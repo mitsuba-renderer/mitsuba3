@@ -134,7 +134,7 @@ class PathProjectiveIntegrator(PSIntegrator):
                project: bool = False,
                si_shade: Optional[mi.SurfaceInteraction3f] = None,
                **kwargs # Absorbs unused arguments
-    ) -> Tuple[mi.Spectrum, mi.Bool, Any]:
+    ) -> Tuple[mi.Spectrum, mi.Bool, List[mi.Float], Any]:
         """
         See ``PSIntegrator.sample()`` for a description of this interface and
         the role of the various parameters and return values.
@@ -375,6 +375,7 @@ class PathProjectiveIntegrator(PSIntegrator):
         return (
             L if primal else δL, # Radiance/differential radiance
             dr.neq(depth, 0),    # Ray validity flag for alpha blending
+            [],                  # Empty tuple of AOVs.
                                  # Seed rays, or the state for the differential phase
             [dr.detach(ray_seed), active_seed] if project else L
         )
@@ -392,7 +393,7 @@ class PathProjectiveIntegrator(PSIntegrator):
             ss.p + (1 + dr.max(dr.abs(ss.p))) * (ss.d * ss.offset + ss.n * mi.math.ShapeEpsilon),
             ss.d
         )
-        radiance_bg, _, _ = self.sample(
+        radiance_bg, _, _, _ = self.sample(
             dr.ADMode.Primal, scene, sampler, ray_bg, curr_depth, None, None, active, False, None)
 
         # ----------- Estimate the radiance of the foreground -----------
@@ -430,7 +431,7 @@ class PathProjectiveIntegrator(PSIntegrator):
 
         # Call `sample()` to estimate the radiance starting from the surface
         # interaction
-        radiance_fg, _, _ = self.sample(
+        radiance_fg, _, _, _ = self.sample(
             dr.ADMode.Primal, scene, sampler, ray_bg, curr_depth, None, None, active, False, si_fg)
 
         # Compute the radiance difference
