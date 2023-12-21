@@ -817,8 +817,9 @@ class PSIntegrator(ADIntegrator):
         # clamped for numerical stability
         self.clamp_mass_thres = 1e-8
 
-        # Scale sample contribution with sqrt to suppress outliers
-        self.sqrt_scale_mass = False
+        # Apply a power transform on the sample contribution as x'=x^(1-this) to
+        # suppress outliers. If set to 0, no transform will be applied.
+        self.scale_mass = 0.
 
         ##### MESH PROJECTION #####
         # Mesh projection algorithm {'hybrid', 'walk', 'jump'}
@@ -1059,10 +1060,10 @@ class PSIntegrator(ADIntegrator):
     ################# Primarily visible discontinuous derivative ###############
 
     def render_primarily_visible_silhouette(self,
-                                             scene: mi.Scene,
-                                             sensor: mi.Sensor,
-                                             sampler: mi.Sampler,
-                                             spp: int) -> mi.TensorXf:
+                                            scene: mi.Scene,
+                                            sensor: mi.Sensor,
+                                            sampler: mi.Sampler,
+                                            spp: int) -> mi.TensorXf:
         """
         Renders the primarily visible discontinuities.
 

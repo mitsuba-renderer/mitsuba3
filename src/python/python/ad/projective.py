@@ -274,7 +274,7 @@ class ProjectiveDetail():
         self.guiding_distr = mi.ad.GridDistr(
             parent.guiding_grid_reso,
             parent.clamp_mass_thres,
-            parent.sqrt_scale_mass,
+            parent.scale_mass,
             mi.log_level() == mi.LogLevel.Debug,
         )
 
@@ -314,7 +314,7 @@ class ProjectiveDetail():
         self.guiding_distr = mi.ad.GridDistr(
             parent.guiding_grid_reso,
             parent.clamp_mass_thres,
-            parent.sqrt_scale_mass,
+            parent.scale_mass,
             mi.log_level() == mi.LogLevel.Debug
         )
 
@@ -390,7 +390,7 @@ class ProjectiveDetail():
             parent.clamp_mass_thres,
             parent.octree_highres_x_slices,
             parent.octree_scatter_inc,
-            parent.sqrt_scale_mass,
+            parent.scale_mass,
             mi.log_level() == mi.LogLevel.Debug
         )
 
