@@ -1,4 +1,3 @@
-
 #include <iomanip>
 #include <cstring>
 #include <cstdio>
@@ -23,14 +22,17 @@ NAMESPACE_BEGIN(mitsuba)
 #  define strdup(x) _strdup(x)
 #endif
 
-static constexpr size_t PROGRAM_GROUP_COUNT = 2 + CUSTOM_OPTIX_SHAPE_COUNT;
+static constexpr size_t PROGRAM_GROUP_COUNT = 2 + OPTIX_SHAPE_TYPE_COUNT;
 
 // Per scene OptiX state data structure
 struct OptixSceneState {
     OptixShaderBindingTable sbt = {};
     OptixAccelData accel;
     OptixTraversableHandle ias_handle = 0ull;
-    void* ias_buffer = nullptr;
+    struct InstanceData {
+        void* buffer = nullptr;             // Device-visible storage for IAS 
+        void* inputs = nullptr;             // Device-visible storage for OptixInstance array
+    } ias_data;
     size_t config_index;
     uint32_t sbt_jit_index;
     bool own_sbt;
@@ -49,19 +51,24 @@ struct OptixSceneState {
 struct OptixConfig {
     OptixDeviceContext context;
     OptixPipelineCompileOptions pipeline_compile_options;
-    OptixModule module;
+    OptixModule main_module;
+    OptixModule bspline_curve_module; /// Built-in module for B-spline curves
+    OptixModule linear_curve_module; /// Built-in module for linear curves
     OptixProgramGroup program_groups[PROGRAM_GROUP_COUNT];
-    char *custom_shapes_program_names[2 * CUSTOM_OPTIX_SHAPE_COUNT];
+    char *custom_shapes_program_names[2 * OPTIX_SHAPE_TYPE_COUNT];
     uint32_t pipeline_jit_index;
 };
 
 // Array storing previously initialized optix configurations
-static constexpr int32_t OPTIX_CONFIG_COUNT = 8;
+static constexpr int32_t OPTIX_CONFIG_COUNT = 32;
 static OptixConfig optix_configs[OPTIX_CONFIG_COUNT] = {};
 
-size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
+size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
+                         bool has_bspline_curves, bool has_linear_curves) {
     // Compute config index in optix_configs based on required set of features
     size_t config_index =
+        (has_bspline_curves ? 16 : 0) +
+        (has_linear_curves ? 8 : 0) +
         (has_instances ? 4 : 0) +
         (has_meshes ? 2 : 0) +
         (has_others ? 1 : 0);
@@ -69,7 +76,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
     OptixConfig &config = optix_configs[config_index];
 
     // Initialize Optix config if necessary
-    if (!config.module) {
+    if (!config.main_module) {
         Log(Debug, "Initialize Optix configuration (index=%zu)..", config_index);
 
         config.context = jit_optix_context();
@@ -93,15 +100,24 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
         config.pipeline_compile_options.numAttributeValues = 2; // the minimum legal value
         config.pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
+        bool at_least_two_gas = [&]() {
+            uint32_t counter = 0;
+            for (bool has_gas : { has_meshes, has_bspline_curves,
+                                  has_linear_curves, has_others })
+                if (has_gas)
+                    if (++counter >= 2)
+                        return true;
+            return false;
+        }();
+
+        uint32_t traversable_flag = 0;
         if (has_instances)
-            config.pipeline_compile_options.traversableGraphFlags =
-                OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
-        else if (has_others && has_meshes)
-            config.pipeline_compile_options.traversableGraphFlags =
-                OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
+            traversable_flag = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
+        else if (at_least_two_gas)
+            traversable_flag = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
         else
-            config.pipeline_compile_options.traversableGraphFlags =
-                OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
+            traversable_flag = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
+        config.pipeline_compile_options.traversableGraphFlags = traversable_flag;
 
     #if !defined(MI_OPTIX_DEBUG)
         config.pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
@@ -117,6 +133,10 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
             prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
         if (has_others)
             prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
+        if (has_bspline_curves)
+            prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_CUBIC_BSPLINE;
+        if (has_linear_curves)
+            prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_LINEAR;
 
         config.pipeline_compile_options.usesPrimitiveTypeFlags = prim_flags;
 
@@ -147,7 +167,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
             optix_rt_ptx_size,
             optix_log,
             &optix_log_size,
-            &config.module,
+            &config.main_module,
             &task
         ));
 
@@ -174,11 +194,42 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
 
         int compilation_state = 0;
         check_log(
-            optixModuleGetCompilationState(config.module, &compilation_state));
+            optixModuleGetCompilationState(config.main_module, &compilation_state));
         if (compilation_state != OPTIX_MODULE_COMPILE_STATE_COMPLETED)
             Throw("Optix configuration initialization failed! The OptiX module "
                   "compilation did not complete successfully. The module's "
                   "compilation state is: %#06x", compilation_state);
+
+        // =====================================================
+        // Load built-in Optix modules for curves
+        // =====================================================
+
+        if (has_bspline_curves) {
+            OptixBuiltinISOptions options = {};
+            options.builtinISModuleType   = OPTIX_PRIMITIVE_TYPE_ROUND_CUBIC_BSPLINE;
+            options.usesMotionBlur        = false;
+            options.curveEndcapFlags      = 0;
+            // buildFlags must match the flags used in OptixAccelBuildOptions (shapes.h)
+            options.buildFlags            = OPTIX_BUILD_FLAG_ALLOW_COMPACTION |
+                                            OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
+            jit_optix_check(
+                optixBuiltinISModuleGet(config.context, &module_compile_options,
+                                        &config.pipeline_compile_options,
+                                        &options, &config.bspline_curve_module));
+        }
+        if (has_linear_curves) {
+            OptixBuiltinISOptions options = {};
+            options.builtinISModuleType = OPTIX_PRIMITIVE_TYPE_ROUND_LINEAR;
+            options.usesMotionBlur      = false;
+            options.curveEndcapFlags    = 0;
+            // buildFlags must match the flags used in OptixAccelBuildOptions (shapes.h)
+            options.buildFlags          = OPTIX_BUILD_FLAG_ALLOW_COMPACTION |
+                                          OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
+            jit_optix_check(
+                optixBuiltinISModuleGet(config.context, &module_compile_options,
+                                        &config.pipeline_compile_options,
+                                        &options, &config.linear_curve_module));
+        }
 
         // =====================================================
         // Create program groups (raygen provided by Dr.Jit..)
@@ -188,23 +239,40 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
         OptixProgramGroupDesc pgd[PROGRAM_GROUP_COUNT] {};
 
         pgd[0].kind                         = OPTIX_PROGRAM_GROUP_KIND_MISS;
-        pgd[0].miss.module                  = config.module;
+        pgd[0].miss.module                  = config.main_module;
         pgd[0].miss.entryFunctionName       = "__miss__ms";
         pgd[1].kind                         = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-        pgd[1].hitgroup.moduleCH            = config.module;
+        pgd[1].hitgroup.moduleCH            = config.main_module;
         pgd[1].hitgroup.entryFunctionNameCH = "__closesthit__mesh";
 
-        for (size_t i = 0; i < CUSTOM_OPTIX_SHAPE_COUNT; i++) {
+        for (size_t i = 0; i < OPTIX_SHAPE_TYPE_COUNT; i++) {
             pgd[2+i].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
 
-            std::string name = string::to_lower(CUSTOM_OPTIX_SHAPE_NAMES[i]);
-            config.custom_shapes_program_names[2*i]   = strdup(("__closesthit__"   + name).c_str());
-            config.custom_shapes_program_names[2*i+1] = strdup(("__intersection__" + name).c_str());
+            OptixShapeType optix_shape_type = OPTIX_SHAPE_ORDER[i];
+            OptixShape& optix_shape = OPTIX_SHAPES.at(optix_shape_type);
 
-            pgd[2+i].hitgroup.moduleCH            = config.module;
+            config.custom_shapes_program_names[2*i]   = strdup(optix_shape.ch_name().c_str());
+            if (optix_shape.is_builtin)
+                config.custom_shapes_program_names[2*i+1] = nullptr;
+            else
+                config.custom_shapes_program_names[2*i+1] = strdup(optix_shape.is_name().c_str());
+
+            pgd[2+i].hitgroup.moduleCH            = config.main_module;
             pgd[2+i].hitgroup.entryFunctionNameCH = config.custom_shapes_program_names[2*i];
-            pgd[2+i].hitgroup.moduleIS            = config.module;
             pgd[2+i].hitgroup.entryFunctionNameIS = config.custom_shapes_program_names[2*i+1];
+            if (optix_shape.is_builtin) {
+                switch(optix_shape_type) {
+                    case BSplineCurve:
+                        pgd[2 + i].hitgroup.moduleIS = config.bspline_curve_module; break;
+                    case LinearCurve:
+                        pgd[2 + i].hitgroup.moduleIS = config.linear_curve_module; break;
+                    default:
+                        Throw("Unknown builtin OptiX shape type: \"%s\"!",
+                              OPTIX_SHAPE_TYPE_NAMES[optix_shape_type]);
+                }
+            }
+            else
+                pgd[2+i].hitgroup.moduleIS = config.main_module;
         }
 
         optix_log_size = sizeof(optix_log);
@@ -224,7 +292,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances) {
         jit_set_scope(JitBackend::CUDA, 0);
         config.pipeline_jit_index = jit_optix_configure_pipeline(
             &config.pipeline_compile_options,
-            config.module,
+            config.main_module,
             config.program_groups, PROGRAM_GROUP_COUNT
         );
         jit_set_scope(JitBackend::CUDA, scope);
@@ -300,19 +368,28 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
             bool has_meshes = false;
             bool has_others = false;
             bool has_instances = false;
+            bool has_bspline_curves = false;
+            bool has_linear_curves = false;
 
             for (auto& shape : m_shapes) {
-                has_meshes    |= shape->is_mesh();
-                has_others    |= !shape->is_mesh() && !shape->is_instance();
-                has_instances |= shape->is_instance();
+                uint32_t type = shape->shape_type();
+
+                has_meshes           |= (type == +ShapeType::Mesh);
+                has_instances        |= (type == +ShapeType::Instance);
+                has_bspline_curves   |= (type == +ShapeType::BSplineCurve);
+                has_linear_curves    |= (type == +ShapeType::LinearCurve);
+                has_others           |= !shape->is_mesh() && !shape->is_instance();
             }
 
             for (auto& shape : m_shapegroups) {
-                has_meshes |= !shape->has_meshes();
-                has_others |= !shape->has_others();
+                has_meshes |= shape->has_meshes();
+                has_bspline_curves |= shape->has_bspline_curves();
+                has_linear_curves |= shape->has_linear_curves();
+                has_others |= shape->has_others();
             }
 
-            s.config_index = init_optix_config(has_meshes, has_others, has_instances);
+            s.config_index = init_optix_config(has_meshes, has_others,
+                has_instances, has_bspline_curves, has_linear_curves);
             const OptixConfig &config = optix_configs[s.config_index];
 
             // =====================================================
@@ -381,7 +458,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
             if (config.pipeline_compile_options.traversableGraphFlags == OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS) {
                 if (ias.size() != 1)
                     Throw("OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS used but found multiple IASs.");
-                s.ias_buffer = nullptr;
+                s.ias_data = {};
                 s.ias_handle = ias[0].traversableHandle;
             } else {
                 // Build a "master" IAS that contains all the IAS of the scene (meshes,
@@ -395,10 +472,14 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
                 void* d_ias = jit_malloc(AllocType::HostPinned, ias_data_size);
                 jit_memcpy_async(JitBackend::CUDA, d_ias, ias.data(), ias_data_size);
 
+                jit_free(s.ias_data.buffer);
+                jit_free(s.ias_data.inputs);
+                s.ias_data = {};
+                s.ias_data.inputs = jit_malloc_migrate(d_ias, AllocType::Device, 1);
+
                 OptixBuildInput build_input;
                 build_input.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
-                build_input.instanceArray.instances =
-                    (CUdeviceptr) jit_malloc_migrate(d_ias, AllocType::Device, 1);
+                build_input.instanceArray.instances = (CUdeviceptr)s.ias_data.inputs;
                 build_input.instanceArray.numInstances = (unsigned int) ias.size();
 
                 OptixAccelBufferSizes buffer_sizes;
@@ -410,12 +491,9 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
                     &buffer_sizes
                 ));
 
-                if (s.ias_buffer)
-                    jit_free(s.ias_buffer);
-
                 void* d_temp_buffer
                     = jit_malloc(AllocType::Device, buffer_sizes.tempSizeInBytes);
-                s.ias_buffer
+                s.ias_data.buffer
                     = jit_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes);
 
                 scoped_optix_context guard;
@@ -428,7 +506,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
                     1, // num build inputs
                     (CUdeviceptr)d_temp_buffer,
                     buffer_sizes.tempSizeInBytes,
-                    (CUdeviceptr)s.ias_buffer,
+                    (CUdeviceptr)s.ias_data.buffer,
                     buffer_sizes.outputSizeInBytes,
                     &s.ias_handle,
                     0, // emitted property list
@@ -455,11 +533,13 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
             [](uint32_t /* index */, int should_free, void *payload) {
                 if (should_free) {
                     Log(Debug, "Free OptiX IAS..");
-                    jit_free(payload);
-                    // TODO should also free build_input.instanceArray.instances
+                    auto* s = (OptixSceneState *)payload;
+                    jit_free(s->ias_data.buffer);
+                    jit_free(s->ias_data.inputs);
+                    delete s;
                 }
             },
-            (void *) s.ias_buffer
+            (void *) m_accel
         );
 
         clear_shapes_dirty();
@@ -486,9 +566,6 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
                no ray tracing calls are pending. */
             (void) UInt32::steal(s->sbt_jit_index);
         }
-
-        delete s;
-
         m_accel = nullptr;
     }
 }
@@ -505,7 +582,7 @@ MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
                    structure if no ray tracing calls are pending. */
                 (void) UInt32::steal(config.pipeline_jit_index);
 
-                for (size_t i = 0; i < 2 * CUSTOM_OPTIX_SHAPE_COUNT; i++)
+                for (size_t i = 0; i < 2 * OPTIX_SHAPE_TYPE_COUNT; i++)
                     free(config.custom_shapes_program_names[i]);
             }
         }

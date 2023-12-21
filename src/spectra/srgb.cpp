@@ -54,6 +54,7 @@ public:
 
         if (dr::any(color < 0 || color > 1) && !props.get<bool>("unbounded", false))
             Throw("Invalid RGB reflectance value %s, must be in the range [0, 1]!", color);
+        props.mark_queried("unbounded");
 
         if constexpr (is_spectral_v<Spectrum>)
             m_value = srgb_model_fetch(color);
@@ -78,6 +79,14 @@ public:
 
         if constexpr (is_spectral_v<Spectrum>)
             return srgb_model_eval<UnpolarizedSpectrum>(m_value, si.wavelengths);
+        else
+            return m_value;
+    }
+
+    Color3f eval_3(const SurfaceInteraction3f &/*si*/, Mask active) const override {
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        if constexpr (is_monochromatic_v<Spectrum>)
+            return Color3f(m_value[0]);
         else
             return m_value;
     }

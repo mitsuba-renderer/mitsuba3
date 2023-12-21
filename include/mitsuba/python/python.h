@@ -162,6 +162,7 @@ template <typename Array> void bind_drjit_ptr_array(py::class_<Array> &cls) {
     cls.attr("eq_") = py::none();
     cls.attr("neq_") = py::none();
     cls.attr("gather_") = py::none();
+    cls.attr("scatter_") = py::none();
     cls.attr("select_") = py::none();
     cls.attr("set_label_") = py::none();
     cls.attr("label_") = py::none();
@@ -215,6 +216,14 @@ template <typename Array> void bind_drjit_ptr_array(py::class_<Array> &cls) {
         else
             return dr::gather<Array, false>(source, index, mask);
     }, "source"_a, "index"_a, "mask"_a, "permute"_a=false);
+
+    cls.def("scatter_", [](const Array &self, Array &target, const UInt32 &index,
+                           const Mask &mask, bool permute) {
+        if (permute)
+            return dr::scatter<true>(target, self, index, mask);
+        else
+            return dr::scatter<false>(target, self, index, mask);
+    }, "target"_a, "index"_a, "mask"_a, "permute"_a = false);
 
     cls.def_static("select_",
                    [](const Mask &m, const Array &t, const Array &f) {

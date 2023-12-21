@@ -147,14 +147,23 @@ public:
         bs.sampled_component = null_index;
         bs.sampled_type      = +BSDFFlags::Null;
         bs.pdf               = 1.f - opacity;
-        result               = 1.f;
+
+        result = 1.f;
+        if constexpr (dr::is_diff_v<Float>) {
+            if (dr::grad_enabled(opacity)) {
+                result = dr::replace_grad(
+                    result,
+                    Spectrum((1.f - opacity) / dr::detach(1.f - opacity)));
+            }
+        }
 
         Mask nested_mask = active && sample1 < opacity;
         if (dr::any_or<true>(nested_mask)) {
             sample1 /= opacity;
             auto tmp                = m_nested_bsdf->sample(ctx, si, sample1, sample2, nested_mask);
             dr::masked(bs, nested_mask) = tmp.first;
-            dr::masked(result, nested_mask) = tmp.second;
+            dr::masked(result, nested_mask) = tmp.second * opacity / dr::detach(opacity);
+            dr::masked(bs.pdf, nested_mask) *= opacity;
         }
 
         return { bs, result };

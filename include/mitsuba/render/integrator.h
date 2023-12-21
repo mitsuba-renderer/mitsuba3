@@ -92,6 +92,200 @@ public:
                     bool develop = true,
                     bool evaluate = true);
 
+
+    // =========================================================================
+    //! @{ \name Default backwards and forwards differentiation
+    // =========================================================================
+
+    /**
+     * \brief Evaluates the forward-mode derivative of the rendering step.
+     *
+     * Forward-mode differentiation propagates gradients from scene parameters
+     * through the simulation, producing a *gradient image* (i.e., the derivative
+     * of the rendered image with respect to those scene parameters). The gradient
+     * image is very helpful for debugging, for example to inspect the gradient
+     * variance or visualize the region of influence of a scene parameter. It is
+     * not particularly useful for simultaneous optimization of many parameters,
+     * since multiple differentiation passes are needed to obtain separate
+     * derivatives for each scene parameter. See ``Integrator.render_backward()``
+     * for an efficient way of obtaining all parameter derivatives at once, or
+     * simply use the ``mi.render()`` abstraction that hides both
+     * ``Integrator.render_forward()`` and ``Integrator.render_backward()`` behind
+     * a unified interface.
+     *
+     * Before calling this function, you must first enable gradient tracking and
+     * furthermore associate concrete input gradients with one or more scene
+     * parameters, or the function will just return a zero-valued gradient image.
+     * This is typically done by invoking ``dr.enable_grad()`` and
+     * ``dr.set_grad()`` on elements of the ``SceneParameters`` data structure
+     * that can be obtained obtained via a call to ``mi.traverse()``.
+     *
+     * Note the default implementation of this functionality relies on naive
+     * automatic differentiation (AD), which records a computation graph of the
+     * primal rendering step that is subsequently traversed to propagate
+     * derivatives. This tends to be relatively inefficient due to the need to
+     * track intermediate program state. In particular, it means that
+     * differentiation of nontrivial scenes at high sample counts will often run
+     * out of memory. Integrators like ``rb`` (Radiative Backpropagation) and
+     * ``prb`` (Path Replay Backpropagation) that are specifically designed for
+     * differentiation can be significantly more efficient.
+     *
+     * \param scene
+     *    The scene to be rendered differentially.
+     *
+     * \param params
+     *    An arbitrary container of scene parameters that should receive
+     *    gradients. Typically this will be an instance of type
+     *    ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it could
+     *    also be a Python list/dict/object tree (DrJit will traverse it to find
+     *    all parameters). Gradient tracking must be explicitly enabled for each of
+     *    these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
+     *    ``render_forward()`` will not do this for you). Furthermore,
+     *    ``dr.set_grad(...)`` must be used to associate specific gradient values
+     *    with each parameter.
+     *
+     * \param sensor
+     *    Specify a sensor or a (sensor index) to render the scene from a
+     *    different viewpoint. By default, the first sensor within the scene
+     *    description (index 0) will take precedence.
+     *
+     * \param seed
+     *    This parameter controls the initialization of the random number
+     *    generator. It is crucial that you specify different seeds (e.g., an
+     *    increasing sequence) if subsequent calls should produce statistically
+     *    independent images (e.g. to de-correlate gradient-based optimization
+     *    steps).
+
+    \param ``spp`` (``int``):
+        Optional parameter to override the number of samples per pixel for the
+        differential rendering step. The value provided within the original
+        scene specification takes precedence if ``spp=0``.
+    */
+    virtual TensorXf render_forward(Scene* scene,
+                                    void* params,
+                                    Sensor *sensor,
+                                    uint32_t seed = 0,
+                                    uint32_t spp = 0);
+
+    /**
+     * \brief Evaluates the forward-mode derivative of the rendering step.
+     *
+     * This function is just a thin wrapper around the previous \ref render_forward()
+     * function. It accepts a sensor *index* instead and renders the scene
+     * using sensor 0 by default.
+     */
+    TensorXf render_forward(Scene* scene,
+                            void* params,
+                            uint32_t sensor_index = 0,
+                            uint32_t seed = 0,
+                            uint32_t spp = 0) {
+
+        if (sensor_index >= scene->sensors().size())
+            Throw("SamplingIntegrator::render_forward(): sensor index %i"
+                  "is out of bounds!", sensor_index);
+
+        return render_forward(scene,
+                              params,
+                              scene->sensors()[sensor_index].get(),
+                              seed,
+                              spp);
+    }
+
+    /**
+     * \brief Evaluates the reverse-mode derivative of the rendering step.
+     *
+     * Reverse-mode differentiation transforms image-space gradients into scene
+     * parameter gradients, enabling simultaneous optimization of scenes with
+     * millions of free parameters. The function is invoked with an input
+     * *gradient image* (``grad_in``) and transforms and accumulates these into
+     * the gradient arrays of scene parameters that previously had gradient
+     * tracking enabled.
+     *
+     * Before calling this function, you must first enable gradient tracking for
+     * one or more scene parameters, or the function will not do anything. This is
+     * typically done by invoking ``dr.enable_grad()`` on elements of the
+     * ``SceneParameters`` data structure that can be obtained obtained via a call
+     * to ``mi.traverse()``. Use ``dr.grad()`` to query the resulting gradients of
+     * these parameters once ``render_backward()`` returns.
+     *
+     * Note the default implementation of this functionality relies on naive
+     * automatic differentiation (AD), which records a computation graph of the
+     * primal rendering step that is subsequently traversed to propagate
+     * derivatives. This tends to be relatively inefficient due to the need to
+     * track intermediate program state. In particular, it means that
+     * differentiation of nontrivial scenes at high sample counts will often run
+     * out of memory. Integrators like ``rb`` (Radiative Backpropagation) and
+     * ``prb`` (Path Replay Backpropagation) that are specifically designed for
+     * differentiation can be significantly more efficient.
+     *
+     * \param scene
+     *    The scene to be rendered differentially.
+     *
+     * \param params
+     *    An arbitrary container of scene parameters that should receive
+     *    gradients. Typically this will be an instance of type
+     *    ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it could
+     *    also be a Python list/dict/object tree (DrJit will traverse it to find
+     *    all parameters). Gradient tracking must be explicitly enabled for each of
+     *    these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
+     *    ``render_backward()`` will not do this for you).
+     *
+     * \param grad_in
+     *    Gradient image that should be back-propagated.
+     *
+     * \param sensor
+     *    Specify a sensor or a (sensor index) to render the scene from a
+     *    different viewpoint. By default, the first sensor within the scene
+     *    description (index 0) will take precedence.
+     *
+     * \param seed
+     *    This parameter controls the initialization of the random number
+     *    generator. It is crucial that you specify different seeds (e.g., an
+     *    increasing sequence) if subsequent calls should produce statistically
+     *    independent images (e.g. to de-correlate gradient-based optimization
+     *    steps).
+
+     * \param spp
+     *   Optional parameter to override the number of samples per pixel for the
+     *   differential rendering step. The value provided within the original
+     *   scene specification takes precedence if ``spp=0``.
+     */
+    virtual void render_backward(Scene* scene,
+                                 void* params,
+                                 const TensorXf& grad_in,
+                                 Sensor* sensor,
+                                 uint32_t seed = 0,
+                                 uint32_t spp = 0);
+
+    /**
+     * \brief Evaluates the reverse-mode derivative of the rendering step.
+     *
+     * This function is just a thin wrapper around the previous \ref render_backward()
+     * function. It accepts a sensor *index* instead and renders the scene
+     * using sensor 0 by default.
+     */
+    void render_backward(Scene* scene,
+                         void* params,
+                         const TensorXf& grad_in,
+                         uint32_t sensor_index = 0,
+                         uint32_t seed = 0,
+                         uint32_t spp = 0) {
+
+        if (sensor_index >= scene->sensors().size())
+            Throw("SamplingIntegrator::render_backward(): sensor index %i"
+                  "is out of bounds!", sensor_index);
+
+        return render_backward(scene,
+                               params,
+                               grad_in,
+                               scene->sensors()[sensor_index].get(),
+                               seed,
+                               spp);
+    }
+
+    //! @}
+    // =========================================================================
+
     /// \brief Cancel a running render job (e.g. after receiving Ctrl-C)
     virtual void cancel();
 

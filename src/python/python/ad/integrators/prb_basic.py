@@ -80,20 +80,26 @@ class BasicPRBIntegrator(RBIntegrator):
                        state=lambda: (sampler, ray, depth, L, δL, β, active))
 
         while loop(active):
+            active_next = mi.Bool(active)
+
             # ---------------------- Direct emission ----------------------
 
             # Compute a surface interaction that tracks derivatives arising
             # from differentiable shape parameters (position, normals, etc.)
             # In primal mode, this is just an ordinary ray tracing operation.
-
             with dr.resume_grad(when=not primal):
                 si = scene.ray_intersect(ray)
 
-                # Differentiable evaluation of intersected emitter / envmap
-                Le = β * si.emitter(scene).eval(si)
+            # Hide the environment emitter if necessary
+            if self.hide_emitters:
+                active_next &= ~(dr.eq(depth, 0) & ~si.is_valid())
+
+            # Differentiable evaluation of intersected emitter / envmap
+            with dr.resume_grad(when=not primal):
+                Le = β * si.emitter(scene).eval(si, active_next)
 
             # Should we continue tracing to reach one more vertex?
-            active_next = (depth + 1 < self.max_depth) & si.is_valid()
+            active_next &= (depth + 1 < self.max_depth) & si.is_valid()
 
             # Get the BSDF. Potentially computes texture-space differentials.
             bsdf = si.bsdf(ray)

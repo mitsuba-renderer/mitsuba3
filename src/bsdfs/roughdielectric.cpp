@@ -287,7 +287,9 @@ public:
                 Sampling weights should be computed accordingly. */
             if constexpr (dr::is_diff_v<Float>) {
                 if (dr::grad_enabled(F)) {
-                    weight = dr::select(selected_r, F / dr::detach(F), (1 - F) / (1.f - dr::detach(F)));
+                    Float r_diff = dr::replace_grad(Float(1.f), F / dr::detach(F));
+                    Float t_diff = dr::replace_grad(Float(1.f), (1.f - F) / (1.f - dr::detach(F)));
+                    weight = dr::select(selected_r, r_diff, t_diff);
                 }
             }
             bs.pdf *= dr::detach(dr::select(selected_r, F, 1.f - F));

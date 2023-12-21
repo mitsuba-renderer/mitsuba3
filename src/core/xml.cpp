@@ -35,49 +35,13 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(xml)
 
+using Version = util::Version;
+
 // Set of supported XML tags
 enum class Tag {
     Boolean, Integer, Float, String, Point, Vector, Spectrum, RGB,
     Transform, Translate, Matrix, Rotate, Scale, LookAt, Object,
     NamedReference, Include, Alias, Default, Resource, Invalid
-};
-
-struct Version {
-    unsigned int major, minor, patch;
-
-    Version() = default;
-
-    Version(int major, int minor, int patch)
-        : major(major), minor(minor), patch(patch) { }
-
-    Version(const char *value) {
-        auto list = string::tokenize(value, " .");
-        if (list.size() != 3)
-            Throw("Version number must consist of three period-separated parts!");
-        major = std::stoul(list[0]);
-        minor = std::stoul(list[1]);
-        patch = std::stoul(list[2]);
-    }
-
-    bool operator==(const Version &v) const {
-        return std::tie(major, minor, patch) ==
-               std::tie(v.major, v.minor, v.patch);
-    }
-
-    bool operator!=(const Version &v) const {
-        return std::tie(major, minor, patch) !=
-               std::tie(v.major, v.minor, v.patch);
-    }
-
-    bool operator<(const Version &v) const {
-        return std::tie(major, minor, patch) <
-               std::tie(v.major, v.minor, v.patch);
-    }
-
-    friend std::ostream &operator<<(std::ostream &os, const Version &v) {
-        os << v.major << "." << v.minor << "." << v.patch;
-        return os;
-    }
 };
 
 // Check if the name corresponds to an unbounded spectrum property which require
@@ -985,27 +949,6 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
     return std::make_pair("", "");
 }
 
-struct ScopedSetJITScope {
-    ScopedSetJITScope(uint32_t backend, uint32_t scope) : backend(backend) {
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
-        if (backend) {
-            backup = jit_scope((JitBackend) backend);
-            jit_set_scope((JitBackend) backend, scope);
-        }
-#endif
-    }
-
-    ~ScopedSetJITScope() {
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
-        if (backend)
-            jit_set_scope((JitBackend) backend, backup);
-#endif
-    }
-
-    uint32_t backend, backup;
-};
-
-
 static std::string init_xml_parse_context_from_file(XMLParseContext &ctx,
                                                     const fs::path &filename_,
                                                     ParameterList param,
@@ -1194,6 +1137,10 @@ static ref<Object> instantiate_top_node(XMLParseContext &ctx, const std::string 
     ThreadEnvironment env;
     std::unordered_map<std::string, Task*> task_map;
     instantiate_node(ctx, id, env, task_map, true);
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+    if (ctx.backend && ctx.parallel)
+        jit_new_scope((JitBackend) ctx.backend);
+#endif
     return ctx.instances.find(id)->second.object;
 }
 

@@ -82,7 +82,12 @@ public:
 
         // Primary & further bounces illumination
         auto [ray, throughput] = prepare_ray(scene, sensor, sampler);
-        trace_light_ray(ray, scene, sensor, sampler, throughput, block, sample_scale);
+
+        Float throughput_max = dr::max(unpolarized_spectrum(throughput));
+        Mask active = dr::neq(throughput_max, 0.f);
+
+        trace_light_ray(ray, scene, sensor, sampler, throughput, block,
+                        sample_scale, active);
     }
 
     /**

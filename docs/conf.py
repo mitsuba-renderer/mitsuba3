@@ -92,7 +92,7 @@ rst_prolog = r"""
 
 .. |exposed| replace:: :abbr:`P (This parameters will be exposed as a scene parameter)`
 .. |differentiable| replace:: :abbr:`∂ (This parameter is differentiable)`
-.. |discontinuous| replace:: :abbr:`D (This parameter might introduce discontinuities. Therefore it requires special handling during differentiation to prevent bias (e.g. prb-reparam)))`
+.. |discontinuous| replace:: :abbr:`D (This parameter might introduce discontinuities. Therefore it requires special handling during differentiation to prevent bias))`
 
 """
 

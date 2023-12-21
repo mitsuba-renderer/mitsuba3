@@ -138,7 +138,7 @@ inline bool replace_inplace(std::string &str, const std::string &source,
 
 /// Remove leading and trailing characters
 extern MI_EXPORT_LIB std::string trim(const std::string &s,
-                                        const std::string &whitespace = " \t");
+                                      const std::string &whitespace = " \t");
 
 /// Check if a list of keys contains a specific key
 extern MI_EXPORT_LIB bool contains(const std::vector<std::string> &keys, const std::string &key);

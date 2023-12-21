@@ -79,6 +79,21 @@ MI_PY_EXPORT(warp) {
           warp::square_to_uniform_sphere_pdf<false, Float>,
           "v"_a, D(warp, square_to_uniform_sphere_pdf));
 
+    m.def("square_to_uniform_spherical_lune",
+          warp::square_to_uniform_spherical_lune<Float>,
+          "sample"_a, "n1"_a, "n2"_a,
+          D(warp, square_to_uniform_spherical_lune));
+
+    m.def("uniform_spherical_lune_to_square",
+          warp::uniform_spherical_lune_to_square<Float>,
+          "d"_a, "n1"_a, "n2"_a,
+          D(warp, uniform_spherical_lune_to_square));
+
+    m.def("square_to_uniform_spherical_lune_pdf",
+          warp::square_to_uniform_spherical_lune_pdf<Float>,
+          "d"_a, "n1"_a, "n2"_a,
+          D(warp, square_to_uniform_spherical_lune_pdf));
+
     m.def("square_to_uniform_hemisphere",
           warp::square_to_uniform_hemisphere<Float>,
           "sample"_a, D(warp, square_to_uniform_hemisphere));
@@ -174,4 +189,14 @@ MI_PY_EXPORT(warp) {
     m.def("bilinear_to_square", warp::bilinear_to_square<Float>,
           "v00"_a, "v10"_a, "v01"_a, "v11"_a, "sample"_a,
           D(warp, bilinear_to_square));
+
+    m.def("interval_to_tangent_direction",
+          warp::interval_to_tangent_direction<Float>,
+          "n"_a, "sample"_a,
+          D(warp, interval_to_tangent_direction));
+
+    m.def("tangent_direction_to_interval",
+          warp::tangent_direction_to_interval<Float>,
+          "n"_a, "dir"_a,
+          D(warp, tangent_direction_to_interval));
 }

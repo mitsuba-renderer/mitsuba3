@@ -58,6 +58,7 @@ Perspective pinhole camera (:monosp:`perspective`)
  * - principal_point_offset_x, principal_point_offset_y
    - |float|
    - Specifies the position of the camera's principal point relative to the center of the film.
+   - |exposed|, |differentiable|, |discontinuous|
 
  * - srf
    - |spectrum|
@@ -153,8 +154,10 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         Base::traverse(callback);
-        callback->put_parameter("x_fov",     m_x_fov,          ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_parameter("to_world", *m_to_world.ptr(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("x_fov",                    m_x_fov,                      ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("principal_point_offset_x", m_principal_point_offset.x(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("principal_point_offset_y", m_principal_point_offset.y(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        callback->put_parameter("to_world",                *m_to_world.ptr(),             ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {

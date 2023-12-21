@@ -33,7 +33,7 @@ combinations of two phase function instances. Any phase function in Mitsuba 3
 manner. This is of particular interest when mixing components in a participating
 medium (*e.g.* accounting for the presence of aerosols in a Rayleigh-scattering
 atmosphere).
-The association of nested Phase plugins with the two positions in the 
+The association of nested Phase plugins with the two positions in the
 interpolation is based on the alphanumeric order of their identifiers.
 
 .. tabs::
@@ -100,10 +100,10 @@ public:
         callback->put_object("phase_1", m_nested_phase[1].get(), +ParamFlags::Differentiable);
     }
 
-    std::pair<Vector3f, Float> sample(const PhaseFunctionContext &ctx,
-                                      const MediumInteraction3f &mi,
-                                      Float sample1, const Point2f &sample2,
-                                      Mask active) const override {
+    std::tuple<Vector3f, Spectrum, Float> sample(const PhaseFunctionContext &ctx,
+                                                 const MediumInteraction3f &mi,
+                                                 Float sample1, const Point2f &sample2,
+                                                 Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
 
         Float weight = eval_weight(mi, active);
@@ -116,42 +116,47 @@ public:
                     (uint32_t) m_nested_phase[0]->component_count();
             else
                 weight = 1.f - weight;
-            auto [wo, pdf] = m_nested_phase[sample_first ? 0 : 1]->sample(
+            auto [wo, w, pdf] = m_nested_phase[sample_first ? 0 : 1]->sample(
                 ctx2, mi, sample1, sample2, active);
             pdf *= weight;
-            return { wo, pdf };
+            return { wo, w * weight, pdf };
         }
 
         Vector3f wo = dr::zeros<Vector3f>();
+        Spectrum w = dr::zeros<Spectrum>();
         Float pdf = dr::zeros<Float>();
 
         Mask m0 = active && sample1 > weight,
              m1 = active && sample1 <= weight;
 
         if (dr::any_or<true>(m0)) {
-            auto [wo0, pdf0] = m_nested_phase[0]->sample(
+            auto [wo0, w0, pdf0] = m_nested_phase[0]->sample(
                 ctx, mi, (sample1 - weight) / (1 - weight), sample2, m0);
             dr::masked(wo, m0)  = wo0;
+            dr::masked(w, m0)   = w0;
             dr::masked(pdf, m0) = pdf0;
         }
 
         if (dr::any_or<true>(m1)) {
-            auto [wo1, pdf1] = m_nested_phase[1]->sample(
+            auto [wo1, w1, pdf1] = m_nested_phase[1]->sample(
                 ctx, mi, sample1 / weight, sample2, m1);
             dr::masked(wo, m1)  = wo1;
+            dr::masked(w, m1)   = w1;
             dr::masked(pdf, m1) = pdf1;
         }
 
-        return { wo, pdf };
+        return { wo, w, pdf };
     }
 
     MI_INLINE Float eval_weight(const MediumInteraction3f &mi,
-                                 const Mask &active) const {
+                                const Mask &active) const {
         return dr::clamp(m_weight->eval_1(mi, active), 0.f, 1.f);
     }
 
-    Float eval(const PhaseFunctionContext &ctx, const MediumInteraction3f &mi,
-               const Vector3f &wo, Mask active) const override {
+    std::pair<Spectrum, Float> eval_pdf(const PhaseFunctionContext &ctx,
+                                        const MediumInteraction3f &mi,
+                                        const Vector3f &wo,
+                                        Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
 
         Float weight = eval_weight(mi, active);
@@ -165,12 +170,18 @@ public:
                     (uint32_t) m_nested_phase[0]->component_count();
             else
                 weight = 1.f - weight;
-            return weight * m_nested_phase[sample_first ? 0 : 1]->eval(
-                                ctx2, mi, wo, active);
-        }
+             auto [val, pdf] = m_nested_phase[sample_first ? 0 : 1]->eval_pdf(ctx2, mi, wo, active);
 
-        return m_nested_phase[0]->eval(ctx, mi, wo, active) * (1 - weight) +
-               m_nested_phase[1]->eval(ctx, mi, wo, active) * weight;
+             return { weight * val, weight * pdf };
+        } else {
+            auto [val_0, pdf_0] = m_nested_phase[0]->eval_pdf(ctx, mi, wo, active);
+            auto [val_1, pdf_1] = m_nested_phase[1]->eval_pdf(ctx, mi, wo, active);
+
+            return {
+                dr::lerp(val_0, val_1, weight),
+                dr::lerp(pdf_0, pdf_1, weight)
+            };
+        }
     }
 
     std::string to_string() const override {

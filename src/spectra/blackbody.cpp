@@ -74,6 +74,7 @@ public:
     constexpr static ScalarFloat c = ScalarFloat(2.99792458e+8);   /// Speed of light
     constexpr static ScalarFloat h = ScalarFloat(6.62607004e-34);  /// Planck constant
     constexpr static ScalarFloat k = ScalarFloat(1.38064852e-23);  /// Boltzmann constant
+    constexpr static ScalarFloat b = ScalarFloat(2.89777196e-3);   /// Wien displacement constant
 
     /// First and second radiation static constants
     constexpr static ScalarFloat c0 = 2 * h * c * c;
@@ -236,6 +237,36 @@ public:
     Float mean() const override {
         return m_integral / (m_wavelength_range.y() - m_wavelength_range.x());
     }
+
+    ScalarVector2f wavelength_range() const override {
+        return m_wavelength_range;
+    }
+
+    ScalarFloat spectral_resolution() const override {
+        return 0.f;
+    }
+
+    ScalarFloat max() const override {
+        ScalarFloat lambda_peak = dr::clamp(b / m_temperature, 
+                                            m_wavelength_range.x() * 1e-9f, 
+                                            m_wavelength_range.y() * 1e-9f),
+                    lambda2_peak = dr::sqr(lambda_peak),
+                    lambda5_peak = dr::sqr(lambda2_peak) * lambda_peak;
+
+        ScalarFloat P = 1e-9f * c0 / (lambda5_peak *
+                    (dr::exp(c1 / (lambda_peak * m_temperature)) - 1.f));
+
+        return P;
+    }
+
+    std::string to_string() const override {
+        std::ostringstream oss;
+        oss << "BlackBodySpectrum[" << std::endl
+            << "  temperature = " << string::indent(m_temperature) << std::endl
+            << "]";
+        return oss.str();
+    }
+
 
     MI_DECLARE_CLASS()
 private:

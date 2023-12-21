@@ -239,6 +239,10 @@ public:
         m_srf = PluginManager::instance()->create_object<Texture>(props);
     }
 
+    size_t base_channels_count() const override {
+        return m_srfs.size();
+    }
+
     size_t prepare(const std::vector<std::string>& channels) override {
         std::vector<std::string> sorted = channels;
 
@@ -303,6 +307,11 @@ public:
         Assert(m_storage != nullptr);
         std::lock_guard<std::mutex> lock(m_mutex);
         m_storage->put_block(block);
+    }
+    
+    void clear() override {
+        if (m_storage)
+            m_storage->clear();
     }
 
     TensorXf develop(bool raw = false) const override {

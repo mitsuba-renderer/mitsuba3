@@ -21,8 +21,10 @@ template <typename Value> struct DiscreteDistribution {
     using Float = std::conditional_t<dr::is_static_array_v<Value>,
                                      dr::value_t<Value>, Value>;
     using FloatStorage   = DynamicBuffer<Float>;
+    using UInt32         = dr::uint32_array_t<Float>;
     using Index          = dr::uint32_array_t<Value>;
     using Mask           = dr::mask_t<Value>;
+    using Vector2u       = dr::Array<UInt32, 2>;
 
     using ScalarFloat    = dr::scalar_t<Float>;
     using ScalarVector2u = dr::Array<uint32_t, 2>;
@@ -46,18 +48,15 @@ public:
     /// Initialize from a given floating point array
     DiscreteDistribution(const ScalarFloat *values, size_t size)
         : m_pmf(dr::load<FloatStorage>(values, size)) {
-        compute_cdf(values, size);
+        compute_cdf_scalar(values, size);
     }
 
     /// Update the internal state. Must be invoked when changing the pmf.
     void update() {
-        if constexpr (dr::is_jit_v<Float>) {
-            FloatStorage temp = dr::migrate(m_pmf, AllocType::Host);
-            dr::sync_thread();
-            compute_cdf(temp.data(), temp.size());
-        } else {
-            compute_cdf(m_pmf.data(), m_pmf.size());
-        }
+        if constexpr (dr::is_jit_v<Float>)
+            compute_cdf();
+        else
+            compute_cdf_scalar(m_pmf.data(), m_pmf.size());
     }
 
     /// Return the unnormalized probability mass function
@@ -108,21 +107,28 @@ public:
      * \brief %Transform a uniformly distributed sample to the stored
      * distribution
      *
-     * \param value
+     * \param sample
      *     A uniformly distributed sample on the interval [0, 1].
      *
      * \return
      *     The discrete index associated with the sample
      */
-    Index sample(Value value, Mask active = true) const {
+    Index sample(Value sample, Mask active = true) const {
         MI_MASK_ARGUMENT(active);
 
-        value *= m_sum;
+        sample *= m_sum;
 
         return dr::binary_search<Index>(
             m_valid.x(), m_valid.y(),
             [&](Index index) DRJIT_INLINE_LAMBDA {
-                return dr::gather<Value>(m_cdf, index, active) < value;
+                Value value = dr::gather<Value>(m_cdf, index, active);
+                if constexpr (!dr::is_jit_v<Float>) {
+                    return value < sample;
+                } else {
+                    // `m_valid` is not computed in JIT variants
+                    return ((value < sample) || (dr::eq(value, 0))) &&
+                           dr::neq(value, m_sum);
+                }
             }
         );
     }
@@ -209,12 +215,27 @@ public:
     }
 
 private:
-    void compute_cdf(const ScalarFloat *pmf, size_t size) {
+    void compute_cdf() {
+        if (m_pmf.empty())
+            Throw("DiscreteDistribution: empty distribution!");
+        if (!dr::all(m_pmf >= 0.f))
+            Throw("DiscreteDistribution: entries must be non-negative!");
+        if (!dr::any(m_pmf > 0.f))
+            Throw("DiscreteDistribution: no probability mass found!");
+
+        m_cdf = dr::prefix_sum(m_pmf, false);
+        m_valid = Vector2u(0, m_pmf.size() - 1);
+        m_sum = dr::gather<Float>(m_cdf, m_valid.y());
+        m_normalization = dr::rcp(m_sum);
+        dr::make_opaque(m_valid, m_sum, m_normalization);
+    }
+
+    void compute_cdf_scalar(const ScalarFloat *pmf, size_t size) {
         if (size == 0)
             Throw("DiscreteDistribution: empty distribution!");
 
         std::vector<ScalarFloat> cdf(size);
-        m_valid = (uint32_t) -1;
+        ScalarVector2u valid = (uint32_t) -1;
 
         double sum = 0.0;
         for (uint32_t i = 0; i < size; ++i) {
@@ -225,19 +246,21 @@ private:
             if (value < 0.0) {
                 Throw("DiscreteDistribution: entries must be non-negative!");
             } else if (value > 0.0) {
-                // Determine the first and last wavelength bin with nonzero density
-                if (m_valid.x() == (uint32_t) -1)
-                    m_valid.x() = i;
-                m_valid.y() = i;
+                // Determine the first and last bin with nonzero density
+                if (valid.x() == (uint32_t) -1)
+                    valid.x() = i;
+                valid.y() = i;
             }
         }
 
-        if (dr::any(dr::eq(m_valid, (uint32_t) -1)))
+        if (dr::any(dr::eq(valid, (uint32_t) -1)))
             Throw("DiscreteDistribution: no probability mass found!");
 
-        m_sum = dr::opaque<Float>(sum);
-        m_normalization = dr::opaque<Float>(1.0 / sum);
         m_cdf = dr::load<FloatStorage>(cdf.data(), size);
+        m_valid = valid;
+        m_sum = dr::gather<Float>(m_cdf, m_valid.y());
+        m_normalization = dr::rcp(m_sum);
+        dr::make_opaque(m_valid, m_sum, m_normalization);
     }
 
 private:
@@ -245,7 +268,7 @@ private:
     FloatStorage m_cdf;
     Float m_sum = 0.f;
     Float m_normalization = 0.f;
-    ScalarVector2u m_valid;
+    Vector2u m_valid;
 };
 
 /**
@@ -264,8 +287,10 @@ template <typename Value> struct ContinuousDistribution {
     using Float = std::conditional_t<dr::is_static_array_v<Value>,
                                      dr::value_t<Value>, Value>;
     using FloatStorage = DynamicBuffer<Float>;
+    using UInt32 = dr::uint32_array_t<Float>;
     using Index = dr::uint32_array_t<Value>;
     using Mask = dr::mask_t<Value>;
+    using Vector2u = dr::Array<UInt32, 2>;
 
     using ScalarFloat = dr::scalar_t<Float>;
     using ScalarVector2f = Vector<ScalarFloat, 2>;
@@ -294,18 +319,15 @@ public:
                            const ScalarFloat *values, size_t size)
         : m_pdf(dr::load<FloatStorage>(values, size)),
           m_range(range) {
-        compute_cdf(values, size);
+        compute_cdf_scalar(values, size);
     }
 
     /// Update the internal state. Must be invoked when changing the pdf.
     void update() {
-        if constexpr (dr::is_jit_v<Float>) {
-            FloatStorage temp = dr::migrate(m_pdf, AllocType::Host);
-            dr::sync_thread();
-            compute_cdf(temp.data(), temp.size());
-        } else {
-            compute_cdf(m_pdf.data(), m_pdf.size());
-        }
+        if constexpr (dr::is_jit_v<Float>)
+            compute_cdf();
+        else
+            compute_cdf_scalar(m_pdf.data(), m_pdf.size());
     }
 
     /// Return the range of the distribution
@@ -392,21 +414,28 @@ public:
      * \brief %Transform a uniformly distributed sample to the stored
      * distribution
      *
-     * \param value
+     * \param sample
      *     A uniformly distributed sample on the interval [0, 1].
      *
      * \return
      *     The sampled position.
      */
-    Value sample(Value value, Mask active = true) const {
+    Value sample(Value sample, Mask active = true) const {
         MI_MASK_ARGUMENT(active);
 
-        value *= m_integral;
+        sample *= m_integral;
 
         Index index = dr::binary_search<Index>(
             m_valid.x(), m_valid.y(),
             [&](Index index) DRJIT_INLINE_LAMBDA {
-                return dr::gather<Value>(m_cdf, index, active) < value;
+                Value value = dr::gather<Value>(m_cdf, index, active);
+                if constexpr (!dr::is_jit_v<Float>) {
+                    return value < sample;
+                } else {
+                    // `m_valid` is not computed in JIT variants
+                    return ((value < sample) || (dr::eq(value, 0))) &&
+                           dr::neq(value, m_integral);
+                }
             }
         );
 
@@ -414,10 +443,10 @@ public:
               y1 = dr::gather<Value>(m_pdf, index + 1u, active),
               c0 = dr::gather<Value>(m_cdf, index - 1u, active && index > 0);
 
-        value = (value - c0) * m_inv_interval_size;
+        sample = (sample - c0) * m_inv_interval_size;
 
-        Value t_linear = (y0 - dr::safe_sqrt(dr::fmadd(y0, y0, 2.f * value * (y1 - y0)))) * dr::rcp(y0 - y1),
-              t_const  = value * dr::rcp(y0),
+        Value t_linear = (y0 - dr::safe_sqrt(dr::fmadd(y0, y0, 2.f * sample * (y1 - y0)))) * dr::rcp(y0 - y1),
+              t_const  = sample * dr::rcp(y0),
               t        = dr::select(dr::eq(y0, y1), t_const, t_linear);
 
         return dr::fmadd(Value(index) + t, m_interval_size, m_range.x());
@@ -427,7 +456,7 @@ public:
      * \brief %Transform a uniformly distributed sample to the stored
      * distribution
      *
-     * \param value
+     * \param sample 
      *     A uniformly distributed sample on the interval [0, 1].
      *
      * \return
@@ -436,15 +465,22 @@ public:
      *     1. the sampled position.
      *     2. the normalized probability density of the sample.
      */
-    std::pair<Value, Value> sample_pdf(Value value, Mask active = true) const {
+    std::pair<Value, Value> sample_pdf(Value sample, Mask active = true) const {
         MI_MASK_ARGUMENT(active);
 
-        value *= m_integral;
+        sample *= m_integral;
 
         Index index = dr::binary_search<Index>(
             m_valid.x(), m_valid.y(),
             [&](Index index) DRJIT_INLINE_LAMBDA {
-                return dr::gather<Value>(m_cdf, index, active) < value;
+                Value value = dr::gather<Value>(m_cdf, index, active);
+                if constexpr (!dr::is_jit_v<Float>) {
+                    return value < sample;
+                } else {
+                    // `m_valid` is not computed in JIT variants
+                    return ((value < sample) || (dr::eq(value, 0))) &&
+                           dr::neq(value, m_integral);
+                }
             }
         );
 
@@ -452,10 +488,10 @@ public:
               y1 = dr::gather<Value>(m_pdf, index + 1u, active),
               c0 = dr::gather<Value>(m_cdf, index - 1u, active && index > 0);
 
-        value = (value - c0) * m_inv_interval_size;
+        sample = (sample - c0) * m_inv_interval_size;
 
-        Value t_linear = (y0 - dr::safe_sqrt(dr::fmadd(y0, y0, 2.f * value * (y1 - y0)))) * dr::rcp(y0 - y1),
-              t_const  = value * dr::rcp(y0),
+        Value t_linear = (y0 - dr::safe_sqrt(dr::fmadd(y0, y0, 2.f * sample * (y1 - y0)))) * dr::rcp(y0 - y1),
+              t_const  = sample * dr::rcp(y0),
               t        = dr::select(dr::eq(y0, y1), t_const, t_linear);
 
         return { dr::fmadd(Value(index) + t, m_interval_size, m_range.x()),
@@ -472,7 +508,38 @@ public:
     }
 
 private:
-    void compute_cdf(const ScalarFloat *pdf, size_t size) {
+    void compute_cdf() {
+        if (m_pdf.size() < 2)
+            Throw("ContinuousDistribution: needs at least two entries!");
+        if (!(m_range.x() < m_range.y()))
+            Throw("ContinuousDistribution: invalid range!");
+        if (!dr::all(m_pdf >= 0.f))
+            Throw("ContinuousDistribution: entries must be non-negative!");
+        if (!dr::any(m_pdf > 0.f))
+            Throw("ContinuousDistribution: no probability mass found!");
+
+        uint32_t size = m_pdf.size() - 1;
+        m_interval_size_scalar = (m_range.y() - m_range.x()) / size;
+        m_interval_size = dr::opaque<Float>(m_interval_size_scalar);
+        UInt32 index_1_to_n = dr::arange<UInt32>(1, size + 1);
+
+        // cdf[i] = interval_size * (sum(pmf[:i+1]) - 0.5 * (pmf[0] + pmf[i+1]))
+        m_cdf =
+            m_interval_size *
+            (dr::gather<Float>(dr::prefix_sum(m_pdf, false), index_1_to_n) -
+             0.5 * dr::gather<Float>(m_pdf, UInt32(0)) -
+             0.5 * dr::gather<Float>(m_pdf, index_1_to_n));
+
+        m_valid = Vector2u(0, size - 1);
+        m_integral = dr::gather<Float>(m_cdf, m_valid.y());
+        m_normalization = dr::rcp(m_integral);
+        m_inv_interval_size = dr::rcp(m_interval_size);
+        m_max = dr::slice(dr::max(m_pdf));
+        dr::make_opaque(m_valid, m_cdf, m_integral, m_normalization,
+                        m_inv_interval_size);
+    }
+
+    void compute_cdf_scalar(const ScalarFloat *pdf, size_t size) {
         if (size < 2)
             Throw("ContinuousDistribution: needs at least two entries!");
 
@@ -480,7 +547,7 @@ private:
             Throw("ContinuousDistribution: invalid range!");
 
         std::vector<ScalarFloat> cdf(size - 1);
-        m_valid = (uint32_t) -1;
+        ScalarVector2u valid = (uint32_t) -1;
 
         double range = double(m_range.y()) - double(m_range.x()),
                interval_size = range / (size - 1),
@@ -503,21 +570,24 @@ private:
                 Throw("ContinuousDistribution: entries must be non-negative!");
             } else if (value > 0.) {
                 // Determine the first and last wavelength bin with nonzero density
-                if (m_valid.x() == (uint32_t) -1)
-                    m_valid.x() = (uint32_t) i;
-                m_valid.y() = (uint32_t) i;
+                if (valid.x() == (uint32_t) -1)
+                    valid.x() = (uint32_t) i;
+                valid.y() = (uint32_t) i;
             }
         }
 
-        if (dr::any(dr::eq(m_valid, (uint32_t) -1)))
+        if (dr::any(dr::eq(valid, (uint32_t) -1)))
             Throw("ContinuousDistribution: no probability mass found!");
 
-        m_integral = dr::opaque<Float>(integral);
-        m_normalization = dr::opaque<Float>(1. / integral);
-        m_interval_size = dr::opaque<Float>(interval_size);
-        m_interval_size_scalar = (ScalarFloat) interval_size;
-        m_inv_interval_size = dr::opaque<Float>(1. / interval_size);
+        m_valid = valid;
+        dr::make_opaque(m_valid);
         m_cdf = dr::load<FloatStorage>(cdf.data(), size - 1);
+        m_integral = dr::gather<Float>(m_cdf, m_valid.y());
+        m_normalization = dr::rcp(m_integral);
+        m_interval_size = dr::opaque<Float>(interval_size);
+        m_inv_interval_size = dr::rcp(m_interval_size);
+        m_interval_size_scalar = (ScalarFloat) interval_size;
+        dr::make_opaque(m_integral, m_normalization, m_inv_interval_size);
     }
 
 private:
@@ -529,7 +599,7 @@ private:
     ScalarFloat m_interval_size_scalar = 0.f;
     Float m_inv_interval_size = 0.f;
     ScalarVector2f m_range { 0.f, 0.f };
-    ScalarVector2u m_valid;
+    Vector2u m_valid;
     ScalarFloat m_max = 0.f;
 };
 
@@ -549,8 +619,10 @@ template <typename Value> struct IrregularContinuousDistribution {
     using Float = std::conditional_t<dr::is_static_array_v<Value>,
                                      dr::value_t<Value>, Value>;
     using FloatStorage = DynamicBuffer<Float>;
+    using UInt32 = dr::uint32_array_t<Float>;
     using Index = dr::uint32_array_t<Value>;
     using Mask = dr::mask_t<Value>;
+    using Vector2u       = dr::Array<UInt32, 2>;
 
     using ScalarFloat = dr::scalar_t<Float>;
     using ScalarVector2f = dr::Array<ScalarFloat, 2>;
@@ -579,7 +651,7 @@ public:
                                     const ScalarFloat *pdf,
                                     size_t size)
         : m_nodes(dr::load<FloatStorage>(nodes, size)), m_pdf(dr::load<FloatStorage>(pdf, size)) {
-        compute_cdf(nodes, pdf, size);
+        compute_cdf_scalar(nodes, pdf, size);
     }
 
     /// Update the internal state. Must be invoked when changing the pdf or range.
@@ -587,14 +659,10 @@ public:
         if (m_pdf.size() != m_nodes.size())
             Throw("IrregularContinuousDistribution: 'pdf' and 'nodes' size mismatch!");
 
-        if constexpr (dr::is_jit_v<Float>) {
-            FloatStorage temp_nodes = dr::migrate(m_nodes, AllocType::Host);
-            FloatStorage temp_pdf = dr::migrate(m_pdf, AllocType::Host);
-            dr::sync_thread();
-            compute_cdf(temp_nodes.data(), temp_pdf.data(), temp_nodes.size());
-        } else {
-            compute_cdf(m_nodes.data(), m_pdf.data(), m_nodes.size());
-        }
+        if constexpr (dr::is_jit_v<Float>)
+            compute_cdf();
+        else
+            compute_cdf_scalar(m_nodes.data(), m_pdf.data(), m_nodes.size());
     }
 
     /// Return the nodes of the underlying discretization
@@ -702,21 +770,28 @@ public:
      * \brief %Transform a uniformly distributed sample to the stored
      * distribution
      *
-     * \param value
+     * \param sample
      *     A uniformly distributed sample on the interval [0, 1].
      *
      * \return
      *     The sampled position.
      */
-    Value sample(Value value, Mask active = true) const {
+    Value sample(Value sample, Mask active = true) const {
         MI_MASK_ARGUMENT(active);
 
-        value *= m_integral;
+        sample *= m_integral;
 
         Index index = dr::binary_search<Index>(
             m_valid.x(), m_valid.y(),
             [&](Index index) DRJIT_INLINE_LAMBDA {
-                return dr::gather<Value>(m_cdf, index, active) < value;
+                Value value = dr::gather<Value>(m_cdf, index, active);
+                if constexpr (!dr::is_jit_v<Float>) {
+                    return value < sample;
+                } else {
+                    // `m_valid` is not computed in JIT variants
+                    return ((value < sample) || (dr::eq(value, 0))) &&
+                           dr::neq(value, m_integral);
+                }
             }
         );
 
@@ -727,10 +802,10 @@ public:
               c0 = dr::gather<Value>(m_cdf,   index - 1u, active && index > 0),
               w  = x1 - x0;
 
-        value = (value - c0) / w;
+        sample = (sample - c0) / w;
 
-        Value t_linear = (y0 - dr::safe_sqrt(dr::sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
-              t_const  = value / y0,
+        Value t_linear = (y0 - dr::safe_sqrt(dr::sqr(y0) + 2.f * sample * (y1 - y0))) / (y0 - y1),
+              t_const  = sample / y0,
               t        = dr::select(dr::eq(y0, y1), t_const, t_linear);
 
         return dr::fmadd(t, w, x0);
@@ -740,7 +815,7 @@ public:
      * \brief %Transform a uniformly distributed sample to the stored
      * distribution
      *
-     * \param value
+     * \param sample
      *     A uniformly distributed sample on the interval [0, 1].
      *
      * \return
@@ -749,15 +824,22 @@ public:
      *     1. the sampled position.
      *     2. the normalized probability density of the sample.
      */
-    std::pair<Value, Value> sample_pdf(Value value, Mask active = true) const {
+    std::pair<Value, Value> sample_pdf(Value sample, Mask active = true) const {
         MI_MASK_ARGUMENT(active);
 
-        value *= m_integral;
+        sample *= m_integral;
 
         Index index = dr::binary_search<Index>(
             m_valid.x(), m_valid.y(),
             [&](Index index) DRJIT_INLINE_LAMBDA {
-                return dr::gather<Value>(m_cdf, index, active) < value;
+                Value value = dr::gather<Value>(m_cdf, index, active);
+                if constexpr (!dr::is_jit_v<Float>) {
+                    return value < sample;
+                } else {
+                    // `m_valid` is not computed in JIT variants
+                    return ((value < sample) || (dr::eq(value, 0))) &&
+                           dr::neq(value, m_integral);
+                }
             }
         );
 
@@ -768,10 +850,10 @@ public:
               c0 = dr::gather<Value>(m_cdf,   index - 1u, active && index > 0),
               w  = x1 - x0;
 
-        value = (value - c0) / w;
+        sample = (sample - c0) / w;
 
-        Value t_linear = (y0 - dr::safe_sqrt(dr::sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
-              t_const  = value / y0,
+        Value t_linear = (y0 - dr::safe_sqrt(dr::sqr(y0) + 2.f * sample * (y1 - y0))) / (y0 - y1),
+              t_const  = sample / y0,
               t        = dr::select(dr::eq(y0, y1), t_const, t_linear);
 
         return { dr::fmadd(t, w, x0),
@@ -790,12 +872,46 @@ public:
     }
 
 private:
-    void compute_cdf(const ScalarFloat *nodes, const ScalarFloat *pdf, size_t size) {
+    void compute_cdf() {
+        if (m_pdf.size() < 2)
+            Throw("IrregularContinuousDistribution: needs at least two entries!");
+        if (!dr::all(m_pdf >= 0.f))
+            Throw("IrregularContinuousDistribution: entries must be non-negative!");
+        if (!dr::any(m_pdf > 0.f))
+            Throw("IrregularContinuousDistribution: no probability mass found!");
+
+        uint32_t size = m_pdf.size() - 1;
+        UInt32 index_curr = dr::arange<UInt32>(size);
+        UInt32 index_next = dr::arange<UInt32>(1, size + 1);
+
+        Float nodes_curr = dr::gather<Float>(m_nodes, index_curr);
+        Float nodes_next = dr::gather<Float>(m_nodes, index_next);
+
+        if (dr::any(nodes_next - nodes_curr <= 0))
+            Throw("IrregularContinuousDistribution: node positions must be strictly increasing!");
+
+        Float pdf_curr = dr::gather<Float>(m_pdf, index_curr);
+        Float pdf_next = dr::gather<Float>(m_pdf, index_next);
+
+        Float interval_integral =
+            0.5 * (nodes_next - nodes_curr) * (pdf_curr + pdf_next);
+        m_cdf = dr::prefix_sum(interval_integral, false);
+
+        m_range = ScalarVector2f(dr::slice(m_nodes, 0), dr::slice(m_nodes, size));
+        m_valid = Vector2u(0, size - 1);
+        m_integral = dr::gather<Float>(m_cdf, m_valid.y());
+        m_normalization = dr::rcp(m_integral);
+        dr::make_opaque(m_valid, m_integral, m_normalization);
+        m_interval_size = dr::slice(dr::min(nodes_next - nodes_curr));
+        m_max = dr::slice(dr::max(m_pdf));
+    }
+
+    void compute_cdf_scalar(const ScalarFloat *nodes, const ScalarFloat *pdf, size_t size) {
         if (size < 2)
             Throw("IrregularContinuousDistribution: needs at least two entries!");
 
         m_interval_size = dr::Infinity<Float>;
-        m_valid = (uint32_t) -1;
+        ScalarVector2u valid = (uint32_t) -1;
         m_range = ScalarVector2f(
              dr::Infinity<ScalarFloat>,
             -dr::Infinity<ScalarFloat>
@@ -830,18 +946,21 @@ private:
                 Throw("IrregularContinuousDistribution: entries must be non-negative!");
             } else if (value > 0.) {
                 // Determine the first and last wavelength bin with nonzero density
-                if (m_valid.x() == (uint32_t) -1)
-                    m_valid.x() = (uint32_t) i;
-                m_valid.y() = (uint32_t) i;
+                if (valid.x() == (uint32_t) -1)
+                    valid.x() = (uint32_t) i;
+                valid.y() = (uint32_t) i;
             }
         }
 
-        if (dr::any(dr::eq(m_valid, (uint32_t) -1)))
+        if (dr::any(dr::eq(valid, (uint32_t) -1)))
             Throw("IrregularContinuousDistribution: no probability mass found!");
 
-        m_integral = dr::opaque<Float>(integral);
-        m_normalization = dr::opaque<Float>(1. / integral);
-        m_cdf = dr::load<FloatStorage>(cdf.data(), size - 1);
+        m_valid = valid;
+        dr::make_opaque(m_valid);
+        m_cdf = dr::load<FloatStorage>(cdf.data(), size);
+        m_integral = dr::gather<Float>(m_cdf, m_valid.y());
+        m_normalization = dr::rcp(m_integral);
+        dr::make_opaque(m_integral, m_normalization);
     }
 
 private:
@@ -851,7 +970,7 @@ private:
     Float m_integral = 0.f;
     Float m_normalization = 0.f;
     ScalarVector2f m_range { 0.f, 0.f };
-    ScalarVector2u m_valid;
+    Vector2u m_valid;
     ScalarFloat m_interval_size = 0.f;
     ScalarFloat m_max = 0.f;
 };

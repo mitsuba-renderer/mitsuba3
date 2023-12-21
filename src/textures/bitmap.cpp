@@ -21,7 +21,6 @@ Bitmap texture (:monosp:`bitmap`)
 ---------------------------------
 
 .. pluginparameters::
- :extra-rows: 7
 
  * - filename
    - |string|
@@ -32,6 +31,13 @@ Bitmap texture (:monosp:`bitmap`)
    - When creating a Bitmap texture at runtime, e.g. from Python or C++,
      an existing Bitmap image instance can be passed directly rather than
      loading it from the filesystem with :paramtype:`filename`.
+
+ * - data
+   - |tensor|
+   - Tensor array containing the texture data. Similarly to the
+     :paramtype:`bitmap` parameter, this field can only be used at runtime. The
+     :paramtype:`raw` parameter must also be set to :monosp:`true`.
+   - |exposed|, |differentiable|
 
  * - filter_type
    - |string|
@@ -73,11 +79,6 @@ Bitmap texture (:monosp:`bitmap`)
      cause small differences as hardware interpolation methods typically have a
      loss of precision (not exactly 32-bit arithmetic). (Default: true)
 
- * - data
-   - |tensor|
-   - Tensor array containing the texture data.
-   - |exposed|, |differentiable|
-
 This plugin provides a bitmap texture that performs interpolated lookups given
 a JPEG, PNG, OpenEXR, RGBE, TGA, or BMP input file.
 
@@ -105,7 +106,7 @@ at all.
 
     .. code-tab:: python
 
-        'type': 'mesh_attribute',
+        'type': 'bitmap',
         'filename': 'texture.png',
         'wrap_mode': 'mirror'
 
@@ -117,10 +118,12 @@ public:
     MI_IMPORT_TYPES(Texture)
 
     BitmapTexture(const Properties &props) : Texture(props) {
-        m_transform = props.get<ScalarTransform4f>("to_uv", ScalarTransform4f())
-                          .extract();
+        m_transform = props.get<ScalarTransform3f>("to_uv", ScalarTransform3f());
         if (m_transform != ScalarTransform3f())
             dr::make_opaque(m_transform);
+
+        ref<Bitmap> bitmap = nullptr;
+        TensorXf* tensor = nullptr;
 
         if (props.has_property("bitmap")) {
             // Creates a Bitmap texture directly from an existing Bitmap object
@@ -132,14 +135,22 @@ public:
             Bitmap *b = dynamic_cast<Bitmap *>(other.get());
             if (!b)
                 Throw("Property \"bitmap\" must be a Bitmap instance.");
-            m_bitmap = b;
-        } else {
+            bitmap = b;
+        } else if (props.has_property("filename")) {
             // Creates a Bitmap texture by loading an image from the filesystem
             FileResolver* fs = Thread::thread()->file_resolver();
             fs::path file_path = fs->resolve(props.string("filename"));
             m_name = file_path.filename().string();
             Log(Debug, "Loading bitmap texture from \"%s\" ..", m_name);
-            m_bitmap = new Bitmap(file_path);
+            bitmap = new Bitmap(file_path);
+        } else if (props.has_property("data")) {
+            tensor = props.tensor<TensorXf>("data");
+            if (tensor->ndim() != 3)
+                Throw("Bitmap raw tensor has dimension %lu, expected 3", tensor->ndim());
+
+            const size_t channel_count = tensor->shape(2);
+            if (channel_count != 1 && channel_count != 3)
+                Throw("Unsupported tensor channel count: %d (expected 1 or 3)", channel_count);
         }
 
         std::string filter_mode_str = props.string("filter_type", "bilinear");
@@ -164,103 +175,134 @@ public:
             Throw("Invalid wrap mode \"%s\", must be one of: \"repeat\", "
                   "\"mirror\", or \"clamp\"!", wrap_mode_str);
 
-        /* Convert to linear RGB float bitmap, will be converted
-           into spectral profile coefficients below (in place) */
-        Bitmap::PixelFormat pixel_format = m_bitmap->pixel_format();
-        switch (pixel_format) {
-            case Bitmap::PixelFormat::Y:
-            case Bitmap::PixelFormat::YA:
-                pixel_format = Bitmap::PixelFormat::Y;
-                break;
-
-            case Bitmap::PixelFormat::RGB:
-            case Bitmap::PixelFormat::RGBA:
-            case Bitmap::PixelFormat::XYZ:
-            case Bitmap::PixelFormat::XYZA:
-                pixel_format = Bitmap::PixelFormat::RGB;
-                break;
-
-            default:
-                Throw("The texture needs to have a known pixel "
-                      "format (Y[A], RGB[A], XYZ[A] are supported).");
-        }
-
         /* Should Mitsuba disable transformations to the stored color data?
            (e.g. sRGB to linear, spectral upsampling, etc.) */
         m_raw = props.get<bool>("raw", false);
-        if (m_raw) {
-            /* Don't undo gamma correction in the conversion below.
-               This is needed, e.g., for normal maps. */
-            m_bitmap->set_srgb_gamma(false);
-        }
-
         m_accel = props.get<bool>("accel", true);
 
-        // Convert the image into the working floating point representation
-        m_bitmap =
-            m_bitmap->convert(pixel_format, struct_type_v<ScalarFloat>, false);
+        if (tensor) {
+            Log(Debug, "Loading bitmap texture from tensor...");
+            if (!m_raw)
+                Throw("Bitmap \"raw\" parameter must be `true` when "
+                      "initializing using tensor data! Use a `Bitmap` "
+                      "object or a file if transformation of color data is "
+                      "required.");
+            m_texture = Texture2f(TensorXf(*tensor), m_accel, m_accel, filter_mode, wrap_mode);
+            const size_t pixel_count = tensor->shape(1) * tensor->shape(0);
+            const size_t ch_count = tensor->shape(2);
 
-        if (dr::any(m_bitmap->size() < 2)) {
-            Log(Warn,
-                "Image must be at least 2x2 pixels in size, up-sampling..");
-            using ReconstructionFilter = Bitmap::ReconstructionFilter;
-            ref<ReconstructionFilter> rfilter =
-                PluginManager::instance()->create_object<ReconstructionFilter>(
-                    Properties("tent"));
-            m_bitmap =
-                m_bitmap->resample(dr::maximum(m_bitmap->size(), 2), rfilter);
-        }
+            if (ch_count == 3) {
+                if constexpr (dr::is_dynamic_v<Float>)
+                    m_mean = dr::sum(luminance(dr::unravel<Color3f>(tensor->array()))) / pixel_count;
+                else {
+                    const size_t pixel_count = tensor->shape(0) * tensor->shape(1);
+                    double mean = 0.0;
+                    ScalarFloat* ptr = tensor->data();
+                    for (size_t i = 0; i < pixel_count; ++i) {
+                        ScalarColor3f value = dr::load<ScalarColor3f>(ptr);
+                        mean += (double) luminance(value);
+                        ptr += 3;
+                    }
+                    m_mean = (ScalarFloat)(mean / pixel_count);
+                }
+            }
+            else
+                m_mean = dr::sum(tensor->array()) / pixel_count;
 
-        ScalarFloat *ptr = (ScalarFloat *) m_bitmap->data();
-        size_t pixel_count = m_bitmap->pixel_count();
-        bool exceed_unit_range = false;
+        } else {
+            /* Convert to linear RGB float bitmap, will be converted
+               into spectral profile coefficients below (in place) */
+            Bitmap::PixelFormat pixel_format = bitmap->pixel_format();
+            switch (pixel_format) {
+                case Bitmap::PixelFormat::Y:
+                case Bitmap::PixelFormat::YA:
+                    pixel_format = Bitmap::PixelFormat::Y;
+                    break;
 
-        double mean = 0.0;
-        if (m_bitmap->channel_count() == 3) {
-            if (is_spectral_v<Spectrum> && !m_raw) {
+                case Bitmap::PixelFormat::RGB:
+                case Bitmap::PixelFormat::RGBA:
+                case Bitmap::PixelFormat::XYZ:
+                case Bitmap::PixelFormat::XYZA:
+                    pixel_format = Bitmap::PixelFormat::RGB;
+                    break;
+
+                default:
+                    Throw("The texture needs to have a known pixel "
+                          "format (Y[A], RGB[A], XYZ[A] are supported).");
+            }
+
+            if (m_raw) {
+                /* Don't undo gamma correction in the conversion below.
+                   This is needed, e.g., for normal maps. */
+                bitmap->set_srgb_gamma(false);
+            }
+
+            // Convert the image into the working floating point representation
+            bitmap =
+                bitmap->convert(pixel_format, struct_type_v<ScalarFloat>, false);
+
+            if (dr::any(bitmap->size() < 2)) {
+                Log(Warn,
+                    "Image must be at least 2x2 pixels in size, up-sampling..");
+                using ReconstructionFilter = Bitmap::ReconstructionFilter;
+                ref<ReconstructionFilter> rfilter =
+                    PluginManager::instance()->create_object<ReconstructionFilter>(
+                        Properties("tent"));
+                bitmap =
+                    bitmap->resample(dr::maximum(bitmap->size(), 2), rfilter);
+            }
+
+            ScalarFloat *ptr = (ScalarFloat *) bitmap->data();
+            size_t pixel_count = bitmap->pixel_count();
+            bool exceed_unit_range = false;
+
+            double mean = 0.0;
+            if (bitmap->channel_count() == 3) {
+                if (is_spectral_v<Spectrum> && !m_raw) {
+                    for (size_t i = 0; i < pixel_count; ++i) {
+                        ScalarColor3f value = dr::load<ScalarColor3f>(ptr);
+                        if (!all(value >= 0 && value <= 1))
+                            exceed_unit_range = true;
+                        value = srgb_model_fetch(value);
+                        mean += (double) srgb_model_mean(value);
+                        dr::store(ptr, value);
+                        ptr += 3;
+                    }
+                } else {
+                    for (size_t i = 0; i < pixel_count; ++i) {
+                        ScalarColor3f value = dr::load<ScalarColor3f>(ptr);
+                        if (!all(value >= 0 && value <= 1))
+                            exceed_unit_range = true;
+                        mean += (double) luminance(value);
+                        ptr += 3;
+                    }
+                }
+            } else if (bitmap->channel_count() == 1) {
                 for (size_t i = 0; i < pixel_count; ++i) {
-                    ScalarColor3f value = dr::load<ScalarColor3f>(ptr);
-                    if (!all(value >= 0 && value <= 1))
+                    ScalarFloat value = ptr[i];
+                    if (!(value >= 0 && value <= 1))
                         exceed_unit_range = true;
-                    value = srgb_model_fetch(value);
-                    mean += (double) srgb_model_mean(value);
-                    dr::store(ptr, value);
-                    ptr += 3;
+                    mean += (double) value;
                 }
             } else {
-                for (size_t i = 0; i < pixel_count; ++i) {
-                    ScalarColor3f value = dr::load<ScalarColor3f>(ptr);
-                    if (!all(value >= 0 && value <= 1))
-                        exceed_unit_range = true;
-                    mean += (double) luminance(value);
-                    ptr += 3;
-                }
+                Throw("Unsupported channel count: %d (expected 1 or 3)",
+                      bitmap->channel_count());
             }
-        } else if (m_bitmap->channel_count() == 1) {
-            for (size_t i = 0; i < pixel_count; ++i) {
-                ScalarFloat value = ptr[i];
-                if (!(value >= 0 && value <= 1))
-                    exceed_unit_range = true;
-                mean += (double) value;
-            }
-        } else {
-            Throw("Unsupported channel count: %d (expected 1 or 3)",
-                  m_bitmap->channel_count());
+
+            if (exceed_unit_range && !m_raw)
+                Log(Warn,
+                    "BitmapTexture: texture named \"%s\" contains pixels that "
+                    "exceed the [0, 1] range!",
+                    m_name);
+
+            m_mean = Float(mean / pixel_count);
+
+            size_t channels = bitmap->channel_count();
+            ScalarVector2i res = ScalarVector2i(bitmap->size());
+            size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), channels };
+            m_texture = Texture2f(TensorXf(bitmap->data(), 3, shape), m_accel,
+                                  m_accel, filter_mode, wrap_mode);
         }
-
-        if (exceed_unit_range && !m_raw)
-            Log(Warn,
-                "BitmapTexture: texture named \"%s\" contains pixels that "
-                "exceed the [0, 1] range!",
-                m_name);
-
-        m_mean = Float(mean / pixel_count);
-
-        size_t channels = m_bitmap->channel_count();
-        ScalarVector2i res = ScalarVector2i(m_bitmap->size());
-        size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), channels };
-        m_texture = Texture2f(TensorXf(m_bitmap->data(), 3, shape), m_accel,
-                              m_accel, filter_mode, wrap_mode);
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -748,7 +790,6 @@ protected:
     bool m_accel;
     bool m_raw;
     Float m_mean;
-    ref<Bitmap> m_bitmap;
     std::string m_name;
 
     // Optional: distribution for importance sampling

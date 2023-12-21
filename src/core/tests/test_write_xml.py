@@ -513,7 +513,7 @@ def test13_xml_multiple_defaults(variants_all_rgb, tmp_path):
 
 
 @fresolver_append_path
-def test13_xml_empty_dir(variants_all_rgb, tmp_path):
+def test14_xml_empty_dir(variants_all_rgb, tmp_path):
     filepath = str(tmp_path / 'test13_xml_empty_dir.xml')
     print(f"Output temporary file: {filepath}")
 
@@ -526,8 +526,8 @@ def test13_xml_empty_dir(variants_all_rgb, tmp_path):
         "radius": 10.0,
     }
     mi.xml.dict_to_xml(scene_dict, os.path.split(filepath)[1])
-
     os.chdir(cwd)
+
     s1 = mi.load_dict({
         'type': 'scene',
         'sphere': {
@@ -539,3 +539,65 @@ def test13_xml_empty_dir(variants_all_rgb, tmp_path):
     s2 = mi.load_file(filepath)
 
     assert str(s1) == str(s2)
+
+
+@fresolver_append_path
+def test15_xml_volume(variants_all_rgb, tmp_path):
+    filepath = str(tmp_path / 'test_write_xml-test15_output.xml')
+    print(f"Output temporary file: {filepath}")
+
+    scene_dict = {
+        'type': 'scene',
+        'sphere' : {
+            'type': 'sphere',
+            'center': [0, 0, -10],
+            'radius': 10.0,
+            'interior': {
+                'type': 'homogeneous'
+            }
+        }
+    }
+
+    for i in range(2):
+        mi.xml.dict_to_xml(scene_dict, filepath, split_files=(i==0))
+
+        s1 = mi.load_dict(scene_dict)
+        s2 = mi.load_file(filepath)
+
+        print(s1)
+        print(s2)
+
+        assert str(s1) == str(s2)
+
+
+@fresolver_append_path
+def test16_xml_volume_with_args(variants_all_rgb, tmp_path):
+    filepath = str(tmp_path / 'test_write_xml-test16_output.xml')
+    print(f"Output temporary file: {filepath}")
+
+    scene_dict = {
+        'type': 'scene',
+        'sphere' : {
+            'type': 'sphere',
+            'center': [0, 0, -10],
+            'radius': 10.0,
+            'interior': {
+                'type': 'homogeneous',
+                'albedo': {
+                    'type': 'rgb',
+                    'value': [0.99, 0.9, 0.96]
+                },
+            }
+        }
+    }
+
+    for i in range(2):
+        mi.xml.dict_to_xml(scene_dict, filepath, split_files=(i==0))
+
+        s1 = mi.load_dict(scene_dict)
+        s2 = mi.load_file(filepath)
+
+        print(s1)
+        print(s2)
+
+        assert str(s1) == str(s2)

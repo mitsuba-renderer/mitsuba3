@@ -10,6 +10,7 @@ MI_PY_EXPORT(math) {
 
     m.attr("RayEpsilon")      = py::cast(math::RayEpsilon<Float>);
     m.attr("ShadowEpsilon")   = py::cast(math::ShadowEpsilon<Float>);
+    m.attr("ShapeEpsilon")    = py::cast(math::ShapeEpsilon<Float>);
 
     m.def("legendre_p",
           py::overload_cast<int, Float>(math::legendre_p<Float>),

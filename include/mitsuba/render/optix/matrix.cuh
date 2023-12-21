@@ -141,14 +141,14 @@ struct Transform4f {
         inverse_transpose[3][3] = 1.f;
     }
 
-    DEVICE Vector3f transform_point(const Vector3f &p) {
+    DEVICE Vector3f transform_point(const Vector3f &p) const {
         Vector4f result = matrix[3];
         for (size_t i = 0; i < 3; ++i)
             result = fmaf(p[i], matrix[i], result);
         return Vector3f(result.x(), result.y(), result.z());
     }
 
-    DEVICE Vector3f transform_normal(const Vector3f &n) {
+    DEVICE Vector3f transform_normal(const Vector3f &n) const {
         Vector4f result = inverse_transpose[0];
         result *= n.x();
         for (size_t i = 1; i < 3; ++i)
@@ -156,7 +156,7 @@ struct Transform4f {
         return Vector3f(result.x(), result.y(), result.z());
     }
 
-    DEVICE Vector3f transform_vector(const Vector3f &v) {
+    DEVICE Vector3f transform_vector(const Vector3f &v) const {
         Vector4f result = matrix[0];
         result *= v.x();
         for (size_t i = 1; i < 3; ++i)
@@ -164,7 +164,7 @@ struct Transform4f {
         return Vector3f(result.x(), result.y(), result.z());
     }
 
-    DEVICE Ray3f transform_ray(const Ray3f &ray) {
+    DEVICE Ray3f transform_ray(const Ray3f &ray) const {
         return Ray3f(transform_point(ray.o), transform_vector(ray.d),
                      ray.maxt, ray.time);
     }

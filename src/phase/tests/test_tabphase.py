@@ -58,7 +58,7 @@ def test_eval(variant_scalar_rgb):
     mei.wi = wi
     tab_eval = np.zeros_like(ref_eval)
     for i, wo in enumerate(wos):
-        tab_eval[i] = tab.eval(ctx, mei, wo)
+        tab_eval[i] = tab.eval_pdf(ctx, mei, wo)[1]
 
     # Compare reference and plugin outputs
     assert np.allclose(ref_eval, tab_eval)
@@ -79,7 +79,7 @@ def test_sample(variant_scalar_rgb):
     mei.wi = [0, 0, 1]
 
     # The passed sample corresponds to forward scattering
-    wo, pdf = tab.sample(ctx, mei, 0, (1, 0))
+    wo, w, pdf = tab.sample(ctx, mei, 0, (1, 0))
 
     # The sampled direction indicates forward scattering in the "graphics"
     # convention
@@ -132,4 +132,4 @@ def test_traverse(variant_scalar_rgb):
     mei = mi.MediumInteraction3f()
     mei.wi = np.array([0, 0, -1])
     wo = [0, 0, 1]
-    assert dr.allclose(phase.eval(ctx, mei, wo), dr.inv_two_pi * 1.5 / ref_integral)
+    assert dr.allclose(phase.eval_pdf(ctx, mei, wo)[0], dr.inv_two_pi * 1.5 / ref_integral)

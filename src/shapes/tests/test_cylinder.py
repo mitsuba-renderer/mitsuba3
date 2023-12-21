@@ -275,3 +275,186 @@ def test07_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
     assert dr.allclose(dr.grad(si.n), 0.0, atol=1e-7)
     assert dr.allclose(dr.grad(si.uv), [-0.25, 0.0])
 
+
+def test08_sample_silhouette_perimeter(variants_vec_rgb):
+    cylinder = mi.load_dict({ 'type': 'cylinder' })
+    cylinder_ptr = mi.ShapePtr(cylinder)
+
+    x = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    samples = mi.Point3f(dr.meshgrid(x, y, z))
+
+    ss = cylinder.sample_silhouette(samples, mi.DiscontinuityFlags.PerimeterType)
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
+    assert dr.all(dr.eq(ss.p.z, 0) | dr.eq(ss.p.z, 1))
+    assert dr.allclose(dr.norm(mi.Point2f(ss.p.x, ss.p.y)), 1)
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    assert dr.allclose(ss.pdf, dr.inv_four_pi * dr.inv_four_pi)
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, cylinder_ptr))
+
+
+def test09_sample_silhouette_interior(variants_vec_rgb):
+    cylinder = mi.load_dict({ 'type': 'cylinder' })
+    cylinder_ptr = mi.ShapePtr(cylinder)
+
+    x = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    samples = mi.Point3f(dr.meshgrid(x, y, z))
+
+    ss = cylinder.sample_silhouette(samples, mi.DiscontinuityFlags.InteriorType)
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.InteriorType.value)
+    assert dr.all((0 <= ss.p.z) & (ss.p.z <= 1))
+    assert dr.allclose(dr.norm(mi.Point2f(ss.p.x, ss.p.y)), 1)
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    assert dr.allclose(ss.n, mi.Point3f(ss.p.x, ss.p.y, 0))
+    assert dr.allclose(ss.pdf, (1 / cylinder.surface_area()) * dr.inv_two_pi)
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, cylinder_ptr))
+
+
+def test10_sample_silhouette_bijective(variants_vec_rgb):
+    cylinder = mi.load_dict({ 'type': 'cylinder' })
+
+    x = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    samples = mi.Point3f(dr.meshgrid(x, y, z))
+
+    ss_perimeter = cylinder.sample_silhouette(samples, mi.DiscontinuityFlags.PerimeterType)
+    out_perimeter  = cylinder.invert_silhouette_sample(ss_perimeter)
+    assert dr.allclose(samples, out_perimeter, atol=1e-7)
+
+    ss_interior = cylinder.sample_silhouette(samples, mi.DiscontinuityFlags.InteriorType)
+    out_interior = cylinder.invert_silhouette_sample(ss_interior)
+    assert dr.allclose(samples, out_interior, atol=1e-7)
+
+
+def test11_discontinuity_types(variants_vec_rgb):
+    cylinder = mi.load_dict({ 'type': 'cylinder' })
+
+    types = cylinder.silhouette_discontinuity_types()
+    assert mi.has_flag(types, mi.DiscontinuityFlags.InteriorType)
+    assert mi.has_flag(types, mi.DiscontinuityFlags.PerimeterType)
+
+
+def test12_differential_motion(variants_vec_rgb):
+    if not dr.is_diff_v(mi.Float):
+        pytest.skip("Only relevant in AD-enabled variants!")
+
+    cylinder = mi.load_dict({ 'type': 'cylinder' })
+    params = mi.traverse(cylinder)
+
+    theta = mi.Point3f(0.0)
+    dr.enable_grad(theta)
+    params['to_world'] = mi.Transform4f.translate(
+        [theta.x, 2 * theta.y, 3 * theta.z])
+    params.update()
+
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.prim_index = 0
+    si.p = mi.Point3f(1, 0, 0) # doesn't matter
+    si.uv = mi.Point2f(0.5, 0.5)
+
+    p_diff = cylinder.differential_motion(si)
+    dr.forward(theta)
+    v = dr.grad(p_diff)
+
+    assert dr.allclose(p_diff, si.p)
+    assert dr.allclose(v, [1.0, 2.0, 3.0])
+
+
+def test13_primitive_silhouette_projection_perimeter(variants_vec_rgb):
+    cylinder = mi.load_dict({ 'type': 'cylinder' })
+    cylinder_ptr = mi.ShapePtr(cylinder)
+
+    u = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    v = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    uv = mi.Point2f(dr.meshgrid(u, v))
+    si = cylinder.eval_parameterization(uv)
+
+    viewpoint = mi.Point3f(5, 0, 0.5)
+
+    ss = cylinder.primitive_silhouette_projection(
+        viewpoint, si, mi.DiscontinuityFlags.PerimeterType, 0.)
+
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
+    assert dr.all(dr.eq(ss.p.z, 0) | dr.eq(ss.p.z, 1))
+    assert dr.allclose(dr.norm(mi.Point2f(ss.p.x, ss.p.y)), 1)
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, cylinder_ptr))
+
+
+def test14_primitive_silhouette_projection_interior(variants_vec_rgb):
+    cylinder = mi.load_dict({ 'type': 'cylinder' })
+    cylinder_ptr = mi.ShapePtr(cylinder)
+
+    u = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    v = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    uv = mi.Point2f(dr.meshgrid(u, v))
+    si = cylinder.eval_parameterization(uv)
+
+    viewpoint = mi.Point3f(5, 0, 0.5)
+
+    ss = cylinder.primitive_silhouette_projection(
+        viewpoint, si, mi.DiscontinuityFlags.InteriorType, 0.)
+
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.InteriorType.value)
+    assert dr.all((0 <= ss.p.z) & (ss.p.z <= 1))
+    assert dr.allclose(dr.norm(mi.Point2f(ss.p.x, ss.p.y)), 1)
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    assert dr.allclose(ss.n, mi.Point3f(ss.p.x, ss.p.y, 0))
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, cylinder_ptr))
+
+
+def test15_precompute_silhouette(variants_vec_rgb):
+    cylinder = mi.load_dict({ 'type': 'cylinder' })
+
+    indices, weights = cylinder.precompute_silhouette(mi.ScalarPoint3f(0, 0, 3))
+
+    assert len(indices) == 2
+    assert len(weights) == 2
+    assert indices[0] == mi.DiscontinuityFlags.PerimeterType.value
+    assert indices[1] == mi.DiscontinuityFlags.InteriorType.value
+    assert weights[0] == 0.5
+    assert weights[1] == 0.5
+
+
+def test16_sample_precomputed_silhouette(variants_vec_rgb):
+    cylinder = mi.load_dict({ 'type': 'cylinder' })
+    cylinder_ptr = mi.ShapePtr(cylinder)
+
+    samples = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    viewpoint = mi.Point3f(5, 0, 0.5)
+
+    ss = cylinder.sample_precomputed_silhouette(
+        viewpoint, mi.DiscontinuityFlags.PerimeterType.value, samples)
+
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
+    assert dr.all(dr.eq(ss.p.z, 0) | dr.eq(ss.p.z, 1))
+    assert dr.allclose(dr.norm(mi.Point2f(ss.p.x, ss.p.y)), 1)
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    assert dr.allclose(ss.pdf, dr.inv_four_pi)
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, cylinder_ptr))
+
+    ss = cylinder.sample_precomputed_silhouette(
+        viewpoint, mi.DiscontinuityFlags.InteriorType.value, samples)
+
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.InteriorType.value)
+    assert dr.all((0 <= ss.p.z) & (ss.p.z <= 1))
+    assert dr.allclose(dr.norm(mi.Point2f(ss.p.x, ss.p.y)), 1)
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    assert dr.allclose(ss.n, mi.Point3f(ss.p.x, ss.p.y, 0))
+    assert dr.allclose(ss.pdf, 0.5)
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, cylinder_ptr))
+
+
+def test17_shape_type(variant_scalar_rgb):
+    cylinder = mi.load_dict({ 'type': 'cylinder' })
+    assert cylinder.shape_type() == mi.ShapeType.Cylinder.value;

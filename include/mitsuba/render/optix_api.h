@@ -23,6 +23,7 @@ using OptixIndicesFormat     = int;
 using OptixTransformFormat   = int;
 using OptixAccelPropertyType = int;
 using OptixProgramGroupKind  = int;
+using OptixPrimitiveType     = int;
 using OptixDeviceContext     = void*;
 using OptixTask              = void*;
 using OptixDenoiserStructPtr = void*;
@@ -34,6 +35,7 @@ using OptixDenoiserStructPtr = void*;
 #define OPTIX_BUILD_INPUT_TYPE_TRIANGLES         0x2141
 #define OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES 0x2142
 #define OPTIX_BUILD_INPUT_TYPE_INSTANCES         0x2143
+#define OPTIX_BUILD_INPUT_TYPE_CURVES            0x2145
 #define OPTIX_BUILD_OPERATION_BUILD              0x2161
 
 #define OPTIX_GEOMETRY_FLAG_NONE           0
@@ -52,9 +54,10 @@ using OptixDenoiserStructPtr = void*;
 #define OPTIX_COMPILE_DEBUG_LEVEL_MODERATE       0x2353
 #define OPTIX_COMPILE_DEBUG_LEVEL_FULL           0x2352
 
-#define OPTIX_BUILD_FLAG_ALLOW_COMPACTION  2
-#define OPTIX_BUILD_FLAG_PREFER_FAST_TRACE 4
-#define OPTIX_PROPERTY_TYPE_COMPACTED_SIZE 0x2181
+#define OPTIX_BUILD_FLAG_ALLOW_COMPACTION           2
+#define OPTIX_BUILD_FLAG_PREFER_FAST_TRACE          4
+#define OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS 16
+#define OPTIX_PROPERTY_TYPE_COMPACTED_SIZE          0x2181
 
 #define OPTIX_EXCEPTION_FLAG_NONE           0
 #define OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW 1
@@ -66,8 +69,16 @@ using OptixDenoiserStructPtr = void*;
 #define OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS 1
 #define OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING (1u << 1)
 
-#define OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM   (1 << 0)
-#define OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE (1 << 31)
+#define OPTIX_PRIMITIVE_TYPE_ROUND_CUBIC_BSPLINE 0x2502
+#define OPTIX_PRIMITIVE_TYPE_ROUND_LINEAR        0x2503
+
+#define OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM              (1 << 0)
+#define OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_CUBIC_BSPLINE (1 << 2)
+#define OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_LINEAR        (1 << 3)
+#define OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE            (1 << 31)
+
+#define OPTIX_CURVE_ENDCAP_DEFAULT 0
+#define OPTIX_CURVE_ENDCAP_ON      1
 
 #define OPTIX_PROGRAM_GROUP_KIND_MISS      0x2422
 #define OPTIX_PROGRAM_GROUP_KIND_HITGROUP  0x2424
@@ -80,6 +91,7 @@ using OptixDenoiserStructPtr = void*;
 #define OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT     (1u << 3)
 
 #define OPTIX_MODULE_COMPILE_STATE_COMPLETED 0x2364
+
 
 // =====================================================
 //          Commonly used OptiX data structures
@@ -140,14 +152,39 @@ struct OptixBuildInputInstanceArray {
     unsigned int numInstances;
 };
 
+struct OptixBuildInputCurveArray {
+    OptixPrimitiveType curveType;
+    unsigned int numPrimitives;
+    const CUdeviceptr* vertexBuffers;
+    unsigned int numVertices;
+    unsigned int vertexStrideInBytes;
+    const CUdeviceptr* widthBuffers;
+    unsigned int widthStrideInBytes;
+    const CUdeviceptr* normalBuffers;
+    unsigned int normalStrideInBytes;
+    CUdeviceptr indexBuffer;
+    unsigned int indexStrideInBytes;
+    unsigned int flag;
+    unsigned int primitiveIndexOffset;
+    unsigned int endcapFlags;
+};
+
 struct OptixBuildInput {
     OptixBuildInputType type;
     union {
         OptixBuildInputTriangleArray triangleArray;
         OptixBuildInputCustomPrimitiveArray customPrimitiveArray;
         OptixBuildInputInstanceArray instanceArray;
+        OptixBuildInputCurveArray curveArray;
         char pad[1024];
     };
+};
+
+struct OptixBuiltinISOptions {
+    OptixPrimitiveType builtinISModuleType;
+    int usesMotionBlur;
+    unsigned int buildFlags;
+    unsigned int curveEndcapFlags;
 };
 
 struct OptixInstance {
@@ -305,6 +342,9 @@ D(optixAccelComputeMemoryUsage, OptixDeviceContext,
 D(optixAccelBuild, OptixDeviceContext, CUstream, const OptixAccelBuildOptions *,
   const OptixBuildInput *, unsigned int, CUdeviceptr, size_t, CUdeviceptr,
   size_t, OptixTraversableHandle *, const OptixAccelEmitDesc *, unsigned int);
+D(optixBuiltinISModuleGet, OptixDeviceContext,
+  const OptixModuleCompileOptions *, const OptixPipelineCompileOptions *,
+  const OptixBuiltinISOptions *, OptixModule *);
 D(optixModuleCreateFromPTXWithTasks, OptixDeviceContext,
   const OptixModuleCompileOptions *, const OptixPipelineCompileOptions *,
   const char *, size_t, char *, size_t *, OptixModule *, OptixTask *);

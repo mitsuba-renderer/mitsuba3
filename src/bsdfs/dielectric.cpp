@@ -130,10 +130,6 @@ In *polarized* rendering modes, the material automatically switches to a polariz
 implementation of the underlying Fresnel equations that quantify the reflectance and
 transmission.
 
-.. note::
-
-    Dispersion is currently unsupported but will be enabled in a future release.
-
 Instead of specifying numerical values for the indices of refraction, Mitsuba 3
 comes with a list of presets that can be specified with the :paramtype:`material`
 parameter:
@@ -341,7 +337,9 @@ public:
                     Sampling weights should be computed accordingly. */
                 if constexpr (dr::is_diff_v<Float>) {
                     if (dr::grad_enabled(r_i)) {
-                        weight = dr::select(selected_r, r_i / dr::detach(r_i), t_i / dr::detach(t_i));
+                        Float r_diff = dr::replace_grad(Float(1.f), r_i / dr::detach(r_i));
+                        Float t_diff = dr::replace_grad(Float(1.f), t_i / dr::detach(t_i));
+                        weight = dr::select(selected_r, r_diff, t_diff);
                     }
                 }
             } else if (has_reflection || has_transmission) {

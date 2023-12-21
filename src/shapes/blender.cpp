@@ -1,3 +1,4 @@
+#include <mitsuba/core/util.h>
 #include <mitsuba/render/mesh.h>
 #include <drjit/color.h>
 #include <array>
@@ -55,11 +56,6 @@ NAMESPACE_BEGIN(blender)
         char padding[2];
     };
 
-    // Vertex normal data structure for Blender 3.xx
-    struct MVertNormal {
-        float no[3];
-    };
-
 NAMESPACE_END(blender)
 
 NAMESPACE_BEGIN(mitsuba)
@@ -92,6 +88,7 @@ public:
     using typename Base::InputVector3f;
     using typename Base::InputNormal3f;
     using typename Base::FloatStorage;
+    using Version = util::Version;
 
     using ScalarIndex3 = std::array<ScalarIndex, 3>;
 
@@ -108,34 +105,45 @@ public:
                 m_name, args...);
         };
 
-        std::vector<std::string> necessary_fields = {"name", "mat_nr", "vert_count", "loop_tri_count", "loops", "loop_tris", "polys", "verts"};
+        std::vector<std::string> necessary_fields = {"name", "version", "mat_nr", "vert_count", "loop_tri_count", "loops", "loop_tris", "polys", "verts"};
         for (auto &s : necessary_fields) {
             if (!props.has_property(s))
                 fail("missing property \"%s\"!", s);
         }
 
-        m_name     = props.string("name");
+        // Get Blender version, this is used to determine the right data layout
+        Version version(props.string("version").c_str());
+
+        m_name = props.string("name");
         short mat_nr = (short) props.get<int>("mat_nr");
         size_t vertex_count = props.get<int>("vert_count");
         size_t loop_tri_count = props.get<int>("loop_tri_count");
-        const blender::MLoop *loops =
-            reinterpret_cast<const blender::MLoop *>(props.get<int64_t>("loops"));
-        const blender::MLoopTri *tri_loops =
-            reinterpret_cast<const blender::MLoopTri *>(props.get<int64_t>("loop_tris"));
-        const blender::MPoly *polygons =
-            reinterpret_cast<const blender::MPoly *>(props.get<int64_t>("polys"));
+
+        // Before Blender 3.6, this points to an array of MLoop, after it is just an array of ints
+        const int *loops = reinterpret_cast<const int *>(props.get<int64_t>("loops"));
+        const blender::MLoop *loops_old = (const blender::MLoop *) loops;
+
+        // Before Blender 3.6, this points to an array of MLoopTri, after it is just an array of ints
+        const unsigned int (*tri_loops)[3] = reinterpret_cast<const unsigned int (*)[3]>(props.get<int64_t>("loop_tris"));
+        const blender::MLoopTri *tri_loops_old = (const blender::MLoopTri *) tri_loops;
+
+        // Before Blender 3.6, this points to an array of MPoly, after it is just an array of ints
+        const int *polys = reinterpret_cast<const int *>(props.get<int64_t>("polys"));
+        const blender::MPoly *polys_old = (const blender::MPoly *) polys;
+
+        // Blender 3.4+ layout
+        const int *mat_indices = reinterpret_cast<const int *>(props.get<int64_t>("mat_indices", 0));
+
+        // Blender 3.6+ layout
+        const bool *sharp_faces = reinterpret_cast<const bool *>(props.get<int64_t>("sharp_face", 0));
 
         // The type of vertex buffer will depend on the version of blender used.
-        void *verts_ptr = reinterpret_cast<void *>(props.get<int64_t>("verts"));
-        const blender::MVertBlender2 *verts_blender2 = (const blender::MVertBlender2 *) verts_ptr;
-        const blender::MVertBlender3 *verts_blender3 = (const blender::MVertBlender3 *) verts_ptr;
+        const float (*verts)[3] = reinterpret_cast<const float (*)[3]>(props.get<int64_t>("verts"));
+        const blender::MVertBlender2 *verts_old_2 = (const blender::MVertBlender2 *) verts;
+        const blender::MVertBlender3 *verts_old_3 = (const blender::MVertBlender3 *) verts;
 
-        const blender::MVertNormal *normals_blender3 =
-            reinterpret_cast<const blender::MVertNormal *>(props.get<int64_t>("normals", 0));
-
-        // Blender 3.xx uses a slightly different memory layout for storing
-        // vertices information. E.g. vertex normals are stored in a separate buffer.
-        bool blender_3 = normals_blender3 != nullptr;
+		// Normals are stored in a separate buffer in Blender 3.1+
+        const float (*normals)[3] = reinterpret_cast<const float (*)[3]>(props.get<int64_t>("normals", 0));
 
         bool has_cols = false;
         std::vector<std::pair<std::string, const blender::MLoopCol *>> cols;
@@ -147,9 +155,9 @@ public:
         }
 
         bool has_uvs = props.has_property("uvs");
-        const blender::MLoopUV *uvs = nullptr;
+        const void *uv_ptr = nullptr;
         if (has_uvs)
-            uvs = reinterpret_cast<const blender::MLoopUV *>(props.get<int64_t>("uvs"));
+            uv_ptr = reinterpret_cast<const void *>(props.get<int64_t>("uvs"));
         else
             Log(Warn, "Mesh %s has no texture coordinates!", m_name);
 
@@ -157,14 +165,26 @@ public:
         // Blender meshes can be partially smooth AND flat (e.g. with edge split modifier)
         // In this case, flat face vertices will be duplicated.
         m_face_normals = true;
-        for (size_t tri_loop_id = 0; tri_loop_id < loop_tri_count; tri_loop_id++) {
-            const blender::MLoopTri &tri_loop = tri_loops[tri_loop_id];
-            const blender::MPoly &face        = polygons[tri_loop.poly];
-            if (blender::ME_SMOOTH & face.flag) {
-                // If at least one face is smooth shaded, we need to disable face normals
-                // and duplicate the (potential) flat shaded face vertices.
-                m_face_normals = false;
-                break;
+        if (version >= Version(3, 6, 0) && sharp_faces == nullptr)
+            // In this case, the mesh is globally smooth shaded, no need to go through all vertices
+            m_face_normals = false;
+        else {
+            if (version >= Version(3, 6, 0)) {
+                for (size_t tri_loop_id = 0; tri_loop_id < loop_tri_count; tri_loop_id++) {
+                    if (!sharp_faces[polys[tri_loop_id]]) {
+                        // At least one smooth face, we can't use global face normals
+                        m_face_normals = false;
+                        break;
+                    }
+                }
+            }
+            else {
+                for (size_t tri_loop_id = 0; tri_loop_id < loop_tri_count; tri_loop_id++) {
+                    if (blender::ME_SMOOTH & polys_old[tri_loops_old[tri_loop_id].poly].flag) {
+                        m_face_normals = false;
+                        break;
+                    }
+                }
             }
         }
 
@@ -224,25 +244,52 @@ public:
 
         size_t duplicates_ctr = 0;
         for (size_t tri_loop_id = 0; tri_loop_id < loop_tri_count; tri_loop_id++) {
-            const blender::MLoopTri &tri_loop = tri_loops[tri_loop_id];
-            const blender::MPoly &face        = polygons[tri_loop.poly];
+            int face_id;
+            if (version >= Version(3, 6, 0))
+                face_id = polys[tri_loop_id];
+             else
+                face_id = tri_loops_old[tri_loop_id].poly;
 
             // We only export the part of the mesh corresponding to the given
             // material id
-            if (face.mat_nr != mat_nr)
+            if (version >= Version(3, 4, 0) && mat_indices != nullptr && mat_indices[face_id] != mat_nr)
                 continue;
+            else if (version < Version(3, 4, 0)) {
+                if (polys_old[face_id].mat_nr != mat_nr)
+                    continue;
+            }
 
             ScalarIndex3 triangle;
 
-            const float *co_0, *co_1, *co_2;
-            if (blender_3) {
-                co_0 = verts_blender3[loops[tri_loop.tri[0]].v].co;
-                co_1 = verts_blender3[loops[tri_loop.tri[1]].v].co;
-                co_2 = verts_blender3[loops[tri_loop.tri[2]].v].co;
+            int v0, v1, v2;
+            if (version >= Version(3, 6, 0)) {
+                const unsigned int *tri_loop = tri_loops[tri_loop_id];
+                v0 = loops[tri_loop[0]];
+                v1 = loops[tri_loop[1]];
+                v2 = loops[tri_loop[2]];
             } else {
-                co_0 = verts_blender2[loops[tri_loop.tri[0]].v].co;
-                co_1 = verts_blender2[loops[tri_loop.tri[1]].v].co;
-                co_2 = verts_blender2[loops[tri_loop.tri[2]].v].co;
+                const blender::MLoopTri &tri_loop = tri_loops_old[tri_loop_id];
+                v0 = loops_old[tri_loop.tri[0]].v;
+                v1 = loops_old[tri_loop.tri[1]].v;
+                v2 = loops_old[tri_loop.tri[2]].v;
+            }
+
+            const float *co_0, *co_1, *co_2;
+            if (version <= Version(3, 0, 0)) {
+                // Blender 2.xx - 3.0
+                co_0 = verts_old_2[v0].co;
+                co_1 = verts_old_2[v1].co;
+                co_2 = verts_old_2[v2].co;
+            } else if (version >= Version(3, 1, 0) && version <= Version(3, 4, 0)) {
+                // Blender 3.1 - 3.4
+                co_0 = verts_old_3[v0].co;
+                co_1 = verts_old_3[v1].co;
+                co_2 = verts_old_3[v2].co;
+            } else {
+                // Blender 3.5+
+                co_0 = verts[v0];
+                co_1 = verts[v1];
+                co_2 = verts[v2];
             }
 
             dr::Array<InputPoint3f, 3> face_points;
@@ -251,7 +298,14 @@ public:
             face_points[2] = InputPoint3f(co_2[0], co_2[1], co_2[2]);
 
             InputNormal3f normal(0.f);
-            if (!(blender::ME_SMOOTH & face.flag) && !m_face_normals) {
+            bool smooth_face;
+            if (version >= Version(3, 6, 0)) {
+                // Blender 3.6+ layout
+                smooth_face = sharp_faces == nullptr || !sharp_faces[face_id];
+            } else {
+                smooth_face = blender::ME_SMOOTH & polys_old[face_id].flag;
+            }
+            if (!smooth_face && !m_face_normals) {
                 // Flat shading, use per face normals (only if the mesh is not globally flat)
                 const InputVector3f e1 = face_points[1] - face_points[0];
                 const InputVector3f e2 = face_points[2] - face_points[0];
@@ -265,19 +319,28 @@ public:
             InputFloat color_factor = dr::rcp(255.f);
 
             for (int i = 0; i < 3; i++) {
-                const size_t loop_index = tri_loop.tri[i];
-                const size_t vert_index = loops[loop_index].v;
+                size_t loop_index, vert_index;
+                if (version >= Version(3, 6, 0)) {
+                    const int *tri_loop = (const int *) tri_loops[tri_loop_id];
+                    loop_index = tri_loop[i];
+                    vert_index = loops[loop_index];
+                } else {
+                    loop_index = tri_loops_old[tri_loop_id].tri[i];
+                    vert_index = loops_old[loop_index].v;
+                }
+
                 if (unlikely((vert_index >= vertex_count)))
                     fail("reference to invalid vertex %i!", vert_index);
 
                 Key vert_key;
-                if (blender::ME_SMOOTH & face.flag || m_face_normals) {
-                    if (!blender_3) {
-                        const short *no = verts_blender2[vert_index].no;
+                if (smooth_face || m_face_normals) {
+                    if (version <= Version(3, 0, 0)) {
+                        // Blender 2.xx - 3.0
+                        const short *no = verts_old_2[vert_index].no;
                         // Store per vertex normals if the face is smooth or if the mesh is globally flat
                         normal = m_to_world.scalar().transform_affine(InputNormal3f(no[0], no[1], no[2]));
                     } else {
-                        const float *no = normals_blender3[vert_index].no;
+                        const float *no = normals[vert_index];
                         // Store per vertex normals if the face is smooth or if the mesh is globally flat
                         normal = m_to_world.scalar().transform_affine(InputNormal3f(no[0], no[1], no[2]));
                     }
@@ -290,15 +353,24 @@ public:
                 } else {
                     // vert_key.smooth = false (default), flat shading
                     // Store the referenced polygon (face)
-                    vert_key.poly = tri_loop.poly;
+                    vert_key.poly = face_id;
                 }
 
                 vert_key.normal = normal;
 
                 if (has_uvs) {
-                    const blender::MLoopUV &loop_uv = uvs[loop_index];
-                    const InputVector2f uv(loop_uv.uv[0], 1.0f - loop_uv.uv[1]);
-                    vert_key.uv = uv;
+                    if (version <= Version(3, 4, 0)) {
+                        // Blender 2.xx - 3.4
+                        const blender::MLoopUV *uvs = (const blender::MLoopUV *) uv_ptr;
+                        const blender::MLoopUV &loop_uv = uvs[loop_index];
+                        const InputVector2f uv(loop_uv.uv[0], 1.0f - loop_uv.uv[1]);
+                        vert_key.uv = uv;
+                    } else {
+                        // Blender 3.5+
+                        const float (*uvs)[2] = (const float (*)[2]) uv_ptr;
+                        const InputVector2f uv(uvs[loop_index][0], 1.0f - uvs[loop_index][1]);
+                        vert_key.uv = uv;
+                    }
                 }
 
                 // Vertex index in the blender mesh is the map index

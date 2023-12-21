@@ -221,6 +221,34 @@ def test_read_tga(variant_scalar_rgb):
     assert b1 == b2
 
 
+@pytest.mark.parametrize('file_format',
+                         [mi.scalar_rgb.Bitmap.FileFormat.JPEG,
+                          mi.scalar_rgb.Bitmap.FileFormat.PPM,
+                          mi.scalar_rgb.Bitmap.FileFormat.PNG])
+def test_read_write_memorystream_uint8(variant_scalar_rgb, np_rng, file_format):
+    ref = np.uint8(np_rng.random((10, 10, 3)) * 255)
+    b = mi.Bitmap(ref)
+    stream = mi.MemoryStream()
+    b.write(stream, file_format)
+    stream.seek(0)
+    b2 = mi.Bitmap(stream)
+    assert np.sum(np.abs(np.float32(np.array(b2))-ref)) / (3*10*10*255) < 0.2
+
+
+@pytest.mark.parametrize('file_format',
+                         [mi.scalar_rgb.Bitmap.FileFormat.OpenEXR,
+                          mi.scalar_rgb.Bitmap.FileFormat.RGBE,
+                          mi.scalar_rgb.Bitmap.FileFormat.PFM])
+def test_read_write_memorystream_float32(variant_scalar_rgb, np_rng, file_format):
+    ref = np.float32(np_rng.random((10, 10, 3)))
+    b = mi.Bitmap(ref)
+    stream = mi.MemoryStream()
+    b.write(stream, file_format)
+    stream.seek(0)
+    b2 = mi.Bitmap(stream)
+    assert np.abs(np.mean(np.array(b2)-ref)) < 1e-2
+
+
 def test_accumulate(variant_scalar_rgb):
     # ----- Accumulate the whole bitmap
     b1 = mi.Bitmap(mi.Bitmap.PixelFormat.RGB, mi.Struct.Type.UInt8, [10, 10])
@@ -319,6 +347,24 @@ def test_construct_from_array(variants_all_rgb):
 
     assert dr.allclose(b_np, np.array(b1))
     assert dr.allclose(b_np, np.array(b2))
+
+
+def test_construct_from_non_contiguous_array(variants_all_rgb):
+    flat_arr = np.array([
+        [[0, 1], [3, 4], [6,  7]],
+        [[1, 2], [4, 5], [7,  8]],
+        [[2, 3], [5, 6], [8,  9]],
+        [[3, 4], [6, 7], [9,  10]],
+    ], dtype=np.float32)
+
+    for i in range(2):
+        strided = np.flip(flat_arr, axis=i)
+
+        # Test assumes that `np.flip` will create a strided array
+        assert strided.strides[i] < 0
+
+        b = mi.Bitmap(strided)
+        assert dr.allclose(strided, np.array(b))
 
 
 def test_construct_from_int8_array(variants_all_rgb):

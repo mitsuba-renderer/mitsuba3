@@ -4,7 +4,6 @@
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/stream.h>
 #include <mitsuba/core/mstream.h>
-#include <pybind11/numpy.h>
 #include <mitsuba/python/python.h>
 
 MI_PY_EXPORT(Bitmap) {
@@ -100,13 +99,14 @@ MI_PY_EXPORT(Bitmap) {
                    bool srgb_gamma = b.srgb_gamma();
                    if (!srgb.is(py::none()))
                        srgb_gamma = srgb.cast<bool>();
+
+                   py::gil_scoped_release release;
                    return b.convert(pixel_format, component_format, srgb_gamma,
                                     alpha_transform);
             },
              D(Bitmap, convert),
              "pixel_format"_a = py::none(), "component_format"_a = py::none(),
-             "srgb_gamma"_a = py::none(), "alpha_transform"_a = Bitmap::AlphaTransform::Empty,
-             py::call_guard<py::gil_scoped_release>())
+             "srgb_gamma"_a = py::none(), "alpha_transform"_a = Bitmap::AlphaTransform::Empty)
         .def("convert", py::overload_cast<Bitmap *>(&Bitmap::convert, py::const_),
              D(Bitmap, convert, 2), "target"_a,
              py::call_guard<py::gil_scoped_release>())
@@ -281,11 +281,55 @@ MI_PY_EXPORT(Bitmap) {
             if (!pixel_format_.is_none())
                 pixel_format = pixel_format_.cast<Bitmap::PixelFormat>();
 
-            obj = py::array::ensure(obj, py::array::c_style);
             Vector2u size(shape[1].cast<size_t>(), shape[0].cast<size_t>());
-            auto bitmap = new Bitmap(pixel_format, component_format, size,
+            Bitmap* bitmap = new Bitmap(pixel_format, component_format, size,
                                      channel_count, channel_names);
-            memcpy(bitmap->data(), ptr, bitmap->buffer_size());
+
+            bool is_contiguous = true;
+            if (interface.contains("strides") && !interface["strides"].is_none()) {
+                auto strides = interface["strides"].template cast<py::tuple>();
+
+                // Stride information might be given although it's contiguous
+                size_t bytes_per_value = bitmap->bytes_per_pixel() / bitmap->channel_count();
+                int64_t current_stride = bytes_per_value;
+                for (size_t i = ndim; i > 0; --i) {
+                    if (current_stride != strides[i - 1].cast<int64_t>()) {
+                        is_contiguous = false;
+                        break;
+                    }
+                    current_stride *= shape[i - 1].cast<size_t>();
+                }
+
+                // Need to shuffle memory
+                if (!is_contiguous) {
+                    size_t num_values = size.x() * size.y();
+                    if (ndim == 3)
+                        num_values *= shape[2].cast<size_t>();
+
+                    std::unique_ptr<size_t[]> shape_cum = std::make_unique<size_t[]>(ndim);
+                    shape_cum[ndim - 1] = 1;
+                    for (size_t j = ndim - 1; j > 0; --j) {
+                        size_t shape_j = shape[j].cast<size_t>();
+                        shape_cum[j - 1] = shape_j * shape_cum[j];
+                    }
+
+                    for (size_t i = 0; i < num_values; ++i) {
+                        unsigned char* src = (unsigned char*) ptr;
+                        for (size_t j = ndim; j > 0; --j) {
+                            int64_t stride_j = strides[j - 1].cast<int64_t>();
+                            size_t shape_j = shape[j - 1].cast<size_t>();
+                            int64_t offset_j = ((i / shape_cum[j - 1]) % shape_j) * stride_j;
+                            src += offset_j;
+                        }
+                        unsigned char *dest = (unsigned char *) bitmap->data() + i * bytes_per_value;
+                        memcpy(dest, src, bytes_per_value);
+                    }
+                }
+            }
+
+            if (is_contiguous)
+                memcpy(bitmap->data(), ptr, bitmap->buffer_size());
+
             return bitmap;
         }),
         "array"_a,

@@ -177,7 +177,7 @@ if (NOT SKBUILD)
   set(DRJIT_STUB_FILE_DEPENDENCIES ${MI_COPY_FILES})
   list(APPEND DRJIT_STUB_FILE_DEPENDENCIES
     drjit-python
-    ${CMAKE_SOURCE_DIR}/ext/drjit/resources/generate_stub_files.py
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/resources/generate_stub_files.py
   )
   if (MSVC)
     list(APPEND DRJIT_STUB_FILE_DEPENDENCIES copy-targets-python)
@@ -187,7 +187,7 @@ if (NOT SKBUILD)
     OUTPUT ${MI_BINARY_DIR}/python/drjit/__init__.pyi
     COMMAND ${CMAKE_COMMAND} -E env
       "PYTHONPATH=${DRJIT_STUBS_ENV_PYTHONPATH}${PATH_SEP}$ENV{PYTHONPATH}"
-      "${Python_EXECUTABLE}" -Xutf8 ${CMAKE_SOURCE_DIR}/ext/drjit/resources/generate_stub_files.py
+      "${Python_EXECUTABLE}" -Xutf8 ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/resources/generate_stub_files.py
       ${MI_BINARY_DIR}/python/drjit
     DEPENDS ${DRJIT_STUB_FILE_DEPENDENCIES}
   )
@@ -213,7 +213,7 @@ if ("${MI_PYTHON_STUBS_DIR}" STREQUAL "")
   set(MI_STUB_FILE_DEPENDENCIES ${MI_COPY_FILES})
   list(APPEND MI_STUB_FILE_DEPENDENCIES
     mitsuba_ext
-    ${CMAKE_SOURCE_DIR}/resources/generate_stub_files.py
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/generate_stub_files.py
   )
   foreach (MI_VARIANT ${MI_VARIANTS})
     string(REPLACE "|" ";" MI_VARIANT ${MI_VARIANT})
@@ -231,7 +231,7 @@ if ("${MI_PYTHON_STUBS_DIR}" STREQUAL "")
     OUTPUT ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
     COMMAND ${CMAKE_COMMAND} -E env
       "PYTHONPATH=${MI_STUBS_ENV_PYTHONPATH}${PATH_SEP}$ENV{PYTHONPATH}"
-      "${Python_EXECUTABLE}" -Xutf8 ${CMAKE_SOURCE_DIR}/resources/generate_stub_files.py
+      "${Python_EXECUTABLE}" -Xutf8 ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/generate_stub_files.py
       ${MI_BINARY_DIR}/python/mitsuba
     DEPENDS ${MI_STUB_FILE_DEPENDENCIES}
   )

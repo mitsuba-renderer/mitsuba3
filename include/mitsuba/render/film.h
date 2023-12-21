@@ -57,8 +57,14 @@ public:
      */
     virtual size_t prepare(const std::vector<std::string> &aovs) = 0;
 
+    /// Return the number of channels for the developed image (excluding AOVS)
+    virtual size_t base_channels_count() const = 0;
+
     /// Merge an image block into the film. This methods should be thread-safe.
     virtual void put_block(const ImageBlock *block) = 0;
+
+    /// Clear the film contents to zero.
+    virtual void clear() = 0;
 
     /// Return a image buffer object storing the developed image
     virtual TensorXf develop(bool raw = false) const = 0;

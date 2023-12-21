@@ -37,22 +37,25 @@ public:
         m_components.push_back(m_flags);
     }
 
-    std::pair<Vector3f, Float> sample(const PhaseFunctionContext & /* ctx */,
-                                      const MediumInteraction3f & /* mi */,
-                                      Float /* sample1 */,
-                                      const Point2f &sample2,
-                                      Mask active) const override {
+    std::tuple<Vector3f, Spectrum, Float> sample(const PhaseFunctionContext & /* ctx */,
+                                                 const MediumInteraction3f & /* mi */,
+                                                 Float /* sample1 */,
+                                                 const Point2f &sample2,
+                                                 Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
 
         auto wo  = warp::square_to_uniform_sphere(sample2);
         auto pdf = warp::square_to_uniform_sphere_pdf(wo);
-        return { wo, pdf };
+        return { wo, 1.f, pdf };
     }
 
-    Float eval(const PhaseFunctionContext & /* ctx */, const MediumInteraction3f & /* mi */,
-               const Vector3f &wo, Mask active) const override {
+    std::pair<Spectrum, Float> eval_pdf(const PhaseFunctionContext & /* ctx */,
+                                        const MediumInteraction3f & /* mi */,
+                                        const Vector3f &wo,
+                                        Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
-        return warp::square_to_uniform_sphere_pdf(wo);
+        Float pdf = warp::square_to_uniform_sphere_pdf(wo);
+        return { pdf, pdf };
     }
 
     std::string to_string() const override { return "IsotropicPhaseFunction[]"; }

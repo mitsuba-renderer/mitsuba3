@@ -40,6 +40,7 @@ MI_PY_DECLARE(Spiral);
 MI_PY_DECLARE(Sensor);
 MI_PY_DECLARE(VolumeGrid);
 MI_PY_DECLARE(FilmFlags);
+MI_PY_DECLARE(DiscontinuityFlags);
 
 PYBIND11_MODULE(mitsuba_ext, m) {
     // Temporarily change the module name (for pydoc)
@@ -73,8 +74,25 @@ PYBIND11_MODULE(mitsuba_ext, m) {
 #endif
 
     m.def("set_log_level", [](mitsuba::LogLevel level) {
+
+        if (!Thread::thread()->logger()) {
+            Throw("No Logger instance is set on the current thread! This is likely due to " 
+                  "set_log_level being called from a non-Mitsuba thread. You can manually set a "
+                  "thread's ThreadEnvironment (which includes the logger) using "
+                  "ScopedSetThreadEnvironment e.g.\n"
+                  "# Main thread\n"
+                  "env = mi.ThreadEnvironment()\n"
+                  "# Secondary thread\n"
+                  "with mi.ScopedSetThreadEnvironment(env):\n"
+                  "   mi.set_log_level(mi.LogLevel.Info)\n"
+                  "   mi.Log(mi.LogLevel.Info, 'Message')\n");
+        }
+
         Thread::thread()->logger()->set_log_level(level);
-    });
+    }, "Sets the log level.");
+    m.def("log_level", []() {
+        return Thread::thread()->logger()->log_level();
+    }, "Returns the current log level.");
 
     Jit::static_initialization();
     Class::static_initialization();
@@ -126,6 +144,7 @@ PYBIND11_MODULE(mitsuba_ext, m) {
     MI_PY_IMPORT(Spiral);
     MI_PY_IMPORT(Sensor);
     MI_PY_IMPORT(FilmFlags);
+    MI_PY_IMPORT(DiscontinuityFlags);
 
     // Register a cleanup callback function to wait for pending tasks
     auto atexit = py::module_::import("atexit");

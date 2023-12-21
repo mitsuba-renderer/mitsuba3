@@ -178,6 +178,45 @@ Single object
 
         by `vajrablue <https://www.blendswap.com/profile/5201>`_
 
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Hair curls <https://rgl.s3.eu-central-1.amazonaws.com/scenes/hair-curl.zip>`_
+        :class-title: sd-text-center sd-font-weight-bold
+        :class-body: sd-text-center
+
+        .. image:: ../resources/data/docs/images/gallery_thumbnails/hair-curl.png
+            :height: 130
+            :align: center
+
+        by `Benedikt Bitterli <https://benedikt-bitterli.me/>`_
+
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Curly hair <https://rgl.s3.eu-central-1.amazonaws.com/scenes/curly-hair.zip>`_
+        :class-title: sd-text-center sd-font-weight-bold
+        :class-body: sd-text-center
+
+        .. image:: ../resources/data/docs/images/gallery_thumbnails/curly-hair.png
+            :height: 130
+            :align: center
+
+        by `Cem Yuksel <http://www.cemyuksel.com/>`_
+
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Straight hair <https://rgl.s3.eu-central-1.amazonaws.com/scenes/straight-hair.zip>`_
+        :class-title: sd-text-center sd-font-weight-bold
+        :class-body: sd-text-center
+
+        .. image:: ../resources/data/docs/images/gallery_thumbnails/straight-hair.png
+            :height: 130
+            :align: center
+
+        by `Cem Yuksel <http://www.cemyuksel.com/>`_
+
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Fur ball <https://rgl.s3.eu-central-1.amazonaws.com/scenes/furball.zip>`_
+        :class-title: sd-text-center sd-font-weight-bold
+        :class-body: sd-text-center
+
+        .. image:: ../resources/data/docs/images/gallery_thumbnails/furball.png
+            :height: 130
+            :align: center
+
+        by `Benedikt Bitterli <https://benedikt-bitterli.me/>`_
 
 
 Architecture

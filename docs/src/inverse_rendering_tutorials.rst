@@ -17,7 +17,9 @@ applications:
     inverse_rendering/forward_inverse_rendering
     inverse_rendering/caustics_optimization
     inverse_rendering/object_pose_estimation
+    inverse_rendering/projective_sampling_integrators
     inverse_rendering/volume_optimization
+    inverse_rendering/shape_optimization
     inverse_rendering/radiance_field_reconstruction
     inverse_rendering/polarizer_optimization
     inverse_rendering/pytorch_mitsuba_interoperability

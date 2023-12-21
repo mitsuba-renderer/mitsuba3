@@ -223,3 +223,17 @@ def test06_empty_film(variants_all_rgb, develop):
     else:
         image = mi.TensorXf(film.bitmap())
         assert dr.all((image == 0) | dr.isnan(image))
+
+
+def test07_luminance_alpha_mono(variants_all):
+    film = mi.load_dict({
+        'type': 'hdrfilm',
+        'width': 3,
+        'height': 2,
+        'pixel_format': 'luminance_alpha'
+    })
+    film.prepare([])
+
+    image = mi.TensorXf(film.bitmap())
+
+    assert image.shape[2] == 2

@@ -194,3 +194,37 @@ def test10_animated_transforms(variant_scalar_rgb):
     assert type(p["trafo"]) is mi.Transform4d
     assert type(p["atrafo"]) is mi.AnimatedTransform
 
+def test10_transforms3(variant_scalar_rgb):
+    p = mi.Properties()
+    p["transform"] = mi.ScalarTransform3d.translate([2,4])
+
+    assert type(p["transform"] is mi.ScalarTransform3d)
+
+def test11_tensor(variant_scalar_rgb):
+    props = mi.Properties()
+
+    # Check copy is set to properties
+    a = dr.zeros(mi.TensorXf, shape = [30, 30, 30])
+    props['foo'] = a
+    a = None
+    assert props['foo'].shape == (30, 30, 30)
+
+    # Check temporary can be set
+    props['moo'] =  dr.zeros(mi.TensorXf, shape = [30, 30, 30])
+    assert props['moo'].shape == (30, 30, 30)
+
+    # Check numpy
+    import numpy as np
+    props['goo'] = np.zeros((2, 3, 4))
+    assert props['goo'].shape == (2, 3, 4)
+
+def test11_tensor_cuda(variant_cuda_ad_rgb):
+    # Check tensor flow
+    tf = pytest.importorskip("tensorflow")
+    props['boo'] = tf.constant([[1, 2], [3, 4]])
+    assert props['boo'].shape == (2, 2)
+
+    # Check PyTorch
+    torch = pytest.importorskip("torch")
+    props['goo'] = torch.zeros(2, 3, 4)
+    assert props['goo'].shape == (2, 3, 4)

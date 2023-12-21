@@ -1,4 +1,3 @@
-
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/emitter.h>
@@ -29,6 +28,7 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.i
         Sensor *sensor   = dynamic_cast<Sensor *>(obj.get());
         BSDF *bsdf       = dynamic_cast<BSDF *>(obj.get());
         Medium *medium   = dynamic_cast<Medium *>(obj.get());
+        Texture *texture = dynamic_cast<Texture *>(obj.get());
 
         if (emitter) {
             if (m_emitter)
@@ -52,6 +52,8 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.i
                     Throw("Only a single exterior medium can be specified per shape.");
                 m_exterior_medium = medium;
             }
+        } else if (texture) {
+            m_texture_attributes.insert({ name, texture });
         } else {
             continue;
         }
@@ -67,11 +69,15 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.i
         m_bsdf = PluginManager::instance()->create_object<BSDF>(props2);
     }
 
+    m_silhouette_sampling_weight = props.get<ScalarFloat>("silhouette_sampling_weight", 1.0f);
+
     dr::set_attr(this, "emitter", m_emitter.get());
     dr::set_attr(this, "sensor", m_sensor.get());
     dr::set_attr(this, "bsdf", m_bsdf.get());
     dr::set_attr(this, "interior_medium", m_interior_medium.get());
     dr::set_attr(this, "exterior_medium", m_exterior_medium.get());
+    dr::set_attr(this, "silhouette_sampling_weight", m_silhouette_sampling_weight);
+    dr::set_attr(this, "shape_type", m_shape_type);
 }
 
 MI_VARIANT Shape<Float, Spectrum>::~Shape() {
@@ -79,10 +85,6 @@ MI_VARIANT Shape<Float, Spectrum>::~Shape() {
     if constexpr (dr::is_cuda_v<Float>)
         jit_free(m_optix_data_ptr);
 #endif
-}
-
-MI_VARIANT bool Shape<Float, Spectrum>::is_mesh() const {
-    return class_()->derives_from(Mesh<Float, Spectrum>::m_class);
 }
 
 MI_VARIANT typename Shape<Float, Spectrum>::PositionSample3f
@@ -100,7 +102,7 @@ template <typename Float, typename Spectrum>
 void embree_bbox(const struct RTCBoundsFunctionArguments* args) {
     MI_IMPORT_TYPES(Shape)
     const Shape* shape = (const Shape*) args->geometryUserPtr;
-    ScalarBoundingBox3f bbox = shape->bbox();
+    ScalarBoundingBox3f bbox = shape->bbox(args->primID);
     RTCBounds* bounds_o = args->bounds_o;
     bounds_o->lower_x = (float) bbox.min.x();
     bounds_o->lower_y = (float) bbox.min.y();
@@ -115,6 +117,7 @@ void embree_intersect_scalar(int* valid,
                              void* geometryUserPtr,
                              unsigned int geomID,
                              unsigned int instID,
+                             unsigned int primID,
                              RTCRay* rtc_ray,
                              RTCHit* rtc_hit) {
     MI_IMPORT_TYPES(Shape)
@@ -139,13 +142,13 @@ void embree_intersect_scalar(int* valid,
 
     // Check whether this is a shadow ray or not
     if (rtc_hit) {
-        PreliminaryIntersection3f pi = shape->ray_intersect_preliminary(ray);
+        PreliminaryIntersection3f pi = shape->ray_intersect_preliminary(ray, primID, true);
         if (dr::all(pi.is_valid())) {
             rtc_ray->tfar      = (float) dr::slice(pi.t);
             rtc_hit->u         = (float) dr::slice(pi.prim_uv.x());
             rtc_hit->v         = (float) dr::slice(pi.prim_uv.y());
             rtc_hit->geomID    = geomID;
-            rtc_hit->primID    = 0;
+            rtc_hit->primID    = primID;
             rtc_hit->instID[0] = instID;
 #if !defined(NDEBUG)
             rtc_hit->Ng_x      = 0.f;
@@ -154,14 +157,16 @@ void embree_intersect_scalar(int* valid,
 #endif
         }
     } else {
-        if (dr::all(shape->ray_test(ray)))
+        if (dr::all(shape->ray_test(ray, primID, true)))
             rtc_ray->tfar = -dr::Infinity<float>;
     }
 }
 
 template <typename Float, typename Spectrum, size_t N, typename RTCRay_, typename RTCHit_>
 static void embree_intersect_packet(int *valid, void *geometryUserPtr,
-                                    unsigned int geomID, unsigned int instID,
+                                    unsigned int geomID,
+                                    unsigned int instID,
+                                    unsigned int primID,
                                     RTCRay_ *rtc_ray,
                                     RTCHit_ *rtc_hit) {
     MI_IMPORT_TYPES(Shape)
@@ -197,16 +202,16 @@ static void embree_intersect_packet(int *valid, void *geometryUserPtr,
 
     // Check whether this is a shadow ray or not
     if (rtc_hit) {
-        auto [t, prim_uv, s_idx, p_idx] = shape->ray_intersect_preliminary_packet(ray, active);
+        auto [t, prim_uv, s_idx, p_idx] = shape->ray_intersect_preliminary_packet(ray, primID, active);
         active &= dr::neq(t, dr::Infinity<Float>);
         dr::store_aligned(rtc_ray->tfar,      Float32P(dr::select(active, t,           ray.maxt)));
         dr::store_aligned(rtc_hit->u,         Float32P(dr::select(active, prim_uv.x(), dr::load_aligned<Float32P>(rtc_hit->u))));
         dr::store_aligned(rtc_hit->v,         Float32P(dr::select(active, prim_uv.y(), dr::load_aligned<Float32P>(rtc_hit->v))));
         dr::store_aligned(rtc_hit->geomID,    dr::select(active, UInt32P(geomID), dr::load_aligned<UInt32P>(rtc_hit->geomID)));
-        dr::store_aligned(rtc_hit->primID,    dr::select(active, UInt32P(0),      dr::load_aligned<UInt32P>(rtc_hit->primID)));
+        dr::store_aligned(rtc_hit->primID,    dr::select(active, UInt32P(primID), dr::load_aligned<UInt32P>(rtc_hit->primID)));
         dr::store_aligned(rtc_hit->instID[0], dr::select(active, UInt32P(instID), dr::load_aligned<UInt32P>(rtc_hit->instID[0])));
     } else {
-        active &= shape->ray_test_packet(ray, active);
+        active &= shape->ray_test_packet(ray, primID, active);
         dr::store_aligned(rtc_ray->tfar, Float32P(dr::select(active, -dr::Infinity<Float>, tfar)));
     }
 }
@@ -217,7 +222,7 @@ void embree_intersect(const RTCIntersectFunctionNArguments* args) {
         case 1:
             embree_intersect_scalar<Float, Spectrum>(
                 args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0],
+                args->context->instID[0], args->primID,
                 &((RTCRayHit *) args->rayhit)->ray,
                 &((RTCRayHit *) args->rayhit)->hit);
             break;
@@ -225,7 +230,7 @@ void embree_intersect(const RTCIntersectFunctionNArguments* args) {
         case 4:
             embree_intersect_packet<Float, Spectrum, 4>(
                 args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0],
+                args->context->instID[0], args->primID,
                 &((RTCRayHit4 *) args->rayhit)->ray,
                 &((RTCRayHit4 *) args->rayhit)->hit);
             break;
@@ -233,7 +238,7 @@ void embree_intersect(const RTCIntersectFunctionNArguments* args) {
         case 8:
             embree_intersect_packet<Float, Spectrum, 8>(
                 args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0],
+                args->context->instID[0], args->primID,
                 &((RTCRayHit8 *) args->rayhit)->ray,
                 &((RTCRayHit8 *) args->rayhit)->hit);
             break;
@@ -241,7 +246,7 @@ void embree_intersect(const RTCIntersectFunctionNArguments* args) {
         case 16:
             embree_intersect_packet<Float, Spectrum, 16>(
                 args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0],
+                args->context->instID[0], args->primID,
                 &((RTCRayHit16 *) args->rayhit)->ray,
                 &((RTCRayHit16 *) args->rayhit)->hit);
             break;
@@ -257,7 +262,7 @@ void embree_occluded(const RTCOccludedFunctionNArguments* args) {
         case 1:
             embree_intersect_scalar<Float, Spectrum>(
                 args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0],
+                args->context->instID[0], args->primID,
                 (RTCRay *) args->ray,
                 (RTCHit *) nullptr);
             break;
@@ -265,7 +270,7 @@ void embree_occluded(const RTCOccludedFunctionNArguments* args) {
         case 4:
             embree_intersect_packet<Float, Spectrum, 4>(
                 args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0],
+                args->context->instID[0], args->primID,
                 (RTCRay4 *) args->ray,
                 (RTCHit4 *) nullptr);
             break;
@@ -273,7 +278,7 @@ void embree_occluded(const RTCOccludedFunctionNArguments* args) {
         case 8:
             embree_intersect_packet<Float, Spectrum, 8>(
                 args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0],
+                args->context->instID[0], args->primID,
                 (RTCRay8 *) args->ray,
                 (RTCHit8 *) nullptr);
             break;
@@ -281,7 +286,7 @@ void embree_occluded(const RTCOccludedFunctionNArguments* args) {
         case 16:
             embree_intersect_packet<Float, Spectrum, 16>(
                 args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0],
+                args->context->instID[0], args->primID,
                 (RTCRay16 *) args->ray,
                 (RTCHit16 *) nullptr);
             break;
@@ -294,7 +299,7 @@ void embree_occluded(const RTCOccludedFunctionNArguments* args) {
 MI_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice device) {
     if constexpr (!dr::is_cuda_v<Float>) {
         RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
-        rtcSetGeometryUserPrimitiveCount(geom, 1);
+        rtcSetGeometryUserPrimitiveCount(geom, primitive_count());
         rtcSetGeometryUserData(geom, (void *) this);
         rtcSetGeometryBoundsFunction(geom, embree_bbox<Float, Spectrum>, nullptr);
         rtcSetGeometryIntersectFunction(geom, embree_intersect<Float, Spectrum>);
@@ -382,8 +387,61 @@ MI_VARIANT Float Shape<Float, Spectrum>::pdf_direction(const Interaction3f & /*i
     return pdf;
 }
 
+MI_VARIANT typename Shape<Float, Spectrum>::SilhouetteSample3f
+Shape<Float, Spectrum>::sample_silhouette(const Point3f & /*sample*/,
+                                          uint32_t /*type*/,
+                                          Mask /*active*/) const {
+    if constexpr (dr::is_jit_v<Float>)
+        return dr::zeros<SilhouetteSample3f>();
+    else
+        NotImplementedError("sample_silhouette");
+}
+
+MI_VARIANT typename Shape<Float, Spectrum>::Point3f
+Shape<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f & /*ss*/,
+                                                 Mask /*active*/) const {
+    if constexpr (dr::is_jit_v<Float>)
+        return dr::zeros<Point3f>();
+    else
+        NotImplementedError("invert_silhouette_sample");
+}
+
+MI_VARIANT typename Shape<Float, Spectrum>::Point3f
+Shape<Float, Spectrum>::differential_motion(const SurfaceInteraction3f &si,
+                                            Mask /*active*/) const {
+    return dr::detach(si.p);
+}
+
+MI_VARIANT typename Shape<Float, Spectrum>::SilhouetteSample3f
+Shape<Float, Spectrum>::primitive_silhouette_projection(const Point3f &,
+                                                        const SurfaceInteraction3f &,
+                                                        uint32_t,
+                                                        Float,
+                                                        Mask) const {
+    return dr::zeros<SilhouetteSample3f>();
+}
+
+MI_VARIANT
+std::tuple<DynamicBuffer<typename CoreAliases<Float>::UInt32>,
+           DynamicBuffer<Float>>
+Shape<Float, Spectrum>::precompute_silhouette(
+    const ScalarPoint3f & /*viewpoint*/) const {
+    NotImplementedError("precompute_silhouette");
+}
+
+MI_VARIANT typename Shape<Float, Spectrum>::SilhouetteSample3f
+Shape<Float, Spectrum>::sample_precomputed_silhouette(
+    const Point3f & /*viewpoint*/, Index /*sample1*/, Float /*sample2*/,
+    Mask /*active*/) const {
+    if constexpr (dr::is_jit_v<Float>)
+        return dr::zeros<SilhouetteSample3f>();
+    else
+        NotImplementedError("sample_precomputed_silhouette");
+}
+
 MI_VARIANT typename Shape<Float, Spectrum>::PreliminaryIntersection3f
-Shape<Float, Spectrum>::ray_intersect_preliminary(const Ray3f & /*ray*/, Mask /*active*/) const {
+Shape<Float, Spectrum>::ray_intersect_preliminary(const Ray3f & /*ray*/,
+                                                  uint32_t /*prim_index*/, Mask /*active*/) const {
     NotImplementedError("ray_intersect_preliminary");
 }
 
@@ -396,20 +454,21 @@ Shape<Float, Spectrum>::ray_intersect_preliminary_scalar(const ScalarRay3f & /*r
     NotImplementedError("ray_intersect_preliminary_scalar");
 }
 
-#define MI_DEFAULT_RAY_INTERSECT_PACKET(N)                                    \
-    MI_VARIANT std::tuple<typename Shape<Float, Spectrum>::FloatP##N,         \
-                           typename Shape<Float, Spectrum>::Point2fP##N,       \
-                           typename Shape<Float, Spectrum>::UInt32P##N,        \
-                           typename Shape<Float, Spectrum>::UInt32P##N>        \
-    Shape<Float, Spectrum>::ray_intersect_preliminary_packet(                  \
-        const Ray3fP##N & /*ray*/, MaskP##N /*active*/) const {                \
-        NotImplementedError("ray_intersect_preliminary_packet");               \
-    }                                                                          \
-    MI_VARIANT typename Shape<Float, Spectrum>::MaskP##N                      \
-    Shape<Float, Spectrum>::ray_test_packet(const Ray3fP##N &ray,              \
-                                            MaskP##N active) const {           \
-        auto res = ray_intersect_preliminary_packet(ray, active);              \
-        return dr::neq(std::get<0>(res), dr::Infinity<Float>);                 \
+#define MI_DEFAULT_RAY_INTERSECT_PACKET(N)                                                          \
+    MI_VARIANT std::tuple<typename Shape<Float, Spectrum>::FloatP##N,                               \
+                           typename Shape<Float, Spectrum>::Point2fP##N,                            \
+                           typename Shape<Float, Spectrum>::UInt32P##N,                             \
+                           typename Shape<Float, Spectrum>::UInt32P##N>                             \
+    Shape<Float, Spectrum>::ray_intersect_preliminary_packet(                                       \
+        const Ray3fP##N & /*ray*/, uint32_t /*prim_index*/, MaskP##N /*active*/) const {            \
+        NotImplementedError("ray_intersect_preliminary_packet");                                    \
+    }                                                                                               \
+    MI_VARIANT typename Shape<Float, Spectrum>::MaskP##N                                            \
+    Shape<Float, Spectrum>::ray_test_packet(const Ray3fP##N &ray,                                   \
+                                            uint32_t prim_index,                                    \
+                                            MaskP##N active) const {                                \
+        auto res = ray_intersect_preliminary_packet(ray, prim_index, active);                       \
+        return dr::neq(std::get<0>(res), dr::Infinity<Float>);                                      \
     }
 
 MI_DEFAULT_RAY_INTERSECT_PACKET(4)
@@ -417,9 +476,9 @@ MI_DEFAULT_RAY_INTERSECT_PACKET(8)
 MI_DEFAULT_RAY_INTERSECT_PACKET(16)
 
 MI_VARIANT typename Shape<Float, Spectrum>::Mask
-Shape<Float, Spectrum>::ray_test(const Ray3f &ray, Mask active) const {
+Shape<Float, Spectrum>::ray_test(const Ray3f &ray, uint32_t prim_index, Mask active) const {
     MI_MASK_ARGUMENT(active);
-    return ray_intersect_preliminary(ray, active).is_valid();
+    return ray_intersect_preliminary(ray, prim_index, active).is_valid();
 }
 
 MI_VARIANT
@@ -439,43 +498,61 @@ Shape<Float, Spectrum>::compute_surface_interaction(const Ray3f & /*ray*/,
 MI_VARIANT typename Shape<Float, Spectrum>::SurfaceInteraction3f
 Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask active) const {
     MI_MASK_ARGUMENT(active);
-    auto pi = ray_intersect_preliminary(ray, active);
+    auto pi = ray_intersect_preliminary(ray, 0, active);
     return pi.compute_surface_interaction(ray, ray_flags, active);
 }
 
+MI_VARIANT typename Shape<Float, Spectrum>::Mask
+Shape<Float, Spectrum>::has_attribute(const std::string& name, Mask /*active*/) const {
+    return m_texture_attributes.find(name) != m_texture_attributes.end();
+}
+
 MI_VARIANT typename Shape<Float, Spectrum>::UnpolarizedSpectrum
-Shape<Float, Spectrum>::eval_attribute(const std::string & /*name*/,
-                                       const SurfaceInteraction3f & /*si*/,
-                                       Mask /*active*/) const {
-    /* When virtual function calls are recorded in symbolic mode,
-       we can't throw an exception here. */
-    if constexpr (dr::is_jit_v<Float>)
-        return 0.f;
-    else
-        NotImplementedError("eval_attribute");
+Shape<Float, Spectrum>::eval_attribute(const std::string & name,
+                                       const SurfaceInteraction3f & si,
+                                       Mask active) const {
+    const auto& it = m_texture_attributes.find(name);
+    if (it == m_texture_attributes.end()) {
+        if constexpr (dr::is_jit_v<Float>)
+            return 0.f;
+        else
+            Throw("Invalid attribute requested %s.", name.c_str());
+    }
+
+    const auto& texture = it->second;
+    return texture->eval(si, active);
 }
 
 MI_VARIANT Float
-Shape<Float, Spectrum>::eval_attribute_1(const std::string& /*name*/,
-                                         const SurfaceInteraction3f &/*si*/,
-                                         Mask /*active*/) const {
-    /* When virtual function calls are recorded in symbolic mode,
-       we can't throw an exception here. */
-    if constexpr (dr::is_jit_v<Float>)
-        return 0.f;
-    else
-        NotImplementedError("eval_attribute_1");
+Shape<Float, Spectrum>::eval_attribute_1(const std::string& name,
+                                         const SurfaceInteraction3f &si,
+                                         Mask active) const {
+    const auto& it = m_texture_attributes.find(name);
+    if (it == m_texture_attributes.end()) {
+        if constexpr (dr::is_jit_v<Float>)
+            return 0.f;
+        else
+            Throw("Invalid attribute requested %s.", name.c_str());
+    }
+
+    const auto& texture = it->second;
+    return texture->eval_1(si, active);
 }
+
 MI_VARIANT typename Shape<Float, Spectrum>::Color3f
-Shape<Float, Spectrum>::eval_attribute_3(const std::string& /*name*/,
-                                         const SurfaceInteraction3f &/*si*/,
-                                         Mask /*active*/) const {
-    /* When virtual function calls are recorded in symbolic mode,
-       we can't throw an exception here. */
-    if constexpr (dr::is_jit_v<Float>)
-        return 0.f;
-    else
-        NotImplementedError("eval_attribute_3");
+Shape<Float, Spectrum>::eval_attribute_3(const std::string& name,
+                                         const SurfaceInteraction3f &si,
+                                         Mask active) const {
+    const auto& it = m_texture_attributes.find(name);
+    if (it == m_texture_attributes.end()) {
+        if constexpr (dr::is_jit_v<Float>)
+            return 0.f;
+        else
+            Throw("Invalid attribute requested %s.", name.c_str());
+    }
+
+    const auto& texture = it->second;
+    return texture->eval_3(si, active);
 }
 
 MI_VARIANT Float Shape<Float, Spectrum>::surface_area() const {
@@ -514,13 +591,17 @@ MI_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
         callback->put_object("interior_medium", m_interior_medium.get(), +ParamFlags::Differentiable);
     if (m_exterior_medium)
         callback->put_object("exterior_medium", m_exterior_medium.get(), +ParamFlags::Differentiable);
+
+    callback->put_parameter("silhouette_sampling_weight", m_silhouette_sampling_weight, +ParamFlags::NonDifferentiable);
 }
 
 MI_VARIANT
 void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
     if (dirty()) {
         if constexpr (dr::is_jit_v<Float>) {
-            if (!is_mesh())
+            bool is_bspline_curve = (shape_type() == +ShapeType::BSplineCurve);
+            bool is_linear_curve = (shape_type() == +ShapeType::LinearCurve);
+            if (!is_mesh() && !is_bspline_curve && !is_linear_curve) // to_world/to_object is used
                 dr::make_opaque(m_to_world, m_to_object);
         }
 
@@ -542,7 +623,9 @@ MI_VARIANT bool Shape<Float, Spectrum>::parameters_grad_enabled() const {
 
 MI_VARIANT void Shape<Float, Spectrum>::initialize() {
     if constexpr (dr::is_jit_v<Float>) {
-        if (!is_mesh())
+        bool is_bspline_curve = (shape_type() == +ShapeType::BSplineCurve);
+        bool is_linear_curve = (shape_type() == +ShapeType::LinearCurve);
+        if (!is_mesh() && !is_bspline_curve && !is_linear_curve) // to_world/to_object is not used
             dr::make_opaque(m_to_world, m_to_object);
     }
 

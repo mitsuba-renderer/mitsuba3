@@ -111,13 +111,15 @@ public:
             UnpolarizedSpectrum delta = dr::deg_to_rad(m_delta->eval(si, active));
 
             // Approximate angle-of-incidence behaviour with a cosine falloff
-            delta *= dr::abs(Frame3f::cos_theta(si.wi));
+            Float cos_theta = Frame3f::cos_theta(si.wi);
+            delta *= dr::abs(cos_theta);
 
             // Get standard Mueller matrix for a linear polarizer.
             Spectrum M = mueller::linear_retarder(delta);
 
-            // Rotate optical element by specified angle
-            M = mueller::rotated_element(theta, M);
+            /* Rotate optical element by specified angle. The angle is flipped if
+               the element is intersected from the backside. */
+            M = mueller::rotated_element(dr::sign(cos_theta) * theta, M);
 
             /* The `forward` direction here is always along the direction that
                light travels. This is needed for the coordinate system rotation
@@ -161,13 +163,15 @@ public:
             UnpolarizedSpectrum delta = dr::deg_to_rad(m_delta->eval(si, active));
 
             // Approximate angle-of-incidence behaviour with a cosine falloff
-            delta *= dr::abs(Frame3f::cos_theta(si.wi));
+            Float cos_theta = Frame3f::cos_theta(si.wi);
+            delta *= dr::abs(cos_theta);
 
             // Get standard Mueller matrix for a linear polarizer.
             Spectrum M = mueller::linear_retarder(delta);
 
-            // Rotate optical element by specified angle
-            M = mueller::rotated_element(theta, M);
+            /* Rotate optical element by specified angle. The angle is flipped if
+               the element is intersected from the backside. */
+            M = mueller::rotated_element(dr::sign(cos_theta) * theta, M);
 
             /* The `forward` direction here is always along the direction that
                light travels. This is needed for the coordinate system rotation
@@ -190,7 +194,7 @@ public:
 
     std::string to_string() const override {
         std::ostringstream oss;
-        oss << "LinearPolarizer[" << std::endl
+        oss << "LinearRetarder[" << std::endl
             << "  theta = " << string::indent(m_theta) << std::endl
             << "  delta = " << string::indent(m_delta) << std::endl
             << "  transmittance = " << string::indent(m_transmittance) << std::endl

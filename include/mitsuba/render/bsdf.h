@@ -265,7 +265,7 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB BSDF : public Object {
 public:
-    MI_IMPORT_TYPES()
+    MI_IMPORT_TYPES(Texture)
 
     /**
      * \brief Importance sample the BSDF model
@@ -281,7 +281,7 @@ public:
      * version is sampled.
      *
      * When sampling a continuous/non-delta component, this method also
-     * multiplies by the cosine foreshorening factor with respect to the
+     * multiplies by the cosine foreshortening factor with respect to the
      * sampled direction.
      *
      * \param ctx
@@ -472,6 +472,73 @@ public:
     virtual Spectrum eval_null_transmission(const SurfaceInteraction3f &si,
                                             Mask active = true) const;
 
+    /**
+     * \brief Returns whether this BSDF contains the specified attribute.
+     *
+     * \param name
+     *     Name of the attribute
+     */
+    virtual Mask has_attribute(const std::string &name, Mask active = true) const;
+
+    /**
+     * \brief Evaluate a specific BSDF attribute at the given surface interaction.
+     *
+     * BSDF attributes are user-provided fields that provide extra
+     * information at an intersection. An example of this would be a per-vertex
+     * or per-face color on a triangle mesh.
+     *
+     * \param name
+     *     Name of the attribute to evaluate
+     *
+     * \param si
+     *     Surface interaction associated with the query
+     *
+     * \return
+     *     An unpolarized spectral power distribution or reflectance value
+     */
+    virtual UnpolarizedSpectrum eval_attribute(const std::string &name,
+                                               const SurfaceInteraction3f &si,
+                                               Mask active = true) const;
+
+    /**
+     * \brief Monochromatic evaluation of a BSDF attribute at the given surface interaction
+     *
+     * This function differs from \ref eval_attribute() in that it provided raw access to
+     * scalar intensity/reflectance values without any color processing (e.g.
+     * spectral upsampling).
+     *
+     * \param name
+     *     Name of the attribute to evaluate
+     *
+     * \param si
+     *     Surface interaction associated with the query
+     *
+     * \return
+     *     An scalar intensity or reflectance value
+     */
+    virtual Float eval_attribute_1(const std::string &name,
+                                   const SurfaceInteraction3f &si,
+                                   Mask active = true) const;
+
+    /**
+     * \brief Trichromatic evaluation of a BSDF attribute at the given surface interaction
+     *
+     * This function differs from \ref eval_attribute() in that it provided raw access to
+     * RGB intensity/reflectance values without any additional color processing
+     * (e.g. RGB-to-spectral upsampling).
+     *
+     * \param name
+     *     Name of the attribute to evaluate
+     *
+     * \param si
+     *     Surface interaction associated with the query
+     *
+     * \return
+     *     An trichromatic intensity or reflectance value
+     */
+    virtual Color3f eval_attribute_3(const std::string &name,
+                                     const SurfaceInteraction3f &si,
+                                     Mask active = true) const;
 
     // -----------------------------------------------------------------------
     //! @{ \name BSDF property accessors (components, flags, etc)
@@ -570,14 +637,8 @@ typename SurfaceInteraction<Float, Spectrum>::BSDFPtr SurfaceInteraction<Float, 
     const typename SurfaceInteraction<Float, Spectrum>::RayDifferential3f &ray) {
     const BSDFPtr bsdf = shape->bsdf();
 
-    /// TODO: revisit the 'false' default for autodiff mode once there are actually BRDFs using
-    /// differentials
-    if constexpr (!dr::is_diff_v<Float>) {
-        if (!has_uv_partials() && dr::any(bsdf->needs_differentials()))
-            compute_uv_partials(ray);
-    } else {
-        DRJIT_MARK_USED(ray);
-    }
+    if (!has_uv_partials() && dr::any(bsdf->needs_differentials()))
+        compute_uv_partials(ray);
 
     return bsdf;
 }
@@ -600,6 +661,10 @@ DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::BSDF)
     DRJIT_VCALL_METHOD(eval_pdf)
     DRJIT_VCALL_METHOD(eval_pdf_sample)
     DRJIT_VCALL_METHOD(eval_diffuse_reflectance)
+    DRJIT_VCALL_METHOD(has_attribute)
+    DRJIT_VCALL_METHOD(eval_attribute)
+    DRJIT_VCALL_METHOD(eval_attribute_1)
+    DRJIT_VCALL_METHOD(eval_attribute_3)
     DRJIT_VCALL_GETTER(flags, uint32_t)
     auto needs_differentials() const {
         return has_flag(flags(), mitsuba::BSDFFlags::NeedsDifferentials);

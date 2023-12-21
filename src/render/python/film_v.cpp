@@ -14,12 +14,20 @@ public:
 
     PyFilm(const Properties &props) : Film(props) { }
 
+    size_t base_channels_count() const override {
+        PYBIND11_OVERRIDE_PURE(size_t, Film, base_channels_count);
+    }
+
     size_t prepare(const std::vector<std::string> &aovs) override {
         PYBIND11_OVERRIDE_PURE(size_t, Film, prepare, aovs);
     }
 
     void put_block(const ImageBlock *block) override {
         PYBIND11_OVERRIDE_PURE(void, Film, put_block, block);
+    }
+
+    void clear() override {
+        PYBIND11_OVERRIDE_PURE(void, Film, clear);
     }
 
     TensorXf develop(bool raw = false) const override {
@@ -76,10 +84,12 @@ MI_PY_EXPORT(Film) {
         .def(py::init<const Properties &>(), "props"_a)
         .def_method(Film, prepare, "aovs"_a)
         .def_method(Film, put_block, "block"_a)
+        .def_method(Film, clear)
         .def_method(Film, develop, "raw"_a = false)
         .def_method(Film, bitmap, "raw"_a = false)
         .def_method(Film, write, "path"_a)
         .def_method(Film, sample_border)
+        .def_method(Film, base_channels_count)
         // Make sure to return a copy of those members as they might also be
         // exposed by-references via `mi.traverse`. In which case the return
         // policy of `mi.traverse` might overrule the ones of those bindings.

@@ -20,17 +20,18 @@ void optix_initialize() {
     L(optixAccelComputeMemoryUsage);
     L(optixAccelBuild);
     L(optixAccelCompact);
-    L(optixModuleCreateFromPTXWithTasks);
-    L(optixModuleGetCompilationState);
-    L(optixTaskExecute);
-    L(optixProgramGroupCreate);
-    L(optixSbtRecordPackHeader);
+    L(optixBuiltinISModuleGet);
     L(optixDenoiserCreate);
     L(optixDenoiserDestroy);
     L(optixDenoiserComputeMemoryResources);
     L(optixDenoiserSetup);
     L(optixDenoiserInvoke);
     L(optixDenoiserComputeIntensity);
+    L(optixModuleCreateFromPTXWithTasks);
+    L(optixModuleGetCompilationState);
+    L(optixTaskExecute);
+    L(optixProgramGroupCreate);
+    L(optixSbtRecordPackHeader);
 
     #undef L
 }

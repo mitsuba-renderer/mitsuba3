@@ -230,3 +230,21 @@ def test05_eval_spectral(variants_vec_backends_once_spectral):
     expected = 0.5394
     assert dr.allclose(expected, spec, atol=1e-04)
     assert dr.allclose(expected, mono, atol=1e-04)
+
+
+def test06_tensor_load(variants_all_rgb):
+    bitmap = mi.load_dict({
+        'type' : 'bitmap',
+        'data' : dr.ones(mi.TensorXf, shape = [30, 30, 3]),
+        'raw' : True
+    })
+
+    assert dr.allclose(bitmap.mean(), 1.0);
+
+    bitmap = mi.load_dict({
+        'type' : 'bitmap',
+        'data' : dr.full(mi.TensorXf, 3.0, shape = [30, 30, 3]),
+        'raw' : True
+    })
+
+    assert dr.allclose(bitmap.mean(), 3.0);

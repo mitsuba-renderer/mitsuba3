@@ -41,6 +41,48 @@ Integrator<Float, Spectrum>::render(Scene *scene,
                   seed, spp, develop, evaluate);
 }
 
+MI_VARIANT typename Integrator<Float, Spectrum>::TensorXf
+Integrator<Float, Spectrum>::render_forward(Scene* scene,
+                                            void* /*params*/,
+                                            Sensor *sensor,
+                                            uint32_t seed,
+                                            uint32_t spp) {
+    auto forward_gradients = [&]() -> TensorXf {
+        auto image = render(scene, sensor, seed, spp, true, false);
+        dr::forward_to(image.array());
+        return TensorXf(dr::grad(image.array()), 3, image.shape().data());
+    };
+
+    if constexpr (dr::is_jit_v<Float>) {
+        // Recorded loops cannot be differentiated, so let's disable them
+        dr::scoped_set_flag scope(JitFlag::LoopRecord, false);
+        return forward_gradients();
+    } else {
+        return forward_gradients();
+    }
+}
+
+MI_VARIANT void
+Integrator<Float, Spectrum>::render_backward(Scene* scene,
+                                             void* /*params */,
+                                             const TensorXf& grad_in,
+                                             Sensor* sensor,
+                                             uint32_t seed,
+                                             uint32_t spp) {
+    auto backward_gradients = [&]() -> void {
+        auto image = render(scene, sensor, seed, spp, true, false);
+        dr::backward_from((image * grad_in).array());
+    };
+
+    if constexpr (dr::is_jit_v<Float>) {
+        // Recorded loops cannot be differentiated, so let's disable them
+        dr::scoped_set_flag scope(JitFlag::LoopRecord, false);
+        backward_gradients();
+    } else {
+        backward_gradients();
+    }
+}
+
 MI_VARIANT std::vector<std::string> Integrator<Float, Spectrum>::aov_names() const {
     return { };
 }
@@ -258,7 +300,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
             idx /= dr::opaque<UInt32>(spp_per_pass);
 
         // Compute the position on the image plane
-        Vector2u pos;
+        Vector2i pos;
         pos.y() = idx / film_size[0];
         pos.x() = dr::fnmadd(film_size[0], pos.y(), idx);
 

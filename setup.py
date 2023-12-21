@@ -16,13 +16,13 @@ except ImportError:
 
 this_directory = os.path.abspath(os.path.dirname(__file__))
 
-with open(os.path.join("include/mitsuba/mitsuba.h")) as f:
+with open(os.path.join(this_directory, "include/mitsuba/mitsuba.h")) as f:
     mi_version_regex = re.compile(
         r"^\s*#\s*define\s+MI_VERSION_([A-Z]+)\s+(.*)$", re.MULTILINE)
     matches = dict(mi_version_regex.findall(f.read()))
     mitsuba_version = "{MAJOR}.{MINOR}.{PATCH}".format(**matches)
 
-with open(os.path.join("ext/drjit/include/drjit/fwd.h")) as f:
+with open(os.path.join(this_directory, "ext/drjit/include/drjit/fwd.h")) as f:
     drjit_version_regex = re.compile(
         r"^\s*#\s*define\s+DRJIT_VERSION_([A-Z]+)\s+(.*)$", re.MULTILINE)
     matches = dict(drjit_version_regex.findall(f.read()))

@@ -59,3 +59,19 @@ def test03_eval_pdf(variant_scalar_rgb):
         v_eval_pdf = bsdf.eval_pdf(ctx, si, wo=wo)
         assert dr.allclose(v_eval, v_eval_pdf[0])
         assert dr.allclose(v_pdf, v_eval_pdf[1])
+
+
+def test04_eval_attribute(variants_all_rgb):
+    reflectance = [0.5, 0.6, 0.7]
+    roughness = 0.4
+    bsdf = mi.load_dict({
+        'type': 'roughplastic',
+        'diffuse_reflectance': { 'type': 'rgb', 'value': reflectance},
+        'alpha': roughness
+    })
+
+    si = mi.SurfaceInteraction3f()
+
+    assert dr.allclose(bsdf.eval_attribute('diffuse_reflectance', si), reflectance)
+    assert dr.allclose(bsdf.eval_attribute_3('diffuse_reflectance', si), reflectance)
+    assert dr.allclose(bsdf.eval_attribute_1('alpha', si), roughness)

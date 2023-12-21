@@ -12,10 +12,15 @@ SHAPE_ORDERING = [
     'obj',
     'ply',
     'serialized',
+    'cube'
     'sphere',
-    'cylinder',
     'disk',
+    'cylinder',
+    'bsplinecurve',
+    'linearcurve',
     'rectangle',
+    'cube',
+    'sdfgrid',
     'shapegroup',
     'instance'
 ]
@@ -27,9 +32,11 @@ BSDF_ORDERING = [
     'roughdielectric',
     'conductor',
     'roughconductor',
+    'hair',
+    'measured',
+    'measured_polarized',
     'plastic',
     'roughplastic',
-    'measured',
     'bumpmap',
     'normalmap',
     'blendbsdf',
@@ -39,7 +46,6 @@ BSDF_ORDERING = [
     'polarizer',
     'retarder',
     'circular',
-    'measured_polarized',
     'pplastic'
 ]
 
@@ -90,9 +96,8 @@ INTEGRATOR_ORDERING = [
     'volpathmis',
     '../src/python/python/ad/integrators/prb.py',
     '../src/python/python/ad/integrators/prb_basic.py',
-    '../src/python/python/ad/integrators/direct_reparam.py',
-    '../src/python/python/ad/integrators/emission_reparam.py',
-    '../src/python/python/ad/integrators/prb_reparam.py',
+    '../src/python/python/ad/integrators/direct_projective.py',
+    '../src/python/python/ad/integrators/prb_projective.py',
     '../src/python/python/ad/integrators/prbvolpath.py',
 ]
 

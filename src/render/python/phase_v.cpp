@@ -10,17 +10,20 @@ public:
 
     PyPhaseFunction(const Properties &props) : PhaseFunction(props) {}
 
-    std::pair<Vector3f, Float> sample(const PhaseFunctionContext &ctx,
-                    const MediumInteraction3f &mi,
-                    Float sample1, const Point2f &sample2,
-                    Mask active) const override {
-        using Return = std::pair<Vector3f, Float>;
+    std::tuple<Vector3f, Spectrum, Float> sample(const PhaseFunctionContext &ctx,
+                                                 const MediumInteraction3f &mi,
+                                                 Float sample1, const Point2f &sample2,
+                                                 Mask active) const override {
+        using Return = std::tuple<Vector3f, Spectrum, Float>;
         PYBIND11_OVERRIDE_PURE(Return, PhaseFunction, sample, ctx, mi, sample1, sample2, active);
     }
 
-    Float eval(const PhaseFunctionContext &ctx, const MediumInteraction3f &mi,
-               const Vector3f &wo, Mask active) const override {
-        PYBIND11_OVERRIDE_PURE(Float, PhaseFunction, eval, ctx, mi, wo, active);
+    std::pair<Spectrum, Float> eval_pdf(const PhaseFunctionContext &ctx,
+                                        const MediumInteraction3f &mi,
+                                        const Vector3f &wo,
+                                        Mask active) const override {
+        using Return = std::pair<Spectrum, Float>;
+        PYBIND11_OVERRIDE_PURE(Return, PhaseFunction, eval_pdf, ctx, mi, wo, active);
     }
 
     Float projected_area(const MediumInteraction3f &mi, Mask active) const override {
@@ -33,6 +36,14 @@ public:
 
     std::string to_string() const override {
         PYBIND11_OVERRIDE_PURE(std::string, PhaseFunction, to_string);
+    }
+
+    void traverse(TraversalCallback *cb) override {
+        PYBIND11_OVERRIDE(void, PhaseFunction, traverse, cb);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        PYBIND11_OVERRIDE(void, PhaseFunction, parameters_changed, keys);
     }
 
     using PhaseFunction::m_flags;
@@ -48,12 +59,12 @@ template <typename Ptr, typename Cls> void bind_phase_generic(Cls &cls) {
                Mask active) { return ptr->sample(ctx, mi, s1, s2, active); },
             "ctx"_a, "mi"_a, "sample1"_a, "sample2"_a, "active"_a = true,
             D(PhaseFunction, sample))
-       .def("eval",
+       .def("eval_pdf",
             [](Ptr ptr, const PhaseFunctionContext &ctx,
                const MediumInteraction3f &mi, const Vector3f &wo,
-               Mask active) { return ptr->eval(ctx, mi, wo, active); },
+               Mask active) { return ptr->eval_pdf(ctx, mi, wo, active); },
             "ctx"_a, "mi"_a, "wo"_a, "active"_a = true,
-            D(PhaseFunction, eval))
+            D(PhaseFunction, eval_pdf))
        .def("projected_area",
             [](Ptr ptr, const MediumInteraction3f &mi,
                Mask active) { return ptr->projected_area(mi, active); },
@@ -81,9 +92,11 @@ MI_PY_EXPORT(PhaseFunction) {
     py::class_<PhaseFunctionContext>(m, "PhaseFunctionContext", D(PhaseFunctionContext))
         .def(py::init<Sampler*, TransportMode>(), "sampler"_a,
                 "mode"_a = TransportMode::Radiance, D(PhaseFunctionContext, PhaseFunctionContext))
-        .def_method(PhaseFunctionContext, reverse)
-        .def_field(PhaseFunctionContext, sampler, D(PhaseFunctionContext, sampler))
+        .def_field(PhaseFunctionContext, mode,      D(PhaseFunctionContext, mode))
+        .def_field(PhaseFunctionContext, sampler,   D(PhaseFunctionContext, sampler))
+        .def_field(PhaseFunctionContext, type_mask, D(PhaseFunctionContext, type_mask))
         .def_field(PhaseFunctionContext, component, D(PhaseFunctionContext, component))
+        .def_method(PhaseFunctionContext, reverse)
         .def_repr(PhaseFunctionContext);
 
     auto phase =
@@ -105,7 +118,7 @@ MI_PY_EXPORT(PhaseFunction) {
     bind_phase_generic<PhaseFunction *>(phase);
 
     if constexpr (dr::is_array_v<PhaseFunctionPtr>) {
-        py::object dr       = py::module_::import("drjit"),
+        py::object dr = py::module_::import("drjit"),
                    dr_array = dr.attr("ArrayBase");
 
         py::class_<PhaseFunctionPtr> cls(m, "PhaseFunctionPtr", dr_array);

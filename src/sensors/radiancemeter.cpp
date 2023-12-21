@@ -23,7 +23,7 @@ Radiance meter (:monosp:`radiancemeter`)
  * - origin
    - |point|
    - Location from which the sensor will be recording in world coordinates.
-     Must be used with `origin`.
+     Must be used with `direction`.
 
  * - direction
    - |vector|

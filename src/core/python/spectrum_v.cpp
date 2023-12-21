@@ -6,7 +6,7 @@
 MI_PY_EXPORT(Spectrum) {
     MI_PY_IMPORT_TYPES()
 
-    m.def("luminance", [](const UnpolarizedSpectrum &value, const UnpolarizedSpectrum &w, Mask active) {
+    m.def("luminance", [](const UnpolarizedSpectrum &value, const wavelength_t<UnpolarizedSpectrum> &w, Mask active) {
             return luminance(value, w, active);
         }, "value"_a, "wavelengths"_a, "active"_a = true, D(luminance))
     .def("luminance", [](Color<Float, 3> c) {

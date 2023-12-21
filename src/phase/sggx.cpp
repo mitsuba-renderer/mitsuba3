@@ -69,7 +69,7 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("S", m_ndf_params, +ParamFlags::Differentiable);
+        callback->put_object("S", m_ndf_params.get(), +ParamFlags::Differentiable);
     }
 
     MI_INLINE
@@ -78,14 +78,14 @@ public:
         return m_ndf_params->eval_6(mi, active);
     }
 
-    std::pair<Vector3f, Float> sample(const PhaseFunctionContext & /* ctx */,
-                                      const MediumInteraction3f &mi,
-                                      const Float /* sample1 */,
-                                      const Point2f &sample2,
-                                      Mask active) const override {
+    std::tuple<Vector3f, Spectrum, Float> sample(const PhaseFunctionContext & /* ctx */,
+                                                 const MediumInteraction3f &mi,
+                                                 const Float /* sample1 */,
+                                                 const Point2f &sample2,
+                                                 Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
         auto s         = eval_ndf_params(mi, active);
-        auto sampled_n = sggx_sample_vndf(mi.sh_frame, sample2, s);
+        auto sampled_n = sggx_sample(mi.sh_frame, sample2, s);
 
         // The diffuse variant of the SGGX is currently not supported and
         // requires some changes to the phase function interface to work in
@@ -98,25 +98,28 @@ public:
            wo = frame.to_world(wo);
            return {wo, pdf};
            } else { */
-        Float pdf = 0.25f * sggx_ndf_pdf(Vector3f(sampled_n), s) /
+        Float pdf = 0.25f * sggx_pdf(Vector3f(sampled_n), s) /
                     sggx_projected_area(mi.wi, s);
         Vector3f wo = dr::normalize(reflect(mi.wi, sampled_n));
-        return { wo, pdf };
+        return { wo, 1.f, pdf };
         // }
     }
 
-    Float eval(const PhaseFunctionContext & /* ctx */,
-               const MediumInteraction3f &mi, const Vector3f &wo,
-               Mask active) const override {
+    std::pair<Spectrum, Float> eval_pdf(const PhaseFunctionContext & /* ctx */,
+                                        const MediumInteraction3f &mi,
+                                        const Vector3f &wo,
+                                        Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
         auto s = eval_ndf_params(mi, active);
         /* if (m_diffuse) {
-           auto sampled_n = sggx_sample_vndf(mi.sh_frame,
+           auto sampled_n = sggx_sample(mi.sh_frame,
            ctx.sampler->next_2d(active), s); return dr::InvPi<Float> *
            dr::maximum(dr::dot(wo, sampled_n), 0.f); } else { */
-        return 0.25f * sggx_ndf_pdf(dr::normalize(wo + mi.wi), s) /
-               sggx_projected_area(mi.wi, s);
+        Float pdf = 0.25f * sggx_pdf(dr::normalize(wo + mi.wi), s) /
+                    sggx_projected_area(mi.wi, s);
         // }
+
+        return { pdf, pdf };
     }
 
     virtual Float projected_area(const MediumInteraction3f &mi,

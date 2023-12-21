@@ -18,7 +18,8 @@ class MI_EXPORT_LIB Mesh : public Shape<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES()
     MI_IMPORT_BASE(Shape, m_to_world, mark_dirty, m_emitter, m_sensor, m_bsdf,
-                   m_interior_medium, m_exterior_medium, m_is_instance)
+                   m_interior_medium, m_exterior_medium, m_is_instance,
+                   m_discontinuity_types, m_shape_type)
 
     // Mesh is always stored in single precision
     using InputFloat = float;
@@ -31,6 +32,7 @@ public:
 
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
+    using typename Base::Index;
 
     /// Create a new mesh with the given vertex and face data structures
     Mesh(const std::string &name, ScalarSize vertex_count,
@@ -81,7 +83,7 @@ public:
     void add_attribute(const std::string &name, size_t dim,
                        const std::vector<InputFloat> &buf);
 
-    /// Returns the face indices associated with triangle \c index
+    /// Returns the vertex indices associated with triangle \c index
     template <typename Index>
     MI_INLINE auto face_indices(Index index,
                                 dr::mask_t<Index> active = true) const {
@@ -113,6 +115,26 @@ public:
         return dr::gather<Result>(m_vertex_texcoords, index, active);
     }
 
+    /// Returns the normal direction of the face with index \c index
+    template <typename Index>
+    MI_INLINE auto face_normal(Index index,
+                               dr::mask_t<Index> active = true) const {
+        Vector3u vertex_indices = face_indices(index, active);
+        Vector3f v[3] = { vertex_position(vertex_indices[0], active),
+                          vertex_position(vertex_indices[1], active),
+                          vertex_position(vertex_indices[2], active) };
+
+        return dr::normalize(dr::cross(v[1] - v[0], v[2] - v[0]));
+    }
+
+    /// Returns the opposite edge index associated with directed edge \c index
+    template <typename Index>
+    MI_INLINE auto opposite_dedge(Index index,
+                                 dr::mask_t<Index> active = true) const {
+        using Result = dr::uint32_array_t<Index>;
+        return dr::gather<Result>(m_E2E, index, active);
+    }
+
     /// Does this mesh have per-vertex normals?
     bool has_vertex_normals() const { return dr::width(m_vertex_normals) != 0; }
 
@@ -128,8 +150,21 @@ public:
     /// @}
     // =========================================================================
 
-    /// Export mesh as a binary PLY file
+    /**
+     * Write the mesh to a binary PLY file
+     *
+     * \param filename
+     *    Target file path on disk
+     */
     void write_ply(const std::string &filename) const;
+
+    /**
+     * Write the mesh encoded in binary PLY format to a stream
+     *
+     * \param stream
+     *    Target stream that will receive the encoded output
+     */
+    void write_ply(Stream *stream) const;
 
     /// Merge two meshes into one
     ref<Mesh> merge(const Mesh *other) const;
@@ -144,47 +179,79 @@ public:
     //! @{ \name Shape interface implementation
     // =============================================================
 
-    virtual ScalarBoundingBox3f bbox() const override;
+    ScalarBoundingBox3f bbox() const override;
 
-    virtual ScalarBoundingBox3f bbox(ScalarIndex index) const override;
+    ScalarBoundingBox3f bbox(ScalarIndex index) const override;
 
-    virtual ScalarBoundingBox3f bbox(ScalarIndex index,
-                                     const ScalarBoundingBox3f &clip) const override;
+    ScalarBoundingBox3f bbox(ScalarIndex index,
+                             const ScalarBoundingBox3f &clip) const override;
 
-    virtual ScalarSize primitive_count() const override;
+    ScalarSize primitive_count() const override;
 
-    virtual Float surface_area() const override;
+    Float surface_area() const override;
 
-    virtual PositionSample3f sample_position(Float time, const Point2f &sample,
-                                             Mask active = true) const override;
-
-    virtual Float pdf_position(const PositionSample3f &ps, Mask active = true) const override;
-
-    virtual Point3f
-    barycentric_coordinates(const SurfaceInteraction3f &si,
-                            Mask active = true) const;
-
-    virtual SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
-                                                             const PreliminaryIntersection3f &pi,
-                                                             uint32_t ray_flags,
-                                                             uint32_t recursion_depth = 0,
-                                                             Mask active = true) const override;
-
-    virtual UnpolarizedSpectrum eval_attribute(const std::string &name,
-                                               const SurfaceInteraction3f &si,
-                                               Mask active = true) const override;
-    virtual Float eval_attribute_1(const std::string& name,
-                                   const SurfaceInteraction3f &si,
-                                   Mask active = true) const override;
-    virtual Color3f eval_attribute_3(const std::string& name,
-                                     const SurfaceInteraction3f &si,
+    PositionSample3f sample_position(Float time,
+                                     const Point2f &sample,
                                      Mask active = true) const override;
 
-    virtual SurfaceInteraction3f eval_parameterization(const Point2f &uv,
-                                                       uint32_t ray_flags = +RayFlags::All,
-                                                       Mask active = true) const override;
+    Float pdf_position(const PositionSample3f &ps, Mask active = true) const override;
+
+    Point3f barycentric_coordinates(const SurfaceInteraction3f &si,
+                                    Mask active = true) const;
+
+    SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
+                                                     const PreliminaryIntersection3f &pi,
+                                                     uint32_t ray_flags,
+                                                     uint32_t recursion_depth = 0,
+                                                     Mask active = true) const override;
+
+    Mask has_attribute(const std::string &name, Mask active = true) const override;
+
+    UnpolarizedSpectrum eval_attribute(const std::string &name,
+                                       const SurfaceInteraction3f &si,
+                                       Mask active = true) const override;
+
+    Float eval_attribute_1(const std::string &name,
+                           const SurfaceInteraction3f &si,
+                           Mask active = true) const override;
+
+    Color3f eval_attribute_3(const std::string &name,
+                             const SurfaceInteraction3f &si,
+                             Mask active = true) const override;
+
+    SurfaceInteraction3f eval_parameterization(const Point2f &uv,
+                                               uint32_t ray_flags = +RayFlags::All,
+                                               Mask active = true) const override;
 
     void set_scene(Scene<Float, Spectrum> *scene) { m_scene = scene; }
+
+    SilhouetteSample3f sample_silhouette(const Point3f &sample,
+                                         uint32_t flags,
+                                         Mask active) const override;
+
+    Point3f invert_silhouette_sample(const SilhouetteSample3f &ss,
+                                     Mask active) const override;
+
+    Point3f differential_motion(const SurfaceInteraction3f &si,
+                                Mask active = true) const override;
+
+    SilhouetteSample3f primitive_silhouette_projection(const Point3f &viewpoint,
+                                                       const SurfaceInteraction3f &si,
+                                                       uint32_t flags,
+                                                       Float sample,
+                                                       Mask active = true) const override;
+
+    std::tuple<DynamicBuffer<UInt32>, DynamicBuffer<Float>>
+    precompute_silhouette(const ScalarPoint3f &viewpoint) const override;
+
+    SilhouetteSample3f sample_precomputed_silhouette(const Point3f &viewpoint,
+                                                     Index sample1,
+                                                     Float sample2,
+                                                     Mask active = true) const override;
+
+    //! @}
+    // =============================================================
+
 
     /** \brief Ray-triangle intersection test
      *
@@ -302,6 +369,27 @@ protected:
      * Thread-safe, since it uses a mutex.
      */
     void build_pmf();
+
+    /**
+     * /brief Build directed edge data structure to efficiently access adjacent
+     * edges.
+     *
+     * This is an implementation of the technique described in:
+     * <tt>https://www.graphics.rwth-aachen.de/media/papers/directed.pdf</tt>.
+     */
+    void build_directed_edges();
+
+    /**
+     * /brief Precompute the set of edges that could contribute to the indirect
+     * discontinuous integral.
+     *
+     * This method filters out any concave edges or flat surfaces.
+     *
+     * Internally, this method relies on the directed edge data structure. A
+     * call to \ref build_directed_edges before a call to this method is
+     * therefore necessary.
+     */
+    void build_indirect_silhouette_distribution();
 
     /**
      * \brief Initialize the \c m_parameterization field for mapping UV
@@ -437,6 +525,16 @@ protected:
     mutable FloatStorage m_vertex_texcoords;
 
     mutable DynamicBuffer<UInt32> m_faces;
+
+    /// Directed edges data structures to support neighbor queries
+    mutable DynamicBuffer<UInt32> m_E2E;
+    bool m_E2E_outdated = true;
+
+
+    constexpr static ScalarIndex m_invalid_dedge = (ScalarIndex) -1;
+
+    /// Sampling density of silhouette (\ref build_indirect_silhouette_distribution)
+    DiscreteDistribution<Float> m_sil_dedge_pmf;
 
 #if defined(MI_ENABLE_LLVM) && !defined(MI_ENABLE_EMBREE)
     /* Data pointer to ensure triangle intersection routine doesn't rely on

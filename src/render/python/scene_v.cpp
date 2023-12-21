@@ -78,6 +78,12 @@ MI_PY_EXPORT(Scene) {
         .def("sample_emitter_ray", &Scene::sample_emitter_ray,
              "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a,
              D(Scene, sample_emitter_ray))
+        .def("sample_silhouette", &Scene::sample_silhouette,
+             "sample"_a, "flags"_a, "active"_a = true,
+             D(Scene, sample_silhouette))
+        .def("invert_silhouette_sample", &Scene::invert_silhouette_sample,
+             "ss"_a, "active"_a = true,
+             D(Scene, invert_silhouette_sample))
         // Accessors
         .def_method(Scene, bbox)
         .def("sensors",
@@ -94,9 +100,9 @@ MI_PY_EXPORT(Scene) {
                  return result;
              },
              D(Scene, sensors))
+        .def("sensors_dr", &Scene::sensors_dr, D(Scene, sensors_dr))
         .def("emitters", py::overload_cast<>(&Scene::emitters), D(Scene, emitters))
         .def("emitters_dr", &Scene::emitters_dr, D(Scene, emitters_dr))
-        .def("shapes_dr", &Scene::shapes_dr, D(Scene, shapes_dr))
         .def_method(Scene, environment)
         .def("shapes",
              [](const Scene &scene) {
@@ -111,6 +117,20 @@ MI_PY_EXPORT(Scene) {
                  return result;
              },
              D(Scene, shapes))
+        .def("shapes_dr", &Scene::shapes_dr, D(Scene, shapes_dr))
+        .def("silhouette_shapes",
+             [](const Scene &scene) {
+                 py::list result;
+                 for (const Shape *s : scene.silhouette_shapes()) {
+                     const Mesh *m = dynamic_cast<const Mesh *>(s);
+                     if (m)
+                         result.append(py::cast(m));
+                     else
+                         result.append(py::cast(s));
+                 }
+                 return result;
+             },
+             D(Scene, silhouette_shapes))
         .def("integrator",
              [](Scene &scene) -> py::object {
                  Integrator *o = scene.integrator();

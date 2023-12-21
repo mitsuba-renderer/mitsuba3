@@ -58,6 +58,10 @@
 
 .. autoclass:: mitsuba.Color3f
 
+.. autoclass:: mitsuba.Complex2d
+
+.. autoclass:: mitsuba.Complex2f
+
 .. autoclass:: mitsuba.ContinuousDistribution
 
 .. autoclass:: mitsuba.CppADIntegrator
@@ -67,6 +71,8 @@
 .. autoclass:: mitsuba.DefaultFormatter
 
 .. autoclass:: mitsuba.DirectionSample3f
+
+.. autoclass:: mitsuba.DiscontinuityFlags
 
 .. autoclass:: mitsuba.DiscreteDistribution
 
@@ -424,6 +430,10 @@
 
 .. autoclass:: mitsuba.ShapePtr
 
+.. autoclass:: mitsuba.ShapeType
+
+.. autoclass:: mitsuba.SilhouetteSample3f
+
 .. autoclass:: mitsuba.Spectrum
 
 .. autoclass:: mitsuba.Spiral
@@ -540,17 +550,33 @@
 
 .. autoclass:: mitsuba.ad.Adam
 
+.. autoclass:: mitsuba.ad.BaseGuidingDistr
+
+.. autoclass:: mitsuba.ad.GridDistr
+
+.. autoclass:: mitsuba.ad.LargeSteps
+
+.. autoclass:: mitsuba.ad.OcSpaceDistr
+
 .. autoclass:: mitsuba.ad.Optimizer
+
+.. autoclass:: mitsuba.ad.ProjectiveDetail
 
 .. autoclass:: mitsuba.ad.SGD
 
+.. autoclass:: mitsuba.ad.UniformDistr
+
 .. autoclass:: mitsuba.ad.common.ADIntegrator
+
+.. autoclass:: mitsuba.ad.common.PSIntegrator
 
 .. autoclass:: mitsuba.ad.common.RBIntegrator
 
 .. autofunction:: mitsuba.ad.common.mis_weight
 
-.. autofunction:: mitsuba.ad.reparameterize_ray
+.. autoclass:: mitsuba.ad.largesteps.SolveCholesky
+
+.. autofunction:: mitsuba.ad.largesteps.mesh_laplacian
 
 .. autofunction:: mitsuba.chi2.BSDFAdapter
 
@@ -634,11 +660,17 @@
 
 .. autofunction:: mitsuba.load_string
 
+.. autofunction:: mitsuba.log_level
+
+.. autofunction:: mitsuba.lookup_ior
+
 .. autofunction:: mitsuba.luminance
 
 .. autofunction:: mitsuba.math.RayEpsilon
 
 .. autofunction:: mitsuba.math.ShadowEpsilon
+
+.. autofunction:: mitsuba.math.ShapeEpsilon
 
 .. autofunction:: mitsuba.math.chi2
 
@@ -772,6 +804,12 @@
 
 .. autofunction:: mitsuba.set_variant
 
+.. autofunction:: mitsuba.sggx_pdf
+
+.. autofunction:: mitsuba.sggx_projected_area
+
+.. autofunction:: mitsuba.sggx_sample
+
 .. autofunction:: mitsuba.sobol_2
 
 .. autofunction:: mitsuba.spectrum_from_file
@@ -824,6 +862,8 @@
 
 .. autofunction:: mitsuba.variant
 
+.. autofunction:: mitsuba.variant_context
+
 .. autofunction:: mitsuba.variants
 
 .. autofunction:: mitsuba.warp.beckmann_to_square
@@ -835,6 +875,8 @@
 .. autofunction:: mitsuba.warp.interval_to_linear
 
 .. autofunction:: mitsuba.warp.interval_to_nonuniform_tent
+
+.. autofunction:: mitsuba.warp.interval_to_tangent_direction
 
 .. autofunction:: mitsuba.warp.interval_to_tent
 
@@ -884,6 +926,10 @@
 
 .. autofunction:: mitsuba.warp.square_to_uniform_sphere_pdf
 
+.. autofunction:: mitsuba.warp.square_to_uniform_spherical_lune
+
+.. autofunction:: mitsuba.warp.square_to_uniform_spherical_lune_pdf
+
 .. autofunction:: mitsuba.warp.square_to_uniform_square_concentric
 
 .. autofunction:: mitsuba.warp.square_to_uniform_triangle
@@ -893,6 +939,8 @@
 .. autofunction:: mitsuba.warp.square_to_von_mises_fisher
 
 .. autofunction:: mitsuba.warp.square_to_von_mises_fisher_pdf
+
+.. autofunction:: mitsuba.warp.tangent_direction_to_interval
 
 .. autofunction:: mitsuba.warp.tent_to_interval
 
@@ -907,6 +955,8 @@
 .. autofunction:: mitsuba.warp.uniform_hemisphere_to_square
 
 .. autofunction:: mitsuba.warp.uniform_sphere_to_square
+
+.. autofunction:: mitsuba.warp.uniform_spherical_lune_to_square
 
 .. autofunction:: mitsuba.warp.uniform_triangle_to_square
 

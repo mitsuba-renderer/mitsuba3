@@ -84,9 +84,75 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
     m_emitters_dr = dr::load<DynamicBuffer<EmitterPtr>>(
         m_emitters.data(), m_emitters.size());
 
-    m_emitter_pmf = m_emitters.empty() ? 0.f : (1.f / m_emitters.size());
+    m_sensors_dr = dr::load<DynamicBuffer<SensorPtr>>(
+        m_sensors.data(), m_sensors.size());
+
+    dr::eval(m_emitters_dr, m_shapes_dr, m_sensors_dr);
+
+    update_emitter_sampling_distribution();
+    update_silhouette_sampling_distribution();
 
     m_shapes_grad_enabled = false;
+}
+
+MI_VARIANT
+void Scene<Float, Spectrum>::update_emitter_sampling_distribution() {
+    // Check if we need to use non-uniform emitter sampling.
+    bool non_uniform_sampling = false;
+    for (auto &e : m_emitters) {
+        if (e->sampling_weight() != ScalarFloat(1.0)) {
+            non_uniform_sampling = true;
+            break;
+        }
+    }
+    size_t n_emitters = m_emitters.size();
+    if (non_uniform_sampling) {
+        std::unique_ptr<ScalarFloat[]> sample_weights(new ScalarFloat[n_emitters]);
+        for (size_t i = 0; i < n_emitters; ++i)
+            sample_weights[i] = m_emitters[i]->sampling_weight();
+        m_emitter_distr = std::make_unique<DiscreteDistribution<Float>>(
+            sample_weights.get(), n_emitters);
+    } else {
+        // By default use uniform sampling with constant PMF
+        m_emitter_pmf = m_emitters.empty() ? 0.f : (1.f / n_emitters);
+        m_emitter_distr = nullptr;
+    }
+    // Clear emitter's dirty flag
+    for (auto &e : m_emitters)
+        e->set_dirty(false);
+}
+
+MI_VARIANT
+void Scene<Float, Spectrum>::update_silhouette_sampling_distribution() {
+    size_t n_shapes = m_shapes.size();
+    std::vector<ScalarFloat> shape_weights{};
+    m_silhouette_shapes.clear();
+
+    for (size_t i = 0; i < n_shapes; ++i) {
+        ScalarFloat weight = m_shapes[i]->silhouette_sampling_weight();
+        // Only consider shapes that are being differentiated
+        bool grad_enabled = m_shapes[i]->parameters_grad_enabled();
+
+        if (grad_enabled && (weight > 0.f)) {
+            uint32_t types = m_shapes[i]->silhouette_discontinuity_types();
+
+            bool has_interior = has_flag(types, DiscontinuityFlags::InteriorType);
+            bool has_perimeter = has_flag(types, DiscontinuityFlags::PerimeterType);
+            bool has_discontinuity = has_interior || has_perimeter;
+
+            if (has_discontinuity) {
+                m_silhouette_shapes.emplace_back(m_shapes[i]);
+                shape_weights.emplace_back(weight);
+            }
+        }
+    }
+
+    size_t silhouette_shape_count = m_silhouette_shapes.size();
+    m_silhouette_shapes_dr = dr::load<DynamicBuffer<ShapePtr>>(
+        m_silhouette_shapes.data(), silhouette_shape_count);
+    if (silhouette_shape_count > 0u)
+        m_silhouette_distr = std::make_unique<DiscreteDistribution<Float>>(
+            shape_weights.data(), silhouette_shape_count);
 }
 
 MI_VARIANT Scene<Float, Spectrum>::~Scene() {
@@ -169,6 +235,11 @@ Scene<Float, Spectrum>::sample_emitter(Float index_sample, Mask active) const {
             return { UInt32(-1), 0.f, index_sample };
     }
 
+    if (m_emitter_distr != nullptr) {
+        auto [index, reused_sample, pmf] = m_emitter_distr->sample_reuse_pmf(index_sample);
+        return {index, dr::rcp(pmf), reused_sample};
+    }
+
     uint32_t emitter_count = (uint32_t) m_emitters.size();
     ScalarFloat emitter_count_f = (ScalarFloat) emitter_count;
     Float index_sample_scaled = index_sample * emitter_count_f;
@@ -178,9 +249,12 @@ Scene<Float, Spectrum>::sample_emitter(Float index_sample, Mask active) const {
     return { index, emitter_count_f, index_sample_scaled - Float(index) };
 }
 
-MI_VARIANT Float Scene<Float, Spectrum>::pdf_emitter(UInt32 /*index*/,
-                                                      Mask /*active*/) const {
-    return m_emitter_pmf;
+MI_VARIANT Float Scene<Float, Spectrum>::pdf_emitter(UInt32 index,
+                                                      Mask active) const {
+    if (m_emitter_distr == nullptr)
+        return m_emitter_pmf;
+    else
+        return m_emitter_distr->eval_pmf_normalized(index, active);
 }
 
 MI_VARIANT std::tuple<typename Scene<Float, Spectrum>::Ray3f, Spectrum,
@@ -283,13 +357,116 @@ Scene<Float, Spectrum>::pdf_emitter_direction(const Interaction3f &ref,
                                               const DirectionSample3f &ds,
                                               Mask active) const {
     MI_MASK_ARGUMENT(active);
-    return ds.emitter->pdf_direction(ref, ds, active) * m_emitter_pmf;
+    Float emitter_pmf;
+    if (m_emitter_distr == nullptr)
+        emitter_pmf = m_emitter_pmf;
+    else
+        emitter_pmf = ds.emitter->sampling_weight() * m_emitter_distr->normalization();
+    return ds.emitter->pdf_direction(ref, ds, active) * emitter_pmf;
 }
 
 MI_VARIANT Spectrum Scene<Float, Spectrum>::eval_emitter_direction(
     const Interaction3f &ref, const DirectionSample3f &ds, Mask active) const {
     MI_MASK_ARGUMENT(active);
     return ds.emitter->eval_direction(ref, ds, active);
+}
+
+MI_VARIANT typename Scene<Float, Spectrum>::SilhouetteSample3f
+Scene<Float, Spectrum>::sample_silhouette(const Point3f &sample_,
+                                          uint32_t flags, Mask active) const {
+    MI_MASK_ARGUMENT(active);
+
+    if (unlikely(!m_silhouette_distr|| m_silhouette_shapes.size() == 0))
+        return dr::zeros<SilhouetteSample3f>();
+
+    // Sample a shape
+    UInt32 shape_idx;
+    Float reused_sample_x,
+          shape_weight;
+    std::tie(shape_idx, reused_sample_x, shape_weight) =
+        m_silhouette_distr->sample_reuse_pmf(sample_.x(), active);
+    ShapePtr shape =
+        dr::gather<ShapePtr>(m_silhouette_shapes_dr, shape_idx, active);
+
+    bool has_interior = has_flag(flags, DiscontinuityFlags::InteriorType);
+    bool has_perimeter = has_flag(flags, DiscontinuityFlags::PerimeterType);
+    Point3f sample(sample_);
+    sample.x() = reused_sample_x;
+
+    // Map a boundary sample space to a boundary segment in the scene space
+    SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
+    if (has_interior != has_perimeter) { // Only one discontinuity type
+        ss = shape->sample_silhouette(sample, flags, active);
+    } else {
+        UInt32 shape_sil_types = shape->silhouette_discontinuity_types();
+        Mask only_interior =
+            active &&
+            has_flag(shape_sil_types, DiscontinuityFlags::InteriorType) &&
+            !has_flag(shape_sil_types, DiscontinuityFlags::PerimeterType);
+        Mask only_perimeter =
+            active &&
+            !has_flag(shape_sil_types, DiscontinuityFlags::InteriorType) &&
+            has_flag(shape_sil_types, DiscontinuityFlags::PerimeterType);
+        Mask both =
+            active &&
+            has_flag(shape_sil_types, DiscontinuityFlags::InteriorType) &&
+            has_flag(shape_sil_types, DiscontinuityFlags::PerimeterType);
+
+        // If shapes have both types, weight them equally
+        Mask interior  = only_interior  || (both && (sample.x() <  0.5f));
+        Mask perimeter = only_perimeter || (both && (sample.x() >= 0.5f));
+        dr::masked(sample.x(), interior && both)  = sample.x() * 2.f;
+        dr::masked(sample.x(), perimeter && both) = sample.x() * 2.f - 1.f;
+
+        uint32_t other_flags = flags & ~DiscontinuityFlags::AllTypes;
+        SilhouetteSample3f ss_interior = shape->sample_silhouette(
+            sample, (uint32_t) DiscontinuityFlags::InteriorType | other_flags,
+            interior);
+        SilhouetteSample3f ss_perimeter = shape->sample_silhouette(
+            sample, (uint32_t) DiscontinuityFlags::PerimeterType | other_flags,
+            perimeter);
+
+        ss = dr::select(interior, ss_interior, ss_perimeter);
+        dr::masked(ss.pdf, both) *= 0.5f;
+    }
+
+    ss.pdf *= shape_weight;
+    ss.scene_index = shape_idx;
+
+    return ss;
+}
+
+MI_VARIANT typename Scene<Float, Spectrum>::Point3f
+Scene<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f &ss,
+                                                 Mask active) const {
+    MI_MASK_ARGUMENT(active);
+
+    Point3f sample = ss.shape->invert_silhouette_sample(ss, active);
+
+    // Inverse mapping of samples on shapes that have both types
+    Mask both_types_sampled =
+        dr::eq(ss.flags, (uint32_t) DiscontinuityFlags::AllTypes);
+    Mask shape_has_both_types =
+        dr::eq(ss.shape->silhouette_discontinuity_types(),
+               (uint32_t) DiscontinuityFlags::AllTypes);
+    Mask is_interior =
+        has_flag(ss.discontinuity_type, DiscontinuityFlags::InteriorType);
+    dr::masked(sample.x(), both_types_sampled && shape_has_both_types) =
+        dr::select(is_interior,
+                   sample.x() * 0.5f,
+                   sample.x() * 0.5f + 0.5f);
+
+    if (m_silhouette_shapes.size() == 1)
+        return sample;
+
+    // Inverse mapping of samples w.r.t. scene
+    Float cdf = m_silhouette_distr->eval_cdf_normalized(ss.scene_index, active);
+    Float normalization = m_silhouette_distr->normalization();
+    Float weight = ss.shape->silhouette_sampling_weight();
+    Float offset = cdf - weight * normalization;
+    sample.x() = sample.x() * weight * normalization + offset;
+
+    return sample;
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *callback) {
@@ -325,14 +502,29 @@ MI_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std
             accel_parameters_changed_gpu();
         else
             accel_parameters_changed_cpu();
+
+        m_bbox = {};
+        for (auto &s : m_shapes)
+            m_bbox.expand(s->bbox());
     }
 
     // Check whether any shape parameters have gradient tracking enabled
     m_shapes_grad_enabled = false;
     for (auto &s : m_shapes) {
         m_shapes_grad_enabled |= s->parameters_grad_enabled();
-        if (m_shapes_grad_enabled)
+        if (m_shapes_grad_enabled) {
+            update_silhouette_sampling_distribution();
             break;
+        }
+    }
+
+    // Check if emitters were modified and we potentially need to update
+    // the emitter sampling distribution.
+    for (auto &e : m_emitters) {
+        if (e->dirty()) {
+            update_emitter_sampling_distribution();
+            break;
+        }
     }
 }
 

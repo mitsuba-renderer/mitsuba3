@@ -1,21 +1,44 @@
+#include <drjit/tensor.h>
 #include <mitsuba/core/filesystem.h>
+#include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/xml.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/python/python.h>
+#include <nanothread/nanothread.h>
 #include <map>
 
 using Caster = py::object(*)(mitsuba::Object *);
 extern Caster cast_object;
 
+struct DictInstance {
+    Properties props;
+    ref<Object> object = nullptr;
+    uint32_t scope;
+    std::vector<std::pair<std::string, std::string>> dependencies;
+};
+
+struct DictParseContext {
+    ThreadEnvironment env;
+    std::map<std::string, DictInstance> instances;
+    std::map<std::string, std::string> aliases;
+    bool parallel;
+};
+
 // Forward declaration
 template <typename Float, typename Spectrum>
-std::vector<ref<Object>> load_dict(
-        const std::string &dict_key,
-        const py::dict &dict,
-        std::map<std::string, ref<Object>> &instances
+void parse_dictionary(
+    DictParseContext &ctx,
+    const std::string path,
+    const py::dict &dict
+);
+template <typename Float, typename Spectrum>
+Task * instantiate_node(
+    DictParseContext &ctx,
+    const std::string path,
+    std::unordered_map<std::string, Task *> &task_map
 );
 
 /// Shorthand notation for accessing the MI_VARIANT string
@@ -87,20 +110,35 @@ MI_PY_EXPORT(xml) {
 
     m.def(
         "load_dict",
-        [](const py::dict dict) {
-            std::map<std::string, ref<Object>> instances;
-            std::vector<ref<Object>> objects =
-                load_dict<Float, Spectrum>("", dict, instances);
+        [](const py::dict dict, bool parallel) {
+            // Make a backup copy of the FileResolver, which will be restored after parsing
+            ref<FileResolver> fs_backup = Thread::thread()->file_resolver();
+            Thread::thread()->set_file_resolver(new FileResolver(*fs_backup));
 
-            py::object out = single_object_or_list(objects);
+            DictParseContext ctx;
+            ctx.parallel = parallel;
+            ctx.env = ThreadEnvironment();
 
-            return out;
+            try {
+                parse_dictionary<Float, Spectrum>(ctx, "__root__", dict);
+                std::unordered_map<std::string, Task*> task_map;
+                instantiate_node<Float, Spectrum>(ctx, "__root__", task_map);
+                auto objects = mitsuba::xml::detail::expand_node(ctx.instances["__root__"].object);
+                Thread::thread()->set_file_resolver(fs_backup.get());
+                return single_object_or_list(objects);
+            } catch(...) {
+                Thread::thread()->set_file_resolver(fs_backup.get());
+                throw;
+            }
         },
-        "dict"_a,
+        "dict"_a, "parallel"_a=true,
         R"doc(Load a Mitsuba scene or object from an Python dictionary
 
 Parameter ``dict``:
     Python dictionary containing the object description
+
+Parameter ``parallel``:
+    Whether the loading should be executed on multiple threads in parallel
 
 )doc");
 
@@ -152,7 +190,7 @@ ref<Object> create_texture_from(const py::dict &dict, bool within_emitter) {
     if (type == "rgb") {
         if (dict.size() != 2) {
             Throw("'rgb' dictionary should always contain 2 entries "
-                    "('type' and 'value'), got %u.", dict.size());
+                  "('type' and 'value'), got %u.", dict.size());
         }
         // Read info from the dictionary
         Properties::Color3f color(0.f);
@@ -169,7 +207,7 @@ ref<Object> create_texture_from(const py::dict &dict, bool within_emitter) {
     } else if (type == "spectrum") {
         if (dict.size() != 2) {
             Throw("'spectrum' dictionary should always contain 2 "
-                    "entries ('type' and 'value'), got %u.", dict.size());
+                  "entries ('type' and 'value'), got %u.", dict.size());
         }
         // Read info from the dictionary
         Properties::Float const_value(1);
@@ -210,19 +248,22 @@ ref<Object> create_texture_from(const py::dict &dict, bool within_emitter) {
 }
 
 template <typename Float, typename Spectrum>
-std::vector<ref<Object>> load_dict(const std::string &dict_key,
-                                   const py::dict &dict,
-                                   std::map<std::string,
-                                   ref<Object>> &instances) {
+void parse_dictionary(DictParseContext &ctx,
+                      const std::string path,
+                      const py::dict &dict) {
     MI_IMPORT_CORE_TYPES()
     using ScalarArray3f = dr::Array<ScalarFloat, 3>;
 
+    auto &inst = ctx.instances[path];
+
     std::string type = get_type(dict);
-
-    if (type == "spectrum" || type == "rgb")
-        return { create_texture_from<Float, Spectrum>(dict, false) };
-
     bool is_scene = (type == "scene");
+    bool is_root = string::starts_with(path, "__root__");
+
+    if (type == "spectrum" || type == "rgb") {
+        inst.object = create_texture_from<Float, Spectrum>(dict, false);
+        return;
+    }
 
     const Class *class_;
     if (is_scene)
@@ -231,7 +272,11 @@ std::vector<ref<Object>> load_dict(const std::string &dict_key,
         class_ = PluginManager::instance()->get_plugin_class(type, GET_VARIANT())->parent();
 
     bool within_emitter = (!is_scene && class_->alias() == "emitter");
-    Properties props(type);
+
+    Properties &props = inst.props;
+    props.set_plugin_name(type);
+
+    std::string id;
 
     for (auto& [k, value] : dict) {
         std::string key = k.template cast<std::string>();
@@ -240,7 +285,7 @@ std::vector<ref<Object>> load_dict(const std::string &dict_key,
             continue;
 
         if (key == "id") {
-            props.set_id(value.template cast<std::string>());
+            id = value.template cast<std::string>();
             continue;
         }
 
@@ -250,9 +295,16 @@ std::vector<ref<Object>> load_dict(const std::string &dict_key,
         SET_PROPS(py::str, std::string, set_string);
         SET_PROPS(ScalarColor3f, ScalarColor3f, set_color);
         SET_PROPS(ScalarArray3f, ScalarArray3f, set_array3f);
+        SET_PROPS(ScalarTransform3f, ScalarTransform3f, set_transform3f);
         SET_PROPS(ScalarTransform4f, ScalarTransform4f, set_transform);
 
-        // Load nested dictionary
+        if (key.find('.') != std::string::npos) {
+            Throw("The object key '%s' contains a '.' character, which is "
+                  "already used as a delimiter in the object path in the scene."
+                  " Please use '_' instead.", key);
+        }
+
+        // Parse nested dictionary
         if (py::isinstance<py::dict>(value)) {
             py::dict dict2 = value.template cast<py::dict>();
             std::string type2 = get_type(dict2);
@@ -262,63 +314,69 @@ std::vector<ref<Object>> load_dict(const std::string &dict_key,
                 continue;
             }
 
+            if (type2 == "resources") {
+                ref<FileResolver> fs = Thread::thread()->file_resolver();
+                std::string path = dict2["path"].template cast<std::string>();
+                fs::path resource_path(path);
+                if (!resource_path.is_absolute()) {
+                    // First try to resolve it starting in the Python file directory
+                    py::module_ inspect = py::module_::import("inspect");
+                    py::object filename = inspect.attr("getfile")(inspect.attr("currentframe")());
+                    fs::path current_file(filename.template cast<std::string>());
+                    resource_path = current_file.parent_path() / resource_path;
+                    // Otherwise try to resolve it with the FileResolver
+                    if (!fs::exists(resource_path))
+                        resource_path = fs->resolve(path);
+                }
+                if (!fs::exists(resource_path))
+                    Throw("path: folder %s not found", resource_path);
+                fs->prepend(resource_path);
+                continue;
+            }
+
             // Nested dict with type == "ref" specify a reference to another
             // object previously instantiated
             if (type2 == "ref") {
                 if (is_scene)
                     Throw("Reference found at the scene level: %s", key);
 
-                for (auto& [k2, value2] : value.template cast<py::dict>()) {
-                    std::string key2 = k2.template cast<std::string>();
+                for (auto& kv2 : value.template cast<py::dict>()) {
+                    std::string key2 = kv2.first.template cast<std::string>();
                     if (key2 == "id") {
-                        std::string id = value2.template cast<std::string>();
-                        if (instances.count(id) == 1)
-                            expand_and_set_object(props, key, instances[id]);
+                        std::string id2 = kv2.second.template cast<std::string>();
+                        std::string path2;
+                        if (ctx.aliases.count(id2) == 1)
+                            path2 = ctx.aliases[id2];
                         else
-                            Throw("Referenced id \"%s\" not found: %s", id, key);
-                    }  else if (key2 != "type") {
+                            path2 = id2;
+                        if (ctx.instances.count(path2) != 1)
+                            Throw("Referenced id \"%s\" not found: %s", path2, path);
+                        inst.dependencies.push_back({key, path2});
+                    } else if (key2 != "type") {
                         Throw("Unexpected key in ref dictionary: %s", key2);
                     }
                 }
-                continue;
+            } else {
+                std::string path2 = is_root ? key : path + "." + key;
+                inst.dependencies.push_back({key, path2});
+                parse_dictionary<Float, Spectrum>(ctx, path2, dict2);
             }
-
-            // Load the dictionary recursively
-            std::vector<ref<Object>> objects = load_dict<Float, Spectrum>(key, dict2, instances);
-            size_t n_objects = objects.size();
-            int ctr = 0;
-
-            for (auto &obj : objects) {
-                if (n_objects > 1) {
-                    props.set_object(key + "_" + std::to_string(ctr++), obj);
-                } else {
-                    props.set_object(key, obj);
-                }
-
-                // Add instanced object to the instance map for later references
-                if (is_scene) {
-                    // An object can be referenced using its key
-                    if (instances.count(key) != 0)
-                        Throw("%s has duplicate id: %s", key, key);
-                    instances[key] = obj;
-
-                    // An object can also be referenced using its "id" if it has
-                    // one
-                    std::string id = obj->id();
-                    if (!id.empty() && id != key) {
-                        if (instances.count(id) != 0)
-                            Throw("%s has duplicate id: %s", key, id);
-                        instances[id] = obj;
-                    }
-                }
-            }
-
             continue;
         }
 
         // Try to cast to Array3f (list, tuple, numpy.array, ...)
         try {
             props.set_array3f(key, value.template cast<Properties::Array3f>());
+            continue;
+        } catch (const pybind11::cast_error &) { }
+
+        // Try to cast to TensorXf
+        try {
+            TensorXf tensor = value.template cast<TensorXf>();
+            // To support parallel loading we have to ensure tensor has been evaluated
+            // because tracking of side effects won't persist across different ThreadStates
+            dr::eval(tensor);
+            props.set_tensor_handle(key, std::make_shared<TensorXf>(tensor));
             continue;
         } catch (const pybind11::cast_error &) { }
 
@@ -334,17 +392,112 @@ std::vector<ref<Object>> load_dict(const std::string &dict_key,
         Throw("Unkown value type: %s", value.get_type());
     }
 
-    // Use the dict key as id (if available) if no id was already set
-    if (props.id().empty() && !dict_key.empty())
-        props.set_id(dict_key);
+    // Set object id based on path in dictionary if no id is provided
+    props.set_id(id.empty() ? string::tokenize(path, ".").back() : id);
 
-    // Construct the object with the parsed Properties
-    auto obj = PluginManager::instance()->create_object(props, class_);
+    if constexpr (dr::is_jit_v<Float>) {
+        if (ctx.parallel) {
+            jit_new_scope(dr::backend_v<Float>);
+            inst.scope = jit_scope(dr::backend_v<Float>);
+        }
+    }
 
-    if (!props.unqueried().empty())
-        Throw("Unreferenced property \"%s\" in plugin of type \"%s\"!", props.unqueried()[0], type);
+    if (!id.empty()) {
+        if (ctx.aliases.count(id) != 0)
+            Throw("%s has duplicate id: %s", path, id);
+        ctx.aliases[id] = path;
+    }
+}
 
-    return mitsuba::xml::detail::expand_node(obj);
+template <typename Float, typename Spectrum>
+Task *instantiate_node(DictParseContext &ctx,
+                       std::string path,
+                       std::unordered_map<std::string, Task *> &task_map) {
+    if (task_map.find(path) != task_map.end())
+        return task_map.find(path)->second;
+
+    auto &inst = ctx.instances[path];
+    uint32_t scope = inst.scope;
+    uint32_t backend = (uint32_t) dr::backend_v<Float>;
+    bool is_root = path == "__root__";
+
+    // Early exit if the object was already instantiated
+    if (inst.object)
+        return nullptr;
+
+    std::vector<Task *> deps;
+    for (auto &[key2, path2] : inst.dependencies) {
+        if (task_map.find(path2) == task_map.end()) {
+            Task *task = instantiate_node<Float, Spectrum>(ctx, path2, task_map);
+            task_map.insert({path2, task});
+        }
+        deps.push_back(task_map.find(path2)->second);
+    }
+
+    auto instantiate = [&ctx, path, scope, backend]() {
+        ScopedSetThreadEnvironment set_env(ctx.env);
+        mitsuba::xml::ScopedSetJITScope set_scope(ctx.parallel ? backend : 0u, scope);
+
+        auto &inst = ctx.instances[path];
+        Properties props = inst.props;
+        std::string type = props.plugin_name();
+
+        const Class *class_;
+        if (type == "scene")
+            class_ = Class::for_name("Scene", GET_VARIANT());
+        else
+            class_ = PluginManager::instance()->get_plugin_class(type, GET_VARIANT())->parent();
+
+        for (auto &[key2, path2] : inst.dependencies) {
+            if (ctx.instances.count(path2) == 1) {
+                auto obj2 = ctx.instances[path2].object;
+                if (obj2)
+                    expand_and_set_object(props, key2, obj2);
+                else
+                    Throw("Dependence hasn't been instantiated yet: %s, %s -> %s", path, path2, key2);
+            } else {
+                Throw("Dependence path \"%s\" not found: %s", path2, path);
+            }
+        }
+
+        // Construct the object with the parsed Properties
+        inst.object = PluginManager::instance()->create_object(props, class_);
+
+        if (!props.unqueried().empty())
+            Throw("Unreferenced property \"%s\" in plugin of type \"%s\"!", props.unqueried()[0], type);
+    };
+
+    // Top node always instantiated on the main thread
+    if (is_root) {
+        std::exception_ptr eptr;
+        for (auto& task : deps) {
+            try {
+                py::gil_scoped_release gil_release{};
+                task_wait(task);
+            } catch (...) {
+                if (!eptr)
+                    eptr = std::current_exception();
+            }
+        }
+        for (auto& kv : task_map)
+            task_release(kv.second);
+        if (eptr)
+            std::rethrow_exception(eptr);
+        instantiate();
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+        if (backend && ctx.parallel)
+            jit_new_scope((JitBackend) backend);
+#endif
+        return nullptr;
+    } else {
+        if (ctx.parallel) {
+            // Instantiate object asynchronously
+            return dr::do_async(instantiate, deps.data(), deps.size());
+        } else {
+            instantiate();
+            return nullptr;
+        }
+    }
 }
 
 #undef SET_PROPS

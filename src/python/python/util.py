@@ -1,5 +1,6 @@
 from __future__ import annotations as __annotations__ # Delayed parsing of type annotations
 
+import contextlib
 from collections.abc import Mapping
 
 import drjit as dr
@@ -95,8 +96,8 @@ class SceneParameters(Mapping):
     def __repr__(self) -> str:
         if len(self) == 0:
             return f'SceneParameters[]'
-        name_length = int(max([len(k) for k in self.properties.keys()]) + 2)
-        type_length = int(max([len(type(v).__name__) for k, v in self.properties.items()]))
+        name_length = int(max(len(k) for k in self.properties.keys()) + 2)
+        type_length = int(max(len(type(v[0] if v[1] is None else self.get_property(*v[:3])).__name__) for k, v in self.properties.items()))
         param_list = '\n'
         param_list += '  ' + '-' * (name_length + 53) + '\n'
         param_list += f"  {'Name':{name_length}}  {'Flags':7}  {'Type':{type_length}} {'Parent'}\n"
@@ -135,6 +136,9 @@ class SceneParameters(Mapping):
         return self.__iter__()
 
     def keys(self):
+        return self.properties.keys()
+
+    def _ipython_key_completions_(self):
         return self.properties.keys()
 
     def flags(self, key: str):
@@ -562,7 +566,7 @@ def cornell_box():
     '''
     Returns a dictionary containing a description of the Cornell Box scene.
     '''
-    T = mi.ScalarTransform4f
+    T = mi.scalar_rgb.Transform4f
     return {
         'type': 'scene',
         'integrator': {
@@ -693,3 +697,20 @@ def cornell_box():
             }
         },
     }
+
+
+@contextlib.contextmanager
+def variant_context(*args) -> None:
+    '''
+    Temporarily override the active variant. Arguments are interpreted as
+    they are in :func:`mitsuba.set_variant`.
+    '''
+
+    old_variant = mi.variant()
+    try:
+        mi.set_variant(*args)
+        yield
+    except Exception:
+        raise
+    finally:
+        mi.set_variant(old_variant)

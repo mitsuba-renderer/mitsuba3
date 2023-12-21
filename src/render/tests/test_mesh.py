@@ -899,60 +899,302 @@ def test20_write_xml(variants_all_rgb, tmp_path):
 
 
 @fresolver_append_path
-def test21_boundary_test_sh_normal(variant_llvm_ad_rgb):
-    scene = mi.load_dict({
-        'type': 'scene',
-        'mesh': {
-            'type' : 'obj',
-            'filename' : 'resources/data/common/meshes/sphere.obj'
-        }
+def test22_write_stream(variants_all_rgb, tmp_path):
+    filepath = str(tmp_path / 'test_mesh-test23_write_stream.ply')
+    mesh = mi.load_dict({
+        'type': 'ply',
+        'filename': 'resources/data/tests/ply/rectangle_normals_uv.ply'
     })
+    params = mi.traverse(mesh)
+    fs = mi.FileStream(filepath, mi.FileStream.ETruncReadWrite)
+    mesh.write_ply(fs)
+    fs.close()
 
-    # Check boundary test value at silhouette
-    ray = mi.Ray3f([1.0, 0, -2], [0, 0, 1], 0.0, [])
-    B = scene.ray_intersect(ray, mi.RayFlags.BoundaryTest, True).boundary_test
+    mesh_saved = mi.load_dict({
+        'type': 'ply',
+        'filename': filepath
+    })
+    params_saved = mi.traverse(mesh_saved)
+    assert dr.allclose(params_saved['vertex_positions'], params['vertex_positions'])
 
-    assert dr.all(B < 1e-6)
-
-    # Check that boundary test value increase as we move away from boundary
-    N = 10
-    prev = 0.0
-    for x in range(N):
-        ray = mi.Ray3f([1.0 - float(x) / N, 0, -2], [0, 0, 1], 0.0, [])
-        B = scene.ray_intersect(ray, mi.RayFlags.BoundaryTest, True).boundary_test
-        assert dr.all(prev < B)
-        prev = B
+    ms = mi.MemoryStream()
+    fs = mi.FileStream(filepath, mi.FileStream.ERead)
+    mesh.write_ply(ms)
+    assert fs.size() == ms.size()
 
 
 @fresolver_append_path
-def test22_boundary_test_face_normal(variants_all_ad_rgb):
-    scene = mi.load_dict({
-        'type': 'scene',
-        'mesh': {
-            'type' : 'obj',
-            'filename' : 'resources/data/common/meshes/rectangle.obj',
-            'face_normals': True
-        }
+def test23_texture_attributes(variants_all_rgb):
+
+    texture = mi.load_dict({
+        "type": "bitmap",
+        "filename" : "resources/data/common/textures/flower.bmp",
     })
 
-    # Check boundary test value when no intersection
-    ray = mi.Ray3f([2, 0, -1], [0, 0, 1], 0.0, [])
-    si = scene.ray_intersect(ray, mi.RayFlags.BoundaryTest, True)
-    assert dr.all(~si.is_valid())
-    B = si.boundary_test
-    assert dr.all(B > 1e6)
+    mesh = mi.load_dict({
+        "type" : "obj",
+        "id" : "rect",
+        "filename" : "resources/data/common/meshes/rectangle.obj",
+        "attribute_1": texture
+    })
 
-    # Check boundary test value close to silhouette
-    ray = mi.Ray3f([0.9999, 0.9999, -1], [0, 0, 1], 0.0, [])
-    B = scene.ray_intersect(ray, mi.RayFlags.BoundaryTest, True).boundary_test
-    assert dr.all(B < 1e-3)
+    assert dr.all(mesh.has_attribute('attribute_1'))
+    assert not dr.any(mesh.has_attribute('foo'))
 
-    # Check boundary test value close to silhouette
-    ray = mi.Ray3f([0.99999, 0.0, -1], [0, 0, 1], 0.0, [])
-    B = scene.ray_intersect(ray, mi.RayFlags.BoundaryTest, True).boundary_test
-    assert dr.all(B < 1e-4)
+    si = mi.SurfaceInteraction3f()
+    si.uv = mi.Point2f(0.5)
 
-    # Check boundary test value close far from silhouette
-    ray = mi.Ray3f([0.9, 0.0, -1], [0, 0, 1], 0.0, [])
-    B = scene.ray_intersect(ray, mi.RayFlags.BoundaryTest, True).boundary_test
-    assert dr.all(B > 1e-1)
+    assert dr.allclose(mesh.eval_attribute('attribute_1', si), texture.eval(si))
+
+
+@fresolver_append_path
+def test24_flip_tex_coords_obj(variants_all_rgb, tmp_path):
+    mesh = mi.load_dict({
+        'type': 'obj',
+        'filename': 'resources/data/tests/obj/rectangle_uv.obj',
+        'flip_tex_coords': False
+    })
+    params = mi.traverse(mesh)
+
+    mesh_flipped = mi.load_dict({
+        'type': 'obj',
+        'filename': 'resources/data/tests/obj/rectangle_uv.obj',
+        'flip_tex_coords': True
+    })
+    params_flipped = mi.traverse(mesh_flipped)
+
+    uv = params['vertex_texcoords'].numpy()
+    uv_flipped = params_flipped['vertex_texcoords'].numpy()
+
+    assert (uv[::2] == uv_flipped[::2]).all()
+    assert (uv[1::2] == 1 - uv_flipped[1::2]).all()
+
+
+@fresolver_append_path
+def test25_flip_tex_coords_ply(variants_all_rgb, tmp_path):
+    mesh = mi.load_dict({
+        'type': 'ply',
+        'filename': 'resources/data/tests/ply/rectangle_uv.ply',
+        'flip_tex_coords': False
+    })
+    params = mi.traverse(mesh)
+
+    mesh_flipped = mi.load_dict({
+        'type': 'ply',
+        'filename': 'resources/data/tests/ply/rectangle_uv.ply',
+        'flip_tex_coords': True
+    })
+    params_flipped = mi.traverse(mesh_flipped)
+
+    uv = params['vertex_texcoords'].numpy()
+    uv_flipped = params_flipped['vertex_texcoords'].numpy()
+
+    assert (uv[::2] == uv_flipped[::2]).all()
+    assert (uv[1::2] == 1 - uv_flipped[1::2]).all()
+
+
+@fresolver_append_path
+def test26_sample_silhouette_wrong_type(variants_all_rgb):
+    mesh = mi.load_dict({
+        "type" : "ply",
+        "filename" : "resources/data/tests/ply/triangle.ply",
+        "face_normals" : True
+    })
+    ss = mesh.sample_silhouette([0.1, 0.2, 0.3],
+                                mi.DiscontinuityFlags.InteriorType)
+
+    assert ss.discontinuity_type == mi.DiscontinuityFlags.Empty.value
+
+
+@fresolver_append_path
+def test27_sample_silhouette(variants_vec_rgb):
+    if not dr.is_diff_v(mi.Float):
+        pytest.skip("Only relevant in AD-enabled variants!")
+
+    mesh = mi.load_dict({
+        "type" : "ply",
+        "filename" : "resources/data/tests/ply/triangle.ply",
+        "face_normals" : True
+    })
+    mesh_ptr = mi.ShapePtr(mesh)
+
+    params = mi.traverse(mesh)
+    dr.enable_grad(params['vertex_positions'])
+    params.update()
+
+    x = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    samples = mi.Point3f(dr.meshgrid(x, y, z))
+
+    # Sphere
+    flags = mi.DiscontinuityFlags.PerimeterType | mi.DiscontinuityFlags.DirectionSphere
+    ss = mesh.sample_silhouette(samples, flags)
+
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
+    assert dr.all(dr.eq(ss.p.x, 0))
+    assert dr.all(
+        (ss.p.y <= 1) & (ss.p.y >= 0) &
+        (ss.p.z <= 1) & (ss.p.z >= 0)
+    )
+    assert dr.all(dr.eq(ss.flags, flags))
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    perimeter = 2 + dr.sqrt(2)
+    assert dr.allclose(ss.pdf, dr.rcp(perimeter) * dr.inv_four_pi)
+
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, mesh_ptr))
+
+    # Lune
+    flags = mi.DiscontinuityFlags.PerimeterType | mi.DiscontinuityFlags.DirectionLune
+    ss = mesh.sample_silhouette(samples, flags)
+
+    valid = ss.is_valid()
+    ss = dr.gather(mi.SilhouetteSample3f, ss, dr.compress(valid))
+
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
+    assert dr.all(dr.eq(ss.p.x, 0))
+    assert dr.all(
+        (ss.p.y <= 1) & (ss.p.y >= 0) &
+        (ss.p.z <= 1) & (ss.p.z >= 0)
+    )
+    assert dr.all(dr.eq(ss.flags, flags))
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    perimeter = 2 + dr.sqrt(2)
+    assert dr.allclose(ss.pdf, dr.rcp(perimeter) * dr.inv_four_pi)
+
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, mesh_ptr))
+
+
+@fresolver_append_path
+def test28_sample_silhouette_bijective(variants_vec_rgb):
+    if not dr.is_diff_v(mi.Float):
+        pytest.skip("Only relevant in AD-enabled variants!")
+
+    mesh = mi.load_dict({
+        "type" : "ply",
+        "filename" : "resources/data/common/meshes/bunny_lowres.ply",
+    })
+
+    params = mi.traverse(mesh)
+    dr.enable_grad(params['vertex_positions'])
+    params.update()
+
+    x = dr.linspace(mi.Float, 1e-3, 1-1e-3, 10)
+    y = dr.linspace(mi.Float, 1e-3, 1-1e-3, 10)
+    z = dr.linspace(mi.Float, 1e-3, 1-1e-3, 10)
+    samples = mi.Point3f(dr.meshgrid(x, y, z))
+
+    # Sphere
+    flags = mi.DiscontinuityFlags.PerimeterType | mi.DiscontinuityFlags.DirectionSphere
+    ss = mesh.sample_silhouette(samples, flags)
+    out = mesh.invert_silhouette_sample(ss)
+    valid = ss.is_valid()
+    samples_valid = dr.gather(mi.Point3f, samples, dr.compress(valid))
+    out_valid = dr.gather(mi.Point3f, out, dr.compress(valid))
+
+    assert dr.allclose(samples_valid, out_valid, atol=1e-7)
+
+    # Lune
+    flags = mi.DiscontinuityFlags.PerimeterType | mi.DiscontinuityFlags.DirectionLune
+    ss = mesh.sample_silhouette(samples, flags)
+    out = mesh.invert_silhouette_sample(ss)
+    valid = ss.is_valid()
+    samples_valid = dr.gather(mi.Point3f, samples, dr.compress(valid))
+    out_valid = dr.gather(mi.Point3f, out, dr.compress(valid))
+
+    assert dr.allclose(samples_valid.x, out_valid.x, atol=1e-7)
+    assert dr.allclose(samples_valid.y, out_valid.y, atol=1e-4) # Lune sampling is not numerically robust
+    assert dr.allclose(samples_valid.z, out_valid.z, atol=1e-7)
+
+
+@fresolver_append_path
+def test29_discontinuity_types(variants_vec_rgb):
+    mesh = mi.load_dict({
+        "type" : "ply",
+        "filename" : "resources/data/tests/ply/triangle.ply",
+        "face_normals" : True
+    })
+
+    types = mesh.silhouette_discontinuity_types()
+    assert not mi.has_flag(types, mi.DiscontinuityFlags.InteriorType)
+    assert mi.has_flag(types, mi.DiscontinuityFlags.PerimeterType)
+
+
+@fresolver_append_path
+def test30_differential_motion(variants_vec_rgb):
+    if not dr.is_diff_v(mi.Float):
+        pytest.skip("Only relevant in AD-enabled variants!")
+
+    mesh = mi.load_dict({
+        "type" : "ply",
+        "filename" : "resources/data/common/meshes/bunny_lowres.ply",
+    })
+    params = mi.traverse(mesh)
+
+    theta = mi.Point3f(0.0)
+    dr.enable_grad(theta)
+    key = 'vertex_positions'
+    positions = dr.unravel(mi.Point3f, params[key])
+    translation = mi.Transform4f.translate([theta.x, 2 * theta.y, 3 * theta.z])
+    positions = translation @ positions
+    params[key] = dr.ravel(positions)
+    params.update()
+
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.prim_index = 0
+    si.p = mi.Point3f(1, 0, 0) # doesn't matter
+    si.uv = mi.Point2f(0.5, 0.5)
+
+    p_diff = mesh.differential_motion(si)
+    dr.forward(theta)
+    v = dr.grad(p_diff)
+
+    assert dr.allclose(p_diff, si.p)
+    assert dr.allclose(v, [1.0, 2.0, 3.0])
+
+
+@fresolver_append_path
+def test31_primitive_silhouette_projection(variants_vec_rgb):
+    if not dr.is_diff_v(mi.Float):
+        pytest.skip("Only relevant in AD-enabled variants!")
+
+    mesh = mi.load_dict({
+        "type" : "ply",
+        "filename" : "resources/data/tests/ply/rectangle_uv.ply",
+    })
+    mesh_ptr = mi.ShapePtr(mesh)
+    params = mi.traverse(mesh)
+
+    key = 'vertex_positions'
+    dr.enable_grad(params[key])
+    params.update()
+
+    u = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    v = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    uv = mi.Point2f(dr.meshgrid(u, v))
+    si = mesh.eval_parameterization(uv)
+
+    viewpoint = mi.Point3f(0, 0, 5)
+
+    sample = dr.linspace(mi.Float, 1e-6, 1-1e-6, dr.width(uv))
+    ss = mesh.primitive_silhouette_projection(
+        viewpoint, si, mi.DiscontinuityFlags.PerimeterType, sample, si.is_valid())
+
+    valid = ss.is_valid()
+    ss = dr.gather(mi.SilhouetteSample3f, ss, dr.compress(valid))
+
+    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array_v(mi.UInt32, mesh_ptr))
+
+
+@fresolver_append_path
+def test32_shape_type(variant_scalar_rgb):
+    mesh = mi.load_dict({
+        "type" : "ply",
+        "filename" : "resources/data/tests/ply/rectangle_uv.ply",
+    })
+    assert mesh.shape_type() == mi.ShapeType.Mesh.value;

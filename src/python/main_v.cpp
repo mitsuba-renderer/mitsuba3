@@ -97,6 +97,7 @@ MI_PY_DECLARE(PreliminaryIntersection);
 MI_PY_DECLARE(Medium);
 MI_PY_DECLARE(mueller);
 MI_PY_DECLARE(MicrofacetDistribution);
+MI_PY_DECLARE(MicroflakeDistribution);
 #if defined(MI_ENABLE_CUDA)
 MI_PY_DECLARE(OptixDenoiser);
 #endif // defined(MI_ENABLE_CUDA)
@@ -106,6 +107,7 @@ MI_PY_DECLARE(DirectionSample);
 MI_PY_DECLARE(Sampler);
 MI_PY_DECLARE(Scene);
 MI_PY_DECLARE(Sensor);
+MI_PY_DECLARE(SilhouetteSample);
 MI_PY_DECLARE(Shape);
 MI_PY_DECLARE(ShapeKDTree);
 MI_PY_DECLARE(srgb);
@@ -185,6 +187,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MI_PY_IMPORT(MediumInteraction);
     MI_PY_IMPORT(PreliminaryIntersection);
     MI_PY_IMPORT(PositionSample);
+    MI_PY_IMPORT(SilhouetteSample);
     MI_PY_IMPORT(DirectionSample);
     MI_PY_IMPORT(BSDFSample);
     MI_PY_IMPORT(BSDF);
@@ -194,6 +197,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MI_PY_IMPORT(Integrator);
     MI_PY_IMPORT_SUBMODULE(mueller);
     MI_PY_IMPORT(MicrofacetDistribution);
+    MI_PY_IMPORT(MicroflakeDistribution);
 #if defined(MI_ENABLE_CUDA)
     MI_PY_IMPORT(OptixDenoiser);
 #endif // defined(MI_ENABLE_CUDA)

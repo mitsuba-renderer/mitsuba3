@@ -41,6 +41,11 @@ Wavefront OBJ mesh loader (:monosp:`obj`)
    - Is the mesh inverted, i.e. should the normal vectors be flipped? (Default:|false|, i.e.
      the normals point outside)
 
+ * - to_world
+   - |transform|
+   - Specifies an optional linear object-to-world transformation.
+     (Default: none, i.e. object space = world space)
+
  * - vertex_count
    - |int|
    - Total number of vertices
@@ -75,11 +80,6 @@ Wavefront OBJ mesh loader (:monosp:`obj`)
    - :paramtype:`float[]`
    - Mesh attribute buffer (flatten)
    - |exposed|, |differentiable|
-
- * - to_world
-   - |transform|
-   - Specifies an optional linear object-to-world transformation.
-     (Default: none, i.e. object space = world space)
 
 This plugin implements a simple loader for Wavefront OBJ files. It handles
 meshes containing triangles and quadrilaterals, and it also imports vertex normals
@@ -147,7 +147,7 @@ public:
 
     OBJMesh(const Properties &props) : Base(props) {
         /* Causes all texture coordinates to be vertically flipped.
-           Enabled by default, for consistence with the Mitsuba 1 behavior. */
+           Enabled by default, for consistency with the Mitsuba 1 behavior. */
         bool flip_tex_coords = props.get<bool>("flip_tex_coords", true);
 
         auto fr = Thread::thread()->file_resolver();

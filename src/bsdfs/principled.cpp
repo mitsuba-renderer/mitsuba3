@@ -173,7 +173,7 @@ material:
         'sheen': 0.3,
         'sheen_tint': 0.2,
         'clearcoat': 0.6,
-        'clearcoat_glass': 0.3,
+        'clearcoat_gloss': 0.3,
         'spec_trans': 0.4
 
 All of the parameters except sampling rates and `eta` should take values

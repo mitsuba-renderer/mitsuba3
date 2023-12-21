@@ -34,6 +34,11 @@ Disk (:monosp:`disk`)
      permitted! (Default: none, i.e. object space = world space)
    - |exposed|, |differentiable|, |discontinuous|
 
+ * - silhouette_sampling_weight
+   - |float|
+   - Weight associated with this shape when sampling silhoeuttes in the scene. (Default: 1)
+   - |exposed|
+
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/shape_disk.jpg
    :caption: Basic example
@@ -81,10 +86,12 @@ The following XML snippet instantiates an example of a textured disk shape:
 template <typename Float, typename Spectrum>
 class Disk final : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance, initialize,
-                   mark_dirty, get_children_string, parameters_grad_enabled)
+    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance,
+                   m_discontinuity_types, m_shape_type, initialize, mark_dirty,
+                   get_children_string, parameters_grad_enabled)
     MI_IMPORT_TYPES()
 
+    using typename Base::ScalarIndex;
     using typename Base::ScalarSize;
 
     Disk(const Properties &props) : Base(props) {
@@ -92,6 +99,12 @@ public:
             m_to_world =
                 m_to_world.scalar() *
                 ScalarTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
+
+        m_discontinuity_types = (uint32_t) DiscontinuityFlags::PerimeterType;
+        dr::set_attr(this, "silhouette_discontinuity_types", m_discontinuity_types);
+
+        m_shape_type = ShapeType::Disk;
+        dr::set_attr(this, "shape_type", m_shape_type);
 
         update();
         initialize();
@@ -134,15 +147,17 @@ public:
 
 
     ScalarBoundingBox3f bbox() const override {
-        ScalarBoundingBox3f bbox;
         ScalarTransform4f to_world = m_to_world.scalar();
 
-        bbox.expand(to_world.transform_affine(ScalarPoint3f(-1.f, -1.f, 0.f)));
-        bbox.expand(to_world.transform_affine(ScalarPoint3f(-1.f,  1.f, 0.f)));
-        bbox.expand(to_world.transform_affine(ScalarPoint3f( 1.f, -1.f, 0.f)));
-        bbox.expand(to_world.transform_affine(ScalarPoint3f( 1.f,  1.f, 0.f)));
+        ScalarPoint3f c = to_world * ScalarPoint3f(0.f, 0.f, 0.f);
+        ScalarVector3f u = to_world * ScalarVector3f(1.f, 0.f, 0.f);
+        ScalarVector3f v = to_world * ScalarVector3f(0.f, 1.f, 0.f);
+        ScalarVector3f e = dr::sqrt(dr::sqr(u) + dr::sqr(v));
 
-        return bbox;
+        return ScalarBoundingBox3f(
+            dr::minimum(c - e, c + e),
+            dr::maximum(c - e, c + e)
+        );
     }
 
     Float surface_area() const override {
@@ -192,7 +207,7 @@ public:
 
         Ray3f ray(p + m_frame.n, -m_frame.n, 0, Wavelength(0));
 
-        PreliminaryIntersection3f pi = ray_intersect_preliminary(ray, active);
+        PreliminaryIntersection3f pi = ray_intersect_preliminary(ray, 0, active);
         active &= pi.is_valid();
 
         if (dr::none_or<false>(active))
@@ -209,6 +224,165 @@ public:
     // =============================================================
 
     // =============================================================
+    //! @{ \name Silhouette sampling routines and other utilities
+    // =============================================================
+
+    SilhouetteSample3f sample_silhouette(const Point3f &sample,
+                                         uint32_t flags,
+                                         Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        if (!has_flag(flags, DiscontinuityFlags::PerimeterType))
+            return dr::zeros<SilhouetteSample3f>();
+
+        const Transform4f& to_world = m_to_world.value();
+        SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
+
+        /// Sample a point on the shape surface
+        ss.uv = Point2f(1.f, sample.x());
+        Float theta = sample.x() * dr::TwoPi<Float>;
+        Float sin_theta, cos_theta;
+        std::tie(sin_theta, cos_theta) = dr::sincos(theta);
+        Point3f local_p = Point3f(cos_theta, sin_theta, 0.f);
+        ss.p = to_world.transform_affine(Point3f(local_p.x(), local_p.y(), 0.f));
+
+        /// Sample a tangential direction at the point
+        ss.d = warp::square_to_uniform_sphere(Point2f(sample.y(), sample.z()));
+
+        /// Fill other fields
+        ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
+        ss.flags = flags;
+        ss.silhouette_d  = dr::normalize(to_world.transform_affine(
+            Vector3f(local_p.y(), -local_p.x(), 0.f)));
+        Normal3f frame_n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
+
+        // Normal direction `ss.n` must point outwards
+        Vector3f inward_dir = -local_p;
+        inward_dir = to_world.transform_affine(inward_dir);
+        dr::masked(frame_n, dr::dot(inward_dir, frame_n) > 0.f) *= -1.f;
+        ss.n = frame_n;
+
+        // Arc-length ratio
+        ss.pdf = dr::InvTwoPi<Float> *
+                 dr::rcp(dr::norm(to_world.transform_affine(
+                     Vector3f(local_p.y(), -local_p.x(), 0.f))));
+        ss.pdf *= warp::square_to_uniform_sphere_pdf(ss.d);
+        ss.foreshortening = dr::norm(dr::cross(ss.d, ss.silhouette_d));
+        ss.shape = this;
+
+        return ss;
+    }
+
+    Point3f invert_silhouette_sample(const SilhouetteSample3f &ss,
+                                     Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        Point3f sample = dr::zeros<Point3f>(dr::width(ss));
+
+        sample.x() = ss.uv.y();
+        Point2f sample_yz = warp::uniform_sphere_to_square(ss.d);
+        sample.y() = sample_yz.x();
+        sample.z() = sample_yz.y();
+
+        return sample;
+    }
+
+    Point3f differential_motion(const SurfaceInteraction3f &si,
+                         Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        if constexpr (!dr::is_diff_v<Float>) {
+            return si.p;
+        } else {
+            Point2f uv = dr::detach(si.uv);
+
+            Float theta = uv.y() * dr::TwoPi<Float>;
+            Float sin_theta, cos_theta;
+            std::tie(sin_theta, cos_theta) = dr::sincos(theta);
+            Point3f local  = uv.x() * Point3f(cos_theta, sin_theta, 0.f);
+            Point3f p_diff = m_to_world.value().transform_affine(local);
+
+            return dr::replace_grad(si.p, p_diff);
+        }
+    }
+
+    SilhouetteSample3f primitive_silhouette_projection(const Point3f &viewpoint,
+                                                       const SurfaceInteraction3f &si,
+                                                       uint32_t flags,
+                                                       Float /*sample*/,
+                                                       Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        if (!has_flag(flags, DiscontinuityFlags::PerimeterType))
+            return dr::zeros<SilhouetteSample3f>();
+
+        const Transform4f &to_world = m_to_world.value();
+        SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
+
+        ss.uv = Point2f(1.f, si.uv.y());
+
+        Float theta = ss.uv.y() * dr::TwoPi<Float>;
+        Float sin_theta, cos_theta;
+        std::tie(sin_theta, cos_theta) = dr::sincos(theta);
+
+        Point3f local_p = Point3f(cos_theta, sin_theta, 0.f);
+
+        ss.p = to_world.transform_affine(local_p);
+        ss.d = dr::normalize(ss.p - viewpoint);
+
+        ss.silhouette_d  = dr::normalize(to_world.transform_affine(
+            Vector3f(local_p.y(), -local_p.x(), 0.f)));
+        Normal3f frame_n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
+
+        Vector3f inward_dir = -local_p;
+        inward_dir = to_world.transform_affine(inward_dir);
+        dr::masked(frame_n, dr::dot(inward_dir, frame_n) > 0.f) *= -1.f;
+        ss.n = frame_n;
+
+        ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
+        ss.flags = flags;
+        ss.shape = this;
+
+        return ss;
+    }
+
+    std::tuple<DynamicBuffer<UInt32>, DynamicBuffer<Float>>
+    precompute_silhouette(const ScalarPoint3f &/*viewpoint*/) const override {
+        DynamicBuffer<UInt32> indices(DiscontinuityFlags::PerimeterType);
+        DynamicBuffer<Float> weights(1.f);
+
+        return {indices, weights};
+    }
+
+    SilhouetteSample3f
+    sample_precomputed_silhouette(const Point3f &viewpoint,
+                                  UInt32 /*sample1*/,
+                                  Float sample,
+                                  Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        // Call `primitive_silhouette_projection` which uses `si.uv` to compute
+        // the silhouette point.
+
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        si.uv = Point2f(0.5f, sample);
+
+        uint32_t flags = (uint32_t) DiscontinuityFlags::PerimeterType;
+        SilhouetteSample3f ss = primitive_silhouette_projection(viewpoint, si, flags, 0.f, active);
+
+        Point3f local_p = m_to_object.value().transform_affine(ss.p);
+        // Arc-length ratio
+        ss.pdf = dr::InvTwoPi<Float> *
+                 dr::rcp(dr::norm(m_to_world.value().transform_affine(
+                     Vector3f(local_p.y(), -local_p.x(), 0.f))));
+
+        return ss;
+    }
+
+    //! @}
+    // =============================================================
+
+    // =============================================================
     //! @{ \name Ray tracing routines
     // =============================================================
 
@@ -216,6 +390,7 @@ public:
     std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
                dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray_,
+                                   ScalarIndex /*prim_index*/,
                                    dr::mask_t<FloatP> active) const {
         Transform<Point<FloatP, 4>> to_object;
         if constexpr (!dr::is_jit_v<FloatP>)
@@ -237,6 +412,7 @@ public:
 
     template <typename FloatP, typename Ray3fP>
     dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray_,
+                                     ScalarIndex /*prim_index*/,
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
@@ -300,7 +476,7 @@ public:
                    the traced ray, we first recompute the intersection distance
                    in a differentiable way (w.r.t. to the disk parameters) and
                    then compute the corresponding point along the ray. */
-                PreliminaryIntersection3f pi_d = ray_intersect_preliminary(ray, active);
+                PreliminaryIntersection3f pi_d = ray_intersect_preliminary(ray, 0, active);
                 si.t = dr::replace_grad(pi.t, pi_d.t);
                 si.p = ray(si.t);
                 prim_uv = dr::replace_grad(pi.prim_uv, pi_d.prim_uv);
@@ -316,8 +492,7 @@ public:
         si.t = dr::select(active, si.t, dr::Infinity<Float>);
 
         if (likely(has_flag(ray_flags, RayFlags::UV) ||
-                   has_flag(ray_flags, RayFlags::dPdUV) ||
-                   has_flag(ray_flags, RayFlags::BoundaryTest))) {
+                   has_flag(ray_flags, RayFlags::dPdUV))) {
             Float r = dr::norm(Point2f(prim_uv.x(), prim_uv.y())),
                   inv_r = dr::rcp(r);
 
@@ -341,14 +516,11 @@ public:
         si.shape    = this;
         si.instance = nullptr;
 
-        if (unlikely(has_flag(ray_flags, RayFlags::BoundaryTest)))
-            si.boundary_test = dr::abs(1.f - si.uv.x());
-
         return si;
     }
 
     bool parameters_grad_enabled() const override {
-        return dr::grad_enabled(m_to_world);
+        return dr::grad_enabled(m_to_world.value());
     }
 
 #if defined(MI_ENABLE_CUDA)
