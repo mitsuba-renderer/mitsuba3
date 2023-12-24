@@ -489,9 +489,9 @@ endif()
 
 # Copy shared libraries to Python folders (no rpath on Windows)
 if (MSVC AND MI_ENABLE_PYTHON)
-  add_custom_target(copy-targets ALL)
-
   set(COPY_TARGETS mitsuba ${MI_DEPEND} ${MI_PLUGIN_TARGETS})
+  add_custom_target(copy-targets ALL DEPENDS ${COPY_TARGETS})
+
   foreach(target ${COPY_TARGETS})
     get_target_property(TARGET_FOLDER ${target} FOLDER)
     if (TARGET_FOLDER STREQUAL "drjit")
