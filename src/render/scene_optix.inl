@@ -123,9 +123,9 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
         config.pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
     #else
         config.pipeline_compile_options.exceptionFlags =
-                OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW
-                | OPTIX_EXCEPTION_FLAG_TRACE_DEPTH
-                | OPTIX_EXCEPTION_FLAG_DEBUG;
+                OPTIX_EXCEPTION_FLAG_DEBUG |
+                OPTIX_EXCEPTION_FLAG_TRACE_DEPTH |
+                OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW;
     #endif
 
         unsigned int prim_flags = 0;
