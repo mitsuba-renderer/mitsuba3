@@ -311,11 +311,11 @@ endif()
 
 if (MI_ENABLE_OPTIX_DEBUG_VALIDATION)
   add_definitions(-DMI_ENABLE_OPTIX_DEBUG_VALIDATION)
-  set(DRJIT_ENABLE_OPTIX_DEBUG_VALIDATION ON CACHE BOOL "Drjit: OptiX debug and validation flags enabled." FORCE)
+  set(DRJIT_ENABLE_OPTIX_DEBUG_VALIDATION ON CACHE BOOL "Dr.Jit: OptiX debug and validation flags enabled." FORCE)
   message(STATUS "Mitsuba: OptiX debug and validation flags enabled.")
 else()
+  set(DRJIT_ENABLE_OPTIX_DEBUG_VALIDATION OFF CACHE BOOL "Dr.Jit: OptiX debug and validation flags disabled." FORCE)
   message(STATUS "Mitsuba: OptiX debug and validation flags disabled.")
-  set(DRJIT_ENABLE_OPTIX_DEBUG_VALIDATION OFF CACHE BOOL "Drjit: OptiX debug and validation flags disabled." FORCE)
 endif()
 
 if (MI_ENABLE_AUTODIFF)
