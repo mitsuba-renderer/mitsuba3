@@ -16,7 +16,9 @@ project(mitsuba
 
 # A number of Mitsuba 3 features (scripting, differentiable rendering, testing
 # infrastructure, etc.) are only available if Python bindings are built.
-option(MI_ENABLE_PYTHON "Build Python bindings for Mitsuba, Dr.Jit, and NanoGUI?" ON)
+
+#option(MI_ENABLE_PYTHON "Build Python bindings for Mitsuba, Dr.Jit, and NanoGUI?" ON)
+set(MI_ENABLE_PYTHON OFF CACHE BOOL "Dr.Jit: OptiX debug and validation flags disabled." FORCE)
 
 # Mitsuba 3 ships with its own ray tracing acceleration data structure. If
 # desired, Embree (which tends to be quite a bit faster) can be used instead.
