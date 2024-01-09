@@ -347,10 +347,10 @@ MuellerMatrix rotate_stokes_basis(const Vector3 &forward,
  *      Direction of travel for input Stokes vector (normalized)
  *
  * \param out_basis_current
- *      Current (normalized) input Stokes basis. Must be orthogonal to \c out_forward.
+ *      Current (normalized) output Stokes basis. Must be orthogonal to \c out_forward.
  *
  * \param out_basis_target
- *      Target (normalized) input Stokes basis. Must be orthogonal to \c out_forward.
+ *      Target (normalized) output Stokes basis. Must be orthogonal to \c out_forward.
  *
  * \return
  *      New Mueller matrix that operates from \c in_basis_target to \c out_basis_target.
