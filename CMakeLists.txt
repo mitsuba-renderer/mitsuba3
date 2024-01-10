@@ -498,7 +498,7 @@ if (NOT SKBUILD)
   endif()
 
   if (MI_ENABLE_AUTODIFF)
-    list(APPEND MI_DEPEND drjit-autodiff)
+    list(APPEND MI_DEPEND drjit-extra)
   endif()
 endif()
 
