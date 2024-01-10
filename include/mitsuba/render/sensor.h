@@ -147,7 +147,7 @@ public:
         Base::parameters_changed(keys);
     }
 
-    DRJIT_VCALL_REGISTER(Float, mitsuba::Sensor)
+    MI_CALL_REGISTER(Float, mitsuba::Sensor)
     MI_DECLARE_CLASS()
 protected:
     Sensor(const Properties &props);
@@ -311,17 +311,17 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Dr.Jit support for vectorized function calls
 // -----------------------------------------------------------------------
 
-DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Sensor)
-    DRJIT_VCALL_METHOD(sample_ray)
-    DRJIT_VCALL_METHOD(sample_ray_differential)
-    DRJIT_VCALL_METHOD(sample_direction)
-    DRJIT_VCALL_METHOD(pdf_direction)
-    DRJIT_VCALL_METHOD(eval_direction)
-    DRJIT_VCALL_METHOD(sample_position)
-    DRJIT_VCALL_METHOD(pdf_position)
-    DRJIT_VCALL_METHOD(eval)
-    DRJIT_VCALL_METHOD(sample_wavelengths)
-    DRJIT_VCALL_GETTER(flags, uint32_t)
-    DRJIT_VCALL_GETTER(shape, const typename Class::Shape *)
-    DRJIT_VCALL_GETTER(medium, const typename Class::Medium *)
-DRJIT_VCALL_TEMPLATE_END(mitsuba::Sensor)
+DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Sensor)
+    DRJIT_CALL_METHOD(sample_ray)
+    DRJIT_CALL_METHOD(sample_ray_differential)
+    DRJIT_CALL_METHOD(sample_direction)
+    DRJIT_CALL_METHOD(pdf_direction)
+    DRJIT_CALL_METHOD(eval_direction)
+    DRJIT_CALL_METHOD(sample_position)
+    DRJIT_CALL_METHOD(pdf_position)
+    DRJIT_CALL_METHOD(eval)
+    DRJIT_CALL_METHOD(sample_wavelengths)
+    DRJIT_CALL_GETTER(flags)
+    DRJIT_CALL_GETTER(shape)
+    DRJIT_CALL_GETTER(medium)
+DRJIT_CALL_END(mitsuba::Sensor)

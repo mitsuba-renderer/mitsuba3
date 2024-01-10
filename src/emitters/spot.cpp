@@ -100,7 +100,6 @@ public:
                 Throw("The parameter 'texture' must be spatially varying (e.g. bitmap type)!");
             m_flags |= +EmitterFlags::SpatiallyVarying;
         }
-        dr::set_attr(this, "flags", m_flags);
 
         ScalarFloat cutoff_angle = props.get<ScalarFloat>("cutoff_angle", 20.0f);
         m_beam_width   = props.get<ScalarFloat>("beam_width", cutoff_angle * 3.0f / 4.0f);

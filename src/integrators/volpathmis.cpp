@@ -105,7 +105,7 @@ public:
                      Medium, MediumPtr, PhaseFunctionContext)
 
     using WeightMatrix =
-        std::conditional_t<SpectralMis, dr::Matrix<Float, dr::array_size_v<UnpolarizedSpectrum>>,
+        std::conditional_t<SpectralMis, dr::Matrix<Float, dr::size_v<UnpolarizedSpectrum>>,
                            UnpolarizedSpectrum>;
 
     VolpathMisIntegratorImpl(const Properties &props) : Base(props) {}
@@ -155,7 +155,7 @@ public:
 
         UInt32 channel = 0;
         if (is_rgb_v<Spectrum>) {
-            uint32_t n_channels = (uint32_t) dr::array_size_v<Spectrum>;
+            uint32_t n_channels = (uint32_t) dr::size_v<Spectrum>;
             channel = (UInt32) dr::minimum(sampler->next_1d(active) * n_channels, n_channels - 1);
         }
 
@@ -509,7 +509,7 @@ public:
         // components and multiplies them to the current values in p_over_f
         if constexpr (SpectralMis) {
             DRJIT_MARK_USED(channel);
-            for (size_t i = 0; i < dr::array_size_v<Spectrum>; ++i) {
+            for (size_t i = 0; i < dr::size_v<Spectrum>; ++i) {
                 UnpolarizedSpectrum ratio = p / f.entry(i);
                 ratio = dr::select(dr::isfinite(ratio), ratio, 0.f);
                 ratio *= p_over_f[i];
@@ -525,7 +525,7 @@ public:
 
     UnpolarizedSpectrum mis_weight(const WeightMatrix& p_over_f) const {
         if constexpr (SpectralMis) {
-            constexpr size_t n = dr::array_size_v<Spectrum>;
+            constexpr size_t n = dr::size_v<Spectrum>;
             UnpolarizedSpectrum weight(0.0f);
             for (size_t i = 0; i < n; ++i) {
                 Float sum = dr::sum(p_over_f[i]);
@@ -542,7 +542,7 @@ public:
     UnpolarizedSpectrum mis_weight(const WeightMatrix& p_over_f1, const WeightMatrix& p_over_f2) const {
         UnpolarizedSpectrum weight(0.0f);
         if constexpr (SpectralMis) {
-            constexpr size_t n = dr::array_size_v<Spectrum>;
+            constexpr size_t n = dr::size_v<Spectrum>;
             auto sum_matrix = p_over_f1 + p_over_f2;
             for (size_t i = 0; i < n; ++i) {
                 Float sum = dr::sum(sum_matrix[i]);

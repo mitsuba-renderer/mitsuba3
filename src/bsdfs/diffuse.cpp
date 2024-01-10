@@ -90,7 +90,6 @@ public:
     SmoothDiffuse(const Properties &props) : Base(props) {
         m_reflectance = props.texture<Texture>("reflectance", .5f);
         m_flags = BSDFFlags::DiffuseReflection | BSDFFlags::FrontSide;
-        dr::set_attr(this, "flags", m_flags);
         m_components.push_back(m_flags);
     }
 

@@ -228,10 +228,10 @@ private:
         UInt32 k = dr::select((j % 2) > 0, j - 1, j + 1);
         UInt32 a_ij = (a_i0 + (j - 1) * a_i1) % m_resolution;
         UInt32 a_ik = (a_i0 + (k - 1) * a_i1) % m_resolution;
-        Mask j_is_zero = dr::eq(j, 0u);
+        Mask j_is_zero = j == 0u;
         dr::masked(a_ij, j_is_zero) = a_i0;
         dr::masked(a_ik, j_is_zero) = a_i1;
-        Mask j_is_one  = dr::eq(j, 1u);
+        Mask j_is_one  = j == 1u;
         dr::masked(a_ij, j_is_one)  = a_i1;
         dr::masked(a_ik, j_is_one)  = a_i0;
 

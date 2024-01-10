@@ -159,12 +159,12 @@ template <typename Float_> struct Frame {
 
     /// Equality test
     Mask operator==(const Frame &frame) const {
-        return dr::all(dr::eq(frame.s, s) && dr::eq(frame.t, t) && dr::eq(frame.n, n));
+        return dr::all((frame.s == s) && (frame.t == t) && (frame.n == n));
     }
 
     /// Inequality test
     Mask operator!=(const Frame &frame) const {
-        return dr::any(dr::neq(frame.s, s) || dr::neq(frame.t, t) || dr::neq(frame.n, n));
+        return dr::any((frame.s != s) || (frame.t != t) || (frame.n != n));
     }
 
     DRJIT_STRUCT(Frame, s, t, n)

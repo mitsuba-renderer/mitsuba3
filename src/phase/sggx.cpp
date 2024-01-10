@@ -65,7 +65,6 @@ public:
         m_ndf_params = props.volume<Volume>("S");
         m_flags =
             PhaseFunctionFlags::Anisotropic | PhaseFunctionFlags::Microflake;
-        dr::set_attr(this, "flags", m_flags);
     }
 
     void traverse(TraversalCallback *callback) override {

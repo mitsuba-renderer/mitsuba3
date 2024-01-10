@@ -101,10 +101,8 @@ public:
                 ScalarTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
 
         m_discontinuity_types = (uint32_t) DiscontinuityFlags::PerimeterType;
-        dr::set_attr(this, "silhouette_discontinuity_types", m_discontinuity_types);
 
         m_shape_type = ShapeType::Disk;
-        dr::set_attr(this, "shape_type", m_shape_type);
 
         update();
         initialize();

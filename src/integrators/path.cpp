@@ -126,20 +126,25 @@ public:
            passing the '-W' command line flag to the mitsuba binary or
            enabling/disabling the JitFlag.LoopRecord bit in Dr.Jit.
 
-           The first argument identifies the loop by name, which is helpful for
-           debugging. The subsequent list registers all variables that encode
+           The first argument registers all variables that encode
            the loop state variables. This is crucial: omitting a variable may
            lead to undefined behavior. */
-        dr::Loop<Bool> loop("Path Tracer", sampler, ray, throughput, result,
-                            eta, depth, valid_ray, prev_si, prev_bsdf_pdf,
-                            prev_bsdf_delta, active);
+        std::tie(ray, throughput, result, eta, depth, 
+            valid_ray, prev_si, prev_bsdf_pdf,prev_bsdf_delta, active) =
+        dr::while_loop(
+            std::make_tuple(ray, throughput, result, eta, depth, 
+            valid_ray, prev_si, prev_bsdf_pdf,prev_bsdf_delta, active),
 
-        /* Inform the loop about the maximum number of loop iterations.
-           This accelerates wavefront-style rendering by avoiding costly
-           synchronization points that check the 'active' flag. */
-        loop.set_max_iterations(m_max_depth);
+            [](const Ray3f&, const Spectrum&, const Spectrum&, const Float&, 
+               const UInt32& depth, const Mask&, const Interaction3f&, 
+               const Float&, const Bool&, const Bool& active) {
+                return active;
+            },
+            [](Ray3f& ray, Spectrum& throughput, Spectrum& result, 
+                Float& eta, UInt32& depth, Mask& valid_ray, 
+                Interaction3f& prev_si, Float& prev_bsdf_pdf, 
+                Bool& prev_bsdf_delta, Bool& active) {
 
-        while (loop(active)) {
             /* dr::Loop implicitly masks all code in the loop using the 'active'
                flag, so there is no need to pass it to every function */
 
@@ -278,7 +283,7 @@ public:
 
             active = active_next && (!rr_active || rr_continue) &&
                      dr::neq(throughput_max, 0.f);
-        }
+        });
 
         return {
             /* spec  = */ dr::select(valid_ray, result, 0.f),

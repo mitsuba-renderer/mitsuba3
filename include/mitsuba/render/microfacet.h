@@ -133,7 +133,7 @@ public:
             m_alpha_v = props.get<ScalarFloat>("alpha_v");
         }
 
-        if (alpha_u == 0.f || alpha_v == 0.f)
+        if (dr::slice(alpha_u == 0.f || alpha_v == 0.f))
             Log(Warn,
                 "Cannot create a microfacet distribution with alpha_u/alpha_v=0 (clamped to 10^-4). "
                 "Please use the corresponding smooth reflectance model to get zero roughness.");
@@ -164,11 +164,11 @@ public:
         if constexpr (dr::is_jit_v<Float>)
             return m_alpha_u.index() == m_alpha_v.index();
         else
-            return m_alpha_u == m_alpha_v;
+            return dr::all(m_alpha_u == m_alpha_v);
     }
 
     /// Is this an anisotropic microfacet distribution?
-    bool is_anisotropic() const { return m_alpha_u != m_alpha_v; }
+    bool is_anisotropic() const { return dr::slice(m_alpha_u != m_alpha_v); }
 
     /// Scale the roughness values by some constant
     void scale_alpha(Float value) {
@@ -355,7 +355,7 @@ public:
         }
 
         // Perpendicular incidence -- no shadowing/masking
-        dr::masked(result, dr::eq(xy_alpha_2, 0.f)) = 1.f;
+        dr::masked(result, xy_alpha_2 == 0.f) = 1.f;
 
         /* Ensure consistent orientation (can't see the back
            of the microfacet from the front and vice versa) */
@@ -391,7 +391,7 @@ public:
                           tan_theta_i * dr::exp(-dr::sqr(cot_theta_i));
 
             // Three Newton iterations
-            DRJIT_NOUNROLL for (size_t i = 0; i < 3; ++i) {
+            for (size_t i = 0; i < 3; ++i) {
                 Float slope = dr::erfinv(x),
                       value = 1.f + x + dr::InvSqrtPi<Float> * tan_theta_i *
                               dr::exp(-dr::sqr(slope)) - sample.x(),

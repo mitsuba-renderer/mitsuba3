@@ -71,7 +71,6 @@ public:
         m_flags = EmitterFlags::Surface | EmitterFlags::DeltaDirection;
         if (m_radiance->is_spatially_varying())
             m_flags |= +EmitterFlags::SpatiallyVarying;
-        dr::set_attr(this, "flags", m_flags);
     }
 
     void traverse(TraversalCallback *callback) override {

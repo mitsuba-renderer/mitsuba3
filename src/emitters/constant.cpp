@@ -64,7 +64,6 @@ public:
             Throw("Expected a non-spatially varying radiance spectra!");
 
         m_flags = +EmitterFlags::Infinite;
-        dr::set_attr(this, "flags", m_flags);
     }
 
     void traverse(TraversalCallback *callback) override {

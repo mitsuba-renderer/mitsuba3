@@ -103,7 +103,7 @@ Float smith_ggx1(const Vector<Float,3> &v, const Vector<Float,3> &wh,
             2.0f * dr::rcp(1.0f + dr::sqrt(1.0f + alpha_2 * tan_theta_2));
 
     // Perpendicular incidence -- no shadowing/masking
-    dr::masked(result, dr::eq(v.z(), 1.f)) = 1.f;
+    dr::masked(result, v.z() == 1.f) = 1.f;
     /* Ensure consistent orientation (can't see the back
        of the microfacet from the front and vice versa) */
     dr::masked(result, dr::dot(v, wh) * Frame3f::cos_theta(v) <= 0.f) = 0.f;

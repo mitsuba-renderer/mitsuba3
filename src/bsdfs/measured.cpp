@@ -81,7 +81,6 @@ public:
     Measured(const Properties &props) : Base(props) {
         m_components.push_back(BSDFFlags::GlossyReflection | BSDFFlags::FrontSide);
         m_flags = m_components[0];
-        dr::set_attr(this, "flags", m_flags);
 
         auto fs            = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
@@ -325,7 +324,7 @@ public:
         bs.sampled_component = 0;
 
         UnpolarizedSpectrum spec;
-        for (size_t i = 0; i < dr::array_size_v<UnpolarizedSpectrum>; ++i) {
+        for (size_t i = 0; i < dr::size_v<UnpolarizedSpectrum>; ++i) {
             Float params_spec[3] = { phi_i, theta_i,
                 is_spectral_v<Spectrum> ? si.wavelengths[i] : Float((float) i) };
             spec[i] = m_spectra.eval(sample, params_spec, active);
@@ -384,7 +383,7 @@ public:
         auto [sample, unused] = m_vndf.invert(u_m, params, active);
 
         UnpolarizedSpectrum spec;
-        for (size_t i = 0; i < dr::array_size_v<UnpolarizedSpectrum>; ++i) {
+        for (size_t i = 0; i < dr::size_v<UnpolarizedSpectrum>; ++i) {
             Float params_spec[3] = { phi_i, theta_i,
                 is_spectral_v<Spectrum> ? si.wavelengths[i] : Float((float) i) };
             spec[i] = m_spectra.eval(sample, params_spec, active);

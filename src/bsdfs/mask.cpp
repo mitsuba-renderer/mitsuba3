@@ -113,7 +113,6 @@ public:
         // The "transmission" BSDF component is at the last index.
         m_components.push_back(BSDFFlags::Null | BSDFFlags::FrontSide | BSDFFlags::BackSide);
         m_flags = m_nested_bsdf->flags() | m_components.back();
-        dr::set_attr(this, "flags", m_flags);
     }
 
     void traverse(TraversalCallback *callback) override {

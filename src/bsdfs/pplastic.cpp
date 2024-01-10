@@ -175,9 +175,8 @@ public:
         m_alpha_v = distr.alpha_v();
 
         m_flags = BSDFFlags::GlossyReflection | BSDFFlags::DiffuseReflection;
-        if (m_alpha_u != m_alpha_v)
+        if (dr::all(m_alpha_u != m_alpha_v))
             m_flags = m_flags | BSDFFlags::Anisotropic;
-        dr::set_attr(this, "flags", m_flags);
         m_flags = m_flags | BSDFFlags::FrontSide;
 
         m_components.clear();

@@ -22,7 +22,7 @@ NAMESPACE_BEGIN(mitsuba)
  * \tparam T The underlying point data type (e.g. \c Point2d)
  */
 template <typename Point_> struct BoundingBox {
-    static constexpr size_t Dimension = dr::array_size_v<Point_>;
+    static constexpr size_t Dimension = dr::size_v<Point_>;
     using Point  = Point_;
     using Value  = dr::value_t<Point>;
     using Scalar = dr::scalar_t<Point>;
@@ -53,12 +53,12 @@ template <typename Point_> struct BoundingBox {
 
     /// Test for equality against another bounding box
     bool operator==(const BoundingBox &bbox) const {
-        return dr::all_nested(dr::eq(min, bbox.min) && dr::eq(max, bbox.max));
+        return dr::all_nested((min == bbox.min) && (max == bbox.max));
     }
 
     /// Test for inequality against another bounding box
     bool operator!=(const BoundingBox &bbox) const {
-        return dr::any_nested(dr::neq(min, bbox.min) || dr::neq(max, bbox.max));
+        return dr::any_nested((min != bbox.min) || (max != bbox.max));
     }
 
     /**
@@ -76,7 +76,7 @@ template <typename Point_> struct BoundingBox {
 
     /// Check whether this bounding box has collapsed to a point, line, or plane
     Mask collapsed() const {
-        return dr::any(dr::eq(min, max));
+        return dr::any(min == max);
     }
 
     /// Return the dimension index with the index associated side length

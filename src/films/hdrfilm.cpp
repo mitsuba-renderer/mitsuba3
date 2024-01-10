@@ -277,7 +277,7 @@ public:
         bool warn = !dr::is_jit_v<Float> && !is_spectral_v<Spectrum> &&
                     m_channels.size() <= 5;
 
-        bool default_config = size == ScalarVector2u(0);
+        bool default_config = dr::all(size == ScalarVector2u(0));
 
         return new ImageBlock(default_config ? m_crop_size : size,
                               default_config ? m_crop_offset : ScalarPoint2u(0),
@@ -365,7 +365,7 @@ public:
 
             // If luminance + alpha, shift alpha channel to skip the GB channels
             if (alpha && to_y)
-                values_idx[dr::eq(channel_idx, color_ch /* alpha */)] += 2;
+                values_idx[channel_idx == color_ch /* alpha */] += 2;
 
             Mask value_mask = true;
 
@@ -397,7 +397,7 @@ public:
             }
 
             // Perform the weight division unless the weight is zero
-            values /= dr::select(dr::eq(weight, 0.f), 1.f, weight);
+            values /= dr::select(weight == 0.f, 1.f, weight);
 
             size_t shape[3] = { (size_t) size.y(), (size_t) size.x(),
                                 target_ch };

@@ -34,7 +34,7 @@
 #include <mitsuba/core/traits.h>
 #include <mitsuba/core/fwd.h>
 #include <drjit/random.h>
-#include <drjit/loop.h>
+#include <drjit/while_loop.h>
 
 NAMESPACE_BEGIN(drjit)
 /// Prints the canonical representation of a PCG32 object.
@@ -80,7 +80,7 @@ std::pair<UInt32, UInt32> sample_tea_32(UInt32 v0, UInt32 v1, int rounds = 4) {
         "sample_tea_32(): template type should be a 32 bit unsigned integer!");
 
     UInt32 sum = 0;
-    DRJIT_NOUNROLL for (int i = 0; i < rounds; ++i) {
+    for (int i = 0; i < rounds; ++i) {
         sum += 0x9e3779b9;
         v0 += (dr::sl<4>(v1) + 0xa341316c) ^ (v1 + sum) ^ (dr::sr<5>(v1) + 0xc8013ea4);
         v1 += (dr::sl<4>(v0) + 0xad90777d) ^ (v0 + sum) ^ (dr::sr<5>(v0) + 0x7e95761e);
@@ -206,7 +206,7 @@ UInt32 permute(UInt32 index, uint32_t size, UInt32 seed, int rounds = 2) {
         UInt32 rand = sample_tea_32(index | bit, seed, rounds).first;
 
         // Perform the flip if 'bit' is set
-        dr::masked(index, dr::eq(rand & bit, bit)) = index ^ bit;
+        dr::masked(index, rand & (bit == bit)) = index ^ bit;
     }
 
     return index;
@@ -269,11 +269,18 @@ UInt32 permute_kensler(UInt32 index, uint32_t sample_count, UInt32 seed,
 
     if constexpr (dr::is_jit_v<UInt32>) {
         if (jit_flag(JitFlag::LoopRecord)) {
-            dr::Loop<dr::mask_t<UInt32>> loop("perm", active, index);
-            while (loop(dr::detach(active))) {
-                dr::masked(index, active) = body(index);
-                active &= (index >= sample_count);
-            }
+
+            std::tie(active, index) = dr::while_loop(
+                std::make_tuple(active, index),
+                [](const dr::mask_t<UInt32>& active, const UInt32&) {
+                    return dr::detach(active);
+                },
+                [body, sample_count](dr::mask_t<UInt32>& active, UInt32& index) {
+                    dr::masked(index, active) = body(index);
+                    active &= (index >= sample_count);
+                }
+            );
+
             return (index + seed) % sample_count;
         }
     }

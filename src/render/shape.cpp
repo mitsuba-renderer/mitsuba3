@@ -70,14 +70,6 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.i
     }
 
     m_silhouette_sampling_weight = props.get<ScalarFloat>("silhouette_sampling_weight", 1.0f);
-
-    dr::set_attr(this, "emitter", m_emitter.get());
-    dr::set_attr(this, "sensor", m_sensor.get());
-    dr::set_attr(this, "bsdf", m_bsdf.get());
-    dr::set_attr(this, "interior_medium", m_interior_medium.get());
-    dr::set_attr(this, "exterior_medium", m_exterior_medium.get());
-    dr::set_attr(this, "silhouette_sampling_weight", m_silhouette_sampling_weight);
-    dr::set_attr(this, "shape_type", m_shape_type);
 }
 
 MI_VARIANT Shape<Float, Spectrum>::~Shape() {
@@ -327,7 +319,7 @@ void Shape<Float, Spectrum>::optix_fill_hitgroup_records(std::vector<HitGroupSbt
     // Set hitgroup record data
     hitgroup_records.push_back(HitGroupSbtRecord());
     hitgroup_records.back().data = {
-        jit_registry_get_id(JitBackend::CUDA, this), m_optix_data_ptr
+        jit_registry_id(this), m_optix_data_ptr
     };
 
     size_t program_group_idx = (is_mesh() ? 1 : 2 + get_shape_descr_idx(this));

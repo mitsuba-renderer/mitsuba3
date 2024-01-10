@@ -82,7 +82,6 @@ public:
 
         m_needs_sample_3 = false;
         m_flags = +EmitterFlags::DeltaPosition;
-        dr::set_attr(this, "flags", m_flags);
     }
 
     void traverse(TraversalCallback *callback) override {

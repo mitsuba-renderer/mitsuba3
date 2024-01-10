@@ -67,11 +67,6 @@ MI_VARIANT void Sampler<Float, Spectrum>::schedule_state() {
     dr::schedule(m_sample_index, m_dimension_index);
 }
 
-MI_VARIANT
-void Sampler<Float, Spectrum>::loop_put(dr::Loop<Mask> &loop) {
-    loop.put(m_sample_index, m_dimension_index);
-}
-
 MI_VARIANT void
 Sampler<Float, Spectrum>::set_samples_per_wavefront(uint32_t samples_per_wavefront) {
     if constexpr (!dr::is_array_v<Float>)
@@ -136,12 +131,6 @@ MI_VARIANT void PCG32Sampler<Float, Spectrum>::seed(uint32_t seed,
 MI_VARIANT void PCG32Sampler<Float, Spectrum>::schedule_state() {
     Base::schedule_state();
     dr::schedule(m_rng.inc, m_rng.state);
-}
-
-MI_VARIANT void
-PCG32Sampler<Float, Spectrum>::loop_put(dr::Loop<Mask> &loop) {
-    Base::loop_put(loop);
-    loop.put(m_rng.state);
 }
 
 MI_VARIANT

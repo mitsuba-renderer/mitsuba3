@@ -97,7 +97,6 @@ public:
             m_components.push_back(c | BSDFFlags::BackSide);
             m_flags = m_flags | m_components.back();
         }
-        dr::set_attr(this, "flags", m_flags);
 
         if (has_flag(m_flags, BSDFFlags::Transmission))
             Throw("Only materials without a transmission component can be nested!");

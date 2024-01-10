@@ -5,8 +5,8 @@
 #include <mitsuba/core/hash.h>
 #include <mitsuba/core/jit.h>
 #include <drjit/array.h>
-#include <drjit/half.h>
 #include <drjit/color.h>
+#include <drjit-core/half.h>
 #include <unordered_map>
 #include <ostream>
 #include <map>

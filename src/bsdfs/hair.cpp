@@ -197,7 +197,6 @@ public:
         m_components.push_back(BSDFFlags::Null | BSDFFlags::BackSide);
 
         m_flags = m_components[0] | m_components[1];
-        dr::set_attr(this, "flags", m_flags);
 
         update();
     }
@@ -265,8 +264,8 @@ public:
         for (size_t j = 0; j < P_MAX; j++) {
             auto [sin_theta_ij, cos_theta_ij] =
                 reframe_with_scales(sin_theta_i, cos_theta_i, j);
-            dr::masked(sin_theta_ip, dr::eq(p, j)) = sin_theta_ij;
-            dr::masked(cos_theta_ip, dr::eq(p, j)) = cos_theta_ij;
+            dr::masked(sin_theta_ip, p == j) = sin_theta_ij;
+            dr::masked(cos_theta_ip, p == j) = cos_theta_ij;
         }
 
         // Sample longitudinal scattering
@@ -274,7 +273,7 @@ public:
             1 + m_v[P_MAX] *
                 dr::log(u[1][0] + (1.f - u[1][0]) * dr::exp(-2.f / m_v[P_MAX]));
         for (size_t i = 0; i < P_MAX; i++)
-            dr::masked(cos_theta, dr::eq(p, i)) =
+            dr::masked(cos_theta, p == i) =
                 1 + m_v[i] * dr::log(u[1][0] + (1.f - u[1][0]) * dr::exp(-2.f / m_v[i]));
         Float sin_theta = dr::safe_sqrt(1.f - dr::sqr(cos_theta));
         Float cos_phi = dr::cos(2 * dr::Pi<ScalarFloat> * u[1][1]);
@@ -325,7 +324,7 @@ public:
         bs.sampled_component = 0;
 
         Spectrum value = dr::select(
-            dr::neq(bs.pdf, 0), eval(ctx, si, bs.wo, active) / bs.pdf, 0);
+            bs.pdf != 0, eval(ctx, si, bs.wo, active) / bs.pdf, 0);
 
         return { bs, depolarizer<Spectrum>(value) & (active && bs.pdf > 0.f) };
     }
@@ -581,7 +580,7 @@ private:
     MI_INLINE Float gamma(const Vector3f &w) const {
         Float normal_plane_proj =
             dr::safe_sqrt(dr::sqr(w.x()) + dr::sqr(w.z()));
-        Mask singularity = dr::eq(normal_plane_proj, 0);
+        Mask singularity = normal_plane_proj == 0;
 
         Float gamma = dr::safe_acos(w.z() / normal_plane_proj);
         gamma = dr::select(!singularity, gamma, 0);

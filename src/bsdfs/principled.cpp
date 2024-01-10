@@ -265,7 +265,6 @@ public:
 
         for (auto c : m_components)
             m_flags |= c;
-        dr::set_attr(this, "flags", m_flags);
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -339,7 +338,7 @@ public:
         BSDFSample3f bs   = dr::zeros<BSDFSample3f>();
 
         // Ignoring perfectly grazing incoming rays
-        active &= dr::neq(cos_theta_i, 0.0f);
+        active &= cos_theta_i != 0.0f;
 
         if (unlikely(dr::none_or<false>(active)))
             return { bs, 0.0f };
@@ -497,7 +496,7 @@ public:
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         // Ignore perfectly grazing configurations
-        active &= dr::neq(cos_theta_i, 0.0f);
+        active &= cos_theta_i != 0.0f;
 
         if (unlikely(dr::none_or<false>(active)))
             return 0.0f;
@@ -715,7 +714,7 @@ public:
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         // Ignore perfectly grazing configurations.
-        active &= dr::neq(cos_theta_i, 0.0f);
+        active &= cos_theta_i != 0.0f;
 
         if (unlikely(dr::none_or<false>(active)))
             return 0.0f;

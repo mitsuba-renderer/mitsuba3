@@ -223,7 +223,6 @@ public:
 
     SmoothConductor(const Properties &props) : Base(props) {
         m_flags = BSDFFlags::DeltaReflection | BSDFFlags::FrontSide;
-        dr::set_attr(this, "flags", m_flags);
         m_components.push_back(m_flags);
 
         m_specular_reflectance = props.texture<Texture>("specular_reflectance", 1.f);

@@ -48,8 +48,8 @@ std::tuple<Float, Float, Float, Float> fresnel(Float cos_theta_i, Float eta) {
     Float cos_theta_i_abs = dr::abs(cos_theta_i);
     Float cos_theta_t_abs = dr::safe_sqrt(cos_theta_t_sqr);
 
-    auto index_matched = dr::eq(eta, 1.f),
-         special_case  = index_matched || dr::eq(cos_theta_i_abs, 0.f);
+    auto index_matched = eta == 1.f,
+         special_case  = index_matched || (cos_theta_i_abs == 0.f);
 
     Float r_sc = dr::select(index_matched, Float(0.f), Float(1.f));
 
@@ -176,8 +176,8 @@ fresnel_polarized(Float cos_theta_i, Float eta) {
     dr::Complex<Float> a_p = (eta_it * cos_theta_i_abs - cos_theta_t) /
                              (eta_it * cos_theta_i_abs + cos_theta_t);
 
-    auto index_matched = dr::eq(eta, 1.f);
-    auto invalid       = dr::eq(eta, 0.f);
+    auto index_matched = eta == 1.f;
+    auto invalid       = eta == 0.f;
     dr::masked(a_s, index_matched || invalid) = 0.f;
     dr::masked(a_p, index_matched || invalid) = 0.f;
 

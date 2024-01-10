@@ -74,8 +74,8 @@ MI_INLINE Point<Value, 2> square_to_uniform_disk_concentric(const Point<Value, 2
         }
     */
 
-    Mask is_zero         = dr::eq(x, 0.f) &&
-                           dr::eq(y, 0.f),
+    Mask is_zero         = (x == 0.f) &&
+                           (y == 0.f),
          quadrant_1_or_3 = dr::abs(x) < dr::abs(y);
 
     Value r  = dr::select(quadrant_1_or_3, y, x),
@@ -669,7 +669,7 @@ MI_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sam
     Vector<Value, 3> result = { p.x(), p.y(), cos_theta };
 #endif
 
-    dr::masked(result, dr::eq(kappa, 0.f)) = square_to_uniform_sphere(sample);
+    dr::masked(result, kappa == 0.f) = square_to_uniform_sphere(sample);
 
     return result;
 }

@@ -80,14 +80,13 @@ template <typename Point_> struct Transform {
 
     /// Equality comparison operator
     bool operator==(const Transform &t) const {
-        return matrix == t.matrix &&
-               inverse_transpose == t.inverse_transpose;
+        return dr::all(dr::all(matrix == t.matrix) && dr::all(inverse_transpose == t.inverse_transpose));
     }
 
     /// Inequality comparison operator
     bool operator!=(const Transform &t) const {
-        return matrix != t.matrix ||
-               inverse_transpose != t.inverse_transpose;
+        return dr::all(dr::all(matrix != t.matrix) ||
+               dr::all(inverse_transpose != t.inverse_transpose));
     }
 
     /**
@@ -104,7 +103,7 @@ template <typename Point_> struct Transform {
     MI_INLINE Point<Expr, Size - 1> transform_affine(const Point<T, Size - 1> &arg) const {
         dr::Array<Expr, Size> result = matrix.entry(Size - 1);
 
-        DRJIT_UNROLL for (size_t i = 0; i < Size - 1; ++i)
+        for (size_t i = 0; i < Size - 1; ++i)
             result = dr::fmadd(matrix.entry(i), arg.entry(i), result);
 
         return dr::head<Size - 1>(result); // no-op
@@ -118,7 +117,7 @@ template <typename Point_> struct Transform {
     MI_INLINE Point<Expr, Size - 1> operator*(const Point<T, Size - 1> &arg) const {
         dr::Array<Expr, Size> result = matrix.entry(Size - 1);
 
-        DRJIT_UNROLL for (size_t i = 0; i < Size - 1; ++i)
+        for (size_t i = 0; i < Size - 1; ++i)
             result = dr::fmadd(matrix.entry(i), arg.entry(i), result);
 
         return dr::head<Size - 1>(result) / result.entry(Size - 1);
@@ -133,7 +132,7 @@ template <typename Point_> struct Transform {
         dr::Array<Expr, Size> result = matrix.entry(0);
         result *= arg.x();
 
-        DRJIT_UNROLL for (size_t i = 1; i < Size - 1; ++i)
+        for (size_t i = 1; i < Size - 1; ++i)
             result = dr::fmadd(matrix.entry(i), arg.entry(i), result);
 
         return dr::head<Size - 1>(result); // no-op
@@ -148,7 +147,7 @@ template <typename Point_> struct Transform {
         dr::Array<Expr, Size> result = inverse_transpose.entry(0);
         result *= arg.x();
 
-        DRJIT_UNROLL for (size_t i = 1; i < Size - 1; ++i)
+        for (size_t i = 1; i < Size - 1; ++i)
             result = dr::fmadd(inverse_transpose.entry(i), arg.entry(i), result);
 
         return dr::head<Size - 1>(result); // no-op

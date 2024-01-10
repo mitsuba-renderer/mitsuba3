@@ -192,7 +192,7 @@ template <typename Array> void bind_drjit_ptr_array(py::class_<Array> &cls) {
     cls.attr("IsLLVM") = dr::is_llvm_v<Array>;
     cls.attr("IsCUDA") = dr::is_cuda_v<Array>;
     cls.attr("Depth") = dr::array_depth_v<Array>;
-    cls.attr("Size")  = dr::array_size_v<Array>;
+    cls.attr("Size")  = dr::size_v<Array>;
     cls.attr("IsDiff") = false;
     cls.attr("IsQuaternion") = false;
     cls.attr("IsComplex") = false;

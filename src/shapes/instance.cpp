@@ -77,7 +77,6 @@ public:
             Throw("A reference to a 'shapegroup' must be specified!");
 
         m_shape_type = ShapeType::Instance;
-        dr::set_attr(this, "shape_type", m_shape_type);
 
         dr::make_opaque(m_to_world, m_to_object);
     }

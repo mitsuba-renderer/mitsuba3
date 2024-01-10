@@ -129,7 +129,7 @@ public:
 
         if (!m_hide_emitters) {
             EmitterPtr emitter_vis = si.emitter(scene, active);
-            if (dr::any_or<true>(dr::neq(emitter_vis, nullptr)))
+            if (dr::any_or<true>(emitter_vis != nullptr))
                 result += emitter_vis->eval(si, active);
         }
 
@@ -151,7 +151,7 @@ public:
                 Spectrum emitter_val;
                 std::tie(ds, emitter_val) = scene->sample_emitter_direction(
                     si, sampler->next_2d(active_e), true, active_e);
-                active_e &= dr::neq(ds.pdf, 0.f);
+                active_e &= ds.pdf != 0.f;
                 if (dr::none_or<false>(active_e))
                     continue;
 
@@ -176,7 +176,7 @@ public:
                                                sampler->next_2d(active), active);
             bsdf_val = si.to_world_mueller(bsdf_val, -bs.wo, si.wi);
 
-            Mask active_b = active && dr::any(dr::neq(unpolarized_spectrum(bsdf_val), 0.f));
+            Mask active_b = active && dr::any(unpolarized_spectrum(bsdf_val) != 0.f);
 
             // Trace the ray in the sampled direction and intersect against the scene
             SurfaceInteraction3f si_bsdf =
@@ -184,7 +184,7 @@ public:
 
             // Retain only rays that hit an emitter
             EmitterPtr emitter = si_bsdf.emitter(scene, active_b);
-            active_b &= dr::neq(emitter, nullptr);
+            active_b &= (emitter != nullptr);
 
             if (dr::any_or<true>(active_b)) {
                 Spectrum emitter_val = emitter->eval(si_bsdf, active_b);

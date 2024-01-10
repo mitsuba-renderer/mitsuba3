@@ -100,7 +100,7 @@ MI_PY_EXPORT(Emitter) {
             [](PyEmitter &emitter){ return emitter.m_flags; },
             [](PyEmitter &emitter, uint32_t flags){
                 emitter.m_flags = flags;
-                dr::set_attr(&emitter, "flags", flags);
+                //dr::set_attr(&emitter, "flags", flags);
             }
         );
 

@@ -4,7 +4,7 @@
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/sampler.h>
-#include <drjit/vcall.h>
+#include <drjit/call.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -207,7 +207,7 @@ public:
     //! @}
     // -----------------------------------------------------------------------
 
-    DRJIT_VCALL_REGISTER(Float, mitsuba::PhaseFunction)
+    MI_CALL_REGISTER(Float, mitsuba::PhaseFunction)
 
     MI_DECLARE_CLASS()
 protected:
@@ -248,14 +248,14 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Dr.Jit support for vectorized function calls
 // -----------------------------------------------------------------------
 
-DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::PhaseFunction)
-    DRJIT_VCALL_METHOD(sample)
-    DRJIT_VCALL_METHOD(eval_pdf)
-    DRJIT_VCALL_METHOD(projected_area)
-    DRJIT_VCALL_METHOD(max_projected_area)
-    DRJIT_VCALL_GETTER(flags, uint32_t)
-    DRJIT_VCALL_GETTER(component_count, size_t)
-DRJIT_VCALL_TEMPLATE_END(mitsuba::PhaseFunction)
+DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::PhaseFunction)
+    DRJIT_CALL_METHOD(sample)
+    DRJIT_CALL_METHOD(eval_pdf)
+    DRJIT_CALL_METHOD(projected_area)
+    DRJIT_CALL_METHOD(max_projected_area)
+    DRJIT_CALL_GETTER(flags)
+    DRJIT_CALL_GETTER(component_count)
+DRJIT_CALL_END(mitsuba::PhaseFunction)
 
 //! @}
 // -----------------------------------------------------------------------

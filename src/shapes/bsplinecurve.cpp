@@ -326,10 +326,8 @@ public:
         );
 
         m_discontinuity_types = (uint32_t) DiscontinuityFlags::AllTypes;
-        dr::set_attr(this, "silhouette_discontinuity_types", m_discontinuity_types);
 
         m_shape_type = ShapeType::BSplineCurve;
-        dr::set_attr(this, "shape_type", m_shape_type);
 
         initialize();
     }

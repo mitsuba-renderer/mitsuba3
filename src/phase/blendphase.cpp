@@ -91,7 +91,6 @@ public:
                 m_components.push_back(m_nested_phase[i]->flags(j));
 
         m_flags = m_nested_phase[0]->flags() | m_nested_phase[1]->flags();
-        dr::set_attr(this, "flags", m_flags);
     }
 
     void traverse(TraversalCallback *callback) override {
