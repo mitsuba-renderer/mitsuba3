@@ -119,15 +119,15 @@ public:
         sample *= m_sum;
 
         return dr::binary_search<Index>(
-            m_valid.x(), m_valid.y(),
+            dr::slice(m_valid.x()), dr::slice(m_valid.y()),
             [&](Index index) DRJIT_INLINE_LAMBDA {
                 Value value = dr::gather<Value>(m_cdf, index, active);
                 if constexpr (!dr::is_jit_v<Float>) {
                     return value < sample;
                 } else {
                     // `m_valid` is not computed in JIT variants
-                    return ((value < sample) || (dr::eq(value, 0))) &&
-                           dr::neq(value, m_sum);
+                    return ((value < sample) || value == 0) &&
+                           value != m_sum;
                 }
             }
         );
@@ -253,7 +253,7 @@ private:
             }
         }
 
-        if (dr::any(dr::eq(valid, (uint32_t) -1)))
+        if (dr::any((valid == (uint32_t) -1)))
             Throw("DiscreteDistribution: no probability mass found!");
 
         m_cdf = dr::load<FloatStorage>(cdf.data(), size);
@@ -433,8 +433,8 @@ public:
                     return value < sample;
                 } else {
                     // `m_valid` is not computed in JIT variants
-                    return ((value < sample) || (dr::eq(value, 0))) &&
-                           dr::neq(value, m_integral);
+                    return ((value < sample) || (value == 0)) &&
+                           (value != m_integral);
                 }
             }
         );
@@ -447,7 +447,7 @@ public:
 
         Value t_linear = (y0 - dr::safe_sqrt(dr::fmadd(y0, y0, 2.f * sample * (y1 - y0)))) * dr::rcp(y0 - y1),
               t_const  = sample * dr::rcp(y0),
-              t        = dr::select(dr::eq(y0, y1), t_const, t_linear);
+              t        = dr::select(y0 == y1, t_const, t_linear);
 
         return dr::fmadd(Value(index) + t, m_interval_size, m_range.x());
     }
@@ -478,8 +478,8 @@ public:
                     return value < sample;
                 } else {
                     // `m_valid` is not computed in JIT variants
-                    return ((value < sample) || (dr::eq(value, 0))) &&
-                           dr::neq(value, m_integral);
+                    return ((value < sample) || (value == 0)) &&
+                           (value != m_integral);
                 }
             }
         );
@@ -492,7 +492,7 @@ public:
 
         Value t_linear = (y0 - dr::safe_sqrt(dr::fmadd(y0, y0, 2.f * sample * (y1 - y0)))) * dr::rcp(y0 - y1),
               t_const  = sample * dr::rcp(y0),
-              t        = dr::select(dr::eq(y0, y1), t_const, t_linear);
+              t        = dr::select(y0 == y1, t_const, t_linear);
 
         return { dr::fmadd(Value(index) + t, m_interval_size, m_range.x()),
                  dr::fmadd(t, y1 - y0, y0) * m_normalization };
@@ -576,7 +576,7 @@ private:
             }
         }
 
-        if (dr::any(dr::eq(valid, (uint32_t) -1)))
+        if (dr::any(valid == (uint32_t) -1))
             Throw("ContinuousDistribution: no probability mass found!");
 
         m_valid = valid;
@@ -789,8 +789,8 @@ public:
                     return value < sample;
                 } else {
                     // `m_valid` is not computed in JIT variants
-                    return ((value < sample) || (dr::eq(value, 0))) &&
-                           dr::neq(value, m_integral);
+                    return ((value < sample) || (value == 0)) &&
+                           (value != m_integral);
                 }
             }
         );
@@ -806,7 +806,7 @@ public:
 
         Value t_linear = (y0 - dr::safe_sqrt(dr::sqr(y0) + 2.f * sample * (y1 - y0))) / (y0 - y1),
               t_const  = sample / y0,
-              t        = dr::select(dr::eq(y0, y1), t_const, t_linear);
+              t        = dr::select(y0 == y1, t_const, t_linear);
 
         return dr::fmadd(t, w, x0);
     }
@@ -837,8 +837,8 @@ public:
                     return value < sample;
                 } else {
                     // `m_valid` is not computed in JIT variants
-                    return ((value < sample) || (dr::eq(value, 0))) &&
-                           dr::neq(value, m_integral);
+                    return ((value < sample) || (value == 0)) &&
+                           (value != m_integral);
                 }
             }
         );
@@ -854,7 +854,7 @@ public:
 
         Value t_linear = (y0 - dr::safe_sqrt(dr::sqr(y0) + 2.f * sample * (y1 - y0))) / (y0 - y1),
               t_const  = sample / y0,
-              t        = dr::select(dr::eq(y0, y1), t_const, t_linear);
+              t        = dr::select(y0 == y1, t_const, t_linear);
 
         return { dr::fmadd(t, w, x0),
                  dr::fmadd(t, y1 - y0, y0) * m_normalization };
@@ -952,7 +952,7 @@ private:
             }
         }
 
-        if (dr::any(dr::eq(valid, (uint32_t) -1)))
+        if (dr::any(valid == (uint32_t) -1))
             Throw("IrregularContinuousDistribution: no probability mass found!");
 
         m_valid = valid;

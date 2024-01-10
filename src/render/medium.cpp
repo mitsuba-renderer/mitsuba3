@@ -27,8 +27,6 @@ MI_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props
     }
 
     m_sample_emitters = props.get<bool>("sample_emitters", true);
-    dr::set_attr(this, "use_emitter_sampling", m_sample_emitters);
-    dr::set_attr(this, "phase_function", m_phase_function.get());
 }
 
 MI_VARIANT Medium<Float, Spectrum>::~Medium() {}

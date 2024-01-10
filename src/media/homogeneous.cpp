@@ -141,9 +141,6 @@ public:
 
         m_scale = props.get<ScalarFloat>("scale", 1.0f);
         m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);
-
-        dr::set_attr(this, "is_homogeneous", m_is_homogeneous);
-        dr::set_attr(this, "has_spectral_extinction", m_has_spectral_extinction);
     }
 
     void traverse(TraversalCallback *callback) override {

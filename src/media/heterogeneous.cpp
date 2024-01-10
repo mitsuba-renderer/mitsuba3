@@ -161,9 +161,6 @@ public:
         m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);
 
         m_max_density = dr::opaque<Float>(m_scale * m_sigmat->max());
-
-        dr::set_attr(this, "is_homogeneous", m_is_homogeneous);
-        dr::set_attr(this, "has_spectral_extinction", m_has_spectral_extinction);
     }
 
     void traverse(TraversalCallback *callback) override {

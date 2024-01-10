@@ -6,7 +6,6 @@
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/random.h>
-#include <drjit/loop.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -128,9 +127,6 @@ public:
     /// dr::schedule() variables that represent the internal sampler state
     virtual void schedule_state();
 
-    /// Register internal state of this sampler with a symbolic loop
-    virtual void loop_put(dr::Loop<Mask> &loop);
-
     MI_DECLARE_CLASS()
 protected:
     Sampler(const Properties &props);
@@ -169,7 +165,6 @@ public:
     virtual void seed(uint32_t seed,
                       uint32_t wavefront_size = (uint32_t) -1) override;
     virtual void schedule_state() override;
-    virtual void loop_put(dr::Loop<Mask> &loop) override;
 
     MI_DECLARE_CLASS()
 protected:

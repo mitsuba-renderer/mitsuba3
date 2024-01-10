@@ -24,14 +24,14 @@ template <typename Point_> struct BoundingSphere {
 
     /// Equality test against another bounding sphere
     bool operator==(const BoundingSphere &bsphere) const {
-        return dr::all_nested(dr::eq(center, bsphere.center) &&
-                              dr::eq(radius, bsphere.radius));
+        return dr::all_nested((center == bsphere.center) &&
+                              (radius == bsphere.radius));
     }
 
     /// Inequality test against another bounding sphere
     bool operator!=(const BoundingSphere &bsphere) const {
-        return dr::any_nested(dr::neq(center, bsphere.center) ||
-                              dr::neq(radius, bsphere.radius));
+        return dr::any_nested((center != bsphere.center) ||
+                              (radius != bsphere.radius));
     }
 
     /// Return whether this bounding sphere has a radius of zero or less.

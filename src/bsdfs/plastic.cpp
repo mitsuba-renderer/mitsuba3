@@ -177,7 +177,6 @@ public:
         m_components.push_back(BSDFFlags::DeltaReflection | BSDFFlags::FrontSide);
         m_components.push_back(BSDFFlags::DiffuseReflection | BSDFFlags::FrontSide);
         m_flags = m_components[0] | m_components[1];
-        dr::set_attr(this, "flags", m_flags);
 
         parameters_changed();
     }

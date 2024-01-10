@@ -87,7 +87,6 @@ public:
         m_polarizing = props.get<bool>("polarizing", true);
 
         m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null;
-        dr::set_attr(this, "flags", m_flags);
         m_components.push_back(m_flags);
     }
 

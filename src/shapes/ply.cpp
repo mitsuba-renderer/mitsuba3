@@ -6,7 +6,7 @@
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/timer.h>
 #include <mitsuba/core/profiler.h>
-#include <drjit/half.h>
+#include <drjit-core/half.h>
 #include <unordered_map>
 #include <unordered_set>
 #include <fstream>

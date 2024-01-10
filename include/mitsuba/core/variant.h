@@ -71,7 +71,7 @@ template <typename T, typename... Args> struct variant_helper<T, Args...> {
 
     static bool equals(const std::type_info *type_info, const void *v1, const void *v2) {
         if (type_info == &typeid(T))
-            return (*reinterpret_cast<const T *>(v1)) == (*reinterpret_cast<const T *>(v2));
+            return dr::all((*reinterpret_cast<const T *>(v1)) == (*reinterpret_cast<const T *>(v2)));
         else
             return variant_helper<Args...>::equals(type_info, v1, v2);
     }

@@ -311,7 +311,7 @@ void prepare_ias(const OptixDeviceContext &context,
         if (shape->is_instance())
             shape->optix_prepare_ias(
                 context, out_instances,
-                jit_registry_get_id(JitBackend::CUDA, shape), transf);
+                jit_registry_id(shape), transf);
     }
 }
 

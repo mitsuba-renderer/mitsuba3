@@ -212,7 +212,6 @@ public:
         m_components.push_back(BSDFFlags::GlossyTransmission | BSDFFlags::FrontSide |
                                BSDFFlags::BackSide | BSDFFlags::NonSymmetric | extra);
         m_flags = m_components[0] | m_components[1];
-        dr::set_attr(this, "flags", m_flags);
 
         parameters_changed();
     }
@@ -253,7 +252,7 @@ public:
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
 
         // Ignore perfectly grazing configurations
-        active &= dr::neq(cos_theta_i, 0.f);
+        active &= cos_theta_i != 0.f;
 
         /* Construct the microfacet distribution matching the roughness values at the current surface position. */
         MicrofacetDistribution distr(m_type,
@@ -272,7 +271,7 @@ public:
         Normal3f m;
         std::tie(m, bs.pdf) =
             sample_distr.sample(dr::mulsign(si.wi, cos_theta_i), sample2);
-        active &= dr::neq(bs.pdf, 0.f);
+        active &= bs.pdf != 0.f;
 
         auto [F, cos_theta_t, eta_it, eta_ti] =
             fresnel(dr::dot(si.wi, m), m_eta);
@@ -363,7 +362,7 @@ public:
               cos_theta_o = Frame3f::cos_theta(wo);
 
         // Ignore perfectly grazing configurations
-        active &= dr::neq(cos_theta_i, 0.f);
+        active &= cos_theta_i != 0.f;
 
         // Determine the type of interaction
         bool has_reflection   = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
@@ -439,7 +438,7 @@ public:
               cos_theta_o = Frame3f::cos_theta(wo);
 
         // Ignore perfectly grazing configurations
-        active &= dr::neq(cos_theta_i, 0.f);
+        active &= cos_theta_i != 0.f;
 
         // Determine the type of interaction
         bool has_reflection   = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
@@ -506,7 +505,7 @@ public:
               cos_theta_o = Frame3f::cos_theta(wo);
 
         // Ignore perfectly grazing configurations
-        active &= dr::neq(cos_theta_i, 0.f);
+        active &= cos_theta_i != 0.f;
 
         // Determine the type of interaction
         bool has_reflection   = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),

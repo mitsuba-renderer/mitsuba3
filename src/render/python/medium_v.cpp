@@ -100,21 +100,18 @@ MI_PY_EXPORT(Medium) {
                 [](PyMedium &medium){ return medium.m_sample_emitters; },
                 [](PyMedium &medium, bool value){
                     medium.m_sample_emitters = value;
-                    dr::set_attr(&medium, "sample_emitters", value);
                 }
             )
             .def_property("m_is_homogeneous",
                 [](PyMedium &medium){ return medium.m_is_homogeneous; },
                 [](PyMedium &medium, bool value){
                     medium.m_is_homogeneous = value;
-                    dr::set_attr(&medium, "is_homogeneous", value);
                 }
             )
             .def_property("m_has_spectral_extinction",
                 [](PyMedium &medium){ return medium.m_has_spectral_extinction; },
                 [](PyMedium &medium, bool value){
                     medium.m_has_spectral_extinction = value;
-                    dr::set_attr(&medium, "has_spectral_extinction", value);
                 }
             )
             .def("__repr__", &Medium::to_string);

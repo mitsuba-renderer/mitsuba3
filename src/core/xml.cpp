@@ -371,13 +371,13 @@ void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) 
             pugi::xml_node trafo = n.append_child("transform");
             trafo.append_attribute("name") = "to_uv";
 
-            if (offset != Vector2f(0.f)) {
+            if (dr::all(offset != Vector2f(0.f))) {
                 pugi::xml_node element = trafo.append_child("translate");
                 element.append_attribute("x") = std::to_string(offset.x()).c_str();
                 element.append_attribute("y") = std::to_string(offset.y()).c_str();
             }
 
-            if (scale != Vector2f(1.f)) {
+            if (dr::all(scale != Vector2f(1.f))) {
                 pugi::xml_node element = trafo.append_child("scale");
                 element.append_attribute("x") = std::to_string(scale.x()).c_str();
                 element.append_attribute("y") = std::to_string(scale.y()).c_str();

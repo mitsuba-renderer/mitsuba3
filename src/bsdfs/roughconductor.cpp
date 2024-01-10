@@ -204,7 +204,6 @@ public:
         m_flags = BSDFFlags::GlossyReflection | BSDFFlags::FrontSide;
         if (m_alpha_u != m_alpha_v)
             m_flags = m_flags | BSDFFlags::Anisotropic;
-        dr::set_attr(this, "flags", m_flags);
 
         m_components.clear();
         m_components.push_back(m_flags);
@@ -255,7 +254,7 @@ public:
         bs.sampled_type = +BSDFFlags::GlossyReflection;
 
         // Ensure that this is a valid sample
-        active &= dr::neq(bs.pdf, 0.f) && Frame3f::cos_theta(bs.wo) > 0.f;
+        active &= (bs.pdf != 0.f) && Frame3f::cos_theta(bs.wo) > 0.f;
 
         UnpolarizedSpectrum weight;
         if (likely(m_sample_visible))
@@ -329,7 +328,7 @@ public:
         // Evaluate the microfacet normal distribution
         Float D = distr.eval(H);
 
-        active &= dr::neq(D, 0.f);
+        active &= D != 0.f;
 
         // Evaluate Smith's shadow-masking function
         Float G = distr.G(si.wi, wo, H);
@@ -443,7 +442,7 @@ public:
         // Evaluate the microfacet normal distribution
         Float D = distr.eval(H);
 
-        active &= dr::neq(D, 0.f);
+        active &= D != 0.f;
 
         // Evaluate Smith's shadow-masking function
         Float smith_g1_wi = distr.smith_g1(si.wi, H);

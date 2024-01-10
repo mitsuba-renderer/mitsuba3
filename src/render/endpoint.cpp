@@ -21,11 +21,6 @@ MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props) : m_id(p
             props.mark_queried(name);
         }
     }
-
-    /* For some emitters, set_shape() will never be called, so we
-       must ensure that m_shape is at least initialized. */
-    dr::set_attr(this, "shape", m_shape);
-
 }
 
 MI_VARIANT Endpoint<Float, Spectrum>::~Endpoint() { }
@@ -40,7 +35,6 @@ MI_VARIANT void Endpoint<Float, Spectrum>::set_shape(Shape *shape) {
         Throw("An endpoint can be only be attached to a single shape.");
 
     m_shape = shape;
-    dr::set_attr(this, "shape", m_shape);
 }
 
 MI_VARIANT void Endpoint<Float, Spectrum>::set_medium(Medium *medium) {
@@ -49,7 +43,6 @@ MI_VARIANT void Endpoint<Float, Spectrum>::set_medium(Medium *medium) {
         Throw("An endpoint can be only be attached to a single medium.");
 
     m_medium = medium;
-    dr::set_attr(this, "medium", m_medium);
 }
 
 MI_VARIANT std::pair<typename Endpoint<Float, Spectrum>::Ray3f, Spectrum>

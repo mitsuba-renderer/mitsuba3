@@ -126,7 +126,7 @@ struct Interaction {
 
     /// Is the current interaction valid?
     Mask is_valid() const {
-        return dr::neq(t, dr::Infinity<Float>);
+        return t != dr::Infinity<Float>;
     }
 
     /// Spawn a semi-infinite ray towards the given direction
@@ -247,7 +247,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
             dr::fmadd(sh_frame.n, -dr::dot(sh_frame.n, dp_du), dp_du));
 
         // When dp_du is invalid, use an orthonormal basis
-        Mask singularity_mask = dr::all(dr::eq(dp_du, 0.f));
+        Mask singularity_mask = dr::all(dp_du == 0.f);
         if (unlikely(dr::any_or<true>(singularity_mask)))
             sh_frame.s[singularity_mask] = coordinate_system(sh_frame.n).first;
 
@@ -440,14 +440,14 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         if constexpr (dr::is_dynamic_v<Float>)
             return dr::width(duv_dx) > 0 || dr::width(duv_dy) > 0;
         else
-            return dr::any_nested(dr::neq(duv_dx, 0.f) || dr::neq(duv_dy, 0.f));
+            return dr::any_nested((duv_dx != 0.f) || (duv_dy != 0.f));
     }
 
     bool has_n_partials() const {
         if constexpr (dr::is_dynamic_v<Float>)
             return dr::width(dn_du) > 0 || dr::width(dn_dv) > 0;
         else
-            return dr::any_nested(dr::neq(dn_du, 0.f) || dr::neq(dn_dv, 0.f));
+            return dr::any_nested((dn_du != 0.f) || (dn_dv != 0.f));
     }
 
     /**
@@ -626,7 +626,7 @@ struct PreliminaryIntersection {
 
     /// Is the current interaction valid?
     Mask is_valid() const {
-        return dr::neq(t, dr::Infinity<Float>);
+        return t != dr::Infinity<Float>;
     }
 
     /**
@@ -658,7 +658,7 @@ struct PreliminaryIntersection {
 
             ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
 
-            ShapePtr target = dr::select(dr::eq(instance, nullptr), shape, instance);
+            ShapePtr target = dr::select(instance == nullptr, shape, instance);
             SurfaceInteraction3f si =
                 target->compute_surface_interaction(ray, *this, ray_flags, 0u, active);
             si.finalize_surface_interaction(*this, ray, ray_flags, active);

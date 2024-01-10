@@ -110,7 +110,6 @@ MI_PY_EXPORT(PhaseFunction) {
                 [](PyPhaseFunction &phase){ return phase.m_flags; },
                 [](PyPhaseFunction &phase, uint32_t flags){
                     phase.m_flags = flags;
-                    dr::set_attr(&phase, "flags", flags);
                 }
             )
             .def("__repr__", &PhaseFunction::to_string);

@@ -182,7 +182,6 @@ public:
         }
 
         m_shape_type = ShapeType::SDFGrid;
-        dr::set_attr(this, "shape_type", m_shape_type);
 
         update();
         initialize();

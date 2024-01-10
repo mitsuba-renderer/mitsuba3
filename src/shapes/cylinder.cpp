@@ -121,10 +121,10 @@ public:
             ScalarTransform4f::scale(ScalarVector3f(radius, radius, length));
 
         m_discontinuity_types = (uint32_t) DiscontinuityFlags::AllTypes;
-        dr::set_attr(this, "silhouette_discontinuity_types", m_discontinuity_types);
+        //dr::set_attr(this, "silhouette_discontinuity_types", m_discontinuity_types);
 
         m_shape_type = ShapeType::Cylinder;
-        dr::set_attr(this, "shape_type", m_shape_type);
+        //dr::set_attr(this, "shape_type", m_shape_type);
 
         update();
         initialize();

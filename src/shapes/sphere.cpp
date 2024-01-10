@@ -136,10 +136,8 @@ public:
             ScalarTransform4f::scale(props.get<ScalarFloat>("radius", 1.f));
 
         m_discontinuity_types = (uint32_t) DiscontinuityFlags::InteriorType;
-        dr::set_attr(this, "silhouette_discontinuity_types", m_discontinuity_types);
 
         m_shape_type = ShapeType::Sphere;
-        dr::set_attr(this, "shape_type", m_shape_type);
 
         update();
         initialize();

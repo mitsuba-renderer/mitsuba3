@@ -41,19 +41,19 @@ MI_PY_EXPORT(Spectrum) {
             "rgb"_a, "active"_a = true, D(srgb_to_xyz));
 
     if constexpr (is_spectral_v<Spectrum> || is_monochromatic_v<Spectrum>) {
-        m.def("spectrum_to_xyz", &spectrum_to_xyz<Float, dr::array_size_v<Spectrum>>,
+        m.def("spectrum_to_xyz", &spectrum_to_xyz<Float, dr::size_v<Spectrum>>,
               "value"_a, "wavelengths"_a, "active"_a = true, D(spectrum_to_xyz));
-        m.def("spectrum_to_srgb", &spectrum_to_srgb<Float, dr::array_size_v<Spectrum>>,
+        m.def("spectrum_to_srgb", &spectrum_to_srgb<Float, dr::size_v<Spectrum>>,
               "value"_a, "wavelengths"_a, "active"_a = true, D(spectrum_to_srgb));
 
         m.def("sample_shifted",
               py::overload_cast<const dr::value_t<
-                  dr::Array<Float, dr::array_size_v<Spectrum>>> &>(
+                  dr::Array<Float, dr::size_v<Spectrum>>> &>(
                   &math::sample_shifted<
-                      dr::Array<Float, dr::array_size_v<Spectrum>>>),
+                      dr::Array<Float, dr::size_v<Spectrum>>>),
               "sample"_a);
 
-        m.attr("MI_WAVELENGTH_SAMPLES") = dr::array_size_v<Spectrum>;
+        m.attr("MI_WAVELENGTH_SAMPLES") = dr::size_v<Spectrum>;
     }
 
     m.attr("MI_CIE_MIN") = MI_CIE_MIN;

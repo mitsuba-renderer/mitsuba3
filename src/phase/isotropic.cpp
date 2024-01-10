@@ -33,7 +33,6 @@ public:
 
     IsotropicPhaseFunction(const Properties & props) : Base(props) {
         m_flags = +PhaseFunctionFlags::Isotropic;
-        dr::set_attr(this, "flags", m_flags);
         m_components.push_back(m_flags);
     }
 

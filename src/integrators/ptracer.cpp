@@ -301,7 +301,7 @@ public:
                             ImageBlock *block, ScalarFloat sample_scale,
                             Mask active) const {
         active &= (sensor_ds.pdf > 0.f) &&
-                  dr::any(dr::neq(unpolarized_spectrum(weight), 0.f));
+                  dr::any(unpolarized_spectrum(weight) != 0.f);
         if (dr::none_or<false>(active))
             return 0.f;
 
@@ -321,10 +321,10 @@ public:
                emitters associated with a shape. Otherwise it's included in the
                BSDF. Clamp negative cosines (zero value if behind the surface). */
 
-            surface_weight[on_surface && dr::eq(bsdf, nullptr)] *=
+            surface_weight[on_surface && (bsdf == nullptr)] *=
                 dr::maximum(0.f, Frame3f::cos_theta(local_d));
 
-            on_surface &= dr::neq(bsdf, nullptr);
+            on_surface &= bsdf != nullptr;
             if (dr::any_or<true>(on_surface)) {
                 BSDFContext ctx(TransportMode::Importance);
                 // Using geometric normals
@@ -347,7 +347,7 @@ public:
 
         /* Even if the ray is not coming from a surface (no foreshortening),
            we still don't want light coming from behind the emitter. */
-        Mask not_on_surface = active && dr::eq(si.shape, nullptr) && dr::eq(bsdf, nullptr);
+        Mask not_on_surface = active && (si.shape == nullptr) && (bsdf == nullptr);
         if (dr::any_or<true>(not_on_surface)) {
             Mask invalid_side = Frame3f::cos_theta(local_d) <= 0.f;
             surface_weight[not_on_surface && invalid_side] = 0.f;

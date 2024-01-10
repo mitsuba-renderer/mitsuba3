@@ -123,7 +123,7 @@ MI_PY_EXPORT(DrJit) {
     bind_dr<ScalarNormal3d, dr::Array<ScalarFloat64, 3>>(m, "ScalarNormal3d");
 
     using DrSpec = dr::Array<dr::value_t<UnpolarizedSpectrum>,
-                             dr::array_size_v<UnpolarizedSpectrum>>;
+                             dr::size_v<UnpolarizedSpectrum>>;
     if constexpr (is_polarized_v<Spectrum>) {
         bind_dr<Spectrum, dr::Matrix<DrSpec, 4>>(m, "Spectrum");
         bind_dr<UnpolarizedSpectrum, DrSpec>(m, "UnpolarizedSpectrum");

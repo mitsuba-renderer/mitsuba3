@@ -31,10 +31,8 @@ MI_VARIANT Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
     m_flip_normals = props.get<bool>("flip_normals", false);
 
     m_discontinuity_types = (uint32_t) DiscontinuityFlags::PerimeterType;
-    dr::set_attr(this, "silhouette_discontinuity_types", m_discontinuity_types);
 
     m_shape_type = ShapeType::Mesh;
-    dr::set_attr(this, "shape_type", m_shape_type);
 }
 
 MI_VARIANT
@@ -571,8 +569,8 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_directed_edges() {
 template <typename Index>
 MI_INLINE auto pick_vertex(const dr::Array<dr::uint32_array_t<Index>, 3> &vec, const Index &offset) {
     Index dim_mod = dr::imod(offset, 3u);
-    Index res = dr::select(dr::eq(dim_mod, 1u), vec[1], vec[0]);
-    res = dr::select(dr::eq(dim_mod, 2u), vec[2], res);
+    Index res = dr::select(dim_mod == 1u, vec[1], vec[0]);
+    res = dr::select(dim_mod == 2u, vec[2], res);
     return res;
 }
 
@@ -580,7 +578,7 @@ MI_VARIANT void
 Mesh<Float, Spectrum>::build_indirect_silhouette_distribution() {
     UInt32 dedge = dr::arange<UInt32>(m_face_count * 3),
            dedge_oppo = opposite_dedge(dedge);
-    Mask boundary = dr::eq(dedge_oppo, m_invalid_dedge);
+    Mask boundary = dedge_oppo == m_invalid_dedge;
     // One edge can be represented by two dedge indices, we use the smaller index
     Mask valid = (dedge_oppo > dedge) & !boundary;
 
@@ -850,7 +848,7 @@ Mesh<Float, Spectrum>::sample_silhouette(const Point3f &sample_,
     std::tie(dedge, sample_x, pmf_edge) =
         m_sil_dedge_pmf.sample_reuse_pmf(sample_.x(), active);
     Point3f sample(sample_x, sample_.y(), sample_.z());
-    active &= dr::neq(pmf_edge, 0.f);
+    active &= pmf_edge != 0.f;
 
     auto [face_idx, edge_idx] = dr::idivmod(dedge, 3u);
     Vector3u v_idx = face_indices(face_idx, active);
@@ -861,10 +859,10 @@ Mesh<Float, Spectrum>::sample_silhouette(const Point3f &sample_,
     ss.p = dr::lerp(p0, p1, sample.x());
 
     // Face local barycentric UV coordinates
-    ss.uv = dr::select(dr::eq(edge_idx, 0u),
+    ss.uv = dr::select((edge_idx == 0u),
                        Point2f(sample.x(), 0.f),
                        Point2f(1 - sample.x(), sample.x()));
-    ss.uv = dr::select(dr::eq(edge_idx, 2u),
+    ss.uv = dr::select((edge_idx == 2u),
                        Point2f(0.f, 1 - sample.x()),
                        ss.uv);
 
@@ -873,7 +871,7 @@ Mesh<Float, Spectrum>::sample_silhouette(const Point3f &sample_,
 
     UInt32 dedge_oppo = opposite_dedge(dedge, active);
     UInt32 face_idx_oppo = dr::idiv(dedge_oppo, 3u);
-    Mask has_opposite = dr::neq(dedge_oppo, m_invalid_dedge) & active;
+    Mask has_opposite = (dedge_oppo != m_invalid_dedge) & active;
     Normal3f n_oppo = face_normal(face_idx_oppo, has_opposite);
 
     bool is_lune = has_flag(flags, DiscontinuityFlags::DirectionLune);
@@ -926,7 +924,7 @@ Mesh<Float, Spectrum>::sample_silhouette(const Point3f &sample_,
     ss.offset = 0.f;
 
     // Mark failed samples
-    Mask failed = dr::eq(ss.pdf, 0.f) || !active;
+    Mask failed = (ss.pdf == 0.f) || !active;
     dr::masked(ss, failed) = dr::zeros<SilhouetteSample3f>();
 
     return ss;
@@ -941,8 +939,8 @@ Mesh<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f &ss,
 
     // Safley ignore invalid boundary segments
     Mask active =
-        active_ && (dr::eq(ss.discontinuity_type,
-                           (uint32_t) DiscontinuityFlags::PerimeterType));
+        active_ && (ss.discontinuity_type ==
+                           (uint32_t) DiscontinuityFlags::PerimeterType);
 
     UInt32 dedge_curr = ss.prim_index * 3u + ss.projection_index,
            dedge_oppo = opposite_dedge(dedge_curr, active);
@@ -953,7 +951,7 @@ Mesh<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f &ss,
     dr::masked(dedge_curr, swap) = dedge_oppo;
     dr::masked(dedge_oppo, swap) = dedge_curr_tmp;
 
-    Mask has_opposite = dr::neq(dedge_oppo, m_invalid_dedge) && active;
+    Mask has_opposite = (dedge_oppo != m_invalid_dedge) && active;
     Normal3f n_curr = face_normal(dr::idiv(dedge_curr, 3u), active),
              n_oppo = face_normal(dr::idiv(dedge_oppo, 3u), has_opposite);
 
@@ -1050,9 +1048,9 @@ Mesh<Float, Spectrum>::primitive_silhouette_projection(const Point3f &viewpoint,
     UInt32 dedge_oppo_0 = opposite_dedge(si.prim_index * 3u     , active),
            dedge_oppo_1 = opposite_dedge(si.prim_index * 3u + 1u, active),
            dedge_oppo_2 = opposite_dedge(si.prim_index * 3u + 2u, active);
-    Mask boundary_0 = active && dr::eq(dedge_oppo_0, m_invalid_dedge),
-         boundary_1 = active && dr::eq(dedge_oppo_1, m_invalid_dedge),
-         boundary_2 = active && dr::eq(dedge_oppo_2, m_invalid_dedge);
+    Mask boundary_0 = active && (dedge_oppo_0 == m_invalid_dedge),
+         boundary_1 = active && (dedge_oppo_1 == m_invalid_dedge),
+         boundary_2 = active && (dedge_oppo_2 == m_invalid_dedge);
     UInt32 prim_idx_0 = dr::select(boundary_0, si.prim_index, dr::idiv(dedge_oppo_0, 3u)),
            prim_idx_1 = dr::select(boundary_1, si.prim_index, dr::idiv(dedge_oppo_1, 3u)),
            prim_idx_2 = dr::select(boundary_2, si.prim_index, dr::idiv(dedge_oppo_2, 3u));
@@ -1110,9 +1108,9 @@ Mesh<Float, Spectrum>::primitive_silhouette_projection(const Point3f &viewpoint,
         ss.prim_index = dr::select(sample >= weight[0], prim_idx_1, prim_idx_0);
         ss.prim_index = dr::select(sample >= weight[0] + weight[1], prim_idx_2, ss.prim_index);
 
-        failed_proj = (dr::eq(ss.projection_index, 0u) && cos_theta_oppo[0] > 0.f) ||
-                      (dr::eq(ss.projection_index, 1u) && cos_theta_oppo[1] > 0.f) ||
-                      (dr::eq(ss.projection_index, 2u) && cos_theta_oppo[2] > 0.f);
+        failed_proj = ((ss.projection_index == 0u) && cos_theta_oppo[0] > 0.f) ||
+                      ((ss.projection_index == 1u) && cos_theta_oppo[1] > 0.f) ||
+                      ((ss.projection_index == 2u) && cos_theta_oppo[2] > 0.f);
     } else {
         /// Project to any silhouette edge with equal probability.
         weight.x() = dr::select(cos_theta_oppo.x() < 0.f, 1.f, 0.f);
@@ -1122,7 +1120,7 @@ Mesh<Float, Spectrum>::primitive_silhouette_projection(const Point3f &viewpoint,
         Float sum = weight[0] + weight[1] + weight[2];
 
         // If none of the edges are on the silhouette, pick one uniformly
-        failed_proj = dr::eq(sum, 0.f);
+        failed_proj = sum == 0.f;
         dr::masked(weight, failed_proj) = Vector3f(1.f, 1.f, 1.f);
         dr::masked(sum, failed_proj) = 3.f;
         weight /= sum;
@@ -1135,25 +1133,25 @@ Mesh<Float, Spectrum>::primitive_silhouette_projection(const Point3f &viewpoint,
 
     // Reuse sample
     sample = dr::select(
-        dr::eq(ss.projection_index, 0u),
+        ss.projection_index == 0u,
         sample / weight[0],
         sample);
     sample = dr::select(
-        dr::eq(ss.projection_index, 1u),
+        ss.projection_index == 1u,
         (sample - weight[0]) / weight[1],
         sample);
     sample = dr::select(
-        dr::eq(ss.projection_index, 2u),
+        ss.projection_index == 2u,
         (sample - weight[1] - weight[0]) / weight[2],
         sample);
 
     // Sample a point on the selected edge
     ss.p = dr::select(
-        dr::eq(ss.projection_index, 1u),
+        ss.projection_index == 1u,
         dr::lerp(p1, p2, sample), dr::lerp(p0, p1, sample)
     );
     ss.p = dr::select(
-        dr::eq(ss.projection_index, 2u),
+        ss.projection_index == 2u,
         dr::lerp(p2, p0, sample), ss.p
     );
 
@@ -1270,7 +1268,7 @@ Mesh<Float, Spectrum>::precompute_silhouette(
         Float weight = unit_angle(to_p0, to_p1);
 
         UInt32 dedge_oppo = opposite_dedge(dedge_curr);
-        Mask has_opposite = dr::neq(dedge_oppo, m_invalid_dedge);
+        Mask has_opposite = (dedge_oppo != m_invalid_dedge);
 
         auto face_idx_oppo = dr::idiv(dedge_oppo, 3u);
         Normal3f n_oppo = face_normal(face_idx_oppo, has_opposite);
@@ -1319,10 +1317,10 @@ Mesh<Float, Spectrum>::sample_precomputed_silhouette(const Point3f &viewpoint,
     dr::masked(ss.n, dr::dot(ss.n, inward_dir) > 0.f) *= -1.f;
 
     // Face local barycentric UV coordinates used by `differential_motion`
-    ss.uv = dr::select(dr::eq(e, 0u),
+    ss.uv = dr::select(e == 0u,
                        Point2f(sample2, 0.f),
                        Point2f(1 - sample2, sample2));
-    ss.uv = dr::select(dr::eq(e, 2u),
+    ss.uv = dr::select(e == 2u,
                        Point2f(0.f, 1 - sample2),
                        ss.uv);
 
@@ -1477,7 +1475,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
             Float det     = dr::fmsub(duv0.x(), duv1.y(), duv0.y() * duv1.x()),
                   inv_det = dr::rcp(det);
 
-            Mask valid = dr::neq(det, 0.f);
+            Mask valid = (det != 0.f);
 
             si.dp_du[valid] = dr::fmsub( duv1.y(), dp0, duv0.y() * dp1) * inv_det;
             si.dp_dv[valid] = dr::fnmadd(duv1.x(), dp0, duv0.x() * dp1) * inv_det;

@@ -1,7 +1,7 @@
 #include <mitsuba/render/imageblock.h>
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/profiler.h>
-#include <drjit/loop.h>
+#include <drjit/while_loop.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -41,7 +41,7 @@ ImageBlock<Float, Spectrum>::ImageBlock(const TensorXf &tensor,
       m_warn_negative(warn_negative), m_warn_invalid(warn_invalid) {
 
     if (tensor.ndim() != 3)
-		Throw("ImageBlock(const TensorXf&): expected a 3D tensor (height x width x channels)!");
+        Throw("ImageBlock(const TensorXf&): expected a 3D tensor (height x width x channels)!");
 
     // Detect if a box filter is being used, and just discard it in that case
     if (rfilter && rfilter->is_box_filter())
@@ -55,8 +55,8 @@ ImageBlock<Float, Spectrum>::ImageBlock(const TensorXf &tensor,
 
     // Account for the boundary region, if present
     if (border && dr::any(m_size < 2 * m_border_size))
-		Throw("ImageBlock(const TensorXf&): image is too small to have a boundary!");
-	m_size -= 2 * m_border_size;
+        Throw("ImageBlock(const TensorXf&): image is too small to have a boundary!");
+    m_size -= 2 * m_border_size;
 
     // Copy the image tensor
     if constexpr (dr::is_jit_v<Float>)
@@ -85,7 +85,7 @@ MI_VARIANT void
 ImageBlock<Float, Spectrum>::set_size(const ScalarVector2u &size) {
     using Array = typename TensorXf::Array;
 
-    if (size == m_size)
+    if (dr::all(size == m_size))
         return;
 
     ScalarVector2u size_ext = size + 2 * m_border_size;
@@ -119,9 +119,9 @@ MI_VARIANT const typename ImageBlock<Float, Spectrum>::TensorXf &ImageBlock<Floa
 MI_VARIANT void ImageBlock<Float, Spectrum>::accum(Float value, UInt32 index, Bool active) {
     if constexpr (dr::is_jit_v<Float>) {
         if (m_compensate)
-            dr::scatter_reduce_kahan(m_tensor.array(),
-                                     m_tensor_compensation.array(),
-                                     value, index, active);
+            dr::scatter_add_kahan(m_tensor.array(),
+                                  m_tensor_compensation.array(),
+                                  value, index, active);
         else
             dr::scatter_reduce(ReduceOp::Add, m_tensor.array(),
                                value, index, active);
@@ -147,8 +147,8 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put_block(const ImageBlock *block) 
 
     if constexpr (dr::is_jit_v<Float>) {
         // If target block is cleared and match size, directly copy data
-        if (m_size == block->size() && m_offset == block->offset() &&
-            m_border_size == block->border_size()) {
+        if (dr::all(m_size == block->size() && m_offset == block->offset() &&
+            m_border_size == block->border_size())) {
             if (m_tensor.array().is_literal() && m_tensor.array()[0] == 0.f)
                 m_tensor.array() = block->tensor().array();
             else
@@ -330,7 +330,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                 Float factor = dr::detach(wx * wy);
 
                 if constexpr (JIT) {
-                    factor = dr::select(dr::neq(factor, 0.f), dr::rcp(factor), 0.f);
+                    factor = dr::select(factor != 0.f, dr::rcp(factor), 0.f);
                 } else {
                     if (unlikely(factor == 0))
                         return;
@@ -467,7 +467,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                 }
 
                 Float factor = dr::detach(wx * wy);
-                factor = dr::select(dr::neq(factor, 0.f), dr::rcp(factor), 0.f);
+                factor = dr::select(factor != 0.f, dr::rcp(factor), 0.f);
 
                 for (uint32_t i = 0; i < count; ++i)
                     weights_x[i] *= factor;
@@ -658,7 +658,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
             Float factor = dr::detach(wx * wy);
 
             if constexpr (JIT) {
-                factor = dr::select(dr::neq(factor, 0.f), dr::rcp(factor), 0.f);
+                factor = dr::select(factor != 0.f, dr::rcp(factor), 0.f);
             } else {
                 if (unlikely(factor == 0))
                     return;
@@ -745,7 +745,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
 
         if (m_normalize) {
             Float norm =
-                dr::select(dr::neq(weight_sum, 0.f), dr::rcp(weight_sum), 0.f);
+                dr::select(weight_sum != 0.f, dr::rcp(weight_sum), 0.f);
 
             for (uint32_t k = 0; k < m_channel_count; ++k)
                 values[k] *= norm;

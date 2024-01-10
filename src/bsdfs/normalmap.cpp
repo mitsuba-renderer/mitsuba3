@@ -104,7 +104,6 @@ public:
             m_components.push_back((m_nested_bsdf->flags(i)));
             m_flags |= m_components.back();
         }
-        dr::set_attr(this, "flags", m_flags);
     }
 
     void traverse(TraversalCallback *callback) override {

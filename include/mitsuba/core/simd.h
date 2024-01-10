@@ -13,7 +13,7 @@ template <typename T> std::string type_suffix() {
     using S = dr::scalar_t<T>;
     using V = dr::value_t<T>;
 
-    std::string id = std::to_string(dr::array_size_v<T>);
+    std::string id = std::to_string(dr::size_v<T>);
 
     if constexpr (dr::is_floating_point_v<S>) {
         if constexpr (std::is_same_v<S, dr::half>)

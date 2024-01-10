@@ -11,7 +11,7 @@
 #include <thread>
 
 #include <nanothread/nanothread.h>
-#include <drjit/half.h>
+#include <drjit-core/half.h>
 
 /* libpng */
 #include <png.h>
@@ -340,10 +340,10 @@ void Bitmap::resample(
         channel_count() != target->channel_count())
         Throw("Bitmap::resample(): Incompatible source and target bitmaps!");
 
-    if (temp && (pixel_format() != temp->pixel_format() ||
-                 component_format() != temp->component_format() ||
+    if (dr::all(temp && (pixel_format() != temp->pixel_format() ||
+                (component_format() != temp->component_format()) ||
                  channel_count() != temp->channel_count() ||
-                 temp->size() != Vector2u(target->width(), height())))
+                 temp->size() != Vector2u(target->width(), height()))))
         Throw("Bitmap::resample(): Incompatible temporary bitmap specified!");
 
     switch (m_component_format) {
@@ -407,7 +407,7 @@ ref<Bitmap> Bitmap::convert(PixelFormat pixel_format,
 }
 
 void Bitmap::convert(Bitmap *target) const {
-    if (m_size != target->size())
+    if (dr::all(m_size != target->size()))
         Throw("Bitmap::convert(): Incompatible target size!"
               " This: %s vs target: %s)", m_size, target->size());
 
@@ -816,13 +816,13 @@ void Bitmap::write_async(const fs::path &path, FileFormat format, int quality) c
 }
 
 bool Bitmap::operator==(const Bitmap &bitmap) const {
-    if (m_pixel_format != bitmap.m_pixel_format ||
+    if (dr::all(m_pixel_format != bitmap.m_pixel_format ||
         m_component_format != bitmap.m_component_format ||
         m_size != bitmap.m_size ||
         m_srgb_gamma != bitmap.m_srgb_gamma ||
         m_premultiplied_alpha != bitmap.m_premultiplied_alpha ||
         *m_struct != *bitmap.m_struct ||
-        m_metadata != bitmap.m_metadata)
+        m_metadata != bitmap.m_metadata))
         return false;
     return memcmp(uint8_data(), bitmap.uint8_data(), buffer_size()) == 0;
 }
@@ -1132,7 +1132,7 @@ void Bitmap::read_exr(Stream *stream) {
         Vector2i sampling(channel.xSampling, channel.ySampling);
         Imf::Slice slice;
 
-        if (sampling == Vector2i(1)) {
+        if (dr::all(sampling == Vector2i(1))) {
             // This is a full resolution channel. Load the ordinary way
             slice = Imf::Slice(pixel_type, (char *) (ptr + field.offset),
                                pixel_stride, row_stride);
