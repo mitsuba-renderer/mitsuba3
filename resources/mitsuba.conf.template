@@ -223,62 +223,62 @@
     },
 
     "llvm_ad_mono": {
-        "float": "dr::DiffArray<dr::LLVMArray<float>>",
+        "float": "dr::DiffArray<JitBackend::LLVM, float>",
         "spectrum": "Color<Float, 1>"
     },
 
     "llvm_ad_mono_double": {
-        "float": "dr::DiffArray<dr::LLVMArray<double>>",
+        "float": "dr::DiffArray<JitBackend::LLVM, double>",
         "spectrum": "Color<Float, 1>"
     },
 
     "llvm_ad_mono_polarized": {
-        "float": "dr::DiffArray<dr::LLVMArray<float>>",
+        "float": "dr::DiffArray<JitBackend::LLVM, float>",
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
     "llvm_ad_mono_polarized_double": {
-        "float": "dr::DiffArray<dr::LLVMArray<double>>",
+        "float": "dr::DiffArray<JitBackend::LLVM, double>",
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
     "llvm_ad_rgb": {
-        "float": "dr::DiffArray<dr::LLVMArray<float>>",
+        "float": "dr::DiffArray<JitBackend::LLVM, float>",
         "spectrum": "Color<Float, 3>"
     },
 
     "llvm_ad_rgb_double": {
-        "float": "dr::DiffArray<dr::LLVMArray<double>>",
+        "float": "dr::DiffArray<JitBackend::LLVM, double>",
         "spectrum": "Color<Float, 3>"
     },
 
     "llvm_ad_rgb_polarized": {
-        "float": "dr::DiffArray<dr::LLVMArray<float>>",
+        "float": "dr::DiffArray<JitBackend::LLVM, float>",
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
     "llvm_ad_rgb_polarized_double": {
-        "float": "dr::DiffArray<dr::LLVMArray<double>>",
+        "float": "dr::DiffArray<JitBackend::LLVM, double>",
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
     "llvm_ad_spectral": {
-        "float": "dr::DiffArray<dr::LLVMArray<float>>",
+        "float": "dr::DiffArray<JitBackend::LLVM, float>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
     "llvm_ad_spectral_double": {
-        "float": "dr::DiffArray<dr::LLVMArray<double>>",
+        "float": "dr::DiffArray<JitBackend::LLVM, double>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
     "llvm_ad_spectral_polarized": {
-        "float": "dr::DiffArray<dr::LLVMArray<float>>",
+        "float": "dr::DiffArray<JitBackend::LLVM, float>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
     "llvm_ad_spectral_polarized_double": {
-        "float": "dr::DiffArray<dr::LLVMArray<double>>",
+        "float": "dr::DiffArray<JitBackend::LLVM, double>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
@@ -345,62 +345,62 @@
     },
 
     "cuda_ad_mono": {
-        "float": "dr::DiffArray<dr::CUDAArray<float>>",
+        "float": "dr::DiffArray<JitBackend::CUDA, float>",
         "spectrum": "Color<Float, 1>"
     },
 
     "cuda_ad_mono_double": {
-        "float": "dr::DiffArray<dr::CUDAArray<double>>",
+        "float": "dr::DiffArray<JitBackend::CUDA, double>",
         "spectrum": "Color<Float, 1>"
     },
 
     "cuda_ad_mono_polarized": {
-        "float": "dr::DiffArray<dr::CUDAArray<float>>",
+        "float": "dr::DiffArray<JitBackend::CUDA, float>",
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
     "cuda_ad_mono_polarized_double": {
-        "float": "dr::DiffArray<dr::CUDAArray<double>>",
+        "float": "dr::DiffArray<JitBackend::CUDA, double>",
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
     "cuda_ad_rgb": {
-        "float": "dr::DiffArray<dr::CUDAArray<float>>",
+        "float": "dr::DiffArray<JitBackend::CUDA, float>",
         "spectrum": "Color<Float, 3>"
     },
 
     "cuda_ad_rgb_double": {
-        "float": "dr::DiffArray<dr::CUDAArray<double>>",
+        "float": "dr::DiffArray<JitBackend::CUDA, double>",
         "spectrum": "Color<Float, 3>"
     },
 
     "cuda_ad_rgb_polarized": {
-        "float": "dr::DiffArray<dr::CUDAArray<float>>",
+        "float": "dr::DiffArray<JitBackend::CUDA, float>",
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
     "cuda_ad_rgb_polarized_double": {
-        "float": "dr::DiffArray<dr::CUDAArray<double>>",
+        "float": "dr::DiffArray<JitBackend::CUDA, double>",
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
     "cuda_ad_spectral": {
-        "float": "dr::DiffArray<dr::CUDAArray<float>>",
+        "float": "dr::DiffArray<JitBackend::CUDA, float>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
     "cuda_ad_spectral_double": {
-        "float": "dr::DiffArray<dr::CUDAArray<double>>",
+        "float": "dr::DiffArray<JitBackend::CUDA, double>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
     "cuda_ad_spectral_polarized": {
-        "float": "dr::DiffArray<dr::CUDAArray<float>>",
+        "float": "dr::DiffArray<JitBackend::CUDA, float>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
     "cuda_ad_spectral_polarized_double": {
-        "float": "dr::DiffArray<dr::CUDAArray<double>>",
+        "float": "dr::DiffArray<JitBackend::CUDA, double>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     }
 }
