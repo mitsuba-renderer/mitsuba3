@@ -255,10 +255,18 @@ def test_eval_diffuse(variant_scalar_mono, R):
     assert np.allclose(values, reference, rtol=1e-3, atol=1e-3, equal_nan=True)
 
 
-def test_chi2_rtls(variant_llvm_ad_rgb):
+def test_chi2_rtls(variant_llvm_rgb):
     from mitsuba.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
 
-    sample_func, pdf_func = BSDFAdapter("rtls", "")
+    sample_func, pdf_func = BSDFAdapter("rtls",
+    """
+        <float name="f_iso" value="0.209741"/>
+        <float name="f_vol" value="0.081384"/>
+        <float name="f_geo" value="0.004140"/>
+        <float name="h" value="2"/>
+        <float name="r" value="1"/>
+        <float name="b" value="1"/>
+    """)
 
     chi2 = ChiSquareTest(
         domain=SphericalDomain(),
