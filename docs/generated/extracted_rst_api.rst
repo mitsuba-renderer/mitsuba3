@@ -10904,7 +10904,7 @@
 
 .. py:data:: mitsuba.MI_VERSION
     :type: str
-    :value: 3.4.1
+    :value: 3.5.0
 
 .. py:data:: mitsuba.MI_VERSION_MAJOR
     :type: int
@@ -10912,11 +10912,11 @@
 
 .. py:data:: mitsuba.MI_VERSION_MINOR
     :type: int
-    :value: 4
+    :value: 5
 
 .. py:data:: mitsuba.MI_VERSION_PATCH
     :type: int
-    :value: 1
+    :value: 0
 
 .. py:data:: mitsuba.MI_YEAR
     :type: str
@@ -27454,8 +27454,8 @@
         Parameter ``clamp_mass_thres``:
             Threshold value below which points' mass will be clamped to 0
         
-        Parameter ``sqrt_scale_mass``:
-            Scale sample's contribution by taking their square root
+        Parameter ``scale_mass``:
+            Scale sample's contribution by performing a power transformation
         
         Parameter ``debug_logs``:
             Whether or not to print debug logs. If this is enabled, extra
