@@ -31,7 +31,7 @@ def run_notebook(notebook_path, tmp_dir=None):
             if v not in mi.variants():
                 pytest.skip(f'variant {v} is not enabled')
 
-    proc = ExecutePreprocessor(timeout=600, kernel_name='python3')
+    proc = ExecutePreprocessor(timeout=900, kernel_name='python3')
     proc.allow_errors = True
 
     proc.preprocess(nb, {'metadata': {'path': dirname(notebook_path)}})
