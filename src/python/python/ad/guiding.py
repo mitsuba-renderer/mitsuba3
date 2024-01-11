@@ -24,7 +24,7 @@ class GridDistr(BaseGuidingDistr):
     Regular grid guiding distribution.
     """
 
-    def __init__(self, resolution, clamp_mass_thres, sqrt_scale_mass=False, debug_logs=False) -> None:
+    def __init__(self, resolution, clamp_mass_thres, scale_mass=0., debug_logs=False) -> None:
         """
         Parameter ``resolution``:
             Grid resolution
@@ -32,8 +32,8 @@ class GridDistr(BaseGuidingDistr):
         Parameter ``clamp_mass_thres``:
             Threshold value below which points' mass will be clamped to 0
 
-        Parameter ``sqrt_scale_mass``:
-            Scale sample's contribution by taking their square root
+        Parameter ``scale_mass``:
+            Scale sample's contribution by performing a power transformation
 
         Parameter ``debug_logs``:
             Whether or not to print debug logs. If this is enabled, extra
@@ -49,7 +49,7 @@ class GridDistr(BaseGuidingDistr):
             self.unit_delta.insert(0, dr.rcp(x))
         self.resolution = resolution
         self.clamp_mass_thres = clamp_mass_thres
-        self.sqrt_scale_mass = sqrt_scale_mass
+        self.scale_mass = scale_mass
         self.debug_logs = debug_logs
 
     def get_cell_array(self, index_array_):
@@ -95,8 +95,8 @@ class GridDistr(BaseGuidingDistr):
                        f"mass = {mass_ttl}). Clamped {percentage:.3f}% of "
                         "samples.")
 
-        if self.sqrt_scale_mass:
-            mass = dr.safe_sqrt(mass)
+        if self.scale_mass > 0:
+            mass = dr.power(mass, 1.0 - self.scale_mass)
 
         self.pmf = mi.DiscreteDistribution(mass)
 
@@ -145,7 +145,7 @@ class OcSpaceDistr(BaseGuidingDistr):
 
     def __init__(self, max_depth, max_leaf_count, extra_spc, eval_indirect_integrand_handle,
                  clamp_input_mass_thres, clamp_mass_thres, prepartition_x_slices,
-                 scatter_inc=False, sqrt_scale_mass=False, debug_logs=False) -> None:
+                 scatter_inc=False, scale_mass=False, debug_logs=False) -> None:
         self.max_depth = max_depth
         self.max_leaf_count = max_leaf_count
         self.extra_spc = extra_spc
@@ -154,7 +154,7 @@ class OcSpaceDistr(BaseGuidingDistr):
         self.clamp_input_mass_thres = clamp_input_mass_thres
         self.clamp_mass_thres = clamp_mass_thres
         self.scatter_inc = scatter_inc
-        self.sqrt_scale_mass = sqrt_scale_mass
+        self.scale_mass = scale_mass
         self.debug_logs = debug_logs
 
     @staticmethod
@@ -539,8 +539,8 @@ class OcSpaceDistr(BaseGuidingDistr):
 
             del valid_idx, valid_mask
 
-        if self.sqrt_scale_mass:
-            box_mass = dr.safe_sqrt(box_mass)
+        if self.scale_mass > 0:
+            box_mass = dr.power(box_mass, 1.0 - self.scale_mass)
 
         del vol, query_mass, filtered_points
 

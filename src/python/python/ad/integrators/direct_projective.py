@@ -173,7 +173,6 @@ class DirectProjectiveIntegrator(PSIntegrator):
             # phase
             if not primal:
                 # Re-compute attached `emitter_val` to enable emitter optimization
-                # TODO: zz: do we really need this?
                 ds_em.d = dr.normalize(ds_em.p - si.p)
                 spec_em = scene.eval_emitter_direction(si, ds_em, active_em)
                 emitter_val = spec_em / ds_em.pdf
