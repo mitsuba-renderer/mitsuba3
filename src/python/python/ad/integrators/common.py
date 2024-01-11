@@ -859,7 +859,7 @@ class PSIntegrator(ADIntegrator):
         # If set to be "True", launch one kernel for all rounds of
         # projections. Otherwise a recorded loop simulates the multi-round
         # initialization.
-        self.octree_scatter_inc = False
+        self.octree_scatter_inc = True
 
         ##### OTHER #####
         # Warn about potential bias due to shapes entering/leaving the frame
