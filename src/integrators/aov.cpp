@@ -221,7 +221,7 @@ public:
                 static_assert(is_spectral_v<Spectrum>);
                 /// Note: this assumes that sensor used sample_rgb_spectrum() to generate 'ray.wavelengths'
                 auto pdf = pdf_rgb_spectrum(ray.wavelengths);
-                spec_u *= dr::select(dr::neq(pdf, 0.f), dr::rcp(pdf), 0.f);
+                spec_u *= dr::select(pdf != 0.f, dr::rcp(pdf), 0.f);
                 return spectrum_to_srgb(spec_u, ray.wavelengths, active);
             }
         };

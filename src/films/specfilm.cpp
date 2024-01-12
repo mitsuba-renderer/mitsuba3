@@ -289,7 +289,7 @@ public:
 
         // The SRF is not necessarily normalized, cancel out multiplicative factors
         UnpolarizedSpectrum inv_spec = m_srf->eval(si);
-        inv_spec = dr::select(dr::neq(inv_spec, 0.f), dr::rcp(inv_spec), 1.f);
+        inv_spec = dr::select(inv_spec != 0.f, dr::rcp(inv_spec), 1.f);
         UnpolarizedSpectrum values = spec * inv_spec;
 
         for (size_t j = 0; j < m_srfs.size(); ++j) {

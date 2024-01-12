@@ -306,7 +306,7 @@ template <typename Point_> struct BoundingBox {
 
         /* First, ensure that the ray either has a nonzero slope on each axis,
            or that its origin on a zero-valued axis is within the box bounds */
-        auto active = dr::all(dr::neq(ray.d, dr::zeros<Vector>()) || ((ray.o > min) || (ray.o < max)));
+        auto active = dr::all((ray.d != dr::zeros<Vector>()) || ((ray.o > min) || (ray.o < max)));
 
         // Compute intersection intervals for each axis
         Vector d_rcp = dr::rcp(ray.d),

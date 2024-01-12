@@ -173,7 +173,7 @@ static void embree_intersect_packet(int *valid, void *geometryUserPtr,
 
     const Shape* shape = (const Shape*) geometryUserPtr;
 
-    MaskP active = dr::neq(dr::load_aligned<UInt32P>(valid), 0);
+    MaskP active = dr::load_aligned<UInt32P>(valid) != 0;
     if (dr::none(active))
         return;
 
@@ -195,7 +195,7 @@ static void embree_intersect_packet(int *valid, void *geometryUserPtr,
     // Check whether this is a shadow ray or not
     if (rtc_hit) {
         auto [t, prim_uv, s_idx, p_idx] = shape->ray_intersect_preliminary_packet(ray, primID, active);
-        active &= dr::neq(t, dr::Infinity<Float>);
+        active &= (t != dr::Infinity<Float>);
         dr::store_aligned(rtc_ray->tfar,      Float32P(dr::select(active, t,           ray.maxt)));
         dr::store_aligned(rtc_hit->u,         Float32P(dr::select(active, prim_uv.x(), dr::load_aligned<Float32P>(rtc_hit->u))));
         dr::store_aligned(rtc_hit->v,         Float32P(dr::select(active, prim_uv.y(), dr::load_aligned<Float32P>(rtc_hit->v))));
@@ -374,7 +374,7 @@ MI_VARIANT Float Shape<Float, Spectrum>::pdf_direction(const Interaction3f & /*i
     Float pdf = pdf_position(ds, active),
            dp = dr::abs_dot(ds.d, ds.n);
 
-    pdf *= dr::select(dr::neq(dp, 0.f), (ds.dist * ds.dist) / dp, 0.f);
+    pdf *= dr::select(dp != 0.f, (ds.dist * ds.dist) / dp, 0.f);
 
     return pdf;
 }
@@ -460,7 +460,7 @@ Shape<Float, Spectrum>::ray_intersect_preliminary_scalar(const ScalarRay3f & /*r
                                             uint32_t prim_index,                                    \
                                             MaskP##N active) const {                                \
         auto res = ray_intersect_preliminary_packet(ray, prim_index, active);                       \
-        return dr::neq(std::get<0>(res), dr::Infinity<Float>);                                      \
+        return std::get<0>(res) != dr::Infinity<Float>;                                             \
     }
 
 MI_DEFAULT_RAY_INTERSECT_PACKET(4)

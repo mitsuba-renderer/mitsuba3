@@ -196,7 +196,7 @@ template <typename T> T round_to_power_of_two(T i) {
 /// Ceiling of base-2 logarithm
 template <typename T> T log2i_ceil(T value) {
     T result = 8 * sizeof(dr::scalar_t<T>) - 1u - dr::lzcnt(value);
-    dr::masked(result, dr::neq(value & (value - 1u), 0u)) += 1u;
+    dr::masked(result, (value & (value - 1u)) != 0u) += 1u;
     return result;
 }
 
@@ -365,7 +365,7 @@ solve_quadratic(const Value &a, const Value &b, const Value &c) {
     Mask linear_case = (a == Scalar(0));
 
     /* If so, we require b != 0 */
-    Mask valid_linear = linear_case && dr::neq(b, Scalar(0));
+    Mask valid_linear = linear_case && (b != Scalar(0));
 
     /* Initialize solution with that of linear equation */
     Value x0, x1;

@@ -130,7 +130,7 @@ public:
         } else {
             // Importance sample the texture, then map onto the shape
             auto [uv, pdf] = m_radiance->sample_position(sample, active);
-            active &= dr::neq(pdf, 0.f);
+            active &= (pdf != 0.f);
 
             si = m_shape->eval_parameterization(uv, +RayFlags::All, active);
             si.wavelengths = it.wavelengths;
@@ -205,7 +205,7 @@ public:
         } else {
             // Importance sample texture
             auto [uv, pdf] = m_radiance->sample_position(sample, active);
-            active &= dr::neq(pdf, 0.f);
+            active &= (pdf != 0.f);
 
             auto si = m_shape->eval_parameterization(uv, +RayFlags::All, active);
             active &= si.is_valid();

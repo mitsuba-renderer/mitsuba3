@@ -112,7 +112,7 @@ public:
         UInt32 depth                  = 0;
 
         // If m_hide_emitters == false, the environment emitter will be visible
-        Mask valid_ray                = !m_hide_emitters && dr::neq(scene->environment(), nullptr);
+        Mask valid_ray = !m_hide_emitters && (scene->environment() != nullptr);
 
         // Variables caching information from the previous bounce
         Interaction3f prev_si         = dr::zeros<Interaction3f>();
@@ -160,7 +160,7 @@ public:
                each Monte Carlo sample runs independently. In this case,
                dr::any_or<..>() returns the template argument (true) which means
                that the 'if' statement is always conservatively taken. */
-            if (dr::any_or<true>(dr::neq(si.emitter(scene), nullptr))) {
+            if (dr::any_or<true>(si.emitter(scene) != nullptr)) {
                 DirectionSample3f ds(scene, si, prev_si);
                 Float em_pdf = 0.f;
 
@@ -199,14 +199,14 @@ public:
                 // Sample the emitter
                 std::tie(ds, em_weight) = scene->sample_emitter_direction(
                     si, sampler->next_2d(), true, active_em);
-                active_em &= dr::neq(ds.pdf, 0.f);
+                active_em &= (ds.pdf != 0.f);
 
                 /* Given the detached emitter sample, recompute its contribution
                    with AD to enable light source optimization. */
                 if (dr::grad_enabled(si.p)) {
                     ds.d = dr::normalize(ds.p - si.p);
                     Spectrum em_val = scene->eval_emitter_direction(si, ds, active_em);
-                    em_weight = dr::select(dr::neq(ds.pdf, 0), em_val / ds.pdf, 0);
+                    em_weight = dr::select(ds.pdf != 0, em_val / ds.pdf, 0);
                 }
 
                 wo = si.to_local(ds.d);
@@ -282,7 +282,7 @@ public:
             throughput[rr_active] *= dr::rcp(dr::detach(rr_prob));
 
             active = active_next && (!rr_active || rr_continue) &&
-                     dr::neq(throughput_max, 0.f);
+                     (throughput_max != 0.f);
         });
 
         return {

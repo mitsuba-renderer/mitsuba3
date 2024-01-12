@@ -84,7 +84,7 @@ public:
         auto [ray, throughput] = prepare_ray(scene, sensor, sampler);
 
         Float throughput_max = dr::max(unpolarized_spectrum(throughput));
-        Mask active = dr::neq(throughput_max, 0.f);
+        Mask active = (throughput_max != 0.f);
 
         trace_light_ray(ray, scene, sensor, sampler, throughput, block,
                         sample_scale, active);
@@ -258,7 +258,7 @@ public:
             throughput *= bsdf_val * correction;
             eta *= bs.eta;
 
-            active &= dr::any(dr::neq(unpolarized_spectrum(throughput), 0.f));
+            active &= dr::any(unpolarized_spectrum(throughput) != 0.f);
             if (dr::none_or<false>(active))
                 break;
 
@@ -315,7 +315,7 @@ public:
         Spectrum result = 0.f;
         Spectrum surface_weight = 1.f;
         Vector3f local_d        = si.to_local(sensor_ray.d);
-        Mask on_surface         = active && dr::neq(si.shape, nullptr);
+        Mask on_surface         = active && (si.shape != nullptr);
         if (dr::any_or<true>(on_surface)) {
             /* Note that foreshortening is only missing for directly visible
                emitters associated with a shape. Otherwise it's included in the
@@ -359,7 +359,7 @@ public:
            The crop window is already accounted for in the UV positions
            returned by the sensor, here we just need to compensate for
            the block's offset that will be applied in `put`. */
-        Float alpha = dr::select(dr::neq(bsdf, nullptr), 1.f, 0.f);
+        Float alpha = dr::select(bsdf != nullptr, 1.f, 0.f);
         Vector2f adjusted_position = sensor_ds.uv + block->offset();
 
         /* Splat RGB value onto the image buffer. The particle tracer

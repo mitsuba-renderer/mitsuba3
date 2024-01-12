@@ -122,7 +122,7 @@ public:
         perturbed_si.wi = perturbed_si.to_local(si.wi);
         auto [bs, weight] = m_nested_bsdf->sample(ctx, perturbed_si,
                                                   sample1, sample2, active);
-        active &= dr::any(dr::neq(unpolarized_spectrum(weight), 0.f));
+        active &= dr::any(unpolarized_spectrum(weight) != 0.f);
         if (dr::none_or<false>(active))
             return { bs, 0.f };
 

@@ -135,7 +135,7 @@ public:
 
         // If there is an environment emitter and emitters are visible: all rays will be valid
         // Otherwise, it will depend on whether a valid interaction is sampled
-        Mask valid_ray = !m_hide_emitters && dr::neq(scene->environment(), nullptr);
+        Mask valid_ray = !m_hide_emitters && (scene->environment() != nullptr);
 
         // For now, don't use ray differentials
         Ray3f ray = ray_;
@@ -188,12 +188,12 @@ public:
             last_event_was_null = false;
 
             active &= depth < (uint32_t) m_max_depth;
-            active &= dr::any(dr::neq(unpolarized_spectrum(mis_weight(p_over_f)), 0.f));
+            active &= dr::any(unpolarized_spectrum(mis_weight(p_over_f)) != 0.f);
             if (dr::none_or<false>(active))
                 break;
 
             // ----------------------- Sampling the RTE -----------------------
-            Mask active_medium  = active && dr::neq(medium, nullptr);
+            Mask active_medium  = active && (medium != nullptr);
             Mask active_surface = active && !active_medium;
             Mask act_null_scatter = false, act_medium_scatter = false,
                  escaped_medium = false;
@@ -311,7 +311,7 @@ public:
                 Mask ray_from_camera = active_surface && (depth == 0u);
                 Mask count_direct = ray_from_camera || specular_chain;
                 EmitterPtr emitter = si.emitter(scene);
-                Mask active_e = active_surface && dr::neq(emitter, nullptr) && !((depth == 0u) && m_hide_emitters);
+                Mask active_e = active_surface && (emitter != nullptr) && !((depth == 0u) && m_hide_emitters);
                 if (dr::any_or<true>(active_e)) {
                     if (dr::any_or<true>(active_e && !count_direct)) {
                         // Get the PDF of sampling this emitter using next event estimation
@@ -385,7 +385,7 @@ public:
         auto [ds, emitter_sample_weight] = scene->sample_emitter_direction(ref_interaction, sampler->next_2d(active), false, active);
         Spectrum emitter_val = emitter_sample_weight * ds.pdf;
         dr::masked(emitter_val, ds.pdf == 0.f) = 0.f;
-        active &= dr::neq(ds.pdf, 0.f);
+        active &= (ds.pdf != 0.f);
         update_weights(p_over_f_nee, ds.pdf, 1.0f, channel, active);
 
         if (dr::none_or<false>(active)) {
@@ -417,7 +417,7 @@ public:
                 break;
 
             Mask escaped_medium = false;
-            Mask active_medium  = active && dr::neq(medium, nullptr);
+            Mask active_medium  = active && (medium != nullptr);
             Mask active_surface = active && !active_medium;
 
             if (dr::any_or<true>(active_medium)) {
@@ -485,10 +485,11 @@ public:
 
             // Continue tracing through scene if non-zero weights exist
             if constexpr (SpectralMis)
-                active &= (active_medium || active_surface) && dr::any(dr::neq(mis_weight(p_over_f_uni), 0.f));
+                active &= (active_medium || active_surface) && dr::any(mis_weight(p_over_f_uni) != 0.f);
             else
                 active &= (active_medium || active_surface) &&
-                      (dr::any(dr::neq(unpolarized_spectrum(p_over_f_uni), 0.f)) || dr::any(dr::neq(unpolarized_spectrum(p_over_f_nee), 0.f)) );
+                          (dr::any(unpolarized_spectrum(p_over_f_uni) != 0.f) ||
+                           dr::any(unpolarized_spectrum(p_over_f_nee) != 0.f));
 
             // If a medium transition is taking place: Update the medium pointer
             Mask has_medium_trans = active_surface && si.is_medium_transition();
