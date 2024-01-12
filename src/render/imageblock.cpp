@@ -244,6 +244,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
     // Check if the operation can be performed using a recorded loop
     bool record_loop = false;
 
+    // TODO: Maybe revisit this now that nanobind can differentiate through loops
     if constexpr (JIT) {
         record_loop = jit_flag(JitFlag::LoopRecord) && !m_normalize;
 
@@ -383,29 +384,44 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
             // ===========================================================
 
             UInt32 ys = 0;
-            dr::Loop<Mask> loop_1("ImageBlock::put() [1]", ys, index);
 
-            while (loop_1(ys < count.y())) {
-                Float weight_y = m_rfilter->eval(rel_f.y() + Float(ys));
-                Mask active_1 = active && (pos_0_u.y() + ys <= pos_1_u.y());
+            std::tie(ys, index) = dr::while_loop(
+                std::make_tuple(ys, index),
+                [&count](const UInt32 &ys, const UInt32 &index) {
+                    return ys < count.y();
+                },
+                // TODO: REVISIT THIS! Capturing \`this\` is not what we'd want potentially
+                [this, active, count, values, pos_0_u, pos_1_u,
+                 rel_f, size](UInt32 &ys, UInt32 &index) {
+                    Float weight_y = m_rfilter->eval(rel_f.y() + Float(ys));
+                    Mask active_1 = active && (pos_0_u.y() + ys <= pos_1_u.y());
 
-                UInt32 xs = 0;
-                dr::Loop<Mask> loop_2("ImageBlock::put() [2]", xs, index);
+                    UInt32 xs = 0;
 
-                while (loop_2(xs < count.x())) {
-                    Float weight_x = m_rfilter->eval(rel_f.x() + Float(xs)),
-                          weight = weight_x * weight_y;
+                    std::tie(xs, index) = dr::while_loop(
+                        std::make_tuple(xs, index),
+                        [count](const UInt32 &xs, const UInt32 &index) {
+                            return xs < count.x();
+                        },
+                        [this, values, rel_f, weight_y, pos_0_u, pos_1_u,
+                         active_1](UInt32 &xs, UInt32 &index) {
+                            Float weight_x =
+                                      m_rfilter->eval(rel_f.x() + Float(xs)),
+                                  weight = weight_x * weight_y;
 
-                    Mask active_2 = active_1 && (pos_0_u.x() + xs <= pos_1_u.x());
-                    for (uint32_t k = 0; k < m_channel_count; ++k)
-                        accum(values[k] * weight, index++, active_2);
+                            Mask active_2 =
+                                active_1 && (pos_0_u.x() + xs <= pos_1_u.x());
+                            for (uint32_t k = 0; k < m_channel_count; ++k)
+                                accum(values[k] * weight, index++, active_2);
 
-                    xs++;
-                }
+                            xs++;
+                        },
+                        "ImageBlock::put() [2]");
 
-                ys++;
-                index += (size.x() - count.x()) * m_channel_count;
-            }
+                    ys++;
+                    index += (size.x() - count.x()) * m_channel_count;
+                },
+                "ImageBlock::put() [1]");
         }
 
         return;

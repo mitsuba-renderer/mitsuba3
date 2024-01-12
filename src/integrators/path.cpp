@@ -145,8 +145,8 @@ public:
                 Interaction3f& prev_si, Float& prev_bsdf_pdf, 
                 Bool& prev_bsdf_delta, Bool& active) {
 
-            /* dr::Loop implicitly masks all code in the loop using the 'active'
-               flag, so there is no need to pass it to every function */
+            /* dr::while_loop implicitly masks all code in the loop using the
+               'active' flag, so there is no need to pass it to every function */
 
             SurfaceInteraction3f si =
                 scene->ray_intersect(ray,
