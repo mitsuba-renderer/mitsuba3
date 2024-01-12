@@ -273,7 +273,7 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
     // Potentially disable inlining of emitter sampling (if there is just a single emitter)
     bool vcall_inline = true;
     if constexpr (dr::is_jit_v<Float>)
-         vcall_inline = jit_flag(JitFlag::VCallInline);
+         vcall_inline = false;
 
     size_t emitter_count = m_emitters.size();
     if (emitter_count > 1 || (emitter_count == 1 && !vcall_inline)) {
@@ -308,7 +308,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
     // Potentially disable inlining of emitter sampling (if there is just a single emitter)
     bool vcall_inline = true;
     if constexpr (dr::is_jit_v<Float>)
-         vcall_inline = jit_flag(JitFlag::VCallInline);
+         vcall_inline = false;
 
     size_t emitter_count = m_emitters.size();
     if (emitter_count > 1 || (emitter_count == 1 && !vcall_inline)) {
