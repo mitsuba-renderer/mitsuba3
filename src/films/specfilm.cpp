@@ -267,7 +267,7 @@ public:
 
     ref<ImageBlock> create_block(const ScalarVector2u &size, bool normalize,
                                  bool border) override {
-        bool default_config = size == ScalarVector2u(0);
+        bool default_config = dr::all(size == ScalarVector2u(0));
 
         return new ImageBlock(default_config ? m_crop_size : size,
                               default_config ? m_crop_offset : ScalarPoint2u(0),

@@ -136,12 +136,13 @@ public:
             valid_ray, prev_si, prev_bsdf_pdf,prev_bsdf_delta, active),
 
             [](const Ray3f&, const Spectrum&, const Spectrum&, const Float&, 
-               const UInt32& depth, const Mask&, const Interaction3f&, 
+               const UInt32&, const Mask&, const Interaction3f&, 
                const Float&, const Bool&, const Bool& active) {
                 return active;
             },
-            [](Ray3f& ray, Spectrum& throughput, Spectrum& result, 
-                Float& eta, UInt32& depth, Mask& valid_ray, 
+            // TODO: Correct handling of sampler state
+            [this, sampler, scene, bsdf_ctx](Ray3f& ray, Spectrum& throughput, 
+                Spectrum& result, Float& eta, UInt32& depth, Mask& valid_ray, 
                 Interaction3f& prev_si, Float& prev_bsdf_pdf, 
                 Bool& prev_bsdf_delta, Bool& active) {
 
@@ -181,8 +182,10 @@ public:
             // Continue tracing the path at this point?
             Bool active_next = (depth + 1 < m_max_depth) && si.is_valid();
 
-            if (dr::none_or<false>(active_next))
-                break; // early exit for scalar mode
+            if (dr::none_or<false>(active_next)) {
+                active = active_next;
+                return; // early exit for scalar mode
+            }
 
             BSDFPtr bsdf = si.bsdf(ray);
 

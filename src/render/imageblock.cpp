@@ -149,7 +149,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put_block(const ImageBlock *block) 
         // If target block is cleared and match size, directly copy data
         if (dr::all(m_size == block->size() && m_offset == block->offset() &&
             m_border_size == block->border_size())) {
-            if (m_tensor.array().is_literal() && m_tensor.array()[0] == 0.f)
+            if (/*m_tensor.array().is_literal() &&*/ m_tensor.array()[0] == 0.f)
                 m_tensor.array() = block->tensor().array();
             else
                 m_tensor.array() += block->tensor().array();
@@ -387,10 +387,9 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
 
             std::tie(ys, index) = dr::while_loop(
                 std::make_tuple(ys, index),
-                [&count](const UInt32 &ys, const UInt32 &index) {
+                [count](const UInt32 &ys, const UInt32 &) {
                     return ys < count.y();
                 },
-                // TODO: REVISIT THIS! Capturing \`this\` is not what we'd want potentially
                 [this, active, count, values, pos_0_u, pos_1_u,
                  rel_f, size](UInt32 &ys, UInt32 &index) {
                     Float weight_y = m_rfilter->eval(rel_f.y() + Float(ys));
@@ -400,7 +399,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
 
                     std::tie(xs, index) = dr::while_loop(
                         std::make_tuple(xs, index),
-                        [count](const UInt32 &xs, const UInt32 &index) {
+                        [count](const UInt32 &xs, const UInt32 &) {
                             return xs < count.x();
                         },
                         [this, values, rel_f, weight_y, pos_0_u, pos_1_u,
@@ -520,29 +519,41 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
 
             UInt32 ys = 0;
 
-            dr::Loop<Mask> loop_1("ImageBlock::put() [1]", ys, index);
+            std::tie(ys, index) = dr::while_loop(
+                std::make_tuple(ys, index),
+                [count](const UInt32 &ys, const UInt32 &) {
+                    return ys < count;
+                },
+                [this, active, count, values, x, y, rel_f, 
+                    size](UInt32 &ys, UInt32 &index) {
+                    Float weight_y = m_rfilter->eval(rel_f.y() + Float(ys));
+                    Mask active_1 = active && (y + ys < size.y());
 
-            while (loop_1(ys < count)) {
-                Float weight_y = m_rfilter->eval(rel_f.y() + Float(ys));
-                Mask active_1 = active && (y + ys < size.y());
+                    UInt32 xs = 0;
 
-                UInt32 xs = 0;
-                dr::Loop<Mask> loop_2("ImageBlock::put() [2]", xs, index);
+                    std::tie(xs, index) = dr::while_loop(
+                        std::make_tuple(xs, index),
+                        [count](const UInt32 &xs, const UInt32 &) {
+                            return xs < count;
+                        },
+                        [this, values, rel_f, weight_y, x, y, size,
+                            active_1](UInt32 &xs, UInt32 &index) {
+                            Float weight_x = 
+                                    m_rfilter->eval(rel_f.x() + Float(xs)),
+                                  weight = weight_x * weight_y;
 
-                while (loop_2(xs < count)) {
-                    Float weight_x = m_rfilter->eval(rel_f.x() + Float(xs)),
-                          weight = weight_x * weight_y;
+                            Mask active_2 = active_1 && (x + xs < size.x());
+                            for (uint32_t k = 0; k < m_channel_count; ++k)
+                                accum(values[k] * weight, index++, active_2);
 
-                    Mask active_2 = active_1 && (x + xs < size.x());
-                    for (uint32_t k = 0; k < m_channel_count; ++k)
-                        accum(values[k] * weight, index++, active_2);
+                            xs++;
+                        },
+                        "ImageBlock::put() [2]");
 
-                    xs++;
-                }
-
-                ys++;
-                index += (size.x() - count) * m_channel_count;
-            }
+                    ys++;
+                    index += (size.x() - count) * m_channel_count;
+                },
+                "ImageBlock::put() [1]");
         }
     }
 }
@@ -719,45 +730,55 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
 
         UInt32 ys = 0;
         Float weight_sum = 0.f;
+        using Values = dr::DynamicArray<Float>;
+        Values dr_values = dr::load<Values>(values, m_channel_count);
 
-        dr::Loop<Mask> loop_1("ImageBlock::read() [1]");
-        loop_1.put(ys, index, weight_sum);
-        for (uint32_t k = 0; k < m_channel_count; ++k)
-            loop_1.put(values[k]);
-        loop_1.init();
+        std::tie(ys, index, weight_sum, dr_values) = dr::while_loop(
+            std::make_tuple(ys, index, weight_sum, dr_values),
+            [count](const UInt32 &ys, const UInt32 &, const Float&, 
+                const Values&) {
+                return ys < count.y();
+            },
+            [this, active, count, pos_0_u, pos_1_u, size,
+            rel_f](UInt32& ys, UInt32& index, Float& weight_sum, 
+            Values& dr_values) {
+                Float weight_y = m_rfilter->eval(rel_f.y() + Float(ys));
+                Mask active_1 = active && (pos_0_u.y() + ys <= pos_1_u.y());
 
-        while (loop_1(ys < count.y())) {
-            Float weight_y = m_rfilter->eval(rel_f.y() + Float(ys));
-            Mask active_1 = active && (pos_0_u.y() + ys <= pos_1_u.y());
+                UInt32 xs = 0;
 
-            UInt32 xs = 0;
-            dr::Loop<Mask> loop_2("ImageBlock::read() [2]");
+                std::tie(xs, index, weight_sum, dr_values) = dr::while_loop(
+                    std::make_tuple(xs, index, weight_sum, dr_values),
+                    [count](const UInt32& xs, const UInt32&, const Float&, 
+                        const Values&) {
+                        return xs < count.x();
+                    },
+                    [this, rel_f, weight_y, pos_0_u, pos_1_u, 
+                    active_1](UInt32& xs, UInt32& index, Float& weight_sum, 
+                        Values& dr_values) {
 
-            loop_2.put(xs, index, weight_sum);
-            for (uint32_t k = 0; k < m_channel_count; ++k)
-                loop_2.put(values[k]);
-            loop_2.init();
+                        Float weight_x = m_rfilter->eval(rel_f.x() + Float(xs)),
+                        weight = weight_x * weight_y;
 
-            while (loop_2(xs < count.x())) {
-                Float weight_x = m_rfilter->eval(rel_f.x() + Float(xs)),
-                      weight = weight_x * weight_y;
+                        Mask active_2 = 
+                            active_1 && (pos_0_u.x() + xs <= pos_1_u.x());
+                        for (uint32_t k = 0; k < m_channel_count; ++k) {
+                            dr_values.entry(k) = dr::fmadd(
+                                dr::gather<Float>(m_tensor.array(), index, active_2),
+                                weight, dr_values.entry(k));
 
-                Mask active_2 = active_1 && (pos_0_u.x() + xs <= pos_1_u.x());
-                for (uint32_t k = 0; k < m_channel_count; ++k) {
-                    values[k] = dr::fmadd(
-                        dr::gather<Float>(m_tensor.array(), index, active_2),
-                        weight, values[k]);
+                            index++;
+                        }
 
-                    index++;
-                }
+                        weight_sum += dr::select(active_2, weight, 0.f);
+                        xs++;
+                    },
+                    "ImageBlock::read() [2]");
 
-                weight_sum += dr::select(active_2, weight, 0.f);
-                xs++;
-            }
-
-            ys++;
-            index += (size.x() - count.x()) * m_channel_count;
-        }
+                ys++;
+                index += (size.x() - count.x()) * m_channel_count;
+            },
+            "ImageBlock::read() [1]");
 
         if (m_normalize) {
             Float norm =

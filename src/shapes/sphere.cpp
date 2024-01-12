@@ -445,7 +445,7 @@ public:
 
     std::tuple<DynamicBuffer<UInt32>, DynamicBuffer<Float>>
     precompute_silhouette(const ScalarPoint3f & /*viewpoint*/) const override {
-        DynamicBuffer<UInt32> indices(DiscontinuityFlags::InteriorType);
+        DynamicBuffer<UInt32> indices((uint32_t)DiscontinuityFlags::InteriorType);
         DynamicBuffer<Float> weights(1.f);
 
         return {indices, weights};

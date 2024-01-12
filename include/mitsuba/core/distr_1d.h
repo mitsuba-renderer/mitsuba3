@@ -119,7 +119,7 @@ public:
         sample *= m_sum;
 
         return dr::binary_search<Index>(
-            dr::slice(m_valid.x()), dr::slice(m_valid.y()),
+            m_valid.x(), m_valid.y(),
             [&](Index index) DRJIT_INLINE_LAMBDA {
                 Value value = dr::gather<Value>(m_cdf, index, active);
                 if constexpr (!dr::is_jit_v<Float>) {

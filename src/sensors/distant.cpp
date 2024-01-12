@@ -141,7 +141,7 @@ public:
 
     DistantSensorImpl(const Properties &props) : Base(props) {
         // Check film size
-        if (m_film->size() != ScalarPoint2i(1, 1))
+        if (dr::all(m_film->size() != ScalarPoint2i(1, 1)))
             Throw("This sensor only supports films of size 1x1 Pixels!");
 
         // Check reconstruction filter radius

@@ -76,7 +76,7 @@ public:
         Float factor = Float(1.f),
               recip(base.recip);
 
-        auto active = (index != 0u);
+        auto active = index != 0u;
 
         while (dr::any(active)) {
             auto active_f = dr::reinterpret_array<dr::mask_t<Float>>(active);
@@ -112,7 +112,7 @@ public:
         Float factor(1.f),
               recip(base.recip);
 
-        auto active = (index != 0);
+        auto active = index != 0;
 
         while (dr::any(active)) {
             auto active_f = dr::reinterpret_array<dr::mask_t<Float>>(active);
@@ -122,7 +122,7 @@ public:
             dr::masked(value, active) =
                 value * divisor + (dr::gather<UInt64, 2>(perm, digit, active) & mask);
             index = next;
-            active = (index != 0);
+            active = index != 0;
         }
 
         Float correction(base.recip * (Float) perm[0] / ((Float) 1 - base.recip));
@@ -224,11 +224,11 @@ Float sobol_2(UInt index, UInt scramble = 0) {
                 return index != 0U;
             },
             [](UInt& v, UInt& scramble, UInt& index) {
-                dr::masked(scramble, index & 1U == 1U) ^= v;
+                dr::masked(scramble, index & (1U == 1U)) ^= v;
                 index >>= 1;
                 v ^= v >> 1;
-            }
-        );
+            },
+            "sobol_2");
 
         return dr::reinterpret_array<Float>(dr::sr<12>(scramble) | 0x3ff0000000000000ull) - 1.0;
     } else {
@@ -243,8 +243,8 @@ Float sobol_2(UInt index, UInt scramble = 0) {
                 dr::masked(scramble, index & (1U == 1U)) ^= v;
                 index >>= 1;
                 v ^= v >> 1;
-            }
-        );
+            },
+            "sobol_2");
 
         return Float(scramble) / Float(1ULL << 32);
     }
