@@ -76,7 +76,7 @@ public:
         Float factor = Float(1.f),
               recip(base.recip);
 
-        auto active = dr::neq(index, 0u);
+        auto active = (index != 0u);
 
         while (dr::any(active)) {
             auto active_f = dr::reinterpret_array<dr::mask_t<Float>>(active);
@@ -84,7 +84,7 @@ public:
             dr::masked(factor, active_f) = factor * recip;
             dr::masked(value, active) = (value - next) * divisor + index;
             index = next;
-            active = dr::neq(index, 0u);
+            active = (index != 0u);
         }
 
         return dr::minimum(dr::OneMinusEpsilon<Float>, Float(value) * factor);
@@ -112,7 +112,7 @@ public:
         Float factor(1.f),
               recip(base.recip);
 
-        auto active = dr::neq(index, 0);
+        auto active = (index != 0);
 
         while (dr::any(active)) {
             auto active_f = dr::reinterpret_array<dr::mask_t<Float>>(active);
@@ -122,7 +122,7 @@ public:
             dr::masked(value, active) =
                 value * divisor + (dr::gather<UInt64, 2>(perm, digit, active) & mask);
             index = next;
-            active = dr::neq(index, 0);
+            active = (index != 0);
         }
 
         Float correction(base.recip * (Float) perm[0] / ((Float) 1 - base.recip));

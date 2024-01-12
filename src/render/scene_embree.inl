@@ -325,12 +325,12 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
 
         UInt32 inst_index = UInt32::steal(out[5]);
 
-        Mask hit = active && dr::neq(t, ray_maxt);
+        Mask hit = active && (t != ray_maxt);
 
         pi.t = dr::select(hit, t, dr::Infinity<Float>);
 
         // Set si.instance and si.shape
-        Mask hit_inst = hit && dr::neq(inst_index, RTC_INVALID_GEOMETRY_ID);
+        Mask hit_inst = hit && (inst_index != RTC_INVALID_GEOMETRY_ID);
         UInt32 index = dr::select(hit_inst, inst_index, pi.shape_index);
 
         ShapePtr shape = dr::gather<UInt32>(s.shapes_registry_ids, index, hit);
@@ -431,7 +431,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask coherent, Mask activ
 
         jit_llvm_ray_trace(func_v.index(), scene_v.index(), 1, in, out);
 
-        return active && dr::neq(Single::steal(out[0]), ray_maxt);
+        return active && (Single::steal(out[0]) != ray_maxt);
     } else {
         DRJIT_MARK_USED(ray);
         DRJIT_MARK_USED(coherent);

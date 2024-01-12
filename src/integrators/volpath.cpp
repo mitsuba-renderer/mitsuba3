@@ -141,7 +141,7 @@ public:
             // Russian roulette: try to keep path weights equal to one, while accounting for the
             // solid angle compression at refractive index boundaries. Stop with at least some
             // probability to avoid  getting stuck (e.g. due to total internal reflection)
-            active &= dr::any(dr::neq(unpolarized_spectrum(throughput), 0.f));
+            active &= dr::any(unpolarized_spectrum(throughput) != 0.f);
             Float q = dr::minimum(dr::max(unpolarized_spectrum(throughput)) * dr::sqr(eta), .95f);
             Mask perform_rr = (depth > (uint32_t) m_rr_depth);
             active &= sampler->next_1d(active) < q || !perform_rr;
@@ -152,7 +152,7 @@ public:
                 break;
 
             // ----------------------- Sampling the RTE -----------------------
-            Mask active_medium  = active && dr::neq(medium, nullptr);
+            Mask active_medium  = active && (medium != nullptr);
             Mask active_surface = active && !active_medium;
             Mask act_null_scatter = false, act_medium_scatter = false,
                  escaped_medium = false;
@@ -257,7 +257,7 @@ public:
                 Mask ray_from_camera = active_surface && (depth == 0u);
                 Mask count_direct = ray_from_camera || specular_chain;
                 EmitterPtr emitter = si.emitter(scene);
-                Mask active_e = active_surface && dr::neq(emitter, nullptr)
+                Mask active_e = active_surface && emitter != nullptr)
                                 && !((depth == 0u) && m_hide_emitters);
                 if (dr::any_or<true>(active_e)) {
                     Float emitter_pdf = 1.0f;
@@ -335,7 +335,7 @@ public:
 
         auto [ds, emitter_val] = scene->sample_emitter_direction(ref_interaction, sampler->next_2d(active), false, active);
         dr::masked(emitter_val, ds.pdf == 0.f) = 0.f;
-        active &= dr::neq(ds.pdf, 0.f);
+        active &= (ds.pdf != 0.f);
 
         if (dr::none_or<false>(active)) {
             return { emitter_val, ds };
@@ -366,7 +366,7 @@ public:
                 break;
 
             Mask escaped_medium = false;
-            Mask active_medium  = active && dr::neq(medium, nullptr);
+            Mask active_medium  = active && (medium != nullptr);
             Mask active_surface = active && !active_medium;
 
             if (dr::any_or<true>(active_medium)) {
@@ -433,7 +433,8 @@ public:
             needs_intersection |= active_surface;
 
             // Continue tracing through scene if non-zero weights exist
-            active &= (active_medium || active_surface) && dr::any(dr::neq(unpolarized_spectrum(transmittance), 0.f));
+            active &= (active_medium || active_surface) &&
+                      dr::any(unpolarized_spectrum(transmittance) != 0.f);
 
             // If a medium transition is taking place: Update the medium pointer
             Mask has_medium_trans = active_surface && si.is_medium_transition();

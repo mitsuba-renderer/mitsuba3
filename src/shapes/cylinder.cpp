@@ -221,12 +221,12 @@ public:
 
         // Project the cylinder direction onto the plane
         FloatP8 dp   = dr::dot(cyl_d, face_n);
-        MaskP8 valid = dr::neq(dp, 0.f);
+        MaskP8 valid = (dp != 0.f);
 
         // Compute semimajor/minor axes of ellipse
         Vector3fP8 v1 = dr::fnmadd(face_n, dp, cyl_d);
         FloatP8 v1_n2 = dr::squared_norm(v1);
-        v1 = dr::select(dr::neq(v1_n2, 0.f), v1 * dr::rsqrt(v1_n2),
+        v1 = dr::select(v1_n2 != 0.f, v1 * dr::rsqrt(v1_n2),
                     coordinate_system(face_n).first);
         Vector3fP8 v2 = dr::cross(face_n, v1);
 

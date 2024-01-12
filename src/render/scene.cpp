@@ -324,7 +324,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
         ds.pdf *= pdf_emitter(index, active);
         spec *= emitter_weight;
 
-        active &= dr::neq(ds.pdf, 0.f);
+        active &= (ds.pdf != 0.f);
 
         // Mark occluded samples as invalid if requested by the user
         if (test_visibility && dr::any_or<true>(active)) {
@@ -336,7 +336,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
         // Sample a direction towards the (single) emitter
         std::tie(ds, spec) = m_emitters[0]->sample_direction(ref, sample, active);
 
-        active &= dr::neq(ds.pdf, 0.f);
+        active &= (ds.pdf != 0.f);
 
         // Mark occluded samples as invalid if requested by the user
         if (test_visibility && dr::any_or<true>(active)) {

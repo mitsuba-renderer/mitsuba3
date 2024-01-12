@@ -185,7 +185,7 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
 
     /// Is the current boundary segment valid=
     Mask is_valid() const {
-        return dr::neq(discontinuity_type, (uint32_t) DiscontinuityFlags::Empty);
+        return discontinuity_type != (uint32_t) DiscontinuityFlags::Empty;
     }
 
     /**

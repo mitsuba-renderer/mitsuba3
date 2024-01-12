@@ -173,8 +173,8 @@ public:
 
         sample.x() -= col_cdf_0;
         sample.y() -= row_cdf_0;
-        dr::masked(sample.x(), dr::neq(col_cdf_1, col_cdf_0)) /= col_cdf_1 - col_cdf_0;
-        dr::masked(sample.y(), dr::neq(row_cdf_1, row_cdf_0)) /= row_cdf_1 - row_cdf_0;
+        dr::masked(sample.x(), col_cdf_1 != col_cdf_0) /= col_cdf_1 - col_cdf_0;
+        dr::masked(sample.y(), row_cdf_1 != row_cdf_0) /= row_cdf_1 - row_cdf_0;
 
         return { Point2u(col, row), (col_cdf_1 - col_cdf_0) * m_normalization, sample };
     }
@@ -636,8 +636,8 @@ public:
             v11 = level.lookup(offset_i, m_param_strides,
                                param_weight, active);
 
-            Mask x_mask = dr::neq(offset.x() & 1u, 0u),
-                 y_mask = dr::neq(offset.y() & 1u, 0u);
+            Mask x_mask = offset.x() & (1u != 0u),
+                 y_mask = offset.y() & (1u != 0u);
 
             Float r0 = v00 + v10,
                   r1 = v01 + v11,
@@ -1148,7 +1148,7 @@ protected:
               row_cdf_1 = fetch_marginal(row, active);
 
         sample.y() -= row_cdf_0;
-        dr::masked(sample.y(), dr::neq(row_cdf_1, row_cdf_0)) /= row_cdf_1 - row_cdf_0;
+        dr::masked(sample.y(), row_cdf_1 != row_cdf_0) /= row_cdf_1 - row_cdf_0;
 
         /// Multiply by last entry of conditional CDF
         UInt32 offset_cond = slice_offset * n_cond + row * (m_size.x() - 1);
@@ -1171,7 +1171,7 @@ protected:
                                  n_cond, param_weight, active);
 
         sample.x() -= col_cdf_0;
-        dr::masked(sample.x(), dr::neq(col_cdf_1, col_cdf_0)) /= col_cdf_1 - col_cdf_0;
+        dr::masked(sample.x(), col_cdf_1 != col_cdf_0) /= col_cdf_1 - col_cdf_0;
 
         // Sample a position on the bilinear patch
         UInt32 offset_data = slice_offset * n_data + row * m_size.x() + col;
@@ -1433,7 +1433,7 @@ protected:
         sample *= 2.f * inv_width;
         dr::masked(sample, non_const) =
             v0 - dr::safe_sqrt(dr::sqr(v0) + sample * (v1 - v0));
-        dr::masked(sample, dr::neq(divisor, 0.f)) /= divisor;
+        dr::masked(sample, divisor != 0.f) /= divisor;
         return sample;
     }
 

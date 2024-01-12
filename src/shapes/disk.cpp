@@ -499,8 +499,8 @@ public:
             si.uv = Point2f(r, v);
 
             if (likely(has_flag(ray_flags, RayFlags::dPdUV))) {
-                Float cos_phi = dr::select(dr::neq(r, 0.f), prim_uv.x() * inv_r, 1.f),
-                      sin_phi = dr::select(dr::neq(r, 0.f), prim_uv.y() * inv_r, 0.f);
+                Float cos_phi = dr::select(r != 0.f, prim_uv.x() * inv_r, 1.f),
+                      sin_phi = dr::select(r != 0.f, prim_uv.y() * inv_r, 0.f);
 
                 si.dp_du = to_world * Vector3f( cos_phi, sin_phi, 0.f);
                 si.dp_dv = to_world * Vector3f(-sin_phi, cos_phi, 0.f);

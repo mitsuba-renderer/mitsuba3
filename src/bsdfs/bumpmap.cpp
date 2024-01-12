@@ -133,7 +133,7 @@ public:
         perturbed_si.wi = perturbed_si.to_local(si.wi);
         auto [bs, weight] = m_nested_bsdf->sample(ctx, perturbed_si,
                                                   sample1, sample2, active);
-        active &= dr::any(dr::neq(unpolarized_spectrum(weight), 0.f));
+        active &= dr::any(unpolarized_spectrum(weight) != 0.f);
 
         // Transform sampled 'wo' back to original frame and check orientation
         Vector3f perturbed_wo = perturbed_si.to_world(bs.wo);

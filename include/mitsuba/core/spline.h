@@ -618,7 +618,7 @@ sample_1d(Float min, Float max, const Float *values, const Float *cdf,
     Value t_linear =
         (f0 - dr::safe_sqrt(f0 * f0 + 2 * sample * (f1 - f0))) / (f0 - f1);
     Value t_const  = sample / f0;
-    Value t = dr::select(dr::neq(f0, f1), t_linear, t_const);
+    Value t = dr::select(f0 != f1, t_linear, t_const);
 
     Value a = 0, b = 1, value, deriv;
     Mask active(true);
@@ -713,7 +713,7 @@ sample_1d(const Float *nodes, const Float *values, const Float *cdf,
     Value t_linear =
         (f0 - dr::safe_sqrt(f0 * f0 + 2 * sample * (f1 - f0))) / (f0 - f1);
     Value t_const  = sample / f0;
-    Value t = dr::select(dr::neq(f0, f1), t_linear, t_const);
+    Value t = dr::select(f0 != f1, t_linear, t_const);
 
     Value a = 0, b = 1, value, deriv;
     Mask active(true);
@@ -1008,7 +1008,7 @@ Value eval_2d(const Float *nodes1, uint32_t size1, const Float *nodes2,
             Value weight_x  = weights[0][xi];
             Value weight_xy = weight_x * weight_y;
 
-            Mask weight_valid = dr::neq(weight_xy, dr::zeros<Value>());
+            Mask weight_valid = weight_xy != dr::zeros<Value>();
             Value value = dr::gather<Value>(values, index, weight_valid);
 
             result = dr::fmadd(value, weight_xy, result);
