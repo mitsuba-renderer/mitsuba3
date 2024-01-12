@@ -362,7 +362,7 @@ solve_quadratic(const Value &a, const Value &b, const Value &c) {
     using Mask = dr::mask_t<Value>;
 
     /* Is this perhaps a linear equation? */
-    Mask linear_case = (a == Scalar(0));
+    Mask linear_case = a == Scalar(0);
 
     /* If so, we require b != 0 */
     Mask valid_linear = linear_case && (b != Scalar(0));

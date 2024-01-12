@@ -101,7 +101,7 @@ struct field<DeviceType, HostType,
         m_scalar = dr::slice<HostType>(m_value);
         return *this;
     }
-    void opaque_() { dr::make_opaque(m_value); }
+    bool schedule_force_() { return dr::detail::schedule_force(m_value); }
 private:
     DeviceType m_value;
     HostType m_scalar;

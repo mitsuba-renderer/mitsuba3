@@ -278,8 +278,8 @@ UInt32 permute_kensler(UInt32 index, uint32_t sample_count, UInt32 seed,
                 [body, sample_count](dr::mask_t<UInt32>& active, UInt32& index) {
                     dr::masked(index, active) = body(index);
                     active &= (index >= sample_count);
-                }
-            );
+                },
+                "perm");
 
             return (index + seed) % sample_count;
         }

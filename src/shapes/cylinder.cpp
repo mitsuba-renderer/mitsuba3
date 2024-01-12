@@ -121,10 +121,7 @@ public:
             ScalarTransform4f::scale(ScalarVector3f(radius, radius, length));
 
         m_discontinuity_types = (uint32_t) DiscontinuityFlags::AllTypes;
-        //dr::set_attr(this, "silhouette_discontinuity_types", m_discontinuity_types);
-
         m_shape_type = ShapeType::Cylinder;
-        //dr::set_attr(this, "shape_type", m_shape_type);
 
         update();
         initialize();
@@ -237,7 +234,7 @@ public:
         // Compute center of ellipse
         FloatP8 t = dr::dot(face_n, face_p - cyl_p) / dp;
         Point3fP8 center = dr::fmadd(Vector3fP8(cyl_d), t, Vector3fP8(cyl_p));
-        center[neq(face_n, 0.f)] = face_p;
+        center[face_n != 0.f] = face_p;
 
         // Compute ellipse minima and maxima
         Vector3fP8 x = dr::sqrt(dr::sqr(v1) + dr::sqr(v2));
@@ -765,7 +762,7 @@ public:
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixCylinderData));
 
-            OptixCylinderData data = { bbox(), m_to_object.scalar(),
+            OptixCylinderData data = { bbox(), m_to_object.scalar().transpose(),
                                        (float) 1.f,
                                        (float) 1.f };
 

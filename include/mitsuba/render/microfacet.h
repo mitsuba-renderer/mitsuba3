@@ -133,7 +133,7 @@ public:
             m_alpha_v = props.get<ScalarFloat>("alpha_v");
         }
 
-        if (dr::slice(alpha_u == 0.f || alpha_v == 0.f))
+        if (dr::all(alpha_u == 0.f || alpha_v == 0.f))
             Log(Warn,
                 "Cannot create a microfacet distribution with alpha_u/alpha_v=0 (clamped to 10^-4). "
                 "Please use the corresponding smooth reflectance model to get zero roughness.");
@@ -168,7 +168,7 @@ public:
     }
 
     /// Is this an anisotropic microfacet distribution?
-    bool is_anisotropic() const { return dr::slice(m_alpha_u != m_alpha_v); }
+    bool is_anisotropic() const { return dr::all(m_alpha_u != m_alpha_v); }
 
     /// Scale the roughness values by some constant
     void scale_alpha(Float value) {

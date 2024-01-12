@@ -391,7 +391,7 @@ public:
 
     std::tuple<DynamicBuffer<UInt32>, DynamicBuffer<Float>>
     precompute_silhouette(const ScalarPoint3f & /*viewpoint*/) const override {
-        DynamicBuffer<UInt32> indices(DiscontinuityFlags::PerimeterType);
+        DynamicBuffer<UInt32> indices((uint32_t)DiscontinuityFlags::PerimeterType);
         DynamicBuffer<Float> weights(1.f);
 
         return {indices, weights};
@@ -577,7 +577,7 @@ public:
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixRectangleData));
 
-            OptixRectangleData data = { bbox(), m_to_object.scalar() };
+            OptixRectangleData data = { bbox(), m_to_object.scalar().transpose() };
 
             jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data,
                        sizeof(OptixRectangleData));

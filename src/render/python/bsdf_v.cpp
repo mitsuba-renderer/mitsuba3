@@ -182,7 +182,6 @@ MI_PY_EXPORT(BSDF) {
             [](PyBSDF &bsdf){ return bsdf.m_flags; },
             [](PyBSDF &bsdf, uint32_t flags){
                 bsdf.m_flags = flags;
-                //dr::set_attr(&bsdf, "flags", flags);
             }
         )
         .def_readwrite("m_components", &PyBSDF::m_components)

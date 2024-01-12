@@ -233,7 +233,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
         pi.t = dr::select(hit, t, dr::Infinity<Float>);
 
         // Set si.instance and si.shape
-        Mask hit_inst = hit && (inst_index != ((uint32_t-1)));
+        Mask hit_inst = hit && (inst_index != ((uint32_t)-1));
         UInt32 index = dr::select(hit_inst, inst_index, pi.shape_index);
 
         ShapePtr shape = dr::gather<UInt32>(s->shapes_registry_ids, index, hit);

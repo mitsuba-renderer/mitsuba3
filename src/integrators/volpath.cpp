@@ -130,13 +130,26 @@ public:
         /* Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
            generates wavefront or megakernel renderer based on configuration).
            Register everything that changes as part of the loop here */
-        dr::Loop<Mask> loop("Volpath integrator",
-                            /* loop state: */ active, depth, ray, throughput,
-                            result, si, mei, medium, eta, last_scatter_event,
-                            last_scatter_direction_pdf, needs_intersection,
-                            specular_chain, valid_ray, sampler);
+        std::tie(active, depth, ray, throughput,
+            result, si, mei, medium, eta, last_scatter_event,
+            last_scatter_direction_pdf, needs_intersection,
+            specular_chain, valid_ray) = dr::while_loop(
+            std::make_tuple(active, depth, ray, throughput, 
+                result, si, mei, medium, eta, last_scatter_event,
+                last_scatter_direction_pdf, needs_intersection,
+                specular_chain, valid_ray),
+            [](const Mask& active, const UInt32&, const Ray3f&, 
+                const Spectrum&, const Spectrum&, const SurfaceInteraction3f&,
+                const MediumInteraction3f&, const MediumPtr&, const Float&,
+                const Interaction3f&, const Float&, const Mask&, const Mask&, 
+                const Mask&) { return active; },
+            [this, scene, channel, sampler](Mask& active, UInt32& depth, Ray3f& ray, 
+                Spectrum& throughput, Spectrum& result, SurfaceInteraction3f& si,
+                MediumInteraction3f& mei, MediumPtr& medium, Float& eta,
+                Interaction3f& last_scatter_event, 
+                Float& last_scatter_direction_pdf, Mask& needs_intersection, 
+                Mask& specular_chain, Mask& valid_ray) {
 
-        while (loop(active)) {
             // ----------------- Handle termination of paths ------------------
             // Russian roulette: try to keep path weights equal to one, while accounting for the
             // solid angle compression at refractive index boundaries. Stop with at least some
@@ -149,7 +162,7 @@ public:
 
             active &= depth < (uint32_t) m_max_depth;
             if (dr::none_or<false>(active))
-                break;
+                return;
 
             // ----------------------- Sampling the RTE -----------------------
             Mask active_medium  = active && (medium != nullptr);
@@ -257,7 +270,7 @@ public:
                 Mask ray_from_camera = active_surface && (depth == 0u);
                 Mask count_direct = ray_from_camera || specular_chain;
                 EmitterPtr emitter = si.emitter(scene);
-                Mask active_e = active_surface && emitter != nullptr)
+                Mask active_e = active_surface && emitter != nullptr
                                 && !((depth == 0u) && m_hide_emitters);
                 if (dr::any_or<true>(active_e)) {
                     Float emitter_pdf = 1.0f;
@@ -320,7 +333,9 @@ public:
                 dr::masked(medium, has_medium_trans) = si.target_medium(ray.d);
             }
             active &= (active_surface | active_medium);
-        }
+        },
+        "Volpath integrator");
+
         return { result, valid_ray };
     }
 
@@ -353,17 +368,26 @@ public:
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         Mask needs_intersection = true;
 
-        dr::Loop<Mask> loop("Volpath integrator emitter sampling");
-        loop.put(active, ray, total_dist, needs_intersection, medium, si,
-                 transmittance);
-        sampler->loop_put(loop);
-        loop.init();
-        while (loop(dr::detach(active))) {
+        DirectionSample3f direct_sample = ds;
+
+        std::tie(active, ray, total_dist, needs_intersection, medium, si,
+                 transmittance) = dr::while_loop(
+            std::make_tuple(active, ray, total_dist, 
+                needs_intersection, medium, si, transmittance),
+            [](const Mask& active, const Ray3f&, const Float&, const Mask&,
+            const MediumPtr&, const SurfaceInteraction3f&, const Spectrum&) {
+                return dr::detach(active);
+            },
+            [this, scene, sampler, channel, direct_sample, 
+                max_dist](Mask& active, Ray3f& ray, 
+            Float& total_dist, Mask& needs_intersection, MediumPtr& medium, 
+            SurfaceInteraction3f& si, Spectrum& transmittance) {
+
             Float remaining_dist = max_dist - total_dist;
             ray.maxt = remaining_dist;
             active &= remaining_dist > 0.f;
             if (dr::none_or<false>(active))
-                break;
+                return;
 
             Mask escaped_medium = false;
             Mask active_medium  = active && (medium != nullptr);
@@ -390,7 +414,7 @@ public:
                 }
 
                 // Handle exceeding the maximum distance by medium sampling
-                dr::masked(total_dist, active_medium && (mei.t > remaining_dist) && mei.is_valid()) = ds.dist;
+                dr::masked(total_dist, active_medium && (mei.t > remaining_dist) && mei.is_valid()) = direct_sample.dist;
                 dr::masked(mei.t, active_medium && (mei.t > remaining_dist)) = dr::Infinity<Float>;
 
                 escaped_medium = active_medium && !mei.is_valid();
@@ -441,8 +465,10 @@ public:
             if (dr::any_or<true>(has_medium_trans)) {
                 dr::masked(medium, has_medium_trans) = si.target_medium(ray.d);
             }
-        }
-        return { transmittance * emitter_val, ds };
+        },
+        "Volpath integrator emitter sampling");
+
+        return { transmittance * emitter_val, direct_sample };
     }
 
     //! @}

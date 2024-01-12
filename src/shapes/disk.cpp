@@ -109,7 +109,7 @@ public:
     }
 
     void update() {
-        m_to_object = m_to_world.value().inverse();
+        m_to_object = m_to_world.value().transpose().inverse();
 
         Vector3f dp_du = m_to_world.value() * Vector3f(1.f, 0.f, 0.f);
         Vector3f dp_dv = m_to_world.value() * Vector3f(0.f, 1.f, 0.f);
@@ -346,7 +346,7 @@ public:
 
     std::tuple<DynamicBuffer<UInt32>, DynamicBuffer<Float>>
     precompute_silhouette(const ScalarPoint3f &/*viewpoint*/) const override {
-        DynamicBuffer<UInt32> indices(DiscontinuityFlags::PerimeterType);
+        DynamicBuffer<UInt32> indices((uint32_t)DiscontinuityFlags::PerimeterType);
         DynamicBuffer<Float> weights(1.f);
 
         return {indices, weights};

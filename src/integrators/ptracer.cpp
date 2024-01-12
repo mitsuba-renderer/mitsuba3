@@ -222,11 +222,15 @@ public:
         /* Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
            generates wavefront or megakernel renderer based on configuration).
            Register everything that changes as part of the loop here */
-        dr::Loop<Mask> loop("Particle Tracer Integrator", active, depth, ray,
-                            throughput, si, eta, sampler);
-
         // Incrementally build light path using BSDF sampling.
-        while (loop(active)) {
+        std::tie(active, depth, ray, throughput, si, eta) = dr::while_loop(
+            std::make_tuple(active, depth, ray, throughput, si, eta),
+            [](const Mask& active, const Int32&, const Ray3f&, const Spectrum&, 
+                const SurfaceInteraction3f&, const Float&) { return active; },
+            [this, scene, sensor, sampler, block, sample_scale](
+            Mask& active, Int32& depth, Ray3f& ray, Spectrum& throughput, 
+            SurfaceInteraction3f& si, Float& eta) {
+
             BSDFPtr bsdf = si.bsdf(ray);
 
             /* Connect to sensor and splat if successful. Sample a direction
@@ -260,7 +264,7 @@ public:
 
             active &= dr::any(unpolarized_spectrum(throughput) != 0.f);
             if (dr::none_or<false>(active))
-                break;
+                return;
 
             // Intersect the BSDF ray against scene geometry (next vertex).
             ray = si.spawn_ray(si.to_world(bs.wo));
@@ -279,7 +283,8 @@ public:
                 dr::masked(active, use_rr) &= sampler->next_1d(active) < q;
                 dr::masked(throughput, use_rr) *= dr::rcp(q);
             }
-        }
+        },
+        "Particle Tracer Integrator");
 
         return { throughput, 1.f };
     }

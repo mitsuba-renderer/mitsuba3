@@ -1,4 +1,4 @@
-//#include <mitsuba/core/fresolver.h>
+#include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/fstream.h>
 #include <mitsuba/core/mmap.h>
 #include <mitsuba/core/logger.h>
@@ -10,7 +10,7 @@ template <typename Scalar>
 void spectrum_from_file(const fs::path &path, std::vector<Scalar> &wavelengths,
                         std::vector<Scalar> &values) {
 
-    /*auto fs = Thread::thread()->file_resolver();
+    auto fs = Thread::thread()->file_resolver();
     fs::path file_path = fs->resolve(path);
     if (!fs::exists(file_path))
         Log(Error, "\"%s\": file does not exist!", file_path);
@@ -50,14 +50,13 @@ void spectrum_from_file(const fs::path &path, std::vector<Scalar> &wavelengths,
     } else {
         Log(Error, "You need to provide a valid extension like \".spd\" to read"
                    "the information from an ASCII file. You used \"%s\"", extension);
-    }*/
+    }
 }
 
 template <typename Scalar>
 void spectrum_to_file(const fs::path &path, const std::vector<Scalar> &wavelengths,
                       const std::vector<Scalar> &values) {
 
-/*
     auto fs = Thread::thread()->file_resolver();
     fs::path file_path = fs->resolve(path);
 
@@ -79,7 +78,7 @@ void spectrum_to_file(const fs::path &path, const std::vector<Scalar> &wavelengt
     } else {
         Log(Error, "You need to provide a valid extension like \".spd\" to store"
                    "the information in an ASCII file. You used \"%s\"", extension);
-    }*/
+    }
 }
 
 template <typename Scalar>
@@ -244,14 +243,14 @@ CIE1932Tables<dr::CUDAArray<float>> color_space_tables_cuda;
 NAMESPACE_END(detail)
 
 void color_management_static_initialization(bool cuda, bool llvm) {
-    //detail::color_space_tables_scalar.initialize(cie1931_tbl);
+    detail::color_space_tables_scalar.initialize(cie1931_tbl);
 #if defined(MI_ENABLE_LLVM)
-    //if (llvm)
-    //    detail::color_space_tables_llvm.initialize(cie1931_tbl);
+    if (llvm)
+        detail::color_space_tables_llvm.initialize(cie1931_tbl);
 #endif
 #if defined(MI_ENABLE_CUDA)
-   // if (cuda)
-    //    detail::color_space_tables_cuda.initialize(cie1931_tbl);
+    if (cuda)
+        detail::color_space_tables_cuda.initialize(cie1931_tbl);
 #endif
     (void) cuda; (void) llvm;
 }

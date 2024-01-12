@@ -724,9 +724,18 @@ public:
             Mask success = active & (f_lower * f_upper < 0.f),
                  active_loop = Mask(success);
             UInt32 cnt = 0u;
-            dr::Loop<Mask> loop("B-Spline curve projection bisection", u_lower,
-                                u_upper, f_lower, f_upper, cnt, active_loop);
-            while (loop(active_loop)) {
+
+            std::tie(u_lower, u_upper, f_lower, f_upper, cnt, 
+                active_loop) = dr::while_loop(
+                std::make_tuple(u_lower, u_upper, f_lower, f_upper, cnt, 
+                active_loop),
+            [](const Float&, const Float&, const Float&, const Float&, 
+                const UInt32&, const Mask& active_loop) {
+                return active_loop;
+            },
+            [normal_eq](Float& u_lower, Float& u_upper, Float& f_lower, 
+                Float& f_upper, UInt32& cnt, Mask& active_loop) {
+
                 Float u_middle = 0.5f * (u_lower + u_upper);
                 Float f_middle = normal_eq(u_middle);
                 Mask lower = f_middle * f_lower <= 0.f;
@@ -737,7 +746,8 @@ public:
 
                 cnt += 1u;
                 active_loop &= cnt < 22u;
-            }
+            },
+            "B-Spline curve projection bisection");
 
             ss.discontinuity_type =
                 dr::select(success,

@@ -109,7 +109,7 @@ if (MI_ENABLE_JIT)
 endif()
 
 if (MI_ENABLE_AUTODIFF)
-  target_link_libraries(mitsuba-core PUBLIC drjit-autodiff)
+  target_link_libraries(mitsuba-core PUBLIC drjit-extra)
 endif()
 
 # Python bindings

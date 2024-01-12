@@ -221,12 +221,12 @@ public:
                               // precision
             InputVector2f uv{ 0.0f, 0.0f };
             bool operator==(const Key &other) const {
-                return (smooth ? normal == other.normal : poly == other.poly) &&
-                       uv == other.uv;
+                return dr::all(dr::all(smooth ? normal == other.normal : poly == other.poly) &&
+                       uv == other.uv);
             }
             bool operator!=(const Key &other) const {
-                return (smooth ? normal != other.normal : poly != other.poly) ||
-                       uv != other.uv;
+                return dr::all(dr::all(smooth ? normal != other.normal : poly != other.poly) ||
+                       uv != other.uv);
             }
         };
 
