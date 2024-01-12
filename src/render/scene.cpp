@@ -169,11 +169,6 @@ MI_VARIANT Scene<Float, Spectrum>::~Scene() {
     m_children.clear();
     m_integrator = nullptr;
     m_environment = nullptr;
-
-    if constexpr (dr::is_jit_v<Float>) {
-        // Clean up JIT pointer registry now that the above has happened
-        jit_registry_trim();
-    }
 }
 
 // -----------------------------------------------------------------------
