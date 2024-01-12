@@ -117,7 +117,15 @@ public:
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
-        Assert(m_shape, "Can't sample from an area emitter without an associated Shape.");
+
+        if constexpr (drjit::is_jit_v<Float>) {
+            if (!m_shape)
+                return { dr::zeros<DirectionSample3f>(), 0.f };
+        } else {
+            Assert(m_shape, "Can't sample from an area emitter without an "
+                            "associated Shape.");
+        }
+
         DirectionSample3f ds;
         SurfaceInteraction3f si;
 
@@ -165,6 +173,14 @@ public:
         Float dp = dr::dot(ds.d, ds.n);
         active &= dp < 0.f;
 
+        if constexpr (drjit::is_jit_v<Float>) {
+            if (!m_shape)
+                return 0.f;
+        } else {
+            Assert(m_shape,
+                   "The area emitter without has no associated Shape!");
+        }
+
         Float value;
         if (!m_radiance->is_spatially_varying()) {
             value = m_shape->pdf_direction(it, ds, active);
@@ -196,7 +212,14 @@ public:
     sample_position(Float time, const Point2f &sample,
                     Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
-        Assert(m_shape, "Cannot sample from an area emitter without an associated Shape.");
+
+        if constexpr (drjit::is_jit_v<Float>) {
+            if (!m_shape)
+                return { dr::zeros<PositionSample3f>(), 0.f };
+        } else {
+            Assert(m_shape, "Cannot sample from an area emitter without an "
+                            "associated Shape.");
+        }
 
         // Two strategies to sample the spatial component based on 'm_radiance'
         PositionSample3f ps;

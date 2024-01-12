@@ -89,6 +89,15 @@ public:
                                           const Point2f &sample2,
                                           const Point2f & /*sample3*/,
                                           Mask active) const override {
+        if constexpr (drjit::is_jit_v<Float>) {
+            if (!m_shape)
+                return { dr::zeros<Ray3f>(), 0.f };
+        } else {
+            Assert(m_shape,
+                   "Cannot sample from a directionalarea emitter without an "
+                   "associated Shape.");
+        }
+
         // 1. Sample spatial component
         PositionSample3f ps = m_shape->sample_position(time, sample2);
 
@@ -129,7 +138,14 @@ public:
     std::pair<PositionSample3f, Float>
     sample_position(Float time, const Point2f &sample,
                     Mask active) const override {
-        Assert(m_shape, "Can't sample from an area emitter without an associated Shape.");
+        if constexpr (drjit::is_jit_v<Float>) {
+            if (!m_shape)
+                return { dr::zeros<PositionSample3f>(), 0.f };
+        } else {
+            Assert(m_shape, "Can't sample from a directionalarea emitter "
+                            "without an associated Shape.");
+        }
+
         PositionSample3f ps = m_shape->sample_position(time, sample, active);
         Float weight        = dr::select(ps.pdf > 0.f, dr::rcp(ps.pdf), 0.f);
         return { ps, weight };
