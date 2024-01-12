@@ -495,8 +495,7 @@ private:
         Vector3f guide = Vector3f(0, 0, 1);
         Vector3f v_rot = dr::normalize(
             guide - dc_dv_normalized * dr::dot(dc_dv_normalized, guide));
-        Mask singular_mask =
-            dr::eq(dr::abs(dr::dot(guide, dc_dv_normalized)), 1.f);
+        Mask singular_mask = dr::abs(dr::dot(guide, dc_dv_normalized)) == 1.f;
         dr::masked(v_rot, singular_mask) =
             Vector3f(0, 1, 0); // non-consistent at singular points
         Vector3f v_rad = dr::cross(v_rot, dc_dv_normalized);

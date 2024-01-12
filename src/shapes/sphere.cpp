@@ -278,7 +278,7 @@ public:
             ds.dist     = dr::sqrt(dist2);
             ds.d        = ds.d / ds.dist;
             ds.pdf      = warp::square_to_uniform_cone_pdf(dr::zeros<Vector3f>(), cos_theta_max);
-            dr::masked(ds.pdf, dr::eq(ds.dist, 0.f)) = 0.f;
+            dr::masked(ds.pdf, ds.dist == 0.f) = 0.f;
 
             dr::masked(result, outside_mask) = ds;
         }
@@ -526,7 +526,7 @@ public:
 
         // Ray is perpendicular to plane
         dr::mask_t<FloatP> no_hit =
-            dr::eq(plane_t, 0) && dr::all(dr::neq(ray.o, center));
+            plane_t == 0 && dr::all(dr::neq(ray.o, center));
 
         Value3 plane_p = ray(FloatP(plane_t));
 
@@ -692,7 +692,7 @@ public:
                                     local.z() * sin_phi,
                                     -rd);
 
-                Mask singularity_mask = active && dr::eq(rd, 0.f);
+                Mask singularity_mask = active && (rd == 0.f);
                 if (unlikely(dr::any_or<true>(singularity_mask)))
                     si.dp_dv[singularity_mask] = Vector3f(1.f, 0.f, 0.f);
 

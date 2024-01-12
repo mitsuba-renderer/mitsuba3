@@ -356,7 +356,7 @@ public:
                   values = dr::gather<Float>(data, values_idx);
 
             // Perform the weight division unless the weight is zero
-            values /= dr::select(dr::eq(weight, 0.f), 1.f, weight);
+            values /= dr::select(weight == 0.f, 1.f, weight);
 
             size_t shape[3] = { (size_t) size.y(), (size_t) size.x(),
                                 target_ch };

@@ -310,7 +310,7 @@ public:
                 const InputVector3f e1 = face_points[1] - face_points[0];
                 const InputVector3f e2 = face_points[2] - face_points[0];
                 normal = m_to_world.scalar().transform_affine(dr::cross(e1, e2));
-                if(unlikely(dr::all(dr::eq(normal, 0.f))))
+                if(unlikely(dr::all(normal == 0.f)))
                     continue; // Degenerate triangle, ignore it
                 else
                     normal = dr::normalize(normal);
@@ -345,7 +345,7 @@ public:
                         normal = m_to_world.scalar().transform_affine(InputNormal3f(no[0], no[1], no[2]));
                     }
 
-                    if(unlikely(dr::all(dr::eq(normal, 0.f))))
+                    if(unlikely(dr::all(normal == 0.f)))
                         fail("invalid normals!");
                     else
                         normal = dr::normalize(normal);

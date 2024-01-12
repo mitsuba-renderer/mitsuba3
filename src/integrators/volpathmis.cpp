@@ -114,8 +114,8 @@ public:
     Float index_spectrum(const UnpolarizedSpectrum &spec, const UInt32 &idx) const {
         Float m = spec[0];
         if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
-            dr::masked(m, dr::eq(idx, 1u)) = spec[1];
-            dr::masked(m, dr::eq(idx, 2u)) = spec[2];
+            dr::masked(m, idx == 1u) = spec[1];
+            dr::masked(m, idx == 2u) = spec[2];
         } else {
             DRJIT_MARK_USED(idx);
         }
@@ -308,10 +308,10 @@ public:
 
             if (dr::any_or<true>(active_surface)) {
                 // ---------------- Intersection with emitters ----------------
-                Mask ray_from_camera = active_surface && dr::eq(depth, 0u);
+                Mask ray_from_camera = active_surface && (depth == 0u);
                 Mask count_direct = ray_from_camera || specular_chain;
                 EmitterPtr emitter = si.emitter(scene);
-                Mask active_e = active_surface && dr::neq(emitter, nullptr) && !(dr::eq(depth, 0u) && m_hide_emitters);
+                Mask active_e = active_surface && dr::neq(emitter, nullptr) && !((depth == 0u) && m_hide_emitters);
                 if (dr::any_or<true>(active_e)) {
                     if (dr::any_or<true>(active_e && !count_direct)) {
                         // Get the PDF of sampling this emitter using next event estimation
@@ -345,7 +345,7 @@ public:
                 // ----------------------- BSDF sampling ----------------------
                 auto [bs, bsdf_weight] = bsdf->sample(ctx, si, sampler->next_1d(active_surface),
                                                    sampler->next_2d(active_surface), active_surface);
-                Mask invalid_bsdf_sample = active_surface && dr::eq(bs.pdf, 0.f);
+                Mask invalid_bsdf_sample = active_surface && (bs.pdf == 0.f);
                 active_surface &= bs.pdf > 0.f;
                 dr::masked(eta, active_surface) *= bs.eta;
 
@@ -384,7 +384,7 @@ public:
 
         auto [ds, emitter_sample_weight] = scene->sample_emitter_direction(ref_interaction, sampler->next_2d(active), false, active);
         Spectrum emitter_val = emitter_sample_weight * ds.pdf;
-        dr::masked(emitter_val, dr::eq(ds.pdf, 0.f)) = 0.f;
+        dr::masked(emitter_val, ds.pdf == 0.f) = 0.f;
         active &= dr::neq(ds.pdf, 0.f);
         update_weights(p_over_f_nee, ds.pdf, 1.0f, channel, active);
 
@@ -529,11 +529,11 @@ public:
             UnpolarizedSpectrum weight(0.0f);
             for (size_t i = 0; i < n; ++i) {
                 Float sum = dr::sum(p_over_f[i]);
-                weight[i] = dr::select(dr::eq(sum, 0.f), 0.0f, n / sum);
+                weight[i] = dr::select(sum == 0.f, 0.0f, n / sum);
             }
             return weight;
         } else {
-            Mask invalid = dr::eq(min(dr::abs(p_over_f)), 0.f);
+            Mask invalid = (min(dr::abs(p_over_f)) == 0.f);
             return dr::select(invalid, 0.f, 1.f / p_over_f);
         }
     }
@@ -546,11 +546,11 @@ public:
             auto sum_matrix = p_over_f1 + p_over_f2;
             for (size_t i = 0; i < n; ++i) {
                 Float sum = dr::sum(sum_matrix[i]);
-                weight[i] = dr::select(dr::eq(sum, 0.f), 0.0f, n / sum);
+                weight[i] = dr::select(sum == 0.f, 0.0f, n / sum);
             }
         } else {
             auto sum = p_over_f1 + p_over_f2;
-            weight = dr::select(dr::eq(min(dr::abs(sum)), 0.f), 0.0f, 1.f / sum);
+            weight = dr::select(min(dr::abs(sum)) == 0.f, 0.0f, 1.f / sum);
         }
         return weight;
     }

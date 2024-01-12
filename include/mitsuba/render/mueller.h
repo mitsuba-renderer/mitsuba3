@@ -211,8 +211,8 @@ MuellerMatrix<Float> specular_reflection(Float cos_theta_i, Eta eta) {
           b = 0.5f * (r_s - r_p),
           c = dr::sqrt(r_s * r_p);
 
-    dr::masked(sin_delta, dr::eq(c, 0.f)) = 0.f; // avoid issues with NaNs
-    dr::masked(cos_delta, dr::eq(c, 0.f)) = 0.f;
+    dr::masked(sin_delta, c == 0.f) = 0.f; // avoid issues with NaNs
+    dr::masked(cos_delta, c == 0.f) = 0.f;
 
     return MuellerMatrix<Float>(
         a, b, 0, 0,

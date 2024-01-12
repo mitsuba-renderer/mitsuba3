@@ -529,7 +529,7 @@ public:
         si.uv = Point2f(sample2 * 2.f, 0.f);
         dr::masked(si.uv, sample2 > 0.5f) = Point2f(sample2 * 2.f - 1.f, 1.f);
         uint32_t flags = (uint32_t) DiscontinuityFlags::PerimeterType;
-        Mask perimeter = active & dr::eq(sample1, +DiscontinuityFlags::PerimeterType);
+        Mask perimeter = active & (sample1 == +DiscontinuityFlags::PerimeterType);
         dr::masked(ss, perimeter) =
             primitive_silhouette_projection(viewpoint, si, flags, 0.f, perimeter);
         dr::masked(ss.pdf, perimeter) = dr::rcp(dr::FourPi<Float> * m_radius.value());
@@ -538,7 +538,7 @@ public:
         si.uv = Point2f(0.1f, sample2 * 2.f);
         dr::masked(si.uv, sample2 > 0.5f) = Point2f(0.6f, sample2 * 2.f - 1.f);
         flags = (uint32_t) DiscontinuityFlags::InteriorType;
-        Mask interior = active & dr::eq(sample1, +DiscontinuityFlags::InteriorType);
+        Mask interior = active & (sample1 == +DiscontinuityFlags::InteriorType);
         dr::masked(ss, interior) =
             primitive_silhouette_projection(viewpoint, si, flags, 0.f, interior);
         dr::masked(ss.pdf, interior) = dr::rcp(2 * m_length.value());
