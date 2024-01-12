@@ -288,19 +288,19 @@ public:
         Bool done = false;
 
         // Clockwise rotation starting at bottom left corner
-        range = dr::eq(ss.uv.x(), 0.f);
+        range = (ss.uv.x() == 0.f);
         dr::masked(sample_x, range && !done) = ss.uv.y() * 0.25f + 0.00f;
         done |= range;
 
-        range = dr::eq(ss.uv.y(), 1.f);
+        range = (ss.uv.y() == 1.f);
         dr::masked(sample_x, range && !done) = ss.uv.x() * 0.25f + 0.25f;
         done |= range;
 
-        range = dr::eq(ss.uv.x(), 1.f);
+        range = (ss.uv.x() == 1.f);
         dr::masked(sample_x, range && !done) = (1.f - ss.uv.y()) * 0.25f + 0.50f;
         done |= range;
 
-        range = dr::eq(ss.uv.y(), 0.f);
+        range = (ss.uv.y() == 0.f);
         dr::masked(sample_x, range && !done) = (1.f - ss.uv.x()) * 0.25f + 0.75f;
 
         Point2f sample_yz = warp::uniform_sphere_to_square(ss.d);

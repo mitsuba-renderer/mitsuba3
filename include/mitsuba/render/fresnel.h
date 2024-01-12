@@ -258,8 +258,8 @@ fresnel_polarized(Float cos_theta_i, dr::Complex<Float> eta) {
     dr::Complex<Float> a_p = (eta_it * cos_theta_i_abs - cos_theta_t) /
                              (eta_it * cos_theta_i_abs + cos_theta_t);
 
-    auto index_matched = dr::eq(dr::squared_norm(eta), 1.f) && dr::eq(dr::imag(eta), 0.f);
-    auto invalid       = dr::eq(dr::squared_norm(eta), 0.f);
+    auto index_matched = (dr::squared_norm(eta) == 1.f) && (dr::imag(eta) == 0.f);
+    auto invalid = dr::squared_norm(eta) == 0.f;
     dr::masked(a_s, index_matched || invalid) = 0.f;
     dr::masked(a_p, index_matched || invalid) = 0.f;
 

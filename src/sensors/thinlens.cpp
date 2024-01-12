@@ -155,7 +155,7 @@ public:
 
         m_aperture_radius = props.get<ScalarFloat>("aperture_radius");
 
-        if (dr::all(dr::eq(m_aperture_radius, 0.f))) {
+        if (dr::all(m_aperture_radius == 0.f)) {
             Log(Warn, "Can't have a zero aperture radius -- setting to %f", dr::Epsilon<Float>);
             m_aperture_radius = dr::Epsilon<Float>;
         }

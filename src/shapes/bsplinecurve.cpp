@@ -479,7 +479,7 @@ public:
             // ss.n must point outwards from the curve
             Vector3f inward_dir = -n;
             dr::masked(ss.n, dr::dot(inward_dir, ss.n) > 0.f) *= -1.f;
-            inward_dir = dc_dv * dr::select(dr::eq(local_uv.y(), 0.f), 1.f, -1.f);
+            inward_dir = dc_dv * dr::select(local_uv.y() == 0.f, 1.f, -1.f);
             dr::masked(ss.n, dr::dot(inward_dir, ss.n) > 0.f) *= -1.f;
 
             ss.pdf = dr::rcp(dr::TwoPi<Float> * radius * (2 * curve_count));
@@ -821,7 +821,7 @@ public:
                         (local_uv.y() + si.prim_index) / dr::width(m_indices));
 
         uint32_t flags = (uint32_t) DiscontinuityFlags::PerimeterType;
-        Mask perimeter = active & dr::eq(sample1, +DiscontinuityFlags::PerimeterType);
+        Mask perimeter = active & (sample1 == +DiscontinuityFlags::PerimeterType);
         dr::masked(ss, perimeter) =
             primitive_silhouette_projection(viewpoint, si, flags, 0.f, perimeter);
         Float radius;
@@ -835,7 +835,7 @@ public:
         si.uv = Point2f(0.1f, sample2 * 2.f);
         dr::masked(si.uv, sample2 > 0.5f) = Point2f(0.6f, dr::fmsub(sample2, 2.f, 1.f));
         flags = (uint32_t) DiscontinuityFlags::InteriorType;
-        Mask interior = active & dr::eq(sample1, +DiscontinuityFlags::InteriorType);
+        Mask interior = active & (sample1 == +DiscontinuityFlags::InteriorType);
         dr::masked(ss, interior) =
             primitive_silhouette_projection(viewpoint, si, flags, 0.f, interior);
 
@@ -1273,8 +1273,7 @@ private:
         Vector3f guide = Vector3f(0, 0, 1);
         Vector3f v_rot = dr::normalize(
             guide - dc_dv_normalized * dr::dot(dc_dv_normalized, guide));
-        Mask singular_mask =
-            dr::eq(dr::abs(dr::dot(guide, dc_dv_normalized)), 1.f);
+        Mask singular_mask = dr::abs(dr::dot(guide, dc_dv_normalized)) == 1.f;
         dr::masked(v_rot, singular_mask) =
             Vector3f(0, 1, 0); // non-consistent at singular points
         Vector3f v_rad = dr::cross(v_rot, dc_dv_normalized);

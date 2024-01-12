@@ -445,10 +445,9 @@ Scene<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f &ss,
 
     // Inverse mapping of samples on shapes that have both types
     Mask both_types_sampled =
-        dr::eq(ss.flags, (uint32_t) DiscontinuityFlags::AllTypes);
+        ss.flags == (uint32_t) DiscontinuityFlags::AllTypes;
     Mask shape_has_both_types =
-        dr::eq(ss.shape->silhouette_discontinuity_types(),
-               (uint32_t) DiscontinuityFlags::AllTypes);
+        ss.shape->silhouette_discontinuity_types() == (uint32_t) DiscontinuityFlags::AllTypes;
     Mask is_interior =
         has_flag(ss.discontinuity_type, DiscontinuityFlags::InteriorType);
     dr::masked(sample.x(), both_types_sampled && shape_has_both_types) =
