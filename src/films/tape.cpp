@@ -27,7 +27,7 @@ public:
         );
         set_crop_window(ScalarPoint2u(0, 0), m_size);
 
-        m_count = props.get<bool>("count", false);
+        m_count = props.get<bool>("count", true);
 
         std::string file_format = string::to_lower(
             props.string("file_format", "openexr"));
