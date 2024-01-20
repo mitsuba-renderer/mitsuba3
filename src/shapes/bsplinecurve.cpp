@@ -120,7 +120,7 @@ points and increasing radii::
         },
 
 .. note:: The backfaces of the curves are culled. It is therefore impossible to
-          intersect the curve with a ray that's origin is inside of the curve.
+          intersect a curve with a ray, whose origin lies inside the curve.
           In addition, prior to the NVIDIA v531.18 drivers for Windows and
           v530.30.02 drivers for Linux, `important inconsistencies <https://forums.developer.nvidia.com/t/orthographic-camera-with-b-spline-curves/238650>`_
           in the ray intersection code have been identified.
