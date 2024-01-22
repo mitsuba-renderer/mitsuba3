@@ -129,25 +129,38 @@ public:
            The first argument registers all variables that encode
            the loop state variables. This is crucial: omitting a variable may
            lead to undefined behavior. */
-        std::tie(ray, throughput, result, eta, depth, 
-            valid_ray, prev_si, prev_bsdf_pdf,prev_bsdf_delta, active) =
-        dr::while_loop(
-            std::make_tuple(ray, throughput, result, eta, depth, 
-            valid_ray, prev_si, prev_bsdf_pdf,prev_bsdf_delta, active),
+        using LoopState = SampleLoopState<>;
 
-            [](const Ray3f&, const Spectrum&, const Spectrum&, const Float&, 
-               const UInt32&, const Mask&, const Interaction3f&, 
-               const Float&, const Bool&, const Bool& active) {
-                return active;
-            },
+        LoopState ls{};
+        ls.ray = ray;
+        ls.throughput = throughput;
+        ls.result = result;
+        ls.eta = eta;
+        ls.depth = depth;
+        ls.valid_ray = valid_ray;
+        ls.prev_si = prev_si;
+        ls.prev_bsdf_pdf = prev_bsdf_pdf;
+        ls.prev_bsdf_delta = prev_bsdf_delta;
+        ls.active = active;
+
+        std::tie(ls) = dr::while_loop(std::make_tuple(ls),
+
+            [](const LoopState& ls) { return ls.active; },
             // TODO: Correct handling of sampler state
-            [this, sampler, scene, bsdf_ctx](Ray3f& ray, Spectrum& throughput, 
-                Spectrum& result, Float& eta, UInt32& depth, Mask& valid_ray, 
-                Interaction3f& prev_si, Float& prev_bsdf_pdf, 
-                Bool& prev_bsdf_delta, Bool& active) {
+            [this, sampler, scene, bsdf_ctx](LoopState& ls) {
 
             /* dr::while_loop implicitly masks all code in the loop using the
                'active' flag, so there is no need to pass it to every function */
+            Ray3f& ray = ls.ray;
+            Spectrum& throughput = ls.throughput;
+            Spectrum& result = ls.result;
+            Float& eta = ls.eta;
+            UInt32& depth = ls.depth;
+            Mask& valid_ray = ls.valid_ray;
+            Interaction3f& prev_si = ls.prev_si;
+            Float& prev_bsdf_pdf = ls.prev_bsdf_pdf;
+            Bool& prev_bsdf_delta = ls.prev_bsdf_delta;
+            Bool& active = ls.active;
 
             SurfaceInteraction3f si =
                 scene->ray_intersect(ray,
@@ -289,8 +302,8 @@ public:
         });
 
         return {
-            /* spec  = */ dr::select(valid_ray, result, 0.f),
-            /* valid = */ valid_ray
+            /* spec  = */ dr::select(ls.valid_ray, ls.result, 0.f),
+            /* valid = */ ls.valid_ray
         };
     }
 
@@ -325,6 +338,24 @@ public:
     }
 
     MI_DECLARE_CLASS()
+private:
+    template <typename = void>
+    struct SampleLoopState {
+
+        Ray3f ray;
+        Spectrum throughput;
+        Spectrum result;
+        Float eta;
+        UInt32 depth;
+        Mask valid_ray;
+        Interaction3f prev_si;
+        Float prev_bsdf_pdf;
+        Bool prev_bsdf_delta;
+        Bool active;
+
+        DRJIT_STRUCT(SampleLoopState, ray, throughput, result, eta, depth, \
+            valid_ray, prev_si, prev_bsdf_pdf, prev_bsdf_delta, active)
+    };
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(PathIntegrator, MonteCarloIntegrator)

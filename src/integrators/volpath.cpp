@@ -130,25 +130,42 @@ public:
         /* Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
            generates wavefront or megakernel renderer based on configuration).
            Register everything that changes as part of the loop here */
-        std::tie(active, depth, ray, throughput,
-            result, si, mei, medium, eta, last_scatter_event,
-            last_scatter_direction_pdf, needs_intersection,
-            specular_chain, valid_ray) = dr::while_loop(
-            std::make_tuple(active, depth, ray, throughput, 
-                result, si, mei, medium, eta, last_scatter_event,
-                last_scatter_direction_pdf, needs_intersection,
-                specular_chain, valid_ray),
-            [](const Mask& active, const UInt32&, const Ray3f&, 
-                const Spectrum&, const Spectrum&, const SurfaceInteraction3f&,
-                const MediumInteraction3f&, const MediumPtr&, const Float&,
-                const Interaction3f&, const Float&, const Mask&, const Mask&, 
-                const Mask&) { return active; },
-            [this, scene, channel, sampler](Mask& active, UInt32& depth, Ray3f& ray, 
-                Spectrum& throughput, Spectrum& result, SurfaceInteraction3f& si,
-                MediumInteraction3f& mei, MediumPtr& medium, Float& eta,
-                Interaction3f& last_scatter_event, 
-                Float& last_scatter_direction_pdf, Mask& needs_intersection, 
-                Mask& specular_chain, Mask& valid_ray) {
+        using LoopState = SampleLoopState<>;
+
+        LoopState ls{};
+        ls.active = active;
+        ls.depth = depth;
+        ls.ray = ray;
+        ls.throughput = throughput;
+        ls.result = result;
+        ls.si = si;
+        ls.mei = mei;
+        ls.medium = medium;
+        ls.eta = eta;
+        ls.last_scatter_event = last_scatter_event;
+        ls.last_scatter_direction_pdf = last_scatter_direction_pdf;
+        ls.needs_intersection = needs_intersection;
+        ls.specular_chain = specular_chain;
+        ls.valid_ray = valid_ray;
+
+        std::tie(ls) = dr::while_loop(std::make_tuple(ls),
+            [](const LoopState& ls) { return ls.active; },
+            [this, scene, channel, sampler](LoopState& ls) {
+
+            Mask& active = ls.active;
+            UInt32& depth = ls.depth;
+            Ray3f& ray = ls.ray;
+            Spectrum& throughput = ls.throughput;
+            Spectrum& result = ls.result;
+            SurfaceInteraction3f& si = ls.si;
+            MediumInteraction3f& mei = ls.mei;
+            MediumPtr& medium = ls.medium;
+            Float& eta = ls.eta;
+            Interaction3f& last_scatter_event = ls.last_scatter_event;
+            Float& last_scatter_direction_pdf = ls.last_scatter_direction_pdf;
+            Mask& needs_intersection = ls.needs_intersection;
+            Mask& specular_chain = ls.specular_chain;
+            Mask& valid_ray = ls.valid_ray;
 
             // ----------------- Handle termination of paths ------------------
             // Russian roulette: try to keep path weights equal to one, while accounting for the
@@ -336,7 +353,7 @@ public:
         },
         "Volpath integrator");
 
-        return { result, valid_ray };
+        return { ls.result, ls.valid_ray };
     }
 
 
@@ -368,20 +385,30 @@ public:
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         Mask needs_intersection = true;
 
-        DirectionSample3f direct_sample = ds;
+        DirectionSample3f dir_sample = ds;
 
-        std::tie(active, ray, total_dist, needs_intersection, medium, si,
-                 transmittance) = dr::while_loop(
-            std::make_tuple(active, ray, total_dist, 
-                needs_intersection, medium, si, transmittance),
-            [](const Mask& active, const Ray3f&, const Float&, const Mask&,
-            const MediumPtr&, const SurfaceInteraction3f&, const Spectrum&) {
-                return dr::detach(active);
-            },
-            [this, scene, sampler, channel, direct_sample, 
-                max_dist](Mask& active, Ray3f& ray, 
-            Float& total_dist, Mask& needs_intersection, MediumPtr& medium, 
-            SurfaceInteraction3f& si, Spectrum& transmittance) {
+        using LoopState = SampleEmitterLoopState<>;
+        LoopState ls{};
+        ls.active = active;
+        ls.ray = ray;
+        ls.total_dist = total_dist;
+        ls.needs_intersection = needs_intersection;
+        ls.medium = medium;
+        ls.si = si;
+        ls.transmittance = transmittance;
+
+        std::tie(ls) = dr::while_loop(std::make_tuple(ls),
+            [](const LoopState& ls) { return dr::detach(ls.active); },
+            [this, scene, sampler, channel, dir_sample, 
+                max_dist](LoopState& ls) {
+
+            Mask& active = ls.active;
+            Ray3f& ray = ls.ray;
+            Float& total_dist = ls.total_dist;
+            Mask& needs_intersection = ls.needs_intersection;
+            MediumPtr& medium = ls.medium;
+            SurfaceInteraction3f& si = ls.si;
+            Spectrum& transmittance = ls.transmittance;
 
             Float remaining_dist = max_dist - total_dist;
             ray.maxt = remaining_dist;
@@ -414,7 +441,7 @@ public:
                 }
 
                 // Handle exceeding the maximum distance by medium sampling
-                dr::masked(total_dist, active_medium && (mei.t > remaining_dist) && mei.is_valid()) = direct_sample.dist;
+                dr::masked(total_dist, active_medium && (mei.t > remaining_dist) && mei.is_valid()) = dir_sample.dist;
                 dr::masked(mei.t, active_medium && (mei.t > remaining_dist)) = dr::Infinity<Float>;
 
                 escaped_medium = active_medium && !mei.is_valid();
@@ -468,7 +495,7 @@ public:
         },
         "Volpath integrator emitter sampling");
 
-        return { transmittance * emitter_val, direct_sample };
+        return { ls.transmittance * emitter_val, dir_sample };
     }
 
     //! @}
@@ -490,6 +517,46 @@ public:
     };
 
     MI_DECLARE_CLASS()
+private:
+    template <typename = void>
+    struct SampleLoopState {
+
+        Mask active;
+        UInt32 depth;
+        Ray3f ray;
+        Spectrum throughput;
+        Spectrum result;
+        SurfaceInteraction3f si;
+        MediumInteraction3f mei;
+        MediumPtr medium;
+        Float eta;
+        Interaction3f last_scatter_event;
+        Float last_scatter_direction_pdf;
+        Mask needs_intersection;
+        Mask specular_chain;
+        Mask valid_ray;
+
+        DRJIT_STRUCT(SampleLoopState, active, depth, ray, throughput, result, \
+            si, mei, medium, eta, last_scatter_event, \
+            last_scatter_direction_pdf, needs_intersection, \
+            specular_chain, valid_ray)
+    };
+
+    template <typename = void>
+    struct SampleEmitterLoopState {
+
+        Mask active;
+        Ray3f ray;
+        Float total_dist;
+        Mask needs_intersection;
+        MediumPtr medium;
+        SurfaceInteraction3f si;
+        Spectrum transmittance;
+
+        DRJIT_STRUCT(SampleEmitterLoopState, active, ray, total_dist, \
+            needs_intersection, medium, si, transmittance)
+    };
+
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(VolumetricPathIntegrator, MonteCarloIntegrator);
