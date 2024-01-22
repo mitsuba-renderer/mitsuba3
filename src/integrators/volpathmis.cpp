@@ -164,30 +164,49 @@ public:
         Mask needs_intersection = true, last_event_was_null = false;
         Interaction3f last_scatter_event = dr::zeros<Interaction3f>();
 
+        using LoopState = SampleLoopState<>;
+
+        LoopState ls{};
+        ls.active = active;
+        ls.depth = depth;
+        ls.ray = ray;
+        ls.p_over_f = p_over_f;
+        ls.p_over_f_nee = p_over_f_nee;
+        ls.result = result;
+        ls.si = si;
+        ls.mei = mei;
+        ls.medium = medium;
+        ls.eta = eta;
+        ls.last_scatter_event = last_scatter_event;
+        ls.last_event_was_null = last_event_was_null;
+        ls.needs_intersection = needs_intersection;
+        ls.specular_chain = specular_chain;
+        ls.valid_ray = valid_ray;
+
+
         /* Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
            generates wavefront or megakernel renderer based on configuration).
            Register everything that changes as part of the loop here */
-        std::tie(active, depth, ray, p_over_f, p_over_f_nee, result, si, 
-            mei, medium, eta, last_scatter_event, needs_intersection, 
-            specular_chain, valid_ray) = dr::while_loop(
+        std::tie(ls) = dr::while_loop(std::make_tuple(ls),
+            [](const LoopState& ls) { return ls.active; },
+            [this, sampler, scene, channel](LoopState& ls) {
 
-            std::make_tuple(active, depth, ray, p_over_f, p_over_f_nee, result,si, 
-                mei, medium, eta, last_scatter_event, needs_intersection, 
-                specular_chain, valid_ray),
-            [](const Mask& active, const UInt32&, const Ray3f&, 
-                const WeightMatrix&, const WeightMatrix&, 
-                const Spectrum&, const SurfaceInteraction3f&, 
-                const MediumInteraction3f&, const MediumPtr&, const Float&, 
-                const Interaction3f&, const Mask&, const Mask&, const Mask&) {
-                return active;
-            },
-            [=, &last_event_was_null](
-                Mask& active, UInt32& depth, Ray3f& ray,
-                WeightMatrix& p_over_f, WeightMatrix& p_over_f_nee,
-                Spectrum& result, SurfaceInteraction3f& si,
-                MediumInteraction3f& mei, MediumPtr& medium, Float& eta,
-                Interaction3f& last_scatter_event, Mask& needs_intersection, 
-                Mask& specular_chain, Mask& valid_ray) {
+            Mask& active = ls.active;
+            UInt32& depth = ls.depth;
+            Ray3f& ray = ls.ray;
+            WeightMatrix& p_over_f = ls.p_over_f;
+            WeightMatrix& p_over_f_nee = ls.p_over_f_nee;
+            Spectrum& result = ls.result;
+            SurfaceInteraction3f& si = ls.si;
+            MediumInteraction3f& mei = ls.mei;
+            MediumPtr& medium = ls.medium;
+            Float& eta = ls.eta;
+            Interaction3f& last_scatter_event = ls.last_scatter_event;
+            Mask& last_event_was_null = ls.last_event_was_null;
+            Mask& needs_intersection = ls.needs_intersection;
+            Mask& specular_chain = ls.specular_chain;
+            Mask& valid_ray = ls.valid_ray;
+
             // ----------------- Handle termination of paths ------------------
 
             // Russian roulette: try to keep path weights equal to one, while accounting for the
@@ -386,7 +405,7 @@ public:
             },
             "Volpath MIS integrator");
 
-        return { result, valid_ray };
+        return { ls.result, ls.valid_ray };
     }
 
     template <typename Interaction>
@@ -421,19 +440,30 @@ public:
         Mask needs_intersection = true;
         DirectionSample3f dir_sample = ds;
 
-        std::tie(active, ray, total_dist, needs_intersection, medium, si, 
-            p_over_f_nee, p_over_f_uni) = dr::while_loop(
-            std::make_tuple(active, ray, total_dist, needs_intersection, medium, 
-            si, p_over_f_nee, p_over_f_uni),
-            [](const Mask& active, const Ray3f&, const Float&, const Mask&, 
-            const MediumPtr&, const SurfaceInteraction3f&, const WeightMatrix&,
-            const WeightMatrix&) {
-                return dr::detach(active);
-            },
-            [=](Mask& active, Ray3f& ray, 
-            Float& total_dist, Mask& needs_intersection, MediumPtr& medium, 
-            SurfaceInteraction3f& si, WeightMatrix& p_over_f_nee,
-            WeightMatrix& p_over_f_uni) {
+        using LoopState = SampleEmitterLoopState<>;
+        LoopState ls{};
+        ls.active = active;
+        ls.ray = ray;
+        ls.total_dist = total_dist;
+        ls.needs_intersection = needs_intersection;
+        ls.medium = medium;
+        ls.si = si;
+        ls.p_over_f_nee = p_over_f_nee;
+        ls.p_over_f_uni = p_over_f_uni;
+
+        std::tie(ls) = dr::while_loop(std::make_tuple(ls),
+            [](const LoopState& ls) { return dr::detach(ls.active); },
+            [this, sampler, scene, channel, max_dist, 
+            dir_sample](LoopState& ls) {
+
+            Mask& active = ls.active;
+            Ray3f& ray = ls.ray;
+            Float& total_dist = ls.total_dist;
+            Mask& needs_intersection = ls.needs_intersection;
+            MediumPtr& medium = ls.medium;
+            SurfaceInteraction3f& si = ls.si;
+            WeightMatrix& p_over_f_nee = ls.p_over_f_nee;
+            WeightMatrix& p_over_f_uni = ls.p_over_f_uni;
 
             Float remaining_dist = max_dist - total_dist;
             ray.maxt = remaining_dist;
@@ -524,7 +554,7 @@ public:
         },
         "Volpath MIS integrator emitter sampling");
 
-        return { p_over_f_nee, p_over_f_uni, emitter_val, dir_sample};
+        return { ls.p_over_f_nee, ls.p_over_f_uni, emitter_val, dir_sample};
     }
 
     MI_INLINE
@@ -594,6 +624,47 @@ public:
     }
 
     MI_DECLARE_CLASS()
+
+private:
+    template <typename = void>
+    struct SampleLoopState {
+
+        Mask active;
+        UInt32 depth;
+        Ray3f ray;
+        WeightMatrix p_over_f;
+        WeightMatrix p_over_f_nee;
+        Spectrum result;
+        SurfaceInteraction3f si;
+        MediumInteraction3f mei;
+        MediumPtr medium;
+        Float eta;
+        Interaction3f last_scatter_event;
+        Mask last_event_was_null;
+        Mask needs_intersection;
+        Mask specular_chain;
+        Mask valid_ray;
+
+        DRJIT_STRUCT(SampleLoopState, active, depth, ray, p_over_f, \
+            p_over_f_nee, result, si, mei, medium, eta, last_scatter_event, \
+            last_event_was_null, needs_intersection, specular_chain, valid_ray)
+    };
+
+    template <typename = void>
+    struct SampleEmitterLoopState {
+
+        Mask active;
+        Ray3f ray;
+        Float total_dist;
+        Mask needs_intersection;
+        MediumPtr medium;
+        SurfaceInteraction3f si;
+        WeightMatrix p_over_f_nee;
+        WeightMatrix p_over_f_uni;
+
+        DRJIT_STRUCT(SampleEmitterLoopState, active, ray, total_dist, \
+            needs_intersection, medium, si, p_over_f_nee, p_over_f_uni)
+    };
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(VolumetricMisPathIntegrator, MonteCarloIntegrator);
