@@ -762,7 +762,7 @@ public:
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixCylinderData));
 
-            OptixCylinderData data = { bbox(), m_to_object.scalar().transpose(),
+            OptixCylinderData data = { bbox(), m_to_object.scalar(),
                                        (float) 1.f,
                                        (float) 1.f };
 

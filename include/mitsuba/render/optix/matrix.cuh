@@ -11,7 +11,7 @@
 namespace optix {
 template <typename Value_, size_t Size_> struct Matrix {
     using Value = Value_;
-    using Column = Array<Value, Size_>;
+    using Row = Array<Value, Size_>;
     static constexpr size_t Size = Size_;
 
 #ifndef __CUDACC__
@@ -25,7 +25,7 @@ template <typename Value_, size_t Size_> struct Matrix {
     template <typename T>
     DEVICE Matrix(const Matrix<T, Size> &a) {
         for (size_t i = 0; i < Size; ++i)
-            m[i] = (Column) a.m[i];
+            m[i] = (Row) a.m[i];
     }
 
     DEVICE Matrix operator-() const {
@@ -61,16 +61,6 @@ template <typename Value_, size_t Size_> struct Matrix {
         return *this;
     }
 
-    DEVICE friend Matrix operator*(const Matrix &a, const Matrix &b) {
-        Matrix result;
-        for (size_t j = 0; j < Size; ++j) {
-            Column sum = a[0] * b[0][j];
-            for (size_t i = 1; i < Size; ++i)
-                sum = ::fmaf(b[i][j], a[i], sum);
-            result[j] = sum;
-        }
-    }
-
     DEVICE bool operator==(const Matrix &a) const {
         for (size_t i = 0; i < Size; ++i) {
             if (m[i] != a.m[i])
@@ -83,12 +73,12 @@ template <typename Value_, size_t Size_> struct Matrix {
         return !operator==(a);
     }
 
-    DEVICE const Column &operator[](size_t i) const {
+    DEVICE const Row &operator[](size_t i) const {
         assert(i < Size);
         return m[i];
     }
 
-    DEVICE Column &operator[](size_t i) {
+    DEVICE Row &operator[](size_t i) {
         assert(i < Size);
         return m[i];
     }
@@ -96,17 +86,17 @@ template <typename Value_, size_t Size_> struct Matrix {
     /// Debug print
     DEVICE void print() const {
         printf("[\n");
-        for (size_t i = 0; i < Size; i++) {
+        for (size_t j = 0; j < Size; j++) {
             printf("  [");
-            for (size_t j = 0; j < Size; j++)
-                printf((j < Size - 1 ? "%f, " : "%f"), m[j][i]);
+            for (size_t i = 0; i < Size; i++)
+                printf((i < Size - 1 ? "%f, " : "%f"), m[i][j]);
             printf("]\n");
         }
         printf("]\n");
     }
 #endif
 
-    Column m[Size];
+    Row m[Size];
 };
 
 // Import some common Dr.Jit types
@@ -128,39 +118,43 @@ struct Transform4f {
     DEVICE Transform4f() { }
 
     DEVICE Transform4f(float m[12], float inv[12]) {
-        for (size_t i = 0; i < 3; ++i)
-            for (size_t j = 0; j < 4; ++j)
-                matrix[j][i] = m[i*4 + j];
-        matrix[0][3] = matrix[1][3] = matrix[2][3] = 0.f;
+        for (size_t j = 0; j < 3; ++j)
+            for (size_t i = 0; i < 4; ++i)
+                matrix[i][j] = m[j*4 + i];
+        matrix[3][0] = matrix[3][1] = matrix[3][2] = 0.f;
         matrix[3][3] = 1.f;
 
-        for (size_t i = 0; i < 3; ++i)
-            for (size_t j = 0; j < 4; ++j)
-                inverse_transpose[i][j] = inv[i*4 + j];
-        inverse_transpose[3][0] = inverse_transpose[3][1] = inverse_transpose[3][2] = 0.f;
+        for (size_t j = 0; j < 3; ++j)
+            for (size_t i = 0; i < 4; ++i)
+                inverse_transpose[j][i] = inv[j*4 + i];
+        inverse_transpose[0][3] = inverse_transpose[1][3] = inverse_transpose[2][3] = 0.f;
         inverse_transpose[3][3] = 1.f;
     }
 
     DEVICE Vector3f transform_point(const Vector3f &p) const {
-        Vector4f result = matrix[3];
+        Vector4f result;
+        Vector4f point = Vector4f(p.x(), p.y(), p.z(), 1);
+
         for (size_t i = 0; i < 3; ++i)
-            result = fmaf(p[i], matrix[i], result);
+            result[i] = dot(matrix[i], point);
         return Vector3f(result.x(), result.y(), result.z());
     }
 
     DEVICE Vector3f transform_normal(const Vector3f &n) const {
-        Vector4f result = inverse_transpose[0];
-        result *= n.x();
-        for (size_t i = 1; i < 3; ++i)
-            result = fmaf(n[i], inverse_transpose[i], result);
+        Vector4f result;
+        Vector4f vec = Vector4f(n.x(), n.y(), n.z(), 0);
+
+        for (size_t i = 0; i < 3; ++i)
+            result[i] = dot(inverse_transpose[i], vec);
         return Vector3f(result.x(), result.y(), result.z());
     }
 
     DEVICE Vector3f transform_vector(const Vector3f &v) const {
-        Vector4f result = matrix[0];
-        result *= v.x();
-        for (size_t i = 1; i < 3; ++i)
-            result = fmaf(v[i], matrix[i], result);
+        Vector4f result;
+        Vector4f vec = Vector4f(v.x(), v.y(), v.z(), 0);
+
+        for (size_t i = 0; i < 3; ++i)
+            result[i] = dot(matrix[i], vec);
         return Vector3f(result.x(), result.y(), result.z());
     }
 
