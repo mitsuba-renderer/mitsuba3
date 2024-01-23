@@ -577,7 +577,7 @@ public:
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixRectangleData));
 
-            OptixRectangleData data = { bbox(), m_to_object.scalar().transpose() };
+            OptixRectangleData data = { bbox(), m_to_object.scalar() };
 
             jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data,
                        sizeof(OptixRectangleData));

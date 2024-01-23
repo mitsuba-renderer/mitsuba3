@@ -581,7 +581,7 @@ public:
                                       m_voxel_size.scalar()[1],
                                       m_voxel_size.scalar()[2],
                                       m_grid_texture.tensor().array().data(),
-                                      m_to_object.scalar().transpose(),
+                                      m_to_object.scalar(),
                                       m_watertight };
             jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data,
                        sizeof(OptixSDFGridData));

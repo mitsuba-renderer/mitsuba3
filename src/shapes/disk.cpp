@@ -109,7 +109,7 @@ public:
     }
 
     void update() {
-        m_to_object = m_to_world.value().transpose().inverse();
+        m_to_object = m_to_world.value().inverse();
 
         Vector3f dp_du = m_to_world.value() * Vector3f(1.f, 0.f, 0.f);
         Vector3f dp_dv = m_to_world.value() * Vector3f(0.f, 1.f, 0.f);
