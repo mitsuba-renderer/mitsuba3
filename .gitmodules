@@ -19,9 +19,6 @@
 [submodule "ext/asmjit"]
     path = ext/asmjit
     url = https://github.com/mitsuba-renderer/asmjit
-[submodule "ext/pybind11"]
-    path = ext/pybind11
-    url = https://github.com/pybind/pybind11
 [submodule "ext/nanogui"]
     path = ext/nanogui
     url = https://github.com/mitsuba-renderer/nanogui
