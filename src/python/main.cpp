@@ -4,7 +4,7 @@
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/profiler.h>
-//#include <mitsuba/python/python.h>
+#include <mitsuba/python/python.h>
 
 // core
 //MI_PY_DECLARE(atomic);
@@ -42,37 +42,37 @@
 //MI_PY_DECLARE(FilmFlags);
 //MI_PY_DECLARE(DiscontinuityFlags);
 
-//PYBIND11_MODULE(mitsuba_ext, m) {
-//    // Temporarily change the module name (for pydoc)
-//    m.attr("__name__") = "mitsuba";
-//
-//    // Expose some constants in the main `mitsuba` module
-//    m.attr("__version__")       = MI_VERSION;
-//    m.attr("MI_VERSION")       = MI_VERSION;
-//    m.attr("MI_VERSION_MAJOR") = MI_VERSION_MAJOR;
-//    m.attr("MI_VERSION_MINOR") = MI_VERSION_MINOR;
-//    m.attr("MI_VERSION_PATCH") = MI_VERSION_PATCH;
-//    m.attr("MI_YEAR")          = MI_YEAR;
-//    m.attr("MI_AUTHORS")       = MI_AUTHORS;
-//
-//#if defined(NDEBUG)
-//    m.attr("DEBUG") = false;
-//#else
-//    m.attr("DEBUG") = true;
-//#endif
-//
-//#if defined(MI_ENABLE_CUDA)
-//    m.attr("MI_ENABLE_CUDA") = true;
-//#else
-//    m.attr("MI_ENABLE_CUDA") = false;
-//#endif
-//
-//#if defined(MI_ENABLE_EMBREE)
-//    m.attr("MI_ENABLE_EMBREE") = true;
-//#else
-//    m.attr("MI_ENABLE_EMBREE") = false;
-//#endif
-//
+NB_MODULE(mitsuba_ext, m) {
+    // Temporarily change the module name (for pydoc)
+    m.attr("__name__") = "mitsuba";
+
+    // Expose some constants in the main `mitsuba` module
+    m.attr("__version__")       = MI_VERSION;
+    m.attr("MI_VERSION")       = MI_VERSION;
+    m.attr("MI_VERSION_MAJOR") = MI_VERSION_MAJOR;
+    m.attr("MI_VERSION_MINOR") = MI_VERSION_MINOR;
+    m.attr("MI_VERSION_PATCH") = MI_VERSION_PATCH;
+    m.attr("MI_YEAR")          = MI_YEAR;
+    m.attr("MI_AUTHORS")       = MI_AUTHORS;
+
+#if defined(NDEBUG)
+    m.attr("DEBUG") = false;
+#else
+    m.attr("DEBUG") = true;
+#endif
+
+#if defined(MI_ENABLE_CUDA)
+    m.attr("MI_ENABLE_CUDA") = true;
+#else
+    m.attr("MI_ENABLE_CUDA") = false;
+#endif
+
+#if defined(MI_ENABLE_EMBREE)
+    m.attr("MI_ENABLE_EMBREE") = true;
+#else
+    m.attr("MI_ENABLE_EMBREE") = false;
+#endif
+
 //    m.def("set_log_level", [](mitsuba::LogLevel level) {
 //
 //        if (!Thread::thread()->logger()) {
@@ -169,5 +169,5 @@
 //    (void) py::weakref(m.attr("Object"), cleanup_callback).release();
 //
 //    // Change module name back to correct value
-//    m.attr("__name__") = "mitsuba_ext";
-//}
+    m.attr("__name__") = "mitsuba_ext";
+}

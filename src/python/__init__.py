@@ -35,7 +35,7 @@ if _dr.__version__ != DRJIT_VERSION_REQUIREMENT:
 del DRJIT_VERSION_REQUIREMENT
 
 try:
-    with _dr.scoped_rtld_deepbind():
+    with _dr.detail.scoped_rtld_deepbind():
         _import('mitsuba.mitsuba_ext')
 
     _tls = threading.local()
@@ -63,7 +63,8 @@ finally:
     _sys.modules.pop('mitsuba.mitsuba_ext', None)
 
 # Known submodules that will be directly accessible from the mitsuba package
-submodules = ['warp', 'math', 'spline', 'quad', 'mueller', 'util', 'filesystem']
+#submodules = ['warp', 'math', 'spline', 'quad', 'mueller', 'util', 'filesystem']
+submodules = [] # FIXME: Revert this change
 
 # Inform the meta path finder of the python folder
 __path__.append(__path__[0] + '/python')
@@ -101,7 +102,7 @@ class MitsubaVariantModule(types.ModuleType):
 
         if modules is None:
             try:
-                with _dr.scoped_rtld_deepbind():
+                with _dr.detail.scoped_rtld_deepbind():
                     modules = (
                         _import('mitsuba.mitsuba_ext'),
                         _import('mitsuba.mitsuba_' + variant + '_ext'),
@@ -318,13 +319,15 @@ class MitsubaModule(types.ModuleType):
             del sys
 
 # Check whether we are reloading the mitsuba module
-reload = f'mitsuba.{submodules[0]}' in _sys.modules
-if reload:
-    print(
-        "The Mitsuba module was reloaded (imported a second time). "
-        "This can in some cases result in small but subtle issues "
-        "and is discouraged."
-    )
+# FIXME: Revert the changes below
+reload = False
+#reload = f'mitsuba.{submodules[0]}' in _sys.modules
+#if reload:
+#    print(
+#        "The Mitsuba module was reloaded (imported a second time). "
+#        "This can in some cases result in small but subtle issues "
+#        "and is discouraged."
+#    )
 
 # Register the variant modules
 from .config import MI_VARIANTS
@@ -376,4 +379,5 @@ del logging
 if config in locals():
     del config
 del MI_VARIANTS
-del variant, submodule, name, reload
+del variant, name, reload # FIXME: Revert this change
+#del variant, submodule, name, reload
