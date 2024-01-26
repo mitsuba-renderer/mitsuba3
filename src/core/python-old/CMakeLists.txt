@@ -1,0 +1,45 @@
+set(CORE_PY_V_SRC
+  ${CMAKE_CURRENT_SOURCE_DIR}/drjit_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/bbox_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/bsphere_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/distr_1d_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/distr_2d_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/frame_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/math_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/object_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/qmc_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/properties_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/random_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ray_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/rfilter_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/spectrum_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/spline_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/transform_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/vector_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/warp_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/xml_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/quad_v.cpp
+  PARENT_SCOPE
+)
+
+set(CORE_PY_SRC
+  ${CMAKE_CURRENT_SOURCE_DIR}/atomic.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/appender.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/argparser.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/bitmap.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/cast.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/filesystem.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/formatter.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/fresolver.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/logger.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/mmap.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/object.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/progress.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/rfilter.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/stream.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/struct.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/thread.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/timer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/util.cpp
+  PARENT_SCOPE
+)
