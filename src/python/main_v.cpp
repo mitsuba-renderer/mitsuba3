@@ -13,7 +13,7 @@
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/volume.h>
 
-//#include <mitsuba/python/python.h>
+#include <mitsuba/python/python.h>
 
 
 //#define PY_TRY_CAST(Type)                                         \
@@ -114,15 +114,17 @@
 //MI_PY_DECLARE(Texture);
 //MI_PY_DECLARE(Volume);
 //MI_PY_DECLARE(VolumeGrid);
-//
-//#define MODULE_NAME MI_MODULE_NAME(mitsuba, MI_VARIANT_NAME)
-//
+
+#define MODULE_NAME MI_MODULE_NAME(mitsuba, MI_VARIANT_NAME)
+
 //using Caster = py::object(*)(mitsuba::Object *);
 //Caster cast_object = nullptr;
 //
-//PYBIND11_MODULE(MODULE_NAME, m) {
-//    // Temporarily change the module name (for pydoc)
-//    m.attr("__name__") = "mitsuba." DRJIT_TOSTRING(MI_VARIANT_NAME);
+
+NB_MODULE(MODULE_NAME, m) {
+    // Temporarily change the module name (for pydoc)
+    m.attr("__name__") = "mitsuba." DRJIT_TOSTRING(MI_VARIANT_NAME);
+
 //
 //    MI_PY_IMPORT_TYPES()
 //
@@ -233,8 +235,8 @@
 //    (void) py::weakref(m.attr("Scene"), cleanup_callback).release();
 //
 //    // Change module name back to correct value
-//    m.attr("__name__") = "mitsuba." DRJIT_TOSTRING(MODULE_NAME);
-//}
+    m.attr("__name__") = "mitsuba." DRJIT_TOSTRING(MODULE_NAME);
+}
 //
 //#undef CHANGE_SUBMODULE_NAME
 //#undef CHANGE_BACK_SUBMODULE_NAME

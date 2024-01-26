@@ -7,10 +7,7 @@
 #include <mitsuba/mitsuba.h>
 #include <mitsuba/core/object.h>
 #include <mitsuba/render/fwd.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/operators.h>
-#include <pybind11/functional.h>
-#include <pybind11/stl.h>
+#include <nanobind/nanobind.h>
 #include <drjit/packet.h>
 #include <drjit-core/jit.h>
 
@@ -88,7 +85,7 @@
 //
 //using namespace mitsuba;
 //
-//namespace py = pybind11;
+namespace nb = nanobind;
 //
 //using namespace py::literals;
 //
@@ -138,8 +135,7 @@
 //#define MI_PY_IMPORT(Name) python_export_##Name(m)
 //#define MI_PY_IMPORT_SUBMODULE(Name) python_export_##Name(Name)
 //
-//#define MI_MODULE_NAME_1(lib, variant) lib##_##variant##_ext
-//#define MI_MODULE_NAME(lib, variant) MI_MODULE_NAME_1(lib, variant)
+#define MI_MODULE_NAME(lib, variant) lib##_##variant##_ext
 //
 //#define MI_PY_IMPORT_TYPES(...)                                                                   \
 //    using Float    = MI_VARIANT_FLOAT;                                                            \
