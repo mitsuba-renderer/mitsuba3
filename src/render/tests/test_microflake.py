@@ -4,10 +4,10 @@ import drjit as dr
 import pytest
 
 
-@pytest.mark.parametrize("alpha", [[1, 1, 1], [1, 0.1, 0.5]])
+@pytest.mark.parametrize("s_diagonal", [[1, 1, 1], [1, 0.1, 0.5]])
 @pytest.mark.parametrize("angle", [dr.pi / 4, dr.pi / 2])
-def test01_sampling(variants_vec_backends_once, alpha, angle):
-    s = alpha + [0, 0, 0]
+def test01_sampling(variants_vec_backends_once, s_diagonal, angle):
+    s = s_diagonal + [0, 0, 0]
     w_i = dr.normalize(mi.Vector3f(0, dr.sin(angle), dr.cos(angle)))
 
     def sample_fun(sample):
@@ -19,11 +19,10 @@ def test01_sampling(variants_vec_backends_once, alpha, angle):
 
     chi2 = mi.chi2.ChiSquareTest(
         domain=mi.chi2.SphericalDomain(),
-        sample_func=lambda *args: sample_fun(*args),
-        pdf_func=lambda *args: pdf_fun(*args),
+        sample_func=sample_fun,
+        pdf_func=pdf_fun,
         sample_dim=2,
         res=128,
         ires=32
     )
-
     assert chi2.run()
