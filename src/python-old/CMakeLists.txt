@@ -18,7 +18,8 @@ foreach (MI_VARIANT ${MI_VARIANTS})
   list(GET MI_VARIANT 2 MI_VARIANT_SPECTRUM)
   set(TARGET_NAME mitsuba_${MI_VARIANT_NAME}_ext)
 
-  nanobind_add_module(${TARGET_NAME}
+  pybind11_add_module(${TARGET_NAME}
+      THIN_LTO OPT_SIZE
       main_v.cpp
       ${CORE_PY_V_SRC}
       ${RENDER_PY_V_SRC}
@@ -45,7 +46,8 @@ foreach (MI_VARIANT ${MI_VARIANTS})
   )
 endforeach()
 
-nanobind_add_module(mitsuba_ext
+pybind11_add_module(mitsuba_ext
+  THIN_LTO OPT_SIZE
   main.cpp
   ${CORE_PY_SRC}
   ${RENDER_PY_SRC}
@@ -116,7 +118,8 @@ if (NOT SKBUILD)
   endif()
 
   set(DRJIT_PYTHON_FILES
-    __init__.py ast.py config.py detail.py interop.py
+    __init__.py const.py detail.py generic.py
+    matrix.py router.py traits.py tensor.py config.py
   )
 
   foreach(file ${DRJIT_PYTHON_FILES})
@@ -164,94 +167,94 @@ endif()
 #   Generate type information stubs (drjit)
 # ----------------------------------------------------------
 
-#if (NOT SKBUILD)
-#  set(PATH_SEP ":")
-#  if(MSVC)
-#    set(PATH_SEP ";")
-#  endif()
-#  file(TO_NATIVE_PATH "${MI_BINARY_DIR}/python" DRJIT_STUBS_ENV_PYTHONPATH)
-#
-#  set(DRJIT_STUB_FILE_DEPENDENCIES ${MI_COPY_FILES})
-#  list(APPEND DRJIT_STUB_FILE_DEPENDENCIES
-#    drjit-python
-#    ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/resources/generate_stub_files.py
-#  )
-#  if (MSVC)
-#    list(APPEND DRJIT_STUB_FILE_DEPENDENCIES copy-targets-python)
-#  endif()
-#
-#  add_custom_command(
-#    OUTPUT ${MI_BINARY_DIR}/python/drjit/__init__.pyi
-#    COMMAND ${CMAKE_COMMAND} -E env
-#      "PYTHONPATH=${DRJIT_STUBS_ENV_PYTHONPATH}${PATH_SEP}$ENV{PYTHONPATH}"
-#      "${Python_EXECUTABLE}" -Xutf8 ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/resources/generate_stub_files.py
-#      ${MI_BINARY_DIR}/python/drjit
-#    DEPENDS ${DRJIT_STUB_FILE_DEPENDENCIES}
-#  )
-#  add_custom_target(drjit_stub_file_generation ALL
-#    DEPENDS ${MI_BINARY_DIR}/python/drjit/__init__.pyi
-#  )
-#  set_target_properties(drjit_stub_file_generation PROPERTIES FOLDER python)
-#endif()
+if (NOT SKBUILD)
+  set(PATH_SEP ":")
+  if(MSVC)
+    set(PATH_SEP ";")
+  endif()
+  file(TO_NATIVE_PATH "${MI_BINARY_DIR}/python" DRJIT_STUBS_ENV_PYTHONPATH)
+
+  set(DRJIT_STUB_FILE_DEPENDENCIES ${MI_COPY_FILES})
+  list(APPEND DRJIT_STUB_FILE_DEPENDENCIES
+    drjit-python
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/resources/generate_stub_files.py
+  )
+  if (MSVC)
+    list(APPEND DRJIT_STUB_FILE_DEPENDENCIES copy-targets-python)
+  endif()
+
+  add_custom_command(
+    OUTPUT ${MI_BINARY_DIR}/python/drjit/__init__.pyi
+    COMMAND ${CMAKE_COMMAND} -E env
+      "PYTHONPATH=${DRJIT_STUBS_ENV_PYTHONPATH}${PATH_SEP}$ENV{PYTHONPATH}"
+      "${Python_EXECUTABLE}" -Xutf8 ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/resources/generate_stub_files.py
+      ${MI_BINARY_DIR}/python/drjit
+    DEPENDS ${DRJIT_STUB_FILE_DEPENDENCIES}
+  )
+  add_custom_target(drjit_stub_file_generation ALL
+    DEPENDS ${MI_BINARY_DIR}/python/drjit/__init__.pyi
+  )
+  set_target_properties(drjit_stub_file_generation PROPERTIES FOLDER python)
+endif()
 
 # ----------------------------------------------------------
 #   Generate type information stubs (mitsuba)
 # ----------------------------------------------------------
 
-#set(MI_PYTHON_STUBS_DIR "" CACHE STRING "Location of the Python typing fle stubs directory to use if the files should not be generated during the build.")
-#mark_as_advanced(MI_PYTHON_STUBS_DIR)
-#if ("${MI_PYTHON_STUBS_DIR}" STREQUAL "")
-#  set(PATH_SEP ":")
-#  if(MSVC)
-#    set(PATH_SEP ";")
-#  endif()
-#  file(TO_NATIVE_PATH "${MI_BINARY_DIR}/python" MI_STUBS_ENV_PYTHONPATH)
-#
-#  set(MI_STUB_FILE_DEPENDENCIES ${MI_COPY_FILES})
-#  list(APPEND MI_STUB_FILE_DEPENDENCIES
-#    mitsuba_ext
-#    ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/generate_stub_files.py
-#  )
-#  foreach (MI_VARIANT ${MI_VARIANTS})
-#    string(REPLACE "|" ";" MI_VARIANT ${MI_VARIANT})
-#    list(GET MI_VARIANT 0 MI_VARIANT_NAME)
-#    list(APPEND MI_STUB_FILE_DEPENDENCIES mitsuba_${MI_VARIANT_NAME}_ext)
-#  endforeach()
-#  if (NOT SKBUILD)
-#    list(APPEND MI_STUB_FILE_DEPENDENCIES drjit_stub_file_generation)
-#  endif()
-#  if (MSVC)
-#    list(APPEND MI_STUB_FILE_DEPENDENCIES copy-targets-python)
-#  endif()
-#
-#  add_custom_command(
-#    OUTPUT ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
-#    COMMAND ${CMAKE_COMMAND} -E env
-#      "PYTHONPATH=${MI_STUBS_ENV_PYTHONPATH}${PATH_SEP}$ENV{PYTHONPATH}"
-#      "${Python_EXECUTABLE}" -Xutf8 ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/generate_stub_files.py
-#      ${MI_BINARY_DIR}/python/mitsuba
-#    DEPENDS ${MI_STUB_FILE_DEPENDENCIES}
-#  )
-#  add_custom_target(mitsuba_stub_file_generation ALL
-#    DEPENDS ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
-#  )
-#  set_target_properties(mitsuba_stub_file_generation PROPERTIES FOLDER python)
-#else()
-#  ro_copy(${MI_PYTHON_STUBS_DIR}/__init__.pyi python/mitsuba/__init__.pyi)
-#  file(GLOB_RECURSE MI_PYTHON_STUB_FILES RELATIVE ${MI_PYTHON_STUBS_DIR}/stubs ${MI_PYTHON_STUBS_DIR}/stubs/*.pyi)
-#  foreach(file ${MI_PYTHON_STUB_FILES})
-#    ro_copy(${MI_PYTHON_STUBS_DIR}/stubs/${file} python/mitsuba/stubs/${file})
-#  endforeach(file)
-#
-#  add_custom_target(copy-python-stubs ALL DEPENDS ${MI_COPY_FILES})
-#  set_target_properties(copy-python-stubs PROPERTIES FOLDER python)
-#endif()
-#
-#install(FILES ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi DESTINATION mitsuba)
-#install(DIRECTORY ${MI_BINARY_DIR}/python/mitsuba/stubs/ DESTINATION mitsuba/stubs)
-#
-#file(GENERATE OUTPUT ${MI_BINARY_DIR}/python/mitsuba/py.typed CONTENT "partial\n")
-#install(FILES ${MI_BINARY_DIR}/python/mitsuba/py.typed DESTINATION mitsuba)
+set(MI_PYTHON_STUBS_DIR "" CACHE STRING "Location of the Python typing fle stubs directory to use if the files should not be generated during the build.")
+mark_as_advanced(MI_PYTHON_STUBS_DIR)
+if ("${MI_PYTHON_STUBS_DIR}" STREQUAL "")
+  set(PATH_SEP ":")
+  if(MSVC)
+    set(PATH_SEP ";")
+  endif()
+  file(TO_NATIVE_PATH "${MI_BINARY_DIR}/python" MI_STUBS_ENV_PYTHONPATH)
+
+  set(MI_STUB_FILE_DEPENDENCIES ${MI_COPY_FILES})
+  list(APPEND MI_STUB_FILE_DEPENDENCIES
+    mitsuba_ext
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/generate_stub_files.py
+  )
+  foreach (MI_VARIANT ${MI_VARIANTS})
+    string(REPLACE "|" ";" MI_VARIANT ${MI_VARIANT})
+    list(GET MI_VARIANT 0 MI_VARIANT_NAME)
+    list(APPEND MI_STUB_FILE_DEPENDENCIES mitsuba_${MI_VARIANT_NAME}_ext)
+  endforeach()
+  if (NOT SKBUILD)
+    list(APPEND MI_STUB_FILE_DEPENDENCIES drjit_stub_file_generation)
+  endif()
+  if (MSVC)
+    list(APPEND MI_STUB_FILE_DEPENDENCIES copy-targets-python)
+  endif()
+
+  add_custom_command(
+    OUTPUT ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
+    COMMAND ${CMAKE_COMMAND} -E env
+      "PYTHONPATH=${MI_STUBS_ENV_PYTHONPATH}${PATH_SEP}$ENV{PYTHONPATH}"
+      "${Python_EXECUTABLE}" -Xutf8 ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/generate_stub_files.py
+      ${MI_BINARY_DIR}/python/mitsuba
+    DEPENDS ${MI_STUB_FILE_DEPENDENCIES}
+  )
+  add_custom_target(mitsuba_stub_file_generation ALL
+    DEPENDS ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
+  )
+  set_target_properties(mitsuba_stub_file_generation PROPERTIES FOLDER python)
+else()
+  ro_copy(${MI_PYTHON_STUBS_DIR}/__init__.pyi python/mitsuba/__init__.pyi)
+  file(GLOB_RECURSE MI_PYTHON_STUB_FILES RELATIVE ${MI_PYTHON_STUBS_DIR}/stubs ${MI_PYTHON_STUBS_DIR}/stubs/*.pyi)
+  foreach(file ${MI_PYTHON_STUB_FILES})
+    ro_copy(${MI_PYTHON_STUBS_DIR}/stubs/${file} python/mitsuba/stubs/${file})
+  endforeach(file)
+
+  add_custom_target(copy-python-stubs ALL DEPENDS ${MI_COPY_FILES})
+  set_target_properties(copy-python-stubs PROPERTIES FOLDER python)
+endif()
+
+install(FILES ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi DESTINATION mitsuba)
+install(DIRECTORY ${MI_BINARY_DIR}/python/mitsuba/stubs/ DESTINATION mitsuba/stubs)
+
+file(GENERATE OUTPUT ${MI_BINARY_DIR}/python/mitsuba/py.typed CONTENT "partial\n")
+install(FILES ${MI_BINARY_DIR}/python/mitsuba/py.typed DESTINATION mitsuba)
 
 # ----------------------------------------------------------
 #   docstring target
