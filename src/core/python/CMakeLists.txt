@@ -1,5 +1,5 @@
-#set(CORE_PY_V_SRC
-#  ${CMAKE_CURRENT_SOURCE_DIR}/drjit_v.cpp
+set(CORE_PY_V_SRC
+  ${CMAKE_CURRENT_SOURCE_DIR}/drjit_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/bbox_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/bsphere_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/distr_1d_v.cpp
@@ -19,8 +19,8 @@
 #  ${CMAKE_CURRENT_SOURCE_DIR}/warp_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/xml_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/quad_v.cpp
-#  PARENT_SCOPE
-#)
+  PARENT_SCOPE
+)
 #
 #set(CORE_PY_SRC
 #  ${CMAKE_CURRENT_SOURCE_DIR}/atomic.cpp
