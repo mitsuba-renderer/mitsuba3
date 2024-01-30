@@ -55,7 +55,7 @@
 //}
 
 // core
-//MI_PY_DECLARE(DrJit);
+MI_PY_DECLARE(DrJit);
 //MI_PY_DECLARE(Object);
 //MI_PY_DECLARE(BoundingBox);
 //MI_PY_DECLARE(BoundingSphere);
@@ -125,8 +125,7 @@ NB_MODULE(MODULE_NAME, m) {
     // Temporarily change the module name (for pydoc)
     m.attr("__name__") = "mitsuba." DRJIT_TOSTRING(MI_VARIANT_NAME);
 
-//
-//    MI_PY_IMPORT_TYPES()
+    MI_PY_IMPORT_TYPES()
 //
 //    // Create sub-modules
 //    py::module math    = create_submodule(m, "math"),
@@ -142,7 +141,7 @@ NB_MODULE(MODULE_NAME, m) {
 //    quad.doc()    = "Functions for numerical quadrature";
 //    mueller.doc() = "Routines to manipulate Mueller matrices for polarized rendering.";
 //
-//    MI_PY_IMPORT(DrJit);
+    MI_PY_IMPORT(DrJit);
 //
 //    m.attr("float_dtype") = std::is_same_v<ScalarFloat, float> ? "f" : "d";
 //    m.attr("is_monochromatic") = is_monochromatic_v<Spectrum>;
