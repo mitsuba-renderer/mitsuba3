@@ -1,42 +1,32 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/python/python.h>
-
-py::handle array_init;
+#include <drjit/python.h>
 
 template <typename Array, typename Base>
-void bind_dr(py::module_ &m, const char *name) {
-    py::handle h = get_type_handle<Array>();
+void bind_dr(nb::module_ &m, const char *name) {
+    // Check if Array has already been bound (it is just a C++ alias)
+    nb::handle h = nb::type<Array>();
     if (h.ptr()) {
         m.attr(name) = h;
         return;
     }
 
-    py::class_<Array> cls(m, name, py::type::handle_of<Base>());
-    cls.def(
-        "__init__",
-        [](py::detail::value_and_holder &v_h, py::args args) {
-            v_h.value_ptr() = new Array();
-            array_init(py::handle((PyObject *) v_h.inst), args);
-        },
-        py::detail::is_new_style_constructor());
-
-    auto tinfo_array = py::detail::get_type_info(typeid(Array));
-    auto tinfo_base  = py::detail::get_type_info(typeid(Base));
-    tinfo_array->implicit_conversions = tinfo_base->implicit_conversions;
+    dr::ArrayBinding b;
+    dr::bind_array_t<Array>(b, m, name);
 }
 
 template <typename Type, size_t Size, bool IsDouble>
-void dr_bind_vp_impl(py::module_ &m, const std::string &prefix) {
+void dr_bind_vp_impl(nb::module_ &m, const std::string &prefix) {
     std::string suffix = std::to_string(Size);
 
-    if (IsDouble)
+    if constexpr (IsDouble)
         suffix += "d";
-    else if (std::is_floating_point_v<dr::scalar_t<Type>>)
+    else if constexpr (std::is_floating_point_v<dr::scalar_t<Type>>)
         suffix += "f";
-    else if (std::is_signed_v<dr::scalar_t<Type>>)
+    else if constexpr (std::is_signed_v<dr::scalar_t<Type>>)
         suffix += "i";
-    else if (std::is_signed_v<dr::scalar_t<Type>>)
+    else if constexpr (std::is_signed_v<dr::scalar_t<Type>>)
         suffix += "i";
     else
         suffix += "u";
@@ -48,7 +38,7 @@ void dr_bind_vp_impl(py::module_ &m, const std::string &prefix) {
 }
 
 template <typename Type, bool IsDouble = false>
-void dr_bind_vp(py::module_ &m, const std::string &prefix = "") {
+void dr_bind_vp(nb::module_ &m, const std::string &prefix = "") {
     dr_bind_vp_impl<Type, 0, IsDouble>(m, prefix);
     dr_bind_vp_impl<Type, 1, IsDouble>(m, prefix);
     dr_bind_vp_impl<Type, 2, IsDouble>(m, prefix);
@@ -66,14 +56,12 @@ MI_PY_EXPORT(DrJit) {
     else if constexpr (dr::is_llvm_v<Float>)
         backend = "llvm";
 
-    py::module drjit         = py::module::import("drjit"),
-               drjit_variant = drjit.attr(backend),
-               drjit_scalar  = drjit.attr("scalar");
+    nb::module_ drjit         = nb::module_::import_("drjit"),
+                drjit_variant = drjit.attr(backend),
+                drjit_scalar  = drjit.attr("scalar");
 
     if constexpr (dr::is_diff_v<Float>)
         drjit_variant = drjit_variant.attr("ad");
-
-    array_init = drjit.attr("detail").attr("array_init");
 
     // Create basic type aliases to Dr.Jit (scalar + vectorized)
     for (const char *name : { "Float32", "Float64", "Bool", "Int", "Int32",
@@ -173,7 +161,7 @@ MI_PY_EXPORT(DrJit) {
     m.attr("TensorXu64") = drjit_variant.attr("TensorXu64");
 
     // Texture type aliases
-    if constexpr (std::is_same_v<float, ScalarFloat>) {
+    if constexpr (std::is_same_v<ScalarFloat, float>) {
         m.attr("Texture1f") = drjit_variant.attr("Texture1f");
         m.attr("Texture2f") = drjit_variant.attr("Texture2f");
         m.attr("Texture3f") = drjit_variant.attr("Texture3f");
@@ -190,6 +178,6 @@ MI_PY_EXPORT(DrJit) {
     m.attr("PCG32") = drjit_variant.attr("PCG32");
 
     // Loop type alias
-    m.attr("Loop") = drjit_variant.attr("Loop");
+    m.attr("while_loop") = drjit.attr("while_loop");
 }
 
