@@ -19,6 +19,7 @@ foreach (MI_VARIANT ${MI_VARIANTS})
   set(TARGET_NAME mitsuba_${MI_VARIANT_NAME}_ext)
 
   nanobind_add_module(${TARGET_NAME}
+      NB_DOMAIN drjit #FIXME
       main_v.cpp
       ${CORE_PY_V_SRC}
       ${RENDER_PY_V_SRC}
@@ -46,6 +47,7 @@ foreach (MI_VARIANT ${MI_VARIANTS})
 endforeach()
 
 nanobind_add_module(mitsuba_ext
+  NB_DOMAIN drjit #FIXME
   main.cpp
   ${CORE_PY_SRC}
   ${RENDER_PY_SRC}
