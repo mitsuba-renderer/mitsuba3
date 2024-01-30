@@ -8,15 +8,16 @@
 #include <mitsuba/core/object.h>
 #include <mitsuba/render/fwd.h>
 #include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
 #include <drjit/packet.h>
 #include <drjit-core/jit.h>
 
 #include "docstr.h"
 
 //PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
-//
-//#define D(...) DOC(mitsuba, __VA_ARGS__)
-//
+
+#define D(...) DOC(mitsuba, __VA_ARGS__)
+
 ///// Shorthand notation for defining a data structure
 //#define MI_PY_STRUCT(Name, ...) \
 //    py::class_<Name>(m, #Name, D(Name), ##__VA_ARGS__)
@@ -24,31 +25,31 @@
 ///// Shorthand notation for defining a Mitsuba class deriving from a base class
 //#define MI_PY_CLASS(Name, Base, ...) \
 //    py::class_<Name, Base, ref<Name>>(m, #Name, D(Name), ##__VA_ARGS__)
-//
-///// Shorthand notation for defining a Mitsuba class that can be extended in Python
-//#define MI_PY_TRAMPOLINE_CLASS(Trampoline, Name, Base, ...) \
-//    py::class_<Name, Base, ref<Name>, Trampoline>(m, #Name, D(Name), ##__VA_ARGS__)
-//
-///// Shorthand notation for defining attributes with read-write access
-//#define def_field(Class, Member, ...) \
-//    def_readwrite(#Member, &Class::Member, ##__VA_ARGS__)
-//
-///// Shorthand notation for defining enum members
-//#define def_value(Class, Value, ...) \
-//    value(#Value, Class::Value, D(Class, Value), ##__VA_ARGS__)
-//
-///// Shorthand notation for defining most kinds of methods
-//#define def_method(Class, Function, ...) \
-//    def(#Function, &Class::Function, D(Class, Function), ##__VA_ARGS__)
-//
-///// Shorthand notation for defining most kinds of static methods
-//#define def_static_method(Class, Function, ...) \
-//    def_static(#Function, &Class::Function, D(Class, Function), ##__VA_ARGS__)
-//
-///// Shorthand notation for defining __repr__ using operator<<
-//#define def_repr(Class) \
-//    def("__repr__", [](const Class &c) { std::ostringstream oss; oss << c; return oss.str(); } )
-//
+
+/// Shorthand notation for defining a Mitsuba class that can be extended in Python
+#define MI_PY_TRAMPOLINE_CLASS(Trampoline, Name, Base, ...) \
+    nb::class_<Name, Base, Trampoline>(m, #Name, D(Name), ##__VA_ARGS__)
+
+/// Shorthand notation for defining attributes with read-write access
+#define def_field(Class, Member, ...) \
+    def_rw(#Member, &Class::Member, ##__VA_ARGS__)
+
+/// Shorthand notation for defining enum members
+#define def_value(Class, Value, ...) \
+    value(#Value, Class::Value, D(Class, Value), ##__VA_ARGS__)
+
+/// Shorthand notation for defining most kinds of methods
+#define def_method(Class, Function, ...) \
+    def(#Function, &Class::Function, D(Class, Function), ##__VA_ARGS__)
+
+/// Shorthand notation for defining most kinds of static methods
+#define def_static_method(Class, Function, ...) \
+    def_static(#Function, &Class::Function, D(Class, Function), ##__VA_ARGS__)
+
+/// Shorthand notation for defining __repr__ using operator<<
+#define def_repr(Class) \
+    def("__repr__", [](const Class &c) { std::ostringstream oss; oss << c; return oss.str(); } )
+
 ///// Shorthand notation for defining object registration routine for trampoline objects
 ///// WARNING: this will leak out memory as the constructed py::object will never be destroyed
 //#define MI_PY_REGISTER_OBJECT(Function, Name)                                  \
@@ -82,42 +83,42 @@
 //                nullptr);                                                      \
 //            PluginManager::instance()->register_python_plugin(name, variant);  \
 //        });
-//
-//using namespace mitsuba;
-//
+
+using namespace mitsuba;
+
 namespace nb = nanobind;
-//
-//using namespace py::literals;
-//
-//template <typename T>
-//py::handle type_of() {
-//    if constexpr (std::is_integral_v<T>)
-//        return py::handle((PyObject *) &PyLong_Type);
-//    else if constexpr (std::is_floating_point_v<T>)
-//        return py::handle((PyObject *) &PyFloat_Type);
-//    else if constexpr (std::is_pointer_v<T>)
-//        return py::type::of<std::decay_t<std::remove_pointer_t<T>>>();
-//    else
-//        return py::type::of<T>();
-//}
-//
-//#define MI_PY_DRJIT_STRUCT_BIND_FIELD(x) \
-//    fields[#x] = type_of<decltype(struct_type_().x)>();
-//
-//#define MI_PY_DRJIT_STRUCT(cls, Type, ...)                                    \
-//    py::dict fields;                                                           \
-//    using struct_type_ = Type;                                                 \
-//    DRJIT_MAP(MI_PY_DRJIT_STRUCT_BIND_FIELD, __VA_ARGS__)                     \
-//    cls.attr("DRJIT_STRUCT") = fields;                                         \
-//    cls.def("assign", [](Type &a, const Type &b) {                             \
-//        if (&a != &b)                                                          \
-//            a = b;                                                             \
-//    });                                                                        \
-//    cls.def("__setitem__",                                                     \
-//            [](Type &type, const Mask &mask, const Type &value) {              \
-//                type = dr::select(mask, value, type);                          \
-//            });
-//
+
+using namespace nb::literals;
+
+template <typename T>
+nb::handle type_of() {
+    if constexpr (std::is_integral_v<T>)
+        return nb::handle((PyObject *) &PyLong_Type);
+    else if constexpr (std::is_floating_point_v<T>)
+        return nb::handle((PyObject *) &PyFloat_Type);
+    else if constexpr (std::is_pointer_v<T>)
+        return nb::type<std::decay_t<std::remove_pointer_t<T>>>();
+    else
+        return nb::type<T>();
+}
+
+#define MI_PY_DRJIT_STRUCT_BIND_FIELD(x) \
+    fields[#x] = type_of<decltype(struct_type_().x)>();
+
+#define MI_PY_DRJIT_STRUCT(cls, Type, ...)                                     \
+    nb::dict fields;                                                           \
+    using struct_type_ = Type;                                                 \
+    DRJIT_MAP(MI_PY_DRJIT_STRUCT_BIND_FIELD, __VA_ARGS__)                      \
+    cls.attr("DRJIT_STRUCT") = fields;                                         \
+    cls.def("assign", [](Type &a, const Type &b) {                             \
+        if (&a != &b)                                                          \
+            a = b;                                                             \
+    });                                                                        \
+    cls.def("__setitem__",                                                     \
+            [](Type &type, const Mask &mask, const Type &value) {              \
+                type = dr::select(mask, value, type);                          \
+            });
+
 //template <typename Source, typename Target> void pybind11_type_alias() {
 //    auto &types = pybind11::detail::get_internals().registered_types_cpp;
 //    auto it = types.find(std::type_index(typeid(Source)));
@@ -130,18 +131,20 @@ namespace nb = nanobind;
 //    return pybind11::detail::get_type_handle(typeid(Type), false);
 //}
 //
-#define MI_PY_DECLARE(Name) extern void python_export_##Name(py::module_ &m)
-//#define MI_PY_EXPORT(Name) void python_export_##Name(py::module_ &m)
-//#define MI_PY_IMPORT(Name) python_export_##Name(m)
+#define MI_PY_DECLARE(Name) extern void python_export_##Name(nb::module_ &m)
+#define MI_PY_EXPORT(Name) void python_export_##Name(nb::module_ &m)
+#define MI_PY_IMPORT(Name) python_export_##Name(m)
 //#define MI_PY_IMPORT_SUBMODULE(Name) python_export_##Name(Name)
+
+#define MI_MODULE_NAME_1(lib, variant) lib##_##variant##_ext
+#define MI_MODULE_NAME(lib, variant) MI_MODULE_NAME_1(lib, variant)
+
 //
-#define MI_MODULE_NAME(lib, variant) lib##_##variant##_ext
-//
-//#define MI_PY_IMPORT_TYPES(...)                                                                   \
-//    using Float    = MI_VARIANT_FLOAT;                                                            \
-//    using Spectrum = MI_VARIANT_SPECTRUM;                                                         \
-//    MI_IMPORT_TYPES(__VA_ARGS__)                                                                  \
-//    MI_IMPORT_OBJECT_TYPES()
+#define MI_PY_IMPORT_TYPES(...)                                                                   \
+    using Float    = MI_VARIANT_FLOAT;                                                            \
+    using Spectrum = MI_VARIANT_SPECTRUM;                                                         \
+    MI_IMPORT_TYPES(__VA_ARGS__)                                                                  \
+    MI_IMPORT_OBJECT_TYPES()
 //
 //inline py::module_ create_submodule(py::module_ &m, const char *name) {
 //    std::string full_name = std::string(PyModule_GetName(m.ptr())) + "." + name;
@@ -271,16 +274,15 @@ namespace nb = nanobind;
 //        m.attr(Name) = h;                             \
 //    }                                                 \
 //    else
-//
-//#define MI_PY_DECLARE_ENUM_OPERATORS(Type, m)        \
-//    m.def(py::self == py::self)                       \
-//     .def(py::self | py::self)                        \
-//     .def(int() | py::self)                           \
-//     .def(py::self &py::self)                         \
-//     .def(int() & py::self)                           \
-//     .def(+py::self)                                  \
-//     .def(~py::self)                                  \
-//     .def("__pos__", [](const Type &f) {              \
-//            return static_cast<uint32_t>(f);          \
-//        }, py::is_operator());
-//
+
+#define MI_PY_DECLARE_ENUM_OPERATORS(Type, m)         \
+    m.def(nb::self == nb::self)                       \
+     .def(nb::self | nb::self)                        \
+     .def(int() | nb::self)                           \
+     .def(nb::self &nb::self)                         \
+     .def(int() & nb::self)                           \
+     .def(+nb::self)                                  \
+     .def(~nb::self)                                  \
+     .def("__pos__", [](const Type &f) {              \
+            return static_cast<uint32_t>(f);          \
+        }, nb::is_operator());
