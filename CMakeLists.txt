@@ -290,6 +290,7 @@ add_subdirectory(ext)
 # Always add the include directories for tinyformat, Dr.Jit and Eigen
 include_directories(include
   ${TINYFORMAT_INCLUDE_DIRS}
+  ${NANOBIND_INCLUDE_DIRS}
   ${CMAKE_CURRENT_BINARY_DIR}/include
 )
 

@@ -129,6 +129,7 @@ NB_MODULE(MODULE_NAME, m) {
     m.attr("__name__") = "mitsuba." DRJIT_TOSTRING(MI_VARIANT_NAME);
 
     MI_PY_IMPORT_TYPES()
+
 //
 //    // Create sub-modules
 //    py::module math    = create_submodule(m, "math"),

@@ -9,7 +9,7 @@
 // core
 //MI_PY_DECLARE(atomic);
 //MI_PY_DECLARE(filesystem);
-//MI_PY_DECLARE(Object);
+MI_PY_DECLARE(Object);
 MI_PY_DECLARE(Cast);
 //MI_PY_DECLARE(Struct);
 //MI_PY_DECLARE(Appender);
@@ -73,6 +73,18 @@ NB_MODULE(mitsuba_ext, m) {
     m.attr("MI_ENABLE_EMBREE") = false;
 #endif
 
+    // Initialize reference counting hooks for mitsuba::Object
+    nb::intrusive_init(
+        [](PyObject *o) noexcept {
+            nb::gil_scoped_acquire guard;
+            Py_INCREF(o);
+        },
+        [](PyObject *o) noexcept {
+            nb::gil_scoped_acquire guard;
+            Py_DECREF(o);
+        }
+    );
+
 //    m.def("set_log_level", [](mitsuba::LogLevel level) {
 //
 //        if (!Thread::thread()->logger()) {
@@ -115,7 +127,7 @@ NB_MODULE(mitsuba_ext, m) {
 //    // Register python modules
 //    MI_PY_IMPORT(atomic);
 //    MI_PY_IMPORT(filesystem);
-//    MI_PY_IMPORT(Object);
+    MI_PY_IMPORT(Object);
     MI_PY_IMPORT(Cast);
 //    MI_PY_IMPORT(Struct);
 //    MI_PY_IMPORT(Appender);

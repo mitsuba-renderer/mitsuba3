@@ -808,9 +808,10 @@ void Bitmap::write(Stream *stream, FileFormat format, int quality) const {
 
 void Bitmap::write_async(const fs::path &path, FileFormat format, int quality) const {
     this->inc_ref();
-    Task *task = dr::do_async([path, format, quality, this](){
+    Task *task = dr::do_async([path, format, quality, this]() {
         write(path, format, quality);
-        this->dec_ref();
+        if (this->dec_ref())
+            delete this;
     });
     Thread::register_task(task);
 }
