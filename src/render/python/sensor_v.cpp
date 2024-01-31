@@ -100,7 +100,6 @@ template <typename Ptr, typename Cls> void bind_sensor_generic(Cls &cls) {
     .def("sample_ray_differential",
             [](Ptr ptr, Float time, Float sample1, const Point2f &sample2,
                const Point2f &sample3, Mask active) {
-                std::cout << "Hellooo !! " << std::endl;
                 return ptr->sample_ray_differential(time, sample1, sample2, sample3, active);
             },
             "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
