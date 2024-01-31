@@ -3,6 +3,7 @@
 #include <atomic>
 #include <stdexcept>
 #include <mitsuba/core/class.h>
+#include <nanobind/intrusive/counter.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -24,8 +25,10 @@ NAMESPACE_BEGIN(mitsuba)
  * instances, hence the need for an alternative in Mitsuba.
  *
  * In contrast, the ``Object`` class allows for a highly efficient
- * implementation that only adds 32 bits to the base object (for the counter)
- * and has no overhead for references.
+ * implementation that only adds 64 bits to the base object (for the counter)
+ * and has no overhead for references. In addition, when using Mitsuba in
+ * Python, this counter is shared with Python such that the ownerhsip and
+ * lifetime of any ``Object`` instance across C++ and Python is managed by it.
  */
 class MI_EXPORT_LIB Object {
 public:
@@ -35,19 +38,20 @@ public:
     /// Copy constructor
     Object(const Object &) { }
 
-    /// Return the current reference count
-    int ref_count() const { return m_ref_count; };
+    /// Virtual destructor
+    virtual ~Object() { };
 
     /// Increase the object's reference count by one
-    void inc_ref() const { ++m_ref_count; }
+    void inc_ref() const noexcept { m_ref_count.inc_ref(); }
 
-    /** \brief Decrease the reference count of the object and possibly
-     * deallocate it.
+    /**
+     * \brief Decrease the reference count and return whether or not it reached
+     * zero
      *
-     * The object will automatically be deallocated once the reference count
-     * reaches zero.
+     * This method will not call the destructor, it only changes the reference
+     * count.
      */
-    void dec_ref(bool dealloc = true) const noexcept;
+    bool dec_ref() const noexcept { return m_ref_count.dec_ref(); }
 
     /**
      * \brief Expand the object into a list of sub-objects and return them
@@ -107,6 +111,15 @@ public:
     /// Set an identifier to the current instance (if applicable)
     virtual void set_id(const std::string& id);
 
+    /// Set the Python object associated with this instance
+    void set_self_py(PyObject *self) noexcept { m_ref_count.set_self_py(self); }
+
+    /**
+     * \brief Return the Python object associated with this instance or null if
+     * there isn't any
+     */
+    PyObject *self_py() noexcept { return m_ref_count.self_py(); }
+
     /**
      * \brief Return a human-readable string representation of the object's
      * contents.
@@ -118,14 +131,8 @@ public:
      */
     virtual std::string to_string() const;
 
-protected:
-    /** \brief Virtual protected deconstructor.
-     * (Will only be called by \ref ref)
-     */
-    virtual ~Object();
-
 private:
-    mutable std::atomic<int> m_ref_count { 0 };
+    mutable nanobind::intrusive_counter m_ref_count;
 
     static Class *m_class;
 };
@@ -152,22 +159,19 @@ public:
     ref(T *ptr) : m_ptr(ptr) {
         static_assert(std::is_base_of_v<Object, T2>,
                       "Cannot create reference to object not inheriting from Object class.");
-        if (m_ptr)
-            ((Object *) m_ptr)->inc_ref();
+        inc_ref();
     }
 
     /// Construct a reference from another convertible reference
     template <typename T2>
     ref(const ref<T2> &r) : m_ptr((T2 *) r.get()) {
         static_assert(std::is_convertible_v<T2*, T*>, "Cannot create reference to object from another unconvertible reference.");
-        if (m_ptr)
-            ((Object *) m_ptr)->inc_ref();
+        inc_ref();
     }
 
     /// Copy constructor
     ref(const ref &r) : m_ptr(r.m_ptr) {
-        if (m_ptr)
-            ((Object *) m_ptr)->inc_ref();
+        inc_ref();
     }
 
     /// Move constructor
@@ -177,15 +181,13 @@ public:
 
     /// Destroy this reference
     ~ref() {
-        if (m_ptr)
-            ((Object *) m_ptr)->dec_ref();
+        dec_ref();
     }
 
     /// Move another reference into the current one
     ref& operator=(ref&& r) noexcept {
         if (&r != this) {
-            if (m_ptr)
-                ((Object *) m_ptr)->dec_ref();
+            dec_ref();
             m_ptr = r.m_ptr;
             r.m_ptr = nullptr;
         }
@@ -195,10 +197,8 @@ public:
     /// Overwrite this reference with another reference
     ref& operator=(const ref& r) noexcept {
         if (m_ptr != r.m_ptr) {
-            if (r.m_ptr)
-                ((Object *) r.m_ptr)->inc_ref();
-            if (m_ptr)
-                ((Object *) m_ptr)->dec_ref();
+            r.inc_ref();
+            dec_ref();
             m_ptr = r.m_ptr;
         }
         return *this;
@@ -212,9 +212,8 @@ public:
                       " inherit from the Object class..");
         if (m_ptr != ptr) {
             if (ptr)
-                ((Object *) ptr)->inc_ref();
-            if (m_ptr)
-                ((Object *) m_ptr)->dec_ref();
+                ptr->inc_ref();
+            dec_ref();
             m_ptr = ptr;
         }
         return *this;
@@ -259,6 +258,21 @@ public:
     /// Check if the object is defined
     operator bool() const { return m_ptr != nullptr; }
 private:
+
+    /// Icrease the object's reference count
+    MI_INLINE void inc_ref() const {
+        if (m_ptr)
+            ((Object *) m_ptr)->inc_ref();
+    }
+
+    /// Decrease the object's reference count and deallocate it if it reaches zero
+    MI_INLINE void dec_ref() {
+        if (m_ptr && ((Object *) m_ptr)->dec_ref()) {
+            delete (Object*) m_ptr;
+            m_ptr = nullptr;
+        }
+    }
+
     T *m_ptr = nullptr;
 };
 
