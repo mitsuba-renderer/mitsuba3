@@ -9,6 +9,9 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MI_EXPORT_LIB Formatter : public Object {
 public:
+    /// Virtual destructor
+    virtual ~Formatter() = default;
+
     /**
      * \brief Turn a log message into a human-readable format
      * \param level     The importance of the debug message
@@ -18,15 +21,11 @@ public:
      * \param line      Associated line within the source file
      * \param msg       Text content associated with the log message
      */
-
     virtual std::string format(LogLevel level, const Class *class_,
                                const Thread *thread, const char *file, int line,
                                const std::string &msg) = 0;
 
     MI_DECLARE_CLASS()
-protected:
-    /// Protected destructor
-    virtual ~Formatter() = default;
 };
 
 /** \brief The default formatter used to turn log messages into

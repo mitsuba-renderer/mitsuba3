@@ -54,6 +54,9 @@ public:
      */
     Stream();
 
+    /// Virtual destructor
+    virtual ~Stream();
+
     /// Returns a human-readable descriptor of the stream
     virtual std::string to_string() const override;
 
@@ -223,9 +226,6 @@ public:
 
     MI_DECLARE_CLASS()
 protected:
-    /// Destructor
-    virtual ~Stream();
-
     /// Copying is disallowed.
     Stream(const Stream&) = delete;
     void operator=(const Stream&) = delete;

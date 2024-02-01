@@ -29,6 +29,9 @@ public:
     /// Construct a new logger with the given minimum log level
     Logger(LogLevel log_level = Debug);
 
+    /// Virtual destructor
+    virtual ~Logger();
+
     /**
      * \brief Process a log message
      * \param level      Log level of the message
@@ -117,9 +120,6 @@ public:
     static void static_shutdown();
 
     MI_DECLARE_CLASS()
-protected:
-    /// Protected destructor
-    virtual ~Logger();
 
 private:
     struct LoggerPrivate;

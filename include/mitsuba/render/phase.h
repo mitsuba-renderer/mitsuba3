@@ -107,6 +107,9 @@ class MI_EXPORT_LIB PhaseFunction : public Object {
 public:
     MI_IMPORT_TYPES(PhaseFunctionContext);
 
+    /// Virtual destructor
+    virtual ~PhaseFunction();
+
     /**
      * \brief Importance sample the phase function model
      *
@@ -208,10 +211,9 @@ public:
     // -----------------------------------------------------------------------
 
     MI_DECLARE_CLASS()
+
 protected:
     PhaseFunction(const Properties &props);
-public:
-    virtual ~PhaseFunction();
 
 protected:
     /// Type of phase function (e.g. anisotropic)

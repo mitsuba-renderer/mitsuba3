@@ -59,6 +59,9 @@ public:
     //! @{ \name Wavelength sampling interface
     // =============================================================
 
+    /// Virtual destructor
+    virtual ~Endpoint();
+
     /**
      * \brief Importance sample a set of wavelengths according to the
      * endpoint's sensitivity/emission spectrum.
@@ -387,10 +390,9 @@ public:
     void parameters_changed(const std::vector<std::string> &keys = {}) override;
 
     MI_DECLARE_CLASS()
+
 protected:
     Endpoint(const Properties &props);
-public:
-    virtual ~Endpoint();
 
 protected:
     field<Transform4f, ScalarTransform4f> m_to_world;

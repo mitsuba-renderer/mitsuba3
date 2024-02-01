@@ -38,6 +38,9 @@ class MI_EXPORT_LIB ImageBlock : public Object {
 public:
     MI_IMPORT_TYPES(ReconstructionFilter)
 
+    /// Virtual destructor
+    virtual ~ImageBlock();
+
     /**
      * \brief Construct a zero-initialized image block with the desired shape
      * and channel count
@@ -325,12 +328,11 @@ public:
     std::string to_string() const override;
 
     MI_DECLARE_CLASS()
-protected:
-    /// Virtual destructor
-    virtual ~ImageBlock();
 
+protected:
     // Implementation detail to atomically accumulate a value into the image block
     void accum(Float value, UInt32 index, Bool active);
+
 protected:
     ScalarPoint2i m_offset;
     ScalarVector2u m_size;

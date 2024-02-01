@@ -247,6 +247,9 @@ public:
     /// Move constructor
     Bitmap(Bitmap &&bitmap);
 
+    /// Destructor
+    ~Bitmap() override;
+
     /// Return the pixel format of this bitmap
     PixelFormat pixel_format() const { return m_pixel_format; }
 
@@ -592,9 +595,6 @@ public:
 
     MI_DECLARE_CLASS()
  protected:
-     /// Protected destructor
-     virtual ~Bitmap();
-
      /// Rebuild the 'm_struct' field based on the pixel format etc.
      void rebuild_struct(size_t channel_count = 0, const std::vector<std::string> &channel_names = {});
 

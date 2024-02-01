@@ -23,12 +23,13 @@ public:
      */
     ProgressReporter(const std::string &label, void *payload = nullptr);
 
+    /// Destructor
+    ~ProgressReporter();
+
     /// Update the progress to \c progress (which should be in the range [0, 1])
     void update(float progress);
 
     MI_DECLARE_CLASS()
-protected:
-    ~ProgressReporter();
 
 protected:
     Timer m_timer;

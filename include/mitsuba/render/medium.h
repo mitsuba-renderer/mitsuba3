@@ -13,6 +13,9 @@ class MI_EXPORT_LIB Medium : public Object {
 public:
     MI_IMPORT_TYPES(PhaseFunction, Sampler, Scene, Texture);
 
+    /// Virtual destructor
+    virtual ~Medium();
+
     /// Intersects a ray with the medium's bounding box
     virtual std::tuple<Mask, Float, Float>
     intersect_aabb(const Ray3f &ray) const = 0;
@@ -98,11 +101,10 @@ public:
     std::string to_string() const override = 0;
 
     MI_DECLARE_CLASS()
+
 protected:
     Medium();
     Medium(const Properties &props);
-public:
-    virtual ~Medium();
 
 protected:
     ref<PhaseFunction> m_phase_function;

@@ -33,6 +33,9 @@ public:
     /// Map the specified file into memory
     TensorFile(const fs::path &filename);
 
+    /// Destructor
+    ~TensorFile();
+
     /// Does the file contain a field of the specified name?
     bool has_field(const std::string &name) const;
 
@@ -43,9 +46,6 @@ public:
     std::string to_string() const override;
 
     MI_DECLARE_CLASS()
-protected:
-    /// Destructor
-    ~TensorFile();
 
 private:
     std::unordered_map<std::string, Field> m_fields;
