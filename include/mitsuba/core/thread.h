@@ -38,6 +38,9 @@ public:
      */
     Thread(const std::string &name);
 
+    /// Virtual destructor
+    virtual ~Thread();
+
     /**
      * \brief Set the thread priority
      *
@@ -161,9 +164,6 @@ public:
 
     MI_DECLARE_CLASS()
 protected:
-    /// Protected destructor
-    virtual ~Thread();
-
     /// Initialize thread execution environment and then call \ref run()
     void dispatch();
 

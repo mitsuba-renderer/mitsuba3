@@ -64,6 +64,9 @@ class MI_EXPORT_LIB Sampler : public Object {
 public:
     MI_IMPORT_TYPES()
 
+    /// Virtual destructor
+    virtual ~Sampler();
+
     /**
      * \brief Create a fork of this sampler.
      *
@@ -128,11 +131,11 @@ public:
     virtual void schedule_state();
 
     MI_DECLARE_CLASS()
+
 protected:
     Sampler(const Properties &props);
     /// Copy state to a new sampler object
     Sampler(const Sampler&);
-    virtual ~Sampler();
 
     /// Generates a array of seeds where the seed values are unique per sequence
     UInt32 compute_per_sequence_seed(uint32_t seed) const;

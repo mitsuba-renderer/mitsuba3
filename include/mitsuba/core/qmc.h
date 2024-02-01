@@ -33,6 +33,9 @@ public:
      */
     RadicalInverse(size_t max_base = 8161, int scramble = -1);
 
+    /// Default destructor
+    virtual ~RadicalInverse() = default;
+
     /// Return the number of prime bases for which precomputed tables are available
     size_t bases() const { return m_base_count; }
 
@@ -154,8 +157,6 @@ private:
     void invert_permutation(uint32_t i);
 
     MI_DECLARE_CLASS()
-protected:
-    virtual ~RadicalInverse() = default;
 
 private:
 #if defined(_MSC_VER)

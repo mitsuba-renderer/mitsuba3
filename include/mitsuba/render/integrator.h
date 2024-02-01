@@ -38,6 +38,9 @@ class MI_EXPORT_LIB Integrator : public Object {
 public:
     MI_IMPORT_TYPES(Scene, Sensor)
 
+    /// Virtual destructor
+    virtual ~Integrator() { }
+
     /**
      * \brief Render the scene
      *
@@ -310,12 +313,10 @@ public:
     virtual std::vector<std::string> aov_names() const;
 
     MI_DECLARE_CLASS()
+
 protected:
     /// Create an integrator
     Integrator(const Properties & props);
-
-    /// Virtual destructor
-    virtual ~Integrator() { }
 
 protected:
     /// Integrators should stop all work when this flag is set to true.

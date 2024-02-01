@@ -39,6 +39,9 @@ public:
          ScalarSize face_count, const Properties &props = Properties(),
          bool has_vertex_normals = false, bool has_vertex_texcoords = false);
 
+    /// Virtual destructor
+    virtual ~Mesh();
+
     /// Must be called at the end of the constructor of Mesh plugins
     void initialize() override;
 
@@ -360,7 +363,6 @@ public:
 protected:
     Mesh(const Properties &);
     inline Mesh() {}
-    virtual ~Mesh();
 
     /**
      * \brief Build internal tables for sampling uniformly wrt. area.

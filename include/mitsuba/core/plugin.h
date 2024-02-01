@@ -19,6 +19,9 @@ NAMESPACE_BEGIN(mitsuba)
 class MI_EXPORT_LIB PluginManager : public Object {
 public:
 
+    /// Destruct and unload all plugins
+    ~PluginManager();
+
     /// Return the global plugin manager
     static PluginManager *instance() { return m_instance; }
 
@@ -56,11 +59,10 @@ public:
     }
 
     MI_DECLARE_CLASS()
+
 protected:
     PluginManager();
 
-    /// Destruct and unload all plugins
-    ~PluginManager();
 private:
     struct PluginManagerPrivate;
     std::unique_ptr<PluginManagerPrivate> d;

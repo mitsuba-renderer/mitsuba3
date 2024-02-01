@@ -51,6 +51,9 @@ class MI_EXPORT_LIB Film : public Object {
 public:
     MI_IMPORT_TYPES(ImageBlock, ReconstructionFilter, Texture)
 
+    /// Virtual destructor
+    virtual ~Film();
+
     /**
      * Configure the film for rendering a specified set of extra channels (AOVS).
      * Returns the total number of channels that the film will store
@@ -210,9 +213,6 @@ public:
 protected:
     /// Create a film
     Film(const Properties &props);
-
-    /// Virtual destructor
-    virtual ~Film();
 
     /// Combined flags for all properties of this film.
     uint32_t m_flags;

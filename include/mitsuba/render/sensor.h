@@ -24,6 +24,9 @@ public:
     //! @{ \name Sensor-specific sampling functions
     // =============================================================
 
+    /// Virtual destructor
+    virtual ~Sensor();
+
     /**
      * \brief Importance sample a ray differential proportional to the sensor's
      * sensitivity profile.
@@ -148,10 +151,9 @@ public:
     }
 
     MI_DECLARE_CLASS()
+
 protected:
     Sensor(const Properties &props);
-public:
-    virtual ~Sensor();
 
 protected:
     ref<Film> m_film;

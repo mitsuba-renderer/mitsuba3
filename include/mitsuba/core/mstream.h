@@ -33,6 +33,9 @@ public:
      */
     MemoryStream(void *ptr, size_t size);
 
+    /// Virtual destructor
+    virtual ~MemoryStream();
+
     /// Returns a string representation
     std::string to_string() const override;
 
@@ -117,11 +120,8 @@ public:
     // =========================================================================
 
     MI_DECLARE_CLASS()
+
 protected:
-
-    /// Protected destructor
-    virtual ~MemoryStream();
-
     void resize(size_t newSize);
 
 private:

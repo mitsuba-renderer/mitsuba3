@@ -43,6 +43,9 @@ public:
     /// Instantiate a scene from a \ref Properties object
     Scene(const Properties &props);
 
+    /// Virtual destructor
+    virtual ~Scene();
+
     // =============================================================
     //! @{ \name Ray tracing
     // =============================================================
@@ -563,10 +566,8 @@ public:
     static void static_accel_shutdown();
 
     MI_DECLARE_CLASS()
-protected:
-    /// Virtual destructor
-    virtual ~Scene();
 
+protected:
     /// Unmarks all shapes as dirty
     void clear_shapes_dirty();
 

@@ -55,6 +55,9 @@ public:
     MI_IMPORT_BASE(Endpoint, m_shape)
     MI_IMPORT_TYPES()
 
+    /// Virtual destructor
+    virtual ~Emitter();
+
     /// Is this an environment map light emitter?
     bool is_environment() const {
         return has_flag(m_flags, EmitterFlags::Infinite) &&
@@ -78,10 +81,9 @@ public:
     void set_dirty(bool dirty) { m_dirty = dirty; }
 
     MI_DECLARE_CLASS()
+
 protected:
     Emitter(const Properties &props);
-public:
-    virtual ~Emitter();
 
 protected:
     /// Combined flags for all properties of this emitter.

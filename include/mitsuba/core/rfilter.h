@@ -50,6 +50,9 @@ class MI_EXPORT_LIB ReconstructionFilter : public Object {
 public:
     MI_IMPORT_CORE_TYPES()
 
+    /// Virtual destructor
+    virtual ~ReconstructionFilter();
+
     /// Return the filter's width
     ScalarFloat radius() const { return m_radius; }
 
@@ -78,9 +81,6 @@ public:
 protected:
     /// Create a new reconstruction filter
     ReconstructionFilter(const Properties &props);
-
-    /// Virtual destructor
-    virtual ~ReconstructionFilter();
 
     /// Mandatory initialization prior to calls to \ref eval_discretized()
     void init_discretization();

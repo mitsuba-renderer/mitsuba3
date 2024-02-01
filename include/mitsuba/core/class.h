@@ -135,7 +135,7 @@ extern MI_EXPORT_LIB const Class* m_class;
  * \brief This macro should be invoked in the class declaration of classes
  * that directly or indirectly derive from \ref Object.
  */
-#define MI_DECLARE_CLASS()                         \
+#define MI_DECLARE_CLASS()                          \
     virtual const Class *class_() const override;   \
 public:                                             \
     static Class *m_class;

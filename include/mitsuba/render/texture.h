@@ -24,6 +24,9 @@ class MI_EXPORT_LIB Texture : public Object {
 public:
     MI_IMPORT_TYPES()
 
+    /// Virtual destructor
+    virtual ~Texture();
+
     // =============================================================
     //! @{ \name Standard sampling interface
     // =============================================================
@@ -230,7 +233,6 @@ public:
 
 protected:
     Texture(const Properties &);
-    virtual ~Texture();
 
 protected:
     std::string m_id;
