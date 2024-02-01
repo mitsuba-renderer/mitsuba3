@@ -9,8 +9,9 @@
 #include <mitsuba/python/python.h>
 #include <nanothread/nanothread.h>
 #include <map>
+#include <nanobind/stl/string.h>
 
-using Caster = py::object(*)(mitsuba::Object *);
+using Caster = nb::object(*)(mitsuba::Object *);
 extern Caster cast_object;
 
 struct DictInstance {
@@ -32,7 +33,7 @@ template <typename Float, typename Spectrum>
 void parse_dictionary(
     DictParseContext &ctx,
     const std::string path,
-    const py::dict &dict
+    const nb::dict &dict
 );
 template <typename Float, typename Spectrum>
 Task * instantiate_node(
@@ -46,15 +47,15 @@ Task * instantiate_node(
 
 /// Depending on whether or not the input vector has size 1, returns the first
 /// and only element of the vector or the entire vector as a list
-MI_INLINE py::object single_object_or_list(std::vector<ref<Object>> &objects) {
+MI_INLINE nb::object single_object_or_list(std::vector<ref<Object>> &objects) {
     if (objects.size() == 1)
         return cast_object(objects[0]);
 
-    py::list l;
+    nb::list l;
     for (ref<Object> &obj : objects)
         l.append(cast_object(obj));
 
-    return static_cast<py::object>(l);
+    return static_cast<nb::object>(l);
 }
 
 MI_PY_EXPORT(xml) {
@@ -62,55 +63,55 @@ MI_PY_EXPORT(xml) {
 
     m.def(
         "load_file",
-        [](const std::string &name, bool update_scene, bool parallel, py::kwargs kwargs) {
+        [](const std::string &name, bool update_scene, bool parallel, nb::kwargs kwargs) {
             xml::ParameterList param;
             if (kwargs) {
                 for (auto [k, v] : kwargs)
                     param.emplace_back(
-                        (std::string) py::str(k),
-                        (std::string) py::str(v),
+                        nb::str(k).c_str(),
+                        nb::str(v).c_str(),
                         false
                     );
             }
 
             std::vector<ref<Object>> objects;
             {
-                py::gil_scoped_release release;
+                nb::gil_scoped_release release;
                 objects = xml::load_file(name, GET_VARIANT(), param, update_scene, parallel);
             }
 
             return single_object_or_list(objects);
         },
-        "path"_a, "update_scene"_a = false, "parallel"_a = true,
+        "path"_a, "update_scene"_a = false, "parallel"_a = true, "kwargs"_a,
         D(xml, load_file));
 
     m.def(
         "load_string",
-        [](const std::string &name, bool parallel, py::kwargs kwargs) {
+        [](const std::string &name, bool parallel, nb::kwargs kwargs) {
             xml::ParameterList param;
             if (kwargs) {
                 for (auto [k, v] : kwargs)
                     param.emplace_back(
-                        (std::string) py::str(k),
-                        (std::string) py::str(v),
+                        nb::str(k).c_str(),
+                        nb::str(v).c_str(),
                         false
                     );
             }
 
             std::vector<ref<Object>> objects;
             {
-                py::gil_scoped_release release;
+                nb::gil_scoped_release release;
                 objects = xml::load_string(name, GET_VARIANT(), param, parallel);
             }
 
             return single_object_or_list(objects);
         },
-        "string"_a, "parallel"_a = true,
+        "string"_a, "parallel"_a = true, "kwargs"_a,
         D(xml, load_string));
 
     m.def(
         "load_dict",
-        [](const py::dict dict, bool parallel) {
+        [](const nb::dict dict, bool parallel) {
             // Make a backup copy of the FileResolver, which will be restored after parsing
             ref<FileResolver> fs_backup = Thread::thread()->file_resolver();
             Thread::thread()->set_file_resolver(new FileResolver(*fs_backup));
@@ -145,7 +146,7 @@ Parameter ``parallel``:
     m.def(
         "xml_to_props",
         [](const std::string &path) {
-            py::gil_scoped_release release;
+            nb::gil_scoped_release release;
 
             return xml::detail::xml_to_properties(path, GET_VARIANT());
         },
@@ -154,18 +155,20 @@ Parameter ``parallel``:
 }
 
 // Helper function to find a value of "type" in a Python dictionary
-std::string get_type(const py::dict &dict) {
-    for (auto& [key, value] : dict)
-        if (key.template cast<std::string>() == "type")
-            return value.template cast<std::string>();
+std::string get_type(const nb::dict &dict) {
+    for (const auto &[key, value] : dict)
+        if (nb::cast<std::string>(key) == "type")
+            return nb::cast<std::string>(value);
 
-    Throw("Missing key 'type' in dictionary: %s", dict);
+    //FIXME
+    //Throw("Missing key 'type' in dictionary: %s", dict);
+    Throw("Missing key 'type' in dictionary!");
 }
 
-#define SET_PROPS(PyType, Type, Setter)         \
-    if (py::isinstance<PyType>(value)) {        \
-        props.Setter(key, value.template cast<Type>());  \
-        continue;                               \
+#define SET_PROPS(PyType, Type, Setter)            \
+    if (nb::isinstance<PyType>(value)) {           \
+        props.Setter(key, nb::cast<Type>(value));  \
+        continue;                                  \
     }
 
 /// Helper function to give the object a chance to recursively expand into sub-objects
@@ -183,7 +186,7 @@ void expand_and_set_object(Properties &props, const std::string &name, const ref
 }
 
 template <typename Float, typename Spectrum>
-ref<Object> create_texture_from(const py::dict &dict, bool within_emitter) {
+ref<Object> create_texture_from(const nb::dict &dict, bool within_emitter) {
     // Treat nested dictionary differently when their type is "rgb" or "spectrum"
     ref<Object> obj;
     std::string type = get_type(dict);
@@ -194,10 +197,10 @@ ref<Object> create_texture_from(const py::dict &dict, bool within_emitter) {
         }
         // Read info from the dictionary
         Properties::Color3f color(0.f);
-        for (auto& [k2, value2] : dict) {
-            std::string key2 = k2.template cast<std::string>();
+        for (const auto& [k2, value2] : dict) {
+            std::string key2 = nb::cast<std::string>(k2);
             if (key2 == "value")
-                color = value2.template cast<Properties::Color3f>();
+                color = nb::cast<Properties::Color3f>(value2);
             else if (key2 != "type")
                 Throw("Unexpected key in rgb dictionary: %s", key2);
         }
@@ -213,25 +216,27 @@ ref<Object> create_texture_from(const py::dict &dict, bool within_emitter) {
         Properties::Float const_value(1);
         std::vector<Properties::Float> wavelengths;
         std::vector<Properties::Float> values;
-        for (auto& [k2, value2] : dict) {
-            std::string key2 = k2.template cast<std::string>();
+        for (const auto& [k2, value2] : dict) {
+            std::string key2 = nb::cast<std::string>(k2);
             if (key2 == "filename") {
-                spectrum_from_file(value2.template cast<std::string>(), wavelengths, values);
+                spectrum_from_file(nb::cast<std::string>(value2), wavelengths, values);
             } else if (key2 == "value") {
-                if (py::isinstance<py::float_>(value2) ||
-                    py::isinstance<py::int_>(value2)) {
-                    const_value = value2.template cast<Properties::Float>();
-                } else if (py::isinstance<py::list>(value2)) {
-                    py::list list = value2.template cast<py::list>();
+                if (nb::isinstance<nb::float_>(value2) ||
+                    nb::isinstance<nb::int_>(value2)) {
+                    const_value = nb::cast<Properties::Float>(value2);
+                } else if (nb::isinstance<nb::list>(value2)) {
+                    nb::list list = nb::cast<nb::list>(value2);
                     wavelengths.resize(list.size());
                     values.resize(list.size());
                     for (size_t i = 0; i < list.size(); ++i) {
-                        auto pair = list[i].template cast<py::tuple>();
-                        wavelengths[i] = pair[0].template cast<Properties::Float>();
-                        values[i]      = pair[1].template cast<Properties::Float>();
+                        auto pair = nb::cast<nb::tuple>(list[i]);
+                        wavelengths[i] = nb::cast<Properties::Float>(pair[0]);
+                        values[i]      = nb::cast<Properties::Float>(pair[1]);
                     }
                 } else {
-                    Throw("Unexpected value type in 'spectrum' dictionary: %s", value2);
+                    //FIXME
+                    //Throw("Unexpected value type in 'spectrum' dictionary: %s", value2);
+                    Throw("Unexpected value type in 'spectrum' dictionary!");
                 }
             } else if (key2 != "type") {
                 Throw("Unexpected key in spectrum dictionary: %s", key2);
@@ -250,7 +255,7 @@ ref<Object> create_texture_from(const py::dict &dict, bool within_emitter) {
 template <typename Float, typename Spectrum>
 void parse_dictionary(DictParseContext &ctx,
                       const std::string path,
-                      const py::dict &dict) {
+                      const nb::dict &dict) {
     MI_IMPORT_CORE_TYPES()
     using ScalarArray3f = dr::Array<ScalarFloat, 3>;
 
@@ -278,21 +283,21 @@ void parse_dictionary(DictParseContext &ctx,
 
     std::string id;
 
-    for (auto& [k, value] : dict) {
-        std::string key = k.template cast<std::string>();
+    for (const auto& [k, value] : dict) {
+        std::string key = nb::cast<std::string>(k);
 
         if (key == "type")
             continue;
 
         if (key == "id") {
-            id = value.template cast<std::string>();
+            id = nb::cast<std::string>(value);
             continue;
         }
 
-        SET_PROPS(py::bool_, bool, set_bool);
-        SET_PROPS(py::int_, int64_t, set_long);
-        SET_PROPS(py::float_, Properties::Float, set_float);
-        SET_PROPS(py::str, std::string, set_string);
+        SET_PROPS(nb::bool_, bool, set_bool);
+        SET_PROPS(nb::int_, int64_t, set_long);
+        SET_PROPS(nb::float_, Properties::Float, set_float);
+        SET_PROPS(nb::str, std::string, set_string);
         SET_PROPS(ScalarColor3f, ScalarColor3f, set_color);
         SET_PROPS(ScalarArray3f, ScalarArray3f, set_array3f);
         SET_PROPS(ScalarTransform3f, ScalarTransform3f, set_transform3f);
@@ -305,8 +310,8 @@ void parse_dictionary(DictParseContext &ctx,
         }
 
         // Parse nested dictionary
-        if (py::isinstance<py::dict>(value)) {
-            py::dict dict2 = value.template cast<py::dict>();
+        if (nb::isinstance<nb::dict>(value)) {
+            nb::dict dict2 = nb::cast<nb::dict>(value);
             std::string type2 = get_type(dict2);
 
             if (type2 == "spectrum" || type2 == "rgb") {
@@ -316,13 +321,13 @@ void parse_dictionary(DictParseContext &ctx,
 
             if (type2 == "resources") {
                 ref<FileResolver> fs = Thread::thread()->file_resolver();
-                std::string path = dict2["path"].template cast<std::string>();
+                std::string path = nb::cast<std::string>(dict2["path"]);
                 fs::path resource_path(path);
                 if (!resource_path.is_absolute()) {
                     // First try to resolve it starting in the Python file directory
-                    py::module_ inspect = py::module_::import("inspect");
-                    py::object filename = inspect.attr("getfile")(inspect.attr("currentframe")());
-                    fs::path current_file(filename.template cast<std::string>());
+                    nb::module_ inspect = nb::module_::import_("inspect");
+                    nb::object filename = inspect.attr("getfile")(inspect.attr("currentframe")());
+                    fs::path current_file(nb::cast<std::string>(filename));
                     resource_path = current_file.parent_path() / resource_path;
                     // Otherwise try to resolve it with the FileResolver
                     if (!fs::exists(resource_path))
@@ -340,10 +345,10 @@ void parse_dictionary(DictParseContext &ctx,
                 if (is_scene)
                     Throw("Reference found at the scene level: %s", key);
 
-                for (auto& kv2 : value.template cast<py::dict>()) {
-                    std::string key2 = kv2.first.template cast<std::string>();
+                for (const auto& kv2 : nb::cast<nb::dict>(value)) {
+                    std::string key2 = nb::cast<std::string>(kv2.first);
                     if (key2 == "id") {
-                        std::string id2 = kv2.second.template cast<std::string>();
+                        std::string id2 = nb::cast<std::string>(kv2.second);
                         std::string path2;
                         if (ctx.aliases.count(id2) == 1)
                             path2 = ctx.aliases[id2];
@@ -366,30 +371,31 @@ void parse_dictionary(DictParseContext &ctx,
 
         // Try to cast to Array3f (list, tuple, numpy.array, ...)
         try {
-            props.set_array3f(key, value.template cast<Properties::Array3f>());
+            props.set_array3f(key, nb::cast<Properties::Array3f>(value));
             continue;
-        } catch (const pybind11::cast_error &) { }
+        } catch (const nb::cast_error &) { }
 
         // Try to cast to TensorXf
         try {
-            TensorXf tensor = value.template cast<TensorXf>();
+            TensorXf tensor = nb::cast<TensorXf>(value);
             // To support parallel loading we have to ensure tensor has been evaluated
             // because tracking of side effects won't persist across different ThreadStates
             dr::eval(tensor);
             props.set_tensor_handle(key, std::make_shared<TensorXf>(tensor));
             continue;
-        } catch (const pybind11::cast_error &) { }
+        } catch (const nb::cast_error &) { }
 
         // Try to cast entry to an object
         try {
-            auto obj = value.template cast<ref<Object>>();
+            auto obj = nb::cast<ref<Object>>(value);
             obj->set_id(key);
             expand_and_set_object(props, key, obj);
             continue;
-        } catch (const pybind11::cast_error &) { }
+        } catch (const nb::cast_error &) { }
 
         // Didn't match any of the other types above
-        Throw("Unkown value type: %s", value.get_type());
+        //FIXME
+        Throw("Unkown value type!");
     }
 
     // Set object id based on path in dictionary if no id is provided
@@ -472,7 +478,7 @@ Task *instantiate_node(DictParseContext &ctx,
         std::exception_ptr eptr;
         for (auto& task : deps) {
             try {
-                py::gil_scoped_release gil_release{};
+                nb::gil_scoped_release gil_release{};
                 task_wait(task);
             } catch (...) {
                 if (!eptr)

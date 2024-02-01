@@ -5,7 +5,7 @@
 #  ${CMAKE_CURRENT_SOURCE_DIR}/film_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/fresnel_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/imageblock_v.cpp
-#  ${CMAKE_CURRENT_SOURCE_DIR}/interaction_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/interaction_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/integrator_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/medium_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/mueller_v.cpp
