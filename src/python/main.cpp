@@ -10,7 +10,7 @@
 //MI_PY_DECLARE(atomic);
 //MI_PY_DECLARE(filesystem);
 //MI_PY_DECLARE(Object);
-//MI_PY_DECLARE(Cast);
+MI_PY_DECLARE(Cast);
 //MI_PY_DECLARE(Struct);
 //MI_PY_DECLARE(Appender);
 //MI_PY_DECLARE(ArgParser);
@@ -93,30 +93,30 @@ NB_MODULE(mitsuba_ext, m) {
 //    m.def("log_level", []() {
 //        return Thread::thread()->logger()->log_level();
 //    }, "Returns the current log level.");
-//
-//    Jit::static_initialization();
-//    Class::static_initialization();
-//    Thread::static_initialization();
-//    Logger::static_initialization();
-//    Bitmap::static_initialization();
-//    Profiler::static_initialization();
-//
+
+    Jit::static_initialization();
+    Class::static_initialization();
+    Thread::static_initialization();
+    Logger::static_initialization();
+    Bitmap::static_initialization();
+    Profiler::static_initialization();
+
 //#if defined(NDEBUG)
 //    // Default log level in Python should be Warn (unless we compiled in debug)
 //    Thread::thread()->logger()->set_log_level(mitsuba::LogLevel::Warn);
 //#endif
-//
-//    // Append the mitsuba directory to the FileResolver search path list
-//    ref<FileResolver> fr = Thread::thread()->file_resolver();
-//    fs::path base_path = util::library_path().parent_path();
-//    if (!fr->contains(base_path))
-//        fr->append(base_path);
-//
+
+    // Append the mitsuba directory to the FileResolver search path list
+    ref<FileResolver> fr = Thread::thread()->file_resolver();
+    fs::path base_path = util::library_path().parent_path();
+    if (!fr->contains(base_path))
+        fr->append(base_path);
+
 //    // Register python modules
 //    MI_PY_IMPORT(atomic);
 //    MI_PY_IMPORT(filesystem);
 //    MI_PY_IMPORT(Object);
-//    MI_PY_IMPORT(Cast);
+    MI_PY_IMPORT(Cast);
 //    MI_PY_IMPORT(Struct);
 //    MI_PY_IMPORT(Appender);
 //    MI_PY_IMPORT(ArgParser);
