@@ -180,6 +180,7 @@ public:
     virtual std::string to_string() const override;
 
     MI_DECLARE_CLASS()
+
 private:
     /// Helper function to validate tensor sizes
     void validate_input(const TensorXf &noisy,

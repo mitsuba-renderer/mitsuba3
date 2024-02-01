@@ -50,6 +50,9 @@ public:
      */
     FileStream(const fs::path &p, EMode mode = ERead);
 
+    /// Virtual destructor
+    virtual ~FileStream();
+
     /** \brief Closes the stream and the underlying file.
      * No further read or write operations are permitted.
      *
@@ -123,10 +126,6 @@ public:
     // =========================================================================
 
     MI_DECLARE_CLASS()
-protected:
-
-    /// Protected destructor
-    virtual ~FileStream();
 
 private:
     EMode m_mode;

@@ -229,6 +229,9 @@ public:
     using Index = UInt32;
     using ScalarRay3f = Ray<ScalarPoint3f, Spectrum>;
 
+    /// Virtual destructor
+    virtual ~Shape();
+
     // =============================================================
     //! @{ \name Sampling routines
     // =============================================================
@@ -944,11 +947,10 @@ public:
     // =============================================================
 
     MI_DECLARE_CLASS()
+
 protected:
     Shape(const Properties &props);
     inline Shape() { }
-public:
-    virtual ~Shape();
 
 protected:
     virtual void initialize();

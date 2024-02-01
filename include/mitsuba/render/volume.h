@@ -15,6 +15,9 @@ class MI_EXPORT_LIB Volume : public Object {
 public:
     MI_IMPORT_TYPES(Texture)
 
+    /// Virtual destructor
+    virtual ~Volume() {}
+
     // ======================================================================
     //! @{ \name Volume interface
     // ======================================================================
@@ -92,9 +95,9 @@ public:
     }
 
     MI_DECLARE_CLASS()
+
 protected:
     Volume(const Properties &props);
-    virtual ~Volume() {}
 
     void update_bbox() {
         ScalarTransform4f to_world = m_to_local.inverse();

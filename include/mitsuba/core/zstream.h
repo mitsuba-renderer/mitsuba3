@@ -38,6 +38,9 @@ public:
     ZStream(Stream *child_stream, EStreamType stream_type = EDeflateStream,
             int level = -1);
 
+    /// Virtual destructor
+    virtual ~ZStream();
+
     /// Returns a string representation
     std::string to_string() const override;
 
@@ -122,9 +125,6 @@ public:
     // =========================================================================
 
     MI_DECLARE_CLASS()
-protected:
-    /// Protected destructor
-    virtual ~ZStream();
 
 private:
     ref<Stream> m_child_stream;
