@@ -89,6 +89,12 @@ public:
     };
 
 public:
+
+    ~ArgParser() {
+        for (Arg *arg : m_args)
+            delete arg;
+    }
+
     /**
      * \brief Register a new argument with the given prefix
      *
