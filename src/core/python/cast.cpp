@@ -1,20 +1,20 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/python/python.h>
 
-using Caster = py::object(*)(mitsuba::Object *);
+using Caster = nb::object(*)(mitsuba::Object *);
 
 static std::vector<void *> casters;
 
-py::object cast_object(Object *o) {
+nb::object cast_object(Object *o) {
     for (auto &caster : casters) {
-        py::object po = ((Caster) caster)(o);
+        nb::object po = ((Caster) caster)(o);
         if (po)
             return po;
     }
-    return py::cast(o);
+    return nb::cast(o);
 }
 
 MI_PY_EXPORT(Cast) {
-    m.attr("casters") = py::cast((void *) &casters);
-    m.attr("cast_object") = py::cast((void *) &cast_object);
+    m.attr("casters") = nb::cast((void *) &casters);
+    m.attr("cast_object") = nb::cast((void *) &cast_object);
 }

@@ -16,43 +16,47 @@
 #include <mitsuba/python/python.h>
 
 
-//#define PY_TRY_CAST(Type)                                         \
-//    if (auto tmp = dynamic_cast<Type *>(o); tmp)                  \
-//        return py::cast(tmp);
-//
-///// Helper routine to cast Mitsuba plugins to their underlying interfaces
-//static py::object caster(Object *o) {
-//    MI_PY_IMPORT_TYPES()
-//
-//    // Try casting, starting from the most precise types
-//    PY_TRY_CAST(Scene);
-//    PY_TRY_CAST(Mesh);
-//    PY_TRY_CAST(Shape);
-//    PY_TRY_CAST(Texture);
-//    PY_TRY_CAST(Volume);
-//    PY_TRY_CAST(ReconstructionFilter);
-//
-//    PY_TRY_CAST(ProjectiveCamera);
-//    PY_TRY_CAST(Sensor);
-//
-//    PY_TRY_CAST(Emitter);
-//    PY_TRY_CAST(Endpoint);
-//
-//    PY_TRY_CAST(BSDF);
-//    PY_TRY_CAST(Film);
-//
-//    PY_TRY_CAST(MonteCarloIntegrator);
-//    PY_TRY_CAST(SamplingIntegrator);
-//    PY_TRY_CAST(AdjointIntegrator);
-//    PY_TRY_CAST(Integrator);
-//
-//    PY_TRY_CAST(Sampler);
-//
-//    PY_TRY_CAST(PhaseFunction);
-//    PY_TRY_CAST(Medium);
-//
-//    return py::object();
-//}
+#define PY_TRY_CAST(Type)                                                      \
+    if (Type* tmp = dynamic_cast<Type *>(o); tmp) {                            \
+        if (PyObject* obj = tmp->self_py())                                    \
+            return borrow(nb::handle(obj).inc_ref());                          \
+        else                                                                   \
+            nb::cast(tmp);                                                     \
+    }
+
+/// Helper routine to cast Mitsuba plugins to their underlying interfaces
+static nb::object caster(Object *o) {
+    MI_PY_IMPORT_TYPES()
+
+    // Try casting, starting from the most precise types
+    PY_TRY_CAST(Scene);
+    PY_TRY_CAST(Mesh);
+    PY_TRY_CAST(Shape);
+    PY_TRY_CAST(Texture);
+    PY_TRY_CAST(Volume);
+    PY_TRY_CAST(ReconstructionFilter);
+
+    PY_TRY_CAST(ProjectiveCamera);
+    PY_TRY_CAST(Sensor);
+
+    PY_TRY_CAST(Emitter);
+    PY_TRY_CAST(Endpoint);
+
+    PY_TRY_CAST(BSDF);
+    PY_TRY_CAST(Film);
+
+    PY_TRY_CAST(MonteCarloIntegrator);
+    PY_TRY_CAST(SamplingIntegrator);
+    PY_TRY_CAST(AdjointIntegrator);
+    PY_TRY_CAST(Integrator);
+
+    PY_TRY_CAST(Sampler);
+
+    PY_TRY_CAST(PhaseFunction);
+    PY_TRY_CAST(Medium);
+
+    return nb::object();
+}
 
 // core
 MI_PY_DECLARE(DrJit);
@@ -78,7 +82,7 @@ MI_PY_DECLARE(DrJit);
 //// MI_PY_DECLARE(AnimatedTransform);
 //MI_PY_DECLARE(vector);
 //MI_PY_DECLARE(warp);
-//MI_PY_DECLARE(xml);
+MI_PY_DECLARE(xml);
 //MI_PY_DECLARE(quad);
 //
 //// render
@@ -90,8 +94,8 @@ MI_PY_DECLARE(DrJit);
 //MI_PY_DECLARE(fresnel);
 //MI_PY_DECLARE(ImageBlock);
 //MI_PY_DECLARE(Integrator);
-//MI_PY_DECLARE(Interaction);
-//MI_PY_DECLARE(SurfaceInteraction);
+MI_PY_DECLARE(Interaction);
+MI_PY_DECLARE(SurfaceInteraction);
 //MI_PY_DECLARE(MediumInteraction);
 //MI_PY_DECLARE(PreliminaryIntersection);
 //MI_PY_DECLARE(Medium);
@@ -117,9 +121,8 @@ MI_PY_DECLARE(DrJit);
 
 #define MODULE_NAME MI_MODULE_NAME(mitsuba, MI_VARIANT_NAME)
 
-//using Caster = py::object(*)(mitsuba::Object *);
-//Caster cast_object = nullptr;
-//
+using Caster = nb::object(*)(mitsuba::Object *);
+Caster cast_object = nullptr;
 
 NB_MODULE(MODULE_NAME, m) {
     // Temporarily change the module name (for pydoc)
@@ -176,15 +179,15 @@ NB_MODULE(MODULE_NAME, m) {
 //    MI_PY_IMPORT(vector);
 //    MI_PY_IMPORT_SUBMODULE(quad);
 //    MI_PY_IMPORT_SUBMODULE(warp);
-//    MI_PY_IMPORT(xml);
-//
+    MI_PY_IMPORT(xml);
+
 //    MI_PY_IMPORT(Scene);
 //    MI_PY_IMPORT(Shape);
 //    MI_PY_IMPORT(Medium);
 //    MI_PY_IMPORT(Endpoint);
 //    MI_PY_IMPORT(Emitter);
-//    MI_PY_IMPORT(Interaction);
-//    MI_PY_IMPORT(SurfaceInteraction);
+    MI_PY_IMPORT(Interaction);
+    MI_PY_IMPORT(SurfaceInteraction);
 //    MI_PY_IMPORT(MediumInteraction);
 //    MI_PY_IMPORT(PreliminaryIntersection);
 //    MI_PY_IMPORT(PositionSample);
@@ -210,14 +213,14 @@ NB_MODULE(MODULE_NAME, m) {
 //    MI_PY_IMPORT(Texture);
 //    MI_PY_IMPORT(Volume);
 //    MI_PY_IMPORT(VolumeGrid);
-//
-//    py::object mitsuba_ext = py::module::import("mitsuba.mitsuba_ext");
-//    cast_object = (Caster) (void *)((py::capsule) mitsuba_ext.attr("cast_object"));
-//
-//    /// Register the variant-specific caster with the 'core_ext' module
-//    auto casters = (std::vector<void *> *) (py::capsule)(mitsuba_ext.attr("casters"));
-//    casters->push_back((void *) caster);
-//
+
+    nb::object mitsuba_ext = nb::module_::import_("mitsuba.mitsuba_ext");
+    cast_object = (Caster) (void *)((nb::capsule) mitsuba_ext.attr("cast_object")).data();
+
+    /// Register the variant-specific caster with the 'core_ext' module
+    auto casters = (std::vector<void *> *) ((nb::capsule)(mitsuba_ext.attr("casters"))).data();
+    casters->push_back((void *) caster);
+
 //    /* Register a cleanup callback function that is invoked when
 //       the 'mitsuba::Scene' Python type is garbage collected */
 //    py::cpp_function cleanup_callback(
@@ -232,8 +235,8 @@ NB_MODULE(MODULE_NAME, m) {
 //    );
 //
 //    (void) py::weakref(m.attr("Scene"), cleanup_callback).release();
-//
-//    // Change module name back to correct value
+
+    // Change module name back to correct value
     m.attr("__name__") = "mitsuba." DRJIT_TOSTRING(MODULE_NAME);
 }
 //

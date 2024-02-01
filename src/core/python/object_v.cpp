@@ -4,7 +4,7 @@
 #include <drjit/dynamic.h>
 #include <drjit/tensor.h>
 
-using Caster = py::object(*)(mitsuba::Object *);
+using Caster = nb::object(*)(mitsuba::Object *);
 extern Caster cast_object;
 
 // Trampoline for derived types implemented in Python
@@ -12,8 +12,8 @@ class PyTraversalCallback : public TraversalCallback {
 public:
     void put_parameter_impl(const std::string &name, void *ptr,
                             uint32_t flags, const std::type_info &type) override {
-        py::gil_scoped_acquire gil;
-        py::function overload = py::get_overload(this, "put_parameter");
+        nb::gil_scoped_acquire gil;
+        nb::function overload = nb::get_overload(this, "put_parameter");
 
         if (overload)
             overload(name, ptr, flags, (void *) &type);
@@ -23,8 +23,8 @@ public:
 
     void put_object(const std::string &name, Object *obj,
                     uint32_t flags) override {
-        py::gil_scoped_acquire gil;
-        py::function overload = py::get_overload(this, "put_object");
+        nb::gil_scoped_acquire gil;
+        nb::function overload = nb::get_overload(this, "put_object");
 
         if (overload)
             overload(name, cast_object(obj), flags);
@@ -57,20 +57,20 @@ public:
 /// Implementation detail of mitsuba.get_property
 #define GET_PROPERTY_T(T)                                                      \
     if (strcmp(type.name(), typeid(T).name()) == 0)                            \
-      return py::cast((T *) ptr, py::return_value_policy::reference_internal,  \
+      return nb::cast((T *) ptr, nb::return_value_policy::reference_internal,  \
                       parent)
 
 /// Implementation detail of mitsuba.set_property
 #define SET_PROPERTY_T(T)                                                      \
     if (strcmp(type.name(), typeid(T).name()) == 0) {                          \
-        *((T *) ptr) = py::cast<T>(value);                                     \
+        *((T *) ptr) = nb::cast<T>(value);                                     \
         return;                                                                \
     }
 
 /// Macro to iterate over types that can be passed to put_parameter_impl
 #define PUT_PARAMETER_IMPL_T(T)                                                \
-    if (py::isinstance<T>(value)) {                                            \
-        T v = py::cast<T>(value);                                              \
+    if (nb::isinstance<T>(value)) {                                            \
+        T v = nb::cast<T>(value);                                              \
         self->put_parameter_impl(name, &v, flags, typeid(T));                  \
     }
 
@@ -85,39 +85,39 @@ MI_PY_EXPORT(Object) {
 
     m.def(
         "get_property",
-        [](const void *ptr, void *type_, py::handle parent) -> py::object {
+        [](const void *ptr, void *type_, nb::handle parent) -> nb::object {
             const std::type_info &type = *(const std::type_info *) type_;
             APPLY_FOR_EACH(GET_PROPERTY_T);
             std::string name(type.name());
-            py::detail::clean_type_id(name);
+            nb::detail::clean_type_id(name);
             Throw("get_property(): unsupported type \"%s\"!", name);
         },
         "ptr"_a, "type"_a, "parent"_a);
 
     m.def(
         "set_property",
-        [](const void *ptr, void *type_, py::handle value) {
+        [](const void *ptr, void *type_, nb::handle value) {
             const std::type_info &type = *(const std::type_info *) type_;
             APPLY_FOR_EACH(SET_PROPERTY_T);
             std::string name(type.name());
-            py::detail::clean_type_id(name);
+            nb::detail::clean_type_id(name);
             Throw("set_property(): unsupported type \"%s\"!", name);
         },
         "ptr"_a, "type"_a, "value"_a);
 
     if constexpr (dr::is_array_v<ObjectPtr>) {
-        py::object dr       = py::module_::import("drjit"),
+        nb::object dr       = nb::module_::import("drjit"),
                    dr_array = dr.attr("ArrayBase");
-        py::class_<ObjectPtr> cls(m, "ObjectPtr", dr_array, py::module_local());
+        nb::class_<ObjectPtr> cls(m, "ObjectPtr", dr_array, nb::module_local());
         bind_drjit_ptr_array(cls);
     }
 
     MI_PY_CHECK_ALIAS(TraversalCallback, "TraversalCallback") {
-        py::class_<TraversalCallback, PyTraversalCallback>(
+        nb::class_<TraversalCallback, PyTraversalCallback>(
             m, "TraversalCallback", D(TraversalCallback))
-            .def(py::init<>())
+            .def(nb::init<>())
             .def("put_parameter",
-                 [] (TraversalCallback &self_, const std::string &name, py::object &value, uint32_t flags) {
+                 [] (TraversalCallback &self_, const std::string &name, nb::object &value, uint32_t flags) {
                     PublicistTraversalCallback *self = (PublicistTraversalCallback *) &self_;
                     APPLY_FOR_EACH(PUT_PARAMETER_IMPL_T);
                  },
