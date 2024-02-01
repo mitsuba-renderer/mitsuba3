@@ -60,6 +60,21 @@ Bitmap texture (:monosp:`bitmap`)
 
      - ``clamp``: clamp coordinates to the edge of the texture.
 
+ * - format
+   - |string|
+   - Specifies the underlying texture storage format. The following options are 
+     currently available:
+
+     - ``auto`` (default): If loading a texture from a bitmap, the native bytes
+         per pixel will be queried to determine whether the texture can be stored
+         in half-precision. Otherwise, defer to using the format that corresponds
+         to the selected variant (either single or double precision).
+
+     - ``variant``: The type is determined by the Mitsuba variant selected (either
+         single or double precision).
+
+     - ``fp16``: Forcibly store the texture in half-precision
+
  * - raw
    - |bool|
    - Should the transformation to the stored color data (e.g. sRGB to linear,
@@ -112,6 +127,10 @@ at all.
 
 */
 
+// Forward declaration of specialized bitmap texture
+template <typename Float, typename Spectrum, typename StoreType>
+class BitmapTextureImpl;
+
 template <typename Float, typename Spectrum>
 class BitmapTexture final : public Texture<Float, Spectrum> {
 public:
@@ -119,190 +138,236 @@ public:
 
     BitmapTexture(const Properties &props) : Texture(props) {
         m_transform = props.get<ScalarTransform3f>("to_uv", ScalarTransform3f());
-        if (m_transform != ScalarTransform3f())
-            dr::make_opaque(m_transform);
-
-        ref<Bitmap> bitmap = nullptr;
-        TensorXf* tensor = nullptr;
-
-        if (props.has_property("bitmap")) {
-            // Creates a Bitmap texture directly from an existing Bitmap object
-            if (props.has_property("filename"))
-                Throw("Cannot specify both \"bitmap\" and \"filename\".");
-            Log(Debug, "Loading bitmap texture from memory...");
-            // Note: ref-counted, so we don't have to worry about lifetime
-            ref<Object> other = props.object("bitmap");
-            Bitmap *b = dynamic_cast<Bitmap *>(other.get());
-            if (!b)
-                Throw("Property \"bitmap\" must be a Bitmap instance.");
-            bitmap = b;
-        } else if (props.has_property("filename")) {
-            // Creates a Bitmap texture by loading an image from the filesystem
-            FileResolver* fs = Thread::thread()->file_resolver();
-            fs::path file_path = fs->resolve(props.string("filename"));
-            m_name = file_path.filename().string();
-            Log(Debug, "Loading bitmap texture from \"%s\" ..", m_name);
-            bitmap = new Bitmap(file_path);
-        } else if (props.has_property("data")) {
-            tensor = props.tensor<TensorXf>("data");
-            if (tensor->ndim() != 3)
-                Throw("Bitmap raw tensor has dimension %lu, expected 3", tensor->ndim());
-
-            const size_t channel_count = tensor->shape(2);
-            if (channel_count != 1 && channel_count != 3)
-                Throw("Unsupported tensor channel count: %d (expected 1 or 3)", channel_count);
-        }
-
-        std::string filter_mode_str = props.string("filter_type", "bilinear");
-        dr::FilterMode filter_mode;
-        if (filter_mode_str == "nearest")
-            filter_mode = dr::FilterMode::Nearest;
-        else if (filter_mode_str == "bilinear")
-            filter_mode = dr::FilterMode::Linear;
-        else
-            Throw("Invalid filter type \"%s\", must be one of: \"nearest\", or "
-                  "\"bilinear\"!", filter_mode_str);
-
-        std::string wrap_mode_str = props.string("wrap_mode", "repeat");
-        typename dr::WrapMode wrap_mode;
-        if (wrap_mode_str == "repeat")
-            wrap_mode = dr::WrapMode::Repeat;
-        else if (wrap_mode_str == "mirror")
-            wrap_mode = dr::WrapMode::Mirror;
-        else if (wrap_mode_str == "clamp")
-            wrap_mode = dr::WrapMode::Clamp;
-        else
-            Throw("Invalid wrap mode \"%s\", must be one of: \"repeat\", "
-                  "\"mirror\", or \"clamp\"!", wrap_mode_str);
 
         /* Should Mitsuba disable transformations to the stored color data?
            (e.g. sRGB to linear, spectral upsampling, etc.) */
         m_raw = props.get<bool>("raw", false);
         m_accel = props.get<bool>("accel", true);
 
-        if (tensor) {
-            Log(Debug, "Loading bitmap texture from tensor...");
-            if (!m_raw)
-                Throw("Bitmap \"raw\" parameter must be `true` when "
-                      "initializing using tensor data! Use a `Bitmap` "
-                      "object or a file if transformation of color data is "
-                      "required.");
-            m_texture = Texture2f(TensorXf(*tensor), m_accel, m_accel, filter_mode, wrap_mode);
-            const size_t pixel_count = tensor->shape(1) * tensor->shape(0);
-            const size_t ch_count = tensor->shape(2);
-
-            if (ch_count == 3) {
-                if constexpr (dr::is_dynamic_v<Float>)
-                    m_mean = dr::sum(luminance(dr::unravel<Color3f>(tensor->array()))) / pixel_count;
-                else {
-                    const size_t pixel_count = tensor->shape(0) * tensor->shape(1);
-                    double mean = 0.0;
-                    ScalarFloat* ptr = tensor->data();
-                    for (size_t i = 0; i < pixel_count; ++i) {
-                        ScalarColor3f value = dr::load<ScalarColor3f>(ptr);
-                        mean += (double) luminance(value);
-                        ptr += 3;
-                    }
-                    m_mean = (ScalarFloat)(mean / pixel_count);
-                }
-            }
+        // Filter mode
+        {
+            std::string filter_mode_str = props.string("filter_type", "bilinear");
+            if (filter_mode_str == "nearest")
+                m_filter_mode = dr::FilterMode::Nearest;
+            else if (filter_mode_str == "bilinear")
+                m_filter_mode = dr::FilterMode::Linear;
             else
-                m_mean = dr::sum(tensor->array()) / pixel_count;
-
-        } else {
-            /* Convert to linear RGB float bitmap, will be converted
-               into spectral profile coefficients below (in place) */
-            Bitmap::PixelFormat pixel_format = bitmap->pixel_format();
-            switch (pixel_format) {
-                case Bitmap::PixelFormat::Y:
-                case Bitmap::PixelFormat::YA:
-                    pixel_format = Bitmap::PixelFormat::Y;
-                    break;
-
-                case Bitmap::PixelFormat::RGB:
-                case Bitmap::PixelFormat::RGBA:
-                case Bitmap::PixelFormat::XYZ:
-                case Bitmap::PixelFormat::XYZA:
-                    pixel_format = Bitmap::PixelFormat::RGB;
-                    break;
-
-                default:
-                    Throw("The texture needs to have a known pixel "
-                          "format (Y[A], RGB[A], XYZ[A] are supported).");
-            }
-
-            if (m_raw) {
-                /* Don't undo gamma correction in the conversion below.
-                   This is needed, e.g., for normal maps. */
-                bitmap->set_srgb_gamma(false);
-            }
-
-            // Convert the image into the working floating point representation
-            bitmap =
-                bitmap->convert(pixel_format, struct_type_v<ScalarFloat>, false);
-
-            if (dr::any(bitmap->size() < 2)) {
-                Log(Warn,
-                    "Image must be at least 2x2 pixels in size, up-sampling..");
-                using ReconstructionFilter = Bitmap::ReconstructionFilter;
-                ref<ReconstructionFilter> rfilter =
-                    PluginManager::instance()->create_object<ReconstructionFilter>(
-                        Properties("tent"));
-                bitmap =
-                    bitmap->resample(dr::maximum(bitmap->size(), 2), rfilter);
-            }
-
-            ScalarFloat *ptr = (ScalarFloat *) bitmap->data();
-            size_t pixel_count = bitmap->pixel_count();
-            bool exceed_unit_range = false;
-
-            double mean = 0.0;
-            if (bitmap->channel_count() == 3) {
-                if (is_spectral_v<Spectrum> && !m_raw) {
-                    for (size_t i = 0; i < pixel_count; ++i) {
-                        ScalarColor3f value = dr::load<ScalarColor3f>(ptr);
-                        if (!all(value >= 0 && value <= 1))
-                            exceed_unit_range = true;
-                        value = srgb_model_fetch(value);
-                        mean += (double) srgb_model_mean(value);
-                        dr::store(ptr, value);
-                        ptr += 3;
-                    }
-                } else {
-                    for (size_t i = 0; i < pixel_count; ++i) {
-                        ScalarColor3f value = dr::load<ScalarColor3f>(ptr);
-                        if (!all(value >= 0 && value <= 1))
-                            exceed_unit_range = true;
-                        mean += (double) luminance(value);
-                        ptr += 3;
-                    }
-                }
-            } else if (bitmap->channel_count() == 1) {
-                for (size_t i = 0; i < pixel_count; ++i) {
-                    ScalarFloat value = ptr[i];
-                    if (!(value >= 0 && value <= 1))
-                        exceed_unit_range = true;
-                    mean += (double) value;
-                }
-            } else {
-                Throw("Unsupported channel count: %d (expected 1 or 3)",
-                      bitmap->channel_count());
-            }
-
-            if (exceed_unit_range && !m_raw)
-                Log(Warn,
-                    "BitmapTexture: texture named \"%s\" contains pixels that "
-                    "exceed the [0, 1] range!",
-                    m_name);
-
-            m_mean = Float(mean / pixel_count);
-
-            size_t channels = bitmap->channel_count();
-            ScalarVector2i res = ScalarVector2i(bitmap->size());
-            size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), channels };
-            m_texture = Texture2f(TensorXf(bitmap->data(), 3, shape), m_accel,
-                                  m_accel, filter_mode, wrap_mode);
+                Throw("Invalid filter type \"%s\", must be one of: \"nearest\", or "
+                      "\"bilinear\"!", filter_mode_str);
         }
+
+        // Wrap mode
+        {
+            std::string wrap_mode_str = props.string("wrap_mode", "repeat");
+            if (wrap_mode_str == "repeat")
+                m_wrap_mode = dr::WrapMode::Repeat;
+            else if (wrap_mode_str == "mirror")
+                m_wrap_mode = dr::WrapMode::Mirror;
+            else if (wrap_mode_str == "clamp")
+                m_wrap_mode = dr::WrapMode::Clamp;
+            else
+                Throw("Invalid wrap mode \"%s\", must be one of: \"repeat\", "
+                      "\"mirror\", or \"clamp\"!", wrap_mode_str);
+        }
+
+        // Format
+        {
+            std::string format_str = props.string("format", "auto");
+            if (format_str == "auto")
+                m_format = Format::Auto;
+            else if (format_str == "variant")
+                m_format = Format::Variant;
+            else if (format_str == "fp16")
+                m_format = Format::Float16;
+            else
+                Throw("Invalid format \"%s\", must be one of: \"auto\", "
+                      "\"variant\", or \"fp16\"!", format_str);
+        }
+
+        // Store
+        {
+            if (props.has_property("bitmap")) {
+                // Creates a Bitmap texture directly from an existing Bitmap
+                if (props.has_property("filename"))
+                    Throw("Cannot specify both \"bitmap\" and \"filename\".");
+                Log(Debug, "Loading bitmap texture from memory...");
+                // Note: ref-counted, so we don't have to worry about lifetime
+                ref<Object> other = props.object("bitmap");
+                Bitmap *b = dynamic_cast<Bitmap *>(other.get());
+                if (!b)
+                    Throw("Property \"bitmap\" must be a Bitmap instance.");
+                m_bitmap = b;
+            } else if (props.has_property("filename")) {
+                // Creates a Bitmap texture by loading an image from the filesystem
+                FileResolver* fs = Thread::thread()->file_resolver();
+                fs::path file_path = fs->resolve(props.string("filename"));
+                m_name = file_path.filename().string();
+                Log(Debug, "Loading bitmap texture from \"%s\" ..", m_name);
+                m_bitmap = new Bitmap(file_path);
+            } else if (props.has_property("data")) {
+                m_tensor = props.tensor<TensorXf>("data");
+                if (m_tensor->ndim() != 3)
+                    Throw("Bitmap raw tensor has dimension %lu, expected 3", 
+                        m_tensor->ndim());
+
+                const size_t channel_count = m_tensor->shape(2);
+                if (channel_count != 1 && channel_count != 3)
+                    Throw("Unsupported tensor channel count: %d" 
+                          "(expected 1 or 3)", channel_count);
+            }
+        }
+    }
+
+    std::vector<ref<Object>> expand() const override {
+        return { ref<Object>(expand_1()) };
+    }
+
+    MI_DECLARE_CLASS()
+
+protected:
+    Object* expand_1() const {
+        if (m_bitmap) {
+
+            Format format = m_format;
+            // Format auto means we store texture as FP16 when possible
+            {
+                size_t bytes_p_ch = m_bitmap->bytes_per_pixel() 
+                    / m_bitmap->channel_count();
+                if (m_format == Format::Auto && bytes_p_ch <= 2)
+                    format = Format::Float16;
+            }
+
+            if (format == Format::Float16)
+                return expand_bitmap<dr::replace_scalar_t<Float, dr::half>>();
+            else
+               return expand_bitmap<Float>();
+        }
+
+        // Otherwise, initializing using tensor
+        Properties props;
+        return new BitmapTextureImpl<Float, Spectrum, Float>(
+            props,
+            m_name,
+            m_transform,
+            m_filter_mode,
+            m_wrap_mode,
+            m_raw,
+            m_accel,
+            *m_tensor);
+    }
+
+    template <typename StoreType> Object* expand_bitmap() const {
+        using StoreScalar           = dr::scalar_t<StoreType>;
+        using StoreScalarColor3f    = Color<StoreScalar, 3>;
+        using StoreTensorXf         = dr::replace_scalar_t<TensorXf, StoreScalar>;
+        using StoreTexture2f        = dr::Texture<StoreType, 2>;
+
+        /* Convert to linear RGB float bitmap, will be converted
+           into spectral profile coefficients below (in place) */
+        Bitmap::PixelFormat pixel_format = m_bitmap->pixel_format();
+        switch (pixel_format) {
+            case Bitmap::PixelFormat::Y:
+            case Bitmap::PixelFormat::YA:
+                pixel_format = Bitmap::PixelFormat::Y;
+                break;
+
+            case Bitmap::PixelFormat::RGB:
+            case Bitmap::PixelFormat::RGBA:
+            case Bitmap::PixelFormat::XYZ:
+            case Bitmap::PixelFormat::XYZA:
+                pixel_format = Bitmap::PixelFormat::RGB;
+                break;
+
+            default:
+                Throw("The texture needs to have a known pixel "
+                      "format (Y[A], RGB[A], XYZ[A] are supported).");
+        }
+
+        if (m_raw) {
+            /* Don't undo gamma correction in the conversion below.
+               This is needed, e.g., for normal maps. */
+            m_bitmap->set_srgb_gamma(false);
+        }
+
+        // Convert the image into the working floating point representation
+        m_bitmap =
+            m_bitmap->convert(pixel_format, struct_type_v<StoreScalar>, false);
+
+        if (dr::any(m_bitmap->size() < 2)) {
+            Log(Warn,
+                "Image must be at least 2x2 pixels in size, up-sampling..");
+            using ReconstructionFilter = Bitmap::ReconstructionFilter;
+            ref<ReconstructionFilter> rfilter =
+                PluginManager::instance()->create_object<ReconstructionFilter>(
+                    Properties("tent"));
+            m_bitmap =
+                m_bitmap->resample(dr::maximum(m_bitmap->size(), 2), rfilter);
+        }
+
+        size_t channels = m_bitmap->channel_count();
+        ScalarVector2i res = ScalarVector2i(m_bitmap->size());
+        size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), channels };
+        StoreTensorXf tensor = StoreTensorXf(m_bitmap->data(), 3, shape);
+
+        Properties props;
+        return new BitmapTextureImpl<Float, Spectrum, StoreType>(
+            props,
+            m_name,
+            m_transform,
+            m_filter_mode,
+            m_wrap_mode,
+            m_raw,
+            m_accel,
+            tensor);
+    }
+
+    enum class Format {
+        Auto,
+        Variant,
+        Float16
+    } m_format;
+
+    bool m_accel;
+    bool m_raw;
+    ScalarTransform3f m_transform;
+    std::string m_name;
+    dr::FilterMode m_filter_mode;
+    dr::WrapMode m_wrap_mode;
+    mutable ref<Bitmap> m_bitmap;
+    TensorXf* m_tensor;
+};
+
+template <typename Float, typename Spectrum, typename StoreType>
+class BitmapTextureImpl : public Texture<Float, Spectrum> {
+public:
+    MI_IMPORT_TYPES(Texture)
+
+    using StoreScalar           = dr::scalar_t<StoreType>;
+    using StoreScalarColor3f    = Color<StoreScalar, 3>;
+    using StoreColor3f          = Color<StoreType, 3>;
+    using StoreTensorXf         = dr::replace_scalar_t<TensorXf, StoreScalar>;
+    using StoreTexture2f        = dr::Texture<StoreType, 2>;
+
+    BitmapTextureImpl(const Properties &props,
+            const std::string& name,
+            const ScalarTransform3f& transform,
+            dr::FilterMode filter_mode,
+            dr::WrapMode wrap_mode,
+            bool raw,
+            bool accel,
+            StoreTensorXf& tensor) : 
+        Texture(props), 
+        m_name(name),
+        m_transform(transform),
+        m_accel(accel),
+        m_raw(raw),
+        m_texture(tensor, accel, accel, filter_mode, wrap_mode) {
+
+        /* Compute mean without migrating texture data
+           i.e. Avoid call to m_texture.tensor() that triggers migration.
+           For CUDA-variants, ideally want to solely keep data as CUDA texture
+        */
+        rebuild_internals(tensor, true, false);
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -325,7 +390,7 @@ public:
                       to_string());
 
             m_texture.set_tensor(m_texture.tensor());
-            rebuild_internals(true, m_distr2d != nullptr);
+            rebuild_internals(m_texture.tensor(), true, m_distr2d != nullptr);
         }
     }
 
@@ -407,9 +472,9 @@ public:
 
                 Point2f uv = m_transform.transform_affine(si.uv);
 
-                Float f00, f10, f01, f11;
+                StoreType f00, f10, f01, f11;
                 if (channels == 1) {
-                    dr::Array<Float *, 4> fetch_values;
+                    dr::Array<StoreType *, 4> fetch_values;
                     fetch_values[0] = &f00;
                     fetch_values[1] = &f10;
                     fetch_values[2] = &f01;
@@ -420,8 +485,8 @@ public:
                     else
                         m_texture.eval_fetch_nonaccel(uv, fetch_values, active);
                 } else { // 3 channels
-                    Color3f v00, v10, v01, v11;
-                    dr::Array<Float *, 4> fetch_values;
+                    StoreColor3f v00, v10, v01, v11;
+                    dr::Array<StoreType *, 4> fetch_values;
                     fetch_values[0] = v00.data();
                     fetch_values[1] = v10.data();
                     fetch_values[2] = v01.data();
@@ -459,7 +524,7 @@ public:
                                     uv_tm.entry(1, 1) * df_xy.y() };
                 return res * df_uv;
             }
-            // else if (m_filter_type == FilterType::Nearest)
+            // m_filter_type == FilterType::Nearest
             return Vector2f(0.f);
         }
     }
@@ -627,7 +692,7 @@ protected:
         Point2f uv = m_transform.transform_affine(si.uv);
 
         if (m_texture.filter_mode() == dr::FilterMode::Linear) {
-            Color3f v00, v10, v01, v11;
+            StoreColor3f v00, v10, v01, v11;
             dr::Array<Float *, 4> fetch_values;
             fetch_values[0] = v00.data();
             fetch_values[1] = v10.data();
@@ -657,7 +722,7 @@ protected:
 
             return dr::fmadd(w0.y(), c0, w1.y() * c1);
         } else {
-            Color3f out;
+            StoreColor3f out;
             if (m_accel)
                 m_texture.eval(uv, out.data(), active);
             else
@@ -679,7 +744,7 @@ protected:
 
         Point2f uv = m_transform.transform_affine(si.uv);
 
-        Float out;
+        StoreType out;
         if (m_accel)
             m_texture.eval(uv, &out, active);
         else
@@ -700,7 +765,7 @@ protected:
 
         Point2f uv = m_transform.transform_affine(si.uv);
 
-        Color3f out;
+        StoreColor3f out;
         if (m_accel)
             m_texture.eval(uv, out.data(), active);
         else
@@ -713,8 +778,8 @@ protected:
      * \brief Recompute mean and 2D sampling distribution (if requested)
      * following an update
      */
-    void rebuild_internals(bool init_mean, bool init_distr) {
-        auto&& data = dr::migrate(m_texture.value(), AllocType::Host);
+    void rebuild_internals(const StoreTensorXf& tensor, bool init_mean, bool init_distr) {
+        auto&& data = dr::migrate(tensor.array(), AllocType::Host);
 
         if constexpr (dr::is_jit_v<Float>)
             dr::sync_thread();
@@ -722,20 +787,21 @@ protected:
         if (m_transform != ScalarTransform3f())
             dr::make_opaque(m_transform);
 
-        const ScalarFloat *ptr = data.data();
+        const StoreScalar *ptr = data.data();
 
         double mean = 0.0;
         size_t pixel_count = (size_t) dr::prod(resolution());
         bool exceed_unit_range = false;
 
         const size_t channels = m_texture.shape()[2];
-        if (channels == 3) {
-            std::unique_ptr<ScalarFloat[]> importance_map(
-                init_distr ? new ScalarFloat[pixel_count] : nullptr);
 
+        std::unique_ptr<ScalarFloat[]> importance_map(
+            init_distr ? new ScalarFloat[pixel_count] : nullptr);
+
+        if (channels == 3) {
             for (size_t i = 0; i < pixel_count; ++i) {
-                ScalarColor3f value = dr::load<ScalarColor3f>(ptr);
-                ScalarFloat tmp;
+                StoreScalarColor3f value = dr::load<StoreScalarColor3f>(ptr);
+                StoreScalar tmp;
                 if (is_spectral_v<Spectrum> && !m_raw ) {
                     tmp = srgb_model_mean(value);
                 } else {
@@ -748,22 +814,20 @@ protected:
                 mean += (double) tmp;
                 ptr += 3;
             }
-
-            if (init_distr)
-                m_distr2d = std::make_unique<DiscreteDistribution2D<Float>>(
-                    importance_map.get(), resolution());
         } else {
             for (size_t i = 0; i < pixel_count; ++i) {
-                ScalarFloat value = ptr[i];
+                StoreScalar value = ptr[i];
                 if (!(value >= 0 && value <= 1))
                     exceed_unit_range = true;
+                if (init_distr)
+                    importance_map[i] = value;
                 mean += (double) value;
             }
-
-            if (init_distr)
-                m_distr2d = std::make_unique<DiscreteDistribution2D<Float>>(
-                    ptr, resolution());
         }
+
+        if (init_distr)
+            m_distr2d = std::make_unique<DiscreteDistribution2D<Float>>(
+                importance_map.get(), resolution());
 
         if (init_mean)
             m_mean = dr::opaque<Float>(ScalarFloat(mean / pixel_count));
@@ -779,18 +843,18 @@ protected:
     MI_INLINE void init_distr() const {
         std::lock_guard<std::mutex> lock(m_mutex);
         if (!m_distr2d) {
-            auto self = const_cast<BitmapTexture *>(this);
-            self->rebuild_internals(false, true);
+            auto self = const_cast<BitmapTextureImpl *>(this);
+            self->rebuild_internals(m_texture.tensor(), false, true);
         }
     }
 
 protected:
-    Texture2f m_texture;
+    std::string m_name;
     ScalarTransform3f m_transform;
     bool m_accel;
     bool m_raw;
     Float m_mean;
-    std::string m_name;
+    StoreTexture2f m_texture;
 
     // Optional: distribution for importance sampling
     mutable std::mutex m_mutex;
@@ -799,5 +863,28 @@ protected:
 
 MI_IMPLEMENT_CLASS_VARIANT(BitmapTexture, Texture)
 MI_EXPORT_PLUGIN(BitmapTexture, "Bitmap texture")
+
+/* This class has a name that depends on extra template parameters, so
+   the standard MI_IMPLEMENT_CLASS_VARIANT macro cannot be used */
+
+NAMESPACE_BEGIN(detail)
+template <typename StoreType>
+constexpr const char * bitmap_class_name() {
+    if constexpr (std::is_same_v<dr::scalar_t<StoreType>, dr::half>)
+        return "BitmapTextureImpl_FP16";
+
+    return "BitmapTextureImpl";
+}
+NAMESPACE_END(detail)
+
+template <typename Float, typename Spectrum, typename StoreType>
+Class *BitmapTextureImpl<Float, Spectrum, StoreType>::m_class
+    = new Class(detail::bitmap_class_name<StoreType>(), "Texture",
+                ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
+
+template <typename Float, typename Spectrum, typename StoreType>
+const Class* BitmapTextureImpl<Float, Spectrum, StoreType>::class_() const {
+    return m_class;
+}
 
 NAMESPACE_END(mitsuba)
