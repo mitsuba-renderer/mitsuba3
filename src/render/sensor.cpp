@@ -12,6 +12,9 @@ NAMESPACE_BEGIN(mitsuba)
 // =============================================================================
 
 MI_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props) {
+    if constexpr (dr::is_jit_v<Float>)
+        jit_registry_put(dr::backend_v<Float>, "mitsuba::Sensor", this);
+
     m_shutter_open      = props.get<ScalarFloat>("shutter_open", 0.f);
     m_shutter_open_time = props.get<ScalarFloat>("shutter_close", 0.f) - m_shutter_open;
 
@@ -73,7 +76,10 @@ MI_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props
     }
 }
 
-MI_VARIANT Sensor<Float, Spectrum>::~Sensor() {}
+MI_VARIANT Sensor<Float, Spectrum>::~Sensor() {
+    if constexpr (dr::is_jit_v<Float>)
+        jit_registry_remove(this);
+}
 
 MI_VARIANT std::pair<typename Sensor<Float, Spectrum>::RayDifferential3f, Spectrum>
 Sensor<Float, Spectrum>::sample_ray_differential(Float time, Float sample1, const Point2f &sample2,

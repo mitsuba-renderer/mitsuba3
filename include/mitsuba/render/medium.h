@@ -97,12 +97,11 @@ public:
     /// Return a human-readable representation of the Medium
     std::string to_string() const override = 0;
 
-    MI_CALL_REGISTER(Float, mitsuba::Medium)
-
     MI_DECLARE_CLASS()
 protected:
     Medium();
     Medium(const Properties &props);
+public:
     virtual ~Medium();
 
 protected:

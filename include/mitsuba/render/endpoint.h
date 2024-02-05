@@ -386,11 +386,10 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override;
 
-    MI_CALL_REGISTER(Float, mitsuba::Endpoint)
     MI_DECLARE_CLASS()
 protected:
     Endpoint(const Properties &props);
-
+public:
     virtual ~Endpoint();
 
 protected:

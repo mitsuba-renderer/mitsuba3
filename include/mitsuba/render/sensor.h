@@ -147,11 +147,10 @@ public:
         Base::parameters_changed(keys);
     }
 
-    MI_CALL_REGISTER(Float, mitsuba::Sensor)
     MI_DECLARE_CLASS()
 protected:
     Sensor(const Properties &props);
-
+public:
     virtual ~Sensor();
 
 protected:

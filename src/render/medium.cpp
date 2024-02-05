@@ -7,9 +7,17 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MI_VARIANT Medium<Float, Spectrum>::Medium() : m_is_homogeneous(false), m_has_spectral_extinction(true) {}
+MI_VARIANT Medium<Float, Spectrum>::Medium() : 
+    m_is_homogeneous(false), 
+    m_has_spectral_extinction(true) {
+
+    if constexpr (dr::is_jit_v<Float>)
+        jit_registry_put(dr::backend_v<Float>, "mitsbua::Medium", this);
+}
 
 MI_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props.id()) {
+    if constexpr (dr::is_jit_v<Float>)
+        jit_registry_put(dr::backend_v<Float>, "mitsuba::Medium", this);
 
     for (auto &[name, obj] : props.objects(false)) {
         auto *phase = dynamic_cast<PhaseFunction *>(obj.get());
@@ -29,7 +37,10 @@ MI_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props
     m_sample_emitters = props.get<bool>("sample_emitters", true);
 }
 
-MI_VARIANT Medium<Float, Spectrum>::~Medium() {}
+MI_VARIANT Medium<Float, Spectrum>::~Medium() {
+    if constexpr (dr::is_jit_v<Float>)
+        jit_registry_remove(this);
+}
 
 MI_VARIANT void Medium<Float, Spectrum>::traverse(TraversalCallback *callback) {
     callback->put_object("phase_function", m_phase_function.get(), +ParamFlags::Differentiable);

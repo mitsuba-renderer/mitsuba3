@@ -19,6 +19,9 @@
 NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.id()) {
+    if constexpr (dr::is_jit_v<Float>)
+        jit_registry_put(dr::backend_v<Float>, "mitsuba::Shape", this);
+
     m_to_world =
         (ScalarTransform4f) props.get<ScalarTransform4f>("to_world", ScalarTransform4f());
     m_to_object = m_to_world.scalar().inverse();
@@ -77,6 +80,9 @@ MI_VARIANT Shape<Float, Spectrum>::~Shape() {
     if constexpr (dr::is_cuda_v<Float>)
         jit_free(m_optix_data_ptr);
 #endif
+
+    if constexpr (dr::is_jit_v<Float>)
+        jit_registry_remove(this);
 }
 
 MI_VARIANT typename Shape<Float, Spectrum>::PositionSample3f

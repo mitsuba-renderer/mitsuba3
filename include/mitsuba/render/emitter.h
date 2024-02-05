@@ -77,12 +77,10 @@ public:
     /// Modify the emitter's "dirty" flag
     void set_dirty(bool dirty) { m_dirty = dirty; }
 
-    MI_CALL_REGISTER(Float, mitsuba::Emitter)
-
     MI_DECLARE_CLASS()
 protected:
     Emitter(const Properties &props);
-
+public:
     virtual ~Emitter();
 
 protected:

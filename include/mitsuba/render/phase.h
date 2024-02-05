@@ -207,11 +207,10 @@ public:
     //! @}
     // -----------------------------------------------------------------------
 
-    MI_CALL_REGISTER(Float, mitsuba::PhaseFunction)
-
     MI_DECLARE_CLASS()
 protected:
     PhaseFunction(const Properties &props);
+public:
     virtual ~PhaseFunction();
 
 protected:
