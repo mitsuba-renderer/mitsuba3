@@ -943,14 +943,14 @@ public:
     //! @}
     // =============================================================
 
-    MI_CALL_REGISTER(Float, mitsuba::Shape)
-
     MI_DECLARE_CLASS()
 protected:
     Shape(const Properties &props);
     inline Shape() { }
+public:
     virtual ~Shape();
 
+protected:
     virtual void initialize();
     std::string get_children_string() const;
 protected:

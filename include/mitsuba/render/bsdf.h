@@ -592,11 +592,11 @@ public:
     //! @}
     // -----------------------------------------------------------------------
 
-    MI_CALL_REGISTER(Float, mitsuba::BSDF)
 
     MI_DECLARE_CLASS()
 protected:
     BSDF(const Properties &props);
+public:
     virtual ~BSDF();
 
 protected:

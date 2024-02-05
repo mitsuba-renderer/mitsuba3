@@ -360,33 +360,6 @@ extern "C" {
                             })
 #endif
 
-#define MI_CALL_REGISTER(Array, Class)                                         \
-    static constexpr const char *Domain = #Class;                              \
-    static constexpr bool Registered = drjit::is_jit_v<Array>;                 \
-    static constexpr JitBackend Backend = drjit::backend_v<Array>;             \
-    void *operator new(size_t size) {                                          \
-        void *ptr = ::operator new(size);                                      \
-        if constexpr (Registered)                                              \
-            jit_registry_put(Backend, #Class, ptr);                            \
-        return ptr;                                                            \
-    }                                                                          \
-    void *operator new(size_t size, std::align_val_t align) {                  \
-        void *ptr = ::operator new(size, align);                               \
-        if constexpr (Registered)                                              \
-            jit_registry_put(Backend, #Class, ptr);                            \
-        return ptr;                                                            \
-    }                                                                          \
-    void operator delete(void *ptr) {                                          \
-        if constexpr (Registered)                                              \
-            jit_registry_remove(ptr);                                          \
-        ::operator delete(ptr);                                                \
-    }                                                                          \
-    void operator delete(void *ptr, std::align_val_t align) {                  \
-        if constexpr (Registered)                                              \
-            jit_registry_remove(ptr);                                          \
-        ::operator delete(ptr, align);                                         \
-    }
-
 //! @}
 // =============================================================
 
