@@ -390,7 +390,7 @@ class ADIntegrator(mi.CppADIntegrator):
             if mi.is_spectral:
                 rgb = mi.spectrum_to_srgb(value, wavelengths)
             elif mi.is_monochromatic:
-                rgb = value.x
+                rgb = mi.Color3f(value.x)
             else:
                 rgb = value
             if mi.has_flag(film.flags(), mi.FilmFlags.Alpha):
