@@ -149,7 +149,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put_block(const ImageBlock *block) 
         // If target block is cleared and match size, directly copy data
         if (dr::all(m_size == block->size() && m_offset == block->offset() &&
             m_border_size == block->border_size())) {
-            if (/*m_tensor.array().is_literal() &&*/ m_tensor.array()[0] == 0.f)
+            if (m_tensor.array().state() == VarState::Literal && m_tensor.array()[0] == 0.f)
                 m_tensor.array() = block->tensor().array();
             else
                 m_tensor.array() += block->tensor().array();
