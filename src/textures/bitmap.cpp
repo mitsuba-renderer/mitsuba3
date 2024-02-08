@@ -692,7 +692,7 @@ protected:
 
         if (m_texture.filter_mode() == dr::FilterMode::Linear) {
             StoredColor3f v00, v10, v01, v11;
-            dr::Array<Float *, 4> fetch_values;
+            dr::Array<StoredType *, 4> fetch_values;
             fetch_values[0] = v00.data();
             fetch_values[1] = v10.data();
             fetch_values[2] = v01.data();
