@@ -31,7 +31,7 @@ MI_PY_DECLARE(Cast);
 //MI_PY_DECLARE(util);
 
 // render
-//MI_PY_DECLARE(BSDFContext);
+MI_PY_DECLARE(BSDFContext);
 //MI_PY_DECLARE(EmitterExtras);
 //MI_PY_DECLARE(RayFlags);
 //MI_PY_DECLARE(MicrofacetType);
@@ -148,7 +148,7 @@ NB_MODULE(mitsuba_ext, m) {
 //    MI_PY_IMPORT(Timer);
 //    MI_PY_IMPORT(util);
 //
-//    MI_PY_IMPORT(BSDFContext);
+    MI_PY_IMPORT(BSDFContext);
 //    MI_PY_IMPORT(EmitterExtras);
 //    MI_PY_IMPORT(RayFlags);
 //    MI_PY_IMPORT(MicrofacetType);

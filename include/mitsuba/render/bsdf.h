@@ -267,6 +267,9 @@ class MI_EXPORT_LIB BSDF : public Object {
 public:
     MI_IMPORT_TYPES(Texture)
 
+    /// Virtual destructor
+    virtual ~BSDF();
+
     /**
      * \brief Importance sample the BSDF model
      *
@@ -592,12 +595,10 @@ public:
     //! @}
     // -----------------------------------------------------------------------
 
-
     MI_DECLARE_CLASS()
+
 protected:
     BSDF(const Properties &props);
-public:
-    virtual ~BSDF();
 
 protected:
     /// Combined flags for all components of this BSDF.
