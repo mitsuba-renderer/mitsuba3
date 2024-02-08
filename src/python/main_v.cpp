@@ -86,8 +86,8 @@ MI_PY_DECLARE(xml);
 //MI_PY_DECLARE(quad);
 //
 //// render
-//MI_PY_DECLARE(BSDFSample);
-//MI_PY_DECLARE(BSDF);
+MI_PY_DECLARE(BSDFSample);
+MI_PY_DECLARE(BSDF);
 //MI_PY_DECLARE(Emitter);
 //MI_PY_DECLARE(Endpoint);
 //MI_PY_DECLARE(Film);
@@ -194,8 +194,8 @@ NB_MODULE(MODULE_NAME, m) {
 //    MI_PY_IMPORT(PositionSample);
 //    MI_PY_IMPORT(SilhouetteSample);
 //    MI_PY_IMPORT(DirectionSample);
-//    MI_PY_IMPORT(BSDFSample);
-//    MI_PY_IMPORT(BSDF);
+    MI_PY_IMPORT(BSDFSample);
+    MI_PY_IMPORT(BSDF);
 //    MI_PY_IMPORT(Film);
 //    MI_PY_IMPORT(fresnel);
 //    MI_PY_IMPORT(ImageBlock);

@@ -9,6 +9,7 @@
 #include <mitsuba/render/fwd.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/operators.h>
+#include <nanobind/stl/function.h>
 #include <drjit/packet.h>
 #include <drjit-core/jit.h>
 
@@ -50,39 +51,40 @@
 #define def_repr(Class) \
     def("__repr__", [](const Class &c) { std::ostringstream oss; oss << c; return oss.str(); } )
 
-///// Shorthand notation for defining object registration routine for trampoline objects
-///// WARNING: this will leak out memory as the constructed py::object will never be destroyed
-//#define MI_PY_REGISTER_OBJECT(Function, Name)                                  \
-//    m.def(                                                                     \
-//        Function,                                                              \
-//        [](const std::string &name,                                            \
-//           std::function<py::object(const Properties *)> &constructor) {       \
-//            auto variant = ::mitsuba::detail::get_variant<Float, Spectrum>();  \
-//            (void) new Class(                                                  \
-//                name, #Name, variant,                                          \
-//                [=](const Properties &p) {                                     \
-//                    /* The thread-local python variant information might not
-//                    have been set on this thread */                            \
-//                    py::gil_scoped_acquire gil;                                \
-//                    py::module mi = py::module::import("mitsuba");             \
-//                    py::object py_variant = mi.attr("variant")();              \
-//                    if (py_variant.is(py::none()) ||                           \
-//                        py_variant.cast<std::string>() != variant)             \
-//                        mi.attr("set_variant")(variant);                       \
-//                                                                               \
-//                    py::object o;                                              \
-//                    {                                                          \
-//                        py::gil_scoped_release release;                        \
-//                        o = constructor(&p);                                   \
-//                    }                                                          \
-//                                                                               \
-//                    ref<Name> o2 = o.cast<Name*>();                            \
-//                    o.release();                                               \
-//                    return o2;                                                 \
-//                },                                                             \
-//                nullptr);                                                      \
-//            PluginManager::instance()->register_python_plugin(name, variant);  \
-//        });
+/// Shorthand notation for defining object registration routine for trampoline objects
+#define MI_PY_REGISTER_OBJECT(Function, Name)                                  \
+    m.def(                                                                     \
+        Function,                                                              \
+        [](const std::string &name,                                            \
+           std::function<nb::object(const Properties *)> &constructor) {       \
+            auto variant = ::mitsuba::detail::get_variant<Float, Spectrum>();  \
+            (void) new Class(                                                  \
+                name, #Name, variant,                                          \
+                [=](const Properties &p) -> Name* {                            \
+                    /* The thread-local python variant information might not
+                    have been set on this thread */                            \
+                    nb::gil_scoped_acquire gil;                                \
+                    nb::module_ mi        = nb::module_::import_("mitsuba");   \
+                    nb::object py_variant = mi.attr("variant")();              \
+                    if (py_variant.is(nb::none()) ||                           \
+                        nb::cast<std::string>(py_variant) != variant)          \
+                        mi.attr("set_variant")(variant);                       \
+                                                                               \
+                    nb::object o;                                              \
+                    {                                                          \
+                        nb::gil_scoped_release release;                        \
+                        o = constructor(&p);                                   \
+                    }                                                          \
+                                                                               \
+                    BSDF* ptr = nb::cast<BSDF*>(o);                            \
+                    o.release();                                               \
+                                                                               \
+                    return ptr;                                                \
+                },                                                             \
+                nullptr);                                                      \
+            PluginManager::instance()->register_python_plugin(name, variant);  \
+        }                                                                      \
+    );
 
 using namespace mitsuba;
 
@@ -152,21 +154,21 @@ nb::handle type_of() {
 //    m.attr(name) = module;
 //    return module;
 //}
-//
-//template <typename Array> void bind_drjit_ptr_array(py::class_<Array> &cls) {
+
+//template <typename Array> void bind_drjit_ptr_array(nb::class_<Array> &cls) {
 //    using Type = std::decay_t<std::remove_pointer_t<dr::value_t<Array>>>;
 //    using UInt32 = dr::uint32_array_t<Array>;
 //    using Mask = dr::mask_t<UInt32>;
 //
-//    cls.attr("eq_") = py::none();
-//    cls.attr("neq_") = py::none();
-//    cls.attr("gather_") = py::none();
-//    cls.attr("scatter_") = py::none();
-//    cls.attr("select_") = py::none();
-//    cls.attr("set_label_") = py::none();
-//    cls.attr("label_") = py::none();
-//    cls.attr("index") = py::none();
-//    cls.attr("assign") = py::none();
+//    cls.attr("eq_") = nb::none();
+//    cls.attr("neq_") = nb::none();
+//    cls.attr("gather_") = nb::none();
+//    cls.attr("scatter_") = nb::none();
+//    cls.attr("select_") = nb::none();
+//    cls.attr("set_label_") = nb::none();
+//    cls.attr("label_") = nb::none();
+//    cls.attr("index") = nb::none();
+//    cls.attr("assign") = nb::none();
 //
 //    cls.def(py::init<>())
 //       .def(py::init<Type *>())
@@ -268,7 +270,7 @@ nb::handle type_of() {
 //        });
 //    }
 //}
-//
+
 //#define MI_PY_CHECK_ALIAS(Type, Name)                \
 //    if (auto h = get_type_handle<Type>(); h) {        \
 //        m.attr(Name) = h;                             \
