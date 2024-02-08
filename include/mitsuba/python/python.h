@@ -271,11 +271,11 @@ nb::handle type_of() {
 //    }
 //}
 
-//#define MI_PY_CHECK_ALIAS(Type, Name)                \
-//    if (auto h = get_type_handle<Type>(); h) {        \
-//        m.attr(Name) = h;                             \
-//    }                                                 \
-//    else
+#define MI_PY_CHECK_ALIAS(Type, Name)                 \
+    if (auto h = nb::type<Type>(); h) {               \
+        m.attr(Name) = h;                             \
+    }                                                 \
+    else
 
 #define MI_PY_DECLARE_ENUM_OPERATORS(Type, m)         \
     m.def(nb::self == nb::self)                       \
