@@ -1,5 +1,5 @@
-#set(RENDER_PY_V_SRC
-#  ${CMAKE_CURRENT_SOURCE_DIR}/bsdf_v.cpp
+set(RENDER_PY_V_SRC
+  ${CMAKE_CURRENT_SOURCE_DIR}/bsdf_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/emitter_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/endpoint_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/film_v.cpp
@@ -23,12 +23,12 @@
 #  ${CMAKE_CURRENT_SOURCE_DIR}/volume_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/volumegrid_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/signal.h
-#  PARENT_SCOPE
-#)
-#
-#set(RENDER_PY_SRC
+  PARENT_SCOPE
+)
+
+set(RENDER_PY_SRC
 #  ${CMAKE_CURRENT_SOURCE_DIR}/emitter.cpp
-#  ${CMAKE_CURRENT_SOURCE_DIR}/bsdf.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/bsdf.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/shape.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/interaction.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/microfacet.cpp
@@ -36,5 +36,5 @@
 #  ${CMAKE_CURRENT_SOURCE_DIR}/sensor.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/spiral.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/film.cpp
-#  PARENT_SCOPE
-#)
+  PARENT_SCOPE
+)
