@@ -1,7 +1,7 @@
 set(RENDER_PY_V_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/bsdf_v.cpp
-#  ${CMAKE_CURRENT_SOURCE_DIR}/emitter_v.cpp
-#  ${CMAKE_CURRENT_SOURCE_DIR}/endpoint_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/emitter_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/endpoint_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/film_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/fresnel_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/imageblock_v.cpp
@@ -27,7 +27,7 @@ set(RENDER_PY_V_SRC
 )
 
 set(RENDER_PY_SRC
-#  ${CMAKE_CURRENT_SOURCE_DIR}/emitter.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/emitter.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/bsdf.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/shape.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/interaction.cpp
