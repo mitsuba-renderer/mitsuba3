@@ -25,7 +25,7 @@ MI_PY_DECLARE(Cast);
 //MI_PY_DECLARE(MemoryStream);
 //MI_PY_DECLARE(ZStream);
 //MI_PY_DECLARE(ProgressReporter);
-//MI_PY_DECLARE(rfilter);
+MI_PY_DECLARE(rfilter);
 //MI_PY_DECLARE(Thread);
 //MI_PY_DECLARE(Timer);
 //MI_PY_DECLARE(util);
@@ -132,7 +132,7 @@ NB_MODULE(mitsuba_ext, m) {
 //    MI_PY_IMPORT(Struct);
 //    MI_PY_IMPORT(Appender);
 //    MI_PY_IMPORT(ArgParser);
-//    MI_PY_IMPORT(rfilter);
+    MI_PY_IMPORT(rfilter);
 //    MI_PY_IMPORT(Stream);
 //    MI_PY_IMPORT(Bitmap);
 //    MI_PY_IMPORT(Formatter);

@@ -11,7 +11,7 @@ set(CORE_PY_V_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/properties_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/random_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/ray_v.cpp
-#  ${CMAKE_CURRENT_SOURCE_DIR}/rfilter_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/rfilter_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/spectrum_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/spline_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/transform_v.cpp
@@ -35,7 +35,7 @@ set(CORE_PY_SRC
 #  ${CMAKE_CURRENT_SOURCE_DIR}/mmap.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/object.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/progress.cpp
-#  ${CMAKE_CURRENT_SOURCE_DIR}/rfilter.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/rfilter.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/stream.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/struct.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/thread.cpp

@@ -3,9 +3,9 @@
 #include <mitsuba/python/python.h>
 
 template <typename ReconstructionFilter>
-void bind_rfilter(py::module &m, const char *name) {
+void bind_rfilter(nb::module_ &m, const char *name) {
     MI_PY_CHECK_ALIAS(ReconstructionFilter, name) {
-        py::class_<ReconstructionFilter, Object, ref<ReconstructionFilter>>(
+        nb::class_<ReconstructionFilter, Object>(
             m, name, D(ReconstructionFilter))
             .def("border_size", &ReconstructionFilter::border_size,
                  D(ReconstructionFilter, border_size))

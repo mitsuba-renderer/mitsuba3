@@ -74,7 +74,7 @@ MI_PY_DECLARE(DrJit);
 //MI_PY_DECLARE(math);
 //MI_PY_DECLARE(qmc);
 MI_PY_DECLARE(Properties);
-//MI_PY_DECLARE(rfilter);
+MI_PY_DECLARE(rfilter);
 //MI_PY_DECLARE(sample_tea);
 //MI_PY_DECLARE(spline);
 //MI_PY_DECLARE(Spectrum);
@@ -169,7 +169,7 @@ NB_MODULE(MODULE_NAME, m) {
 //    MI_PY_IMPORT_SUBMODULE(math);
 //    MI_PY_IMPORT(qmc);
     MI_PY_IMPORT(Properties);
-//    MI_PY_IMPORT(rfilter);
+    MI_PY_IMPORT(rfilter);
 //    MI_PY_IMPORT(sample_tea);
 //    MI_PY_IMPORT_SUBMODULE(spline);
 //    MI_PY_IMPORT(Spectrum);
