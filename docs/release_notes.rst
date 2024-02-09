@@ -5,6 +5,12 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`_ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
+Incoming changes
+----------------
+
+- The ``sdfgrid`` has its ``watertight`` parameter set to ``false`` by default
+
+
 Mitsuba 3.5.0
 -------------
 
