@@ -88,8 +88,8 @@ MI_PY_DECLARE(xml);
 //// render
 MI_PY_DECLARE(BSDFSample);
 MI_PY_DECLARE(BSDF);
-//MI_PY_DECLARE(Emitter);
-//MI_PY_DECLARE(Endpoint);
+MI_PY_DECLARE(Emitter);
+MI_PY_DECLARE(Endpoint);
 //MI_PY_DECLARE(Film);
 //MI_PY_DECLARE(fresnel);
 //MI_PY_DECLARE(ImageBlock);
@@ -185,8 +185,8 @@ NB_MODULE(MODULE_NAME, m) {
     MI_PY_IMPORT(Scene);
     MI_PY_IMPORT(Shape);
 //    MI_PY_IMPORT(Medium);
-//    MI_PY_IMPORT(Endpoint);
-//    MI_PY_IMPORT(Emitter);
+    MI_PY_IMPORT(Endpoint);
+    MI_PY_IMPORT(Emitter);
     MI_PY_IMPORT(Interaction);
     MI_PY_IMPORT(SurfaceInteraction);
 //    MI_PY_IMPORT(MediumInteraction);
