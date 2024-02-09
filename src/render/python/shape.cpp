@@ -3,7 +3,7 @@
 #include <mitsuba/python/python.h>
 
 MI_PY_EXPORT(DiscontinuityFlags) {
-    auto disc_flags = py::enum_<DiscontinuityFlags>(m, "DiscontinuityFlags", D(DiscontinuityFlags))
+    auto disc_flags = nb::enum_<DiscontinuityFlags>(m, "DiscontinuityFlags", D(DiscontinuityFlags))
         .def_value(DiscontinuityFlags, Empty)
         .def_value(DiscontinuityFlags, PerimeterType)
         .def_value(DiscontinuityFlags, InteriorType)
@@ -14,7 +14,7 @@ MI_PY_EXPORT(DiscontinuityFlags) {
 
         MI_PY_DECLARE_ENUM_OPERATORS(DiscontinuityFlags, disc_flags)
 
-    auto shape_types = py::enum_<ShapeType>(m, "ShapeType", D(ShapeType))
+    auto shape_types = nb::enum_<ShapeType>(m, "ShapeType", D(ShapeType))
         .def_value(ShapeType, Mesh)
         .def_value(ShapeType, BSplineCurve)
         .def_value(ShapeType, Cylinder)

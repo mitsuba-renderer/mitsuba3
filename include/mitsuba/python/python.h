@@ -23,9 +23,9 @@
 //#define MI_PY_STRUCT(Name, ...) \
 //    py::class_<Name>(m, #Name, D(Name), ##__VA_ARGS__)
 //
-///// Shorthand notation for defining a Mitsuba class deriving from a base class
-//#define MI_PY_CLASS(Name, Base, ...) \
-//    py::class_<Name, Base, ref<Name>>(m, #Name, D(Name), ##__VA_ARGS__)
+// Shorthand notation for defining a Mitsuba class deriving from a base class
+#define MI_PY_CLASS(Name, Base, ...) \
+    nb::class_<Name, Base>(m, #Name, D(Name), ##__VA_ARGS__)
 
 /// Shorthand notation for defining a Mitsuba class that can be extended in Python
 #define MI_PY_TRAMPOLINE_CLASS(Trampoline, Name, Base, ...) \
@@ -76,7 +76,7 @@
                         o = constructor(&p);                                   \
                     }                                                          \
                                                                                \
-                    BSDF* ptr = nb::cast<BSDF*>(o);                            \
+                    Name* ptr = nb::cast<Name*>(o);                            \
                     o.release();                                               \
                                                                                \
                     return ptr;                                                \
