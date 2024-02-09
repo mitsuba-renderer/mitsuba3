@@ -109,7 +109,7 @@ MI_PY_DECLARE(SurfaceInteraction);
 //MI_PY_DECLARE(PhaseFunction);
 //MI_PY_DECLARE(DirectionSample);
 MI_PY_DECLARE(Sampler);
-//MI_PY_DECLARE(Scene);
+MI_PY_DECLARE(Scene);
 //MI_PY_DECLARE(Sensor);
 //MI_PY_DECLARE(SilhouetteSample);
 MI_PY_DECLARE(Shape);
@@ -182,7 +182,7 @@ NB_MODULE(MODULE_NAME, m) {
 //    MI_PY_IMPORT_SUBMODULE(warp);
     MI_PY_IMPORT(xml);
 
-//    MI_PY_IMPORT(Scene);
+    MI_PY_IMPORT(Scene);
     MI_PY_IMPORT(Shape);
 //    MI_PY_IMPORT(Medium);
 //    MI_PY_IMPORT(Endpoint);

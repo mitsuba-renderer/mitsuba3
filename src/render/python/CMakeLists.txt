@@ -15,7 +15,7 @@ set(RENDER_PY_V_SRC
 #  ${CMAKE_CURRENT_SOURCE_DIR}/phase_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/records_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/sampler_v.cpp
-#  ${CMAKE_CURRENT_SOURCE_DIR}/scene_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/scene_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/sensor_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/shape_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/srgb_v.cpp
