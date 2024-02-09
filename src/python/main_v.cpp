@@ -78,7 +78,7 @@ MI_PY_DECLARE(rfilter);
 //MI_PY_DECLARE(sample_tea);
 //MI_PY_DECLARE(spline);
 //MI_PY_DECLARE(Spectrum);
-//MI_PY_DECLARE(Transform);
+MI_PY_DECLARE(Transform);
 //// MI_PY_DECLARE(AnimatedTransform);
 //MI_PY_DECLARE(vector);
 //MI_PY_DECLARE(warp);
@@ -173,7 +173,7 @@ NB_MODULE(MODULE_NAME, m) {
 //    MI_PY_IMPORT(sample_tea);
 //    MI_PY_IMPORT_SUBMODULE(spline);
 //    MI_PY_IMPORT(Spectrum);
-//    MI_PY_IMPORT(Transform);
+    MI_PY_IMPORT(Transform);
 //    // MI_PY_IMPORT(AnimatedTransform);
 //    MI_PY_IMPORT(Hierarchical2D);
 //    MI_PY_IMPORT(Marginal2D);
