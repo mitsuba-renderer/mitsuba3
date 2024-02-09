@@ -38,7 +38,6 @@ public:
     sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
            Float sample1, const Point2f &sample2,
            Mask active) const override {
-        using Return = std::pair<BSDFSample3f, Spectrum>;
         NB_OVERRIDE_PURE(sample, ctx, si, sample1, sample2, active);
     }
 
@@ -60,7 +59,6 @@ public:
               const SurfaceInteraction3f &si,
               const Vector3f &wo,
               Mask active) const override {
-        using Return = std::pair<Spectrum, Float>;
         NB_OVERRIDE(eval_pdf, ctx, si, wo, active);
     }
 
