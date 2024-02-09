@@ -21,7 +21,7 @@
         if (PyObject* obj = tmp->self_py())                                    \
             return borrow(nb::handle(obj).inc_ref());                          \
         else                                                                   \
-            nb::cast(tmp);                                                     \
+            return nb::cast(tmp);                                              \
     }
 
 /// Helper routine to cast Mitsuba plugins to their underlying interfaces
