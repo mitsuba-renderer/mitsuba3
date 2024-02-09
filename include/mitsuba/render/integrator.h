@@ -465,12 +465,12 @@ class MI_EXPORT_LIB MonteCarloIntegrator
 public:
     MI_IMPORT_BASE(SamplingIntegrator)
 
+    /// Virtual destructor
+    ~MonteCarloIntegrator();
+
 protected:
     /// Create an integrator
     MonteCarloIntegrator(const Properties &props);
-
-    /// Virtual destructor
-    virtual ~MonteCarloIntegrator();
 
     MI_DECLARE_CLASS()
 protected:
