@@ -430,35 +430,43 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() {
 MI_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    if (!m_area_pmf.empty())
-        return; // already built!
-
     if (m_face_count == 0)
         Throw("Cannot create sampling table for an empty mesh: %s", to_string());
 
-    auto&& vertex_positions = dr::migrate(m_vertex_positions, AllocType::Host);
-    auto&& faces = dr::migrate(m_faces, AllocType::Host);
-    if constexpr (dr::is_jit_v<Float>)
-        dr::sync_thread();
+    if constexpr (!dr::is_jit_v<Float>) {
+        if (!m_area_pmf.empty())
+            return; // already built!
 
-    const InputFloat *pos_p = vertex_positions.data();
-    const ScalarIndex *idx_p = faces.data();
+        auto &&vertex_positions =
+            dr::migrate(m_vertex_positions, AllocType::Host);
+        auto &&faces = dr::migrate(m_faces, AllocType::Host);
+        if constexpr (dr::is_jit_v<Float>)
+            dr::sync_thread();
 
-    std::vector<ScalarFloat> table(m_face_count);
-    for (ScalarIndex i = 0; i < m_face_count; i++) {
-        ScalarPoint3u idx = dr::load<ScalarPoint3u>(idx_p + 3 * i);
+        const InputFloat *pos_p  = vertex_positions.data();
+        const ScalarIndex *idx_p = faces.data();
 
-        ScalarPoint3f p0 = dr::load<InputPoint3f>(pos_p + 3 * idx.x()),
-                      p1 = dr::load<InputPoint3f>(pos_p + 3 * idx.y()),
-                      p2 = dr::load<InputPoint3f>(pos_p + 3 * idx.z());
+        std::vector<ScalarFloat> table(m_face_count);
+        for (ScalarIndex i = 0; i < m_face_count; i++) {
+            ScalarPoint3u idx = dr::load<ScalarPoint3u>(idx_p + 3 * i);
 
-        table[i] = .5f * dr::norm(dr::cross(p1 - p0, p2 - p0));
+            ScalarPoint3f p0 = dr::load<InputPoint3f>(pos_p + 3 * idx.x()),
+                          p1 = dr::load<InputPoint3f>(pos_p + 3 * idx.y()),
+                          p2 = dr::load<InputPoint3f>(pos_p + 3 * idx.z());
+
+            table[i] = .5f * dr::norm(dr::cross(p1 - p0, p2 - p0));
+        }
+
+        m_area_pmf = DiscreteDistribution<Float>(table.data(), m_face_count);
+    } else {
+        Vector3u v_idx = face_indices(dr::arange<UInt32>(m_face_count));
+        Point3f p0 = vertex_position(v_idx[0]), p1 = vertex_position(v_idx[1]),
+                p2 = vertex_position(v_idx[2]);
+
+        Float face_surface_area = .5f * dr::norm(dr::cross(p1 - p0, p2 - p0));
+
+        m_area_pmf = DiscreteDistribution<Float>(dr::detach(face_surface_area));
     }
-
-    m_area_pmf = DiscreteDistribution<Float>(
-        table.data(),
-        m_face_count
-    );
 }
 
 MI_VARIANT void Mesh<Float, Spectrum>::build_directed_edges() {
