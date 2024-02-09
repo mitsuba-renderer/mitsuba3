@@ -48,7 +48,7 @@ SDF Grid (:monosp:`sdfgrid`)
 
  * - watertight
    - |bool|
-   - Is the associated surface watertight, i.e. does the surface contain no holes? (Default: |true|)
+   - Is the associated surface watertight, i.e. does the surface contain no holes? (Default: |false|)
    - |exposed|
 
  * - normals
@@ -141,7 +141,7 @@ public:
                   "or \"smooth\"!",
                   normals_mode_str);
 
-        m_watertight = props.get<bool>("watertight", true);
+        m_watertight = props.get<bool>("watertight", false);
 
         if (props.has_property("filename")) {
             FileResolver *fs   = Thread::thread()->file_resolver();
