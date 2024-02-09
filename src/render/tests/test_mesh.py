@@ -1198,3 +1198,26 @@ def test32_shape_type(variant_scalar_rgb):
         "filename" : "resources/data/tests/ply/rectangle_uv.ply",
     })
     assert mesh.shape_type() == mi.ShapeType.Mesh.value;
+
+
+@fresolver_append_path
+def test33_rebuild_area_pmf(variants_vec_rgb):
+    mesh = mi.load_dict({
+        "type" : "ply",
+        "filename" : "resources/data/tests/ply/triangle.ply",
+        "face_normals" : True
+    })
+
+    surface_area_before = mesh.surface_area()
+
+    params = mi.traverse(mesh)
+    key = 'vertex_positions'
+
+    vertices = dr.unravel(mi.Point3f, params[key])
+    new_vertices = mi.Transform4f().scale(2) @ vertices
+    params[key] = dr.ravel(new_vertices)
+    params.update()
+
+    surface_area_after = mesh.surface_area()
+
+    assert surface_area_after == 4 * surface_area_before
