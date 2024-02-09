@@ -115,7 +115,7 @@ MI_PY_DECLARE(SurfaceInteraction);
 //MI_PY_DECLARE(Shape);
 //MI_PY_DECLARE(ShapeKDTree);
 //MI_PY_DECLARE(srgb);
-//MI_PY_DECLARE(Texture);
+MI_PY_DECLARE(Texture);
 //MI_PY_DECLARE(Volume);
 //MI_PY_DECLARE(VolumeGrid);
 
@@ -211,7 +211,7 @@ NB_MODULE(MODULE_NAME, m) {
 //    MI_PY_IMPORT(Sensor);
 //    MI_PY_IMPORT(ShapeKDTree);
 //    MI_PY_IMPORT(srgb);
-//    MI_PY_IMPORT(Texture);
+    MI_PY_IMPORT(Texture);
 //    MI_PY_IMPORT(Volume);
 //    MI_PY_IMPORT(VolumeGrid);
 
