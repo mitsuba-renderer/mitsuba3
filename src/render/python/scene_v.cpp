@@ -17,19 +17,19 @@ MI_PY_EXPORT(ShapeKDTree) {
 
 #if !defined(MI_ENABLE_EMBREE)
     MI_PY_CLASS(ShapeKDTree, Object)
-        .def(py::init<const Properties &>(), D(ShapeKDTree, ShapeKDTree))
+        .def(nb::init<const Properties &>(), D(ShapeKDTree, ShapeKDTree))
         .def_method(ShapeKDTree, add_shape)
         .def_method(ShapeKDTree, primitive_count)
         .def_method(ShapeKDTree, shape_count)
         .def("shape", (Shape *(ShapeKDTree::*)(size_t)) &ShapeKDTree::shape, D(ShapeKDTree, shape))
-        .def("__getitem__", [](ShapeKDTree &s, size_t i) -> py::object {
+        .def("__getitem__", [](ShapeKDTree &s, size_t i) -> nb::object {
             if (i >= s.primitive_count())
-                throw py::index_error();
+                throw nb::index_error();
             Shape *shape = s.shape(i);
             if (shape->is_mesh())
-                return py::cast(static_cast<Mesh *>(s.shape(i)));
+                return nb::cast(static_cast<Mesh *>(s.shape(i)));
             else
-                return py::cast(s.shape(i));
+                return nb::cast(s.shape(i));
         })
         .def("__len__", &ShapeKDTree::primitive_count)
         .def("bbox", [] (ShapeKDTree &s) { return s.bbox(); })
@@ -43,21 +43,21 @@ MI_PY_EXPORT(ShapeKDTree) {
 MI_PY_EXPORT(Scene) {
     MI_PY_IMPORT_TYPES(Scene, Integrator, SamplingIntegrator, MonteCarloIntegrator, Sensor)
     MI_PY_CLASS(Scene, Object)
-        .def(py::init<const Properties>())
+        .def(nb::init<const Properties>())
         .def("ray_intersect_preliminary",
-             py::overload_cast<const Ray3f &, Mask, Mask>(&Scene::ray_intersect_preliminary, py::const_),
+             nb::overload_cast<const Ray3f &, Mask, Mask>(&Scene::ray_intersect_preliminary, nb::const_),
              "ray"_a, "coherent"_a = false, "active"_a = true, D(Scene, ray_intersect_preliminary))
         .def("ray_intersect",
-             py::overload_cast<const Ray3f &, Mask>(&Scene::ray_intersect, py::const_),
+             nb::overload_cast<const Ray3f &, Mask>(&Scene::ray_intersect, nb::const_),
              "ray"_a, "active"_a = true, D(Scene, ray_intersect))
         .def("ray_intersect",
-             py::overload_cast<const Ray3f &, uint32_t, Mask, Mask>(&Scene::ray_intersect, py::const_),
+             nb::overload_cast<const Ray3f &, uint32_t, Mask, Mask>(&Scene::ray_intersect, nb::const_),
              "ray"_a, "ray_flags"_a, "coherent"_a, "active"_a = true, D(Scene, ray_intersect, 2))
         .def("ray_test",
-             py::overload_cast<const Ray3f &, Mask>(&Scene::ray_test, py::const_),
+             nb::overload_cast<const Ray3f &, Mask>(&Scene::ray_test, nb::const_),
              "ray"_a, "active"_a = true, D(Scene, ray_test))
         .def("ray_test",
-             py::overload_cast<const Ray3f &, Mask, Mask>(&Scene::ray_test, py::const_),
+             nb::overload_cast<const Ray3f &, Mask, Mask>(&Scene::ray_test, nb::const_),
              "ray"_a, "coherent"_a, "active"_a = true, D(Scene, ray_test, 2))
 #if !defined(MI_ENABLE_EMBREE)
         .def("ray_intersect_naive",
@@ -88,31 +88,31 @@ MI_PY_EXPORT(Scene) {
         .def_method(Scene, bbox)
         .def("sensors",
              [](const Scene &scene) {
-                 py::list result;
+                 nb::list result;
                  for (const Sensor *s : scene.sensors()) {
                      const ProjectiveCamera *p =
                          dynamic_cast<const ProjectiveCamera *>(s);
                      if (p)
-                         result.append(py::cast(p));
+                         result.append(nb::cast(p));
                      else
-                         result.append(py::cast(s));
+                         result.append(nb::cast(s));
                  }
                  return result;
              },
              D(Scene, sensors))
         .def("sensors_dr", &Scene::sensors_dr, D(Scene, sensors_dr))
-        .def("emitters", py::overload_cast<>(&Scene::emitters), D(Scene, emitters))
+        .def("emitters", nb::overload_cast<>(&Scene::emitters), D(Scene, emitters))
         .def("emitters_dr", &Scene::emitters_dr, D(Scene, emitters_dr))
         .def_method(Scene, environment)
         .def("shapes",
              [](const Scene &scene) {
-                 py::list result;
+                 nb::list result;
                  for (const Shape *s : scene.shapes()) {
                      const Mesh *m = dynamic_cast<const Mesh *>(s);
                      if (m)
-                         result.append(py::cast(m));
+                         result.append(nb::cast(m));
                      else
-                         result.append(py::cast(s));
+                         result.append(nb::cast(s));
                  }
                  return result;
              },
@@ -120,29 +120,29 @@ MI_PY_EXPORT(Scene) {
         .def("shapes_dr", &Scene::shapes_dr, D(Scene, shapes_dr))
         .def("silhouette_shapes",
              [](const Scene &scene) {
-                 py::list result;
+                 nb::list result;
                  for (const Shape *s : scene.silhouette_shapes()) {
                      const Mesh *m = dynamic_cast<const Mesh *>(s);
                      if (m)
-                         result.append(py::cast(m));
+                         result.append(nb::cast(m));
                      else
-                         result.append(py::cast(s));
+                         result.append(nb::cast(s));
                  }
                  return result;
              },
              D(Scene, silhouette_shapes))
         .def("integrator",
-             [](Scene &scene) -> py::object {
+             [](Scene &scene) -> nb::object {
                  Integrator *o = scene.integrator();
                  if (!o)
-                     return py::none();
+                     return nb::none();
                  if (auto tmp = dynamic_cast<MonteCarloIntegrator *>(o); tmp)
-                     return py::cast(tmp);
+                     return nb::cast(tmp);
                  if (auto tmp = dynamic_cast<SamplingIntegrator *>(o); tmp)
-                     return py::cast(tmp);
+                     return nb::cast(tmp);
                  if (auto tmp = dynamic_cast<AdjointIntegrator *>(o); tmp)
-                     return py::cast(tmp);
-                 return py::cast(o);
+                     return nb::cast(tmp);
+                 return nb::cast(o);
              },
              D(Scene, integrator))
         .def_method(Scene, shapes_grad_enabled)
