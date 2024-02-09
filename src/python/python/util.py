@@ -581,7 +581,7 @@ def cornell_box():
             'far_clip': 100.0,
             'focus_distance': 1000,
             'fov': 39.3077,
-            'to_world': T.look_at(
+            'to_world': T.create_look_at(
                 origin=[0, 0, 3.90],
                 target=[0, 0, 0],
                 up=[0, 1, 0]
@@ -626,7 +626,7 @@ def cornell_box():
         # -------------------- Light --------------------
         'light': {
             'type': 'rectangle',
-            'to_world': T.translate([0.0, 0.99, 0.01]).rotate([1, 0, 0], 90).scale([0.23, 0.19, 0.19]),
+            'to_world': T.create_translate([0.0, 0.99, 0.01]).rotate([1, 0, 0], 90).scale([0.23, 0.19, 0.19]),
             'bsdf': {
                 'type': 'ref',
                 'id': 'white'
@@ -642,7 +642,7 @@ def cornell_box():
         # -------------------- Shapes --------------------
         'floor': {
             'type': 'rectangle',
-            'to_world': T.translate([0.0, -1.0, 0.0]).rotate([1, 0, 0], -90),
+            'to_world': T.create_translate([0.0, -1.0, 0.0]).rotate([1, 0, 0], -90),
             'bsdf': {
                 'type': 'ref',
                 'id':  'white'
@@ -650,7 +650,7 @@ def cornell_box():
         },
         'ceiling': {
             'type': 'rectangle',
-            'to_world': T.translate([0.0, 1.0, 0.0]).rotate([1, 0, 0], 90),
+            'to_world': T.create_translate([0.0, 1.0, 0.0]).rotate([1, 0, 0], 90),
             'bsdf': {
                 'type': 'ref',
                 'id':  'white'
@@ -658,7 +658,7 @@ def cornell_box():
         },
         'back': {
             'type': 'rectangle',
-            'to_world': T.translate([0.0, 0.0, -1.0]),
+            'to_world': T.create_translate([0.0, 0.0, -1.0]),
             'bsdf': {
                 'type': 'ref',
                 'id':  'white'
@@ -666,7 +666,7 @@ def cornell_box():
         },
         'green-wall': {
             'type': 'rectangle',
-            'to_world': T.translate([1.0, 0.0, 0.0]).rotate([0, 1, 0], -90),
+            'to_world': T.create_translate([1.0, 0.0, 0.0]).rotate([0, 1, 0], -90),
             'bsdf': {
                 'type': 'ref',
                 'id':  'green'
@@ -674,7 +674,7 @@ def cornell_box():
         },
         'red-wall': {
             'type': 'rectangle',
-            'to_world': T.translate([-1.0, 0.0, 0.0]).rotate([0, 1, 0], 90),
+            'to_world': T.create_translate([-1.0, 0.0, 0.0]).rotate([0, 1, 0], 90),
             'bsdf': {
                 'type': 'ref',
                 'id':  'red'
@@ -682,7 +682,7 @@ def cornell_box():
         },
         'small-box': {
             'type': 'cube',
-            'to_world': T.translate([0.335, -0.7, 0.38]).rotate([0, 1, 0], -17).scale(0.3),
+            'to_world': T.create_translate([0.335, -0.7, 0.38]).rotate([0, 1, 0], -17).scale(0.3),
             'bsdf': {
                 'type': 'ref',
                 'id':  'white'
@@ -690,7 +690,7 @@ def cornell_box():
         },
         'large-box': {
             'type': 'cube',
-            'to_world': T.translate([-0.33, -0.4, -0.28]).rotate([0, 1, 0], 18.25).scale([0.3, 0.61, 0.3]),
+            'to_world': T.create_translate([-0.33, -0.4, -0.28]).rotate([0, 1, 0], 18.25).scale([0.3, 0.61, 0.3]),
             'bsdf': {
                 'type': 'ref',
                 'id':  'white'
