@@ -2,6 +2,7 @@
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/python/python.h>
+#include <nanobind/stl/string.h>
 
 extern nb::object cast_object(Object *o);
 

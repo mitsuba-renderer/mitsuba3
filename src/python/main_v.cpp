@@ -112,7 +112,7 @@ MI_PY_DECLARE(SurfaceInteraction);
 //MI_PY_DECLARE(Scene);
 //MI_PY_DECLARE(Sensor);
 //MI_PY_DECLARE(SilhouetteSample);
-//MI_PY_DECLARE(Shape);
+MI_PY_DECLARE(Shape);
 //MI_PY_DECLARE(ShapeKDTree);
 //MI_PY_DECLARE(srgb);
 MI_PY_DECLARE(Texture);
@@ -183,7 +183,7 @@ NB_MODULE(MODULE_NAME, m) {
     MI_PY_IMPORT(xml);
 
 //    MI_PY_IMPORT(Scene);
-//    MI_PY_IMPORT(Shape);
+    MI_PY_IMPORT(Shape);
 //    MI_PY_IMPORT(Medium);
 //    MI_PY_IMPORT(Endpoint);
 //    MI_PY_IMPORT(Emitter);

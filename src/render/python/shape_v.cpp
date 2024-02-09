@@ -8,7 +8,9 @@
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/shape.h>
 #include <mitsuba/python/python.h>
-#include <pybind11/numpy.h>
+#include <nanobind/trampoline.h>
+#include <nanobind/stl/string.h>
+#include <drjit/python.h>
 
 MI_PY_EXPORT(SilhouetteSample) {
     MI_PY_IMPORT_TYPES()
@@ -16,20 +18,20 @@ MI_PY_EXPORT(SilhouetteSample) {
     m.def("has_flag", [](uint32_t flags, DiscontinuityFlags f) {return has_flag(flags, f);});
     m.def("has_flag", [](UInt32   flags, DiscontinuityFlags f) {return has_flag(flags, f);});
 
-    auto ss = py::class_<SilhouetteSample3f, PositionSample3f>(m, "SilhouetteSample3f", D(SilhouetteSample))
-        .def(py::init<>(), "Construct an uninitialized silhouette sample")
-        .def(py::init<const SilhouetteSample3f &>(), "Copy constructor", "other"_a)
+    auto ss = nb::class_<SilhouetteSample3f, PositionSample3f>(m, "SilhouetteSample3f", D(SilhouetteSample))
+        .def(nb::init<>(), "Construct an uninitialized silhouette sample")
+        .def(nb::init<const SilhouetteSample3f &>(), "Copy constructor", "other"_a)
         // Members
-        .def_readwrite("discontinuity_type", &SilhouetteSample3f::discontinuity_type, D(SilhouetteSample, discontinuity_type))
-        .def_readwrite("d",                  &SilhouetteSample3f::d,                  D(SilhouetteSample, d))
-        .def_readwrite("silhouette_d",       &SilhouetteSample3f::silhouette_d,       D(SilhouetteSample, silhouette_d))
-        .def_readwrite("prim_index",         &SilhouetteSample3f::prim_index,         D(SilhouetteSample, prim_index))
-        .def_readwrite("scene_index",        &SilhouetteSample3f::scene_index,        D(SilhouetteSample, scene_index))
-        .def_readwrite("flags",              &SilhouetteSample3f::flags,              D(SilhouetteSample, flags))
-        .def_readwrite("projection_index",   &SilhouetteSample3f::projection_index,   D(SilhouetteSample, projection_index))
-        .def_readwrite("shape",              &SilhouetteSample3f::shape,              D(SilhouetteSample, shape))
-        .def_readwrite("foreshortening",     &SilhouetteSample3f::foreshortening,     D(SilhouetteSample, foreshortening))
-        .def_readwrite("offset",             &SilhouetteSample3f::offset,             D(SilhouetteSample, offset))
+        .def_rw("discontinuity_type", &SilhouetteSample3f::discontinuity_type, D(SilhouetteSample, discontinuity_type))
+        .def_rw("d",                  &SilhouetteSample3f::d,                  D(SilhouetteSample, d))
+        .def_rw("silhouette_d",       &SilhouetteSample3f::silhouette_d,       D(SilhouetteSample, silhouette_d))
+        .def_rw("prim_index",         &SilhouetteSample3f::prim_index,         D(SilhouetteSample, prim_index))
+        .def_rw("scene_index",        &SilhouetteSample3f::scene_index,        D(SilhouetteSample, scene_index))
+        .def_rw("flags",              &SilhouetteSample3f::flags,              D(SilhouetteSample, flags))
+        .def_rw("projection_index",   &SilhouetteSample3f::projection_index,   D(SilhouetteSample, projection_index))
+        .def_rw("shape",              &SilhouetteSample3f::shape,              D(SilhouetteSample, shape))
+        .def_rw("foreshortening",     &SilhouetteSample3f::foreshortening,     D(SilhouetteSample, foreshortening))
+        .def_rw("offset",             &SilhouetteSample3f::offset,             D(SilhouetteSample, offset))
         // Methods
         .def("is_valid",  &SilhouetteSample3f::is_valid,  D(SilhouetteSample, is_valid))
         .def("spawn_ray", &SilhouetteSample3f::spawn_ray, D(SilhouetteSample, spawn_ray))
@@ -45,6 +47,8 @@ MI_PY_EXPORT(SilhouetteSample) {
 MI_VARIANT class PyMesh : public Mesh<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Mesh)
+    NB_TRAMPOLINE(Mesh, 1);
+
     PyMesh(const Properties &props) : Mesh(props) { }
     PyMesh(const std::string &name, uint32_t vertex_count, uint32_t face_count,
            const Properties &props = Properties(),
@@ -52,7 +56,7 @@ public:
         : Mesh(name, vertex_count, face_count, props, has_vertex_normals,
                has_vertex_texcoords) {}
     std::string to_string() const override {
-        PYBIND11_OVERRIDE(std::string, Mesh, to_string);
+        NB_OVERRIDE(to_string);
     }
 };
 
@@ -204,21 +208,18 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
                 return shape->surface_area();
             },
             D(Shape, surface_area));
-
-    if constexpr (dr::is_array_v<Ptr>)
-        bind_drjit_ptr_array(cls);
 }
 
 MI_PY_EXPORT(Shape) {
     MI_PY_IMPORT_TYPES(Shape, Mesh)
 
     auto shape = MI_PY_CLASS(Shape, Object)
-        .def("bbox", py::overload_cast<>(
-            &Shape::bbox, py::const_), D(Shape, bbox))
-        .def("bbox", py::overload_cast<ScalarUInt32>(
-            &Shape::bbox, py::const_), D(Shape, bbox, 2), "index"_a)
-        .def("bbox", py::overload_cast<ScalarUInt32, const ScalarBoundingBox3f &>(
-            &Shape::bbox, py::const_), D(Shape, bbox, 3), "index"_a, "clip"_a)
+        .def("bbox", nb::overload_cast<>(
+            &Shape::bbox, nb::const_), D(Shape, bbox))
+        .def("bbox", nb::overload_cast<ScalarUInt32>(
+            &Shape::bbox, nb::const_), D(Shape, bbox, 2), "index"_a)
+        .def("bbox", nb::overload_cast<ScalarUInt32, const ScalarBoundingBox3f &>(
+            &Shape::bbox, nb::const_), D(Shape, bbox, 3), "index"_a, "clip"_a)
         .def_method(Shape, id)
         .def_method(Shape, is_mesh)
         .def_method(Shape, parameters_grad_enabled)
@@ -229,21 +230,22 @@ MI_PY_EXPORT(Shape) {
     bind_shape_generic<Shape *>(shape);
 
     if constexpr (dr::is_array_v<ShapePtr>) {
-        py::object dr       = py::module_::import("drjit"),
+        nb::object dr       = nb::module_::import_("drjit"),
                    dr_array = dr.attr("ArrayBase");
 
-        py::class_<ShapePtr> cls(m, "ShapePtr", dr_array);
-        bind_shape_generic<ShapePtr>(cls);
+        dr::ArrayBinding b;
+        auto shape_ptr = dr::bind_array_t<ShapePtr>(b, m, "ShapePtr");
+        bind_shape_generic<ShapePtr>(shape_ptr);
     }
 
     using PyMesh = PyMesh<Float, Spectrum>;
     using ScalarSize = typename Mesh::ScalarSize;
     MI_PY_TRAMPOLINE_CLASS(PyMesh, Mesh, Shape)
-        .def(py::init<const Properties&>(), "props"_a)
-        .def(py::init<const std::string &, ScalarSize, ScalarSize,
+        .def(nb::init<const Properties&>(), "props"_a)
+        .def(nb::init<const std::string &, ScalarSize, ScalarSize,
                       const Properties &, bool, bool>(),
              "name"_a, "vertex_count"_a, "face_count"_a,
-             py::arg_v("props", Properties(), "Properties()"),
+             "props"_a = Properties(),
              "has_vertex_normals"_a = false, "has_vertex_texcoords"_a = false,
              D(Mesh, Mesh))
         .def_method(Mesh, initialize)
@@ -252,13 +254,13 @@ MI_PY_EXPORT(Shape) {
         .def_method(Mesh, has_vertex_normals)
         .def_method(Mesh, has_vertex_texcoords)
         .def("write_ply",
-             py::overload_cast<const std::string &>(&Mesh::write_ply, py::const_),
+             nb::overload_cast<const std::string &>(&Mesh::write_ply, nb::const_),
              "filename"_a, D(Mesh, write_ply))
         .def("write_ply",
-             py::overload_cast<Stream *>(&Mesh::write_ply, py::const_),
+             nb::overload_cast<Stream *>(&Mesh::write_ply, nb::const_),
              "stream"_a, D(Mesh, write_ply, 2))
         .def("add_attribute", &Mesh::add_attribute, "name"_a, "size"_a, "buffer"_a,
-             D(Mesh, add_attribute), py::return_value_policy::reference_internal)
+             D(Mesh, add_attribute))
         .def("vertex_position", [](const Mesh &m, UInt32 index, Mask active) {
                 return m.vertex_position(index, active);
              }, D(Mesh, vertex_position), "index"_a, "active"_a = true)
