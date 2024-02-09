@@ -4,7 +4,6 @@
 #include <mitsuba/core/properties.h>
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/string.h>
-#include <drjit/python.h>
 
 /// Trampoline for derived types implemented in Python
 MI_VARIANT class PyTexture : public Texture<Float, Spectrum> {

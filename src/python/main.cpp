@@ -37,7 +37,7 @@ MI_PY_DECLARE(BSDFContext);
 //MI_PY_DECLARE(MicrofacetType);
 //MI_PY_DECLARE(PhaseFunctionExtras);
 //MI_PY_DECLARE(Spiral);
-MI_PY_DECLARE(Sensor);
+//MI_PY_DECLARE(Sensor);
 //MI_PY_DECLARE(VolumeGrid);
 //MI_PY_DECLARE(FilmFlags);
 //MI_PY_DECLARE(DiscontinuityFlags);
@@ -154,7 +154,7 @@ NB_MODULE(mitsuba_ext, m) {
 //    MI_PY_IMPORT(MicrofacetType);
 //    MI_PY_IMPORT(PhaseFunctionExtras);
 //    MI_PY_IMPORT(Spiral);
-    MI_PY_IMPORT(Sensor);
+//    MI_PY_IMPORT(Sensor);
 //    MI_PY_IMPORT(FilmFlags);
 //    MI_PY_IMPORT(DiscontinuityFlags);
 

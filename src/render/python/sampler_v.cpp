@@ -1,46 +1,48 @@
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/python/python.h>
 #include <mitsuba/core/properties.h>
+#include <nanobind/trampoline.h>
+#include <nanobind/stl/string.h>
+#include <drjit/python.h>
 
 /// Trampoline for derived types implemented in Python
 MI_VARIANT class PySampler : public Sampler<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Sampler)
+    NB_TRAMPOLINE(Sampler, 10);
 
     PySampler(const Properties &props) : Sampler(props) {}
 
-    ref<Sampler> fork() override { PYBIND11_OVERRIDE_PURE(ref<Sampler>, Sampler, fork); }
+    ref<Sampler> fork() override { NB_OVERRIDE_PURE(fork); }
 
     ref<Sampler> clone() override {
-        PYBIND11_OVERRIDE_PURE(ref<Sampler>, Sampler, fork);
+        NB_OVERRIDE_PURE(fork);
     }
 
     void seed(uint32_t seed, uint32_t wavefront_size = (uint32_t) -1) override {
-        PYBIND11_OVERRIDE(void, Sampler, seed, seed, wavefront_size);
+        NB_OVERRIDE(seed, seed, wavefront_size);
     }
 
-    void advance() override { PYBIND11_OVERRIDE(void, Sampler, advance); }
+    void advance() override { NB_OVERRIDE(advance); }
 
     Float next_1d(Mask active = true) override {
-        PYBIND11_OVERRIDE_PURE(Float, Sampler, next_1d, active);
+        NB_OVERRIDE_PURE(next_1d, active);
     }
 
     Point2f next_2d(Mask active = true) override {
-        PYBIND11_OVERRIDE_PURE(Point2f, Sampler, next_2d, active);
+        NB_OVERRIDE_PURE(next_2d, active);
     }
 
     void set_sample_count(uint32_t spp) override {
-        PYBIND11_OVERRIDE(void, Sampler, set_sample_count, spp);
+        NB_OVERRIDE(set_sample_count, spp);
     }
 
-    void schedule_state() override { PYBIND11_OVERRIDE(void, Sampler, schedule_state); }
-
-    void loop_put(dr::Loop<Mask> &loop) override {
-        PYBIND11_OVERRIDE(void, Sampler, loop_put, loop);
+    void schedule_state() override {
+        NB_OVERRIDE(schedule_state);
     }
 
     std::string to_string() const override {
-        PYBIND11_OVERRIDE(std::string, Sampler, to_string);
+        NB_OVERRIDE(to_string);
     }
 };
 
@@ -49,7 +51,7 @@ MI_PY_EXPORT(Sampler) {
     using PySampler = PySampler<Float, Spectrum>;
 
     MI_PY_TRAMPOLINE_CLASS(PySampler, Sampler, Object)
-        .def(py::init<const Properties&>(), "props"_a)
+        .def(nb::init<const Properties&>(), "props"_a)
         .def_method(Sampler, fork)
         .def_method(Sampler, clone)
         .def_method(Sampler, sample_count)
@@ -58,7 +60,6 @@ MI_PY_EXPORT(Sampler) {
         .def_method(Sampler, set_sample_count, "spp"_a)
         .def_method(Sampler, advance)
         .def_method(Sampler, schedule_state)
-        .def_method(Sampler, loop_put, "loop"_a)
         .def_method(Sampler, seed, "seed"_a, "wavefront_size"_a = (uint32_t) -1)
         .def_method(Sampler, next_1d, "active"_a = true)
         .def_method(Sampler, next_2d, "active"_a = true);
