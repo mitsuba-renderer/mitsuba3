@@ -110,7 +110,7 @@ MI_PY_DECLARE(SurfaceInteraction);
 //MI_PY_DECLARE(DirectionSample);
 //MI_PY_DECLARE(Sampler);
 //MI_PY_DECLARE(Scene);
-//MI_PY_DECLARE(Sensor);
+MI_PY_DECLARE(Sensor);
 //MI_PY_DECLARE(SilhouetteSample);
 MI_PY_DECLARE(Shape);
 //MI_PY_DECLARE(ShapeKDTree);
@@ -208,7 +208,7 @@ NB_MODULE(MODULE_NAME, m) {
 //#endif // defined(MI_ENABLE_CUDA)
 //    MI_PY_IMPORT(PhaseFunction);
 //    MI_PY_IMPORT(Sampler);
-//    MI_PY_IMPORT(Sensor);
+    MI_PY_IMPORT(Sensor);
 //    MI_PY_IMPORT(ShapeKDTree);
 //    MI_PY_IMPORT(srgb);
     MI_PY_IMPORT(Texture);

@@ -16,7 +16,7 @@ set(RENDER_PY_V_SRC
 #  ${CMAKE_CURRENT_SOURCE_DIR}/records_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/sampler_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/scene_v.cpp
-#  ${CMAKE_CURRENT_SOURCE_DIR}/sensor_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/sensor_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/shape_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/srgb_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/texture_v.cpp
@@ -33,7 +33,7 @@ set(RENDER_PY_SRC
 #  ${CMAKE_CURRENT_SOURCE_DIR}/interaction.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/microfacet.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/phase.cpp
-#  ${CMAKE_CURRENT_SOURCE_DIR}/sensor.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/sensor.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/spiral.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/film.cpp
   PARENT_SCOPE
