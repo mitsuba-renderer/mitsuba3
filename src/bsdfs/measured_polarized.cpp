@@ -99,6 +99,9 @@ here as a user parameter `alpha_sample` and should be set according to the
 approximate roughness of the material to be rendered. Note that any value here
 will result in a correct rendering but the level of noise can vary significantly.
 
+.. warning::
+    This BSDF is currently only supported in the ``scalar_spectral_polarized``
+    variant.
 */
 template <typename Float, typename Spectrum>
 class MeasuredPolarized final : public BSDF<Float, Spectrum> {
