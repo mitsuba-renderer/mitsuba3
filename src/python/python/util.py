@@ -606,21 +606,24 @@ def cornell_box():
             'type': 'diffuse',
             'reflectance': {
                 'type': 'rgb',
-                'value': [0.885809, 0.698859, 0.666422],
+                #'value': mi.ScalarColor3f([0.885809, 0.698859, 0.666422]),
+                'value': mi.ScalarColor3d(0.885809, 0.698859, 0.666422),
             }
         },
         'green': {
             'type': 'diffuse',
             'reflectance': {
                 'type': 'rgb',
-                'value': [0.105421, 0.37798, 0.076425],
+                #'value': [0.105421, 0.37798, 0.076425],
+                'value': mi.ScalarColor3d(0.105421, 0.37798, 0.076425),
             }
         },
         'red': {
             'type': 'diffuse',
             'reflectance': {
                 'type': 'rgb',
-                'value': [0.570068, 0.0430135, 0.0443706],
+                #'value': [0.570068, 0.0430135, 0.0443706],
+                'value': mi.ScalarColor3d(0.570068, 0.0430135, 0.0443706),
             }
         },
         # -------------------- Light --------------------
@@ -635,7 +638,8 @@ def cornell_box():
                 'type': 'area',
                 'radiance': {
                     'type': 'rgb',
-                    'value': [18.387, 13.9873, 6.75357],
+                    #'value': [18.387, 13.9873, 6.75357],
+                    'value': mi.ScalarColor3d(18.387, 13.9873, 6.75357),
                 }
             }
         },
