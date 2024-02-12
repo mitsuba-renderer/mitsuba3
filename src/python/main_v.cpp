@@ -116,8 +116,8 @@ MI_PY_DECLARE(Shape);
 //MI_PY_DECLARE(ShapeKDTree);
 //MI_PY_DECLARE(srgb);
 MI_PY_DECLARE(Texture);
-//MI_PY_DECLARE(Volume);
-//MI_PY_DECLARE(VolumeGrid);
+MI_PY_DECLARE(Volume);
+MI_PY_DECLARE(VolumeGrid);
 
 #define MODULE_NAME MI_MODULE_NAME(mitsuba, MI_VARIANT_NAME)
 
@@ -212,8 +212,8 @@ NB_MODULE(MODULE_NAME, m) {
 //    MI_PY_IMPORT(ShapeKDTree);
 //    MI_PY_IMPORT(srgb);
     MI_PY_IMPORT(Texture);
-//    MI_PY_IMPORT(Volume);
-//    MI_PY_IMPORT(VolumeGrid);
+    MI_PY_IMPORT(Volume);
+    MI_PY_IMPORT(VolumeGrid);
 
     nb::object mitsuba_ext = nb::module_::import_("mitsuba.mitsuba_ext");
     cast_object = (Caster) (void *)((nb::capsule) mitsuba_ext.attr("cast_object")).data();

@@ -38,7 +38,7 @@ MI_PY_DECLARE(BSDFContext);
 //MI_PY_DECLARE(PhaseFunctionExtras);
 //MI_PY_DECLARE(Spiral);
 //MI_PY_DECLARE(Sensor);
-//MI_PY_DECLARE(VolumeGrid);
+MI_PY_DECLARE(VolumeGrid);
 //MI_PY_DECLARE(FilmFlags);
 //MI_PY_DECLARE(DiscontinuityFlags);
 
