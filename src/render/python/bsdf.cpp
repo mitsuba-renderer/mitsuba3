@@ -5,9 +5,9 @@
 #include <nanobind/stl/string.h>
 
 MI_PY_EXPORT(BSDFContext) {
-    //nb::enum_<TransportMode>(m, "TransportMode", D(TransportMode))
-    //    .def_value(TransportMode, Radiance)
-    //    .def_value(TransportMode, Importance);
+    nb::enum_<TransportMode>(m, "TransportMode", D(TransportMode))
+        .def_value(TransportMode, Radiance)
+        .def_value(TransportMode, Importance);
 
     //auto e = nb::enum_<BSDFFlags>(m, "BSDFFlags", D(BSDFFlags))
     //    .def_value(BSDFFlags, Empty)
