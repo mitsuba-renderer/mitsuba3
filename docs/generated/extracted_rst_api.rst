@@ -12329,7 +12329,7 @@
 
         Return the phase function of this medium
 
-        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.PhaseFunction` const*>>:
+        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.PhaseFunction` const*> >:
             *no description available*
 
     .. py:method:: mitsuba.MediumPtr.registry_get_max_()
@@ -17150,7 +17150,7 @@
 
         Return the list of emitters as a Dr.Jit array
 
-        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Emitter` const*>>:
+        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Emitter` const*> >:
             *no description available*
 
     .. py:method:: mitsuba.Scene.environment(self)
@@ -17577,7 +17577,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[:py:obj:`mitsuba.Ray3f`, :py:obj:`mitsuba.Color3f`, drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Emitter` const*>>]:
+        Returns → Tuple[:py:obj:`mitsuba.Ray3f`, :py:obj:`mitsuba.Color3f`, drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Emitter` const*> >]:
             A tuple ``(ray, weight, emitter, radiance)``, where
 
         * ``ray`` is the sampled ray (e.g. starting on the surface of an area
@@ -17624,7 +17624,7 @@
 
         Return the list of sensors as a Dr.Jit array
 
-        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Sensor` const*>>:
+        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Sensor` const*> >:
             *no description available*
 
     .. py:method:: mitsuba.Scene.shapes(self)
@@ -17638,7 +17638,7 @@
 
         Return the list of shapes as a Dr.Jit array
 
-        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Shape` const*>>:
+        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Shape` const*> >:
             *no description available*
 
     .. py:method:: mitsuba.Scene.shapes_grad_enabled(self)
@@ -19203,7 +19203,7 @@
 
         Return the shape's BSDF
 
-        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.BSDF` const*>>:
+        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.BSDF` const*> >:
             *no description available*
 
     .. py:method:: mitsuba.ShapePtr.compute_surface_interaction(self, ray, pi, ray_flags=14, active=True)
@@ -19277,7 +19277,7 @@
 
         Return the area emitter associated with this shape (if any)
 
-        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Emitter` const*>>:
+        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Emitter` const*> >:
             *no description available*
 
     .. py:method:: mitsuba.ShapePtr.entry_(self, arg0)
@@ -19382,7 +19382,7 @@
 
         Return the medium that lies on the exterior of this shape
 
-        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Medium` const*>>:
+        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Medium` const*> >:
             *no description available*
 
     .. py:method:: mitsuba.ShapePtr.gather_(source, index, mask, permute=False)
@@ -19419,7 +19419,7 @@
 
         Return the medium that lies on the interior of this shape
 
-        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Medium` const*>>:
+        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Medium` const*> >:
             *no description available*
 
     .. py:method:: mitsuba.ShapePtr.invert_silhouette_sample(self, ss, active=True)
@@ -19778,7 +19778,7 @@
 
         Return the area sensor associated with this shape (if any)
 
-        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Sensor` const*>>:
+        Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.Sensor` const*> >:
             *no description available*
 
     .. py:method:: mitsuba.ShapePtr.set_index_(self, arg0)
@@ -21076,12 +21076,12 @@
             Parameter ``ray`` (:py:obj:`mitsuba.RayDifferential3f`):
                 *no description available*
 
-            Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.BSDF` const*>>:
+            Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.BSDF` const*> >:
                 *no description available*
 
         .. py:method:: bsdf(self)
 
-            Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.BSDF` const*>>:
+            Returns → drjit::DiffArray<drjit::LLVMArray<:py:obj:`mitsuba.BSDF` const*> >:
                 *no description available*
 
     .. py:method:: mitsuba.SurfaceInteraction3f.compute_uv_partials(self, ray)
@@ -23858,7 +23858,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[List[drjit.llvm.ad.Float], List[drjit.llvm.ad.Array1f], List[drjit::Matrix<drjit::DiffArray<drjit::LLVMArray<float>>, 1ul>]]:
+        Returns → Tuple[List[drjit.llvm.ad.Float], List[drjit.llvm.ad.Array1f], List[drjit::Matrix<drjit::DiffArray<drjit::LLVMArray<float> >, 1ul>]]:
             *no description available*
 
     .. py:method:: mitsuba.Texture1f.eval_cuda(self, pos, active=True)
@@ -24766,7 +24766,7 @@
         Parameter ``angle`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double>>, 3>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 3>:
             *no description available*
 
     .. py:method:: mitsuba.Transform3d.scale(v)
@@ -24776,7 +24776,7 @@
         Parameter ``v`` (:py:obj:`mitsuba.Point2d`):
             *no description available*
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double>>, 3>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 3>:
             *no description available*
 
     .. py:method:: mitsuba.Transform3d.transform_affine(overloaded)
@@ -24811,7 +24811,7 @@
         Parameter ``v`` (:py:obj:`mitsuba.Point2d`):
             *no description available*
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double>>, 3>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 3>:
             *no description available*
 
     .. py:method:: mitsuba.Transform3d.translation(self)
@@ -24923,7 +24923,7 @@
         Parameter ``angle`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float>>, 3>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 3>:
             *no description available*
 
     .. py:method:: mitsuba.Transform3f.scale(v)
@@ -24933,7 +24933,7 @@
         Parameter ``v`` (:py:obj:`mitsuba.Point2f`):
             *no description available*
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float>>, 3>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 3>:
             *no description available*
 
     .. py:method:: mitsuba.Transform3f.transform_affine(overloaded)
@@ -24968,7 +24968,7 @@
         Parameter ``v`` (:py:obj:`mitsuba.Point2f`):
             *no description available*
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float>>, 3>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 3>:
             *no description available*
 
     .. py:method:: mitsuba.Transform3f.translation(self)
@@ -25058,7 +25058,7 @@
         Parameter ``frame`` (:py:obj:`mitsuba.Frame`):
             *no description available*
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double>>, 4>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4d.has_scale(overloaded)
@@ -25103,7 +25103,7 @@
         Parameter ``up`` (:py:obj:`mitsuba.Point3d`):
             Up vector
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double>>, 4>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4d.orthographic(near, far)
@@ -25117,7 +25117,7 @@
         Parameter ``far`` (drjit.llvm.ad.Float64):
             Far clipping plane
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double>>, 4>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4d.perspective(fov, near, far)
@@ -25140,7 +25140,7 @@
         Parameter ``far`` (drjit.llvm.ad.Float64):
             Far clipping plane
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double>>, 4>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4d.rotate(axis, angle)
@@ -25154,7 +25154,7 @@
         Parameter ``angle`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double>>, 4>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4d.scale(v)
@@ -25164,7 +25164,7 @@
         Parameter ``v`` (:py:obj:`mitsuba.Point3d`):
             *no description available*
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double>>, 4>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4d.to_frame(frame)
@@ -25175,7 +25175,7 @@
         Parameter ``frame`` (:py:obj:`mitsuba.Frame`):
             *no description available*
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double>>, 4>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4d.transform_affine(overloaded)
@@ -25232,7 +25232,7 @@
         Parameter ``v`` (:py:obj:`mitsuba.Point3d`):
             *no description available*
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double>>, 4>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<double> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4d.translation(self)
@@ -25322,7 +25322,7 @@
         Parameter ``frame`` (:py:obj:`mitsuba.Frame3f`):
             *no description available*
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float>>, 4>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4f.has_scale(overloaded)
@@ -25367,7 +25367,7 @@
         Parameter ``up`` (:py:obj:`mitsuba.Point3f`):
             Up vector
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float>>, 4>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4f.orthographic(near, far)
@@ -25381,7 +25381,7 @@
         Parameter ``far`` (drjit.llvm.ad.Float):
             Far clipping plane
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float>>, 4>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4f.perspective(fov, near, far)
@@ -25404,7 +25404,7 @@
         Parameter ``far`` (drjit.llvm.ad.Float):
             Far clipping plane
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float>>, 4>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4f.rotate(axis, angle)
@@ -25418,7 +25418,7 @@
         Parameter ``angle`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float>>, 4>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4f.scale(v)
@@ -25428,7 +25428,7 @@
         Parameter ``v`` (:py:obj:`mitsuba.Point3f`):
             *no description available*
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float>>, 4>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4f.to_frame(frame)
@@ -25439,7 +25439,7 @@
         Parameter ``frame`` (:py:obj:`mitsuba.Frame3f`):
             *no description available*
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float>>, 4>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4f.transform_affine(overloaded)
@@ -25496,7 +25496,7 @@
         Parameter ``v`` (:py:obj:`mitsuba.Point3f`):
             *no description available*
 
-        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float>>, 4>:
+        Returns → ChainTransform<drjit::DiffArray<drjit::LLVMArray<float> >, 4>:
             *no description available*
 
     .. py:method:: mitsuba.Transform4f.translation(self)
@@ -28086,7 +28086,7 @@
         Parameter ``aovs`` (list):
             *no description available*
 
-    .. py:method:: mitsuba.ad.common.ADIntegrator.sample(mode, scene, sampler, ray, depth, L, state_in, active)
+    .. py:method:: mitsuba.ad.common.ADIntegrator.sample(mode, scene, sampler, ray, depth, L, aovs, state_in, active)
 
         This function does the main work of differentiable rendering and
         remains unimplemented here. It is provided by subclasses of the
@@ -28154,6 +28154,12 @@
             Indicates whether the rays intersected a surface, which can be used
             to compute an alpha channel.
 
+        Output ``aovs`` (``List[mi.Float]``):
+            Integrators may return one or more arbitrary output variables (AOVs).
+            The implementation has to guarantee that the number of returned AOVs
+            matches the length of self.aov_names().
+
+
         Parameter ``mode`` (dr.ADMode):
             *no description available*
 
@@ -28169,7 +28175,10 @@
         Parameter ``depth`` (mi.UInt32, δ):
             *no description available*
 
-        Parameter ``L`` (Optional[mi.Spectrum]):
+        Parameter ``L`` (Optional[mi.Spectrum], δ):
+            *no description available*
+
+        Parameter ``aovs`` (Optional[mi.Spectrum]):
             *no description available*
 
         Parameter ``state_in`` (Any):
@@ -28178,7 +28187,7 @@
         Parameter ``active`` (mi.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[mi.Spectrum, mi.Bool]:
+        Returns → Tuple[mi.Spectrum, mi.Bool, List[mi.Float]]:
             *no description available*
 
 .. py:class:: mitsuba.ad.common.PSIntegrator
@@ -28395,7 +28404,7 @@
         Output ``valid`` (``mi.Bool``):
             Indicates if a valid path is found.
 
-    .. py:method:: mitsuba.ad.common.PSIntegrator.sample(mode, scene, sampler, ray, depth, L, state_in, active, project=False, si_shade=None)
+    .. py:method:: mitsuba.ad.common.PSIntegrator.sample(mode, scene, sampler, ray, depth, L, aovs, state_in, active, project=False, si_shade=None)
 
         See ADIntegrator.sample() for a description of this function's purpose.
 
@@ -28425,6 +28434,11 @@
             Indicates whether the rays intersected a surface, which can be used
             to compute an alpha channel.
 
+        Output ``aovs`` (``Sequence[mi.Float]``):
+            Integrators may return one or more arbitrary output variables (AOVs).
+            The implementation has to guarantee that the number of returned AOVs
+            matches the length of self.aov_names().
+
         Output ``seedray`` / ``state_out`` (``any``):
             If ``project`` is true, the integrator returns the seed rays to be
             projected as the third output. The seed rays is a python list of
@@ -28451,7 +28465,10 @@
         Parameter ``depth`` (mi.UInt32, δ):
             *no description available*
 
-        Parameter ``L`` (Optional[mi.Spectrum]):
+        Parameter ``L`` (Optional[mi.Spectrum], δ):
+            *no description available*
+
+        Parameter ``aovs`` (Optional[mi.Spectrum]):
             *no description available*
 
         Parameter ``state_in`` (Any):
@@ -28466,7 +28483,7 @@
         Parameter ``si_shade`` (Optional[mi.SurfaceInteraction3f]):
             *no description available*
 
-        Returns → Tuple[mi.Spectrum, mi.Bool, Any]:
+        Returns → Tuple[mi.Spectrum, mi.Bool, List[mi.Float], Any]:
             *no description available*
 
 .. py:class:: mitsuba.ad.common.RBIntegrator
@@ -31138,7 +31155,7 @@
     Parameter ``wm`` (:py:obj:`mitsuba.Vector3f`):
         The microflake normal
 
-    Parameter ``s`` (drjit::Array<drjit::DiffArray<drjit::LLVMArray<float>>, 6ul>):
+    Parameter ``s`` (drjit::Array<drjit::DiffArray<drjit::LLVMArray<float> >, 6ul>):
         The parameters of the SGGX phase function stored as a 6D vector
         [S_xx, S_yy, S_zz, S_xy, S_xz, S_yz]. The parameters describe the
         entries of a symmetric positive definite 3x3 matrix. The user
@@ -31155,7 +31172,7 @@
     Parameter ``wi`` (:py:obj:`mitsuba.Vector3f`):
         A 3D direction
 
-    Parameter ``s`` (drjit::Array<drjit::DiffArray<drjit::LLVMArray<float>>, 6ul>):
+    Parameter ``s`` (drjit::Array<drjit::DiffArray<drjit::LLVMArray<float> >, 6ul>):
         The parameters of the SGGX phase function stored as a 6D vector
         [S_xx, S_yy, S_zz, S_xy, S_xz, S_yz]. The parameters describe the
         entries of a symmetric positive definite 3x3 matrix. The user
@@ -31185,7 +31202,7 @@
         Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
             A uniformly distributed 2D sample
 
-        Parameter ``s`` (drjit::Array<drjit::DiffArray<drjit::LLVMArray<float>>, 6ul>):
+        Parameter ``s`` (drjit::Array<drjit::DiffArray<drjit::LLVMArray<float> >, 6ul>):
             The parameters of the SGGX phase function stored as a 6D vector
             [S_xx, S_yy, S_zz, S_xy, S_xz, S_yz]. The parameters describe the
             entries of a symmetric positive definite 3x3 matrix. The user
@@ -31213,7 +31230,7 @@
         Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
             A uniformly distributed 2D sample
 
-        Parameter ``s`` (drjit::Array<drjit::DiffArray<drjit::LLVMArray<float>>, 6ul>):
+        Parameter ``s`` (drjit::Array<drjit::DiffArray<drjit::LLVMArray<float> >, 6ul>):
             The parameters of the SGGX phase function stored as a 6D vector
             [S_xx, S_yy, S_zz, S_xy, S_xz, S_yz]. The parameters describe the
             entries of a symmetric positive definite 3x3 matrix. The user
