@@ -8,6 +8,7 @@
 #include <map>
 #include <sstream>
 #include <cstring>
+#include <climits>
 
 #include <drjit/tensor.h>
 
@@ -59,10 +60,11 @@ struct SortKey {
 
         if (std::isdigit(*a_ptr) && std::isdigit(*b_ptr)) {
             char *a_end, *b_end;
-            long l1 = std::strtol(a_ptr, &a_end, 10);
-            long l2 = std::strtol(b_ptr, &b_end, 10);
+            long long l1 = std::strtoll(a_ptr, &a_end, 10);
+            long long l2 = std::strtoll(b_ptr, &b_end, 10);
             if (a_end == (a.c_str() + a.size()) &&
-                b_end == (b.c_str() + b.size()))
+                b_end == (b.c_str() + b.size()) &&
+                l1 != LLONG_MAX && l2 != LLONG_MAX)
                 return l1 < l2;
         }
 
@@ -91,7 +93,7 @@ T get_impl(const Iterator &it) {
 
 /**
  * \brief Specialization to gracefully handle if user supplies either a 3x3 or 4x4 transform.
- * Historically, we didn't directly support Transform3 properties so want to maintain 
+ * Historically, we didn't directly support Transform3 properties so want to maintain
  * backwards compatibility
  */
 template<>
