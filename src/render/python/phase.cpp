@@ -6,7 +6,7 @@
 
 
 MI_PY_EXPORT(PhaseFunctionExtras) {
-    auto e = py::enum_<PhaseFunctionFlags>(m, "PhaseFunctionFlags", D(PhaseFunctionFlags))
+    auto e = nb::enum_<PhaseFunctionFlags>(m, "PhaseFunctionFlags", D(PhaseFunctionFlags))
         .def_value(PhaseFunctionFlags, Empty)
         .def_value(PhaseFunctionFlags, Isotropic)
         .def_value(PhaseFunctionFlags, Anisotropic)
