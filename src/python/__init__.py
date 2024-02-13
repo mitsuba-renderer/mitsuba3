@@ -58,9 +58,9 @@ except (ImportError, ModuleNotFoundError) as e:
     exc.__cause__ = e
 
     raise exc
-finally:
-    # Make sure mitsuba_ext isn't accessible from _sys.modules
-    _sys.modules.pop('mitsuba.mitsuba_ext', None)
+#finally:
+#    # Make sure mitsuba_ext isn't accessible from _sys.modules
+#    _sys.modules.pop('mitsuba.mitsuba_ext', None)
 
 # Known submodules that will be directly accessible from the mitsuba package
 #submodules = ['warp', 'math', 'spline', 'quad', 'mueller', 'util', 'filesystem']
@@ -114,11 +114,11 @@ class MitsubaVariantModule(types.ModuleType):
                     raise AttributeError('Mitsuba variant "%s" not found.' % variant)
                 else:
                     raise AttributeError(e)
-            finally:
-                # Remove those modules from _sys.modules as only the
-                # MitsubaVariantModule instance should hold a reference to them.
-                _sys.modules.pop('mitsuba.mitsuba_ext', None)
-                _sys.modules.pop('mitsuba.mitsuba_' + variant + '_ext', None)
+            #finally:
+            #    # Remove those modules from _sys.modules as only the
+            #    # MitsubaVariantModule instance should hold a reference to them.
+            #    _sys.modules.pop('mitsuba.mitsuba_ext', None)
+            #    _sys.modules.pop('mitsuba.mitsuba_' + variant + '_ext', None)
 
         submodule = super().__getattribute__('_submodule')
         sub_suffix = '' if submodule is None else f'.{submodule}'
