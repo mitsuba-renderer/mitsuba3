@@ -236,6 +236,8 @@ void build_gas(const OptixDeviceContext &context,
                    &compact_size,
                    (void*)emit_property.result,
                    sizeof(size_t));
+        jit_free(emit_property.result);
+
         if (compact_size < buffer_sizes.outputSizeInBytes) {
             void* compact_buffer = jit_malloc(AllocType::Device, compact_size);
             // Use handle as input and output
