@@ -275,11 +275,11 @@ public:
         for (size_t i = 0; i < P_MAX; i++)
             dr::masked(cos_theta, p == i) =
                 1 + m_v[i] * dr::log(u[1][0] + (1.f - u[1][0]) * dr::exp(-2.f / m_v[i]));
-        Float sin_theta = dr::safe_sqrt(1.f - dr::sqr(cos_theta));
+        Float sin_theta = dr::safe_sqrt(1.f - dr::square(cos_theta));
         Float cos_phi = dr::cos(2 * dr::Pi<ScalarFloat> * u[1][1]);
         Float sin_theta_o =
             -cos_theta * sin_theta_ip + sin_theta * cos_phi * cos_theta_ip;
-        Float cos_theta_o = dr::safe_sqrt(1.f - dr::sqr(sin_theta_o));
+        Float cos_theta_o = dr::safe_sqrt(1.f - dr::square(sin_theta_o));
 
         // Transmission angle in azimuthal plane
         Float eta_p = azimuthal_ior(sin_theta_i, cos_theta_i);
@@ -347,13 +347,13 @@ public:
 
         // Transmission angle in longitudinal plane
         Float sin_theta_t = sin_theta_i / m_eta;
-        Float cos_theta_t = dr::safe_sqrt(1.f - dr::sqr(sin_theta_t));
+        Float cos_theta_t = dr::safe_sqrt(1.f - dr::square(sin_theta_t));
 
         // Transmission angle in azimuthal plane
         Float eta_p =
-            dr::safe_sqrt(dr::sqr(m_eta) - dr::sqr(sin_theta_i)) / cos_theta_i;
+            dr::safe_sqrt(dr::square(m_eta) - dr::square(sin_theta_i)) / cos_theta_i;
         Float sin_gamma_t = h / eta_p;
-        Float cos_gamma_t = dr::safe_sqrt(1.f - dr::sqr(sin_gamma_t));
+        Float cos_gamma_t = dr::safe_sqrt(1.f - dr::square(sin_gamma_t));
         Float gamma_t = dr::safe_asin(sin_gamma_t);
 
         // Attenuation coefficients
@@ -405,7 +405,7 @@ public:
 
         // Transmission angle in azimuthal plane
         Float eta_p =
-            dr::safe_sqrt(Float(m_eta * m_eta) - dr::sqr(sin_theta_i)) /
+            dr::safe_sqrt(Float(m_eta * m_eta) - dr::square(sin_theta_i)) /
             cos_theta_i;
         Float sin_gamma_t = h / eta_p;
         Float gamma_t = dr::safe_asin(sin_gamma_t);
@@ -456,14 +456,14 @@ public:
 
         // Transmission angle in longitudinal plane
         Float sin_theta_t = sin_theta_i / m_eta;
-        Float cos_theta_t = dr::safe_sqrt(1.f - dr::sqr(sin_theta_t));
+        Float cos_theta_t = dr::safe_sqrt(1.f - dr::square(sin_theta_t));
 
         // Transmission angle in azimuthal plane
         Float eta_p =
-            dr::safe_sqrt(Float(m_eta * m_eta) - dr::sqr(sin_theta_i)) /
+            dr::safe_sqrt(Float(m_eta * m_eta) - dr::square(sin_theta_i)) /
             cos_theta_i;
         Float sin_gamma_t = h / eta_p;
-        Float cos_gamma_t = dr::safe_sqrt(1.f - dr::sqr(sin_gamma_t));
+        Float cos_gamma_t = dr::safe_sqrt(1.f - dr::square(sin_gamma_t));
         Float gamma_t = dr::safe_asin(sin_gamma_t);
 
         // Attenuation coefficients
@@ -538,23 +538,23 @@ private:
     void update() {
         // Fill the `m_sin_2k_alpha` and `m_cos_2k_alpha` terms
         m_sin_2k_alpha[0] = dr::sin(dr::deg_to_rad(m_alpha));
-        m_cos_2k_alpha[0] = dr::safe_sqrt(1.f - dr::sqr(m_sin_2k_alpha[0]));
+        m_cos_2k_alpha[0] = dr::safe_sqrt(1.f - dr::square(m_sin_2k_alpha[0]));
         for (int i = 1; i < 3; ++i) {
             m_sin_2k_alpha[i] =
                 2 * m_cos_2k_alpha[i - 1] * m_sin_2k_alpha[i - 1];
             m_cos_2k_alpha[i] =
-                dr::sqr(m_cos_2k_alpha[i - 1]) - dr::sqr(m_sin_2k_alpha[i - 1]);
+                dr::square(m_cos_2k_alpha[i - 1]) - dr::square(m_sin_2k_alpha[i - 1]);
         }
 
         // Azimuthal logistic scale factor
         ScalarFloat sqrt_pi_over_8 = dr::sqrt(dr::Pi<ScalarFloat> / 8.f);
         m_s = sqrt_pi_over_8 * (0.265f * m_azimuthal_roughness +
-                                1.194f * dr::sqr(m_azimuthal_roughness) +
+                                1.194f * dr::square(m_azimuthal_roughness) +
                                 5.372f * dr::pow(m_azimuthal_roughness, 22));
 
         // Longitudinal variance
-        m_v[0] = dr::sqr(0.726f * m_longitudinal_roughness +
-                         0.812f * dr::sqr(m_longitudinal_roughness) +
+        m_v[0] = dr::square(0.726f * m_longitudinal_roughness +
+                         0.812f * dr::square(m_longitudinal_roughness) +
                          3.7f * dr::pow(m_longitudinal_roughness, 20));
         m_v[1] = .25f * m_v[0];
         m_v[2] = 4 * m_v[0];
@@ -579,7 +579,7 @@ private:
     /// Angle between surface normal and direction `w` in hair cross-section
     MI_INLINE Float gamma(const Vector3f &w) const {
         Float normal_plane_proj =
-            dr::safe_sqrt(dr::sqr(w.x()) + dr::sqr(w.z()));
+            dr::safe_sqrt(dr::square(w.x()) + dr::square(w.z()));
         Mask singularity = normal_plane_proj == 0;
 
         Float gamma = dr::safe_acos(w.z() / normal_plane_proj);
@@ -590,7 +590,7 @@ private:
 
     /// Modified index of refraction, considers projection in the normal plane
     MI_INLINE Float azimuthal_ior(Float sin_theta_i, Float cos_theta_i) const {
-        return dr::safe_sqrt(dr::sqr(m_eta) - dr::sqr(sin_theta_i)) /
+        return dr::safe_sqrt(dr::square(m_eta) - dr::square(sin_theta_i)) /
                cos_theta_i;
     }
 
@@ -633,12 +633,12 @@ private:
                 const UnpolarizedSpectrum &transmittance) const {
         AttenuationCoeffs a_p = dr::zeros<AttenuationCoeffs>();
 
-        Float cos_gamma_i = dr::safe_sqrt(1.f - dr::sqr(h));
+        Float cos_gamma_i = dr::safe_sqrt(1.f - dr::square(h));
         Float cos_theta = cos_theta_i * cos_gamma_i; // hair coordinate system
 
         Float f = std::get<0>(fresnel(cos_theta, eta));
         a_p[0] = f;
-        a_p[1] = dr::sqr(1.f - f) * transmittance;
+        a_p[1] = dr::square(1.f - f) * transmittance;
         for (int p = 2; p < P_MAX; ++p)
             a_p[p] = a_p[p - 1] * transmittance * f;
 
@@ -661,12 +661,12 @@ private:
 
         // Transmission angle in longitudinal plane
         Float sin_theta_t = sin_theta_i / m_eta;
-        Float cos_theta_t = dr::safe_sqrt(1.f - dr::sqr(sin_theta_t));
+        Float cos_theta_t = dr::safe_sqrt(1.f - dr::square(sin_theta_t));
 
         // Transmission angle in azimuthal plane
         Float eta_p = azimuthal_ior(sin_theta_i, cos_theta_i);
         Float sin_gamma_t = h / eta_p;
-        Float cos_gamma_t = dr::safe_sqrt(1.f - dr::sqr(sin_gamma_t));
+        Float cos_gamma_t = dr::safe_sqrt(1.f - dr::square(sin_gamma_t));
 
         // Attenuation coefficients
         UnpolarizedSpectrum sigma_a = absorption(si, active);
@@ -702,7 +702,7 @@ private:
 
     MI_INLINE Float logistic(Float x, Float s) const {
         x = dr::abs(x);
-        return dr::exp(-x / s) / (s * dr::sqr(1.f + dr::exp(-x / s)));
+        return dr::exp(-x / s) / (s * dr::square(1.f + dr::exp(-x / s)));
     }
 
     MI_INLINE Float logistic_cdf(Float x, Float s) const {
@@ -715,7 +715,7 @@ private:
         Float x =
             -s *
             dr::log(1.f / (sample * k + logistic_cdf(-dr::Pi<Float>, s)) - 1.f);
-        return dr::clamp(x, -dr::Pi<Float>, dr::Pi<Float>);
+        return dr::clip(x, -dr::Pi<Float>, dr::Pi<Float>);
     }
 
     /// Azimuthal scattering distribution (`s` is the logisitic scale factor)

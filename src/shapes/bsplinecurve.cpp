@@ -363,7 +363,7 @@ public:
         Float v_global = uv.y();
         size_t segment_count = dr::width(m_indices);
         UInt32 segment_idx = dr::floor2int<UInt32>(v_global * segment_count);
-        segment_idx = dr::clamp(segment_idx, 0, segment_count - 1); // In case v_global == 1
+        segment_idx = dr::clip(segment_idx, 0, segment_count - 1); // In case v_global == 1
         Float v_local = v_global * segment_count - segment_idx;
 
         pi.prim_uv.x() = v_local;
@@ -416,7 +416,7 @@ public:
             // sample a curve
             size_t curve_count = dr::width(m_curves_prim_idx) - 1;
             UInt32 curve_idx = dr::floor2int<UInt32>(sample.x() * curve_count);
-            curve_idx = dr::clamp(curve_idx, 0, curve_count - 1); // In case sample.x() == 1
+            curve_idx = dr::clip(curve_idx, 0, curve_count - 1); // In case sample.x() == 1
 
             // sample either extremity of the curve
             UInt32 first_segment_idx =
@@ -808,7 +808,7 @@ public:
         // Perimeter silhouette
         size_t curve_count = dr::width(m_curves_prim_idx) - 1;
         UInt32 curve_idx = dr::floor2int<UInt32>(sample2 * curve_count);
-        curve_idx = dr::clamp(curve_idx, 0, curve_count - 1); // In case sample2 == 1
+        curve_idx = dr::clip(curve_idx, 0, curve_count - 1); // In case sample2 == 1
 
         UInt32 first_segment_idx =
             dr::gather<UInt32>(m_curves_prim_idx, curve_idx, active);
@@ -1134,7 +1134,7 @@ private:
               r2 = c2.w(),
               r3 = c3.w();
 
-        Float v2 = dr::sqr(v), v3 = v2 * v;
+        Float v2 = dr::square(v), v3 = v2 * v;
         Float multiplier = 1.f / 6.f;
 
         Point3f c = (-v3 + 3.f * v2 - 3.f * v + 1.f) * p0 +
@@ -1205,10 +1205,10 @@ private:
         Float norm_dc_dv = dr::norm(dc_dv);
         Vector3f cross_dc_dv_dc_dvv = dr::cross(dc_dv, dc_dvv),
                  dc_dv_normalized = dc_dv / norm_dc_dv;
-        Float sqr_norm_dc_dv = dr::sqr(norm_dc_dv),
+        Float sqr_norm_dc_dv = dr::square(norm_dc_dv),
               norm_cross_dc_dv_dc_dvv = dr::norm(cross_dc_dv_dc_dvv),
               kappa = norm_cross_dc_dv_dc_dvv / (norm_dc_dv * sqr_norm_dc_dv),
-              tau = dr::dot(dc_dvvv, cross_dc_dv_dc_dvv) / dr::sqr(norm_cross_dc_dv_dc_dvv);
+              tau = dr::dot(dc_dvvv, cross_dc_dv_dc_dvv) / dr::square(norm_cross_dc_dv_dc_dvv);
 
         dr::masked(tau, norm_cross_dc_dv_dc_dvv < 1e-6f) = 0.f;  // Numerical stability
         dr::masked(tau, dr::norm(dc_dvvv) < 1e-6f) = 0.f;
@@ -1252,7 +1252,7 @@ private:
         // Rescale (u: [0, 1) -> [0, 2pi), v: local -> global)
         dp_du *= dr::TwoPi<Float>;
         dp_duv *= dr::TwoPi<Float>;
-        dp_duu *= dr::sqr(dr::TwoPi<Float>);
+        dp_duu *= dr::square(dr::TwoPi<Float>);
         ScalarFloat ratio = (ScalarFloat) dr::width(m_indices),
                     ratio2 = ratio * ratio;
         dp_dv  *= ratio;

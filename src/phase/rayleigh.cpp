@@ -48,7 +48,7 @@ public:
     }
 
     MI_INLINE Float eval_rayleigh(Float cos_theta) const {
-        return (3.f / 16.f) * dr::InvPi<Float> * (1.f + dr::sqr(cos_theta));
+        return (3.f / 16.f) * dr::InvPi<Float> * (1.f + dr::square(cos_theta));
     }
 
     std::tuple<Vector3f, Spectrum, Float> sample(const PhaseFunctionContext & /* ctx */,
@@ -59,11 +59,11 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
 
         Float z   = 2.f * (2.f * sample.x() - 1.f);
-        Float tmp = dr::sqrt(dr::sqr(z) + 1.f);
+        Float tmp = dr::sqrt(dr::square(z) + 1.f);
         Float A   = dr::cbrt(z + tmp);
         Float B   = dr::cbrt(z - tmp);
         Float cos_theta = A + B;
-        Float sin_theta = dr::safe_sqrt(1.0f - dr::sqr(cos_theta));
+        Float sin_theta = dr::safe_sqrt(1.0f - dr::square(cos_theta));
         auto [sin_phi, cos_phi] = dr::sincos(dr::TwoPi<Float> * sample.y());
 
         auto wo = Vector3f{ sin_theta * cos_phi, sin_theta * sin_phi, cos_theta };

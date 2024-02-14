@@ -373,7 +373,7 @@ public:
         Vector3f d = dr::sphdir(theta, phi);
         d = Vector3f(d.y(), d.z(), -d.x());
 
-        Float inv_sin_theta = dr::safe_rsqrt(dr::sqr(d.x()) + dr::sqr(d.z()));
+        Float inv_sin_theta = dr::safe_rsqrt(dr::square(d.x()) + dr::square(d.z()));
         pdf *= inv_sin_theta * dr::InvTwoPi<Float> * dr::InvPi<Float>;
 
         // Unlike \ref sample_direction, ray goes from the envmap toward the scene
@@ -394,7 +394,7 @@ public:
         auto [wavelengths, weight] =
             sample_wavelengths(si, wavelength_sample, active);
 
-        Float r2 = dr::sqr(m_bsphere.radius);
+        Float r2 = dr::square(m_bsphere.radius);
         Ray3f ray(origin, d_global, time, wavelengths);
         weight *= dr::Pi<Float> * r2 / pdf;
 
@@ -421,7 +421,7 @@ public:
         Float dist = 2.f * radius;
 
         Float inv_sin_theta = dr::safe_rsqrt(dr::maximum(
-            dr::sqr(d.x()) + dr::sqr(d.z()), dr::sqr(dr::Epsilon<Float>)));
+            dr::square(d.x()) + dr::square(d.z()), dr::square(dr::Epsilon<Float>)));
 
         d = m_to_world.value().transform_affine(d);
 
@@ -432,7 +432,7 @@ public:
         ds.time    = it.time;
         ds.pdf     = dr::select(
             active,
-            pdf * inv_sin_theta * (1.f / (2.f * dr::sqr(dr::Pi<Float>))),
+            pdf * inv_sin_theta * (1.f / (2.f * dr::square(dr::Pi<Float>))),
             0.f
         );
         ds.delta   = false;
@@ -460,9 +460,9 @@ public:
         uv -= dr::floor(uv);
 
         Float inv_sin_theta = dr::safe_rsqrt(dr::maximum(
-            dr::sqr(d.x()) + dr::sqr(d.z()), dr::sqr(dr::Epsilon<Float>)));
+            dr::square(d.x()) + dr::square(d.z()), dr::square(dr::Epsilon<Float>)));
 
-        return m_warp.eval(uv) * inv_sin_theta * (1.f / (2.f * dr::sqr(dr::Pi<Float>)));
+        return m_warp.eval(uv) * inv_sin_theta * (1.f / (2.f * dr::square(dr::Pi<Float>)));
     }
 
     Spectrum eval_direction(const Interaction3f &it,

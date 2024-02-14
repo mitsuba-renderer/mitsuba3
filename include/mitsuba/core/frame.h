@@ -2,7 +2,7 @@
 
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/vector.h>
-#include <drjit/struct.h>
+#include <drjit/array_traverse.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -50,7 +50,7 @@ template <typename Float_> struct Frame {
      * of the elevation angle in a reference spherical coordinate system (see
      * the \ref Frame description)
      */
-    static Float cos_theta_2(const Vector3f &v) { return dr::sqr(v.z()); }
+    static Float cos_theta_2(const Vector3f &v) { return dr::square(v.z()); }
 
     /** \brief Give a unit direction, this function returns the sine
      * of the elevation angle in a reference spherical coordinate system (see
@@ -62,7 +62,7 @@ template <typename Float_> struct Frame {
      * of the elevation angle in a reference spherical coordinate system (see
      * the \ref Frame description)
      */
-    static Float sin_theta_2(const Vector3f &v) { return dr::fmadd(v.x(), v.x(), dr::sqr(v.y())); }
+    static Float sin_theta_2(const Vector3f &v) { return dr::fmadd(v.x(), v.x(), dr::square(v.y())); }
 
     /** \brief Give a unit direction, this function returns the tangent
      * of the elevation angle in a reference spherical coordinate system (see
@@ -79,7 +79,7 @@ template <typename Float_> struct Frame {
      */
     static Float tan_theta_2(const Vector3f &v) {
         Float temp = dr::fnmadd(v.z(), v.z(), 1.f);
-        return dr::maximum(temp, 0.f) / dr::sqr(v.z());
+        return dr::maximum(temp, 0.f) / dr::square(v.z());
     }
 
     /** \brief Give a unit direction, this function returns the sine of the
@@ -90,7 +90,7 @@ template <typename Float_> struct Frame {
         Float sin_theta_2 = Frame::sin_theta_2(v),
               inv_sin_theta = dr::rsqrt(Frame::sin_theta_2(v));
         return dr::select(dr::abs(sin_theta_2) <= 4.f * dr::Epsilon<Float>, 0.f,
-                          dr::clamp(v.y() * inv_sin_theta, -1.f, 1.f));
+                          dr::clip(v.y() * inv_sin_theta, -1.f, 1.f));
     }
 
     /** \brief Give a unit direction, this function returns the cosine of the
@@ -101,7 +101,7 @@ template <typename Float_> struct Frame {
         Float sin_theta_2 = Frame::sin_theta_2(v),
               inv_sin_theta = dr::rsqrt(Frame::sin_theta_2(v));
         return dr::select(dr::abs(sin_theta_2) <= 4.f * dr::Epsilon<Float>, 1.f,
-                          dr::clamp(v.x() * inv_sin_theta, -1.f, 1.f));
+                          dr::clip(v.x() * inv_sin_theta, -1.f, 1.f));
     }
 
     /** \brief Give a unit direction, this function returns the sine and cosine
@@ -116,7 +116,7 @@ template <typename Float_> struct Frame {
 
         result = dr::select(dr::abs(sin_theta_2) <= 4.f * dr::Epsilon<Float>,
                             Vector2f(1.f, 0.f),
-                            dr::clamp(result, -1.f, 1.f));
+                            dr::clip(result, -1.f, 1.f));
 
         return { result.y(), result.x() };
     }
@@ -128,7 +128,7 @@ template <typename Float_> struct Frame {
     static Float sin_phi_2(const Vector3f &v) {
         Float sin_theta_2 = Frame::sin_theta_2(v);
         return dr::select(dr::abs(sin_theta_2) <= 4.f * dr::Epsilon<Float>, 0.f,
-                          dr::clamp(dr::sqr(v.y()) / sin_theta_2, -1.f, 1.f));
+                          dr::clip(dr::square(v.y()) / sin_theta_2, -1.f, 1.f));
     }
 
     /** \brief Give a unit direction, this function returns the squared cosine of
@@ -138,7 +138,7 @@ template <typename Float_> struct Frame {
     static Float cos_phi_2(const Vector3f &v) {
         Float sin_theta_2 = Frame::sin_theta_2(v);
         return dr::select(dr::abs(sin_theta_2) <= 4.f * dr::Epsilon<Float>, 1.f,
-                          dr::clamp(dr::sqr(v.x()) / sin_theta_2, -1.f, 1.f));
+                          dr::clip(dr::square(v.x()) / sin_theta_2, -1.f, 1.f));
     }
 
     /** \brief Give a unit direction, this function returns the squared sine
@@ -149,10 +149,10 @@ template <typename Float_> struct Frame {
         Float sin_theta_2 = Frame::sin_theta_2(v),
               inv_sin_theta_2 = dr::rcp(sin_theta_2);
 
-        Vector2f result = dr::sqr(dr::head<2>(v)) * inv_sin_theta_2;
+        Vector2f result = dr::square(dr::head<2>(v)) * inv_sin_theta_2;
 
         result = dr::select(dr::abs(sin_theta_2) <= 4.f * dr::Epsilon<Float>,
-                            Vector2f(1.f, 0.f), dr::clamp(result, -1.f, 1.f));
+                            Vector2f(1.f, 0.f), dr::clip(result, -1.f, 1.f));
 
         return { result.y(), result.x() };
     }

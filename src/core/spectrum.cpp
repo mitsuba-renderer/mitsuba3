@@ -119,7 +119,7 @@ Color<Scalar, 3> spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
 
     if (bounded && dr::any(rgb < (Scalar) 0.f || rgb > (Scalar) 1.f)) {
         Log(Warn, "Spectrum: clamping out-of-gamut color %s", rgb);
-        rgb = clamp(rgb, (Scalar) 0.f, (Scalar) 1.f);
+        rgb = clip(rgb, (Scalar) 0.f, (Scalar) 1.f);
     } else if (!bounded && dr::any(rgb < (Scalar) 0.f)) {
         Log(Warn, "Spectrum: clamping out-of-gamut color %s", rgb);
         rgb = dr::maximum(rgb, (Scalar) 0.f);

@@ -330,7 +330,7 @@ public:
 
             /* For transmission, radiance must be scaled to account for the solid
                angle compression that occurs when crossing the interface. */
-            UnpolarizedSpectrum factor = (ctx.mode == TransportMode::Radiance) ? dr::sqr(eta_ti) : Float(1.f);
+            UnpolarizedSpectrum factor = (ctx.mode == TransportMode::Radiance) ? dr::square(eta_ti) : Float(1.f);
 
             if (m_specular_transmittance)
                 factor *= m_specular_transmittance->eval(si, selected_t);
@@ -339,8 +339,8 @@ public:
 
             // Jacobian of the half-direction mapping
             dr::masked(dwh_dwo, selected_t) =
-                (dr::sqr(bs.eta) * dr::dot(bs.wo, m)) /
-                 dr::sqr(dr::dot(si.wi, m) + bs.eta * dr::dot(bs.wo, m));
+                (dr::square(bs.eta) * dr::dot(bs.wo, m)) /
+                 dr::square(dr::dot(si.wi, m) + bs.eta * dr::dot(bs.wo, m));
         }
 
         if (likely(m_sample_visible))
@@ -414,12 +414,12 @@ public:
             /* Missing term in the original paper: account for the solid angle
                compression when tracing radiance -- this is necessary for
                bidirectional methods. */
-            Float scale = (ctx.mode == TransportMode::Radiance) ? dr::sqr(inv_eta) : Float(1.f);
+            Float scale = (ctx.mode == TransportMode::Radiance) ? dr::square(inv_eta) : Float(1.f);
 
             // Compute the total amount of transmission
             UnpolarizedSpectrum value = dr::abs(
                 (scale * (1.f - F) * D * G * eta * eta * dr::dot(si.wi, m) * dr::dot(wo, m)) /
-                (cos_theta_i * dr::sqr(dr::dot(si.wi, m) + eta * dr::dot(wo, m))));
+                (cos_theta_i * dr::square(dr::dot(si.wi, m) + eta * dr::dot(wo, m))));
 
             if (m_specular_transmittance)
                 value *= m_specular_transmittance->eval(si, eval_t);
@@ -467,7 +467,7 @@ public:
         // Jacobian of the half-direction mapping
         Float dwh_dwo = dr::select(reflect, dr::rcp(4.f * dr::dot(wo, m)),
                                (eta * eta * dr::dot(wo, m)) /
-                                   dr::sqr(dr::dot(si.wi, m) + eta * dr::dot(wo, m)));
+                                   dr::square(dr::dot(si.wi, m) + eta * dr::dot(wo, m)));
 
         /* Construct the microfacet distribution matching the
            roughness values at the current surface position. */
@@ -570,12 +570,12 @@ public:
             /* Missing term in the original paper: account for the solid angle
                compression when tracing radiance -- this is necessary for
                bidirectional methods. */
-            Float scale = (ctx.mode == TransportMode::Radiance) ? dr::sqr(inv_eta) : Float(1.f);
+            Float scale = (ctx.mode == TransportMode::Radiance) ? dr::square(inv_eta) : Float(1.f);
 
             // Compute the total amount of transmission
             UnpolarizedSpectrum value = dr::abs(
                 (scale * (1.f - F) * D * G * eta * eta * dot_wi_m * dot_wo_m) /
-                (cos_theta_i * dr::sqr(dot_wi_m + eta * dot_wo_m)));
+                (cos_theta_i * dr::square(dot_wi_m + eta * dot_wo_m)));
 
             if (m_specular_transmittance)
                 value *= m_specular_transmittance->eval(si, eval_t);
@@ -598,7 +598,7 @@ public:
         // Jacobian of the half-direction mapping
         Float dwh_dwo = dr::select(reflect, dr::rcp(4.f * dot_wo_m),
                                    (eta * eta * dot_wo_m) /
-                                       dr::sqr(dot_wi_m + eta * dot_wo_m));
+                                       dr::square(dot_wi_m + eta * dot_wo_m));
 
         return { depolarizer<Spectrum>(result),
                  dr::select(active, pdf * dr::abs(dwh_dwo), 0.f) };

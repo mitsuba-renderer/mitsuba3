@@ -122,9 +122,9 @@ MI_VARIANT void PCG32Sampler<Float, Spectrum>::seed(uint32_t seed,
            does not produce a sufficiently statistically independent set of RNGs */
         auto [v0, v1] = sample_tea_32(tmp, idx);
 
-        m_rng.seed(1, v0, v1);
+        m_rng.seed(v0, v1);
     } else {
-        m_rng.seed(1, seed_value, PCG32_DEFAULT_STREAM);
+        m_rng.seed(seed_value, PCG32_DEFAULT_STREAM);
     }
 }
 

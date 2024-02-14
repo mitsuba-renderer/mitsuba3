@@ -60,7 +60,7 @@ std::tuple<Float, Float, Float, Float> fresnel(Float cos_theta_i, Float eta) {
     Float a_p = dr::fnmadd(eta_it, cos_theta_i_abs, cos_theta_t_abs) /
                 dr::fmadd(eta_it, cos_theta_i_abs, cos_theta_t_abs);
 
-    Float r = 0.5f * (dr::sqr(a_s) + dr::sqr(a_p));
+    Float r = 0.5f * (dr::square(a_s) + dr::square(a_p));
 
     dr::masked(r, special_case) = r_sc;
 
@@ -239,7 +239,7 @@ fresnel_polarized(Float cos_theta_i, dr::Complex<Float> eta) {
     /* Using Snell's law, calculate the squared sine of the
        angle between the surface normal and the transmitted ray */
     dr::Complex<Float> cos_theta_t_sqr =
-        1.f - dr::sqr(eta_ti) * dr::fnmadd(cos_theta_i, cos_theta_i, 1.f);
+        1.f - dr::square(eta_ti) * dr::fnmadd(cos_theta_i, cos_theta_i, 1.f);
 
     /* Find the cosines of the incident/transmitted rays */
     Float cos_theta_i_abs = dr::abs(cos_theta_i);

@@ -2,9 +2,8 @@
 
 #include <mitsuba/mitsuba.h>
 #include <string>
-#include <tuple>
 
-#include <drjit/array_router.h>
+#include <drjit/array.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

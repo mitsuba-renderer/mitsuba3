@@ -356,7 +356,7 @@ public:
             /* For transmission, radiance must be scaled to account for the solid
                angle compression that occurs when crossing the interface. */
             Float factor = (ctx.mode == TransportMode::Radiance) ? eta_ti : Float(1.f);
-            weight[selected_t] *= dr::sqr(factor);
+            weight[selected_t] *= dr::square(factor);
         }
 
         return { bs, weight & active };

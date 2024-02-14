@@ -4,7 +4,7 @@
 #include <ostream>
 #include <type_traits>
 
-#include <drjit/array_router.h>
+#include <drjit/array.h>
 namespace dr = drjit;
 
 NAMESPACE_BEGIN(mitsuba)

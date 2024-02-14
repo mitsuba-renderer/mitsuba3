@@ -1,6 +1,6 @@
 #pragma once
 
-#include <drjit/array_utils.h>
+#include <drjit/array.h>
 #include <mitsuba/mitsuba.h>
 #include <type_traits>
 #include <atomic>

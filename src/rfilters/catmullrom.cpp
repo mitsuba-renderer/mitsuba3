@@ -39,7 +39,7 @@ public:
     Float eval(Float x, dr::mask_t<Float> /* active */) const override {
         x = dr::abs(x);
 
-        Float x2 = dr::sqr(x), x3 = x2*x,
+        Float x2 = dr::square(x), x3 = x2*x,
               B = 0.f, C = .5f;
 
         Float result = (1.f / 6.f) * dr::select(

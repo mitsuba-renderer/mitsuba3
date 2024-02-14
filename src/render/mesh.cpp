@@ -969,7 +969,7 @@ Mesh<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f &ss,
     Float alpha = dr::norm(ss.p - p0) * dr::rcp(dr::norm(p1 - p0));
 
     // We sacrifice the last bit of precision to avoid numerical issues
-    alpha = dr::clamp(alpha, dr::Epsilon<Float>, 1.f - dr::Epsilon<Float>);
+    alpha = dr::clip(alpha, dr::Epsilon<Float>, 1.f - dr::Epsilon<Float>);
 
     dr::masked(sample.x(), active) =
         (cdf + (alpha - 1.f) * pmf) * m_sil_dedge_pmf.normalization();

@@ -535,7 +535,7 @@ public:
 
             // Retro response
             Float cos_theta_d = dr::dot(wh, wo_t);
-            Float Rr          = 2.0f * roughness * dr::sqr(cos_theta_d);
+            Float Rr          = 2.0f * roughness * dr::square(cos_theta_d);
             Float f_retro     = Rr * (Fo + Fi + Fo * Fi * (Rr - 1.0f));
 
             /* Fake subsurface implementation based on Hanrahan-Krueger

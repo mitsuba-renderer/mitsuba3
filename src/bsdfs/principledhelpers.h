@@ -31,7 +31,7 @@ public:
 
     Float eval(const Vector3f &m) const {
         Float cos_theta  = Frame3f::cos_theta(m),
-        cos_theta2 = dr::sqr(cos_theta), alpha2 = dr::sqr(m_alpha);
+        cos_theta2 = dr::square(cos_theta), alpha2 = dr::square(m_alpha);
 
         Float result = (alpha2 - 1.f) / (dr::Pi<Float> * dr::log(alpha2) *
                 (1.f + (alpha2 - 1.f) * cos_theta2));
@@ -45,7 +45,7 @@ public:
 
     Normal3f sample(const Point2f &sample) const {
         auto [sin_phi, cos_phi] = dr::sincos((2.f * dr::Pi<Float>) *sample.x());
-        Float alpha2            = dr::sqr(m_alpha);
+        Float alpha2            = dr::square(m_alpha);
 
         Float cos_theta2 =
                 (1.f - dr::pow(alpha2, 1.f - sample.y())) / (1.f - alpha2);
@@ -94,9 +94,9 @@ template<typename Float>
 Float smith_ggx1(const Vector<Float,3> &v, const Vector<Float,3> &wh,
                  const Float &alpha) {
     using Frame3f     = Frame<Float>;
-    Float alpha_2     = dr::sqr(alpha),
+    Float alpha_2     = dr::square(alpha),
     cos_theta   = dr::abs(Frame3f::cos_theta(v)),
-    cos_theta_2 = dr::sqr(cos_theta),
+    cos_theta_2 = dr::square(cos_theta),
     tan_theta_2 = (1.0f - cos_theta_2) / cos_theta_2;
 
     Float result =
@@ -139,8 +139,8 @@ bool get_flag(const std::string &name, const Properties &props) {
  */
 template <typename Float>
 Float schlick_weight(Float cos_i) {
-    Float m = dr::clamp(1.0f - cos_i, 0.0f, 1.0f);
-    return dr::sqr(dr::sqr(m)) * m;
+    Float m = dr::clip(1.0f - cos_i, 0.0f, 1.0f);
+    return dr::square(dr::square(m)) * m;
 }
 
 /**
@@ -161,7 +161,7 @@ T calc_schlick(T R0, Float cos_theta_i,Float eta){
     eta_ti      = dr::select(outside_mask, rcp_eta, eta);
 
     Float cos_theta_t_sqr = dr::fnmadd(
-            dr::fnmadd(cos_theta_i, cos_theta_i, 1.0f), dr::sqr(eta_ti), 1.0f);
+            dr::fnmadd(cos_theta_i, cos_theta_i, 1.0f), dr::square(eta_ti), 1.0f);
     Float cos_theta_t = dr::safe_sqrt(cos_theta_t_sqr);
     return dr::select(
             eta_it > 1.0f,
@@ -178,7 +178,7 @@ T calc_schlick(T R0, Float cos_theta_i,Float eta){
  */
 template <typename Float>
 Float schlick_R0_eta(Float eta){
-    return dr::sqr((eta - 1.0f) / (eta + 1.0f));
+    return dr::square((eta - 1.0f) / (eta + 1.0f));
 }
 
 /**
@@ -320,7 +320,7 @@ template<typename Float>
 std::pair<Float, Float> calc_dist_params(Float anisotropic,
                                          Float roughness,
                                          bool has_anisotropic){
-    Float roughness_2 = dr::sqr(roughness);
+    Float roughness_2 = dr::square(roughness);
     if (!has_anisotropic) {
         Float a = dr::maximum(0.001f, roughness_2);
         return { a, a };

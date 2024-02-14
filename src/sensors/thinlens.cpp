@@ -343,7 +343,7 @@ public:
         ds.dist = dist;
         ds.n    = trafo * Vector3f(0.f, 0.f, 1.f);
 
-        Float aperture_pdf = dr::rcp(dr::Pi<Float> * dr::sqr(m_aperture_radius));
+        Float aperture_pdf = dr::rcp(dr::Pi<Float> * dr::square(m_aperture_radius));
         ds.pdf = dr::select(valid, aperture_pdf * dist * dist * inv_ct, 0.f);
 
         return { ds, Spectrum(value * inv_dist * inv_dist) };

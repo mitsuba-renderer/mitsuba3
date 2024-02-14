@@ -382,8 +382,8 @@ private:
               th = dr::safe_acos(dr::dot(n, h));
 
         Vector3 i_prj = dr::normalize(i - dr::dot(i, h)*h);
-        Value cos_phi_d = dr::clamp(dr::dot(t, i_prj), -1.f, 1.f),
-              sin_phi_d = dr::clamp(dr::dot(b, i_prj), -1.f, 1.f);
+        Value cos_phi_d = dr::clip(dr::dot(t, i_prj), -1.f, 1.f),
+              sin_phi_d = dr::clip(dr::dot(b, i_prj), -1.f, 1.f);
 
         Value pd = dr::atan2(sin_phi_d, cos_phi_d);
 

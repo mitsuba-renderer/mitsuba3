@@ -2,7 +2,6 @@
 
 #include <mitsuba/core/object.h>
 #include <functional>
-#include <tuple>
 #include <iostream>
 
 NAMESPACE_BEGIN(mitsuba)

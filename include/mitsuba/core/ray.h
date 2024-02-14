@@ -1,6 +1,6 @@
 #pragma once
 
-#include <drjit/struct.h>
+#include <drjit/array.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/spectrum.h>
