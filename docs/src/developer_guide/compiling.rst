@@ -112,12 +112,23 @@ optionally. During the development of this project, we encountered many issues
 with GCC (mis-compilations, compiler errors, segmentation faults), and strongly
 recommend that you use Clang instead.
 
-To fetch all dependencies and Clang, enter the following commands on Ubuntu:
+To install build tools and Clang, enter the following commands on Ubuntu 20.04:
 
 .. code-block:: bash
 
     # Install recent versions build tools, including Clang and libc++ (Clang's C++ library)
     sudo apt install clang-10 libc++-10-dev libc++abi-10-dev cmake ninja-build
+
+To install build tools and Clang, enter the following commands on Ubuntu 22.04:
+
+.. code-block:: bash
+
+    # Install recent versions build tools, including Clang and libc++ (Clang’s C++ library) 
+    sudo apt install clang-15 libc++-15-dev libc++abi-15-dev libstdc++-12-dev cmake ninja-build 
+
+To fetch all dependencies, additionally enter the following: 
+
+.. code-block:: bash
 
     # Install libraries for image I/O
     sudo apt install libpng-dev libjpeg-dev
@@ -139,9 +150,18 @@ exported. You can either run these two commands manually before using CMake
 or---even better---add them to your :monosp:`~/.bashrc` file. This ensures that
 CMake will always use the correct compiler.
 
+In the Ubuntu 20.04 case, enter:
+
 .. code-block:: bash
 
     export CC=clang-10 export CXX=clang++-10
+
+
+And for the Ubuntu 22.04 case, enter:
+
+.. code-block:: bash
+
+    export CC=clang-15 export CXX=clang++-15
 
 If you installed another version of Clang, the version suffix of course has to
 be adjusted. Now, compilation should be as simple as running the following from
@@ -160,14 +180,20 @@ inside the :monosp:`mitsuba3` root directory:
 
 The above procedure will likely work on many different flavors of Linux (with
 slight adjustments for the package manager and package names). We have mainly
-worked with software environment listed below, and our instructions should work
+worked with software environments listed below, and our instructions should work
 without modifications in that case.
 
 * Ubuntu 20.04
-* clang 10.0.0
-* cmake 3.16.3
-* ninja 1.10.0
-* python 3.8.2
+    * clang 10.0.0
+    * cmake 3.16.3
+    * ninja 1.10.0
+    * python 3.8.2
+
+* Ubuntu 22.04
+    * cmake 15.0.7
+    * cmake 3.22.1
+    * ninja 1.10.1
+    * python 3.10.12
 
 Windows
 -------
