@@ -483,6 +483,12 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         duv_dx = duv_dy = dr::zeros<Point2f>();
     }
 
+    /// Convenience operator for masking
+    template <typename Array, drjit::enable_if_mask_t<Array> = 0>
+    auto operator[](const Array &array) {
+        return dr::masked(*this, array);
+    }
+
     //! @}
     // =============================================================
 

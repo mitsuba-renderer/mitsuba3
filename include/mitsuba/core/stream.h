@@ -1,6 +1,6 @@
 #pragma once
 
-#include <drjit/array_utils.h>
+#include <drjit/array.h>
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/logger.h>
 #include <set>

@@ -62,6 +62,11 @@ template <typename Point_> struct Transform {
         : matrix(value),
           inverse_transpose(inv) { }
 
+    template <typename T,  dr::enable_if_t<!std::is_same_v<T, Point_>> = 0>
+    Transform(const Transform<T> &transform)
+        : matrix(transform.matrix),
+          inverse_transpose(transform.inverse_transpose) { }
+
     /// Concatenate transformations
     MI_INLINE Transform operator*(const Transform &other) const {
         return Transform(matrix * other.matrix,
@@ -80,6 +85,13 @@ template <typename Point_> struct Transform {
     /// Get the translation part of a matrix
     Vector<Float, Size - 1> translation() const {
         return dr::head<Size - 1>(dr::transpose(matrix).entry(Size - 1));
+    }
+
+    template<typename T>
+    Transform& operator=(const Transform<T> &t) {
+        matrix = t.matrix;
+        inverse_transpose = t.inverse_transpose;
+        return *this;
     }
 
     /// Equality comparison operator

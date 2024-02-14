@@ -172,7 +172,7 @@ public:
             SurfaceInteraction3f si = m_shape->eval_parameterization(ds.uv, +RayFlags::dPdUV, active);
             active &= si.is_valid();
 
-            value = m_radiance->pdf_position(ds.uv, active) * dr::sqr(ds.dist) /
+            value = m_radiance->pdf_position(ds.uv, active) * dr::square(ds.dist) /
                     (dr::norm(dr::cross(si.dp_du, si.dp_dv)) * -dp);
         }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <drjit/array_router.h>
+#include <drjit/array.h>
 #include <mitsuba/core/object.h>
 
 NAMESPACE_BEGIN(mitsuba)

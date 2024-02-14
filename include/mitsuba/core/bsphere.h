@@ -58,9 +58,9 @@ template <typename Point_> struct BoundingSphere {
     template <bool Strict = false>
     Mask contains(const Point &p) const {
         if constexpr (Strict)
-            return dr::squared_norm(p - center) < dr::sqr(radius);
+            return dr::squared_norm(p - center) < dr::square(radius);
         else
-            return dr::squared_norm(p - center) <= dr::sqr(radius);
+            return dr::squared_norm(p - center) <= dr::square(radius);
     }
 
     /// Check if a ray intersects a bounding box
@@ -71,7 +71,7 @@ template <typename Point_> struct BoundingSphere {
         return math::solve_quadratic(
             dr::squared_norm(ray.d),
             2.f * dr::dot(o, ray.d),
-            dr::squared_norm(o) - dr::sqr(radius)
+            dr::squared_norm(o) - dr::square(radius)
         );
     }
 };

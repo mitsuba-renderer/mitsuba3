@@ -188,6 +188,12 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     /// Construct from a position sample
     DirectionSample(const Base &base) : Base(base) { }
 
+    /// Convenience operator for masking
+    template <typename Array, drjit::enable_if_mask_t<Array> = 0>
+    auto operator[](const Array &array) {
+        return drjit::masked(*this, array);
+    }
+
     //! @}
     // =============================================================
 

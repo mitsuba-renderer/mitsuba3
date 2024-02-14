@@ -149,7 +149,7 @@ public:
 
     MI_INLINE Float eval_weight(const MediumInteraction3f &mi,
                                 const Mask &active) const {
-        return dr::clamp(m_weight->eval_1(mi, active), 0.f, 1.f);
+        return dr::clip(m_weight->eval_1(mi, active), 0.f, 1.f);
     }
 
     std::pair<Spectrum, Float> eval_pdf(const PhaseFunctionContext &ctx,

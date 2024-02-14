@@ -207,7 +207,7 @@ public:
             radiance *= m_texture->eval(si, active);
         }
 
-        return { ds, depolarizer<Spectrum>(radiance & active) * (falloff * dr::sqr(inv_dist)) };
+        return { ds, depolarizer<Spectrum>(radiance & active) * (falloff * dr::square(inv_dist)) };
     }
 
     Float pdf_direction(const Interaction3f &,

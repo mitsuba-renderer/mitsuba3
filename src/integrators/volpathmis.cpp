@@ -1,5 +1,4 @@
 #include <random>
-#include <tuple>
 #include <mitsuba/core/ray.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/bsdf.h>
@@ -213,7 +212,7 @@ public:
             // solid angle compression at refractive index boundaries. Stop with at least some
             // probability to avoid  getting stuck (e.g. due to total internal reflection)
             Spectrum mis_throughput = mis_weight(p_over_f);
-            Float q = dr::minimum(dr::max(unpolarized_spectrum(mis_throughput)) * dr::sqr(eta), .95f);
+            Float q = dr::minimum(dr::max(unpolarized_spectrum(mis_throughput)) * dr::square(eta), .95f);
             Mask perform_rr = active && !last_event_was_null && (depth > (uint32_t) m_rr_depth);
             active &= !(sampler->next_1d(active) >= q && perform_rr);
             update_weights(p_over_f, dr::detach(q), 1.0f, channel, perform_rr);

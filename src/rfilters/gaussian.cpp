@@ -78,11 +78,11 @@ public:
             double scale = 1;
             for (int i = 0; i < 10; ++i) {
                 coeff_s[i] = ScalarFloat(coeff[i] * scale);
-                scale /= dr::sqr((double) m_stddev);
+                scale /= dr::square((double) m_stddev);
             }
 
             // Ensure that we really reach zero at the boundary
-            coeff_s[0] -= dr::detail::estrin_impl(dr::sqr(m_radius), coeff_s);
+            coeff_s[0] -= dr::detail::estrin_impl(dr::square(m_radius), coeff_s);
 
             for (int i = 0; i < 10; ++i)
                 m_coeff[i] = coeff_s[i];
@@ -93,12 +93,12 @@ public:
 
     Float eval(Float x, Mask /* active */) const override {
         if constexpr (!dr::is_cuda_v<Float>) {
-            return dr::maximum(dr::detail::estrin_impl(dr::sqr(x), m_coeff), 0.f);
+            return dr::maximum(dr::detail::estrin_impl(dr::square(x), m_coeff), 0.f);
         } else {
             // Use the base-2 exponential functions on NVIDIA hardware
-            ScalarFloat alpha = -1.f / (2.f * dr::sqr(m_stddev));
-            ScalarFloat bias = dr::exp(alpha * dr::sqr(m_radius));
-            return dr::maximum(0.f, dr::exp2((dr::InvLogTwo<Float> * alpha) * dr::sqr(x)) - bias);
+            ScalarFloat alpha = -1.f / (2.f * dr::square(m_stddev));
+            ScalarFloat bias = dr::exp(alpha * dr::square(m_radius));
+            return dr::maximum(0.f, dr::exp2((dr::InvLogTwo<Float> * alpha) * dr::square(x)) - bias);
         }
     }
 

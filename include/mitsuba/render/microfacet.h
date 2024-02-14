@@ -185,21 +185,21 @@ public:
     Float eval(const Vector3f &m) const {
         Float alpha_uv = m_alpha_u * m_alpha_v,
               cos_theta         = Frame3f::cos_theta(m),
-              cos_theta_2       = dr::sqr(cos_theta),
+              cos_theta_2       = dr::square(cos_theta),
               result;
 
         if (m_type == MicrofacetType::Beckmann) {
             // Beckmann distribution function for Gaussian random surfaces
-            result = dr::exp(-(dr::sqr(m.x() / m_alpha_u) +
-                               dr::sqr(m.y() / m_alpha_v)) /
+            result = dr::exp(-(dr::square(m.x() / m_alpha_u) +
+                               dr::square(m.y() / m_alpha_v)) /
                              cos_theta_2) /
-                     (dr::Pi<Float> * alpha_uv * dr::sqr(cos_theta_2));
+                     (dr::Pi<Float> * alpha_uv * dr::square(cos_theta_2));
         } else {
             // GGX / Trowbridge-Reitz distribution function
             result =
                 dr::rcp(dr::Pi<Float> * alpha_uv *
-                        dr::sqr(dr::sqr(m.x() / m_alpha_u) +
-                                dr::sqr(m.y() / m_alpha_v) + dr::sqr(m.z())));
+                        dr::square(dr::square(m.x() / m_alpha_u) +
+                                dr::square(m.y() / m_alpha_v) + dr::square(m.z())));
         }
 
         // Prevent potential numerical issues in other stages of the model
@@ -260,15 +260,15 @@ public:
 
                 sin_phi = cos_phi * tmp;
 
-                alpha_2 = dr::rcp(dr::sqr(cos_phi / m_alpha_u) +
-                                  dr::sqr(sin_phi / m_alpha_v));
+                alpha_2 = dr::rcp(dr::square(cos_phi / m_alpha_u) +
+                                  dr::square(sin_phi / m_alpha_v));
             }
 
             // Sample elevation component
             if (m_type == MicrofacetType::Beckmann) {
                 // Beckmann distribution function for Gaussian random surfaces
                 cos_theta = dr::rsqrt(dr::fnmadd(alpha_2, dr::log(1.f - sample.x()), 1.f));
-                cos_theta_2 = dr::sqr(cos_theta);
+                cos_theta_2 = dr::square(cos_theta);
 
                 // Compute probability density of the sampled position
                 Float cos_theta_3 = dr::maximum(cos_theta_2 * cos_theta, 1e-20f);
@@ -277,12 +277,12 @@ public:
                 // GGX / Trowbridge-Reitz distribution function
                 Float tan_theta_m_2 = alpha_2 * sample.x() / (1.f - sample.x());
                 cos_theta = dr::rsqrt(1.f + tan_theta_m_2);
-                cos_theta_2 = dr::sqr(cos_theta);
+                cos_theta_2 = dr::square(cos_theta);
 
                 // Compute probability density of the sampled position
                 Float temp = 1.f + tan_theta_m_2 / alpha_2,
                       cos_theta_3 = dr::maximum(cos_theta_2 * cos_theta, 1e-20f);
-                pdf = dr::rcp(dr::Pi<Float> * m_alpha_u * m_alpha_v * cos_theta_3 * dr::sqr(temp));
+                pdf = dr::rcp(dr::Pi<Float> * m_alpha_u * m_alpha_v * cos_theta_3 * dr::square(temp));
             }
 
             Float sin_theta = dr::sqrt(1.f - cos_theta_2);
@@ -339,12 +339,12 @@ public:
      *     The microfacet normal
      */
     Float smith_g1(const Vector3f &v, const Vector3f &m) const {
-        Float xy_alpha_2 = dr::sqr(m_alpha_u * v.x()) + dr::sqr(m_alpha_v * v.y()),
-              tan_theta_alpha_2 = xy_alpha_2 / dr::sqr(v.z()),
+        Float xy_alpha_2 = dr::square(m_alpha_u * v.x()) + dr::square(m_alpha_v * v.y()),
+              tan_theta_alpha_2 = xy_alpha_2 / dr::square(v.z()),
               result;
 
         if (m_type == MicrofacetType::Beckmann) {
-            Float a = dr::rsqrt(tan_theta_alpha_2), a_sqr = dr::sqr(a);
+            Float a = dr::rsqrt(tan_theta_alpha_2), a_sqr = dr::square(a);
             /* Use a fast and accurate (<0.35% rel. error) rational
                approximation to the shadowing-masking function */
             result = dr::select(a >= 1.6f, 1.f,
@@ -388,13 +388,13 @@ public:
 
             // Normalization factor for the CDF
             sample.x() *= 1.f + maxval + dr::InvSqrtPi<Float> *
-                          tan_theta_i * dr::exp(-dr::sqr(cot_theta_i));
+                          tan_theta_i * dr::exp(-dr::square(cot_theta_i));
 
             // Three Newton iterations
             for (size_t i = 0; i < 3; ++i) {
                 Float slope = dr::erfinv(x),
                       value = 1.f + x + dr::InvSqrtPi<Float> * tan_theta_i *
-                              dr::exp(-dr::sqr(slope)) - sample.x(),
+                              dr::exp(-dr::square(slope)) - sample.x(),
                       derivative = 1.f - slope * tan_theta_i;
 
                 x -= value / derivative;
@@ -407,14 +407,14 @@ public:
             Point2f p = warp::square_to_uniform_disk_concentric(sample);
 
             Float s = 0.5f * (1.f + cos_theta_i);
-            p.y() = dr::lerp(dr::safe_sqrt(1.f - dr::sqr(p.x())), p.y(), s);
+            p.y() = dr::lerp(dr::safe_sqrt(1.f - dr::square(p.x())), p.y(), s);
 
             // Project onto chosen side of the hemisphere
             Float x = p.x(), y = p.y(),
                   z = dr::safe_sqrt(1.f - dr::squared_norm(p));
 
             // Convert to slope
-            Float sin_theta_i = dr::safe_sqrt(1.f - dr::sqr(cos_theta_i));
+            Float sin_theta_i = dr::safe_sqrt(1.f - dr::square(cos_theta_i));
             Float norm = dr::rcp(dr::fmadd(sin_theta_i, y, cos_theta_i * z));
             return Vector2f(dr::fmsub(cos_theta_i, y, sin_theta_i * z), x) * norm;
         }
@@ -430,12 +430,12 @@ protected:
     /// Compute the squared 1D roughness along direction \c v
     Float project_roughness_2(const Vector3f &v) const {
         if (is_isotropic())
-            return dr::sqr(m_alpha_u);
+            return dr::square(m_alpha_u);
 
         Float sin_phi_2, cos_phi_2;
         std::tie(sin_phi_2, cos_phi_2) = Frame3f::sincos_phi_2(v);
 
-        return sin_phi_2 * dr::sqr(m_alpha_v) + cos_phi_2 * dr::sqr(m_alpha_u);
+        return sin_phi_2 * dr::square(m_alpha_v) + cos_phi_2 * dr::square(m_alpha_u);
     }
 
 protected:

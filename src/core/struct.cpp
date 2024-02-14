@@ -635,7 +635,7 @@ public:
             if (field.type == Struct::Type::Float16) {
                 auto ref = cc.newUInt16Const(
                     asmjit::ConstPoolScope::kGlobal,
-                    dr::half::float32_to_float16((float) field.default_));
+                    dr::half((float) field.default_).value);
                 cc.cmp(value.gp.r16(), ref);
             } else if (field.type == Struct::Type::Float32) {
                 auto ref = cc.newFloatConst(asmjit::ConstPoolScope::kGlobal, (float) field.default_);

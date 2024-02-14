@@ -59,7 +59,7 @@ public:
 
     Float eval(Float x, Mask /* active */) const override {
         x = dr::abs(x);
-        Float x2 = dr::sqr(x), x3 = x2*x;
+        Float x2 = dr::square(x), x3 = x2*x;
 
         ScalarFloat a3 = (12.f - 9.f * m_b - 6.f * m_c),
                     a2 = (-18.f + 12.f * m_b + 6.f * m_c),

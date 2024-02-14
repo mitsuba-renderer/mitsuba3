@@ -367,7 +367,7 @@ public:
         active &= x >= m_range.x() && x <= m_range.y();
         x = (x - m_range.x()) * m_inv_interval_size;
 
-        Index index = dr::clamp(Index(x), 0u, uint32_t(m_pdf.size() - 2));
+        Index index = dr::clip(Index(x), 0u, uint32_t(m_pdf.size() - 2));
 
         Value y0 = dr::gather<Value>(m_pdf, index,      active),
               y1 = dr::gather<Value>(m_pdf, index + 1u, active);
@@ -391,13 +391,13 @@ public:
 
         Value x = (x_ - m_range.x()) * m_inv_interval_size;
 
-        Index index = dr::clamp(Index(x), 0u, uint32_t(m_pdf.size() - 2));
+        Index index = dr::clip(Index(x), 0u, uint32_t(m_pdf.size() - 2));
 
         Value y0 = dr::gather<Value>(m_pdf, index,      active),
               y1 = dr::gather<Value>(m_pdf, index + 1u, active),
               c0 = dr::gather<Value>(m_cdf, index - 1u, active && index > 0u);
 
-        Value t   = dr::clamp(x - Value(index), 0.f, 1.f),
+        Value t   = dr::clip(x - Value(index), 0.f, 1.f),
               cdf = dr::fmadd(t, dr::fmadd(.5f * t, y1 - y0, y0) * m_interval_size, c0);
 
         return cdf;
@@ -753,7 +753,7 @@ public:
               c0 = dr::gather<Value>(m_cdf,   index - 1u, active && index > 0u);
 
         Value w   = x1 - x0,
-              t   = dr::clamp((x - x0) / w, 0.f, 1.f),
+              t   = dr::clip((x - x0) / w, 0.f, 1.f),
               cdf = c0 + w * t * (y0 + .5f * t * (y1 - y0));
 
         return cdf;
@@ -804,7 +804,7 @@ public:
 
         sample = (sample - c0) / w;
 
-        Value t_linear = (y0 - dr::safe_sqrt(dr::sqr(y0) + 2.f * sample * (y1 - y0))) / (y0 - y1),
+        Value t_linear = (y0 - dr::safe_sqrt(dr::square(y0) + 2.f * sample * (y1 - y0))) / (y0 - y1),
               t_const  = sample / y0,
               t        = dr::select(y0 == y1, t_const, t_linear);
 
@@ -852,7 +852,7 @@ public:
 
         sample = (sample - c0) / w;
 
-        Value t_linear = (y0 - dr::safe_sqrt(dr::sqr(y0) + 2.f * sample * (y1 - y0))) / (y0 - y1),
+        Value t_linear = (y0 - dr::safe_sqrt(dr::square(y0) + 2.f * sample * (y1 - y0))) / (y0 - y1),
               t_const  = sample / y0,
               t        = dr::select(y0 == y1, t_const, t_linear);
 

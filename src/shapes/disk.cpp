@@ -150,7 +150,7 @@ public:
         ScalarPoint3f c = to_world * ScalarPoint3f(0.f, 0.f, 0.f);
         ScalarVector3f u = to_world * ScalarVector3f(1.f, 0.f, 0.f);
         ScalarVector3f v = to_world * ScalarVector3f(0.f, 1.f, 0.f);
-        ScalarVector3f e = dr::sqrt(dr::sqr(u) + dr::sqr(v));
+        ScalarVector3f e = dr::sqrt(dr::square(u) + dr::square(v));
 
         return ScalarBoundingBox3f(
             dr::minimum(c - e, c + e),
@@ -160,7 +160,7 @@ public:
 
     Float surface_area() const override {
         // First compute height of the ellipse
-        Float h = dr::sqrt(dr::sqr(m_dv) - dr::sqr(dr::dot(m_dv * m_frame.t, m_frame.s)));
+        Float h = dr::sqrt(dr::square(m_dv) - dr::square(dr::dot(m_dv * m_frame.t, m_frame.s)));
         return dr::Pi<ScalarFloat> * m_du * h;
     }
 

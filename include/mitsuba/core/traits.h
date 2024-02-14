@@ -3,7 +3,6 @@
 #include <drjit/fwd.h>
 #include <mitsuba/mitsuba.h>
 #include <type_traits>
-#include <tuple>
 
 NAMESPACE_BEGIN(mitsuba)
 

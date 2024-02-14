@@ -80,7 +80,7 @@ public:
         } else {
             m_bsphere = ScalarBoundingSphere3f(ScalarPoint3f(0.f), 1.f);
         }
-        m_surface_area = 4.f * dr::Pi<ScalarFloat> * dr::sqr(m_bsphere.radius);
+        m_surface_area = 4.f * dr::Pi<ScalarFloat> * dr::square(m_bsphere.radius);
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {

@@ -659,7 +659,7 @@ private:
                         case Struct::Type::Float16: {
                                 float value;
                                 if (!(is >> value)) Throw("\"%s\": could not parse \"half\" value for field %s", m_name, field.name);
-                                out->write(dr::half::float32_to_float16(value));
+                                out->write(dr::half(value).value);
                             }
                             break;
 

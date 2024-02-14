@@ -177,7 +177,7 @@ public:
     ScalarBoundingBox3f bbox() const override {
         ScalarVector3f x1 = m_to_world.scalar() * ScalarVector3f(1.f, 0.f, 0.f),
                        x2 = m_to_world.scalar() * ScalarVector3f(0.f, 1.f, 0.f),
-                       x  = dr::sqrt(dr::sqr(x1) + dr::sqr(x2));
+                       x  = dr::sqrt(dr::square(x1) + dr::square(x2));
 
         ScalarPoint3f p0 = m_to_world.scalar() * ScalarPoint3f(0.f, 0.f, 0.f),
                       p1 = m_to_world.scalar() * ScalarPoint3f(0.f, 0.f, 1.f);
@@ -237,7 +237,7 @@ public:
         center[face_n != 0.f] = face_p;
 
         // Compute ellipse minima and maxima
-        Vector3fP8 x = dr::sqrt(dr::sqr(v1) + dr::sqr(v2));
+        Vector3fP8 x = dr::sqrt(dr::square(v1) + dr::square(v2));
         BoundingBox3fP8 ellipse_bounds(center - x, center + x);
         MaskP8 ellipse_overlap = valid && bbox.overlaps(ellipse_bounds);
         ellipse_bounds.clip(bbox);
@@ -580,9 +580,9 @@ public:
               dy = Value(ray.d.y()),
               dz = Value(ray.d.z());
 
-        Value A = dr::sqr(dx) + dr::sqr(dy),
+        Value A = dr::square(dx) + dr::square(dy),
               B = ScalarValue(2.f) * (dx * ox + dy * oy),
-              C = dr::sqr(ox) + dr::sqr(oy) - dr::sqr(radius);
+              C = dr::square(ox) + dr::square(oy) - dr::square(radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
@@ -638,9 +638,9 @@ public:
               dy = Value(ray.d.y()),
               dz = Value(ray.d.z());
 
-        Value A = dr::sqr(dx) + dr::sqr(dy),
+        Value A = dr::square(dx) + dr::square(dy),
               B = ScalarValue(2.f) * (dx * ox + dy * oy),
-              C = dr::sqr(ox) + dr::sqr(oy) - dr::sqr(radius);
+              C = dr::square(ox) + dr::square(oy) - dr::square(radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 

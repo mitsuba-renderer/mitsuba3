@@ -135,7 +135,7 @@ public:
                Also, convert to area measure. */
             emitter_weight[active_e] =
                 dr::select(ds.pdf > 0.f, dr::rcp(ds.pdf), 0.f) *
-                dr::sqr(ds.dist);
+                dr::square(ds.dist);
 
             si[active_e] = SurfaceInteraction3f(ds, ref_it.wavelengths);
         }
@@ -279,7 +279,7 @@ public:
             Mask use_rr = depth > m_rr_depth;
             if (dr::any_or<true>(use_rr)) {
                 Float q = dr::minimum(
-                    dr::max(unpolarized_spectrum(throughput)) * dr::sqr(eta), 0.95f);
+                    dr::max(unpolarized_spectrum(throughput)) * dr::square(eta), 0.95f);
                 dr::masked(active, use_rr) &= sampler->next_1d(active) < q;
                 dr::masked(throughput, use_rr) *= dr::rcp(q);
             }

@@ -1,6 +1,9 @@
 #pragma once
 
 #include <mitsuba/core/platform.h>
+#include <drjit-core/jit.h>
+#include <drjit-core/traits.h>
+#include <drjit/fwd.h>
 #include <drjit/array_traits.h>
 #include <drjit/map.h>
 #include <drjit/call.h>

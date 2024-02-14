@@ -79,13 +79,13 @@ public:
     void set_sample_count(uint32_t spp) override {
         // Make sure sample_count is a square number
         m_resolution = 1;
-        while (dr::sqr(m_resolution) < spp)
+        while (dr::square(m_resolution) < spp)
             m_resolution++;
 
-        if (spp != dr::sqr(m_resolution))
-            Log(Warn, "Sample count should be square and power of two, rounding to %i", dr::sqr(m_resolution));
+        if (spp != dr::square(m_resolution))
+            Log(Warn, "Sample count should be square and power of two, rounding to %i", dr::square(m_resolution));
 
-        m_sample_count = dr::sqr(m_resolution);
+        m_sample_count = dr::square(m_resolution);
         m_inv_sample_count = dr::rcp(ScalarFloat(m_sample_count));
         m_inv_resolution   = dr::rcp(ScalarFloat(m_resolution));
         m_resolution_div = m_resolution;

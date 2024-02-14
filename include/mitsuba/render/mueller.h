@@ -205,8 +205,8 @@ MuellerMatrix<Float> specular_reflection(Float cos_theta_i, Eta eta) {
     Float sin_delta, cos_delta;
     std::tie(sin_delta, cos_delta) = sincos_arg_diff(a_p, a_s);
 
-    Float r_s = dr::abs(dr::sqr(a_s)),
-          r_p = dr::abs(dr::sqr(a_p)),
+    Float r_s = dr::abs(dr::square(a_s)),
+          r_p = dr::abs(dr::square(a_p)),
           a = 0.5f * (r_s + r_p),
           b = 0.5f * (r_s - r_p),
           c = dr::sqrt(r_s * r_p);
@@ -250,8 +250,8 @@ MuellerMatrix<Float> specular_transmission(Float cos_theta_i, Float eta) {
     Float a_s_r = 1.f + real(a_s),
           a_p_r = (1.f + real(a_p)) * eta_ti;
 
-    Float t_s = dr::sqr(a_s_r),
-          t_p = dr::sqr(a_p_r),
+    Float t_s = dr::square(a_s_r),
+          t_p = dr::square(a_p_r),
           a = 0.5f * factor * (t_s + t_p),
           b = 0.5f * factor * (t_s - t_p),
           c = factor * dr::sqrt(t_s * t_p);

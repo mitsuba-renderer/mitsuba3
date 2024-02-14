@@ -100,14 +100,14 @@ public:
         };
 
         m_resolution = 2;
-        while (dr::sqr(m_resolution) < spp || !is_prime(m_resolution))
+        while (dr::square(m_resolution) < spp || !is_prime(m_resolution))
             m_resolution++;
 
-        if (spp != dr::sqr(m_resolution))
+        if (spp != dr::square(m_resolution))
             Log(Warn, "Sample count should be the square of a prime"
-                "number, rounding to %i", dr::sqr(m_resolution));
+                "number, rounding to %i", dr::square(m_resolution));
 
-        m_sample_count = dr::sqr(m_resolution);
+        m_sample_count = dr::square(m_resolution);
         m_resolution_div = m_resolution;
     }
 

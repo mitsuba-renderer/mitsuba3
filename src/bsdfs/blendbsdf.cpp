@@ -213,7 +213,7 @@ public:
     }
 
     MI_INLINE Float eval_weight(const SurfaceInteraction3f &si, const Mask &active) const {
-        return dr::clamp(m_weight->eval_1(si, active), 0.f, 1.f);
+        return dr::clip(m_weight->eval_1(si, active), 0.f, 1.f);
     }
 
     Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,

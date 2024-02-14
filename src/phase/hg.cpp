@@ -63,8 +63,8 @@ public:
     }
 
     MI_INLINE Float eval_hg(Float cos_theta) const {
-        Float temp = 1.f + dr::sqr(m_g) + 2.f * m_g * cos_theta;
-        return dr::InvFourPi<ScalarFloat> * (1.f - dr::sqr(m_g)) /
+        Float temp = 1.f + dr::square(m_g) + 2.f * m_g * cos_theta;
+        return dr::InvFourPi<ScalarFloat> * (1.f - dr::square(m_g)) /
                (temp * dr::sqrt(temp));
     }
 
@@ -75,13 +75,13 @@ public:
                                                  Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
 
-        Float sqr_term  = (1.f - dr::sqr(m_g)) / (1.f - m_g + 2.f * m_g * sample2.x()),
-              cos_theta = (1.f + dr::sqr(m_g) - dr::sqr(sqr_term)) / (2.f * m_g);
+        Float sqr_term  = (1.f - dr::square(m_g)) / (1.f - m_g + 2.f * m_g * sample2.x()),
+              cos_theta = (1.f + dr::square(m_g) - dr::square(sqr_term)) / (2.f * m_g);
 
         // Diffuse fallback
         dr::masked(cos_theta, dr::abs(m_g) < dr::Epsilon<ScalarFloat>) = 1.f - 2.f * sample2.x();
 
-        Float sin_theta = dr::safe_sqrt(1.f - dr::sqr(cos_theta));
+        Float sin_theta = dr::safe_sqrt(1.f - dr::square(cos_theta));
         auto [sin_phi, cos_phi] = dr::sincos(2.f * dr::Pi<ScalarFloat> * sample2.y());
 
         Vector3f wo = mi.to_world(

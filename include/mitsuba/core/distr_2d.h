@@ -143,7 +143,7 @@ public:
         Point2f sample(sample_);
 
         // Avoid degeneracies on the domain boundary
-        sample = dr::clamp(sample, dr::Smallest<Float>, dr::OneMinusEpsilon<Float>);
+        sample = dr::clip(sample, dr::Smallest<Float>, dr::OneMinusEpsilon<Float>);
 
         // Scale sample Y range
         sample.y() *= m_inv_normalization;
@@ -273,7 +273,7 @@ protected:
                       p1 = dr::gather<Float>(m_param_values[dim], param_index + 1, active);
 
                 param_weight[2 * dim + 1] =
-                    dr::clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
+                    dr::clip((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
                 param_weight[2 * dim] = 1.f - param_weight[2 * dim + 1];
                 slice_offset += m_param_strides[dim] * param_index;
             }
@@ -497,7 +497,7 @@ public:
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
         // Avoid issues with roundoff error
-        sample = dr::clamp(sample, 0.f, 1.f);
+        sample = dr::clip(sample, 0.f, 1.f);
 
         // Hierarchical sample warping
         Point2u offset = dr::zeros<Point2u>();
@@ -525,7 +525,7 @@ public:
                                      param_weight, active);
 
             // Avoid issues with roundoff error
-            sample = dr::clamp(sample, 0.f, 1.f);
+            sample = dr::clip(sample, 0.f, 1.f);
 
             // Select the row
             Float r0 = v00 + v10,
@@ -586,7 +586,7 @@ public:
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
         // Avoid issues with roundoff error
-        sample = dr::clamp(sample, 0.f, 1.f);
+        sample = dr::clip(sample, 0.f, 1.f);
 
         // Fetch values at corners of bilinear patch
         const Level &level0 = m_levels[0];
@@ -653,7 +653,7 @@ public:
             sample.x() /= c0 + c1;
 
             // Avoid issues with roundoff error
-            sample = dr::clamp(sample, 0.f, 1.f);
+            sample = dr::clip(sample, 0.f, 1.f);
 
             offset = dr::sr<1>(offset);
         }
@@ -672,7 +672,7 @@ public:
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
         // Avoid issues with roundoff error
-        pos = dr::clamp(pos, 0.f, 1.f);
+        pos = dr::clip(pos, 0.f, 1.f);
 
         // Compute linear interpolation weights
         pos *= m_inv_patch_size;
@@ -1030,7 +1030,7 @@ public:
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
         // Avoid issues with roundoff error
-        pos = dr::clamp(pos, 0.f, 1.f);
+        pos = dr::clip(pos, 0.f, 1.f);
 
         // Compute linear interpolation weights
         pos *= m_inv_patch_size;
@@ -1123,7 +1123,7 @@ protected:
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
         // Avoid degeneracies on the domain boundary
-        sample = dr::clamp(sample, dr::Epsilon<Float>, dr::OneMinusEpsilon<Float>);
+        sample = dr::clip(sample, dr::Epsilon<Float>, dr::OneMinusEpsilon<Float>);
 
         /// Multiply by last entry of marginal CDF if the data is not normalized
         UInt32 offset_marg = slice_offset * n_marg;
@@ -1207,7 +1207,7 @@ protected:
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
         // Avoid issues with roundoff error
-        sample = dr::clamp(sample, 0.f, 1.f);
+        sample = dr::clip(sample, 0.f, 1.f);
 
         // Fetch values at corners of bilinear patch
         sample *= m_inv_patch_size;
@@ -1270,7 +1270,7 @@ protected:
         DRJIT_MARK_USED(slice_offset);
 
         // Avoid degeneracies on the domain boundary
-        sample = dr::clamp(sample, dr::Epsilon<Float>,
+        sample = dr::clip(sample, dr::Epsilon<Float>,
                        dr::OneMinusEpsilon<Float>);
 
         // Sample the row first
@@ -1364,7 +1364,7 @@ protected:
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
         // Avoid issues with roundoff error
-        sample = dr::clamp(sample, 0.f, 1.f);
+        sample = dr::clip(sample, 0.f, 1.f);
 
         // Fetch values at corners of bilinear patch
         sample *= m_inv_patch_size;
@@ -1432,7 +1432,7 @@ protected:
         Float divisor = dr::select(non_const, v0 - v1, v0 + v1);
         sample *= 2.f * inv_width;
         dr::masked(sample, non_const) =
-            v0 - dr::safe_sqrt(dr::sqr(v0) + sample * (v1 - v0));
+            v0 - dr::safe_sqrt(dr::square(v0) + sample * (v1 - v0));
         dr::masked(sample, divisor != 0.f) /= divisor;
         return sample;
     }

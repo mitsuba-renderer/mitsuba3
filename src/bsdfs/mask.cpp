@@ -225,7 +225,7 @@ public:
     }
 
     MI_INLINE Float eval_opacity(const SurfaceInteraction3f &si, Mask active) const {
-        return dr::clamp(m_opacity->eval_1(si, active), 0.f, 1.f);
+        return dr::clip(m_opacity->eval_1(si, active), 0.f, 1.f);
     }
 
     Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,

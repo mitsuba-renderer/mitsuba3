@@ -144,7 +144,7 @@ public:
         if (keys.empty() || string::contains(keys, "irradiance")) {
             ScalarVector2i size = m_irradiance->resolution();
 
-            m_camera_to_sample = perspective_projection(size, size, 0, m_x_fov,
+            m_camera_to_sample = perspective_projection<Float>(size, size, 0, m_x_fov,
                                                         ScalarFloat(1e-4f),
                                                         ScalarFloat(1e4f));
             m_sample_to_camera = m_camera_to_sample.inverse();
@@ -239,7 +239,7 @@ public:
          *    dist^2 * cos_theta^3 == it_local.z^2 * cos_theta
          */
         spec *= dr::Pi<Float> * m_intensity_scale /
-                (dr::sqr(it_local.z()) * -dr::dot(ds.n, ds.d));
+                (dr::square(it_local.z()) * -dr::dot(ds.n, ds.d));
 
         return { ds, depolarizer<Spectrum>(spec & active) };
     }
@@ -283,7 +283,7 @@ public:
 
         UnpolarizedSpectrum spec = m_irradiance->eval(it_query, active);
         spec *= dr::Pi<Float> * m_intensity_scale /
-                (dr::sqr(it_local.z()) * -dr::dot(ds.n, ds.d));
+                (dr::square(it_local.z()) * -dr::dot(ds.n, ds.d));
 
         return depolarizer<Spectrum>(spec) & active;
     }

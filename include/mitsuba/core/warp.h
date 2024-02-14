@@ -143,7 +143,7 @@ square_to_uniform_square_concentric(const Point<Value, 2> &sample) {
     dr::masked(phi, r < 0.f) += 0.5f;
     dr::masked(phi, phi < 0.f) += 1.f;
 
-    return { phi, dr::sqr(r) };
+    return { phi, dr::square(r) };
 }
 
 // =======================================================================
@@ -337,8 +337,8 @@ uniform_spherical_lune_to_square(const Vector<Value, 3> &d,
     dr::masked(angle, angle < -dr::Pi<Value> * 0.5f) += dr::TwoPi<Value>;
 
     drjit::mask_t<Value> positive_x = (x >= 0.f);
-    dr::masked(angle, positive_x) = dr::clamp(angle, -theta, theta);
-    dr::masked(angle, !positive_x) = dr::clamp(angle, pi - theta, pi + theta);
+    dr::masked(angle, positive_x) = dr::clip(angle, -theta, theta);
+    dr::masked(angle, !positive_x) = dr::clip(angle, pi - theta, pi + theta);
 
     // Inverse mapping from (-theta, theta) & (pi - theta, pi + theta)
     Value sample_x = dr::select(
@@ -447,7 +447,7 @@ template <typename Value>
 MI_INLINE Value interval_to_linear(Value v0, Value v1, Value sample) {
     return dr::select(
         dr::abs(v0 - v1) > 1e-4f * (v0 + v1),
-        (v0 - dr::safe_sqrt(dr::lerp(dr::sqr(v0), dr::sqr(v1), sample))) / (v0 - v1),
+        (v0 - dr::safe_sqrt(dr::lerp(dr::square(v0), dr::square(v1), sample))) / (v0 - v1),
         sample
     );
 }
@@ -586,7 +586,7 @@ MI_INLINE Vector<Value, 3> square_to_beckmann(const Point<Value, 2> &sample,
     // Approach 1: warping method based on standard disk mapping
     auto [s, c] = dr::sincos(dr::TwoPi<Value> * sample.x());
 
-    Value tan_theta_m_sqr = -dr::sqr(alpha) * dr::log(1.f - sample.y());
+    Value tan_theta_m_sqr = -dr::square(alpha) * dr::log(1.f - sample.y());
     Value cos_theta_m = dr::rsqrt(1 + tan_theta_m_sqr),
           sin_theta_m = circ(cos_theta_m);
 
@@ -596,7 +596,7 @@ MI_INLINE Vector<Value, 3> square_to_beckmann(const Point<Value, 2> &sample,
     Point<Value, 2> p = square_to_uniform_disk_concentric(sample);
     Value r2 = dr::squared_norm(p);
 
-    Value tan_theta_m_sqr = -dr::sqr(alpha) * dr::log(1.f - r2);
+    Value tan_theta_m_sqr = -dr::square(alpha) * dr::log(1.f - r2);
     Value cos_theta_m = dr::rsqrt(1.f + tan_theta_m_sqr);
     p *= dr::safe_sqrt(dr::fnmadd(cos_theta_m, cos_theta_m, 1.f) / r2);
 
@@ -608,11 +608,11 @@ MI_INLINE Vector<Value, 3> square_to_beckmann(const Point<Value, 2> &sample,
 template <typename Value>
 MI_INLINE Point<Value, 2> beckmann_to_square(const Vector<Value, 3> &v, const Value &alpha) {
     Point<Value, 2> p(v.x(), v.y());
-    Value tan_theta_m_sqr = dr::rcp(dr::sqr(v.z())) - 1.f;
+    Value tan_theta_m_sqr = dr::rcp(dr::square(v.z())) - 1.f;
 
-    Value r2 = 1.f - dr::exp(tan_theta_m_sqr * (-1.f / dr::sqr(alpha)));
+    Value r2 = 1.f - dr::exp(tan_theta_m_sqr * (-1.f / dr::square(alpha)));
 
-    p *= dr::safe_sqrt(r2 / (1.f - dr::sqr(v.z())));
+    p *= dr::safe_sqrt(r2 / (1.f - dr::square(v.z())));
 
     return uniform_disk_to_square_concentric(p);
 }
@@ -626,7 +626,7 @@ MI_INLINE Value square_to_beckmann_pdf(const Vector<Value, 3> &m,
     Value temp = Frame::tan_theta(m) / alpha,
           ct   = Frame::cos_theta(m);
 
-    Value result = dr::exp(-dr::sqr(temp)) / (dr::Pi<Value> * dr::sqr(alpha * ct) * ct);
+    Value result = dr::exp(-dr::square(temp)) / (dr::Pi<Value> * dr::square(alpha * ct) * ct);
 
     return dr::select(ct < 1e-9f, 0.f, result);
 }
@@ -654,7 +654,7 @@ MI_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sam
 #endif
 
     auto [s, c] = dr::sincos(dr::TwoPi<Value> * sample.x());
-    Value sin_theta = dr::safe_sqrt(1.f - dr::sqr(cos_theta));
+    Value sin_theta = dr::safe_sqrt(1.f - dr::square(cos_theta));
     Vector<Value, 3> result = { c * sin_theta, s * sin_theta, cos_theta };
 #else
     // Approach 2: low-distortion warping technique based on concentric disk mapping
@@ -664,7 +664,7 @@ MI_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sam
           sy = dr::maximum(1.f - r2, 1e-6f),
           cos_theta = 1.f + dr::log(sy + (1.f - sy) * dr::exp(-2.f * kappa)) / kappa;
 
-    p *= dr::safe_sqrt((1.f - dr::sqr(cos_theta)) / r2);
+    p *= dr::safe_sqrt((1.f - dr::square(cos_theta)) / r2);
 
     Vector<Value, 3> result = { p.x(), p.y(), cos_theta };
 #endif
@@ -753,7 +753,7 @@ namespace detail {
             Value factor = i + 1.f;
             result += xi / denom;
             xi *= x2;
-            denom *= 4.f * dr::sqr(factor);
+            denom *= 4.f * dr::square(factor);
         }
         return result;
     }

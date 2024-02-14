@@ -1,4 +1,3 @@
-#include <tuple>
 #include <mitsuba/core/ray.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/bsdf.h>
@@ -288,7 +287,7 @@ public:
 
             Float throughput_max = dr::max(unpolarized_spectrum(throughput));
 
-            Float rr_prob = dr::minimum(throughput_max * dr::sqr(eta), .95f);
+            Float rr_prob = dr::minimum(throughput_max * dr::square(eta), .95f);
             Mask rr_active = depth >= m_rr_depth,
                  rr_continue = sampler->next_1d() < rr_prob;
 

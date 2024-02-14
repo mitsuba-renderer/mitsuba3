@@ -103,8 +103,8 @@ public:
             /* The scale factors of 1e-9f are needed to perform a conversion between
                densities per unit nanometer and per unit meter. */
             Wavelength lambda  = wavelengths * 1e-9f,
-                       lambda2 = dr::sqr(lambda),
-                       lambda5 = dr::sqr(lambda2) * lambda;
+                       lambda2 = dr::square(lambda),
+                       lambda5 = dr::square(lambda2) * lambda;
 
             dr::mask_t<Wavelength> active = active_;
             active &= wavelengths >= m_wavelength_range.x()
@@ -133,8 +133,8 @@ public:
     Wavelength pdf_spectrum(const SurfaceInteraction3f &si, Mask active_) const override {
         if constexpr (is_spectral_v<Spectrum>) {
             Wavelength lambda  = si.wavelengths * 1e-9f,
-                       lambda2 = dr::sqr(lambda),
-                       lambda5 = dr::sqr(lambda2) * lambda;
+                       lambda2 = dr::square(lambda),
+                       lambda5 = dr::square(lambda2) * lambda;
 
             dr::mask_t<Wavelength> active = active_;
             active &= si.wavelengths >= m_wavelength_range.x()
@@ -154,17 +154,17 @@ public:
 
     template <typename Value>
     std::pair<Value, Value> cdf_and_pdf(Value lambda) const {
-        Value c1_2 = dr::sqr(c1),
+        Value c1_2 = dr::square(c1),
               c1_3 = c1_2 * c1,
-              c1_4 = dr::sqr(c1_2);
+              c1_4 = dr::square(c1_2);
 
         const Value K  = m_temperature,
-                    K2 = dr::sqr(K),
+                    K2 = dr::square(K),
                     K3 = K2*K;
 
         lambda *= 1e-9f;
 
-        Value lambda2 = dr::sqr(lambda),
+        Value lambda2 = dr::square(lambda),
               lambda3 = lambda2 * lambda,
               lambda5 = lambda2 * lambda3;
 
@@ -247,11 +247,11 @@ public:
     }
 
     ScalarFloat max() const override {
-        ScalarFloat lambda_peak = dr::clamp(b / m_temperature, 
+        ScalarFloat lambda_peak = dr::clip(b / m_temperature, 
                                             m_wavelength_range.x() * 1e-9f, 
                                             m_wavelength_range.y() * 1e-9f),
-                    lambda2_peak = dr::sqr(lambda_peak),
-                    lambda5_peak = dr::sqr(lambda2_peak) * lambda_peak;
+                    lambda2_peak = dr::square(lambda_peak),
+                    lambda5_peak = dr::square(lambda2_peak) * lambda_peak;
 
         ScalarFloat P = 1e-9f * c0 / (lambda5_peak *
                     (dr::exp(c1 / (lambda_peak * m_temperature)) - 1.f));

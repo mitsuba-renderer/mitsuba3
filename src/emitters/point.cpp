@@ -142,7 +142,7 @@ public:
         si.wavelengths = it.wavelengths;
 
         UnpolarizedSpectrum spec =
-            m_intensity->eval(si, active) * dr::sqr(inv_dist);
+            m_intensity->eval(si, active) * dr::square(inv_dist);
 
         return { ds, depolarizer<Spectrum>(spec) };
     }
