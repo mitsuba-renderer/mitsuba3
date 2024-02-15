@@ -222,20 +222,14 @@ NB_MODULE(MODULE_NAME, m) {
     auto casters = (std::vector<void *> *) ((nb::capsule)(mitsuba_ext.attr("casters"))).data();
     casters->push_back((void *) caster);
 
-//    /* Register a cleanup callback function that is invoked when
-//       the 'mitsuba::Scene' Python type is garbage collected */
-//    py::cpp_function cleanup_callback(
-//        [](py::handle weakref) {
-//            color_management_static_shutdown();
-//            Scene::static_accel_shutdown();
-//
-//            /* The DrJit python module is responsible for cleaning up the
-//               JIT state, so jit_shutdown() shouldn't be called here. */
-//            weakref.dec_ref();
-//        }
-//    );
-//
-//    (void) py::weakref(m.attr("Scene"), cleanup_callback).release();
+    /* Callback function cleanup static variant-specific data strucutres, this
+     * should be called when the interpreter is exiting */
+    auto atexit = nb::module_::import_("atexit");
+    atexit.attr("register")(nb::cpp_function([]() {
+        Thread::wait_for_tasks();
+        color_management_static_shutdown();
+        Scene::static_accel_shutdown();
+    }));
 
     // Change module name back to correct value
     m.attr("__name__") = "mitsuba." DRJIT_TOSTRING(MODULE_NAME);
