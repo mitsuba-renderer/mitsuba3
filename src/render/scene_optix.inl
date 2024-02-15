@@ -30,12 +30,11 @@ struct OptixSceneState {
     OptixAccelData accel;
     OptixTraversableHandle ias_handle = 0ull;
     struct InstanceData {
-        void* buffer = nullptr;             // Device-visible storage for IAS 
-        void* inputs = nullptr;             // Device-visible storage for OptixInstance array
+        void* buffer = nullptr;  // Device-visible storage for IAS
+        void* inputs = nullptr;  // Device-visible storage for OptixInstance array
     } ias_data;
     size_t config_index;
     uint32_t sbt_jit_index;
-    bool own_sbt;
 };
 
 /**
@@ -357,9 +356,11 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
             jit_optix_update_sbt(s2.sbt_jit_index, &s2.sbt);
 
             memcpy(&s.sbt, &s2.sbt, sizeof(OptixShaderBindingTable));
+
             s.sbt_jit_index = s2.sbt_jit_index;
+            jit_var_inc_ref(s.sbt_jit_index);
+
             s.config_index = s2.config_index;
-            s.own_sbt = false;
         } else {
             // =====================================================
             //  Initialize OptiX configuration
@@ -425,7 +426,6 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
                 jit_malloc_migrate(s.sbt.hitgroupRecordBase, AllocType::Device, 1);
 
             s.sbt_jit_index = jit_optix_configure_sbt(&s.sbt, config.pipeline_jit_index);
-            s.own_sbt = true;
         }
 
         // =====================================================
@@ -555,12 +555,10 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
 
         OptixSceneState *s = (OptixSceneState *) m_accel;
 
-        if (s->own_sbt) {
-            /* This will decrease the reference count of the shader binding table
-               JIT variable which might trigger the release of the OptiX SBT if
-               no ray tracing calls are pending. */
-            (void) UInt32::steal(s->sbt_jit_index);
-        }
+        /* This will decrease the reference count of the shader binding table
+            JIT variable which might trigger the release of the OptiX SBT if
+            no ray tracing calls are pending. */
+        (void) UInt32::steal(s->sbt_jit_index);
 
         /* Decrease the reference count of the IAS handle variable. This will
            trigger the release of the OptiX acceleration data structure if no
