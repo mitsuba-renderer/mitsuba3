@@ -190,6 +190,8 @@ public:
     MI_IMPORT_BASE(Sensor)
     MI_IMPORT_TYPES()
 
+    virtual ~ProjectiveCamera();
+
     /// Return the near clip plane distance
     ScalarFloat near_clip() const { return m_near_clip; }
 
@@ -206,10 +208,9 @@ public:
     }
 
     MI_DECLARE_CLASS()
+
 protected:
     ProjectiveCamera(const Properties &props);
-
-    virtual ~ProjectiveCamera();
 
 protected:
     ScalarFloat m_near_clip;
