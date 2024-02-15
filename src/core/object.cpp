@@ -6,9 +6,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-std::vector<ref<Object>> Object::expand() const {
-    return { };
-}
+std::vector<ref<Object>> Object::expand() const { return { }; }
 
 void Object::traverse(TraversalCallback * /*callback*/) { }
 
