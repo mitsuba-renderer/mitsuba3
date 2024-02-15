@@ -88,7 +88,7 @@ NB_MODULE(mitsuba_ext, m) {
 //    m.def("set_log_level", [](mitsuba::LogLevel level) {
 //
 //        if (!Thread::thread()->logger()) {
-//            Throw("No Logger instance is set on the current thread! This is likely due to " 
+//            Throw("No Logger instance is set on the current thread! This is likely due to "
 //                  "set_log_level being called from a non-Mitsuba thread. You can manually set a "
 //                  "thread's ThreadEnvironment (which includes the logger) using "
 //                  "ScopedSetThreadEnvironment e.g.\n"
@@ -158,18 +158,24 @@ NB_MODULE(mitsuba_ext, m) {
 //    MI_PY_IMPORT(FilmFlags);
 //    MI_PY_IMPORT(DiscontinuityFlags);
 
-    // Callback function to wait for pending tasks & cleanup
+    /* Register a cleanup callback function to wait for pending tasks (this is
+     * called before all Python variables are cleaned up */
     auto atexit = nb::module_::import_("atexit");
     atexit.attr("register")(nb::cpp_function([]() {
         Thread::wait_for_tasks();
-
-        Profiler::static_shutdown();
-        Bitmap::static_shutdown();
-        Logger::static_shutdown();
-        Thread::static_shutdown();
-        Class::static_shutdown();
-        Jit::static_shutdown();
     }));
+
+    /* Callback function cleanup static data strucutres, this should be called
+     * when the module is being deallocated */
+    nanobind_module_def_mitsuba_ext.m_free = [](void *) {
+            Profiler::static_shutdown();
+            Bitmap::static_shutdown();
+            Logger::static_shutdown();
+            Thread::static_shutdown();
+            Class::static_shutdown();
+            Jit::static_shutdown();
+    };
+
 
     // Change module name back to correct value
     m.attr("__name__") = "mitsuba_ext";
