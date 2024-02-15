@@ -5,6 +5,7 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/python/python.h>
+#include <nanobind/stl/string.h>
 
 #if !defined(MI_ENABLE_EMBREE)
 #  include <mitsuba/render/kdtree.h>
