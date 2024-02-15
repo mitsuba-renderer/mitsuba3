@@ -456,7 +456,7 @@ Task *instantiate_node(DictParseContext &ctx,
 
         for (auto &[key2, path2] : inst.dependencies) {
             if (ctx.instances.count(path2) == 1) {
-                auto obj2 = ctx.instances[path2].object;
+                ref<Object> obj2 = ctx.instances[path2].object;
                 if (obj2)
                     expand_and_set_object(props, key2, obj2);
                 else
