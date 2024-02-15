@@ -1,5 +1,7 @@
 #pragma once
 
+#define NB_INTRUSIVE_EXPORT MI_EXPORT
+
 #include <atomic>
 #include <stdexcept>
 #include <mitsuba/core/class.h>
