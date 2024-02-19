@@ -553,11 +553,6 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
         // Ensure all ray tracing kernels are terminated before releasing the scene
         dr::sync_thread();
 
-        /* Decrease the reference count of the IAS handle variable. This will
-           trigger the release of the OptiX acceleration data structure if no
-           ray tracing calls are pending. */
-        m_accel_handle = 0;
-
         OptixSceneState *s = (OptixSceneState *) m_accel;
 
         if (s->own_sbt) {
@@ -566,6 +561,13 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
                no ray tracing calls are pending. */
             (void) UInt32::steal(s->sbt_jit_index);
         }
+
+        /* Decrease the reference count of the IAS handle variable. This will
+           trigger the release of the OptiX acceleration data structure if no
+           ray tracing calls are pending.
+           This **needs** to be done after decreasing the SBT index */
+        m_accel_handle = 0;
+
         m_accel = nullptr;
     }
 }
