@@ -19,7 +19,7 @@
 #define PY_TRY_CAST(Type)                                                      \
     if (Type* tmp = dynamic_cast<Type *>(o); tmp) {                            \
         if (PyObject* obj = tmp->self_py())                                    \
-            return borrow(nb::handle(obj).inc_ref());                          \
+            return borrow(nb::handle(obj));                                    \
         else                                                                   \
             return nb::cast(tmp);                                              \
     }
@@ -222,7 +222,7 @@ NB_MODULE(MODULE_NAME, m) {
     auto casters = (std::vector<void *> *) ((nb::capsule)(mitsuba_ext.attr("casters"))).data();
     casters->push_back((void *) caster);
 
-    /* Callback function cleanup static variant-specific data strucutres, this
+    /* Callback function cleanup static variant-specific data structures, this
      * should be called when the interpreter is exiting */
     auto atexit = nb::module_::import_("atexit");
     atexit.attr("register")(nb::cpp_function([]() {

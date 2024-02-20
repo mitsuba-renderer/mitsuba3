@@ -112,6 +112,15 @@ void Class::static_initialization() {
     m_is_initialized = true;
 }
 
+void Class::static_remove_functors() {
+    if (!m_is_initialized)
+        return;
+    for (auto &pair : *__classes) {
+        pair.second->m_construct = nullptr;
+        pair.second->m_unserialize = nullptr;
+    }
+}
+
 void Class::static_shutdown() {
     if (!m_is_initialized)
         return;
