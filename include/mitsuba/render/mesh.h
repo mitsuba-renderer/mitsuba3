@@ -39,8 +39,8 @@ public:
          ScalarSize face_count, const Properties &props = Properties(),
          bool has_vertex_normals = false, bool has_vertex_texcoords = false);
 
-    /// Virtual destructor
-    virtual ~Mesh();
+    /// Destructor
+    ~Mesh();
 
     /// Must be called at the end of the constructor of Mesh plugins
     void initialize() override;
@@ -338,13 +338,13 @@ public:
 
 #if defined(MI_ENABLE_EMBREE)
     /// Return the Embree version of this shape
-    virtual RTCGeometry embree_geometry(RTCDevice device) override;
+    RTCGeometry embree_geometry(RTCDevice device) override;
 #endif
 
 #if defined(MI_ENABLE_CUDA)
     using Base::m_optix_data_ptr;
-    virtual void optix_prepare_geometry() override;
-    virtual void optix_build_input(OptixBuildInput&) const override;
+    void optix_prepare_geometry() override;
+    void optix_build_input(OptixBuildInput&) const override;
 #endif
 
     /// @}
@@ -355,7 +355,7 @@ public:
     bool parameters_grad_enabled() const override;
 
     /// Return a human-readable string representation of the shape contents.
-    virtual std::string to_string() const override;
+    std::string to_string() const override;
 
     size_t vertex_data_bytes() const;
     size_t face_data_bytes() const;

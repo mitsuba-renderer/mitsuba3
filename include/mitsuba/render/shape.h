@@ -229,8 +229,8 @@ public:
     using Index = UInt32;
     using ScalarRay3f = Ray<ScalarPoint3f, Spectrum>;
 
-    /// Virtual destructor
-    virtual ~Shape();
+    /// Destructor
+    ~Shape();
 
     // =============================================================
     //! @{ \name Sampling routines

@@ -38,8 +38,8 @@ class MI_EXPORT_LIB Integrator : public Object {
 public:
     MI_IMPORT_TYPES(Scene, Sensor)
 
-    /// Virtual destructor
-    virtual ~Integrator() { }
+    /// Destructor
+    ~Integrator() { }
 
     /**
      * \brief Render the scene
@@ -465,7 +465,7 @@ class MI_EXPORT_LIB MonteCarloIntegrator
 public:
     MI_IMPORT_BASE(SamplingIntegrator)
 
-    /// Virtual destructor
+    /// Destructor
     ~MonteCarloIntegrator();
 
 protected:
@@ -542,8 +542,8 @@ protected:
     /// Create an integrator
     AdjointIntegrator(const Properties &props);
 
-    /// Virtual destructor
-    virtual ~AdjointIntegrator();
+    /// Destructor
+    ~AdjointIntegrator();
 
 protected:
     /**

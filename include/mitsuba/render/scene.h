@@ -43,8 +43,8 @@ public:
     /// Instantiate a scene from a \ref Properties object
     Scene(const Properties &props);
 
-    /// Virtual destructor
-    virtual ~Scene();
+    /// Destructor
+    ~Scene();
 
     // =============================================================
     //! @{ \name Ray tracing

@@ -9,8 +9,8 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MI_EXPORT_LIB Formatter : public Object {
 public:
-    /// Virtual destructor
-    virtual ~Formatter() = default;
+    /// Destructor
+    ~Formatter() = default;
 
     /**
      * \brief Turn a log message into a human-readable format

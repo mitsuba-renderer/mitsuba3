@@ -29,8 +29,8 @@ public:
     /// Construct a new logger with the given minimum log level
     Logger(LogLevel log_level = Debug);
 
-    /// Virtual destructor
-    virtual ~Logger();
+    /// Destructor
+    ~Logger();
 
     /**
      * \brief Process a log message

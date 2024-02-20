@@ -38,8 +38,8 @@ public:
     ZStream(Stream *child_stream, EStreamType stream_type = EDeflateStream,
             int level = -1);
 
-    /// Virtual destructor
-    virtual ~ZStream();
+    /// Destructor
+    ~ZStream();
 
     /// Returns a string representation
     std::string to_string() const override;
@@ -50,10 +50,10 @@ public:
      * This function is idempotent.
      * It is called automatically by the destructor.
      */
-    virtual void close() override;
+    void close() override;
 
     /// Whether the stream is closed (no read or write are then permitted).
-    virtual bool is_closed() const override { return m_child_stream && m_child_stream->is_closed(); };
+    bool is_closed() const override { return m_child_stream && m_child_stream->is_closed(); };
 
     // =========================================================================
     //! @{ \name Compression stream-specific features
@@ -77,47 +77,47 @@ public:
      * it first using ZLib.
      * Throws an exception when the stream ended prematurely.
      */
-    virtual void read(void *p, size_t size) override;
+    void read(void *p, size_t size) override;
 
     /**
      * \brief Writes a specified amount of data into the stream, compressing
      * it first using ZLib.
      * Throws an exception when not all data could be written.
      */
-    virtual void write(const void *p, size_t size) override;
+    void write(const void *p, size_t size) override;
 
     /// Flushes any buffered data
-    virtual void flush() override;
+    void flush() override;
 
     /// Unsupported. Always throws.
-    virtual void seek(size_t) override {
+    void seek(size_t) override {
         Throw("seek(): unsupported in a ZLIB stream!");
     }
 
     //// Unsupported. Always throws.
-    virtual void truncate(size_t) override {
+    void truncate(size_t) override {
         Throw("truncate(): unsupported in a ZLIB stream!");
     }
 
     /// Unsupported. Always throws.
-    virtual size_t tell() const override {
+    size_t tell() const override {
         Throw("tell(): unsupported in a ZLIB stream!");
         return 0;
     }
 
     /// Unsupported. Always throws.
-    virtual size_t size() const override {
+    size_t size() const override {
         Throw("size(): unsupported in a ZLIB stream!");
         return 0;
     }
 
     /// Can we write to the stream?
-    virtual bool can_write() const override {
+    bool can_write() const override {
         return m_child_stream->can_write();
     }
 
     /// Can we read from the stream?
-    virtual bool can_read() const override {
+    bool can_read() const override {
         return m_child_stream->can_read();
     }
 

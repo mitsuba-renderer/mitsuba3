@@ -55,8 +55,8 @@ public:
     MI_IMPORT_BASE(Endpoint, m_shape)
     MI_IMPORT_TYPES()
 
-    /// Virtual destructor
-    virtual ~Emitter();
+    /// Destructor
+    ~Emitter();
 
     /// Is this an environment map light emitter?
     bool is_environment() const {

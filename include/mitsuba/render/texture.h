@@ -24,8 +24,8 @@ class MI_EXPORT_LIB Texture : public Object {
 public:
     MI_IMPORT_TYPES()
 
-    /// Virtual destructor
-    virtual ~Texture();
+    /// Destructor
+    ~Texture();
 
     // =============================================================
     //! @{ \name Standard sampling interface

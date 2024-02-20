@@ -59,8 +59,8 @@ public:
     //! @{ \name Wavelength sampling interface
     // =============================================================
 
-    /// Virtual destructor
-    virtual ~Endpoint();
+    /// Destructor
+    ~Endpoint();
 
     /**
      * \brief Importance sample a set of wavelengths according to the

@@ -13,8 +13,8 @@ class MI_EXPORT_LIB Medium : public Object {
 public:
     MI_IMPORT_TYPES(PhaseFunction, Sampler, Scene, Texture);
 
-    /// Virtual destructor
-    virtual ~Medium();
+    /// Destructor
+    ~Medium();
 
     /// Intersects a ray with the medium's bounding box
     virtual std::tuple<Mask, Float, Float>

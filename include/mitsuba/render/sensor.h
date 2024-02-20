@@ -24,8 +24,8 @@ public:
     //! @{ \name Sensor-specific sampling functions
     // =============================================================
 
-    /// Virtual destructor
-    virtual ~Sensor();
+    /// Destructor
+    ~Sensor();
 
     /**
      * \brief Importance sample a ray differential proportional to the sensor's
