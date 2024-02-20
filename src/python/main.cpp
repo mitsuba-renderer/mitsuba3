@@ -163,6 +163,7 @@ NB_MODULE(mitsuba_ext, m) {
     auto atexit = nb::module_::import_("atexit");
     atexit.attr("register")(nb::cpp_function([]() {
         Thread::wait_for_tasks();
+        Class::static_remove_functors();
     }));
 
     /* Callback function cleanup static data strucutres, this should be called
@@ -175,7 +176,6 @@ NB_MODULE(mitsuba_ext, m) {
             Class::static_shutdown();
             Jit::static_shutdown();
     };
-
 
     // Change module name back to correct value
     m.attr("__name__") = "mitsuba_ext";

@@ -23,8 +23,8 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MI_EXPORT_LIB Class {
 public:
-    using ConstructFunctor   = std::function<Object *(const Properties &props)>;
-    using UnserializeFunctor = std::function<Object *(Stream *stream)>;
+    using ConstructFunctor   = std::function<ref<Object> (const Properties &props)>;
+    using UnserializeFunctor = std::function<ref<Object> (Stream *stream)>;
 
     /**
      * \brief Construct a new class descriptor
@@ -105,6 +105,15 @@ public:
      * a list of all compiled classes
      */
     static void static_initialization();
+
+    /** \brif Remove all constructors and unserializers of all classes
+     *
+     * This sets the the construction and unserialization functions of all
+     * classes to nullptr. This should only be necessary if these functions
+     * capture variables that need to be deallocated before calling the
+     * \ref static_shutdown method.
+     */
+    static void static_remove_functors();
 
     /// Free the memory taken by static_initialization()
     static void static_shutdown();
