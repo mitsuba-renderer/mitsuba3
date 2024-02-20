@@ -68,19 +68,6 @@ public:
         NB_OVERRIDE_PURE(bbox);
     }
 
-    //FIXME
-    //void set_shape(Shape *shape) override {
-    //    NB_OVERRIDE(set_shape, shape);
-    //}
-
-    //void set_medium(Medium *medium) override {
-    //    NB_OVERRIDE(set_medium, medium);
-    //}
-
-    //void set_scene(const Scene *scene) override {
-    //    NB_OVERRIDE(set_scene, scene);
-    //}
-
     std::string to_string() const override {
         NB_OVERRIDE_PURE(to_string);
     }
@@ -150,9 +137,8 @@ template <typename Ptr, typename Cls> void bind_emitter_generic(Cls &cls) {
             "si"_a, "sample"_a, "active"_a = true,
             D(Endpoint, sample_wavelengths))
     .def("flags", [](EmitterPtr ptr) { return ptr->flags(); }, D(Emitter, flags))
-    // FIXME
-    //.def("get_shape", [](EmitterPtr ptr) { return ptr->shape(); }, D(Endpoint, shape))
-    //.def("get_medium", [](EmitterPtr ptr) { return ptr->medium(); }, D(Endpoint, medium))
+    .def("get_shape", [](EmitterPtr ptr) { return ptr->shape(); }, D(Endpoint, shape))
+    .def("get_medium", [](EmitterPtr ptr) { return ptr->medium(); }, D(Endpoint, medium))
     .def("sampling_weight", [](EmitterPtr ptr) { return ptr->sampling_weight(); }, D(Emitter, sampling_weight))
     .def("is_environment", [](EmitterPtr ptr) { return ptr->is_environment(); }, D(Emitter, is_environment));
 }

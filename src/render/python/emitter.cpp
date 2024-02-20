@@ -12,5 +12,5 @@ MI_PY_EXPORT(EmitterExtras) {
         .def_value(EmitterFlags, SpatiallyVarying)
         .def_value(EmitterFlags, Delta);
 
-    //MI_PY_DECLARE_ENUM_OPERATORS(EmitterFlags, e)
+    MI_PY_DECLARE_ENUM_OPERATORS(EmitterFlags, e)
 }
