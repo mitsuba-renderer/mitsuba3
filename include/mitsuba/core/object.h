@@ -261,7 +261,7 @@ public:
     operator bool() const { return m_ptr != nullptr; }
 private:
 
-    /// Icrease the object's reference count
+    /// Increase the object's reference count
     MI_INLINE void inc_ref() const {
         if (m_ptr)
             ((Object *) m_ptr)->inc_ref();
