@@ -15,8 +15,8 @@ class MI_EXPORT_LIB Volume : public Object {
 public:
     MI_IMPORT_TYPES(Texture)
 
-    /// Virtual destructor
-    virtual ~Volume() {}
+    /// Destructor
+    ~Volume() {}
 
     // ======================================================================
     //! @{ \name Volume interface

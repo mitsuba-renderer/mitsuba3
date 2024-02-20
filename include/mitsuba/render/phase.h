@@ -107,8 +107,8 @@ class MI_EXPORT_LIB PhaseFunction : public Object {
 public:
     MI_IMPORT_TYPES(PhaseFunctionContext);
 
-    /// Virtual destructor
-    virtual ~PhaseFunction();
+    /// Destructor
+    ~PhaseFunction();
 
     /**
      * \brief Importance sample the phase function model

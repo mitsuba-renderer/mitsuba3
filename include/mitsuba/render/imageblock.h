@@ -38,8 +38,8 @@ class MI_EXPORT_LIB ImageBlock : public Object {
 public:
     MI_IMPORT_TYPES(ReconstructionFilter)
 
-    /// Virtual destructor
-    virtual ~ImageBlock();
+    /// Destructor
+    ~ImageBlock();
 
     /**
      * \brief Construct a zero-initialized image block with the desired shape

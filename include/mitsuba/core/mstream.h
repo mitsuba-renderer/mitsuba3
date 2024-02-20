@@ -33,8 +33,8 @@ public:
      */
     MemoryStream(void *ptr, size_t size);
 
-    /// Virtual destructor
-    virtual ~MemoryStream();
+    /// Destructor
+    ~MemoryStream();
 
     /// Returns a string representation
     std::string to_string() const override;
@@ -45,10 +45,10 @@ public:
      * This function is idempotent.
      * It may be called automatically by the destructor.
      */
-    virtual void close() override { m_is_closed = true; };
+    void close() override { m_is_closed = true; };
 
     /// Whether the stream is closed (no read or write are then permitted).
-    virtual bool is_closed() const override { return m_is_closed; };
+    bool is_closed() const override { return m_is_closed; };
 
     // =========================================================================
     //! @{ \name Implementation of the Stream interface
@@ -59,13 +59,13 @@ public:
      * Throws an exception if trying to read further than the current size
      * of the contents.
      */
-    virtual void read(void *p, size_t size) override;
+    void read(void *p, size_t size) override;
 
     /**
      * \brief Writes a specified amount of data into the memory buffer.
      * The capacity of the memory buffer is extended if necessary.
      */
-    virtual void write(const void *p, size_t size) override;
+    void write(const void *p, size_t size) override;
 
     /** Seeks to a position inside the stream.
      * You may seek beyond the size of the stream's contents, or even beyond the
@@ -73,7 +73,7 @@ public:
      * A subsequent write would then expand the size and capacity
      * accordingly. The contents of the memory that was skipped is undefined.
      */
-    virtual void seek(size_t pos) override {
+    void seek(size_t pos) override {
         m_pos = pos;
     }
 
@@ -84,28 +84,28 @@ public:
      * \note This will throw is the MemoryStream was initialized with a
      * pre-allocated buffer.
      */
-    virtual void truncate(size_t size) override;
+    void truncate(size_t size) override;
 
     /** \brief Gets the current position inside the memory buffer. Note that
      * this might be further than the stream's size or even capacity.
      */
 
-    virtual size_t tell() const override { return m_pos; };
+    size_t tell() const override { return m_pos; };
 
     /** \brief Returns the size of the contents written to the memory buffer.
      * \note This is not equal to the size of the memory buffer in general,
      * since we allocate more capacity at once.
      */
-    virtual size_t size() const override { return m_size; };
+    size_t size() const override { return m_size; };
 
     /// No-op since all writes are made directly to memory
-    virtual void flush() override { };
+    void flush() override { };
 
     /// Always returns true, except if the stream is closed.
-    virtual bool can_write() const override { return !is_closed(); }
+    bool can_write() const override { return !is_closed(); }
 
     /// Always returns true, except if the stream is closed.
-    virtual bool can_read() const override { return !is_closed(); }
+    bool can_read() const override { return !is_closed(); }
 
     /// Return the current capacity of the underlying memory buffer
     size_t capacity() const { return m_capacity; }

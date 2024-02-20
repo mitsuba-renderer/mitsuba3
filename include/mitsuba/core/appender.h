@@ -10,8 +10,8 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MI_EXPORT_LIB Appender : public Object {
 public:
-    /// Virtual destructor
-    virtual ~Appender() = default;
+    /// Destructor
+    ~Appender() = default;
 
     /// Append a line of text with the given log level
     virtual void append(LogLevel level, const std::string &text) = 0;
@@ -47,8 +47,8 @@ public:
     /// Create a new stream appender logging to a file
     StreamAppender(const std::string &filename);
 
-    /// Virtual destructor
-    virtual ~StreamAppender();
+    /// Destructor
+    ~StreamAppender();
 
     /// Append a line of text
     void append(LogLevel level, const std::string &text) override;

@@ -267,8 +267,8 @@ class MI_EXPORT_LIB BSDF : public Object {
 public:
     MI_IMPORT_TYPES(Texture)
 
-    /// Virtual destructor
-    virtual ~BSDF();
+    /// Destructor
+    ~BSDF();
 
     /**
      * \brief Importance sample the BSDF model

@@ -64,8 +64,8 @@ class MI_EXPORT_LIB Sampler : public Object {
 public:
     MI_IMPORT_TYPES()
 
-    /// Virtual destructor
-    virtual ~Sampler();
+    /// Destructor
+    ~Sampler();
 
     /**
      * \brief Create a fork of this sampler.
@@ -165,9 +165,8 @@ public:
     MI_IMPORT_TYPES()
     using PCG32 = mitsuba::PCG32<UInt32>;
 
-    virtual void seed(uint32_t seed,
-                      uint32_t wavefront_size = (uint32_t) -1) override;
-    virtual void schedule_state() override;
+    void seed(uint32_t seed, uint32_t wavefront_size = (uint32_t) -1) override;
+    void schedule_state() override;
 
     MI_DECLARE_CLASS()
 protected:
