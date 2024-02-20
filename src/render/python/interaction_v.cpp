@@ -28,7 +28,9 @@ MI_PY_EXPORT(Interaction) {
         .def("spawn_ray_to", &Interaction3f::spawn_ray_to, "t"_a, D(Interaction, spawn_ray_to))
         .def("is_valid",     &Interaction3f::is_valid,     D(Interaction, is_valid))
         .def("zero_",        &Interaction3f::zero_, D(Interaction, zero))
-        .def_repr(Interaction3f);
+        ;
+        // FIXME
+        //.def_repr(Interaction3f);
 
     MI_PY_DRJIT_STRUCT(it, Interaction3f, t, time, wavelengths, p, n)
 }
@@ -53,7 +55,7 @@ MI_PY_EXPORT(SurfaceInteraction) {
         //.def_field(SurfaceInteraction3f, instance,      D(SurfaceInteraction, instance))
 
         // Methods
-        .def(nb::init<>(), D(SurfaceInteraction, SurfaceInteraction))
+        .def(nb::init<>(), D(SurfaceInteraction, SurfaceInteraction));
         //.def(nb::init<const SurfaceInteraction3f &>(), "Copy constructor")
         //.def(nb::init<const PositionSample3f &, const Wavelength &>(), "ps"_a,
         //    "wavelengths"_a, D(SurfaceInteraction, SurfaceInteraction))
@@ -89,7 +91,7 @@ MI_PY_EXPORT(SurfaceInteraction) {
         //    D(SurfaceInteraction, has_uv_partials))
         //.def("has_n_partials", &SurfaceInteraction3f::has_n_partials,
         //    D(SurfaceInteraction, has_n_partials))
-        .def_repr(SurfaceInteraction3f);
+        //.def_repr(SurfaceInteraction3f);
 
     //MI_PY_DRJIT_STRUCT(si, SurfaceInteraction3f, t, time, wavelengths, p, n,
     //                   shape, uv, sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
