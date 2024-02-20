@@ -3,39 +3,41 @@
 #include <mitsuba/render/phase.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/python/python.h>
+#include <nanobind/trampoline.h>
+#include <nanobind/stl/string.h>
+#include <drjit/python.h>
 
 /// Trampoline for derived types implemented in Python
 MI_VARIANT class PyMedium : public Medium<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Medium, Sampler, Scene)
+    NB_TRAMPOLINE(Medium, 6);
 
     PyMedium(const Properties &props) : Medium(props) {}
 
     std::tuple<Mask, Float, Float> intersect_aabb(const Ray3f &ray) const override {
-        using Return = std::tuple<Mask, Float, Float>;
-        PYBIND11_OVERRIDE_PURE(Return, Medium, intersect_aabb, ray);
+        NB_OVERRIDE_PURE(intersect_aabb, ray);
     }
 
     UnpolarizedSpectrum get_majorant(const MediumInteraction3f &mi, Mask active = true) const override {
-        PYBIND11_OVERRIDE_PURE(UnpolarizedSpectrum, Medium, get_majorant, mi, active);
+        NB_OVERRIDE_PURE(get_majorant, mi, active);
     }
 
     std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
     get_scattering_coefficients(const MediumInteraction3f &mi, Mask active = true) const override {
-        using Return = std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>;
-        PYBIND11_OVERRIDE_PURE(Return, Medium, get_scattering_coefficients, mi, active);
+        NB_OVERRIDE_PURE(get_scattering_coefficients, mi, active);
     }
 
     std::string to_string() const override {
-        PYBIND11_OVERRIDE_PURE(std::string, Medium, to_string, );
+        NB_OVERRIDE_PURE(to_string);
     }
 
     void traverse(TraversalCallback *cb) override {
-        PYBIND11_OVERRIDE(void, Medium, traverse, cb);
+        NB_OVERRIDE(traverse, cb);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
-        PYBIND11_OVERRIDE(void, Medium, parameters_changed, keys);
+        NB_OVERRIDE(parameters_changed, keys);
     }
 
     using Medium::m_sample_emitters;
@@ -84,9 +86,6 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
                 return ptr->get_scattering_coefficients(mi, active); },
             "mi"_a, "active"_a=true,
             D(Medium, get_scattering_coefficients));
-
-    if constexpr (dr::is_array_v<Ptr>)
-        bind_drjit_ptr_array(cls);
 }
 
 MI_PY_EXPORT(Medium) {
@@ -94,38 +93,36 @@ MI_PY_EXPORT(Medium) {
     using PyMedium = PyMedium<Float, Spectrum>;
 
     auto medium = MI_PY_TRAMPOLINE_CLASS(PyMedium, Medium, Object)
-            .def(py::init<const Properties &>())
-            .def_method(Medium, id)
-            .def_property("m_sample_emitters",
-                [](PyMedium &medium){ return medium.m_sample_emitters; },
-                [](PyMedium &medium, bool value){
-                    medium.m_sample_emitters = value;
-                }
-            )
-            .def_property("m_is_homogeneous",
-                [](PyMedium &medium){ return medium.m_is_homogeneous; },
-                [](PyMedium &medium, bool value){
-                    medium.m_is_homogeneous = value;
-                }
-            )
-            .def_property("m_has_spectral_extinction",
-                [](PyMedium &medium){ return medium.m_has_spectral_extinction; },
-                [](PyMedium &medium, bool value){
-                    medium.m_has_spectral_extinction = value;
-                }
-            )
-            .def("__repr__", &Medium::to_string);
+        .def(nb::init<const Properties &>(), "props"_a)
+        .def_method(Medium, id)
+        .def_method(Medium, set_id)
+        .def_prop_rw("m_sample_emitters",
+            [](PyMedium &medium){ return medium.m_sample_emitters; },
+            [](PyMedium &medium, bool value){
+                medium.m_sample_emitters = value;
+            }
+        )
+        .def_prop_rw("m_is_homogeneous",
+            [](PyMedium &medium){ return medium.m_is_homogeneous; },
+            [](PyMedium &medium, bool value){
+                medium.m_is_homogeneous = value;
+            }
+        )
+        .def_prop_rw("m_has_spectral_extinction",
+            [](PyMedium &medium){ return medium.m_has_spectral_extinction; },
+            [](PyMedium &medium, bool value){
+                medium.m_has_spectral_extinction = value;
+            }
+        )
+        .def("__repr__", &Medium::to_string, D(Medium, to_string));
 
     bind_medium_generic<Medium *>(medium);
 
     if constexpr (dr::is_array_v<MediumPtr>) {
-        py::object dr       = py::module_::import("drjit"),
-                   dr_array = dr.attr("ArrayBase");
-
-        py::class_<MediumPtr> cls(m, "MediumPtr", dr_array);
-        bind_medium_generic<MediumPtr>(cls);
+        dr::ArrayBinding b;
+        auto medium_ptr = dr::bind_array_t<MediumPtr>(b, m, "MediumPtr");
+        bind_medium_generic<MediumPtr>(medium_ptr);
     }
-
 
     MI_PY_REGISTER_OBJECT("register_medium", Medium)
 }

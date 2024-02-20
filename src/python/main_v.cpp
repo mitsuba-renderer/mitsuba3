@@ -98,7 +98,7 @@ MI_PY_DECLARE(Interaction);
 MI_PY_DECLARE(SurfaceInteraction);
 //MI_PY_DECLARE(MediumInteraction);
 //MI_PY_DECLARE(PreliminaryIntersection);
-//MI_PY_DECLARE(Medium);
+MI_PY_DECLARE(Medium);
 //MI_PY_DECLARE(mueller);
 //MI_PY_DECLARE(MicrofacetDistribution);
 //MI_PY_DECLARE(MicroflakeDistribution);
@@ -184,7 +184,7 @@ NB_MODULE(MODULE_NAME, m) {
 
     MI_PY_IMPORT(Scene);
     MI_PY_IMPORT(Shape);
-//    MI_PY_IMPORT(Medium);
+    MI_PY_IMPORT(Medium);
     MI_PY_IMPORT(Endpoint);
     MI_PY_IMPORT(Emitter);
     MI_PY_IMPORT(Interaction);
