@@ -230,9 +230,6 @@ MI_PY_EXPORT(Shape) {
     bind_shape_generic<Shape *>(shape);
 
     if constexpr (dr::is_array_v<ShapePtr>) {
-        nb::object dr       = nb::module_::import_("drjit"),
-                   dr_array = dr.attr("ArrayBase");
-
         dr::ArrayBinding b;
         auto shape_ptr = dr::bind_array_t<ShapePtr>(b, m, "ShapePtr");
         bind_shape_generic<ShapePtr>(shape_ptr);

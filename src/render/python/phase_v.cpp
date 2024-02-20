@@ -117,9 +117,6 @@ MI_PY_EXPORT(PhaseFunction) {
     bind_phase_generic<PhaseFunction *>(phase);
 
     if constexpr (dr::is_array_v<PhaseFunctionPtr>) {
-        nb::object dr       = nb::module_::import_("drjit"),
-                   dr_array = dr.attr("ArrayBase");
-
         dr::ArrayBinding b;
         auto phase_ptr = dr::bind_array_t<PhaseFunctionPtr>(b, m, "PhaseFunctionPtr");
         bind_phase_generic<PhaseFunctionPtr>(phase_ptr);

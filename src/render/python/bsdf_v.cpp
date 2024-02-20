@@ -189,9 +189,6 @@ MI_PY_EXPORT(BSDF) {
     bind_bsdf_generic<BSDF *>(bsdf);
 
     if constexpr (dr::is_array_v<BSDFPtr>) {
-        nb::object dr       = nb::module_::import_("drjit"),
-                   dr_array = dr.attr("ArrayBase");
-
         dr::ArrayBinding b;
         auto bsdf_ptr = dr::bind_array_t<BSDFPtr>(b, m, "BSDFPtr");
         bind_bsdf_generic<BSDFPtr>(bsdf_ptr);
