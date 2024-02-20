@@ -160,9 +160,7 @@ std::string get_type(const nb::dict &dict) {
         if (nb::cast<std::string>(key) == "type")
             return nb::cast<std::string>(value);
 
-    //FIXME
-    //Throw("Missing key 'type' in dictionary: %s", dict);
-    Throw("Missing key 'type' in dictionary!");
+    Throw("Missing key 'type' in dictionary: %s", nb::str(dict).c_str());
 }
 
 #define SET_PROPS(PyType, Type, Setter)            \
@@ -234,9 +232,8 @@ ref<Object> create_texture_from(const nb::dict &dict, bool within_emitter) {
                         values[i]      = nb::cast<Properties::Float>(pair[1]);
                     }
                 } else {
-                    //FIXME
-                    //Throw("Unexpected value type in 'spectrum' dictionary: %s", value2);
-                    Throw("Unexpected value type in 'spectrum' dictionary!");
+                    Throw("Unexpected value type in 'spectrum' dictionary: %s",
+                          nb::str(value2).c_str());
                 }
             } else if (key2 != "type") {
                 Throw("Unexpected key in spectrum dictionary: %s", key2);
@@ -394,8 +391,7 @@ void parse_dictionary(DictParseContext &ctx,
         } catch (const nb::cast_error &) { }
 
         // Didn't match any of the other types above
-        //FIXME
-        Throw("Unkown value type!");
+        Throw("Unkown value type: %s", nb::str(value.type()).c_str());
     }
 
     // Set object id based on path in dictionary if no id is provided
