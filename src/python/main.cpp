@@ -39,7 +39,7 @@ MI_PY_DECLARE(EmitterExtras);
 //MI_PY_DECLARE(Spiral);
 MI_PY_DECLARE(Sensor);
 MI_PY_DECLARE(VolumeGrid);
-//MI_PY_DECLARE(FilmFlags);
+MI_PY_DECLARE(FilmFlags);
 //MI_PY_DECLARE(DiscontinuityFlags);
 
 NB_MODULE(mitsuba_ext, m) {
@@ -155,7 +155,7 @@ NB_MODULE(mitsuba_ext, m) {
 //    MI_PY_IMPORT(PhaseFunctionExtras);
 //    MI_PY_IMPORT(Spiral);
     MI_PY_IMPORT(Sensor);
-//    MI_PY_IMPORT(FilmFlags);
+    MI_PY_IMPORT(FilmFlags);
 //    MI_PY_IMPORT(DiscontinuityFlags);
 
     /* Register a cleanup callback function to wait for pending tasks (this is

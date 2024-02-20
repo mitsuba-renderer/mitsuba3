@@ -117,12 +117,11 @@ MI_PY_EXPORT(Film) {
             "spec"_a, "wavelengths"_a, "nChannels"_a,
             "weight"_a = 1.f, "alpha"_a = 1.f, "active"_a = true,
             D(Film, prepare_sample))
-        //FIXME
-        //.def_method(Film, create_block, "size"_a = ScalarVector2u(0, 0),
-        //            "normalize"_a = false, "borders"_a = false)
+        .def_method(Film, create_block, "size"_a = ScalarVector2u(0, 0),
+                    "normalize"_a = false, "borders"_a = false)
         .def_method(Film, schedule_storage)
         .def_method(Film, sensor_response_function)
         .def_method(Film, flags);
 
-    //MI_PY_REGISTER_OBJECT("register_film", Film)
+    MI_PY_REGISTER_OBJECT("register_film", Film)
 }
