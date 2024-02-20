@@ -174,9 +174,6 @@ MI_PY_EXPORT(Sensor) {
     bind_sensor_generic<Sensor *>(sensor);
 
     if constexpr (dr::is_array_v<SensorPtr>) {
-        nb::object dr       = nb::module_::import_("drjit"),
-                   dr_array = dr.attr("ArrayBase");
-
         dr::ArrayBinding b;
         auto sensor_ptr = dr::bind_array_t<SensorPtr>(b, m, "SensorPtr");
         bind_sensor_generic<SensorPtr>(sensor_ptr);

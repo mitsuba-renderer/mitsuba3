@@ -181,9 +181,6 @@ MI_PY_EXPORT(Emitter) {
     bind_emitter_generic<Emitter *>(emitter);
 
     if constexpr (dr::is_array_v<EmitterPtr>) {
-        nb::object dr       = nb::module_::import_("drjit"),
-                   dr_array = dr.attr("ArrayBase");
-
         dr::ArrayBinding b;
         auto emitter_ptr = dr::bind_array_t<EmitterPtr>(b, m, "EmitterPtr");
         bind_emitter_generic<EmitterPtr>(emitter_ptr);
