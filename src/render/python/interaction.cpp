@@ -2,7 +2,7 @@
 #include <mitsuba/python/python.h>
 
 MI_PY_EXPORT(RayFlags) {
-    auto e = py::enum_<RayFlags>(m, "RayFlags", py::arithmetic())
+    auto e = nb::enum_<RayFlags>(m, "RayFlags", nb::is_arithmetic())
         .def_value(RayFlags, Empty)
         .def_value(RayFlags, Minimal)
         .def_value(RayFlags, UV)
