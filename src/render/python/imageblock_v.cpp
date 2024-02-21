@@ -5,7 +5,7 @@
 MI_PY_EXPORT(ImageBlock) {
     MI_PY_IMPORT_TYPES(ImageBlock, ReconstructionFilter)
     MI_PY_CLASS(ImageBlock, Object)
-        .def(py::init<const ScalarVector2u &, const ScalarPoint2i &, uint32_t,
+        .def(nb::init<const ScalarVector2u &, const ScalarPoint2i &, uint32_t,
                       const ReconstructionFilter *, bool, bool, bool,
                       bool, bool, bool>(),
              "size"_a, "offset"_a, "channel_count"_a, "rfilter"_a = nullptr,
@@ -13,7 +13,7 @@ MI_PY_EXPORT(ImageBlock) {
              "coalesce"_a = dr::is_jit_v<Float>, "compensate"_a = false,
              "warn_negative"_a = std::is_scalar_v<Float>,
              "warn_invalid"_a  = std::is_scalar_v<Float>)
-        .def(py::init<const TensorXf &, const ScalarPoint2i &,
+        .def(nb::init<const TensorXf &, const ScalarPoint2i &,
                       const ReconstructionFilter *, bool, bool, bool,
                       bool, bool, bool>(),
              "tensor"_a, "offset"_a = ScalarPoint2i(0), "rfilter"_a = nullptr,
@@ -24,7 +24,7 @@ MI_PY_EXPORT(ImageBlock) {
         .def("put_block", &ImageBlock::put_block, D(ImageBlock, put_block),
              "block"_a)
         .def("put",
-             py::overload_cast<const Point2f &, const wavelength_t<Spectrum> &,
+             nb::overload_cast<const Point2f &, const wavelength_t<Spectrum> &,
                                const Spectrum &, Float, Float,
                                dr::mask_t<Float>>(&ImageBlock::put),
              "pos"_a, "wavelengths"_a, "value"_a, "alpha"_a = 1.f,
@@ -63,7 +63,6 @@ MI_PY_EXPORT(ImageBlock) {
         .def_method(ImageBlock, border_size)
         .def_method(ImageBlock, has_border)
         .def_method(ImageBlock, channel_count)
-        .def("tensor", py::overload_cast<>(&ImageBlock::tensor),
-             py::return_value_policy::reference_internal,
+        .def("tensor", nb::overload_cast<>(&ImageBlock::tensor),
              D(ImageBlock, tensor));
 }
