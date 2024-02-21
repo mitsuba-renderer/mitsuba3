@@ -35,9 +35,7 @@ MI_PY_EXPORT(SilhouetteSample) {
         // Methods
         .def("is_valid",  &SilhouetteSample3f::is_valid,  D(SilhouetteSample, is_valid))
         .def("spawn_ray", &SilhouetteSample3f::spawn_ray, D(SilhouetteSample, spawn_ray))
-        ;
-        // FIXME
-        //.def_repr(SilhouetteSample3f);
+        .def_repr(SilhouetteSample3f);
 
     MI_PY_DRJIT_STRUCT(ss, SilhouetteSample3f, p, discontinuity_type, n, uv,
                        time, pdf, delta, d, silhouette_d, prim_index,
