@@ -2,15 +2,15 @@
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/python/python.h>
 
-template <typename BSphere, typename Ray> auto bind_bsphere(py::module &m, const char *name) {
+template <typename BSphere, typename Ray> auto bind_bsphere(nb::module_ &m, const char *name) {
         using Point = typename BSphere::Point;
         using Float = typename BSphere::Float;
 
         MI_PY_CHECK_ALIAS(BSphere, name) {
-        py::class_<BSphere>(m, name, D(BoundingSphere))
-            .def(py::init<>(), D(BoundingSphere, BoundingSphere))
-            .def(py::init<Point, Float>(), D(BoundingSphere, BoundingSphere, 2))
-            .def(py::init<const BSphere &>())
+        nb::class_<BSphere>(m, name, D(BoundingSphere))
+            .def(nb::init<>(), D(BoundingSphere, BoundingSphere))
+            .def(nb::init<Point, Float>(), D(BoundingSphere, BoundingSphere, 2))
+            .def(nb::init<const BSphere &>())
             .def("empty", &BSphere::empty, D(BoundingSphere, empty))
             .def("contains",
                 [](const BSphere &self, const Point &p, bool strict) {
@@ -22,10 +22,10 @@ template <typename BSphere, typename Ray> auto bind_bsphere(py::module &m, const
                 [](const BSphere &self, const Ray &ray) {
                     return self.ray_intersect(ray);
                 }, D(BoundingSphere, ray_intersect), "ray"_a)
-            .def(py::self == py::self)
-            .def(py::self != py::self)
-            .def_readwrite("center", &BSphere::center)
-            .def_readwrite("radius", &BSphere::radius)
+            .def(nb::self == nb::self)
+            .def(nb::self != nb::self)
+            .def_rw("center", &BSphere::center)
+            .def_rw("radius", &BSphere::radius)
             .def_repr(BSphere);
         }
 }
