@@ -3,7 +3,7 @@ set(RENDER_PY_V_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/emitter_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/endpoint_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/film_v.cpp
-#  ${CMAKE_CURRENT_SOURCE_DIR}/fresnel_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/fresnel_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/imageblock_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/interaction_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/integrator_v.cpp

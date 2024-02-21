@@ -91,7 +91,7 @@ MI_PY_DECLARE(BSDF);
 MI_PY_DECLARE(Emitter);
 MI_PY_DECLARE(Endpoint);
 MI_PY_DECLARE(Film);
-//MI_PY_DECLARE(fresnel);
+MI_PY_DECLARE(fresnel);
 //MI_PY_DECLARE(ImageBlock);
 MI_PY_DECLARE(Integrator);
 MI_PY_DECLARE(Interaction);
@@ -197,7 +197,7 @@ NB_MODULE(MODULE_NAME, m) {
     MI_PY_IMPORT(BSDFSample);
     MI_PY_IMPORT(BSDF);
     MI_PY_IMPORT(Film);
-//    MI_PY_IMPORT(fresnel);
+    MI_PY_IMPORT(fresnel);
 //    MI_PY_IMPORT(ImageBlock);
     MI_PY_IMPORT(Integrator);
 //    MI_PY_IMPORT_SUBMODULE(mueller);

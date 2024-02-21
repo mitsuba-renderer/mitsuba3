@@ -11,27 +11,27 @@ MI_PY_EXPORT(fresnel) {
          &fresnel_conductor<Float>,
          "cos_theta_i"_a, "eta"_a, D(fresnel_conductor))
     .def("fresnel_polarized",
-         py::overload_cast<Float, dr::Complex<Float>>(&fresnel_polarized<Float>),
+         nb::overload_cast<Float, dr::Complex<Float>>(&fresnel_polarized<Float>),
          "cos_theta_i"_a, "eta"_a, D(fresnel_polarized, 2))
     .def("reflect",
-         py::overload_cast<const Vector3f &>(&reflect<Float>),
+         nb::overload_cast<const Vector3f &>(&reflect<Float>),
          "wi"_a, D(reflect))
     .def("reflect",
-         py::overload_cast<const Vector3f &, const Normal3f &>(&reflect<Float>),
+         nb::overload_cast<const Vector3f &, const Normal3f &>(&reflect<Float>),
          "wi"_a, "m"_a, D(reflect, 2))
     .def("refract",
-         py::overload_cast<const Vector3f &, Float, Float>(&refract<Float>),
+         nb::overload_cast<const Vector3f &, Float, Float>(&refract<Float>),
          "wi"_a, "cos_theta_t"_a, "eta_ti"_a, D(refract))
     .def("refract",
-         py::overload_cast<const Vector3f &, const Normal3f &, Float, Float>(&refract<Float>),
+         nb::overload_cast<const Vector3f &, const Normal3f &, Float, Float>(&refract<Float>),
          "wi"_a, "m"_a, "cos_theta_t"_a, "eta_ti"_a, D(refract, 2))
     .def("fresnel_diffuse_reflectance", &fresnel_diffuse_reflectance<Float>,
          "eta"_a, D(fresnel_diffuse_reflectance))
     .def("lookup_ior",
-         [](const Properties &props, const std::string& name, py::object def) {
-            if (py::isinstance<py::float_>(def))
-                return lookup_ior(props, name, def.template cast<Properties::Float>());
-            return lookup_ior(props, name, def.template cast<std::string>());
+         [](const Properties &props, const std::string& name, nb::object def) {
+            if (nb::isinstance<nb::float_>(def))
+                return lookup_ior(props, name, nb::cast<Properties::Float>(def));
+            return lookup_ior(props, name, nb::cast<std::string>(def));
          },
          "properties"_a, "name"_a, "default"_a,
          "Lookup IOR value in table.");
