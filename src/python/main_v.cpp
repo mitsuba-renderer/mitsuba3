@@ -105,9 +105,9 @@ MI_PY_DECLARE(Medium);
 //#if defined(MI_ENABLE_CUDA)
 MI_PY_DECLARE(OptixDenoiser);
 //#endif // defined(MI_ENABLE_CUDA)
-//MI_PY_DECLARE(PositionSample);
+MI_PY_DECLARE(PositionSample);
 MI_PY_DECLARE(PhaseFunction);
-//MI_PY_DECLARE(DirectionSample);
+MI_PY_DECLARE(DirectionSample);
 MI_PY_DECLARE(Sampler);
 MI_PY_DECLARE(Scene);
 MI_PY_DECLARE(Sensor);
@@ -191,9 +191,9 @@ NB_MODULE(MODULE_NAME, m) {
     MI_PY_IMPORT(SurfaceInteraction);
 //    MI_PY_IMPORT(MediumInteraction);
 //    MI_PY_IMPORT(PreliminaryIntersection);
-//    MI_PY_IMPORT(PositionSample);
+    MI_PY_IMPORT(PositionSample);
 //    MI_PY_IMPORT(SilhouetteSample);
-//    MI_PY_IMPORT(DirectionSample);
+    MI_PY_IMPORT(DirectionSample);
     MI_PY_IMPORT(BSDFSample);
     MI_PY_IMPORT(BSDF);
     MI_PY_IMPORT(Film);

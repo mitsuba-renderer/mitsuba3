@@ -11,9 +11,9 @@ set(RENDER_PY_V_SRC
 #  ${CMAKE_CURRENT_SOURCE_DIR}/mueller_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/microfacet_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/microflake_v.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/optixdenoiser_v.cpp
-   ${CMAKE_CURRENT_SOURCE_DIR}/phase_v.cpp
-#  ${CMAKE_CURRENT_SOURCE_DIR}/records_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/optixdenoiser_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/phase_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/records_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/sampler_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/scene_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/sensor_v.cpp
