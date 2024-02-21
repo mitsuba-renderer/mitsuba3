@@ -71,7 +71,7 @@ MI_PY_DECLARE(ContinuousDistribution);
 MI_PY_DECLARE(IrregularContinuousDistribution);
 MI_PY_DECLARE(Hierarchical2D);
 MI_PY_DECLARE(Marginal2D);
-//MI_PY_DECLARE(math);
+MI_PY_DECLARE(math);
 MI_PY_DECLARE(qmc);
 MI_PY_DECLARE(Properties);
 MI_PY_DECLARE(rfilter);
@@ -132,13 +132,13 @@ NB_MODULE(MODULE_NAME, m) {
 
 //
 //    // Create sub-modules
-//    py::module math    = create_submodule(m, "math"),
+      nb::module_   math    = create_submodule(m, "math"),
 //               spline  = create_submodule(m, "spline"),
 //               warp    = create_submodule(m, "warp"),
 //               quad    = create_submodule(m, "quad"),
-      nb::module_ mueller = create_submodule(m, "mueller");
+                    mueller = create_submodule(m, "mueller");
 //
-//    math.doc()    = "Mathematical routines, special functions, etc.";
+      math.doc()    = "Mathematical routines, special functions, etc.";
 //    spline.doc()  = "Functions for evaluating and sampling Catmull-Rom splines";
 //    warp.doc()    = "Common warping techniques that map from the unit square to other "
 //                    "domains, such as spheres, hemispheres, etc.";
@@ -166,7 +166,7 @@ NB_MODULE(MODULE_NAME, m) {
     MI_PY_IMPORT(DiscreteDistribution2D);
     MI_PY_IMPORT(ContinuousDistribution);
     MI_PY_IMPORT(IrregularContinuousDistribution);
-//    MI_PY_IMPORT_SUBMODULE(math);
+    MI_PY_IMPORT_SUBMODULE(math);
     MI_PY_IMPORT(qmc);
     MI_PY_IMPORT(Properties);
     MI_PY_IMPORT(rfilter);

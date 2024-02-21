@@ -8,16 +8,16 @@
 MI_PY_EXPORT(math) {
     MI_PY_IMPORT_TYPES()
 
-    m.attr("RayEpsilon")      = py::cast(math::RayEpsilon<Float>);
-    m.attr("ShadowEpsilon")   = py::cast(math::ShadowEpsilon<Float>);
-    m.attr("ShapeEpsilon")    = py::cast(math::ShapeEpsilon<Float>);
+    m.attr("RayEpsilon")      = nb::cast(math::RayEpsilon<Float>);
+    m.attr("ShadowEpsilon")   = nb::cast(math::ShadowEpsilon<Float>);
+    m.attr("ShapeEpsilon")    = nb::cast(math::ShapeEpsilon<Float>);
 
     m.def("legendre_p",
-          py::overload_cast<int, Float>(math::legendre_p<Float>),
+          nb::overload_cast<int, Float>(math::legendre_p<Float>),
           "l"_a, "x"_a, D(math, legendre_p));
 
     m.def("legendre_p",
-          py::overload_cast<int, int, Float>(math::legendre_p<Float>),
+          nb::overload_cast<int, int, Float>(math::legendre_p<Float>),
           "l"_a, "m"_a, "x"_a, D(math, legendre_p));
 
     m.def("legendre_pd",
