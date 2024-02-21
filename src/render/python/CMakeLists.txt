@@ -34,7 +34,7 @@ set(RENDER_PY_SRC
 #  ${CMAKE_CURRENT_SOURCE_DIR}/microfacet.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/phase.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/sensor.cpp
-#  ${CMAKE_CURRENT_SOURCE_DIR}/spiral.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/spiral.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/film.cpp
   PARENT_SCOPE
 )
