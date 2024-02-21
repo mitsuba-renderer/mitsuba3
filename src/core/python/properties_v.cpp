@@ -144,7 +144,10 @@ MI_PY_EXPORT(Properties) {
             .def(nb::self != nb::self, D(Properties, operator_ne))
             .def_repr(Properties);
 
-        nb::enum_<Properties::Type>(p, "Type");
+        // FIXME: Binding this enumeration leaks. Defining an internal enum to
+        // an arbitrary class is fine, this seems to be specifically an issue
+        // with defining an internal enum in Properties
+        //nb::enum_<Properties::Type>(p, "Type");
             //.value("Bool",              Properties::Type::Bool,           D(Properties, Type, Bool))
             //.value("Long",              Properties::Type::Long,           D(Properties, Type, Long))
             //.value("Float",             Properties::Type::Float,          D(Properties, Type, Float))
