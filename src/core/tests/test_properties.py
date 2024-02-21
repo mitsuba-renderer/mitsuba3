@@ -240,3 +240,15 @@ def test12_large_integer_keys(variant_scalar_rgb):
     assert len(props.property_names()) == 2
     assert props[key1] == 4.0
     assert props[key2] == 8.0
+
+def test13_trailing_zeros_keys(variant_scalar_rgb):
+    key1 = 'aa_1'
+    key2 = 'aa_0001'
+
+    props = mi.Properties()
+    props[key1] = 4.0
+    props[key2] = 8.0
+
+    assert len(props.property_names()) == 2
+    assert props[key1] == 4.0
+    assert props[key2] == 8.0
