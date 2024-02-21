@@ -141,7 +141,7 @@ nb::handle type_of() {
 #define MI_PY_DECLARE(Name) extern void python_export_##Name(nb::module_ &m)
 #define MI_PY_EXPORT(Name) void python_export_##Name(nb::module_ &m)
 #define MI_PY_IMPORT(Name) python_export_##Name(m)
-//#define MI_PY_IMPORT_SUBMODULE(Name) python_export_##Name(Name)
+#define MI_PY_IMPORT_SUBMODULE(Name) python_export_##Name(Name)
 
 #define MI_MODULE_NAME_1(lib, variant) lib##_##variant##_ext
 #define MI_MODULE_NAME(lib, variant) MI_MODULE_NAME_1(lib, variant)
@@ -152,13 +152,13 @@ nb::handle type_of() {
     using Spectrum = MI_VARIANT_SPECTRUM;                                                         \
     MI_IMPORT_TYPES(__VA_ARGS__)                                                                  \
     MI_IMPORT_OBJECT_TYPES()
-//
-//inline py::module_ create_submodule(py::module_ &m, const char *name) {
-//    std::string full_name = std::string(PyModule_GetName(m.ptr())) + "." + name;
-//    py::module_ module = py::reinterpret_steal<py::module_>(PyModule_New(full_name.c_str()));
-//    m.attr(name) = module;
-//    return module;
-//}
+
+inline nb::module_ create_submodule(nb::module_ &m, const char *name) {
+    std::string full_name = std::string(PyModule_GetName(m.ptr())) + "." + name;
+    nb::module_ module = nb::steal<nb::module_>(PyModule_New(full_name.c_str()));
+    m.attr(name) = module;
+    return module;
+}
 
 //template <typename Array> void bind_drjit_ptr_array(nb::class_<Array> &cls) {
 //    using Type = std::decay_t<std::remove_pointer_t<dr::value_t<Array>>>;

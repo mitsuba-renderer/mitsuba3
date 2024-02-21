@@ -8,7 +8,7 @@ set(RENDER_PY_V_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/interaction_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/integrator_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/medium_v.cpp
-#  ${CMAKE_CURRENT_SOURCE_DIR}/mueller_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/mueller_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/microfacet_v.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/microflake_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/optixdenoiser_v.cpp
@@ -22,7 +22,7 @@ set(RENDER_PY_V_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/texture_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/volume_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/volumegrid_v.cpp
-#  ${CMAKE_CURRENT_SOURCE_DIR}/signal.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/signal.h
   PARENT_SCOPE
 )
 

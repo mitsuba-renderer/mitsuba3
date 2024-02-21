@@ -99,7 +99,7 @@ MI_PY_DECLARE(SurfaceInteraction);
 //MI_PY_DECLARE(MediumInteraction);
 //MI_PY_DECLARE(PreliminaryIntersection);
 MI_PY_DECLARE(Medium);
-//MI_PY_DECLARE(mueller);
+MI_PY_DECLARE(mueller);
 //MI_PY_DECLARE(MicrofacetDistribution);
 //MI_PY_DECLARE(MicroflakeDistribution);
 //#if defined(MI_ENABLE_CUDA)
@@ -136,14 +136,14 @@ NB_MODULE(MODULE_NAME, m) {
 //               spline  = create_submodule(m, "spline"),
 //               warp    = create_submodule(m, "warp"),
 //               quad    = create_submodule(m, "quad"),
-//               mueller = create_submodule(m, "mueller");
+      nb::module_ mueller = create_submodule(m, "mueller");
 //
 //    math.doc()    = "Mathematical routines, special functions, etc.";
 //    spline.doc()  = "Functions for evaluating and sampling Catmull-Rom splines";
 //    warp.doc()    = "Common warping techniques that map from the unit square to other "
 //                    "domains, such as spheres, hemispheres, etc.";
 //    quad.doc()    = "Functions for numerical quadrature";
-//    mueller.doc() = "Routines to manipulate Mueller matrices for polarized rendering.";
+      mueller.doc() = "Routines to manipulate Mueller matrices for polarized rendering.";
 //
     MI_PY_IMPORT(DrJit);
 //
@@ -200,7 +200,7 @@ NB_MODULE(MODULE_NAME, m) {
     MI_PY_IMPORT(fresnel);
     MI_PY_IMPORT(ImageBlock);
     MI_PY_IMPORT(Integrator);
-//    MI_PY_IMPORT_SUBMODULE(mueller);
+    MI_PY_IMPORT_SUBMODULE(mueller);
 //    MI_PY_IMPORT(MicrofacetDistribution);
 //    MI_PY_IMPORT(MicroflakeDistribution);
 //#if defined(MI_ENABLE_CUDA)
