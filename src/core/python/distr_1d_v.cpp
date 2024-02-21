@@ -7,18 +7,18 @@ MI_PY_EXPORT(DiscreteDistribution) {
     using DiscreteDistribution = mitsuba::DiscreteDistribution<Float>;
     using FloatStorage = DynamicBuffer<Float>;
 
-    MI_PY_STRUCT(DiscreteDistribution, py::module_local())
-        .def(py::init<>(), D(DiscreteDistribution))
-        .def(py::init<const DiscreteDistribution &>(), "Copy constructor")
-        .def(py::init<const FloatStorage &>(), "pmf"_a,
+    MI_PY_STRUCT(DiscreteDistribution)
+        .def(nb::init<>(), D(DiscreteDistribution))
+        .def(nb::init<const DiscreteDistribution &>(), "Copy constructor")
+        .def(nb::init<const FloatStorage &>(), "pmf"_a,
              D(DiscreteDistribution, DiscreteDistribution, 2))
         .def("__len__", &DiscreteDistribution::size)
         .def("size", &DiscreteDistribution::size, D(DiscreteDistribution, size))
         .def("empty", &DiscreteDistribution::empty, D(DiscreteDistribution, empty))
-        .def("pmf", py::overload_cast<>(&DiscreteDistribution::pmf),
-             D(DiscreteDistribution, pmf), py::return_value_policy::reference_internal)
-        .def("cdf", py::overload_cast<>(&DiscreteDistribution::cdf),
-             D(DiscreteDistribution, cdf), py::return_value_policy::reference_internal)
+        .def("pmf", nb::overload_cast<>(&DiscreteDistribution::pmf),
+             D(DiscreteDistribution, pmf))
+        .def("cdf", nb::overload_cast<>(&DiscreteDistribution::cdf),
+             D(DiscreteDistribution, cdf))
         .def("eval_pmf", &DiscreteDistribution::eval_pmf,
              "index"_a, "active"_a = true, D(DiscreteDistribution, eval_pmf))
         .def("eval_pmf_normalized", &DiscreteDistribution::eval_pmf_normalized,
@@ -51,20 +51,20 @@ MI_PY_EXPORT(ContinuousDistribution) {
     using ContinuousDistribution = mitsuba::ContinuousDistribution<Float>;
     using FloatStorage = DynamicBuffer<Float>;
 
-    MI_PY_STRUCT(ContinuousDistribution, py::module_local())
-        .def(py::init<>(), D(ContinuousDistribution))
-        .def(py::init<const ContinuousDistribution &>(), "Copy constructor")
-        .def(py::init<const ScalarVector2f &, const FloatStorage &>(),
+    MI_PY_STRUCT(ContinuousDistribution)
+        .def(nb::init<>(), D(ContinuousDistribution))
+        .def(nb::init<const ContinuousDistribution &>(), "Copy constructor")
+        .def(nb::init<const ScalarVector2f &, const FloatStorage &>(),
              "range"_a, "pdf"_a, D(ContinuousDistribution, ContinuousDistribution, 2))
         .def("__len__", &ContinuousDistribution::size)
         .def("size", &ContinuousDistribution::size, D(ContinuousDistribution, size))
         .def("empty", &ContinuousDistribution::empty, D(ContinuousDistribution, empty))
-        .def("range", py::overload_cast<>(&ContinuousDistribution::range),
-             D(ContinuousDistribution, range), py::return_value_policy::reference_internal)
-        .def("pdf", py::overload_cast<>(&ContinuousDistribution::pdf),
-             D(ContinuousDistribution, pdf), py::return_value_policy::reference_internal)
-        .def("cdf", py::overload_cast<>(&ContinuousDistribution::cdf),
-             D(ContinuousDistribution, cdf), py::return_value_policy::reference_internal)
+        .def("range", nb::overload_cast<>(&ContinuousDistribution::range),
+             D(ContinuousDistribution, range))
+        .def("pdf", nb::overload_cast<>(&ContinuousDistribution::pdf),
+             D(ContinuousDistribution, pdf))
+        .def("cdf", nb::overload_cast<>(&ContinuousDistribution::cdf),
+             D(ContinuousDistribution, cdf))
         .def("eval_pdf", &ContinuousDistribution::eval_pdf,
              "x"_a, "active"_a = true, D(ContinuousDistribution, eval_pdf))
         .def("eval_pdf_normalized", &ContinuousDistribution::eval_pdf_normalized,
@@ -93,22 +93,22 @@ MI_PY_EXPORT(IrregularContinuousDistribution) {
     using IrregularContinuousDistribution = mitsuba::IrregularContinuousDistribution<Float>;
     using FloatStorage = DynamicBuffer<Float>;
 
-    MI_PY_STRUCT(IrregularContinuousDistribution, py::module_local())
-        .def(py::init<>(), D(IrregularContinuousDistribution))
-        .def(py::init<const IrregularContinuousDistribution &>(), "Copy constructor")
-        .def(py::init<const FloatStorage &, const FloatStorage &>(),
+    MI_PY_STRUCT(IrregularContinuousDistribution)
+        .def(nb::init<>(), D(IrregularContinuousDistribution))
+        .def(nb::init<const IrregularContinuousDistribution &>(), "Copy constructor")
+        .def(nb::init<const FloatStorage &, const FloatStorage &>(),
              "nodes"_a, "pdf"_a, D(IrregularContinuousDistribution, IrregularContinuousDistribution, 2))
         .def("__len__", &IrregularContinuousDistribution::size)
         .def("size", &IrregularContinuousDistribution::size, D(IrregularContinuousDistribution, size))
         .def("empty", &IrregularContinuousDistribution::empty, D(IrregularContinuousDistribution, empty))
-        .def("range", py::overload_cast<>(&IrregularContinuousDistribution::range),
-             D(IrregularContinuousDistribution, range), py::return_value_policy::reference_internal)
-        .def("nodes", py::overload_cast<>(&IrregularContinuousDistribution::nodes),
-             D(IrregularContinuousDistribution, nodes), py::return_value_policy::reference_internal)
-        .def("pdf", py::overload_cast<>(&IrregularContinuousDistribution::pdf),
-             D(IrregularContinuousDistribution, pdf), py::return_value_policy::reference_internal)
-        .def("cdf", py::overload_cast<>(&IrregularContinuousDistribution::cdf),
-             D(IrregularContinuousDistribution, cdf), py::return_value_policy::reference_internal)
+        .def("range", nb::overload_cast<>(&IrregularContinuousDistribution::range),
+             D(IrregularContinuousDistribution, range))
+        .def("nodes", nb::overload_cast<>(&IrregularContinuousDistribution::nodes),
+             D(IrregularContinuousDistribution, nodes))
+        .def("pdf", nb::overload_cast<>(&IrregularContinuousDistribution::pdf),
+             D(IrregularContinuousDistribution, pdf))
+        .def("cdf", nb::overload_cast<>(&IrregularContinuousDistribution::cdf),
+             D(IrregularContinuousDistribution, cdf))
         .def("eval_pdf", &IrregularContinuousDistribution::eval_pdf,
              "x"_a, "active"_a = true, D(IrregularContinuousDistribution, eval_pdf))
         .def("eval_pdf_normalized", &IrregularContinuousDistribution::eval_pdf_normalized,

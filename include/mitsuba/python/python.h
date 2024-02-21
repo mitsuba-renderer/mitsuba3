@@ -19,11 +19,11 @@
 
 #define D(...) DOC(mitsuba, __VA_ARGS__)
 
-///// Shorthand notation for defining a data structure
-//#define MI_PY_STRUCT(Name, ...) \
-//    py::class_<Name>(m, #Name, D(Name), ##__VA_ARGS__)
+/// Shorthand notation for defining a data structure
+#define MI_PY_STRUCT(Name, ...) \
+    nb::class_<Name>(m, #Name, D(Name), ##__VA_ARGS__)
 
-// Shorthand notation for defining a Mitsuba class deriving from a base class
+/// Shorthand notation for defining a Mitsuba class deriving from a base class
 #define MI_PY_CLASS(Name, Base, ...) \
     nb::class_<Name, Base>(m, #Name, D(Name), ##__VA_ARGS__)
 
