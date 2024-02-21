@@ -6,18 +6,18 @@
 MI_PY_EXPORT(MicrofacetDistribution) {
     MI_PY_IMPORT_TYPES(MicrofacetDistribution)
 
-    py::class_<MicrofacetDistribution>(m, "MicrofacetDistribution", D(MicrofacetDistribution))
-        .def(py::init([](MicrofacetType t, ScalarFloat alpha, bool sv) {
-            return MicrofacetDistribution(t, alpha, sv);
-        }), "type"_a, "alpha"_a, "sample_visible"_a = true)
-        .def(py::init([](MicrofacetType t, ScalarFloat alpha_u, ScalarFloat alpha_v, bool sv) {
-            return MicrofacetDistribution(t, alpha_u, alpha_v, sv);
-        }), "type"_a, "alpha_u"_a, "alpha_v"_a, "sample_visible"_a = true)
-        .def(py::init<MicrofacetType, const Float &, bool>(), "type"_a, "alpha"_a,
+    nb::class_<MicrofacetDistribution>(m, "MicrofacetDistribution", D(MicrofacetDistribution))
+        .def("__init__", [](MicrofacetDistribution* alloc, MicrofacetType t, ScalarFloat alpha, bool sv) {
+            return new (alloc) MicrofacetDistribution(t, alpha, sv);
+        }, "type"_a, "alpha"_a, "sample_visible"_a = true)
+        .def("__init__", [](MicrofacetDistribution* alloc, MicrofacetType t, ScalarFloat alpha_u, ScalarFloat alpha_v, bool sv) {
+            return  new (alloc) MicrofacetDistribution(t, alpha_u, alpha_v, sv);
+        }, "type"_a, "alpha_u"_a, "alpha_v"_a, "sample_visible"_a = true)
+        .def(nb::init<MicrofacetType, const Float &, bool>(), "type"_a, "alpha"_a,
             "sample_visible"_a = true)
-        .def(py::init<MicrofacetType, const Float &, const Float &, bool>(), "type"_a, "alpha_u"_a,
+        .def(nb::init<MicrofacetType, const Float &, const Float &, bool>(), "type"_a, "alpha_u"_a,
             "alpha_v"_a, "sample_visible"_a = true)
-        .def(py::init<const Properties &>())
+        .def(nb::init<const Properties &>())
         .def_method(MicrofacetDistribution, type)
         .def_method(MicrofacetDistribution, alpha)
         .def_method(MicrofacetDistribution, alpha_u)
