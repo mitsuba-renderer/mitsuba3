@@ -2,16 +2,16 @@
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/python/python.h>
 
-template <typename BBox, typename Ray> auto bind_bbox(py::module &m, const char *name) {
+template <typename BBox, typename Ray> auto bind_bbox(nb::module_ &m, const char *name) {
         using Point = typename BBox::Point;
         using Float = typename BBox::Value;
 
         MI_PY_CHECK_ALIAS(BBox, name) {
-            auto bbox = py::class_<BBox>(m, name, D(BoundingBox))
-                .def(py::init<>(), D(BoundingBox, BoundingBox))
-                .def(py::init<Point>(), D(BoundingBox, BoundingBox, 2), "p"_a)
-                .def(py::init<Point, Point>(), D(BoundingBox, BoundingBox, 3), "min"_a, "max"_a)
-                .def(py::init<const BBox &>(), "Copy constructor")
+            auto bbox = nb::class_<BBox>(m, name, D(BoundingBox))
+                .def(nb::init<>(), D(BoundingBox, BoundingBox))
+                .def(nb::init<Point>(), D(BoundingBox, BoundingBox, 2), "p"_a)
+                .def(nb::init<Point, Point>(), D(BoundingBox, BoundingBox, 3), "min"_a, "max"_a)
+                .def(nb::init<const BBox &>(), "Copy constructor")
                 .def("valid",        &BBox::valid,        D(BoundingBox, valid))
                 .def("collapsed",    &BBox::collapsed,    D(BoundingBox, collapsed))
                 .def("major_axis",   &BBox::major_axis,   D(BoundingBox, major_axis))
@@ -40,20 +40,20 @@ template <typename BBox, typename Ray> auto bind_bbox(py::module &m, const char 
                     },
                     D(BoundingBox, overlaps), "bbox"_a, "strict"_a = false)
                 .def("squared_distance",
-                    py::overload_cast<const Point &>(
-                        &BBox::template squared_distance<Float>, py::const_),
+                    nb::overload_cast<const Point &>(
+                        &BBox::template squared_distance<Float>, nb::const_),
                     D(BoundingBox, squared_distance))
                 .def("squared_distance",
-                    py::overload_cast<const BBox &>(
-                        &BBox::template squared_distance<Float>, py::const_),
+                    nb::overload_cast<const BBox &>(
+                        &BBox::template squared_distance<Float>, nb::const_),
                     D(BoundingBox, squared_distance, 2))
                 .def("distance",
-                    py::overload_cast<const Point &>(
-                        &BBox::template distance<Float>, py::const_),
+                    nb::overload_cast<const Point &>(
+                        &BBox::template distance<Float>, nb::const_),
                     D(BoundingBox, distance))
                 .def("distance",
-                    py::overload_cast<const BBox &>(
-                        &BBox::template distance<Float>, py::const_),
+                    nb::overload_cast<const BBox &>(
+                        &BBox::template distance<Float>, nb::const_),
                     D(BoundingBox, distance, 2))
                 .def("reset", &BBox::reset, D(BoundingBox, reset))
                 .def("clip", (void (BBox::*)(const BBox &)) &BBox::clip,
@@ -62,11 +62,11 @@ template <typename BBox, typename Ray> auto bind_bbox(py::module &m, const char 
                     D(BoundingBox, expand))
                 .def("expand", (void (BBox::*)(const BBox &)) &BBox::expand,
                     D(BoundingBox, expand, 2))
-                .def(py::self == py::self)
-                .def(py::self != py::self)
+                .def(nb::self == nb::self)
+                .def(nb::self != nb::self)
                 .def_static("merge", &BBox::merge, D(BoundingBox, merge))
-                .def_readwrite("min", &BBox::min)
-                .def_readwrite("max", &BBox::max)
+                .def_rw("min", &BBox::min)
+                .def_rw("max", &BBox::max)
                 .def_repr(BBox);
 
             if constexpr (dr::size_v<Point> == 3) {
