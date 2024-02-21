@@ -69,8 +69,8 @@ MI_PY_DECLARE(DiscreteDistribution);
 MI_PY_DECLARE(DiscreteDistribution2D);
 MI_PY_DECLARE(ContinuousDistribution);
 MI_PY_DECLARE(IrregularContinuousDistribution);
-//MI_PY_DECLARE(Hierarchical2D);
-//MI_PY_DECLARE(Marginal2D);
+MI_PY_DECLARE(Hierarchical2D);
+MI_PY_DECLARE(Marginal2D);
 //MI_PY_DECLARE(math);
 //MI_PY_DECLARE(qmc);
 MI_PY_DECLARE(Properties);
@@ -103,7 +103,7 @@ MI_PY_DECLARE(Medium);
 //MI_PY_DECLARE(MicrofacetDistribution);
 //MI_PY_DECLARE(MicroflakeDistribution);
 //#if defined(MI_ENABLE_CUDA)
-//MI_PY_DECLARE(OptixDenoiser);
+MI_PY_DECLARE(OptixDenoiser);
 //#endif // defined(MI_ENABLE_CUDA)
 //MI_PY_DECLARE(PositionSample);
 MI_PY_DECLARE(PhaseFunction);
@@ -175,8 +175,8 @@ NB_MODULE(MODULE_NAME, m) {
 //    MI_PY_IMPORT(Spectrum);
     MI_PY_IMPORT(Transform);
 //    // MI_PY_IMPORT(AnimatedTransform);
-//    MI_PY_IMPORT(Hierarchical2D);
-//    MI_PY_IMPORT(Marginal2D);
+    MI_PY_IMPORT(Hierarchical2D);
+    MI_PY_IMPORT(Marginal2D);
 //    MI_PY_IMPORT(vector);
 //    MI_PY_IMPORT_SUBMODULE(quad);
 //    MI_PY_IMPORT_SUBMODULE(warp);
@@ -204,7 +204,7 @@ NB_MODULE(MODULE_NAME, m) {
 //    MI_PY_IMPORT(MicrofacetDistribution);
 //    MI_PY_IMPORT(MicroflakeDistribution);
 //#if defined(MI_ENABLE_CUDA)
-//    MI_PY_IMPORT(OptixDenoiser);
+    MI_PY_IMPORT(OptixDenoiser);
 //#endif // defined(MI_ENABLE_CUDA)
     MI_PY_IMPORT(PhaseFunction);
     MI_PY_IMPORT(Sampler);
