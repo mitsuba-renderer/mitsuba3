@@ -60,7 +60,7 @@ static nb::object caster(Object *o) {
 
 // core
 MI_PY_DECLARE(DrJit);
-//MI_PY_DECLARE(Object);
+MI_PY_DECLARE(Object);
 MI_PY_DECLARE(BoundingBox);
 MI_PY_DECLARE(BoundingSphere);
 MI_PY_DECLARE(Frame);
@@ -155,7 +155,7 @@ NB_MODULE(MODULE_NAME, m) {
                                            dr::is_llvm_v<Float>);
     Scene::static_accel_initialization();
 //
-//    MI_PY_IMPORT(Object);
+    MI_PY_IMPORT(Object);
     MI_PY_IMPORT(Ray);
     MI_PY_IMPORT(BoundingBox);
     MI_PY_IMPORT(BoundingSphere);

@@ -6,7 +6,7 @@ set(CORE_PY_V_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/distr_2d_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/frame_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/math_v.cpp
-#  ${CMAKE_CURRENT_SOURCE_DIR}/object_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/object_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/qmc_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/properties_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/random_v.cpp
@@ -21,7 +21,7 @@ set(CORE_PY_V_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/quad_v.cpp
   PARENT_SCOPE
 )
-#
+
 set(CORE_PY_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/atomic.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/appender.cpp
