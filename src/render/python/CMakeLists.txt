@@ -18,7 +18,7 @@ set(RENDER_PY_V_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/scene_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/sensor_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/shape_v.cpp
-#  ${CMAKE_CURRENT_SOURCE_DIR}/srgb_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/srgb_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/texture_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/volume_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/volumegrid_v.cpp
