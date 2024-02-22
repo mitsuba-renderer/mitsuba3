@@ -118,7 +118,7 @@ if (NOT SKBUILD)
   endif()
 
   set(DRJIT_PYTHON_FILES
-    __init__.py ast.py detail.py interop.py
+    __init__.py ast.py detail.py interop.py llvm/ad.py cuda/ad.py scalar/__init__.py
   )
 
   foreach(file ${DRJIT_PYTHON_FILES})
