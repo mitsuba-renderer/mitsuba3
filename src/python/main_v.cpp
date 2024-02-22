@@ -76,12 +76,12 @@ MI_PY_DECLARE(qmc);
 MI_PY_DECLARE(Properties);
 MI_PY_DECLARE(rfilter);
 MI_PY_DECLARE(sample_tea);
-//MI_PY_DECLARE(spline);
+MI_PY_DECLARE(spline);
 //MI_PY_DECLARE(Spectrum);
 MI_PY_DECLARE(Transform);
 //// MI_PY_DECLARE(AnimatedTransform);
 //MI_PY_DECLARE(vector);
-//MI_PY_DECLARE(warp);
+MI_PY_DECLARE(warp);
 MI_PY_DECLARE(xml);
 //MI_PY_DECLARE(quad);
 //
@@ -133,15 +133,15 @@ NB_MODULE(MODULE_NAME, m) {
 //
 //    // Create sub-modules
       nb::module_   math    = create_submodule(m, "math"),
-//               spline  = create_submodule(m, "spline"),
-//               warp    = create_submodule(m, "warp"),
+                    spline  = create_submodule(m, "spline"),
+                    warp    = create_submodule(m, "warp"),
 //               quad    = create_submodule(m, "quad"),
                     mueller = create_submodule(m, "mueller");
 //
       math.doc()    = "Mathematical routines, special functions, etc.";
-//    spline.doc()  = "Functions for evaluating and sampling Catmull-Rom splines";
-//    warp.doc()    = "Common warping techniques that map from the unit square to other "
-//                    "domains, such as spheres, hemispheres, etc.";
+      spline.doc()  = "Functions for evaluating and sampling Catmull-Rom splines";
+      warp.doc()    = "Common warping techniques that map from the unit square to other "
+                      "domains, such as spheres, hemispheres, etc.";
 //    quad.doc()    = "Functions for numerical quadrature";
       mueller.doc() = "Routines to manipulate Mueller matrices for polarized rendering.";
 //
@@ -171,7 +171,7 @@ NB_MODULE(MODULE_NAME, m) {
     MI_PY_IMPORT(Properties);
     MI_PY_IMPORT(rfilter);
     MI_PY_IMPORT(sample_tea);
-//    MI_PY_IMPORT_SUBMODULE(spline);
+    MI_PY_IMPORT_SUBMODULE(spline);
 //    MI_PY_IMPORT(Spectrum);
     MI_PY_IMPORT(Transform);
 //    // MI_PY_IMPORT(AnimatedTransform);
@@ -179,7 +179,7 @@ NB_MODULE(MODULE_NAME, m) {
     MI_PY_IMPORT(Marginal2D);
 //    MI_PY_IMPORT(vector);
 //    MI_PY_IMPORT_SUBMODULE(quad);
-//    MI_PY_IMPORT_SUBMODULE(warp);
+    MI_PY_IMPORT_SUBMODULE(warp);
     MI_PY_IMPORT(xml);
 
     MI_PY_IMPORT(Scene);
