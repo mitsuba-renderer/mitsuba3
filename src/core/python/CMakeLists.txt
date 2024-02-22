@@ -23,8 +23,8 @@ set(CORE_PY_V_SRC
 )
 #
 set(CORE_PY_SRC
-#  ${CMAKE_CURRENT_SOURCE_DIR}/atomic.cpp
-#  ${CMAKE_CURRENT_SOURCE_DIR}/appender.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/atomic.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/appender.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/argparser.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/bitmap.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/cast.cpp
