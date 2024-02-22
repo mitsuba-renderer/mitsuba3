@@ -3,6 +3,8 @@
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/python/python.h>
 
+#include <nanobind/trampoline.h>
+
 NAMESPACE_BEGIN(mitsuba)
 
 /**
@@ -11,18 +13,19 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class PyThread : public Thread {
 public:
-    using Thread::Thread;
+    NB_TRAMPOLINE(Thread, 2);
+
     virtual ~PyThread() = default;
 
     std::string to_string() const override {
-        py::gil_scoped_acquire acquire;
-        PYBIND11_OVERRIDE(std::string, Thread, to_string);
+        nb::gil_scoped_acquire acquire;
+        NB_OVERRIDE(to_string);
     }
 
 protected:
     void run() override {
-        py::gil_scoped_acquire acquire;
-        PYBIND11_OVERRIDE_PURE(void, Thread, run);
+        nb::gil_scoped_acquire acquire;
+        NB_OVERRIDE_PURE(run);
     }
 };
 
@@ -39,7 +42,7 @@ public:
     }
 
 
-    void exit(py::handle, py::handle, py::handle) {
+    void exit(nb::handle, nb::handle, nb::handle) {
         if (!m_ste)
             return;
 
@@ -60,9 +63,9 @@ public:
 NAMESPACE_END(mitsuba)
 
 MI_PY_EXPORT(Thread) {
-    auto thr = py::class_<Thread, Object, ref<Thread>, PyThread>(m, "Thread", D(Thread));
+    auto thr = nb::class_<Thread, Object, PyThread>(m, "Thread", D(Thread));
 
-    py::enum_<Thread::EPriority>(thr, "EPriority", D(Thread, EPriority))
+    nb::enum_<Thread::EPriority>(thr, "EPriority", D(Thread, EPriority))
         .value("EIdlePriority", Thread::EIdlePriority, D(Thread, EPriority, EIdlePriority))
         .value("ELowestPriority", Thread::ELowestPriority, D(Thread, EPriority, ELowestPriority))
         .value("ELowPriority", Thread::ELowPriority, D(Thread, EPriority, ELowPriority))
@@ -73,7 +76,7 @@ MI_PY_EXPORT(Thread) {
         .export_values();
 
 
-    thr.def(py::init<const std::string &>(), "name"_a)
+    thr.def(nb::init<const std::string &>(), "name"_a)
        .def("parent", (Thread * (Thread::*) ()) & Thread::parent,
            D(Thread, parent))
        .def("file_resolver",
@@ -100,12 +103,12 @@ MI_PY_EXPORT(Thread) {
        .def_static_method(Thread, sleep)
        .def_static_method(Thread, wait_for_tasks);
 
-    py::class_<ThreadEnvironment>(m, "ThreadEnvironment", D(ThreadEnvironment))
-        .def(py::init<>());
+    nb::class_<ThreadEnvironment>(m, "ThreadEnvironment", D(ThreadEnvironment))
+        .def(nb::init<>());
 
-    py::class_<PyScopedSetThreadEnvironment>(m, "ScopedSetThreadEnvironment",
+    nb::class_<PyScopedSetThreadEnvironment>(m, "ScopedSetThreadEnvironment",
                                             D(ScopedSetThreadEnvironment))
-        .def(py::init<const ThreadEnvironment &>())
+        .def(nb::init<const ThreadEnvironment &>())
         .def("__enter__", &PyScopedSetThreadEnvironment::enter)
         .def("__exit__", &PyScopedSetThreadEnvironment::exit);
 }
