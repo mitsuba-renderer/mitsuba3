@@ -18,7 +18,7 @@ MI_PY_DECLARE(Bitmap);
 MI_PY_DECLARE(Formatter);
 MI_PY_DECLARE(FileResolver);
 //MI_PY_DECLARE(Logger);
-//MI_PY_DECLARE(MemoryMappedFile);
+MI_PY_DECLARE(MemoryMappedFile);
 //MI_PY_DECLARE(Stream);
 //MI_PY_DECLARE(DummyStream);
 //MI_PY_DECLARE(FileStream);
@@ -138,7 +138,7 @@ NB_MODULE(mitsuba_ext, m) {
     MI_PY_IMPORT(Formatter);
     MI_PY_IMPORT(FileResolver);
 //    MI_PY_IMPORT(Logger);
-//    MI_PY_IMPORT(MemoryMappedFile);
+    MI_PY_IMPORT(MemoryMappedFile);
 //    MI_PY_IMPORT(DummyStream);
 //    MI_PY_IMPORT(FileStream);
 //    MI_PY_IMPORT(MemoryStream);
