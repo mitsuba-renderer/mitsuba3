@@ -65,7 +65,7 @@ struct SortKey {
             if (a_end == (a.c_str() + a.size()) &&
                 b_end == (b.c_str() + b.size()) &&
                 l1 != LLONG_MAX && l2 != LLONG_MAX &&
-                !((l1 == l2) && (a.size() != b.size()))) // catch trailing zeros case (e.g. 001 vs 01))
+                !((l1 == l2) && (a.size() != b.size()))) // catch leading zeros case (e.g. 001 vs 01))
                 return l1 < l2;
         }
 
