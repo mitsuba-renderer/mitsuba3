@@ -11,7 +11,7 @@ MI_PY_DECLARE(atomic);
 MI_PY_DECLARE(filesystem);
 MI_PY_DECLARE(Object);
 MI_PY_DECLARE(Cast);
-//MI_PY_DECLARE(Struct);
+MI_PY_DECLARE(Struct);
 MI_PY_DECLARE(Appender);
 MI_PY_DECLARE(ArgParser);
 MI_PY_DECLARE(Bitmap);
@@ -129,7 +129,7 @@ NB_MODULE(mitsuba_ext, m) {
     MI_PY_IMPORT(filesystem);
     MI_PY_IMPORT(Object);
     MI_PY_IMPORT(Cast);
-//    MI_PY_IMPORT(Struct);
+    MI_PY_IMPORT(Struct);
     MI_PY_IMPORT(Appender);
     MI_PY_IMPORT(ArgParser);
     MI_PY_IMPORT(rfilter);
