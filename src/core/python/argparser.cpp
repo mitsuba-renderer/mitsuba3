@@ -2,17 +2,17 @@
 #include <mitsuba/python/python.h>
 
 MI_PY_EXPORT(ArgParser) {
-    py::class_<ArgParser> argp(m, "ArgParser", D(ArgParser));
-    py::class_<ArgParser::Arg> argpa(argp, "Arg", D(ArgParser, Arg));
+    nb::class_<ArgParser> argp(m, "ArgParser", D(ArgParser));
+    nb::class_<ArgParser::Arg> argpa(argp, "Arg", D(ArgParser, Arg));
 
-    argp.def(py::init<>())
+    argp.def(nb::init<>())
         .def("add", (const ArgParser::Arg * (ArgParser::*) (const std::string &, bool))
              &ArgParser::add, "prefix"_a, "extra"_a = false,
-             py::return_value_policy::reference_internal,
+             nb::rv_policy::reference_internal,
              D(ArgParser, add, 2))
         .def("add", (const ArgParser::Arg * (ArgParser::*) (const std::vector<std::string> &, bool))
              &ArgParser::add, "prefixes"_a, "extra"_a = false,
-             py::return_value_policy::reference_internal,
+             nb::rv_policy::reference_internal,
              D(ArgParser, add))
         .def("parse", [](ArgParser &a, std::vector<std::string> args) {
                 std::unique_ptr<const char *[]> args_(new const char *[args.size()]);
@@ -26,7 +26,7 @@ MI_PY_EXPORT(ArgParser) {
     argpa.def("__bool__", &ArgParser::Arg::operator bool, D(ArgParser, Arg, operator, bool))
          .def("extra", &ArgParser::Arg::extra, D(ArgParser, Arg, extra))
          .def("count", &ArgParser::Arg::count, D(ArgParser, Arg, count))
-         .def("next", &ArgParser::Arg::next, py::return_value_policy::reference_internal,
+         .def("next", &ArgParser::Arg::next, nb::rv_policy::reference_internal,
               D(ArgParser, Arg, next))
          .def("as_string", &ArgParser::Arg::as_string, D(ArgParser, Arg, as_string))
          .def("as_int", &ArgParser::Arg::as_int, D(ArgParser, Arg, as_int))
