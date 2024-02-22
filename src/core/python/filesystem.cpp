@@ -1,16 +1,18 @@
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/python/python.h>
 
+#include <nanobind/stl/string.h>
+
 using namespace mitsuba::filesystem;
 
 MI_PY_EXPORT(filesystem) {
     // Create dedicated submodule
     auto fs = m.def_submodule("filesystem", "Lightweight cross-platform filesystem utilities");
 
-    py::class_<path>(fs, "path", D(filesystem, path))
-        .def(py::init<>(), D(filesystem, path, path))
-        .def(py::init<const path &>(), D(filesystem, path, path, 2))
-        .def(py::init<const string_type &>(), D(filesystem, path, path, 4))
+    nb::class_<path>(fs, "path", D(filesystem, path))
+        .def(nb::init<>(), D(filesystem, path, path))
+        .def(nb::init<const path &>(), D(filesystem, path, path, 2))
+        .def(nb::init<const string_type &>(), D(filesystem, path, path, 4))
         .def("clear", &path::clear, D(filesystem, path, clear))
         .def("empty", &path::empty, D(filesystem, path, empty))
         .def("is_absolute", &path::is_absolute, D(filesystem, path, is_absolute))
@@ -20,12 +22,12 @@ MI_PY_EXPORT(filesystem) {
         .def("replace_extension", &path::replace_extension, D(filesystem, path, replace_extension))
         .def("filename", &path::filename, D(filesystem, path, filename))
         .def("native", &path::native, D(filesystem, path, native))
-        .def(py::self / py::self, D(filesystem, path, operator_div))
-        .def(py::self == py::self, D(filesystem, path, operator_eq))
-        .def(py::self != py::self, D(filesystem, path, operator_ne))
+        .def(nb::self / nb::self, D(filesystem, path, operator_div))
+        .def(nb::self == nb::self, D(filesystem, path, operator_eq))
+        .def(nb::self != nb::self, D(filesystem, path, operator_ne))
         .def("__repr__", &path::native, D(filesystem, path, native));
 
-    fs.attr("preferred_separator") = py::cast(preferred_separator);
+    fs.attr("preferred_separator") = nb::cast(preferred_separator);
 
     fs.def("current_path", &current_path, D(filesystem, current_path));
     fs.def("absolute", &absolute, D(filesystem, absolute));
@@ -37,6 +39,4 @@ MI_PY_EXPORT(filesystem) {
     fs.def("create_directory", &create_directory, D(filesystem, create_directory));
     fs.def("resize_file", &resize_file, D(filesystem, resize_file));
     fs.def("remove", &filesystem::remove, D(filesystem, remove));
-
-    py::implicitly_convertible<py::str, path>();
 }

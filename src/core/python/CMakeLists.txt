@@ -28,7 +28,7 @@ set(CORE_PY_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/argparser.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/bitmap.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/cast.cpp
-#  ${CMAKE_CURRENT_SOURCE_DIR}/filesystem.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/filesystem.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/formatter.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/fresolver.cpp
 #  ${CMAKE_CURRENT_SOURCE_DIR}/logger.cpp

@@ -8,7 +8,7 @@
 
 // core
 MI_PY_DECLARE(atomic);
-//MI_PY_DECLARE(filesystem);
+MI_PY_DECLARE(filesystem);
 MI_PY_DECLARE(Object);
 MI_PY_DECLARE(Cast);
 //MI_PY_DECLARE(Struct);
@@ -126,7 +126,7 @@ NB_MODULE(mitsuba_ext, m) {
 
 //    // Register python modules
     MI_PY_IMPORT(atomic);
-//    MI_PY_IMPORT(filesystem);
+    MI_PY_IMPORT(filesystem);
     MI_PY_IMPORT(Object);
     MI_PY_IMPORT(Cast);
 //    MI_PY_IMPORT(Struct);
