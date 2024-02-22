@@ -14,9 +14,9 @@ static void PyLog(mitsuba::LogLevel level, const std::string &msg) {
 #endif
 
     std::string name =
-        py::cast<std::string>(py::handle(f_code->co_name));
+        nb::cast<std::string>(nb::handle(f_code->co_name));
     std::string filename =
-        py::cast<std::string>(py::handle(f_code->co_filename));
+        nb::cast<std::string>(nb::handle(f_code->co_filename));
     std::string fmt = "%s: %s";
     int lineno = PyFrame_GetLineNumber(frame);
 
@@ -48,20 +48,20 @@ static void PyLog(mitsuba::LogLevel level, const std::string &msg) {
 
 MI_PY_EXPORT(Logger) {
     MI_PY_CLASS(Logger, Object)
-        .def(py::init<mitsuba::LogLevel>(), D(Logger, Logger))
+        .def(nb::init<mitsuba::LogLevel>(), D(Logger, Logger))
         .def_method(Logger, log_progress, "progress"_a, "name"_a,
-            "formatted"_a, "eta"_a, "ptr"_a = py::none())
+            "formatted"_a, "eta"_a, "ptr"_a = nb::none())
         .def_method(Logger, set_log_level)
         .def_method(Logger, log_level)
         .def_method(Logger, set_error_level)
         .def_method(Logger, error_level)
-        .def_method(Logger, add_appender, py::keep_alive<1, 2>())
+        .def_method(Logger, add_appender, nb::keep_alive<1, 2>())
         .def_method(Logger, remove_appender)
         .def_method(Logger, clear_appenders)
         .def_method(Logger, appender_count)
         .def("appender", (Appender * (Logger::*)(size_t)) &Logger::appender, D(Logger, appender))
         .def("formatter", (Formatter * (Logger::*)()) &Logger::formatter, D(Logger, formatter))
-        .def_method(Logger, set_formatter, py::keep_alive<1, 2>())
+        .def_method(Logger, set_formatter, nb::keep_alive<1, 2>())
         .def_method(Logger, read_log);
 
     m.def("Log", &PyLog, "level"_a, "msg"_a);
