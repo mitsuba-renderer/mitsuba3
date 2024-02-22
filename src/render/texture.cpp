@@ -84,7 +84,7 @@ Texture<Float, Spectrum>::D65(ref<Texture> texture) {
         };
         if (string::contains(plugins, texture->class_()->name())) {
             Properties props("d65");
-            props.set_object("nested", texture);
+            props.set_object("nested", ref<Object>(texture));
             ref<Texture> texture2 = PluginManager::instance()->create_object<Texture>(props);
             std::vector<ref<Object>> children = texture2->expand();
             if (!children.empty())

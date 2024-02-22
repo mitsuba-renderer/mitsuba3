@@ -21,7 +21,6 @@ namespace dr = drjit;
 
 class Object;
 class Class;
-template <typename> class ref;
 
 // class AnimatedTransform;
 class AnnotatedStream;

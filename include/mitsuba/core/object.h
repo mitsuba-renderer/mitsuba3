@@ -1,11 +1,8 @@
 #pragma once
 
-#define NB_INTRUSIVE_EXPORT MI_EXPORT
-
 #include <atomic>
 #include <stdexcept>
 #include <mitsuba/core/class.h>
-#include <nanobind/intrusive/counter.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -32,7 +29,7 @@ NAMESPACE_BEGIN(mitsuba)
  * Python, this counter is shared with Python such that the ownerhsip and
  * lifetime of any ``Object`` instance across C++ and Python is managed by it.
  */
-class MI_EXPORT_LIB Object {
+class MI_EXPORT_LIB Object : public nanobind::intrusive_base {
 public:
     /// Default constructor
     Object() { }
@@ -40,20 +37,8 @@ public:
     /// Copy constructor
     Object(const Object &) { }
 
-    /// Virtual destructor
-    virtual ~Object() { };
-
-    /// Increase the object's reference count by one
-    void inc_ref() const noexcept { m_ref_count.inc_ref(); }
-
-    /**
-     * \brief Decrease the reference count and return whether or not it reached
-     * zero
-     *
-     * This method will not call the destructor, it only changes the reference
-     * count.
-     */
-    bool dec_ref() const noexcept { return m_ref_count.dec_ref(); }
+    /// Destructor
+    ~Object() { };
 
     /**
      * \brief Expand the object into a list of sub-objects and return them
@@ -113,15 +98,6 @@ public:
     /// Set an identifier to the current instance (if applicable)
     virtual void set_id(const std::string& id);
 
-    /// Set the Python object associated with this instance
-    void set_self_py(PyObject *self) noexcept { m_ref_count.set_self_py(self); }
-
-    /**
-     * \brief Return the Python object associated with this instance or null if
-     * there isn't any
-     */
-    PyObject *self_py() noexcept { return m_ref_count.self_py(); }
-
     /**
      * \brief Return a human-readable string representation of the object's
      * contents.
@@ -134,148 +110,7 @@ public:
     virtual std::string to_string() const;
 
 private:
-    mutable nanobind::intrusive_counter m_ref_count;
-
     static Class *m_class;
-};
-
-/**
- * \brief Reference counting helper
- *
- * The \a ref template is a simple wrapper to store a pointer to an object. It
- * takes care of increasing and decreasing the object's reference count as
- * needed. When the last reference goes out of scope, the associated object
- * will be deallocated.
- *
- * The advantage over C++ solutions such as <tt>std::shared_ptr</tt> is that
- * the reference count is very compactly integrated into the base object
- * itself.
- */
-template <typename T> class ref {
-public:
-    /// Create a <tt>nullptr</tt>-valued reference
-    ref() { }
-
-    /// Construct a reference from a pointer
-    template <typename T2 = T>
-    ref(T *ptr) : m_ptr(ptr) {
-        static_assert(std::is_base_of_v<Object, T2>,
-                      "Cannot create reference to object not inheriting from Object class.");
-        inc_ref();
-    }
-
-    /// Construct a reference from another convertible reference
-    template <typename T2>
-    ref(const ref<T2> &r) : m_ptr((T2 *) r.get()) {
-        static_assert(std::is_convertible_v<T2*, T*>, "Cannot create reference to object from another unconvertible reference.");
-        inc_ref();
-    }
-
-    /// Copy constructor
-    ref(const ref &r) : m_ptr(r.m_ptr) {
-        inc_ref();
-    }
-
-    /// Move constructor
-    ref(ref &&r) noexcept : m_ptr(r.m_ptr) {
-        r.m_ptr = nullptr;
-    }
-
-    /// Destroy this reference
-    ~ref() {
-        dec_ref();
-    }
-
-    /// Move another reference into the current one
-    ref& operator=(ref&& r) noexcept {
-        if (&r != this) {
-            dec_ref();
-            m_ptr = r.m_ptr;
-            r.m_ptr = nullptr;
-        }
-        return *this;
-    }
-
-    /// Overwrite this reference with another reference
-    ref& operator=(const ref& r) noexcept {
-        if (m_ptr != r.m_ptr) {
-            r.inc_ref();
-            dec_ref();
-            m_ptr = r.m_ptr;
-        }
-        return *this;
-    }
-
-    /// Overwrite this reference with a pointer to another object
-    template <typename T2 = T>
-    ref& operator=(T *ptr) noexcept {
-        static_assert(std::is_base_of_v<Object, T2>,
-                      "Cannot create reference to an instance that does not"
-                      " inherit from the Object class..");
-        if (m_ptr != ptr) {
-            if (ptr)
-                ptr->inc_ref();
-            dec_ref();
-            m_ptr = ptr;
-        }
-        return *this;
-    }
-
-    /// Compare this reference to another reference
-    bool operator==(const ref &r) const { return m_ptr == r.m_ptr; }
-
-    /// Compare this reference to another reference
-    bool operator!=(const ref &r) const { return m_ptr != r.m_ptr; }
-
-    /// Compare this reference to a pointer
-    bool operator==(const T* ptr) const { return m_ptr == ptr; }
-
-    /// Compare this reference to a pointer
-    bool operator!=(const T* ptr) const { return m_ptr != ptr; }
-
-    /// Access the object referenced by this reference
-    T* operator->() { return m_ptr; }
-
-    /// Access the object referenced by this reference
-    const T* operator->() const { return m_ptr; }
-
-    /// Return a C++ reference to the referenced object
-    T& operator*() { return *m_ptr; }
-
-    /// Return a const C++ reference to the referenced object
-    const T& operator*() const { return *m_ptr; }
-
-    /// Return a pointer to the referenced object
-    operator T* () { return m_ptr; }
-
-    /// Return a pointer to the referenced object
-    operator const T* () const { return m_ptr; }
-
-    /// Return a const pointer to the referenced object
-    T* get() { return m_ptr; }
-
-    /// Return a pointer to the referenced object
-    const T* get() const { return m_ptr; }
-
-    /// Check if the object is defined
-    operator bool() const { return m_ptr != nullptr; }
-private:
-
-    /// Increase the object's reference count
-    MI_INLINE void inc_ref() const {
-        if (m_ptr)
-            ((Object *) m_ptr)->inc_ref();
-    }
-
-    /// Decrease the object's reference count and deallocate it if it reaches zero
-    MI_INLINE void dec_ref() {
-        if (m_ptr && ((Object *) m_ptr)->dec_ref()) {
-            delete (Object*) m_ptr;
-            m_ptr = nullptr;
-        }
-    }
-
-    T *m_ptr = nullptr;
 };
 
 // -----------------------------------------------------------------------------

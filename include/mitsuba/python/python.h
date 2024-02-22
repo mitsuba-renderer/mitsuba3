@@ -60,7 +60,7 @@
             auto variant = ::mitsuba::detail::get_variant<Float, Spectrum>();  \
             (void) new Class(                                                  \
                 name, #Name, variant,                                          \
-                [=](const Properties &p) -> ref<Name> {                        \
+                [=](const Properties &p) -> ref<Object> {                      \
                     /* The thread-local python variant information might not
                     have been set on this thread */                            \
                     nb::gil_scoped_acquire gil;                                \
@@ -81,7 +81,7 @@
                     /* At this point `ptr` has a reference count of 1. By
                      * creating at `ref<>` of if it will increase to 2. So we
                      * manually decrease the reference count to compensate. */ \
-                    ref<Name> out(ptr);                                        \
+                    ref<Object> out(ptr);                                      \
                     ptr->dec_ref();                                            \
                                                                                \
                     return ptr;                                                \

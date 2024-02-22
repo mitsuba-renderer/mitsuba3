@@ -44,7 +44,7 @@ public:
         for (auto &kv : tbl) {
             if (tbl.size() == 1)
                 kv.second->set_id(props.id());
-            m_objects.push_back(kv.second);
+            m_objects.push_back((ref<Object>) kv.second);
         }
 
         Log(Info, "Collapsed %zu into %zu meshes. (took %s, %zu objects ignored)",

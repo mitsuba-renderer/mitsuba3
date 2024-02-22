@@ -44,7 +44,6 @@ template <typename Float, typename Spectrum> struct MediumInteraction;
 template <typename Float, typename Spectrum> struct SurfaceInteraction;
 template <typename Float, typename Shape>    struct PreliminaryIntersection;
 
-
 template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Float                     = Float_;
     using Spectrum                  = Spectrum_;

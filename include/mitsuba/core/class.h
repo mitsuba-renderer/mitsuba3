@@ -1,8 +1,13 @@
 #pragma once
 
+#define NB_INTRUSIVE_EXPORT MI_EXPORT
+
 #include <mitsuba/mitsuba.h>
 #include <string>
 #include <functional>
+#include <nanobind/intrusive/ref.h>
+
+template <typename T> using ref = nanobind::ref<T>;
 
 NAMESPACE_BEGIN(mitsuba)
 

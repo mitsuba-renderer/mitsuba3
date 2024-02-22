@@ -18,9 +18,6 @@
 
 #define PY_TRY_CAST(Type)                                                      \
     if (Type* tmp = dynamic_cast<Type *>(o); tmp) {                            \
-        if (PyObject* obj = tmp->self_py())                                    \
-            return borrow(nb::handle(obj));                                    \
-        else                                                                   \
             return nb::cast(tmp);                                              \
     }
 
