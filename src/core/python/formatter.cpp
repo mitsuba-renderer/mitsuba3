@@ -2,6 +2,8 @@
 #include <mitsuba/core/thread.h>
 #include <mitsuba/python/python.h>
 
+#include <nanobind/trampoline.h>
+
 // Trampoline for derived types implemented in Python
 class PyFormatter : public Formatter {
 public:
