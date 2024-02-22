@@ -8,23 +8,24 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/python/python.h>
 
+
 #define DECLARE_RW(Type, ReadableName)                                         \
     def("read_" ReadableName,                                                  \
         [](Stream &s) {                                                        \
             Type v;                                                            \
             s.read(v);                                                         \
-            return py::cast(v);                                                \
+            return nb::cast(v);                                                \
         }, D(Stream, read, 2))                                                 \
     .def("write_" ReadableName,                                                \
          [](Stream &s, const Type &v) {                                        \
              s.write(v);                                                       \
-             return py::cast(v);                                               \
+             return nb::cast(v);                                               \
          }, D(Stream, write, 2))
 
 MI_PY_EXPORT(Stream) {
     auto cls = MI_PY_CLASS(Stream, Object);
 
-    py::enum_<Stream::EByteOrder>(cls, "EByteOrder", D(Stream, EByteOrder))
+    nb::enum_<Stream::EByteOrder>(cls, "EByteOrder", D(Stream, EByteOrder))
         .value("EBigEndian", Stream::EBigEndian, D(Stream, EByteOrder, EBigEndian))
         .value("ELittleEndian", Stream::ELittleEndian, D(Stream, EByteOrder, ELittleEndian))
         .value("ENetworkByteOrder", Stream::ENetworkByteOrder, D(Stream, EByteOrder, ENetworkByteOrder))
@@ -41,14 +42,14 @@ MI_PY_EXPORT(Stream) {
         .def_method(Stream, can_read)
         .def_method(Stream, can_write)
         .def_static("host_byte_order", Stream::host_byte_order, D(Stream, host_byte_order))
-        .def("write", [](Stream &s, py::bytes b) {
-            std::string data(b);
+        .def("write", [](Stream &s, nb::bytes b) {
+            std::string data(b.c_str());
             s.write(data.c_str(), data.size());
         }, D(Stream, write))
         .def("read", [](Stream &s, size_t size) {
             std::unique_ptr<char> tmp(new char[size]);
             s.read((void *) tmp.get(), size);
-            return py::bytes(tmp.get(), size);
+            return nb::bytes(tmp.get(), size);
         }, D(Stream, write))
         .def_method(Stream, skip)
         .def_method(Stream, read_line)
@@ -72,48 +73,48 @@ MI_PY_EXPORT(Stream) {
 
 MI_PY_EXPORT(DummyStream) {
     MI_PY_CLASS(DummyStream, Stream)
-        .def(py::init<>(), D(DummyStream, DummyStream));
+        .def(nb::init<>(), D(DummyStream, DummyStream));
 }
 
 MI_PY_EXPORT(FileStream) {
     auto fs = MI_PY_CLASS(FileStream, Stream)
         .def_method(FileStream, path);
 
-    py::enum_<FileStream::EMode>(fs, "EMode", D(FileStream, EMode))
+    nb::enum_<FileStream::EMode>(fs, "EMode", D(FileStream, EMode))
         .value("ERead", FileStream::ERead, D(FileStream, EMode, ERead))
         .value("EReadWrite", FileStream::EReadWrite, D(FileStream, EMode, EReadWrite))
         .value("ETruncReadWrite", FileStream::ETruncReadWrite, D(FileStream, EMode, ETruncReadWrite))
         .export_values();
 
-    fs.def(py::init<const mitsuba::filesystem::path &, FileStream::EMode>(),
+    fs.def(nb::init<const mitsuba::filesystem::path &, FileStream::EMode>(),
         "p"_a, "mode"_a = FileStream::ERead, D(FileStream, FileStream));
 }
 
 MI_PY_EXPORT(MemoryStream) {
     MI_PY_CLASS(MemoryStream, Stream)
-        .def(py::init<size_t>(), D(MemoryStream, MemoryStream),
+        .def(nb::init<size_t>(), D(MemoryStream, MemoryStream),
             "capacity"_a = 512)
         .def_method(MemoryStream, capacity)
         .def_method(MemoryStream, owns_buffer)
-        .def("raw_buffer", [](MemoryStream &s) -> py::bytes {
-            return py::bytes(reinterpret_cast<const char*>(s.raw_buffer()), s.size());
+        .def("raw_buffer", [](MemoryStream &s) -> nb::bytes {
+            return nb::bytes(reinterpret_cast<const char*>(s.raw_buffer()), s.size());
         });
 }
 
 MI_PY_EXPORT(ZStream) {
     auto c = MI_PY_CLASS(ZStream, Stream);
 
-    py::enum_<ZStream::EStreamType>(c, "EStreamType", D(ZStream, EStreamType))
+    nb::enum_<ZStream::EStreamType>(c, "EStreamType", D(ZStream, EStreamType))
         .value("EDeflateStream", ZStream::EDeflateStream, D(ZStream, EStreamType, EDeflateStream))
         .value("EGZipStream", ZStream::EGZipStream, D(ZStream, EStreamType, EGZipStream))
         .export_values();
 
 
-    c.def(py::init<Stream*, ZStream::EStreamType, int>(), D(ZStream, ZStream),
+    c.def(nb::init<Stream*, ZStream::EStreamType, int>(), D(ZStream, ZStream),
         "child_stream"_a,
         "stream_type"_a = ZStream::EDeflateStream,
         "level"_a = -1)
         .def("child_stream", [](ZStream &stream) {
-            return py::cast(stream.child_stream());
+            return nb::cast(stream.child_stream());
         }, D(ZStream, child_stream));
 }
