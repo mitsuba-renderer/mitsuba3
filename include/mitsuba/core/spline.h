@@ -210,11 +210,13 @@ std::pair<Value, Value> eval_spline_i(Value f0, Value f1, Value d0,
  *      The interpolated value or zero when <tt>Extrapolate=false</tt>
  *      and \c x lies outside of [\c min, \c max]
  */
-template <bool Extrapolate = false, typename Value, typename Float>
-Value eval_1d(Float min, Float max, const Float *values,
+template <bool Extrapolate = false, typename Value>
+Value eval_1d(dr::scalar_t<Value> min, dr::scalar_t<Value> max, const dr::scalar_t<Value> *values_,
               uint32_t size, Value x) {
-    using Mask = dr::mask_t<Value>;
-    using Index = dr::uint32_array_t<Value>;
+    using Mask      = dr::mask_t<Value>;
+    using Index     = dr::uint32_array_t<Value>;
+    using Float     = dr::scalar_t<Value>;
+    using FloatX    = DynamicBuffer<Value>;
 
     /* Give up when given an out-of-range or NaN argument */
     Mask mask_valid = (x >= min) && (x <= max);
@@ -227,6 +229,8 @@ Value eval_1d(Float min, Float max, const Float *values,
 
     /* Find the index of the left node in the queried subinterval */
     Index idx = dr::maximum(Index(0), dr::minimum(Index(t), Index(size - 2)));
+
+    FloatX values = dr::load<FloatX>(values_, size);
 
     GET_SPLINE_UNIFORM(idx);
 
@@ -269,11 +273,17 @@ Value eval_1d(Float min, Float max, const Float *values,
  *      The interpolated value or zero when <tt>Extrapolate=false</tt>
  *      and \c x lies outside of \a [\c min, \c max]
  */
-template <bool Extrapolate = false, typename Value, typename Float>
-Value eval_1d(const Float *nodes, const Float *values,
+template <bool Extrapolate = false, typename Value>
+Value eval_1d(const dr::scalar_t<Value> *nodes_, 
+              const dr::scalar_t<Value> *values_,
               uint32_t size, Value x) {
-    using Mask = dr::mask_t<Value>;
-    using Index = dr::uint32_array_t<Value>;
+    using Mask      = dr::mask_t<Value>;
+    using Index     = dr::uint32_array_t<Value>;
+    using Float     = dr::scalar_t<Value>;
+    using FloatX    = DynamicBuffer<Value>;
+
+    FloatX nodes = dr::load<FloatX>(nodes_, size);
+    FloatX values = dr::load<FloatX>(values_, size);
 
     /* Give up when given an out-of-range or NaN argument */
     Mask mask_valid = (x >= nodes[0]) && (x <= nodes[size-1]);
@@ -398,15 +408,18 @@ void integrate_1d(const Value *nodes, const Value *values,
  * \return
  *      The spline parameter \c t such that <tt>eval_1d(..., t)=y</tt>
  */
-template <typename Value, typename Float>
-Value invert_1d(Float min, Float max, const Float *values, uint32_t size,
-                Value y, Float eps = 1e-6f) {
-    using Mask = dr::mask_t<Value>;
-    using Index = dr::uint32_array_t<Value>;
+template <typename Value>
+Value invert_1d(dr::scalar_t<Value> min, dr::scalar_t<Value> max, 
+                const dr::scalar_t<Value> *values_, uint32_t size,
+                Value y, dr::scalar_t<Value> eps = 1e-6f) {
+    using Mask      = dr::mask_t<Value>;
+    using Index     = dr::uint32_array_t<Value>;
+    using Float     = dr::scalar_t<Value>;
+    using FloatX    = DynamicBuffer<Value>;
 
     /* Give up when given an out-of-range or NaN argument */
-    Mask in_bounds_low  = y > values[0],
-         in_bounds_high = y < values[size - 1],
+    Mask in_bounds_low  = y > values_[0],
+         in_bounds_high = y < values_[size - 1],
          in_bounds      = in_bounds_low && in_bounds_high;
 
     /* Assuming that the lookup is out of bounds */
@@ -415,6 +428,8 @@ Value invert_1d(Float min, Float max, const Float *values, uint32_t size,
 
     if (unlikely(dr::none(in_bounds)))
         return out_of_bounds_value;
+
+    FloatX values = dr::load<FloatX>(values_, size);
 
     /* Map y to a spline interval by searching through the
        'values' array (which is assumed to be monotonic) */
@@ -487,25 +502,32 @@ Value invert_1d(Float min, Float max, const Float *values, uint32_t size,
  * \return
  *      The spline parameter \c t such that <tt>eval_1d(..., t)=y</tt>
  */
-template <typename Value, typename Float>
-Value invert_1d(const Float *nodes, const Float *values, uint32_t size,
-                Value y, Float eps = 1e-6f) {
-    using Mask = dr::mask_t<Value>;
-    using Index = dr::uint32_array_t<Value>;
+template <typename Value>
+Value invert_1d(const dr::scalar_t<Value> *nodes_,
+                const dr::scalar_t<Value> *values_,
+                uint32_t size,
+                Value y, dr::scalar_t<Value> eps = 1e-6f) {
+    using Mask      = dr::mask_t<Value>;
+    using Index     = dr::uint32_array_t<Value>;
+    using Float     = dr::scalar_t<Value>;
+    using FloatX    = DynamicBuffer<Value>;
 
     /* Give up when given an out-of-range or NaN argument */
-    Mask in_bounds_low  = y > values[0],
-         in_bounds_high = y < values[size - 1],
+    Mask in_bounds_low  = y > values_[0],
+         in_bounds_high = y < values_[size - 1],
          in_bounds      = in_bounds_low && in_bounds_high;
 
     /* Assuming that the lookup is out of bounds */
     Value out_of_bounds_value =
-        dr::select(in_bounds_high, Value(nodes[0]), Value(nodes[size - 1]));
+        dr::select(in_bounds_high, Value(nodes_[0]), Value(nodes_[size - 1]));
 
     if (unlikely(dr::none(in_bounds)))
         return out_of_bounds_value;
 
     Value result;
+
+    FloatX nodes    = dr::load<FloatX>(nodes_, size);
+    FloatX values   = dr::load<FloatX>(values_, size);
 
     /* Map y to a spline interval by searching through the
        'values' array (which is assumed to be monotonic) */
@@ -582,17 +604,21 @@ Value invert_1d(const Float *nodes, const Float *values, uint32_t size,
  *      3. The probability density at the sampled position (which only differs
  *         from item 2. when the function does not integrate to one)
  */
-template <typename Value, typename Float>
+template <typename Value>
 std::tuple<Value, Value, Value>
-sample_1d(Float min, Float max, const Float *values, const Float *cdf,
-          uint32_t size, Value sample, Float eps = 1e-6f) {
-    using Mask = dr::mask_t<Value>;
-    using Index = dr::uint32_array_t<Value>;
+sample_1d(dr::scalar_t<Value> min, dr::scalar_t<Value> max, 
+          const dr::scalar_t<Value> *values_, 
+          const dr::scalar_t<Value> *cdf_,
+          uint32_t size, Value sample, dr::scalar_t<Value> eps = 1e-6f) {
+    using Mask      = dr::mask_t<Value>;
+    using Index     = dr::uint32_array_t<Value>;
+    using Float     = dr::scalar_t<Value>;
+    using FloatX    = DynamicBuffer<Value>;
 
     const Float full_width = max - min,
                 width      = full_width / (size - 1),
                 inv_width  = (size - 1) / full_width,
-                last       = cdf[size - 1],
+                last       = cdf_[size - 1],
                 eps_domain = eps * full_width,
                 eps_value  = eps * last,
                 last_rcp   = (Float) 1 / last;
@@ -600,6 +626,9 @@ sample_1d(Float min, Float max, const Float *values, const Float *cdf,
     /* Scale by the definite integral of the function (in case
        it is not normalized) */
     sample *= last;
+
+    FloatX cdf      = dr::load<FloatX>(cdf_, size);
+    FloatX values   = dr::load<FloatX>(values_, size);
 
     /* Map y to a spline interval by searching through the
        monotonic 'cdf' array */
@@ -680,17 +709,25 @@ sample_1d(Float min, Float max, const Float *values, const Float *cdf,
  *      3. The probability density at the sampled position (which only differs
  *         from item 2. when the function does not integrate to one)
  */
-template <typename Value, typename Float>
+template <typename Value>
 std::tuple<Value, Value, Value>
-sample_1d(const Float *nodes, const Float *values, const Float *cdf,
-          uint32_t size, Value sample, Float eps = 1e-6f) {
-    using Mask = dr::mask_t<Value>;
-    using Index = dr::uint32_array_t<Value>;
+sample_1d(const dr::scalar_t<Value> *nodes_,
+          const dr::scalar_t<Value> *values_,
+          const dr::scalar_t<Value> *cdf_,
+          uint32_t size, Value sample, dr::scalar_t<Value> eps = 1e-6f) {
+    using Mask      = dr::mask_t<Value>;
+    using Index     = dr::uint32_array_t<Value>;
+    using Float     = dr::scalar_t<Value>;
+    using FloatX    = DynamicBuffer<Value>;
 
-    const Float last = cdf[size - 1],
-                eps_domain = eps * (nodes[size - 1] - nodes[0]),
+    const Float last = cdf_[size - 1],
+                eps_domain = eps * (nodes_[size - 1] - nodes_[0]),
                 eps_value  = eps * last,
                 last_rcp   = (Float) 1 / last;
+
+    FloatX cdf      = dr::load<FloatX>(cdf_, size);
+    FloatX nodes    = dr::load<FloatX>(nodes_, size);
+    FloatX values   = dr::load<FloatX>(values_, size);
 
     /* Scale by the definite integral of the function (in case
        it is not normalized) */
@@ -779,12 +816,15 @@ sample_1d(const Float *nodes, const Float *values, const Float *cdf,
  *      associated with weights[0]
  */
 template <bool Extrapolate = false,
-          typename Value, typename Float,
+          typename Value,
           typename Int32 = dr::int32_array_t<Value>,
           typename Mask = dr::mask_t<Value>>
-std::pair<Mask, Int32> eval_spline_weights(Float min, Float max, uint32_t size,
+std::pair<Mask, Int32> eval_spline_weights(dr::scalar_t<Value> min,
+                                           dr::scalar_t<Value> max,
+                                           uint32_t size,
                                            Value x, Value *weights) {
     using Index = dr::uint32_array_t<Value>;
+    using Float = dr::scalar_t<Value>;
 
     /* Give up when given an out-of-range or NaN argument */
     auto mask_valid = (x >= min) && (x <= max);
@@ -869,18 +909,22 @@ std::pair<Mask, Int32> eval_spline_weights(Float min, Float max, uint32_t size,
  */
 template <bool Extrapolate = false,
           typename Value,
-          typename Float,
           typename Int32 = dr::int32_array_t<Value>,
           typename Mask = dr::mask_t<Value>>
-std::pair<Mask, Int32> eval_spline_weights(const Float* nodes, uint32_t size,
+std::pair<Mask, Int32> eval_spline_weights(const dr::scalar_t<Value>* nodes_,
+                                           uint32_t size,
                                            Value x, Value *weights) {
-    using Index = dr::uint32_array_t<Value>;
+    using Index     = dr::uint32_array_t<Value>;
+    using Float     = dr::scalar_t<Value>;
+    using FloatX    = DynamicBuffer<Value>;
 
     /* Give up when given an out-of-range or NaN argument */
-    Mask mask_valid = (x >= nodes[0]) && (x <= nodes[size-1]);
+    Mask mask_valid = (x >= nodes_[0]) && (x <= nodes_[size-1]);
 
     if (unlikely(!Extrapolate && dr::none(mask_valid)))
         return std::make_pair(Mask(false), dr::zeros<Int32>());
+
+    FloatX nodes = dr::load<FloatX>(nodes_, size);
 
     /* Find the index of the left node in the queried subinterval */
     Index idx = math::find_interval<Index>(size,
@@ -979,20 +1023,27 @@ std::pair<Mask, Int32> eval_spline_weights(const Float* nodes, uint32_t size,
  *      The interpolated value or zero when <tt>Extrapolate=false</tt>tt> and
  *      <tt>(x,y)</tt> lies outside of the node range
  */
-template <bool Extrapolate = false, typename Value, typename Float>
-Value eval_2d(const Float *nodes1, uint32_t size1, const Float *nodes2,
-              uint32_t size2, const Float *values, Value x, Value y) {
-    using Mask = dr::mask_t<Value>;
-    using Index = dr::int32_array_t<Value>;
+template <bool Extrapolate = false, typename Value>
+Value eval_2d(const dr::scalar_t<Value> *nodes1_, uint32_t size1,
+              const dr::scalar_t<Value> *nodes2_, uint32_t size2,
+              const dr::scalar_t<Value> *values_, Value x, Value y) {
+    using Mask      = dr::mask_t<Value>;
+    using Index     = dr::int32_array_t<Value>;
+    using Float     = dr::scalar_t<Value>;
+    using FloatX    = DynamicBuffer<Value>;
+
+    FloatX nodes1 = dr::load<FloatX>(nodes1_, size1);
+    FloatX nodes2 = dr::load<FloatX>(nodes2_, size2);
+    FloatX values = dr::load<FloatX>(values_, size1 * size2);
 
     Value weights[2][4];
     Index offset[2];
     Mask valid_x, valid_y;
 
     std::tie(valid_x, offset[0]) =
-        eval_spline_weights<Extrapolate>(nodes1, size1, x, weights[0]);
+        eval_spline_weights<Extrapolate>(nodes1_, size1, x, weights[0]);
     std::tie(valid_y, offset[1]) =
-        eval_spline_weights<Extrapolate>(nodes2, size2, y, weights[1]);
+        eval_spline_weights<Extrapolate>(nodes2_, size2, y, weights[1]);
 
     /* Compute interpolation weights separately for each dimension */
     if (unlikely(dr::none(valid_x && valid_y)))
