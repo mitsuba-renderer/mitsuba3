@@ -28,7 +28,7 @@ MI_PY_DECLARE(ProgressReporter);
 MI_PY_DECLARE(rfilter);
 MI_PY_DECLARE(Thread);
 MI_PY_DECLARE(Timer);
-//MI_PY_DECLARE(util);
+MI_PY_DECLARE(util);
 
 // render
 MI_PY_DECLARE(BSDFContext);
@@ -124,7 +124,7 @@ NB_MODULE(mitsuba_ext, m) {
     if (!fr->contains(base_path))
         fr->append(base_path);
 
-//    // Register python modules
+    // Register python modules
     MI_PY_IMPORT(atomic);
     MI_PY_IMPORT(filesystem);
     MI_PY_IMPORT(Object);
@@ -146,7 +146,7 @@ NB_MODULE(mitsuba_ext, m) {
     MI_PY_IMPORT(ProgressReporter);
     MI_PY_IMPORT(Thread);
     MI_PY_IMPORT(Timer);
-//    MI_PY_IMPORT(util);
+    MI_PY_IMPORT(util);
 //
     MI_PY_IMPORT(BSDFContext);
     MI_PY_IMPORT(EmitterExtras);
