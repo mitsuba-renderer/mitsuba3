@@ -63,7 +63,7 @@ MI_PY_DECLARE(DrJit);
 //MI_PY_DECLARE(Object);
 MI_PY_DECLARE(BoundingBox);
 MI_PY_DECLARE(BoundingSphere);
-//MI_PY_DECLARE(Frame);
+MI_PY_DECLARE(Frame);
 MI_PY_DECLARE(Ray);
 MI_PY_DECLARE(DiscreteDistribution);
 MI_PY_DECLARE(DiscreteDistribution2D);
@@ -156,10 +156,10 @@ NB_MODULE(MODULE_NAME, m) {
     Scene::static_accel_initialization();
 //
 //    MI_PY_IMPORT(Object);
-   MI_PY_IMPORT(Ray);
-   MI_PY_IMPORT(BoundingBox);
-   MI_PY_IMPORT(BoundingSphere);
-//    MI_PY_IMPORT(Frame);
+    MI_PY_IMPORT(Ray);
+    MI_PY_IMPORT(BoundingBox);
+    MI_PY_IMPORT(BoundingSphere);
+    MI_PY_IMPORT(Frame);
     MI_PY_IMPORT(DiscreteDistribution);
     MI_PY_IMPORT(DiscreteDistribution2D);
     MI_PY_IMPORT(ContinuousDistribution);
