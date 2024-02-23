@@ -24,7 +24,7 @@ MI_PY_DECLARE(Stream);
 //MI_PY_DECLARE(FileStream);
 //MI_PY_DECLARE(MemoryStream);
 //MI_PY_DECLARE(ZStream);
-//MI_PY_DECLARE(ProgressReporter);
+MI_PY_DECLARE(ProgressReporter);
 MI_PY_DECLARE(rfilter);
 MI_PY_DECLARE(Thread);
 MI_PY_DECLARE(Timer);
@@ -143,7 +143,7 @@ NB_MODULE(mitsuba_ext, m) {
 //    MI_PY_IMPORT(FileStream);
 //    MI_PY_IMPORT(MemoryStream);
 //    MI_PY_IMPORT(ZStream);
-//    MI_PY_IMPORT(ProgressReporter);
+    MI_PY_IMPORT(ProgressReporter);
     MI_PY_IMPORT(Thread);
     MI_PY_IMPORT(Timer);
 //    MI_PY_IMPORT(util);

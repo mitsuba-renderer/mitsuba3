@@ -34,7 +34,7 @@ set(CORE_PY_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/logger.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/mmap.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/object.cpp
-#  ${CMAKE_CURRENT_SOURCE_DIR}/progress.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/progress.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/rfilter.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/stream.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/struct.cpp
