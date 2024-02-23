@@ -64,5 +64,6 @@ MI_PY_EXPORT(ImageBlock) {
         .def_method(ImageBlock, has_border)
         .def_method(ImageBlock, channel_count)
         .def("tensor", nb::overload_cast<>(&ImageBlock::tensor),
+             nb::rv_policy::reference_internal,
              D(ImageBlock, tensor));
 }

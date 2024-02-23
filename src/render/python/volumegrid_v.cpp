@@ -9,7 +9,7 @@
 MI_PY_EXPORT(VolumeGrid) {
     MI_PY_IMPORT_TYPES(VolumeGrid)
     MI_PY_CLASS(VolumeGrid, Object).def("__init__",
-            [](nb::ndarray<ScalarFloat, nb::c_contig> &obj, bool compute_max = true) {
+            [](nb::ndarray<ScalarFloat, nb::c_contig, nb::device::cpu> &obj, bool compute_max = true) {
             if (obj.ndim() != 3 && obj.ndim() != 4)
                 throw nb::type_error("Expected an array of size 3 or 4");
 

@@ -96,13 +96,13 @@ template <typename Point_> struct Transform {
 
     /// Equality comparison operator
     bool operator==(const Transform &t) const {
-        return dr::all(dr::all(matrix == t.matrix) && dr::all(inverse_transpose == t.inverse_transpose));
+        return dr::all_nested(matrix == t.matrix) && dr::all_nested(inverse_transpose == t.inverse_transpose);
     }
 
     /// Inequality comparison operator
     bool operator!=(const Transform &t) const {
-        return dr::all(dr::all(matrix != t.matrix) ||
-               dr::all(inverse_transpose != t.inverse_transpose));
+        return dr::all_nested(matrix != t.matrix) ||
+               dr::all_nested(inverse_transpose != t.inverse_transpose);
     }
 
     /**

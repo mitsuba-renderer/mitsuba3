@@ -10,7 +10,9 @@ MI_PY_EXPORT(MemoryMappedFile) {
             D(MemoryMappedFile, MemoryMappedFile), "filename"_a, "size"_a)
         .def(nb::init<const mitsuba::filesystem::path &, bool>(),
             D(MemoryMappedFile, MemoryMappedFile, 2), "filename"_a, "write"_a = false)
-        .def("__init__", [](MemoryMappedFile* t, const mitsuba::filesystem::path &p, nb::ndarray<nb::numpy> array) {
+        .def("__init__", [](MemoryMappedFile* t, 
+            const mitsuba::filesystem::path &p, 
+            nb::ndarray<nb::device::cpu> array) {
             size_t size = array.size() * array.itemsize();
             auto m = new (t) MemoryMappedFile(p, size);
             memcpy(m->data(), array.data(), size);

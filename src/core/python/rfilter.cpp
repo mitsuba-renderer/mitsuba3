@@ -11,7 +11,7 @@ MI_PY_EXPORT(rfilter) {
         .value("One", FilterBoundaryCondition::One, D(FilterBoundaryCondition, One));
 
     using Resampler = mitsuba::Resampler<float>;
-    using NumPyArray = nb::ndarray<float,  nb::c_contig, nb::numpy>;
+    using ArrayType = nb::ndarray<float,  nb::c_contig, nb::device::cpu>;
 
     nb::class_<Resampler>(m, "Resampler", D(Resampler))
         .def(nb::init<const ReconstructionFilter<float, Color<float, 3>> *, uint32_t, uint32_t>(),
@@ -26,15 +26,9 @@ MI_PY_EXPORT(rfilter) {
         .def_method(Resampler, clamp)
         .def("__repr__", &Resampler::to_string)
         .def("resample",
-            [](Resampler &resampler, const NumPyArray &source,
-                uint32_t source_stride, NumPyArray &target,
+            [](Resampler &resampler, const ArrayType &source,
+                uint32_t source_stride, ArrayType &target,
                 uint32_t target_stride, uint32_t channels) {
-                if (source.dtype() != (nb::dtype<float>()))
-                    throw std::runtime_error(
-                        "'source' has an incompatible type!");
-                if (target.dtype() != (nb::dtype<float>()))
-                    throw std::runtime_error(
-                        "'target' has an incompatible type!");
                 if (resampler.source_resolution() * source_stride != (size_t) source.size())
                     throw std::runtime_error(
                         "'source' has an incompatible size!");
