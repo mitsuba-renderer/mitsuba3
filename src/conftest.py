@@ -54,13 +54,11 @@ def clean_up():
 
     dr.kernel_history_clear()
     dr.flush_malloc_cache()
-    dr.malloc_clear_statistics()
     dr.flush_kernel_cache()
 
     if hasattr(dr, 'sync_thread'):
         dr.sync_thread()
-        dr.registry_clear()
-        dr.set_flags(dr.JitFlag.Default)
+        dr.set_flag(dr.JitFlag.Default, True)
 
 
 def generate_fixture(variant):
