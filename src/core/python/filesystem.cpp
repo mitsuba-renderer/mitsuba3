@@ -39,4 +39,6 @@ MI_PY_EXPORT(filesystem) {
     fs.def("create_directory", &create_directory, D(filesystem, create_directory));
     fs.def("resize_file", &resize_file, D(filesystem, resize_file));
     fs.def("remove", &filesystem::remove, D(filesystem, remove));
+
+    nb::implicitly_convertible<nb::str, path>();
 }

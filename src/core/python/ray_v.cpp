@@ -55,4 +55,6 @@ MI_PY_EXPORT(Ray) {
         MI_PY_DRJIT_STRUCT(raydiff, RayDifferential3f, o, d, maxt, time,
                             wavelengths, o_x, o_y, d_x, d_y)
     }
+
+    nb::implicitly_convertible<Ray3f, RayDifferential3f>();
 }
