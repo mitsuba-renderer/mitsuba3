@@ -118,15 +118,14 @@ if (NOT SKBUILD)
   endif()
 
   set(DRJIT_PYTHON_FILES
-    __init__.py ast.py detail.py interop.py llvm/ad.py cuda/ad.py scalar/__init__.py
+    __init__.py ast.py config.py detail.py interop.py llvm/ad.py cuda/ad.py
+    scalar/__init__.py
   )
 
   foreach(file ${DRJIT_PYTHON_FILES})
     set(IN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/drjit/${file})
     ro_copy(${IN_FILE} python/drjit/${file})
   endforeach(file)
-
-  ro_copy(${CMAKE_CURRENT_BINARY_DIR}/../../ext/drjit/drjit/config.py python/drjit/config.py)
 endif()
 
 # ----------------------------------------------------------
