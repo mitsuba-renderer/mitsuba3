@@ -309,13 +309,14 @@ class MitsubaModule(types.ModuleType):
         _tls.variant = value
 
         # Automatically load/reload and register Python integrators for AD variants
-        if value.startswith(('llvm_', 'cuda_')):
-            import sys
-            if 'mitsuba.ad.integrators' in _sys.modules:
-                _reload(_sys.modules['mitsuba.ad.integrators'])
-            else:
-                _import('mitsuba.ad.integrators')
-            del sys
+        # FIXME
+        #if value.startswith(('llvm_', 'cuda_')):
+        #    import sys
+        #    if 'mitsuba.ad.integrators' in _sys.modules:
+        #        _reload(_sys.modules['mitsuba.ad.integrators'])
+        #    else:
+        #        _import('mitsuba.ad.integrators')
+        #    del sys
 
 # Check whether we are reloading the mitsuba module
 reload = f'mitsuba.{submodules[0]}' in _sys.modules
