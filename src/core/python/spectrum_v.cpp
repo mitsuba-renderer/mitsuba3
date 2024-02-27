@@ -3,6 +3,11 @@
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/python/python.h>
 
+#include <nanobind/stl/list.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+
 MI_PY_EXPORT(Spectrum) {
     MI_PY_IMPORT_TYPES()
 
@@ -47,7 +52,7 @@ MI_PY_EXPORT(Spectrum) {
               "value"_a, "wavelengths"_a, "active"_a = true, D(spectrum_to_srgb));
 
         m.def("sample_shifted",
-              py::overload_cast<const dr::value_t<
+              nb::overload_cast<const dr::value_t<
                   dr::Array<Float, dr::size_v<Spectrum>>> &>(
                   &math::sample_shifted<
                       dr::Array<Float, dr::size_v<Spectrum>>>),
