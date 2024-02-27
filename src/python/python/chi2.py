@@ -145,8 +145,8 @@ class ChiSquareTest:
 
         # Normalize position values
         xy = (xy - self.bounds.min) / self.bounds.extents()
-        xy = mi.Vector2u(dr.clamp(xy * mi.Vector2f(self.res), 0,
-                                  mi.Vector2f(self.res - 1)))
+        xy = mi.Vector2u(dr.clip(xy * mi.Vector2f(self.res), 0,
+                                 mi.Vector2f(self.res - 1)))
 
         # Compute a histogram of the positions in the parameter domain
         self.histogram = dr.zeros(mi.Float, dr.prod(self.res))
@@ -206,8 +206,8 @@ class ChiSquareTest:
         p += (sample_index_2d + 1e-4) * (1-2e-4) * sample_spacing
 
         # Trapezoid rule integration weights
-        weights = dr.prod(dr.select(dr.eq(sample_index_2d, 0) |
-                                     dr.eq(sample_index_2d, self.ires - 1), 0.5, 1))
+        weights = dr.prod(dr.select((sample_index_2d == 0) |
+                                    (sample_index_2d == self.ires - 1), 0.5, 1))
         weights *= dr.prod(sample_spacing) * self.sample_count
 
         # Remap onto the target domain
@@ -277,7 +277,7 @@ class ChiSquareTest:
             self._log('Failure: The number of degrees of freedom is too low!')
             self.fail = True
 
-        if dr.any(dr.eq(pdf, 0) & dr.neq(histogram, 0)):
+        if dr.any((pdf == 0) & (histogram != 0)):
             self._log('Failure: Found samples in a cell with expected '
                       'frequency 0. Rejecting the null hypothesis!')
             self.fail = True
@@ -516,7 +516,7 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], uv=[0.5, 0.5], ctx=None):
         bs, weight = plugin.sample(ctx, si, sample[0], mi.Vector2f([sample[1], sample[2]]))
 
         w = dr.full(mi.Float, 1.0, dr.width(weight))
-        w[dr.all(dr.eq(weight, 0))] = 0
+        w[dr.all(weight == 0)] = 0
         return bs.wo, w
 
     def pdf_functor(wo, *args):
@@ -634,7 +634,7 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None):
         mei, ctx = make_context(n)
         wo, weight, pdf = plugin.sample(ctx, mei, sample[0], mi.Vector2f([sample[1], sample[2]]))
         w = dr.full(mi.Float, 1.0, dr.width(pdf))
-        w[dr.eq(pdf, 0)] = 0
+        w[pdf == 0] = 0
         return wo, w
 
     def pdf_functor(wo, *args):
