@@ -159,7 +159,7 @@ class SceneParameters(Mapping):
         """
         value, _, node, flags = self.properties[key]
 
-        is_nondifferentiable = (flags & mi.ParamFlags.NonDifferentiable.value)
+        is_nondifferentiable = (flags & mi.ParamFlags.NonDifferentiable)
         if is_nondifferentiable and dr.grad_enabled(value):
             mi.Log(
                 mi.LogLevel.Warn,
@@ -263,7 +263,7 @@ def _jit_id_hash(value: Any) -> int:
     def jit_ids(value: Any) -> list[tuple[int, Optional[int]]]:
         ids = []
 
-        if dr.is_static_array_v(value):
+        if dr.is_vector_v(value):
             for i in range(len(value)):
                 ids.extend(jit_ids(value[i]))
         elif dr.is_diff_v(value):

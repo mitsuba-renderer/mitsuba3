@@ -384,7 +384,7 @@ void parse_dictionary(DictParseContext &ctx,
 
         // Try to cast entry to an object
         try {
-            auto obj = nb::cast<ref<Object>>(value);
+            ref<Object> obj = nb::cast<Object*>(value);
             obj->set_id(key);
             expand_and_set_object(props, key, obj);
             continue;
