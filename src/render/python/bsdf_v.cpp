@@ -3,6 +3,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/trampoline.h>
+#include <nanobind/stl/pair.h>
 #include <nanobind/stl/string.h>
 #include <drjit/python.h>
 
