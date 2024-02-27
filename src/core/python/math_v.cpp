@@ -4,6 +4,8 @@
 #include <drjit/morton.h>
 #include <bitset>
 #include <mitsuba/python/python.h>
+#include <nanobind/stl/tuple.h>
+#include <nanobind/stl/pair.h>
 
 MI_PY_EXPORT(math) {
     MI_PY_IMPORT_TYPES()
@@ -43,12 +45,27 @@ MI_PY_EXPORT(math) {
           [](Float &c) { return dr::srgb_to_linear(c); },
           "Applies the inverse sRGB gamma curve to the given argument.");
 
-    m.def("chi2",
-          [](const DynamicBuffer<double> &obs, const DynamicBuffer<double> &exp, double thresh) {
-              if (exp.size() != obs.size())
-                  throw std::runtime_error("Unsupported input dimensions");
-              return math::chi2(obs.data(), exp.data(), thresh, obs.size());
-          }, D(math, chi2));
+    m.def(
+        "chi2",
+        [](const DynamicBuffer<Float64> &obs_,
+           const DynamicBuffer<Float64> &exp_, double thresh) {
+            if (exp_.size() != obs_.size())
+                throw std::runtime_error("Unsupported input dimensions");
+
+            DynamicBuffer<double> obs = dr::zeros<DynamicBuffer<double>>(exp_.size());
+            DynamicBuffer<double> exp = dr::zeros<DynamicBuffer<double>>(exp_.size());
+            if constexpr(dr::is_jit_v<DynamicBuffer<Float64>>) {
+                dr::eval(obs_, exp_);
+                dr::store(obs.data(), obs_);
+                dr::store(exp.data(), exp_);
+            } else {
+                obs = obs_;
+                exp = exp_;
+            }
+
+            return math::chi2(obs.data(), exp.data(), thresh, obs.size());
+        },
+        D(math, chi2));
 
     m.def("solve_quadratic",
           &math::solve_quadratic<Float>,
