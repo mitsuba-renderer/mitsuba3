@@ -63,8 +63,7 @@ except (ImportError, ModuleNotFoundError) as e:
 #    _sys.modules.pop('mitsuba.mitsuba_ext', None)
 
 # Known submodules that will be directly accessible from the mitsuba package
-#submodules = ['warp', 'math', 'spline', 'quad', 'mueller', 'util', 'filesystem']
-submodules = [] # FIXME: Revert this change
+submodules = ['warp', 'math', 'spline', 'quad', 'mueller', 'util', 'filesystem']
 
 # Inform the meta path finder of the python folder
 __path__.append(__path__[0] + '/python')
@@ -310,25 +309,22 @@ class MitsubaModule(types.ModuleType):
         _tls.variant = value
 
         # Automatically load/reload and register Python integrators for AD variants
-        # FIXME: Revert the changes below
-        #if value.startswith(('llvm_', 'cuda_')):
-        #    import sys
-        #    if 'mitsuba.ad.integrators' in _sys.modules:
-        #        _reload(_sys.modules['mitsuba.ad.integrators'])
-        #    else:
-        #        _import('mitsuba.ad.integrators')
-        #    del sys
+        if value.startswith(('llvm_', 'cuda_')):
+            import sys
+            if 'mitsuba.ad.integrators' in _sys.modules:
+                _reload(_sys.modules['mitsuba.ad.integrators'])
+            else:
+                _import('mitsuba.ad.integrators')
+            del sys
 
 # Check whether we are reloading the mitsuba module
-# FIXME: Revert the changes below
-reload = False
-#reload = f'mitsuba.{submodules[0]}' in _sys.modules
-#if reload:
-#    print(
-#        "The Mitsuba module was reloaded (imported a second time). "
-#        "This can in some cases result in small but subtle issues "
-#        "and is discouraged."
-#    )
+reload = f'mitsuba.{submodules[0]}' in _sys.modules
+if reload:
+    print(
+        "The Mitsuba module was reloaded (imported a second time). "
+        "This can in some cases result in small but subtle issues "
+        "and is discouraged."
+    )
 
 # Register the variant modules
 from .config import MI_VARIANTS
@@ -380,5 +376,4 @@ del logging
 if config in locals():
     del config
 del MI_VARIANTS
-del variant, name, reload # FIXME: Revert this change
-#del variant, submodule, name, reload
+del variant, submodule, name, reload
