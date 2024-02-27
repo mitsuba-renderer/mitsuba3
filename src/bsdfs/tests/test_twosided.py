@@ -92,7 +92,7 @@ def test03_sample_eval_pdf(variant_scalar_rgb):
                         assert dr.allclose(e_value, v_eval_pdf[0])
                         assert dr.allclose(p_pdf, v_eval_pdf[1])
 
-def test03_eval_diffuse_reflectance(variants_vec_rgb):
+def test04_eval_diffuse_reflectance(variants_vec_rgb):
     bsdf_front = mi.load_dict({
         'type': 'diffuse',
         'reflectance': {

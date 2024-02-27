@@ -43,7 +43,7 @@ def test02_white_furnace(variants_vec_backends_once_rgb):
 
             wo = mi.warp.square_to_uniform_sphere(sampler.next_2d())
             value = bsdf.eval(ctx, si, wo)
-            expected = dr.sum_nested(value) / (total * mi.warp.square_to_uniform_sphere_pdf(1.))
+            expected = dr.sum(value, axis=None) / (total * mi.warp.square_to_uniform_sphere_pdf(1.))
 
             assert dr.allclose(expected - 3, 0, atol=1e-2)
 
@@ -76,7 +76,7 @@ def test03_white_furnace_importance_sample(variants_vec_backends_once_rgb):
             })
 
             _, value = bsdf.sample(ctx, si, sampler.next_1d(), sampler.next_2d())
-            expected = dr.sum_nested(value) / total
+            expected = dr.sum(value, axis=None) / total
 
             assert dr.allclose(expected - 3, 0, atol=1e-3)
 
@@ -115,7 +115,7 @@ def test04_sample_numeric(variants_vec_backends_once_rgb):
             _, spec = bsdf.sample(ctx, si, d1, d2)
 
             # Sample might be 0
-            spec = dr.select(dr.eq(mi.luminance(spec), 0), 1, spec)
+            spec = dr.select(mi.luminance(spec) ==  0, 1, spec)
             lum = mi.luminance(spec)
 
             assert dr.all(dr.allclose(lum - 1, 0, atol=1e-3))
