@@ -2,6 +2,7 @@
 #include <mitsuba/core/frame.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/trampoline.h>
+#include <nanobind/stl/string.h>
 #include <drjit/dynamic.h>
 #include <drjit/tensor.h>
 #include <drjit/python.h>
@@ -17,12 +18,12 @@ public:
     void put_parameter_impl(const std::string &name, void *ptr,
                             uint32_t flags, const std::type_info &type) override {
         nanobind::detail::ticket nb_ticket(nb_trampoline, "put_parameter", true);
-        nb_trampoline.base().attr(nb_ticket.key)(name, ptr, flags, type);
+        nb_trampoline.base().attr(nb_ticket.key)(name, ptr, flags, (void *) &type);
     }
 
     void put_object(const std::string &name, Object *obj,
                     uint32_t flags) override {
-        nanobind::detail::ticket nb_ticket(nb_trampoline, "put_parameter", true);
+        nanobind::detail::ticket nb_ticket(nb_trampoline, "put_object", true);
         nb_trampoline.base().attr(nb_ticket.key)(name, obj, flags);
     }
 };
