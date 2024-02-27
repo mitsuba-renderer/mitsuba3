@@ -197,8 +197,9 @@ ref<Object> create_texture_from(const nb::dict &dict, bool within_emitter) {
         Properties::Color3f color(0.f);
         for (const auto& [k2, value2] : dict) {
             std::string key2 = nb::cast<std::string>(k2);
+            using Color3f = Properties::Color3f;
             if (key2 == "value")
-                color = nb::cast<Properties::Color3f>(value2);
+                color = nb::cast<Color3f>(nb::type<Color3f>()(value2));
             else if (key2 != "type")
                 Throw("Unexpected key in rgb dictionary: %s", key2);
         }
