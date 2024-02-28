@@ -154,16 +154,8 @@ public:
     }
 
     inline const Float eval_f(const Float &phi) const {
-        Log(Debug, "f: phi %s", phi);
-        Log(Debug, "f: tan(phi/2) %s", dr::tan(phi * 0.5f));
 
-        return dr::exp(-2.f * dr::abs(dr::tan(phi / 2.f)));
-        // The absolute value is here to prevent the exp to give inf results
-        // when tan(phi/2) ~= pi/2 % pi. In the case where phi / 2 is slightly
-        // below pi/2, tan returns a negative value that tends towards -inf.
-        // This is an arrangement I made that is not in  the original formula,
-        // but I can't see how the original formula can converge to a meaningful
-        // value when tan(phi/2) is negative.
+        return dr::exp(-2.f * dr::tan(phi / 2.f));
     }
 
     inline const Spectrum eval_E1(const Spectrum &tan_theta,
@@ -219,24 +211,30 @@ public:
                                      const Float &i, const Float &phi,
                                      const Float &cos_phi) const {
 
-        const Float opt_cos_phi = dr::select(e < i, cos_phi, 1.f);
-        const Float sign        = dr::select(e < i, 1.f, -1.f);
+        const Float opt_cos_phi = dr::select(e <= i, cos_phi, 1.f);
+        const Float sign        = dr::select(e <= i, 1.f, -1.f);
         const Float cos_e       = dr::cos(e);
         const Float sin_e       = dr::sin(e);
 
-        return eval_mu(tan_theta, e, i, cos_e, sin_e, phi, opt_cos_phi, sign);
+        const Float a = dr::select(e <= i, i, e);
+        const Float b = dr::select(e <= i, e, i);
+        
+        return eval_mu(tan_theta, a, b, cos_e, sin_e, phi, opt_cos_phi, sign);
     }
 
     inline const Spectrum eval_mu_0eG(const Spectrum &tan_theta, const Float &e,
                                       const Float &i, const Float &phi,
                                       const Float &cos_phi) const {
 
-        const Float opt_cos_phi = dr::select(e < i, 1.f, cos_phi);
-        const Float sign        = dr::select(e < i, -1.f, 1.f);
+        const Float opt_cos_phi = dr::select(e <= i, 1.f, cos_phi);
+        const Float sign        = dr::select(e <= i, -1.f, 1.f);
         const Float cos_i       = dr::cos(i);
         const Float sin_i       = dr::sin(i);
+        
+        const Float a = dr::select(e <= i, i, e);
+        const Float b = dr::select(e <= i, e, i);
 
-        return eval_mu(tan_theta, e, i, cos_i, sin_i, phi, opt_cos_phi, sign);
+        return eval_mu(tan_theta, a, b, cos_i, sin_i, phi, opt_cos_phi, sign);
     }
 
     inline const Spectrum eval_M(const Spectrum &w, const Spectrum &mu_0eG,
@@ -301,8 +299,10 @@ public:
 
         const Float i   = dr::atan(tan_i);
         const Float e   = dr::atan(tan_e);
-        const Float phi = dr::acos(cos_phi);
-
+        Float fr_phi = dr::safe_acos(cos_phi);
+        fr_phi = dr::select(fr_phi > dr::Pi<Float>, 2.f * dr::Pi<Float> - fr_phi, fr_phi);
+        const Float phi = dr::select(fr_phi < 0.f, dr::abs(fr_phi), fr_phi);
+        
         const Spectrum w_div_4 = w * 0.25f;
 
         const Spectrum mu_0eG = eval_mu_0eG(tan_theta, e, i, phi, cos_phi);
@@ -313,7 +313,7 @@ public:
         const Spectrum b  = m_b->eval(si, active);
         const Spectrum c  = m_c->eval(si, active);
         const Float cos_g = eval_cos_g(mu_0, mu, sin_i, sin_e, cos_phi);
-        const Float g     = dr::acos(cos_g);
+        const Float g     = dr::safe_acos(cos_g);
 
         const Spectrum P = eval_P(b, c, cos_g);
 
