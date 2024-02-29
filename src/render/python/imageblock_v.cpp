@@ -1,6 +1,7 @@
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/render/imageblock.h>
 #include <mitsuba/python/python.h>
+#include <nanobind/stl/vector.h>
 
 MI_PY_EXPORT(ImageBlock) {
     MI_PY_IMPORT_TYPES(ImageBlock, ReconstructionFilter)

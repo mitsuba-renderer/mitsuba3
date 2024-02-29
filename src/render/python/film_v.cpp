@@ -1,3 +1,4 @@
+#include <nanobind/nanobind.h> // Needs to be first, to get `ref<T>` caster
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/render/film.h>
@@ -8,6 +9,7 @@
 #include <mitsuba/python/python.h>
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 #include <drjit/python.h>
 
 /// Trampoline for derived types implemented in Python
