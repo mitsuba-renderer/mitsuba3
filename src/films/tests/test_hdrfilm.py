@@ -216,13 +216,12 @@ def test06_empty_film(variants_all_rgb, develop):
     })
     film.prepare([])
 
-    # TODO: do not allow NaNs from film
     if develop:
         image = dr.ravel(film.develop())
         assert dr.all((image == 0) | dr.isnan(image))
     else:
         image = mi.TensorXf(film.bitmap())
-        assert dr.all((image == 0) | dr.isnan(image))
+        assert dr.all((image == 0) | dr.isnan(image), axis=None)
 
 
 def test07_luminance_alpha_mono(variants_all):

@@ -127,10 +127,10 @@ def test05_empty_film(variants_all_spectral, develop):
         assert dr.all((image == 0) | dr.isnan(image))
     else:
         image = mi.TensorXf(film.bitmap())
-        assert dr.all((image == 0) | dr.isnan(image))
+        assert dr.all((image == 0) | dr.isnan(image), axis=None)
 
 
-def test05_multiple_channels(variants_all_spectral):
+def test06_multiple_channels(variants_all_spectral):
     dic = {
         'type': 'specfilm',
         'width': 3,
@@ -144,11 +144,11 @@ def test05_multiple_channels(variants_all_spectral):
         }
         film = mi.load_dict(dic)
         chnl = film.prepare([])
-        block = film.create_block(False)
+        block = film.create_block()
         assert(block.channel_count() == chnl)
         assert(block.channel_count() == i+1)
 
-def test06_aovs(variants_all_spectral):
+def test07_aovs(variants_all_spectral):
     dic = {
         'type': 'specfilm',
         'width': 3,
@@ -163,7 +163,7 @@ def test06_aovs(variants_all_spectral):
         for j in range(1,5):
             film = mi.load_dict(dic)
             chnl = film.prepare(['AOV{}'.format(x) for x in range(1, j+1)])
-            block = film.create_block(False)
+            block = film.create_block()
             assert(block.channel_count() == chnl)
             assert(block.channel_count() == (i+1+j))
 
