@@ -1,14 +1,15 @@
+#include <nanobind/nanobind.h> // Needs to be first, to get `ref<T>` caster
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/stream.h>
 #include <mitsuba/core/mstream.h>
 #include <mitsuba/python/python.h>
 #include <string>
+#include <drjit/python.h>
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 #include <nanobind/stl/pair.h>
-#include <drjit/python.h>
 
 struct fp16 {
     unsigned char d[2];
@@ -25,7 +26,9 @@ namespace nanobind {
     };
 }
 
-void from_cpu_dlpack(Bitmap *b, nb::ndarray<nb::ndim<3>, nb::device::cpu> data,
+using ContigCpuNdArray = nb::ndarray<nb::ndim<3>, nb::device::cpu, nb::c_contig>;
+
+void from_cpu_dlpack(Bitmap *b, ContigCpuNdArray data,
                      nb::object pixel_format_,
                      const std::vector<std::string> &channel_names) {
         using Float = typename Bitmap::Float;
@@ -188,8 +191,8 @@ MI_PY_EXPORT(Bitmap) {
                        srgb_gamma = nb::cast<bool>(srgb);
 
                    nb::gil_scoped_release release;
-                   return b.convert(pixel_format, component_format, srgb_gamma,
-                                    alpha_transform);
+                   return b.convert(pixel_format, component_format,
+                                               srgb_gamma, alpha_transform);
             },
              D(Bitmap, convert),
              "pixel_format"_a = nb::none(), "component_format"_a = nb::none(),
@@ -230,29 +233,94 @@ MI_PY_EXPORT(Bitmap) {
     bitmap.attr("Float64") = type_.attr("Float64");
     bitmap.attr("Invalid") = type_.attr("Invalid");
 
-    bitmap.def(nb::init<const fs::path &, Bitmap::FileFormat>(), "path"_a,
-            "format"_a = Bitmap::FileFormat::Auto,
-            nb::call_guard<nb::gil_scoped_release>())
+    bitmap
+        .def(nb::init<const fs::path &, Bitmap::FileFormat>(), "path"_a,
+             "format"_a = Bitmap::FileFormat::Auto,
+             nb::call_guard<nb::gil_scoped_release>())
         .def(nb::init<Stream *, Bitmap::FileFormat>(), "stream"_a,
-            "format"_a = Bitmap::FileFormat::Auto,
-            nb::call_guard<nb::gil_scoped_release>())
+             "format"_a = Bitmap::FileFormat::Auto,
+             nb::call_guard<nb::gil_scoped_release>())
         .def("write",
-            nb::overload_cast<Stream *, Bitmap::FileFormat, int>(
-                &Bitmap::write, nb::const_),
-            "stream"_a, "format"_a = Bitmap::FileFormat::Auto, "quality"_a = -1,
-            D(Bitmap, write), nb::call_guard<nb::gil_scoped_release>())
+             nb::overload_cast<Stream *, Bitmap::FileFormat, int>(
+                 &Bitmap::write, nb::const_),
+             "stream"_a, "format"_a = Bitmap::FileFormat::Auto,
+             "quality"_a = -1, D(Bitmap, write),
+             nb::call_guard<nb::gil_scoped_release>())
         .def("write",
-            nb::overload_cast<const fs::path &, Bitmap::FileFormat, int>(
-                &Bitmap::write, nb::const_),
-            "path"_a, "format"_a = Bitmap::FileFormat::Auto, "quality"_a = -1,
-            D(Bitmap, write, 2), nb::call_guard<nb::gil_scoped_release>())
+             nb::overload_cast<const fs::path &, Bitmap::FileFormat, int>(
+                 &Bitmap::write, nb::const_),
+             "path"_a, "format"_a = Bitmap::FileFormat::Auto, "quality"_a = -1,
+             D(Bitmap, write, 2), nb::call_guard<nb::gil_scoped_release>())
         .def("write_async",
-            nb::overload_cast<const fs::path &, Bitmap::FileFormat, int>(
-                &Bitmap::write_async, nb::const_),
-            "path"_a, "format"_a = Bitmap::FileFormat::Auto, "quality"_a = -1,
-            D(Bitmap, write_async))
+             nb::overload_cast<const fs::path &, Bitmap::FileFormat, int>(
+                 &Bitmap::write_async, nb::const_),
+             "path"_a, "format"_a = Bitmap::FileFormat::Auto, "quality"_a = -1,
+             D(Bitmap, write_async))
         .def("split", &Bitmap::split, D(Bitmap, split))
-        .def_static("detect_file_format", &Bitmap::detect_file_format, D(Bitmap, detect_file_format))
+        .def_static("detect_file_format", &Bitmap::detect_file_format,
+                    D(Bitmap, detect_file_format))
+        .def(
+            "__dlpack__",
+            [](Bitmap &bitmap, nb::object /*stream*/) {
+                Struct::Type component_format = bitmap.component_format();
+                nb::dlpack::dtype dtype;
+                switch (component_format) {
+                    case Struct::Type::UInt8:
+                        dtype = nb::dtype<uint8_t>();
+                        break;
+                    case Struct::Type::UInt16:
+                        dtype = nb::dtype<uint16_t>();
+                        break;
+                    case Struct::Type::UInt32:
+                        dtype = nb::dtype<uint32_t>();
+                        break;
+                    case Struct::Type::UInt64:
+                        dtype = nb::dtype<uint64_t>();
+                        break;
+                    case Struct::Type::Int8:
+                        dtype = nb::dtype<int8_t>();
+                        break;
+                    case Struct::Type::Int16:
+                        dtype = nb::dtype<int16_t>();
+                        break;
+                    case Struct::Type::Int32:
+                        dtype = nb::dtype<int32_t>();
+                        break;
+                    case Struct::Type::Int64:
+                        dtype = nb::dtype<int64_t>();
+                        break;
+                    case Struct::Type::Float16:
+                        dtype = nb::dtype<fp16>();
+                        break;
+                    case Struct::Type::Float32:
+                        dtype = nb::dtype<float>();
+                        break;
+                    case Struct::Type::Float64:
+                        dtype = nb::dtype<double>();
+                        break;
+                    default:
+                        throw nb::type_error("Invalid component format");
+                }
+
+                nb::object self = nb::find(bitmap);
+                if (!self.is_valid()) // This should never happen
+                    throw nb::type_error("Bitmap object doesn't exist!");
+
+                nb::make_tuple(bitmap.height(), bitmap.width(),
+                               bitmap.channel_count());
+
+                return nb::ndarray<>(
+                    bitmap.data(),
+                    { bitmap.height(), bitmap.width(), bitmap.channel_count() },
+                    self, {}, dtype, nb::device::cpu::value, 0);
+            },
+            "stream"_a = nb::none(), "Interface for the DLPack protocol.")
+        .def(
+            "__dlpack_device__",
+            [](Bitmap & /*bitmap*/) {
+                return nb::make_tuple(nb::device::cpu::value, 0);
+            },
+            "Interface for the DLPack protocol.")
         .def_prop_ro("__array_interface__", [](Bitmap &bitmap) -> nb::object {
             if (bitmap.struct_()->size() == 0)
                 return nb::none();
@@ -299,7 +367,7 @@ MI_PY_EXPORT(Bitmap) {
      */
     bitmap.def(
         "__init__",
-        [](Bitmap *b, nb::ndarray<nb::ndim<3>, nb::device::cpu> data,
+        [](Bitmap *b, ContigCpuNdArray data,
            nb::object pixel_format_,
            const std::vector<std::string> &channel_names) {
             from_cpu_dlpack(b, data, pixel_format_, channel_names);
@@ -323,8 +391,7 @@ MI_PY_EXPORT(Bitmap) {
                 throw nb::type_error(
                     "Should only be used with Dr.Jit Tensor types!");
 
-            using ArrayType = nb::ndarray<nb::ndim<3>, nb::device::cpu>;
-            ArrayType data = nb::cast<ArrayType>(h.attr("numpy")());
+            ContigCpuNdArray data = nb::cast<ContigCpuNdArray>(h.attr("numpy")());
             from_cpu_dlpack(b, data, pixel_format_, channel_names);
         },
         "array"_a, "pixel_format"_a = nb::none(),
