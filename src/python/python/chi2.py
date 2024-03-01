@@ -608,7 +608,7 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None):
     """
 
     if ctx is None:
-        ctx = mi.PhaseFunctionContext(None)
+        ctx = mi.PhaseFunctionContext()
 
     def make_context(n):
         mei = dr.zeros(mi.MediumInteraction3f, n)

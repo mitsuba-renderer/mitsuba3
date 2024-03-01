@@ -8,12 +8,12 @@ def test01_create(variant_scalar_rgb):
     assert p is not None
 
 
-def test02_eval(variant_scalar_rgb):
+def test02_eval(variants_vec_backends_once_rgb):
     p = mi.load_dict({"type": "isotropic"})
-    ctx = mi.PhaseFunctionContext(None)
+    ctx = mi.PhaseFunctionContext()
     mei = mi.MediumInteraction3f()
 
-    theta  = dr.linspace(mi.Float, dr.pi / 2, 4)
+    theta  = dr.linspace(mi.Float, 0, dr.pi / 2, 4)
     ph  = dr.linspace(mi.Float, 0, dr.pi, 4)
     wo = [dr.sin(theta), 0, dr.cos(theta)]
     v_eval = p.eval_pdf(ctx, mei, wo)[0]

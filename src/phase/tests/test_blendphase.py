@@ -51,7 +51,7 @@ def test02_eval_all(variant_scalar_rgb):
     mei.wi = [0, 0, 1]
 
     wo = [0, 0, 1]
-    ctx = mi.PhaseFunctionContext(None)
+    ctx = mi.PhaseFunctionContext()
 
     # Evaluate the blend of both components
     expected = (1.0 - weight) * dr.inv_four_pi + weight * dr.inv_four_pi * (1.0 - g) / (
@@ -80,7 +80,7 @@ def test03_sample_all(variants_all_rgb):
     mei.sh_frame = mi.Frame3f([0, 0, 1])
     mei.wi = [0, 0, 1]
 
-    ctx = mi.PhaseFunctionContext(None)
+    ctx = mi.PhaseFunctionContext()
 
     # Sample using two different values of 'sample1' and make sure correct
     # components are chosen.
@@ -116,7 +116,7 @@ def test04_eval_components(variant_scalar_rgb):
     mei.wi = [0, 0, 1]
 
     wo = [0, 0, 1]
-    ctx = mi.PhaseFunctionContext(None)
+    ctx = mi.PhaseFunctionContext()
 
     # Evaluate the two components separately
 
@@ -152,7 +152,7 @@ def test05_sample_components(variant_scalar_rgb):
     mei.sh_frame = mi.Frame3f([0, 0, 1])
     mei.wi = [0, 0, 1]
 
-    ctx = mi.PhaseFunctionContext(None)
+    ctx = mi.PhaseFunctionContext()
 
     # Sample using two different values of 'sample1' and make sure correct
     # components are chosen.

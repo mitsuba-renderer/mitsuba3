@@ -5,6 +5,8 @@
 #include <array>
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/array.h>
+#include <nanobind/stl/vector.h>
 
 /// Trampoline for derived types implemented in Python
 MI_VARIANT class PyVolume : public Volume<Float, Spectrum> {
@@ -78,7 +80,7 @@ MI_PY_EXPORT(Volume) {
                     dr::Array<Float, 6> result = volume.eval_6(it, active);
                     std::array<Float, 6> output;
                     for (size_t i = 0; i < 6; ++i)
-                        output[i] = std::move(result[i]);
+                        output[i] = std::move(result.data()[i]);
                     return output;
                 }, "it"_a, "active"_a = true, D(Volume, eval_6))
         .def("eval_gradient", &Volume::eval_gradient, "it"_a, "active"_a = true,

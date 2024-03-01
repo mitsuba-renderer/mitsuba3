@@ -2,6 +2,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/trampoline.h>
+#include <nanobind/stl/pair.h>
 #include <nanobind/stl/string.h>
 #include <drjit/python.h>
 
@@ -89,49 +90,49 @@ template <typename Ptr, typename Cls> void bind_emitter_generic(Cls &cls) {
     MI_PY_IMPORT_TYPES()
 
     cls.def("sample_ray",
-            [](EmitterPtr ptr, Float time, Float sample1, const Point2f &sample2,
+            [](Ptr ptr, Float time, Float sample1, const Point2f &sample2,
             const Point2f &sample3, Mask active) {
                 return ptr->sample_ray(time, sample1, sample2, sample3, active);
             },
             "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
             D(Endpoint, sample_ray))
     .def("sample_direction",
-            [](EmitterPtr ptr, const Interaction3f &it, const Point2f &sample, Mask active) {
+            [](Ptr ptr, const Interaction3f &it, const Point2f &sample, Mask active) {
                 return ptr->sample_direction(it, sample, active);
             },
             "it"_a, "sample"_a, "active"_a = true,
             D(Endpoint, sample_direction))
     .def("pdf_direction",
-            [](EmitterPtr ptr, const Interaction3f &it, const DirectionSample3f &ds, Mask active) {
+            [](Ptr ptr, const Interaction3f &it, const DirectionSample3f &ds, Mask active) {
                 return ptr->pdf_direction(it, ds, active);
             },
             "it"_a, "ds"_a, "active"_a = true,
             D(Endpoint, pdf_direction))
     .def("eval_direction",
-            [](EmitterPtr ptr, const Interaction3f &it, const DirectionSample3f &ds, Mask active) {
+            [](Ptr ptr, const Interaction3f &it, const DirectionSample3f &ds, Mask active) {
                 return ptr->eval_direction(it, ds, active);
             },
             "it"_a, "ds"_a, "active"_a = true,
             D(Endpoint, eval_direction))
     .def("sample_position",
-            [](EmitterPtr ptr, Float time, const Point2f &sample, Mask active) {
+            [](Ptr ptr, Float time, const Point2f &sample, Mask active) {
                 return ptr->sample_position(time, sample, active);
             },
             "time"_a, "sample"_a, "active"_a = true,
             D(Endpoint, sample_position))
     .def("pdf_position",
-            [](EmitterPtr ptr, const PositionSample3f &ps, Mask active) {
+            [](Ptr ptr, const PositionSample3f &ps, Mask active) {
                 return ptr->pdf_position(ps, active);
             },
             "ps"_a, "active"_a = true,
             D(Endpoint, pdf_position))
     .def("eval",
-            [](EmitterPtr ptr, const SurfaceInteraction3f &si, Mask active) {
+            [](Ptr ptr, const SurfaceInteraction3f &si, Mask active) {
                 return ptr->eval(si, active);
             },
             "si"_a, "active"_a = true, D(Endpoint, eval))
     .def("sample_wavelengths",
-            [](EmitterPtr ptr, const SurfaceInteraction3f &si, Float sample, Mask active) {
+            [](Ptr ptr, const SurfaceInteraction3f &si, Float sample, Mask active) {
                 return ptr->sample_wavelengths(si, sample, active);
             },
             "si"_a, "sample"_a, "active"_a = true,

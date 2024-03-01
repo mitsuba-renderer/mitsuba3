@@ -21,7 +21,7 @@ def test01_create_and_eval(variants_vec_rgb):
         def to_string(self):
             return "MyIsotropicPhaseFunction[]"
 
-    mi.register_phasefunction("myisotropic", lambda props: MyIsotropicPhaseFunction(props))
+    mi.register_phasefunction("myisotropic", MyIsotropicPhaseFunction)
 
     p = mi.load_dict({'type': 'myisotropic'})
     assert p is not None
@@ -30,7 +30,7 @@ def test01_create_and_eval(variants_vec_rgb):
     assert not mi.has_flag(p.m_flags, mi.PhaseFunctionFlags.Anisotropic)
     assert not mi.has_flag(p.m_flags, mi.PhaseFunctionFlags.Microflake)
 
-    ctx = mi.PhaseFunctionContext(None)
+    ctx = mi.PhaseFunctionContext()
     mei = mi.MediumInteraction3f()
     theta = dr.linspace(mi.Float, 0, dr.pi / 2, 4)
     ph = dr.linspace(mi.Float, 0, dr.pi, 4)

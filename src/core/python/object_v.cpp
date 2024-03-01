@@ -58,7 +58,7 @@ public:
 /// Implementation detail of mitsuba.set_property
 #define SET_PROPERTY_T(T)                                                      \
     if (strcmp(type.name(), typeid(T).name()) == 0) {                          \
-        *((T *) ptr) = nb::cast<T>(value);                                     \
+        *((T *) ptr) = nb::cast<T>(nb::type<T>()(value));                      \
         return;                                                                \
     }
 

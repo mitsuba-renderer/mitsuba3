@@ -6,7 +6,7 @@ import mitsuba as mi
 def test01_constant_construct(variant_scalar_rgb):
     vol = mi.load_dict({
         "type": "constvolume",
-        "to_world": mi.ScalarTransform4f.scale([2, 0.2, 1]),
+        "to_world": mi.ScalarTransform4f().scale([2, 0.2, 1]),
         "value": {
             "type": "regular",
             "wavelength_min": 500,
