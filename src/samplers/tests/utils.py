@@ -35,7 +35,7 @@ def check_uniform_wavefront_sampler(sampler, res=16, atol=0.5):
     hist_1d = dr.zeros(mi.UInt32, res)
     hist_2d = dr.zeros(mi.UInt32, res * res)
 
-    v_1d = dr.clamp(sampler.next_1d() * res, 0, res)
+    v_1d = dr.clip(sampler.next_1d() * res, 0, res)
     dr.scatter_reduce(
         dr.ReduceOp.Add,
         hist_1d,
@@ -43,12 +43,12 @@ def check_uniform_wavefront_sampler(sampler, res=16, atol=0.5):
         mi.UInt32(v_1d)
     )
 
-    v_2d = mi.Vector2u(dr.clamp(sampler.next_2d() * res, 0, res))
+    v_2d = mi.Vector2u(dr.clip(sampler.next_2d() * res, 0, res))
     dr.scatter_reduce(
         dr.ReduceOp.Add,
         hist_2d,
         mi.UInt32(1),
-        mi.UInt32(v_2d.x * res + v_2d.y)
+        mi.UInt32(v_2d.y * res + v_2d.x)
     )
 
     assert dr.allclose(mi.Float(hist_1d), float(sample_count) / res, atol=atol)
@@ -88,4 +88,4 @@ def check_deep_copy_sampler_wavefront(sampler1, factor=16):
 
     for i in range(10):
         assert dr.all(sampler1.next_1d() == sampler2.next_1d())
-        assert dr.all(sampler1.next_2d() == sampler2.next_2d())
+        assert dr.all(sampler1.next_2d() == sampler2.next_2d(), axis=None)

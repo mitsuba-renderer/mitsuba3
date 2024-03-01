@@ -225,7 +225,7 @@ Float sobol_2(UInt index, UInt scramble = 0) {
                 return index != 0U;
             },
             [](UInt& v, UInt& scramble, UInt& index) {
-                dr::masked(scramble, index & (1U == 1U)) ^= v;
+                dr::masked(scramble, ((index & 1U) == 1U)) ^= v;
                 index >>= 1;
                 v ^= v >> 1;
             },
@@ -241,7 +241,7 @@ Float sobol_2(UInt index, UInt scramble = 0) {
                 return index != 0U;
             },
             [](UInt& v, UInt& scramble, UInt& index) {
-                dr::masked(scramble, index & (1U == 1U)) ^= v;
+                dr::masked(scramble, ((index & 1U) == 1U)) ^= v;
                 index >>= 1;
                 v ^= v >> 1;
             },

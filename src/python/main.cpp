@@ -35,7 +35,7 @@ MI_PY_DECLARE(BSDFContext);
 MI_PY_DECLARE(EmitterExtras);
 MI_PY_DECLARE(RayFlags);
 //MI_PY_DECLARE(MicrofacetType);
-//MI_PY_DECLARE(PhaseFunctionExtras);
+MI_PY_DECLARE(PhaseFunctionExtras);
 MI_PY_DECLARE(Spiral);
 MI_PY_DECLARE(Sensor);
 MI_PY_DECLARE(VolumeGrid);
@@ -152,7 +152,7 @@ NB_MODULE(mitsuba_ext, m) {
     MI_PY_IMPORT(EmitterExtras);
     MI_PY_IMPORT(RayFlags);
 //    MI_PY_IMPORT(MicrofacetType);
-//    MI_PY_IMPORT(PhaseFunctionExtras);
+    MI_PY_IMPORT(PhaseFunctionExtras);
     MI_PY_IMPORT(Spiral);
     MI_PY_IMPORT(Sensor);
     MI_PY_IMPORT(FilmFlags);
@@ -164,6 +164,8 @@ NB_MODULE(mitsuba_ext, m) {
     atexit.attr("register")(nb::cpp_function([]() {
         Thread::wait_for_tasks();
         Class::static_remove_functors();
+        Logger::static_shutdown();
+        Thread::static_shutdown();
     }));
 
     /* Callback function cleanup static data strucutres, this should be called
@@ -171,8 +173,6 @@ NB_MODULE(mitsuba_ext, m) {
     nanobind_module_def_mitsuba_ext.m_free = [](void *) {
             Profiler::static_shutdown();
             Bitmap::static_shutdown();
-            Logger::static_shutdown();
-            Thread::static_shutdown();
             Class::static_shutdown();
             Jit::static_shutdown();
     };

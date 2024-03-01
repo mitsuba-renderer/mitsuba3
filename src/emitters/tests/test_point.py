@@ -64,7 +64,8 @@ def test02_point_sample_direction(variant_scalar_spectral, spectrum_key):
     emitter, spectrum = create_emitter_and_spectrum(emitter_pos, spectrum_key)
 
     # Direction sampling
-    it = dr.zeros(mi.SurfaceInteraction3f)
+    it = mi.SurfaceInteraction3f()
+    it.wavelengths = [0, 0, 0, 0]
     it.p = [0.0, -2.0, 4.5]  # Some position
     it.time = 0.3
 

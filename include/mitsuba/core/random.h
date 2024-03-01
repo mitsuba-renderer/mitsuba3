@@ -206,7 +206,7 @@ UInt32 permute(UInt32 index, uint32_t size, UInt32 seed, int rounds = 2) {
         UInt32 rand = sample_tea_32(index | bit, seed, rounds).first;
 
         // Perform the flip if 'bit' is set
-        dr::masked(index, rand & (bit == bit)) = index ^ bit;
+        dr::masked(index, (rand & bit) == bit) = index ^ bit;
     }
 
     return index;

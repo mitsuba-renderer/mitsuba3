@@ -12,14 +12,14 @@ def test01_chi2(variants_vec_backends_once_rgb, iteration):
 
     if iteration == 0:
         # Sparse image with 1 pixel turned on
-        img = dr.zeros(mi.TensorXf, [100, 10])
+        img = dr.zeros(mi.TensorXf, [100, 10, 1])
         img[40, 5] = 1
     elif iteration == 1:
         # High res constant image
-        img = dr.full(mi.TensorXf, 1, [100, 100])
+        img = dr.full(mi.TensorXf, 1, [100, 100, 1])
     elif iteration == 2:
         # Low res constant image
-        img = dr.full(mi.TensorXf, 1, [3, 2])
+        img = dr.full(mi.TensorXf, 1, [3, 2, 1])
 
     mi.Bitmap(img).write(fname)
 
@@ -52,7 +52,7 @@ def test02_sampling_weights(variants_vec_backends_once_rgb):
     fname = os.path.join(tempdir.name, 'out.exr')
 
     # Sparse image with 1 pixel turned on
-    img = dr.zeros(mi.TensorXf, [100, 10])
+    img = dr.zeros(mi.TensorXf, [100, 10, 1])
     img[40, 5] = 1
     mi.Bitmap(img).write(fname)
 
@@ -80,7 +80,7 @@ def test02_sampling_weights(variants_vec_backends_once_rgb):
     assert dr.allclose(w4, w, rtol=1e-3)
 
 
-def test03_load_bitmap(variants_all_rgb):
+def test03_load_bitmap(variants_vec_backends_once_rgb):
     rng = mi.PCG32(size=102400)
     sample = mi.Point2f(
         rng.next_float32(),
@@ -93,7 +93,7 @@ def test03_load_bitmap(variants_all_rgb):
     fname = os.path.join(tempdir.name, 'out.exr')
 
     # Sparse image with 1 pixel turned on
-    img = dr.zeros(mi.TensorXf, [100, 10])
+    img = dr.zeros(mi.TensorXf, [100, 10, 1])
     img[40, 5] = 1
     bmp = mi.Bitmap(img)
     bmp.write(fname)
@@ -121,7 +121,7 @@ def test03_load_bitmap(variants_all_rgb):
 def test04_parameters_changed(variants_all):
     import numpy as np
 
-    n_channels = mi.Spectrum.Size
+    n_channels = dr.size_v(mi.Spectrum)
     bitmap = mi.Bitmap(np.zeros((191, 23, n_channels), dtype=np.float32))
     emitter = mi.load_dict({
         "type" : "envmap",

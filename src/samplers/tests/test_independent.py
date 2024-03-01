@@ -24,7 +24,7 @@ def test02_sample_vs_pcg32(variant_scalar_rgb):
     rng = dr.scalar.PCG32(initstate=0)
     for i in range(10):
         assert dr.all(sampler.next_1d() == rng.next_float32())
-        assert dr.all(sampler.next_2d() == [rng.next_float32(), rng.next_float32()])
+        assert dr.all(sampler.next_2d() == [rng.next_float32(), rng.next_float32()], axis=None)
 
 
 def test03_copy_sampler_scalar(variants_any_scalar):

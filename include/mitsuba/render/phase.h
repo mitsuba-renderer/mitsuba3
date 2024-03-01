@@ -207,6 +207,12 @@ public:
     /// Return a human-readable representation of the phase function
     std::string to_string() const override = 0;
 
+    /// Return type of phase function
+    uint32_t get_flags() const { return m_flags; }
+
+    /// Set type of phase function
+    void set_flags(uint32_t flags) { m_flags = flags; }
+
     //! @}
     // -----------------------------------------------------------------------
 

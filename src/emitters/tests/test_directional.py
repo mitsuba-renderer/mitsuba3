@@ -33,7 +33,7 @@ def make_emitter(direction=None, spectrum_key="d65"):
     }
 
     if direction is not None:
-        emitter_dict["direction"] = direction
+        emitter_dict["direction"] = dr.scalar.Array3f(direction)
 
     return mi.load_dict(emitter_dict)
 
@@ -92,7 +92,9 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, direction):
     emitter = make_emitter(direction, spectrum_key)
     spectrum = make_spectrum(spectrum_key)
 
-    it = dr.zeros(mi.SurfaceInteraction3f)
+    it = mi.SurfaceInteraction3f()
+    it.wavelengths = [0, 0, 0, 0]
+
     # Some position inside the unit sphere (i.e. within the emitter's default bounding sphere)
     it.p = [-0.5, 0.3, -0.1]
     it.time = 1.0

@@ -4,6 +4,9 @@
 #include <mitsuba/python/python.h>
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/tuple.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/list.h>
 #include <drjit/python.h>
 
 /// Trampoline for derived types implemented in Python
@@ -93,6 +96,7 @@ MI_PY_EXPORT(PhaseFunction) {
     nb::class_<PhaseFunctionContext>(m, "PhaseFunctionContext", D(PhaseFunctionContext))
         .def(nb::init<Sampler*, TransportMode>(), "sampler"_a,
                 "mode"_a = TransportMode::Radiance, D(PhaseFunctionContext, PhaseFunctionContext))
+        .def(nb::init<>())
         .def_field(PhaseFunctionContext, mode,      D(PhaseFunctionContext, mode))
         .def_field(PhaseFunctionContext, sampler,   D(PhaseFunctionContext, sampler))
         .def_field(PhaseFunctionContext, type_mask, D(PhaseFunctionContext, type_mask))
@@ -107,9 +111,9 @@ MI_PY_EXPORT(PhaseFunction) {
                  "index"_a, "active"_a = true, D(PhaseFunction, flags, 2))
             .def_method(PhaseFunction, id)
             .def_prop_rw("m_flags",
-                [](PyPhaseFunction &phase){ return phase.m_flags; },
-                [](PyPhaseFunction &phase, uint32_t flags){
-                    phase.m_flags = flags;
+                [](PhaseFunction &phase){ return phase.get_flags(); },
+                [](PhaseFunction &phase, uint32_t flags){
+                    phase.set_flags(flags);
                 }
             )
             .def("__repr__", &PhaseFunction::to_string);

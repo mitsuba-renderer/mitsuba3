@@ -531,7 +531,12 @@ void Thread::static_shutdown() {
     registered_tasks.clear();
 
     thread()->d->running = false;
-    delete self;
+    // If Python object exists, then this will be deleted when Python object
+    // is destroyed due to nanobind intrusive ref counting
+    if (!self->self_py())
+        delete self;
+    else
+        self->dec_ref();
     self = nullptr;
     #if defined(__linux__) || defined(__APPLE__)
         pthread_key_delete(this_thread_id);

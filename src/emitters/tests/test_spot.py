@@ -14,8 +14,8 @@ spectrum_dicts = {
 }
 
 lookat_transforms = [
-    mi.scalar_rgb.ScalarTransform4f.look_at([0, 1, 0], [0, 0, 0], [1, 0, 0]),
-    mi.scalar_rgb.ScalarTransform4f.look_at([0, 0, 1], [0, 0, 0], [0, -1, 0])
+    mi.scalar_rgb.ScalarTransform4f().look_at([0, 1, 0], [0, 0, 0], [1, 0, 0]),
+    mi.scalar_rgb.ScalarTransform4f().look_at([0, 0, 1], [0, 0, 0], [0, -1, 0])
 ]
 
 
@@ -51,7 +51,8 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelen
     trafo = mi.Transform4f(emitter.world_transform())
 
     # Create a surface iteration
-    it = dr.zeros(mi.SurfaceInteraction3f)
+    it = mi.SurfaceInteraction3f()
+    it.wavelengths = [0, 0, 0, 0]
     it.p = it_pos
     it.time = eval_t
 

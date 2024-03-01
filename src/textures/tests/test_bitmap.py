@@ -39,7 +39,7 @@ def test02_eval_grad(variant_scalar_rgb, np_rng):
         bitmap = mi.load_dict({
             "type" : "bitmap",
             "filename" : "resources/data/common/textures/noise_8x8.png",
-            "to_uv" : mi.ScalarTransform4f.rotate([0, 0, 1], angle)
+            "to_uv" : mi.ScalarTransform4f().rotate([0, 0, 1], angle)
         })
         for uv in np_rng.random((10, 2)):
             si.uv = mi.Vector2f(uv)
@@ -59,9 +59,10 @@ def test03_wrap(variants_vec_backends_once_rgb, wrap_mode):
     import numpy as np
 
     bitmap = mi.load_dict({
-        "type" : "bitmap",
-        "filename" : "resources/data/common/textures/noise_8x8.png",
-        "wrap_mode" : wrap_mode
+        "type"      : "bitmap",
+        "filename"  : "resources/data/common/textures/noise_8x8.png",
+        "wrap_mode" : wrap_mode,
+        "format"    : "variant"
     })
 
     def eval_ranges(range_x, range_y):
@@ -91,42 +92,42 @@ def test03_wrap(variants_vec_backends_once_rgb, wrap_mode):
 
     elif wrap_mode == 'clamp':
         # Top
-        x = dr.linspace(mi.Float, 0, 1, axis_res)
-        y = dr.linspace(mi.Float, -1, 0, axis_res)
-        top = np.array(ref)[:axis_res]
-        assert dr.allclose(0, top - np.reshape(
-            eval_ranges(x, y), (axis_res, axis_res, 3)), atol=1e-04)
+        x           = dr.linspace(mi.Float, 0, 1, axis_res)
+        y           = dr.linspace(mi.Float, -1, 0, axis_res)
+        y_expected  = dr.linspace(mi.Float, 0, 0, axis_res)
+        assert dr.allclose(eval_ranges(x, y_expected), eval_ranges(x,y),
+            atol=1e-04)
 
         # Bottom
-        x = dr.linspace(mi.Float, 0, 1, axis_res)
-        y = dr.linspace(mi.Float, 1, 2, axis_res)
-        bottom = np.array(ref)[-axis_res:]
-        assert dr.allclose(0, bottom - np.reshape(
-            eval_ranges(x, y), (axis_res, axis_res, 3)), atol=1e-04)
+        x           = dr.linspace(mi.Float, 0, 1, axis_res)
+        y           = dr.linspace(mi.Float, 1, 2, axis_res)
+        y_expected  = dr.linspace(mi.Float, 1, 1, axis_res)
+        assert dr.allclose(eval_ranges(x, y_expected), eval_ranges(x,y),
+            atol=1e-04)
 
         # Left
-        x = dr.linspace(mi.Float, -1, 0, axis_res)
-        y = dr.linspace(mi.Float, 0, 1, axis_res)
-        left = np.array(ref)[::axis_res]
-        assert dr.allclose(0, np.repeat(left, axis_res, axis=0) -
-            eval_ranges(x, y), atol=1e-04)
+        x           = dr.linspace(mi.Float, -1, 0, axis_res)
+        y           = dr.linspace(mi.Float, 0, 1, axis_res)
+        x_expected  = dr.linspace(mi.Float, 0, 0, axis_res)
+        assert dr.allclose(eval_ranges(x_expected, y), eval_ranges(x,y),
+            atol=1e-04)
 
         # Right
-        x = dr.linspace(mi.Float, 1, 2, axis_res)
-        y = dr.linspace(mi.Float, 0, 1, axis_res)
-        right = np.array(ref)[axis_res - 1::axis_res]
-        assert dr.allclose(0, np.repeat(right, axis_res, axis=0) -
-            eval_ranges(x, y), atol=1e-04)
+        x           = dr.linspace(mi.Float, 1, 2, axis_res)
+        y           = dr.linspace(mi.Float, 0, 1, axis_res)
+        x_expected  = dr.linspace(mi.Float, 1, 1, axis_res)
+        assert dr.allclose(eval_ranges(x_expected, y), eval_ranges(x,y),
+            atol=1e-04)
 
     elif wrap_mode == 'mirror':
         # Top left
-        x = dr.linspace(mi.Float, -1, 0, axis_res)[::-1]
-        y = dr.linspace(mi.Float, -1, 0, axis_res)[::-1]
+        x = dr.linspace(mi.Float, 0, -1, axis_res)
+        y = dr.linspace(mi.Float, 0, -1, axis_res)
         assert dr.allclose(0, ref - eval_ranges(x, y), atol=1e-04)
 
         # Bottom right
-        x = dr.linspace(mi.Float, 1, 2, axis_res)[::-1]
-        y = dr.linspace(mi.Float, 1, 2, axis_res)[::-1]
+        x = dr.linspace(mi.Float, 2, 1, axis_res)
+        y = dr.linspace(mi.Float, 2, 1, axis_res)
         assert dr.allclose(0, ref - eval_ranges(x, y), atol=1e-04)
 
 

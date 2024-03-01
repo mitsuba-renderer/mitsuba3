@@ -64,7 +64,7 @@ class SceneParameters(Mapping):
         if value_type is not None:
             cur_value = self.get_property(cur, value_type, node)
 
-        if _jit_id_hash(cur_value) == _jit_id_hash(value) and cur_value == value:
+        if (_jit_id_hash(cur_value) == _jit_id_hash(value) and dr.all(cur_value == value, axis=None)):
             # Turn this into a no-op when the set value is identical to the new value
             return
 

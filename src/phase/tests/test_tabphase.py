@@ -36,7 +36,7 @@ def test_eval(variant_scalar_rgb):
         cos_theta = np.array([np.dot(a, b) for a, b in zip(wi, wo)])
         return 0.5 / np.pi * np.interp(-cos_theta, ref_x, ref_y) / ref_integral
 
-    wi = np.array([[0, 0, -1]])
+    wi = np.array([0, 0, -1])
     thetas = np.linspace(0, np.pi / 2, 16)
     phis = np.linspace(0, np.pi, 16)
     wos = np.array(
@@ -53,7 +53,7 @@ def test_eval(variant_scalar_rgb):
 
     # Evaluate Mitsuba implementation
     tab = mi.load_dict({"type": "tabphase", "values": ", ".join([str(x) for x in ref_y])})
-    ctx = mi.PhaseFunctionContext(None)
+    ctx = mi.PhaseFunctionContext()
     mei = mi.MediumInteraction3f()
     mei.wi = wi
     tab_eval = np.zeros_like(ref_eval)
@@ -71,7 +71,7 @@ def test_sample(variant_scalar_rgb):
     """
 
     tab = mi.load_dict({"type": "tabphase", "values": "0.0, 0.5, 1.0"})
-    ctx = mi.PhaseFunctionContext(None)
+    ctx = mi.PhaseFunctionContext()
     mei = mi.MediumInteraction3f()
     mei.t = 0.1
     mei.p = [0, 0, 0]
@@ -128,7 +128,7 @@ def test_traverse(variant_scalar_rgb):
     assert dr.allclose(params["values"], [0.5, 1.0, 1.5])
 
     # The plugin itself evaluates consistently
-    ctx = mi.PhaseFunctionContext(None)
+    ctx = mi.PhaseFunctionContext()
     mei = mi.MediumInteraction3f()
     mei.wi = np.array([0, 0, -1])
     wo = [0, 0, 1]
