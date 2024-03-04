@@ -2,6 +2,7 @@
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/sensor.h>
+#include <unordered_map>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -87,7 +88,7 @@ template <typename Float, typename Spectrum>
 class AOVIntegrator final : public SamplingIntegrator<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(SamplingIntegrator)
-    MI_IMPORT_TYPES(Scene, Sensor, Sampler, Medium, BSDFPtr)
+    MI_IMPORT_TYPES(Scene, Shape, Sensor, Sampler, Medium, BSDFPtr, ShapePtr)
 
     enum class Type {
         Albedo,
@@ -226,6 +227,13 @@ public:
             }
         };
 
+        // Shape indexing data structure for scalar variants
+        std::unordered_map<const Shape*, uint32_t> shape_to_idx{};
+        std::vector<ref<Shape>> shapes = scene->shapes();
+        size_t counter = 1; // 0 reserved for background
+        for (const ref<Shape>& shape: shapes)
+            shape_to_idx[shape.get()] = counter++;
+
         // We want to pack the channels such that base_channels and inner-integrator
         // RGBA channels are contiguous
         Float* aovs_rgba_integrator = _aovs;
@@ -307,7 +315,19 @@ public:
                     break;
 
                 case Type::ShapeIndex:
-                    *aovs++ = Float(dr::reinterpret_array<UInt32>(si.shape));
+                    if constexpr (!dr::is_jit_v<Float>) {
+                        ShapePtr target = si.instance;
+                        if (!target)
+                            target = si.shape;
+
+                        auto it = shape_to_idx.find(target);
+                        if (it == shape_to_idx.end())
+                            *aovs++ = 0;
+                        else
+                            *aovs++ = it->second;
+                    } else {
+                        *aovs++ = Float(dr::reinterpret_array<UInt32>(si.shape));
+                    }
                     break;
 
                 case Type::IntegratorRGBA: {
