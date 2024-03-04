@@ -19,7 +19,7 @@ public:
     MI_IMPORT_TYPES()
     MI_IMPORT_BASE(Shape, m_to_world, mark_dirty, m_emitter, m_sensor, m_bsdf,
                    m_interior_medium, m_exterior_medium, m_is_instance,
-                   m_discontinuity_types, m_shape_type)
+                   m_discontinuity_types, m_shape_type, m_initialized)
 
     // Mesh is always stored in single precision
     using InputFloat = float;
@@ -34,12 +34,24 @@ public:
     using typename Base::ScalarIndex;
     using typename Base::Index;
 
-    /// Create a new mesh with the given vertex and face data structures
+    /** \brief Creates a zero-initialized mesh with the given vertex and face
+     * counts
+     *
+     * The vertex and face buffers can be filled using the ``mi.traverse``
+     * mechanism. When initializing these buffers through another method, an
+     * explicit call to \ref initialize must be made once all buffers are
+     * filled.
+     */
     Mesh(const std::string &name, ScalarSize vertex_count,
          ScalarSize face_count, const Properties &props = Properties(),
          bool has_vertex_normals = false, bool has_vertex_texcoords = false);
 
-    /// Must be called at the end of the constructor of Mesh plugins
+    /** \brief Must be called once at the end of the construction of a Mesh
+     *
+     * This method computes internal data structures and notifies the parent
+     * sensor or emitter (if there is one) that this instance is their internal
+     * shape.
+     */
     void initialize() override;
 
     // =========================================================================
