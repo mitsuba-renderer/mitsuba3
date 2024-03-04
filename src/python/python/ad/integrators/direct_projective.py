@@ -73,6 +73,10 @@ class DirectProjectiveIntegrator(PSIntegrator):
     It is functionally equivalent with `prb_projective` when `max_depth` is set
     to be 2.
 
+    .. warning::
+        This integrator is not supported in variants which track polarization
+        states.
+
     .. tabs::
 
         .. code-tab:: python

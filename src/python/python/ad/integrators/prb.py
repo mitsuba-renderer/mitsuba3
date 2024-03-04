@@ -48,6 +48,10 @@ class PRBIntegrator(RBIntegrator):
     See the papers :cite:`Vicini2021` and :cite:`Zeltner2021MonteCarlo`
     for details on PRB, attached/detached sampling, and reparameterizations.
 
+    .. warning::
+        This integrator is not supported in variants which track polarization
+        states.
+
     .. tabs::
 
         .. code-tab:: python

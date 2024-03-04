@@ -95,6 +95,10 @@ class PathProjectiveIntegrator(PSIntegrator):
     See the paper :cite:`Zhang2023Projective` for details on projective
     sampling, and guiding structures for indirect visibility discontinuities.
 
+    .. warning::
+        This integrator is not supported in variants which track polarization
+        states.
+
     .. tabs::
 
         .. code-tab:: python
