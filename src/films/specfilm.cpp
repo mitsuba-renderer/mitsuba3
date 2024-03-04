@@ -210,16 +210,25 @@ public:
         // Compute resolution of the discretized PDF used for sampling
         size_t n_points = (size_t) dr::ceil((m_range.y() - m_range.x()) / resolution + 1);
         FloatStorage mis_data = dr::zeros<FloatStorage>(n_points);
-        Float mis_wavelengths = dr::linspace<Float>(m_range.x(), m_range.y(), n_points);
+        FloatStorage mis_wavelengths = dr::linspace<FloatStorage>(m_range.x(), m_range.y(), n_points);
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
-        si.wavelengths = mis_wavelengths;
-
-        for (auto srf : m_srfs) {
-            UnpolarizedSpectrum values = srf->eval(si);
-            // Each wavelength is duplicated with the size of the Spectrum
-            // (default constructor while initialized with only a number)
-            mis_data += values.x();
+        // Each wavelength is duplicated with the size of the Spectrum (default
+        // constructor while initialized with only a number)
+        if constexpr (dr::is_jit_v<Float>) {
+            si.wavelengths = mis_wavelengths;
+            for (auto srf : m_srfs) {
+                UnpolarizedSpectrum values = srf->eval(si);
+                mis_data += values.x();
+            }
+        } else {
+            for (size_t i = 0; i < n_points; ++i) {
+                si.wavelengths = mis_wavelengths[i];
+                for (auto srf : m_srfs) {
+                    UnpolarizedSpectrum values = srf->eval(si);
+                    mis_data[i] += values.x();
+                }
+            }
         }
 
         // Conversion needed because Properties::Float is always double
