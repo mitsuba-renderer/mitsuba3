@@ -178,3 +178,29 @@ def test06_aovs(variants_all_spectral):
             }
         })
         film.prepare(['AOV', 'AOV'])
+
+def test07_srf(variants_all_spectral):
+    dic = {
+        'type': 'specfilm',
+        'channel1': {
+            'type': 'regular',
+            'wavelength_min': 400,
+            'wavelength_max': 500,
+            'values': "0.1, 0.2",
+        },
+        'channel2': {
+            'type': 'regular',
+            'wavelength_min': 700,
+            'wavelength_max': 800,
+            'values': "0.3, 0.4",
+        },
+    }
+
+    film = mi.load_dict(dic)
+    srf = film.sensor_response_function()
+    params = mi.traverse(srf)
+    key_range = "range"
+    key_values = "values"
+
+    dr.allclose(params[key_range], [400, 800])
+    dr.allclose(params[key_values], [0.1, 0.2, 0., 0.3, 0.4])
