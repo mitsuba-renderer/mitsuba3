@@ -59,6 +59,10 @@ class PRBVolpathIntegrator(RBIntegrator):
     See the paper :cite:`Vicini2021` for details on PRB and differentiable delta
     tracking.
 
+    .. warning::
+        This integrator is not supported in variants which track polarization
+        states.
+
     .. tabs::
 
         .. code-tab:: python

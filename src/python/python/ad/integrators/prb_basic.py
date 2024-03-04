@@ -34,6 +34,10 @@ class BasicPRBIntegrator(RBIntegrator):
     ``prb.py`` for a more feature-complete Path Replay Backpropagation
     integrator, and ``prb_reparam.py`` for one that also handles visibility.
 
+    .. warning::
+        This integrator is not supported in variants which track polarization
+        states.
+
     .. tabs::
 
         .. code-tab:: python
