@@ -50,8 +50,6 @@ Mesh<Float, Spectrum>::Mesh(const std::string &name, ScalarSize vertex_count,
         m_vertex_normals = dr::zeros<FloatStorage>(m_vertex_count * 3);
     if (has_vertex_texcoords)
         m_vertex_texcoords = dr::zeros<FloatStorage>(m_vertex_count * 2);
-
-    initialize();
 }
 
 MI_VARIANT
@@ -87,8 +85,6 @@ MI_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
     // We arbitrarily chose to show all attributes as being differentiable here.
     for (auto &[name, attribute]: m_mesh_attributes)
         callback->put_parameter(name, attribute.buf, +ParamFlags::Differentiable);
-
-
 }
 
 MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
@@ -155,6 +151,9 @@ MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std:
         m_faces_ptr = m_faces.data();
 #endif
         mark_dirty();
+
+        if (!m_initialized)
+            Base::initialize();
     }
 
     Base::parameters_changed();

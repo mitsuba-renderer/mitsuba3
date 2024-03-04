@@ -984,6 +984,9 @@ protected:
 protected:
     /// True if the shape's geometry has changed
     bool m_dirty = true;
+
+    /// True if the shape has called iniatlize() at least once
+    bool m_initialized = false;
 };
 
 // -----------------------------------------------------------------------
