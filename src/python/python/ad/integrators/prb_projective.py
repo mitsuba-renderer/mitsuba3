@@ -241,7 +241,7 @@ class PathProjectiveIntegrator(PSIntegrator):
                     dr.disable_grad(ds.d)
 
                 # Evaluate BSDF * cos(theta) differentiably
-                wo = dr.detach(si.to_local(ds.d))
+                wo = si.to_local(ds.d)
                 bsdf_value_em, bsdf_pdf_em = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
                 mis_em = dr.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf_em))
                 Lr_dir = β * mis_em * bsdf_value_em * em_weight
@@ -338,7 +338,7 @@ class PathProjectiveIntegrator(PSIntegrator):
                     # via multiple importance sampling)
 
                     # Recompute 'wo' to propagate derivatives to cosine term
-                    wo = dr.detach(si.to_local(ray.d))
+                    wo = si.to_local(ray.d)
 
                     # Re-evaluate BSDF * cos(theta) differentiably
                     bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active_next)

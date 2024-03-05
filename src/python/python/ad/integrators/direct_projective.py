@@ -170,7 +170,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
 
         with dr.resume_grad(when=not primal):
             # Evaluate the BSDF (foreshortening term included)
-            wo = dr.detach(si.to_local(ds_em.d))
+            wo = si.to_local(ds_em.d)
             bsdf_val, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
 
             # Re-compute some values with AD attached only in differentiable
@@ -202,7 +202,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
             # Re-compute `weight_bsdf` with AD attached only in differentiable
             # phase
             if not primal:
-                wo = dr.detach(si.to_local(ray_bsdf.d))
+                wo = si.to_local(ray_bsdf.d)
                 bsdf_val, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_bsdf)
                 weight_bsdf = bsdf_val / dr.detach(bsdf_pdf)
 
