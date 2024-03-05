@@ -647,6 +647,48 @@ class TranslateCameraConfig(ConfigBase):
         self.params.update()
         dr.eval()
 
+
+# Rotate plane's shading normals (no discontinuities)
+class RotateShadingNormalsPlaneConfig(ConfigBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.key = 'plane.vertex_normals'
+        self.scene_dict = {
+            'type': 'scene',
+            'plane': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
+                'bsdf': { 'type': 'diffuse' },
+            },
+            'light': {
+                'type': 'rectangle',
+                'to_world': T.translate([1.25, 0.0, 1.0]) @ T.rotate([0, 1, 0], -90),
+                'emitter': {
+                    'type': 'area',
+                    'radiance': {'type': 'rgb', 'value': [3.0, 3.0, 3.0]}
+                }
+            }
+        }
+        self.integrator_dict = {
+            'max_depth': 2,
+        }
+        self.error_mean_threshold = 0.02
+        self.error_max_threshold = 0.3
+
+    def initialize(self):
+        super().initialize()
+        self.params.keep([self.key])
+        self.initial_state = mi.Float(self.params[self.key])
+
+    def update(self, theta):
+        self.params[self.key] = dr.ravel(
+            mi.Transform4f.rotate(angle=theta, axis=[0.0, 1.0, 0.0]) @
+            dr.unravel(mi.Normal3f, self.initial_state)
+        )
+        self.params.update()
+        dr.eval()
+
+
 # -------------------------------------------------------------------
 #                           List configs
 # -------------------------------------------------------------------
@@ -658,6 +700,7 @@ BASIC_CONFIGS_LIST = [
     DirectlyVisibleAreaLightRadianceConfig,
     TranslateTexturedPlaneConfig,
     CropWindowConfig,
+    RotateShadingNormalsPlaneConfig,
 
     # The next two configs have issues with Nvidia driver v545
     # PointLightIntensityConfig,
