@@ -937,7 +937,9 @@ public:
     friend class Scene<Float, Spectrum>;
     friend class ShapeGroup<Float, Spectrum>;
 
-    /// Return whether any shape's parameters require gradients (default return false)
+    /** \brief Return whether any shape's parameters that introduce visibility
+     *  discontinuities require gradients (default return false)
+     */
     virtual bool parameters_grad_enabled() const;
 
     //! @}
