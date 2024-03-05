@@ -1852,13 +1852,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::optix_build_input(OptixBuildInput &build_
 #endif
 
 MI_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
-    bool result = false;
-    for (auto &[name, attribute]: m_mesh_attributes)
-        result |= dr::grad_enabled(attribute.buf);
-    result |= dr::grad_enabled(m_vertex_positions);
-    result |= dr::grad_enabled(m_vertex_normals);
-    result |= dr::grad_enabled(m_vertex_texcoords);
-    return result;
+    return dr::grad_enabled(m_vertex_positions);
 }
 
 MI_IMPLEMENT_CLASS_VARIANT(Mesh, Shape)
