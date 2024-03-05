@@ -388,9 +388,10 @@ MI_PY_EXPORT(Bitmap) {
             dr::ArrayMeta m = nb::type_supplement<dr::ArraySupplement>(type);
 
             if (!m.is_tensor)
-                throw nb::type_error(
-                    "Should only be used with Dr.Jit Tensor types!");
+                throw nb::type_error("This constructor is only supported with "
+                                     "Dr.Jit Tensor types!");
 
+            // Use Numpy conversion to get migration to the CPU
             ContigCpuNdArray data = nb::cast<ContigCpuNdArray>(h.attr("numpy")());
             from_cpu_dlpack(b, data, pixel_format_, channel_names);
         },
