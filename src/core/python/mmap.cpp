@@ -16,7 +16,6 @@ MI_PY_EXPORT(MemoryMappedFile) {
             size_t size = array.size() * array.itemsize();
             auto m = new (t) MemoryMappedFile(p, size);
             memcpy(m->data(), array.data(), size);
-            return m;
         }, "filename"_a, "array"_a)
         .def("size", &MemoryMappedFile::size, D(MemoryMappedFile, size))
         .def("data", nb::overload_cast<>(&MemoryMappedFile::data), D(MemoryMappedFile, data))

@@ -19,7 +19,7 @@ def test02_bbox(variant_scalar_rgb):
                           mi.Vector3f([-10000, 3.0, 31])]:
             s = mi.load_dict({
                 "type" : "rectangle",
-                "to_world" : mi.Transform4f.translate(translate) @ mi.Transform4f.scale((sx, sy, 1.0))
+                "to_world" : mi.Transform4f().translate(translate) @ mi.Transform4f().scale((sx, sy, 1.0))
             })
             b = s.bbox()
 
@@ -37,7 +37,7 @@ def test03_ray_intersect(variant_scalar_rgb):
         "type" : "scene",
         "foo" : {
             "type" : "rectangle",
-            "to_world" : mi.Transform4f.scale((2.0, 0.5, 1.0))
+            "to_world" : mi.Transform4f().scale((2.0, 0.5, 1.0))
         }
     })
 
@@ -67,7 +67,7 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
             "type" : "scene",
             "foo" : {
                 "type" : "rectangle",
-                "to_world" : mi.ScalarTransform4f.scale((2.0, 0.5, 1.0))
+                "to_world" : mi.ScalarTransform4f().scale((2.0, 0.5, 1.0))
             }
         })
 
@@ -184,7 +184,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     theta = mi.Float(0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f.scale(1 + theta)
+    params['to_world'] = mi.Transform4f().scale(1 + theta)
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.DetachShape)
 
@@ -202,7 +202,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     theta = mi.Float(0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f.scale([1 + theta, 1 + 2 * theta, 1])
+    params['to_world'] = mi.Transform4f().scale([1 + theta, 1 + 2 * theta, 1])
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All)
 
@@ -223,7 +223,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     theta = mi.Float(0.0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f.translate([theta, 0.0, 0.0])
+    params['to_world'] = mi.Transform4f().translate([theta, 0.0, 0.0])
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
 
@@ -241,7 +241,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     theta = mi.Float(0.0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f.rotate([0, 0, 1], 90 * theta)
+    params['to_world'] = mi.Transform4f().rotate([0, 0, 1], 90 * theta)
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
 
@@ -254,12 +254,11 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     # Test 04: Without FollowShape, a rectangle that is only rotating shouldn't
     #          produce any gradients for the intersection point and normal, but
     #          for the UVs.
-
     ray = mi.Ray3f(mi.Vector3f(0.1, 0.1, -2.0), mi.Vector3f(0.0, 0.0, 1.0))
 
     theta = mi.Float(0.0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f.rotate([0, 0, 1], 90 * theta)
+    params['to_world'] = mi.Transform4f().rotate([0, 0, 1], 90 * theta)
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All)
 
@@ -291,7 +290,7 @@ def test10_sample_silhouette_wrong_type(variants_all_rgb):
     ss = rectangle.sample_silhouette([0.1, 0.2, 0.3],
                                   mi.DiscontinuityFlags.InteriorType)
 
-    assert ss.discontinuity_type == mi.DiscontinuityFlags.Empty.value
+    assert ss.discontinuity_type == int(mi.DiscontinuityFlags.Empty)
 
 
 def test11_sample_silhouette(variants_vec_rgb):
@@ -304,16 +303,17 @@ def test11_sample_silhouette(variants_vec_rgb):
     samples = mi.Point3f(dr.meshgrid(x, y, z))
 
     ss = rectangle.sample_silhouette(samples, mi.DiscontinuityFlags.PerimeterType)
-    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
-    assert dr.all(dr.eq(ss.p.z, 0))
+    assert dr.allclose(ss.discontinuity_type, int(mi.DiscontinuityFlags.PerimeterType))
+    assert dr.all(ss.p.z == 0)
     assert dr.all(
-        dr.eq(ss.p.x, -1) | dr.eq(ss.p.x, 1) |
-        dr.eq(ss.p.y, -1) | dr.eq(ss.p.y, 1)
+        (ss.p.x == -1) | (ss.p.x == 1) |
+        (ss.p.y == -1) | (ss.p.y == 1)
     )
     assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
     assert dr.allclose(ss.pdf, (1 / (2 * 4)) * dr.inv_four_pi)
-    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
-            dr.reinterpret_array_v(mi.UInt32, rectangle_ptr))
+
+    assert (dr.reinterpret_array(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array(mi.UInt32, rectangle_ptr))
 
 
 def test12_sample_silhouette_bijective(variants_vec_rgb):
@@ -347,7 +347,7 @@ def test14_differential_motion(variants_vec_rgb):
 
     theta = mi.Point3f(0.0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f.translate(
+    params['to_world'] = mi.Transform4f().translate(
         [theta.x, 2 * theta.y, 3 * theta.z])
     params.update()
 
@@ -379,15 +379,15 @@ def test15_primitive_silhouette_projection(variants_vec_rgb):
     ss = rectangle.primitive_silhouette_projection(
         viewpoint, si, mi.DiscontinuityFlags.PerimeterType, sample)
 
-    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
-    assert dr.all(dr.eq(ss.p.z, 0))
+    assert dr.allclose(ss.discontinuity_type, int(mi.DiscontinuityFlags.PerimeterType))
+    assert dr.all((ss.p.z == 0))
     assert dr.all(
-        dr.eq(ss.p.x, -1) | dr.eq(ss.p.x, 1) |
-        dr.eq(ss.p.y, -1) | dr.eq(ss.p.y, 1)
+        (ss.p.x == -1) | (ss.p.x == 1) |
+        (ss.p.y == -1) | (ss.p.y == 1)
     )
     assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
-    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
-            dr.reinterpret_array_v(mi.UInt32, rectangle_ptr))
+    assert (dr.reinterpret_array(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array(mi.UInt32, rectangle_ptr))
 
 
 def test16_precompute_silhouette(variants_vec_rgb):
@@ -396,7 +396,7 @@ def test16_precompute_silhouette(variants_vec_rgb):
     indices, weights = rectangle.precompute_silhouette(mi.ScalarPoint3f(0, 0, 3))
 
     assert len(weights) == 1
-    assert indices[0] == mi.DiscontinuityFlags.PerimeterType.value
+    assert indices[0] == int(mi.DiscontinuityFlags.PerimeterType)
     assert weights[0] == 1
 
 
@@ -409,18 +409,18 @@ def test17_sample_precomputed_silhouette(variants_vec_rgb):
 
     ss = rectangle.sample_precomputed_silhouette(viewpoint, 0, samples)
 
-    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
-    assert dr.all(dr.eq(ss.p.z, 0))
+    assert dr.allclose(ss.discontinuity_type, int(mi.DiscontinuityFlags.PerimeterType))
+    assert dr.all((ss.p.z == 0))
     assert dr.all(
-        dr.eq(ss.p.x, -1) | dr.eq(ss.p.x, 1) |
-        dr.eq(ss.p.y, -1) | dr.eq(ss.p.y, 1)
+        (ss.p.x == -1) | (ss.p.x == 1) |
+        (ss.p.y == -1) | (ss.p.y == 1)
     )
     assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
     assert dr.allclose(ss.pdf, (1 / (2 * 4)))
-    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
-            dr.reinterpret_array_v(mi.UInt32, rectangle_ptr))
+    assert (dr.reinterpret_array(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array(mi.UInt32, rectangle_ptr))
 
 
 def test18_shape_type(variant_scalar_rgb):
     rectangle = mi.load_dict({ 'type': 'rectangle' })
-    assert rectangle.shape_type() == mi.ShapeType.Rectangle.value;
+    assert rectangle.shape_type() == int(mi.ShapeType.Rectangle)

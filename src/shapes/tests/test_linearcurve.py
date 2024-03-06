@@ -27,13 +27,14 @@ def test02_create_multiple_curves(variants_all_rgb):
 
 @fresolver_append_path
 def test02_bbox(variants_all_rgb):
+    T = mi.ScalarTransform4f
     for sx in [1, 2, 4]:
         for translate in [mi.ScalarVector3f([1.3, -3.0, 5]),
                           mi.ScalarVector3f([-10000, 3.0, 31])]:
             s = mi.load_dict({
                 "type" : "linearcurve",
                 "filename" : "resources/data/common/meshes/curve.txt",
-                "to_world" : mi.ScalarTransform4f.translate(translate) @ mi.ScalarTransform4f.scale((sx, 1, 1))
+                "to_world" : T().translate(translate) @ T().scale((sx, 1, 1))
             })
             b = s.bbox()
 
@@ -78,7 +79,7 @@ def test04_ray_intersect(variant_scalar_rgb):
             "foo" : {
                 "type" : "linearcurve",
                 "filename" : "resources/data/common/meshes/curve.txt",
-                "to_world" : mi.Transform4f.translate(translate).scale(10)
+                "to_world" : mi.Transform4f().translate(translate).scale(10)
             }
         })
 
@@ -145,6 +146,7 @@ def test05_ray_intersect_vec(variant_scalar_rgb):
 
 @fresolver_append_path
 def test08_instancing(variants_all_rgb):
+    T = mi.ScalarTransform4f
     scene = mi.load_dict({
         "type" : "scene",
         "group": {
@@ -156,7 +158,7 @@ def test08_instancing(variants_all_rgb):
         },
         "instance1": {
             "type" : "instance",
-            "to_world": mi.ScalarTransform4f.translate([0, -2, 0]),
+            "to_world": T().translate([0, -2, 0]),
             "shapegroup": {
                 "type": "ref",
                 "id": "group"
@@ -164,7 +166,7 @@ def test08_instancing(variants_all_rgb):
         },
         "instance2": {
             "type" : "instance",
-            "to_world": mi.ScalarTransform4f.translate([0, 2, 0]),
+            "to_world": T().translate([0, 2, 0]),
             "shapegroup": {
                 "type": "ref",
                 "id": "group"

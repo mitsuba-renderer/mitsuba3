@@ -263,8 +263,8 @@ public:
         if constexpr (!dr::is_cuda_v<Float>) {
             RTCGeometry instance = m_shapegroup->embree_geometry(device);
             rtcSetGeometryTimeStepCount(instance, 1);
-            dr::Matrix<ScalarFloat32, 4> matrix(m_to_world.scalar().matrix);
-            rtcSetGeometryTransform(instance, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, &matrix);
+            dr::Matrix<ScalarFloat32, 4> matrix(dr::transpose(m_to_world.scalar().matrix));
+            rtcSetGeometryTransform(instance, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, matrix.data());
             rtcCommitGeometry(instance);
             return instance;
         } else {

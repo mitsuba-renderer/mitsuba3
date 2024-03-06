@@ -279,6 +279,9 @@ public:
     /// Return the representable range of the given type
     static std::pair<double, double> range(Type type);
 
+    /// Free static resources
+    static void static_shutdown();
+
     MI_DECLARE_CLASS()
 protected:
     std::vector<Field> m_fields;

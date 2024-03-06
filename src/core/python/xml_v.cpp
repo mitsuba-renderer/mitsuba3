@@ -381,8 +381,7 @@ void parse_dictionary(DictParseContext &ctx,
 
         // Try to cast to Array3f (list, tuple, numpy.array, ...)
         try {
-            props.set_array3f(key, nb::cast<Properties::Array3f>(
-                nb::type<Properties::Array3f>()(value)));
+            props.set_array3f(key, nb::cast<Properties::Array3f>(value));
             continue;
         } catch (const nb::cast_error &) { }
 

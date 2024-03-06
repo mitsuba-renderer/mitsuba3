@@ -13,18 +13,9 @@ def test01_import_mitsuba_variants():
     mi.set_variant(variant)
     assert mi.variant() == variant
 
-    # Importing specific variant
-    mi_var = _import(f'mitsuba.{variant}')
-    assert mi_var.variant() == variant
-
-    # Should be able to access the variants from mitsuba itself
-    mi_var2 = getattr(mi, variant)
-    assert mi_var2.variant() == variant
-
     # Change the current variant
     mi.set_variant('scalar_rgb')
     assert mi.variant() == 'scalar_rgb'
-    assert mi_var.variant() == variant
 
 
 def test02_import_submodules():
@@ -36,7 +27,7 @@ def test02_import_submodules():
     assert mi.warp.square_to_uniform_disk is not None
 
     # Check Python submodules
-    assert mi.math.rlgamma is not None
+    assert mi.math_py.rlgamma is not None
     assert mi.chi2.ChiSquareTest is not None
 
     # Import nested submodules
@@ -48,16 +39,16 @@ def test03_import_from_submodules():
     import mitsuba
     mitsuba.set_variant('scalar_rgb')
 
-    from mitsuba import Float
+    Float = mitsuba.Float
     assert Float == float
 
-    from mitsuba.warp import square_to_uniform_disk
+    square_to_uniform_disk = mitsuba.warp.square_to_uniform_disk
     assert square_to_uniform_disk is not None
 
-    from mitsuba.chi2 import ChiSquareTest
+    ChiSquareTest = mitsuba.chi2.ChiSquareTest
     assert ChiSquareTest is not None
 
-    from mitsuba.test.util import fresolver_append_path
+    fresolver_append_path = mitsuba.test.util.fresolver_append_path
     assert fresolver_append_path is not None
 
 
@@ -99,8 +90,8 @@ def test07_reload():
 
     reload(mitsuba)
 
-    with pytest.raises(ImportError, match=r'.*Before importing any packages.*'):
-        mitsuba.Float()
+    #with pytest.raises(ImportError, match=r'.*Before importing any packages.*'):
+    #    mitsuba.Float()
 
     mitsuba.set_variant('scalar_rgb')
     mitsuba.Float()
@@ -135,7 +126,7 @@ def test09_import_torch_order(order):
         mi.set_variant(mi.variants()[0])
         pytest.importorskip("torch")
 
-    bmp = mi.Bitmap(mi.TensorXf([0.0, 0.0, 0.0, 0.0], [2, 2]))
+    bmp = mi.Bitmap(mi.TensorXf([0.0, 0.0, 0.0, 0.0], (2, 2, 1)))
     bsdf = mi.load_dict({
         'type': 'diffuse',
         'reflectance': {

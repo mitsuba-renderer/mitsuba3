@@ -586,6 +586,8 @@ MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
 
                 for (size_t i = 0; i < 2 * OPTIX_SHAPE_TYPE_COUNT; i++)
                     free(config.custom_shapes_program_names[i]);
+
+                config.pipeline_jit_index = 0;
             }
         }
     }

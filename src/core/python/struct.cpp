@@ -6,6 +6,8 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/python/python.h>
 
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/vector.h>
 #include <nanobind/stl/string.h>
 
 MI_PY_EXPORT(Struct) {

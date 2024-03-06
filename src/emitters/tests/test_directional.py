@@ -33,7 +33,7 @@ def make_emitter(direction=None, spectrum_key="d65"):
     }
 
     if direction is not None:
-        emitter_dict["direction"] = dr.scalar.Array3f(direction)
+        emitter_dict["direction"] = direction
 
     return mi.load_dict(emitter_dict)
 

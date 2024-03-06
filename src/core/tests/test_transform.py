@@ -83,7 +83,7 @@ def test02_inverse(variant_scalar_rgb, np_rng):
         inv_ref = la.inv(mtx)
 
         trafo = mi.Transform4f(mtx)
-        inv_val = dr.transpose(trafo.inverse_transpose)
+        inv_val = trafo.inverse_transpose.T
 
         assert dr.allclose(trafo.matrix, mtx, atol=1e-4)
         assert la.norm(inv_ref-inv_val, 'fro') / la.norm(inv_val, 'fro') < 5e-4

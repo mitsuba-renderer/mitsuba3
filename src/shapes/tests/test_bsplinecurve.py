@@ -33,7 +33,7 @@ def test03_bbox(variants_all_rgb):
             s = mi.load_dict({
                 "type" : "bsplinecurve",
                 "filename" : "resources/data/common/meshes/curve.txt",
-                "to_world" : mi.ScalarTransform4f.translate(translate) @ mi.ScalarTransform4f.scale((sx, 1, 1))
+                "to_world" : mi.ScalarTransform4f().translate(translate) @ mi.ScalarTransform4f().scale((sx, 1, 1))
             })
             b = s.bbox()
 
@@ -78,7 +78,7 @@ def test05_ray_intersect(variant_scalar_rgb):
             "foo" : {
                 "type" : "bsplinecurve",
                 "filename" : "resources/data/common/meshes/curve.txt",
-                "to_world" : mi.Transform4f.translate(translate)
+                "to_world" : mi.Transform4f().translate(translate)
             }
         })
 
@@ -122,8 +122,6 @@ def test05_ray_intersect(variant_scalar_rgb):
 
 @fresolver_append_path
 def test06_ray_intersect_vec(variant_scalar_rgb):
-    # TODO: Enable once required OptiX drivers are above v531
-    pytest.skip('Curve inteserctions with OptiX are unstable!')
 
     from mitsuba.scalar_rgb.test.util import check_vectorization
 
@@ -228,9 +226,8 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variant_l
     assert dr.allclose(dr.grad(si.uv), 0, atol=1e-6)
 
 
-# TODO: Enable OptiX once the required drivers are above v531
 @fresolver_append_path
-def test08_eval_parameterization(variant_llvm_ad_rgb):
+def test08_eval_parameterization(variants_vec_rgb):
     scene = mi.load_dict({
         "type" : "scene",
         "curve" : {
@@ -239,7 +236,7 @@ def test08_eval_parameterization(variant_llvm_ad_rgb):
         }
     })
 
-    N = 1
+    N = 10
     x = dr.linspace(mi.Float, -0.2, 0.2, N)
     y = dr.linspace(mi.Float, -0.2, 0.2, N)
     x, y, = dr.meshgrid(x, y)
@@ -257,9 +254,8 @@ def test08_eval_parameterization(variant_llvm_ad_rgb):
     assert dr.allclose(si.sh_frame.n, eval_param_si.sh_frame.n, atol=1e-6)
 
 
-# TODO: Enable OptiX once the required drivers are above v531
 @fresolver_append_path
-def test09_instancing(variant_llvm_ad_rgb):
+def test09_instancing(variants_vec_rgb):
     scene = mi.load_dict({
         "type" : "scene",
         "group": {
@@ -271,7 +267,7 @@ def test09_instancing(variant_llvm_ad_rgb):
         },
         "instance1": {
             "type" : "instance",
-            "to_world": mi.ScalarTransform4f.translate([0, -2, 0]),
+            "to_world": mi.ScalarTransform4f().translate([0, -2, 0]),
             "shapegroup": {
                 "type": "ref",
                 "id": "group"
@@ -279,7 +275,7 @@ def test09_instancing(variant_llvm_ad_rgb):
         },
         "instance2": {
             "type" : "instance",
-            "to_world": mi.ScalarTransform4f.translate([0, 2, 0]),
+            "to_world": mi.ScalarTransform4f().translate([0, 2, 0]),
             "shapegroup": {
                 "type": "ref",
                 "id": "group"
@@ -339,8 +335,8 @@ def test12_sample_silhouette_perimeter(variants_vec_rgb):
     assert dr.allclose(dr.norm(mi.Point2f(ss.p.y, ss.p.z)), 1)
     assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
     assert dr.allclose(ss.pdf, dr.inv_four_pi * dr.inv_two_pi, atol=1e-6)
-    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
-            dr.reinterpret_array_v(mi.UInt32, curve_ptr))
+    assert (dr.reinterpret_array(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array(mi.UInt32, curve_ptr))
 
 
 @fresolver_append_path
@@ -364,8 +360,8 @@ def test13_sample_silhouette_interior(variants_vec_rgb):
     assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
     assert dr.allclose(ss.n, mi.Point3f(0, ss.p.y, ss.p.z), atol=1e-6)
     assert dr.allclose(ss.pdf, dr.inv_two_pi * (1 / length) * dr.inv_two_pi, atol=1e-2)
-    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
-            dr.reinterpret_array_v(mi.UInt32, curve_ptr))
+    assert (dr.reinterpret_array(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array(mi.UInt32, curve_ptr))
 
 
 @fresolver_append_path
@@ -417,7 +413,7 @@ def test16_differential_motion(variants_vec_rgb):
     key = 'control_points'
     control_points = dr.unravel(mi.Point4f, params[key])
     positions = mi.Point3f(control_points.x, control_points.y, control_points.z)
-    translation = mi.Transform4f.translate([theta.x, 2 * theta.y, 3 * theta.z])
+    translation = mi.Transform4f().translate([theta.x, 2 * theta.y, 3 * theta.z])
     positions = translation @ positions
     control_points = mi.Point4f(
         positions.x,
@@ -468,8 +464,8 @@ def test17_primitive_silhouette_projection_interior(variants_vec_rgb):
     assert dr.allclose(dr.norm(mi.Point2f(ss.p.y, ss.p.z)), 1)
     assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
     assert dr.allclose(ss.n, mi.Point3f(0, ss.p.y, ss.p.z), atol=1e-6)
-    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
-            dr.reinterpret_array_v(mi.UInt32, curve_ptr))
+    assert dr.all((dr.reinterpret_array(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array(mi.UInt32, curve_ptr)))
 
 
 @fresolver_append_path
@@ -498,8 +494,8 @@ def test18_primitive_silhouette_projection_perimeter(variants_vec_rgb):
     assert dr.allclose(dr.abs(ss.p.x), length/2)
     assert dr.allclose(dr.norm(mi.Point2f(ss.p.y, ss.p.z)), 1)
     assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
-    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
-            dr.reinterpret_array_v(mi.UInt32, curve_ptr))
+    assert dr.all((dr.reinterpret_array(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array(mi.UInt32, curve_ptr)))
 
 
 def test19_precompute_silhouette(variants_vec_rgb):
@@ -540,8 +536,8 @@ def test20_sample_precomputed_silhouette(variants_vec_rgb):
     assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
     assert dr.allclose(ss.n, mi.Point3f(0, ss.p.y, ss.p.z), atol=1e-6)
     assert dr.allclose(dr.mean(ss.pdf), 1 / (2 * length), atol=1e-2)
-    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
-            dr.reinterpret_array_v(mi.UInt32, curve_ptr))
+    assert dr.all((dr.reinterpret_array(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array(mi.UInt32, curve_ptr)))
 
     ss = curve.sample_precomputed_silhouette(
         viewpoint, mi.DiscontinuityFlags.PerimeterType.value, samples)
@@ -553,8 +549,8 @@ def test20_sample_precomputed_silhouette(variants_vec_rgb):
     assert dr.allclose(dr.norm(mi.Point2f(ss.p.y, ss.p.z)), 1)
     assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
     assert dr.allclose(ss.pdf, dr.inv_four_pi, atol=1e-6)
-    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
-            dr.reinterpret_array_v(mi.UInt32, curve_ptr))
+    assert dr.all((dr.reinterpret_array(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array(mi.UInt32, curve_ptr)))
 
 
 @fresolver_append_path

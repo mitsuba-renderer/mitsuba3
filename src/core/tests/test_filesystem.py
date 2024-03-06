@@ -5,8 +5,8 @@ import pytest
 import drjit as dr
 import mitsuba as mi
 
-from mitsuba.scalar_rgb import filesystem as fs
-from mitsuba.scalar_rgb.filesystem import preferred_separator as sep
+from mitsuba import filesystem as fs
+from mitsuba.filesystem import preferred_separator as sep
 
 path_here_relative = fs.path("." + sep)
 path_here = fs.current_path()
