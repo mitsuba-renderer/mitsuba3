@@ -39,7 +39,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: Wandalen/wretry.action@v1.2.0
+      - uses: Wandalen/wretry.action@v1.4.7
         with:
           action: actions/checkout@v3
           with: |
