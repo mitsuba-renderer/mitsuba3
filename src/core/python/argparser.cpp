@@ -4,6 +4,8 @@
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
+#include <memory>
+
 MI_PY_EXPORT(ArgParser) {
     nb::class_<ArgParser> argp(m, "ArgParser", D(ArgParser));
     nb::class_<ArgParser::Arg> argpa(argp, "Arg", D(ArgParser, Arg));

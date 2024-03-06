@@ -14,7 +14,7 @@ def test02_bbox(variant_scalar_rgb):
     for r in [1, 2, 4]:
         s = mi.load_dict({
             "type" : "cube",
-            "to_world" : mi.Transform4f.scale([r, r, r])
+            "to_world" : mi.Transform4f().scale([r, r, r])
         })
 
         b = s.bbox()
@@ -32,7 +32,7 @@ def test03_ray_intersect(variant_scalar_rgb):
                     "type" : "scene",
                     "foo" : {
                         "type" : 'cube',
-                        "to_world": mi.Transform4f.scale(scale),
+                        "to_world": mi.Transform4f().scale(scale),
                     }
 
                 })
@@ -60,7 +60,7 @@ def test03_ray_intersect(variant_scalar_rgb):
                         assert dr.allclose(dv, [0, 1], atol=2e-2)
 
                     # Check normal
-                    assert si.n == mi.Vector3f([0,0,-1])
+                    assert dr.all(si.n == mi.Vector3f([0,0,-1]))
 
                     # Check UV
                     oo  = (coordsY - (-scale.y)) / ((scale.y) - (-scale.y))
@@ -75,7 +75,7 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
             "type" : "scene",
             "foo" : {
                 "type" : "cube",
-                "to_world" : mi.ScalarTransform4f.scale((0.5, 0.5, 0.5))
+                "to_world" : mi.ScalarTransform4f().scale((0.5, 0.5, 0.5))
             }
         })
 
@@ -108,7 +108,7 @@ def test05_check_normals(variant_scalar_rgb):
         ray = mi.Ray3f(o=face[0], d=face[1],
                                     time=0.0, wavelengths=[])
         si = s.ray_intersect(ray)
-        assert si.n == face[2]
+        assert dr.all(si.n == face[2])
 
     ss = mi.load_dict({
         "type" : "scene",
@@ -129,4 +129,4 @@ def test05_check_normals(variant_scalar_rgb):
         ray = mi.Ray3f(o=face[0], d=face[1],
                                     time=0.0, wavelengths=[])
         si2 = ss.ray_intersect(ray)
-        assert si2.n == face[2]
+        assert dr.all(si2.n == face[2])

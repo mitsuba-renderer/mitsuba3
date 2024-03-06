@@ -780,6 +780,9 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
             },
             "ImageBlock::read() [1]");
 
+        for (uint32_t k = 0; k < m_channel_count; ++k)
+            values[k] = dr_values[k];
+
         if (m_normalize) {
             Float norm =
                 dr::select(weight_sum != 0.f, dr::rcp(weight_sum), 0.f);

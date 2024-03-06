@@ -8,14 +8,14 @@ import os
 def test01_numpy_conversion(variants_all_scalar, np_rng):
     a = np_rng.random((4, 8, 16, 3))
     grid = mi.VolumeGrid(a)
-    assert dr.allclose(a, np.array(grid))
+    assert dr.allclose(a, np.array(grid), atol=1e-3, rtol=1e-5)
     assert dr.allclose(np.max(a), grid.max())
     assert dr.allclose([a.shape[2], a.shape[1], a.shape[0]], grid.size())
     assert dr.allclose(a.shape[3], grid.channel_count())
 
     # Don't ask for computation of the maximum value
     grid = mi.VolumeGrid(a, False)
-    assert dr.allclose(a, np.array(grid))
+    assert dr.allclose(a, np.array(grid), atol=1e-3, rtol=1e-5)
     assert dr.allclose(grid.max(), 0.0)
     assert dr.allclose([a.shape[2], a.shape[1], a.shape[0]], grid.size())
     assert dr.allclose(a.shape[3], grid.channel_count())

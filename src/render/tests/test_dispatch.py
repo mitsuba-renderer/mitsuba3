@@ -59,8 +59,6 @@ def test02_dispatch_sparse_registry(variants_vec_rgb, recorded):
 
     assert dr.allclose(res, bsdf_ptr.eval(ctx, si, wo))
 
-    dr.registry_trim()
-
     res = dr.dispatch(bsdf_ptr, func, si, wo)
     dr.eval(res)
 

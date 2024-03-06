@@ -103,7 +103,7 @@ def test02_put(variants_all, filter_name, border, offset, normalize, coalesce, c
                                        block.tensor().shape)
 
             if normalize:
-                value = dr.sum(ref_norm)
+                value = dr.sum(ref_norm, axis=None)
                 if dr.all(value > 0):
                     ref /= value
             match = dr.allclose(block.tensor(), ref, atol=1e-5)
@@ -126,8 +126,8 @@ def test03_put_boundary(variants_all_rgb, filter_name):
     im.clear()
     im.put([1.5, 1.5], [1.0])
     if dr.is_jit_v(mi.Float):
-        a = dr.slice(rfilter.eval(0))
-        b = dr.slice(rfilter.eval(1))
+        a = dr.slice(rfilter.eval(0), 0)
+        b = dr.slice(rfilter.eval(1), 0)
         c = b**2
         assert dr.allclose(im.tensor().array, [c, b, c,
                                                b, a, b,
@@ -204,10 +204,10 @@ def test04_read(variants_all, filter_name, border, offset, normalize, enable_ad)
                     ref /= weights
             else:
                 weight = rfilter.eval(-p[0]) * rfilter.eval(-p[1])
-                ref = dr.sum(weight * dr.detach(source_tensor.array))
+                ref = dr.sum(weight * dr.detach(source_tensor.array), axis=None)
 
                 if normalize:
-                    ref /= dr.sum(weight)
+                    ref /= dr.sum(weight, axis=None)
 
             assert dr.allclose(value, ref, atol=1e-5)
 
@@ -238,7 +238,7 @@ def test05_boundary_effects(variants_vec_rgb, coalesce, normalize):
 
 @pytest.mark.parametrize("compensate", [ False, True ])
 def test06_error_compensation(variants_any_cuda, compensate):
-    with dr.scoped_set_flag(dr.JitFlag.AtomicReduceLocal, False):
+    with dr.scoped_set_flag(dr.JitFlag.ScatterReduceLocal, False):
         ib = mi.ImageBlock(
             size=(1, 1),
             offset=(0, 0),

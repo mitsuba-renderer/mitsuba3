@@ -15,7 +15,7 @@ def create_camera(o, d, fov=34, fov_axis="x", s_open=1.5, s_close=5, near_clip=1
         "fov_axis": fov_axis,
         "shutter_open": s_open,
         "shutter_close": s_close,
-        "to_world": mi.ScalarTransform4f.look_at(
+        "to_world": mi.ScalarTransform4f().look_at(
             origin=o,
             target=t,
             up=[0, 1, 0]
@@ -49,7 +49,7 @@ def test01_create(variant_scalar_rgb, origin, direction, s_open, s_time):
     assert not camera.needs_aperture_sample()
     assert camera.bbox() == mi.BoundingBox3f(origin, origin)
     assert dr.allclose(camera.world_transform().matrix,
-                       mi.Transform4f.look_at(origin, mi.Vector3f(origin) + direction, [0, 1, 0]).matrix)
+                       mi.Transform4f().look_at(origin, mi.Vector3f(origin) + direction, [0, 1, 0]).matrix)
 
 
 @pytest.mark.parametrize("origin", origins)

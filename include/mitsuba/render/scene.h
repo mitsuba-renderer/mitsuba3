@@ -655,7 +655,7 @@ SurfaceInteraction<Float, Spectrum>::emitter(const Scene *scene, Mask active) co
         return is_valid() ? shape->emitter() : scene->environment();
     } else {
         EmitterPtr emitter = shape->emitter(active);
-        if (scene->environment())
+        if (scene && scene->environment())
             emitter = dr::select(is_valid(), emitter, scene->environment() & active);
         return emitter;
     }

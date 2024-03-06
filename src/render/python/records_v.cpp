@@ -3,6 +3,9 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/python/python.h>
 
+#include <nanobind/stl/string.h>
+#include <nanobind/ndarray.h>
+
 MI_PY_EXPORT(PositionSample) {
     MI_PY_IMPORT_TYPES()
     auto pos = nb::class_<PositionSample3f>(m, "PositionSample3f", D(PositionSample))
@@ -33,7 +36,7 @@ MI_PY_EXPORT(DirectionSample) {
             "p"_a, "n"_a, "uv"_a, "time"_a, "pdf"_a, "delta"_a, "d"_a, "dist"_a,
             "emitter"_a, "Element-by-element constructor")
         .def(nb::init<const Scene *, const SurfaceInteraction3f &, const Interaction3f &>(),
-            "scene"_a, "si"_a, "ref"_a, D(PositionSample, PositionSample))
+            "scene"_a.none(), "si"_a, "ref"_a, D(PositionSample, PositionSample))
         .def_rw("d",     &DirectionSample3f::d,     D(DirectionSample, d))
         .def_rw("dist",  &DirectionSample3f::dist,  D(DirectionSample, dist))
         .def_rw("emitter", &DirectionSample3f::emitter, D(DirectionSample, emitter))

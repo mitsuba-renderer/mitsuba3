@@ -105,6 +105,12 @@ def test02_kernel_launches_ptracer(variants_vec_rgb, scene_fname):
         'max_depth': 5
     })
 
+    # Area emitters using bitmaps lazily compute scalar 2D distribution used
+    # for importance sampling. That can trigger a sync_thread during sampling
+    # because associated variables may not have been evaluated yet
+    # Hence, first render may invoke a higher number of kernels
+    integrator.render(scene, seed=0, spp=spp)
+
     with dr.scoped_set_flag(dr.JitFlag.KernelHistory, True):
         # Perform 3 rendering in a row
         integrator.render(scene, seed=0, spp=spp)

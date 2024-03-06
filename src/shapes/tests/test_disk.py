@@ -19,7 +19,7 @@ def test02_bbox(variant_scalar_rgb):
                           mi.Vector3f([-10000, 3.0, 31])]:
             s = mi.load_dict({
                 "type" : "disk",
-                "to_world" : mi.Transform4f.translate(translate) @ mi.Transform4f.scale((sx, sy, 1.0))
+                "to_world" : mi.Transform4f().translate(translate) @ mi.Transform4f().scale((sx, sy, 1.0))
             })
             b = s.bbox()
 
@@ -39,7 +39,7 @@ def test03_ray_intersect(variant_scalar_rgb):
                 "type" : "scene",
                 "foo" : {
                     "type" : "disk",
-                    "to_world" : mi.Transform4f.translate(translate) @ mi.Transform4f.scale((r, r, 1.0))
+                    "to_world" : mi.Transform4f().translate(translate) @ mi.Transform4f().scale((r, r, 1.0))
                 }
             })
 
@@ -89,7 +89,7 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
             "type" : "scene",
             "foo" : {
                 "type" : "disk",
-                "to_world" : mi.ScalarTransform4f.scale((2.0, 0.5, 1.0))
+                "to_world" : mi.ScalarTransform4f().scale((2.0, 0.5, 1.0))
             }
         })
 
@@ -188,7 +188,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     theta = mi.Float(0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f.scale(1 + theta)
+    params['to_world'] = mi.Transform4f().scale(1 + theta)
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.DetachShape)
 
@@ -206,7 +206,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     theta = mi.Float(0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f.scale(1 + theta)
+    params['to_world'] = mi.Transform4f().scale(1 + theta)
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All)
 
@@ -230,7 +230,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     theta = mi.Float(0.0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f.translate([theta, 0.0, 0.0])
+    params['to_world'] = mi.Transform4f().translate([theta, 0.0, 0.0])
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
 
@@ -248,7 +248,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     theta = mi.Float(0.0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f.rotate([0, 0, 1], 90 * theta)
+    params['to_world'] = mi.Transform4f().rotate([0, 0, 1], 90 * theta)
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
 
@@ -266,7 +266,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     theta = mi.Float(0.0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f.rotate([0, 0, 1], 90 * theta)
+    params['to_world'] = mi.Transform4f().rotate([0, 0, 1], 90 * theta)
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All)
 
@@ -315,12 +315,12 @@ def test10_sample_silhouette_perimeter(variants_vec_rgb):
 
     ss = disk.sample_silhouette(samples, mi.DiscontinuityFlags.PerimeterType)
     assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
-    assert dr.all(dr.eq(ss.p.z, 0) | dr.eq(ss.p.z, 1))
+    assert dr.all((ss.p.z == 0) | (ss.p.z == 1))
     assert dr.allclose(dr.norm(mi.Point2f(ss.p.x, ss.p.y)), 1)
     assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
     assert dr.allclose(ss.pdf, dr.inv_two_pi * dr.inv_four_pi, atol=1e-6)
-    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
-            dr.reinterpret_array_v(mi.UInt32, disk_ptr))
+    assert (dr.reinterpret_array(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array(mi.UInt32, disk_ptr))
 
 
 def test11_sample_silhouette_bijective(variants_vec_rgb):
@@ -354,7 +354,7 @@ def test13_differential_motion(variants_vec_rgb):
 
     theta = mi.Point3f(0.0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f.translate(
+    params['to_world'] = mi.Transform4f().translate(
         [theta.x, 2 * theta.y, 3 * theta.z])
     params.update()
 
@@ -385,11 +385,11 @@ def test14_primitive_silhouette_projection(variants_vec_rgb):
     ss = disk.primitive_silhouette_projection(viewpoint, si, mi.DiscontinuityFlags.PerimeterType, 0.)
 
     assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
-    assert dr.all(dr.eq(ss.p.z, 0))
+    assert dr.all(ss.p.z == 0)
     assert dr.allclose(dr.norm(mi.Point2f(ss.p.x, ss.p.y)), 1)
     assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
-    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
-            dr.reinterpret_array_v(mi.UInt32, disk_ptr))
+    assert (dr.reinterpret_array(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array(mi.UInt32, disk_ptr))
 
 
 def test15_precompute_silhouette(variants_vec_rgb):
@@ -412,12 +412,12 @@ def test16_sample_precomputed_silhouette(variants_vec_rgb):
     ss = disk.sample_precomputed_silhouette(viewpoint, 0, samples)
 
     assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
-    assert dr.all(dr.eq(ss.p.z, 0) | dr.eq(ss.p.z, 1))
+    assert dr.all((ss.p.z == 0) | (ss.p.z == 1))
     assert dr.allclose(dr.norm(mi.Point2f(ss.p.x, ss.p.y)), 1)
     assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
     assert dr.allclose(ss.pdf, dr.inv_two_pi, atol=1e-6)
-    assert (dr.reinterpret_array_v(mi.UInt32, ss.shape) ==
-            dr.reinterpret_array_v(mi.UInt32, disk_ptr))
+    assert (dr.reinterpret_array(mi.UInt32, ss.shape) ==
+            dr.reinterpret_array(mi.UInt32, disk_ptr))
 
 
 def test17_shape_type(variant_scalar_rgb):

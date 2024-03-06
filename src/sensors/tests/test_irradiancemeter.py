@@ -7,7 +7,7 @@ def sensor_shape_dict(radius, center):
     return {
         'type': 'sphere',
         'radius': radius,
-        'to_world': mi.ScalarTransform4f.translate(center),
+        'to_world': mi.ScalarTransform4f().translate(center),
         'sensor': {
             'type': 'irradiancemeter',
             'film': {
@@ -33,7 +33,7 @@ def test_construct(variant_scalar_rgb):
     sphere = mi.load_dict(sensor_shape_dict(radius, center_v))
     sensor = sphere.sensor()
 
-    assert sensor.shape() == sphere
+    assert sensor.get_shape() == sphere
     assert dr.allclose(sensor.film().size(), [1, 1])
 
 

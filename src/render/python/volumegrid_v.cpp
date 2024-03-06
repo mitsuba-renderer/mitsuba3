@@ -4,6 +4,7 @@
 #include <mitsuba/python/python.h>
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 #include <nanobind/ndarray.h>
 
 MI_PY_EXPORT(VolumeGrid) {

@@ -36,28 +36,29 @@ def test02_intersection_construction(variant_scalar_rgb):
     si.prim_index = 34
     si.instance = None
     assert si.sh_frame == mi.Frame3f([9, 10, 11], [12, 13, 14], [15, 16, 17])
-    assert repr(si) == """SurfaceInteraction[
-  t = 1,
-  time = 2,
-  wavelengths = [],
-  p = [1, 2, 3],
-  shape = nullptr,
-  uv = [7, 8],
-  n = [4, 5, 6],
-  sh_frame = Frame[
-    s = [9, 10, 11],
-    t = [12, 13, 14],
-    n = [15, 16, 17]
-  ],
-  dp_du = [18, 19, 20],
-  dp_dv = [21, 22, 23],
-  dn_du = [18, 19, 20],
-  dn_dv = [21, 22, 23],
-  duv_dx = [24, 25],
-  duv_dy = [26, 27],
-  wi = [31, 32, 33],
-  prim_index = 34,
-  instance = nullptr
+
+    assert repr(si).strip() == """SurfaceInteraction[
+  t=1,
+  time=2,
+  wavelengths=[],
+  p=[1, 2, 3],
+  n=[4, 5, 6],
+  shape=0x0,
+  uv=[7, 8],
+  sh_frame=Frame[
+             s=[9, 10, 11],
+             t=[12, 13, 14],
+             n=[15, 16, 17]
+],
+  dp_du=[18, 19, 20],
+  dp_dv=[21, 22, 23],
+  dn_du=[18, 19, 20],
+  dn_dv=[21, 22, 23],
+  duv_dx=[24, 25],
+  duv_dy=[26, 27],
+  wi=[31, 32, 33],
+  prim_index=34,
+  instance=0x0
 ]"""
 
 
@@ -149,12 +150,12 @@ def test05_gather_interaction(variants_any_llvm):
         'integrator': { 'type': 'path' },
         'mysensor': {
             'type': 'perspective',
-            'to_world': T.look_at(origin=[0, 0, 3], target=[0, 0, 0], up=[0, 1, 0]),
+            'to_world': T().look_at(origin=[0, 0, 3], target=[0, 0, 0], up=[0, 1, 0]),
             'myfilm': {'type': 'hdrfilm'},
         },
     })
     sensor = scene.sensors()[0]
-    ray, w = sensor.sample_ray(0.0, 0.0, mi.Point2f([0.1, 0.2, 0.3]), mi.Point2f([0.1, 0.2, 0.3]))
+    ray, w = sensor.sample_ray(0.0, 0.0, mi.Point2f([0.1, 0.2]), mi.Point2f([0.1, 0.2]))
     si = scene.ray_intersect(ray)
     
     si_ = dr.gather(mi.SurfaceInteraction3f, si, mi.UInt32([0, 2]))

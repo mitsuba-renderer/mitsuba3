@@ -4,17 +4,18 @@ import mitsuba as mi
 
 
 def test01_create(variant_scalar_rgb):
+    T = mi.ScalarTransform4f
     s = mi.load_dict({
         'type' : 'shapegroup',
         'shape_01' : {
             'type' : 'sphere',
             'radius' : 1.0,
-            'to_world' : mi.ScalarTransform4f.translate([-2, 0, 0])
+            'to_world' : T().translate([-2, 0, 0])
         },
         'shape_02' : {
             'type' : 'sphere',
             'radius' : 1.0,
-            'to_world' : mi.ScalarTransform4f.translate([2, 0, 0])
+            'to_world' : T().translate([2, 0, 0])
         }
     })
 

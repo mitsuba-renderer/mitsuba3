@@ -44,13 +44,13 @@ def test03_import_from_submodules():
     import mitsuba as mi
     mi.set_variant('scalar_rgb')
 
-    from mitsuba import Float
+    Float = mitsuba.Float
     assert Float == float
 
     from mitsuba.chi2 import ChiSquareTest
     assert ChiSquareTest is not None
 
-    from mitsuba.test.util import fresolver_append_path
+    fresolver_append_path = mitsuba.test.util.fresolver_append_path
     assert fresolver_append_path is not None
 
 

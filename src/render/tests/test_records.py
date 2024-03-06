@@ -17,14 +17,15 @@ def test01_position_sample_construction_single(variant_scalar_rgb):
     record.pdf = 0.002
     record.delta = False
     record.time = 0
-    assert str(record) == """PositionSample3f[
-  p = [0, 42, 0],
-  n = [0, 0, 0.4],
-  uv = [1, 2],
-  time = 0,
-  pdf = 0.002,
-  delta = 0,
+    expected = """PositionSample[
+  p=[0, 42, 0],
+  n=[0, 0, 0.4],
+  uv=[1, 2],
+  time=0,
+  pdf=0.002,
+  delta=0
 ]"""
+    assert str(record) == expected.strip()
 
     # SurfaceInteraction constructor
     si = mi.SurfaceInteraction3f()
@@ -40,31 +41,34 @@ def test02_position_sample_construction_vec(variants_vec_backends_once):
     n_records = 5
 
     records = dr.zeros(mi.PositionSample3f, n_records)
-    records.p = np.array([[1.0, 1.0, 1.0], [0.9, 0.9, 0.9], [0.7, 0.7, 0.7],
-                 [1.2, 1.5, 1.1], [1.5, 1.5, 1.5]])
+    records.p = np.array([
+        [1.0, 0.9, 0.7, 1.2, 1.5],
+        [1.0, 0.9, 0.7, 1.5, 1.5],
+        [1.0, 0.9, 0.7, 1.1, 1.5]])
     records.time = [0.0, 0.5, 0.7, 1.0, 1.5]
 
-    assert  """[
-  p = [[1, 1, 1],
-       [0.9, 0.9, 0.9],
-       [0.7, 0.7, 0.7],
-       [1.2, 1.5, 1.1],
-       [1.5, 1.5, 1.5]],
-  n = [[0, 0, 0],
-       [0, 0, 0],
-       [0, 0, 0],
-       [0, 0, 0],
-       [0, 0, 0]],
-  uv = [[0, 0],
-        [0, 0],
-        [0, 0],
-        [0, 0],
-        [0, 0]],
-  time = [0, 0.5, 0.7, 1, 1.5],
-  pdf = [0, 0, 0, 0, 0],
-  delta = [0, 0, 0, 0, 0],
-]""" in str(records)
+    expected = """PositionSample[
+  p=[[1, 1, 1],
+     [0.9, 0.9, 0.9],
+     [0.7, 0.7, 0.7],
+     [1.2, 1.5, 1.1],
+     [1.5, 1.5, 1.5]],
+  n=[[0, 0, 0],
+     [0, 0, 0],
+     [0, 0, 0],
+     [0, 0, 0],
+     [0, 0, 0]],
+  uv=[[0, 0],
+      [0, 0],
+      [0, 0],
+      [0, 0],
+      [0, 0]],
+  time=[0, 0.5, 0.7, 1, 1.5],
+  pdf=[0, 0, 0, 0, 0],
+  delta=[0, 0, 0, 0, 0]
+]"""
 
+    assert str(records) == expected
     # SurfaceInteraction constructor
     si = dr.zeros(mi.SurfaceInteraction3f, n_records)
     si.time = [0.0, 0.5, 0.7, 1.0, 1.5]
@@ -72,7 +76,7 @@ def test02_position_sample_construction_vec(variants_vec_backends_once):
     assert dr.all(records.time == si.time)
 
 
-def test04_direction_sample_construction_single(variant_scalar_rgb):
+def test04_direction_sample_construction_single(variants_vec_backends_once):
     # Default constructor
     record = mi.DirectionSample3f()
     record.p = [1, 2, 3]
@@ -83,16 +87,16 @@ def test04_direction_sample_construction_single(variant_scalar_rgb):
     record.dist = 0.13
 
     assert dr.allclose(record.d, [0, 42, -1])
-    assert str(record) == """DirectionSample3f[
-  p = [1, 2, 3],
-  n = [4, 5, 6],
-  uv = [7, 8],
-  time = 0,
-  pdf = 0.002,
-  delta = 0,
-  emitter = nullptr,
-  d = [0, 42, -1],
-  dist = 0.13
+    assert str(record) == """DirectionSample[
+  p=[[1, 2, 3]],
+  n=[[4, 5, 6]],
+  uv=[[7, 8]],
+  time=[],
+  pdf=[0.002],
+  delta=[],
+  d=[[0, 42, -1]],
+  dist=[0.13],
+  emitter=[0x0]
 ]"""
 
     # Construct from two interactions: ds.d should start from the reference its.

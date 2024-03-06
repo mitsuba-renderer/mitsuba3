@@ -113,7 +113,7 @@ def test04_scene_destruction_and_pending_raytracing(variants_vec_rgb, shadow):
             'integrator': { 'type': 'path' },
             'mysensor': {
                 'type': 'perspective',
-                'to_world': T.look_at(origin=[0, 0, 3], target=[0, 0, 0], up=[0, 1, 0]),
+                'to_world': T().look_at(origin=[0, 0, 3], target=[0, 0, 0], up=[0, 1, 0]),
                 'myfilm': {
                     'type': 'hdrfilm',
                     'rfilter': { 'type': 'box'},
@@ -257,7 +257,7 @@ def test10_test_scene_bbox_update(variant_scalar_rgb):
     bbox = scene.bbox()
     params = mi.traverse(scene)
     offset = [-1, -1, -1]
-    params['sphere.to_world'] = mi.Transform4f.translate(offset)
+    params['sphere.to_world'] = mi.Transform4f().translate(offset)
     params.update()
 
     expected = mi.BoundingBox3f(bbox.min + offset, bbox.max + offset)
@@ -313,5 +313,5 @@ def test11_sample_silhouette_bijective(variants_vec_rgb):
     # Both types
     ss = scene.sample_silhouette(samples, mi.DiscontinuityFlags.AllTypes)
     out = scene.invert_silhouette_sample(ss)
-    assert dr.all(dr.neq(ss.discontinuity_type, mi.DiscontinuityFlags.Empty.value))
+    assert dr.all(ss.discontinuity_type != mi.DiscontinuityFlags.Empty.value)
     assert dr.allclose(valid_samples, valid_out, atol=1e-6)

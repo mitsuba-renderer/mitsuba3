@@ -26,7 +26,7 @@ def make_sensor(origin=None, direction=None, to_world=None, pixels=1):
 
 def test_construct(variant_scalar_rgb):
     # Test construct from to_world
-    sensor = make_sensor(to_world=mi.ScalarTransform4f.look_at(
+    sensor = make_sensor(to_world=mi.ScalarTransform4f().look_at(
         origin=[0, 0, 0],
         target=[0, 1, 0],
         up=[0, 0, 1]
@@ -53,7 +53,7 @@ def test_construct(variant_scalar_rgb):
 
     # Test to_world overriding direction + origin
     sensor = make_sensor(
-        to_world=mi.ScalarTransform4f.look_at(
+        to_world=mi.ScalarTransform4f().look_at(
             origin=[0, 0, 0],
             target=[0, 1, 0],
             up=[0, 0, 1]

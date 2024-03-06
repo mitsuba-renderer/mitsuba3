@@ -184,7 +184,7 @@ def test04_sample_beckmann(variants_vec_backends_once):
               10.610329,   9.01175,   7.3768272,  5.695923,   3.9525049,  2.1113062,
               10.610329,   9.01175,   7.3768272,  5.695923,   3.9525049,  2.1113062]))
 
-    assert dr.allclose(ref[0], result[0], atol=5e-4)
+    assert dr.allclose(ref[0].transpose(), result[0], atol=5e-4)
     assert dr.allclose(ref[1], result[1], atol=1e-4)
 
 
@@ -198,7 +198,7 @@ def test03_smith_g1_ggx(variants_vec_backends_once):
     cos_theta, sin_theta = dr.cos(theta), dr.sin(theta)
     cos_phi, sin_phi = dr.cos(phi), dr.sin(phi)
     v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
-    wi = np.tile([0, 0, 1], (steps, 1))
+    wi = np.tile([0, 0, 1], (steps, 1)).transpose()
 
     assert dr.allclose(mdf.smith_g1(v, wi),
                        [9.4031686e-01, 9.3310797e-01, 9.2485082e-01, 9.1534841e-01, 9.0435863e-01,
@@ -236,7 +236,7 @@ def test05_sample_ggx(variants_vec_backends_once):
     u1, u2 = dr.meshgrid(u, u)
     u = [u1, u2]
     wi = np.tile([0, 0, 1], (steps * steps, 1))
-    result = mdf.sample(wi, u)
+    result = mdf.sample(wi.transpose(), u)
 
     ref = ((np.array([[ 0.0000000e+00,  0.0000000e+00,  1.0000000e+00],
                       [ 4.4676583e-02,  0.0000000e+00,  9.9900150e-01],
@@ -281,7 +281,7 @@ def test05_sample_ggx(variants_vec_backends_once):
                10.610329,  7.5235577, 4.96543,   2.9359221, 1.4349728, 0.4623032,
                10.610329,  7.5235577, 4.965429,  2.9359221, 1.4349725, 0.4623031])))
 
-    assert dr.allclose(ref[0], result[0], atol=5e-4)
+    assert dr.allclose(ref[0].transpose(), result[0], atol=5e-4)
     assert dr.allclose(ref[1], result[1], atol=1e-4)
 
 

@@ -1,6 +1,8 @@
 #include <mitsuba/render/spiral.h>
 #include <mitsuba/python/python.h>
 
+#include <nanobind/stl/tuple.h>
+
 MI_PY_EXPORT(Spiral) {
     using Vector2u = typename Spiral::Vector2u;
     MI_PY_CLASS(Spiral, Object)

@@ -3,15 +3,19 @@
 #include <mitsuba/python/python.h>
 #include <drjit/dynamic.h>
 
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/list.h>
+#include <nanobind/ndarray.h>
+
 MI_PY_EXPORT(MicrofacetDistribution) {
     MI_PY_IMPORT_TYPES(MicrofacetDistribution)
 
     nb::class_<MicrofacetDistribution>(m, "MicrofacetDistribution", D(MicrofacetDistribution))
         .def("__init__", [](MicrofacetDistribution* alloc, MicrofacetType t, ScalarFloat alpha, bool sv) {
-            return new (alloc) MicrofacetDistribution(t, alpha, sv);
+            new (alloc) MicrofacetDistribution(t, alpha, sv);
         }, "type"_a, "alpha"_a, "sample_visible"_a = true)
         .def("__init__", [](MicrofacetDistribution* alloc, MicrofacetType t, ScalarFloat alpha_u, ScalarFloat alpha_v, bool sv) {
-            return  new (alloc) MicrofacetDistribution(t, alpha_u, alpha_v, sv);
+            new (alloc) MicrofacetDistribution(t, alpha_u, alpha_v, sv);
         }, "type"_a, "alpha_u"_a, "alpha_v"_a, "sample_visible"_a = true)
         .def(nb::init<MicrofacetType, const Float &, bool>(), "type"_a, "alpha"_a,
             "sample_visible"_a = true)

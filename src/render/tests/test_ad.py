@@ -11,7 +11,7 @@ def make_simple_scene(res=1, integrator="path"):
             "type" : "perspective",
             "near_clip": 0.1,
             "far_clip": 1000.0,
-            "to_world" : mi.ScalarTransform4f.look_at(origin=[0, 0, 4],
+            "to_world" : mi.ScalarTransform4f().look_at(origin=[0, 0, 4],
                                                       target=[0, 0, 0],
                                                       up=[0, 1, 0]),
             "myfilm" : {
@@ -44,9 +44,9 @@ def make_simple_scene(res=1, integrator="path"):
 
 if hasattr(dr, 'JitFlag'):
     jit_flags_options = [
-        {dr.JitFlag.VCallRecord : 0, dr.JitFlag.VCallOptimize : 0, dr.JitFlag.LoopRecord : 0},
-        {dr.JitFlag.VCallRecord : 1, dr.JitFlag.VCallOptimize : 0, dr.JitFlag.LoopRecord : 0},
-        {dr.JitFlag.VCallRecord : 1, dr.JitFlag.VCallOptimize : 1, dr.JitFlag.LoopRecord : 0},
+        {dr.JitFlag.VCallRecord : False, dr.JitFlag.VCallOptimize : False, dr.JitFlag.LoopRecord : False},
+        {dr.JitFlag.VCallRecord : True, dr.JitFlag.VCallOptimize : False, dr.JitFlag.LoopRecord : False},
+        {dr.JitFlag.VCallRecord : True, dr.JitFlag.VCallOptimize : True, dr.JitFlag.LoopRecord : False},
     ]
 else:
     jit_flags_options = []
@@ -73,7 +73,7 @@ def test01_bsdf_reflectance_backward(variants_all_ad_rgb, jit_flags, spp):
     img_1 = scene.integrator().render(scene, seed=0, spp=spp)
 
     # Backward pass and gradient descent step
-    loss = dr.sum(img_1)
+    loss = dr.sum(img_1, axis=None)
     dr.backward(loss)
 
     grad = dr.grad(params[key])
@@ -85,7 +85,7 @@ def test01_bsdf_reflectance_backward(variants_all_ad_rgb, jit_flags, spp):
     # Forward rendering - second time
     img_2 = scene.integrator().render(scene, seed=0, spp=spp)
 
-    new_loss = dr.sum(img_2)
+    new_loss = dr.sum(img_2, axis=None)
 
     assert dr.allclose(loss, new_loss - lr * grad[0])
 
@@ -117,7 +117,7 @@ def test02_bsdf_reflectance_forward(variants_all_ad_rgb, jit_flags, spp):
     img_1 = scene.integrator().render(scene, seed=0, spp=spp)
 
     # Compute forward gradients
-    assert dr.grad(img_1) == 0.0
+    assert dr.all(dr.grad(img_1) == 0.0, axis=None)
     dr.forward(X)
     grad = dr.grad(img_1)
 
@@ -165,7 +165,7 @@ def test03_optimizer(variants_all_ad_rgb, spp, res, opt_conf):
         dr.set_label(image, 'image')
 
         # Objective: MSE between 'image' and 'image_ref'
-        ob_val = dr.sum(dr.sqr(image - image_ref)) / len(image)
+        ob_val = dr.sum(dr.square(image - image_ref), axis=None) / len(image.array)
         dr.set_label(ob_val, 'ob_val')
 
         # print(dr.graphviz_str(Float(1)))
@@ -179,7 +179,7 @@ def test03_optimizer(variants_all_ad_rgb, spp, res, opt_conf):
         # Optimizer: Update the scene parameters
         params.update(opt)
 
-        err_ref = dr.sum(dr.detach(dr.sqr(param_ref - params[key])))[0]
+        err_ref = dr.sum(dr.detach(dr.square(param_ref - params[key])))[0]
         print('Iteration %03i: error=%g' % (it, err_ref))
 
         if it >= N - W:
@@ -213,7 +213,7 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval
     dr.set_label(p, "albedo_1")
     bsdf_params.update()
 
-    mask = dr.eq(dr.arange(mi.UInt32, N) & 1, 0)
+    mask = dr.arange(mi.UInt32, N) & 1 == 0
     bsdf_ptr = dr.select(mask, mi.BSDFPtr(bsdf), dr.zeros(mi.BSDFPtr))
 
     si    = dr.zeros(mi.SurfaceInteraction3f, N)
@@ -250,7 +250,7 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval
 
     dr.set_grad(loss, loss_grad)
     dr.enqueue(dr.ADMode.Backward, loss)
-    dr.traverse(mi.Float, dr.ADMode.Backward, dr.ADFlag.ClearVertices)
+    dr.traverse(dr.ADMode.Backward, dr.ADFlag.ClearVertices)
 
     # Check gradients
     grad = dr.grad(bsdf_params['reflectance.value'])
@@ -308,7 +308,7 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
         dr.set_label(p2, "albedo_2")
     bsdf2_params.update()
 
-    mask = dr.eq(dr.arange(mi.UInt32, N) & 1, 0)
+    mask = (dr.arange(mi.UInt32, N) & 1) == 0
     bsdf_ptr = dr.select(mask, mi.BSDFPtr(bsdf1), mi.BSDFPtr(bsdf2))
 
     si    = dr.zeros(mi.SurfaceInteraction3f, N)
@@ -351,7 +351,7 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
 
         dr.set_grad(loss, loss_grad)
         dr.enqueue(dr.ADMode.Backward, loss)
-        dr.traverse(mi.Float, dr.ADMode.Backward, dr.ADFlag.ClearVertices)
+        dr.traverse(dr.ADMode.Backward, dr.ADFlag.ClearVertices)
 
         # Check gradients
         grad1 = dr.grad(p1)
@@ -366,13 +366,13 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
         dr.set_grad(p2, 0)
         dr.enqueue(dr.ADMode.Forward, p1)
         dr.enqueue(dr.ADMode.Forward, p2)
-        dr.traverse(mi.Float, dr.ADMode.Forward, dr.ADFlag.ClearVertices)
+        dr.traverse(dr.ADMode.Forward, dr.ADFlag.ClearVertices)
 
         dr.set_grad(p1, 0)
         dr.set_grad(p2, 1)
         dr.enqueue(dr.ADMode.Forward, p1)
         dr.enqueue(dr.ADMode.Forward, p2)
-        dr.traverse(mi.Float, dr.ADMode.Forward, dr.ADFlag.ClearVertices)
+        dr.traverse(dr.ADMode.Forward, dr.ADFlag.ClearVertices)
 
         assert dr.allclose(dr.grad(loss), 3 * v * dr.select(mask, mult1, mult2))
 
@@ -401,10 +401,10 @@ def test06_optimizer_state(variants_all_ad_rgb):
         assert key in opt.state
         state_before = ensure_iterable(opt.state[key])
         for s in state_before:
-            assert dr.all(dr.neq(s, 0))
+            assert dr.all(s != 0)
 
         # A value change should not affect the state
-        opt[key] = dr.clamp(opt[key], 0, 2)
+        opt[key] = dr.clip(opt[key], 0, 2)
         state_after = ensure_iterable(opt.state[key])
         for a, b in zip(state_before, state_after):
             assert dr.allclose(a, b)
@@ -413,7 +413,7 @@ def test06_optimizer_state(variants_all_ad_rgb):
         opt[key] = mi.Float([1.0, 2.0])
         state_after = ensure_iterable(opt.state[key])
         for s in state_after:
-            assert dr.all(dr.eq(s, 0))
+            assert dr.all(s == 0)
 
 
 @pytest.mark.parametrize('opt', ['SGD', 'Adam'])
@@ -447,18 +447,18 @@ def test07_masked_updates(variants_all_ad_rgb, opt):
     prev_x = mi.Float(params['x'])
     prev_state = [mi.Float(vv) for vv in ensure_iterable(opt.state['x'])]
     for zero_i in range(n):
-        is_zero = dr.eq(dr.arange(mi.UInt32, n), zero_i)
+        is_zero = dr.arange(mi.UInt32, n) == zero_i
         g2 = dr.select(is_zero, 0, mi.Float(g1))
 
         dr.set_grad(params['x'], g2)
         opt.step()
         params.update(opt)
 
-        assert dr.all(dr.eq(params['x'], prev_x) | ~is_zero), 'Param should not be updated where grad == 0'
-        assert dr.all(dr.neq(params['x'], prev_x) | is_zero), 'Param should be updated where grad != 0'
+        assert dr.all((params['x'] == prev_x) | ~is_zero), 'Param should not be updated where grad == 0'
+        assert dr.all((params['x'] != prev_x) | is_zero), 'Param should be updated where grad != 0'
         for v1, v2 in zip(ensure_iterable(opt.state['x']), prev_state):
-            assert dr.all(dr.eq(v1, v2) | ~is_zero), 'State should not be updated where grad == 0'
-            assert dr.all(dr.neq(v1, v2) | is_zero), 'State should be updated where grad != 0'
+            assert dr.all((v1 == v2) | ~is_zero), 'State should not be updated where grad == 0'
+            assert dr.all((v1 != v2) | is_zero), 'State should be updated where grad != 0'
 
         prev_x = mi.Float(params['x'])
         prev_state = [mi.Float(vv) for vv in ensure_iterable(opt.state['x'])]

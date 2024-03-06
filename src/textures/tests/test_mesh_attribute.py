@@ -89,7 +89,7 @@ def test01_eval(variant_scalar_rgb):
         assert dr.allclose(texture.eval_1(si), si.prim_index)
 
 
-def test02_eval_spectrum(variant_scalar_spectral):
+def test02_eval_spectrum(variants_vec_spectral):
     mesh = create_rectangle()
 
     texture = mi.load_dict({
