@@ -46,6 +46,11 @@ if (NOT APPLE)
   option(MI_ENABLE_OPTIX_DEBUG_VALIDATION "Enable debug flag for OptiX" OFF)
 endif()
 
+# Create compile commands?
+# Used by Clangd as hints for the files it operates on.
+# Output will be `compile_commands.json` in the build directory.
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # ----------------------------------------------------------
 #  Check if submodules have been checked out, or fail early
 # ----------------------------------------------------------

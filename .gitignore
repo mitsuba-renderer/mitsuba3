@@ -28,3 +28,7 @@ __pycache__
 /docs/src/quickstart
 /docs/src/generated
 /docs/resources
+
+# Clangd files
+compile_commands.json
+/.cache
