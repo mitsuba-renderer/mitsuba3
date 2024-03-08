@@ -2,6 +2,9 @@
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/python/python.h>
 
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/tuple.h>
+
 template <typename BBox, typename Ray> auto bind_bbox(nb::module_ &m, const char *name) {
         using Point = typename BBox::Point;
         using Float = typename BBox::Value;

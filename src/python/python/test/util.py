@@ -131,7 +131,7 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6,
         args_types = [params[name].annotation for name in params]
         assert not _empty in args_types, \
                "`kernel` arguments should be annotated, or `arg_dims` should be set."
-        arg_dims = [1 if t == float else t.Size for t in args_types]
+        arg_dims = [1 if t == float else dr.size_v(t) for t in args_types]
 
     # Construct random argument arrays
     rng = np.random.default_rng(seed=0)
@@ -163,7 +163,7 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6,
         types = [mi.Float, mi.Vector2f, mi.Vector3f]
 
         # Cast arguments
-        args = [types[arg_dims[i]-1](args_np[i]) for i in range(len(args_np))]
+        args = [types[arg_dims[i]-1](np.transpose(args_np[i])) for i in range(len(args_np))]
 
         # Evaluate vectorized kernel
         results_vec = kernel(*args)
@@ -172,4 +172,4 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6,
 
         # Compare results
         for i in range(len(results_scalar)):
-            assert dr.allclose(results_vec[i], results_scalar[i], atol=atol)
+            assert dr.allclose(results_vec[i], (np.transpose(results_scalar[i])), atol=atol)

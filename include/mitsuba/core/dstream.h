@@ -14,6 +14,8 @@ class MI_EXPORT_LIB DummyStream : public Stream {
 public:
     DummyStream();
 
+    ~DummyStream() = default;
+
     /** \brief Closes the stream.
      * No further read or write operations are permitted.
      *
@@ -43,11 +45,6 @@ public:
     // =========================================================================
 
     MI_DECLARE_CLASS()
-protected:
-
-    /// Protected destructor.
-    virtual ~DummyStream() = default;
-
 private:
     /// Size of all data written to the stream
     size_t m_size;

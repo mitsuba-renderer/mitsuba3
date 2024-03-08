@@ -34,9 +34,9 @@ def test04_discr_basic(variants_vec_backends_once):
 
     assert x.sum() == 6
     assert dr.allclose(x.normalization(), 1.0 / 6.0)
-    assert x.pmf() == [1, 3, 2]
-    assert x.cdf() == [1, 4, 6]
-    assert x.eval_pmf([1, 2, 0]) == [3, 2, 1]
+    assert dr.all(x.pmf == [1, 3, 2])
+    assert dr.all(x.cdf == [1, 4, 6])
+    assert dr.all(x.eval_pmf([1, 2, 0]) == [3, 2, 1])
 
     assert dr.allclose(
         x.eval_pmf_normalized([1, 2, 0]),
@@ -50,9 +50,10 @@ def test04_discr_basic(variants_vec_backends_once):
     assert repr(x) == 'DiscreteDistribution[\n  size = 3,' \
         '\n  sum = [6],\n  pmf = [1, 3, 2]\n]'
 
-    x.pmf()[:] = [1, 1, 1]
+    x.pmf = [1, 1, 1]
     x.update()
-    assert x.cdf() == [1, 2, 3]
+    assert dr.all(x.cdf == [1, 2, 3])
+    assert dr.all(x.cdf == [1, 2, 3])
     assert x.sum() == 3
     assert dr.allclose(x.normalization(), 1.0 / 3.0)
 
@@ -62,9 +63,9 @@ def test05_discr_sample(variants_vec_backends_once):
     eps = 1e-7
 
     x = mi.DiscreteDistribution([1, 3, 2])
-    assert x.sample([-1, 0, 1, 2]) == [0, 0, 2, 2]
-    assert x.sample([1 / 6.0 - eps, 1 / 6.0 + eps]) == [0, 1]
-    assert x.sample([4 / 6.0 - eps, 4 / 6.0 + eps]) == [1, 2]
+    assert dr.all(x.sample([-1, 0, 1, 2]) == [0, 0, 2, 2])
+    assert dr.all(x.sample([1 / 6.0 - eps, 1 / 6.0 + eps]) == [0, 1])
+    assert dr.all(x.sample([4 / 6.0 - eps, 4 / 6.0 + eps]) == [1, 2])
 
     assert dr.allclose(
         x.sample_pmf([-1, 0, 1, 2]),
@@ -100,33 +101,34 @@ def test06_discr_bruteforce(variants_vec_backends_once):
 
     for size in range(2, 20, 5):
         for i in range(2, 50, 5):
-            density = mi.Float(rng.next_uint32_bounded(i)[0:size])
+            density = dr.gather(mi.Float, mi.Float(rng.next_uint32_bounded(i)), 
+                dr.arange(mi.UInt32, size))
             if dr.sum(density)[0] == 0:
                 continue
             ddistr = mi.DiscreteDistribution(density)
 
             x = dr.linspace(mi.Float, 0, 1, 20)
             y = ddistr.sample(x)
-            z = dr.gather(mi.Float, ddistr.cdf(), y - 1, y > 0)
+            z = dr.gather(mi.Float, ddistr.cdf, y - 1, y > 0)
             x *= ddistr.sum()
 
             # Did we sample the right interval?
-            assert dr.all((x > z) | (dr.eq(x, 0) & (x >= z)))
+            assert dr.all((x > z) | ((x == 0) & (x >= z)))
 
 
 def test07_discr_leading_trailing_zeros(variants_vec_backends_once):
     # Check that sampling still works when there are zero-valued buckets
     x = mi.DiscreteDistribution([0, 0, 1, 0, 1, 0, 0, 0])
     index, pmf = x.sample_pmf([-100, 0, 0.5, 0.5 + 1e-6, 1, 100])
-    assert index == [2, 2, 2, 4, 4, 4]
-    assert pmf == [.5] * 6
+    assert dr.all(index == [2, 2, 2, 4, 4, 4])
+    assert dr.all(pmf == [.5] * 6)
 
 
 def test08_cont_empty(variants_all_backends_once):
     # Test that operations involving the empty distribution throw
     d = mi.ContinuousDistribution()
     assert d.empty()
-    d.range()[:] = [1, 2]
+    d.range = [1, 2]
 
     with pytest.raises(RuntimeError) as excinfo:
         d.update()
@@ -179,10 +181,10 @@ def test12_cont_eval(variants_vec_backends_once):
         [0, 0, 5.0 / 12.0, 1, 1]
     )
 
-    assert d.sample([0, 1]) == [2, 3]
+    assert dr.all(d.sample([0, 1]) == [2, 3])
     x, pdf = d.sample_pdf([0, 0.5, 1])
     dx = (dr.sqrt(10) - 2) / 2
-    assert x == [2, 2 + dx, 3]
+    assert dr.all(x == [2, 2 + dx, 3])
     assert dr.allclose(
         pdf,
         [2.0 / 3.0, (4 * dx + 2 * (1 - dx)) / 3.0, 4.0 / 3.0]
@@ -192,7 +194,7 @@ def test12_cont_eval(variants_vec_backends_once):
 def test13_cont_func(variants_vec_backends_once):
     # Test continuous 1D distribution integral against analytic result
     x = dr.linspace(mi.Float, -2, 2, 513)
-    y = dr.exp(-dr.sqr(x))
+    y = dr.exp(-dr.square(x))
 
     d = mi.ContinuousDistribution([-2, 2], y)
     assert dr.allclose(d.max(), 1.0)

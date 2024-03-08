@@ -1,6 +1,8 @@
 #include <mitsuba/render/volume.h>
 #include <mitsuba/python/python.h>
 #include <mitsuba/core/properties.h>
+
+#include <array>
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/string.h>
 

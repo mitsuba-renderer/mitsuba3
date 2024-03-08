@@ -249,7 +249,7 @@ def test07_dict_scene(variant_scalar_rgb):
             "type" : "perspective",
             "near_clip": 1.0,
             "far_clip": 1000.0,
-            "to_world" : mi.ScalarTransform4f.look_at(origin=[1, 1, 1],
+            "to_world" : mi.ScalarTransform4f().look_at(origin=[1, 1, 1],
                                                       target=[0, 0, 0],
                                                       up=[0, 0, 1]),
             "myfilm" : {

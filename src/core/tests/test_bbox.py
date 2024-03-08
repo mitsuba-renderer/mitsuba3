@@ -20,31 +20,31 @@ def test01_basics(variant_scalar_rgb):
     assert bbox2.volume() == 0
     assert bbox2.major_axis() == 0
     assert bbox2.minor_axis() == 0
-    assert (bbox2.center() == [0, 1, 2])
-    assert (bbox2.extents() == [0, 0, 0])
+    assert dr.all(bbox2.center() == [0, 1, 2])
+    assert dr.all(bbox2.extents() == [0, 0, 0])
     assert bbox2.surface_area() == 0
     assert bbox3.volume() == 2
     assert bbox3.surface_area() == 10
-    assert (bbox3.center() == [1.5, 2.5, 4])
-    assert (bbox3.extents() == [1, 1, 2])
+    assert dr.all(bbox3.center() == [1.5, 2.5, 4])
+    assert dr.all(bbox3.extents() == [1, 1, 2])
     assert bbox3.major_axis() == 2
     assert bbox3.minor_axis() == 0
-    assert (bbox3.min == [1, 2, 3])
-    assert (bbox3.max == [2, 3, 5])
-    assert (bbox3.corner(0) == [1, 2, 3])
-    assert (bbox3.corner(1) == [2, 2, 3])
-    assert (bbox3.corner(2) == [1, 3, 3])
-    assert (bbox3.corner(3) == [2, 3, 3])
-    assert (bbox3.corner(4) == [1, 2, 5])
-    assert (bbox3.corner(5) == [2, 2, 5])
-    assert (bbox3.corner(6) == [1, 3, 5])
-    assert (bbox3.corner(7) == [2, 3, 5])
+    assert dr.all(bbox3.min == [1, 2, 3])
+    assert dr.all(bbox3.max == [2, 3, 5])
+    assert dr.all(bbox3.corner(0) == [1, 2, 3])
+    assert dr.all(bbox3.corner(1) == [2, 2, 3])
+    assert dr.all(bbox3.corner(2) == [1, 3, 3])
+    assert dr.all(bbox3.corner(3) == [2, 3, 3])
+    assert dr.all(bbox3.corner(4) == [1, 2, 5])
+    assert dr.all(bbox3.corner(5) == [2, 2, 5])
+    assert dr.all(bbox3.corner(6) == [1, 3, 5])
+    assert dr.all(bbox3.corner(7) == [2, 3, 5])
     assert str(bbox1) == "BoundingBox3f[invalid]"
     assert str(bbox3) == "BoundingBox3f[\n  min = [1, 2, 3],\n" \
                          "  max = [2, 3, 5]\n]"
     bbox4 = BBox.merge(bbox2, bbox3)
-    assert (bbox4.min == [0, 1, 2])
-    assert (bbox4.max == [2, 3, 5])
+    assert dr.all(bbox4.min == [0, 1, 2])
+    assert dr.all(bbox4.max == [2, 3, 5])
     bbox3.reset()
     assert not bbox3.valid()
     bbox3.expand([0, 0, 0])

@@ -1,6 +1,8 @@
 #include <mitsuba/core/warp.h>
 #include <mitsuba/python/python.h>
 
+#include <nanobind/stl/pair.h>
+
 MI_PY_EXPORT(warp) {
     MI_PY_IMPORT_TYPES()
 

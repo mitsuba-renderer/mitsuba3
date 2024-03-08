@@ -4,6 +4,7 @@
 #include <mitsuba/python/python.h>
 
 #include <nanobind/trampoline.h>
+#include <nanobind/stl/string.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

@@ -7,6 +7,8 @@
 #include <nanobind/stl/tuple.h>
 #include <nanobind/stl/pair.h>
 
+#include <nanobind/stl/tuple.h>
+
 MI_PY_EXPORT(math) {
     MI_PY_IMPORT_TYPES()
 

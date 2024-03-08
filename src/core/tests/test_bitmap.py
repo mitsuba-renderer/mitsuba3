@@ -369,7 +369,7 @@ def test_construct_from_non_contiguous_array(variants_all_rgb):
 
 def test_construct_from_int8_array(variants_all_rgb):
     # test uint8
-    b_np = np.reshape(np.arange(16), (4, 4)).astype(np.uint8)
+    b_np = np.reshape(np.arange(16), (4, 4, 1)).astype(np.uint8)
     b1 = mi.Bitmap(b_np)
     assert dr.allclose(b_np, np.array(b1))
 
