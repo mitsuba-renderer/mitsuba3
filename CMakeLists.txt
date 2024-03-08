@@ -225,11 +225,20 @@ if (NOT SKBUILD)
       configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/setpath.sh
                      ${CMAKE_CURRENT_BINARY_DIR}/setpath.sh @ONLY)
       install(FILES ${CMAKE_CURRENT_BINARY_DIR}/setpath.sh DESTINATION ".")
+
+      configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/setpath.fish
+                     ${CMAKE_CURRENT_BINARY_DIR}/setpath.fish @ONLY)
+      install(FILES ${CMAKE_CURRENT_BINARY_DIR}/setpath.fish DESTINATION ".")
   else()
       configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/setpath.sh
                      ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.sh @ONLY)
       install(FILES ${CMAKE_CURRENT_BINARY_DIR}/setpath.sh DESTINATION ".")
       ro_copy(${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.sh setpath.sh)
+
+      configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/setpath.fish
+                     ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.fish @ONLY)
+      install(FILES ${CMAKE_CURRENT_BINARY_DIR}/setpath.fish DESTINATION ".")
+      ro_copy(${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.fish setpath.fish)
 
       configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/setpath.bat
                      ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.bat @ONLY)

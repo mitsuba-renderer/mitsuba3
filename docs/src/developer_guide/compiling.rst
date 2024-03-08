@@ -245,7 +245,7 @@ Now, compilation should be as simple as running the following from inside the
 Running Mitsuba
 ---------------
 
-Once Mitsuba is compiled, run the ``setpath.sh/.bat/.ps1`` script in your build
+Once Mitsuba is compiled, run the ``setpath.sh/setpath.fish/.bat/.ps1`` script in your build
 directory to configure environment variables (``PATH/PYTHONPATH``) that are
 required to run Mitsuba.
 
@@ -253,6 +253,9 @@ required to run Mitsuba.
 
     # On Linux / Mac OS
     source setpath.sh
+
+    # For fish shell
+    source setpath.fish
 
     # On Windows (cmd)
     C:/.../mitsuba3/build/Release> setpath
