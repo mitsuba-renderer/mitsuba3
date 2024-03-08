@@ -461,7 +461,7 @@ std::pair<Value, Value> sample_rgb_spectrum(const Value &sample) {
  * cases, the PDF is returned per wavelength.
  */
 template <typename Value> Value pdf_rgb_spectrum(const Value &wavelengths) {
-    Value tmp = dr::sec(0.0072f * (wavelengths - 538.f));
+    Value tmp = dr::rcp(dr::sin(0.0072f * (wavelengths - 538.f)));
     return dr::select(wavelengths >= MI_CIE_MIN && wavelengths <= MI_CIE_MAX,
                       0.003939804229326285f * tmp * tmp, dr::zeros<Value>());
 }
