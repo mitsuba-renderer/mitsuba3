@@ -353,6 +353,9 @@ public:
                     m_stop, m_timeout, m_render_timer, m_hide_emitters)
     MI_IMPORT_TYPES(Scene, Sensor, Film, ImageBlock, Medium, Sampler)
 
+    /// Destructor
+    ~SamplingIntegrator();
+
     /**
      * \brief Sample the incident radiance along a ray.
      *
@@ -416,7 +419,6 @@ public:
     MI_DECLARE_CLASS()
 protected:
     SamplingIntegrator(const Properties &props);
-    virtual ~SamplingIntegrator();
 
     virtual void render_block(const Scene *scene,
                               const Sensor *sensor,
@@ -498,6 +500,9 @@ public:
     MI_IMPORT_TYPES(Scene, Sensor, Film, BSDF, BSDFPtr, ImageBlock, Sampler,
                      EmitterPtr)
 
+    /// Destructor
+    ~AdjointIntegrator();
+
     /**
      * \brief Sample the incident importance and splat the product of
      * importance and radiance to the film.
@@ -541,9 +546,6 @@ public:
 protected:
     /// Create an integrator
     AdjointIntegrator(const Properties &props);
-
-    /// Destructor
-    ~AdjointIntegrator();
 
 protected:
     /**
