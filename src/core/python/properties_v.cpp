@@ -5,6 +5,11 @@
 #include <mitsuba/python/python.h>
 #include <nanobind/stl/string.h>
 
+#include <nanobind/ndarray.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+
 using Caster = nb::object(*)(mitsuba::Object *);
 extern Caster cast_object;
 

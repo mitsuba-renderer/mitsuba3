@@ -10,9 +10,9 @@ def test01_basics(variant_scalar_rgb):
     assert str(bsphere1) == "BoundingSphere3f[empty]"
     assert str(bsphere2) == "BoundingSphere3f[\n  center = [0, 1, 2],\n  radius = 1\n]"
     assert bsphere1.radius == 0
-    assert (bsphere1.center == [0, 0, 0])
+    assert dr.all(bsphere1.center == [0, 0, 0])
     assert bsphere2.radius == 1
-    assert (bsphere2.center == [0, 1, 2])
+    assert dr.all(bsphere2.center == [0, 1, 2])
     assert bsphere1 != bsphere2
     assert bsphere2 == bsphere2
     assert bsphere1.empty()

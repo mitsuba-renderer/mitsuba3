@@ -3,26 +3,27 @@
 #include <mitsuba/core/frame.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/python/python.h>
-
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/list.h>
 #include <nanobind/ndarray.h>
 
 template <typename Float>
 void bind_transform3(nb::module_ &m, const char *name) {
     MI_IMPORT_CORE_TYPES()
     using ScalarType = drjit::scalar_t<Float>;
-    using NdMatrix33 = nb::ndarray<ScalarType, nb::shape<3,3>,
+    using NdMatrix = nb::ndarray<ScalarType, nb::shape<3,3>,
         nb::c_contig, nb::device::cpu>;
 
     auto trans3 = nb::class_<Transform3f>(m, name, D(Transform))
         .def(nb::init<>(), "Initialize with the identity matrix")
         .def(nb::init<const Transform3f &>(), "Copy constructor")
-        .def("__init__", [](Transform3f *t, NdMatrix33 a) {
+        .def("__init__", [](Transform3f *t, NdMatrix a) {
             auto v = a.view();
             ScalarMatrix3f m;
             for (size_t i = 0; i < 3; ++i)
                 for (size_t j = 0; j < 3; ++j)
                     m.entry(i, j) = v(i, j);
-            return new (t) Transform3f(m);
+            new (t) Transform3f(m);
         })
         .def("__init__", [](const nb::list &list) {
             size_t size = list.size();
@@ -30,8 +31,8 @@ void bind_transform3(nb::module_ &m, const char *name) {
                 throw nb::cast_error();
             ScalarMatrix3f m;
             for (size_t i = 0; i < size; ++i)
-                m[i] = nb::cast<ScalarVector3f>(list[i]);
-            return new Transform3f(transpose(m));
+                m[i] = nb::cast<ScalarVector3f>(nb::type<ScalarVector3f>()(list[i]));
+            new Transform3f(m);
         })
         .def(nb::init<Matrix3f>(), D(Transform, Transform))
         .def(nb::init<Matrix3f, Matrix3f>(), "Initialize from a matrix and its inverse transpose")
@@ -87,19 +88,19 @@ void bind_transform4(nb::module_ &m, const char *name) {
     MI_IMPORT_CORE_TYPES()
     using Ray3f = Ray<Point<Float, 3>, Spectrum>;
     using ScalarType = drjit::scalar_t<Float>;
-    using NdMatrix44 = nb::ndarray<ScalarType, nb::shape<4,4>,
+    using NdMatrix = nb::ndarray<ScalarType, nb::shape<4,4>,
         nb::c_contig, nb::device::cpu>;
 
     auto trans4 = nb::class_<Transform4f>(m, name, D(Transform))
         .def(nb::init<>(), "Initialize with the identity matrix")
         .def(nb::init<const Transform4f &>(), "Copy constructor")
-        .def("__init__",[](Transform4f* t, NdMatrix44 a) {
+        .def("__init__",[](Transform4f* t, NdMatrix& a) {
             auto v = a.view();
             ScalarMatrix4f m;
             for (size_t i = 0; i < 4; ++i)
                 for (size_t j = 0; j < 4; ++j)
                     m.entry(i, j) = v(i, j);
-            return new (t) Transform3f(m);
+            new (t) Transform4f(m);
         })
         .def("__init__", [](Transform4f *t, const nb::list &list) {
             size_t size = list.size();
@@ -107,8 +108,8 @@ void bind_transform4(nb::module_ &m, const char *name) {
                 throw nb::cast_error();
             ScalarMatrix4f m;
             for (size_t i = 0; i < size; ++i)
-                m[i] = nb::cast<ScalarVector4f>(list[i]);
-            return new (t) Transform4f(transpose(m));
+                m[i] = nb::cast<ScalarVector4f>(nb::type<ScalarVector4f>()(list[i]));
+            new (t) Transform4f(m);
         })
         .def(nb::init<Matrix4f>(), D(Transform, Transform))
         .def(nb::init<Matrix4f, Matrix4f>(), "Initialize from a matrix and its inverse transpose")

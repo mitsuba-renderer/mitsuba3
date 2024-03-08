@@ -2,6 +2,9 @@
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/python/python.h>
 
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/tuple.h>
+
 template <typename BSphere, typename Ray> auto bind_bsphere(nb::module_ &m, const char *name) {
         using Point = typename BSphere::Point;
         using Float = typename BSphere::Float;

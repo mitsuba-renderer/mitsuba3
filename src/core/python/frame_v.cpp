@@ -1,6 +1,8 @@
 #include <mitsuba/core/frame.h>
 #include <mitsuba/python/python.h>
 
+#include <nanobind/stl/pair.h>
+
 MI_PY_EXPORT(Frame) {
     MI_PY_IMPORT_TYPES()
     MI_PY_CHECK_ALIAS(Frame3f, "Frame3f") {

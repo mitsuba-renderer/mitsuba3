@@ -1,3 +1,6 @@
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/pair.h>
+
 #include <mitsuba/core/struct.h>
 #include <mitsuba/core/simd.h>
 #include <mitsuba/core/logger.h>
@@ -47,7 +50,7 @@ MI_PY_EXPORT(Struct) {
         .def("append",
             (Struct &(Struct::*)(const std::string&, Struct::Type, uint32_t, double)) &Struct::append,
             "name"_a, "type"_a, "flags"_a = Struct::Flags::Empty, "default"_a = 0.0,
-            D(Struct, append))
+            D(Struct, append), nb::rv_policy::none)
         .def("field", nb::overload_cast<const std::string &>(&Struct::field), D(Struct, field),
             nb::rv_policy::reference_internal)
         .def("__getitem__", [](Struct &s, size_t i) -> Struct::Field& {
@@ -90,11 +93,13 @@ MI_PY_EXPORT(Struct) {
         .def_method(StructConverter, source)
         .def_method(StructConverter, target)
         .def("convert", [](const StructConverter &c, nb::bytes input_) -> nb::bytes {
-            std::string input(input_.c_str());
+            std::string input(input_.c_str(), input_.size());
             size_t count = input.length() / c.source()->size();
+            size_t output_size = c.target()->size() * count;
             std::string result(c.target()->size() * count, '\0');
             if (!c.convert(count, input.data(), (void *) result.data()))
-            throw std::runtime_error("Conversion failed!");
-            return nb::bytes(result.c_str());
+                throw std::runtime_error("Conversion failed!");
+
+            return nb::bytes(result.c_str(), output_size);
         });
 }

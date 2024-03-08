@@ -2,6 +2,8 @@
 #include <mitsuba/python/python.h>
 #include <drjit/dynamic.h>
 
+#include <nanobind/stl/pair.h>
+
 MI_PY_EXPORT(quad) {
     MI_PY_IMPORT_TYPES()
     using FloatX = DynamicBuffer<Float>;

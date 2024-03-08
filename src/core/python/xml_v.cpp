@@ -9,6 +9,10 @@
 #include <mitsuba/python/python.h>
 #include <nanothread/nanothread.h>
 #include <map>
+#include <unordered_map>
+
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/vector.h>
 #include <nanobind/stl/string.h>
 
 using Caster = nb::object(*)(mitsuba::Object *);
@@ -367,27 +371,30 @@ void parse_dictionary(DictParseContext &ctx,
             continue;
         }
 
-        // Try to cast to Array3f (list, tuple, numpy.array, ...)
-        try {
-            props.set_array3f(key, nb::cast<Properties::Array3f>(value));
-            continue;
-        } catch (const nb::cast_error &) { }
-
-        // Try to cast to TensorXf
-        try {
-            TensorXf tensor = nb::cast<TensorXf>(value);
-            // To support parallel loading we have to ensure tensor has been evaluated
-            // because tracking of side effects won't persist across different ThreadStates
-            dr::eval(tensor);
-            props.set_tensor_handle(key, std::make_shared<TensorXf>(tensor));
-            continue;
-        } catch (const nb::cast_error &) { }
-
         // Try to cast entry to an object
         try {
             ref<Object> obj = nb::cast<Object*>(value);
             obj->set_id(key);
             expand_and_set_object(props, key, obj);
+            continue;
+        } catch (const nb::cast_error &) { }
+
+        // Try to cast to Array3f (list, tuple, numpy.array, ...)
+        try {
+            
+            props.set_array3f(key, nb::cast<Properties::Array3f>(
+                nb::type<Properties::Array3f>()(value)));
+            continue;
+        } catch (const nb::cast_error &) { }
+
+        // Try to cast to TensorXf
+        try {
+            TensorXf tensor = nb::cast<TensorXf>(
+                nb::type<TensorXf>()(value));
+            // To support parallel loading we have to ensure tensor has been evaluated
+            // because tracking of side effects won't persist across different ThreadStates
+            dr::eval(tensor);
+            props.set_tensor_handle(key, std::make_shared<TensorXf>(tensor));
             continue;
         } catch (const nb::cast_error &) { }
 

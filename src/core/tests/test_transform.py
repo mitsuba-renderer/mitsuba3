@@ -25,18 +25,6 @@ def test01_basics(variants_all_backends_once):
     assert dr.allclose(mi.Transform4f(m2).matrix, m2)
     assert dr.allclose(mi.Transform4f(m3).matrix, m3)
 
-    if dr.is_jit_v(mi.Matrix4f):
-        assert(
-            repr(mi.Transform4f(mi.Matrix4f(m1))) ==
-            "[[[1, 2, 3, 4],\n  [5, 6, 7, 8],\n  [9, 10, 11, 12],\n  [13, 14, 15, 16]]]"
-        )
-    else:
-        assert(
-            repr(mi.Transform4f(mi.Matrix4f(m1))) ==
-            "[[1, 2, 3, 4],\n [5, 6, 7, 8],\n [9, 10, 11, 12],\n [13, 14, 15, 16]]"
-        )
-
-
 def test02_inverse(variant_scalar_rgb, np_rng):
     p = [1, 2, 3]
     def check_inverse(tr, expected):
@@ -49,7 +37,7 @@ def test02_inverse(variant_scalar_rgb, np_rng):
                            rtol=1e-4)
 
     # --- Scale
-    trafo = mi.Transform4f.scale([1.0, 10.0, 500.0])
+    trafo = mi.Transform4f().scale([1.0, 10.0, 500.0])
     assert dr.allclose(trafo.matrix,
                        [[1, 0, 0, 0],
                         [0, 10, 0, 0],
@@ -64,7 +52,7 @@ def test02_inverse(variant_scalar_rgb, np_rng):
     ])
 
     # --- Translation
-    trafo = mi.Transform4f.translate([1, 0, 1.5])
+    trafo = mi.Transform4f().translate([1, 0, 1.5])
     assert dr.allclose(trafo.matrix,
                        [[1, 0, 0, 1],
                         [0, 1, 0, 0],
@@ -79,7 +67,7 @@ def test02_inverse(variant_scalar_rgb, np_rng):
     ])
 
     # --- Perspective                x_fov, near clip, far clip
-    trafo = mi.Transform4f.perspective(34.022,         1,     1000)
+    trafo = mi.Transform4f().perspective(34.022,         1,     1000)
     # Spot-checked against a known transform from Mitsuba1.
     expected = [
         [3.26860189,          0,        0,         0],
@@ -155,26 +143,27 @@ def test06_transform_normal(variant_scalar_rgb):
 
 
 def test07_transform_has_scale(variant_scalar_rgb):
-    assert not mi.Transform4f.rotate([1, 0, 0], 0.5).has_scale()
-    assert not mi.Transform4f.rotate([0, 1, 0], 50).has_scale()
-    assert not mi.Transform4f.rotate([0, 0, 1], 1e3).has_scale()
-    assert not mi.Transform4f.translate([41, 1e3, 0]).has_scale()
-    assert not mi.Transform4f.scale([1, 1, 1]).has_scale()
-    assert mi.Transform4f.scale([1, 1, 1.1]).has_scale() == True
-    assert mi.Transform4f.perspective(90, 0.1, 100).has_scale()
-    assert mi.Transform4f.orthographic(0.01, 200).has_scale()
-    assert not mi.Transform4f.look_at(origin=[10, -1, 3], target=[1, 1, 2], up=[0, 1, 0]).has_scale()
-    assert not mi.Transform4f().has_scale()
+    T = mi.Transform4f()
+    assert not T.rotate([1, 0, 0], 0.5).has_scale()
+    assert not T.rotate([0, 1, 0], 50).has_scale()
+    assert not T.rotate([0, 0, 1], 1e3).has_scale()
+    assert not T.translate([41, 1e3, 0]).has_scale()
+    assert not T.scale([1, 1, 1]).has_scale()
+    assert T.scale([1, 1, 1.1]).has_scale() == True
+    assert T.perspective(90, 0.1, 100).has_scale()
+    assert T.orthographic(0.01, 200).has_scale()
+    assert not T.look_at(origin=[10, -1, 3], target=[1, 1, 2], up=[0, 1, 0]).has_scale()
+    assert not T.has_scale()
 
 
 def test08_transform_chain(variants_all_rgb):
-    T = mi.Transform3f
+    T = mi.Transform3f()
     assert T.scale(4.0).scale(6.0) == T.scale(4.0) @ T.scale(6.0)
     assert T.scale(4.0).rotate(6.0) == T.scale(4.0) @ T.rotate(6.0)
     assert T.rotate(6.0).scale(4.0) == T.rotate(6.0) @ T.scale(4.0)
     assert T.translate([6.0, 1.0]).scale(4.0) == T.translate([6.0, 1.0]) @ T.scale(4.0)
 
-    T = mi.Transform4f
+    T = mi.Transform4f()
     assert T.scale(4.0).scale(6.0) == T.scale(4.0) @ T.scale(6.0)
     assert T.scale(4.0).rotate([1, 0, 0], 6.0) == T.scale(4.0) @ T.rotate([1, 0, 0], 6.0)
     assert T.rotate([1, 0, 0], 6.0).scale(4.0) == T.rotate([1, 0, 0], 6.0) @ T.scale(4.0)

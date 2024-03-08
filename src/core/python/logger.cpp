@@ -56,13 +56,13 @@ MI_PY_EXPORT(Logger) {
         .def_method(Logger, log_level)
         .def_method(Logger, set_error_level)
         .def_method(Logger, error_level)
-        .def_method(Logger, add_appender, nb::keep_alive<1, 2>())
+        .def_method(Logger, add_appender)
         .def_method(Logger, remove_appender)
         .def_method(Logger, clear_appenders)
         .def_method(Logger, appender_count)
         .def("appender", (Appender * (Logger::*)(size_t)) &Logger::appender, D(Logger, appender))
         .def("formatter", (Formatter * (Logger::*)()) &Logger::formatter, D(Logger, formatter))
-        .def_method(Logger, set_formatter, nb::keep_alive<1, 2>())
+        .def_method(Logger, set_formatter)
         .def_method(Logger, read_log);
 
     m.def("Log", &PyLog, "level"_a, "msg"_a);

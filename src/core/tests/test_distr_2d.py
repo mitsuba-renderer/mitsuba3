@@ -22,14 +22,16 @@ def test01_sample_inverse_discrete(variants_all_backends_once, warp, normalize):
     warp = getattr(mi, warp)
     distr = warp(ref, normalize=normalize)
 
+    intg0 = float(intg[0])
+
     s = 35 / 8.0 if not normalize else 1
     # Check if we can reach the corners and transition between patches
     assert allclose(distr.sample([0, 0]), [[0, 0], s * 8.0 / 35.0])
     assert allclose(distr.sample([1, 1]), [[1, 1], s * 16.0 / 35.0])
-    assert allclose(distr.sample([intg[0], 0]), [[0.5, 0], s * 16.0 / 35.0])
+    assert allclose(distr.sample([intg0, 0]), [[0.5, 0], s * 16.0 / 35.0])
     assert allclose(distr.invert([0, 0]), [[0, 0], s * 8.0 / 35.0])
     assert allclose(distr.invert([1, 1]), [[1, 1], s * 16.0 / 35.0])
-    assert allclose(distr.invert([0.5, 0]), [[intg[0], 0], s * 16.0 / 35.0])
+    assert allclose(distr.invert([0.5, 0]), [[intg0, 0], s * 16.0 / 35.0])
 
     # Check if we can sample a specific position in each patch
     sample, pdf = mi.warp.bilinear_to_square(1, 2, 9, 7, [0.4, 0.3])

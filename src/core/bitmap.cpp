@@ -340,10 +340,10 @@ void Bitmap::resample(
         channel_count() != target->channel_count())
         Throw("Bitmap::resample(): Incompatible source and target bitmaps!");
 
-    if (dr::all(temp && (pixel_format() != temp->pixel_format() ||
+    if (temp && (pixel_format() != temp->pixel_format() ||
                 (component_format() != temp->component_format()) ||
                  channel_count() != temp->channel_count() ||
-                 temp->size() != Vector2u(target->width(), height()))))
+                 dr::all(temp->size() != Vector2u(target->width(), height()))))
         Throw("Bitmap::resample(): Incompatible temporary bitmap specified!");
 
     switch (m_component_format) {

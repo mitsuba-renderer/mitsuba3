@@ -21,7 +21,7 @@ MI_PY_EXPORT(Object) {
 
     nb::class_<PluginManager>(
         m, "PluginManager", D(PluginManager))
-        .def_static_method(PluginManager, instance)
+        .def_static_method(PluginManager, instance, nb::rv_policy::reference)
         .def("get_plugin_class",
              [](PluginManager &pmgr, const std::string &name,
                 const std::string &variant) {

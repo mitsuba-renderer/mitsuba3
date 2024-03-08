@@ -24,9 +24,8 @@ MI_PY_EXPORT(MemoryMappedFile) {
         .def("filename", &MemoryMappedFile::filename, D(MemoryMappedFile, filename))
         .def("can_write", &MemoryMappedFile::can_write, D(MemoryMappedFile, can_write))
         .def_static("create_temporary", &MemoryMappedFile::create_temporary, D(MemoryMappedFile, create_temporary))
-        //.def("ret_numpy", [](MemoryMappedFile &m) {
-        //    size_t shape[1] = { m.size() };
-        //    return nb::ndarray<nb::numpy, uint8_t>((uint8_t*)m.data(), 1, shape);
-        //});
-        ;
+        .def("__array__", [](MemoryMappedFile &m) {
+            size_t shape[] = { m.size() };
+            return nb::ndarray<nb::numpy, uint8_t>((uint8_t*)m.data(), 1, shape);
+        }, nb::rv_policy::reference_internal);
 }

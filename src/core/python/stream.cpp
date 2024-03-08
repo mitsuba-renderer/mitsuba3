@@ -8,6 +8,7 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/python/python.h>
 
+#include <nanobind/stl/string.h>
 
 #define DECLARE_RW(Type, ReadableName)                                         \
     def("read_" ReadableName,                                                  \

@@ -2,6 +2,7 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/trampoline.h>
+#include <nanobind/stl/string.h>
 
 // Trampoline for derived types implemented in Python
 class PyAppender : public Appender {

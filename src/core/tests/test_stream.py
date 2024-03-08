@@ -150,9 +150,9 @@ def test04_read_back(class_, args, request, tmpdir_factory):
                       else arg(request, tmpdir_factory))
                       for arg in args])
 
-    otherEndianness = Stream.EBigEndian
+    otherEndianness = Stream.EByteOrder.EBigEndian
     if Stream.host_byte_order() == otherEndianness:
-        otherEndianness = Stream.ELittleEndian
+        otherEndianness = Stream.EByteOrder.ELittleEndian
 
     if stream.can_write():
         write_contents(stream)
@@ -196,7 +196,7 @@ def test06_dummy_stream():
     s.seek(0)
     with pytest.raises(RuntimeError):
         s.read_int64()
-    s.set_byte_order(Stream.EBigEndian)
+    s.set_byte_order(Stream.EByteOrder.EBigEndian)
     assert str(s) == """DummyStream[
   host_byte_order = little-endian,
   byte_order = big-endian,
@@ -214,7 +214,7 @@ def test07_memory_stream():
     assert s.can_read()
 
     string = 'hello world'
-    s.set_byte_order(Stream.EBigEndian)
+    s.set_byte_order(Stream.EByteOrder.EBigEndian)
     s.write_string(string)
 
     reference = int(len(string)).to_bytes(4, 'big') + bytes(string, encoding='ascii')

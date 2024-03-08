@@ -270,7 +270,7 @@ class ChiSquareTest:
         histogram = mi.Float64(dr.gather(mi.Float, self.histogram, index))
 
         # Compute chi^2 statistic and pool low-valued cells
-        chi2val, dof, pooled_in, pooled_out = mi.math.chi2(histogram, pdf, 5)
+        chi2val, dof, pooled_in, pooled_out = mi.math.chi2(histogram.numpy(), pdf.numpy(), 5)
 
         if dof < 1:
             self._log('Failure: The number of degrees of freedom is too low!')
