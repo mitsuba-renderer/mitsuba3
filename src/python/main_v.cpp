@@ -76,13 +76,13 @@ MI_PY_DECLARE(sample_tea);
 MI_PY_DECLARE(spline);
 MI_PY_DECLARE(Spectrum);
 MI_PY_DECLARE(Transform);
-//// MI_PY_DECLARE(AnimatedTransform);
+// MI_PY_DECLARE(AnimatedTransform);
 MI_PY_DECLARE(vector);
 MI_PY_DECLARE(warp);
 MI_PY_DECLARE(xml);
 MI_PY_DECLARE(quad);
-//
-//// render
+
+// render
 MI_PY_DECLARE(BSDFSample);
 MI_PY_DECLARE(BSDF);
 MI_PY_DECLARE(Emitter);
@@ -116,14 +116,21 @@ MI_PY_DECLARE(Texture);
 MI_PY_DECLARE(Volume);
 MI_PY_DECLARE(VolumeGrid);
 
-#define MODULE_NAME MI_MODULE_NAME(mitsuba, MI_VARIANT_NAME)
-
 using Caster = nb::object(*)(mitsuba::Object *);
 Caster cast_object = nullptr;
 
-NB_MODULE(MODULE_NAME, m) {
+NB_MODULE(MI_VARIANT_NAME, m) {
     // Temporarily change the module name (for pydoc)
     m.attr("__name__") = "mitsuba." DRJIT_TOSTRING(MI_VARIANT_NAME);
+
+    // FIXME: we don't really need a list of casters
+    /// Initialize the list of casters
+    nb::object mitsuba_ext = nb::module_::import_("mitsuba.mitsuba_ext");
+    cast_object = (Caster) (void *)((nb::capsule) mitsuba_ext.attr("cast_object")).data();
+
+    /// Register the variant-specific caster with the 'core_ext' module
+    auto casters = (std::vector<void *> *) ((nb::capsule)(mitsuba_ext.attr("casters"))).data();
+    casters->push_back((void *) caster);
 
     MI_PY_IMPORT_TYPES()
 
@@ -198,9 +205,9 @@ NB_MODULE(MODULE_NAME, m) {
     MI_PY_IMPORT_SUBMODULE(mueller);
     MI_PY_IMPORT(MicrofacetDistribution);
     MI_PY_IMPORT(MicroflakeDistribution);
-//#if defined(MI_ENABLE_CUDA)
+#if defined(MI_ENABLE_CUDA)
     MI_PY_IMPORT(OptixDenoiser);
-//#endif // defined(MI_ENABLE_CUDA)
+#endif // defined(MI_ENABLE_CUDA)
     MI_PY_IMPORT(PhaseFunction);
     MI_PY_IMPORT(Sampler);
     MI_PY_IMPORT(Sensor);
@@ -209,13 +216,6 @@ NB_MODULE(MODULE_NAME, m) {
     MI_PY_IMPORT(Texture);
     MI_PY_IMPORT(Volume);
     MI_PY_IMPORT(VolumeGrid);
-
-    nb::object mitsuba_ext = nb::module_::import_("mitsuba.mitsuba_ext");
-    cast_object = (Caster) (void *)((nb::capsule) mitsuba_ext.attr("cast_object")).data();
-
-    /// Register the variant-specific caster with the 'core_ext' module
-    auto casters = (std::vector<void *> *) ((nb::capsule)(mitsuba_ext.attr("casters"))).data();
-    casters->push_back((void *) caster);
 
     /* Callback function cleanup static variant-specific data structures, this
      * should be called when the interpreter is exiting */
@@ -226,9 +226,21 @@ NB_MODULE(MODULE_NAME, m) {
         Scene::static_accel_shutdown();
     }));
 
+    /* Make this a package, thus allowing statements such as:
+     * `from mitsuba.scalar_rgb.test.util import function`
+     * For that we `__path__` needs to be populated. We do it by using the
+     * `__file__` attribute of a Python file which is located in the same
+     * directory as this module */
+    nb::module_ os = nb::module_::import_("os");
+    nb::module_ cfg = nb::module_::import_("mitsuba.config");
+    nb::object cfg_path = os.attr("path").attr("realpath")(cfg.attr("__file__"));
+    nb::object mi_dir = os.attr("path").attr("dirname")(cfg_path);
+    nb::object mi_py_dir = os.attr("path").attr("join")(mi_dir, "python");
+    nb::list paths{};
+    paths.append(nb::str(mi_dir));
+    paths.append(nb::str(mi_py_dir));
+    m.attr("__path__") = paths;
+
     // Change module name back to correct value
-    m.attr("__name__") = "mitsuba." DRJIT_TOSTRING(MODULE_NAME);
+    m.attr("__name__") = "mitsuba." DRJIT_TOSTRING(MI_VARIANT_NAME);
 }
-//
-//#undef CHANGE_SUBMODULE_NAME
-//#undef CHANGE_BACK_SUBMODULE_NAME

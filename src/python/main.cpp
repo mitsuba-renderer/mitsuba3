@@ -147,7 +147,7 @@ NB_MODULE(mitsuba_ext, m) {
     MI_PY_IMPORT(Thread);
     MI_PY_IMPORT(Timer);
     MI_PY_IMPORT(util);
-//
+
     MI_PY_IMPORT(BSDFContext);
     MI_PY_IMPORT(EmitterExtras);
     MI_PY_IMPORT(RayFlags);
@@ -176,6 +176,21 @@ NB_MODULE(mitsuba_ext, m) {
             Class::static_shutdown();
             Jit::static_shutdown();
     };
+
+    /* Make this a package, thus allowing statements such as:
+     * `from mitsuba.test.util import function`
+     * For that we `__path__` needs to be populated. We do it by using the
+     * `__file__` attribute of a Python file which is located in the same
+     * directory as this module */
+    nb::module_ os = nb::module_::import_("os");
+    nb::module_ cfg = nb::module_::import_("mitsuba.config");
+    nb::object cfg_path = os.attr("path").attr("realpath")(cfg.attr("__file__"));
+    nb::object mi_dir = os.attr("path").attr("dirname")(cfg_path);
+    nb::object mi_py_dir = os.attr("path").attr("join")(mi_dir, "python");
+    nb::list paths{};
+    paths.append(nb::str(mi_dir));
+    paths.append(nb::str(mi_py_dir));
+    m.attr("__path__") = paths;
 
     // Change module name back to correct value
     m.attr("__name__") = "mitsuba_ext";

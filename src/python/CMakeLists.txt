@@ -16,7 +16,7 @@ foreach (MI_VARIANT ${MI_VARIANTS})
   list(GET MI_VARIANT 0 MI_VARIANT_NAME)
   list(GET MI_VARIANT 1 MI_VARIANT_FLOAT)
   list(GET MI_VARIANT 2 MI_VARIANT_SPECTRUM)
-  set(TARGET_NAME mitsuba_${MI_VARIANT_NAME}_ext)
+  set(TARGET_NAME ${MI_VARIANT_NAME})
 
   nanobind_add_module(${TARGET_NAME}
       NB_DOMAIN drjit
@@ -53,6 +53,11 @@ nanobind_add_module(mitsuba_ext
   ${RENDER_PY_SRC}
 )
 
+nanobind_add_module(mitsuba_alias
+  NB_DOMAIN drjit
+  alias.cpp
+)
+
 # macOS: Avoid warnings about loop unrolling being disabled with -Os
 target_compile_definitions(mitsuba_ext PRIVATE "-DDRJIT_UNROLL= ")
 
@@ -69,6 +74,16 @@ set_target_properties(mitsuba_ext
 )
 
 install(TARGETS mitsuba_ext
+  LIBRARY DESTINATION mitsuba
+)
+
+set_target_properties(mitsuba_alias
+  PROPERTIES
+  LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
+  FOLDER python
+)
+
+install(TARGETS mitsuba_alias
   LIBRARY DESTINATION mitsuba
 )
 

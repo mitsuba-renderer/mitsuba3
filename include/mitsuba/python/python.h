@@ -137,16 +137,12 @@ nb::handle type_of() {
 //template <typename Type> pybind11::handle get_type_handle() {
 //    return pybind11::detail::get_type_handle(typeid(Type), false);
 //}
-//
+
 #define MI_PY_DECLARE(Name) extern void python_export_##Name(nb::module_ &m)
 #define MI_PY_EXPORT(Name) void python_export_##Name(nb::module_ &m)
 #define MI_PY_IMPORT(Name) python_export_##Name(m)
 #define MI_PY_IMPORT_SUBMODULE(Name) python_export_##Name(Name)
 
-#define MI_MODULE_NAME_1(lib, variant) lib##_##variant##_ext
-#define MI_MODULE_NAME(lib, variant) MI_MODULE_NAME_1(lib, variant)
-
-//
 #define MI_PY_IMPORT_TYPES(...)                                                                   \
     using Float    = MI_VARIANT_FLOAT;                                                            \
     using Spectrum = MI_VARIANT_SPECTRUM;                                                         \

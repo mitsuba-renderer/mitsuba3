@@ -75,7 +75,6 @@ class ChiSquareTest:
     """
     def __init__(self, domain, sample_func, pdf_func, sample_dim=2,
                  sample_count=1000000, res=101, ires=4, seed=0):
-
         assert res > 0
         assert ires >= 2, "The 'ires' parameter must be >= 2!"
 
@@ -297,7 +296,7 @@ class ChiSquareTest:
 
         # Probability of observing a test statistic at least as
         # extreme as the one here assuming that the distributions match
-        self.p_value = 1 - mi.math.rlgamma(dof / 2, chi2val / 2)
+        self.p_value = 1 - mi.math_py.rlgamma(dof / 2, chi2val / 2)
 
         # Apply the Šidák correction term, since we'll be conducting multiple
         # independent hypothesis tests. This accounts for the fact that the
