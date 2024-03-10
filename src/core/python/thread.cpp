@@ -96,9 +96,9 @@ MI_PY_EXPORT(Thread) {
        .def_method(Thread, start)
        .def_method(Thread, is_running)
        .def_method(Thread, detach)
-       .def_method(Thread, join)
-       .def_static_method(Thread, sleep)
-       .def_static_method(Thread, wait_for_tasks);
+       .def_method(Thread, join, py::call_guard<py::gil_scoped_release>())
+       .def_static_method(Thread, sleep, py::call_guard<py::gil_scoped_release>())
+       .def_static_method(Thread, wait_for_tasks, py::call_guard<py::gil_scoped_release>());
 
     py::class_<ThreadEnvironment>(m, "ThreadEnvironment", D(ThreadEnvironment))
         .def(py::init<>());
