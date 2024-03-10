@@ -57,6 +57,10 @@ public:
         PYBIND11_OVERRIDE_PURE(Float, Texture, mean);
     }
 
+    ScalarFloat max() const override {
+        PYBIND11_OVERRIDE_PURE(ScalarFloat, Texture, max);
+    }
+
     ScalarVector2i resolution() const override {
         PYBIND11_OVERRIDE(ScalarVector2i, Texture, resolution);
     }

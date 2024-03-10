@@ -113,6 +113,10 @@ public:
         return .5f * (m_color0->mean() + m_color1->mean());
     }
 
+    ScalarFloat max() const override {
+        return dr::maximum(m_color0->max(), m_color1->max());
+    }
+
     bool is_spatially_varying() const override { return true; }
 
     std::string to_string() const override {
