@@ -33,6 +33,7 @@ if (MI_PROFILER_NVTX)
 endif()
 
 if (NOT SKBUILD)
+  set(DRJIT_PYTHON_DST_DIR "${CMAKE_CURRENT_BINARY_DIR}/../python/drjit")
   add_subdirectory(drjit)
 
   if (NOT MI_ENABLE_JIT)

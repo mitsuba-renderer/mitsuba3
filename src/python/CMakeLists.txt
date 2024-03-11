@@ -115,7 +115,7 @@ if (MSVC)
 endif()
 
 # ----------------------------------------------------------
-#   Copy & installation targets for DrJit python bindings
+#   Installation targets for DrJit python bindings
 # ----------------------------------------------------------
 
 if (NOT SKBUILD)
@@ -131,16 +131,6 @@ if (NOT SKBUILD)
       PROPERTIES
       LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/drjit)
   endif()
-
-  set(DRJIT_PYTHON_FILES
-    __init__.py ast.py config.py detail.py interop.py llvm/ad.py cuda/ad.py
-    scalar/__init__.py
-  )
-
-  foreach(file ${DRJIT_PYTHON_FILES})
-    set(IN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/drjit/${file})
-    ro_copy(${IN_FILE} python/drjit/${file})
-  endforeach(file)
 endif()
 
 # ----------------------------------------------------------
@@ -177,40 +167,6 @@ if (MSVC)
   add_custom_target(copy-targets-python ALL)
   set_target_properties(copy-targets-python PROPERTIES FOLDER python)
 endif()
-
-# ----------------------------------------------------------
-#   Generate type information stubs (drjit)
-# ----------------------------------------------------------
-
-#if (NOT SKBUILD)
-#  set(PATH_SEP ":")
-#  if(MSVC)
-#    set(PATH_SEP ";")
-#  endif()
-#  file(TO_NATIVE_PATH "${MI_BINARY_DIR}/python" DRJIT_STUBS_ENV_PYTHONPATH)
-#
-#  set(DRJIT_STUB_FILE_DEPENDENCIES ${MI_COPY_FILES})
-#  list(APPEND DRJIT_STUB_FILE_DEPENDENCIES
-#    drjit-python
-#    ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/resources/generate_stub_files.py
-#  )
-#  if (MSVC)
-#    list(APPEND DRJIT_STUB_FILE_DEPENDENCIES copy-targets-python)
-#  endif()
-#
-#  add_custom_command(
-#    OUTPUT ${MI_BINARY_DIR}/python/drjit/__init__.pyi
-#    COMMAND ${CMAKE_COMMAND} -E env
-#      "PYTHONPATH=${DRJIT_STUBS_ENV_PYTHONPATH}${PATH_SEP}$ENV{PYTHONPATH}"
-#      "${Python_EXECUTABLE}" -Xutf8 ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/resources/generate_stub_files.py
-#      ${MI_BINARY_DIR}/python/drjit
-#    DEPENDS ${DRJIT_STUB_FILE_DEPENDENCIES}
-#  )
-#  add_custom_target(drjit_stub_file_generation ALL
-#    DEPENDS ${MI_BINARY_DIR}/python/drjit/__init__.pyi
-#  )
-#  set_target_properties(drjit_stub_file_generation PROPERTIES FOLDER python)
-#endif()
 
 # ----------------------------------------------------------
 #   Generate type information stubs (mitsuba)
