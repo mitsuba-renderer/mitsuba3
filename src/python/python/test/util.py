@@ -30,7 +30,7 @@ def fresolver_append_path(func):
     execution has finished.
     """
 
-    import mitsuba.scalar_rgb as mi
+    import mitsuba as mi
 
     par = os.path.dirname
 
