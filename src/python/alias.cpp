@@ -22,18 +22,12 @@
 
 namespace nb = nanobind;
 
-/// Python module for `mitsuba_ext`
-static nb::object mitsuba_ext{};
-/// Python module for `mitsuba.python`
-static nb::object mitsuba_python{};
 /// Mapping from variant name to module
 static nb::dict variant_modules{};
 /// Current variant (string)
 static nb::object curr_variant = nb::none();
-/// Current variant (module)
-static nb::object curr_variant_module = nb::none();
-/// Cache for `__getattr__`, its keys are tuples: (variant_name, key)
-static nb::dict cache{};
+/// Additional reference to this module's `__dict__` attribute
+static nb::dict mi_dict{};
 
 /// Return the Python module associated with a given variant name
 static nb::object variant_module(nb::handle variant) {
@@ -70,50 +64,19 @@ static void set_variant(nb::args args) {
         );
     }
 
-    curr_variant = new_variant;
-    curr_variant_module = variant_module(curr_variant);
+    if (!curr_variant.equal(new_variant)) {
+        curr_variant = new_variant;
+        nb::object curr_variant_module = variant_module(curr_variant);
+
+        nb::dict variant_dict = curr_variant_module.attr("__dict__");
+        for (const auto &k : variant_dict.keys())
+            if (!nb::bool_(k.attr("startswith")("__")) &&
+                !nb::bool_(k.attr("endswith")("__")))
+                mi_dict[k] = variant_dict[k];
+    }
 
     // FIXME: Reload python integrators if we're setting a JIT enabled variant
 };
-
-/// Main aliasing mechanism to fetch attributes from `mitsuba`
-static nb::object get_attr(nb::handle key) {
-    // Lookup cache
-    nb::tuple cache_key = nb::make_tuple(curr_variant, key);
-
-    nb::object result = nb::borrow(PyDict_GetItem(cache.ptr(), key.ptr()));
-    if (result)
-        return result;
-
-    #define MI_PY_GET_ATTR(obj, key)                                           \
-    {                                                                          \
-        result = nb::steal(PyObject_GetAttr(obj.ptr(), key.ptr()));            \
-        if (result) {                                                          \
-            cache[cache_key] = result;                                         \
-            return result;                                                     \
-        }                                                                      \
-        PyErr_Clear();                                                         \
-    }
-
-    // Accessing variant-specifc C++ code
-    if (curr_variant)
-        MI_PY_GET_ATTR(curr_variant_module, key);
-
-    // Accessing non-variant C++ code
-    MI_PY_GET_ATTR(mitsuba_ext, key);
-
-    // Accessing Python code ("mi.python.foo" should be equivalent to "mi.foo")
-    MI_PY_GET_ATTR(mitsuba_python, key);
-
-    #undef MI_PY_GET_ATTR
-
-    // Explicitly accessing a variant (i.e `mi.scalar_rgb.something`)
-    if (variant_modules.contains(key))
-        return variant_module(key);
-
-    throw nb::attribute_error(
-        nb::str("module 'mitsuba' has no attribute '{}'").format(key).c_str());
-}
 
 NB_MODULE(mitsuba_alias, m) {
     // Temporarily change the module name (for pydoc)
@@ -142,28 +105,31 @@ NB_MODULE(mitsuba_alias, m) {
         // set of variant names
         variant_modules[all_variant_names[i]] = nb::none();
 
-    m.def("variant", []() {
-        return curr_variant ? curr_variant : nb::none();
-    });
+    m.def("variant", []() { return curr_variant ? curr_variant : nb::none(); });
     m.def("variants", []() { return variant_modules.keys(); });
     m.def("set_variant", set_variant);
-    m.def("__getattr__", [](nb::handle key) { return get_attr(key); });
 
-    // Load non-variant-specific bindings
-    mitsuba_ext = nb::steal(nb::module_::import_("mitsuba.mitsuba_ext"));
-    // Load additional python definitions
-    mitsuba_python = nb::steal(nb::module_::import_("mitsuba.python"));
+    /// Fill `__dict__` with all objects in `mitsuba_ext` and `mitsuba.python`
+    mi_dict = nb::borrow<nb::dict>(m.attr("__dict__"));
+    nb::object mi_ext = nb::steal(nb::module_::import_("mitsuba.mitsuba_ext"));
+    nb::object mi_python = nb::steal(nb::module_::import_("mitsuba.python"));
+    nb::dict mitsuba_ext_dict = mi_ext.attr("__dict__");
+    for (const auto &k : mitsuba_ext_dict.keys())
+        if (!nb::bool_(k.attr("startswith")("__")) &&
+            !nb::bool_(k.attr("endswith")("__")))
+            mi_dict[k] = mitsuba_ext_dict[k];
+    nb::dict mitsuba_python_dict = mi_python.attr("__dict__");
+    for (const auto &k : mitsuba_python_dict.keys())
+        if (!nb::bool_(k.attr("startswith")("__")) &&
+            !nb::bool_(k.attr("endswith")("__")))
+            mi_dict[k] = mitsuba_python_dict[k];
 
-    /* Cleanup all static variables, this is called when the interpreter is
-     * exiting */
+    /// Cleanup static variables, this is called when the interpreter is exiting
     auto atexit = nb::module_::import_("atexit");
     atexit.attr("register")(nb::cpp_function([]() {
-        mitsuba_ext.reset();
-        mitsuba_python.reset();
         curr_variant.reset();
-        curr_variant_module.reset();
         variant_modules.reset();
-        cache.reset();
+        mi_dict.reset();
     }));
 
     // Change module name back to correct value
