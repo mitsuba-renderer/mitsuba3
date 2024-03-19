@@ -132,4 +132,4 @@ def test_traverse(variant_scalar_rgb):
     mei = mi.MediumInteraction3f()
     mei.wi = np.array([0, 0, -1])
     wo = [0, 0, 1]
-    assert dr.allclose(phase.eval_pdf(ctx, mei, wo)[0], dr.inv_two_pi * 1.5 / ref_integral)
+    assert dr.allclose(phase.eval_pdf(ctx, mei, wo)[0], dr.inv_two_pi * 1.5 / float(ref_integral))

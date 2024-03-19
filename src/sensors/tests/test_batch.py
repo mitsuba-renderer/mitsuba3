@@ -15,7 +15,7 @@ def create_perspective(o, d, fov=34, fov_axis="x", s_open=1.5, s_close=5, near_c
         "fov_axis": fov_axis,
         "shutter_open": s_open,
         "shutter_close": s_close,
-        "to_world": mi.ScalarTransform4f.look_at(
+        "to_world": mi.ScalarTransform4f().look_at(
             origin=o,
             target=t,
             up=[0, 1, 0]

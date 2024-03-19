@@ -496,6 +496,16 @@ def render(scene: mi.Scene,
         raise Exception('The primal and differential seed should be different '
                         'to ensure unbiased gradient computation!')
 
+    if 'scalar' in mi.variant():
+        return integrator.render(
+                scene=scene,
+                sensor=sensor,
+                seed=seed,
+                spp=spp,
+                develop=True,
+                evaluate=False
+            )
+
     return dr.custom(_RenderOp, scene, sensor, params, integrator,
                      (seed, seed_grad), (spp, spp_grad))
 
