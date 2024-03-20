@@ -2,7 +2,7 @@ import pytest
 import drjit as dr
 import mitsuba as mi
 
-from mitsuba.scalar_rgb.test.util import find_resource
+from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 def test01_construct(variants_all):
     # Single AOV
@@ -36,8 +36,10 @@ def test01_construct(variants_all):
             }
         })
 
+
+@fresolver_append_path
 def test02_radiance_consistent(variants_all_rgb):
-    scene = mi.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'))
+    scene = mi.load_file('resources/data/scenes/cbox/cbox.xml', res=32)
 
     path_integrator = mi.load_dict({
         'type': 'path',
@@ -50,15 +52,17 @@ def test02_radiance_consistent(variants_all_rgb):
         'my_image': path_integrator
     })
 
-    spp = 16
+    spp = 1
     path_image = path_integrator.render(scene, seed=0, spp=spp)
     aovs_image = aov_integrator.render(scene, seed=0, spp=spp)
 
     # Make sure radiance is consistent
     assert(dr.allclose(path_image, aovs_image[:,:,:3]))
 
+
+@fresolver_append_path
 def test03_supports_multiple_inner_integrators(variants_all_rgb):
-    scene = mi.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'))
+    scene = mi.load_file('resources/data/scenes/cbox/cbox.xml', res=32)
 
     path_integrator = mi.load_dict({
         'type': 'path',
@@ -72,14 +76,16 @@ def test03_supports_multiple_inner_integrators(variants_all_rgb):
         'my_image2' : path_integrator
     })
 
-    spp = 16
+    # sampler is shared between integrators, use a higher spp to reduce noise
+    # difference between both rendered images
+    spp = 32
     aovs_image = aov_integrator.render(scene, seed=0, spp=spp)
 
     # Make sure radiance is consistent between two inner integrators
     assert(dr.allclose(aovs_image[:,:,:3], aovs_image[:,:, 3:6]))
 
-def test04_check_aov_correct(variants_all_rgb):
 
+def test04_check_aov_correct(variants_all_rgb):
     albedo = 0.4
     camera_offset = 1
     plane_offset = -1
@@ -93,7 +99,7 @@ def test04_check_aov_correct(variants_all_rgb):
                 'value': albedo
             }
         },
-        'to_world' : mi.ScalarTransform4f.scale([10.0, 10.0, 1.0]).translate([0,0,plane_offset])
+        'to_world' : mi.ScalarTransform4f().scale([10.0, 10.0, 1.0]).translate([0,0,plane_offset])
     }
 
     path_integrator = mi.load_dict({
@@ -111,7 +117,7 @@ def test04_check_aov_correct(variants_all_rgb):
         'type': 'scene',
         'sensor': {
             'type': 'orthographic',
-            'to_world': mi.ScalarTransform4f.look_at(
+            'to_world': mi.ScalarTransform4f().look_at(
                 origin=(0, 0, camera_offset),
                 target=(0, 0, plane_offset),
                 up=(0, 1, 0),
@@ -149,9 +155,10 @@ def test04_check_aov_correct(variants_all_rgb):
     assert(dr.allclose(image[:,:, -1:].array, [plane_offset] * image_dim))
 
 
+@fresolver_append_path
 def test05_check_aov_film(variants_all_rgb):
     import numpy as np
-    scene = mi.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'))
+    scene = mi.load_file('resources/data/scenes/cbox/cbox.xml', res=512)
 
     path_integrator = mi.load_dict({
         'type': 'path',
