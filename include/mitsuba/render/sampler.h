@@ -130,8 +130,9 @@ public:
     /// dr::schedule() variables that represent the internal sampler state
     virtual void schedule_state();
 
+    /// Traversal callback mechanism for symbolic loops
     virtual void traverse_1_cb_ro(void *payload, void (*fn)(void *, uint64_t));
-
+    /// Traversal callback mechanism for symbolic loops
     virtual void traverse_1_cb_rw(void *payload, uint64_t (*fn)(void *, uint64_t));
 
     MI_DECLARE_CLASS()

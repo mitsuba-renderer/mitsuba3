@@ -129,27 +129,48 @@ public:
         /* Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
            generates wavefront or megakernel renderer based on configuration).
            Register everything that changes as part of the loop here */
-        using LoopState = SampleLoopState<>;
+        struct LoopState {
+            Mask active;
+            UInt32 depth;
+            Ray3f ray;
+            Spectrum throughput;
+            Spectrum result;
+            SurfaceInteraction3f si;
+            MediumInteraction3f mei;
+            MediumPtr medium;
+            Float eta;
+            Interaction3f last_scatter_event;
+            Float last_scatter_direction_pdf;
+            Mask needs_intersection;
+            Mask specular_chain;
+            Mask valid_ray;
+            Sampler* sampler;
 
-        LoopState ls{};
-        ls.active = active;
-        ls.depth = depth;
-        ls.ray = ray;
-        ls.throughput = throughput;
-        ls.result = result;
-        ls.si = si;
-        ls.mei = mei;
-        ls.medium = medium;
-        ls.eta = eta;
-        ls.last_scatter_event = last_scatter_event;
-        ls.last_scatter_direction_pdf = last_scatter_direction_pdf;
-        ls.needs_intersection = needs_intersection;
-        ls.specular_chain = specular_chain;
-        ls.valid_ray = valid_ray;
+            DRJIT_STRUCT(LoopState, active, depth, ray, throughput, result, \
+                si, mei, medium, eta, last_scatter_event, \
+                last_scatter_direction_pdf, needs_intersection, \
+                specular_chain, valid_ray, sampler)
+        } ls = {
+            active,
+            depth,
+            ray,
+            throughput,
+            result,
+            si,
+            mei,
+            medium,
+            eta,
+            last_scatter_event,
+            last_scatter_direction_pdf,
+            needs_intersection,
+            specular_chain,
+            valid_ray,
+            sampler
+        };
 
-        std::tie(ls) = dr::while_loop(std::make_tuple(ls),
+        dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),
             [](const LoopState& ls) { return ls.active; },
-            [this, scene, channel, sampler](LoopState& ls) {
+            [this, scene, channel](LoopState& ls) {
 
             Mask& active = ls.active;
             UInt32& depth = ls.depth;
@@ -165,6 +186,7 @@ public:
             Mask& needs_intersection = ls.needs_intersection;
             Mask& specular_chain = ls.specular_chain;
             Mask& valid_ray = ls.valid_ray;
+            Sampler* sampler = ls.sampler;
 
             // ----------------- Handle termination of paths ------------------
             // Russian roulette: try to keep path weights equal to one, while accounting for the
@@ -383,23 +405,37 @@ public:
         Float total_dist = 0.f;
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         Mask needs_intersection = true;
-
         DirectionSample3f dir_sample = ds;
 
-        using LoopState = SampleEmitterLoopState<>;
-        LoopState ls{};
-        ls.active = active;
-        ls.ray = ray;
-        ls.total_dist = total_dist;
-        ls.needs_intersection = needs_intersection;
-        ls.medium = medium;
-        ls.si = si;
-        ls.transmittance = transmittance;
+        struct LoopState {
+            Mask active;
+            Ray3f ray;
+            Float total_dist;
+            Mask needs_intersection;
+            MediumPtr medium;
+            SurfaceInteraction3f si;
+            Spectrum transmittance;
+            DirectionSample3f dir_sample;
+            Sampler* sampler;
 
-        std::tie(ls) = dr::while_loop(std::make_tuple(ls),
+            DRJIT_STRUCT(LoopState, active, ray, total_dist, \
+                needs_intersection, medium, si, transmittance, \
+                dir_sample, sampler)
+        } ls = {
+            active,
+            ray,
+            total_dist,
+            needs_intersection,
+            medium,
+            si,
+            transmittance,
+            dir_sample,
+            sampler
+        };
+
+        dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),
             [](const LoopState& ls) { return dr::detach(ls.active); },
-            [this, scene, sampler, channel, dir_sample, 
-                max_dist](LoopState& ls) {
+            [this, scene, channel, max_dist](LoopState& ls) {
 
             Mask& active = ls.active;
             Ray3f& ray = ls.ray;
@@ -408,6 +444,8 @@ public:
             MediumPtr& medium = ls.medium;
             SurfaceInteraction3f& si = ls.si;
             Spectrum& transmittance = ls.transmittance;
+            DirectionSample3f& dir_sample = ls.dir_sample;
+            Sampler* sampler = ls.sampler;
 
             Float remaining_dist = max_dist - total_dist;
             ray.maxt = remaining_dist;
@@ -516,46 +554,6 @@ public:
     };
 
     MI_DECLARE_CLASS()
-private:
-    template <typename = void>
-    struct SampleLoopState {
-
-        Mask active;
-        UInt32 depth;
-        Ray3f ray;
-        Spectrum throughput;
-        Spectrum result;
-        SurfaceInteraction3f si;
-        MediumInteraction3f mei;
-        MediumPtr medium;
-        Float eta;
-        Interaction3f last_scatter_event;
-        Float last_scatter_direction_pdf;
-        Mask needs_intersection;
-        Mask specular_chain;
-        Mask valid_ray;
-
-        DRJIT_STRUCT(SampleLoopState, active, depth, ray, throughput, result, \
-            si, mei, medium, eta, last_scatter_event, \
-            last_scatter_direction_pdf, needs_intersection, \
-            specular_chain, valid_ray)
-    };
-
-    template <typename = void>
-    struct SampleEmitterLoopState {
-
-        Mask active;
-        Ray3f ray;
-        Float total_dist;
-        Mask needs_intersection;
-        MediumPtr medium;
-        SurfaceInteraction3f si;
-        Spectrum transmittance;
-
-        DRJIT_STRUCT(SampleEmitterLoopState, active, ray, total_dist, \
-            needs_intersection, medium, si, transmittance)
-    };
-
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(VolumetricPathIntegrator, MonteCarloIntegrator);

@@ -124,47 +124,48 @@ public:
            wavefront-style renderer in JIT variants. This can be controlled by
            passing the '-W' command line flag to the mitsuba binary or
            enabling/disabling the JitFlag.LoopRecord bit in Dr.Jit.
+        */
+        struct LoopState {
+            Ray3f ray;
+            Spectrum throughput;
+            Spectrum result;
+            Float eta;
+            UInt32 depth;
+            Mask valid_ray;
+            Interaction3f prev_si;
+            Float prev_bsdf_pdf;
+            Bool prev_bsdf_delta;
+            Bool active;
+            Sampler* sampler;
 
-           The first argument registers all variables that encode
-           the loop state variables. This is crucial: omitting a variable may
-           lead to undefined behavior. */
-        using LoopState = SampleLoopState<>;
+            DRJIT_STRUCT(LoopState, ray, throughput, result, eta, depth, \
+                valid_ray, prev_si, prev_bsdf_pdf, prev_bsdf_delta,
+                active, sampler)
+        } ls = {
+            ray,
+            throughput,
+            result,
+            eta,
+            depth,
+            valid_ray,
+            prev_si,
+            prev_bsdf_pdf,
+            prev_bsdf_delta,
+            active,
+            sampler
+        };
 
-        LoopState ls{};
-        ls.ray = ray;
-        ls.throughput = throughput;
-        ls.result = result;
-        ls.eta = eta;
-        ls.depth = depth;
-        ls.valid_ray = valid_ray;
-        ls.prev_si = prev_si;
-        ls.prev_bsdf_pdf = prev_bsdf_pdf;
-        ls.prev_bsdf_delta = prev_bsdf_delta;
-        ls.active = active;
-        ls.sampler = sampler;
-
-        std::tie(ls) = dr::while_loop(std::make_tuple(ls),
-
+        dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),
             [](const LoopState& ls) { return ls.active; },
             [this, scene, bsdf_ctx](LoopState& ls) {
 
             /* dr::while_loop implicitly masks all code in the loop using the
                'active' flag, so there is no need to pass it to every function */
-            Ray3f& ray = ls.ray;
-            Spectrum& throughput = ls.throughput;
-            Spectrum& result = ls.result;
-            Float& eta = ls.eta;
-            UInt32& depth = ls.depth;
-            Mask& valid_ray = ls.valid_ray;
-            Interaction3f& prev_si = ls.prev_si;
-            Float& prev_bsdf_pdf = ls.prev_bsdf_pdf;
-            Bool& prev_bsdf_delta = ls.prev_bsdf_delta;
-            Bool& active = ls.active;
 
             SurfaceInteraction3f si =
-                scene->ray_intersect(ray,
+                scene->ray_intersect(ls.ray,
                                      /* ray_flags = */ +RayFlags::All,
-                                     /* coherent = */ depth == 0u);
+                                     /* coherent = */ ls.depth == 0u);
 
             // ---------------------- Direct emission ----------------------
 
@@ -174,32 +175,32 @@ public:
                dr::any_or<..>() returns the template argument (true) which means
                that the 'if' statement is always conservatively taken. */
             if (dr::any_or<true>(si.emitter(scene) != nullptr)) {
-                DirectionSample3f ds(scene, si, prev_si);
+                DirectionSample3f ds(scene, si, ls.prev_si);
                 Float em_pdf = 0.f;
 
-                if (dr::any_or<true>(!prev_bsdf_delta))
-                    em_pdf = scene->pdf_emitter_direction(prev_si, ds,
-                                                          !prev_bsdf_delta);
+                if (dr::any_or<true>(!ls.prev_bsdf_delta))
+                    em_pdf = scene->pdf_emitter_direction(ls.prev_si, ds,
+                                                          !ls.prev_bsdf_delta);
 
                 // Compute MIS weight for emitter sample from previous bounce
-                Float mis_bsdf = mis_weight(prev_bsdf_pdf, em_pdf);
+                Float mis_bsdf = mis_weight(ls.prev_bsdf_pdf, em_pdf);
 
                 // Accumulate, being careful with polarization (see spec_fma)
-                result = spec_fma(
-                    throughput,
-                    ds.emitter->eval(si, prev_bsdf_pdf > 0.f) * mis_bsdf,
-                    result);
+                ls.result = spec_fma(
+                    ls.throughput,
+                    ds.emitter->eval(si, ls.prev_bsdf_pdf > 0.f) * mis_bsdf,
+                    ls.result);
             }
 
             // Continue tracing the path at this point?
-            Bool active_next = (depth + 1 < m_max_depth) && si.is_valid();
+            Bool active_next = (ls.depth + 1 < m_max_depth) && si.is_valid();
 
             if (dr::none_or<false>(active_next)) {
-                active = active_next;
+                ls.active = active_next;
                 return; // early exit for scalar mode
             }
 
-            BSDFPtr bsdf = si.bsdf(ray);
+            BSDFPtr bsdf = si.bsdf(ls.ray);
 
             // ---------------------- Emitter sampling ----------------------
 
@@ -245,58 +246,58 @@ public:
                     dr::select(ds.delta, 1.f, mis_weight(ds.pdf, bsdf_pdf));
 
                 // Accumulate, being careful with polarization (see spec_fma)
-                result[active_em] = spec_fma(
-                    throughput, bsdf_val * em_weight * mis_em, result);
+                ls.result[active_em] = spec_fma(
+                    ls.throughput, bsdf_val * em_weight * mis_em, ls.result);
             }
 
             // ---------------------- BSDF sampling ----------------------
 
             bsdf_weight = si.to_world_mueller(bsdf_weight, -bsdf_sample.wo, si.wi);
 
-            ray = si.spawn_ray(si.to_world(bsdf_sample.wo));
+            ls.ray = si.spawn_ray(si.to_world(bsdf_sample.wo));
 
             /* When the path tracer is differentiated, we must be careful that
                the generated Monte Carlo samples are detached (i.e. don't track
                derivatives) to avoid bias resulting from the combination of moving
                samples and discontinuous visibility. We need to re-evaluate the
                BSDF differentiably with the detached sample in that case. */
-            if (dr::grad_enabled(ray)) {
-                ray = dr::detach<true>(ray);
+            if (dr::grad_enabled(ls.ray)) {
+                ls.ray = dr::detach<true>(ls.ray);
 
                 // Recompute 'wo' to propagate derivatives to cosine term
-                Vector3f wo_2 = si.to_local(ray.d);
-                auto [bsdf_val_2, bsdf_pdf_2] = bsdf->eval_pdf(bsdf_ctx, si, wo_2, active);
+                Vector3f wo_2 = si.to_local(ls.ray.d);
+                auto [bsdf_val_2, bsdf_pdf_2] = bsdf->eval_pdf(bsdf_ctx, si, wo_2, ls.active);
                 bsdf_weight[bsdf_pdf_2 > 0.f] = bsdf_val_2 / dr::detach(bsdf_pdf_2);
             }
 
             // ------ Update loop variables based on current interaction ------
 
-            throughput *= bsdf_weight;
-            eta *= bsdf_sample.eta;
-            valid_ray |= active && si.is_valid() &&
+            ls.throughput *= bsdf_weight;
+            ls.eta *= bsdf_sample.eta;
+            ls.valid_ray |= ls.active && si.is_valid() &&
                          !has_flag(bsdf_sample.sampled_type, BSDFFlags::Null);
 
             // Information about the current vertex needed by the next iteration
-            prev_si = si;
-            prev_bsdf_pdf = bsdf_sample.pdf;
-            prev_bsdf_delta = has_flag(bsdf_sample.sampled_type, BSDFFlags::Delta);
+            ls.prev_si = si;
+            ls.prev_bsdf_pdf = bsdf_sample.pdf;
+            ls.prev_bsdf_delta = has_flag(bsdf_sample.sampled_type, BSDFFlags::Delta);
 
             // -------------------- Stopping criterion ---------------------
 
-            dr::masked(depth, si.is_valid()) += 1;
+            dr::masked(ls.depth, si.is_valid()) += 1;
 
-            Float throughput_max = dr::max(unpolarized_spectrum(throughput));
+            Float throughput_max = dr::max(unpolarized_spectrum(ls.throughput));
 
-            Float rr_prob = dr::minimum(throughput_max * dr::square(eta), .95f);
-            Mask rr_active = depth >= m_rr_depth,
+            Float rr_prob = dr::minimum(throughput_max * dr::square(ls.eta), .95f);
+            Mask rr_active = ls.depth >= m_rr_depth,
                  rr_continue = ls.sampler->next_1d() < rr_prob;
 
             /* Differentiable variants of the renderer require the the russian
                roulette sampling weight to be detached to avoid bias. This is a
                no-op in non-differentiable variants. */
-            throughput[rr_active] *= dr::rcp(dr::detach(rr_prob));
+            ls.throughput[rr_active] *= dr::rcp(dr::detach(rr_prob));
 
-            active = active_next && (!rr_active || rr_continue) &&
+            ls.active = active_next && (!rr_active || rr_continue) &&
                      (throughput_max != 0.f);
         });
 
@@ -337,25 +338,6 @@ public:
     }
 
     MI_DECLARE_CLASS()
-
-private:
-    template <typename = void>
-    struct SampleLoopState {
-        Ray3f ray;
-        Spectrum throughput;
-        Spectrum result;
-        Float eta;
-        UInt32 depth;
-        Mask valid_ray;
-        Interaction3f prev_si;
-        Float prev_bsdf_pdf;
-        Bool prev_bsdf_delta;
-        Sampler *sampler;
-        Bool active;
-
-        DRJIT_STRUCT(SampleLoopState, ray, throughput, result, eta, depth, \
-            valid_ray, prev_si, prev_bsdf_pdf, prev_bsdf_delta, sampler, active)
-    };
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(PathIntegrator, MonteCarloIntegrator)

@@ -151,6 +151,14 @@ public:
         dr::schedule(m_scramble_seed);
     }
 
+    void traverse_1_cb_ro(void *payload, void (*fn)(void *, uint64_t)) const override {
+        dr::traverse_1_fn_ro(m_scramble_seed, payload, fn);
+    }
+
+    void traverse_1_cb_rw(void *payload, uint64_t (*fn)(void *, uint64_t)) override {
+        dr::traverse_1_fn_rw(m_scramble_seed, payload, fn);
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "LowDiscrepancySampler [" << std::endl

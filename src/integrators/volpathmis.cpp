@@ -163,32 +163,53 @@ public:
         Mask needs_intersection = true, last_event_was_null = false;
         Interaction3f last_scatter_event = dr::zeros<Interaction3f>();
 
-        using LoopState = SampleLoopState<>;
+        struct LoopState {
+            Mask active;
+            UInt32 depth;
+            Ray3f ray;
+            WeightMatrix p_over_f;
+            WeightMatrix p_over_f_nee;
+            Spectrum result;
+            SurfaceInteraction3f si;
+            MediumInteraction3f mei;
+            MediumPtr medium;
+            Float eta;
+            Interaction3f last_scatter_event;
+            Mask last_event_was_null;
+            Mask needs_intersection;
+            Mask specular_chain;
+            Mask valid_ray;
+            Sampler* sampler;
 
-        LoopState ls{};
-        ls.active = active;
-        ls.depth = depth;
-        ls.ray = ray;
-        ls.p_over_f = p_over_f;
-        ls.p_over_f_nee = p_over_f_nee;
-        ls.result = result;
-        ls.si = si;
-        ls.mei = mei;
-        ls.medium = medium;
-        ls.eta = eta;
-        ls.last_scatter_event = last_scatter_event;
-        ls.last_event_was_null = last_event_was_null;
-        ls.needs_intersection = needs_intersection;
-        ls.specular_chain = specular_chain;
-        ls.valid_ray = valid_ray;
-
+            DRJIT_STRUCT(LoopState, active, depth, ray, p_over_f, \
+                p_over_f_nee, result, si, mei, medium, eta, last_scatter_event, \
+                last_event_was_null, needs_intersection, specular_chain, \
+                valid_ray, sampler)
+        } ls = {
+            active,
+            depth,
+            ray,
+            p_over_f,
+            p_over_f_nee,
+            result,
+            si,
+            mei,
+            medium,
+            eta,
+            last_scatter_event,
+            last_event_was_null,
+            needs_intersection,
+            specular_chain,
+            valid_ray,
+            sampler
+        };
 
         /* Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
            generates wavefront or megakernel renderer based on configuration).
            Register everything that changes as part of the loop here */
-        std::tie(ls) = dr::while_loop(std::make_tuple(ls),
+        dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),
             [](const LoopState& ls) { return ls.active; },
-            [this, sampler, scene, channel](LoopState& ls) {
+            [this, scene, channel](LoopState& ls) {
 
             Mask& active = ls.active;
             UInt32& depth = ls.depth;
@@ -205,6 +226,7 @@ public:
             Mask& needs_intersection = ls.needs_intersection;
             Mask& specular_chain = ls.specular_chain;
             Mask& valid_ray = ls.valid_ray;
+            Sampler* sampler = ls.sampler;
 
             // ----------------- Handle termination of paths ------------------
 
@@ -439,21 +461,37 @@ public:
         Mask needs_intersection = true;
         DirectionSample3f dir_sample = ds;
 
-        using LoopState = SampleEmitterLoopState<>;
-        LoopState ls{};
-        ls.active = active;
-        ls.ray = ray;
-        ls.total_dist = total_dist;
-        ls.needs_intersection = needs_intersection;
-        ls.medium = medium;
-        ls.si = si;
-        ls.p_over_f_nee = p_over_f_nee;
-        ls.p_over_f_uni = p_over_f_uni;
+        struct LoopState {
+            Mask active;
+            Ray3f ray;
+            Float total_dist;
+            Mask needs_intersection;
+            MediumPtr medium;
+            SurfaceInteraction3f si;
+            WeightMatrix p_over_f_nee;
+            WeightMatrix p_over_f_uni;
+            DirectionSample3f dir_sample;
+            Sampler* sampler;
 
-        std::tie(ls) = dr::while_loop(std::make_tuple(ls),
+            DRJIT_STRUCT(LoopState, active, ray, total_dist, \
+                needs_intersection, medium, si, p_over_f_nee, p_over_f_uni, \
+                dir_sample, sampler)
+        } ls = {
+            active,
+            ray,
+            total_dist,
+            needs_intersection,
+            medium,
+            si,
+            p_over_f_nee,
+            p_over_f_uni,
+            dir_sample,
+            sampler
+        };
+
+        dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),
             [](const LoopState& ls) { return dr::detach(ls.active); },
-            [this, sampler, scene, channel, max_dist, 
-            dir_sample](LoopState& ls) {
+            [this, scene, channel, max_dist](LoopState& ls) {
 
             Mask& active = ls.active;
             Ray3f& ray = ls.ray;
@@ -463,6 +501,8 @@ public:
             SurfaceInteraction3f& si = ls.si;
             WeightMatrix& p_over_f_nee = ls.p_over_f_nee;
             WeightMatrix& p_over_f_uni = ls.p_over_f_uni;
+            DirectionSample3f& dir_sample = ls.dir_sample;
+            Sampler* sampler = ls.sampler;
 
             Float remaining_dist = max_dist - total_dist;
             ray.maxt = remaining_dist;
@@ -623,47 +663,6 @@ public:
     }
 
     MI_DECLARE_CLASS()
-
-private:
-    template <typename = void>
-    struct SampleLoopState {
-
-        Mask active;
-        UInt32 depth;
-        Ray3f ray;
-        WeightMatrix p_over_f;
-        WeightMatrix p_over_f_nee;
-        Spectrum result;
-        SurfaceInteraction3f si;
-        MediumInteraction3f mei;
-        MediumPtr medium;
-        Float eta;
-        Interaction3f last_scatter_event;
-        Mask last_event_was_null;
-        Mask needs_intersection;
-        Mask specular_chain;
-        Mask valid_ray;
-
-        DRJIT_STRUCT(SampleLoopState, active, depth, ray, p_over_f, \
-            p_over_f_nee, result, si, mei, medium, eta, last_scatter_event, \
-            last_event_was_null, needs_intersection, specular_chain, valid_ray)
-    };
-
-    template <typename = void>
-    struct SampleEmitterLoopState {
-
-        Mask active;
-        Ray3f ray;
-        Float total_dist;
-        Mask needs_intersection;
-        MediumPtr medium;
-        SurfaceInteraction3f si;
-        WeightMatrix p_over_f_nee;
-        WeightMatrix p_over_f_uni;
-
-        DRJIT_STRUCT(SampleEmitterLoopState, active, ray, total_dist, \
-            needs_intersection, medium, si, p_over_f_nee, p_over_f_uni)
-    };
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(VolumetricMisPathIntegrator, MonteCarloIntegrator);
