@@ -1,7 +1,6 @@
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/profiler.h>
-
 #include <drjit/array_traverse.h>
 
 NAMESPACE_BEGIN(mitsuba)
