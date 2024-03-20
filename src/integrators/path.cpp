@@ -141,12 +141,12 @@ public:
         ls.prev_bsdf_pdf = prev_bsdf_pdf;
         ls.prev_bsdf_delta = prev_bsdf_delta;
         ls.active = active;
+        ls.sampler = sampler;
 
         std::tie(ls) = dr::while_loop(std::make_tuple(ls),
 
             [](const LoopState& ls) { return ls.active; },
-            // TODO: Correct handling of sampler state
-            [this, sampler, scene, bsdf_ctx](LoopState& ls) {
+            [this, scene, bsdf_ctx](LoopState& ls) {
 
             /* dr::while_loop implicitly masks all code in the loop using the
                'active' flag, so there is no need to pass it to every function */
@@ -213,7 +213,7 @@ public:
             if (dr::any_or<true>(active_em)) {
                 // Sample the emitter
                 std::tie(ds, em_weight) = scene->sample_emitter_direction(
-                    si, sampler->next_2d(), true, active_em);
+                    si, ls.sampler->next_2d(), true, active_em);
                 active_em &= (ds.pdf != 0.f);
 
                 /* Given the detached emitter sample, recompute its contribution
@@ -229,8 +229,8 @@ public:
 
             // ------ Evaluate BSDF * cos(theta) and sample direction -------
 
-            Float sample_1 = sampler->next_1d();
-            Point2f sample_2 = sampler->next_2d();
+            Float sample_1 = ls.sampler->next_1d();
+            Point2f sample_2 = ls.sampler->next_2d();
 
             auto [bsdf_val, bsdf_pdf, bsdf_sample, bsdf_weight]
                 = bsdf->eval_pdf_sample(bsdf_ctx, si, wo, sample_1, sample_2);
@@ -289,7 +289,7 @@ public:
 
             Float rr_prob = dr::minimum(throughput_max * dr::square(eta), .95f);
             Mask rr_active = depth >= m_rr_depth,
-                 rr_continue = sampler->next_1d() < rr_prob;
+                 rr_continue = ls.sampler->next_1d() < rr_prob;
 
             /* Differentiable variants of the renderer require the the russian
                roulette sampling weight to be detached to avoid bias. This is a
@@ -337,10 +337,10 @@ public:
     }
 
     MI_DECLARE_CLASS()
+
 private:
     template <typename = void>
     struct SampleLoopState {
-
         Ray3f ray;
         Spectrum throughput;
         Spectrum result;
@@ -350,10 +350,11 @@ private:
         Interaction3f prev_si;
         Float prev_bsdf_pdf;
         Bool prev_bsdf_delta;
+        Sampler *sampler;
         Bool active;
 
         DRJIT_STRUCT(SampleLoopState, ray, throughput, result, eta, depth, \
-            valid_ray, prev_si, prev_bsdf_pdf, prev_bsdf_delta, active)
+            valid_ray, prev_si, prev_bsdf_pdf, prev_bsdf_delta, sampler, active)
     };
 };
 
