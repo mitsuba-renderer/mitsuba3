@@ -70,7 +70,7 @@ MI_VARIANT void Sampler<Float, Spectrum>::schedule_state() {
 
 MI_VARIANT void
 Sampler<Float, Spectrum>::traverse_1_cb_ro(void * /*payload*/,
-                                           void (* /*fn*/)(void *, uint64_t)) {
+                                           void (* /*fn*/)(void *, uint64_t)) const {
     NotImplementedError("traverse_1_cb_ro");
 }
 
@@ -148,7 +148,7 @@ MI_VARIANT void PCG32Sampler<Float, Spectrum>::schedule_state() {
 
 MI_VARIANT void
 PCG32Sampler<Float, Spectrum>::traverse_1_cb_ro(void *payload,
-                                                void (*fn)(void *, uint64_t)) {
+                                                void (*fn)(void *, uint64_t)) const {
     traverse_1_fn_ro(m_rng, payload, fn);
 }
 
