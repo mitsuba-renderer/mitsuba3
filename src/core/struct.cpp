@@ -1568,7 +1568,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
                 uint16_t val = *((const uint16_t *) src);
                 if (source_swap)
                     val = detail::swap(val);
-                value.s = dr::half::float16_to_float32(val);
+                value.s = dr::half(val).value;
                 value.type = Struct::Type::Float32;
             }
             break;
@@ -1725,7 +1725,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
             break;
 
         case Struct::Type::Float16: {
-                uint16_t val = dr::half::float32_to_float16(value.s);
+                uint16_t val = dr::half(value.s).value;
                 if (target_swap)
                     val = detail::swap(val);
                 *((uint16_t *) dst) = val;
