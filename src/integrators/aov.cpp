@@ -412,7 +412,7 @@ public:
             size_t num_aovs = m_aov_names.size() - m_integrator_aovs_count;
             aovs_image = get_channels_slice(aovs_image, aovs_image.shape(2) - num_aovs, num_aovs);
 
-            dr::backward_from((aovs_image.mul_(aovs_grad)).array());
+            dr::backward_from((aovs_image * aovs_grad).array());
         }
 
         // Let inner integrators handle backwards differentiation for radiance

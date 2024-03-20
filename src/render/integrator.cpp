@@ -71,7 +71,7 @@ Integrator<Float, Spectrum>::render_backward(Scene* scene,
                                              uint32_t spp) {
     auto backward_gradients = [&]() -> void {
         auto image = render(scene, sensor, seed, spp, true, false);
-        dr::backward_from((image.mul_(grad_in)).array());
+        dr::backward_from((image * grad_in).array());
     };
 
     if constexpr (dr::is_jit_v<Float>) {
