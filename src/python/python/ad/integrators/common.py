@@ -1283,7 +1283,7 @@ def mis_weight(pdf_a, pdf_b):
     Compute the Multiple Importance Sampling (MIS) weight given the densities
     of two sampling strategies according to the power heuristic.
     """
-    a2 = dr.sqr(pdf_a)
-    b2 = dr.sqr(pdf_b)
+    a2 = dr.square(pdf_a)
+    b2 = dr.square(pdf_b)
     w = a2 / (a2 + b2)
     return dr.detach(dr.select(dr.isfinite(w), w, 0))

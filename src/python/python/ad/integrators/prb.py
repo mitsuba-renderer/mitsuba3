@@ -56,6 +56,7 @@ class PRBIntegrator(RBIntegrator):
             'max_depth': 8
     """
 
+    @dr.syntax()
     def sample(self,
                mode: dr.ADMode,
                scene: mi.Scene,
@@ -94,16 +95,16 @@ class PRBIntegrator(RBIntegrator):
         prev_bsdf_pdf   = mi.Float(1.0)
         prev_bsdf_delta = mi.Bool(True)
 
-        # Record the following loop in its entirety
-        loop = mi.Loop(name="Path Replay Backpropagation (%s)" % mode.name,
-                       state=lambda: (sampler, ray, depth, L, δL, β, η, active,
-                                      prev_si, prev_bsdf_pdf, prev_bsdf_delta))
+        ## Record the following loop in its entirety
+        #loop = mi.Loop(name="Path Replay Backpropagation (%s)" % mode.name,
+        #               state=lambda: (sampler, ray, depth, L, δL, β, η, active,
+        #                              prev_si, prev_bsdf_pdf, prev_bsdf_delta))
 
-        # Specify the max. number of loop iterations (this can help avoid
-        # costly synchronization when when wavefront-style loops are generated)
-        loop.set_max_iterations(self.max_depth)
+        ## Specify the max. number of loop iterations (this can help avoid
+        ## costly synchronization when when wavefront-style loops are generated)
+        #loop.set_max_iterations(self.max_depth)
 
-        while loop(active):
+        while active:
             active_next = mi.Bool(active)
 
             # Compute a surface interaction that tracks derivatives arising
@@ -112,7 +113,7 @@ class PRBIntegrator(RBIntegrator):
             with dr.resume_grad(when=not primal):
                 si = scene.ray_intersect(ray,
                                          ray_flags=mi.RayFlags.All,
-                                         coherent=dr.eq(depth, 0))
+                                         coherent=(depth == 0))
 
             # Get the BSDF, potentially computes texture-space differentials
             bsdf = si.bsdf(ray)
@@ -120,8 +121,8 @@ class PRBIntegrator(RBIntegrator):
             # ---------------------- Direct emission ----------------------
 
             # Hide the environment emitter if necessary
-            if self.hide_emitters:
-                active_next &= ~(dr.eq(depth, 0) & ~si.is_valid())
+            if dr.hint(self.m_hide_emitters, mode='scalar'):
+                active_next &= ~((depth == 0) & ~si.is_valid())
 
             # Compute MIS weight for emitter sample from previous bounce
             ds = mi.DirectionSample3f(scene, si=si, ref=prev_si)
@@ -145,15 +146,15 @@ class PRBIntegrator(RBIntegrator):
             # If so, randomly sample an emitter without derivative tracking.
             ds, em_weight = scene.sample_emitter_direction(
                 si, sampler.next_2d(), True, active_em)
-            active_em &= dr.neq(ds.pdf, 0.0)
+            active_em &= (ds.pdf != 0.0)
 
             with dr.resume_grad(when=not primal):
-                if not primal:
+                if dr.hint(not primal, mode='scalar'):
                     # Given the detached emitter sample, *recompute* its
                     # contribution with AD to enable light source optimization
                     ds.d = dr.replace_grad(ds.d, dr.normalize(ds.p - si.p))
                     em_val = scene.eval_emitter_direction(si, ds, active_em)
-                    em_weight = dr.replace_grad(em_weight, dr.select(dr.neq(ds.pdf, 0), em_val / ds.pdf, 0))
+                    em_weight = dr.replace_grad(em_weight, dr.select((ds.pdf != 0), em_val / ds.pdf, 0))
                     dr.disable_grad(ds.d)
 
                 # Evaluate BSDF * cos(theta) differentiably
@@ -186,7 +187,7 @@ class PRBIntegrator(RBIntegrator):
 
             # Don't run another iteration if the throughput has reached zero
             β_max = dr.max(β)
-            active_next &= dr.neq(β_max, 0)
+            active_next &= (β_max != 0)
 
             # Russian roulette stopping probability (must cancel out ior^2
             # to obtain unitless throughput, enforces a minimum probability)
@@ -200,7 +201,7 @@ class PRBIntegrator(RBIntegrator):
 
             # ------------------ Differential phase only ------------------
 
-            if not primal:
+            if dr.hint(not primal, mode='scalar'):
                 with dr.resume_grad():
                     # 'L' stores the indirectly reflected radiance at the
                     # current vertex but does not track parameter derivatives.
@@ -230,7 +231,8 @@ class PRBIntegrator(RBIntegrator):
                     # Differentiable Monte Carlo estimate of all contributions
                     Lo = Le + Lr_dir + Lr_ind
 
-                    if dr.flag(dr.JitFlag.VCallRecord) and not dr.grad_enabled(Lo):
+                    attached_contrib = dr.flag(dr.JitFlag.VCallRecord) and not dr.grad_enabled(Lo)
+                    if dr.hint(attached_contrib, mode='scalar'):
                         raise Exception(
                             "The contribution computed by the differential "
                             "rendering phase is not attached to the AD graph! "
@@ -242,7 +244,7 @@ class PRBIntegrator(RBIntegrator):
                             "derivatives in detached PRB.)")
 
                     # Propagate derivatives from/to 'Lo' based on 'mode'
-                    if mode == dr.ADMode.Backward:
+                    if dr.hint(mode == dr.ADMode.Backward, mode='scalar'):
                         dr.backward_from(δL * Lo)
                     else:
                         δL += dr.forward_to(Lo)
@@ -252,7 +254,7 @@ class PRBIntegrator(RBIntegrator):
 
         return (
             L if primal else δL, # Radiance/differential radiance
-            dr.neq(depth, 0),    # Ray validity flag for alpha blending
+            (depth != 0),        # Ray validity flag for alpha blending
             L                    # State for the differential phase
         )
 
