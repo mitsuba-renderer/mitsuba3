@@ -161,8 +161,8 @@ def test05_check_aov_film(variants_all_rgb):
     scene = mi.load_file('resources/data/scenes/cbox/cbox.xml', res=512)
 
     path_integrator = mi.load_dict({
-        'type': 'path',
-        'max_depth': 6
+        'type': 'prb',
+        'max_depth': 2
     })
 
     aov_integrator = mi.load_dict({
