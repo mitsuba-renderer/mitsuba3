@@ -113,6 +113,7 @@ public:
 
     MeasuredPolarized(const Properties &props) : Base(props) {
         m_flags = BSDFFlags::GlossyReflection | BSDFFlags::FrontSide;
+        dr::set_attr(this, "flags", m_flags);
         m_components.push_back(m_flags);
 
         m_alpha_sample = props.get<ScalarFloat>("alpha_sample", 0.1f);
