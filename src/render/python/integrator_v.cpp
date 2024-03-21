@@ -5,6 +5,7 @@
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/tuple.h>
+#include <nanobind/stl/vector.h>
 #include "signal.h"
 
 #if defined(__APPLE__) || defined(__linux__)
@@ -162,11 +163,13 @@ public:
 template <typename Float, typename Spectrum>
 class CppADIntegrator
     : public SamplingIntegrator<Float, Spectrum> {
-    protected:
+public:
+    ~CppADIntegrator() {}
+
+protected:
     MI_IMPORT_BASE(SamplingIntegrator)
 
     CppADIntegrator(const Properties &props) : Base(props) {}
-    virtual ~CppADIntegrator() {}
 
     MI_DECLARE_CLASS()
 };

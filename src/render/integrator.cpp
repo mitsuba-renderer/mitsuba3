@@ -49,7 +49,7 @@ Integrator<Float, Spectrum>::render_forward(Scene* scene,
                                             uint32_t spp) {
     auto forward_gradients = [&]() -> TensorXf {
         auto image = render(scene, sensor, seed, spp, true, false);
-        dr::forward_to(image.array());
+        dr::forward_to(image);
         return TensorXf(dr::grad(image.array()), 3, image.shape().data());
     };
 
