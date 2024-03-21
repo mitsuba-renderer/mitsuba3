@@ -1,3 +1,4 @@
+#include <nanobind/nanobind.h> // Needs to be first, to get `ref<T>` caster
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/integrator.h>
@@ -6,6 +7,7 @@
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/pair.h>
 
 #if !defined(MI_ENABLE_EMBREE)
 #  include <mitsuba/render/kdtree.h>
