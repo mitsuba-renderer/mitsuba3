@@ -179,7 +179,7 @@ public:
         Log(Trace, "O: %s", O);
 
         return O - sec_theta_sum +
-               0.5 * (1.f + cos_psi) * sec_theta_i * sec_theta_o;
+               0.5f * (1.f + cos_psi) * sec_theta_i * sec_theta_o;
     }
 
     const UnpolarizedSpectrum eval_rtls(const SurfaceInteraction3f &si,
