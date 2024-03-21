@@ -154,8 +154,8 @@ public:
     }
 
     inline const Float eval_f(const Float &phi) const {
-
-        return dr::exp(-2.f * dr::tan(phi / 2.f));
+        const Float clamped_phi_div2 = dr::clamp(phi / 2.f, 0.f, dr::Pi<Float> / 2.f - dr::Epsilon<Float>);
+        return dr::exp(-2.f * dr::tan(clamped_phi_div2));
     }
 
     inline const Spectrum eval_E1(const Spectrum &tan_theta,
@@ -218,7 +218,7 @@ public:
 
         const Float a = dr::select(e <= i, i, e);
         const Float b = dr::select(e <= i, e, i);
-        
+
         return eval_mu(tan_theta, a, b, cos_e, sin_e, phi, opt_cos_phi, sign);
     }
 
@@ -230,7 +230,7 @@ public:
         const Float sign        = dr::select(e <= i, -1.f, 1.f);
         const Float cos_i       = dr::cos(i);
         const Float sin_i       = dr::sin(i);
-        
+
         const Float a = dr::select(e <= i, i, e);
         const Float b = dr::select(e <= i, e, i);
 
@@ -300,9 +300,8 @@ public:
         const Float i   = dr::atan(tan_i);
         const Float e   = dr::atan(tan_e);
         Float fr_phi = dr::safe_acos(cos_phi);
-        fr_phi = dr::select(fr_phi > dr::Pi<Float>, 2.f * dr::Pi<Float> - fr_phi, fr_phi);
-        const Float phi = dr::select(fr_phi < 0.f, dr::abs(fr_phi), fr_phi);
-        
+        const Float phi = dr::abs(dr::select(fr_phi > dr::Pi<Float>, 2.f * dr::Pi<Float> - fr_phi, fr_phi));
+
         const Spectrum w_div_4 = w * 0.25f;
 
         const Spectrum mu_0eG = eval_mu_0eG(tan_theta, e, i, phi, cos_phi);
