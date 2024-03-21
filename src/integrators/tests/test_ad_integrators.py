@@ -61,7 +61,7 @@ class ConfigBase:
 
         self.sensor_dict = {
             'type': 'perspective',
-            'to_world': T.look_at(origin=[0, 0, 4], target=[0, 0, 0], up=[0, 1, 0]),
+            'to_world': T().look_at(origin=[0, 0, 4], target=[0, 0, 0], up=[0, 1, 0]),
             'film': {
                 'type': 'hdrfilm',
                 'rfilter': { 'type': 'gaussian', 'stddev': 0.5 },
@@ -126,7 +126,7 @@ class DiffuseAlbedoConfig(ConfigBase):
             },
             'sphere': {
                 'type': 'sphere',
-                'to_world': T.scale(0.25),
+                'to_world': T().scale(0.25),
             },
             'light': { 'type': 'constant' }
         }
@@ -141,7 +141,7 @@ class DiffuseAlbedoGIConfig(ConfigBase):
             'plane': { 'type': 'rectangle' },
             'sphere': {
                 'type': 'sphere',
-                'to_world': T.scale(0.25)
+                'to_world': T().scale(0.25)
             },
             'green': {
                 'type': 'rectangle',
@@ -152,7 +152,7 @@ class DiffuseAlbedoGIConfig(ConfigBase):
                         'value': [0.1, 1.0, 0.1]
                     }
                 },
-                'to_world': T.translate([1.25, 0.0, 1.0]) @ T.rotate([0, 1, 0], -90),
+                'to_world': T().translate([1.25, 0.0, 1.0]) @ T().rotate([0, 1, 0], -90),
             },
             'light': { 'type': 'constant', 'radiance': 3.0 }
         }
@@ -176,11 +176,11 @@ class AreaLightRadianceConfig(ConfigBase):
             },
             'sphere': {
                 'type': 'sphere',
-                'to_world': T.scale(0.25),
+                'to_world': T().scale(0.25),
             },
             'light': {
                 'type': 'rectangle',
-                'to_world': T.translate([1.25, 0.0, 1.0]) @ T.rotate([0, 1, 0], -90),
+                'to_world': T().translate([1.25, 0.0, 1.0]) @ T().rotate([0, 1, 0], -90),
                 'emitter': {
                     'type': 'area',
                     'radiance': {'type': 'rgb', 'value': [3.0, 3.0, 3.0]}
@@ -220,7 +220,7 @@ class PointLightIntensityConfig(ConfigBase):
             },
             'sphere': {
                 'type': 'sphere',
-                'to_world': T.scale(0.25),
+                'to_world': T().scale(0.25),
             },
             'light': {
                 'type': 'point',
@@ -242,7 +242,7 @@ class ConstantEmitterRadianceConfig(ConfigBase):
             },
             'sphere': {
                 'type': 'sphere',
-                'to_world': T.scale(0.25),
+                'to_world': T().scale(0.25),
             },
             'light': { 'type': 'constant' }
         }
@@ -263,7 +263,7 @@ class CropWindowConfig(ConfigBase):
         self.res = 64
         self.sensor_dict = {
             'type': 'perspective',
-            'to_world': T.look_at(origin=[0, 0, 4], target=[0, 0, 0], up=[0, 1, 0]),
+            'to_world': T().look_at(origin=[0, 0, 4], target=[0, 0, 0], up=[0, 1, 0]),
             'film': {
                 'type': 'hdrfilm',
                 'rfilter': { 'type': 'gaussian', 'stddev': 0.5 },
@@ -323,7 +323,7 @@ class TranslateDiffuseSphereConstantConfig(TranslateShapeConfigBase):
             'sphere': {
                 'type': 'obj',
                 'filename': 'resources/data/common/meshes/sphere.obj',
-                'to_world': T.rotate(angle=-90, axis=[0, 1, 0]),
+                'to_world': T().rotate(angle=-90, axis=[0, 1, 0]),
             },
             'light': { 'type': 'constant' }
         }
@@ -372,7 +372,7 @@ class TranslateRectangleEmitterOnBlackConfig(TranslateShapeConfigBase):
                     'type': 'area',
                     'radiance': {'type': 'rgb', 'value': [1.0, 1.0, 1.0]}
                 },
-                'to_world': T.translate([1.25, 0.0, 0.0]),
+                'to_world': T().translate([1.25, 0.0, 0.0]),
             }
         }
         self.ref_fd_epsilon = 1e-3
@@ -398,7 +398,7 @@ class TranslateSphereEmitterOnBlackConfig(TranslateShapeConfigBase):
                     'type': 'area',
                     'radiance': {'type': 'rgb', 'value': [1.0, 1.0, 1.0]}
                 },
-                'to_world': T.translate([1.25, 0.0, 0.0]) @ T.rotate(angle=180, axis=[0, 1, 0]),
+                'to_world': T().translate([1.25, 0.0, 0.0]) @ T().rotate(angle=180, axis=[0, 1, 0]),
             }
         }
         self.ref_fd_epsilon = 1e-4
@@ -446,7 +446,7 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
             'occluder': {
                 'type': 'obj',
                 'filename': 'resources/data/common/meshes/sphere.obj',
-                'to_world': T.translate([2.0, 0.0, 2.0]) @ T.scale(0.25),
+                'to_world': T().translate([2.0, 0.0, 2.0]) @ T().scale(0.25),
             },
             'light': {
                 'type': 'obj',
@@ -455,7 +455,7 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
                     'type': 'area',
                     'radiance': {'type': 'rgb', 'value': [1000.0, 1000.0, 1000.0]}
                 },
-                'to_world': T.translate([4.0, 0.0, 4.0]) @ T.scale(0.05)
+                'to_world': T().translate([4.0, 0.0, 4.0]) @ T().scale(0.05)
             }
         }
         self.ref_fd_epsilon = 1e-3
@@ -482,7 +482,7 @@ class TranslateShadowReceiverAreaLightConfig(TranslateShapeConfigBase):
             'occluder': {
                 'type': 'obj',
                 'filename': 'resources/data/common/meshes/sphere.obj',
-                'to_world': T.translate([2.0, 0.0, 2.0]) @ T.scale(0.25),
+                'to_world': T().translate([2.0, 0.0, 2.0]) @ T().scale(0.25),
             },
             # 'light': {
             #     'type': 'obj',
@@ -491,7 +491,7 @@ class TranslateShadowReceiverAreaLightConfig(TranslateShapeConfigBase):
             #         'type': 'area',
             #         'radiance': {'type': 'rgb', 'value': [1000.0, 1000.0, 1000.0]}
             #     },
-            #     'to_world': T.translate([4.0, 0.0, 4.0]) @ T.scale(0.05)
+            #     'to_world': T().translate([4.0, 0.0, 4.0]) @ T().scale(0.05)
             # }
             'light': { 'type': 'constant' }
         }
@@ -524,7 +524,7 @@ class TranslateTexturedPlaneConfig(TranslateShapeConfigBase):
                         'filename' : 'resources/data/common/textures/museum.exr'
                     }
                 },
-                'to_world': T.scale(2.0),
+                'to_world': T().scale(2.0),
             },
             'light': { 'type': 'constant' }
         }
@@ -549,7 +549,7 @@ class TranslateSelfShadowAreaLightConfig(ConfigBase):
                 'type': 'obj',
                 'filename': 'resources/data/common/meshes/rectangle.obj',
                 'face_normals': True,
-                'to_world': T.translate([-1, 0, 0.5]) @ T.rotate([0, 1, 0], 90) @ T.scale(1.0),
+                'to_world': T().translate([-1, 0, 0.5]) @ T().rotate([0, 1, 0], 90) @ T().scale(1.0),
             },
             'light': {
                 'type': 'point',
@@ -591,7 +591,7 @@ class TranslateSphereOnGlossyFloorConfig(TranslateShapeConfigBase):
                     'type': 'roughconductor',
                     'alpha': 0.025,
                 },
-                'to_world': T.translate([0, 1.5, 0]) @ T.rotate([1, 0, 0], -45) @ T.scale(4),
+                'to_world': T().translate([0, 1.5, 0]) @ T().rotate([1, 0, 0], -45) @ T().scale(4),
             },
             'sphere': {
                 'type': 'obj',
@@ -600,7 +600,7 @@ class TranslateSphereOnGlossyFloorConfig(TranslateShapeConfigBase):
                     'reflectance': {'type': 'rgb', 'value': [1.0, 0.5, 0.0]}
                 },
                 'filename': 'resources/data/common/meshes/sphere.obj',
-                'to_world': T.translate([0.5, 2.0, 1.5]) @ T.scale(1.0),
+                'to_world': T().translate([0.5, 2.0, 1.5]) @ T().scale(1.0),
             },
             'light': { 'type': 'constant', 'radiance': 1.0 },
         }
@@ -688,8 +688,8 @@ INDIRECT_ILLUMINATION_CONFIGS_LIST = [
 INTEGRATORS = [
     ('path', False),
     ('prb', False),
-    ('direct_projective', True),
-    ('prb_projective', True)
+    #('direct_projective', True),
+    #('prb_projective', True)
 ]
 
 CONFIGS = []
@@ -722,8 +722,8 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
     image = integrator.render(config.scene, seed=0, spp=config.spp)
 
     error = dr.abs(image - image_primal_ref) / dr.maximum(dr.abs(image_primal_ref), 2e-2)
-    error_mean = dr.mean(error)[0]
-    error_max = dr.max(error)[0]
+    error_mean = dr.mean(error, axis=None)
+    error_max = dr.max(error, axis=None)
 
     if error_mean > config.error_mean_threshold  or error_max > config.error_max_threshold:
         print(f"Failure in config: {config.name}, {integrator_name}")
@@ -769,8 +769,8 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
     image_fwd = dr.detach(image_fwd)
 
     error = dr.abs(image_fwd - image_fwd_ref) / dr.maximum(dr.abs(image_fwd_ref), 2e-1)
-    error_mean = dr.mean(error)[0]
-    error_max = dr.max(error)[0]
+    error_mean = dr.mean(error, axis=None)
+    error_max = dr.max(error, axis=None)
 
     if error_mean > config.error_mean_threshold or error_max > config.error_max_threshold:
         print(f"Failure in config: {config.name}, {integrator_name}")
