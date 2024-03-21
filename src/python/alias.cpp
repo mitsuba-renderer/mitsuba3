@@ -37,7 +37,7 @@ static nb::object variant_module(nb::handle variant) {
 
     nb::str module_name = nb::str("mitsuba.{}").format(variant);
     result = nb::module_::import_(module_name.c_str());
-    variant_modules[variant] = nb::borrow<nb::module_>(result);
+    variant_modules[variant] = result;
 
     return result;
 }
@@ -76,6 +76,8 @@ static void set_variant(nb::args args) {
     }
 
     // FIXME: Reload python integrators if we're setting a JIT enabled variant
+    nb::module_ mi_python = nb::module_::import_("mitsuba.python.ad.integrators");
+    nb::steal(PyImport_ReloadModule(mi_python.ptr()));
 };
 
 NB_MODULE(mitsuba_alias, m) {
@@ -110,9 +112,9 @@ NB_MODULE(mitsuba_alias, m) {
     m.def("set_variant", set_variant);
 
     /// Fill `__dict__` with all objects in `mitsuba_ext` and `mitsuba.python`
-    mi_dict = nb::borrow<nb::dict>(m.attr("__dict__"));
-    nb::object mi_ext = nb::steal(nb::module_::import_("mitsuba.mitsuba_ext"));
-    nb::object mi_python = nb::steal(nb::module_::import_("mitsuba.python"));
+    mi_dict = m.attr("__dict__");
+    nb::object mi_ext = nb::module_::import_("mitsuba.mitsuba_ext");
+    nb::object mi_python = nb::module_::import_("mitsuba.python");
     nb::dict mitsuba_ext_dict = mi_ext.attr("__dict__");
     for (const auto &k : mitsuba_ext_dict.keys())
         if (!nb::bool_(k.attr("startswith")("__")) &&
