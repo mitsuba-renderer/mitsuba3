@@ -3,6 +3,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/python/python.h>
+#include <nanobind/stl/string.h>
 
 using Caster = nb::object(*)(mitsuba::Object *);
 extern Caster cast_object;
