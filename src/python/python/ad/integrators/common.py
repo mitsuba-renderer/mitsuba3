@@ -268,7 +268,7 @@ class ADIntegrator(mi.CppADIntegrator):
         # Compute the position on the image plane
         pos = mi.Vector2i()
         pos.y = idx // film_size[0]
-        pos.x = dr.fma(-film_size[0], pos.y, idx)
+        pos.x = dr.fma(mi.UInt32(mi.Int32(-film_size[0])), pos.y, idx)
 
         if film.sample_border():
             pos -= border_size
