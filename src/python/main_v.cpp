@@ -148,12 +148,11 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     mueller.doc() = "Routines to manipulate Mueller matrices for polarized rendering.";
 
     MI_PY_IMPORT(DrJit);
-//
-//    m.attr("float_dtype") = std::is_same_v<ScalarFloat, float> ? "f" : "d";
-//    m.attr("is_monochromatic") = is_monochromatic_v<Spectrum>;
-//    m.attr("is_rgb") = is_rgb_v<Spectrum>;
-//    m.attr("is_spectral") = is_spectral_v<Spectrum>;
-//    m.attr("is_polarized") = is_polarized_v<Spectrum>;
+
+    m.attr("is_monochromatic") = is_monochromatic_v<Spectrum>;
+    m.attr("is_rgb") = is_rgb_v<Spectrum>;
+    m.attr("is_spectral") = is_spectral_v<Spectrum>;
+    m.attr("is_polarized") = is_polarized_v<Spectrum>;
 //
     color_management_static_initialization(dr::is_cuda_v<Float>,
                                            dr::is_llvm_v<Float>);
