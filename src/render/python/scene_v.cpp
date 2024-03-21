@@ -135,17 +135,20 @@ MI_PY_EXPORT(Scene) {
              },
              D(Scene, silhouette_shapes))
         .def("integrator",
-             [](Scene &scene) -> nb::object {
+             [](Scene &scene) -> ref<Integrator> {
                  Integrator *o = scene.integrator();
                  if (!o)
-                     return nb::none();
-                 if (auto tmp = dynamic_cast<MonteCarloIntegrator *>(o); tmp)
-                     return nb::cast(tmp);
-                 if (auto tmp = dynamic_cast<SamplingIntegrator *>(o); tmp)
-                     return nb::cast(tmp);
-                 if (auto tmp = dynamic_cast<AdjointIntegrator *>(o); tmp)
-                     return nb::cast(tmp);
-                 return nb::cast(o);
+                     return ref<Integrator>(nullptr);
+                 if (auto tmp = dynamic_cast<MonteCarloIntegrator *>(o); tmp) {
+                    return ref<Integrator>(tmp);
+                 }
+                 if (auto tmp = dynamic_cast<SamplingIntegrator *>(o); tmp) {
+                    return ref<Integrator>(tmp);
+                 }
+                 if (auto tmp = dynamic_cast<AdjointIntegrator *>(o); tmp) {
+                     return ref<Integrator>(tmp);
+                 }
+                 return ref(o);
              },
              D(Scene, integrator))
         .def_method(Scene, shapes_grad_enabled)

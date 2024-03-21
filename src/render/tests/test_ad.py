@@ -11,7 +11,7 @@ def make_simple_scene(res=1, integrator="path"):
             "type" : "perspective",
             "near_clip": 0.1,
             "far_clip": 1000.0,
-            "to_world" : mi.ScalarTransform4f.look_at(origin=[0, 0, 4],
+            "to_world" : mi.ScalarTransform4f().look_at(origin=[0, 0, 4],
                                                       target=[0, 0, 0],
                                                       up=[0, 1, 0]),
             "myfilm" : {
@@ -44,9 +44,9 @@ def make_simple_scene(res=1, integrator="path"):
 
 if hasattr(dr, 'JitFlag'):
     jit_flags_options = [
-        {dr.JitFlag.VCallRecord : 0, dr.JitFlag.VCallOptimize : 0, dr.JitFlag.LoopRecord : 0},
-        {dr.JitFlag.VCallRecord : 1, dr.JitFlag.VCallOptimize : 0, dr.JitFlag.LoopRecord : 0},
-        {dr.JitFlag.VCallRecord : 1, dr.JitFlag.VCallOptimize : 1, dr.JitFlag.LoopRecord : 0},
+        {dr.JitFlag.VCallRecord : False, dr.JitFlag.VCallOptimize : False, dr.JitFlag.LoopRecord : False},
+        {dr.JitFlag.VCallRecord : True, dr.JitFlag.VCallOptimize : False, dr.JitFlag.LoopRecord : False},
+        {dr.JitFlag.VCallRecord : True, dr.JitFlag.VCallOptimize : True, dr.JitFlag.LoopRecord : False},
     ]
 else:
     jit_flags_options = []
