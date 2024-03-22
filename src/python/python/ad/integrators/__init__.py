@@ -1,29 +1,26 @@
 # Import/re-import all files in this folder to register AD integrators
-import os
 import importlib
-import glob
+import mitsuba as mi
 
-# Make sure mitsuba.python.util is imported before the integrators
-import mitsuba.util
+if mi.variant() is not None and not mi.variant().startswith('scalar'):
+    from . import common
+    importlib.reload(common)
 
-do_reload = 'common' in globals()
+    from . import prb_basic
+    importlib.reload(prb_basic)
 
-if mitsuba.variant() is not None and not mitsuba.variant().startswith('scalar'):
-    # Make sure `common.py` is reloaded before the integrators
-    if do_reload:
-        importlib.reload(globals()['common'])
+    from . import prb
+    importlib.reload(prb)
 
-    for f in glob.glob(os.path.join(os.path.dirname(__file__), "*.py")):
-        if not os.path.isfile(f) or f.endswith('__init__.py'):
-            continue
+    from . import prbvolpath
+    importlib.reload(prbvolpath)
 
-        name = os.path.basename(f)[:-3]
-        if do_reload and not name == 'common':
-            importlib.reload(globals()[name])
-        else:
-            importlib.import_module('mitsuba.ad.integrators.' + name)
+    from . import direct_projective
+    importlib.reload(direct_projective)
 
-        del name
-    del f
+    from . import prb_projective
+    importlib.reload(prb_projective)
 
-del os, glob, importlib, do_reload
+    del common, direct_projective, prb_basic, prb_projective, prb, prbvolpath
+
+del importlib, mi

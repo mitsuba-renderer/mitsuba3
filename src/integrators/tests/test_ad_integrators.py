@@ -711,8 +711,6 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
     config = config()
     config.initialize()
 
-    import mitsuba
-    importlib.reload(mitsuba.ad.integrators)
     config.integrator_dict['type'] = integrator_name
 
     integrator = mi.load_dict(config.integrator_dict, parallel=False)

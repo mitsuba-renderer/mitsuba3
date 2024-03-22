@@ -50,7 +50,6 @@ class ADIntegrator(mi.CppADIntegrator):
                spp: int = 0,
                develop: bool = True,
                evaluate: bool = True) -> mi.TensorXf:
-
         if not develop:
             raise Exception("develop=True must be specified when "
                             "invoking AD integrators")
@@ -339,7 +338,8 @@ class ADIntegrator(mi.CppADIntegrator):
         """
 
         film = sensor.film()
-        sampler = sensor.sampler().clone()
+        original_sampler =  sensor.sampler()
+        sampler = original_sampler.clone()
 
         if spp != 0:
             sampler.set_sample_count(spp)

@@ -389,3 +389,5 @@ class DirectProjectiveIntegrator(PSIntegrator):
         return importance, sensor_ds.uv, mi.UInt32(2), si_boundary.p, active_i
 
 mi.register_integrator("direct_projective", lambda props: DirectProjectiveIntegrator(props))
+
+del PSIntegrator

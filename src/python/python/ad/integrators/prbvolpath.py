@@ -430,5 +430,6 @@ class PRBVolpathIntegrator(RBIntegrator):
     def to_string(self):
         return f'PRBVolpathIntegrator[max_depth = {self.max_depth}]'
 
-
 mi.register_integrator("prbvolpath", lambda props: PRBVolpathIntegrator(props))
+
+del RBIntegrator

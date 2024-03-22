@@ -563,3 +563,5 @@ class PathProjectiveIntegrator(PSIntegrator):
         return W, sensor_ds.uv, depth_cam, si_boundary.p, active_found
 
 mi.register_integrator("prb_projective", lambda props: PathProjectiveIntegrator(props))
+
+del PSIntegrator

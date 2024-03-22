@@ -259,3 +259,5 @@ class PRBIntegrator(RBIntegrator):
         )
 
 mi.register_integrator("prb", lambda props: PRBIntegrator(props))
+
+del RBIntegrator
