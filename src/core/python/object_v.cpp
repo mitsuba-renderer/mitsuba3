@@ -24,7 +24,7 @@ public:
     void put_object(const std::string &name, Object *obj,
                     uint32_t flags) override {
         nanobind::detail::ticket nb_ticket(nb_trampoline, "put_object", true);
-        nb_trampoline.base().attr(nb_ticket.key)(name, obj, flags);
+        nb_trampoline.base().attr(nb_ticket.key)(name, cast_object(obj), flags);
     }
 };
 
