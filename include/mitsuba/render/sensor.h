@@ -121,7 +121,7 @@ public:
      * Therefore, this sampler should never be used for anything
      * except creating forks.
      */
-    Sampler *sampler() { return m_sampler; }
+    ref<Sampler> sampler() { return m_sampler; }
 
     /**
      * \brief Return the sensor's sampler (const version).
@@ -132,7 +132,7 @@ public:
      * Therefore, this sampler should never be used for anything
      * except creating clones.
      */
-    const Sampler *sampler() const { return m_sampler.get(); }
+    ref<const Sampler> sampler() const { return m_sampler.get(); }
 
     //! @}
     // =============================================================
