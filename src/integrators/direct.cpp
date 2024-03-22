@@ -149,8 +149,11 @@ public:
                 Mask active_e = sample_emitter;
                 DirectionSample3f ds;
                 Spectrum emitter_val;
+                auto emitter_sample_2d = sampler->next_2d(active_e); // We assume that any emitter rendered with this integrator excludes medium emitters
+                auto emitter_sample = Point3f(emitter_sample_2d.x(), emitter_sample_2d.y(), 0.0f);
                 std::tie(ds, emitter_val) = scene->sample_emitter_direction(
-                    si, sampler->next_2d(active_e), true, active_e);
+                    si, emitter_sample,
+                    true, active_e);
                 active_e &= dr::neq(ds.pdf, 0.f);
                 if (dr::none_or<false>(active_e))
                     continue;

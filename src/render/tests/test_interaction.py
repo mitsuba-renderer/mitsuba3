@@ -154,7 +154,7 @@ def test05_gather_interaction(variants_any_llvm):
         },
     })
     sensor = scene.sensors()[0]
-    ray, w = sensor.sample_ray(0.0, 0.0, mi.Point2f([0.1, 0.2, 0.3]), mi.Point2f([0.1, 0.2, 0.3]))
+    ray, w = sensor.sample_ray(0.0, 0.0, mi.Point3f([[0.1]*3, [0.2]*3, [0.3]*3]), mi.Point2f([0.1, 0.2, 0.3]))
     si = scene.ray_intersect(ray)
     
     si_ = dr.gather(mi.SurfaceInteraction3f, si, mi.UInt32([0, 2]))

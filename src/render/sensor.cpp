@@ -76,7 +76,7 @@ MI_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props
 MI_VARIANT Sensor<Float, Spectrum>::~Sensor() {}
 
 MI_VARIANT std::pair<typename Sensor<Float, Spectrum>::RayDifferential3f, Spectrum>
-Sensor<Float, Spectrum>::sample_ray_differential(Float time, Float sample1, const Point2f &sample2,
+Sensor<Float, Spectrum>::sample_ray_differential(Float time, Float sample1, const Point3f &sample2,
                                                  const Point2f &sample3, Mask active) const {
     MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
@@ -84,8 +84,8 @@ Sensor<Float, Spectrum>::sample_ray_differential(Float time, Float sample1, cons
 
     RayDifferential3f result_ray(temp_ray);
 
-    Vector2f dx(1.f / m_resolution.x(), 0.f);
-    Vector2f dy(0.f, 1.f / m_resolution.y());
+    Vector3f dx(1.f / m_resolution.x(), 0.f, 0.f);
+    Vector3f dy(0.f, 1.f / m_resolution.y(), 0.f);
 
     // Sample a result_ray for X+1
     std::tie(temp_ray, std::ignore) = sample_ray(time, sample1, sample2 + dx, sample3, active);

@@ -17,8 +17,9 @@ NAMESPACE_BEGIN(mitsuba)
  * uniform pseudo- or quasi-random points within a conceptual
  * infinite-dimensional unit hypercube \f$[0,1]^\infty$\f. This involves two
  * main operations: by querying successive component values of such an
- * infinite-dimensional point (\ref next_1d(), \ref next_2d()), or by
- * discarding the current point and generating another one (\ref advance()).
+ * infinite-dimensional point (\ref next_1d(), \ref next_2d(), \ref next_3d()),
+ * or by discarding the current point and generating
+ * another one (\ref advance()).
  *
  * Scalar and vectorized rendering algorithms interact with the sampler
  * interface in a slightly different way:
@@ -109,6 +110,9 @@ public:
 
     /// Retrieve the next two component values from the current sample
     virtual Point2f next_2d(Mask active = true);
+
+    /// Retrieve the next three component values from the current sample
+    virtual Point3f next_3d(Mask active = true);
 
     /// Return the number of samples per pixel
     uint32_t sample_count() const { return m_sample_count; }

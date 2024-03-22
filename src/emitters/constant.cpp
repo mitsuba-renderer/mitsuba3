@@ -91,12 +91,12 @@ public:
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
-                                          const Point2f &sample2, const Point2f &sample3,
+                                          const Point3f &sample2, const Point2f &sample3,
                                           Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         // 1. Sample spatial component
-        Vector3f v0 = warp::square_to_uniform_sphere(sample2);
+        Vector3f v0 = warp::square_to_uniform_sphere(Point2f(sample2.x(), sample2.y()));
         Point3f orig = dr::fmadd(v0, m_bsphere.radius, m_bsphere.center);
 
         // 2. Sample diral component
@@ -114,11 +114,11 @@ public:
     }
 
     std::pair<DirectionSample3f, Spectrum> sample_direction(const Interaction3f &it,
-                                                            const Point2f &sample,
+                                                            const Point3f &sample,
                                                             Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
-        Vector3f d = warp::square_to_uniform_sphere(sample);
+        Vector3f d = warp::square_to_uniform_sphere(Point2f(sample.x(), sample.y()));
 
         // Automatically enlarge the bounding sphere when it does not contain the reference point
         Float radius = dr::maximum(m_bsphere.radius, dr::norm(it.p - m_bsphere.center)),
@@ -127,7 +127,7 @@ public:
         DirectionSample3f ds;
         ds.p       = dr::fmadd(d, dist, it.p);
         ds.n       = -d;
-        ds.uv      = sample;
+        ds.uv      = Point2f(sample.x(), sample.y());
         ds.time    = it.time;
         ds.pdf     = warp::square_to_uniform_sphere_pdf(d);
         ds.delta   = false;
@@ -166,7 +166,7 @@ public:
     }
 
     std::pair<PositionSample3f, Float>
-    sample_position(Float /*time*/, const Point2f & /*sample*/,
+    sample_position(Float /*time*/, const Point3f & /*sample*/,
                     Mask /*active*/) const override {
         if constexpr (dr::is_jit_v<Float>) {
             /* When virtual function calls are recorded in symbolic mode,

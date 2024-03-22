@@ -10,14 +10,14 @@ public:
     PySensor(const Properties &props) : Sensor(props) { }
 
     std::pair<Ray3f, Spectrum>
-    sample_ray(Float time, Float sample1, const Point2f &sample2,
+    sample_ray(Float time, Float sample1, const Point3f &sample2,
                const Point2f &sample3, Mask active) const override {
         using Return = std::pair<Ray3f, Spectrum>;
         PYBIND11_OVERRIDE_PURE(Return, Sensor, sample_ray, time, sample1, sample2, sample3, active);
     }
 
     std::pair<RayDifferential3f, Spectrum>
-    sample_ray_differential(Float time, Float sample1, const Point2f &sample2,
+    sample_ray_differential(Float time, Float sample1, const Point3f &sample2,
                             const Point2f &sample3, Mask active) const override {
         using Return = std::pair<RayDifferential3f, Spectrum>;
         PYBIND11_OVERRIDE(Return, Sensor, sample_ray_differential, time, sample1, sample2, sample3, active);
@@ -25,7 +25,7 @@ public:
 
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &ref,
-                     const Point2f &sample,
+                     const Point3f &sample,
                      Mask active) const override {
         using Return = std::pair<DirectionSample3f, Spectrum>;
         PYBIND11_OVERRIDE_PURE(Return, Sensor, sample_direction, ref, sample, active);
@@ -44,7 +44,7 @@ public:
     }
 
     std::pair<PositionSample3f, Float>
-    sample_position(Float time, const Point2f &sample,
+    sample_position(Float time, const Point3f &sample,
                     Mask active) const override {
         using Return = std::pair<PositionSample3f, Float>;
         PYBIND11_OVERRIDE_PURE(Return, Sensor, sample_position, time, sample, active);
@@ -91,21 +91,21 @@ template <typename Ptr, typename Cls> void bind_sensor_generic(Cls &cls) {
     MI_PY_IMPORT_TYPES()
 
     cls.def("sample_ray",
-            [](Ptr ptr, Float time, Float sample1, const Point2f &sample2,
+            [](Ptr ptr, Float time, Float sample1, const Point3f &sample2,
                const Point2f &sample3, Mask active) {
                 return ptr->sample_ray(time, sample1, sample2, sample3, active);
             },
             "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
             D(Endpoint, sample_ray))
     .def("sample_ray_differential",
-            [](Ptr ptr, Float time, Float sample1, const Point2f &sample2,
+            [](Ptr ptr, Float time, Float sample1, const Point3f &sample2,
                const Point2f &sample3, Mask active) {
                 return ptr->sample_ray_differential(time, sample1, sample2, sample3, active);
             },
             "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
             D(Sensor, sample_ray_differential))
     .def("sample_direction",
-            [](Ptr ptr, const Interaction3f &it, const Point2f &sample, Mask active) {
+            [](Ptr ptr, const Interaction3f &it, const Point3f &sample, Mask active) {
                 return ptr->sample_direction(it, sample, active);
             },
             "it"_a, "sample"_a, "active"_a = true,
@@ -123,7 +123,7 @@ template <typename Ptr, typename Cls> void bind_sensor_generic(Cls &cls) {
             "it"_a, "ds"_a, "active"_a = true,
             D(Endpoint, eval_direction))
     .def("sample_position",
-            [](Ptr ptr, Float time, const Point2f &sample, Mask active) {
+            [](Ptr ptr, Float time, const Point3f &sample, Mask active) {
                 return ptr->sample_position(time, sample, active);
             },
             "time"_a, "sample"_a, "active"_a = true,

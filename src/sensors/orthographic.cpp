@@ -117,7 +117,7 @@ public:
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
-                                          const Point2f &position_sample,
+                                          const Point3f &position_sample,
                                           const Point2f & /*aperture_sample*/,
                                           Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
@@ -131,8 +131,7 @@ public:
         ray.wavelengths = wavelengths;
 
         // Compute the sample position on the near plane (local camera space).
-        Point3f near_p = m_sample_to_camera *
-                         Point3f(position_sample.x(), position_sample.y(), 0.f);
+        Point3f near_p = m_sample_to_camera * position_sample;
 
         ray.o = m_to_world.value() * near_p;
         ray.d = dr::normalize(m_to_world.value() * Vector3f(0, 0, 1));
@@ -142,7 +141,7 @@ public:
     }
 
     std::pair<RayDifferential3f, Spectrum> sample_ray_differential(
-        Float time, Float wavelength_sample, const Point2f &position_sample,
+        Float time, Float wavelength_sample, const Point3f &position_sample,
         const Point2f & /*aperture_sample*/, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
@@ -155,8 +154,7 @@ public:
         ray.wavelengths = wavelengths;
 
         // Compute the sample position on the near plane (local camera space).
-        Point3f near_p = m_sample_to_camera *
-                         Point3f(position_sample.x(), position_sample.y(), 0.f);
+        Point3f near_p = m_sample_to_camera * position_sample;
 
         ray.o = m_to_world.value() * near_p;
         ray.d = dr::normalize(m_to_world.value() * Vector3f(0, 0, 1));

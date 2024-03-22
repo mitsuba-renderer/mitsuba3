@@ -313,5 +313,7 @@ def test11_sample_silhouette_bijective(variants_vec_rgb):
     # Both types
     ss = scene.sample_silhouette(samples, mi.DiscontinuityFlags.AllTypes)
     out = scene.invert_silhouette_sample(ss)
+    valid_samples = dr.gather(mi.Point3f, samples, dr.arange(mi.UInt32, dr.width(ss)), valid)
+    valid_out = dr.gather(mi.Point3f, out, dr.arange(mi.UInt32, dr.width(ss)), valid)
     assert dr.all(dr.neq(ss.discontinuity_type, mi.DiscontinuityFlags.Empty.value))
     assert dr.allclose(valid_samples, valid_out, atol=1e-6)

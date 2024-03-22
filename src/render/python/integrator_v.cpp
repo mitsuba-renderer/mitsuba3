@@ -246,7 +246,7 @@ public:
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler *sampler,
                                      const RayDifferential3f &ray,
-                                     const Medium * /* unused */,
+                                     const Medium * initial_medium,
                                      Float *aovs,
                                      Mask active) const override {
         py::gil_scoped_acquire gil;
@@ -259,6 +259,7 @@ public:
                 "scene"_a=scene,
                 "sampler"_a=sampler,
                 "ray"_a=ray,
+                "initial_medium"_a=initial_medium,
                 "depth"_a=0,
                 "δL"_a=py::none(),
                 "δaovs"_a=py::none(),

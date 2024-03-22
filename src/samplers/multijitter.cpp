@@ -87,16 +87,19 @@ public:
 
     void set_sample_count(uint32_t spp) override {
         // Find stratification grid resolution with aspect ratio close to 1
-        m_resolution[1] = uint32_t(dr::sqrt(ScalarFloat(spp)));
-        m_resolution[0] = (spp + m_resolution[1] - 1) / m_resolution[1];
+        m_resolution[1] = uint32_t(dr::cbrt(ScalarFloat(spp)));
+        m_resolution[0] = (spp + dr::sqr(m_resolution[1]) - 1) / dr::sqr(m_resolution[1]);
+        m_resolution[2] = m_resolution[1];
 
         if (spp != dr::prod(m_resolution))
             Log(Warn, "Sample count rounded up to %i", dr::prod(m_resolution));
 
         m_sample_count = dr::prod(m_resolution);
         m_inv_sample_count = dr::rcp(ScalarFloat(m_sample_count));
-        m_inv_resolution   = dr::rcp(ScalarPoint2f(m_resolution));
+        m_inv_resolution   = dr::rcp(ScalarPoint3f(m_resolution));
         m_resolution_x_div = m_resolution[0];
+        m_resolution_y_div = m_resolution[1];
+        m_resolution_xy_div = m_resolution[0] * m_resolution[1];
     }
 
     ref<Sampler<Float, Spectrum>> fork() override {
@@ -107,6 +110,8 @@ public:
         sampler->m_resolution            = m_resolution;
         sampler->m_inv_resolution        = m_inv_resolution;
         sampler->m_resolution_x_div      = m_resolution_x_div;
+        sampler->m_resolution_y_div      = m_resolution_y_div;
+        sampler->m_resolution_xy_div     = m_resolution_xy_div;
         sampler->m_samples_per_wavefront = m_samples_per_wavefront;
         sampler->m_base_seed             = m_base_seed;
         return sampler;
@@ -146,8 +151,8 @@ public:
         UInt32 s = permute_kensler(sample_indices, m_sample_count, perm_seed * 0x51633e2d, active);
 
         // Map the index to its 2D cell
-        UInt32 y = m_resolution_x_div(s);    // s / m_resolution.x()
-        UInt32 x = s - y * m_resolution.x(); // s % m_resolution.x()
+        UInt32 y = m_resolution_x_div(m_resolution_y_div(s));    // s / m_resolution.x()
+        UInt32 x = m_resolution_y_div(s) - y * m_resolution.x(); // s % m_resolution.x()
 
         // Compute offsets to the appropriate substratum within the cell
         UInt32 sx = permute_kensler(x, m_resolution.x(), perm_seed * 0x68bc21eb, active);
@@ -163,6 +168,39 @@ public:
         // Construct the final 2D point
         return Point2f((x + (sy + jx) * m_inv_resolution.y()) * m_inv_resolution.x(),
                        (y + (sx + jy) * m_inv_resolution.x()) * m_inv_resolution.y());
+    }
+
+    Point3f next_3d(Mask active = true) override {
+        Assert(seeded());
+
+        UInt32 sample_indices = current_sample_index();
+        UInt32 perm_seed = m_permutation_seed + m_dimension_index++;
+
+        // Shuffle the samples order
+        UInt32 s = permute_kensler(sample_indices, m_sample_count, perm_seed * 0x51633e2d, active);
+
+        // Map the index to its 3D cell
+        UInt32 z = m_resolution_xy_div(s); // s / (m_resolution.y() * m_resolution.x())
+        UInt32 y = m_resolution_x_div(s - z * m_resolution.x() * m_resolution.y()); // (s % (m_resolution.y() * m_resolution.x())) / m_resolution.x()
+        UInt32 x = s - y * m_resolution.x() - z * m_resolution.x() * m_resolution.y(); // (s % (m_resolution.y() * m_resolution.x())) % m_resolution.x()
+
+        // Compute offsets to the appropriate substratum within the cell
+        UInt32 sx = permute_kensler(x, m_resolution.x(), perm_seed * 0x68bc21eb, active);
+        UInt32 sy = permute_kensler(y, m_resolution.y(), perm_seed * 0x02e5be93, active);
+        UInt32 sz = permute_kensler(z, m_resolution.z(), perm_seed * 0x48bc48eb, active);
+
+        // Add random perturbations on both axis
+        Float jx = 0.5f, jy = 0.5f, jz = 0.5f;
+        if (m_jitter) {
+            jx = m_rng.template next_float<Float>(active);
+            jy = m_rng.template next_float<Float>(active);
+            jz = m_rng.template next_float<Float>(active);
+        }
+
+        // Construct the final 2D point
+        return Point3f((x + (sy + jx) * m_inv_resolution.y()) * m_inv_resolution.x(),
+                       (y + (sz + jy) * m_inv_resolution.z()) * m_inv_resolution.y(),
+                       (z + (sx + jz) * m_inv_resolution.x()) * m_inv_resolution.z());
     }
 
     void schedule_state() override {
@@ -188,16 +226,18 @@ private:
         m_inv_resolution   = sampler.m_inv_resolution;
         m_inv_sample_count = sampler.m_inv_sample_count;
         m_resolution_x_div = sampler.m_resolution_x_div;
+        m_resolution_y_div = sampler.m_resolution_y_div;
+        m_resolution_xy_div = sampler.m_resolution_xy_div;
         m_permutation_seed = sampler.m_permutation_seed;
     }
 
     bool m_jitter;
 
     /// Stratification grid resolution and precomputed variables
-    ScalarPoint2u m_resolution;
-    ScalarPoint2f m_inv_resolution;
+    ScalarPoint3u m_resolution;
+    ScalarPoint3f m_inv_resolution;
     ScalarFloat m_inv_sample_count;
-    dr::divisor<uint32_t> m_resolution_x_div;
+    dr::divisor<uint32_t> m_resolution_x_div, m_resolution_y_div, m_resolution_xy_div;
 
     /// Per-sequence permutation seed
     UInt32 m_permutation_seed;

@@ -131,7 +131,8 @@ However, it supports the use of a spatially varying albedo.
 template <typename Float, typename Spectrum>
 class HomogeneousMedium final : public Medium<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction, m_phase_function)
+    MI_IMPORT_BASE(Medium, get_radiance, m_is_homogeneous, m_has_spectral_extinction,
+                   m_phase_function, m_medium_sampling_mode)
     MI_IMPORT_TYPES(Scene, Sampler, Texture, Volume)
 
     HomogeneousMedium(const Properties &props) : Base(props) {
@@ -161,10 +162,10 @@ public:
     }
 
     UnpolarizedSpectrum
-    get_majorant(const MediumInteraction3f &mi,
+    get_majorant(const MediumInteraction3f &mei,
                  Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
-        return eval_sigmat(mi, active) & active;
+        return eval_sigmat(mei, active) & active;
     }
 
     std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
@@ -186,9 +187,10 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "HomogeneousMedium[" << std::endl
-            << "  albedo = " << string::indent(m_albedo) << "," << std::endl
-            << "  sigma_t = " << string::indent(m_sigmat) << "," << std::endl
-            << "  scale = " << string::indent(m_scale)  << std::endl
+            << "  albedo              = " << string::indent(m_albedo) << std::endl
+            << "  sigma_t             = " << string::indent(m_sigmat) << std::endl
+            << "  scale               = " << string::indent(m_scale) << std::endl
+            << "  event_sampling_mode = " << string::indent(m_medium_sampling_mode == MediumEventSamplingMode::Analogue ? "Analogue" : (m_medium_sampling_mode == MediumEventSamplingMode::Mean ? "Mean" : "Maximum")) << std::endl
             << "]";
         return oss.str();
     }

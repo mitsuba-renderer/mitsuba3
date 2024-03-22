@@ -10,7 +10,7 @@ public:
     PyEmitter(const Properties &props) : Emitter(props) { }
 
     std::pair<Ray3f, Spectrum>
-    sample_ray(Float time, Float sample1, const Point2f &sample2,
+    sample_ray(Float time, Float sample1, const Point3f &sample2,
            const Point2f &sample3, Mask active) const override {
         using Return = std::pair<Ray3f, Spectrum>;
         PYBIND11_OVERRIDE_PURE(Return, Emitter, sample_ray, time, sample1, sample2, sample3,
@@ -19,7 +19,7 @@ public:
 
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &ref,
-                     const Point2f &sample,
+                     const Point3f &sample,
                      Mask active) const override {
         using Return = std::pair<DirectionSample3f, Spectrum>;
         PYBIND11_OVERRIDE_PURE(Return, Emitter, sample_direction, ref, sample, active);
@@ -38,7 +38,7 @@ public:
     }
 
     std::pair<PositionSample3f, Float>
-    sample_position(Float time, const Point2f &sample,
+    sample_position(Float time, const Point3f &sample,
                     Mask active) const override {
         using Return = std::pair<PositionSample3f, Float>;
         PYBIND11_OVERRIDE_PURE(Return, Emitter, sample_position, time, sample, active);
@@ -79,6 +79,7 @@ public:
 
     using Emitter::m_flags;
     using Emitter::m_needs_sample_2;
+    using Emitter::m_needs_sample_2_3d;
     using Emitter::m_needs_sample_3;
 };
 
@@ -95,6 +96,7 @@ MI_PY_EXPORT(Emitter) {
         .def_method(Emitter, sampling_weight)
         .def_method(Emitter, flags, "active"_a = true)
         .def_readwrite("m_needs_sample_2", &PyEmitter::m_needs_sample_2)
+        .def_readwrite("m_needs_sample_2_3d", &PyEmitter::m_needs_sample_2_3d)
         .def_readwrite("m_needs_sample_3", &PyEmitter::m_needs_sample_3)
         .def_property("m_flags",
             [](PyEmitter &emitter){ return emitter.m_flags; },
@@ -111,14 +113,14 @@ MI_PY_EXPORT(Emitter) {
         py::class_<EmitterPtr> cls(m, "EmitterPtr", dr_array);
 
         cls.def("sample_ray",
-                [](EmitterPtr ptr, Float time, Float sample1, const Point2f &sample2,
+                [](EmitterPtr ptr, Float time, Float sample1, const Point3f &sample2,
                 const Point2f &sample3, Mask active) {
                     return ptr->sample_ray(time, sample1, sample2, sample3, active);
                 },
                 "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
                 D(Endpoint, sample_ray))
         .def("sample_direction",
-                [](EmitterPtr ptr, const Interaction3f &it, const Point2f &sample, Mask active) {
+                [](EmitterPtr ptr, const Interaction3f &it, const Point3f &sample, Mask active) {
                     return ptr->sample_direction(it, sample, active);
                 },
                 "it"_a, "sample"_a, "active"_a = true,
@@ -136,7 +138,7 @@ MI_PY_EXPORT(Emitter) {
                 "it"_a, "ds"_a, "active"_a = true,
                 D(Endpoint, eval_direction))
         .def("sample_position",
-                [](EmitterPtr ptr, Float time, const Point2f &sample, Mask active) {
+                [](EmitterPtr ptr, Float time, const Point3f &sample, Mask active) {
                     return ptr->sample_position(time, sample, active);
                 },
                 "time"_a, "sample"_a, "active"_a = true,

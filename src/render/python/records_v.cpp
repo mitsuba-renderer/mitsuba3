@@ -1,4 +1,5 @@
 #include <mitsuba/render/shape.h>
+#include <mitsuba/render/medium.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/python/python.h>
@@ -10,6 +11,8 @@ MI_PY_EXPORT(PositionSample) {
         .def(py::init<const PositionSample3f &>(), "Copy constructor", "other"_a)
         .def(py::init<const SurfaceInteraction3f &>(),
             "si"_a, D(PositionSample, PositionSample))
+        .def(py::init<const MediumInteraction3f &>(),
+            "mei"_a, D(PositionSample, PositionSample))
         .def_readwrite("p",      &PositionSample3f::p,      D(PositionSample, p))
         .def_readwrite("n",      &PositionSample3f::n,      D(PositionSample, n))
         .def_readwrite("uv",     &PositionSample3f::uv,     D(PositionSample, uv))
@@ -34,6 +37,8 @@ MI_PY_EXPORT(DirectionSample) {
             "emitter"_a, "Element-by-element constructor")
         .def(py::init<const Scene *, const SurfaceInteraction3f &, const Interaction3f &>(),
             "scene"_a, "si"_a, "ref"_a, D(PositionSample, PositionSample))
+        .def(py::init<const MediumInteraction3f&, const Interaction3f &>(),
+            "mei"_a, "ref"_a, D(PositionSample, PositionSample))
         .def_readwrite("d",     &DirectionSample3f::d,     D(DirectionSample, d))
         .def_readwrite("dist",  &DirectionSample3f::dist,  D(DirectionSample, dist))
         .def_readwrite("emitter", &DirectionSample3f::emitter, D(DirectionSample, emitter))

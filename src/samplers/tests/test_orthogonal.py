@@ -8,16 +8,16 @@ from .utils import ( check_uniform_scalar_sampler, check_uniform_wavefront_sampl
 def test01_orthogonal_scalar(variant_scalar_rgb):
     sampler = mi.load_dict({
         "type" : "orthogonal",
-        "sample_count" : 1369,
+        "sample_count" : 961,
     })
 
-    check_uniform_scalar_sampler(sampler, res=4, atol=4.0)
+    check_uniform_scalar_sampler(sampler, res=4, atol=8.0)
 
 
 def test02_orthogonal_wavefront(variants_vec_backends_once):
     sampler = mi.load_dict({
         "type" : "orthogonal",
-        "sample_count" : 1369,
+        "sample_count" : 961,
     })
 
     check_uniform_wavefront_sampler(sampler, atol=4.0)

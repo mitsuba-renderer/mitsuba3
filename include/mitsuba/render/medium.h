@@ -8,10 +8,17 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+enum class MediumEventSamplingMode : uint32_t {
+    Analogue = 0,
+    Maximum,
+    Mean
+};
+MI_DECLARE_ENUM_OPERATORS(MediumEventSamplingMode)
+
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Medium : public Object {
 public:
-    MI_IMPORT_TYPES(PhaseFunction, Sampler, Scene, Texture);
+    MI_IMPORT_TYPES(PhaseFunction, Sampler, Scene, Texture, Emitter, Volume, EmitterPtr);
 
     /// Intersects a ray with the medium's bounding box
     virtual std::tuple<Mask, Float, Float>
@@ -28,6 +35,47 @@ public:
                        UnpolarizedSpectrum>
     get_scattering_coefficients(const MediumInteraction3f &mi,
                                 Mask active = true) const = 0;
+
+    /// Returns the radiance, the probability of a scatter event, and
+    /// the weights associated with real and null scattering events
+    std::pair<std::pair<UnpolarizedSpectrum, UnpolarizedSpectrum>,
+               std::pair<UnpolarizedSpectrum, UnpolarizedSpectrum>>
+    get_interaction_probabilities(const Spectrum &radiance,
+                                  const MediumInteraction3f &mi,
+                                  const Spectrum &throughput) const;
+
+    MI_INLINE std::pair<UnpolarizedSpectrum, UnpolarizedSpectrum>
+    medium_probabilities_analog(const UnpolarizedSpectrum &radiance,
+                                const MediumInteraction3f &mi) const {
+        auto prob_s = mi.sigma_t;
+        auto prob_n = mi.sigma_n + dr::maximum(radiance, dr::mean(dr::abs(radiance)));
+        return std::make_pair( prob_s, prob_n );
+    }
+
+    MI_INLINE std::pair<UnpolarizedSpectrum, UnpolarizedSpectrum>
+    medium_probabilities_max(const UnpolarizedSpectrum &radiance,
+                             const MediumInteraction3f &mi,
+                             const UnpolarizedSpectrum &throughput) const {
+        auto prob_s = dr::max(dr::abs(mi.sigma_t * throughput));
+        auto prob_n = dr::max(dr::abs(mi.sigma_n * throughput)) +
+                      dr::max(dr::abs(radiance * dr::maximum(1.f, throughput)));
+        return std::make_pair( prob_s, prob_n );
+    }
+
+    MI_INLINE std::pair<UnpolarizedSpectrum, UnpolarizedSpectrum>
+    medium_probabilities_mean(const UnpolarizedSpectrum &radiance,
+                              const MediumInteraction3f &mi,
+                              const UnpolarizedSpectrum &throughput) const {
+        auto prob_s = dr::mean(dr::abs(mi.sigma_t * throughput));
+        auto prob_n = dr::mean(dr::abs(mi.sigma_n * throughput)) +
+                      dr::mean(dr::abs(radiance * (0.5f + 0.5f * throughput)));
+        return std::make_pair( prob_s, prob_n );
+    }
+
+    /// Returns the medium's radiance used for emissive media
+    UnpolarizedSpectrum
+    get_radiance(const MediumInteraction3f &mi,
+                 Mask active = true) const;
 
     /**
      * \brief Sample a free-flight distance in the medium.
@@ -75,16 +123,32 @@ public:
         return m_phase_function.get();
     }
 
+    /// Return the emitter of this medium
+    const EmitterPtr emitter(Mask /*unused*/ = true) const {
+        return m_emitter.get();
+    }
+
+    /// Return the emitter of this medium
+    EmitterPtr emitter(Mask /*unused*/ = true) {
+        return m_emitter.get();
+    }
+
     /// Returns whether this specific medium instance uses emitter sampling
     MI_INLINE bool use_emitter_sampling() const { return m_sample_emitters; }
 
     /// Returns whether this medium is homogeneous
     MI_INLINE bool is_homogeneous() const { return m_is_homogeneous; }
 
+    /// Returns whether this medium is emitting
+    MI_INLINE bool is_emitter() const { return m_emitter.get() != nullptr; }
+
     /// Returns whether this medium has a spectrally varying extinction
     MI_INLINE bool has_spectral_extinction() const {
         return m_has_spectral_extinction;
     }
+
+    /// Returns whether this medium is homogeneous
+    void set_emitter(Emitter* emitter);
 
     void traverse(TraversalCallback *callback) override;
 
@@ -107,7 +171,9 @@ protected:
 
 protected:
     ref<PhaseFunction> m_phase_function;
+    ref<Emitter> m_emitter;
     bool m_sample_emitters, m_is_homogeneous, m_has_spectral_extinction;
+    MediumEventSamplingMode m_medium_sampling_mode;
 
     /// Identifier (if available)
     std::string m_id;
@@ -122,14 +188,21 @@ NAMESPACE_END(mitsuba)
 
 DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Medium)
     DRJIT_VCALL_GETTER(phase_function, const typename Class::PhaseFunction*)
+    DRJIT_VCALL_GETTER(emitter, const typename Class::Emitter*)
     DRJIT_VCALL_GETTER(use_emitter_sampling, bool)
     DRJIT_VCALL_GETTER(is_homogeneous, bool)
     DRJIT_VCALL_GETTER(has_spectral_extinction, bool)
     DRJIT_VCALL_METHOD(get_majorant)
+    DRJIT_VCALL_METHOD(get_radiance)
     DRJIT_VCALL_METHOD(intersect_aabb)
     DRJIT_VCALL_METHOD(sample_interaction)
     DRJIT_VCALL_METHOD(transmittance_eval_pdf)
     DRJIT_VCALL_METHOD(get_scattering_coefficients)
+    DRJIT_VCALL_METHOD(get_interaction_probabilities)
+    DRJIT_VCALL_METHOD(medium_probabilities_analog)
+    DRJIT_VCALL_METHOD(medium_probabilities_max)
+    DRJIT_VCALL_METHOD(medium_probabilities_mean)
+    auto is_emitter() const { return neq(emitter(), nullptr); }
 DRJIT_VCALL_TEMPLATE_END(mitsuba::Medium)
 
 //! @}

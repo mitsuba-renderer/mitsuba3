@@ -40,7 +40,7 @@ def test01_point_sample_ray(variants_vec_spectral, spectrum_key):
     time = 0.5
     wavelength_sample = [0.5, 0.33, 0.1]
     dir_sample = [[0.4, 0.5, 0.3], [0.1, 0.4, 0.9]]
-    pos_sample = dir_sample  # not being used anyway
+    pos_sample = dir_sample + [[0.0]*3]  # not being used anyway
 
     # Sample a ray (position, direction, wavelengths) on the emitter
     ray, res = emitter.sample_ray(time, wavelength_sample, pos_sample, dir_sample)
@@ -74,7 +74,7 @@ def test02_point_sample_direction(variant_scalar_spectral, spectrum_key):
     d /= dist
 
     # Sample a direction on the emitter
-    sample = [0.1, 0.5]
+    sample = [0.1, 0.5, 0.0]
     ds, res = emitter.sample_direction(it, sample)
 
     assert ds.time == it.time
@@ -104,7 +104,7 @@ def test03_point_sample_direction_vec(variants_vec_spectral, spectrum_key):
     d /= dist
 
     # Sample direction on the emitter
-    sample = [0.1, 0.5]
+    sample = [0.1, 0.5, 0.0]
     ds, res = emitter.sample_direction(it, sample)
 
     assert dr.all(ds.time == it.time)

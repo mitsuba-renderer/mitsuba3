@@ -27,7 +27,7 @@
     url = https://github.com/mitsuba-renderer/nanogui
 [submodule "resources/data"]
     path = resources/data
-    url = https://github.com/mitsuba-renderer/mitsuba-data
+	url = https://github.com/Microno95/mitsuba-data-emissive-volume
     shallow = true
 [submodule "ext/embree"]
     path = ext/embree

@@ -8,7 +8,8 @@ NAMESPACE_BEGIN(mitsuba)
 
 /**
  * \brief Implements common warping techniques that map from the unit
- * square [0, 1]^2 to other domains such as spheres, hemispheres, etc.
+ * square [0, 1]^2 or unit cube [0, 1]^3 to other domains such as spheres,
+ * hemispheres, etc.
  *
  * The main application of this class is to generate uniformly
  * distributed or weighted point sets in certain common target domains.
@@ -273,6 +274,41 @@ MI_INLINE Value square_to_uniform_sphere_pdf(const Vector<Value, 3> &v) {
                           0.f, dr::InvFourPi<Value>);
     else
         return dr::InvFourPi<Value>;
+}
+
+/// Uniformly sample a vector on the unit sphere with respect to solid angles
+template <typename Value>
+MI_INLINE Vector<Value, 3> cube_to_uniform_sphere(const Point<Value, 3> &sample) {
+    Value radius = dr::safe_cbrt(sample.x()),
+          phi = 2.f * dr::Pi<Value> * sample.z(),
+          u = dr::fmsub(2.f, sample.y(), 1.f);
+    radius = dr::select(dr::neq(sample.x(), 0.f), radius, sample.x());
+    auto [s, c] = dr::sincos(phi);
+    return { radius * c * dr::safe_sqrt(1 - dr::sqr(u)), radius * s * dr::safe_sqrt(1 - dr::sqr(u)), radius * u };
+}
+
+/// Inverse of the mapping \ref square_to_uniform_sphere
+template <typename Value>
+MI_INLINE Point<Value, 3> uniform_sphere_to_cube(const Vector<Value, 3> &p) {
+    Value phi = dr::atan2(p.y(), p.x()) * dr::InvTwoPi<Value>,
+          radius = dr::safe_sqrt(dr::sqr(p.x()) + dr::sqr(p.y()) + dr::sqr(p.z())),
+          u = (p.z() / radius + 1.f) / 2.f;
+    return {
+        dr::sqr(radius) * radius,
+        u,
+        dr::select(phi < 0.f, phi + 1.f, phi),
+    };
+}
+
+/// Density of \ref cube_to_uniform_sphere() with respect to volume
+template <bool TestDomain = false, typename Value>
+MI_INLINE Value cube_to_uniform_sphere_pdf(const Vector<Value, 3> &v) {
+    DRJIT_MARK_USED(v);
+    if constexpr (TestDomain)
+        return dr::select(dr::abs(dr::squared_norm(v) - 1.f) > math::RayEpsilon<Value>,
+                          0.f, 3.f * dr::InvFourPi<Value>);
+    else
+        return 3.f * dr::InvFourPi<Value>;
 }
 
 // =======================================================================

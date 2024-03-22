@@ -114,13 +114,14 @@ public:
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
-                                          const Point2f &spatial_sample,
+                                          const Point3f &spatial_sample,
                                           const Point2f & /*direction_sample*/,
                                           Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
+        auto spatial_sample_2d = Point2f(spatial_sample.x(), spatial_sample.y());
         // 1. Sample spatial component
-        Point2f offset =  warp::square_to_uniform_disk_concentric(spatial_sample);
+        Point2f offset =  warp::square_to_uniform_disk_concentric(spatial_sample_2d);
 
         // 2. "Sample" directional component (fixed, no actual sampling required)
         const auto trafo = m_to_world.value();
@@ -135,7 +136,7 @@ public:
         si.t    = 0.f;
         si.time = time;
         si.p    = origin;
-        si.uv   = spatial_sample;
+        si.uv   = spatial_sample_2d;
         auto [wavelengths, wav_weight] =
             sample_wavelengths(si, wavelength_sample, active);
 
@@ -147,7 +148,7 @@ public:
     }
 
     std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &it, const Point2f & /*sample*/,
+    sample_direction(const Interaction3f &it, const Point3f & /*sample*/,
                      Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
@@ -199,7 +200,7 @@ public:
     }
 
     std::pair<PositionSample3f, Float>
-    sample_position(Float /*time*/, const Point2f & /*sample*/,
+    sample_position(Float /*time*/, const Point3f & /*sample*/,
                     Mask /*active*/) const override {
         if constexpr (dr::is_jit_v<Float>) {
             // When vcalls are recorded in symbolic mode, we can't throw an exception,

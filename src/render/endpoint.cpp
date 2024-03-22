@@ -55,7 +55,7 @@ MI_VARIANT void Endpoint<Float, Spectrum>::set_medium(Medium *medium) {
 MI_VARIANT std::pair<typename Endpoint<Float, Spectrum>::Ray3f, Spectrum>
 Endpoint<Float, Spectrum>::sample_ray(Float /*time*/,
                                       Float /*sample1*/,
-                                      const Point2f & /*sample2*/,
+                                      const Point3f & /*sample2*/,
                                       const Point2f & /*sample3*/,
                                       Mask /*active*/) const {
     NotImplementedError("sample_ray");
@@ -63,7 +63,7 @@ Endpoint<Float, Spectrum>::sample_ray(Float /*time*/,
 
 MI_VARIANT std::pair<typename Endpoint<Float, Spectrum>::DirectionSample3f, Spectrum>
 Endpoint<Float, Spectrum>::sample_direction(const Interaction3f & /*it*/,
-                                            const Point2f & /*sample*/,
+                                            const Point3f & /*sample*/,
                                             Mask /*active*/) const {
     NotImplementedError("sample_direction");
 }
@@ -71,7 +71,7 @@ Endpoint<Float, Spectrum>::sample_direction(const Interaction3f & /*it*/,
 MI_VARIANT
 std::pair<typename Endpoint<Float, Spectrum>::PositionSample3f, Float>
 Endpoint<Float, Spectrum>::sample_position(Float /*time*/,
-                                           const Point2f &/*sample*/,
+                                           const Point3f &/*sample*/,
                                            Mask /*active*/) const {
     NotImplementedError("sample_position");
 }

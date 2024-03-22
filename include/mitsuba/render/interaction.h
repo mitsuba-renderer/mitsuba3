@@ -547,6 +547,10 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
         return sh_frame.to_local(v);
     }
 
+    /// Get emitter attached to the medium associated with this interaction
+    /// \note Defined in scene.h
+    EmitterPtr emitter(Mask active = true) const;
+
     //! @}
     // =============================================================
 

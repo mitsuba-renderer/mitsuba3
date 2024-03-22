@@ -98,7 +98,7 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, direction):
     it.time = 1.0
 
     # Sample direction
-    samples = [0.85, 0.13]
+    samples = [0.85, 0.13, 0.0]
     ds, res = emitter.sample_direction(it, samples)
 
     # Direction should point *towards* the illuminated direction
@@ -124,17 +124,17 @@ def test_sample_ray(variant_scalar_spectral, direction):
     directional_sample = [0.3, 0.2]
 
     for spatial_sample in [
-            [0.85, 0.13],
-            [0.16, 0.50],
-            [0.00, 1.00],
-            [0.32, 0.87],
-            [0.16, 0.44],
-            [0.17, 0.44],
-            [0.22, 0.81],
-            [0.12, 0.82],
-            [0.99, 0.42],
-            [0.72, 0.40],
-            [0.01, 0.61],
+            [0.85, 0.13, 0.0],
+            [0.16, 0.50, 0.0],
+            [0.00, 1.00, 0.0],
+            [0.32, 0.87, 0.0],
+            [0.16, 0.44, 0.0],
+            [0.17, 0.44, 0.0],
+            [0.22, 0.81, 0.0],
+            [0.12, 0.82, 0.0],
+            [0.99, 0.42, 0.0],
+            [0.72, 0.40, 0.0],
+            [0.01, 0.61, 0.0],
         ]:
         ray, _ = emitter.sample_ray(
             time, wavelength_sample, spatial_sample, directional_sample)

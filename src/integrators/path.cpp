@@ -192,8 +192,10 @@ public:
 
             if (dr::any_or<true>(active_em)) {
                 // Sample the emitter
+                auto emitter_sample_2d = sampler->next_2d(); // We assume that any emitter rendered with this integrator excludes medium emitters
+                auto emitter_sample = Point3f(emitter_sample_2d.x(), emitter_sample_2d.y(), 0.0f);
                 std::tie(ds, em_weight) = scene->sample_emitter_direction(
-                    si, sampler->next_2d(), true, active_em);
+                    si, emitter_sample, true, active_em);
                 active_em &= dr::neq(ds.pdf, 0.f);
 
                 /* Given the detached emitter sample, recompute its contribution
