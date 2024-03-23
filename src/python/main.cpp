@@ -28,7 +28,7 @@ MI_PY_DECLARE(ProgressReporter);
 MI_PY_DECLARE(rfilter);
 MI_PY_DECLARE(Thread);
 MI_PY_DECLARE(Timer);
-MI_PY_DECLARE(util);
+MI_PY_DECLARE(misc);
 
 // render
 MI_PY_DECLARE(BSDFContext);
@@ -146,7 +146,7 @@ NB_MODULE(mitsuba_ext, m) {
     MI_PY_IMPORT(ProgressReporter);
     MI_PY_IMPORT(Thread);
     MI_PY_IMPORT(Timer);
-    MI_PY_IMPORT(util);
+    MI_PY_IMPORT(misc);
 
     MI_PY_IMPORT(BSDFContext);
     MI_PY_IMPORT(EmitterExtras);

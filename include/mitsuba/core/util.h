@@ -105,4 +105,3 @@ struct Version {
 
 NAMESPACE_END(util)
 NAMESPACE_END(mitsuba)
-

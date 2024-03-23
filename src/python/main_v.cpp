@@ -135,6 +135,7 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT_TYPES()
 
     // Create sub-modules
+    // TODO: Just use normal submodule creation
     nb::module_ math    = create_submodule(m, "math"),
                 spline  = create_submodule(m, "spline"),
                 warp    = create_submodule(m, "warp"),
@@ -149,6 +150,7 @@ NB_MODULE(MI_VARIANT_NAME, m) {
 
     MI_PY_IMPORT(DrJit);
 
+    // TODO: Add documentation
     m.attr("is_monochromatic") = is_monochromatic_v<Spectrum>;
     m.attr("is_rgb") = is_rgb_v<Spectrum>;
     m.attr("is_spectral") = is_spectral_v<Spectrum>;

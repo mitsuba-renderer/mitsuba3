@@ -106,6 +106,7 @@ class PRBIntegrator(RBIntegrator):
 
         while active:
             active_next = mi.Bool(active)
+            #print()
 
             # Compute a surface interaction that tracks derivatives arising
             # from differentiable shape parameters (position, normals, etc.)
@@ -114,6 +115,11 @@ class PRBIntegrator(RBIntegrator):
                 si = scene.ray_intersect(ray,
                                          ray_flags=mi.RayFlags.All,
                                          coherent=(depth == 0))
+
+            #print(f"ray:\t{ray}")
+            #print(f"si:\t{si}")
+            #print(f"throughput:\t{β}")
+            #print(f"result:\t{L}")
 
             # Get the BSDF, potentially computes texture-space differentials
             bsdf = si.bsdf(ray)
@@ -169,6 +175,8 @@ class PRBIntegrator(RBIntegrator):
                                                    sampler.next_1d(),
                                                    sampler.next_2d(),
                                                    active_next)
+            #print(f"bsdf_sample:\t{bsdf_sample}")
+            #print(f"bsdf_weight:\t{bsdf_weight}")
 
             # ---- Update loop variables based on current interaction -----
 
@@ -176,6 +184,7 @@ class PRBIntegrator(RBIntegrator):
             ray = si.spawn_ray(si.to_world(bsdf_sample.wo))
             η *= bsdf_sample.eta
             β *= bsdf_weight
+            #print(f"β after multiply:\t{β}")
 
             # Information about the current vertex needed by the next iteration
 
@@ -192,10 +201,16 @@ class PRBIntegrator(RBIntegrator):
             # Russian roulette stopping probability (must cancel out ior^2
             # to obtain unitless throughput, enforces a minimum probability)
             rr_prob = dr.minimum(β_max * η**2, .95)
+            #print(f"β:\t{β}")
+            #print(f"rr_prob:\t{rr_prob}")
 
             # Apply only further along the path since, this introduces variance
             rr_active = depth >= self.rr_depth
+            #print(f"rr_active:\t{rr_active}")
+            #print(f"rcp(rr_prob):\t{dr.rcp(rr_prob)}")
+
             β[rr_active] *= dr.rcp(rr_prob)
+
             rr_continue = sampler.next_1d() < rr_prob
             active_next &= ~rr_active | rr_continue
 

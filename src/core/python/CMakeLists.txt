@@ -32,6 +32,7 @@ set(CORE_PY_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/formatter.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/fresolver.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/logger.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/misc.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/mmap.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/object.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/progress.cpp
@@ -40,6 +41,5 @@ set(CORE_PY_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/struct.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/thread.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/timer.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/util.cpp
   PARENT_SCOPE
 )
