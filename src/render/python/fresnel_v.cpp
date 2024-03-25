@@ -2,6 +2,8 @@
 #include <mitsuba/render/fresnel.h>
 #include <mitsuba/python/python.h>
 
+#include <nanobind/stl/tuple.h>
+
 MI_PY_EXPORT(fresnel) {
     MI_PY_IMPORT_TYPES()
     m.def("fresnel",

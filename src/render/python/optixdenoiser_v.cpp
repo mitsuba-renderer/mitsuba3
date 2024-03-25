@@ -1,7 +1,10 @@
 #if defined(MI_ENABLE_CUDA)
 
+#include <nanobind/nanobind.h>
 #include <mitsuba/render/optixdenoiser.h>
 #include <mitsuba/python/python.h>
+
+#include <nanobind/stl/string.h>
 
 MI_PY_EXPORT(OptixDenoiser) {
     MI_PY_IMPORT_TYPES(OptixDenoiser)

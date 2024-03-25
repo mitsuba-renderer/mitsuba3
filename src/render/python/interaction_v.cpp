@@ -39,7 +39,7 @@ MI_PY_EXPORT(SurfaceInteraction) {
         nb::class_<SurfaceInteraction3f, Interaction3f>(m, "SurfaceInteraction3f",
                                                         D(SurfaceInteraction))
         // Members
-        .def_field(SurfaceInteraction3f, shape,         D(SurfaceInteraction, shape))
+        .def_field(SurfaceInteraction3f, shape,         "shape"_a.none(), D(SurfaceInteraction, shape))
         .def_field(SurfaceInteraction3f, uv,            D(SurfaceInteraction, uv))
         .def_field(SurfaceInteraction3f, sh_frame,      D(SurfaceInteraction, sh_frame))
         .def_field(SurfaceInteraction3f, dp_du,         D(SurfaceInteraction, dp_du))
@@ -50,7 +50,7 @@ MI_PY_EXPORT(SurfaceInteraction) {
         .def_field(SurfaceInteraction3f, duv_dy,        D(SurfaceInteraction, duv_dy))
         .def_field(SurfaceInteraction3f, wi,            D(SurfaceInteraction, wi))
         .def_field(SurfaceInteraction3f, prim_index,    D(SurfaceInteraction, prim_index))
-        .def_field(SurfaceInteraction3f, instance,      D(SurfaceInteraction, instance))
+        .def_field(SurfaceInteraction3f, instance,      "instance"_a.none(), D(SurfaceInteraction, instance))
 
         // Methods
         .def(nb::init<>(), D(SurfaceInteraction, SurfaceInteraction))

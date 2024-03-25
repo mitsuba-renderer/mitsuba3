@@ -115,7 +115,7 @@ def test07_rotate_stokes_basis(variant_scalar_rgb):
     b_00 = mi.mueller.stokes_basis(w) # Corresponding Stokes basis
 
     def rotate_vector(v, axis, angle):
-        return mi.Transform4f.rotate(axis, angle) @ v
+        return mi.Transform4f().rotate(axis, angle) @ v
 
     # Switch to basis rotated by 90˚.
     b_90 = rotate_vector(b_00, w, 90.0)
@@ -152,7 +152,7 @@ def test08_rotate_mueller_basis(variant_scalar_rgb):
     M = mi.mueller.linear_polarizer()
 
     def rotate_vector(v, axis, angle):
-        return mi.Transform4f.rotate(axis, angle) @ v
+        return mi.Transform4f().rotate(axis, angle) @ v
 
     # As reference, rotate the element directly by -45˚
     M_rotated_element = mi.mueller.rotated_element(-45 * dr.pi/180, M)

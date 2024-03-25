@@ -237,7 +237,7 @@ def test05_denoiser_denoise_multichannel_bitmap_runs(variant_cuda_ad_rgb):
 
     denoiser = mi.OptixDenoiser(multichannel.size(), True, True)
     denoised = denoiser(multichannel, False, "albedo", "sh_normal", sensor.world_transform().inverse())
-    denoised = mi.TensorXf(denoised.convert(component_format=mi.Struct.Type.Float16))
+    denoised = mi.TensorXf(denoised.convert(component_format=mi.Struct.Type.Float32))
     dr.eval(denoised)
 
     assert True
