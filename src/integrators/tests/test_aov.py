@@ -158,11 +158,11 @@ def test04_check_aov_correct(variants_all_rgb):
 @fresolver_append_path
 def test05_check_aov_film(variants_all_rgb):
     import numpy as np
-    scene = mi.load_file('resources/data/scenes/cbox/cbox.xml', res=512)
+    scene = mi.load_file('resources/data/scenes/cbox/cbox.xml', res=32)
 
     path_integrator = mi.load_dict({
-        'type': 'prb',
-        'max_depth': 2
+        'type': 'path',
+        'max_depth': 6
     })
 
     aov_integrator = mi.load_dict({
