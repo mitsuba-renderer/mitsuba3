@@ -281,12 +281,12 @@ template <typename Point_> struct Transform {
         Vector3 new_up = dr::cross(dir, left);
 
         Vector1 z(0);
-        Matrix result = Matrix(
+        Matrix result = dr::transpose(Matrix(
             dr::concat(left, z),
             dr::concat(new_up, z),
             dr::concat(dir, z),
             dr::concat(origin, Vector1(1))
-        );
+        ));
 
         Matrix inverse = dr::transpose(Matrix(
             dr::concat(left, z),
@@ -295,9 +295,9 @@ template <typename Point_> struct Transform {
             Vector<Float, 4>(0.f, 0.f, 0.f, 1.f)
         ));
 
-        inverse[3] = inverse * dr::concat(-origin, Vector1(1));
+        inverse[3] = dr::transpose(inverse) * dr::concat(-origin, Vector1(1));
 
-        return Transform(dr::transpose(result), inverse);
+        return Transform(result, inverse);
     }
 
     /// Creates a transformation that converts from the standard basis to 'frame'
