@@ -216,7 +216,6 @@ def test_hapke_hemisphere(variant_llvm_ad_rgb, static_hemisphere, plot_figures):
     npvalues = npvalues.reshape((zeniths_s, azimuths_s)).T
 
     ref = np.asarray(static_hemisphere.reflectance.values)
-    print(npvalues.shape, ref.shape)
 
     if plot_figures:
         fig, ax = plt.subplots(subplot_kw=dict(projection="polar"))

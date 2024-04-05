@@ -141,65 +141,67 @@ public:
         return { bs, depolarizer<Spectrum>(value) & (active && bs.pdf > 0.f) };
     }
 
-    inline const Spectrum eval_H(const Spectrum &w, const Spectrum &x) const {
-        const Spectrum gamma = dr::sqrt(1.f - w);
-        const Spectrum ro    = (1.f - gamma) / (1.f + gamma);
+    MI_INLINE UnpolarizedSpectrum eval_H(const UnpolarizedSpectrum &w,
+                                         const UnpolarizedSpectrum &x) const {
+        const UnpolarizedSpectrum gamma = dr::sqrt(1.f - w);
+        const UnpolarizedSpectrum ro    = (1.f - gamma) / (1.f + gamma);
         return 1.f / (1.f - w * x *
                                 (ro + (1.f - 2.f * ro * x) * 0.5f *
                                           dr::log((1.f + x) / x)));
     }
 
-    inline const Spectrum eval_chi(const Spectrum &tan_theta) const {
+    MI_INLINE UnpolarizedSpectrum
+    eval_chi(const UnpolarizedSpectrum &tan_theta) const {
         return 1 / dr::sqrt(1.f + dr::Pi<ScalarFloat> * dr::sqr(tan_theta));
     }
 
-    inline const Float eval_f(const Float &phi) const {
-        const Float clamped_phi_div2 = dr::clamp(phi / 2.f, 0.f, dr::Pi<Float> / 2.f - dr::Epsilon<Float>);
+    MI_INLINE Float eval_f(const Float &phi) const {
+        const Float clamped_phi_div2 =
+            dr::clamp(phi / 2.f, 0.f, dr::Pi<Float> / 2.f - dr::Epsilon<Float>);
         return dr::exp(-2.f * dr::tan(clamped_phi_div2));
     }
 
-    inline const Spectrum eval_E1(const Spectrum &tan_theta,
-                                  const Float &x) const {
+    MI_INLINE UnpolarizedSpectrum eval_E1(const UnpolarizedSpectrum &tan_theta,
+                                          const Float &x) const {
         return dr::exp(-2.f * dr::InvPi<Float> / tan_theta / dr::tan(x));
     }
 
-    inline const Spectrum eval_E2(const Spectrum &tan_theta,
-                                  const Float &x) const {
+    MI_INLINE UnpolarizedSpectrum eval_E2(const UnpolarizedSpectrum &tan_theta,
+                                          const Float &x) const {
         return dr::exp(-dr::InvPi<Float> / dr::sqr(tan_theta) /
                        dr::sqr(dr::tan(x)));
     }
 
-    inline const Spectrum eval_eta_0e(const Spectrum &chi, const Float &cos_i,
-                                      const Float &sin_i,
-                                      const Spectrum &tan_theta,
-                                      const Spectrum &E2_i,
-                                      const Spectrum &E1_i) const {
+    MI_INLINE UnpolarizedSpectrum eval_eta_0e(
+        const UnpolarizedSpectrum &chi, const Float &cos_i, const Float &sin_i,
+        const UnpolarizedSpectrum &tan_theta, const UnpolarizedSpectrum &E2_i,
+        const UnpolarizedSpectrum &E1_i) const {
         return chi * (cos_i + sin_i * tan_theta * E2_i / (2.f - E1_i));
     }
 
-    inline const Spectrum eval_eta_e(const Spectrum &chi, const Float &cos_e,
-                                     const Float &sin_e,
-                                     const Spectrum &tan_theta,
-                                     const Spectrum &E2_e,
-                                     const Spectrum &E1_e) const {
+    MI_INLINE UnpolarizedSpectrum eval_eta_e(
+        const UnpolarizedSpectrum &chi, const Float &cos_e, const Float &sin_e,
+        const UnpolarizedSpectrum &tan_theta, const UnpolarizedSpectrum &E2_e,
+        const UnpolarizedSpectrum &E1_e) const {
         return chi * (cos_e + sin_e * tan_theta * E2_e / (2.f - E1_e));
     }
 
-    inline const Spectrum eval_mu(const Spectrum &tan_theta, const Float &e,
-                                  const Float &i, const Float &cos_x,
-                                  const Float &sin_x, const Float &phi,
-                                  const Float &opt_cos_phi,
-                                  const Float &sign) const {
+    MI_INLINE UnpolarizedSpectrum eval_mu(const UnpolarizedSpectrum &tan_theta,
+                                          const Float &e, const Float &i,
+                                          const Float &cos_x,
+                                          const Float &sin_x, const Float &phi,
+                                          const Float &opt_cos_phi,
+                                          const Float &sign) const {
 
-        const Spectrum chi = eval_chi(tan_theta);
+        UnpolarizedSpectrum chi = eval_chi(tan_theta);
 
-        const Spectrum E1_e = eval_E1(tan_theta, e);
-        const Spectrum E1_i = eval_E1(tan_theta, i);
-        const Spectrum E2_e = eval_E2(tan_theta, e);
-        const Spectrum E2_i = eval_E2(tan_theta, i);
+        UnpolarizedSpectrum E1_e = eval_E1(tan_theta, e);
+        UnpolarizedSpectrum E1_i = eval_E1(tan_theta, i);
+        UnpolarizedSpectrum E2_e = eval_E2(tan_theta, e);
+        UnpolarizedSpectrum E2_i = eval_E2(tan_theta, i);
 
-        const Float sin_phi_div2 = dr::sin(phi * 0.5f);
-        const Float phi_div_pi   = phi * dr::InvPi<ScalarFloat>;
+        Float sin_phi_div2 = dr::sin(phi * 0.5f);
+        Float phi_div_pi   = phi * dr::InvPi<ScalarFloat>;
 
         return chi * (cos_x + sin_x * tan_theta *
                                   (opt_cos_phi * E2_e +
@@ -207,136 +209,142 @@ public:
                                   (2.f - E1_e - phi_div_pi * E1_i));
     }
 
-    inline const Spectrum eval_mu_eG(const Spectrum &tan_theta, const Float &e,
-                                     const Float &i, const Float &phi,
-                                     const Float &cos_phi) const {
+    MI_INLINE UnpolarizedSpectrum
+    eval_mu_eG(const UnpolarizedSpectrum &tan_theta, const Float &e,
+               const Float &i, const Float &phi, const Float &cos_phi) const {
 
-        const Float opt_cos_phi = dr::select(e <= i, cos_phi, 1.f);
-        const Float sign        = dr::select(e <= i, 1.f, -1.f);
-        const Float cos_e       = dr::cos(e);
-        const Float sin_e       = dr::sin(e);
+        Float opt_cos_phi = dr::select(e <= i, cos_phi, 1.f);
+        Float sign        = dr::select(e <= i, 1.f, -1.f);
+        Float cos_e       = dr::cos(e);
+        Float sin_e       = dr::sin(e);
 
-        const Float a = dr::select(e <= i, i, e);
-        const Float b = dr::select(e <= i, e, i);
+        Float a = dr::select(e <= i, i, e);
+        Float b = dr::select(e <= i, e, i);
 
         return eval_mu(tan_theta, a, b, cos_e, sin_e, phi, opt_cos_phi, sign);
     }
 
-    inline const Spectrum eval_mu_0eG(const Spectrum &tan_theta, const Float &e,
-                                      const Float &i, const Float &phi,
-                                      const Float &cos_phi) const {
+    MI_INLINE UnpolarizedSpectrum
+    eval_mu_0eG(const UnpolarizedSpectrum &tan_theta, const Float &e,
+                const Float &i, const Float &phi, const Float &cos_phi) const {
 
-        const Float opt_cos_phi = dr::select(e <= i, 1.f, cos_phi);
-        const Float sign        = dr::select(e <= i, -1.f, 1.f);
-        const Float cos_i       = dr::cos(i);
-        const Float sin_i       = dr::sin(i);
+        Float opt_cos_phi = dr::select(e <= i, 1.f, cos_phi);
+        Float sign        = dr::select(e <= i, -1.f, 1.f);
+        Float cos_i       = dr::cos(i);
+        Float sin_i       = dr::sin(i);
 
-        const Float a = dr::select(e <= i, i, e);
-        const Float b = dr::select(e <= i, e, i);
+        Float a = dr::select(e <= i, i, e);
+        Float b = dr::select(e <= i, e, i);
 
         return eval_mu(tan_theta, a, b, cos_i, sin_i, phi, opt_cos_phi, sign);
     }
 
-    inline const Spectrum eval_M(const Spectrum &w, const Spectrum &mu_0eG,
-                                 const Spectrum &mu_eG) const {
+    MI_INLINE UnpolarizedSpectrum
+    eval_M(const UnpolarizedSpectrum &w, const UnpolarizedSpectrum &mu_0eG,
+           const UnpolarizedSpectrum &mu_eG) const {
         // Multiple scattering function
         return eval_H(w, mu_0eG) * eval_H(w, mu_eG) - 1.f;
     }
 
-    inline const Float eval_cos_g(const Float &mu_0, const Float &mu,
-                                  const Float &sin_i, const Float &sin_e,
-                                  const Float &cos_phi) const {
+    MI_INLINE Float eval_cos_g(const Float &mu_0, const Float &mu,
+                               const Float &sin_i, const Float &sin_e,
+                               const Float &cos_phi) const {
         return mu_0 * mu + sin_i * sin_e * cos_phi;
     }
 
-    inline const Spectrum eval_P(const Spectrum &b, const Spectrum &c,
-                                 const Spectrum &cos_g) const {
+    MI_INLINE UnpolarizedSpectrum
+    eval_P(const UnpolarizedSpectrum &b, const UnpolarizedSpectrum &c,
+           const UnpolarizedSpectrum &cos_g) const {
         // Fonction de phase P
-        const Spectrum numerator = 1.f - sqr(b);
-        const Spectrum term1 =
+        UnpolarizedSpectrum numerator = 1.f - sqr(b);
+        UnpolarizedSpectrum term1 =
             (1.f - c) * numerator /
             dr::pow(1 + 2 * b * cos_g + dr::sqr(b), 3.f / 2.f);
-        const Spectrum term2 =
+        UnpolarizedSpectrum term2 =
             c * numerator / dr::pow(1 - 2 * b * cos_g + dr::sqr(b), 3.f / 2.f);
         return term1 + term2;
     }
 
-    inline const Spectrum eval_S(const Spectrum &eta_e, const Spectrum &eta_0e,
-                                 const Spectrum &chi, const Float &e,
-                                 const Float &i, const Float &mu,
-                                 const Spectrum &mu_0, const Spectrum &mu_e,
-                                 const Spectrum &f) const {
+    MI_INLINE UnpolarizedSpectrum eval_S(
+        const UnpolarizedSpectrum &eta_e, const UnpolarizedSpectrum &eta_0e,
+        const UnpolarizedSpectrum &chi, const Float &e, const Float &i,
+        const Float &mu, const UnpolarizedSpectrum &mu_0,
+        const UnpolarizedSpectrum &mu_e, const UnpolarizedSpectrum &f) const {
 
-        const Spectrum opt_mu  = dr::select(e < i, mu, mu_0);
-        const Spectrum opt_eta = dr::select(e < i, eta_e, eta_0e);
+        UnpolarizedSpectrum opt_mu  = dr::select(e < i, mu, mu_0);
+        UnpolarizedSpectrum opt_eta = dr::select(e < i, eta_e, eta_0e);
 
         return (mu_e * mu_0 * chi) /
                (eta_e * eta_0e * (1.f - f + f * chi * opt_mu / opt_eta));
     }
 
-    inline const Spectrum eval_B(const Spectrum &B_0, const Spectrum &h,
-                                 const Spectrum &g) const {
+    MI_INLINE UnpolarizedSpectrum eval_B(const UnpolarizedSpectrum &B_0,
+                                         const UnpolarizedSpectrum &h,
+                                         const UnpolarizedSpectrum &g) const {
         // Opposition effect
         return B_0 / (1.f + 1.f / h * dr::tan(g / 2));
     }
 
-    const Spectrum eval_hapke(const SurfaceInteraction3f &si,
-                              const Vector3f &wo, Mask active) const {
+    const UnpolarizedSpectrum eval_hapke(const SurfaceInteraction3f &si,
+                                         const Vector3f &wo,
+                                         Mask active) const {
 
-        const Spectrum theta     = dr::deg_to_rad(m_theta->eval(si, active));
-        const Spectrum tan_theta = dr::tan(theta);
-        const Spectrum w         = m_w->eval(si, active);
+        UnpolarizedSpectrum theta = dr::deg_to_rad(m_theta->eval(si, active));
+        UnpolarizedSpectrum tan_theta = dr::tan(theta);
+        UnpolarizedSpectrum w         = m_w->eval(si, active);
 
         auto [sin_phi_e, cos_phi_e] = Frame3f::sincos_phi(wo);
         auto [sin_phi_i, cos_phi_i] = Frame3f::sincos_phi(si.wi);
-        const Float cos_phi = cos_phi_e * cos_phi_i + sin_phi_e * sin_phi_i;
-        const Float sin_e   = Frame3f::sin_theta(wo);
-        const Float mu      = Frame3f::cos_theta(wo);
-        const Float tan_e   = Frame3f::tan_theta(wo);
-        const Float sin_i   = Frame3f::sin_theta(si.wi);
-        const Float mu_0    = Frame3f::cos_theta(si.wi);
-        const Float tan_i   = Frame3f::tan_theta(si.wi);
+        Float cos_phi = cos_phi_e * cos_phi_i + sin_phi_e * sin_phi_i;
+        Float sin_e   = Frame3f::sin_theta(wo);
+        Float mu      = Frame3f::cos_theta(wo);
+        Float tan_e   = Frame3f::tan_theta(wo);
+        Float sin_i   = Frame3f::sin_theta(si.wi);
+        Float mu_0    = Frame3f::cos_theta(si.wi);
+        Float tan_i   = Frame3f::tan_theta(si.wi);
 
-        const Float i   = dr::atan(tan_i);
-        const Float e   = dr::atan(tan_e);
+        Float i      = dr::atan(tan_i);
+        Float e      = dr::atan(tan_e);
         Float fr_phi = dr::safe_acos(cos_phi);
-        const Float phi = dr::abs(dr::select(fr_phi > dr::Pi<Float>, 2.f * dr::Pi<Float> - fr_phi, fr_phi));
+        Float phi    = dr::abs(dr::select(fr_phi > dr::Pi<Float>,
+                                          2.f * dr::Pi<Float> - fr_phi, fr_phi));
 
-        const Spectrum w_div_4 = w * 0.25f;
+        UnpolarizedSpectrum w_div_4 = w * 0.25f;
 
-        const Spectrum mu_0eG = eval_mu_0eG(tan_theta, e, i, phi, cos_phi);
-        const Spectrum mu_eG  = eval_mu_eG(tan_theta, e, i, phi, cos_phi);
+        UnpolarizedSpectrum mu_0eG = eval_mu_0eG(tan_theta, e, i, phi, cos_phi);
+        UnpolarizedSpectrum mu_eG  = eval_mu_eG(tan_theta, e, i, phi, cos_phi);
 
-        const Spectrum mu_ratio = mu_0eG / (mu_0eG + mu_eG) / mu_0;
+        UnpolarizedSpectrum mu_ratio = mu_0eG / (mu_0eG + mu_eG) / mu_0;
 
-        const Spectrum b  = m_b->eval(si, active);
-        const Spectrum c  = m_c->eval(si, active);
-        const Float cos_g = eval_cos_g(mu_0, mu, sin_i, sin_e, cos_phi);
-        const Float g     = dr::safe_acos(cos_g);
+        UnpolarizedSpectrum b = m_b->eval(si, active);
+        UnpolarizedSpectrum c = m_c->eval(si, active);
+        Float cos_g           = eval_cos_g(mu_0, mu, sin_i, sin_e, cos_phi);
+        Float g               = dr::safe_acos(cos_g);
 
-        const Spectrum P = eval_P(b, c, cos_g);
+        UnpolarizedSpectrum P = eval_P(b, c, cos_g);
 
-        const Spectrum B_0 = m_B_0->eval(si, active);
-        const Spectrum h   = m_h->eval(si, active);
-        const Spectrum B   = eval_B(B_0, h, g);
+        UnpolarizedSpectrum B_0 = m_B_0->eval(si, active);
+        UnpolarizedSpectrum h   = m_h->eval(si, active);
+        UnpolarizedSpectrum B   = eval_B(B_0, h, g);
 
-        const Spectrum M = eval_M(w, mu_0eG, mu_eG);
+        UnpolarizedSpectrum M = eval_M(w, mu_0eG, mu_eG);
 
-        const Spectrum f = eval_f(phi);
+        UnpolarizedSpectrum f = eval_f(phi);
 
-        const Spectrum chi = eval_chi(tan_theta);
+        UnpolarizedSpectrum chi = eval_chi(tan_theta);
 
-        const Spectrum E1_e = eval_E1(tan_theta, e);
-        const Spectrum E1_i = eval_E1(tan_theta, i);
-        const Spectrum E2_e = eval_E2(tan_theta, e);
-        const Spectrum E2_i = eval_E2(tan_theta, i);
+        UnpolarizedSpectrum E1_e = eval_E1(tan_theta, e);
+        UnpolarizedSpectrum E1_i = eval_E1(tan_theta, i);
+        UnpolarizedSpectrum E2_e = eval_E2(tan_theta, e);
+        UnpolarizedSpectrum E2_i = eval_E2(tan_theta, i);
 
-        const Spectrum eta_0e =
+        UnpolarizedSpectrum eta_0e =
             eval_eta_0e(chi, mu_0, sin_i, tan_theta, E2_i, E1_i);
-        const Spectrum eta_e =
+        UnpolarizedSpectrum eta_e =
             eval_eta_e(chi, mu, sin_e, tan_theta, E2_e, E1_e);
 
-        const Spectrum S = eval_S(eta_e, eta_0e, chi, e, i, mu, mu_0, mu_eG, f);
+        UnpolarizedSpectrum S =
+            eval_S(eta_e, eta_0e, chi, e, i, mu, mu_0, mu_eG, f);
 
         Log(Trace, "mu ratio %s", mu_ratio);
         Log(Trace, "P %s", P);
