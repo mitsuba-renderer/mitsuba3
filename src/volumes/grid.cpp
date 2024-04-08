@@ -30,6 +30,14 @@ Grid-based volume data source (:monosp:`gridvolume`)
      an existing ``VolumeGrid`` instance can be passed directly rather than
      loading it from the filesystem with :paramtype:`filename`.
 
+ * - use_grid_bbox
+   - |bool|
+   - When set to ``true``, the bounding box information contained in the
+     ``VolumeGrid`` object (or the file it was loaded from) will be used. By
+     default, it is assumed that the grid is defined in the unit cube spanning
+     (0, 0, 0) x (1, 1, 1). Any evaluation of the volume outside of the bounding
+     box is handled by the ``wrap_mode``. (Default: false)
+
  * - data
    - |tensor|
    - Tensor array containing the grid data. This parameter can only be specified
