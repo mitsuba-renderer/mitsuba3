@@ -64,7 +64,8 @@ class SceneParameters(Mapping):
         if value_type is not None:
             cur_value = self.get_property(cur, value_type, node)
 
-        if _jit_id_hash(cur_value) == _jit_id_hash(value) and cur_value == value:
+        if (_jit_id_hash(cur_value) == _jit_id_hash(value) and
+            dr.all(cur_value == value, axis=None)):
             # Turn this into a no-op when the set value is identical to the new value
             return
 
@@ -261,31 +262,7 @@ def _jit_id_hash(value: Any) -> int:
     """
 
     def jit_ids(value: Any) -> list[tuple[int, Optional[int]]]:
-        ids = []
-
-        if dr.is_vector_v(value):
-            for i in range(len(value)):
-                ids.extend(jit_ids(value[i]))
-        elif dr.is_diff_v(value):
-            ids.append((value.index, value.index_ad))
-        elif dr.is_tensor_v(value):
-            ids.extend(jit_ids(value.array))
-        elif dr.is_jit_v(value):
-            ids.append((value.index, 0))
-        elif dr.is_array_v(value) and dr.is_dynamic_array_v(value):
-            for i in range(len(value)):
-                ids.extend(jit_ids(value[i]))
-        elif dr.is_struct_v(value):
-            for k in value.DRJIT_STRUCT.keys():
-                ids.extend(jit_ids(getattr(value, k)))
-        else:
-            # Scalars: None is used to differentiate from non-diff JIT array case
-            try:
-                ids.append((hash(value), None))
-            except TypeError:
-                ids.append((id(value), None))
-
-        return ids
+        return dr.detail.collect_indices(value)
 
     return hash(tuple(jit_ids(value)))
 
