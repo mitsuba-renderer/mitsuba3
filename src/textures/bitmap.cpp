@@ -782,7 +782,6 @@ protected:
      * following an update
      */
     void rebuild_internals(const StoredTensorXf& tensor, bool init_mean, bool init_distr) {
-
         if (m_transform != ScalarTransform3f())
             dr::make_opaque(m_transform);
 
@@ -855,6 +854,7 @@ protected:
     MI_INLINE void init_distr() const {
         std::lock_guard<std::mutex> lock(m_mutex);
         if (!m_distr2d) {
+            dr::scoped_symbolic_independence<Float> guard{};
             auto self = const_cast<BitmapTextureImpl *>(this);
             self->rebuild_internals(m_texture.tensor(), false, true);
         }
