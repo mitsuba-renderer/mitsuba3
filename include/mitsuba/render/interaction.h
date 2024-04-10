@@ -115,13 +115,20 @@ struct Interaction {
                 const Point3f &p, const Normal3f &n = 0.f)
         : t(t), time(time), wavelengths(wavelengths), p(p), n(n) { }
 
+    /// Virtual destructor
+    virtual ~Interaction() = default;
+
     /**
      * This callback method is invoked by dr::zeros<>, and takes care of fields that deviate
      * from the standard zero-initialization convention. In this particular class, the ``t``
      * field should be set to an infinite value to mark invalid intersection records.
      */
-    void zero_(size_t size = 1) {
-        t = dr::full<Float>(dr::Infinity<Float>, size);
+    virtual void zero_(size_t size = 1) {
+        t           = dr::full<Float>(dr::Infinity<Float>, size);
+        time        = dr::zeros<Float>(size);
+        wavelengths = dr::zeros<Wavelength>(size);
+        p           = dr::zeros<Point3f>(size);
+        n           = dr::zeros<Normal3f>(size);
     }
 
     /// Is the current interaction valid?
@@ -240,6 +247,32 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         : Base(0.f, ps.time, wavelengths, ps.p, ps.n), uv(ps.uv),
           sh_frame(Frame3f(ps.n)), dp_du(0), dp_dv(0), dn_du(0), dn_dv(0),
           duv_dx(0), duv_dy(0), wi(0), prim_index(0) {}
+
+    /**
+     * This callback method is invoked by dr::zeros<>, and takes care of fields that deviate
+     * from the standard zero-initialization convention.
+     */
+    void zero_(size_t size = 1) override {
+        Interaction<Float_, Spectrum_>::zero_(size);
+        uv          = dr::zeros<Point2f>(size);
+        sh_frame    = dr::zeros<Frame3f>(size);
+        dp_du       = dr::zeros<Vector3f>(size);
+        dp_dv       = dr::zeros<Vector3f>(size);
+        dn_du       = dr::zeros<Vector3f>(size);
+        dn_dv       = dr::zeros<Vector3f>(size);
+        duv_dx      = dr::zeros<Vector2f>(size);
+        duv_dy      = dr::zeros<Vector2f>(size);
+        wi          = dr::zeros<Vector3f>(size);
+        prim_index  = dr::zeros<Index>(size);
+
+        if constexpr (dr::is_jit_v<Float_>) {
+            shape       = dr::zeros<ShapePtr>(size);
+            instance    = dr::zeros<ShapePtr>(size);
+        } else {
+            shape       = nullptr;
+            instance    = nullptr;
+        }
+    }
 
     /// Initialize local shading frame using Gram-schmidt orthogonalization
     void initialize_sh_frame() {
@@ -543,6 +576,27 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     //! @{ \name Methods
     // =============================================================
 
+    /**
+     * This callback method is invoked by dr::zeros<>, and takes care of fields that deviate
+     * from the standard zero-initialization convention.
+     */
+    void zero_(size_t size = 1) override {
+        Interaction<Float_, Spectrum_>::zero_(size);
+        sh_frame            = dr::zeros<Frame3f>(size);
+        wi                  = dr::zeros<Vector3f>(size);
+        sigma_s             = dr::zeros<UnpolarizedSpectrum>(size);
+        sigma_n             = dr::zeros<UnpolarizedSpectrum>(size);
+        sigma_t             = dr::zeros<UnpolarizedSpectrum>(size);
+        combined_extinction = dr::zeros<UnpolarizedSpectrum>(size);
+        mint                = dr::zeros<Float>(size);
+
+        if constexpr (dr::is_jit_v<Float_>) {
+            medium      = dr::zeros<MediumPtr>(size);
+        } else {
+            medium      = nullptr;
+        }
+    }
+
     /// Convert a local shading-space (defined by ``wi``) vector into world space
     Vector3f to_world(const Vector3f &v) const {
         return sh_frame.to_world(v);
@@ -627,7 +681,18 @@ struct PreliminaryIntersection {
      * field should be set to an infinite value to mark invalid intersection records.
      */
     void zero_(size_t size = 1) {
-        t = dr::full<Float>(dr::Infinity<Float>, size);
+        t           = dr::full<Float>(dr::Infinity<Float>, size);
+        prim_uv     = dr::zeros<Point2f>(size);
+        prim_index  = dr::zeros<Index>(size);
+        shape_index = dr::zeros<Index>(size);
+
+        if constexpr (dr::is_jit_v<Float_>) {
+            shape       = dr::zeros<ShapePtr>(size);
+            instance    = dr::zeros<ShapePtr>(size);
+        } else {
+            shape       = nullptr;
+            instance    = nullptr;
+        }
     }
 
     /// Is the current interaction valid?
