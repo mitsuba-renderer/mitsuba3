@@ -802,10 +802,9 @@ protected:
                 // Potentially upcast values before attempting to compute mean
                 colors_fl = colors;
             } else {
-
-                StoredScalar* ptr = (StoredScalar*)tensor.data();
+                StoredScalar* ptr = (StoredScalar*) tensor.data();
                 DynamicBuffer<UInt32> index
-                    = dr::arange<UInt32>(0, pixel_count) * 3;
+                    = dr::arange<DynamicBuffer<UInt32>>(0, pixel_count) * 3;
 
                 using StoredTypeArray= DynamicBuffer<StoredType>;
                 auto colors = Color<StoredTypeArray, 3>(
@@ -821,7 +820,6 @@ protected:
                 values = srgb_model_mean(colors_fl);
             else
                 values = luminance(colors_fl);
-
         } else {
             if constexpr (dr::is_jit_v<Float>)
                 values = tensor.array();
