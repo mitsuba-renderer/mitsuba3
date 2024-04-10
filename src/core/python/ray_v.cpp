@@ -1,5 +1,6 @@
 #include <mitsuba/core/ray.h>
 #include <mitsuba/python/python.h>
+#include <nanobind/stl/string.h>
 
 template<typename Ray>
 void bind_ray(nb::module_ &m, const char *name) {
