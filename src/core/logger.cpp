@@ -2,7 +2,6 @@
 #include <mitsuba/core/thread.h>
 #include <mitsuba/core/appender.h>
 #include <mitsuba/core/formatter.h>
-#include <mitsuba/core/util.h>
 
 #include <thread>
 #include <iostream>
