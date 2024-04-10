@@ -117,7 +117,7 @@ To fetch all dependencies and Clang, enter the following commands on Ubuntu:
 .. code-block:: bash
 
     # Install recent versions build tools, including Clang and libc++ (Clang's C++ library)
-    sudo apt install clang-10 libc++-10-dev libc++abi-10-dev cmake ninja-build
+    sudo apt install clang-15 libc++-15-dev libc++abi-15-dev cmake ninja-build
 
     # Install libraries for image I/O
     sudo apt install libpng-dev libjpeg-dev
@@ -141,7 +141,7 @@ CMake will always use the correct compiler.
 
 .. code-block:: bash
 
-    export CC=clang-10 export CXX=clang++-10
+    export CC=clang-15 export CXX=clang++-15
 
 If you installed another version of Clang, the version suffix of course has to
 be adjusted. Now, compilation should be as simple as running the following from
