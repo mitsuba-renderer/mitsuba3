@@ -1,5 +1,7 @@
 #include <mitsuba/core/distr_1d.h>
 #include <mitsuba/python/python.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/tuple.h>
 
 MI_PY_EXPORT(DiscreteDistribution) {
     MI_PY_IMPORT_TYPES()

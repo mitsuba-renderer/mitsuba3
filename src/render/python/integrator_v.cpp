@@ -357,7 +357,7 @@ MI_PY_EXPORT(Integrator) {
             },
             "scene"_a, "params"_a, "grad_in"_a, "sensor"_a = 0, "seed"_a = 0,
             "spp"_a = 0)
-        .def_field(PySamplingIntegrator, m_hide_emitters);
+        .def_rw("hide_emitters", &PySamplingIntegrator::m_hide_emitters);
 
     MI_PY_REGISTER_OBJECT("register_integrator", Integrator)
 

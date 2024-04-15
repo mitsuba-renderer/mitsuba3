@@ -2,6 +2,7 @@
 #include <mitsuba/core/appender.h>
 #include <mitsuba/core/formatter.h>
 #include <mitsuba/python/python.h>
+#include <nanobind/stl/string.h>
 
 /// Submit a log message to the Mitusba logging system and tag it with the Python caller
 static void PyLog(mitsuba::LogLevel level, const std::string &msg) {
@@ -14,9 +15,9 @@ static void PyLog(mitsuba::LogLevel level, const std::string &msg) {
 #endif
 
     std::string name =
-        nb::cast<std::string>(nb::handle(f_code->co_name));
+        nb::borrow<nb::str>(nb::handle(f_code->co_name)).c_str();
     std::string filename =
-        nb::cast<std::string>(nb::handle(f_code->co_filename));
+        nb::borrow<nb::str>(nb::handle(f_code->co_filename)).c_str();
     std::string fmt = "%s: %s";
     int lineno = PyFrame_GetLineNumber(frame);
 
