@@ -137,8 +137,8 @@ template <typename Ptr, typename Cls> void bind_emitter_generic(Cls &cls) {
             "si"_a, "sample"_a, "active"_a = true,
             D(Endpoint, sample_wavelengths))
     .def("flags", [](EmitterPtr ptr) { return ptr->flags(); }, D(Emitter, flags))
-    .def("get_shape", [](EmitterPtr ptr) { return ptr->shape(); }, D(Endpoint, shape))
-    .def("get_medium", [](EmitterPtr ptr) { return ptr->medium(); }, D(Endpoint, medium))
+    .def("get_shape", [](EmitterPtr ptr) -> ShapePtr { return ptr->shape(); }, D(Endpoint, shape))
+    .def("get_medium", [](EmitterPtr ptr) -> MediumPtr { return ptr->medium(); }, D(Endpoint, medium))
     .def("sampling_weight", [](EmitterPtr ptr) { return ptr->sampling_weight(); }, D(Emitter, sampling_weight))
     .def("is_environment", [](EmitterPtr ptr) { return ptr->is_environment(); }, D(Emitter, is_environment));
 }

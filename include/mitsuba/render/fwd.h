@@ -186,6 +186,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using ObjectPtr              = typename RenderAliases::ObjectPtr;                              \
     using BSDFPtr                = typename RenderAliases::BSDFPtr;                                \
     using MediumPtr              = typename RenderAliases::MediumPtr;                              \
+    using PhaseFunctionPtr       = typename RenderAliases::PhaseFunctionPtr;                       \
     using ShapePtr               = typename RenderAliases::ShapePtr;                               \
     using EmitterPtr             = typename RenderAliases::EmitterPtr;                             \
     using SensorPtr              = typename RenderAliases::SensorPtr;

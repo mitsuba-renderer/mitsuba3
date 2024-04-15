@@ -10,6 +10,7 @@
 #include <mitsuba/python/python.h>
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/tuple.h>
 #include <drjit/python.h>
 
 MI_PY_EXPORT(SilhouetteSample) {
@@ -74,17 +75,22 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             [](Ptr shape) { return shape->shape_type(); },
             D(Shape, shape_type))
        .def("interior_medium",
-            [](Ptr shape) { return shape->interior_medium(); },
-            D(Shape, interior_medium))
+            [](Ptr shape) -> MediumPtr {
+                return shape->interior_medium();
+            }, D(Shape, interior_medium))
        .def("exterior_medium",
-            [](Ptr shape) { return shape->exterior_medium(); },
-            D(Shape, exterior_medium))
-       .def("bsdf", [](Ptr shape) { return shape->bsdf(); },
-            D(Shape, bsdf))
-       .def("sensor", [](Ptr shape) { return shape->sensor(); },
-            D(Shape, sensor))
-       .def("emitter", [](Ptr shape) { return shape->emitter(); },
-            D(Shape, emitter))
+            [](Ptr shape) -> MediumPtr {
+                return shape->exterior_medium();
+            }, D(Shape, exterior_medium))
+       .def("bsdf", [](Ptr shape) -> BSDFPtr {
+               return shape->bsdf();
+            }, D(Shape, bsdf))
+       .def("sensor", [](Ptr shape) -> SensorPtr {
+               return shape->sensor();
+            }, D(Shape, sensor))
+       .def("emitter", [](Ptr shape) -> EmitterPtr {
+               return shape->emitter();
+       }, D(Shape, emitter))
        .def("compute_surface_interaction",
             [](Ptr shape, const Ray3f &ray,
                const PreliminaryIntersection3f &pi, uint32_t ray_flags,

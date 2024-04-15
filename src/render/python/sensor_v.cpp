@@ -152,7 +152,7 @@ template <typename Ptr, typename Cls> void bind_sensor_generic(Cls &cls) {
             },
             "si"_a, "sample"_a, "active"_a = true,
             D(Endpoint, sample_wavelengths))
-    .def("get_shape", [](Ptr ptr) { return ptr->shape(); }, D(Endpoint, shape));
+    .def("get_shape", [](Ptr ptr) -> ShapePtr { return ptr->shape(); }, D(Endpoint, shape));
 }
 
 MI_PY_EXPORT(Sensor) {
