@@ -40,7 +40,7 @@ MI_PY_DECLARE(Spiral);
 MI_PY_DECLARE(Sensor);
 MI_PY_DECLARE(VolumeGrid);
 MI_PY_DECLARE(FilmFlags);
-//MI_PY_DECLARE(DiscontinuityFlags);
+MI_PY_DECLARE(DiscontinuityFlags);
 
 NB_MODULE(mitsuba_ext, m) {
     // Temporarily change the module name (for pydoc)
@@ -102,9 +102,9 @@ NB_MODULE(mitsuba_ext, m) {
 //
 //        Thread::thread()->logger()->set_log_level(level);
 //    }, "Sets the log level.");
-//    m.def("log_level", []() {
-//        return Thread::thread()->logger()->log_level();
-//    }, "Returns the current log level.");
+    m.def("log_level", []() {
+        return Thread::thread()->logger()->log_level();
+    }, "Returns the current log level.");
 
     Jit::static_initialization();
     Class::static_initialization();
@@ -156,7 +156,7 @@ NB_MODULE(mitsuba_ext, m) {
     MI_PY_IMPORT(Spiral);
     MI_PY_IMPORT(Sensor);
     MI_PY_IMPORT(FilmFlags);
-//    MI_PY_IMPORT(DiscontinuityFlags);
+    MI_PY_IMPORT(DiscontinuityFlags);
 
     /* Register a cleanup callback function to wait for pending tasks (this is
      * called before all Python variables are cleaned up */
