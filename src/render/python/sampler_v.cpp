@@ -51,7 +51,7 @@ MI_PY_EXPORT(Sampler) {
     MI_PY_IMPORT_TYPES(Sampler)
     using PySampler = PySampler<Float, Spectrum>;
 
-    MI_PY_TRAMPOLINE_CLASS(PySampler, Sampler, Object)
+    auto sampler = MI_PY_TRAMPOLINE_CLASS(PySampler, Sampler, Object)
         .def(nb::init<const Properties&>(), "props"_a)
         .def_method(Sampler, fork)
         .def_method(Sampler, clone)
@@ -64,6 +64,8 @@ MI_PY_EXPORT(Sampler) {
         .def_method(Sampler, seed, "seed"_a, "wavefront_size"_a = (uint32_t) -1)
         .def_method(Sampler, next_1d, "active"_a = true)
         .def_method(Sampler, next_2d, "active"_a = true);
+
+    dr::bind_traverse(sampler);
 
     MI_PY_REGISTER_OBJECT("register_sampler", Sampler)
 }
