@@ -1086,11 +1086,11 @@ public:
 protected:
     template <size_t Dim = Dimension>
     MI_INLINE Float lookup(const FloatStorage &data,
-                            size_t offset,
-                            UInt32 i0,
-                            uint32_t size,
-                            const Float *param_weight,
-                            Mask active) const {
+                           uint32_t offset,
+                           UInt32 i0,
+                           uint32_t size,
+                           const Float *param_weight,
+                           Mask active) const {
         if constexpr (Dim != 0) {
             UInt32 i1 = i0 + m_param_strides[Dim - 1] * size;
 

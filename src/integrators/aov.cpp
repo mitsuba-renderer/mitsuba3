@@ -461,7 +461,7 @@ protected:
         DynamicBuffer<UInt32> channel_idx = dr::fmadd(pixel_idx, uint32_t(-(int)num_channels), idx)
             + channel_offset;
 
-        auto values_idx = dr::fmadd(pixel_idx, src.shape(2), channel_idx);
+        DynamicBuffer<UInt32> values_idx = dr::fmadd(pixel_idx, src.shape(2), channel_idx);
         return TensorXf(dr::gather<Array>(src.array(), values_idx), 3, slice_shape);
     }
 

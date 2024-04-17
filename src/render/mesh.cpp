@@ -404,7 +404,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
         dr::disable_grad(m_vertex_normals);
 
         UInt32 ni = dr::arange<UInt32>(m_vertex_count) * 3;
-        for (size_t i = 0; i < 3; ++i)
+        for (uint32_t i = 0; i < 3; ++i)
             dr::scatter(m_vertex_normals,
                         dr::float32_array_t<Float>(normals[i]), ni + i);
 
