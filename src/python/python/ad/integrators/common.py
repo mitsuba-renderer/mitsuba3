@@ -734,9 +734,6 @@ class RBIntegrator(ADIntegrator):
             film.clear()
 
             # Launch the Monte Carlo sampling process in primal mode (1)
-            print("PRIMAL")
-            print("PRIMAL")
-            print("PRIMAL")
             L, valid, state_out = self.sample(
                 mode=dr.ADMode.Primal,
                 scene=scene,
@@ -748,9 +745,6 @@ class RBIntegrator(ADIntegrator):
                 active=mi.Bool(True)
             )
 
-            print("BACKWARD")
-            print("BACKWARD")
-            print("BACKWARD")
             # Launch Monte Carlo sampling in backward AD mode (2)
             L_2, valid_2, state_out_2 = self.sample(
                 mode=dr.ADMode.Backward,

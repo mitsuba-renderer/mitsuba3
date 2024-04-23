@@ -51,10 +51,10 @@ INTEGRATOR_MAPPING = {
 if hasattr(dr, 'JitFlag'):
     JIT_FLAG_OPTIONS = {
         'scalar': {},
-        'jit_flag_option_0' : {dr.JitFlag.VCallRecord : 0, dr.JitFlag.VCallOptimize : 0, dr.JitFlag.LoopRecord : 0},
-        'jit_flag_option_1' : {dr.JitFlag.VCallRecord : 1, dr.JitFlag.VCallOptimize : 0, dr.JitFlag.LoopRecord : 0},
-        'jit_flag_option_2' : {dr.JitFlag.VCallRecord : 1, dr.JitFlag.VCallOptimize : 1, dr.JitFlag.LoopRecord : 0},
-        'jit_flag_option_3' : {dr.JitFlag.VCallRecord : 1, dr.JitFlag.VCallOptimize : 1, dr.JitFlag.LoopRecord : 1},
+#        'jit_flag_option_0' : {dr.JitFlag.SymbolicCalls : 0, dr.JitFlag.OptimizeCalls : 0, dr.JitFlag.SymbolicLoops : 0},
+#        'jit_flag_option_1' : {dr.JitFlag.SymbolicCalls : 1, dr.JitFlag.OptimizeCalls : 0, dr.JitFlag.SymbolicLoops : 0},
+#        'jit_flag_option_2' : {dr.JitFlag.SymbolicCalls : 1, dr.JitFlag.OptimizeCalls : 1, dr.JitFlag.SymbolicLoops : 0},
+        'jit_flag_option_3' : {dr.JitFlag.SymbolicCalls : 1, dr.JitFlag.OptimizeCalls : 1, dr.JitFlag.SymbolicLoops : 1},
     }
 
 def list_all_render_test_configs():
@@ -87,8 +87,8 @@ def list_all_render_test_configs():
                     if k == 'scalar':
                         continue
 
-                    has_vcall_recording = v.get(dr.JitFlag.VCallRecord, 0)
-                    has_loop_recording = v.get(dr.JitFlag.LoopRecord, 0)
+                    has_vcall_recording = v.get(dr.JitFlag.SymbolicCalls, 0)
+                    has_loop_recording = v.get(dr.JitFlag.SymbolicLoops, 0)
                     if any(
                         folder in scene_fname for folder in JIT_FORCE_RECORD_FOLDERS
                     ) and (not has_loop_recording or not has_vcall_recording):
@@ -184,7 +184,7 @@ def test_render(variant, scene_fname, integrator_type, jit_flags_key):
     if 'cuda' in variant or 'llvm' in variant:
         dr.flush_malloc_cache()
         for k, v in JIT_FLAG_OPTIONS[jit_flags_key].items():
-            dr.set_flag(k, v)
+            dr.set_flag(k, bool(v))
 
     ref_fname, ref_var_fname = get_ref_fname(scene_fname)
     if not (exists(ref_fname) and exists(ref_var_fname)):
