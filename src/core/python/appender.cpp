@@ -20,13 +20,12 @@ public:
 };
 
 MI_PY_EXPORT(Appender) {
-    nb::enum_<mitsuba::LogLevel>(m, "LogLevel", D(LogLevel))
+    nb::enum_<mitsuba::LogLevel>(m, "LogLevel", nb::is_arithmetic(), D(LogLevel))
         .value("Trace", Trace, D(LogLevel, Trace))
         .value("Debug", Debug, D(LogLevel, Debug))
         .value("Info", Info, D(LogLevel, Info))
         .value("Warn", Warn, D(LogLevel, Warn))
         .value("Error", Error, D(LogLevel, Error));
-    nb::implicitly_convertible<unsigned, mitsuba::LogLevel>();
 
     MI_PY_TRAMPOLINE_CLASS(PyAppender, Appender, Object)
         .def(nb::init<>())

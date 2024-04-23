@@ -3,7 +3,7 @@
 #include <mitsuba/python/python.h>
 
 MI_PY_EXPORT(EmitterExtras) {
-    auto e = nb::enum_<EmitterFlags>(m, "EmitterFlags", D(EmitterFlags))
+    auto e = nb::enum_<EmitterFlags>(m, "EmitterFlags", nb::is_arithmetic(), D(EmitterFlags))
         .def_value(EmitterFlags, Empty)
         .def_value(EmitterFlags, DeltaPosition)
         .def_value(EmitterFlags, DeltaDirection)
@@ -11,6 +11,4 @@ MI_PY_EXPORT(EmitterExtras) {
         .def_value(EmitterFlags, Surface)
         .def_value(EmitterFlags, SpatiallyVarying)
         .def_value(EmitterFlags, Delta);
-
-    MI_PY_DECLARE_ENUM_OPERATORS(EmitterFlags, e)
 }

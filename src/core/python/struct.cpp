@@ -31,10 +31,7 @@ MI_PY_EXPORT(Struct) {
         .value("Assert",     Struct::Flags::Assert,  D(Struct, Flags, Assert))
         .value("Alpha",     Struct::Flags::Alpha,  D(Struct, Flags, Alpha))
         .value("PremultipliedAlpha",     Struct::Flags::PremultipliedAlpha,  D(Struct, Flags, PremultipliedAlpha))
-        .value("Default",    Struct::Flags::Default, D(Struct, Flags, Default))
-        .def(nb::self | nb::self)
-        .def(int() | nb::self)
-        .def(int() & nb::self);
+        .value("Default",    Struct::Flags::Default, D(Struct, Flags, Default));
 
     nb::enum_<Struct::ByteOrder>(c, "ByteOrder")
         .value("LittleEndian", Struct::ByteOrder::LittleEndian,

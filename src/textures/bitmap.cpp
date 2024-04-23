@@ -228,7 +228,6 @@ public:
 protected:
     Object* expand_1() const {
         if (m_bitmap) {
-
             Format format = m_format;
             // Format auto means we store texture as FP16 when possible.
             // Skip this conversion for spectral variants as we want to perform

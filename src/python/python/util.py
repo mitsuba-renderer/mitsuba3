@@ -362,22 +362,12 @@ class _RenderOp(dr.CustomOp):
 
     def forward(self):
         mi.set_variant(self.variant)
-        if not isinstance(self.params, mi.SceneParameters):
-            raise Exception('An instance of mi.SceneParameter containing the '
-                            'scene parameter to be differentiated should be '
-                            'provided to mi.render() if forward derivatives are '
-                            'desired!')
         self.set_grad_out(
             self.integrator.render_forward(self.scene, self.params, self.sensor,
                                            self.seed[1], self.spp[1]))
 
     def backward(self):
         mi.set_variant(self.variant)
-        if not isinstance(self.params, mi.SceneParameters):
-            raise Exception('An instance of mi.SceneParameter containing the '
-                            'scene parameter to be differentiated should be '
-                            'provided to mi.render() if backward derivatives are '
-                            'desired!')
         self.integrator.render_backward(self.scene, self.params, self.grad_out(),
                                         self.sensor, self.seed[1], self.spp[1])
 
@@ -466,7 +456,9 @@ def render(scene: mi.Scene,
     """
 
     if params is not None and not isinstance(params, mi.SceneParameters):
-        raise Exception('params should be an instance of mi.SceneParameter!')
+        raise Exception('The `params` argument should be an instance of `mi.SceneParameters`!')
+
+    params = dict(params) # Turn SceneParameters into a valid PyTree
 
     assert isinstance(scene, mi.Scene)
 

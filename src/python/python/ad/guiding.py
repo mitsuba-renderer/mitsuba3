@@ -89,7 +89,7 @@ class GridDistr(BaseGuidingDistr):
             mass[clamp_mask] = 0
 
             if self.debug_logs:
-                percentage = 100. * dr.count(clamp_mask) / dr.width(mass)
+                percentage = 100. * dr.slice(dr.count(clamp_mask)) / dr.width(mass)
                 mi.Log(mi.LogLevel.Debug,
                        f"GridDistr: mass clamped with threshold {thres} (total "
                        f"mass = {mass_ttl}). Clamped {percentage:.3f}% of "
@@ -114,7 +114,7 @@ class GridDistr(BaseGuidingDistr):
 
         # The rcp pdf of randomly selecting a point in one cell is (1 / num_cells)
         rcp_pdf = dr.rcp(self.num_cells) * rcp_prob
-        rcp_pdf[dr.eq(prob, 0)] = 0
+        rcp_pdf[prob ==  0] = 0
 
         return sample_new, rcp_pdf
 
@@ -276,7 +276,7 @@ class OcSpaceDistr(BaseGuidingDistr):
             0, active_node_count,
             lambda index: dr.gather(mi.Float, x, index) < points.x
         ) - 1
-        active = dr.neq(points_idx, INVALID_IDX)
+        active = (points_idx != INVALID_IDX)
 
         dr.eval(aabb_buffer, aabb_buffer_next, points_idx, leaves, active, leaves_count)
 
@@ -305,7 +305,8 @@ class OcSpaceDistr(BaseGuidingDistr):
             z_offset = dr.select(points.z > aabb_middle_pt.z, 1, 0)
             offset = OcSpaceDistr.split_offset(x_offset, y_offset, z_offset)
             active_node_count_opaque = dr.opaque(mi.UInt32, active_node_count)
-            points_idx[active] = points_idx + offset * active_node_count_opaque
+            points_idx[active] = mi.Int32(points_idx + offset * active_node_count_opaque)
+            points_idx = mi.UInt32(points_idx) #FIXME
 
             ####################################
             # Determine which nodes are leaves #
@@ -322,27 +323,29 @@ class OcSpaceDistr(BaseGuidingDistr):
             # Updates leaves buffer #
             #########################
             new_leaf_count = dr.count(is_leaf)
-            if new_leaf_count > 0:
+            new_leaf_count_scalar = dr.slice(new_leaf_count)
+            if new_leaf_count_scalar > 0:
                 leaf_idx = dr.compress(is_leaf)
                 leaf_aabb_min = dr.gather(mi.Point3f, aabb_buffer_next, leaf_idx * 2 + 0)
                 leaf_aabb_max = dr.gather(mi.Point3f, aabb_buffer_next, leaf_idx * 2 + 1)
 
-                idx = dr.arange(mi.UInt32, new_leaf_count)
+                idx = dr.arange(mi.UInt32, new_leaf_count_scalar)
                 dr.scatter(leaves, leaf_aabb_min, leaves_count * 2 + idx * 2 + 0)
                 dr.scatter(leaves, leaf_aabb_max, leaves_count * 2 + idx * 2 + 1)
 
-                leaves_count += dr.opaque(mi.UInt32, new_leaf_count)
+                leaves_count += dr.opaque(mi.UInt32, new_leaf_count_scalar)
 
             #############################################
             # Update `aabb_buffer` (for next iteration) #
             #############################################
-            new_active_node_count = active_node_count * 8 - new_leaf_count
-            if new_active_node_count > 0:
+            new_active_node_count = active_node_count * 8 - new_leaf_count_scalar
+            new_active_node_count_scalar = dr.slice(new_active_node_count)
+            if new_active_node_count_scalar > 0:
                 idx = dr.compress(~is_leaf)
                 aabb_next_min = dr.gather(mi.Point3f, aabb_buffer_next, idx * 2 + 0)
                 aabb_next_max = dr.gather(mi.Point3f, aabb_buffer_next, idx * 2 + 1)
 
-                idx = dr.arange(mi.UInt32, new_active_node_count)
+                idx = dr.arange(mi.UInt32, new_active_node_count_scalar)
                 dr.scatter(aabb_buffer, aabb_next_min, idx * 2 + 0)
                 dr.scatter(aabb_buffer, aabb_next_max, idx * 2 + 1)
 
@@ -353,7 +356,7 @@ class OcSpaceDistr(BaseGuidingDistr):
 
             # Invalidate points that are now in leaves
             points_idx[active & point_in_leaf] = INVALID_IDX
-            active &= dr.neq(points_idx, INVALID_IDX)
+            active &= (points_idx != INVALID_IDX)
 
             is_new_leaf_int = dr.zeros(mi.UInt32, active_node_count * 8)
             is_new_leaf_int[is_leaf] = 1
@@ -372,8 +375,8 @@ class OcSpaceDistr(BaseGuidingDistr):
             if self.debug_logs:
                 mi.Log(mi.LogLevel.Debug,
                        f"l{loop_iter:2d}: ttl_leaf = {leaves_count_scalar:6d}, "
-                       f"N_leaf_new = {new_leaf_count:6d}, N_node_new = "
-                       f"{new_active_node_count:6d}")
+                       f"N_leaf_new = {new_leaf_count_scalar:6d}, N_node_new = "
+                       f"{new_active_node_count_scalar:6d}")
 
             if active_node_count == 0:
                 break
@@ -447,7 +450,7 @@ class OcSpaceDistr(BaseGuidingDistr):
             if self.debug_logs:
                 mi.Log(mi.LogLevel.Debug,
                        f"OcSpaceDistr: contructing octree with "
-                       f"{dr.count(valid_mask)} valid points.")
+                       f"{dr.slice(dr.count(valid_mask))} valid points.")
 
             valid_idx = dr.compress(valid_mask)
             filtered_points = dr.gather(mi.Point3f, points, valid_idx)
@@ -458,7 +461,7 @@ class OcSpaceDistr(BaseGuidingDistr):
             if self.debug_logs:
                 mi.Log(mi.LogLevel.Debug,
                        f"OcSpaceDistr: contructing octree with "
-                       f"{dr.count(valid_mask)} valid points.")
+                       f"{dr.slice(dr.count(valid_mask))} valid points.")
 
             counter = mi.UInt32(0)
             compact_idx = dr.scatter_inc(
@@ -523,7 +526,7 @@ class OcSpaceDistr(BaseGuidingDistr):
             box_mass[clamp_mask] = 0
 
             if self.debug_logs:
-                percentage = 100. * dr.count(clamp_mask) / dr.width(box_mass)
+                percentage = 100. * dr.slice(dr.count(clamp_mask)) / dr.width(box_mass)
                 mi.Log(mi.LogLevel.Debug,
                        f"OcSpaceDistr: mass clamped with threshold {thres} (total "
                        f"mass = {query_mass_ttl}). Clamped {percentage:.3f}% of "

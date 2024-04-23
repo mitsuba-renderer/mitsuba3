@@ -277,15 +277,3 @@ inline nb::module_ create_submodule(nb::module_ &m, const char *name) {
         m.attr(Name) = h;                             \
     }                                                 \
     else
-
-#define MI_PY_DECLARE_ENUM_OPERATORS(Type, m)         \
-    m.def(nb::self == nb::self)                       \
-     .def(nb::self | nb::self)                        \
-     .def(int() | nb::self)                           \
-     .def(nb::self &nb::self)                         \
-     .def(int() & nb::self)                           \
-     .def(+nb::self)                                  \
-     .def(~nb::self)                                  \
-     .def("__pos__", [](const Type &f) {              \
-            return static_cast<uint32_t>(f);          \
-        }, nb::is_operator());

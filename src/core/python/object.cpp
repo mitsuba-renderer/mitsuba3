@@ -8,11 +8,10 @@
 extern nb::object cast_object(Object *o);
 
 MI_PY_EXPORT(Object) {
-    auto e = nb::enum_<ParamFlags>(m, "ParamFlags", D(ParamFlags))
+    auto e = nb::enum_<ParamFlags>(m, "ParamFlags", nb::is_arithmetic(), D(ParamFlags))
         .def_value(ParamFlags, Differentiable)
         .def_value(ParamFlags, NonDifferentiable)
         .def_value(ParamFlags, Discontinuous);
-    MI_PY_DECLARE_ENUM_OPERATORS(ParamFlags, e)
 
     nb::class_<Class>(m, "Class", D(Class))
         .def_method(Class, name)

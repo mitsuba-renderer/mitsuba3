@@ -93,12 +93,12 @@ MI_PY_EXPORT(Scene) {
              [](const Scene &scene) {
                  nb::list result;
                  for (const Sensor *s : scene.sensors()) {
-                     const ProjectiveCamera *p =
-                         dynamic_cast<const ProjectiveCamera *>(s);
-                     if (p)
-                         result.append(nb::cast(p));
-                     else
-                         result.append(nb::cast(s));
+                     //const ProjectiveCamera *p =
+                     //    dynamic_cast<const ProjectiveCamera *>(s);
+                     //if (p)
+                     //    result.append(nb::cast(ref<const ProjectiveCamera>(p)));
+                     //else
+                     result.append(nb::cast(ref<const Sensor>(s)));
                  }
                  return result;
              },

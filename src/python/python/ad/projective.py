@@ -71,8 +71,8 @@ class ProjectiveDetail():
             distr_idx, silhouette_idx_pmf = shape_distr.sample_pmf(sample2.x, active)
             silhouette_idx = dr.gather(mi.UInt32, shape_indices, distr_idx, active)
 
-            valid = (dr.neq(silhouette_idx_pmf, 0) &
-                     dr.neq(shape_pmf, 0) &
+            valid = ((silhouette_idx_pmf != 0) &
+                     (shape_pmf != 0) &
                      active)
 
             ss = silhouette_shapes[i].sample_precomputed_silhouette(
@@ -126,7 +126,7 @@ class ProjectiveDetail():
 
         sample_to_camera = camera_to_sample.inverse()
         p_min = sample_to_camera @ mi.Point3f(0, 0, 0)
-        multiplier = dr.sqr(near_clip) / dr.abs(p_min[0] * p_min[1] * 4.0)
+        multiplier = dr.square(near_clip) / dr.abs(p_min[0] * p_min[1] * 4.0)
 
         # Frame
         frame_t = dr.normalize(sensor_center - ss.p)
@@ -136,7 +136,7 @@ class ProjectiveDetail():
         J_num = dr.norm(dr.cross(frame_n, sensor_lookat_dir)) * \
                 dr.norm(dr.cross(frame_s, sensor_lookat_dir)) * \
                 dr.abs(dr.dot(frame_s, ss.silhouette_d))
-        J_den = dr.sqr(dr.sqr(dr.dot(frame_t, sensor_lookat_dir))) * \
+        J_den = dr.square(dr.square(dr.dot(frame_t, sensor_lookat_dir))) * \
                 dr.squared_norm(ss.p - sensor_center)
 
         return J_num / J_den * multiplier
@@ -211,7 +211,7 @@ class ProjectiveDetail():
         scene_index = mi.UInt32(0)
         silhouette_shapes = scene.silhouette_shapes()
         for i in range(len(silhouette_shapes)):
-            current_shape = dr.eq(si.shape, mi.ShapePtr(silhouette_shapes[i]))
+            current_shape = (si.shape == mi.ShapePtr(silhouette_shapes[i]))
             scene_index[current_shape] = mi.UInt32(i)
             is_silhouette_shape |= (active & current_shape)
         active &= is_silhouette_shape
@@ -264,6 +264,7 @@ class ProjectiveDetail():
         gc.collect()
         # TODO this should happen automatically
 
+    @dr.syntax
     def init_indirect_silhouette_grid_unif(self, scene, sensor, seed):
         """
         Guiding structure initialization for uniform grid sampling.
@@ -290,13 +291,12 @@ class ProjectiveDetail():
 
         res = dr.zeros(mi.Float, sampler.wavefront_size())
         cnt = mi.UInt32(0)
-        loop = mi.Loop("guiding_init_indirect_unif", lambda: (cnt, sampler, res))
-        while loop(cnt < parent.guiding_rounds):
+        while cnt < parent.guiding_rounds:
             # GridGuiding - Sample uniform points in [0, 1]^3
             sample_3 = self.guiding_distr.random_cell_sample(sampler)
             # GridGuiding - Evaluate point contribution
             value, _ = self.eval_indirect_integrand(
-                scene, sensor, sample_3, sampler, preprocess=True, active=mi.Mask(True))
+                scene, sensor, sample_3, sampler, preprocess=True)
             value = dr.max(value)  # dr.max over channels
             res += value
             cnt += 1
@@ -355,7 +355,7 @@ class ProjectiveDetail():
             count = dr.zeros(mi.Float, ttl_num_cells)
             ones = dr.ones(mi.Float, dr.width(idx))
             dr.scatter_reduce(dr.ReduceOp.Add, count, ones, idx, active_seed)
-            count[dr.eq(count, 0)] = 1
+            count[count == 0] = 1
 
             # Compute the average contribution of every cell
             res_tmp = res_sum / count
@@ -597,6 +597,7 @@ class ProjectiveDetail():
 
         # ---------------------- Triangle mesh projection ----------------------
 
+        @dr.syntax
         def mesh_walk(self,
                       si_: mi.SurfaceInteraction3f,
                       viewpoint: mi.Point3f,
@@ -614,9 +615,7 @@ class ProjectiveDetail():
             depth = mi.UInt32(0)
             last_succ_ss = mi.SilhouetteSample3f(ss)
 
-            loop = mi.Loop("heuristic_mesh_walk",
-                lambda: (active_loop, depth, last_succ_ss, si, ss, sampler))
-            while loop(active_loop):
+            while active_loop:
                 flags = (mi.DiscontinuityFlags.HeuristicWalk.value |
                          mi.DiscontinuityFlags.PerimeterType.value)
                 ss[active_loop] = si.shape.primitive_silhouette_projection(
@@ -634,6 +633,7 @@ class ProjectiveDetail():
 
             return ss, sampler.state, valid
 
+        @dr.syntax
         def mesh_jump(self,
                       scene: mi.Scene,
                       si_: mi.SurfaceInteraction3f,
@@ -660,8 +660,7 @@ class ProjectiveDetail():
             valid = active & ss.is_valid()
             loop_active = active & (~valid) & (max_jump > 0)
 
-            loop = mi.Loop("mesh_jump", lambda: (loop_active, valid, depth, si, ss))
-            while loop(loop_active):
+            while loop_active:
                 # Project si onto the solution set
                 H = dr.normalize(viewpoint - si.p)
                 a = dr.dot(H, si.dn_du)
@@ -679,7 +678,7 @@ class ProjectiveDetail():
                 )
                 si = scene.ray_intersect(ray_new, mi.RayFlags.All | mi.RayFlags.dNSdUV,
                                          coherent=False, active=loop_active)
-                loop_active &= si.is_valid() & dr.eq(si.shape, shape)
+                loop_active &= si.is_valid() & (si.shape == shape)
 
                 # Check if we hit a silhouette
                 flags = mi.DiscontinuityFlags.PerimeterType.value
@@ -768,11 +767,29 @@ class ProjectiveDetail():
             only_interior_failed = active & ~active_interior & active_perimeter
             rand = sampler.next_float32(active)
 
-            ss = dr.select(
-                only_interior_failed | (active_interior & (rand > 0.5)),
-                ss_perimeter,
-                ss_interior
-            )
+            #ss = dr.select(
+            #    only_interior_failed | (active_interior & (rand > 0.5)),
+            #    ss_perimeter,
+            #    ss_interior
+            #)
+            tmp = only_interior_failed | (active_interior & (rand > 0.5))
+            ss = dr.zeros(mi.SilhouetteSample3f, dr.width(ss_interior))
+            ss.p = dr.select(tmp, ss_interior.p, ss_perimeter.p)
+            ss.discontinuity_type = dr.select(tmp, ss_interior.discontinuity_type, ss_perimeter.discontinuity_type)
+            ss.n = dr.select(tmp, ss_interior.n, ss_perimeter.n)
+            ss.uv = dr.select(tmp, ss_interior.uv, ss_perimeter.uv)
+            ss.time = dr.select(tmp, ss_interior.time, ss_perimeter.time)
+            ss.pdf = dr.select(tmp, ss_interior.pdf, ss_perimeter.pdf)
+            ss.delta = dr.select(tmp, ss_interior.delta, ss_perimeter.delta)
+            ss.d = dr.select(tmp, ss_interior.d, ss_perimeter.d)
+            ss.silhouette_d = dr.select(tmp, ss_interior.silhouette_d, ss_perimeter.silhouette_d)
+            ss.prim_index = dr.select(tmp, ss_interior.prim_index, ss_perimeter.prim_index)
+            ss.scene_index = dr.select(tmp, ss_interior.scene_index, ss_perimeter.scene_index)
+            ss.flags = dr.select(tmp, ss_interior.flags, ss_perimeter.flags)
+            ss.projection_index = dr.select(tmp, ss_interior.projection_index, ss_perimeter.projection_index)
+            ss.shape = dr.select(tmp, ss_interior.shape, ss_perimeter.shape)
+            ss.foreshortening = dr.select(tmp, ss_interior.foreshortening, ss_perimeter.foreshortening)
+            ss.offset = dr.select(tmp, ss_interior.offset, ss_perimeter.offset)
             ss.flags = mi.DiscontinuityFlags.InteriorType | mi.DiscontinuityFlags.PerimeterType
 
             return ss
@@ -791,12 +808,34 @@ class ProjectiveDetail():
             # Randomly choose between perimeter and interior
             only_interior_failed = active & ~active_interior & active_perimeter
             rand = sampler.next_float32(active)
-
-            ss = dr.select(
-                only_interior_failed | (active_interior & (rand > 0.5)),
-                ss_perimeter,
-                ss_interior
+            tmp = mi.Bool(
+                only_interior_failed |
+                (active_interior & (rand > 0.5))
             )
+
+            #ss = dr.select(
+            #    tmp,
+            #    dr.zeros(mi.SilhouetteSample3f),
+            #    dr.zeros(mi.SilhouetteSample3f)
+            #)
+            ss = dr.zeros(mi.SilhouetteSample3f, dr.width(ss_interior))
+            ss.p = dr.select(tmp, ss_interior.p, ss_perimeter.p)
+            ss.discontinuity_type = dr.select(tmp, ss_interior.discontinuity_type, ss_perimeter.discontinuity_type)
+            ss.n = dr.select(tmp, ss_interior.n, ss_perimeter.n)
+            ss.uv = dr.select(tmp, ss_interior.uv, ss_perimeter.uv)
+            ss.time = dr.select(tmp, ss_interior.time, ss_perimeter.time)
+            ss.pdf = dr.select(tmp, ss_interior.pdf, ss_perimeter.pdf)
+            ss.delta = dr.select(tmp, ss_interior.delta, ss_perimeter.delta)
+            ss.d = dr.select(tmp, ss_interior.d, ss_perimeter.d)
+            ss.silhouette_d = dr.select(tmp, ss_interior.silhouette_d, ss_perimeter.silhouette_d)
+            ss.prim_index = dr.select(tmp, ss_interior.prim_index, ss_perimeter.prim_index)
+            ss.scene_index = dr.select(tmp, ss_interior.scene_index, ss_perimeter.scene_index)
+            ss.flags = dr.select(tmp, ss_interior.flags, ss_perimeter.flags)
+            ss.projection_index = dr.select(tmp, ss_interior.projection_index, ss_perimeter.projection_index)
+            ss.shape = dr.select(tmp, ss_interior.shape, ss_perimeter.shape)
+            ss.foreshortening = dr.select(tmp, ss_interior.foreshortening, ss_perimeter.foreshortening)
+            ss.offset = dr.select(tmp, ss_interior.offset, ss_perimeter.offset)
+
             ss.flags = mi.DiscontinuityFlags.InteriorType | mi.DiscontinuityFlags.PerimeterType
 
             return ss

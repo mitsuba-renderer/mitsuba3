@@ -9,7 +9,7 @@ MI_PY_EXPORT(BSDFContext) {
         .def_value(TransportMode, Radiance)
         .def_value(TransportMode, Importance);
 
-    auto e = nb::enum_<BSDFFlags>(m, "BSDFFlags", D(BSDFFlags))
+    auto e = nb::enum_<BSDFFlags>(m, "BSDFFlags", nb::is_arithmetic(), D(BSDFFlags))
         .def_value(BSDFFlags, Empty)
         .def_value(BSDFFlags, Null)
         .def_value(BSDFFlags, DiffuseReflection)
@@ -31,8 +31,6 @@ MI_PY_EXPORT(BSDFContext) {
         .def_value(BSDFFlags, Delta)
         .def_value(BSDFFlags, Delta1D)
         .def_value(BSDFFlags, All);
-
-    MI_PY_DECLARE_ENUM_OPERATORS(BSDFFlags, e)
 
     nb::class_<BSDFContext>(m, "BSDFContext", D(BSDFContext))
         .def(nb::init<TransportMode>(),

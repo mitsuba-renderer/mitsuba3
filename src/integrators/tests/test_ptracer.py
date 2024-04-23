@@ -228,7 +228,7 @@ def test06_ptracer_gradients(variants_all_ad_rgb):
 def test07_adjoint_integrator_trampoline(variants_all_ad_rgb):
 
     class MyPtracer(mi.AdjointIntegrator):
-        def __init__(self, props=mi.Properties()):
+        def __init__(self, props):
             super().__init__(props)
 
     mi.register_integrator("myptracer", MyPtracer)

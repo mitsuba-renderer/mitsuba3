@@ -408,6 +408,8 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
             dr::scatter(m_vertex_normals,
                         dr::float32_array_t<Float>(normals[i]), ni + i);
 
+        dr::disable_grad(m_vertex_normals);
+
         dr::eval(m_vertex_normals);
     }
 }
@@ -427,6 +429,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() {
 
 MI_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
     std::lock_guard<std::mutex> lock(m_mutex);
+    dr::scoped_symbolic_independence<Float> guard{};
 
     if (!m_area_pmf.empty())
         return; // already built!
@@ -871,7 +874,7 @@ Mesh<Float, Spectrum>::sample_silhouette(const Point3f &sample_,
 
     UInt32 dedge_oppo = opposite_dedge(dedge, active);
     UInt32 face_idx_oppo = dr::idiv(dedge_oppo, 3u);
-    Mask has_opposite = (dedge_oppo != m_invalid_dedge) & active;
+    Mask has_opposite = (dedge_oppo != m_invalid_dedge) && active;
     Normal3f n_oppo = face_normal(face_idx_oppo, has_opposite);
 
     bool is_lune = has_flag(flags, DiscontinuityFlags::DirectionLune);

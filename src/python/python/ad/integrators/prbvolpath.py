@@ -66,7 +66,7 @@ class PRBVolpathIntegrator(RBIntegrator):
             'type': 'prbvolpath',
             'max_depth': 8
     """
-    def __init__(self, props=mi.Properties()):
+    def __init__(self, props):
         super().__init__(props)
         self.use_nee = False
         self.nee_handle_homogeneous = False
