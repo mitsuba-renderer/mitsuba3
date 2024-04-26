@@ -1,12 +1,11 @@
-#include <nanobind/stl/string.h>
-#include <nanobind/stl/pair.h>
-
 #include <mitsuba/core/struct.h>
 #include <mitsuba/core/simd.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/python/python.h>
 
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
 
 MI_PY_EXPORT(Struct) {
     auto c = MI_PY_CLASS(Struct, Object);

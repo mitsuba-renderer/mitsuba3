@@ -248,7 +248,7 @@ MI_PY_EXPORT(Shape) {
         .def(nb::init<const std::string &, ScalarSize, ScalarSize,
                       const Properties &, bool, bool>(),
              "name"_a, "vertex_count"_a, "face_count"_a,
-             "props"_a = Properties(),
+             "props"_a,
              "has_vertex_normals"_a = false, "has_vertex_texcoords"_a = false,
              D(Mesh, Mesh))
         .def_method(Mesh, initialize)

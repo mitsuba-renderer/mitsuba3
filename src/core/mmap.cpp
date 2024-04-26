@@ -269,7 +269,7 @@ const fs::path &MemoryMappedFile::filename() const {
     return d->filename;
 }
 
-MemoryMappedFile* MemoryMappedFile::create_temporary(size_t size) {
+ref<MemoryMappedFile> MemoryMappedFile::create_temporary(size_t size) {
     MemoryMappedFile* result = new MemoryMappedFile();
     result->d->size = size;
     result->d->create_temp();

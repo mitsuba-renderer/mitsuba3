@@ -172,4 +172,4 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6,
 
         # Compare results
         for i in range(len(results_scalar)):
-            assert dr.allclose(results_vec[i], (np.transpose(results_scalar[i])), atol=atol)
+            assert dr.allclose(results_vec[i], np.transpose(results_scalar[i]), atol=atol)

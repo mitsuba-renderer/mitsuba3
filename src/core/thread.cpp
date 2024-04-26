@@ -23,7 +23,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 static size_t global_thread_count = 0;
-static thread_local Thread *self = nullptr;
+static thread_local ref<Thread> self = nullptr;
 static std::atomic<uint32_t> thread_ctr { 0 };
 #if defined(__linux__) || defined(__APPLE__)
 static pthread_key_t this_thread_id;
@@ -385,7 +385,6 @@ void Thread::start() {
 
     d->running = true;
 
-    inc_ref();
     d->thread = std::thread(&Thread::dispatch, this);
 }
 
@@ -433,9 +432,8 @@ void Thread::dispatch() {
 void Thread::exit() {
     Log(Debug, "Thread \"%s\" has finished", d->name);
     d->running = false;
-    Assert(self == this);
+    Assert(self.get() == this);
     self = nullptr;
-    dec_ref();
 }
 
 void Thread::join() {
@@ -522,7 +520,6 @@ void Thread::static_initialization() {
     self = new MainThread();
     self->d->running = true;
     self->d->fresolver = new FileResolver();
-    self->inc_ref();
 }
 
 void Thread::static_shutdown() {
@@ -531,7 +528,6 @@ void Thread::static_shutdown() {
     registered_tasks.clear();
 
     thread()->d->running = false;
-    delete self;
     self = nullptr;
     #if defined(__linux__) || defined(__APPLE__)
         pthread_key_delete(this_thread_id);

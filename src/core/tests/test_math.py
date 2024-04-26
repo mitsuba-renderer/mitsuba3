@@ -73,11 +73,10 @@ def test08_legendre_vec(variant_scalar_rgb):
     from mitsuba.test.util import check_vectorization
 
     def kernel(x : float):
-        from mitsuba.math import legendre_p, legendre_pd, legendre_pd_diff
         return (
-            legendre_p(1, x),
-            mi.Vector2f(legendre_pd(3, x)),
-            mi.Vector2f(legendre_pd_diff(4, x))
+            mi.math.legendre_p(1, x),
+            mi.Vector2f(mi.math.legendre_pd(3, x)),
+            mi.Vector2f(mi.math.legendre_pd_diff(4, x))
         )
 
     check_vectorization(kernel)

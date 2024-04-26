@@ -1,5 +1,6 @@
 #include <mitsuba/core/util.h>
 #include <mitsuba/python/python.h>
+#include <nanobind/stl/string.h>
 
 MI_PY_EXPORT(misc) {
     auto misc = m.def_submodule("misc", "Miscellaneous utility routines");

@@ -29,6 +29,31 @@ static nb::object curr_variant = nb::none();
 /// Additional reference to this module's `__dict__` attribute
 static nb::dict mi_dict{};
 
+nb::object import_with_deepbind_if_necessary(const char* name) {
+#if defined(__clang__) && !defined(__APPLE__)
+    nb::int_ backupflags;
+    nb::object sys = nb::module_::import_("sys");
+    if (!std::getenv("DRJIT_NO_RTLD_DEEPBIND")) {
+        backupflags = nb::borrow<nb::int_>(sys.attr("getdlopenflags")());
+        nb::object os = nb::module_::import_("os");
+        nb::object rtld_lazy = os.attr("RTLD_LAZY");
+        nb::object rtld_local = os.attr("RTLD_LOCAL");
+        nb::object rtld_deepbind = os.attr("RTLD_DEEPBIND");
+
+        sys.attr("setdlopenflags")(rtld_lazy | rtld_local | rtld_deepbind);
+    }
+#endif
+
+    nb::object out = nb::module_::import_(name);
+
+#if defined(__clang__) && !defined(__APPLE__)
+    if (!std::getenv("DRJIT_NO_RTLD_DEEPBIND"))
+        sys.attr("setdlopenflags")(sys.attr("getdlopenflags")());
+#endif
+
+    return out;
+}
+
 /// Return the Python module associated with a given variant name
 static nb::object variant_module(nb::handle variant) {
     nb::object result = variant_modules[variant];
@@ -36,7 +61,7 @@ static nb::object variant_module(nb::handle variant) {
         return result;
 
     nb::str module_name = nb::str("mitsuba.{}").format(variant);
-    result = nb::module_::import_(module_name.c_str());
+    result = import_with_deepbind_if_necessary(module_name.c_str());
     variant_modules[variant] = result;
 
     return result;
@@ -113,7 +138,7 @@ NB_MODULE(mitsuba_alias, m) {
 
     /// Fill `__dict__` with all objects in `mitsuba_ext` and `mitsuba.python`
     mi_dict = m.attr("__dict__");
-    nb::object mi_ext = nb::module_::import_("mitsuba.mitsuba_ext");
+    nb::object mi_ext = import_with_deepbind_if_necessary("mitsuba.mitsuba_ext");
     nb::object mi_python = nb::module_::import_("mitsuba.python");
     nb::dict mitsuba_ext_dict = mi_ext.attr("__dict__");
     for (const auto &k : mitsuba_ext_dict.keys())

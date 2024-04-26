@@ -707,12 +707,12 @@ class WriteXML:
                 'z': '1',
                 'angle': rot[2] * 180 / dr.pi
             }
-        if export_scale and scale != 1.0:
+        if export_scale and dr.any(scale != 1.0):
             params['scale'] = {
                 'type': 'scale',
                 'value': "%f %f %f" % (scale[0,0], scale[1,1], scale[2,2])
             }
-        if trans != 0.0:
+        if dr.any(trans != 0.0):
             params['translate'] = {
                 'type': 'translate',
                 'value': "%f %f %f" % (trans[0], trans[1], trans[2])

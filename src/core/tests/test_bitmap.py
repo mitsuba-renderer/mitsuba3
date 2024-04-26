@@ -5,7 +5,7 @@ import pytest
 import drjit as dr
 import mitsuba as mi
 
-from mitsuba.scalar_rgb.test.util import find_resource
+from mitsuba.test.util import find_resource
 
 
 def test_read_convert_yc(variant_scalar_rgb, tmpdir):
@@ -222,9 +222,9 @@ def test_read_tga(variant_scalar_rgb):
 
 
 @pytest.mark.parametrize('file_format',
-                         [mi.scalar_rgb.Bitmap.FileFormat.JPEG,
-                          mi.scalar_rgb.Bitmap.FileFormat.PPM,
-                          mi.scalar_rgb.Bitmap.FileFormat.PNG])
+                         [mi.Bitmap.FileFormat.JPEG,
+                          mi.Bitmap.FileFormat.PPM,
+                          mi.Bitmap.FileFormat.PNG])
 def test_read_write_memorystream_uint8(variant_scalar_rgb, np_rng, file_format):
     ref = np.uint8(np_rng.random((10, 10, 3)) * 255)
     b = mi.Bitmap(ref)
@@ -236,9 +236,9 @@ def test_read_write_memorystream_uint8(variant_scalar_rgb, np_rng, file_format):
 
 
 @pytest.mark.parametrize('file_format',
-                         [mi.scalar_rgb.Bitmap.FileFormat.OpenEXR,
-                          mi.scalar_rgb.Bitmap.FileFormat.RGBE,
-                          mi.scalar_rgb.Bitmap.FileFormat.PFM])
+                         [mi.Bitmap.FileFormat.OpenEXR,
+                          mi.Bitmap.FileFormat.RGBE,
+                          mi.Bitmap.FileFormat.PFM])
 def test_read_write_memorystream_float32(variant_scalar_rgb, np_rng, file_format):
     ref = np.float32(np_rng.random((10, 10, 3)))
     b = mi.Bitmap(ref)

@@ -2,8 +2,8 @@ import os
 import pytest
 import drjit as dr
 
-from mitsuba.scalar_rgb import Stream, DummyStream, FileStream, MemoryStream, ZStream
-from mitsuba.scalar_rgb.test.util import tmpfile, make_tmpfile
+from mitsuba import Stream, DummyStream, FileStream, MemoryStream, ZStream
+from mitsuba.test.util import tmpfile, make_tmpfile
 
 parameters = [
     'class_,args',

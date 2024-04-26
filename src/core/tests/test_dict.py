@@ -2,7 +2,7 @@ import pytest
 import drjit as dr
 import mitsuba as mi
 
-from mitsuba.scalar_rgb.test.util import fresolver_append_path
+from mitsuba.test.util import fresolver_append_path
 
 
 def test01_dict_plugins(variants_all):

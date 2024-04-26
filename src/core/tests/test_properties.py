@@ -200,6 +200,7 @@ def test10_transforms3(variant_scalar_rgb):
 
     assert type(p["transform"] is mi.ScalarTransform3d)
 
+
 def test11_tensor(variant_scalar_rgb):
     props = mi.Properties()
 
@@ -218,14 +219,11 @@ def test11_tensor(variant_scalar_rgb):
     props['goo'] = mi.TensorXf(np.zeros((2, 3, 4)))
     assert props['goo'].shape == (2, 3, 4)
 
+
 def test11_tensor_cuda(variant_cuda_ad_rgb):
-    pass
-    #FIXME: Revisit once set variant changes are in
-    # We need mi.Properties class type to change when
-    # switching between variants!!
-    #props = mi.Properties()
+    props = mi.Properties()
 
     ### Check PyTorch
-    #torch = pytest.importorskip("torch")
-    #props['goo'] = mi.TensorXf(torch.zeros(2, 3, 4))
-    #assert props['goo'].shape == (2, 3, 4)
+    torch = pytest.importorskip("torch")
+    props['goo'] = mi.TensorXf(torch.zeros(2, 3, 4))
+    assert props['goo'].shape == (2, 3, 4)

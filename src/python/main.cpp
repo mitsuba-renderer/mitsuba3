@@ -164,17 +164,17 @@ NB_MODULE(mitsuba_ext, m) {
     atexit.attr("register")(nb::cpp_function([]() {
         Thread::wait_for_tasks();
         Class::static_remove_functors();
+        Logger::static_shutdown();
+        Thread::static_shutdown();
     }));
 
     /* Callback function cleanup static data strucutres, this should be called
      * when the module is being deallocated */
     nanobind_module_def_mitsuba_ext.m_free = [](void *) {
-            Profiler::static_shutdown();
-            Bitmap::static_shutdown();
-            Logger::static_shutdown();
-            Thread::static_shutdown();
-            Class::static_shutdown();
-            Jit::static_shutdown();
+        Profiler::static_shutdown();
+        Bitmap::static_shutdown();
+        Class::static_shutdown();
+        Jit::static_shutdown();
     };
 
     /* Make this a package, thus allowing statements such as:

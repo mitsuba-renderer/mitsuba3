@@ -56,7 +56,7 @@ public:
      *         that haven't yet been written to disk can be discarded
      *         (Linux/OSX only).
      */
-    static MemoryMappedFile* create_temporary(size_t size);
+    static ref<MemoryMappedFile> create_temporary(size_t size);
 
     MI_DECLARE_CLASS()
 protected:

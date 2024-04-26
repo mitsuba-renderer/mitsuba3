@@ -302,19 +302,16 @@ MI_PY_EXPORT(Bitmap) {
                         throw nb::type_error("Invalid component format");
                 }
 
-                nb::object self = nb::find(bitmap);
-                if (!self.is_valid()) // This should never happen
-                    throw nb::type_error("Bitmap object doesn't exist!");
-
                 nb::make_tuple(bitmap.height(), bitmap.width(),
                                bitmap.channel_count());
 
                 return nb::ndarray<>(
                     bitmap.data(),
                     { bitmap.height(), bitmap.width(), bitmap.channel_count() },
-                    self, {}, dtype, nb::device::cpu::value, 0);
+                    nb::handle(), {}, dtype, nb::device::cpu::value, 0);
             },
-            "stream"_a = nb::none(), "Interface for the DLPack protocol.")
+            "stream"_a = nb::none(), "Interface for the DLPack protocol.",
+            nb::rv_policy::reference_internal)
         .def(
             "__dlpack_device__",
             [](Bitmap & /*bitmap*/) {

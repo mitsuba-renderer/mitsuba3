@@ -1,3 +1,4 @@
+#include <nanobind/nanobind.h> // Needs to be first, to get `ref<T>` caster
 #include <mitsuba/core/thread.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/fresolver.h>

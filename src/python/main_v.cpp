@@ -135,18 +135,21 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT_TYPES()
 
     // Create sub-modules
-    // TODO: Just use normal submodule creation
-    nb::module_ math    = create_submodule(m, "math"),
-                spline  = create_submodule(m, "spline"),
-                warp    = create_submodule(m, "warp"),
-                quad    = create_submodule(m, "quad"),
-                mueller = create_submodule(m, "mueller");
-    math.doc()    = "Mathematical routines, special functions, etc.";
-    spline.doc()  = "Functions for evaluating and sampling Catmull-Rom splines";
-    warp.doc()    = "Common warping techniques that map from the unit square to other "
-                  "domains, such as spheres, hemispheres, etc.";
-    quad.doc()    = "Functions for numerical quadrature";
-    mueller.doc() = "Routines to manipulate Mueller matrices for polarized rendering.";
+    nb::module_ math =
+        m.def_submodule("math", "Mathematical routines, special functions, "
+                                "etc.");
+    nb::module_ spline =
+        m.def_submodule("spline", "Functions for evaluating and sampling "
+                                  "Catmull-Rom splines");
+    nb::module_ warp =
+        m.def_submodule("warp", "Common warping techniques that map from "
+                                "the unit square to other domains, such as "
+                                "spheres, hemispheres, etc.");
+    nb::module_ quad =
+        m.def_submodule("quad", "Functions for numerical quadrature");
+    nb::module_ mueller =
+        m.def_submodule("mueller", "Routines to manipulate Mueller matrices "
+                                   "for polarized rendering.");
 
     MI_PY_IMPORT(DrJit);
 
@@ -155,11 +158,11 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     m.attr("is_rgb") = is_rgb_v<Spectrum>;
     m.attr("is_spectral") = is_spectral_v<Spectrum>;
     m.attr("is_polarized") = is_polarized_v<Spectrum>;
-//
+
     color_management_static_initialization(dr::is_cuda_v<Float>,
                                            dr::is_llvm_v<Float>);
     Scene::static_accel_initialization();
-//
+
     MI_PY_IMPORT(Object);
     MI_PY_IMPORT(Ray);
     MI_PY_IMPORT(BoundingBox);
@@ -177,7 +180,7 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT_SUBMODULE(spline);
     MI_PY_IMPORT(Spectrum);
     MI_PY_IMPORT(Transform);
-//    // MI_PY_IMPORT(AnimatedTransform);
+    // MI_PY_IMPORT(AnimatedTransform);
     MI_PY_IMPORT(Hierarchical2D);
     MI_PY_IMPORT(Marginal2D);
     MI_PY_IMPORT(vector);

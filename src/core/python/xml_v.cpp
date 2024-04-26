@@ -203,7 +203,7 @@ ref<Object> create_texture_from(const nb::dict &dict, bool within_emitter) {
             std::string key2 = nb::cast<std::string>(k2);
             using Color3f = Properties::Color3f;
             if (key2 == "value")
-                color = nb::cast<Color3f>(nb::type<Color3f>()(value2));
+                color = nb::cast<Color3f>(value2);
             else if (key2 != "type")
                 Throw("Unexpected key in rgb dictionary: %s", key2);
         }
@@ -382,15 +382,13 @@ void parse_dictionary(DictParseContext &ctx,
         // Try to cast to Array3f (list, tuple, numpy.array, ...)
         try {
             
-            props.set_array3f(key, nb::cast<Properties::Array3f>(
-                nb::type<Properties::Array3f>()(value)));
+            props.set_array3f(key, nb::cast<Properties::Array3f>(value));
             continue;
         } catch (const nb::cast_error &) { }
 
         // Try to cast to TensorXf
         try {
-            TensorXf tensor = nb::cast<TensorXf>(
-                nb::type<TensorXf>()(value));
+            TensorXf tensor = nb::cast<TensorXf>(value);
             // To support parallel loading we have to ensure tensor has been evaluated
             // because tracking of side effects won't persist across different ThreadStates
             dr::eval(tensor);

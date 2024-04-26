@@ -3,7 +3,7 @@ import pytest
 
 
 def test01_time_string(variant_scalar_rgb):
-    from mitsuba.util import time_string
+    from mitsuba.misc import time_string
 
     assert time_string(1, precise=True) == '1ms'
     assert time_string(2010, precise=True) == '2.01s'
@@ -16,7 +16,7 @@ def test01_time_string(variant_scalar_rgb):
 
 
 def test01_mem_string(variant_scalar_rgb):
-    from mitsuba.util import mem_string
+    from mitsuba.misc import mem_string
 
     assert mem_string(2, precise=True) == '2 B'
     assert mem_string(2 * 1024, precise=True) == '2 KiB'

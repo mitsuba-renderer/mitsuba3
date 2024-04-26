@@ -30,6 +30,8 @@ if _dr.__version__ != DRJIT_VERSION_REQUIREMENT:
                       % (DRJIT_VERSION_REQUIREMENT))
 del DRJIT_VERSION_REQUIREMENT
 
-# Replaces 'mitsuba' in sys.modules with itself (mitsuba_alias)
-from . import mitsuba_alias
+with _dr.detail.scoped_rtld_deepbind():
+    # Replaces 'mitsuba' in sys.modules with itself (mitsuba_alias)
+    from . import mitsuba_alias
+
 _ = mitsuba_alias # Removes unused variable warnings

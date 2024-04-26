@@ -31,7 +31,7 @@ void bind_transform3(nb::module_ &m, const char *name) {
                 throw nb::cast_error();
             ScalarMatrix3f m;
             for (size_t i = 0; i < size; ++i)
-                m[i] = nb::cast<ScalarVector3f>(nb::type<ScalarVector3f>()(list[i]));
+                m[i] = nb::cast<ScalarVector3f>(list[i]);
             new Transform3f(m);
         })
         .def(nb::init<Matrix3f>(), D(Transform, Transform))
@@ -108,7 +108,7 @@ void bind_transform4(nb::module_ &m, const char *name) {
                 throw nb::cast_error();
             ScalarMatrix4f m;
             for (size_t i = 0; i < size; ++i)
-                m[i] = nb::cast<ScalarVector4f>(nb::type<ScalarVector4f>()(list[i]));
+                m[i] = nb::cast<ScalarVector4f>(list[i]);
             new (t) Transform4f(m);
         })
         .def(nb::init<Matrix4f>(), D(Transform, Transform))
