@@ -581,9 +581,16 @@ where :math:`\cos\theta_t` can be computed from Snell's law (Eq. :eq:`eq_reflect
 
 Note that the leading signs of both equations would change based on different conventions for the electric field orientations above.
 
-The same expressions also hold in the conductor case where the indices of refraction are complex valued, i.e. :math:`\eta = n - k i` with real and imaginary parts :math:`n` and :math:`k`. The use of complex numbers here comes from the expression :math:`\exp(-i \, \alpha \, \eta \, t)` that describes a plane wave propagating with increasing time :math:`t` and a constant :math:`\alpha` related to the wave frequency. When introducing a value of :math:`k > 0`, this now leads to an exponential decay of the wave as it travels inside the conductor material: :math:`\exp(-i \, n \, \alpha \, t) \cdot \exp(-\alpha \, k \, t)`. For that reason, :math:`k` is also known as the *extinction coefficient*.
+The same expressions also hold in the conductor case where the indices of refraction are complex valued, i.e. :math:`\eta = n - k i` with real and imaginary parts :math:`n` and :math:`k`. The use of complex values here is a mathematical trick to encode both the harmonic oscillation of a wave together with its decay when travelling into the conductive medium. As illustration, consider a wave travelling along spatial coordinate :math:`x` and time :math:`t`:
 
-There exist alternate conventions of this description where the direction of the time dependence is reversed (:math:`\exp(+i \, \alpha \, \eta \, t)`) and as a consequence, the sign of the complex component is flipped to (:math:`n + k i`) :cite:`Muller1969`. We use the former convention with the negative sign (:math:`n - k i`) in this document.
+.. math::
+
+    \exp\left(i \omega (t - \frac{\eta}{c} x)\right) = \exp\left(i \omega (t - \frac{n}{c} x)\right) \cdot \exp\left(-\omega \frac{k}{c} x\right)
+
+In this context, :math:`\omega` denotes the angular spatial frequency and :math:`c` is the speed of light. A value :math:`k > 0` introduces an exponential falloff term which is why :math:`k` is also known as the *extinction coefficient*. We refer to *"Optical Properties of Metals"* in Hecht :cite:`Hecht1998` (Section 4.8 of the 5th edition) for a derivation and further details.
+
+There also exist alternate conventions of the above behaviour involving a complex conjugate, i.e. describing the wave as :math:`\exp\left(i\omega(\frac{\eta}{c}x - t)\right)` instead. As a consequence, the sign of the imaginary part needs to flip to :math:`n + k i` accordingly.
+These are sometimes referred to as the ":math:`\exp(+i \omega t)` and :math:`\exp(-i \omega t)` conventions" in the literature :cite:`Muller1969`. In this document we use the former option, so :math:`\eta = n - k i`.
 
 ------------
 
