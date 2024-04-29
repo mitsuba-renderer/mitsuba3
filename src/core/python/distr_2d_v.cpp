@@ -50,41 +50,41 @@ template <typename Warp> auto bind_warp(nb::module_ &m,
                 param_res, param_values, normalize, build_hierarchy);
         };
 
-    auto warp = nb::class_<Warp>(m, name, doc);
+    MI_PY_CHECK_ALIAS(Warp, name) {
+        auto warp = nb::class_<Warp>(m, name, doc);
 
-    if constexpr (Warp::Dimension == 0)
-        warp.def("__init__", constructor, "data"_a,
-                 "param_values"_a = nb::list(), "normalize"_a = true,
-                 "enable_sampling"_a = true, doc_constructor);
-    else
-        warp.def("__init__", constructor, "data"_a, "param_values"_a,
-                 "normalize"_a = true, "build_hierarchy"_a = true,
-                 doc_constructor);
+        if constexpr (Warp::Dimension == 0)
+            warp.def("__init__", constructor, "data"_a,
+                     "param_values"_a = nb::list(), "normalize"_a = true,
+                     "enable_sampling"_a = true, doc_constructor);
+        else
+            warp.def("__init__", constructor, "data"_a, "param_values"_a,
+                     "normalize"_a = true, "build_hierarchy"_a = true,
+                     doc_constructor);
 
-    warp.def("sample",
-             [](const Warp *w, const Vector2f &sample,
-                          const dr::Array<Float, Warp::Dimension> &param,
-                          Mask active) {
-                 return w->sample(sample, param.data(), active);
-             },
-             "sample"_a, "param"_a = zero, "active"_a = true, doc_sample)
-        .def("invert",
-             [](const Warp *w, const Vector2f &sample,
-                          const dr::Array<Float, Warp::Dimension> &param,
-                          Mask active) {
-                 return w->invert(sample, param.data(), active);
-             },
-             "sample"_a, "param"_a = zero, "active"_a = true, doc_invert)
-        .def("eval",
-             [](const Warp *w, const Vector2f &pos,
-                          const dr::Array<Float, Warp::Dimension> &param,
-                          Mask active) {
-                 return w->eval(pos, param.data(), active);
-             },
-             "pos"_a, "param"_a = zero, "active"_a = true, doc_eval)
-        .def("__repr__", &Warp::to_string);
-
-    return warp;
+        warp.def("sample",
+                 [](const Warp *w, const Vector2f &sample,
+                              const dr::Array<Float, Warp::Dimension> &param,
+                              Mask active) {
+                     return w->sample(sample, param.data(), active);
+                 },
+                 "sample"_a, "param"_a = zero, "active"_a = true, doc_sample)
+            .def("invert",
+                 [](const Warp *w, const Vector2f &sample,
+                              const dr::Array<Float, Warp::Dimension> &param,
+                              Mask active) {
+                     return w->invert(sample, param.data(), active);
+                 },
+                 "sample"_a, "param"_a = zero, "active"_a = true, doc_invert)
+            .def("eval",
+                 [](const Warp *w, const Vector2f &pos,
+                              const dr::Array<Float, Warp::Dimension> &param,
+                              Mask active) {
+                     return w->eval(pos, param.data(), active);
+                 },
+                 "pos"_a, "param"_a = zero, "active"_a = true, doc_eval)
+            .def("__repr__", &Warp::to_string);
+    }
 }
 
 template <typename Warp> void bind_warp_hierarchical(nb::module_ &m, const char *name) {
@@ -134,15 +134,17 @@ MI_PY_EXPORT(DiscreteDistribution2D) {
     MI_PY_IMPORT_TYPES()
     using Warp = DiscreteDistribution2D<Float>;
 
-    nb::class_<Warp>(m, "DiscreteDistribution2D")
-        .def("__init__",[](Warp* t, const nb::ndarray<ScalarFloat, nb::ndim<2>> &data) {
-             new (t) Warp(
-                 data.data(),
-                 ScalarVector2u((uint32_t) data.shape(data.ndim() - 1),
-                                (uint32_t) data.shape(data.ndim() - 2)));
-             }, "data"_a)
-        .def("eval", &Warp::eval, "pos"_a, "active"_a = true)
-        .def("pdf", &Warp::pdf, "pos"_a, "active"_a = true)
-        .def("sample", &Warp::sample, "sample"_a, "active"_a = true)
-        .def("__repr__", &Warp::to_string);
+    MI_PY_CHECK_ALIAS(Warp, "DiscreteDistribution2D") {
+        nb::class_<Warp>(m, "DiscreteDistribution2D")
+            .def("__init__",[](Warp* t, const nb::ndarray<ScalarFloat, nb::ndim<2>> &data) {
+                 new (t) Warp(
+                     data.data(),
+                     ScalarVector2u((uint32_t) data.shape(data.ndim() - 1),
+                                    (uint32_t) data.shape(data.ndim() - 2)));
+                 }, "data"_a)
+            .def("eval", &Warp::eval, "pos"_a, "active"_a = true)
+            .def("pdf", &Warp::pdf, "pos"_a, "active"_a = true)
+            .def("sample", &Warp::sample, "sample"_a, "active"_a = true)
+            .def("__repr__", &Warp::to_string);
+    }
 }
