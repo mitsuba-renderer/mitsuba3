@@ -706,7 +706,6 @@ for integrator_name, handles_discontinuities in INTEGRATORS:
 # -------------------------------------------------------------------
 
 @pytest.mark.slow
-@pytest.mark.skip("Temporary")
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
     config = config()
@@ -735,7 +734,6 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
 
 
 @pytest.mark.slow
-@pytest.mark.skip("Temporary")
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
@@ -783,7 +781,6 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
 
 
 @pytest.mark.slow
-@pytest.mark.skip("Temporary")
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
@@ -823,7 +820,6 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
         assert False
 
 
-@pytest.mark.skip("Temporary")
 @pytest.mark.slow
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 def test04_render_custom_op(variants_all_ad_rgb):
