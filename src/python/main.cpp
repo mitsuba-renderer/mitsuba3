@@ -165,6 +165,7 @@ NB_MODULE(mitsuba_ext, m) {
         Thread::wait_for_tasks();
         Class::static_remove_functors();
         Logger::static_shutdown();
+        StructConverter::static_shutdown();
         Thread::static_shutdown();
     }));
 

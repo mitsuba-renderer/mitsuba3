@@ -1243,6 +1243,10 @@ static std::unordered_map<
     hasher<std::pair<ref<const Struct>, ref<const Struct>>>,
     comparator<std::pair<ref<const Struct>, ref<const Struct>>>> __cache;
 
+void StructConverter::static_shutdown() {
+    __cache.clear();
+}
+
 StructConverter::StructConverter(const Struct *source, const Struct *target, bool dither)
  : m_source(source), m_target(target) {
 #if MI_STRUCTCONVERTER_USE_JIT == 1

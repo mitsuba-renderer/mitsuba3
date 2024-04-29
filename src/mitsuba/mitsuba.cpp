@@ -402,6 +402,7 @@ int main(int argc, char *argv[]) {
     color_management_static_shutdown();
     Profiler::static_shutdown();
     Bitmap::static_shutdown();
+    StructConverter::static_shutdown();
     Logger::static_shutdown();
     Thread::static_shutdown();
     Class::static_shutdown();

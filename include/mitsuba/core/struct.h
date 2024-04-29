@@ -407,6 +407,9 @@ public:
     /// Return a string representation
     std::string to_string() const override;
 
+    /// Free static resources
+    static void static_shutdown();
+
     MI_DECLARE_CLASS()
 protected:
 
