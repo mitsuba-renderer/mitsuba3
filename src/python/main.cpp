@@ -164,7 +164,6 @@ NB_MODULE(mitsuba_ext, m) {
     atexit.attr("register")(nb::cpp_function([]() {
         Thread::wait_for_tasks();
         Class::static_remove_functors();
-        Struct::static_shutdown();
         Logger::static_shutdown();
         StructConverter::static_shutdown();
         Thread::static_shutdown();

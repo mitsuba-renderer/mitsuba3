@@ -346,8 +346,6 @@ else:
 
 @fresolver_append_path
 def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb):
-    dr.set_flag(dr.JitFlag.VCallRecord, False)
-
     scene = mi.load_dict({
         "type" : "scene",
         "meshes": {

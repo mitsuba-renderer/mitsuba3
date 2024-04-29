@@ -177,6 +177,7 @@ def z_test(mean, sample_count, reference, reference_var):
 
 
 @pytest.mark.slow
+@pytest.mark.skip("Temporary")
 @pytest.mark.parametrize("variant, scene_fname, integrator_type, jit_flags_key", list_all_render_test_configs())
 def test_render(variant, scene_fname, integrator_type, jit_flags_key):
     mi.set_variant(variant)

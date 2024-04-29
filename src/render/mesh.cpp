@@ -408,8 +408,6 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
             dr::scatter(m_vertex_normals,
                         dr::float32_array_t<Float>(normals[i]), ni + i);
 
-        dr::disable_grad(m_vertex_normals);
-
         dr::eval(m_vertex_normals);
     }
 }

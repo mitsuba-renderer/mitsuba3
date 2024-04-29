@@ -458,7 +458,8 @@ def render(scene: mi.Scene,
     if params is not None and not isinstance(params, mi.SceneParameters):
         raise Exception('The `params` argument should be an instance of `mi.SceneParameters`!')
 
-    params = dict(params) # Turn SceneParameters into a valid PyTree
+    if params is not None:
+        params = dict(params) # Turn SceneParameters into a valid PyTree
 
     assert isinstance(scene, mi.Scene)
 
