@@ -12,7 +12,7 @@ MI_VARIANT Medium<Float, Spectrum>::Medium() :
     m_has_spectral_extinction(true) {
 
     if constexpr (dr::is_jit_v<Float>)
-        jit_registry_put(dr::backend_v<Float>, "mitsbua::Medium", this);
+        jit_registry_put(dr::backend_v<Float>, "mitsuba::Medium", this);
 }
 
 MI_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props.id()) {
