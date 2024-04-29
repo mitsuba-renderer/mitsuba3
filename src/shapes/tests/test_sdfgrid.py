@@ -308,6 +308,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     assert dr.allclose(dr.grad(si.p), [0, 0.5, 0.5]) # Direction of surface normal
     assert dr.allclose(dr.grad(si.n), 0, atol=1e-7)
 
+
 def test08_load_tensor(variants_all_ad_rgb):
     pytest.importorskip("numpy")
     import numpy as np
