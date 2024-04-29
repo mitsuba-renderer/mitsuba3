@@ -362,14 +362,14 @@ template <typename Point_> struct Transform {
         Result result;
         for (size_t i = 0; i < ExtractedSize - 1; ++i) {
             for (size_t j = 0; j < ExtractedSize - 1; ++j) {
-                result.matrix.entry(i, j) = matrix.entry(i, j);
-                result.inverse_transpose.entry(i, j) =
-                    inverse_transpose.entry(i, j);
+                result.matrix.entry(j, i) = matrix.entry(j, i);
+                result.inverse_transpose.entry(j, i) =
+                    inverse_transpose.entry(j, i);
             }
-            result.matrix.entry(ExtractedSize - 1, i) =
-                matrix.entry(Size - 1, i);
-            result.inverse_transpose.entry(i, ExtractedSize - 1) =
-                inverse_transpose.entry(i, Size - 1);
+            result.matrix.entry(i, ExtractedSize - 1) =
+                matrix.entry(i, Size - 1);
+            result.inverse_transpose.entry(ExtractedSize - 1, i) =
+                inverse_transpose.entry(Size - 1, i);
         }
 
         result.matrix.entry(ExtractedSize - 1, ExtractedSize - 1) =
@@ -377,9 +377,6 @@ template <typename Point_> struct Transform {
 
         result.inverse_transpose.entry(ExtractedSize - 1, ExtractedSize - 1) =
             inverse_transpose.entry(Size - 1, Size - 1);
-
-        result.matrix = dr::transpose(result.matrix);
-        result.inverse_transpose = dr::transpose(result.inverse_transpose);
 
         return result;
     }
