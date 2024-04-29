@@ -48,7 +48,7 @@ def check_uniform_wavefront_sampler(sampler, res=16, atol=0.5):
         dr.ReduceOp.Add,
         hist_2d,
         mi.UInt32(1),
-        mi.UInt32(v_2d.y * res + v_2d.x)
+        mi.UInt32(v_2d.x * res + v_2d.y)
     )
 
     assert dr.allclose(mi.Float(hist_1d), float(sample_count) / res, atol=atol)

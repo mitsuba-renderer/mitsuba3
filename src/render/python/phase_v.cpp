@@ -94,9 +94,8 @@ MI_PY_EXPORT(PhaseFunction) {
     m.def("has_flag", [](UInt32   flags, PhaseFunctionFlags f) { return has_flag(flags, f); });
 
     nb::class_<PhaseFunctionContext>(m, "PhaseFunctionContext", D(PhaseFunctionContext))
-        .def(nb::init<Sampler*, TransportMode>(), "sampler"_a,
+        .def(nb::init<Sampler*, TransportMode>(), "sampler"_a = nb::none(),
                 "mode"_a = TransportMode::Radiance, D(PhaseFunctionContext, PhaseFunctionContext))
-        .def(nb::init<>())
         .def_field(PhaseFunctionContext, mode,      D(PhaseFunctionContext, mode))
         .def_field(PhaseFunctionContext, sampler,   D(PhaseFunctionContext, sampler))
         .def_field(PhaseFunctionContext, type_mask, D(PhaseFunctionContext, type_mask))
