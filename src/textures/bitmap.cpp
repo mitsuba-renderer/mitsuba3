@@ -247,6 +247,7 @@ protected:
 
         // Otherwise, initializing using tensor
         Properties props;
+        TensorXf tensor(*m_tensor);
         return new BitmapTextureImpl<Float, Spectrum, Float>(
             props,
             m_name,
@@ -255,7 +256,7 @@ protected:
             m_wrap_mode,
             m_raw,
             m_accel,
-            *m_tensor);
+            tensor);
     }
 
     template <typename StoredType> Object* expand_bitmap() const {
@@ -306,6 +307,9 @@ protected:
                 m_bitmap->resample(dr::maximum(m_bitmap->size(), 2), rfilter);
         }
 
+        if (is_spectral_v<Spectrum> && !m_raw)
+            convert_spectral<StoredType>();
+
         size_t channels = m_bitmap->channel_count();
         ScalarVector2i res = ScalarVector2i(m_bitmap->size());
         size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), channels };
@@ -321,6 +325,22 @@ protected:
             m_raw,
             m_accel,
             tensor);
+    }
+
+private:
+    /// Convert RGB values to spectral coefficients and store them
+    template <typename StoredType> void convert_spectral() const {
+        StoredType *ptr = (StoredType*) m_bitmap->data();
+        size_t pixel_count = m_bitmap->pixel_count();
+
+        if (m_bitmap->channel_count() == 3) {
+            for (size_t i = 0; i < pixel_count; ++i) {
+                ScalarColor3f value = dr::load<ScalarColor3f>(ptr);
+                value = srgb_model_fetch(value);
+                dr::store(ptr, value);
+                ptr += 3;
+            }
+        }
     }
 
     enum class Format {
