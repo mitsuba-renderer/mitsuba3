@@ -390,8 +390,12 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
             Float face_angle = dr::safe_acos(dr::dot(d0, d1));
 
             Vector3f nn = n * face_angle;
-            for (int j = 0; j < 3; ++j)
-                dr::scatter_reduce(ReduceOp::Add, normals[j], nn[j], fi[i]);
+            for (int j = 0; j < 3; ++j) {
+                // FIXME: CPP scatter_reduce seems broken in AD (LLVM only)
+                //dr::scatter_reduce(ReduceOp::Add, normals[j], nn[j], fi[i]);
+                auto curr = dr::gather<Float>(normals[j], fi[i]);
+                dr::scatter(normals[j], curr + nn[j], fi[i]);
+            }
         }
 
         // --------------------- Kernel 2 starts here ---------------------
@@ -405,10 +409,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 
         UInt32 ni = dr::arange<UInt32>(m_vertex_count) * 3;
         for (uint32_t i = 0; i < 3; ++i)
-            dr::scatter(m_vertex_normals,
-                        dr::float32_array_t<Float>(normals[i]), ni + i);
-
-        dr::disable_grad(m_vertex_normals);
+            dr::scatter(m_vertex_normals, normals[i], ni + i);
 
         dr::eval(m_vertex_normals);
     }
@@ -581,7 +582,7 @@ MI_VARIANT void
 Mesh<Float, Spectrum>::build_indirect_silhouette_distribution() {
     UInt32 dedge = dr::arange<UInt32>(m_face_count * 3),
            dedge_oppo = opposite_dedge(dedge);
-    Mask boundary = dedge_oppo == m_invalid_dedge;
+    Mask boundary = (dedge_oppo == m_invalid_dedge);
     // One edge can be represented by two dedge indices, we use the smaller index
     Mask valid = (dedge_oppo > dedge) & !boundary;
 
@@ -851,7 +852,7 @@ Mesh<Float, Spectrum>::sample_silhouette(const Point3f &sample_,
     std::tie(dedge, sample_x, pmf_edge) =
         m_sil_dedge_pmf.sample_reuse_pmf(sample_.x(), active);
     Point3f sample(sample_x, sample_.y(), sample_.z());
-    active &= pmf_edge != 0.f;
+    active &= (pmf_edge != 0.f);
 
     auto [face_idx, edge_idx] = dr::idivmod(dedge, 3u);
     Vector3u v_idx = face_indices(face_idx, active);
@@ -862,10 +863,10 @@ Mesh<Float, Spectrum>::sample_silhouette(const Point3f &sample_,
     ss.p = dr::lerp(p0, p1, sample.x());
 
     // Face local barycentric UV coordinates
-    ss.uv = dr::select((edge_idx == 0u),
+    ss.uv = dr::select(edge_idx == 0u,
                        Point2f(sample.x(), 0.f),
                        Point2f(1 - sample.x(), sample.x()));
-    ss.uv = dr::select((edge_idx == 2u),
+    ss.uv = dr::select(edge_idx == 2u,
                        Point2f(0.f, 1 - sample.x()),
                        ss.uv);
 
@@ -874,7 +875,7 @@ Mesh<Float, Spectrum>::sample_silhouette(const Point3f &sample_,
 
     UInt32 dedge_oppo = opposite_dedge(dedge, active);
     UInt32 face_idx_oppo = dr::idiv(dedge_oppo, 3u);
-    Mask has_opposite = (dedge_oppo != m_invalid_dedge) && active;
+    Mask has_opposite = (dedge_oppo != m_invalid_dedge) & active;
     Normal3f n_oppo = face_normal(face_idx_oppo, has_opposite);
 
     bool is_lune = has_flag(flags, DiscontinuityFlags::DirectionLune);
@@ -1111,9 +1112,9 @@ Mesh<Float, Spectrum>::primitive_silhouette_projection(const Point3f &viewpoint,
         ss.prim_index = dr::select(sample >= weight[0], prim_idx_1, prim_idx_0);
         ss.prim_index = dr::select(sample >= weight[0] + weight[1], prim_idx_2, ss.prim_index);
 
-        failed_proj = ((ss.projection_index == 0u) && cos_theta_oppo[0] > 0.f) ||
-                      ((ss.projection_index == 1u) && cos_theta_oppo[1] > 0.f) ||
-                      ((ss.projection_index == 2u) && cos_theta_oppo[2] > 0.f);
+        failed_proj = ((ss.projection_index == 0u) && (cos_theta_oppo[0] > 0.f)) ||
+                      ((ss.projection_index == 1u) && (cos_theta_oppo[1] > 0.f)) ||
+                      ((ss.projection_index == 2u) && (cos_theta_oppo[2] > 0.f));
     } else {
         /// Project to any silhouette edge with equal probability.
         weight.x() = dr::select(cos_theta_oppo.x() < 0.f, 1.f, 0.f);
@@ -1123,7 +1124,7 @@ Mesh<Float, Spectrum>::primitive_silhouette_projection(const Point3f &viewpoint,
         Float sum = weight[0] + weight[1] + weight[2];
 
         // If none of the edges are on the silhouette, pick one uniformly
-        failed_proj = sum == 0.f;
+        failed_proj = (sum == 0.f);
         dr::masked(weight, failed_proj) = Vector3f(1.f, 1.f, 1.f);
         dr::masked(sum, failed_proj) = 3.f;
         weight /= sum;
