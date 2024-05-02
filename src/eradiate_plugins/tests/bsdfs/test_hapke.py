@@ -218,25 +218,44 @@ def test_hapke_hemisphere(variant_llvm_ad_rgb, static_hemisphere, plot_figures):
     ref = np.asarray(static_hemisphere.reflectance.values)
 
     if plot_figures:
-        fig, ax = plt.subplots(subplot_kw=dict(projection="polar"))
+        from matplotlib import colors
+
+        nrows = 1
+        ncols = 3
+        fig, axs = plt.subplots(
+            1,
+            3,
+            subplot_kw=dict(projection="polar"),
+            figsize=(4 * ncols, 3 * nrows),
+            layout="constrained",
+        )
+
+        ax = axs[0]
         contour = ax.contourf(theta, r, npvalues, levels=25, cmap="turbo")
         plt.colorbar(contour)
-        plt.grid(False)
-        plt.savefig("hapke_hemisphere_mitsuba.png")
-        plt.close()
+        ax.set_title("plugin")
 
-        fig, ax = plt.subplots(subplot_kw=dict(projection="polar"))
+        ax = axs[1]
         contour = ax.contourf(theta, r, ref, levels=25, cmap="turbo")
         plt.colorbar(contour)
-        plt.grid(False)
-        plt.savefig("hapke_hemisphere_reference.png")
-        plt.close()
+        ax.set_title("reference")
 
-        fig, ax = plt.subplots(subplot_kw=dict(projection="polar"))
-        contour = ax.contourf(theta, r, ref - npvalues, levels=25, cmap="turbo")
+        ax = axs[2]
+        contour = ax.contourf(
+            theta,
+            r,
+            ref - npvalues,
+            levels=25,
+            cmap="RdBu_r",
+            norm=colors.CenteredNorm(),
+        )
         plt.colorbar(contour)
-        plt.grid(False)
-        plt.savefig("hapke_hemisphere_diff.png")
+        ax.set_title("plugin − reference")
+
+        for ax in axs:
+            ax.grid(False)
+        fig.suptitle("Hapke BSDF plugin")
+        plt.savefig("hapke_hemisphere.png", bbox_inches="tight")
         plt.close()
 
     assert np.allclose(ref, npvalues)
@@ -268,15 +287,43 @@ def test_hapke_static_principal_plane_reference(
     values = np.asarray(eval_bsdf(hapke, wi, wo)) / np.abs(np.cos(theta_o))
 
     if plot_figures:
-        fig = plt.figure()
-        plt.grid()
-        plt.plot(np.rad2deg(theta_o), values, marker="+", label="Eradiate/Mitsuba")
-        plt.plot(
+        nrows = 2
+        ncols = 1
+        fig, axs = plt.subplots(nrows, ncols, sharex=True)
+
+        ax = axs[0]
+        ax.plot(
             np.rad2deg(theta_o),
             static_pplane.reflectance,
-            label="Nguyen, Jacquemoud et al. (reference)",
+            color="C0",
+            label="Reference (Nguyen, Jacquemoud et al.)",
         )
-        plt.legend()
+        ax.plot(
+            np.rad2deg(theta_o),
+            values,
+            color="C0",
+            marker=".",
+            ls="",
+            label="Eradiate/Mitsuba",
+        )
+        ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1))
+        ax.set_ylabel("BRDF")
+
+        ax = axs[1]
+        ax.plot(
+            np.rad2deg(theta_o),
+            (values - static_pplane.reflectance) / static_pplane.reflectance,
+            color="C0",
+            label="Reference (Nguyen, Jacquemoud et al.)",
+        )
+        ax.set_xlabel(r"$\omega_\mathrm{o}$ [°]")
+        ax.set_xticks(np.arange(-90, 91, 30))
+        ax.set_ylabel("(plugin − ref) / ref")
+
+        for ax in axs:
+            ax.grid(True)
+        plt.savefig("hapke_pplane.png", bbox_inches="tight")
+        plt.close()
 
     ref = static_pplane.reflectance.values
 
