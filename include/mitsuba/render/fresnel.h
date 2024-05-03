@@ -243,12 +243,11 @@ fresnel_polarized(Float cos_theta_i, dr::Complex<Float> eta) {
 
     /* Find the cosines of the incident/transmitted rays */
     Float cos_theta_i_abs = dr::abs(cos_theta_i);
-    dr::Complex<Float> cos_theta_t = dr::sqrt(cos_theta_t_sqr);
 
     /* Choose the appropriate sign of the root (important when computing the
        phase difference under total internal reflection, see appendix A.2 of
        "Stellar Polarimetry" by David Clarke) */
-    cos_theta_t = dr::mulsign(dr::Array<Float, 2>(cos_theta_t), dr::real(cos_theta_t_sqr));
+    dr::Complex<Float> cos_theta_t = dr::conj(dr::sqrt(dr::conj(cos_theta_t_sqr)));
 
     /* Amplitudes of reflected waves. The sign of 'a_p' used here is referred
        to as the "Verdet convention" which more common in the literature
