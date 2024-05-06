@@ -84,6 +84,7 @@ public:
 MI_PY_EXPORT(Texture) {
     MI_PY_IMPORT_TYPES(Texture)
     using PyTexture = PyTexture<Float, Spectrum>;
+    using Properties = PropertiesV<Float>;
 
     MI_PY_TRAMPOLINE_CLASS(PyTexture, Texture, Object)
         .def(nb::init<const Properties &>(), "props"_a)

@@ -89,6 +89,7 @@ template <typename Ptr, typename Cls> void bind_phase_generic(Cls &cls) {
 MI_PY_EXPORT(PhaseFunction) {
     MI_PY_IMPORT_TYPES(PhaseFunction, PhaseFunctionContext, PhaseFunctionPtr)
     using PyPhaseFunction = PyPhaseFunction<Float, Spectrum>;
+    using Properties = PropertiesV<Float>;
 
     m.def("has_flag", [](uint32_t flags, PhaseFunctionFlags f) { return has_flag(flags, f); });
     m.def("has_flag", [](UInt32   flags, PhaseFunctionFlags f) { return has_flag(flags, f); });

@@ -152,7 +152,11 @@ Parameter ``parallel``:
         [](const std::string &path) {
             nb::gil_scoped_release release;
 
-            return xml::detail::xml_to_properties(path, GET_VARIANT());
+            auto result = std::vector<std::pair<std::string, PropertiesV<Float>>>();
+            for (const auto& [k,v] : xml::detail::xml_to_properties(path, GET_VARIANT()))
+                result.emplace_back(k, PropertiesV<Float>(v));
+
+            return result;
         },
         "path"_a,
         R"doc(Get the names and properties of the objects described in a Mitsuba XML file)doc");
@@ -387,7 +391,7 @@ void parse_dictionary(DictParseContext &ctx,
 
         // Try to cast to TensorXf
         try {
-            TensorXf tensor = nb::cast<TensorXf>(value);
+            TensorXf tensor = nb::cast<TensorXf>(nb::type<TensorXf>()(value));
             // To support parallel loading we have to ensure tensor has been evaluated
             // because tracking of side effects won't persist across different ThreadStates
             dr::eval(tensor);

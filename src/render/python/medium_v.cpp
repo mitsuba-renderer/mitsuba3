@@ -93,6 +93,7 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
 MI_PY_EXPORT(Medium) {
     MI_PY_IMPORT_TYPES(Medium, MediumPtr, Scene, Sampler)
     using PyMedium = PyMedium<Float, Spectrum>;
+    using Properties = PropertiesV<Float>;
 
     auto medium = MI_PY_TRAMPOLINE_CLASS(PyMedium, Medium, Object)
         .def(nb::init<const Properties &>(), "props"_a)

@@ -228,6 +228,10 @@ Properties::Properties(const Properties &props)
 
 Properties::~Properties() { }
 
+void Properties::share(const Properties &props) {
+    d = props.d;
+}
+
 void Properties::operator=(const Properties &props) {
     (*d) = *props.d;
 }

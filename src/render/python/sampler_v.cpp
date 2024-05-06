@@ -50,6 +50,7 @@ public:
 MI_PY_EXPORT(Sampler) {
     MI_PY_IMPORT_TYPES(Sampler)
     using PySampler = PySampler<Float, Spectrum>;
+    using Properties = PropertiesV<Float>;
 
     auto sampler = MI_PY_TRAMPOLINE_CLASS(PySampler, Sampler, Object)
         .def(nb::init<const Properties&>(), "props"_a)

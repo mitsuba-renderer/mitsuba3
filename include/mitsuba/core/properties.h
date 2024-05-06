@@ -83,11 +83,14 @@ public:
     /// Copy constructor
     Properties(const Properties &props);
 
+    /// Share the internals. Used exclusively for Python bindings
+    void share(const Properties& props);
+
     /// Assignment operator
     void operator=(const Properties &props);
 
     /// Release all memory
-    ~Properties();
+    virtual ~Properties();
 
     /// Get the associated plugin name
     const std::string &plugin_name() const;
@@ -396,7 +399,16 @@ private:
     /// Return a reference to an object for a specific name (return null ref if doesn't exist)
     ref<Object> find_object(const std::string &name) const;
     struct PropertiesPrivate;
-    std::unique_ptr<PropertiesPrivate> d;
+    std::shared_ptr<PropertiesPrivate> d;
+};
+
+template <typename Float>
+class MI_EXPORT_LIB PropertiesV : public Properties {
+public:
+    PropertiesV() : Properties() {};
+    PropertiesV(const PropertiesV& p) : Properties() { share(p); }
+    PropertiesV(const Properties& p) : Properties() { share(p); }
+    PropertiesV(const std::string &plugin_name) : Properties(plugin_name) {}
 };
 
 #define EXTERN_EXPORT_PROPERTY_ACCESSOR(T) \

@@ -56,7 +56,7 @@
     m.def(                                                                     \
         Function,                                                              \
         [](const std::string &name,                                            \
-           std::function<nb::object(const Properties *)> &constructor) {       \
+           std::function<nb::object(const Properties&)> &constructor) {        \
             auto variant = ::mitsuba::detail::get_variant<Float, Spectrum>();  \
             (void) new Class(                                                  \
                 name, #Name, variant,                                          \
@@ -73,7 +73,8 @@
                     nb::object o;                                              \
                     {                                                          \
                         nb::gil_scoped_release release;                        \
-                        o = constructor(&p);                                   \
+                        PropertiesV p_v(p);                                    \
+                        o = constructor(p_v);                                  \
                     }                                                          \
                                                                                \
                     Name* ptr = nb::cast<Name*>(o);                            \

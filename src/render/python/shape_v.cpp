@@ -244,6 +244,7 @@ MI_PY_EXPORT(Shape) {
 
     using PyMesh = PyMesh<Float, Spectrum>;
     using ScalarSize = typename Mesh::ScalarSize;
+    using Properties = PropertiesV<Float>;
     MI_PY_TRAMPOLINE_CLASS(PyMesh, Mesh, Shape)
         .def(nb::init<const Properties&>(), "props"_a)
         .def(nb::init<const std::string &, ScalarSize, ScalarSize,

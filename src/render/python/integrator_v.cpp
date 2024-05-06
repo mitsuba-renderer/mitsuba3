@@ -274,6 +274,7 @@ MI_PY_EXPORT(Integrator) {
     using PyAdjointIntegrator = PyAdjointIntegrator<Float, Spectrum>;
     using CppADIntegrator = CppADIntegrator<Float, Spectrum>;
     using PyADIntegrator = PyADIntegrator<Float, Spectrum>;
+    using Properties = PropertiesV<Float>;
 
     MI_PY_CLASS(Integrator, Object)
         .def(
