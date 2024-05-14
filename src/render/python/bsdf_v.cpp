@@ -69,6 +69,11 @@ public:
         NB_OVERRIDE(eval_diffuse_reflectance, si, active);
     }
 
+    Spectrum eval_null_transmission(const SurfaceInteraction3f &si,
+                                      Mask active) const override {
+        NB_OVERRIDE(eval_null_transmission, si, active);
+    }
+
     Mask has_attribute(const std::string &name, Mask active) const override {
         NB_OVERRIDE(has_attribute, name, active);
     }
