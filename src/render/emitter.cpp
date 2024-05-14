@@ -8,6 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
 MI_VARIANT Emitter<Float, Spectrum>::Emitter(const Properties &props)
     : Base(props) {
         m_sampling_weight = props.get<ScalarFloat>("sampling_weight", 1.0f);
+        dr::set_attr(this, "sampling_weight", m_sampling_weight);
     }
 MI_VARIANT Emitter<Float, Spectrum>::~Emitter() { }
 
@@ -20,6 +21,7 @@ MI_VARIANT
 void Emitter<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
     set_dirty(true);
     Base::parameters_changed(keys);
+    dr::set_attr(this, "sampling_weight", m_sampling_weight);
 }
 
 MI_IMPLEMENT_CLASS_VARIANT(Emitter, Endpoint, "emitter")
