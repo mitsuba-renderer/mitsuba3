@@ -65,6 +65,11 @@ public:
         PYBIND11_OVERRIDE(Spectrum, BSDF, eval_diffuse_reflectance, si, active);
     }
 
+    Spectrum eval_null_transmission(const SurfaceInteraction3f &si,
+                                      Mask active) const override {
+        PYBIND11_OVERRIDE(Spectrum, BSDF, eval_null_transmission, si, active);
+    }
+
     Mask has_attribute(const std::string &name, Mask active) const override {
         PYBIND11_OVERRIDE(Mask, BSDF, has_attribute, name, active);
     }
