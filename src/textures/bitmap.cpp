@@ -306,7 +306,7 @@ protected:
         }
 
         if (is_spectral_v<Spectrum> && !m_raw)
-            convert_spectral<StoredType>();
+            convert_spectral<StoredScalar>();
 
         size_t channels = m_bitmap->channel_count();
         ScalarVector2i res = ScalarVector2i(m_bitmap->size());
@@ -327,8 +327,8 @@ protected:
 
 private:
     /// Convert RGB values to spectral coefficients and store them
-    template <typename StoredType> void convert_spectral() const {
-        StoredType *ptr = (StoredType*) m_bitmap->data();
+    template <typename StoredScalar> void convert_spectral() const {
+        StoredScalar *ptr = (StoredScalar*) m_bitmap->data();
         size_t pixel_count = m_bitmap->pixel_count();
 
         if (m_bitmap->channel_count() == 3) {
