@@ -90,10 +90,10 @@ def test02_sample_ray(variants_vec_spectral, s_open, s_time):
 
     inv_z0 = dr.rcp((camera0.world_transform().inverse() @ ray.d).z)
     inv_z1 = dr.rcp((camera1.world_transform().inverse() @ ray.d).z)
-    o0 = mi.Point3f(origins[0]) + near_clip * inv_z0 * mi.Vector3f(ray.d)
-    o1 = mi.Point3f(origins[1]) + near_clip * inv_z1 * mi.Vector3f(ray.d)
+    o0 = mi.Vector3f(origins[0]) + near_clip * inv_z0 * mi.Vector3f(ray.d)
+    o1 = mi.Vector3f(origins[1]) + near_clip * inv_z1 * mi.Vector3f(ray.d)
     o = o0
-    dr.scatter(o, dr.gather(mi.Point3f, o1, 2), 2)
+    dr.scatter(o, dr.gather(mi.Vector3f, o1, 2), 2)
     assert dr.allclose(ray.o, o, atol=1e-4)
 
     # Check that a [(2*i + 1)/(2 * N), 0.5] for i = 0, 1, ..., #cameras

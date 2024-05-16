@@ -169,7 +169,7 @@ def test05_spectrum_sampling(variants_vec_spectral):
         'type': 'perspective',
     })
     wavelengths, _ = camera.sample_wavelengths(dr.zeros(mi.SurfaceInteraction3f), mi.Float([0.1, 0.4, 0.9]))
-    assert (dr.all_nested((wavelengths >= mi.MI_CIE_MIN) & (wavelengths <= mi.MI_CIE_MAX)))
+    assert (dr.all((wavelengths >= mi.MI_CIE_MIN) & (wavelengths <= mi.MI_CIE_MAX), axis=None))
 
     # Check custom SRF wavelength sampling
     camera = mi.load_dict({

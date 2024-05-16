@@ -90,6 +90,7 @@ def test01_eval(variant_scalar_rgb):
 
 
 def test02_eval_spectrum(variants_vec_spectral):
+    import numpy as np
     mesh = create_rectangle()
 
     texture = mi.load_dict({
@@ -97,7 +98,7 @@ def test02_eval_spectrum(variants_vec_spectral):
         "name" : "vertex_color",
     })
 
-    wavelengths = dr.linspace(mi.Spectrum, mi.MI_CIE_MIN, mi.MI_CIE_MAX, mi.MI_WAVELENGTH_SAMPLES)
+    wavelengths = np.linspace(mi.MI_CIE_MIN, mi.MI_CIE_MAX, mi.MI_WAVELENGTH_SAMPLES)
 
     for u, v in [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.3, 0.4), (0.5, 0.5)]:
         si = mesh.eval_parameterization([u, v])
