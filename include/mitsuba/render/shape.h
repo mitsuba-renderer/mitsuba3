@@ -375,6 +375,16 @@ public:
     /// Set a string identifier
     void set_id(const std::string& id) override { m_id = id; };
 
+    void set_num_id(int id) {
+        num_id = id;
+    }
+
+    const int obj_num_id() const {
+        return num_id;
+    }
+    
+
+
     /// Is this shape a triangle mesh?
     bool is_mesh() const;
 
@@ -569,6 +579,7 @@ protected:
     ref<Medium> m_interior_medium;
     ref<Medium> m_exterior_medium;
     std::string m_id;
+    int num_id;
 
     std::unordered_map<std::string, ref<Texture>> m_texture_attributes;
 
@@ -653,6 +664,8 @@ DRJIT_VCALL_TEMPLATE_BEGIN(mitsuba::Shape)
     DRJIT_VCALL_METHOD(eval_attribute)
     DRJIT_VCALL_METHOD(eval_attribute_1)
     DRJIT_VCALL_METHOD(eval_attribute_3)
+    DRJIT_VCALL_METHOD(set_num_id)
+    DRJIT_VCALL_METHOD(obj_num_id)
     DRJIT_VCALL_METHOD(eval_parameterization)
     DRJIT_VCALL_METHOD(ray_intersect_preliminary)
     DRJIT_VCALL_METHOD(ray_intersect)
