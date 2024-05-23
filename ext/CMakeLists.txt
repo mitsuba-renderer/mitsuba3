@@ -168,6 +168,10 @@ if (WIN32)
     ZLIB_BUILD_SHARED_LIBS ZLIB_BUILD_STATIC_LIBS)
 endif()
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+  add_compile_options(-Wno-unused-parameter -Wno-unused-but-set-variable -Wno-sign-compare)
+endif()
+
 # Prevents openexr to set the DEBUG_POSTFIX "_d"
 set(CMAKE_DEBUG_POSTFIX "" CACHE STRING " " FORCE)
 set(ILMBASE_LIB_SUFFIX  "" CACHE STRING "" FORCE)
