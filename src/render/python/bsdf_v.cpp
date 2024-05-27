@@ -5,6 +5,7 @@
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 #include <drjit/python.h>
 
 MI_PY_EXPORT(BSDFSample) {
@@ -178,12 +179,7 @@ MI_PY_EXPORT(BSDF) {
             "index"_a, "active"_a = true, D(BSDF, flags, 2))
         .def_method(BSDF, component_count, "active"_a = true)
         .def_method(BSDF, id)
-        .def_prop_rw("m_flags",
-            [](PyBSDF &bsdf){ return bsdf.m_flags; },
-            [](PyBSDF &bsdf, uint32_t flags){
-                bsdf.m_flags = flags;
-            }
-        )
+        .def_field(PyBSDF, m_flags, D(BSDF, m_flags))
         .def_field(PyBSDF, m_components, D(BSDF, m_components))
         .def("__repr__", &BSDF::to_string, D(BSDF, to_string));
 

@@ -3,6 +3,7 @@
 #include <mitsuba/python/python.h>
 
 #include <nanobind/stl/tuple.h>
+#include <nanobind/stl/string.h>
 
 MI_PY_EXPORT(fresnel) {
     MI_PY_IMPORT_TYPES()
