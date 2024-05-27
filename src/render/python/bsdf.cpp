@@ -3,6 +3,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/optional.h>
 
 MI_PY_EXPORT(BSDFContext) {
     nb::enum_<TransportMode>(m, "TransportMode", D(TransportMode))
@@ -37,6 +38,12 @@ MI_PY_EXPORT(BSDFContext) {
             "mode"_a = TransportMode::Radiance, D(BSDFContext, BSDFContext))
         .def(nb::init<TransportMode, uint32_t, uint32_t>(),
             "mode"_a, "type_mask"_a, "component"_a, D(BSDFContext, BSDFContext, 2))
+        .def("__init__",
+            [](BSDFContext *ctx, TransportMode mode, uint32_t type_mask,
+               std::optional<uint32_t> component) {
+                new (ctx) BSDFContext(mode, type_mask, component.has_value() ? component.value() : -1);
+            }, "mode"_a, "type_mask"_a, "component"_a = nb::none(), D(BSDFContext, BSDFContext, 2)
+        )
         .def_method(BSDFContext, reverse)
         .def_method(BSDFContext, is_enabled, "type"_a, "component"_a = 0)
         .def_field(BSDFContext, mode,      D(BSDFContext, mode))
