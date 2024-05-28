@@ -620,6 +620,7 @@ private:
             const Ray3fP &ray_, ScalarIndex prim_index, dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
+        using MaskP = dr::mask_t<FloatP>;
         // The current implementation doesn't support JIT types so don't try to
         // use this in for instance compute_surface_interaction
         if constexpr (dr::is_jit_v<FloatP>)
@@ -647,7 +648,13 @@ private:
 
         // To determine voxel intersection, we need both near and far AABB
         // intersections
-        auto [bbox_hit, t_beg, t_end] = bbox_local.ray_intersect(ray);
+        auto [bbox_hit, t_bbox_beg, t_bbox_end] = bbox_local.ray_intersect(ray);
+
+        active = active && bbox_hit;
+
+        t_bbox_beg = dr::maximum(t_bbox_beg, 0.0);
+        auto valid_t = t_bbox_beg < t_bbox_end;
+        active &= valid_t;
 
         // Convert ray to voxel-space [0, 1] x [0, 1] x [0, 1]
         {
@@ -707,9 +714,11 @@ private:
             float s011 = m_host_grid_data[to_voxel_index(v011)];
             float s111 = m_host_grid_data[to_voxel_index(v111)];
 
-            FloatP o_x = ray.o.x();
-            FloatP o_y = ray.o.y();
-            FloatP o_z = ray.o.z();
+            auto ray_p_in_voxel = ray(t_bbox_beg);
+            FloatP o_x = ray_p_in_voxel.x();
+            FloatP o_y = ray_p_in_voxel.y();
+            FloatP o_z = ray_p_in_voxel.z();
+
             FloatP d_x = ray.d.x();
             FloatP d_y = ray.d.y();
             FloatP d_z = ray.d.z();
@@ -740,6 +749,9 @@ private:
             c3 = k7 * m1 * d_z;
         }
 
+        FloatP t_beg = 0.0;
+        FloatP t_end = t_bbox_end - t_bbox_beg;
+
         auto [hit, t] = sdf_solve_cubic(t_beg, t_end, c3, c2, c1, c0);
 
         if (m_watertight) {
@@ -749,9 +761,9 @@ private:
             hit                         = hit || eval_sdf < 0;
         }
 
-        active = active && bbox_hit && hit && t >= 0.f && t <= ray.maxt;
+        active = active && bbox_hit && hit && t_bbox_beg + t >= 0.f && t_bbox_beg + t <= ray.maxt;
 
-        return { active, dr::select(active, t, dr::Infinity<FloatP>),
+        return { active, dr::select(active, t_bbox_beg + t, dr::Infinity<FloatP>),
                  Point<FloatP, 2>(0, 0), ((uint32_t) -1), prim_index };
     }
 
