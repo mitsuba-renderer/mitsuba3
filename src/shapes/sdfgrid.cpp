@@ -1153,9 +1153,9 @@ private:
         query = rescale_point(Point3f(p[0], p[1], p000[2] ));
         m_grid_texture.eval(query, &f[5]);
 
-        Float dx = f[0] - f[1]; // f(1, y, z) - f(0, y, z)
-        Float dy = f[2] - f[3]; // f(x, 1, z) - f(x, 0, z)
-        Float dz = f[4] - f[5]; // f(x, y, 1) - f(x, y, 0)
+        Float dx = (f[0] - f[1]) / voxel_size.x(); // f(1, y, z) - f(0, y, z)
+        Float dy = (f[2] - f[3]) / voxel_size.y(); // f(x, 1, z) - f(x, 0, z)
+        Float dz = (f[4] - f[5]) / voxel_size.z(); // f(x, y, 1) - f(x, y, 0)
 
         return Vector3f(dx, dy, dz);
     }
