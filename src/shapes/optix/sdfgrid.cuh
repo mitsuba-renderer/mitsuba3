@@ -84,13 +84,13 @@ __device__ bool sdf_solve_cubic(float t_beg, float t_end, float c3, float c2,
         solve_quadratic(c3 * 3, c2 * 2, c1, root_0, root_1);
 
     auto eval_sdf_t = [&](float t_) -> float {
-        return -(c3 * t_ * t_ * t_ + c2 * t_ * t_ + c1 * t_ + c0);
+        return fmaf(fmaf(fmaf(c3, t_, c2), t_, c1), t_, c0);
     };
 
     auto numerical_solve = [&](float t_near, float t_far, float f_near,
                                float f_far) -> float {
 #define NUM_SOLVE_MAX_ITER 50
-#define NUM_SOLVE_EPSILON 0.004
+#define NUM_SOLVE_EPSILON 1e-5f
 
         float t = 0.f;
         float f_t = 0.f;
@@ -107,7 +107,7 @@ __device__ bool sdf_solve_cubic(float t_beg, float t_end, float c3, float c2,
                 t_near = t;
                 f_near = f_t;
             }
-            done = (abs(f_t) < NUM_SOLVE_EPSILON) || (NUM_SOLVE_MAX_ITER < ++i);
+            done = (abs(t_far - t_near) < NUM_SOLVE_EPSILON) || (NUM_SOLVE_MAX_ITER < ++i);
         }
 
         return t;
@@ -268,7 +268,7 @@ extern "C" __global__ void __intersection__sdfgrid() {
     float c3 = k7 * m1 * d_z;
 
     auto eval_sdf = [&](float t_) -> float {
-        return -(c3 * t_ * t_ * t_ + c2 * t_ * t_ + c1 * t_ + c0);
+        return fmaf(fmaf(fmaf(c3, t_, c2), t_, c1), t_, c0);
     };
 
     float t_beg = 0.f;
