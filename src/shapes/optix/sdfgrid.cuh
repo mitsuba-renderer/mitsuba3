@@ -40,53 +40,32 @@ __device__ bool intersect_aabb(const Ray3f &ray,
     /**
       An Efficient and Robust Ray–Box Intersection Algorithm. Amy Williams et al. 2004.
     */
+    const Vector3f d_rcp = frcp(ray.d);
 
-    bool initialized = false;
-    Vector3f d_rcp = 1.f / ray.d;
+    t_min = ((d_rcp.x() >= 0 ? bbox.min[0] : bbox.max[0]) - ray.o.x()) * d_rcp.x();
+    t_max = ((d_rcp.x() >= 0 ? bbox.max[0] : bbox.min[0]) - ray.o.x()) * d_rcp.x();
 
-    if (ray.d.x() != 0) {
-        t_min  = ((d_rcp.x() < 0 ? bbox.max[0] : bbox.min[0]) - ray.o.x()) * d_rcp.x();
-        t_max = ((d_rcp.x() < 0 ? bbox.min[0] : bbox.max[0]) - ray.o.x()) * d_rcp.x();
-        initialized = true;
-    }
+    const float t_y_min = ((d_rcp.y() >= 0 ? bbox.min[1] : bbox.max[1]) - ray.o.y()) * d_rcp.y();
+    const float t_y_max = ((d_rcp.y() >= 0 ? bbox.max[1] : bbox.min[1]) - ray.o.y()) * d_rcp.y();
 
-    if (ray.d.y() != 0) {
-        if (!initialized) {
-            t_min  = ((d_rcp.y() < 0 ? bbox.max[1] : bbox.min[1]) - ray.o.y()) * d_rcp.y();
-            t_max = ((d_rcp.y() < 0 ? bbox.min[1] : bbox.max[1]) - ray.o.y()) * d_rcp.y();
-            initialized = true;
-        } else {
-            float t_y_min  = ((d_rcp.y() < 0 ? bbox.max[1] : bbox.min[1]) - ray.o.y()) * d_rcp.y();
-            float t_y_max = ((d_rcp.y() < 0 ? bbox.min[1] : bbox.max[1]) - ray.o.y()) * d_rcp.y();
+    if ((t_min > t_y_max) || (t_y_min > t_max))
+        return false;
+    
+    if (t_y_min > t_min || !isfinite(t_min))
+        t_min = t_y_min;
+    if (t_y_max < t_max || !isfinite(t_max))
+        t_max = t_y_max;
 
-            if ((t_min > t_y_max) || (t_y_min > t_max))
-                return false;
+    const float t_z_min = ((d_rcp.z() >= 0 ? bbox.min[2] : bbox.max[2]) - ray.o.z()) * d_rcp.z();
+    const float t_z_max = ((d_rcp.z() >= 0 ? bbox.max[2] : bbox.min[2]) - ray.o.z()) * d_rcp.z();
 
-            if (t_min < t_y_min)
-                t_min = t_y_min;
-            if (t_y_max < t_max)
-                t_max = t_y_max;
-        }
-    }
+    if ((t_min > t_z_max) || (t_z_min > t_max))
+        return false;
 
-    if (ray.d.z() != 0) {
-        if (!initialized) {
-            t_min  = ((d_rcp.z() < 0 ? bbox.max[2] : bbox.min[2]) - ray.o.z()) * d_rcp.z();
-            t_max = ((d_rcp.z() < 0 ? bbox.min[2] : bbox.max[2]) - ray.o.z()) * d_rcp.z();
-            initialized = true;
-        } else {
-            float t_z_min  = ((d_rcp.z() < 0 ? bbox.max[2] : bbox.min[2]) - ray.o.z()) * d_rcp.z();
-            float t_z_max = ((d_rcp.z() < 0 ? bbox.min[2] : bbox.max[2]) - ray.o.z()) * d_rcp.z();
-
-            if ((t_min > t_z_max) || (t_z_min > t_max))
-                return false;
-
-            if (t_z_min > t_min)
-                t_min = t_z_min;
-            if (t_z_max < t_max)
-                t_max = t_z_max;
-        }
-    }
+    if (t_z_min > t_min || !isfinite(t_min))
+        t_min = t_z_min;
+    if (t_z_max < t_max || !isfinite(t_max))
+        t_max = t_z_max;
 
     return true;
 }
