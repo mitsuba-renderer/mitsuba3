@@ -1724,6 +1724,8 @@ void Bitmap::read_png(Stream *stream) {
             png_set_swap(png_ptr); // Swap the byte order on little endian machines
     #endif
 
+    png_set_interlace_handling(png_ptr);
+
     // Update the information based on the transformations
     png_read_update_info(png_ptr, info_ptr);
     png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth,
