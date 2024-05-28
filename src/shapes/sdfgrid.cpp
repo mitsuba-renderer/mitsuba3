@@ -755,8 +755,11 @@ private:
         auto [hit, t] = sdf_solve_cubic(t_beg, t_end, c3, c2, c1, c0);
 
         if (m_watertight) {
-            FloatP eval_sdf             = -(c3 * t_beg * t_beg * t_beg +
-                                c2 * t_beg * t_beg + c1 * t_beg + c0);
+            auto eval_sdf_t = [&](FloatP t_) -> FloatP {
+                return -dr::fmadd(dr::fmadd(dr::fmadd(c3, t_, c2), t_, c1), t_, c0);
+            };
+
+            FloatP eval_sdf = eval_sdf_t(t_beg);
             dr::masked(t, eval_sdf < 0) = t_beg;
             hit                         = hit || eval_sdf < 0;
         }
@@ -783,14 +786,14 @@ private:
         auto [has_derivative_roots, root_0, root_1] =
             math::solve_quadratic(c3 * 3, c2 * 2, c1);
 
-        auto eval_sdf_t = [&](FloatP t_) -> FloatP {
-            return -(c3 * t_ * t_ * t_ + c2 * t_ * t_ + c1 * t_ + c0);
-        };
+            auto eval_sdf_t = [&](FloatP t_) -> FloatP {
+                return -dr::fmadd(dr::fmadd(dr::fmadd(c3, t_, c2), t_, c1), t_, c0);
+            };
 
         auto numerical_solve = [&](FloatP t_near, FloatP t_far, FloatP f_near,
                                    FloatP f_far) -> FloatP {
             static constexpr uint32_t num_solve_max_iter = 50;
-            static constexpr float num_solve_epsilon     = 0.004f;
+            static constexpr float num_solve_epsilon     = 1e-5f;
 
             FloatP t   = 0;
             FloatP f_t = 0;
@@ -806,7 +809,7 @@ private:
 
                 t_near = dr::select(condition > 0, t, t_near);
                 f_near = dr::select(condition > 0, f_t, f_near);
-                done   = (dr::abs(f_t) < num_solve_epsilon) ||
+                done   = (dr::abs(t_near - t_far) < num_solve_epsilon) ||
                        (num_solve_max_iter < ++i);
             }
 
