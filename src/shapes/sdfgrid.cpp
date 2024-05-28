@@ -121,6 +121,32 @@ public:
     using InputPoint3f   = Point<InputFloat, 3>;
     using InputTensorXf  = dr::Tensor<DynamicBuffer<InputFloat>>;
 
+#if defined(MI_ENABLE_CUDA)
+    using BoundingBoxType =
+        typename std::conditional<dr::is_cuda_v<Float>,
+                                    optix::BoundingBox3f,
+                                    ScalarBoundingBox3f>::type;
+
+    using StorageBoundingBoxFloat = 
+        typename std::conditional<dr::is_cuda_v<Float>,
+                                    dr::replace_scalar_t<Float, float>,
+                                    Float>::type;
+
+    using StorageBoundingBoxPoint3f = 
+        typename std::conditional<dr::is_cuda_v<Float>,
+                                    Point<StorageBoundingBoxFloat, 3>,
+                                    Point3f>::type;
+    using StorageBoundingBox3f = 
+        typename std::conditional<dr::is_cuda_v<Float>,
+                                    BoundingBox<StorageBoundingBoxPoint3f>,
+                                    BoundingBox3f>::type;                                          
+#else
+    using BoundingBoxType = ScalarBoundingBox3f;
+    using StorageBoundingBoxFloat = Float;
+    using StorageBoundingBoxPoint3f = Point3f;
+    using StorageBoundingBox3f = BoundingBox3f;
+#endif
+
     using typename Base::ScalarIndex;
     using typename Base::ScalarSize;
 
@@ -188,10 +214,10 @@ public:
     }
 
     ~SDFGrid() {
-        jit_free(m_host_bboxes);
-        jit_free(m_host_voxel_indices);
-        jit_free(m_device_bboxes);
-        jit_free(m_device_voxel_indices);
+        if constexpr (!dr::is_jit_v<Float>) {
+            jit_free(m_host_bboxes);
+            jit_free(m_host_voxel_indices);
+        }
     }
 
     void update() {
@@ -207,7 +233,7 @@ public:
 
         auto shape = m_grid_texture.tensor().shape();
         Vector3f voxel_size(0.f);
-        for (size_t i = 0; i < 3; ++i) {
+        for (uint32_t i = 0; i < 3; ++i) {
             m_inv_shape[i] = 1.f / shape[i];
             voxel_size[i] = 1.f / (shape[i] - 1);
         }
@@ -219,10 +245,10 @@ public:
             m_host_grid_data = m_grid_texture.tensor().data();
         }
 
-        jit_free(m_host_bboxes);
-        jit_free(m_host_voxel_indices);
-        jit_free(m_device_bboxes);
-        jit_free(m_device_voxel_indices);
+        if constexpr (!dr::is_jit_v<Float>){
+            jit_free(m_host_bboxes);
+            jit_free(m_host_voxel_indices);
+        }
         std::tie(m_host_bboxes,
                  m_host_voxel_indices,
                  m_device_bboxes,
@@ -568,12 +594,13 @@ public:
                 m_optix_data_ptr =
                     jit_malloc(AllocType::Device, sizeof(OptixSDFGridData));
 
-            size_t resolution[3] = { m_grid_texture.tensor().shape()[2],
-                                     m_grid_texture.tensor().shape()[1],
-                                     m_grid_texture.tensor().shape()[0] };
+            auto shape = m_grid_texture.tensor().shape();
+            uint32_t resolution[3] = { static_cast<uint32_t>(shape[2]),
+                                       static_cast<uint32_t>(shape[1]),
+                                       static_cast<uint32_t>(shape[0]) };
 
             dr::eval(m_grid_texture.value()); // Make sure the SDF data is evaluated
-            OptixSDFGridData data = { (size_t *) m_device_voxel_indices,
+            OptixSDFGridData data = { (uint32_t *) m_device_voxel_indices,
                                       resolution[0],
                                       resolution[1],
                                       resolution[2],
@@ -904,121 +931,199 @@ private:
      * Depending on the variant used, the pointer returned is either host or
      * device visible
      */
-    std::tuple<void *, size_t *, void *, size_t *, size_t> build_bboxes() {
+    std::tuple<void *, uint32_t *, void *, uint32_t *, uint32_t> build_bboxes() {
         auto shape = m_grid_texture.tensor().shape();
-        size_t shape_v[3]  = { shape[2], shape[1], shape[0] };
+        uint32_t shape_v[3]  = { static_cast<uint32_t>(shape[2]), 
+                                 static_cast<uint32_t>(shape[1]), 
+                                 static_cast<uint32_t>(shape[0]) };
         float voxel_size[3] = { m_voxel_size.scalar()[0],
                                 m_voxel_size.scalar()[1],
                                 m_voxel_size.scalar()[2] };
-        size_t max_voxel_count =
+        uint32_t max_voxel_count =
             (shape[0] - 1) * (shape[1] - 1) * (shape[2] - 1);
         ScalarTransform4f to_world = m_to_world.scalar();
 
-        float *grid = nullptr;
-
         dr::eval(m_grid_texture.value()); // Make sure the SDF data is evaluated
-        if constexpr (dr::is_cuda_v<Float>) {
-            grid = (float *) jit_malloc_migrate(
-                m_grid_texture.tensor().array().data(), AllocType::Host, false);
-            jit_sync_thread();
-        } else {
-            grid = m_grid_texture.tensor().array().data();
-        }
 
-#if defined(MI_ENABLE_CUDA)
-        using BoundingBoxType =
-            typename std::conditional<dr::is_cuda_v<Float>,
-                                      optix::BoundingBox3f,
-                                      ScalarBoundingBox3f>::type;
-#else
-        using BoundingBoxType = ScalarBoundingBox3f;
-#endif
-
-        size_t count = 0;
-        BoundingBoxType *host_aabbs = (BoundingBoxType *) jit_malloc(
-            AllocType::Host, sizeof(BoundingBoxType) * max_voxel_count);
-        size_t *host_voxel_indices = (size_t *) jit_malloc(
-            AllocType::Host, sizeof(size_t) * max_voxel_count);
-        for (size_t z = 0; z < shape[0] - 1; ++z) {
-            for (size_t y = 0; y < shape[1] - 1; ++y) {
-                for (size_t x = 0; x < shape[2] - 1; ++x) {
-                    auto value_index = [&](size_t x_off, size_t y_off, size_t z_off) {
-                        return (x + x_off) +
-                               (y + y_off) * shape_v[0] +
-                               (z + z_off) * shape_v[0] * shape_v[1];
-                    };
-
-                    size_t v000 = value_index(0, 0, 0);
-                    size_t v100 = value_index(1, 0, 0);
-                    size_t v010 = value_index(0, 1, 0);
-                    size_t v110 = value_index(1, 1, 0);
-                    size_t v001 = value_index(0, 0, 1);
-                    size_t v101 = value_index(1, 0, 1);
-                    size_t v011 = value_index(0, 1, 1);
-                    size_t v111 = value_index(1, 1, 1);
-
-                    float f000 = grid[v000];
-                    float f100 = grid[v100];
-                    float f010 = grid[v010];
-                    float f110 = grid[v110];
-                    float f001 = grid[v001];
-                    float f101 = grid[v101];
-                    float f011 = grid[v011];
-                    float f111 = grid[v111];
-
-                    // No surface within voxel
-                    if ((f000 > 0 && f100 > 0 && f010 > 0 && f110 > 0 &&
-                        f001 > 0 && f101 > 0 && f011 > 0 && f111 > 0) || 
-                        (f000 < 0 && f100 < 0 && f010 < 0 && f110 < 0 &&
-                        f001 < 0 && f101 < 0 && f011 < 0 && f111 < 0))
-                        continue;
-
-
-                    ScalarBoundingBox3f bbox{};
-                    auto expand_bbox = [&](size_t x, size_t y, size_t z) {
-                        bbox.expand(to_world.transform_affine(
-                            ScalarPoint3f(
-                                x * voxel_size[2],
-                                y * voxel_size[1],
-                                z * voxel_size[0])));
-                    };
-
-                    expand_bbox(x + 0, y + 0, z + 0);
-                    expand_bbox(x + 1, y + 0, z + 0);
-                    expand_bbox(x + 0, y + 1, z + 0);
-                    expand_bbox(x + 1, y + 1, z + 0);
-                    expand_bbox(x + 0, y + 0, z + 1);
-                    expand_bbox(x + 1, y + 0, z + 1);
-                    expand_bbox(x + 0, y + 1, z + 1);
-                    expand_bbox(x + 1, y + 1, z + 1);
-
-                    size_t voxel_idx = x +
-                                       y * (shape_v[0] - 1) +
-                                       z * (shape_v[0] - 1) * (shape_v[1] - 1);
-
-                    host_voxel_indices[count] = voxel_idx;
-                    host_aabbs[count] = BoundingBoxType(bbox);
-
-                    count++;
-                }
-            }
-        }
+        BoundingBoxType *host_aabbs = nullptr;
+        uint32_t *host_voxel_indices = nullptr;
 
         void *device_aabbs = nullptr;
-        size_t* device_voxel_indices = nullptr;
+        uint32_t *device_voxel_indices = nullptr;
 
-        if constexpr (dr::is_cuda_v<Float>) {
-            device_aabbs =
-                jit_malloc(AllocType::Device, sizeof(BoundingBoxType) * count);
-            jit_memcpy_async(JitBackend::CUDA, device_aabbs, host_aabbs,
-                       sizeof(BoundingBoxType) * count);
+        uint32_t count = 0;
 
-            device_voxel_indices = (size_t *) jit_malloc(AllocType::Device,
-                                                      sizeof(size_t) * count);
-            jit_memcpy_async(JitBackend::CUDA, device_voxel_indices, host_voxel_indices,
-                       sizeof(size_t) * count);
+        if constexpr (dr::is_jit_v<Float>) {
+            InputFloat grid = m_grid_texture.tensor().array();
 
-            jit_free(grid);
+            auto [z, y, x] = dr::meshgrid(dr::arange<UInt32>(shape[0] - 1),
+                                          dr::arange<UInt32>(shape[1] - 1),
+                                          dr::arange<UInt32>(shape[2] - 1), false);
+
+            auto value_index = [&](uint32_t x_off, uint32_t y_off, uint32_t z_off) {
+                return (x + x_off) +
+                       (y + y_off) * shape_v[0] +
+                       (z + z_off) * shape_v[0] * shape_v[1];
+            };
+
+            auto v000 = value_index(0, 0, 0);
+            auto v100 = value_index(1, 0, 0);
+            auto v010 = value_index(0, 1, 0);
+            auto v110 = value_index(1, 1, 0);
+            auto v001 = value_index(0, 0, 1);
+            auto v101 = value_index(1, 0, 1);
+            auto v011 = value_index(0, 1, 1);
+            auto v111 = value_index(1, 1, 1);
+
+            auto f000 = dr::gather<InputFloat>(grid, v000);
+            auto f100 = dr::gather<InputFloat>(grid, v100);
+            auto f010 = dr::gather<InputFloat>(grid, v010);
+            auto f110 = dr::gather<InputFloat>(grid, v110);
+            auto f001 = dr::gather<InputFloat>(grid, v001);
+            auto f101 = dr::gather<InputFloat>(grid, v101);
+            auto f011 = dr::gather<InputFloat>(grid, v011);
+            auto f111 = dr::gather<InputFloat>(grid, v111);
+
+            Mask occupied_mask = !((f000 > 0 && f100 > 0 && f010 > 0 && f110 > 0 &&
+                                    f001 > 0 && f101 > 0 && f011 > 0 && f111 > 0) || 
+                                   (f000 < 0 && f100 < 0 && f010 < 0 && f110 < 0 &&
+                                    f001 < 0 && f101 < 0 && f011 < 0 && f111 < 0));
+
+            StorageBoundingBox3f bbox = dr::zeros<BoundingBox3f>();
+
+            auto expand_bbox = [&](UInt32 x, UInt32 y, UInt32 z) {
+                bbox.expand(to_world.transform_affine(
+                    StorageBoundingBoxPoint3f(
+                        x * voxel_size[2],
+                        y * voxel_size[1],
+                        z * voxel_size[0])));
+            };
+
+            expand_bbox(x + 0, y + 0, z + 0);
+            expand_bbox(x + 1, y + 0, z + 0);
+            expand_bbox(x + 0, y + 1, z + 0);
+            expand_bbox(x + 1, y + 1, z + 0);
+            expand_bbox(x + 0, y + 0, z + 1);
+            expand_bbox(x + 1, y + 0, z + 1);
+            expand_bbox(x + 0, y + 1, z + 1);
+            expand_bbox(x + 1, y + 1, z + 1);
+
+            UInt32 voxel_idx = x +
+                               y * (shape_v[0] - 1) +
+                               z * (shape_v[0] - 1) * (shape_v[1] - 1);
+            
+            UInt32 counter = UInt32(0);
+            auto slot = dr::scatter_inc(counter, UInt32(0), occupied_mask);
+
+            m_jit_voxel_indices = dr::zeros<UInt32>(max_voxel_count);
+
+            if constexpr (dr::is_cuda_v<Float>) {
+                m_jit_bboxes = dr::zeros<StorageBoundingBoxFloat>(6 * max_voxel_count);
+
+                dr::scatter(m_jit_voxel_indices, voxel_idx, slot, occupied_mask);
+                dr::scatter(m_jit_bboxes, bbox.min.x(), 6 * slot + 0, occupied_mask);
+                dr::scatter(m_jit_bboxes, bbox.min.y(), 6 * slot + 1, occupied_mask);
+                dr::scatter(m_jit_bboxes, bbox.min.z(), 6 * slot + 2, occupied_mask);
+                dr::scatter(m_jit_bboxes, bbox.max.x(), 6 * slot + 3, occupied_mask);
+                dr::scatter(m_jit_bboxes, bbox.max.y(), 6 * slot + 4, occupied_mask);
+                dr::scatter(m_jit_bboxes, bbox.max.z(), 6 * slot + 5, occupied_mask);
+
+                dr::eval(m_jit_voxel_indices, m_jit_bboxes);
+
+                device_aabbs = (BoundingBoxType *) m_jit_bboxes.data();
+                device_voxel_indices = (uint32_t*) m_jit_voxel_indices.data();
+            }
+
+            if constexpr (dr::is_llvm_v<Float>) {
+                m_jit_bboxes = dr::zeros<StorageBoundingBoxFloat>(8 * max_voxel_count);
+                
+                dr::scatter(m_jit_voxel_indices, voxel_idx, slot, occupied_mask);
+                dr::scatter(m_jit_bboxes, bbox.min.x(), 8 * slot    , occupied_mask);
+                dr::scatter(m_jit_bboxes, bbox.min.y(), 8 * slot + 1, occupied_mask);
+                dr::scatter(m_jit_bboxes, bbox.min.z(), 8 * slot + 2, occupied_mask);
+                dr::scatter(m_jit_bboxes, bbox.max.x(), 8 * slot + 4, occupied_mask);
+                dr::scatter(m_jit_bboxes, bbox.max.y(), 8 * slot + 5, occupied_mask);
+                dr::scatter(m_jit_bboxes, bbox.max.z(), 8 * slot + 6, occupied_mask);
+                
+                dr::eval(m_jit_voxel_indices, m_jit_bboxes);
+
+                host_aabbs = (BoundingBoxType *) m_jit_bboxes.data();
+                host_voxel_indices = (uint32_t*) m_jit_voxel_indices.data();
+            }
+
+            count = counter[0];
+
+        } else {
+            host_aabbs = (BoundingBoxType *) jit_malloc(
+                AllocType::Host, sizeof(BoundingBoxType) * max_voxel_count);
+            host_voxel_indices = (uint32_t *) jit_malloc(
+                AllocType::Host, sizeof(uint32_t) * max_voxel_count);
+
+            float *grid = m_grid_texture.tensor().array().data();
+
+            for (uint32_t z = 0; z < shape[0] - 1; ++z) {
+                for (uint32_t y = 0; y < shape[1] - 1; ++y) {
+                    for (uint32_t x = 0; x < shape[2] - 1; ++x) {
+
+                        auto value_index = [&](uint32_t x_off, uint32_t y_off, uint32_t z_off) {
+                            return (x + x_off) +
+                                (y + y_off) * shape_v[0] +
+                                (z + z_off) * shape_v[0] * shape_v[1];
+                        };
+
+                        uint32_t v000 = value_index(0, 0, 0);
+                        uint32_t v100 = value_index(1, 0, 0);
+                        uint32_t v010 = value_index(0, 1, 0);
+                        uint32_t v110 = value_index(1, 1, 0);
+                        uint32_t v001 = value_index(0, 0, 1);
+                        uint32_t v101 = value_index(1, 0, 1);
+                        uint32_t v011 = value_index(0, 1, 1);
+                        uint32_t v111 = value_index(1, 1, 1);
+
+                        float f000 = grid[v000];
+                        float f100 = grid[v100];
+                        float f010 = grid[v010];
+                        float f110 = grid[v110];
+                        float f001 = grid[v001];
+                        float f101 = grid[v101];
+                        float f011 = grid[v011];
+                        float f111 = grid[v111];
+                        
+                        // No surface within voxel
+                        if ((f000 > 0 && f100 > 0 && f010 > 0 && f110 > 0 &&
+                            f001 > 0 && f101 > 0 && f011 > 0 && f111 > 0) || 
+                            (f000 < 0 && f100 < 0 && f010 < 0 && f110 < 0 &&
+                            f001 < 0 && f101 < 0 && f011 < 0 && f111 < 0))
+                            continue;
+
+                        ScalarBoundingBox3f bbox{};
+                        auto expand_bbox = [&](uint32_t x, uint32_t y, uint32_t z) {
+                            bbox.expand(to_world.transform_affine(
+                                ScalarPoint3f(
+                                    x * voxel_size[2],
+                                    y * voxel_size[1],
+                                    z * voxel_size[0])));
+                        };
+
+                        expand_bbox(x + 0, y + 0, z + 0);
+                        expand_bbox(x + 1, y + 0, z + 0);
+                        expand_bbox(x + 0, y + 1, z + 0);
+                        expand_bbox(x + 1, y + 1, z + 0);
+                        expand_bbox(x + 0, y + 0, z + 1);
+                        expand_bbox(x + 1, y + 0, z + 1);
+                        expand_bbox(x + 0, y + 1, z + 1);
+                        expand_bbox(x + 1, y + 1, z + 1);
+
+                        uint32_t voxel_idx = x +
+                                        y * (shape_v[0] - 1) +
+                                        z * (shape_v[0] - 1) * (shape_v[1] - 1);
+
+                        host_voxel_indices[count] = voxel_idx;
+                        host_aabbs[count] = BoundingBoxType(bbox);
+                        count++;
+                    }
+                }
+            }
         }
 
         return { host_aabbs, host_voxel_indices, device_aabbs, device_voxel_indices, count };
@@ -1090,14 +1195,18 @@ private:
     // Also used when targeting CUDA variants, as we upload asynchronously
     // to GPU
     void *m_host_bboxes = nullptr;
-    size_t *m_host_voxel_indices = nullptr;
+    uint32_t *m_host_voxel_indices = nullptr;
 
     // Device-visible bounding boxes
     void *m_device_bboxes = nullptr;
-    size_t *m_device_voxel_indices = nullptr;
+    uint32_t *m_device_voxel_indices = nullptr;
+
+    // JIT-visble bounding boxes
+    StorageBoundingBoxFloat m_jit_bboxes;
+    UInt32 m_jit_voxel_indices;
 
     bool m_watertight;
-    size_t m_filled_voxel_count = 0;
+    uint32_t m_filled_voxel_count = 0;
     NormalMethod m_normal_method;
 };
 
