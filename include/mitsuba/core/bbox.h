@@ -304,26 +304,38 @@ template <typename Point_> struct BoundingBox {
         using Float  = typename Ray::Float;
         using Vector = typename Ray::Vector;
 
-        /* First, ensure that the ray either has a nonzero slope on each axis,
-           or that its origin on a zero-valued axis is within the box bounds */
-        auto active = dr::all((ray.d != dr::zeros<Vector>()) || ((ray.o > min) || (ray.o < max)));
+        /**
+            An Efficient and Robust Ray–Box Intersection Algorithm. Amy Williams et al. 2004.
+        */
 
-        // Compute intersection intervals for each axis
-        Vector d_rcp = dr::rcp(ray.d),
-               t1 = (min - ray.o) * d_rcp,
-               t2 = (max - ray.o) * d_rcp;
+        // Ensure that the ray either has a nonzero slope on each axis
+        auto active = dr::any(ray.d != dr::zeros<Vector>());
+        
+        Vector d_rcp = dr::rcp(ray.d);
 
-        // Ensure proper ordering
-        Vector t1p = dr::minimum(t1, t2),
-               t2p = dr::maximum(t1, t2);
+        Vector t_min = (dr::select(d_rcp >= 0, min, max) - ray.o) * d_rcp,
+               t_max = (dr::select(d_rcp >= 0, max, min) - ray.o) * d_rcp;
 
-        // Intersect intervals
-        Float mint = dr::max(t1p),
-              maxt = dr::min(t2p);
+        // Nan-safe min/max
+        auto max_nan_safe = [&](Float a, Float b){
+            return dr::select(a > b || !dr::isfinite(b), a, b);
+        };
 
-        active = active && maxt >= mint;
+        auto min_nan_safe = [&](Float a, Float b){
+            return dr::select(a < b || !dr::isfinite(b), a, b);
+        };
 
-        return std::make_tuple(active, mint, maxt);
+        active = active && !((t_min.x() > t_max.y()) || (t_min.y() > t_max.x()));
+
+        t_min.x() = max_nan_safe(t_min.x(), t_min.y());
+        t_max.x() = min_nan_safe(t_max.x(), t_max.y());
+
+        active = active && !((t_min.x() > t_max.z()) || (t_min.z() > t_max.x()));
+
+        t_min.x() = max_nan_safe(t_min.x(), t_min.z());
+        t_max.x() = min_nan_safe(t_max.x(), t_max.z());
+
+        return std::make_tuple(active, t_min.x(), t_max.x());
     }
 
     /// Create a bounding sphere, which contains the axis-aligned box
