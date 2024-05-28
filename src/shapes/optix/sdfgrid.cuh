@@ -4,10 +4,10 @@
 #include <mitsuba/render/optix/common.h>
 
 struct OptixSDFGridData {
-    size_t* voxel_indices;
-    size_t res_x;
-    size_t res_y;
-    size_t res_z;
+    uint32_t* voxel_indices;
+    uint32_t res_x;
+    uint32_t res_y;
+    uint32_t res_z;
     float voxel_size_x;
     float voxel_size_y;
     float voxel_size_z;
@@ -25,8 +25,8 @@ __device__ unsigned int vec_to_index(const Vector3u &vec,
 
 __device__ Vector3u index_to_vec(unsigned int index,
                                  const OptixSDFGridData &sdf) {
-    size_t x_len = sdf.res_x - 1;
-    size_t y_len = sdf.res_y - 1;
+    uint32_t x_len = sdf.res_x - 1;
+    uint32_t y_len = sdf.res_y - 1;
     unsigned int x = index % x_len;
     unsigned int y = ((index - x) / y_len) % y_len;
     unsigned int z = (index - x - y * x_len) / (x_len * y_len);
