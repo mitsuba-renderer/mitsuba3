@@ -925,6 +925,62 @@ private:
                             InputFloat(rescaled.z()));
     }
 
+    using TightBoundingBoxType = std::conditional_t<dr::is_jit_v<Float>, StorageBoundingBox3f, ScalarBoundingBox3f>;
+    using TightBoundingBoxUInt32 = std::conditional_t<dr::is_jit_v<Float>, dr::uint32_array_t<Float>, uint32_t>;
+    using TightBoundingBoxFloat = std::conditional_t<dr::is_jit_v<Float>, InputFloat, float>;
+    using TightBoundingBoxMask = std::conditional_t<dr::is_jit_v<Float>, Mask, bool>;
+    using TightBoundingBoxPoint3f = std::conditional_t<dr::is_jit_v<Float>, StorageBoundingBoxPoint3f, ScalarPoint3f>;
+    using TightBoundingBoxGridType = std::conditional_t<dr::is_jit_v<Float>, InputFloat, float*>;
+    std::tuple<TightBoundingBoxMask, TightBoundingBoxType> compute_bbox(TightBoundingBoxGridType grid, 
+                                                                        uint32_t shape[3],
+                                                                        float voxel_size[3],
+                                                                        ScalarTransform4f to_world,
+                                                                        TightBoundingBoxUInt32 x, 
+                                                                        TightBoundingBoxUInt32 y, 
+                                                                        TightBoundingBoxUInt32 z) {
+
+        auto value_index = [&](TightBoundingBoxUInt32 x_off, TightBoundingBoxUInt32 y_off, TightBoundingBoxUInt32 z_off) {
+            return (x + x_off) +
+                    (y + y_off) * shape[0] +
+                    (z + z_off) * shape[0] * shape[1];
+        };
+
+        TightBoundingBoxUInt32 v[8];
+        for(size_t i = 0; i < 8; i++) {
+            v[i] = value_index(i & 1, (i >> 1) & 1, (i >> 2) & 1);
+        }
+
+        TightBoundingBoxFloat f[8];
+        for(size_t i = 0; i < 8; i++) {
+            f[i] = dr::gather<InputFloat>(grid, v[i]);
+        }
+
+        TightBoundingBoxMask occupied_mask = !((f[0] > 0 && f[1] > 0 && f[2] > 0 && f[3] > 0 &&
+                                                f[4] > 0 && f[5] > 0 && f[6] > 0 && f[7] > 0) || 
+                                               (f[0] < 0 && f[1] < 0 && f[2] < 0 && f[3] < 0 &&
+                                                f[4] < 0 && f[5] < 0 && f[6] < 0 && f[7] < 0));
+
+        TightBoundingBoxType bbox = dr::zeros<TightBoundingBoxType>();
+        
+        if constexpr (!dr::is_jit_v<Float>) {
+            if (!occupied_mask)
+                return { false, bbox };
+        }
+
+        auto expand_bbox = [&](TightBoundingBoxUInt32 x, TightBoundingBoxUInt32 y, TightBoundingBoxUInt32 z) {
+            bbox.expand(to_world.transform_affine(
+                TightBoundingBoxPoint3f(x * voxel_size[2], 
+                                        y * voxel_size[1],
+                                        z * voxel_size[0])));
+        };
+
+        for(size_t i = 0; i < 8; i++) {
+            expand_bbox(x + (i & 1), y + ((i >> 1) & 1), z + ((i >> 2) & 1));
+        }
+
+        return { occupied_mask, bbox};
+    };
+
     /* \brief Only computes AABBs for voxel that contain a surface in it.
      * Returns a pointer to the array of AABBs, a pointer to an array of voxel
      * indices of the former AABBs and the count of voxels with surface in them.
@@ -961,73 +1017,27 @@ private:
                                           dr::arange<UInt32>(shape[1] - 1),
                                           dr::arange<UInt32>(shape[2] - 1), false);
 
-            auto value_index = [&](uint32_t x_off, uint32_t y_off, uint32_t z_off) {
-                return (x + x_off) +
-                       (y + y_off) * shape_v[0] +
-                       (z + z_off) * shape_v[0] * shape_v[1];
-            };
-
-            auto v000 = value_index(0, 0, 0);
-            auto v100 = value_index(1, 0, 0);
-            auto v010 = value_index(0, 1, 0);
-            auto v110 = value_index(1, 1, 0);
-            auto v001 = value_index(0, 0, 1);
-            auto v101 = value_index(1, 0, 1);
-            auto v011 = value_index(0, 1, 1);
-            auto v111 = value_index(1, 1, 1);
-
-            auto f000 = dr::gather<InputFloat>(grid, v000);
-            auto f100 = dr::gather<InputFloat>(grid, v100);
-            auto f010 = dr::gather<InputFloat>(grid, v010);
-            auto f110 = dr::gather<InputFloat>(grid, v110);
-            auto f001 = dr::gather<InputFloat>(grid, v001);
-            auto f101 = dr::gather<InputFloat>(grid, v101);
-            auto f011 = dr::gather<InputFloat>(grid, v011);
-            auto f111 = dr::gather<InputFloat>(grid, v111);
-
-            Mask occupied_mask = !((f000 > 0 && f100 > 0 && f010 > 0 && f110 > 0 &&
-                                    f001 > 0 && f101 > 0 && f011 > 0 && f111 > 0) || 
-                                   (f000 < 0 && f100 < 0 && f010 < 0 && f110 < 0 &&
-                                    f001 < 0 && f101 < 0 && f011 < 0 && f111 < 0));
-
-            StorageBoundingBox3f bbox = dr::zeros<BoundingBox3f>();
-
-            auto expand_bbox = [&](UInt32 x, UInt32 y, UInt32 z) {
-                bbox.expand(to_world.transform_affine(
-                    StorageBoundingBoxPoint3f(
-                        x * voxel_size[2],
-                        y * voxel_size[1],
-                        z * voxel_size[0])));
-            };
-
-            expand_bbox(x + 0, y + 0, z + 0);
-            expand_bbox(x + 1, y + 0, z + 0);
-            expand_bbox(x + 0, y + 1, z + 0);
-            expand_bbox(x + 1, y + 1, z + 0);
-            expand_bbox(x + 0, y + 0, z + 1);
-            expand_bbox(x + 1, y + 0, z + 1);
-            expand_bbox(x + 0, y + 1, z + 1);
-            expand_bbox(x + 1, y + 1, z + 1);
+            auto [occupied, bbox] = compute_bbox(grid, shape_v, voxel_size, to_world, x, y, z);
 
             UInt32 voxel_idx = x +
                                y * (shape_v[0] - 1) +
                                z * (shape_v[0] - 1) * (shape_v[1] - 1);
             
             UInt32 counter = UInt32(0);
-            auto slot = dr::scatter_inc(counter, UInt32(0), occupied_mask);
+            auto slot = dr::scatter_inc(counter, UInt32(0), occupied);
 
             m_jit_voxel_indices = dr::zeros<UInt32>(max_voxel_count);
 
             if constexpr (dr::is_cuda_v<Float>) {
                 m_jit_bboxes = dr::zeros<StorageBoundingBoxFloat>(6 * max_voxel_count);
 
-                dr::scatter(m_jit_voxel_indices, voxel_idx, slot, occupied_mask);
-                dr::scatter(m_jit_bboxes, bbox.min.x(), 6 * slot + 0, occupied_mask);
-                dr::scatter(m_jit_bboxes, bbox.min.y(), 6 * slot + 1, occupied_mask);
-                dr::scatter(m_jit_bboxes, bbox.min.z(), 6 * slot + 2, occupied_mask);
-                dr::scatter(m_jit_bboxes, bbox.max.x(), 6 * slot + 3, occupied_mask);
-                dr::scatter(m_jit_bboxes, bbox.max.y(), 6 * slot + 4, occupied_mask);
-                dr::scatter(m_jit_bboxes, bbox.max.z(), 6 * slot + 5, occupied_mask);
+                dr::scatter(m_jit_voxel_indices, voxel_idx, slot, occupied);
+                dr::scatter(m_jit_bboxes, bbox.min.x(), 6 * slot + 0, occupied);
+                dr::scatter(m_jit_bboxes, bbox.min.y(), 6 * slot + 1, occupied);
+                dr::scatter(m_jit_bboxes, bbox.min.z(), 6 * slot + 2, occupied);
+                dr::scatter(m_jit_bboxes, bbox.max.x(), 6 * slot + 3, occupied);
+                dr::scatter(m_jit_bboxes, bbox.max.y(), 6 * slot + 4, occupied);
+                dr::scatter(m_jit_bboxes, bbox.max.z(), 6 * slot + 5, occupied);
 
                 dr::eval(m_jit_voxel_indices, m_jit_bboxes);
 
@@ -1038,13 +1048,13 @@ private:
             if constexpr (dr::is_llvm_v<Float>) {
                 m_jit_bboxes = dr::zeros<StorageBoundingBoxFloat>(8 * max_voxel_count);
                 
-                dr::scatter(m_jit_voxel_indices, voxel_idx, slot, occupied_mask);
-                dr::scatter(m_jit_bboxes, bbox.min.x(), 8 * slot    , occupied_mask);
-                dr::scatter(m_jit_bboxes, bbox.min.y(), 8 * slot + 1, occupied_mask);
-                dr::scatter(m_jit_bboxes, bbox.min.z(), 8 * slot + 2, occupied_mask);
-                dr::scatter(m_jit_bboxes, bbox.max.x(), 8 * slot + 4, occupied_mask);
-                dr::scatter(m_jit_bboxes, bbox.max.y(), 8 * slot + 5, occupied_mask);
-                dr::scatter(m_jit_bboxes, bbox.max.z(), 8 * slot + 6, occupied_mask);
+                dr::scatter(m_jit_voxel_indices, voxel_idx, slot, occupied);
+                dr::scatter(m_jit_bboxes, bbox.min.x(), 8 * slot    , occupied);
+                dr::scatter(m_jit_bboxes, bbox.min.y(), 8 * slot + 1, occupied);
+                dr::scatter(m_jit_bboxes, bbox.min.z(), 8 * slot + 2, occupied);
+                dr::scatter(m_jit_bboxes, bbox.max.x(), 8 * slot + 4, occupied);
+                dr::scatter(m_jit_bboxes, bbox.max.y(), 8 * slot + 5, occupied);
+                dr::scatter(m_jit_bboxes, bbox.max.z(), 8 * slot + 6, occupied);
                 
                 dr::eval(m_jit_voxel_indices, m_jit_bboxes);
 
@@ -1072,52 +1082,14 @@ private:
                                 (z + z_off) * shape_v[0] * shape_v[1];
                         };
 
-                        uint32_t v000 = value_index(0, 0, 0);
-                        uint32_t v100 = value_index(1, 0, 0);
-                        uint32_t v010 = value_index(0, 1, 0);
-                        uint32_t v110 = value_index(1, 1, 0);
-                        uint32_t v001 = value_index(0, 0, 1);
-                        uint32_t v101 = value_index(1, 0, 1);
-                        uint32_t v011 = value_index(0, 1, 1);
-                        uint32_t v111 = value_index(1, 1, 1);
+                        auto [occupied, bbox] = compute_bbox(grid, shape_v, voxel_size, to_world, x, y, z);
 
-                        float f000 = grid[v000];
-                        float f100 = grid[v100];
-                        float f010 = grid[v010];
-                        float f110 = grid[v110];
-                        float f001 = grid[v001];
-                        float f101 = grid[v101];
-                        float f011 = grid[v011];
-                        float f111 = grid[v111];
-                        
-                        // No surface within voxel
-                        if ((f000 > 0 && f100 > 0 && f010 > 0 && f110 > 0 &&
-                            f001 > 0 && f101 > 0 && f011 > 0 && f111 > 0) || 
-                            (f000 < 0 && f100 < 0 && f010 < 0 && f110 < 0 &&
-                            f001 < 0 && f101 < 0 && f011 < 0 && f111 < 0))
+                        if (!occupied)
                             continue;
 
-                        ScalarBoundingBox3f bbox{};
-                        auto expand_bbox = [&](uint32_t x, uint32_t y, uint32_t z) {
-                            bbox.expand(to_world.transform_affine(
-                                ScalarPoint3f(
-                                    x * voxel_size[2],
-                                    y * voxel_size[1],
-                                    z * voxel_size[0])));
-                        };
-
-                        expand_bbox(x + 0, y + 0, z + 0);
-                        expand_bbox(x + 1, y + 0, z + 0);
-                        expand_bbox(x + 0, y + 1, z + 0);
-                        expand_bbox(x + 1, y + 1, z + 0);
-                        expand_bbox(x + 0, y + 0, z + 1);
-                        expand_bbox(x + 1, y + 0, z + 1);
-                        expand_bbox(x + 0, y + 1, z + 1);
-                        expand_bbox(x + 1, y + 1, z + 1);
-
                         uint32_t voxel_idx = x +
-                                        y * (shape_v[0] - 1) +
-                                        z * (shape_v[0] - 1) * (shape_v[1] - 1);
+                                             y * (shape_v[0] - 1) +
+                                             z * (shape_v[0] - 1) * (shape_v[1] - 1);
 
                         host_voxel_indices[count] = voxel_idx;
                         host_aabbs[count] = BoundingBoxType(bbox);
