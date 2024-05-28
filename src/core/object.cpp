@@ -7,6 +7,16 @@ NAMESPACE_BEGIN(mitsuba)
 
 void Object::dec_ref(bool dealloc) const noexcept {
     uint32_t ref_count = m_ref_count.fetch_sub(1);
+
+    // If the Object has a Python object attached to it, we need to clean up
+    // when the reference counter is decreased below 2. This accounts for the
+    // fact that there is an internal reference by the Python object itself. The
+    // cleanup callback then releases the Python object, which recursively
+    // de-allocates the Mitsuba Object instance.
+    if (ref_count == 2 && m_py_cleanup_callback) {
+        m_py_cleanup_callback();
+        return;
+    }
     if (ref_count <= 0) {
         fprintf(stderr, "Internal error: Object reference count < 0!\n");
         abort();

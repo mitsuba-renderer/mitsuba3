@@ -78,8 +78,12 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
                         o = constructor(&p);                                   \
                     }                                                          \
                                                                                \
-                    ref<Name> o2 = o.cast<Name*>();                            \
-                    o.release();                                               \
+                    Name *o2 = o.cast<Name*>();                                \
+                    auto handle = o.release(); /* Manage ref count manually. */\
+                    o2->set_py_cleanup([handle]() {                            \
+                        py::gil_scoped_acquire gil;                            \
+                        handle.dec_ref();                                      \
+                    });                                                        \
                     return o2;                                                 \
                 },                                                             \
                 nullptr);                                                      \
