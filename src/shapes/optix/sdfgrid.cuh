@@ -175,12 +175,17 @@ extern "C" __global__ void __intersection__sdfgrid() {
     bbox_local.max[1] = bbox_max[1];
     bbox_local.max[2] = bbox_max[2];
 
-    float t_beg = 0;
-    float t_end = 0;
-    bool bbox_its = intersect_aabb(ray, bbox_local, t_beg, t_end);
+    float t_bbox_beg = 0;
+    float t_bbox_end = 0;
+    bool bbox_its = intersect_aabb(ray, bbox_local, t_bbox_beg, t_bbox_end);
     // This should theoretically always hit, but OptiX might be a bit
     // less/more tight numerically hence some rays will miss
     if (!bbox_its) {
+        return;
+    }
+
+    t_bbox_beg = max(t_bbox_beg, 0.f);
+    if (t_bbox_end < t_bbox_beg) {
         return;
     }
 
@@ -231,9 +236,11 @@ extern "C" __global__ void __intersection__sdfgrid() {
     float s011 = sdf.grid_data[vec_to_index(v011, sdf)];
     float s111 = sdf.grid_data[vec_to_index(v111, sdf)];
 
-    float o_x = ray.o.x();
-    float o_y = ray.o.y();
-    float o_z = ray.o.z();
+    Vector3f ray_p_in_voxel = ray(t_bbox_beg);
+    float o_x = ray_p_in_voxel.x();
+    float o_y = ray_p_in_voxel.y();
+    float o_z = ray_p_in_voxel.z();
+
     float d_x = ray.d.x();
     float d_y = ray.d.y();
     float d_z = ray.d.z();
@@ -264,6 +271,9 @@ extern "C" __global__ void __intersection__sdfgrid() {
         return -(c3 * t_ * t_ * t_ + c2 * t_ * t_ + c1 * t_ + c0);
     };
 
+    float t_beg = 0.f;
+    float t_end = t_bbox_end - t_bbox_beg;
+
     // Avoid leaking through cracks
     if (sdf.watertight && (eval_sdf(t_beg) < 0)) {
         optixReportIntersection(t_beg, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
@@ -275,18 +285,18 @@ extern "C" __global__ void __intersection__sdfgrid() {
         float t = 0;
         bool hit = sdf_solve_cubic(t_beg, t_end, c3, c2, c1, c0, t);
 
-        if (hit && t_beg <= t && t <= t_end)
-            optixReportIntersection(t, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
+        if (hit && t_beg <= t && t <= t_end && t_bbox_beg + t < ray.maxt)
+            optixReportIntersection(t_bbox_beg + t, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
     } else {
         // Quadratic or linear polynomial
         float root_0;
         float root_1;
         bool hit = solve_quadratic(c2, c1, c0, root_0, root_1);
 
-        if (hit && t_beg <= root_0 && root_0 <= t_end)
-            optixReportIntersection(root_0, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
-        else if (hit && t_beg <= root_1 && root_1 <= t_end)
-            optixReportIntersection(root_1, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
+        if (hit && t_beg <= root_0 && root_0 <= t_end && t_bbox_beg + root_0 < ray.maxt)
+            optixReportIntersection(t_bbox_beg + root_0, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
+        else if (hit && t_beg <= root_1 && root_1 <= t_end && t_bbox_beg + root_1 < ray.maxt)
+            optixReportIntersection(t_bbox_beg + root_1, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
     }
 }
 
