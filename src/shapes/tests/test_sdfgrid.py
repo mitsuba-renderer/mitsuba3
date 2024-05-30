@@ -130,7 +130,8 @@ def test05_ray_intersect_instancing(variants_all_ad_rgb):
         'shape_group': {
             'type': 'shapegroup',
             'sdf': {
-                'type': 'sdfgrid'
+                'type': 'sdfgrid',
+                'grid': default_sdf_grid()
             }
         },
         'first_sdf': {
@@ -181,7 +182,8 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
         "type" : "scene",
         "sdf" : {
             "type" : "sdfgrid",
-            "normals" : "analytic"
+            "normals" : "analytic",
+            "grid": default_sdf_grid()
         }
     })
     params = mi.traverse(scene)
