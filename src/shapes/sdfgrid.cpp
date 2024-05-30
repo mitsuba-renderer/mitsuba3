@@ -127,19 +127,19 @@ public:
                                     optix::BoundingBox3f,
                                     ScalarBoundingBox3f>::type;
 
-    using StorageBoundingBoxFloat = 
+    using StorageBoundingBoxFloat =
         typename std::conditional<dr::is_cuda_v<Float>,
                                     dr::replace_scalar_t<Float, float>,
                                     Float>::type;
 
-    using StorageBoundingBoxPoint3f = 
+    using StorageBoundingBoxPoint3f =
         typename std::conditional<dr::is_cuda_v<Float>,
                                     Point<StorageBoundingBoxFloat, 3>,
                                     Point3f>::type;
-    using StorageBoundingBox3f = 
+    using StorageBoundingBox3f =
         typename std::conditional<dr::is_cuda_v<Float>,
                                     BoundingBox<StorageBoundingBoxPoint3f>,
-                                    BoundingBox3f>::type;                                          
+                                    BoundingBox3f>::type;
 #else
     using BoundingBoxType = ScalarBoundingBox3f;
     using StorageBoundingBoxFloat = Float;
@@ -153,8 +153,8 @@ public:
     SDFGrid(const Properties &props) : Base(props) {
 #if !defined(MI_ENABLE_EMBREE)
         if constexpr (!dr::is_jit_v<Float>)
-            Throw("The SDF grid is only available with Embree in scalar "
-                  "variants!");
+            Throw("In scalar variants, the SDF grid is only available with "
+                  "Embree!");
 #endif
 
         std::string normals_mode_str = props.string("normals", "smooth");
@@ -179,9 +179,8 @@ public:
             size_t shape[4]    = { (size_t) res.z(), (size_t) res.y(),
                                    (size_t) res.x(), 1 };
             if (vol_grid.channel_count() != 1)
-                Throw(
-                    "SDF grid data source \"%s\" has %lu channels, expected 1.",
-                    file_path, vol_grid.channel_count());
+                Throw("SDF grid data source \"%s\" has %lu channels, expected 1.",
+                      file_path, vol_grid.channel_count());
 
             m_grid_texture = InputTexture3f(
                 InputTensorXf(vol_grid.data(), 4, shape), true, true,
@@ -189,22 +188,16 @@ public:
         } else if (props.has_property("grid")) {
             TensorXf* tensor = props.tensor<TensorXf>("grid");
             if (tensor->ndim() != 4)
-                Throw(
-                    "SDF grid tensor has dimension %lu, expected 4",
-                    tensor->ndim());
+                Throw("SDF grid tensor has dimension %lu, expected 4",
+                      tensor->ndim());
             if (tensor->shape(3) != 1)
-                Throw(
-                    "SDF grid shape at index 3 is %lu, expected 1",
-                    tensor->shape(3));
+                Throw("SDF grid shape at index 3 is %lu, expected 1",
+                      tensor->shape(3));
             m_grid_texture = InputTexture3f(*tensor, true, true,
                 dr::FilterMode::Linear, dr::WrapMode::Clamp);
         } else {
-            InputFloat default_data[8] = { -1.f, -1.f, -1.f, -1.f,
-                                           -1.f, -1.f, -1.f, -1.f };
-            size_t default_shape[4]    = { 2, 2, 2, 1 };
-            m_grid_texture = InputTexture3f(
-                InputTensorXf(default_data, 4, default_shape), true, true,
-                dr::FilterMode::Linear, dr::WrapMode::Clamp);
+            Throw("The SDF values must be specified with either the "
+                  "\"filename\" or \"grid\" parameter!");
         }
 
         m_shape_type = ShapeType::SDFGrid;
@@ -215,8 +208,8 @@ public:
 
     ~SDFGrid() {
         if constexpr (!dr::is_jit_v<Float>) {
-            jit_free(m_host_bboxes);
-            jit_free(m_host_voxel_indices);
+            jit_free(m_bboxes_ptr);
+            jit_free(m_voxel_indices_ptr);
         }
     }
 
@@ -246,13 +239,11 @@ public:
         }
 
         if constexpr (!dr::is_jit_v<Float>){
-            jit_free(m_host_bboxes);
-            jit_free(m_host_voxel_indices);
+            jit_free(m_bboxes_ptr);
+            jit_free(m_voxel_indices_ptr);
         }
-        std::tie(m_host_bboxes,
-                 m_host_voxel_indices,
-                 m_device_bboxes,
-                 m_device_voxel_indices,
+        std::tie(m_bboxes_ptr,
+                 m_voxel_indices_ptr,
                  m_filled_voxel_count) = build_bboxes();
         if (m_filled_voxel_count == 0)
             Throw("SDFGrid should at least have one non-empty voxel!");
@@ -307,7 +298,7 @@ public:
         if constexpr (dr::is_cuda_v<Float>)
             NotImplementedError("bbox(ScalarIndex index)");
 
-        return reinterpret_cast<ScalarBoundingBox3f*>(m_host_bboxes)[index];
+        return reinterpret_cast<ScalarBoundingBox3f*>(m_bboxes_ptr)[index];
     }
 
     Float surface_area() const override {
@@ -600,7 +591,7 @@ public:
                                        static_cast<uint32_t>(shape[0]) };
 
             dr::eval(m_grid_texture.value()); // Make sure the SDF data is evaluated
-            OptixSDFGridData data = { (uint32_t *) m_device_voxel_indices,
+            OptixSDFGridData data = { (uint32_t *) m_voxel_indices_ptr,
                                       resolution[0],
                                       resolution[1],
                                       resolution[2],
@@ -617,7 +608,7 @@ public:
 
     void optix_build_input(OptixBuildInput &build_input) const override {
         build_input.type = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
-        build_input.customPrimitiveArray.aabbBuffers   = &m_device_bboxes;
+        build_input.customPrimitiveArray.aabbBuffers   = &m_bboxes_ptr;
         build_input.customPrimitiveArray.numPrimitives = m_filled_voxel_count;
         build_input.customPrimitiveArray.strideInBytes = 6 * sizeof(float);
         build_input.customPrimitiveArray.flags         = optix_geometry_flags;
@@ -647,6 +638,7 @@ private:
         MI_MASK_ARGUMENT(active);
 
         using MaskP = dr::mask_t<FloatP>;
+
         // The current implementation doesn't support JIT types so don't try to
         // use this in for instance compute_surface_interaction
         if constexpr (dr::is_jit_v<FloatP>)
@@ -657,7 +649,7 @@ private:
 
         auto shape = m_grid_texture.tensor().shape();
 
-        uint32_t voxel_index     = m_host_voxel_indices[prim_index];
+        uint32_t voxel_index     = m_voxel_indices_ptr[prim_index];
         ScalarVector3u voxel_pos = to_voxel_position(voxel_index);
 
         // Find voxel AABB in object space
@@ -679,7 +671,7 @@ private:
         active = active && bbox_hit;
 
         t_bbox_beg = dr::maximum(t_bbox_beg, 0.0);
-        auto valid_t = t_bbox_beg < t_bbox_end;
+        MaskP valid_t = t_bbox_beg < t_bbox_end;
         active &= valid_t;
 
         // Convert ray to voxel-space [0, 1] x [0, 1] x [0, 1]
@@ -705,7 +697,7 @@ private:
             m[3][2] = -1.f * (float) voxel_pos.z();
             m[3][3] = 1.f;
 
-            auto to_voxel = ScalarTransform4f(m);
+            ScalarTransform4f to_voxel = ScalarTransform4f(m);
 
             ray = to_voxel.transform_affine(ray);
         }
@@ -740,7 +732,7 @@ private:
             float s011 = m_host_grid_data[to_voxel_index(v011)];
             float s111 = m_host_grid_data[to_voxel_index(v111)];
 
-            auto ray_p_in_voxel = ray(t_bbox_beg);
+            Vector<FloatP, 3> ray_p_in_voxel = ray(t_bbox_beg);
             FloatP o_x = ray_p_in_voxel.x();
             FloatP o_y = ray_p_in_voxel.y();
             FloatP o_z = ray_p_in_voxel.z();
@@ -781,16 +773,20 @@ private:
         auto [hit, t] = sdf_solve_cubic(t_beg, t_end, c3, c2, c1, c0);
 
         if (m_watertight) {
-            auto eval_sdf_t = [&](FloatP t_) -> FloatP {
+            auto eval_sdf = [&](FloatP t_) -> FloatP {
                 return -dr::fmadd(dr::fmadd(dr::fmadd(c3, t_, c2), t_, c1), t_, c0);
             };
 
-            FloatP eval_sdf = eval_sdf_t(t_beg);
-            dr::masked(t, eval_sdf < 0) = t_beg;
-            hit                         = hit || eval_sdf < 0;
+            FloatP eval_sdf_t_beg = eval_sdf(t_beg);
+            dr::masked(t, eval_sdf_t_beg < 0) = t_beg;
+            hit = hit || eval_sdf_t_beg < 0;
         }
 
-        active = active && bbox_hit && hit && t_bbox_beg + t >= 0.f && t_bbox_beg + t <= ray.maxt;
+        active = active &&
+                 bbox_hit &&
+                 hit &&
+                 t_bbox_beg + t >= 0.f &&
+                 t_bbox_beg + t <= ray.maxt;
 
         return { active, dr::select(active, t_bbox_beg + t, dr::Infinity<FloatP>),
                  Point<FloatP, 2>(0, 0), ((uint32_t) -1), prim_index };
@@ -812,9 +808,9 @@ private:
         auto [has_derivative_roots, root_0, root_1] =
             math::solve_quadratic(c3 * 3, c2 * 2, c1);
 
-            auto eval_sdf_t = [&](FloatP t_) -> FloatP {
-                return -dr::fmadd(dr::fmadd(dr::fmadd(c3, t_, c2), t_, c1), t_, c0);
-            };
+        auto eval_sdf = [&](FloatP t_) -> FloatP {
+            return -dr::fmadd(dr::fmadd(dr::fmadd(c3, t_, c2), t_, c1), t_, c0);
+        };
 
         auto numerical_solve = [&](FloatP t_near, FloatP t_far, FloatP f_near,
                                    FloatP f_far) -> FloatP {
@@ -828,7 +824,7 @@ private:
             MaskP done = false;
             while (!dr::all(done)) {
                 t   = t_near + (t_far - t_near) * (-f_near / (f_far - f_near));
-                f_t = eval_sdf_t(t);
+                f_t = eval_sdf(t);
                 FloatP condition = f_t * f_near;
                 t_far = dr::select(condition <= 0, t, t_far);
                 f_far = dr::select(condition <= 0, f_t, f_far);
@@ -845,25 +841,25 @@ private:
         FloatP t_near = t_beg;
         FloatP t_far  = t_end;
 
-        FloatP f_root_0 = eval_sdf_t(root_0);
-        FloatP f_root_1 = eval_sdf_t(root_1);
+        FloatP f_root_0 = eval_sdf(root_0);
+        FloatP f_root_1 = eval_sdf(root_1);
 
         MaskP root_0_valid = t_near <= root_0 && root_0 <= t_far;
 
         dr::masked(t_far, has_derivative_roots && root_0_valid &&
-                              eval_sdf_t(t_beg) * f_root_0 <= 0) = root_0;
+                              eval_sdf(t_beg) * f_root_0 <= 0) = root_0;
         dr::masked(t_near, has_derivative_roots && root_0_valid &&
-                               eval_sdf_t(t_beg) * f_root_0 > 0) = root_0;
+                               eval_sdf(t_beg) * f_root_0 > 0) = root_0;
 
         MaskP root_1_valid = t_near <= root_1 && root_1 <= t_far;
 
         dr::masked(t_far, has_derivative_roots && root_1_valid &&
-                              eval_sdf_t(t_near) * f_root_1 <= 0) = root_1;
+                              eval_sdf(t_near) * f_root_1 <= 0) = root_1;
         dr::masked(t_near, has_derivative_roots && root_1_valid &&
-                               eval_sdf_t(t_near) * f_root_1 > 0) = root_1;
+                               eval_sdf(t_near) * f_root_1 > 0) = root_1;
 
-        FloatP f_near = eval_sdf_t(t_near);
-        FloatP f_far  = eval_sdf_t(t_far);
+        FloatP f_near = eval_sdf(t_near);
+        FloatP f_far  = eval_sdf(t_far);
 
         MaskP active = f_near * f_far <= 0;
 
@@ -924,64 +920,64 @@ private:
                             InputFloat(rescaled.z()));
     }
 
-    /* \brief Given the voxel position, returns tight bounding box around the surface.
-     *  HANSSON-SÖDERLUND, H., AND AKENINE-MÖLLER, T. 
-     *  2023. Tight Bounding Boxes for Voxels and Bricks in a Signed Distance Field Ray Tracer.
+    /* \brief Given the voxel position, returns tight bounding box around the
+     * surface.
+     *
+     *  Tight Bounding Boxes for Voxels and Bricks in a Signed Distance Field
+     *  Ray Tracer. HANSSON-SÖDERLUND, H., AND AKENINE-MÖLLER, T. 2023.
      */
-    using TightBoundingBoxType = std::conditional_t<dr::is_jit_v<Float>, StorageBoundingBox3f, ScalarBoundingBox3f>;
-    using TightBoundingBoxUInt32 = std::conditional_t<dr::is_jit_v<Float>, dr::uint32_array_t<Float>, uint32_t>;
-    using TightBoundingBoxFloat = std::conditional_t<dr::is_jit_v<Float>, InputFloat, float>;
-    using TightBoundingBoxMask = std::conditional_t<dr::is_jit_v<Float>, Mask, bool>;
-    using TightBoundingBoxPoint3f = std::conditional_t<dr::is_jit_v<Float>, StorageBoundingBoxPoint3f, ScalarPoint3f>;
-    using TightBoundingBoxGridType = std::conditional_t<dr::is_jit_v<Float>, InputFloat, float*>;
-    std::tuple<TightBoundingBoxMask, TightBoundingBoxType> compute_tight_bbox(TightBoundingBoxGridType grid, 
-                                                                              uint32_t shape[3],
-                                                                              ScalarVector3f voxel_size,
-                                                                              ScalarTransform4f to_world,
-                                                                              TightBoundingBoxUInt32 x, 
-                                                                              TightBoundingBoxUInt32 y, 
-                                                                              TightBoundingBoxUInt32 z) {
+    using TightBBoxType = std::conditional_t<dr::is_jit_v<Float>, StorageBoundingBox3f, ScalarBoundingBox3f>;
+    using TightBBoxUInt32 = std::conditional_t<dr::is_jit_v<Float>, dr::uint32_array_t<Float>, uint32_t>;
+    using TightBBoxFloat = std::conditional_t<dr::is_jit_v<Float>, InputFloat, float>;
+    using TightBBoxMask = std::conditional_t<dr::is_jit_v<Float>, Mask, bool>;
+    using TightBBoxPoint3f = std::conditional_t<dr::is_jit_v<Float>, StorageBoundingBoxPoint3f, ScalarPoint3f>;
+    using TightBBoxGridType = std::conditional_t<dr::is_jit_v<Float>, InputFloat, float*>;
 
-        auto value_index = [&](TightBoundingBoxUInt32 x_off, TightBoundingBoxUInt32 y_off, TightBoundingBoxUInt32 z_off) {
-            return (x + x_off) +
-                    (y + y_off) * shape[0] +
-                    (z + z_off) * shape[0] * shape[1];
+    std::tuple<TightBBoxMask, TightBBoxType>
+    compute_tight_bbox(const TightBBoxGridType& grid,
+                       const uint32_t shape[3],
+                       const Vector3f& voxel_size,
+                       const ScalarTransform4f& to_world,
+                       const TightBBoxUInt32 x,
+                       const TightBBoxUInt32 y,
+                       const TightBBoxUInt32 z) {
+        auto value_index = [&](TightBBoxUInt32 x_off,
+                               TightBBoxUInt32 y_off,
+                               TightBBoxUInt32 z_off) {
+            return (x + x_off) + (y + y_off) * shape[0] +
+                   (z + z_off) * shape[0] * shape[1];
         };
 
         auto voxel_corner_enc = [&](uint32_t x, uint32_t y, uint32_t z) {
             return x + (y << 1) + (z << 2);
         };
-        
+
         auto voxel_corner_dec = [&](uint32_t i) {
             return Point3u(i & 1, (i >> 1) & 1, (i >> 2) & 1);
         };
 
-        TightBoundingBoxUInt32 v[8];
-        for (size_t i = 0; i < 8; i++) {
+        TightBBoxUInt32 v[8];
+        for (size_t i = 0; i < 8; i++)
             v[i] = value_index(i & 1, (i >> 1) & 1, (i >> 2) & 1);
-        }
 
-        TightBoundingBoxFloat f[8];
-        for (size_t i = 0; i < 8; i++) {
+        TightBBoxFloat f[8];
+        for (size_t i = 0; i < 8; i++)
             f[i] = dr::gather<InputFloat>(grid, v[i]);
-        }
 
-        TightBoundingBoxMask occupied_mask = !((f[0] > 0 && f[1] > 0 && f[2] > 0 && f[3] > 0 &&
-                                                f[4] > 0 && f[5] > 0 && f[6] > 0 && f[7] > 0) || 
+        TightBBoxMask occupied_mask = !((f[0] > 0 && f[1] > 0 && f[2] > 0 && f[3] > 0 &&
+                                                f[4] > 0 && f[5] > 0 && f[6] > 0 && f[7] > 0) ||
                                                (f[0] < 0 && f[1] < 0 && f[2] < 0 && f[3] < 0 &&
                                                 f[4] < 0 && f[5] < 0 && f[6] < 0 && f[7] < 0));
 
-        TightBoundingBoxType bbox = dr::zeros<TightBoundingBoxType>();
-        
-        if constexpr (!dr::is_jit_v<Float>) {
+        TightBBoxType bbox = dr::zeros<TightBBoxType>();
+
+        if constexpr (!dr::is_jit_v<Float>)
             if (!occupied_mask)
                 return { false, bbox };
-        }
 
-        TightBoundingBoxMask f_Z[8];
-        for (size_t i = 0; i < 8; i++) {
+        TightBBoxMask f_Z[8];
+        for (size_t i = 0; i < 8; i++)
             f_Z[i] = f[i] == 0;
-        }
 
         bbox.min.x() = dr::select(f_Z[voxel_corner_enc(0, 0, 0)] || f_Z[voxel_corner_enc(0, 0, 1)] || f_Z[voxel_corner_enc(0, 1, 0)] || f_Z[voxel_corner_enc(0, 1, 1)], 0, 1);
         bbox.max.x() = dr::select(f_Z[voxel_corner_enc(1, 0, 0)] || f_Z[voxel_corner_enc(1, 0, 1)] || f_Z[voxel_corner_enc(1, 1, 0)] || f_Z[voxel_corner_enc(1, 1, 1)], 1, 0);
@@ -996,7 +992,7 @@ private:
                 if (!(corner_1 & (1 << shift))) {
                     size_t corner_2 = corner_1 | (1 << shift);
 
-                    TightBoundingBoxMask intersection_mask = f[corner_1] * f[corner_2] <= 0 && f[corner_1] != f[corner_2];
+                    TightBBoxMask intersection_mask = f[corner_1] * f[corner_2] <= 0 && f[corner_1] != f[corner_2];
 
                     if constexpr (!dr::is_jit_v<Float>) {
                         if (!intersection_mask)
@@ -1030,23 +1026,19 @@ private:
      * Depending on the variant used, the pointer returned is either host or
      * device visible
      */
-    std::tuple<void *, uint32_t *, void *, uint32_t *, uint32_t> build_bboxes() {
+    std::tuple<void *, uint32_t *, uint32_t> build_bboxes() {
         auto shape = m_grid_texture.tensor().shape();
-        uint32_t shape_v[3]  = { static_cast<uint32_t>(shape[2]), 
-                                 static_cast<uint32_t>(shape[1]), 
+        uint32_t shape_v[3]  = { static_cast<uint32_t>(shape[2]),
+                                 static_cast<uint32_t>(shape[1]),
                                  static_cast<uint32_t>(shape[0]) };
-        ScalarVector3f voxel_size = m_voxel_size.scalar();
         uint32_t max_voxel_count =
             (shape[0] - 1) * (shape[1] - 1) * (shape[2] - 1);
         ScalarTransform4f to_world = m_to_world.scalar();
 
         dr::eval(m_grid_texture.value()); // Make sure the SDF data is evaluated
 
-        BoundingBoxType *host_aabbs = nullptr;
-        uint32_t *host_voxel_indices = nullptr;
-
-        void *device_aabbs = nullptr;
-        uint32_t *device_voxel_indices = nullptr;
+        void *aabbs_ptr = nullptr;
+        uint32_t *voxel_indices_ptr = nullptr;
 
         uint32_t count = 0;
 
@@ -1057,72 +1049,50 @@ private:
                                           dr::arange<UInt32>(shape[1] - 1),
                                           dr::arange<UInt32>(shape[2] - 1), false);
 
-            auto [occupied, bbox] = compute_tight_bbox(grid, shape_v, voxel_size, to_world, x, y, z);
+            auto [occupied, bbox] = compute_tight_bbox(
+                grid, shape_v, m_voxel_size.value(), to_world, x, y, z);
 
             UInt32 voxel_idx = x +
                                y * (shape_v[0] - 1) +
                                z * (shape_v[0] - 1) * (shape_v[1] - 1);
-            
+
             UInt32 counter = UInt32(0);
-            auto slot = dr::scatter_inc(counter, UInt32(0), occupied);
+            UInt32 slot = dr::scatter_inc(counter, UInt32(0), occupied);
 
             m_jit_voxel_indices = dr::zeros<UInt32>(max_voxel_count);
 
-            if constexpr (dr::is_cuda_v<Float>) {
-                m_jit_bboxes = dr::zeros<StorageBoundingBoxFloat>(6 * max_voxel_count);
+            uint32_t stride = 3; // BBobx's Point3f stride
+            if constexpr (dr::is_llvm_v<Float>)
+                stride = sizeof(ScalarBoundingBox3f) / sizeof(float) / 2u; // Typically 4-wide
 
-                dr::scatter(m_jit_voxel_indices, voxel_idx, slot, occupied);
-                dr::scatter(m_jit_bboxes, bbox.min.x(), 6 * slot + 0, occupied);
-                dr::scatter(m_jit_bboxes, bbox.min.y(), 6 * slot + 1, occupied);
-                dr::scatter(m_jit_bboxes, bbox.min.z(), 6 * slot + 2, occupied);
-                dr::scatter(m_jit_bboxes, bbox.max.x(), 6 * slot + 3, occupied);
-                dr::scatter(m_jit_bboxes, bbox.max.y(), 6 * slot + 4, occupied);
-                dr::scatter(m_jit_bboxes, bbox.max.z(), 6 * slot + 5, occupied);
+            m_jit_bboxes = dr::zeros<StorageBoundingBoxFloat>(stride * max_voxel_count);
+            dr::scatter(m_jit_bboxes, bbox.min.x(), stride * (2 * slot + 0) + 0, occupied);
+            dr::scatter(m_jit_bboxes, bbox.min.y(), stride * (2 * slot + 0) + 1, occupied);
+            dr::scatter(m_jit_bboxes, bbox.min.z(), stride * (2 * slot + 0) + 2, occupied);
+            dr::scatter(m_jit_bboxes, bbox.max.x(), stride * (2 * slot + 1) + 0, occupied);
+            dr::scatter(m_jit_bboxes, bbox.max.y(), stride * (2 * slot + 1) + 1, occupied);
+            dr::scatter(m_jit_bboxes, bbox.max.z(), stride * (2 * slot + 1) + 2, occupied);
+            dr::scatter(m_jit_voxel_indices, voxel_idx, slot, occupied);
+            dr::eval(m_jit_voxel_indices, m_jit_bboxes);
 
-                dr::eval(m_jit_voxel_indices, m_jit_bboxes);
-
-                device_aabbs = (BoundingBoxType *) m_jit_bboxes.data();
-                device_voxel_indices = (uint32_t*) m_jit_voxel_indices.data();
-            }
-
-            if constexpr (dr::is_llvm_v<Float>) {
-                m_jit_bboxes = dr::zeros<StorageBoundingBoxFloat>(8 * max_voxel_count);
-                
-                dr::scatter(m_jit_voxel_indices, voxel_idx, slot, occupied);
-                dr::scatter(m_jit_bboxes, bbox.min.x(), 8 * slot    , occupied);
-                dr::scatter(m_jit_bboxes, bbox.min.y(), 8 * slot + 1, occupied);
-                dr::scatter(m_jit_bboxes, bbox.min.z(), 8 * slot + 2, occupied);
-                dr::scatter(m_jit_bboxes, bbox.max.x(), 8 * slot + 4, occupied);
-                dr::scatter(m_jit_bboxes, bbox.max.y(), 8 * slot + 5, occupied);
-                dr::scatter(m_jit_bboxes, bbox.max.z(), 8 * slot + 6, occupied);
-                
-                dr::eval(m_jit_voxel_indices, m_jit_bboxes);
-
-                host_aabbs = (BoundingBoxType *) m_jit_bboxes.data();
-                host_voxel_indices = (uint32_t*) m_jit_voxel_indices.data();
-            }
+            aabbs_ptr = (void *) m_jit_bboxes.data();
+            voxel_indices_ptr = (uint32_t*) m_jit_voxel_indices.data();
 
             count = counter[0];
-
         } else {
-            host_aabbs = (BoundingBoxType *) jit_malloc(
+            aabbs_ptr = (BoundingBoxType *) jit_malloc(
                 AllocType::Host, sizeof(BoundingBoxType) * max_voxel_count);
-            host_voxel_indices = (uint32_t *) jit_malloc(
+            voxel_indices_ptr = (uint32_t *) jit_malloc(
                 AllocType::Host, sizeof(uint32_t) * max_voxel_count);
 
             float *grid = m_grid_texture.tensor().array().data();
+            ScalarVector3f voxel_size = m_voxel_size.scalar();
 
             for (uint32_t z = 0; z < shape[0] - 1; ++z) {
                 for (uint32_t y = 0; y < shape[1] - 1; ++y) {
                     for (uint32_t x = 0; x < shape[2] - 1; ++x) {
-
-                        auto value_index = [&](uint32_t x_off, uint32_t y_off, uint32_t z_off) {
-                            return (x + x_off) +
-                                (y + y_off) * shape_v[0] +
-                                (z + z_off) * shape_v[0] * shape_v[1];
-                        };
-
-                        auto [occupied, bbox] = compute_tight_bbox(grid, shape_v, voxel_size, to_world, x, y, z);
+                        auto [occupied, bbox] = compute_tight_bbox(
+                            grid, shape_v, voxel_size, to_world, x, y, z);
 
                         if (!occupied)
                             continue;
@@ -1131,15 +1101,16 @@ private:
                                              y * (shape_v[0] - 1) +
                                              z * (shape_v[0] - 1) * (shape_v[1] - 1);
 
-                        host_voxel_indices[count] = voxel_idx;
-                        host_aabbs[count] = BoundingBoxType(bbox);
+                        voxel_indices_ptr[count] = voxel_idx;
+                        BoundingBoxType* ptr = (BoundingBoxType *) aabbs_ptr;
+                        ptr[count] = BoundingBoxType(bbox);
                         count++;
                     }
                 }
             }
         }
 
-        return { host_aabbs, host_voxel_indices, device_aabbs, device_voxel_indices, count };
+        return { aabbs_ptr, voxel_indices_ptr, count };
     }
 
     /// Computes the SDF gradient for a given point and its containing voxel
@@ -1204,19 +1175,16 @@ private:
     // guarded by a global state lock
     float *m_host_grid_data = nullptr;
 
-    // Host-visible non-empty bounding boxes and corresponding indices
-    // Also used when targeting CUDA variants, as we upload asynchronously
-    // to GPU
-    void *m_host_bboxes = nullptr;
-    uint32_t *m_host_voxel_indices = nullptr;
-
-    // Device-visible bounding boxes
-    void *m_device_bboxes = nullptr;
-    uint32_t *m_device_voxel_indices = nullptr;
-
-    // JIT-visble bounding boxes
+    // Non-empty bounding boxes and corresponding indices
     StorageBoundingBoxFloat m_jit_bboxes;
     UInt32 m_jit_voxel_indices;
+
+    // Pointers to non-empty bounding boxes and corresponding indices
+    // (These are just the data pointer to the JIT variables aboves.
+    // In scalar variants, these are allocated  using `jit_malloc`)
+    void *m_bboxes_ptr = nullptr;
+    uint32_t *m_voxel_indices_ptr = nullptr;
+
 
     bool m_watertight;
     uint32_t m_filled_voxel_count = 0;
