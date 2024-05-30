@@ -305,7 +305,8 @@ template <typename Point_> struct BoundingBox {
         using Vector = typename Ray::Vector;
 
         /**
-            An Efficient and Robust Ray–Box Intersection Algorithm. Amy Williams et al. 2004.
+            An Efficient and Robust Ray–Box Intersection Algorithm.
+            Amy Williams et al. 2004.
         */
 
         // Ensure that the ray either has a nonzero slope on each axis
@@ -316,24 +317,24 @@ template <typename Point_> struct BoundingBox {
         Vector t_min = (dr::select(d_rcp >= 0, min, max) - ray.o) * d_rcp,
                t_max = (dr::select(d_rcp >= 0, max, min) - ray.o) * d_rcp;
 
-        // Nan-safe min/max
-        auto max_nan_safe = [&](Float a, Float b){
+        // Nan-safe minimum/maximum
+        auto maximum_safe = [&](Float a, Float b){
             return dr::select(a > b || !dr::isfinite(b), a, b);
         };
 
-        auto min_nan_safe = [&](Float a, Float b){
+        auto minimum_safe = [&](Float a, Float b){
             return dr::select(a < b || !dr::isfinite(b), a, b);
         };
 
         active = active && !((t_min.x() > t_max.y()) || (t_min.y() > t_max.x()));
 
-        t_min.x() = max_nan_safe(t_min.x(), t_min.y());
-        t_max.x() = min_nan_safe(t_max.x(), t_max.y());
+        t_min.x() = maximum_safe(t_min.x(), t_min.y());
+        t_max.x() = minimum_safe(t_max.x(), t_max.y());
 
         active = active && !((t_min.x() > t_max.z()) || (t_min.z() > t_max.x()));
 
-        t_min.x() = max_nan_safe(t_min.x(), t_min.z());
-        t_max.x() = min_nan_safe(t_max.x(), t_max.z());
+        t_min.x() = maximum_safe(t_min.x(), t_min.z());
+        t_max.x() = minimum_safe(t_max.x(), t_max.z());
 
         return std::make_tuple(active, t_min.x(), t_max.x());
     }
