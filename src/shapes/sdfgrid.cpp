@@ -925,19 +925,23 @@ private:
                             InputFloat(rescaled.z()));
     }
 
+    /* \brief Given the voxel position, returns tight bounding box around the surface.
+     *  HANSSON-SÖDERLUND, H., AND AKENINE-MÖLLER, T. 
+     *  2023. Tight Bounding Boxes for Voxels and Bricks in a Signed Distance Field Ray Tracer.
+     */
     using TightBoundingBoxType = std::conditional_t<dr::is_jit_v<Float>, StorageBoundingBox3f, ScalarBoundingBox3f>;
     using TightBoundingBoxUInt32 = std::conditional_t<dr::is_jit_v<Float>, dr::uint32_array_t<Float>, uint32_t>;
     using TightBoundingBoxFloat = std::conditional_t<dr::is_jit_v<Float>, InputFloat, float>;
     using TightBoundingBoxMask = std::conditional_t<dr::is_jit_v<Float>, Mask, bool>;
     using TightBoundingBoxPoint3f = std::conditional_t<dr::is_jit_v<Float>, StorageBoundingBoxPoint3f, ScalarPoint3f>;
     using TightBoundingBoxGridType = std::conditional_t<dr::is_jit_v<Float>, InputFloat, float*>;
-    std::tuple<TightBoundingBoxMask, TightBoundingBoxType> compute_bbox(TightBoundingBoxGridType grid, 
-                                                                        uint32_t shape[3],
-                                                                        float voxel_size[3],
-                                                                        ScalarTransform4f to_world,
-                                                                        TightBoundingBoxUInt32 x, 
-                                                                        TightBoundingBoxUInt32 y, 
-                                                                        TightBoundingBoxUInt32 z) {
+    std::tuple<TightBoundingBoxMask, TightBoundingBoxType> compute_tight_bbox(TightBoundingBoxGridType grid, 
+                                                                              uint32_t shape[3],
+                                                                              ScalarVector3f voxel_size,
+                                                                              ScalarTransform4f to_world,
+                                                                              TightBoundingBoxUInt32 x, 
+                                                                              TightBoundingBoxUInt32 y, 
+                                                                              TightBoundingBoxUInt32 z) {
 
         auto value_index = [&](TightBoundingBoxUInt32 x_off, TightBoundingBoxUInt32 y_off, TightBoundingBoxUInt32 z_off) {
             return (x + x_off) +
@@ -945,13 +949,21 @@ private:
                     (z + z_off) * shape[0] * shape[1];
         };
 
+        auto voxel_corner_enc = [&](uint32_t x, uint32_t y, uint32_t z) {
+            return x + (y << 1) + (z << 2);
+        };
+        
+        auto voxel_corner_dec = [&](uint32_t i) {
+            return Point3u(i & 1, (i >> 1) & 1, (i >> 2) & 1);
+        };
+
         TightBoundingBoxUInt32 v[8];
-        for(size_t i = 0; i < 8; i++) {
+        for (size_t i = 0; i < 8; i++) {
             v[i] = value_index(i & 1, (i >> 1) & 1, (i >> 2) & 1);
         }
 
         TightBoundingBoxFloat f[8];
-        for(size_t i = 0; i < 8; i++) {
+        for (size_t i = 0; i < 8; i++) {
             f[i] = dr::gather<InputFloat>(grid, v[i]);
         }
 
@@ -967,18 +979,49 @@ private:
                 return { false, bbox };
         }
 
-        auto expand_bbox = [&](TightBoundingBoxUInt32 x, TightBoundingBoxUInt32 y, TightBoundingBoxUInt32 z) {
-            bbox.expand(to_world.transform_affine(
-                TightBoundingBoxPoint3f(x * voxel_size[2], 
-                                        y * voxel_size[1],
-                                        z * voxel_size[0])));
-        };
-
-        for(size_t i = 0; i < 8; i++) {
-            expand_bbox(x + (i & 1), y + ((i >> 1) & 1), z + ((i >> 2) & 1));
+        TightBoundingBoxMask f_Z[8];
+        for (size_t i = 0; i < 8; i++) {
+            f_Z[i] = f[i] == 0;
         }
 
-        return { occupied_mask, bbox};
+        bbox.min.x() = dr::select(f_Z[voxel_corner_enc(0, 0, 0)] || f_Z[voxel_corner_enc(0, 0, 1)] || f_Z[voxel_corner_enc(0, 1, 0)] || f_Z[voxel_corner_enc(0, 1, 1)], 0, 1);
+        bbox.max.x() = dr::select(f_Z[voxel_corner_enc(1, 0, 0)] || f_Z[voxel_corner_enc(1, 0, 1)] || f_Z[voxel_corner_enc(1, 1, 0)] || f_Z[voxel_corner_enc(1, 1, 1)], 1, 0);
+        bbox.min.y() = dr::select(f_Z[voxel_corner_enc(0, 0, 0)] || f_Z[voxel_corner_enc(0, 0, 1)] || f_Z[voxel_corner_enc(1, 0, 0)] || f_Z[voxel_corner_enc(1, 0, 1)], 0, 1);
+        bbox.max.y() = dr::select(f_Z[voxel_corner_enc(0, 1, 0)] || f_Z[voxel_corner_enc(0, 1, 1)] || f_Z[voxel_corner_enc(1, 1, 0)] || f_Z[voxel_corner_enc(1, 1, 1)], 1, 0);
+        bbox.min.z() = dr::select(f_Z[voxel_corner_enc(0, 0, 0)] || f_Z[voxel_corner_enc(1, 0, 0)] || f_Z[voxel_corner_enc(0, 1, 0)] || f_Z[voxel_corner_enc(1, 1, 0)], 0, 1);
+        bbox.max.z() = dr::select(f_Z[voxel_corner_enc(0, 0, 1)] || f_Z[voxel_corner_enc(1, 0, 1)] || f_Z[voxel_corner_enc(0, 1, 1)] || f_Z[voxel_corner_enc(1, 1, 1)], 1, 0);
+
+        // Generates pairs of neighboring corners and checks for intersection on the edge
+        for (size_t corner_1 = 0; corner_1 < 8; corner_1++) {
+            for (size_t shift = 0; shift < 3; shift++) {
+                if (!(corner_1 & (1 << shift))) {
+                    size_t corner_2 = corner_1 | (1 << shift);
+
+                    TightBoundingBoxMask intersection_mask = f[corner_1] * f[corner_2] <= 0 && f[corner_1] != f[corner_2];
+
+                    if constexpr (!dr::is_jit_v<Float>) {
+                        if (!intersection_mask)
+                            continue;
+                    }
+
+                    auto corner_1_pos = voxel_corner_dec(corner_1);
+                    auto corner_2_pos = voxel_corner_dec(corner_2);
+
+                    auto intersection_pos = corner_1_pos + f[corner_1] / (f[corner_1] - f[corner_2]) * (corner_2_pos - corner_1_pos);
+
+                    bbox.min = dr::select(intersection_mask, dr::minimum(bbox.min, intersection_pos), bbox.min);
+                    bbox.max = dr::select(intersection_mask, dr::maximum(bbox.max, intersection_pos), bbox.max);
+                }
+            }
+        }
+
+        bbox.min += Vector3f(x, y, z);
+        bbox.max += Vector3f(x, y, z);
+
+        bbox.min = to_world.transform_affine(bbox.min * voxel_size);
+        bbox.max = to_world.transform_affine(bbox.max * voxel_size);
+
+        return { occupied_mask, bbox };
     };
 
     /* \brief Only computes AABBs for voxel that contain a surface in it.
@@ -993,9 +1036,7 @@ private:
         uint32_t shape_v[3]  = { static_cast<uint32_t>(shape[2]), 
                                  static_cast<uint32_t>(shape[1]), 
                                  static_cast<uint32_t>(shape[0]) };
-        float voxel_size[3] = { m_voxel_size.scalar()[0],
-                                m_voxel_size.scalar()[1],
-                                m_voxel_size.scalar()[2] };
+        ScalarVector3f voxel_size = m_voxel_size.scalar();
         uint32_t max_voxel_count =
             (shape[0] - 1) * (shape[1] - 1) * (shape[2] - 1);
         ScalarTransform4f to_world = m_to_world.scalar();
@@ -1017,7 +1058,7 @@ private:
                                           dr::arange<UInt32>(shape[1] - 1),
                                           dr::arange<UInt32>(shape[2] - 1), false);
 
-            auto [occupied, bbox] = compute_bbox(grid, shape_v, voxel_size, to_world, x, y, z);
+            auto [occupied, bbox] = compute_tight_bbox(grid, shape_v, voxel_size, to_world, x, y, z);
 
             UInt32 voxel_idx = x +
                                y * (shape_v[0] - 1) +
@@ -1082,7 +1123,7 @@ private:
                                 (z + z_off) * shape_v[0] * shape_v[1];
                         };
 
-                        auto [occupied, bbox] = compute_bbox(grid, shape_v, voxel_size, to_world, x, y, z);
+                        auto [occupied, bbox] = compute_tight_bbox(grid, shape_v, voxel_size, to_world, x, y, z);
 
                         if (!occupied)
                             continue;
