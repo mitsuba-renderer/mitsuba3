@@ -443,6 +443,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
         dr::sync_thread();
         OptixSceneState &s = *(OptixSceneState *) m_accel;
         const OptixConfig &config = optix_configs[s.config_index];
+        scoped_optix_context guard;
 
         if (!m_shapes.empty()) {
             // Build geometry acceleration structures for all the shapes
