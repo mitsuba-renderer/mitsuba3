@@ -13,7 +13,6 @@ struct OptixSDFGridData {
     float voxel_size_z;
     float* grid_data;
     optix::Transform4f to_object;
-    bool watertight;
 };
 
 #ifdef __CUDACC__
@@ -267,18 +266,8 @@ extern "C" __global__ void __intersection__sdfgrid() {
     float c2 = fmaf(m1, m5, d_z * (fmaf(k5, d_x, fmaf(k6, d_y, k7 * m2))));
     float c3 = k7 * m1 * d_z;
 
-    auto eval_sdf = [&](float t_) -> float {
-        return fmaf(fmaf(fmaf(c3, t_, c2), t_, c1), t_, c0);
-    };
-
     float t_beg = 0.f;
     float t_end = t_bbox_end - t_bbox_beg;
-
-    // Avoid leaking through cracks
-    if (sdf.watertight && (eval_sdf(t_beg) < 0)) {
-        optixReportIntersection(t_beg, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
-        return;
-    }
 
     if (c3 != 0) {
         // Cubic polynomial

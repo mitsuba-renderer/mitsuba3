@@ -46,11 +46,6 @@ SDF Grid (:monosp:`sdfgrid`)
      specified in the XML scene description.
    - |exposed|, |differentiable|, |discontinuous|
 
- * - watertight
-   - |bool|
-   - Is the associated surface watertight, i.e. does the surface contain no holes? (Default: |false|)
-   - |exposed|
-
  * - normals
    - |string|
    - Specifies the method for computing shading normals. The options are
@@ -167,8 +162,6 @@ public:
                   "or \"smooth\"!",
                   normals_mode_str);
 
-        m_watertight = props.get<bool>("watertight", false);
-
         if (props.has_property("filename")) {
             FileResolver *fs   = Thread::thread()->file_resolver();
             fs::path file_path = fs->resolve(props.string("filename"));
@@ -255,12 +248,11 @@ public:
         Base::traverse(callback);
         callback->put_parameter("to_world",     *m_to_world.ptr(),          +ParamFlags::NonDifferentiable);
         callback->put_parameter("grid",         m_grid_texture.tensor(),    +ParamFlags::NonDifferentiable);
-        callback->put_parameter("watertight",   m_watertight,               +ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "to_world") ||
-            string::contains(keys, "grid") || string::contains(keys, "watertight")) {
+            string::contains(keys, "grid")) {
             // Ensure previous ray-tracing operation are fully evaluated before
             // modifying the scalar values of the fields in this class
             if constexpr (dr::is_jit_v<Float>)
@@ -599,8 +591,7 @@ public:
                                       m_voxel_size.scalar()[1],
                                       m_voxel_size.scalar()[2],
                                       m_grid_texture.tensor().array().data(),
-                                      m_to_object.scalar(),
-                                      m_watertight };
+                                      m_to_object.scalar() };
             jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data,
                        sizeof(OptixSDFGridData));
         }
@@ -771,16 +762,6 @@ private:
         FloatP t_end = t_bbox_end - t_bbox_beg;
 
         auto [hit, t] = sdf_solve_cubic(t_beg, t_end, c3, c2, c1, c0);
-
-        if (m_watertight) {
-            auto eval_sdf = [&](FloatP t_) -> FloatP {
-                return -dr::fmadd(dr::fmadd(dr::fmadd(c3, t_, c2), t_, c1), t_, c0);
-            };
-
-            FloatP eval_sdf_t_beg = eval_sdf(t_beg);
-            dr::masked(t, eval_sdf_t_beg < 0) = t_beg;
-            hit = hit || eval_sdf_t_beg < 0;
-        }
 
         active = active &&
                  bbox_hit &&
@@ -1185,8 +1166,6 @@ private:
     void *m_bboxes_ptr = nullptr;
     uint32_t *m_voxel_indices_ptr = nullptr;
 
-
-    bool m_watertight;
     uint32_t m_filled_voxel_count = 0;
     NormalMethod m_normal_method;
 };
