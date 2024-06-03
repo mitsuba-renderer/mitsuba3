@@ -115,32 +115,10 @@ public:
     using InputTexture3f = dr::Texture<InputFloat, 3>;
     using InputPoint3f   = Point<InputFloat, 3>;
     using InputTensorXf  = dr::Tensor<DynamicBuffer<InputFloat>>;
+    using InputBoundingBox3f = BoundingBox<InputPoint3f>;
+    using InputScalarBoundingBox3f = BoundingBox<Point<float, 3>>;
 
-#if defined(MI_ENABLE_CUDA)
-    using BoundingBoxType =
-        typename std::conditional<dr::is_cuda_v<Float>,
-                                    optix::BoundingBox3f,
-                                    ScalarBoundingBox3f>::type;
-
-    using StorageBoundingBoxFloat =
-        typename std::conditional<dr::is_cuda_v<Float>,
-                                    dr::replace_scalar_t<Float, float>,
-                                    Float>::type;
-
-    using StorageBoundingBoxPoint3f =
-        typename std::conditional<dr::is_cuda_v<Float>,
-                                    Point<StorageBoundingBoxFloat, 3>,
-                                    Point3f>::type;
-    using StorageBoundingBox3f =
-        typename std::conditional<dr::is_cuda_v<Float>,
-                                    BoundingBox<StorageBoundingBoxPoint3f>,
-                                    BoundingBox3f>::type;
-#else
-    using BoundingBoxType = ScalarBoundingBox3f;
-    using StorageBoundingBoxFloat = Float;
-    using StorageBoundingBoxPoint3f = Point3f;
-    using StorageBoundingBox3f = BoundingBox3f;
-#endif
+    using FloatStorage = DynamicBuffer<InputFloat>;
 
     using typename Base::ScalarIndex;
     using typename Base::ScalarSize;
@@ -291,7 +269,7 @@ public:
         if constexpr (dr::is_cuda_v<Float>)
             NotImplementedError("bbox(ScalarIndex index)");
 
-        return reinterpret_cast<ScalarBoundingBox3f*>(m_bboxes_ptr)[index];
+        return reinterpret_cast<InputScalarBoundingBox3f*>(m_bboxes_ptr)[index];
     }
 
     Float surface_area() const override {
@@ -908,24 +886,17 @@ private:
      *  Tight Bounding Boxes for Voxels and Bricks in a Signed Distance Field
      *  Ray Tracer. HANSSON-SÖDERLUND, H., AND AKENINE-MÖLLER, T. 2023.
      */
-    using TightBBoxType = std::conditional_t<dr::is_jit_v<Float>, StorageBoundingBox3f, ScalarBoundingBox3f>;
-    using TightBBoxUInt32 = std::conditional_t<dr::is_jit_v<Float>, dr::uint32_array_t<Float>, uint32_t>;
-    using TightBBoxFloat = std::conditional_t<dr::is_jit_v<Float>, InputFloat, float>;
-    using TightBBoxMask = std::conditional_t<dr::is_jit_v<Float>, Mask, bool>;
-    using TightBBoxPoint3f = std::conditional_t<dr::is_jit_v<Float>, StorageBoundingBoxPoint3f, ScalarPoint3f>;
-    using TightBBoxGridType = std::conditional_t<dr::is_jit_v<Float>, InputFloat, float*>;
-
-    std::tuple<TightBBoxMask, TightBBoxType>
-    compute_tight_bbox(const TightBBoxGridType& grid,
+    std::tuple<Mask, InputBoundingBox3f>
+    compute_tight_bbox(const FloatStorage& grid,
                        const uint32_t shape[3],
                        const Vector3f& voxel_size,
                        const ScalarTransform4f& to_world,
-                       const TightBBoxUInt32 x,
-                       const TightBBoxUInt32 y,
-                       const TightBBoxUInt32 z) {
-        auto value_index = [&](TightBBoxUInt32 x_off,
-                               TightBBoxUInt32 y_off,
-                               TightBBoxUInt32 z_off) {
+                       UInt32 x,
+                       UInt32 y,
+                       UInt32 z) {
+        auto value_index = [&](UInt32 x_off,
+                               UInt32 y_off,
+                               UInt32 z_off) {
             return (x + x_off) + (y + y_off) * shape[0] +
                    (z + z_off) * shape[0] * shape[1];
         };
@@ -938,26 +909,25 @@ private:
             return Point3u(i & 1, (i >> 1) & 1, (i >> 2) & 1);
         };
 
-        TightBBoxUInt32 v[8];
+        UInt32 v[8];
         for (size_t i = 0; i < 8; i++)
             v[i] = value_index(i & 1, (i >> 1) & 1, (i >> 2) & 1);
 
-        TightBBoxFloat f[8];
+        InputFloat f[8];
         for (size_t i = 0; i < 8; i++)
             f[i] = dr::gather<InputFloat>(grid, v[i]);
 
-        TightBBoxMask occupied_mask = !((f[0] > 0 && f[1] > 0 && f[2] > 0 && f[3] > 0 &&
-                                                f[4] > 0 && f[5] > 0 && f[6] > 0 && f[7] > 0) ||
-                                               (f[0] < 0 && f[1] < 0 && f[2] < 0 && f[3] < 0 &&
-                                                f[4] < 0 && f[5] < 0 && f[6] < 0 && f[7] < 0));
+        Mask occupied_mask = !((f[0] > 0 && f[1] > 0 && f[2] > 0 && f[3] > 0 &&
+                                f[4] > 0 && f[5] > 0 && f[6] > 0 && f[7] > 0) ||
+                               (f[0] < 0 && f[1] < 0 && f[2] < 0 && f[3] < 0 &&
+                                f[4] < 0 && f[5] < 0 && f[6] < 0 && f[7] < 0));
 
-        TightBBoxType bbox = dr::zeros<TightBBoxType>();
-
+        InputBoundingBox3f bbox = dr::zeros<InputBoundingBox3f>();
         if constexpr (!dr::is_jit_v<Float>)
             if (!occupied_mask)
                 return { false, bbox };
 
-        TightBBoxMask f_Z[8];
+        Mask f_Z[8];
         for (size_t i = 0; i < 8; i++)
             f_Z[i] = f[i] == 0;
 
@@ -974,7 +944,7 @@ private:
                 if (!(corner_1 & (1 << shift))) {
                     size_t corner_2 = corner_1 | (1 << shift);
 
-                    TightBBoxMask intersection_mask = f[corner_1] * f[corner_2] <= 0 && f[corner_1] != f[corner_2];
+                    Mask intersection_mask = f[corner_1] * f[corner_2] <= 0 && f[corner_1] != f[corner_2];
 
                     if constexpr (!dr::is_jit_v<Float>) {
                         if (!intersection_mask)
@@ -1043,11 +1013,11 @@ private:
 
             m_jit_voxel_indices = dr::zeros<UInt32>(max_voxel_count);
 
-            size_t stride = 3; // Point3f stride
+            size_t stride = 3; // BBobx's Point3f stride
             if constexpr (dr::is_llvm_v<Float>)
-                stride = sizeof(ScalarBoundingBox3f) / sizeof(float) / 2u; // Typically 4-wide
+                stride = sizeof(InputScalarBoundingBox3f) / sizeof(float) / 2u; // Typically 4-wide
 
-            m_jit_bboxes = dr::zeros<StorageBoundingBoxFloat>(stride * max_voxel_count);
+            m_jit_bboxes = dr::zeros<InputFloat>(stride * max_voxel_count);
             dr::scatter(m_jit_bboxes, bbox.min.x(), stride * (2 * slot + 0) + 0, occupied);
             dr::scatter(m_jit_bboxes, bbox.min.y(), stride * (2 * slot + 0) + 1, occupied);
             dr::scatter(m_jit_bboxes, bbox.min.z(), stride * (2 * slot + 0) + 2, occupied);
@@ -1062,12 +1032,12 @@ private:
 
             count = counter[0];
         } else {
-            aabbs_ptr = (BoundingBoxType *) jit_malloc(
-                AllocType::Host, sizeof(BoundingBoxType) * max_voxel_count);
+            aabbs_ptr = (ScalarBoundingBox3f*) jit_malloc(
+                AllocType::Host, sizeof(ScalarBoundingBox3f) * max_voxel_count);
             voxel_indices_ptr = (uint32_t *) jit_malloc(
                 AllocType::Host, sizeof(uint32_t) * max_voxel_count);
 
-            float *grid = m_grid_texture.tensor().array().data();
+            FloatStorage grid = m_grid_texture.tensor().array();
             ScalarVector3f voxel_size = m_voxel_size.scalar();
 
             for (uint32_t z = 0; z < shape[0] - 1; ++z) {
@@ -1084,8 +1054,8 @@ private:
                                              z * (shape_v[0] - 1) * (shape_v[1] - 1);
 
                         voxel_indices_ptr[count] = voxel_idx;
-                        BoundingBoxType* ptr = (BoundingBoxType *) aabbs_ptr;
-                        ptr[count] = BoundingBoxType(bbox);
+                        ScalarBoundingBox3f *ptr = (ScalarBoundingBox3f *) aabbs_ptr;
+                        ptr[count] = ScalarBoundingBox3f(bbox);
                         count++;
                     }
                 }
@@ -1158,7 +1128,7 @@ private:
     float *m_host_grid_data = nullptr;
 
     // Non-empty bounding boxes and corresponding indices
-    StorageBoundingBoxFloat m_jit_bboxes;
+    InputFloat m_jit_bboxes;
     UInt32 m_jit_voxel_indices;
 
     // Pointers to non-empty bounding boxes and corresponding indices
