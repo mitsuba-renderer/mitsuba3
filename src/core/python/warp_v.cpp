@@ -79,6 +79,18 @@ MI_PY_EXPORT(warp) {
           warp::square_to_uniform_sphere_pdf<false, Float>,
           "v"_a, D(warp, square_to_uniform_sphere_pdf));
 
+    m.def("cube_to_uniform_sphere",
+          warp::cube_to_uniform_sphere<Float>,
+          "sample"_a, D(warp, cube_to_uniform_sphere));
+
+    m.def("uniform_sphere_to_cube",
+          warp::uniform_sphere_to_cube<Float>,
+          "sample"_a, D(warp, uniform_sphere_to_cube));
+
+    m.def("cube_to_uniform_sphere_pdf",
+          warp::cube_to_uniform_sphere_pdf<false, Float>,
+          "v"_a, D(warp, cube_to_uniform_sphere_pdf));
+
     m.def("square_to_uniform_spherical_lune",
           warp::square_to_uniform_spherical_lune<Float>,
           "sample"_a, "n1"_a, "n2"_a,

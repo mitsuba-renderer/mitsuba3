@@ -63,6 +63,11 @@ Sampler<Float, Spectrum>::next_2d(Mask) {
     NotImplementedError("next_2d");
 }
 
+MI_VARIANT typename Sampler<Float, Spectrum>::Point3f
+Sampler<Float, Spectrum>::next_3d(Mask) {
+    NotImplementedError("next_3d");
+}
+
 MI_VARIANT void Sampler<Float, Spectrum>::schedule_state() {
     dr::schedule(m_sample_index, m_dimension_index);
 }

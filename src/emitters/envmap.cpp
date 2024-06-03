@@ -354,13 +354,13 @@ public:
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
-                                          const Point2f &sample2,
+                                          const Point3f &sample2,
                                           const Point2f &sample3,
                                           Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         // 1. Sample spatial component
-        Point2f offset = warp::square_to_uniform_disk_concentric(sample2);
+        Point2f offset = warp::square_to_uniform_disk_concentric(Point2f(sample2.x(), sample2.y()));
 
         // 2. Sample directional component
         auto [uv, pdf] = m_warp.sample(sample3, nullptr, active);
@@ -403,11 +403,11 @@ public:
     }
 
     std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &it, const Point2f &sample,
+    sample_direction(const Interaction3f &it, const Point3f &sample,
                      Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
-        auto [uv, pdf] = m_warp.sample(sample, nullptr, active);
+        auto [uv, pdf] = m_warp.sample(Point2f(sample.x(), sample.y()), nullptr, active);
         uv.x() += .5f / (m_data.shape(1) - 1);
         active &= pdf > 0.f;
 
@@ -484,7 +484,7 @@ public:
     }
 
     std::pair<PositionSample3f, Float>
-    sample_position(Float /*time*/, const Point2f & /*sample*/,
+    sample_position(Float /*time*/, const Point3f & /*sample*/,
                     Mask /*active*/) const override {
         if constexpr (dr::is_jit_v<Float>) {
             /* Do not throw an exception in JIT-compiled variants. This

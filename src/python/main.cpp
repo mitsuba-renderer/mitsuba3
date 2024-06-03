@@ -33,6 +33,7 @@ MI_PY_DECLARE(util);
 // render
 MI_PY_DECLARE(BSDFContext);
 MI_PY_DECLARE(EmitterExtras);
+MI_PY_DECLARE(MediumExtras);
 MI_PY_DECLARE(RayFlags);
 MI_PY_DECLARE(MicrofacetType);
 MI_PY_DECLARE(PhaseFunctionExtras);
@@ -138,6 +139,7 @@ PYBIND11_MODULE(mitsuba_ext, m) {
 
     MI_PY_IMPORT(BSDFContext);
     MI_PY_IMPORT(EmitterExtras);
+    MI_PY_IMPORT(MediumExtras);
     MI_PY_IMPORT(RayFlags);
     MI_PY_IMPORT(MicrofacetType);
     MI_PY_IMPORT(PhaseFunctionExtras);

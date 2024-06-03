@@ -191,7 +191,7 @@ public:
 
     std::pair<Ray3f, Spectrum>
     sample_ray(Float time, Float wavelength_sample,
-                    const Point2f & /*film_sample*/,
+                    const Point3f & /*film_sample*/,
                     const Point2f &aperture_sample, Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
@@ -217,8 +217,8 @@ public:
             ray_weight = wav_weight;
         } else if constexpr (TargetType == RayTargetType::Shape) {
             // Use area-based sampling of shape
-            PositionSample3f ps =
-                m_target_shape->sample_position(time, aperture_sample, active);
+            PositionSample3f ps = m_target_shape->sample_position_surface(
+                time, aperture_sample, active);
             ray.o = ps.p - 2.f * ray.d * m_bsphere.radius;
             ray_weight = wav_weight / (ps.pdf * m_target_shape->surface_area());
         } else { // if constexpr (TargetType == RayTargetType::None) {
@@ -235,7 +235,7 @@ public:
     }
 
     std::pair<RayDifferential3f, Spectrum> sample_ray_differential(
-        Float time, Float wavelength_sample, const Point2f &film_sample,
+        Float time, Float wavelength_sample, const Point3f &film_sample,
         const Point2f &aperture_sample, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 

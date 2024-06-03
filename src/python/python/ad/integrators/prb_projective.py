@@ -138,7 +138,7 @@ class PathProjectiveIntegrator(PSIntegrator):
                project: bool = False,
                si_shade: Optional[mi.SurfaceInteraction3f] = None,
                **kwargs # Absorbs unused arguments
-    ) -> Tuple[mi.Spectrum, mi.Bool, List[mi.Float], Any]:
+               ) -> Tuple[mi.Spectrum, mi.Bool, List[mi.Float], Any]:
         """
         See ``PSIntegrator.sample()`` for a description of this interface and
         the role of the various parameters and return values.
@@ -225,10 +225,12 @@ class PathProjectiveIntegrator(PSIntegrator):
 
             # Is emitter sampling even possible on the current vertex?
             active_em = active_next & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth)
+            sample_ = sampler.next_2d(active_em)
+            sample_ = mi.Point3f(sample_.x, sample_.y, 0.0)
 
             # If so, randomly sample an emitter without derivative tracking.
             ds, em_weight = scene.sample_emitter_direction(
-                si, sampler.next_2d(), True, active_em)
+                si, sample_, True, active_em)
             active_em &= dr.neq(ds.pdf, 0.0)
 
             with dr.resume_grad(when=not primal):
@@ -287,14 +289,14 @@ class PathProjectiveIntegrator(PSIntegrator):
                     # Directions towards the interior have no contribution
                     # unless we hit a transmissive BSDF
                     active_seed_cand &= (dr.dot(si.n, ray_seed_cand.d) > 0) | \
-                                         mi.has_flag(bsdf.flags(), mi.BSDFFlags.Transmission)
+                                        mi.has_flag(bsdf.flags(), mi.BSDFFlags.Transmission)
                 elif self.project_seed == "both":
                     # By default we use the BSDF sample as the seed ray
                     ray_seed_cand = ray
 
                     # Flip a coin only when the emitter sample is valid
                     mask_replace = (dr.dot(si.n, ray_seed_cand.d) > 0) | \
-                                    mi.has_flag(bsdf.flags(), mi.BSDFFlags.Transmission)
+                                   mi.has_flag(bsdf.flags(), mi.BSDFFlags.Transmission)
                     mask_replace &= sampler.next_1d(active_seed_cand) > 0.5
                     ray_seed_cand[mask_replace] = si.spawn_ray_to(ds.p)
                     ray_seed_cand.maxt = dr.largest(mi.Float)
@@ -380,7 +382,7 @@ class PathProjectiveIntegrator(PSIntegrator):
             L if primal else δL, # Radiance/differential radiance
             dr.neq(depth, 0),    # Ray validity flag for alpha blending
             [],                  # Empty tuple of AOVs.
-                                 # Seed rays, or the state for the differential phase
+            # Seed rays, or the state for the differential phase
             [dr.detach(ray_seed), active_seed] if project else L
         )
 
@@ -491,8 +493,10 @@ class PathProjectiveIntegrator(PSIntegrator):
             active_connect = active_loop & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth)
 
             # Sample a direction from the current vertex towards the sensor
+            sample_ = sampler.next_2d(active_connect)
+            sample_ = mi.Point3f(sample_.x, sample_.y, 0)
             sensor_ds, sensor_weight = sensor.sample_direction(
-                si_loop, sampler.next_2d(active_connect), active_connect)
+                si_loop, sample_, active_connect)
             active_connect &= (sensor_ds.pdf > 0) & dr.any(sensor_weight > 0)
 
             # Check that the sensor is visible from the current vertex (shadow test)
@@ -537,8 +541,10 @@ class PathProjectiveIntegrator(PSIntegrator):
         active_found = active & (cnt_valid > 0)
 
         # Re-compute the importance weight
+        sample_ = sampler.next_2d(active_found)
+        sample_ = mi.Point3f(sample_.x, sample_.y, 0.0)
         sensor_ds, sensor_weight = sensor.sample_direction(
-            si_cam, sampler.next_2d(active_found), active_found)
+            si_cam, sample_, active_found)
         W *= sensor_weight / sensor_ds.pdf
 
         # Include the camera ray intersection BSDF

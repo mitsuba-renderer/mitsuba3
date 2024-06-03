@@ -9,19 +9,24 @@ def check_uniform_scalar_sampler(sampler, res=16, atol=0.5):
 
     hist_1d = np.zeros(res)
     hist_2d = np.zeros((res, res))
+    hist_3d = np.zeros((res, res, res))
 
     for i in range(sample_count):
         v_1d = sampler.next_1d()
         hist_1d[int(v_1d * res)] += 1
         v_2d = sampler.next_2d()
         hist_2d[int(v_2d.x * res), int(v_2d.y * res)] += 1
+        v_3d = sampler.next_3d()
+        hist_3d[int(v_3d.x * res), int(v_3d.y * res), int(v_3d.z * res)] += 1
         sampler.advance()
 
     # print(hist_1d)
     # print(hist_2d)
+    # print(hist_3d)
 
     assert dr.allclose(hist_1d, float(sample_count) / res, atol=atol)
     assert dr.allclose(hist_2d, float(sample_count) / (res * res), atol=atol)
+    assert dr.allclose(hist_3d, float(sample_count) / (res * res * res), atol=atol)
 
 
 def check_uniform_wavefront_sampler(sampler, res=16, atol=0.5):
@@ -34,6 +39,7 @@ def check_uniform_wavefront_sampler(sampler, res=16, atol=0.5):
 
     hist_1d = dr.zeros(mi.UInt32, res)
     hist_2d = dr.zeros(mi.UInt32, res * res)
+    hist_3d = dr.zeros(mi.UInt32, res * res * res)
 
     v_1d = dr.clamp(sampler.next_1d() * res, 0, res)
     dr.scatter_reduce(
@@ -51,8 +57,21 @@ def check_uniform_wavefront_sampler(sampler, res=16, atol=0.5):
         mi.UInt32(v_2d.x * res + v_2d.y)
     )
 
+    v_3d = mi.Vector3u(dr.clamp(sampler.next_3d() * res, 0, res))
+    dr.scatter_reduce(
+        dr.ReduceOp.Add,
+        hist_3d,
+        mi.UInt32(1),
+        mi.UInt32((v_3d.x * res + v_3d.y) * res + v_3d.z)
+    )
+
+    # print(hist_1d)
+    # print(hist_2d)
+    # print(hist_3d)
+
     assert dr.allclose(mi.Float(hist_1d), float(sample_count) / res, atol=atol)
     assert dr.allclose(mi.Float(hist_2d), float(sample_count) / (res * res), atol=atol)
+    assert dr.allclose(mi.Float(hist_3d), float(sample_count) / (res * res * res), atol=atol)
 
 
 def check_deep_copy_sampler_scalar(sampler1):
@@ -63,12 +82,14 @@ def check_deep_copy_sampler_scalar(sampler1):
     for i in range(5):
         sampler1.next_1d()
         sampler1.next_2d()
+        sampler1.next_3d()
 
     sampler2 = sampler1.clone()
 
     for i in range(10):
         assert dr.all(sampler1.next_1d() == sampler2.next_1d())
         assert dr.all(sampler1.next_2d() == sampler2.next_2d())
+        assert dr.all(sampler1.next_3d() == sampler2.next_3d())
 
 
 def check_deep_copy_sampler_wavefront(sampler1, factor=16):
@@ -83,9 +104,12 @@ def check_deep_copy_sampler_wavefront(sampler1, factor=16):
         sampler1.next_1d()
         sampler1.advance()
         sampler1.next_2d()
+        sampler1.advance()
+        sampler1.next_3d()
 
     sampler2 = sampler1.clone()
 
     for i in range(10):
         assert dr.all(sampler1.next_1d() == sampler2.next_1d())
         assert dr.all(sampler1.next_2d() == sampler2.next_2d())
+        assert dr.all(sampler1.next_3d() == sampler2.next_3d())

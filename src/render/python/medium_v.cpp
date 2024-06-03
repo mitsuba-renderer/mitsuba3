@@ -39,6 +39,7 @@ public:
     }
 
     using Medium::m_sample_emitters;
+    using Medium::m_medium_sampling_mode;
     using Medium::m_is_homogeneous;
     using Medium::m_has_spectral_extinction;
 };
@@ -49,20 +50,31 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
     cls.def("phase_function",
             [](Ptr ptr) { return ptr->phase_function(); },
             D(Medium, phase_function))
+       .def("emitter",
+            [](Ptr ptr) { return ptr->emitter(); },
+            D(Medium, emitter))
        .def("use_emitter_sampling",
             [](Ptr ptr) { return ptr->use_emitter_sampling(); },
             D(Medium, use_emitter_sampling))
        .def("is_homogeneous",
             [](Ptr ptr) { return ptr->is_homogeneous(); },
             D(Medium, is_homogeneous))
+       .def("is_emitter",
+            [](Ptr ptr) { return ptr->is_emitter(); },
+            D(Medium, is_emitter))
        .def("has_spectral_extinction",
             [](Ptr ptr) { return ptr->has_spectral_extinction(); },
             D(Medium, has_spectral_extinction))
-       .def("get_majorant",
+        .def("get_majorant",
             [](Ptr ptr, const MediumInteraction3f &mi, Mask active) {
                 return ptr->get_majorant(mi, active); },
             "mi"_a, "active"_a=true,
             D(Medium, get_majorant))
+        .def("get_radiance",
+            [](Ptr ptr, const MediumInteraction3f &mi, Mask active) {
+                return ptr->get_radiance(mi, active); },
+            "mi"_a, "active"_a=true,
+            D(Medium, get_radiance))
        .def("intersect_aabb",
             [](Ptr ptr, const Ray3f &ray) {
                 return ptr->intersect_aabb(ray); },
@@ -83,7 +95,12 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
             [](Ptr ptr, const MediumInteraction3f &mi, Mask active = true) {
                 return ptr->get_scattering_coefficients(mi, active); },
             "mi"_a, "active"_a=true,
-            D(Medium, get_scattering_coefficients));
+            D(Medium, get_scattering_coefficients))
+       .def("get_interaction_probabilities",
+            [](Ptr ptr, const Spectrum &radiance, const MediumInteraction3f &mei, const Spectrum &throughput) {
+                return ptr->get_interaction_probabilities(radiance, mei, throughput); },
+            "radiance"_a, "mei"_a, "throughput"_a,
+            D(Medium, get_interaction_probabilities));
 
     if constexpr (dr::is_array_v<Ptr>)
         bind_drjit_ptr_array(cls);
@@ -101,6 +118,13 @@ MI_PY_EXPORT(Medium) {
                 [](PyMedium &medium, bool value){
                     medium.m_sample_emitters = value;
                     dr::set_attr(&medium, "sample_emitters", value);
+                }
+            )
+            .def_property("m_medium_sampling_mode",
+                [](PyMedium &medium){ return medium.m_medium_sampling_mode; },
+                [](PyMedium &medium, uint32_t medium_sampling_mode){
+                    medium.m_medium_sampling_mode = (MediumEventSamplingMode) medium_sampling_mode;
+                    dr::set_attr(&medium, "medium_sampling_mode", medium_sampling_mode);
                 }
             )
             .def_property("m_is_homogeneous",

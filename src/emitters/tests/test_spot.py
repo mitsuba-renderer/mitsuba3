@@ -72,7 +72,7 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelen
                       < 1e-3, cutoff_angle_rad, angle)
 
     # Sample a direction from the emitter
-    ds, res = emitter.sample_direction(it, [0, 0])
+    ds, res = emitter.sample_direction(it, [0, 0, 0])
 
     # Evaluate the spectrum
     spec = spectrum.eval(it)
@@ -89,7 +89,7 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelen
 
 @pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
 @pytest.mark.parametrize("wavelength_sample", [0.7])
-@pytest.mark.parametrize("pos_sample", [[0.4, 0.5], [0.1, 0.4]])
+@pytest.mark.parametrize("pos_sample", [[0.4, 0.5, 0.0], [0.1, 0.4, 0.0]])
 @pytest.mark.parametrize("cutoff_angle", [20, 80])
 @pytest.mark.parametrize("lookat", lookat_transforms)
 def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_sample, cutoff_angle, lookat):
@@ -105,8 +105,8 @@ def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_
     trafo = mi.Transform4f(emitter.world_transform())
 
     # Sample a local direction and calculate local angle
-    dir_sample = pos_sample  # not being used anyway
-    local_dir = mi.warp.square_to_uniform_cone(pos_sample, cos_cutoff_angle_rad)
+    dir_sample = pos_sample[:2]  # not being used anyway
+    local_dir = mi.warp.square_to_uniform_cone(pos_sample[:2], cos_cutoff_angle_rad)
     angle = dr.acos(local_dir[2])
     angle = dr.select(dr.abs(angle - beam_width_rad)
                       < 1e-3, beam_width_rad, angle)

@@ -31,7 +31,7 @@ def test01_chi2(variants_vec_backends_once_rgb, iteration):
         domain=mi.chi2.SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
-        sample_dim=2,
+        sample_dim=3,
         ires=32
     )
 
@@ -41,9 +41,10 @@ def test01_chi2(variants_vec_backends_once_rgb, iteration):
 # challenging case (envmap zero, with one pixel turned on)
 def test02_sampling_weights(variants_vec_backends_once_rgb):
     rng = mi.PCG32(size=102400)
-    sample = mi.Point2f(
+    sample = mi.Point3f(
         rng.next_float32(),
-        rng.next_float32())
+        rng.next_float32(),
+        0.0)
     sample_2 = mi.Point2f(
         rng.next_float32(),
         rng.next_float32())
@@ -82,9 +83,10 @@ def test02_sampling_weights(variants_vec_backends_once_rgb):
 
 def test03_load_bitmap(variants_all_rgb):
     rng = mi.PCG32(size=102400)
-    sample = mi.Point2f(
+    sample = mi.Point3f(
         rng.next_float32(),
-        rng.next_float32())
+        rng.next_float32(),
+        0.0)
     sample_2 = mi.Point2f(
         rng.next_float32(),
         rng.next_float32())

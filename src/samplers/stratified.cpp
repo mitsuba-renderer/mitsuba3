@@ -79,13 +79,13 @@ public:
     void set_sample_count(uint32_t spp) override {
         // Make sure sample_count is a square number
         m_resolution = 1;
-        while (dr::sqr(m_resolution) < spp)
+        while ((dr::sqr(m_resolution)*m_resolution) < spp)
             m_resolution++;
 
-        if (spp != dr::sqr(m_resolution))
-            Log(Warn, "Sample count should be square and power of two, rounding to %i", dr::sqr(m_resolution));
+        if (spp != (dr::sqr(m_resolution)*m_resolution))
+            Log(Warn, "Sample count should be cube and power of two, rounding to %i", dr::sqr(m_resolution)*m_resolution);
 
-        m_sample_count = dr::sqr(m_resolution);
+        m_sample_count = dr::sqr(m_resolution)*m_resolution;
         m_inv_sample_count = dr::rcp(ScalarFloat(m_sample_count));
         m_inv_resolution   = dr::rcp(ScalarFloat(m_resolution));
         m_resolution_div = m_resolution;
@@ -138,6 +138,7 @@ public:
         UInt32 p = permute_kensler(sample_indices, m_sample_count, perm_seed, active);
 
         // Map the index to its 2D cell
+        p = m_resolution_div(p);
         UInt32 y = m_resolution_div(p);  // p / m_resolution
         UInt32 x = p - y * m_resolution; // p % m_resolution
 
@@ -150,6 +151,32 @@ public:
 
         // Construct the final 2D point
         return Point2f(x + jx, y + jy) * m_inv_resolution;
+    }
+
+    Point3f next_3d(Mask active = true) override {
+        Assert(seeded());
+
+        UInt32 sample_indices = current_sample_index();
+        UInt32 perm_seed = m_permutation_seed + m_dimension_index++;
+
+        // Shuffle the samples order
+        UInt32 p = permute_kensler(sample_indices, m_sample_count, perm_seed, active);
+
+        // Map the index to its 3D cell
+        UInt32 z = m_resolution_div(m_resolution_div(p)); // s / (m_resolution * m_resolution)
+        UInt32 y = m_resolution_div(p - z * m_resolution * m_resolution); // (s % (m_resolution * m_resolution)) / m_resolution
+        UInt32 x = p - y * m_resolution - z * m_resolution * m_resolution; // (s % (m_resolution * m_resolution)) % m_resolution
+
+        // Add a random perturbation
+        Float jx = .5f, jy = .5f, jz = .5f;
+        if (m_jitter) {
+            jx = m_rng.template next_float<Float>(active);
+            jy = m_rng.template next_float<Float>(active);
+            jz = m_rng.template next_float<Float>(active);
+        }
+
+        // Construct the final 2D point
+        return Point3f(x + jx, y + jy, z + jz) * m_inv_resolution;
     }
 
     void schedule_state() override {

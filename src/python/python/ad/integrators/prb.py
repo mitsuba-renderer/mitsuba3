@@ -146,8 +146,9 @@ class PRBIntegrator(RBIntegrator):
             active_em = active_next & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth)
 
             # If so, randomly sample an emitter without derivative tracking.
+            direction_sample = sampler.next_2d()
             ds, em_weight = scene.sample_emitter_direction(
-                si, sampler.next_2d(), True, active_em)
+                si, mi.Point3f(direction_sample.x, direction_sample.y, 0.0), True, active_em)
             active_em &= dr.neq(ds.pdf, 0.0)
 
             with dr.resume_grad(when=not primal):

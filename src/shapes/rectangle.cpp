@@ -163,7 +163,7 @@ public:
     //! @{ \name Sampling routines
     // =============================================================
 
-    PositionSample3f sample_position(Float time, const Point2f &sample,
+    PositionSample3f sample_position_surface(Float time, const Point2f &sample,
                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
@@ -179,7 +179,7 @@ public:
         return ps;
     }
 
-    Float pdf_position(const PositionSample3f & /*ps*/, Mask active) const override {
+    Float pdf_position_surface(const PositionSample3f & /*ps*/, Mask active) const override {
         MI_MASK_ARGUMENT(active);
         return m_inv_surface_area;
     }

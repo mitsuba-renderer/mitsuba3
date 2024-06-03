@@ -8,7 +8,7 @@ from .utils import ( check_uniform_scalar_sampler, check_uniform_wavefront_sampl
 def test01_ldsampler_scalar(variant_scalar_rgb):
     sampler = mi.load_dict({
         "type" : "ldsampler",
-        "sample_count" : 1024,
+        "sample_count" : 4096,
     })
     sampler.seed(0)
 
@@ -18,9 +18,9 @@ def test01_ldsampler_scalar(variant_scalar_rgb):
 def test02_ldsampler_wavefront(variants_vec_backends_once):
     sampler = mi.load_dict({
         "type" : "ldsampler",
-        "sample_count" : 1024,
+        "sample_count" : 4096,
     })
-    sampler.seed(0, 1024)
+    sampler.seed(0, 4096)
 
     check_uniform_wavefront_sampler(sampler)
 
