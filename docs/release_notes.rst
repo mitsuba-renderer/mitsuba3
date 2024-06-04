@@ -8,9 +8,9 @@ strive to document breaking API changes in the release notes below.
 Incoming changes
 ----------------
 
-Most likely the last release relying on Pybind11
+Most likely the last release which uses `pybind11 <https://pybind11.readthedocs.io>`_.
 
-- Upgrade Dr.Jit to ...
+- Upgrade Dr.Jit to `[v0.4.6] <https://github.com/mitsuba-renderer/drjit/releases/tag/v0.4.6>`_
 - More robust scene clean-up when using Embree
   `[7bb672c] <https://github.com/mitsuba-renderer/mitsuba3/commit/7bb672c32d64ad9a4996d3c7700d445d2c5750bc>`_
 - Support for AOV fields in Python AD integrators
