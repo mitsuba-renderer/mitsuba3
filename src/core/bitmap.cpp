@@ -1250,7 +1250,7 @@ void Bitmap::read_exr(Stream *stream) {
         };
 
         switch (m_component_format) {
-            case Struct::Type::Float16: convert((dr::half *) m_data.get()); break;
+            case Struct::Type::Float16: convert((dr::half *)    m_data.get()); break;
             case Struct::Type::Float32: convert((float *)       m_data.get()); break;
             case Struct::Type::UInt32:  convert((uint32_t*)     m_data.get()); break;
             default: Throw("Internal error!");

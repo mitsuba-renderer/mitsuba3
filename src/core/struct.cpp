@@ -1572,7 +1572,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
                 uint16_t val = *((const uint16_t *) src);
                 if (source_swap)
                     val = detail::swap(val);
-                value.s = dr::half(val).value;
+                value.s = (float)dr::half::from_binary(val);
                 value.type = Struct::Type::Float32;
             }
             break;
