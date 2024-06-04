@@ -23,7 +23,7 @@ jobs:
   build_wheels:
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-latest, macos-latest]
+        os: [ubuntu-20.04, windows-latest, macos-13]
         python: [cp38, cp39, cp310, cp311, cp312]
         cibw-arch: [x86_64, arm64]
         exclude:
@@ -35,7 +35,7 @@ jobs:
 
     name: >
       ${{ matrix.python }} wheel for ${{ matrix.os }}
-      ${{ (matrix.os == 'macos-latest' && format('({0})', matrix.cibw-arch)) || '' }}
+      ${{ (matrix.os == 'macos-13' && format('({0})', matrix.cibw-arch)) || '' }}
     runs-on: ${{ matrix.os }}
 
     steps:
