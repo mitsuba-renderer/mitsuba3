@@ -580,7 +580,8 @@ MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
                 /* Decrease the reference count of the pipeline JIT variable.
                    This will trigger the release of the OptiX pipeline data
                    structure if no ray tracing calls are pending. */
-                (void) UInt32::steal(config.pipeline_jit_index);
+                if (jit_has_backend(JitBackend::CUDA))
+                    (void) UInt32::steal(config.pipeline_jit_index);
 
                 for (size_t i = 0; i < 2 * OPTIX_SHAPE_TYPE_COUNT; i++)
                     free(config.custom_shapes_program_names[i]);
