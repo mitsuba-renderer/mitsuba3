@@ -5,8 +5,10 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`_ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
-Upcoming changes
+Mitsuba 3.5.2
 -------------
+
+*June 5, 2024*
 
 Most likely the last release which uses `pybind11 <https://pybind11.readthedocs.io>`_.
 
@@ -15,6 +17,8 @@ Most likely the last release which uses `pybind11 <https://pybind11.readthedocs.
 
 Mitsuba 3.5.1
 -------------
+
+*June 5, 2024*
 
 - Upgrade Dr.Jit to `[v0.4.6] <https://github.com/mitsuba-renderer/drjit/releases/tag/v0.4.6>`_
 - More robust scene clean-up when using Embree
@@ -39,6 +43,8 @@ Mitsuba 3.5.1
 
 Mitsuba 3.5.0
 -------------
+
+*December 11, 2023*
 
 - New projective sampling based integrators, see PR `#997 <https://github.com/mitsuba-renderer/mitsuba3/pull/997>`_ for more details.
   Here's a brief overview of some of the major or breaking changes:
