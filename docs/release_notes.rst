@@ -5,8 +5,9 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`_ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
-Incoming changes
-----------------
+
+Mitsuba 3.5.1
+-------------
 
 Most likely the last release which uses `pybind11 <https://pybind11.readthedocs.io>`_.
 
