@@ -5,11 +5,16 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`_ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
-
-Mitsuba 3.5.1
+Upcoming changes
 -------------
 
 Most likely the last release which uses `pybind11 <https://pybind11.readthedocs.io>`_.
+
+- OptiX scene clean-ups could segfault
+  `[03f5e13] <https://github.com/mitsuba-renderer/mitsuba3/commit/03f5e1362d0cf1cc8c4edbd6e0e7bfd5ee8705a0>`_
+
+Mitsuba 3.5.1
+-------------
 
 - Upgrade Dr.Jit to `[v0.4.6] <https://github.com/mitsuba-renderer/drjit/releases/tag/v0.4.6>`_
 - More robust scene clean-up when using Embree
