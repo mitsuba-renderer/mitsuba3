@@ -4752,12 +4752,7 @@
         However, the ability to re-evaluate the contribution of a generated
         sample is important for differentiable rendering. For example, we
         might want to track derivatives in the sampled direction (``ds.d``)
-        without also differentiating the sampling technique. Alternatively (or
-        additionally), it may be necessary to apply a spherical
-        reparameterization to ``ds.d`` to handle visibility-induced
-        discontinuities during differentiation. Both steps require re-
-        evaluating the contribution of the emitter while tracking derivative
-        information through the calculation.
+        without also differentiating the sampling technique.
 
         In contrast to pdf_direction(), evaluating this function can yield a
         nonzero result in the case of emission profiles containing a Dirac
@@ -5173,12 +5168,7 @@
         However, the ability to re-evaluate the contribution of a generated
         sample is important for differentiable rendering. For example, we
         might want to track derivatives in the sampled direction (``ds.d``)
-        without also differentiating the sampling technique. Alternatively (or
-        additionally), it may be necessary to apply a spherical
-        reparameterization to ``ds.d`` to handle visibility-induced
-        discontinuities during differentiation. Both steps require re-
-        evaluating the contribution of the emitter while tracking derivative
-        information through the calculation.
+        without also differentiating the sampling technique.
 
         In contrast to pdf_direction(), evaluating this function can yield a
         nonzero result in the case of emission profiles containing a Dirac
@@ -12607,7 +12597,11 @@
 
     2. __init__(self: :py:obj:`mitsuba.llvm_ad_rgb.Mesh`, name: str, vertex_count: int, face_count: int, props: :py:obj:`mitsuba.llvm_ad_rgb.Properties` = Properties(), has_vertex_normals: bool = False, has_vertex_texcoords: bool = False) -> None
 
-    Create a new mesh with the given vertex and face data structures
+    Creates a zero-initialized mesh with the given vertex and face counts
+
+    The vertex and face buffers can be filled using the ``mi.traverse``
+    mechanism. When initializing these buffers through another method, an
+    explicit call to initialize must be made once all buffers are filled.
 
     .. py:method:: mitsuba.Mesh.add_attribute(self, name, size, buffer)
 
@@ -12661,7 +12655,11 @@
 
     .. py:method:: mitsuba.Mesh.initialize(self)
 
-        Must be called at the end of the constructor of Mesh plugins
+        Must be called once at the end of the construction of a Mesh
+
+        This method computes internal data structures and notifies the parent
+        sensor or emitter (if there is one) that this instance is their
+        internal shape.
 
         Returns → None:
             *no description available*
@@ -17175,11 +17173,6 @@
         illumination sample is important for differentiable rendering. For
         example, we might want to track derivatives in the sampled direction
         (``ds.d``) without also differentiating the sampling technique.
-        Alternatively (or additionally), it may be necessary to apply a
-        spherical reparameterization to ``ds.d`` to handle visibility-induced
-        discontinuities during differentiation. Both steps require re-
-        evaluating the contribution of the emitter while tracking derivative
-        information through the calculation.
 
         In contrast to pdf_emitter_direction(), evaluating this function can
         yield a nonzero result in the case of emission profiles containing a
@@ -17793,12 +17786,7 @@
         However, the ability to re-evaluate the contribution of a generated
         sample is important for differentiable rendering. For example, we
         might want to track derivatives in the sampled direction (``ds.d``)
-        without also differentiating the sampling technique. Alternatively (or
-        additionally), it may be necessary to apply a spherical
-        reparameterization to ``ds.d`` to handle visibility-induced
-        discontinuities during differentiation. Both steps require re-
-        evaluating the contribution of the emitter while tracking derivative
-        information through the calculation.
+        without also differentiating the sampling technique.
 
         In contrast to pdf_direction(), evaluating this function can yield a
         nonzero result in the case of emission profiles containing a Dirac
@@ -18196,12 +18184,7 @@
         However, the ability to re-evaluate the contribution of a generated
         sample is important for differentiable rendering. For example, we
         might want to track derivatives in the sampled direction (``ds.d``)
-        without also differentiating the sampling technique. Alternatively (or
-        additionally), it may be necessary to apply a spherical
-        reparameterization to ``ds.d`` to handle visibility-induced
-        discontinuities during differentiation. Both steps require re-
-        evaluating the contribution of the emitter while tracking derivative
-        information through the calculation.
+        without also differentiating the sampling technique.
 
         In contrast to pdf_direction(), evaluating this function can yield a
         nonzero result in the case of emission profiles containing a Dirac
@@ -18853,8 +18836,8 @@
 
     .. py:method:: mitsuba.Shape.parameters_grad_enabled(self)
 
-        Return whether any shape's parameters require gradients (default
-        return false)
+        Return whether any shape's parameters that introduce visibility
+        discontinuities require gradients (default return false)
 
         Returns → bool:
             *no description available*
@@ -29974,11 +29957,11 @@
             Direction of travel for input Stokes vector (normalized)
 
         Parameter ``out_basis_current`` (:py:obj:`mitsuba.Vector3f`):
-            Current (normalized) input Stokes basis. Must be orthogonal to
+            Current (normalized) output Stokes basis. Must be orthogonal to
             ``out_forward``.
 
         Parameter ``out_basis_target`` (:py:obj:`mitsuba.Vector3f`):
-            Target (normalized) input Stokes basis. Must be orthogonal to
+            Target (normalized) output Stokes basis. Must be orthogonal to
             ``out_forward``.
 
         Returns → drjit.llvm.ad.Matrix4f:
@@ -30014,11 +29997,11 @@
             Direction of travel for input Stokes vector (normalized)
 
         Parameter ``out_basis_current`` (:py:obj:`mitsuba.Vector3f`):
-            Current (normalized) input Stokes basis. Must be orthogonal to
+            Current (normalized) output Stokes basis. Must be orthogonal to
             ``out_forward``.
 
         Parameter ``out_basis_target`` (:py:obj:`mitsuba.Vector3f`):
-            Target (normalized) input Stokes basis. Must be orthogonal to
+            Target (normalized) output Stokes basis. Must be orthogonal to
             ``out_forward``.
 
         Returns → drjit::Matrix<:py:obj:`mitsuba.Color`:
