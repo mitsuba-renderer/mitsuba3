@@ -304,39 +304,26 @@ template <typename Point_> struct BoundingBox {
         using Float  = typename Ray::Float;
         using Vector = typename Ray::Vector;
 
-        /**
-            An Efficient and Robust Ray–Box Intersection Algorithm.
-            Amy Williams et al. 2004.
-        */
+        /* First, ensure that the ray either has a nonzero slope on each axis,
+           or that its origin on a zero-valued axis is within the box bounds */
+        auto active = dr::all(dr::neq(ray.d, dr::zeros<Vector>()) || ((ray.o > min) || (ray.o < max)));
 
-        // Ensure that the ray either has a nonzero slope on each axis
-        auto active = dr::any(dr::neq(ray.d, dr::zeros<Vector>()));
-        
-        Vector d_rcp = dr::rcp(ray.d);
+        // Compute intersection intervals for each axis
+        Vector d_rcp = dr::rcp(ray.d),
+               t1 = (min - ray.o) * d_rcp,
+               t2 = (max - ray.o) * d_rcp;
 
-        Vector t_min = (dr::select(d_rcp >= 0, min, max) - ray.o) * d_rcp,
-               t_max = (dr::select(d_rcp >= 0, max, min) - ray.o) * d_rcp;
+        // Ensure proper ordering
+        Vector t1p = dr::minimum(t1, t2),
+               t2p = dr::maximum(t1, t2);
 
-        // Nan-safe minimum/maximum
-        auto maximum_safe = [&](Float a, Float b){
-            return dr::select(a > b || !dr::isfinite(b), a, b);
-        };
+        // Intersect intervals
+        Float mint = dr::max(t1p),
+              maxt = dr::min(t2p);
 
-        auto minimum_safe = [&](Float a, Float b){
-            return dr::select(a < b || !dr::isfinite(b), a, b);
-        };
+        active = active && maxt >= mint;
 
-        active = active && !((t_min.x() > t_max.y()) || (t_min.y() > t_max.x()));
-
-        t_min.x() = maximum_safe(t_min.x(), t_min.y());
-        t_max.x() = minimum_safe(t_max.x(), t_max.y());
-
-        active = active && !((t_min.x() > t_max.z()) || (t_min.z() > t_max.x()));
-
-        t_min.x() = maximum_safe(t_min.x(), t_min.z());
-        t_max.x() = minimum_safe(t_max.x(), t_max.z());
-
-        return std::make_tuple(active, t_min.x(), t_max.x());
+        return std::make_tuple(active, mint, maxt);
     }
 
     /// Create a bounding sphere, which contains the axis-aligned box

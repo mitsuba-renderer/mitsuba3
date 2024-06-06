@@ -189,7 +189,7 @@ class ProjectiveDetail():
 
         # Call sample() to get the seed rays
         ray, _, _ = parent.sample_rays(scene, sensor, sampler)
-        _, _, _, (ray_seed, active) = parent.sample(
+        _, _, (ray_seed, active) = parent.sample(
             mode     = dr.ADMode.Primal,
             scene    = scene,
             sampler  = sampler,
@@ -274,7 +274,7 @@ class ProjectiveDetail():
         self.guiding_distr = mi.ad.GridDistr(
             parent.guiding_grid_reso,
             parent.clamp_mass_thres,
-            parent.scale_mass,
+            parent.sqrt_scale_mass,
             mi.log_level() == mi.LogLevel.Debug,
         )
 
@@ -314,7 +314,7 @@ class ProjectiveDetail():
         self.guiding_distr = mi.ad.GridDistr(
             parent.guiding_grid_reso,
             parent.clamp_mass_thres,
-            parent.scale_mass,
+            parent.sqrt_scale_mass,
             mi.log_level() == mi.LogLevel.Debug
         )
 
@@ -390,7 +390,7 @@ class ProjectiveDetail():
             parent.clamp_mass_thres,
             parent.octree_highres_x_slices,
             parent.octree_scatter_inc,
-            parent.scale_mass,
+            parent.sqrt_scale_mass,
             mi.log_level() == mi.LogLevel.Debug
         )
 

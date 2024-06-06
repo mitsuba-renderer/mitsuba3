@@ -73,10 +73,6 @@ class DirectProjectiveIntegrator(PSIntegrator):
     It is functionally equivalent with `prb_projective` when `max_depth` is set
     to be 2.
 
-    .. warning::
-        This integrator is not supported in variants which track polarization
-        states.
-
     .. tabs::
 
         .. code-tab:: python
@@ -119,7 +115,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
                project: bool = False,
                si_shade: Optional[mi.SurfaceInteraction3f] = None,
                **kwargs # Absorbs unused arguments
-    ) -> Tuple[mi.Spectrum, mi.Bool, List[mi.Float], Any]:
+    ) -> Tuple[mi.Spectrum, mi.Bool, Any]:
         """
         See ``PSIntegrator.sample()`` for a description of this interface and
         the role of the various parameters and return values.
@@ -177,6 +173,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
             # phase
             if not primal:
                 # Re-compute attached `emitter_val` to enable emitter optimization
+                # TODO: zz: do we really need this?
                 ds_em.d = dr.normalize(ds_em.p - si.p)
                 spec_em = scene.eval_emitter_direction(si, ds_em, active_em)
                 emitter_val = spec_em / ds_em.pdf
@@ -257,7 +254,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
 
                 guide_seed = [dr.detach(ray_seed), active_guide | mask_replace]
 
-        return L, active, [], guide_seed if project else None
+        return L, active, guide_seed if project else None
 
 
     def sample_radiance_difference(self, scene, ss, curr_depth, sampler, active):
@@ -286,7 +283,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
 
             # ----------- Estimate the radiance of the background -----------
             ray_bg = ss.spawn_ray()
-            radiance_bg, _, _, _ = self.sample(
+            radiance_bg, _, _ = self.sample(
                 dr.ADMode.Primal, scene, sampler, ray_bg, curr_depth, None, None, active, False, None)
 
             # ----------- Estimate the radiance of the foreground -----------
@@ -331,7 +328,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
             si_fg.wi[wrong_side] = si_fg.to_local(-ss.d)
 
             # Estimate the radiance starting from the surface interaction
-            radiance_fg, _, _, _ = self.sample(
+            radiance_fg, _, _ = self.sample(
                 dr.ADMode.Primal, scene, sampler, ray_bg, curr_depth, None, None, active, False, si_fg)
 
         else:

@@ -4752,7 +4752,12 @@
         However, the ability to re-evaluate the contribution of a generated
         sample is important for differentiable rendering. For example, we
         might want to track derivatives in the sampled direction (``ds.d``)
-        without also differentiating the sampling technique.
+        without also differentiating the sampling technique. Alternatively (or
+        additionally), it may be necessary to apply a spherical
+        reparameterization to ``ds.d`` to handle visibility-induced
+        discontinuities during differentiation. Both steps require re-
+        evaluating the contribution of the emitter while tracking derivative
+        information through the calculation.
 
         In contrast to pdf_direction(), evaluating this function can yield a
         nonzero result in the case of emission profiles containing a Dirac
@@ -5168,7 +5173,12 @@
         However, the ability to re-evaluate the contribution of a generated
         sample is important for differentiable rendering. For example, we
         might want to track derivatives in the sampled direction (``ds.d``)
-        without also differentiating the sampling technique.
+        without also differentiating the sampling technique. Alternatively (or
+        additionally), it may be necessary to apply a spherical
+        reparameterization to ``ds.d`` to handle visibility-induced
+        discontinuities during differentiation. Both steps require re-
+        evaluating the contribution of the emitter while tracking derivative
+        information through the calculation.
 
         In contrast to pdf_direction(), evaluating this function can yield a
         nonzero result in the case of emission profiles containing a Dirac
@@ -10894,7 +10904,7 @@
 
 .. py:data:: mitsuba.MI_VERSION
     :type: str
-    :value: 3.5.2
+    :value: 3.4.1
 
 .. py:data:: mitsuba.MI_VERSION_MAJOR
     :type: int
@@ -10902,11 +10912,11 @@
 
 .. py:data:: mitsuba.MI_VERSION_MINOR
     :type: int
-    :value: 5
+    :value: 4
 
 .. py:data:: mitsuba.MI_VERSION_PATCH
     :type: int
-    :value: 2
+    :value: 1
 
 .. py:data:: mitsuba.MI_YEAR
     :type: str
@@ -12597,11 +12607,7 @@
 
     2. __init__(self: :py:obj:`mitsuba.llvm_ad_rgb.Mesh`, name: str, vertex_count: int, face_count: int, props: :py:obj:`mitsuba.llvm_ad_rgb.Properties` = Properties(), has_vertex_normals: bool = False, has_vertex_texcoords: bool = False) -> None
 
-    Creates a zero-initialized mesh with the given vertex and face counts
-
-    The vertex and face buffers can be filled using the ``mi.traverse``
-    mechanism. When initializing these buffers through another method, an
-    explicit call to initialize must be made once all buffers are filled.
+    Create a new mesh with the given vertex and face data structures
 
     .. py:method:: mitsuba.Mesh.add_attribute(self, name, size, buffer)
 
@@ -12655,11 +12661,7 @@
 
     .. py:method:: mitsuba.Mesh.initialize(self)
 
-        Must be called once at the end of the construction of a Mesh
-
-        This method computes internal data structures and notifies the parent
-        sensor or emitter (if there is one) that this instance is their
-        internal shape.
+        Must be called at the end of the constructor of Mesh plugins
 
         Returns → None:
             *no description available*
@@ -17173,6 +17175,11 @@
         illumination sample is important for differentiable rendering. For
         example, we might want to track derivatives in the sampled direction
         (``ds.d``) without also differentiating the sampling technique.
+        Alternatively (or additionally), it may be necessary to apply a
+        spherical reparameterization to ``ds.d`` to handle visibility-induced
+        discontinuities during differentiation. Both steps require re-
+        evaluating the contribution of the emitter while tracking derivative
+        information through the calculation.
 
         In contrast to pdf_emitter_direction(), evaluating this function can
         yield a nonzero result in the case of emission profiles containing a
@@ -17786,7 +17793,12 @@
         However, the ability to re-evaluate the contribution of a generated
         sample is important for differentiable rendering. For example, we
         might want to track derivatives in the sampled direction (``ds.d``)
-        without also differentiating the sampling technique.
+        without also differentiating the sampling technique. Alternatively (or
+        additionally), it may be necessary to apply a spherical
+        reparameterization to ``ds.d`` to handle visibility-induced
+        discontinuities during differentiation. Both steps require re-
+        evaluating the contribution of the emitter while tracking derivative
+        information through the calculation.
 
         In contrast to pdf_direction(), evaluating this function can yield a
         nonzero result in the case of emission profiles containing a Dirac
@@ -18184,7 +18196,12 @@
         However, the ability to re-evaluate the contribution of a generated
         sample is important for differentiable rendering. For example, we
         might want to track derivatives in the sampled direction (``ds.d``)
-        without also differentiating the sampling technique.
+        without also differentiating the sampling technique. Alternatively (or
+        additionally), it may be necessary to apply a spherical
+        reparameterization to ``ds.d`` to handle visibility-induced
+        discontinuities during differentiation. Both steps require re-
+        evaluating the contribution of the emitter while tracking derivative
+        information through the calculation.
 
         In contrast to pdf_direction(), evaluating this function can yield a
         nonzero result in the case of emission profiles containing a Dirac
@@ -18836,8 +18853,8 @@
 
     .. py:method:: mitsuba.Shape.parameters_grad_enabled(self)
 
-        Return whether any shape's parameters that introduce visibility
-        discontinuities require gradients (default return false)
+        Return whether any shape's parameters require gradients (default
+        return false)
 
         Returns → bool:
             *no description available*
@@ -27404,7 +27421,7 @@
         Parameter ``params`` (:py:class:`dict`):
             Optional dictionary-like object containing parameters to optimize.
 
-        Parameter ``params`` (dict | None):
+        Parameter ``params`` (~typing.Optional[dict]):
             *no description available*
 
         
@@ -27437,8 +27454,8 @@
         Parameter ``clamp_mass_thres``:
             Threshold value below which points' mass will be clamped to 0
         
-        Parameter ``scale_mass``:
-            Scale sample's contribution by performing a power transformation
+        Parameter ``sqrt_scale_mass``:
+            Scale sample's contribution by taking their square root
         
         Parameter ``debug_logs``:
             Whether or not to print debug logs. If this is enabled, extra
@@ -27800,7 +27817,7 @@
         Parameter ``params`` (:py:class:`dict`):
             Optional dictionary-like object containing parameters to optimize.
 
-        Parameter ``params`` (dict | None):
+        Parameter ``params`` (~typing.Optional[dict]):
             *no description available*
 
         
@@ -28069,7 +28086,7 @@
         Parameter ``aovs`` (list):
             *no description available*
 
-    .. py:method:: mitsuba.ad.common.ADIntegrator.sample(mode, scene, sampler, ray, depth, L, aovs, state_in, active)
+    .. py:method:: mitsuba.ad.common.ADIntegrator.sample(mode, scene, sampler, ray, depth, L, state_in, active)
 
         This function does the main work of differentiable rendering and
         remains unimplemented here. It is provided by subclasses of the
@@ -28137,12 +28154,6 @@
             Indicates whether the rays intersected a surface, which can be used
             to compute an alpha channel.
 
-        Output ``aovs`` (``List[mi.Float]``):
-            Integrators may return one or more arbitrary output variables (AOVs).
-            The implementation has to guarantee that the number of returned AOVs
-            matches the length of self.aov_names().
-
-
         Parameter ``mode`` (dr.ADMode):
             *no description available*
 
@@ -28158,10 +28169,7 @@
         Parameter ``depth`` (mi.UInt32, δ):
             *no description available*
 
-        Parameter ``L`` (Optional[mi.Spectrum], δ):
-            *no description available*
-
-        Parameter ``aovs`` (Optional[mi.Spectrum]):
+        Parameter ``L`` (Optional[mi.Spectrum]):
             *no description available*
 
         Parameter ``state_in`` (Any):
@@ -28170,7 +28178,7 @@
         Parameter ``active`` (mi.Bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[mi.Spectrum, mi.Bool, List[mi.Float]]:
+        Returns → Tuple[mi.Spectrum, mi.Bool]:
             *no description available*
 
 .. py:class:: mitsuba.ad.common.PSIntegrator
@@ -28387,7 +28395,7 @@
         Output ``valid`` (``mi.Bool``):
             Indicates if a valid path is found.
 
-    .. py:method:: mitsuba.ad.common.PSIntegrator.sample(mode, scene, sampler, ray, depth, L, aovs, state_in, active, project=False, si_shade=None)
+    .. py:method:: mitsuba.ad.common.PSIntegrator.sample(mode, scene, sampler, ray, depth, L, state_in, active, project=False, si_shade=None)
 
         See ADIntegrator.sample() for a description of this function's purpose.
 
@@ -28417,11 +28425,6 @@
             Indicates whether the rays intersected a surface, which can be used
             to compute an alpha channel.
 
-        Output ``aovs`` (``Sequence[mi.Float]``):
-            Integrators may return one or more arbitrary output variables (AOVs).
-            The implementation has to guarantee that the number of returned AOVs
-            matches the length of self.aov_names().
-
         Output ``seedray`` / ``state_out`` (``any``):
             If ``project`` is true, the integrator returns the seed rays to be
             projected as the third output. The seed rays is a python list of
@@ -28448,10 +28451,7 @@
         Parameter ``depth`` (mi.UInt32, δ):
             *no description available*
 
-        Parameter ``L`` (Optional[mi.Spectrum], δ):
-            *no description available*
-
-        Parameter ``aovs`` (Optional[mi.Spectrum]):
+        Parameter ``L`` (Optional[mi.Spectrum]):
             *no description available*
 
         Parameter ``state_in`` (Any):
@@ -28466,7 +28466,7 @@
         Parameter ``si_shade`` (Optional[mi.SurfaceInteraction3f]):
             *no description available*
 
-        Returns → Tuple[mi.Spectrum, mi.Bool, List[mi.Float], Any]:
+        Returns → Tuple[mi.Spectrum, mi.Bool, Any]:
             *no description available*
 
 .. py:class:: mitsuba.ad.common.RBIntegrator
@@ -29957,11 +29957,11 @@
             Direction of travel for input Stokes vector (normalized)
 
         Parameter ``out_basis_current`` (:py:obj:`mitsuba.Vector3f`):
-            Current (normalized) output Stokes basis. Must be orthogonal to
+            Current (normalized) input Stokes basis. Must be orthogonal to
             ``out_forward``.
 
         Parameter ``out_basis_target`` (:py:obj:`mitsuba.Vector3f`):
-            Target (normalized) output Stokes basis. Must be orthogonal to
+            Target (normalized) input Stokes basis. Must be orthogonal to
             ``out_forward``.
 
         Returns → drjit.llvm.ad.Matrix4f:
@@ -29997,11 +29997,11 @@
             Direction of travel for input Stokes vector (normalized)
 
         Parameter ``out_basis_current`` (:py:obj:`mitsuba.Vector3f`):
-            Current (normalized) output Stokes basis. Must be orthogonal to
+            Current (normalized) input Stokes basis. Must be orthogonal to
             ``out_forward``.
 
         Parameter ``out_basis_target`` (:py:obj:`mitsuba.Vector3f`):
-            Target (normalized) output Stokes basis. Must be orthogonal to
+            Target (normalized) input Stokes basis. Must be orthogonal to
             ``out_forward``.
 
         Returns → drjit::Matrix<:py:obj:`mitsuba.Color`:

@@ -2,21 +2,12 @@ import pytest
 import drjit as dr
 import mitsuba as mi
 
-def default_sdf_grid():
-    return mi.TensorXf([0, 0, 1, 0, 0, 1, 0, 0], shape=(2, 2, 2, 1))
 
 def test01_create(variant_scalar_rgb):
     for normal_method in ["analytic", "smooth"]:
-        with pytest.raises(RuntimeError) as e:
-            s = mi.load_dict({
-                "type" : "sdfgrid",
-                "normals" : normal_method
-            })
-
         s = mi.load_dict({
             "type" : "sdfgrid",
-            "normals" : normal_method,
-            "grid": default_sdf_grid()
+            "normals" : normal_method
         })
         assert s is not None
 
@@ -28,8 +19,7 @@ def test02_bbox(variant_scalar_rgb):
                           mi.ScalarVector3f([-10000, 3.0, 31])]:
             s = mi.load_dict({
                 "type" : "sdfgrid",
-                "to_world" : mi.ScalarTransform4f.translate(translate).scale((sx, sy, 1.0)),
-                "grid": default_sdf_grid()
+                "to_world" : mi.ScalarTransform4f.translate(translate).scale((sx, sy, 1.0))
             })
 
             b = s.bbox()
@@ -54,7 +44,6 @@ def test03_parameters_changed(variant_scalar_rgb):
 
     s = mi.load_dict({
         "type" : "sdfgrid",
-        "grid": default_sdf_grid()
     })
 
     params = mi.traverse(s)
@@ -82,8 +71,7 @@ def test04_ray_intersect(variants_all_ad_rgb):
             "type" : "scene",
             "sdf": {
                 "type" : "sdfgrid",
-                "to_world" : mi.ScalarTransform4f.translate(translate),
-                "grid": default_sdf_grid()
+                "to_world" : mi.ScalarTransform4f.translate(translate)
             }
         })
 
@@ -130,8 +118,7 @@ def test05_ray_intersect_instancing(variants_all_ad_rgb):
         'shape_group': {
             'type': 'shapegroup',
             'sdf': {
-                'type': 'sdfgrid',
-                'grid': default_sdf_grid()
+                'type': 'sdfgrid'
             }
         },
         'first_sdf': {
@@ -182,8 +169,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
         "type" : "scene",
         "sdf" : {
             "type" : "sdfgrid",
-            "normals" : "analytic",
-            "grid": default_sdf_grid()
+            "normals" : "analytic"
         }
     })
     params = mi.traverse(scene)
@@ -366,6 +352,5 @@ def test08_load_tensor(variants_all_ad_rgb):
 
 
 def test09_shape_type(variant_scalar_rgb):
-    sdf = mi.load_dict({ "type" : "sdfgrid",
-                         "grid" : default_sdf_grid()})
-    assert sdf.shape_type() == mi.ShapeType.SDFGrid.value
+    sdf = mi.load_dict({ "type" : "sdfgrid" })
+    assert sdf.shape_type() == mi.ShapeType.SDFGrid.value;

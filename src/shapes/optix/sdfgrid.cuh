@@ -4,15 +4,16 @@
 #include <mitsuba/render/optix/common.h>
 
 struct OptixSDFGridData {
-    uint32_t* voxel_indices;
-    uint32_t res_x;
-    uint32_t res_y;
-    uint32_t res_z;
+    size_t* voxel_indices;
+    size_t res_x;
+    size_t res_y;
+    size_t res_z;
     float voxel_size_x;
     float voxel_size_y;
     float voxel_size_z;
     float* grid_data;
     optix::Transform4f to_object;
+    bool watertight;
 };
 
 #ifdef __CUDACC__
@@ -24,8 +25,8 @@ __device__ unsigned int vec_to_index(const Vector3u &vec,
 
 __device__ Vector3u index_to_vec(unsigned int index,
                                  const OptixSDFGridData &sdf) {
-    uint32_t x_len = sdf.res_x - 1;
-    uint32_t y_len = sdf.res_y - 1;
+    size_t x_len = sdf.res_x - 1;
+    size_t y_len = sdf.res_y - 1;
     unsigned int x = index % x_len;
     unsigned int y = ((index - x) / y_len) % y_len;
     unsigned int z = (index - x - y * x_len) / (x_len * y_len);
@@ -39,32 +40,53 @@ __device__ bool intersect_aabb(const Ray3f &ray,
     /**
       An Efficient and Robust Ray–Box Intersection Algorithm. Amy Williams et al. 2004.
     */
-    const Vector3f d_rcp = frcp(ray.d);
 
-    t_min = ((d_rcp.x() >= 0 ? bbox.min[0] : bbox.max[0]) - ray.o.x()) * d_rcp.x();
-    t_max = ((d_rcp.x() >= 0 ? bbox.max[0] : bbox.min[0]) - ray.o.x()) * d_rcp.x();
+    bool initialized = false;
+    Vector3f d_rcp = 1.f / ray.d;
 
-    const float t_y_min = ((d_rcp.y() >= 0 ? bbox.min[1] : bbox.max[1]) - ray.o.y()) * d_rcp.y();
-    const float t_y_max = ((d_rcp.y() >= 0 ? bbox.max[1] : bbox.min[1]) - ray.o.y()) * d_rcp.y();
+    if (ray.d.x() != 0) {
+        t_min  = ((d_rcp.x() < 0 ? bbox.max[0] : bbox.min[0]) - ray.o.x()) * d_rcp.x();
+        t_max = ((d_rcp.x() < 0 ? bbox.min[0] : bbox.max[0]) - ray.o.x()) * d_rcp.x();
+        initialized = true;
+    }
 
-    if ((t_min > t_y_max) || (t_y_min > t_max))
-        return false;
-    
-    if (t_y_min > t_min || !isfinite(t_min))
-        t_min = t_y_min;
-    if (t_y_max < t_max || !isfinite(t_max))
-        t_max = t_y_max;
+    if (ray.d.y() != 0) {
+        if (!initialized) {
+            t_min  = ((d_rcp.y() < 0 ? bbox.max[1] : bbox.min[1]) - ray.o.y()) * d_rcp.y();
+            t_max = ((d_rcp.y() < 0 ? bbox.min[1] : bbox.max[1]) - ray.o.y()) * d_rcp.y();
+            initialized = true;
+        } else {
+            float t_y_min  = ((d_rcp.y() < 0 ? bbox.max[1] : bbox.min[1]) - ray.o.y()) * d_rcp.y();
+            float t_y_max = ((d_rcp.y() < 0 ? bbox.min[1] : bbox.max[1]) - ray.o.y()) * d_rcp.y();
 
-    const float t_z_min = ((d_rcp.z() >= 0 ? bbox.min[2] : bbox.max[2]) - ray.o.z()) * d_rcp.z();
-    const float t_z_max = ((d_rcp.z() >= 0 ? bbox.max[2] : bbox.min[2]) - ray.o.z()) * d_rcp.z();
+            if ((t_min > t_y_max) || (t_y_min > t_max))
+                return false;
 
-    if ((t_min > t_z_max) || (t_z_min > t_max))
-        return false;
+            if (t_min < t_y_min)
+                t_min = t_y_min;
+            if (t_y_max < t_max)
+                t_max = t_y_max;
+        }
+    }
 
-    if (t_z_min > t_min || !isfinite(t_min))
-        t_min = t_z_min;
-    if (t_z_max < t_max || !isfinite(t_max))
-        t_max = t_z_max;
+    if (ray.d.z() != 0) {
+        if (!initialized) {
+            t_min  = ((d_rcp.z() < 0 ? bbox.max[2] : bbox.min[2]) - ray.o.z()) * d_rcp.z();
+            t_max = ((d_rcp.z() < 0 ? bbox.min[2] : bbox.max[2]) - ray.o.z()) * d_rcp.z();
+            initialized = true;
+        } else {
+            float t_z_min  = ((d_rcp.z() < 0 ? bbox.max[2] : bbox.min[2]) - ray.o.z()) * d_rcp.z();
+            float t_z_max = ((d_rcp.z() < 0 ? bbox.min[2] : bbox.max[2]) - ray.o.z()) * d_rcp.z();
+
+            if ((t_min > t_z_max) || (t_z_min > t_max))
+                return false;
+
+            if (t_z_min > t_min)
+                t_min = t_z_min;
+            if (t_z_max < t_max)
+                t_max = t_z_max;
+        }
+    }
 
     return true;
 }
@@ -83,13 +105,13 @@ __device__ bool sdf_solve_cubic(float t_beg, float t_end, float c3, float c2,
         solve_quadratic(c3 * 3, c2 * 2, c1, root_0, root_1);
 
     auto eval_sdf_t = [&](float t_) -> float {
-        return fmaf(fmaf(fmaf(c3, t_, c2), t_, c1), t_, c0);
+        return -(c3 * t_ * t_ * t_ + c2 * t_ * t_ + c1 * t_ + c0);
     };
 
     auto numerical_solve = [&](float t_near, float t_far, float f_near,
                                float f_far) -> float {
 #define NUM_SOLVE_MAX_ITER 50
-#define NUM_SOLVE_EPSILON 1e-5f
+#define NUM_SOLVE_EPSILON 0.004
 
         float t = 0.f;
         float f_t = 0.f;
@@ -106,7 +128,7 @@ __device__ bool sdf_solve_cubic(float t_beg, float t_end, float c3, float c2,
                 t_near = t;
                 f_near = f_t;
             }
-            done = (abs(t_far - t_near) < NUM_SOLVE_EPSILON) || (NUM_SOLVE_MAX_ITER < ++i);
+            done = (abs(f_t) < NUM_SOLVE_EPSILON) || (NUM_SOLVE_MAX_ITER < ++i);
         }
 
         return t;
@@ -174,17 +196,12 @@ extern "C" __global__ void __intersection__sdfgrid() {
     bbox_local.max[1] = bbox_max[1];
     bbox_local.max[2] = bbox_max[2];
 
-    float t_bbox_beg = 0;
-    float t_bbox_end = 0;
-    bool bbox_its = intersect_aabb(ray, bbox_local, t_bbox_beg, t_bbox_end);
+    float t_beg = 0;
+    float t_end = 0;
+    bool bbox_its = intersect_aabb(ray, bbox_local, t_beg, t_end);
     // This should theoretically always hit, but OptiX might be a bit
     // less/more tight numerically hence some rays will miss
     if (!bbox_its) {
-        return;
-    }
-
-    t_bbox_beg = max(t_bbox_beg, 0.f);
-    if (t_bbox_end < t_bbox_beg) {
         return;
     }
 
@@ -235,11 +252,9 @@ extern "C" __global__ void __intersection__sdfgrid() {
     float s011 = sdf.grid_data[vec_to_index(v011, sdf)];
     float s111 = sdf.grid_data[vec_to_index(v111, sdf)];
 
-    Vector3f ray_p_in_voxel = ray(t_bbox_beg);
-    float o_x = ray_p_in_voxel.x();
-    float o_y = ray_p_in_voxel.y();
-    float o_z = ray_p_in_voxel.z();
-
+    float o_x = ray.o.x();
+    float o_y = ray.o.y();
+    float o_z = ray.o.z();
     float d_x = ray.d.x();
     float d_y = ray.d.y();
     float d_z = ray.d.z();
@@ -266,26 +281,33 @@ extern "C" __global__ void __intersection__sdfgrid() {
     float c2 = fmaf(m1, m5, d_z * (fmaf(k5, d_x, fmaf(k6, d_y, k7 * m2))));
     float c3 = k7 * m1 * d_z;
 
-    float t_beg = 0.f;
-    float t_end = t_bbox_end - t_bbox_beg;
+    auto eval_sdf = [&](float t_) -> float {
+        return -(c3 * t_ * t_ * t_ + c2 * t_ * t_ + c1 * t_ + c0);
+    };
+
+    // Avoid leaking through cracks
+    if (sdf.watertight && (eval_sdf(t_beg) < 0)) {
+        optixReportIntersection(t_beg, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
+        return;
+    }
 
     if (c3 != 0) {
         // Cubic polynomial
         float t = 0;
         bool hit = sdf_solve_cubic(t_beg, t_end, c3, c2, c1, c0, t);
 
-        if (hit && t_beg <= t && t <= t_end && t_bbox_beg + t < ray.maxt)
-            optixReportIntersection(t_bbox_beg + t, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
+        if (hit && t_beg <= t && t <= t_end)
+            optixReportIntersection(t, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
     } else {
         // Quadratic or linear polynomial
         float root_0;
         float root_1;
         bool hit = solve_quadratic(c2, c1, c0, root_0, root_1);
 
-        if (hit && t_beg <= root_0 && root_0 <= t_end && t_bbox_beg + root_0 < ray.maxt)
-            optixReportIntersection(t_bbox_beg + root_0, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
-        else if (hit && t_beg <= root_1 && root_1 <= t_end && t_bbox_beg + root_1 < ray.maxt)
-            optixReportIntersection(t_bbox_beg + root_1, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
+        if (hit && t_beg <= root_0 && root_0 <= t_end)
+            optixReportIntersection(root_0, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
+        else if (hit && t_beg <= root_1 && root_1 <= t_end)
+            optixReportIntersection(root_1, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
     }
 }
 

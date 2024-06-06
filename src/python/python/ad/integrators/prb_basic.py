@@ -23,7 +23,7 @@ class BasicPRBIntegrator(RBIntegrator):
 
     Basic Path Replay Backpropagation-style integrator *without* next event
     estimation, multiple importance sampling, Russian Roulette, and
-    projective sampling. The lack of all of these features means that gradients
+    reparameterization. The lack of all of these features means that gradients
     are noisy and don't correctly account for visibility discontinuities. The
     lack of a Russian Roulette stopping criterion means that generated light
     paths may be unnecessarily long and costly to generate.
@@ -33,10 +33,6 @@ class BasicPRBIntegrator(RBIntegrator):
     Python along with efficient forward/reverse-mode derivatives. See the file
     ``prb.py`` for a more feature-complete Path Replay Backpropagation
     integrator, and ``prb_reparam.py`` for one that also handles visibility.
-
-    .. warning::
-        This integrator is not supported in variants which track polarization
-        states.
 
     .. tabs::
 
@@ -56,7 +52,8 @@ class BasicPRBIntegrator(RBIntegrator):
                state_in: Optional[mi.Spectrum],
                active: mi.Bool,
                **kwargs # Absorbs unused arguments
-    ) -> Tuple[mi.Spectrum, mi.Bool, List[mi.Float], mi.Spectrum]:
+    ) -> Tuple[mi.Spectrum,
+               mi.Bool, mi.Spectrum]:
         """
         See ``ADIntegrator.sample()`` for a description of this interface and
         the role of the various parameters and return values.
@@ -164,7 +161,6 @@ class BasicPRBIntegrator(RBIntegrator):
         return (
             L if primal else δL, # Radiance/differential radiance
             dr.neq(depth, 0),    # Ray validity flag for alpha blending
-            [],                  # Empty typle of AOVs
             L                    # State the for differential phase
         )
 

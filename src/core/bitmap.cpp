@@ -177,11 +177,6 @@ void Bitmap::rebuild_struct(size_t channel_count, const std::vector<std::string>
                 for (size_t i = 0; i < channel_count; ++i)
                     channels.push_back(tfm::format("ch%i", i));
             } else {
-                if (channel_names.size() != channel_count)
-                    Throw("Bitmap::rebuild_struct(): expected %u channel "
-                          "names, but only got %u!",
-                          channel_count, channel_names.size());
-
                 std::vector<std::string> channels_sorted = channel_names;
                 std::sort(channels_sorted.begin(), channels_sorted.end());
                 for (size_t i = 1; i < channels_sorted.size(); ++i) {
@@ -1723,8 +1718,6 @@ void Bitmap::read_png(Stream *stream) {
         if (bit_depth == 16)
             png_set_swap(png_ptr); // Swap the byte order on little endian machines
     #endif
-
-    png_set_interlace_handling(png_ptr);
 
     // Update the information based on the transformations
     png_read_update_info(png_ptr, info_ptr);

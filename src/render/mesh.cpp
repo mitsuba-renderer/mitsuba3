@@ -52,6 +52,8 @@ Mesh<Float, Spectrum>::Mesh(const std::string &name, ScalarSize vertex_count,
         m_vertex_normals = dr::zeros<FloatStorage>(m_vertex_count * 3);
     if (has_vertex_texcoords)
         m_vertex_texcoords = dr::zeros<FloatStorage>(m_vertex_count * 2);
+
+    initialize();
 }
 
 MI_VARIANT
@@ -87,6 +89,8 @@ MI_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
     // We arbitrarily chose to show all attributes as being differentiable here.
     for (auto &[name, attribute]: m_mesh_attributes)
         callback->put_parameter(name, attribute.buf, +ParamFlags::Differentiable);
+
+
 }
 
 MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
@@ -134,8 +138,8 @@ MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std:
         if (has_vertex_normals())
             recompute_vertex_normals();
 
-        if (!m_area_pmf.empty() || m_emitter || m_sensor)
-            build_pmf();
+        if (!m_area_pmf.empty() && (m_emitter || m_sensor))
+            ensure_pmf_built();
 
         if (m_parameterization)
             m_parameterization = nullptr;
@@ -153,9 +157,6 @@ MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std:
         m_faces_ptr = m_faces.data();
 #endif
         mark_dirty();
-
-        if (!m_initialized)
-            Base::initialize();
     }
 
     Base::parameters_changed();
@@ -429,43 +430,35 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() {
 MI_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
     std::lock_guard<std::mutex> lock(m_mutex);
 
+    if (!m_area_pmf.empty())
+        return; // already built!
+
     if (m_face_count == 0)
         Throw("Cannot create sampling table for an empty mesh: %s", to_string());
 
-    if constexpr (!dr::is_jit_v<Float>) {
-        if (!m_area_pmf.empty())
-            return; // already built!
+    auto&& vertex_positions = dr::migrate(m_vertex_positions, AllocType::Host);
+    auto&& faces = dr::migrate(m_faces, AllocType::Host);
+    if constexpr (dr::is_jit_v<Float>)
+        dr::sync_thread();
 
-        auto &&vertex_positions =
-            dr::migrate(m_vertex_positions, AllocType::Host);
-        auto &&faces = dr::migrate(m_faces, AllocType::Host);
-        if constexpr (dr::is_jit_v<Float>)
-            dr::sync_thread();
+    const InputFloat *pos_p = vertex_positions.data();
+    const ScalarIndex *idx_p = faces.data();
 
-        const InputFloat *pos_p  = vertex_positions.data();
-        const ScalarIndex *idx_p = faces.data();
+    std::vector<ScalarFloat> table(m_face_count);
+    for (ScalarIndex i = 0; i < m_face_count; i++) {
+        ScalarPoint3u idx = dr::load<ScalarPoint3u>(idx_p + 3 * i);
 
-        std::vector<ScalarFloat> table(m_face_count);
-        for (ScalarIndex i = 0; i < m_face_count; i++) {
-            ScalarPoint3u idx = dr::load<ScalarPoint3u>(idx_p + 3 * i);
+        ScalarPoint3f p0 = dr::load<InputPoint3f>(pos_p + 3 * idx.x()),
+                      p1 = dr::load<InputPoint3f>(pos_p + 3 * idx.y()),
+                      p2 = dr::load<InputPoint3f>(pos_p + 3 * idx.z());
 
-            ScalarPoint3f p0 = dr::load<InputPoint3f>(pos_p + 3 * idx.x()),
-                          p1 = dr::load<InputPoint3f>(pos_p + 3 * idx.y()),
-                          p2 = dr::load<InputPoint3f>(pos_p + 3 * idx.z());
-
-            table[i] = .5f * dr::norm(dr::cross(p1 - p0, p2 - p0));
-        }
-
-        m_area_pmf = DiscreteDistribution<Float>(table.data(), m_face_count);
-    } else {
-        Vector3u v_idx = face_indices(dr::arange<UInt32>(m_face_count));
-        Point3f p0 = vertex_position(v_idx[0]), p1 = vertex_position(v_idx[1]),
-                p2 = vertex_position(v_idx[2]);
-
-        Float face_surface_area = .5f * dr::norm(dr::cross(p1 - p0, p2 - p0));
-
-        m_area_pmf = DiscreteDistribution<Float>(dr::detach(face_surface_area));
+        table[i] = .5f * dr::norm(dr::cross(p1 - p0, p2 - p0));
     }
+
+    m_area_pmf = DiscreteDistribution<Float>(
+        table.data(),
+        m_face_count
+    );
 }
 
 MI_VARIANT void Mesh<Float, Spectrum>::build_directed_edges() {
@@ -1850,7 +1843,13 @@ MI_VARIANT void Mesh<Float, Spectrum>::optix_build_input(OptixBuildInput &build_
 #endif
 
 MI_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
-    return dr::grad_enabled(m_vertex_positions);
+    bool result = false;
+    for (auto &[name, attribute]: m_mesh_attributes)
+        result |= dr::grad_enabled(attribute.buf);
+    result |= dr::grad_enabled(m_vertex_positions);
+    result |= dr::grad_enabled(m_vertex_normals);
+    result |= dr::grad_enabled(m_vertex_texcoords);
+    return result;
 }
 
 MI_IMPLEMENT_CLASS_VARIANT(Mesh, Shape)

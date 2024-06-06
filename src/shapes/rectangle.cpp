@@ -376,7 +376,7 @@ public:
         ss.p = to_world.transform_affine(Point3f(local));
         ss.d            = dr::normalize(ss.p - viewpoint);
         ss.silhouette_d = dr::normalize(to_world.transform_affine(
-            Vector3f(edge_dir.x(), edge_dir.y(), 0.f)));
+            Point3f(edge_dir.x(), edge_dir.y(), 0.f)));
 
         Vector3f frame_t = dr::normalize(viewpoint - ss.p);
         Normal3f frame_n = dr::normalize(dr::cross(frame_t, ss.silhouette_d));
@@ -412,19 +412,19 @@ public:
         Float sample_reuse(0.f);
 
         range = (sample < 0.25f);
-        si.uv[range] = Point2f(0.f, 0.5f);
+        si.uv[range] = Point2f(0.f, 0.f);
         dr::masked(sample_reuse, range) = sample * 4.f;
 
         range = (0.25f <= sample && sample < 0.50f);
-        si.uv[range] = Point2f(0.5f, 1.f);
+        si.uv[range] = Point2f(0.f, 1.f);
         dr::masked(sample_reuse, range) = (sample - 0.25f) * 4.f;
 
         range = (0.50f <= sample && sample < 0.75f);
-        si.uv[range] = Point2f(1.f, 0.5f);
+        si.uv[range] = Point2f(1.f, 1.f);
         dr::masked(sample_reuse, range) = (sample - 0.50f) * 4.f;
 
         range = (0.75f <= sample);
-        si.uv[range] = Point2f(0.5f, 0.f);
+        si.uv[range] = Point2f(1.f, 0.f);
         dr::masked(sample_reuse, range) = (sample - 0.75f) * 4.f;
 
         uint32_t flags = (uint32_t) DiscontinuityFlags::PerimeterType;

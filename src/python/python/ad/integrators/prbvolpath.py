@@ -49,7 +49,7 @@ class PRBVolpathIntegrator(RBIntegrator):
 
     - Russian Roulette stopping criterion.
 
-    - No projective sampling. This means that the integrator cannot be used for
+    - No reparameterization. This means that the integrator cannot be used for
       shape optimization (it will return incorrect/biased gradients for
       geometric parameters like vertex positions.)
 
@@ -58,10 +58,6 @@ class PRBVolpathIntegrator(RBIntegrator):
 
     See the paper :cite:`Vicini2021` for details on PRB and differentiable delta
     tracking.
-
-    .. warning::
-        This integrator is not supported in variants which track polarization
-        states.
 
     .. tabs::
 
@@ -101,7 +97,8 @@ class PRBVolpathIntegrator(RBIntegrator):
                state_in: Optional[mi.Spectrum],
                active: mi.Bool,
                **kwargs # Absorbs unused arguments
-    ) -> Tuple[mi.Spectrum, mi.Bool, List[mi.Float], mi.Spectrum]:
+    ) -> Tuple[mi.Spectrum,
+               mi.Bool, mi.Spectrum]:
         self.prepare_scene(scene)
 
         if mode == dr.ADMode.Forward:
@@ -334,7 +331,7 @@ class PRBVolpathIntegrator(RBIntegrator):
                 medium[has_medium_trans] = si.target_medium(ray.d)
                 active &= (active_surface | active_medium)
 
-        return L if is_primal else δL, valid_ray, [], L
+        return L if is_primal else δL, valid_ray, L
 
     def sample_emitter(self, mei, si, active_medium, active_surface, scene, sampler, medium, channel,
                        active, adj_emitted=None, δL=None, mode=None):

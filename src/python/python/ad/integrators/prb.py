@@ -35,7 +35,7 @@ class PRBIntegrator(RBIntegrator):
 
     - Russian Roulette stopping criterion.
 
-    - No projective sampling. This means that the integrator cannot be used for
+    - No reparameterization. This means that the integrator cannot be used for
       shape optimization (it will return incorrect/biased gradients for
       geometric parameters like vertex positions.)
 
@@ -46,11 +46,7 @@ class PRBIntegrator(RBIntegrator):
     the first two features.
 
     See the papers :cite:`Vicini2021` and :cite:`Zeltner2021MonteCarlo`
-    for details on PRB, attached/detached sampling.
-
-    .. warning::
-        This integrator is not supported in variants which track polarization
-        states.
+    for details on PRB, attached/detached sampling, and reparameterizations.
 
     .. tabs::
 
@@ -69,7 +65,8 @@ class PRBIntegrator(RBIntegrator):
                state_in: Optional[mi.Spectrum],
                active: mi.Bool,
                **kwargs # Absorbs unused arguments
-    ) -> Tuple[mi.Spectrum, mi.Bool, List[mi.Float], mi.Spectrum]:
+    ) -> Tuple[mi.Spectrum,
+               mi.Bool, mi.Spectrum]:
         """
         See ``ADIntegrator.sample()`` for a description of this interface and
         the role of the various parameters and return values.
@@ -256,7 +253,6 @@ class PRBIntegrator(RBIntegrator):
         return (
             L if primal else δL, # Radiance/differential radiance
             dr.neq(depth, 0),    # Ray validity flag for alpha blending
-            [],                  # Empty typle of AOVs
             L                    # State for the differential phase
         )
 

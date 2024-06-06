@@ -285,15 +285,8 @@ public:
 
             /* The Stokes reference frame vector of this matrix lies perpendicular
                to the plane of reflection. */
-            Vector3f s_axis_in  = dr::cross(m, -wo_hat);
-            Vector3f s_axis_out = dr::cross(m, wi_hat);
-
-            // Singularity when the input & output are collinear with the normal
-            Mask collinear = dr::all(dr::eq(s_axis_in, Vector3f(0)));
-            s_axis_in  = dr::select(collinear, Vector3f(1, 0, 0),
-                                               dr::normalize(s_axis_in));
-            s_axis_out = dr::select(collinear, Vector3f(1, 0, 0),
-                                               dr::normalize(s_axis_out));
+            Vector3f s_axis_in  = dr::normalize(dr::cross(m, -wo_hat)),
+                     s_axis_out = dr::normalize(dr::cross(m, wi_hat));
 
             /* Rotate in/out reference vector of F s.t. it aligns with the implicit
                Stokes bases of -wo_hat & wi_hat. */
@@ -362,15 +355,8 @@ public:
 
             /* The Stokes reference frame vector of this matrix lies perpendicular
                to the plane of reflection. */
-            Vector3f s_axis_in  = dr::cross(H, -wo_hat);
-            Vector3f s_axis_out = dr::cross(H, wi_hat);
-
-            // Singularity when the input & output are collinear with the normal
-            Mask collinear = dr::all(dr::eq(s_axis_in, Vector3f(0)));
-            s_axis_in  = dr::select(collinear, Vector3f(1, 0, 0),
-                                               dr::normalize(s_axis_in));
-            s_axis_out = dr::select(collinear, Vector3f(1, 0, 0),
-                                               dr::normalize(s_axis_out));
+            Vector3f s_axis_in  = dr::normalize(dr::cross(H, -wo_hat)),
+                     s_axis_out = dr::normalize(dr::cross(H, wi_hat));
 
             /* Rotate in/out reference vector of F s.t. it aligns with the implicit
                Stokes bases of -wo_hat & wi_hat. */
@@ -484,15 +470,8 @@ public:
 
             /* The Stokes reference frame vector of this matrix lies perpendicular
                to the plane of reflection. */
-            Vector3f s_axis_in  = dr::cross(H, -wo_hat);
-            Vector3f s_axis_out = dr::cross(H, wi_hat);
-
-            // Singularity when the input & output are collinear with the normal
-            Mask collinear = dr::all(dr::eq(s_axis_in, Vector3f(0)));
-            s_axis_in  = dr::select(collinear, Vector3f(1, 0, 0),
-                                               dr::normalize(s_axis_in));
-            s_axis_out = dr::select(collinear, Vector3f(1, 0, 0),
-                                               dr::normalize(s_axis_out));
+            Vector3f s_axis_in  = dr::normalize(dr::cross(H, -wo_hat)),
+                     s_axis_out = dr::normalize(dr::cross(H, wi_hat));
 
             /* Rotate in/out reference vector of F s.t. it aligns with the implicit
                Stokes bases of -wo_hat & wi_hat. */

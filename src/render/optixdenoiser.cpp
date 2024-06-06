@@ -54,7 +54,6 @@ MI_VARIANT OptixDenoiser<Float, Spectrum>::OptixDenoiser(
 }
 
 MI_VARIANT OptixDenoiser<Float, Spectrum>::~OptixDenoiser() {
-    scoped_optix_context guard;
     if (m_denoiser != nullptr)
         jit_optix_check(optixDenoiserDestroy(m_denoiser));
     jit_free(m_hdr_intensity);

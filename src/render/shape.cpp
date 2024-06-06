@@ -634,8 +634,6 @@ MI_VARIANT void Shape<Float, Spectrum>::initialize() {
         m_emitter->set_shape(this);
     if (m_sensor)
         m_sensor->set_shape(this);
-
-    m_initialized = true;
 }
 
 MI_VARIANT
