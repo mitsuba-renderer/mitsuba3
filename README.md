@@ -22,6 +22,13 @@ alt="Mitsuba banner">
 [11]: https://img.shields.io/pypi/v/mitsuba.svg?color=green
 [12]: https://pypi.org/pypi/mitsuba
 
+## Warning
+
+There currently is a large amount of undocumented and unstable work going on in
+the ``master`` branch. We'd highly recommend you use our
+[latest release](https://github.com/mitsuba-renderer/mitsuba3/tree/v3.5.2)
+until further notice.
+
 ## Introduction
 
 Mitsuba 3 is a research-oriented rendering system for forward and inverse light
