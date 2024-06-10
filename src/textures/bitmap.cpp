@@ -261,9 +261,7 @@ protected:
 
     template <typename StoredType> Object* expand_bitmap() const {
         using StoredScalar           = dr::scalar_t<StoredType>;
-        using StoredScalarColor3f    = Color<StoredScalar, 3>;
         using StoredTensorXf         = dr::replace_scalar_t<TensorXf, StoredScalar>;
-        using StoredTexture2f        = dr::Texture<StoredType, 2>;
 
         /* Convert to linear RGB float bitmap, will be converted
            into spectral profile coefficients below (in place) */
@@ -365,7 +363,6 @@ public:
     MI_IMPORT_TYPES(Texture)
 
     using StoredScalar           = dr::scalar_t<StoredType>;
-    using StoredScalarColor3f    = Color<StoredScalar, 3>;
     using StoredColor3f          = Color<StoredType, 3>;
     using StoredTensorXf         = dr::replace_scalar_t<TensorXf, StoredScalar>;
     using StoredTexture2f        = dr::Texture<StoredType, 2>;
@@ -494,9 +491,9 @@ public:
 
                 Point2f uv = m_transform.transform_affine(si.uv);
 
-                StoredType f00, f10, f01, f11;
+                Float f00, f10, f01, f11;
                 if (channels == 1) {
-                    dr::Array<StoredType *, 4> fetch_values;
+                    dr::Array<Float *, 4> fetch_values;
                     fetch_values[0] = &f00;
                     fetch_values[1] = &f10;
                     fetch_values[2] = &f01;
@@ -507,8 +504,8 @@ public:
                     else
                         m_texture.eval_fetch_nonaccel(uv, fetch_values, active);
                 } else { // 3 channels
-                    StoredColor3f v00, v10, v01, v11;
-                    dr::Array<StoredType *, 4> fetch_values;
+                    Color3f v00, v10, v01, v11;
+                    dr::Array<Float *, 4> fetch_values;
                     fetch_values[0] = v00.data();
                     fetch_values[1] = v10.data();
                     fetch_values[2] = v01.data();
@@ -714,8 +711,8 @@ protected:
         Point2f uv = m_transform.transform_affine(si.uv);
 
         if (m_texture.filter_mode() == dr::FilterMode::Linear) {
-            StoredColor3f v00, v10, v01, v11;
-            dr::Array<StoredType *, 4> fetch_values;
+            Color3f v00, v10, v01, v11;
+            dr::Array<Float *, 4> fetch_values;
             fetch_values[0] = v00.data();
             fetch_values[1] = v10.data();
             fetch_values[2] = v01.data();
@@ -744,7 +741,7 @@ protected:
 
             return dr::fmadd(w0.y(), c0, w1.y() * c1);
         } else {
-            StoredColor3f out;
+            Color3f out;
             if (m_accel)
                 m_texture.eval(uv, out.data(), active);
             else
@@ -766,7 +763,7 @@ protected:
 
         Point2f uv = m_transform.transform_affine(si.uv);
 
-        StoredType out;
+        Float out;
         if (m_accel)
             m_texture.eval(uv, &out, active);
         else
@@ -787,7 +784,7 @@ protected:
 
         Point2f uv = m_transform.transform_affine(si.uv);
 
-        StoredColor3f out;
+        Color3f out;
         if (m_accel)
             m_texture.eval(uv, out.data(), active);
         else
