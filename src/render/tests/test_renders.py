@@ -51,9 +51,9 @@ INTEGRATOR_MAPPING = {
 if hasattr(dr, 'JitFlag'):
     JIT_FLAG_OPTIONS = {
         'scalar': {},
-#        'jit_flag_option_0' : {dr.JitFlag.SymbolicCalls : 0, dr.JitFlag.OptimizeCalls : 0, dr.JitFlag.SymbolicLoops : 0},
-#        'jit_flag_option_1' : {dr.JitFlag.SymbolicCalls : 1, dr.JitFlag.OptimizeCalls : 0, dr.JitFlag.SymbolicLoops : 0},
-#        'jit_flag_option_2' : {dr.JitFlag.SymbolicCalls : 1, dr.JitFlag.OptimizeCalls : 1, dr.JitFlag.SymbolicLoops : 0},
+        'jit_flag_option_0' : {dr.JitFlag.SymbolicCalls : 0, dr.JitFlag.OptimizeCalls : 0, dr.JitFlag.SymbolicLoops : 0},
+        'jit_flag_option_1' : {dr.JitFlag.SymbolicCalls : 1, dr.JitFlag.OptimizeCalls : 0, dr.JitFlag.SymbolicLoops : 0},
+        'jit_flag_option_2' : {dr.JitFlag.SymbolicCalls : 1, dr.JitFlag.OptimizeCalls : 1, dr.JitFlag.SymbolicLoops : 0},
         'jit_flag_option_3' : {dr.JitFlag.SymbolicCalls : 1, dr.JitFlag.OptimizeCalls : 1, dr.JitFlag.SymbolicLoops : 1},
     }
 
