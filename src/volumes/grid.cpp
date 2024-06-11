@@ -493,9 +493,9 @@ protected:
             fetch_values[7] = d111.data();
 
             if (m_accel)
-                m_texture.eval_fetch(p, fetch_values, active);
+                m_texture.template eval_fetch<Float>(p, fetch_values, active);
             else
-                m_texture.eval_fetch_nonaccel(p, fetch_values, active);
+                m_texture.template eval_fetch_nonaccel<Float>(p, fetch_values, active);
 
             UnpolarizedSpectrum v000, v001, v010, v011, v100, v101, v110, v111;
             v000 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(d000), it.wavelengths);
@@ -537,9 +537,9 @@ protected:
         } else {
             dr::Array<Float, 4> v;
             if (m_accel)
-                m_texture.eval(p, v.data(), active);
+                m_texture.template eval<Float>(p, v.data(), active);
             else
-                m_texture.eval_nonaccel(p, v.data(), active);
+                m_texture.template eval_nonaccel<Float>(p, v.data(), active);
 
             return v.w() * srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(v), it.wavelengths);
         }
@@ -556,9 +556,9 @@ protected:
         Point3f p = m_to_local * it.p;
         Float result;
         if (m_accel)
-            m_texture.eval(p, &result, active);
+            m_texture.template eval<Float>(p, &result, active);
         else
-            m_texture.eval_nonaccel(p, &result, active);
+            m_texture.template eval_nonaccel<Float>(p, &result, active);
 
         return result;
     }
@@ -575,9 +575,9 @@ protected:
         Point3f p = m_to_local * it.p;
         Color3f result;
         if (m_accel)
-            m_texture.eval(p, result.data(), active);
+            m_texture.template eval<Float>(p, result.data(), active);
         else
-            m_texture.eval_nonaccel(p, result.data(), active);
+            m_texture.template eval_nonaccel<Float>(p, result.data(), active);
 
         return result;
     }
@@ -594,9 +594,9 @@ protected:
         Point3f p = m_to_local * it.p;
         dr::Array<Float, 6> result;
         if (m_accel)
-            m_texture.eval(p, result.data(), active);
+            m_texture.template eval<Float>(p, result.data(), active);
         else
-            m_texture.eval_nonaccel(p, result.data(), active);
+            m_texture.template eval_nonaccel<Float>(p, result.data(), active);
 
         return result;
     }
@@ -613,9 +613,9 @@ protected:
 
         Point3f p = m_to_local * it.p;
         if (m_accel)
-            m_texture.eval(p, out, active);
+            m_texture.template eval<Float>(p, out, active);
         else
-            m_texture.eval_nonaccel(p, out, active);
+            m_texture.template eval_nonaccel<Float>(p, out, active);
     }
 
 protected:
