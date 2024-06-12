@@ -401,6 +401,10 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 
         normals = dr::normalize(normals);
 
+        // Convert to 32-bit precision
+        using JitInputNormal3f = Normal<dr::replace_scalar_t<Float, InputFloat>, 3>;
+        JitInputNormal3f input_normals(normals);
+
         // Disconnect the vertex normal buffer from any pre-existing AD
         // graph. Otherwise an AD graph might be unnecessarily retained
         // here, despite the following lines re-initializing the normals.
@@ -408,7 +412,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 
         UInt32 ni = dr::arange<UInt32>(m_vertex_count) * 3;
         for (uint32_t i = 0; i < 3; ++i)
-            dr::scatter(m_vertex_normals, normals[i], ni + i);
+            dr::scatter(m_vertex_normals, input_normals[i], ni + i);
 
         dr::eval(m_vertex_normals);
     }
