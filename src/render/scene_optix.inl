@@ -461,6 +461,8 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
                 s.ias_data = {};
                 s.ias_handle = ias[0].traversableHandle;
             } else {
+                scoped_optix_context guard;
+
                 // Build a "master" IAS that contains all the IAS of the scene (meshes,
                 // custom shapes, instances, ...)
                 OptixAccelBuildOptions accel_options = {};
@@ -495,8 +497,6 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
                     = jit_malloc(AllocType::Device, buffer_sizes.tempSizeInBytes);
                 s.ias_data.buffer
                     = jit_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes);
-
-                scoped_optix_context guard;
 
                 jit_optix_check(optixAccelBuild(
                     config.context,
