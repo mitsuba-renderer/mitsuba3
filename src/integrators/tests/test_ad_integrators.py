@@ -662,7 +662,7 @@ class RotateShadingNormalsPlaneConfig(ConfigBase):
             },
             'light': {
                 'type': 'rectangle',
-                'to_world': T.translate([1.25, 0.0, 1.0]) @ T.rotate([0, 1, 0], -90),
+                'to_world': T().translate([1.25, 0.0, 1.0]) @ T().rotate([0, 1, 0], -90),
                 'emitter': {
                     'type': 'area',
                     'radiance': {'type': 'rgb', 'value': [3.0, 3.0, 3.0]}
@@ -682,7 +682,7 @@ class RotateShadingNormalsPlaneConfig(ConfigBase):
 
     def update(self, theta):
         self.params[self.key] = dr.ravel(
-            mi.Transform4f.rotate(angle=theta, axis=[0.0, 1.0, 0.0]) @
+            mi.Transform4f().rotate(angle=theta, axis=[0.0, 1.0, 0.0]) @
             dr.unravel(mi.Normal3f, self.initial_state)
         )
         self.params.update()
