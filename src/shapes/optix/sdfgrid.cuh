@@ -49,7 +49,7 @@ __device__ bool intersect_aabb(const Ray3f &ray,
 
     if ((t_min > t_y_max) || (t_y_min > t_max))
         return false;
-    
+
     if (t_y_min > t_min || !isfinite(t_min))
         t_min = t_y_min;
     if (t_y_max < t_max || !isfinite(t_max))
@@ -190,24 +190,24 @@ extern "C" __global__ void __intersection__sdfgrid() {
 
     optix::Transform4f to_voxel;
     to_voxel.matrix[0][0] = (float) (sdf.res_x - 1);
-    to_voxel.matrix[0][1] = 0.f;
-    to_voxel.matrix[0][2] = 0.f;
-    to_voxel.matrix[0][3] = 0.f;
-
     to_voxel.matrix[1][0] = 0.f;
-    to_voxel.matrix[1][1] = (float) (sdf.res_y - 1);
-    to_voxel.matrix[1][2] = 0.f;
-    to_voxel.matrix[1][3] = 0.f;
-
     to_voxel.matrix[2][0] = 0.f;
+    to_voxel.matrix[3][0] = 0.f;
+
+    to_voxel.matrix[0][1] = 0.f;
+    to_voxel.matrix[1][1] = (float) (sdf.res_y - 1);
     to_voxel.matrix[2][1] = 0.f;
+    to_voxel.matrix[3][1] = 0.f;
+
+    to_voxel.matrix[0][2] = 0.f;
+    to_voxel.matrix[1][2] = 0.f;
     to_voxel.matrix[2][2] = (float) (sdf.res_z - 1);
-    to_voxel.matrix[2][3] = 0.f;
+    to_voxel.matrix[3][2] = 0.f;
 
     Vector3u voxel_position = index_to_vec(voxel_index, sdf);
-    to_voxel.matrix[3][0] = -1.f * ((float) voxel_position.x()); 
-    to_voxel.matrix[3][1] = -1.f * ((float) voxel_position.y());
-    to_voxel.matrix[3][2] = -1.f * ((float) voxel_position.z());
+    to_voxel.matrix[0][3] = -1.f * ((float) voxel_position.x());
+    to_voxel.matrix[1][3] = -1.f * ((float) voxel_position.y());
+    to_voxel.matrix[2][3] = -1.f * ((float) voxel_position.z());
     to_voxel.matrix[3][3] = 1.f;
 
     ray = to_voxel.transform_ray(ray); // voxel-space [0, 1] x [0, 1] x [0, 1]
@@ -244,7 +244,7 @@ extern "C" __global__ void __intersection__sdfgrid() {
     float d_y = ray.d.y();
     float d_z = ray.d.z();
 
-    float a  = s101 - s001; 
+    float a  = s101 - s001;
     float k0 = s000;
     float k1 = s100 - s000;
     float k2 = s010 - s000;

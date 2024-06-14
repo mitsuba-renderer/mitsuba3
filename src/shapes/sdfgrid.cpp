@@ -647,23 +647,23 @@ private:
         {
             ScalarMatrix4f m{};
             m[0][0] = (float) (shape[2] - 1);
-            m[0][1] = 0.f;
-            m[0][2] = 0.f;
-            m[0][3] = 0.f;
-
             m[1][0] = 0.f;
-            m[1][1] = (float) (shape[1] - 1);
-            m[1][2] = 0.f;
-            m[1][3] = 0.f;
-
             m[2][0] = 0.f;
-            m[2][1] = 0.f;
-            m[2][2] = (float) (shape[0] - 1);
-            m[2][3] = 0.f;
+            m[3][0] = 0.f;
 
-            m[3][0] = -1.f * (float) voxel_pos.x();
-            m[3][1] = -1.f * (float) voxel_pos.y();
-            m[3][2] = -1.f * (float) voxel_pos.z();
+            m[0][1] = 0.f;
+            m[1][1] = (float) (shape[1] - 1);
+            m[2][1] = 0.f;
+            m[3][1] = 0.f;
+
+            m[0][2] = 0.f;
+            m[1][2] = 0.f;
+            m[2][2] = (float) (shape[0] - 1);
+            m[3][2] = 0.f;
+
+            m[0][3] = -1.f * (float) voxel_pos.x();
+            m[1][3] = -1.f * (float) voxel_pos.y();
+            m[2][3] = -1.f * (float) voxel_pos.z();
             m[3][3] = 1.f;
 
             ScalarTransform4f to_voxel = ScalarTransform4f(m);
@@ -1009,6 +1009,7 @@ private:
 
             UInt32 counter = UInt32(0);
             UInt32 slot = dr::scatter_inc(counter, UInt32(0), occupied);
+            dr::eval(slot);
 
             m_jit_voxel_indices = dr::zeros<UInt32>(max_voxel_count);
 
