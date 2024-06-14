@@ -498,6 +498,7 @@ def test18_primitive_silhouette_projection_perimeter(variants_vec_rgb):
             dr.reinterpret_array(mi.UInt32, curve_ptr)))
 
 
+@fresolver_append_path
 def test19_precompute_silhouette(variants_vec_rgb):
     curve = mi.load_dict({
         "type" : "bsplinecurve",
@@ -514,6 +515,7 @@ def test19_precompute_silhouette(variants_vec_rgb):
     assert weights[1] == 0.5
 
 
+@fresolver_append_path
 def test20_sample_precomputed_silhouette(variants_vec_rgb):
     curve = mi.load_dict({
         "type" : "bsplinecurve",

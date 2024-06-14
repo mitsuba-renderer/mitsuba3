@@ -2,7 +2,7 @@ import pytest
 import drjit as dr
 import mitsuba as mi
 
-from mitsuba.scalar_rgb.test.util import fresolver_append_path
+from mitsuba.scalar_rgb.test.util import find_resource
 
 def test01_construct(variants_all):
     # Single AOV
@@ -37,9 +37,8 @@ def test01_construct(variants_all):
         })
 
 
-@fresolver_append_path
 def test02_radiance_consistent(variants_all_rgb):
-    scene = mi.load_file('resources/data/scenes/cbox/cbox.xml', res=32)
+    scene = mi.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'), res=32)
 
     path_integrator = mi.load_dict({
         'type': 'path',
@@ -60,9 +59,8 @@ def test02_radiance_consistent(variants_all_rgb):
     assert(dr.allclose(path_image, aovs_image[:,:,:3]))
 
 
-@fresolver_append_path
 def test03_supports_multiple_inner_integrators(variants_all_rgb):
-    scene = mi.load_file('resources/data/scenes/cbox/cbox.xml', res=32)
+    scene = mi.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'), res=32)
 
     path_integrator = mi.load_dict({
         'type': 'path',
@@ -155,10 +153,9 @@ def test04_check_aov_correct(variants_all_rgb):
     assert(dr.allclose(image[:,:, -1:].array, [plane_offset] * image_dim))
 
 
-@fresolver_append_path
 def test05_check_aov_film(variants_all_rgb):
     import numpy as np
-    scene = mi.load_file('resources/data/scenes/cbox/cbox.xml', res=32)
+    scene = mi.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'), res=32)
 
     path_integrator = mi.load_dict({
         'type': 'path',
