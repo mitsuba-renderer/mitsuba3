@@ -3,7 +3,7 @@
 #include <mitsuba/python/python.h>
 #include <drjit/python.h>
 
-template <typename Array, typename Base>
+template <typename Array>
 void bind_dr(nb::module_ &m, const char *name) {
     // Check if Array has already been bound (it is just a C++ alias)
     nb::handle h = nb::type<Array>();
@@ -31,10 +31,8 @@ void dr_bind_vp_impl(nb::module_ &m, const std::string &prefix) {
     else
         suffix += "u";
 
-    bind_dr<Vector<Type, Size>, dr::Array<Type, Size>>(
-        m, (prefix + "Vector" + suffix).c_str());
-    bind_dr<Point<Type, Size>, dr::Array<Type, Size>>(
-        m, (prefix + "Point" + suffix).c_str());
+    bind_dr<Vector<Type, Size>>(m, (prefix + "Vector" + suffix).c_str());
+    bind_dr<Point<Type, Size>>(m, (prefix + "Point" + suffix).c_str());
 }
 
 template <typename Type, bool IsDouble = false>
@@ -91,32 +89,30 @@ MI_PY_EXPORT(DrJit) {
     dr_bind_vp<Float64, true>(m);
     dr_bind_vp<ScalarFloat64, true>(m, "Scalar");
 
-    bind_dr<Color<Float, 0>, dr::Array<Float, 0>>(m, "Color0f");
-    bind_dr<Color<Float, 1>, dr::Array<Float, 1>>(m, "Color1f");
-    bind_dr<Color<Float, 3>, dr::Array<Float, 3>>(m, "Color3f");
-    bind_dr<Color<ScalarFloat, 0>, dr::Array<ScalarFloat, 0>>(m, "ScalarColor0f");
-    bind_dr<Color<ScalarFloat, 1>, dr::Array<ScalarFloat, 1>>(m, "ScalarColor1f");
-    bind_dr<Color<ScalarFloat, 3>, dr::Array<ScalarFloat, 3>>(m, "ScalarColor3f");
+    bind_dr<Color<Float, 0>>(m, "Color0f");
+    bind_dr<Color<Float, 1>>(m, "Color1f");
+    bind_dr<Color<Float, 3>>(m, "Color3f");
+    bind_dr<Color<ScalarFloat, 0>>(m, "ScalarColor0f");
+    bind_dr<Color<ScalarFloat, 1>>(m, "ScalarColor1f");
+    bind_dr<Color<ScalarFloat, 3>>(m, "ScalarColor3f");
 
-    bind_dr<Color<Float64, 0>, dr::Array<Float64, 0>>(m, "Color0d");
-    bind_dr<Color<Float64, 1>, dr::Array<Float64, 1>>(m, "Color1d");
-    bind_dr<Color<Float64, 3>, dr::Array<Float64, 3>>(m, "Color3d");
-    bind_dr<Color<ScalarFloat64, 0>, dr::Array<ScalarFloat64, 0>>(m, "ScalarColor0d");
-    bind_dr<Color<ScalarFloat64, 1>, dr::Array<ScalarFloat64, 1>>(m, "ScalarColor1d");
-    bind_dr<Color<ScalarFloat64, 3>, dr::Array<ScalarFloat64, 3>>(m, "ScalarColor3d");
+    bind_dr<Color<Float64, 0>>(m, "Color0d");
+    bind_dr<Color<Float64, 1>>(m, "Color1d");
+    bind_dr<Color<Float64, 3>>(m, "Color3d");
+    bind_dr<Color<ScalarFloat64, 0>>(m, "ScalarColor0d");
+    bind_dr<Color<ScalarFloat64, 1>>(m, "ScalarColor1d");
+    bind_dr<Color<ScalarFloat64, 3>>(m, "ScalarColor3d");
 
-    bind_dr<Normal3f, dr::Array<Float, 3>>(m, "Normal3f");
-    bind_dr<Normal3d, dr::Array<Float64, 3>>(m, "Normal3d");
-    bind_dr<ScalarNormal3f, dr::Array<ScalarFloat, 3>>(m, "ScalarNormal3f");
-    bind_dr<ScalarNormal3d, dr::Array<ScalarFloat64, 3>>(m, "ScalarNormal3d");
+    bind_dr<Normal3f>(m, "Normal3f");
+    bind_dr<Normal3d>(m, "Normal3d");
+    bind_dr<ScalarNormal3f>(m, "ScalarNormal3f");
+    bind_dr<ScalarNormal3d>(m, "ScalarNormal3d");
 
-    using DrSpec = dr::Array<dr::value_t<UnpolarizedSpectrum>,
-                             dr::size_v<UnpolarizedSpectrum>>;
     if constexpr (is_polarized_v<Spectrum>) {
-        bind_dr<Spectrum, dr::Matrix<DrSpec, 4>>(m, "Spectrum");
-        bind_dr<UnpolarizedSpectrum, DrSpec>(m, "UnpolarizedSpectrum");
+        bind_dr<Spectrum>(m, "Spectrum");
+        bind_dr<UnpolarizedSpectrum>(m, "UnpolarizedSpectrum");
     } else {
-        bind_dr<Spectrum, DrSpec>(m, "Spectrum");
+        bind_dr<Spectrum>(m, "Spectrum");
         m.attr("UnpolarizedSpectrum") = m.attr("Spectrum");
     }
 
