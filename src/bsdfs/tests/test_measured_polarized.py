@@ -41,10 +41,14 @@ def test01_evaluation(variant_scalar_spectral_polarized):
                       dr.cos(theta_o)])
 
     value = bsdf.eval(ctx, si, wi)
-    value = np.array(value)[0,:,:]  # Extract Mueller matrix for one wavelength
 
-    ref = [[ 0.17119151, -0.00223141,  0.00754681,  0.00010021],
-           [-0.00393003,  0.00427623, -0.00117126, -0.00310079],
-           [-0.00424358,  0.00312945, -0.01219576,  0.00086167],
-           [ 0.00099006, -0.00345963, -0.00285343, -0.00205485]]
-    assert dr.allclose(ref, value, rtol=1e-4)
+    value = dr.reshape(dr.scalar.TensorXf, dr.ravel(value), shape=(4,4,4))
+
+    value = value[0,:,:]  # Extract Mueller matrix for one wavelength
+
+    ref =  [[0.171191, -0.00224344, 0.00754325, 0.000100205],
+            [-0.00392327, 0.00427306, -0.001145, -0.00310216],
+            [-0.00424985, 0.00315571, -0.0121926, 0.000856727],
+            [0.000990057, -0.00345507, -0.00285894, -0.00205486]]
+
+    assert dr.allclose(ref, value)

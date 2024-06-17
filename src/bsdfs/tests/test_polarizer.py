@@ -377,7 +377,7 @@ def test06_tilted(variant_scalar_mono_polarized):
                 'type': 'polarizer',
                 'theta': {'type': 'spectrum', 'value': 0.0}
             },
-            'to_world': mi.ScalarTransform4f.rotate(axis=(0, 0, 1), angle=-angle)
+            'to_world': mi.ScalarTransform4f().rotate(axis=(0, 0, 1), angle=-angle)
         })
 
         si_rot = scene_rot.ray_intersect(ray)

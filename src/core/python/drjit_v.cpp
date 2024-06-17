@@ -109,8 +109,9 @@ MI_PY_EXPORT(DrJit) {
     bind_dr<ScalarNormal3d>(m, "ScalarNormal3d");
 
     if constexpr (is_polarized_v<Spectrum>) {
-        bind_dr<Spectrum>(m, "Spectrum");
         bind_dr<UnpolarizedSpectrum>(m, "UnpolarizedSpectrum");
+        bind_dr<dr::value_t<Spectrum>>(m, "Spectrum_vt");
+        bind_dr<Spectrum>(m, "Spectrum");
     } else {
         bind_dr<Spectrum>(m, "Spectrum");
         m.attr("UnpolarizedSpectrum") = m.attr("Spectrum");
