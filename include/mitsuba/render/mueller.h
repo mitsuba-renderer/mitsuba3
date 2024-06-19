@@ -94,8 +94,8 @@ MuellerMatrix<Float> linear_retarder(Float phase) {
     return MuellerMatrix<Float>(
         1, 0, 0, 0,
         0, 1, 0, 0,
-        0, 0, c, -s,
-        0, 0, s, c
+        0, 0, c, s,
+        0, 0, -s, c
     );
 }
 
@@ -165,8 +165,8 @@ MuellerMatrix<Float> rotator(Float theta) {
     auto [s, c] = dr::sincos(2.f * theta);
     return MuellerMatrix<Float>(
         1, 0, 0, 0,
-        0, c, -s, 0,
-        0, s, c, 0,
+        0, c, s, 0,
+        0, -s, c, 0,
         0, 0, 0, 1
     );
 }
@@ -217,8 +217,8 @@ MuellerMatrix<Float> specular_reflection(Float cos_theta_i, Eta eta) {
     return MuellerMatrix<Float>(
         a, b, 0, 0,
         b, a, 0, 0,
-        0, 0, c * cos_delta, c * sin_delta,
-        0, 0, -c * sin_delta,  c * cos_delta
+        0, 0, c * cos_delta, -c * sin_delta,
+        0, 0, c * sin_delta,  c * cos_delta
     );
 }
 
