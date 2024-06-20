@@ -526,7 +526,7 @@ public:
 
         // Ray is perpendicular to plane
         dr::mask_t<FloatP> no_hit =
-            plane_t == 0 && dr::all(ray.o != center);
+            plane_t == Value(0) && dr::all(ray.o != center);
 
         Value3 plane_p = ray(FloatP(plane_t));
 

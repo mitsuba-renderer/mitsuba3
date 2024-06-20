@@ -267,11 +267,11 @@ public:
         for (size_t i = 0; i < curve_1st_idx.size(); ++i) {
             size_t next_curve_idx = i + 1 < curve_1st_idx.size() ? curve_1st_idx[i + 1] : vertices.size();
             size_t curve_segment_count = next_curve_idx - curve_1st_idx[i] - 3;
-            curves_1st_prim_idx[i] = segment_index;
+            curves_1st_prim_idx[i] = (ScalarIndex) segment_index;
             for (size_t j = 0; j < curve_segment_count; ++j)
                 indices[segment_index++] = (ScalarIndex) (curve_1st_idx[i] + j);
         }
-        curves_1st_prim_idx[curve_1st_idx.size()] = segment_index;
+        curves_1st_prim_idx[curve_1st_idx.size()] = (ScalarIndex) segment_index;
 
         m_indices = dr::load<UInt32Storage>(indices.get(), segment_count);
         m_curves_prim_idx = dr::load<UInt32Storage>(curves_1st_prim_idx.get(),
@@ -363,7 +363,7 @@ public:
         Float v_global = uv.y();
         size_t segment_count = dr::width(m_indices);
         UInt32 segment_idx = dr::floor2int<UInt32>(v_global * segment_count);
-        segment_idx = dr::clip(segment_idx, 0, segment_count - 1); // In case v_global == 1
+        segment_idx = dr::clip(segment_idx, 0, (uint32_t) segment_count - 1); // In case v_global == 1
         Float v_local = v_global * segment_count - segment_idx;
 
         pi.prim_uv.x() = v_local;
@@ -416,7 +416,7 @@ public:
             // sample a curve
             size_t curve_count = dr::width(m_curves_prim_idx) - 1;
             UInt32 curve_idx = dr::floor2int<UInt32>(sample.x() * curve_count);
-            curve_idx = dr::clip(curve_idx, 0, curve_count - 1); // In case sample.x() == 1
+            curve_idx = dr::clip(curve_idx, 0, (uint32_t) curve_count - 1); // In case sample.x() == 1
 
             // sample either extremity of the curve
             UInt32 first_segment_idx =
@@ -532,7 +532,7 @@ public:
 
         size_t curve_count = dr::width(m_curves_prim_idx) - 1;
         UInt32 curve_idx = dr::binary_search<UInt32>(
-            0, curve_count,
+            0, (uint32_t) curve_count,
             [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
                 UInt32 prim_id =
                     dr::gather<UInt32>(m_curves_prim_idx, idx, active);
@@ -631,7 +631,7 @@ public:
             // Find which curve this segment is in and project to its extremities
             size_t curve_count = dr::width(m_curves_prim_idx) - 1;
             UInt32 curve_idx = dr::binary_search<UInt32>(
-                0, curve_count,
+                0, (uint32_t) curve_count,
                 [&](UInt32 idx) DRJIT_INLINE_LAMBDA {
                     UInt32 prim_id =
                         dr::gather<UInt32>(m_curves_prim_idx, idx, active);
@@ -758,12 +758,12 @@ public:
             dr::masked(u_lower, u_lower > 1.f) -= 1.f;
 
             ss.uv = Point2f(u_lower, si.uv.y());
-            SurfaceInteraction3f si = eval_parameterization(
+            SurfaceInteraction3f si_ = eval_parameterization(
                 ss.uv, +RayFlags::AllNonDifferentiable, active);
-            ss.p = si.p;
-            ss.n = si.n;
+            ss.p = si_.p;
+            ss.n = si_.n;
             ss.d = dr::normalize(ss.p - viewpoint);
-            ss.prim_index = si.prim_index;
+            ss.prim_index = si_.prim_index;
 
             Vector3f dp_du, dp_dv, dn_du, dn_dv;
             std::tie(dp_du, dp_dv, dn_du, dn_dv, std::ignore, std::ignore,
@@ -808,7 +808,7 @@ public:
         // Perimeter silhouette
         size_t curve_count = dr::width(m_curves_prim_idx) - 1;
         UInt32 curve_idx = dr::floor2int<UInt32>(sample2 * curve_count);
-        curve_idx = dr::clip(curve_idx, 0, curve_count - 1); // In case sample2 == 1
+        curve_idx = dr::clip(curve_idx, 0, (uint32_t) curve_count - 1); // In case sample2 == 1
 
         UInt32 first_segment_idx =
             dr::gather<UInt32>(m_curves_prim_idx, curve_idx, active);

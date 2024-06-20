@@ -61,8 +61,8 @@ static constexpr size_t OPTIX_SHAPE_TYPE_COUNT = std::size(OPTIX_SHAPE_ORDER);
 static_assert(OPTIX_SHAPE_TYPE_COUNT == NumOptixShapeTypes);
 
 struct OptixShape {
-    std::string name; /// Lowercase version of OPTIX_SHAPE_TYPE_NAMES
-    bool is_builtin; /// Whether or not this is a built-in OptiX shape type
+    std::string name;        /// Lowercase version of OPTIX_SHAPE_TYPE_NAMES
+    bool is_builtin = false; /// Whether or not this is a built-in OptiX shape type
 
     std::string ch_name() const { return "__closesthit__" + name; }
     std::string is_name() const { return "__intersection__" + name; }

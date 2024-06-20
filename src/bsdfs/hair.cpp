@@ -254,7 +254,7 @@ public:
             Bool sample_p = a_p_pdf[i] < u[0][0];
             u[0][0] -= a_p_pdf[i];
 
-            dr::masked(p, sample_p) = i + 1;
+            dr::masked(p, sample_p) = (uint32_t)i + 1;
             dr::masked(u[0][1], sample_p) = u[0][0] / a_p_pdf[i + 1];
         }
 
@@ -304,10 +304,10 @@ public:
         // PDF for sampled outgoing direction
         for (size_t i = 0; i < P_MAX; ++i) {
             // Account for scales on hair surface
-            auto [sin_theta_ip, cos_theta_ip] =
+            auto [sin_theta_ip_, cos_theta_ip_] =
                 reframe_with_scales(sin_theta_i, cos_theta_i, i);
-            Vector3f wi_p(cos_theta_ip * cos_phi_i, sin_theta_ip,
-                          cos_theta_ip * sin_phi_i);
+            Vector3f wi_p(cos_theta_ip_ * cos_phi_i, sin_theta_ip_,
+                          cos_theta_ip_ * sin_phi_i);
 
             bs.pdf += longitudinal_scattering(wi_p, wo, { 0, 1.f, 0 }, m_v[i]) *
                       dr::TwoPi<Float> * a_p_pdf[i] *

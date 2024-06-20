@@ -22,12 +22,27 @@
 
 namespace nb = nanobind;
 
+/**
+ * On Windows the GIL is not held when we load DLLs due to potential deadlocks 
+ * with the Windows loader-lock.
+ * (see https://github.com/python/cpython/issues/78076 that describes a similar
+ * issue). Here, initialization of static variables is performed during DLL
+ * loading.
+ *
+ * The issue is that the default constructor of nb::dict calls PyDict_New
+ * however the safe use of the CPython API requires that the GIL is acquired.
+ *
+ * Hence we directly use CPython calls for our global dictionaries
+**/
+
 /// Mapping from variant name to module
-static nb::dict variant_modules{};
-/// Current variant (string)
-static nb::object curr_variant = nb::none();
+PyObject *variant_modules = nullptr;
+
 /// Additional reference to this module's `__dict__` attribute
-static nb::dict mi_dict{};
+PyObject *mi_dict = nullptr;
+
+/// Current variant (string)
+nb::object curr_variant;
 
 nb::object import_with_deepbind_if_necessary(const char* name) {
 #if defined(__clang__) && !defined(__APPLE__)
@@ -54,15 +69,21 @@ nb::object import_with_deepbind_if_necessary(const char* name) {
     return out;
 }
 
+static inline void Safe_PyDict_SetItem(PyObject *p, PyObject *key, PyObject *val) {
+    int rv = PyDict_SetItem(p, key, val);
+    if (rv)
+        nb::raise_python_error();
+}
+
 /// Return the Python module associated with a given variant name
 static nb::object variant_module(nb::handle variant) {
-    nb::object result = variant_modules[variant];
+    nb::object result = nb::borrow(PyDict_GetItem(variant_modules, variant.ptr()));
     if (!result.is_none())
         return result;
 
     nb::str module_name = nb::str("mitsuba.{}").format(variant);
     result = import_with_deepbind_if_necessary(module_name.c_str());
-    variant_modules[variant] = result;
+    Safe_PyDict_SetItem(variant_modules, variant.ptr(), result.ptr());
 
     return result;
 }
@@ -72,7 +93,7 @@ static void set_variant(nb::args args) {
     nb::object new_variant{};
     for (auto arg : args) {
         // Find the first valid & compiled variant in the arguments
-        if (variant_modules.contains(arg)) {
+        if (PyDict_Contains(variant_modules, arg.ptr()) == 1) {
             new_variant = nb::borrow(arg);
             break;
         }
@@ -80,7 +101,8 @@ static void set_variant(nb::args args) {
 
     if (!new_variant) {
         nb::object all_args(nb::str(", ").attr("join")(args));
-        nb::object all_variants(nb::str(", ").attr("join")(variant_modules.keys()));
+        nb::object all_variants(
+            nb::str(", ").attr("join")(nb::steal(PyDict_Keys(variant_modules))));
         throw nb::import_error(
             nb::str("Requested an unsupported variant \"{}\". The "
                     "following variants are available: {}.")
@@ -97,17 +119,24 @@ static void set_variant(nb::args args) {
         for (const auto &k : variant_dict.keys())
             if (!nb::bool_(k.attr("startswith")("__")) &&
                 !nb::bool_(k.attr("endswith")("__")))
-                mi_dict[k] = variant_dict[k];
+                Safe_PyDict_SetItem(mi_dict, k.ptr(),
+                    PyDict_GetItem(variant_dict.ptr(), k.ptr()));
     }
 
     // FIXME: Reload python integrators if we're setting a JIT enabled variant
     nb::module_ mi_python = nb::module_::import_("mitsuba.python.ad.integrators");
     nb::steal(PyImport_ReloadModule(mi_python.ptr()));
-};
+}
 
 NB_MODULE(mitsuba_alias, m) {
     // Temporarily change the module name (for pydoc)
     m.attr("__name__") = "mitsuba";
+
+    curr_variant = nb::none();
+
+    if (!variant_modules) {
+        variant_modules = PyDict_New();
+    }
 
     // Need to populate `__path__` we do it by using the `__file__` attribute
     // of a Python file which is located in the same directory as this module
@@ -127,38 +156,45 @@ NB_MODULE(mitsuba_alias, m) {
 
     nb::list all_variant_names(nb::str(MI_VARIANTS).attr("split")("\n"));
     size_t variant_count = nb::len(all_variant_names) - 1;
-    for (size_t i = 0; i < variant_count; ++i)
+    for (size_t i = 0; i < variant_count; ++i) {
         // Fill with `None`, so we can also use `variant_modules.keys()` as the
         // set of variant names
-        variant_modules[all_variant_names[i]] = nb::none();
+        Safe_PyDict_SetItem(variant_modules,
+            all_variant_names[i].ptr(), nb::none().ptr());
+    }
 
     m.def("variant", []() { return curr_variant ? curr_variant : nb::none(); });
-    m.def("variants", []() { return variant_modules.keys(); });
+    m.def("variants", []() { return nb::steal(PyDict_Keys(variant_modules)); });
     m.def("set_variant", set_variant);
 
     /// Fill `__dict__` with all objects in `mitsuba_ext` and `mitsuba.python`
-    mi_dict = m.attr("__dict__");
+    mi_dict = m.attr("__dict__").ptr();
     nb::object mi_ext = import_with_deepbind_if_necessary("mitsuba.mitsuba_ext");
     nb::object mi_python = nb::module_::import_("mitsuba.python");
     nb::dict mitsuba_ext_dict = mi_ext.attr("__dict__");
     for (const auto &k : mitsuba_ext_dict.keys())
         if (!nb::bool_(k.attr("startswith")("__")) &&
-            !nb::bool_(k.attr("endswith")("__")))
-            mi_dict[k] = mitsuba_ext_dict[k];
+            !nb::bool_(k.attr("endswith")("__"))) {
+            Safe_PyDict_SetItem(mi_dict, k.ptr(), mitsuba_ext_dict[k].ptr());
+        }
+
     nb::dict mitsuba_python_dict = mi_python.attr("__dict__");
     for (const auto &k : mitsuba_python_dict.keys())
         if (!nb::bool_(k.attr("startswith")("__")) &&
-            !nb::bool_(k.attr("endswith")("__")))
-            mi_dict[k] = mitsuba_python_dict[k];
+            !nb::bool_(k.attr("endswith")("__"))) {
+            Safe_PyDict_SetItem(mi_dict, k.ptr(), mitsuba_python_dict[k].ptr());
+        }
 
     /// Cleanup static variables, this is called when the interpreter is exiting
     auto atexit = nb::module_::import_("atexit");
     atexit.attr("register")(nb::cpp_function([]() {
         curr_variant.reset();
-        variant_modules.reset();
-        mi_dict.reset();
-    }));
 
+        if (variant_modules) {
+            PyObject_Free(variant_modules);
+            variant_modules = nullptr; 
+        }
+    }));
     // Change module name back to correct value
     m.attr("__name__") = "mitsuba_alias";
 }

@@ -11,7 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(xml)
 
 struct ScopedSetJITScope {
-    ScopedSetJITScope(uint32_t backend, uint32_t scope) : backend(backend) {
+    ScopedSetJITScope(uint32_t backend, uint32_t scope) : backend(backend), backup(0) {
 #if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
         if (backend) {
             backup = jit_scope((JitBackend) backend);

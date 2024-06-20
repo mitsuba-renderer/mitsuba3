@@ -518,7 +518,7 @@ private:
         if (!dr::any(m_pdf > 0.f))
             Throw("ContinuousDistribution: no probability mass found!");
 
-        uint32_t size = m_pdf.size() - 1;
+        uint32_t size = (uint32_t) m_pdf.size() - 1;
         m_interval_size_scalar = (m_range.y() - m_range.x()) / size;
         m_interval_size = dr::opaque<Float>(m_interval_size_scalar);
         UInt32 index_1_to_n = dr::arange<UInt32>(1, size + 1);
@@ -880,7 +880,7 @@ private:
         if (!dr::any(m_pdf > 0.f))
             Throw("IrregularContinuousDistribution: no probability mass found!");
 
-        uint32_t size = m_pdf.size() - 1;
+        uint32_t size = (uint32_t) m_pdf.size() - 1;
         UInt32 index_curr = dr::arange<UInt32>(size);
         UInt32 index_next = dr::arange<UInt32>(1, size + 1);
 

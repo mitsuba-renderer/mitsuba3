@@ -232,7 +232,7 @@ public:
         std::vector<ref<Shape>> shapes = scene->shapes();
         size_t counter = 1; // 0 reserved for background
         for (const ref<Shape>& shape: shapes)
-            shape_to_idx[shape.get()] = counter++;
+            shape_to_idx[shape.get()] = (uint32_t) counter++;
 
         // We want to pack the channels such that base_channels and inner-integrator
         // RGBA channels are contiguous
@@ -324,7 +324,7 @@ public:
                         if (it == shape_to_idx.end())
                             *aovs++ = 0;
                         else
-                            *aovs++ = it->second;
+                            *aovs++ = Float(it->second);
                     } else {
                         *aovs++ = Float(dr::reinterpret_array<UInt32>(si.shape));
                     }
@@ -474,7 +474,7 @@ protected:
         using Array = typename TensorXf::Array;
 
         size_t slice_shape[] = { src.shape(0), src.shape(1), num_channels };
-        uint32_t slice_flat = slice_shape[0] * slice_shape[1] * slice_shape[2];
+        uint32_t slice_flat = (uint32_t) (slice_shape[0] * slice_shape[1] * slice_shape[2]);
 
         DynamicBuffer<UInt32> idx = dr::arange<DynamicBuffer<UInt32>>(slice_flat);
         DynamicBuffer<UInt32> pixel_idx = idx / num_channels;
@@ -487,14 +487,14 @@ protected:
 
     void set_channels_slice(const TensorXf& src, TensorXf& dst, size_t dst_channel_offset) const {
         auto* src_shape = src.shape().data();
-        uint32_t src_flat = src_shape[0] * src_shape[1] * src_shape[2];
+        uint32_t src_flat = (uint32_t) (src_shape[0] * src_shape[1] * src_shape[2]);
 
         DynamicBuffer<UInt32> idx = dr::arange<DynamicBuffer<UInt32>>(src_flat);
         DynamicBuffer<UInt32> pixel_idx = idx / src_shape[2];
         DynamicBuffer<UInt32> dst_channel_idx = dr::fmadd(pixel_idx, uint32_t(-(int)src_shape[2]), idx)
             + dst_channel_offset;
 
-        uint32_t num_dst_channels = dst.shape(2);
+        uint32_t num_dst_channels = (uint32_t) dst.shape(2);
         DynamicBuffer<UInt32> dst_values_idx = dr::fmadd(pixel_idx, num_dst_channels, dst_channel_idx);
 
         dr::scatter(
@@ -524,7 +524,7 @@ protected:
         uint32_t channel_offset = 0;
         for (const auto& image : inner_images) {
             set_channels_slice(image, combined_image, channel_offset);
-            channel_offset += image.shape(2);
+            channel_offset += (uint32_t)image.shape(2);
         }
 
         // Load aovs image into combined

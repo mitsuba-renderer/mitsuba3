@@ -33,7 +33,11 @@ if (MI_PROFILER_NVTX)
 endif()
 
 if (NOT SKBUILD)
-  set(DRJIT_PYTHON_DST_DIR "${CMAKE_CURRENT_BINARY_DIR}/../python/drjit")
+  if (MSVC)
+    set(DRJIT_PYTHON_DST_DIR "${MI_BINARY_DIR}/python/drjit")
+  else()
+    set(DRJIT_PYTHON_DST_DIR "${CMAKE_CURRENT_BINARY_DIR}/../python/drjit")
+  endif()
   add_subdirectory(drjit)
 
   if (NOT MI_ENABLE_JIT)
@@ -188,6 +192,13 @@ unset(CMAKE_CXX_VISIBILITY_PRESET)
 add_subdirectory(openexr)
 set(CMAKE_CXX_VISIBILITY_PRESET "hidden")
 
+if (MSVC)
+  target_compile_options(Half PRIVATE /W2)
+  target_compile_options(IlmThread PRIVATE /W2)
+  target_compile_options(Imath PRIVATE /W2)
+  target_compile_options(IlmImf PRIVATE /W1)
+endif()
+
 set_property(TARGET
   IexMath IlmThread Half Iex Imath IlmImf IexMath IlmImfUtil
   PROPERTY FOLDER "dependencies/openexr")
@@ -328,6 +339,10 @@ mark_as_advanced(
 add_subdirectory(rgb2spec)
 set(RGB2SPEC_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/rgb2spec PARENT_SCOPE)
 set_target_properties(rgb2spec rgb2spec_opt rgb2spec_opt_run PROPERTIES FOLDER "dependencies/rgb2spec")
+
+if (MSVC)
+  target_compile_options(rgb2spec_opt PRIVATE "/wd4849" "/wd4456")
+endif()
 
 # ----------------------------------------------------------
 #  Fast floating point parser (interface library)

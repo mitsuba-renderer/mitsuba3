@@ -839,8 +839,10 @@ protected:
         } else {
             if constexpr (dr::is_jit_v<Float>)
                 values = tensor.array();
-            else
-                values = dr::load<FloatStorage>(tensor.data(), pixel_count);
+            else {
+                using StoredTypeArray= DynamicBuffer<StoredType>;
+                values = dr::load<StoredTypeArray>(tensor.data(), pixel_count);
+            }
         }
 
         if (init_mean) {
