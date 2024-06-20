@@ -492,14 +492,6 @@ endif()
 
 if (NOT SKBUILD)
   list(APPEND MI_DEPEND nanothread)
-
-  if (MI_ENABLE_JIT)
-    list(APPEND MI_DEPEND drjit-core)
-  endif()
-
-  if (MI_ENABLE_AUTODIFF)
-    list(APPEND MI_DEPEND drjit-extra)
-  endif()
 endif()
 
 # Copy shared libraries to Python folders (no rpath on Windows)
@@ -509,9 +501,7 @@ if (MSVC AND MI_ENABLE_PYTHON)
 
   foreach(target ${COPY_TARGETS})
     get_target_property(TARGET_FOLDER ${target} FOLDER)
-    if (TARGET_FOLDER STREQUAL "drjit")
-        set(COPY_TARGET_DESTINATION ${MI_BINARY_DIR}/python/drjit/$<TARGET_FILE_NAME:${target}>)
-    elseif(TARGET_FOLDER MATCHES "plugins/.*$")
+    if(TARGET_FOLDER MATCHES "plugins/.*$")
         set(COPY_TARGET_DESTINATION ${MI_BINARY_DIR}/python/mitsuba/plugins/$<TARGET_FILE_NAME:${target}>)
     else()
         set(COPY_TARGET_DESTINATION ${MI_BINARY_DIR}/python/mitsuba/$<TARGET_FILE_NAME:${target}>)

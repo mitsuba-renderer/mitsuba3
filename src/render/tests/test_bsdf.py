@@ -7,7 +7,7 @@ import numpy as np
 def test01_ctx_construct(variant_scalar_rgb):
     ctx = mi.BSDFContext()
     assert ctx.type_mask == +mi.BSDFFlags.All
-    assert ctx.component == np.uint32(-1)
+    assert ctx.component == np.iinfo(np.uint32).max
     assert ctx.mode == mi.TransportMode.Radiance
     ctx.reverse()
     assert ctx.mode == mi.TransportMode.Importance

@@ -21,7 +21,7 @@ extern Caster cast_object;
 struct DictInstance {
     Properties props;
     ref<Object> object = nullptr;
-    uint32_t scope;
+    uint32_t scope = 0;
     std::vector<std::pair<std::string, std::string>> dependencies;
 };
 
@@ -29,7 +29,7 @@ struct DictParseContext {
     ThreadEnvironment env;
     std::map<std::string, DictInstance> instances;
     std::map<std::string, std::string> aliases;
-    bool parallel;
+    bool parallel = false;
 };
 
 // Forward declaration
@@ -327,8 +327,8 @@ void parse_dictionary(DictParseContext &ctx,
 
             if (type2 == "resources") {
                 ref<FileResolver> fs = Thread::thread()->file_resolver();
-                std::string path = nb::cast<std::string>(dict2["path"]);
-                fs::path resource_path(path);
+                std::string path_ = nb::cast<std::string>(dict2["path"]);
+                fs::path resource_path(path_);
                 if (!resource_path.is_absolute()) {
                     // First try to resolve it starting in the Python file directory
                     nb::module_ inspect = nb::module_::import_("inspect");
@@ -337,7 +337,7 @@ void parse_dictionary(DictParseContext &ctx,
                     resource_path = current_file.parent_path() / resource_path;
                     // Otherwise try to resolve it with the FileResolver
                     if (!fs::exists(resource_path))
-                        resource_path = fs->resolve(path);
+                        resource_path = fs->resolve(path_);
                 }
                 if (!fs::exists(resource_path))
                     Throw("path: folder %s not found", resource_path);

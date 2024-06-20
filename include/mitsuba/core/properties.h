@@ -403,7 +403,7 @@ private:
 };
 
 template <typename Float>
-class MI_EXPORT_LIB PropertiesV : public Properties {
+class PropertiesV : public Properties {
 public:
     PropertiesV() : Properties() {};
     PropertiesV(const PropertiesV& p) : Properties() { share(p); }

@@ -206,13 +206,13 @@ public:
                 if (!volume_grid)
                     Throw("Property \"grid\" must be a VolumeGrid instance.");
                 res = volume_grid->size();
-                channel_count = volume_grid->channel_count();
+                channel_count = (uint32_t) volume_grid->channel_count();
             } else if(props.has_property("data")) {
                 tensor = props.tensor<TensorXf>("data");
                 if (tensor->ndim() != 3 && tensor->ndim() != 4)
                     Throw("Tensor->has %ul dimensions. Expected 3 or 4", tensor->ndim());
                 res = { (uint32_t) tensor->shape(2), (uint32_t) tensor->shape(1), (uint32_t) tensor->shape(0) };
-                channel_count = tensor->ndim() == 4 ? tensor->shape(3) : 1;
+                channel_count = tensor->ndim() == 4 ? (uint32_t) tensor->shape(3) : 1;
 
                 if (channel_count != 1 && channel_count != 3 && channel_count != 6)
                     Throw("Tensor shape at index 3 is %lu invalid. Only volumes with 1, 3 or 6 "
@@ -224,7 +224,7 @@ public:
                     Log(Error, "\"%s\": file does not exist!", file_path);
                 volume_grid = new VolumeGrid(file_path);
                 res = volume_grid->size();
-                channel_count = volume_grid->channel_count();
+                channel_count = (uint32_t) volume_grid->channel_count();
             }
 
             ScalarUInt32 size = dr::prod(res);

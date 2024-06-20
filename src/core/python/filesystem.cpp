@@ -2,6 +2,7 @@
 #include <mitsuba/python/python.h>
 
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/wstring.h>
 
 using namespace mitsuba::filesystem;
 
@@ -27,7 +28,7 @@ MI_PY_EXPORT(filesystem) {
         .def(nb::self != nb::self, D(filesystem, path, operator_ne))
         .def("__repr__", &path::native, D(filesystem, path, native));
 
-    fs.attr("preferred_separator") = nb::cast(preferred_separator);
+    fs.attr("preferred_separator") = nb::cast(string_type(1, preferred_separator));
 
     fs.def("current_path", &current_path, D(filesystem, current_path));
     fs.def("absolute", &absolute, D(filesystem, absolute));

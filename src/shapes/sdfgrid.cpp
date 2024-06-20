@@ -463,7 +463,7 @@ public:
            Graphics Techniques (JCGT), vol. 11, no. 3, 94-113, 2022
         */
         auto shape = m_grid_texture.tensor().shape();
-        Vector3f resolution = Vector3f(shape[2] - 1, shape[1] - 1, shape[0] - 1);
+        Vector3f resolution = Vector3f(shape[2] - 1.f, shape[1] - 1.f, shape[0] - 1.f);
         Point3f scaled_p = p * resolution;
 
         Point3i v000 = Point3i(round(scaled_p)) + Vector3i(-1, -1, -1);
@@ -625,7 +625,7 @@ private:
         ScalarBoundingBox3f bbox_local;
         {
             ScalarPoint3f bbox_min =
-                ScalarPoint3f(voxel_pos.x(), voxel_pos.y(), voxel_pos.z());
+                ScalarPoint3f((float) voxel_pos.x(), (float) voxel_pos.y(), (float) voxel_pos.z());
             ScalarPoint3f bbox_max = bbox_min + ScalarPoint3f(1.f, 1.f, 1.f);
             bbox_min *= m_voxel_size.scalar();
             bbox_max *= m_voxel_size.scalar();
@@ -639,7 +639,7 @@ private:
 
         active = active && bbox_hit;
 
-        t_bbox_beg = dr::maximum(t_bbox_beg, 0.0);
+        t_bbox_beg = dr::maximum(t_bbox_beg, decltype(t_bbox_beg)(0.0));
         MaskP valid_t = t_bbox_beg < t_bbox_end;
         active &= valid_t;
 
@@ -748,7 +748,7 @@ private:
                  t_bbox_beg + t <= ray.maxt;
 
         return { active, dr::select(active, t_bbox_beg + t, dr::Infinity<FloatP>),
-                 Point<FloatP, 2>(0, 0), ((uint32_t) -1), prim_index };
+                 Point<FloatP, 2>(0.f, 0.f), ((uint32_t) -1), prim_index };
     }
 
     /* \brief Solve cubic polynomial that gives solution to voxel intersection
@@ -765,7 +765,7 @@ private:
         using MaskP = dr::mask_t<FloatP>;
 
         auto [has_derivative_roots, root_0, root_1] =
-            math::solve_quadratic(c3 * 3, c2 * 2, c1);
+            math::solve_quadratic(c3 * 3.f, c2 * 2.f, c1);
 
         auto eval_sdf = [&](FloatP t_) -> FloatP {
             return -dr::fmadd(dr::fmadd(dr::fmadd(c3, t_, c2), t_, c1), t_, c0);
@@ -785,11 +785,11 @@ private:
                 t   = t_near + (t_far - t_near) * (-f_near / (f_far - f_near));
                 f_t = eval_sdf(t);
                 FloatP condition = f_t * f_near;
-                t_far = dr::select(condition <= 0, t, t_far);
-                f_far = dr::select(condition <= 0, f_t, f_far);
+                t_far = dr::select(condition <= 0.f, t, t_far);
+                f_far = dr::select(condition <= 0.f, f_t, f_far);
 
-                t_near = dr::select(condition > 0, t, t_near);
-                f_near = dr::select(condition > 0, f_t, f_near);
+                t_near = dr::select(condition > 0.f, t, t_near);
+                f_near = dr::select(condition > 0.f, f_t, f_near);
                 done   = (dr::abs(t_near - t_far) < num_solve_epsilon) ||
                        (num_solve_max_iter < ++i);
             }
@@ -806,21 +806,21 @@ private:
         MaskP root_0_valid = t_near <= root_0 && root_0 <= t_far;
 
         dr::masked(t_far, has_derivative_roots && root_0_valid &&
-                              eval_sdf(t_beg) * f_root_0 <= 0) = root_0;
+                              eval_sdf(t_beg) * f_root_0 <= 0.f) = root_0;
         dr::masked(t_near, has_derivative_roots && root_0_valid &&
-                               eval_sdf(t_beg) * f_root_0 > 0) = root_0;
+                               eval_sdf(t_beg) * f_root_0 > 0.f) = root_0;
 
         MaskP root_1_valid = t_near <= root_1 && root_1 <= t_far;
 
         dr::masked(t_far, has_derivative_roots && root_1_valid &&
-                              eval_sdf(t_near) * f_root_1 <= 0) = root_1;
+                              eval_sdf(t_near) * f_root_1 <= 0.f) = root_1;
         dr::masked(t_near, has_derivative_roots && root_1_valid &&
-                               eval_sdf(t_near) * f_root_1 > 0) = root_1;
+                               eval_sdf(t_near) * f_root_1 > 0.f) = root_1;
 
         FloatP f_near = eval_sdf(t_near);
         FloatP f_far  = eval_sdf(t_far);
 
-        MaskP active = f_near * f_far <= 0;
+        MaskP active = f_near * f_far <= 0.f;
 
         FloatP t =
             dr::select(active, numerical_solve(t_near, t_far, f_near, f_far),
@@ -930,18 +930,18 @@ private:
         for (size_t i = 0; i < 8; i++)
             f_Z[i] = f[i] == 0;
 
-        bbox.min.x() = dr::select(f_Z[voxel_corner_enc(0, 0, 0)] || f_Z[voxel_corner_enc(0, 0, 1)] || f_Z[voxel_corner_enc(0, 1, 0)] || f_Z[voxel_corner_enc(0, 1, 1)], 0, 1);
-        bbox.max.x() = dr::select(f_Z[voxel_corner_enc(1, 0, 0)] || f_Z[voxel_corner_enc(1, 0, 1)] || f_Z[voxel_corner_enc(1, 1, 0)] || f_Z[voxel_corner_enc(1, 1, 1)], 1, 0);
-        bbox.min.y() = dr::select(f_Z[voxel_corner_enc(0, 0, 0)] || f_Z[voxel_corner_enc(0, 0, 1)] || f_Z[voxel_corner_enc(1, 0, 0)] || f_Z[voxel_corner_enc(1, 0, 1)], 0, 1);
-        bbox.max.y() = dr::select(f_Z[voxel_corner_enc(0, 1, 0)] || f_Z[voxel_corner_enc(0, 1, 1)] || f_Z[voxel_corner_enc(1, 1, 0)] || f_Z[voxel_corner_enc(1, 1, 1)], 1, 0);
-        bbox.min.z() = dr::select(f_Z[voxel_corner_enc(0, 0, 0)] || f_Z[voxel_corner_enc(1, 0, 0)] || f_Z[voxel_corner_enc(0, 1, 0)] || f_Z[voxel_corner_enc(1, 1, 0)], 0, 1);
-        bbox.max.z() = dr::select(f_Z[voxel_corner_enc(0, 0, 1)] || f_Z[voxel_corner_enc(1, 0, 1)] || f_Z[voxel_corner_enc(0, 1, 1)] || f_Z[voxel_corner_enc(1, 1, 1)], 1, 0);
+        bbox.min.x() = dr::select(f_Z[voxel_corner_enc(0, 0, 0)] || f_Z[voxel_corner_enc(0, 0, 1)] || f_Z[voxel_corner_enc(0, 1, 0)] || f_Z[voxel_corner_enc(0, 1, 1)], 0.f, 1.f);
+        bbox.max.x() = dr::select(f_Z[voxel_corner_enc(1, 0, 0)] || f_Z[voxel_corner_enc(1, 0, 1)] || f_Z[voxel_corner_enc(1, 1, 0)] || f_Z[voxel_corner_enc(1, 1, 1)], 1.f, 0.f);
+        bbox.min.y() = dr::select(f_Z[voxel_corner_enc(0, 0, 0)] || f_Z[voxel_corner_enc(0, 0, 1)] || f_Z[voxel_corner_enc(1, 0, 0)] || f_Z[voxel_corner_enc(1, 0, 1)], 0.f, 1.f);
+        bbox.max.y() = dr::select(f_Z[voxel_corner_enc(0, 1, 0)] || f_Z[voxel_corner_enc(0, 1, 1)] || f_Z[voxel_corner_enc(1, 1, 0)] || f_Z[voxel_corner_enc(1, 1, 1)], 1.f, 0.f);
+        bbox.min.z() = dr::select(f_Z[voxel_corner_enc(0, 0, 0)] || f_Z[voxel_corner_enc(1, 0, 0)] || f_Z[voxel_corner_enc(0, 1, 0)] || f_Z[voxel_corner_enc(1, 1, 0)], 0.f, 1.f);
+        bbox.max.z() = dr::select(f_Z[voxel_corner_enc(0, 0, 1)] || f_Z[voxel_corner_enc(1, 0, 1)] || f_Z[voxel_corner_enc(0, 1, 1)] || f_Z[voxel_corner_enc(1, 1, 1)], 1.f, 0.f);
 
         // Generates pairs of neighboring corners and checks for intersection on the edge
-        for (size_t corner_1 = 0; corner_1 < 8; corner_1++) {
-            for (size_t shift = 0; shift < 3; shift++) {
-                if (!(corner_1 & (1 << shift))) {
-                    size_t corner_2 = corner_1 | (1 << shift);
+        for (uint32_t corner_1 = 0; corner_1 < 8; corner_1++) {
+            for (uint32_t shift = 0; shift < 3; shift++) {
+                if (!(corner_1 & (1u << shift))) {
+                    uint32_t corner_2 = corner_1 | (1u << shift);
 
                     Mask intersection_mask = f[corner_1] * f[corner_2] <= 0 && f[corner_1] != f[corner_2];
 
@@ -950,8 +950,8 @@ private:
                             continue;
                     }
 
-                    auto corner_1_pos = voxel_corner_dec(corner_1);
-                    auto corner_2_pos = voxel_corner_dec(corner_2);
+                    Point3u corner_1_pos = voxel_corner_dec(corner_1);
+                    Point3u corner_2_pos = voxel_corner_dec(corner_2);
 
                     auto intersection_pos = corner_1_pos + f[corner_1] / (f[corner_1] - f[corner_2]) * (corner_2_pos - corner_1_pos);
 
@@ -961,8 +961,8 @@ private:
             }
         }
 
-        bbox.min += Vector3f(x, y, z);
-        bbox.max += Vector3f(x, y, z);
+        bbox.min += Vector3f(Float(x), Float(y), Float(z));
+        bbox.max += Vector3f(Float(x), Float(y), Float(z));
 
         bbox.min = to_world.transform_affine(bbox.min * voxel_size);
         bbox.max = to_world.transform_affine(bbox.max * voxel_size);
@@ -983,7 +983,7 @@ private:
                                  static_cast<uint32_t>(shape[1]),
                                  static_cast<uint32_t>(shape[0]) };
         uint32_t max_voxel_count =
-            (shape[0] - 1) * (shape[1] - 1) * (shape[2] - 1);
+            (uint32_t)((shape[0] - 1) * (shape[1] - 1) * (shape[2] - 1));
         ScalarTransform4f to_world = m_to_world.scalar();
 
         dr::eval(m_grid_texture.value()); // Make sure the SDF data is evaluated
@@ -1097,7 +1097,7 @@ private:
 
     Vector3f sdf_grad(const Point3f &p) const {
         auto shape = m_grid_texture.tensor().shape();
-        Vector3f resolution = Vector3f(shape[2] - 1, shape[1] - 1, shape[0] - 1);
+        Vector3f resolution = Vector3f(shape[2] - 1.f, shape[1] - 1.f, shape[0] - 1.f);
         Point3i min_voxel_index(p * resolution);
 
         return voxel_grad(p, min_voxel_index);

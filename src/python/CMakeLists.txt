@@ -83,6 +83,11 @@ set_target_properties(mitsuba_alias
   FOLDER python
 )
 
+target_include_directories(mitsuba_alias
+  PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/include 
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/ext/drjit-core/include)
+
 install(TARGETS mitsuba_alias
   LIBRARY DESTINATION mitsuba
 )
@@ -126,6 +131,7 @@ if (NOT SKBUILD)
       LIBRARY_OUTPUT_DIRECTORY_DEBUG          ${MI_BINARY_DIR}/python/drjit
       LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO ${MI_BINARY_DIR}/python/drjit
       LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL     ${MI_BINARY_DIR}/python/drjit)
+    target_compile_options(drjit-python PRIVATE /wd4324) # structure was padded due to alignment specified
   else ()
     set_target_properties(drjit-python
       PROPERTIES

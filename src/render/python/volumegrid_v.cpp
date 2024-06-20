@@ -56,7 +56,7 @@ MI_PY_EXPORT(VolumeGrid) {
                 cpu_array = obj.array();
             } else {
                 dr::eval(obj);
-                uint32_t buffer_size = obj.array().size();
+                uint32_t buffer_size = (uint32_t) obj.array().size();
                 cpu_array = dr::zeros<DynamicBuffer<ScalarFloat>>(buffer_size);
                 dr::store(cpu_array.data(), obj.array());
             }

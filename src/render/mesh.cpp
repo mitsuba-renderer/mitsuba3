@@ -93,12 +93,12 @@ MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std:
     if (m_vertex_positions.size() != m_vertex_count * 3) {
         Log(Debug, "parameters_changed(): Vertex count changed, updating it.");
         mesh_attributes_changed = true;
-        m_vertex_count = m_vertex_positions.size() / 3;
+        m_vertex_count = (uint32_t) m_vertex_positions.size() / 3;
     }
     if (m_faces.size() != m_face_count * 3) {
         Log(Debug, "parameters_changed(): Face count changed, updating it.");
         mesh_attributes_changed = true;
-        m_face_count = m_faces.size() / 3;
+        m_face_count = (uint32_t) m_faces.size() / 3;
     }
     if (has_vertex_normals() && m_vertex_normals.size() != m_vertex_count * 3) {
         Log(Debug, "parameters_changed(): Vertex normal count changed, updating it.");
@@ -1109,7 +1109,7 @@ Mesh<Float, Spectrum>::primitive_silhouette_projection(const Point3f &viewpoint,
         weight[2] = dr::select(cos_theta_oppo[2] <= 0.f, max_weight, weight[2]);
 
         // In case the weights are too small
-        Float min_weight = dr::deg_to_rad(1);
+        Float min_weight = dr::deg_to_rad(1.f);
         weight[0] = dr::maximum(weight[0], min_weight);
         weight[1] = dr::maximum(weight[1], min_weight);
         weight[2] = dr::maximum(weight[2], min_weight);
