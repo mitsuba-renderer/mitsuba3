@@ -65,6 +65,11 @@ public:
 template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
     MI_PY_IMPORT_TYPES()
 
+    using RetMedium = std::conditional_t<drjit::is_array_v<Ptr>, MediumPtr, drjit::scalar_t<MediumPtr>>;
+    using RetBSDF = std::conditional_t<drjit::is_array_v<Ptr>, BSDFPtr, drjit::scalar_t<BSDFPtr>>;
+    using RetSensor = std::conditional_t<drjit::is_array_v<Ptr>, SensorPtr, drjit::scalar_t<SensorPtr>>;
+    using RetEmitter = std::conditional_t<drjit::is_array_v<Ptr>, EmitterPtr, drjit::scalar_t<EmitterPtr>>;
+
     cls.def("is_emitter", [](Ptr shape) { return shape->is_emitter(); },
             D(Shape, is_emitter))
        .def("is_sensor", [](Ptr shape) { return shape->is_sensor(); },
@@ -76,16 +81,16 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             [](Ptr shape) { return shape->shape_type(); },
             D(Shape, shape_type))
        .def("interior_medium",
-            [](Ptr shape) { return shape->interior_medium(); },
+            [](Ptr shape) -> RetMedium { return shape->interior_medium(); },
             D(Shape, interior_medium))
        .def("exterior_medium",
-            [](Ptr shape) { return shape->exterior_medium(); },
+            [](Ptr shape) -> RetMedium { return shape->exterior_medium(); },
             D(Shape, exterior_medium))
-       .def("bsdf", [](Ptr shape) { return shape->bsdf(); },
+       .def("bsdf", [](Ptr shape) -> RetBSDF { return shape->bsdf(); },
             D(Shape, bsdf))
-       .def("sensor", [](Ptr shape) { return shape->sensor(); },
+       .def("sensor", [](Ptr shape) -> RetSensor { return shape->sensor(); },
             D(Shape, sensor))
-       .def("emitter", [](Ptr shape) { return shape->emitter(); },
+       .def("emitter", [](Ptr shape) -> RetEmitter { return shape->emitter(); },
             D(Shape, emitter))
        .def("compute_surface_interaction",
             [](Ptr shape, const Ray3f &ray,

@@ -96,6 +96,8 @@ public:
 template <typename Ptr, typename Cls> void bind_sensor_generic(Cls &cls) {
     MI_PY_IMPORT_TYPES()
 
+    using RetShape = std::conditional_t<drjit::is_array_v<Ptr>, ShapePtr, drjit::scalar_t<ShapePtr>>;
+
     cls.def("sample_ray",
             [](Ptr ptr, Float time, Float sample1, const Point2f &sample2,
                const Point2f &sample3, Mask active) {
@@ -151,7 +153,10 @@ template <typename Ptr, typename Cls> void bind_sensor_generic(Cls &cls) {
             },
             "si"_a, "sample"_a, "active"_a = true,
             D(Endpoint, sample_wavelengths))
-    .def("get_shape", [](Ptr ptr) { return ptr->shape(); }, D(Endpoint, shape));
+    .def("get_shape", [](Ptr ptr) -> RetShape {
+                return ptr->shape();
+            },
+            D(Endpoint, shape));
 }
 
 MI_PY_EXPORT(Sensor) {

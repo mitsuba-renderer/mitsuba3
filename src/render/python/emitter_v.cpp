@@ -89,6 +89,9 @@ public:
 template <typename Ptr, typename Cls> void bind_emitter_generic(Cls &cls) {
     MI_PY_IMPORT_TYPES()
 
+    using RetShape = std::conditional_t<drjit::is_array_v<Ptr>, ShapePtr, drjit::scalar_t<ShapePtr>>;
+    using RetMedium = std::conditional_t<drjit::is_array_v<Ptr>, MediumPtr, drjit::scalar_t<MediumPtr>>;
+
     cls.def("sample_ray",
             [](Ptr ptr, Float time, Float sample1, const Point2f &sample2,
             const Point2f &sample3, Mask active) {
@@ -137,11 +140,11 @@ template <typename Ptr, typename Cls> void bind_emitter_generic(Cls &cls) {
             },
             "si"_a, "sample"_a, "active"_a = true,
             D(Endpoint, sample_wavelengths))
-    .def("flags", [](EmitterPtr ptr) { return ptr->flags(); }, D(Emitter, flags))
-    .def("get_shape", [](EmitterPtr ptr) { return ptr->shape(); }, D(Endpoint, shape))
-    .def("get_medium", [](EmitterPtr ptr) { return ptr->medium(); }, D(Endpoint, medium))
-    .def("sampling_weight", [](EmitterPtr ptr) { return ptr->sampling_weight(); }, D(Emitter, sampling_weight))
-    .def("is_environment", [](EmitterPtr ptr) { return ptr->is_environment(); }, D(Emitter, is_environment));
+    .def("flags", [](Ptr ptr) { return ptr->flags(); }, D(Emitter, flags))
+    .def("get_shape", [](Ptr ptr) -> RetShape { return ptr->shape(); }, D(Endpoint, shape))
+    .def("get_medium", [](Ptr ptr) -> RetMedium { return ptr->medium(); }, D(Endpoint, medium))
+    .def("sampling_weight", [](Ptr ptr) { return ptr->sampling_weight(); }, D(Emitter, sampling_weight))
+    .def("is_environment", [](Ptr ptr) { return ptr->is_environment(); }, D(Emitter, is_environment));
 }
 
 MI_PY_EXPORT(Emitter) {

@@ -124,3 +124,17 @@ def test04_sample_direction(variants_vec_spectral, spectrum_key):
     assert dr.allclose(res, spec)
 
     assert dr.allclose(emitter.eval_direction(it, ds), spec)
+
+
+def test05_shape_accessors(variants_vec_rgb):
+    shape, _ = create_emitter_and_spectrum()
+    shape_ptr = mi.ShapePtr(shape)
+
+    assert type(shape.emitter()) == mi.Emitter
+    assert type(shape_ptr.emitter()) == mi.EmitterPtr
+
+    emitter = shape.emitter()
+    emitter_ptr = mi.EmitterPtr(emitter)
+
+    assert type(emitter.get_shape()) == mi.Mesh
+    assert type(emitter_ptr.get_shape()) == mi.ShapePtr

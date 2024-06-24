@@ -118,3 +118,10 @@ def test03_point_sample_direction_vec(variants_vec_spectral, spectrum_key):
     spec = spectrum.eval(it) / (dist**2)
     assert dr.allclose(res, spec)
     assert dr.allclose(emitter.eval_direction(it, ds), spec)
+
+
+def test04_medium_shape_accessors(variants_vec_rgb):
+    emitter_pos = [10, -1, 2]
+    emitter, _ = create_emitter_and_spectrum(emitter_pos)
+
+    assert emitter.get_shape() is None

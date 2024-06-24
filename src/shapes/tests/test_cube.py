@@ -130,3 +130,44 @@ def test05_check_normals(variant_scalar_rgb):
                                     time=0.0, wavelengths=[])
         si2 = ss.ray_intersect(ray)
         assert dr.all(si2.n == face[2])
+
+
+def test06_medium_accesors(variants_vec_rgb):
+    shape = mi.load_dict({
+        'interior': {
+            'type': 'homogeneous',
+            'albedo': {
+                'type': 'rgb',
+                'value': [0.99, 0.9, 0.96]
+            }
+        },
+        'exterior': {
+            'type': 'homogeneous',
+            'albedo': {
+                'type': 'rgb',
+                'value': [0.1, 0.1, 0.12]
+            }
+        },
+        'type': 'cube',
+    })
+
+    shape_ptr = mi.ShapePtr(shape)
+
+    assert type(shape.interior_medium()) == mi.Medium
+    assert type(shape_ptr.interior_medium()) == mi.MediumPtr
+
+    assert type(shape.exterior_medium()) == mi.Medium
+    assert type(shape_ptr.exterior_medium()) == mi.MediumPtr
+
+
+def test07_bsdf_accesors(variants_vec_rgb):
+    shape = mi.load_dict({
+       'type': 'cube',
+       'bsdf': {
+           'type': 'diffuse',
+       }
+    })
+    shape_ptr = mi.ShapePtr(shape)
+
+    assert type(shape.bsdf()) == mi.BSDF
+    assert type(shape_ptr.bsdf()) == mi.BSDFPtr

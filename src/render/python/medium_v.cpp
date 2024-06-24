@@ -50,8 +50,10 @@ public:
 template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
     MI_PY_IMPORT_TYPES(PhaseFunctionContext)
 
+    using RetPhaseFunction = std::conditional_t<drjit::is_array_v<Ptr>, PhaseFunctionPtr, drjit::scalar_t<PhaseFunctionPtr>>;
+
     cls.def("phase_function",
-            [](Ptr ptr) { return ptr->phase_function(); },
+            [](Ptr ptr) -> RetPhaseFunction { return ptr->phase_function(); },
             D(Medium, phase_function))
        .def("use_emitter_sampling",
             [](Ptr ptr) { return ptr->use_emitter_sampling(); },

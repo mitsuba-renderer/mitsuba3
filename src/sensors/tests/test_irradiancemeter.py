@@ -140,3 +140,19 @@ def test_incoming_flux_integrator(variant_scalar_rgb, radiance):
                                         mi.Struct.Type.Float32, srgb_gamma=False)
 
     assert dr.allclose(mi.TensorXf(img), (radiance * dr.pi))
+
+
+def test_shape_accessors(variants_vec_rgb):
+    center_v = mi.ScalarVector3f(0.0)
+    radius = 1.0
+    shape = mi.load_dict(sensor_shape_dict(radius, center_v))
+    shape_ptr = mi.ShapePtr(shape)
+
+    assert type(shape.sensor()) == mi.Sensor
+    assert type(shape_ptr.sensor()) == mi.SensorPtr
+
+    sensor = shape.sensor()
+    sensor_ptr = mi.SensorPtr(sensor)
+
+    assert type(sensor.get_shape()) == mi.Shape
+    assert type(sensor_ptr.get_shape()) == mi.ShapePtr
