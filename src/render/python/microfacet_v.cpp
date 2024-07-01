@@ -5,6 +5,7 @@
 
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/list.h>
+#include <nanobind/stl/string.h>
 #include <nanobind/ndarray.h>
 
 MI_PY_EXPORT(MicrofacetDistribution) {

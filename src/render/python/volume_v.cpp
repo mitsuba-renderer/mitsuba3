@@ -7,6 +7,7 @@
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/array.h>
 #include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
 
 /// Trampoline for derived types implemented in Python
 MI_VARIANT class PyVolume : public Volume<Float, Spectrum> {

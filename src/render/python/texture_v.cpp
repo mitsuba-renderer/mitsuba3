@@ -1,3 +1,4 @@
+#include <nanobind/nanobind.h> // Needs to be first, to get `ref<T>` caster
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/python/python.h>

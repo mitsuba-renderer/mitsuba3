@@ -129,7 +129,6 @@ static void set_variant(nb::args args) {
 }
 
 NB_MODULE(mitsuba_alias, m) {
-    // Temporarily change the module name (for pydoc)
     m.attr("__name__") = "mitsuba";
 
     curr_variant = nb::none();
@@ -195,6 +194,4 @@ NB_MODULE(mitsuba_alias, m) {
             variant_modules = nullptr; 
         }
     }));
-    // Change module name back to correct value
-    m.attr("__name__") = "mitsuba_alias";
 }

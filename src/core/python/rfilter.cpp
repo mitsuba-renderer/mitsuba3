@@ -1,6 +1,8 @@
 #include <mitsuba/core/rfilter.h>
-#include <nanobind/ndarray.h>
 #include <mitsuba/python/python.h>
+#include <nanobind/ndarray.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/string.h>
 
 MI_PY_EXPORT(rfilter) {
     nb::enum_<FilterBoundaryCondition>(m, "FilterBoundaryCondition", D(FilterBoundaryCondition))
