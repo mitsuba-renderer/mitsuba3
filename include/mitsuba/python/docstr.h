@@ -4298,6 +4298,8 @@ static const char *__doc_mitsuba_Medium_Medium_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_class = R"doc()doc";
 
+static const char *__doc_mitsuba_Medium_eval_transmittance_pdf_real = R"doc()doc";
+
 static const char *__doc_mitsuba_Medium_get_majorant = R"doc(Returns the medium's majorant used for delta tracking)doc";
 
 static const char *__doc_mitsuba_Medium_get_scattering_coefficients =
@@ -4354,6 +4356,8 @@ Returns:
     This method returns a MediumInteraction. The MediumInteraction
     will always be valid, except if the ray missed the Medium's
     bounding box.)doc";
+
+static const char *__doc_mitsuba_Medium_sample_interaction_real = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_set_id = R"doc(Set a string identifier)doc";
 
