@@ -63,6 +63,11 @@ public:
     /// Returns the bounding box of the volume
     ScalarBoundingBox3f bbox() const { return m_bbox; }
 
+// #RAY_CHANGE_BEGIN, NM 24/05/2024 : Add util functions to the volume class
+    /// If applicable, returns the dimensions of one grid cell in world space.
+    ScalarVector3f voxel_size() const;
+// #RAY_CHANGE_END
+
     /**
      * \brief Returns the resolution of the volume, assuming that it is based
      * on a discrete representation.

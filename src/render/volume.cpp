@@ -56,6 +56,20 @@ Volume<Float, Spectrum>::max_per_channel(ScalarFloat * /*out*/) const {
     NotImplementedError("max_per_channel");
 }
 
+// #RAY_CHANGE_BEGIN, NM 24/05/2024 : Add util functions to the volume class
+MI_VARIANT typename Volume<Float, Spectrum>::ScalarVector3f
+Volume<Float, Spectrum>::voxel_size() const {
+    // Extract the scale from the to_world matrix, assuming an affine transformation.
+    ScalarTransform4f to_world = m_to_local.inverse();
+    ScalarVector3f scale(
+        dr::norm(to_world.matrix.x()),
+        dr::norm(to_world.matrix.y()),
+        dr::norm(to_world.matrix.z())
+    );
+    return dr::rcp(ScalarVector3f(resolution())) * scale;
+}
+// #RAY_CHANGE_END
+
 MI_VARIANT typename Volume<Float, Spectrum>::ScalarVector3i
 Volume<Float, Spectrum>::resolution() const {
     return ScalarVector3i(1, 1, 1);

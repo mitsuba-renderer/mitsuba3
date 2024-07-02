@@ -95,6 +95,27 @@ Medium<Float, Spectrum>::transmittance_eval_pdf(const MediumInteraction3f &mi,
     return { tr, pdf };
 }
 
+// #RAY_CHANGE_BEGIN, NM 05/06/2024 : add function that calculates the transmittance and pdf  
+MI_VARIANT
+std::tuple<typename Medium<Float, Spectrum>::MediumInteraction3f, Float, Float>
+Medium<Float, Spectrum>::sample_interaction_real(const Ray3f &/*ray*/, 
+                                            const SurfaceInteraction3f &/*si*/, Float /*sample*/,
+                                            UInt32 /*channel*/, Mask /*active*/) const {
+    NotImplementedError("sample_interaction_real, PiecewiseVolPathIntegrator should only be used with piecewise medium");
+    MediumInteraction3f mi = dr::zeros<MediumInteraction3f>(); 
+    return {mi,0.f,0.f};
+}
+
+MI_VARIANT
+std::tuple<Float, Float, typename Medium<Float, Spectrum>::Mask>
+Medium<Float, Spectrum>::eval_transmittance_pdf_real(const Ray3f &/*ray*/, 
+                                    const SurfaceInteraction3f &/*si*/,
+                                    UInt32 /*channel*/, Mask /*active*/) const {
+    NotImplementedError("eval_transmittance_pdf_real, PiecewiseVolPathIntegrator should only be used with piecewise medium");
+    return {0.f, 0.f, false};
+}
+// #RAY_CHANGE_END
+
 MI_IMPLEMENT_CLASS_VARIANT(Medium, Object, "medium")
 MI_INSTANTIATE_CLASS(Medium)
 NAMESPACE_END(mitsuba)
