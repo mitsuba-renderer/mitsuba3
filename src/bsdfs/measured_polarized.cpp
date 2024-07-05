@@ -263,7 +263,7 @@ public:
                                 phi_d, theta_d, theta_h,
                                 si.wavelengths[k]
                             };
-                            tmp[k] = m_interpolator.eval(Point2f(Float(i)/3.f, Float(j)/3.f), params, active);
+                            tmp[k] = m_interpolator.eval(Point2f(Float(j)/3.f, Float(i)/3.f), params, active);
                         }
                         value(i, j) = tmp;
                     }
@@ -275,7 +275,7 @@ public:
                             phi_d, theta_d, theta_h,
                             Float(m_wavelength)
                         };
-                        value(i, j) = m_interpolator.eval(Point2f(Float(i)/3.f, Float(j)/3.f), params, active);
+                        value(i, j) = m_interpolator.eval(Point2f(Float(j)/3.f, Float(i)/3.f), params, active);
                     }
                 }
             }
