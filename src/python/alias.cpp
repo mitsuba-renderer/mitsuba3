@@ -191,7 +191,7 @@ NB_MODULE(mitsuba_alias, m) {
         curr_variant.reset();
 
         if (variant_modules) {
-            PyObject_Free(variant_modules);
+            Py_DECREF(variant_modules);
             variant_modules = nullptr; 
         }
     }));
