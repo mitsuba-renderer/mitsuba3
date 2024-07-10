@@ -11,6 +11,11 @@ public:
     MI_IMPORT_TYPES(BSDF, Medium, Emitter, Sensor, Mesh)
 
     MergeShape(const Properties &props) {
+        // Note: we are *not* calling the `Shape` constructor as we do not
+        // want to accept various properties such as `to_world`.
+        if constexpr (dr::is_jit_v<Float>)
+            jit_registry_put(dr::backend_v<Float>, "mitsuba::Shape", this);
+
         std::unordered_map<Key, ref<Mesh>, key_hasher> tbl;
         size_t visited = 0, ignored = 0;
         Timer timer;
