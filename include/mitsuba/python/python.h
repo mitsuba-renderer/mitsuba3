@@ -140,14 +140,21 @@ nb::handle type_of() {
 //}
 
 #define MI_PY_DECLARE(Name) extern void python_export_##Name(nb::module_ &m)
-#define MI_PY_EXPORT(Name) void python_export_##Name(nb::module_ &m)
+/// We forward bindings code to a templated to ensure that branches not taken
+/// of ``if constexpr`` do not get instantiated by the compiler.
+#define MI_PY_EXPORT(Name)                                                     \
+    template <int = 0> void python_export_impl_##Name(nb::module_ &m);         \
+    void python_export_##Name(nb::module_ &m) {                                \
+        python_export_impl_##Name<>(m);                                        \
+    }                                                                          \
+    template <int> void python_export_impl_##Name(nb::module_ &m)
 #define MI_PY_IMPORT(Name) python_export_##Name(m)
 #define MI_PY_IMPORT_SUBMODULE(Name) python_export_##Name(Name)
 
-#define MI_PY_IMPORT_TYPES(...)                                                                   \
-    using Float    = MI_VARIANT_FLOAT;                                                            \
-    using Spectrum = MI_VARIANT_SPECTRUM;                                                         \
-    MI_IMPORT_TYPES(__VA_ARGS__)                                                                  \
+#define MI_PY_IMPORT_TYPES(...)                                                \
+    using Float    = MI_VARIANT_FLOAT;                                         \
+    using Spectrum = MI_VARIANT_SPECTRUM;                                      \
+    MI_IMPORT_TYPES(__VA_ARGS__)                                               \
     MI_IMPORT_OBJECT_TYPES()
 
 inline nb::module_ create_submodule(nb::module_ &m, const char *name) {
