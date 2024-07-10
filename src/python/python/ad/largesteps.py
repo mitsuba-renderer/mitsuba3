@@ -100,6 +100,7 @@ class LargeSteps():
         # Remove duplicates due to e.g. UV seams or face normals.
         # This is necessary to avoid seams opening up during optimisation
         v_unique, index_v, inverse_v = np.unique(v, return_index=True, return_inverse=True, axis=0)
+        inverse_v = inverse_v.flatten()
         f_unique = inverse_v[f]
 
         self.index = mi.UInt(index_v)
@@ -109,6 +110,7 @@ class LargeSteps():
         # Solver expects matrices without duplicate entries as input, so we need to sum them manually
         indices, values = mesh_laplacian(self.n_verts, f_unique, lambda_)
         indices_unique, inverse_idx = np.unique(indices, axis=1, return_inverse=True)
+        inverse_idx = inverse_idx.flatten()
 
         self.rows = mi.TensorXi(indices_unique[0])
         self.cols = mi.TensorXi(indices_unique[1])
