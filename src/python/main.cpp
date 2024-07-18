@@ -162,7 +162,10 @@ NB_MODULE(mitsuba_ext, m) {
      * called before all Python variables are cleaned up */
     auto atexit = nb::module_::import_("atexit");
     atexit.attr("register")(nb::cpp_function([]() {
-        Thread::wait_for_tasks();
+        {
+            nb::gil_scoped_release g;
+            Thread::wait_for_tasks();
+        }
         Class::static_remove_functors();
         Logger::static_shutdown();
         StructConverter::static_shutdown();

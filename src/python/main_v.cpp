@@ -225,7 +225,10 @@ NB_MODULE(MI_VARIANT_NAME, m) {
      * should be called when the interpreter is exiting */
     auto atexit = nb::module_::import_("atexit");
     atexit.attr("register")(nb::cpp_function([]() {
-        Thread::wait_for_tasks();
+        {
+            nb::gil_scoped_release g;
+            Thread::wait_for_tasks();
+        }
         color_management_static_shutdown();
         Scene::static_accel_shutdown();
     }));
