@@ -342,9 +342,12 @@ class _RenderOp(dr.CustomOp):
         super().__init__()
         self.variant = mi.variant()
 
-    def eval(self, scene, sensor, params, integrator, seed, spp):
+    def eval(self, scene, sensor, _, params, integrator, seed, spp):
         self.scene = scene
         self.sensor = sensor
+        # The argument `_` is a `dict` of the parameters that is detached,
+        # whereas `params` is a `SceneParameters` object that still contains
+        # a referece to the attached paraamters
         self.params = params
         self.integrator = integrator
         self.seed = seed
@@ -458,8 +461,9 @@ def render(scene: mi.Scene,
     if params is not None and not isinstance(params, mi.SceneParameters):
         raise Exception('The `params` argument should be an instance of `mi.SceneParameters`!')
 
+    dict_params = dict()
     if params is not None:
-        params = dict(params) # Turn SceneParameters into a valid PyTree
+        dict_params = dict(params) # Turn SceneParameters into a valid PyTree
 
     assert isinstance(scene, mi.Scene)
 
@@ -499,7 +503,11 @@ def render(scene: mi.Scene,
                 evaluate=False
             )
 
-    return dr.custom(_RenderOp, scene, sensor, params, integrator,
+    # Both `dict_params` and `params` are passed. The former is necessary
+    # because it allows the custom operation to detect any attached input
+    # arguments. The latter is necessary because it will not be automatically
+    # detached by the custom operation.
+    return dr.custom(_RenderOp, scene, sensor, dict_params, params, integrator,
                      (seed, seed_grad), (spp, spp_grad))
 
 # ------------------------------------------------------------------------------
