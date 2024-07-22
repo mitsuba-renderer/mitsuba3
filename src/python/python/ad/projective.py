@@ -767,29 +767,11 @@ class ProjectiveDetail():
             only_interior_failed = active & ~active_interior & active_perimeter
             rand = sampler.next_float32(active)
 
-            #ss = dr.select(
-            #    only_interior_failed | (active_interior & (rand > 0.5)),
-            #    ss_perimeter,
-            #    ss_interior
-            #)
-            tmp = only_interior_failed | (active_interior & (rand > 0.5))
-            ss = dr.zeros(mi.SilhouetteSample3f, dr.width(ss_interior))
-            ss.p = dr.select(tmp, ss_interior.p, ss_perimeter.p)
-            ss.discontinuity_type = dr.select(tmp, ss_interior.discontinuity_type, ss_perimeter.discontinuity_type)
-            ss.n = dr.select(tmp, ss_interior.n, ss_perimeter.n)
-            ss.uv = dr.select(tmp, ss_interior.uv, ss_perimeter.uv)
-            ss.time = dr.select(tmp, ss_interior.time, ss_perimeter.time)
-            ss.pdf = dr.select(tmp, ss_interior.pdf, ss_perimeter.pdf)
-            ss.delta = dr.select(tmp, ss_interior.delta, ss_perimeter.delta)
-            ss.d = dr.select(tmp, ss_interior.d, ss_perimeter.d)
-            ss.silhouette_d = dr.select(tmp, ss_interior.silhouette_d, ss_perimeter.silhouette_d)
-            ss.prim_index = dr.select(tmp, ss_interior.prim_index, ss_perimeter.prim_index)
-            ss.scene_index = dr.select(tmp, ss_interior.scene_index, ss_perimeter.scene_index)
-            ss.flags = dr.select(tmp, ss_interior.flags, ss_perimeter.flags)
-            ss.projection_index = dr.select(tmp, ss_interior.projection_index, ss_perimeter.projection_index)
-            ss.shape = dr.select(tmp, ss_interior.shape, ss_perimeter.shape)
-            ss.foreshortening = dr.select(tmp, ss_interior.foreshortening, ss_perimeter.foreshortening)
-            ss.offset = dr.select(tmp, ss_interior.offset, ss_perimeter.offset)
+            ss = dr.select(
+                only_interior_failed | (active_interior & (rand > 0.5)),
+                ss_perimeter,
+                ss_interior
+            )
             ss.flags = mi.DiscontinuityFlags.InteriorType | mi.DiscontinuityFlags.PerimeterType
 
             return ss
@@ -808,34 +790,12 @@ class ProjectiveDetail():
             # Randomly choose between perimeter and interior
             only_interior_failed = active & ~active_interior & active_perimeter
             rand = sampler.next_float32(active)
-            tmp = mi.Bool(
-                only_interior_failed |
-                (active_interior & (rand > 0.5))
+
+            ss = dr.select(
+                only_interior_failed | (active_interior & (rand > 0.5)),
+                ss_perimeter,
+                ss_interior
             )
-
-            #ss = dr.select(
-            #    tmp,
-            #    dr.zeros(mi.SilhouetteSample3f),
-            #    dr.zeros(mi.SilhouetteSample3f)
-            #)
-            ss = dr.zeros(mi.SilhouetteSample3f, dr.width(ss_interior))
-            ss.p = dr.select(tmp, ss_interior.p, ss_perimeter.p)
-            ss.discontinuity_type = dr.select(tmp, ss_interior.discontinuity_type, ss_perimeter.discontinuity_type)
-            ss.n = dr.select(tmp, ss_interior.n, ss_perimeter.n)
-            ss.uv = dr.select(tmp, ss_interior.uv, ss_perimeter.uv)
-            ss.time = dr.select(tmp, ss_interior.time, ss_perimeter.time)
-            ss.pdf = dr.select(tmp, ss_interior.pdf, ss_perimeter.pdf)
-            ss.delta = dr.select(tmp, ss_interior.delta, ss_perimeter.delta)
-            ss.d = dr.select(tmp, ss_interior.d, ss_perimeter.d)
-            ss.silhouette_d = dr.select(tmp, ss_interior.silhouette_d, ss_perimeter.silhouette_d)
-            ss.prim_index = dr.select(tmp, ss_interior.prim_index, ss_perimeter.prim_index)
-            ss.scene_index = dr.select(tmp, ss_interior.scene_index, ss_perimeter.scene_index)
-            ss.flags = dr.select(tmp, ss_interior.flags, ss_perimeter.flags)
-            ss.projection_index = dr.select(tmp, ss_interior.projection_index, ss_perimeter.projection_index)
-            ss.shape = dr.select(tmp, ss_interior.shape, ss_perimeter.shape)
-            ss.foreshortening = dr.select(tmp, ss_interior.foreshortening, ss_perimeter.foreshortening)
-            ss.offset = dr.select(tmp, ss_interior.offset, ss_perimeter.offset)
-
             ss.flags = mi.DiscontinuityFlags.InteriorType | mi.DiscontinuityFlags.PerimeterType
 
             return ss
