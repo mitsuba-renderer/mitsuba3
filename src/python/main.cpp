@@ -85,23 +85,22 @@ NB_MODULE(mitsuba_ext, m) {
         }
     );
 
-//    m.def("set_log_level", [](mitsuba::LogLevel level) {
-//
-//        if (!Thread::thread()->logger()) {
-//            Throw("No Logger instance is set on the current thread! This is likely due to "
-//                  "set_log_level being called from a non-Mitsuba thread. You can manually set a "
-//                  "thread's ThreadEnvironment (which includes the logger) using "
-//                  "ScopedSetThreadEnvironment e.g.\n"
-//                  "# Main thread\n"
-//                  "env = mi.ThreadEnvironment()\n"
-//                  "# Secondary thread\n"
-//                  "with mi.ScopedSetThreadEnvironment(env):\n"
-//                  "   mi.set_log_level(mi.LogLevel.Info)\n"
-//                  "   mi.Log(mi.LogLevel.Info, 'Message')\n");
-//        }
-//
-//        Thread::thread()->logger()->set_log_level(level);
-//    }, "Sets the log level.");
+    m.def("set_log_level", [](mitsuba::LogLevel level) {
+        if (!Thread::thread()->logger()) {
+            Throw("No Logger instance is set on the current thread! This is likely due to "
+                  "set_log_level being called from a non-Mitsuba thread. You can manually set a "
+                  "thread's ThreadEnvironment (which includes the logger) using "
+                  "ScopedSetThreadEnvironment e.g.\n"
+                  "# Main thread\n"
+                  "env = mi.ThreadEnvironment()\n"
+                  "# Secondary thread\n"
+                  "with mi.ScopedSetThreadEnvironment(env):\n"
+                  "   mi.set_log_level(mi.LogLevel.Info)\n"
+                  "   mi.Log(mi.LogLevel.Info, 'Message')\n");
+        }
+
+        Thread::thread()->logger()->set_log_level(level);
+    }, "Sets the log level.");
     m.def("log_level", []() {
         return Thread::thread()->logger()->log_level();
     }, "Returns the current log level.");
@@ -113,10 +112,10 @@ NB_MODULE(mitsuba_ext, m) {
     Bitmap::static_initialization();
     Profiler::static_initialization();
 
-//#if defined(NDEBUG)
-//    // Default log level in Python should be Warn (unless we compiled in debug)
-//    Thread::thread()->logger()->set_log_level(mitsuba::LogLevel::Warn);
-//#endif
+#if defined(NDEBUG)
+    // Default log level in Python should be Warn (unless we compiled in debug)
+    Thread::thread()->logger()->set_log_level(mitsuba::LogLevel::Warn);
+#endif
 
     // Append the mitsuba directory to the FileResolver search path list
     ref<FileResolver> fr = Thread::thread()->file_resolver();
@@ -183,7 +182,7 @@ NB_MODULE(mitsuba_ext, m) {
 
     /* Make this a package, thus allowing statements such as:
      * `from mitsuba.test.util import function`
-     * For that we `__path__` needs to be populated. We do it by using the
+     * For that `__path__` needs to be populated. We do it by using the
      * `__file__` attribute of a Python file which is located in the same
      * directory as this module */
     nb::module_ os = nb::module_::import_("os");
