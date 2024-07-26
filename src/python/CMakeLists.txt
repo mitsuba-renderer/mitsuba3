@@ -161,8 +161,8 @@ endif()
 #   Copy python source files
 # ----------------------------------------------------------
 
-add_custom_target(copy-python-src ALL DEPENDS ${MI_COPY_FILES})
-set_target_properties(copy-python-src PROPERTIES FOLDER python)
+add_custom_target(mitsuba-copy-python-src ALL DEPENDS ${MI_COPY_FILES})
+set_target_properties(mitsuba-copy-python-src PROPERTIES FOLDER python)
 
 # ----------------------------------------------------------
 #   Copy targets for python (no rpath on Windows)
