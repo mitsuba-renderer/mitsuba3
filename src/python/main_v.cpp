@@ -123,17 +123,6 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     // Temporarily change the module name (for pydoc)
     m.attr("__name__") = "mitsuba." DRJIT_TOSTRING(MI_VARIANT_NAME);
 
-    // FIXME: we don't really need a list of casters
-    /// Initialize the list of casters
-    nb::object mitsuba_ext = nb::module_::import_("mitsuba.mitsuba_ext");
-    cast_object = (Caster) (void *)((nb::capsule) mitsuba_ext.attr("cast_object")).data();
-
-    /// Register the variant-specific caster with the 'core_ext' module
-    auto casters = (std::vector<void *> *) ((nb::capsule)(mitsuba_ext.attr("casters"))).data();
-    casters->push_back((void *) caster);
-
-    MI_PY_IMPORT_TYPES()
-
     // Create sub-modules
     nb::module_ math =
         m.def_submodule("math", "Mathematical routines, special functions, "
@@ -150,6 +139,19 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     nb::module_ mueller =
         m.def_submodule("mueller", "Routines to manipulate Mueller matrices "
                                    "for polarized rendering.");
+
+    m.attr("__name__") = "mitsuba";
+
+    // FIXME: we don't really need a list of casters
+    /// Initialize the list of casters
+    nb::object mitsuba_ext = nb::module_::import_("mitsuba.mitsuba_ext");
+    cast_object = (Caster) (void *)((nb::capsule) mitsuba_ext.attr("cast_object")).data();
+
+    /// Register the variant-specific caster with the 'core_ext' module
+    auto casters = (std::vector<void *> *) ((nb::capsule)(mitsuba_ext.attr("casters"))).data();
+    casters->push_back((void *) caster);
+
+    MI_PY_IMPORT_TYPES()
 
     MI_PY_IMPORT(DrJit);
 

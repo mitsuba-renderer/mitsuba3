@@ -2,6 +2,7 @@
 #include <mitsuba/python/python.h>
 
 #include <nanobind/stl/pair.h>
+#include <nanobind/stl/string.h>
 
 MI_PY_EXPORT(Frame) {
     MI_PY_IMPORT_TYPES()

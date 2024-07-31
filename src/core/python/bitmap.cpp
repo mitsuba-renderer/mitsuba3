@@ -26,7 +26,7 @@ namespace nanobind {
     };
 }
 
-using ContigCpuNdArray = nb::ndarray<nb::ndim<3>, nb::device::cpu, nb::c_contig>;
+using ContigCpuNdArray = nb::ndarray<nb::device::cpu, nb::c_contig>;
 
 void from_cpu_dlpack(Bitmap *b, ContigCpuNdArray data,
                      nb::object pixel_format_,
@@ -34,9 +34,13 @@ void from_cpu_dlpack(Bitmap *b, ContigCpuNdArray data,
         using Float = typename Bitmap::Float;
         MI_IMPORT_CORE_TYPES()
 
+        if (data.ndim() != 2 && data.ndim() != 3)
+            throw nb::type_error("Invalid num of dimensions. Expected two or three!");
+
         size_t shape[3];
-        for (size_t i = 0; i < 3; ++i)
+        for (size_t i = 0; i < 2; ++i)
             shape[i] = data.shape(i);
+        shape[2] = data.ndim() == 3 ? data.shape(2) : 1;
 
         auto dtype = data.dtype();
         Struct::Type component_format;
@@ -156,7 +160,8 @@ MI_PY_EXPORT(Bitmap) {
         .def_method(Bitmap, clear)
         .def("metadata", [](const Bitmap& b) {
                 return PropertiesV<Float>(b.metadata());
-            }, D(Bitmap, metadata))
+            }, D(Bitmap, metadata), 
+            nb::sig("def metadata(self) -> mitsuba.scalar_rgb.Properties"))
         .def("resample", nb::overload_cast<Bitmap *, const ReconstructionFilter *,
             const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &,
             const std::pair<ScalarFloat, ScalarFloat> &, Bitmap *>(&Bitmap::resample, nb::const_),

@@ -178,60 +178,51 @@ endif()
 #   Generate type information stubs (mitsuba)
 # ----------------------------------------------------------
 
-#set(MI_PYTHON_STUBS_DIR "" CACHE STRING "Location of the Python typing fle stubs directory to use if the files should not be generated during the build.")
-#mark_as_advanced(MI_PYTHON_STUBS_DIR)
-#if ("${MI_PYTHON_STUBS_DIR}" STREQUAL "")
-#  set(PATH_SEP ":")
-#  if(MSVC)
-#    set(PATH_SEP ";")
-#  endif()
-#  file(TO_NATIVE_PATH "${MI_BINARY_DIR}/python" MI_STUBS_ENV_PYTHONPATH)
-#
-#  set(MI_STUB_FILE_DEPENDENCIES ${MI_COPY_FILES})
-#  list(APPEND MI_STUB_FILE_DEPENDENCIES
-#    mitsuba_ext
-#    ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/generate_stub_files.py
-#  )
-#  foreach (MI_VARIANT ${MI_VARIANTS})
-#    string(REPLACE "|" ";" MI_VARIANT ${MI_VARIANT})
-#    list(GET MI_VARIANT 0 MI_VARIANT_NAME)
-#    list(APPEND MI_STUB_FILE_DEPENDENCIES mitsuba_${MI_VARIANT_NAME}_ext)
-#  endforeach()
-#  if (NOT SKBUILD)
-#    list(APPEND MI_STUB_FILE_DEPENDENCIES drjit_stub_file_generation)
-#  endif()
-#  if (MSVC)
-#    list(APPEND MI_STUB_FILE_DEPENDENCIES copy-targets-python)
-#  endif()
-#
-#  add_custom_command(
-#    OUTPUT ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
-#    COMMAND ${CMAKE_COMMAND} -E env
-#      "PYTHONPATH=${MI_STUBS_ENV_PYTHONPATH}${PATH_SEP}$ENV{PYTHONPATH}"
-#      "${Python_EXECUTABLE}" -Xutf8 ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/generate_stub_files.py
-#      ${MI_BINARY_DIR}/python/mitsuba
-#    DEPENDS ${MI_STUB_FILE_DEPENDENCIES}
-#  )
-#  add_custom_target(mitsuba_stub_file_generation ALL
-#    DEPENDS ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
-#  )
-#  set_target_properties(mitsuba_stub_file_generation PROPERTIES FOLDER python)
-#else()
-#  ro_copy(${MI_PYTHON_STUBS_DIR}/__init__.pyi python/mitsuba/__init__.pyi)
-#  file(GLOB_RECURSE MI_PYTHON_STUB_FILES RELATIVE ${MI_PYTHON_STUBS_DIR}/stubs ${MI_PYTHON_STUBS_DIR}/stubs/*.pyi)
-#  foreach(file ${MI_PYTHON_STUB_FILES})
-#    ro_copy(${MI_PYTHON_STUBS_DIR}/stubs/${file} python/mitsuba/stubs/${file})
-#  endforeach(file)
-#
-#  add_custom_target(copy-python-stubs ALL DEPENDS ${MI_COPY_FILES})
-#  set_target_properties(copy-python-stubs PROPERTIES FOLDER python)
-#endif()
-#
-#install(FILES ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi DESTINATION mitsuba)
-#install(DIRECTORY ${MI_BINARY_DIR}/python/mitsuba/stubs/ DESTINATION mitsuba/stubs)
-#
-#file(GENERATE OUTPUT ${MI_BINARY_DIR}/python/mitsuba/py.typed CONTENT "partial\n")
-#install(FILES ${MI_BINARY_DIR}/python/mitsuba/py.typed DESTINATION mitsuba)
+set(MI_ALL_VARIANTS "")
+
+foreach (MI_VARIANT ${MI_VARIANTS})
+  string(REPLACE "|" ";" MI_VARIANT ${MI_VARIANT})
+  list(GET MI_VARIANT 0 MI_VARIANT_NAME)
+  list(APPEND MI_ALL_VARIANTS ${MI_VARIANT_NAME})
+endforeach()
+
+set(STUB_ARGS
+  PYTHON_PATH ${MI_BINARY_DIR}/python
+  PATTERN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/stubs.pat
+  DEPENDS mitsuba mitsuba_ext ${MI_ALL_VARIANTS}
+)
+
+# The sanitizers require preloading shared libraries into Python, and that
+# doesn't play well with stub generation. Disable stubs if sanitizers are
+# enabled.
+if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
+
+  nanobind_add_stub(
+    mitsuba-stub
+    MODULE mitsuba.mitsuba_stubs
+    OUTPUT ${MI_BINARY_DIR}/python/mitsuba/stubs.pyi
+    MARKER_FILE ${MI_BINARY_DIR}/python/mitsuba/py.typed
+    ${STUB_ARGS}
+  )
+
+  add_custom_command(
+    OUTPUT ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
+    DEPENDS ${MI_BINARY_DIR}/python/mitsuba/stubs.pyi
+    COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/variant-stub.cmake
+      ${MI_BINARY_DIR}/python/mitsuba/stubs.pyi
+      ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
+  )
+
+  add_custom_target(
+    mitsuba-stubs
+    ALL
+    DEPENDS
+    ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
+    ${MI_BINARY_DIR}/python/mitsuba/py.typed
+  )
+
+endif()
+
 
 # ----------------------------------------------------------
 #   docstring target

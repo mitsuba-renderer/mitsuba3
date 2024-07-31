@@ -36,6 +36,7 @@ MI_PY_EXPORT(Ray) {
 
     bind_ray<Ray<Point2f, Spectrum>>(m, "Ray2f");
     bind_ray<Ray3f>(m, "Ray3f");
+    bind_ray<Ray<Point3d, Spectrum>>(m, "Ray3d");
 
     {
         auto raydiff = nb::class_<RayDifferential3f, Ray3f>(m, "RayDifferential3f", D(RayDifferential))

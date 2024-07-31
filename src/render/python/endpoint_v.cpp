@@ -7,6 +7,7 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/shape.h>
 #include <mitsuba/python/python.h>
+#include <nanobind/stl/pair.h>
 
 MI_PY_EXPORT(Endpoint) {
     MI_PY_IMPORT_TYPES()

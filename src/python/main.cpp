@@ -47,7 +47,7 @@ NB_MODULE(mitsuba_ext, m) {
     m.attr("__name__") = "mitsuba";
 
     // Expose some constants in the main `mitsuba` module
-    m.attr("__version__")       = MI_VERSION;
+    m.attr("__version__")      = MI_VERSION;
     m.attr("MI_VERSION")       = MI_VERSION;
     m.attr("MI_VERSION_MAJOR") = MI_VERSION_MAJOR;
     m.attr("MI_VERSION_MINOR") = MI_VERSION_MINOR;
