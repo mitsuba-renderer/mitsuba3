@@ -36,7 +36,6 @@ void bind_transform3(nb::module_ &m, const char *name) {
         })
         .def(nb::init<Matrix3f>(), D(Transform, Transform))
         .def(nb::init<Matrix3f, Matrix3f>(), "Initialize from a matrix and its inverse transpose")
-        .def("has_scale", &Transform3f::has_scale, D(Transform, has_scale))
         /// Operators
         .def(nb::self == nb::self)
         .def(nb::self != nb::self)
@@ -114,7 +113,6 @@ void bind_transform4(nb::module_ &m, const char *name) {
         .def(nb::init<Matrix4f>(), D(Transform, Transform))
         .def(nb::init<Matrix4f, Matrix4f>(), "Initialize from a matrix and its inverse transpose")
         .def("translation", &Transform4f::translation, D(Transform, translation))
-        .def("has_scale", &Transform4f::has_scale, D(Transform, has_scale))
         .def("extract", &Transform4f::template extract<3>, D(Transform, extract))
         /// Operators
         .def(nb::self == nb::self)

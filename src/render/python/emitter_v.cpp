@@ -164,8 +164,6 @@ MI_PY_EXPORT(Emitter) {
         .def_rw("m_needs_sample_3", &PyEmitter::m_needs_sample_3)
         .def_field(PyEmitter, m_flags, D(Emitter, m_flags));
 
-    bind_emitter_generic<Emitter *>(emitter);
-
     if constexpr (dr::is_array_v<EmitterPtr>) {
         dr::ArrayBinding b;
         auto emitter_ptr = dr::bind_array_t<EmitterPtr>(b, m, "EmitterPtr");

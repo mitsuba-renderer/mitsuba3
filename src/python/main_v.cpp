@@ -120,27 +120,23 @@ using Caster = nb::object(*)(mitsuba::Object *);
 Caster cast_object = nullptr;
 
 NB_MODULE(MI_VARIANT_NAME, m) {
-    // Temporarily change the module name (for pydoc)
-    m.attr("__name__") = "mitsuba." DRJIT_TOSTRING(MI_VARIANT_NAME);
+    m.attr("__name__") = "mitsuba";
 
     // Create sub-modules
-    nb::module_ math =
-        m.def_submodule("math", "Mathematical routines, special functions, "
-                                "etc.");
-    nb::module_ spline =
-        m.def_submodule("spline", "Functions for evaluating and sampling "
-                                  "Catmull-Rom splines");
-    nb::module_ warp =
-        m.def_submodule("warp", "Common warping techniques that map from "
-                                "the unit square to other domains, such as "
-                                "spheres, hemispheres, etc.");
-    nb::module_ quad =
-        m.def_submodule("quad", "Functions for numerical quadrature");
-    nb::module_ mueller =
-        m.def_submodule("mueller", "Routines to manipulate Mueller matrices "
-                                   "for polarized rendering.");
+    // Don't use nb::def_submodule because of namespace collisions
+    // create_submodule will always create a new module
+    nb::module_ math    = create_submodule(m, "math"),
+                spline  = create_submodule(m, "spline"),
+                warp    = create_submodule(m, "warp"),
+                quad    = create_submodule(m, "quad"),
+                mueller = create_submodule(m, "mueller");
 
-    m.attr("__name__") = "mitsuba";
+    math.doc()    = "Mathematical routines, special functions, etc.";
+    spline.doc()  = "Functions for evaluating and sampling Catmull-Rom splines";
+    warp.doc()    = "Common warping techniques that map from the unit square to other "
+                    "domains, such as spheres, hemispheres, etc.";
+    quad.doc()    = "Functions for numerical quadrature";
+    mueller.doc() = "Routines to manipulate Mueller matrices for polarized rendering.";
 
     // FIXME: we don't really need a list of casters
     /// Initialize the list of casters
@@ -249,7 +245,4 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     paths.append(nb::str(mi_dir));
     paths.append(nb::str(mi_py_dir));
     m.attr("__path__") = paths;
-
-    // Change module name back to correct value
-    m.attr("__name__") = "mitsuba." DRJIT_TOSTRING(MI_VARIANT_NAME);
 }

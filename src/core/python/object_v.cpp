@@ -54,7 +54,7 @@ public:
 /// FIXME: casted return should use rv_policy::reference_interal
 #define GET_PROPERTY_T(T)                                                      \
     if (strcmp(type.name(), typeid(T).name()) == 0)                            \
-      return nb::cast((T *) ptr);
+      return nb::cast((T *) ptr, parent);
 
 /// Implementation detail of mitsuba.set_property
 #define SET_PROPERTY_T(T)                                                      \
