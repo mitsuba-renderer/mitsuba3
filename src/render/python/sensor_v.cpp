@@ -166,9 +166,6 @@ MI_PY_EXPORT(Sensor) {
 
     auto sensor = MI_PY_TRAMPOLINE_CLASS(PySensor, Sensor, Endpoint)
         .def(nb::init<const Properties&>())
-        .def("sample_ray_differential", &Sensor::sample_ray_differential,
-             "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
-             D(Sensor, sample_ray_differential))
         .def_method(Sensor, shutter_open)
         .def_method(Sensor, shutter_open_time)
         .def_method(Sensor, needs_aperture_sample)

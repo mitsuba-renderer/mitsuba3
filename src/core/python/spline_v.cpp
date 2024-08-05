@@ -5,6 +5,7 @@
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/tuple.h>
+#include <nanobind/stl/vector.h>
 
 template<typename Float_>
 void bind_spline(nb::module_ &m) {

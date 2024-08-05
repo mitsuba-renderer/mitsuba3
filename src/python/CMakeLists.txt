@@ -164,20 +164,6 @@ endif()
 add_custom_target(mitsuba-copy-python-src ALL DEPENDS ${MI_COPY_FILES})
 set_target_properties(mitsuba-copy-python-src PROPERTIES FOLDER python)
 
-# ----------------------------------------------------------
-#   Copy targets for python (no rpath on Windows)
-# ----------------------------------------------------------
-
-if (MSVC)
-  # This target is dependent on the root CMakeLists.txt target `copy-targets`
-  add_custom_target(copy-targets-python ALL)
-  set_target_properties(copy-targets-python PROPERTIES FOLDER python)
-endif()
-
-# ----------------------------------------------------------
-#   Generate type information stubs (mitsuba)
-# ----------------------------------------------------------
-
 set(MI_ALL_VARIANTS "")
 
 foreach (MI_VARIANT ${MI_VARIANTS})
@@ -186,16 +172,37 @@ foreach (MI_VARIANT ${MI_VARIANTS})
   list(APPEND MI_ALL_VARIANTS ${MI_VARIANT_NAME})
 endforeach()
 
+set(MI_STUB_DEPENDS mitsuba_alias mitsuba_ext mitsuba-copy-python-src ${MI_ALL_VARIANTS})
+
+# ----------------------------------------------------------
+#   Copy targets for python (no rpath on Windows)
+# ----------------------------------------------------------
+
+if (MSVC)
+  # This target is dependent on the root CMakeLists.txt target `copy-targets`
+  add_custom_target(copy-targets-python ALL)
+  set_target_properties(copy-targets-python PROPERTIES FOLDER python)
+
+  list(APPEND MI_STUB_DEPENDS copy-targets-python)
+endif()
+
+# ----------------------------------------------------------
+#   Generate type information stubs (mitsuba)
+# ----------------------------------------------------------
+
 set(STUB_ARGS
   PYTHON_PATH ${MI_BINARY_DIR}/python
   PATTERN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/stubs.pat
-  DEPENDS mitsuba mitsuba_ext ${MI_ALL_VARIANTS}
+  DEPENDS ${MI_STUB_DEPENDS}
 )
 
 # The sanitizers require preloading shared libraries into Python, and that
 # doesn't play well with stub generation. Disable stubs if sanitizers are
 # enabled.
 if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
+
+  set(MI_STUB_SUBMODULES "math" "quad" "spline" "mueller" "warp" "misc"
+                         "python.ad" "python.chi2" "python.math_py" "python.util" "python.xml")
 
   nanobind_add_stub(
     mitsuba-stub
@@ -213,12 +220,34 @@ if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
       ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
   )
 
+  set(MI_STUB_TARGET_DEPS
+    ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
+    ${MI_BINARY_DIR}/python/mitsuba/py.typed)
+
+  foreach (value ${MI_STUB_SUBMODULES})
+    string(REPLACE "." "/" value_path ${value})
+    nanobind_add_stub(
+      mitsuba-stub-${value}
+      MODULE mitsuba.mitsuba_stubs.${value}
+      OUTPUT ${MI_BINARY_DIR}/python/mitsuba/${value_path}_stubs.pyi
+      ${STUB_ARGS}
+    )
+
+    add_custom_command(
+      OUTPUT ${MI_BINARY_DIR}/python/mitsuba/${value_path}.pyi
+      DEPENDS ${MI_BINARY_DIR}/python/mitsuba/${value_path}_stubs.pyi
+      COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/variant-stub.cmake
+        ${MI_BINARY_DIR}/python/mitsuba/${value_path}_stubs.pyi
+        ${MI_BINARY_DIR}/python/mitsuba/${value_path}.pyi
+    )
+
+    list(APPEND MI_STUB_TARGET_DEPS ${MI_BINARY_DIR}/python/mitsuba/${value_path}.pyi)
+  endforeach()
+
   add_custom_target(
     mitsuba-stubs
     ALL
-    DEPENDS
-    ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
-    ${MI_BINARY_DIR}/python/mitsuba/py.typed
+    DEPENDS ${MI_STUB_TARGET_DEPS}
   )
 
 endif()

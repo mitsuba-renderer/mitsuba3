@@ -43,3 +43,11 @@ except ImportError:
                        'Mitsuba.')
 
 sys.modules[__name__] = sys.modules['mitsuba']
+sys.modules[__name__ +'.math']      = mi.math
+sys.modules[__name__ +'.spline']    = mi.spline
+sys.modules[__name__ +'.warp']      = mi.warp
+sys.modules[__name__ +'.quad']      = mi.quad
+sys.modules[__name__ +'.mueller']   = mi.mueller
+sys.modules[__name__ +'.misc']      = mi.misc
+sys.modules[__name__ +'.python']    = mi.python
+
