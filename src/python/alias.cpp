@@ -123,9 +123,10 @@ static void set_variant(nb::args args) {
                     PyDict_GetItem(variant_dict.ptr(), k.ptr()));
     }
 
-    // FIXME: Reload python integrators if we're setting a JIT enabled variant
-    nb::module_ mi_python = nb::module_::import_("mitsuba.python.ad.integrators");
-    nb::steal(PyImport_ReloadModule(mi_python.ptr()));
+    if (new_variant.attr("startswith")(nb::make_tuple("llvm_", "cuda_"))) {
+        nb::module_ mi_python = nb::module_::import_("mitsuba.python.ad.integrators");
+        nb::steal(PyImport_ReloadModule(mi_python.ptr()));
+    }
 }
 
 NB_MODULE(mitsuba_alias, m) {

@@ -21,6 +21,4 @@ if mi.variant() is not None and not mi.variant().startswith('scalar'):
     from . import prb_projective
     importlib.reload(prb_projective)
 
-    del common, direct_projective, prb_basic, prb_projective, prb, prbvolpath
-
 del importlib, mi
