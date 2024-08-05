@@ -92,7 +92,7 @@ MI_PY_EXPORT(Thread) {
        .def_method(Thread, is_critical)
        .def_method(Thread, set_name)
        .def_method(Thread, name)
-       .def_method(Thread, thread_id)
+       .def_static_method(Thread, thread_id)
        .def_method(Thread, logger)
        .def_method(Thread, set_logger)
        .def_method(Thread, set_file_resolver)

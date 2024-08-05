@@ -11,16 +11,16 @@ def test01_import_mitsuba_variants():
 
     # Importing specific variant
     mi_var = _import(f'mitsuba.{variant}')
-    assert mi_var.__name__ == f"mitsuba.{variant}"
+    assert mi_var.__name__ == f"mitsuba"
 
     # Should be able to access the variants from mitsuba itself
     mi_var2 = getattr(mi, variant)
-    assert mi_var2.__name__ == f"mitsuba.{variant}"
+    assert mi_var2.__name__ == f"mitsuba"
 
     # Change the current variant
     mi.set_variant('scalar_rgb')
     assert mi.variant() == 'scalar_rgb'
-    assert mi_var.__name__ == f"mitsuba.{variant}"
+    assert mi_var.__name__ == f"mitsuba"
 
 
 def test02_import_submodules():

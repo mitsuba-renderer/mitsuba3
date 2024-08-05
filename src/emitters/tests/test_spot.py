@@ -13,8 +13,6 @@ spectrum_dicts = {
     }
 }
 
-mi.set_variant('scalar_rgb')
-
 lookat_transforms = [
     mi.scalar_rgb.ScalarTransform4f().look_at([0, 1, 0], [0, 0, 0], [1, 0, 0]),
     mi.scalar_rgb.ScalarTransform4f().look_at([0, 0, 1], [0, 0, 0], [0, -1, 0])
