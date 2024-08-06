@@ -162,12 +162,7 @@ MI_PY_EXPORT(Emitter) {
         .def_method(Emitter, flags, "active"_a = true)
         .def_rw("m_needs_sample_2", &PyEmitter::m_needs_sample_2)
         .def_rw("m_needs_sample_3", &PyEmitter::m_needs_sample_3)
-        .def_prop_rw("m_flags",
-            [](PyEmitter &emitter){ return emitter.m_flags; },
-            [](PyEmitter &emitter, uint32_t flags){
-                emitter.m_flags = flags;
-            }
-        );
+        .def_field(PyEmitter, m_flags, D(Emitter, m_flags));
 
     bind_emitter_generic<Emitter *>(emitter);
 
