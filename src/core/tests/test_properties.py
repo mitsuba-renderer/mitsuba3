@@ -13,6 +13,7 @@ def fill_properties(p):
     p['prop_4'] = 1.25
     p['prop_5'] = Array3f(1, 2, 3)
     p['prop_6'] = mi.ScalarColor3f(1, 2, 3)
+    p['prop_7'] = mi.Object()
 
 
 def test01_name_and_id(variant_scalar_rgb):
@@ -84,12 +85,12 @@ def test04_queried_properties(variant_scalar_rgb):
     assert p.was_queried('prop_1')
     assert p.was_queried('prop_2')
     assert not p.was_queried('prop_3')
-    assert p.unqueried() == ['prop_3', 'prop_4', 'prop_5', 'prop_6']
+    assert p.unqueried() == ['prop_3', 'prop_4', 'prop_5', 'prop_6', 'prop_7']
 
     # Mark field as queried explicitly
     p.mark_queried('prop_4')
     assert p.was_queried('prop_4')
-    assert p.unqueried() == ['prop_3', 'prop_5', 'prop_6']
+    assert p.unqueried() == ['prop_3', 'prop_5', 'prop_6', 'prop_7']
 
 
 def test05_copy_and_merge(variant_scalar_rgb):
@@ -117,6 +118,7 @@ def test06_equality(variant_scalar_rgb):
     fill_properties(p)
     del p['prop_5']
     del p['prop_6']
+    del p['prop_7']
 
     # Equality should encompass properties, their type,
     # the instance's plugin_name and id properties

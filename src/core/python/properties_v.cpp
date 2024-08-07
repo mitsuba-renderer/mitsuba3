@@ -1,5 +1,5 @@
 #include <drjit/tensor.h>
-
+#include <nanobind/nanobind.h> // Needs to be first, to get `ref<T>` caster
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/python/python.h>
