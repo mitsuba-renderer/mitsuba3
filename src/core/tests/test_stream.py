@@ -18,7 +18,8 @@ parameters = [
 # TODO: more contents, exercise lots of types
 contents = [82.548, 999, 'some sentence', 424,
             'hi', 13.3701, True, 'hey',
-            42, 'c', False, '', 99.998]
+            42, 'c', False, '', 99.998,
+            b'null\0termination\0bytes']
 
 
 def write_contents(stream):
@@ -31,6 +32,10 @@ def write_contents(stream):
             stream.write_single(v)
         elif type(v) is bool:
             stream.write_bool(v)
+        elif type(v) is bytes:
+            stream.write(v)
+        else:
+            raise ValueError("Unsupported type!")
     stream.flush()
 
 
@@ -46,6 +51,10 @@ def check_contents(stream):
             assert dr.abs(stream.read_single() - v) / v < 1e-5
         elif type(v) is bool:
             assert v == stream.read_bool()
+        elif type(v) is bytes:
+            assert v == stream.read(len(v))
+        else:
+            raise ValueError("Unsupported type!")
 
 
 @pytest.mark.parametrize(*parameters)

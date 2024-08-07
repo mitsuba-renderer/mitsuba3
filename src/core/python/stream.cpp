@@ -44,8 +44,7 @@ MI_PY_EXPORT(Stream) {
         .def_method(Stream, can_write)
         .def_static("host_byte_order", Stream::host_byte_order, D(Stream, host_byte_order))
         .def("write", [](Stream &s, nb::bytes b) {
-            std::string data(b.c_str());
-            s.write(data.c_str(), data.size());
+            s.write(b.c_str(), b.size());
         }, D(Stream, write))
         .def("read", [](Stream &s, size_t size) {
             std::unique_ptr<char> tmp(new char[size]);
