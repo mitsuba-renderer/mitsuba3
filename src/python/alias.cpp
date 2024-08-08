@@ -129,6 +129,15 @@ static void set_variant(nb::args args) {
     }
 }
 
+/// Fallback for when we're attempting to fetch variant-specific attribute
+static nb::object get_attr(nb::handle key) {
+    if (PyDict_Contains(variant_modules, key.ptr()) == 1)
+        return variant_module(key);
+
+    throw nb::attribute_error(
+        nb::str("module 'mitsuba' has no attribute '{}'").format(key).c_str());
+}
+
 NB_MODULE(mitsuba_alias, m) {
     m.attr("__name__") = "mitsuba";
 
@@ -166,6 +175,8 @@ NB_MODULE(mitsuba_alias, m) {
     m.def("variant", []() { return curr_variant ? curr_variant : nb::none(); });
     m.def("variants", []() { return nb::steal(PyDict_Keys(variant_modules)); });
     m.def("set_variant", set_variant);
+    /// Only used for variant-specific attributes e.g. mi.scalar_rgb.T
+    m.def("__getattr__", [](nb::handle key) { return get_attr(key); });
 
     /// Fill `__dict__` with all objects in `mitsuba_ext` and `mitsuba.python`
     mi_dict = m.attr("__dict__").ptr();
