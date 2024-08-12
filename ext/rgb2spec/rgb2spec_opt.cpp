@@ -7,6 +7,7 @@
 #  endif
 #endif
 
+#include <cstdint>
 #include <cmath>
 #include <cstring>
 #include <stdexcept>
