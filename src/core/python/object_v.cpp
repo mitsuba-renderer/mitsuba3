@@ -101,6 +101,18 @@ MI_PY_EXPORT(Object) {
         },
         "ptr"_a, "type"_a, "value"_a);
 
+    m.def(
+        "set_property",
+        [](nb::handle dst, nb::handle src) {
+            nb::handle h = dst.type();
+            if (nb::type_check(h)) {
+                nb::inst_replace_copy(dst, h(src));
+                return;
+            }
+            Throw("set_property(): Target property type isn't a nanobind type!");
+        },
+        "dst"_a, "src"_a);
+
     if constexpr (dr::is_array_v<ObjectPtr>) {
         dr::ArrayBinding b;
         auto object_ptr = dr::bind_array_t<ObjectPtr>(b, m, "ObjectPtr");
