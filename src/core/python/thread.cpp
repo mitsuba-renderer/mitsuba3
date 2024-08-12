@@ -112,6 +112,7 @@ MI_PY_EXPORT(Thread) {
                                             D(ScopedSetThreadEnvironment))
         .def(nb::init<const ThreadEnvironment &>())
         .def("__enter__", &PyScopedSetThreadEnvironment::enter)
-        .def("__exit__", &PyScopedSetThreadEnvironment::exit);
+        .def("__exit__", &PyScopedSetThreadEnvironment::exit,
+             "exc_type"_a.none(), "exc_val"_a.none(), "exc_tb"_a.none());
 }
 
