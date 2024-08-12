@@ -73,9 +73,9 @@ class SceneParameters(Mapping):
 
         if value_type is None:
             try:
-                cur.assign(value)
-            except AttributeError as e:
-                if "has no attribute 'assign'" in str(e):
+                self.set_property(cur, value)
+            except Exception as e:
+                if "Target property type isn't a nanobind type" in str(e):
                     mi.Log(
                         mi.LogLevel.Warn,
                         f"Parameter '{key}' cannot be modified! This usually "

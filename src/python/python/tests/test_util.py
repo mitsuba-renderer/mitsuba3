@@ -121,11 +121,12 @@ def test02_traverse_update(variants_all_ad_rgb):
 
         def __init__(self, props):
             mi.Texture.__init__(self, props)
+            self.tex_param_nondiff = mi.Float(3)
 
         def traverse(self, callback):
             callback.put_parameter("tex_param_diff", mi.Point3f(1, 1, 1), mi.ParamFlags.Differentiable)
             callback.put_parameter("tex_param_scalar", mi.ScalarFloat(2), mi.ParamFlags.NonDifferentiable)
-            callback.put_parameter("tex_param_nondiff", mi.Float(3), mi.ParamFlags.NonDifferentiable)
+            callback.put_parameter("tex_param_nondiff", self.tex_param_nondiff, mi.ParamFlags.NonDifferentiable)
 
         def parameters_changed(self, keys):
             MyTexture.update_keys = keys
@@ -171,6 +172,12 @@ def test02_traverse_update(variants_all_ad_rgb):
     assert (
         MyBSDF.update_keys == ['bsdf_tex_diff']
     ), "Updated parameters should propagate to their parents!"
+    reset_update_keys()
+
+    # Propagate changes to plugin variable
+    params["bsdf_tex_diff.tex_param_nondiff"] = 0.2
+    params.update()
+    assert dr.allclose(bsdf.tex1.tex_param_nondiff, 0.2)
     reset_update_keys()
 
     params["bsdf_tex_diff.tex_param_diff"] = mi.Point3f(0, 0, 0)
@@ -262,6 +269,12 @@ def test04_scene_parameters_update(variants_all_ad_rgb):
 
     assert dr.allclose(params['clearcoat.value'], 0.5)
     assert dr.allclose(params['flatness.value'], 0.4)
+
+    # Check parameter changes have been applied to plugin
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.uv = [0.5, 0.5]
+    assert dr.allclose(bsdf.eval_attribute_1('clearcoat', si), 0.5)
+    assert dr.allclose(bsdf.eval_attribute_1('flatness', si), 0.4)
 
     assert ret[-1][-1] == {'clearcoat', 'flatness'}
 
