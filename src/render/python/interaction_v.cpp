@@ -145,7 +145,11 @@ MI_PY_EXPORT(PreliminaryIntersection) {
         .def(nb::init<const PreliminaryIntersection3f &>(), "Copy constructor")
         .def("is_valid", &PreliminaryIntersection3f::is_valid, D(PreliminaryIntersection, is_valid))
         .def("compute_surface_interaction",
-           &PreliminaryIntersection3f::compute_surface_interaction,
+           // GCC 13.2.0 miscompiles the bindings below unless its wrapped in a lambda
+           [](PreliminaryIntersection3f& pi, const Ray3f &&ray, uint32_t ray_flags, Mask active) {
+               return pi.compute_surface_interaction(
+                       std::forward<const Ray3f&>(ray), ray_flags, active);
+           },
            D(PreliminaryIntersection, compute_surface_interaction),
            "ray"_a, "ray_flags"_a = +RayFlags::All, "active"_a = true)
         .def("zero_", &PreliminaryIntersection3f::zero_, D(PreliminaryIntersection, zero))
