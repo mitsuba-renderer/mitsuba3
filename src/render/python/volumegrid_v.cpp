@@ -45,6 +45,10 @@ MI_PY_EXPORT(VolumeGrid) {
     };
 
     MI_PY_CLASS(VolumeGrid, Object)
+        .def(nb::init<const fs::path &>(), "path"_a,
+            nb::call_guard<nb::gil_scoped_release>())
+        .def(nb::init<Stream *>(), "stream"_a,
+            nb::call_guard<nb::gil_scoped_release>())
         .def("__init__", init_cpu_ndarray
             , "array"_a, "compute_max"_a = true, "Initialize a VolumeGrid from a CPU-visible ndarray")
         .def("__init__",
@@ -88,12 +92,6 @@ MI_PY_EXPORT(VolumeGrid) {
         .def("write", nb::overload_cast<const fs::path &>(
                 &VolumeGrid::write, nb::const_), "path"_a, D(VolumeGrid, write, 2),
                 nb::call_guard<nb::gil_scoped_release>())
-
-        .def(nb::init<const fs::path &>(), "path"_a,
-            nb::call_guard<nb::gil_scoped_release>())
-        .def(nb::init<Stream *>(), "stream"_a,
-            nb::call_guard<nb::gil_scoped_release>())
-
         .def_prop_ro("__array_interface__", [](VolumeGrid &grid) -> nb::object {
             nb::dict result;
             auto size = grid.size();
