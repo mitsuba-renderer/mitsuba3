@@ -194,6 +194,20 @@ def test06_dict_rgb(variants_all_scalar):
 
     assert str(e1) == str(e2)
 
+    import numpy as np
+    e1 = mi.load_dict({
+        "type" : "point",
+        "intensity" : {
+            "type": "rgb",
+            "value" : np.array([0.5, 0.2, 0.5])
+        }
+    })
+    assert str(e1) == str(e3)
+
+    with pytest.raises(Exception) as e:
+        mi.load_dict({'type': 'rgb', 'value': np.array([[0.5,0.5,0.3]])})
+    assert "Could not convert [[0.5 0.5 0.3]] into Color3f" in str(e.value)
+
 
 def test07_dict_spectrum(variants_all_scalar):
     e1 = mi.load_dict({
