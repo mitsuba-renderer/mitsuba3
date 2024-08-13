@@ -5,7 +5,7 @@ import numpy as np
 import os
 from shutil import copy
 
-from mitsuba.scalar_rgb.test.util import fresolver_append_path
+from mitsuba.test.util import fresolver_append_path
 
 
 @fresolver_append_path
