@@ -121,11 +121,11 @@ static void set_variant(nb::args args) {
                 !nb::bool_(k.attr("endswith")("__")))
                 Safe_PyDict_SetItem(mi_dict, k.ptr(),
                     PyDict_GetItem(variant_dict.ptr(), k.ptr()));
-    }
 
-    if (new_variant.attr("startswith")(nb::make_tuple("llvm_", "cuda_"))) {
-        nb::module_ mi_python = nb::module_::import_("mitsuba.python.ad.integrators");
-        nb::steal(PyImport_ReloadModule(mi_python.ptr()));
+        if (new_variant.attr("startswith")(nb::make_tuple("llvm_", "cuda_"))) {
+            nb::module_ mi_python = nb::module_::import_("mitsuba.python.ad.integrators");
+            nb::steal(PyImport_ReloadModule(mi_python.ptr()));
+        }
     }
 }
 

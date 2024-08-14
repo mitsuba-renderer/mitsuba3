@@ -364,13 +364,11 @@ class _RenderOp(dr.CustomOp):
             )
 
     def forward(self):
-        mi.set_variant(self.variant)
         self.set_grad_out(
             self.integrator.render_forward(self.scene, self.params, self.sensor,
                                            self.seed[1], self.spp[1]))
 
     def backward(self):
-        mi.set_variant(self.variant)
         self.integrator.render_backward(self.scene, self.params, self.grad_out(),
                                         self.sensor, self.seed[1], self.spp[1])
 

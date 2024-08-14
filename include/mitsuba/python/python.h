@@ -61,14 +61,7 @@
             (void) new Class(                                                  \
                 name, #Name, variant,                                          \
                 [=](const Properties &p) -> ref<Object> {                      \
-                    /* The thread-local python variant information might not
-                    have been set on this thread */                            \
                     nb::gil_scoped_acquire gil;                                \
-                    nb::module_ mi        = nb::module_::import_("mitsuba");   \
-                    nb::object py_variant = mi.attr("variant")();              \
-                    if (py_variant.is(nb::none()) ||                           \
-                        nb::cast<std::string>(py_variant) != variant)          \
-                        mi.attr("set_variant")(variant);                       \
                                                                                \
                     nb::object o;                                              \
                     {                                                          \
