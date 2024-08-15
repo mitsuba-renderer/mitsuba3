@@ -201,6 +201,9 @@ NB_MODULE(mitsuba_alias, m) {
     atexit.attr("register")(nb::cpp_function([]() {
         curr_variant.reset();
 
+        PyDict_Clear(mi_dict);
+        mi_dict = nullptr;
+
         if (variant_modules) {
             Py_DECREF(variant_modules);
             variant_modules = nullptr; 
