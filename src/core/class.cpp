@@ -1,6 +1,6 @@
 #include <mitsuba/core/class.h>
 #include <mitsuba/core/logger.h>
-#include <map>
+#include <unordered_map>
 #include <iostream>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -13,7 +13,7 @@ void cleanup();
 NAMESPACE_END(detail)
 NAMESPACE_END(xml)
 
-static std::map<std::string, Class *> *__classes;
+static std::unordered_map<std::string, Class *> *__classes;
 bool Class::m_is_initialized = false;
 const Class *m_class = nullptr;
 
@@ -34,9 +34,13 @@ Class::Class(const std::string &name, const std::string &parent, const std::stri
         m_alias = name;
 
     if (!__classes)
-        __classes = new std::map<std::string, Class *>();
+        __classes = new std::unordered_map<std::string, Class *>();
 
-    (*__classes)[key(name, variant)] = this;
+    std::string class_key = key(name, variant);
+    if ((*__classes).find(class_key) != (*__classes).end())
+        delete (*__classes)[class_key];
+
+    (*__classes)[class_key] = this;
 
     // Register classes that declare an alias for use in the XML parser
     if (!alias.empty())

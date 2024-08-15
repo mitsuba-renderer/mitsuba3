@@ -166,9 +166,7 @@ NB_MODULE(mitsuba_ext, m) {
             Thread::wait_for_tasks();
         }
         Class::static_remove_functors();
-        Logger::static_shutdown();
         StructConverter::static_shutdown();
-        Thread::static_shutdown();
     }));
 
     /* Callback function cleanup static data strucutres, this should be called
@@ -176,6 +174,8 @@ NB_MODULE(mitsuba_ext, m) {
     nanobind_module_def_mitsuba_ext.m_free = [](void *) {
         Profiler::static_shutdown();
         Bitmap::static_shutdown();
+        Logger::static_shutdown();
+        Thread::static_shutdown();
         Class::static_shutdown();
         Jit::static_shutdown();
     };
