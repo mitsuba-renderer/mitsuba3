@@ -47,7 +47,7 @@ MI_PY_EXPORT(Stream) {
             s.write(b.c_str(), b.size());
         }, D(Stream, write))
         .def("read", [](Stream &s, size_t size) {
-            std::unique_ptr<char> tmp(new char[size]);
+            std::unique_ptr<char[]> tmp(new char[size]);
             s.read((void *) tmp.get(), size);
             return nb::bytes(tmp.get(), size);
         }, D(Stream, write))
