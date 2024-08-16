@@ -150,6 +150,13 @@ public:
         Base::parameters_changed(keys);
     }
 
+    /**
+     * \brief Return the kappa parameter of the sensor
+     *
+     * This method will only be implemented in acoustic films.
+     */
+    virtual Float kappa() const;
+
     MI_DECLARE_CLASS()
 
 protected:
@@ -326,4 +333,5 @@ MI_CALL_TEMPLATE_BEGIN(Sensor)
     DRJIT_CALL_GETTER(flags)
     DRJIT_CALL_GETTER(shape)
     DRJIT_CALL_GETTER(medium)
+    DRJIT_CALL_GETTER(kappa)
 MI_CALL_TEMPLATE_END(Sensor)

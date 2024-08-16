@@ -128,6 +128,10 @@ Sensor<Float, Spectrum>::sample_wavelengths(const SurfaceInteraction3f& /*si*/, 
     return sample_wavelength<Float, Spectrum>(sample);
 }
 
+MI_VARIANT Float Sensor<Float, Spectrum>::kappa() const {
+    NotImplementedError();
+}
+
 // =============================================================================
 // ProjectiveCamera interface
 // =============================================================================

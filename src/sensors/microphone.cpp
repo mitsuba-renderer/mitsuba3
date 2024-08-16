@@ -120,6 +120,10 @@ public:
         return ScalarBoundingBox3f();
     }
 
+    Float kappa() const override {
+        return m_kappa;
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Microphone[" << std::endl
