@@ -6472,6 +6472,15 @@ static const char *__doc_mitsuba_Resampler_target_resolution = R"doc(Return the 
 
 static const char *__doc_mitsuba_Resampler_to_string = R"doc(Return a human-readable summary)doc";
 
+static const char *__doc_mitsuba_SGGXPhaseFunctionParams =
+R"doc(The parameters of the SGGX phase function stored as a pair of 3D
+vectors [[S_xx, S_yy, S_zz], [S_xy, S_xz, S_yz]])doc";
+
+static const char *__doc_mitsuba_SGGXPhaseFunctionParams_SGGXPhaseFunctionParams =
+R"doc(Construct from a pair of 3D vectors [S_xx, S_yy, S_zz] and [S_xy,
+S_xz, S_yz] that correspond to the entries of a symmetric positive
+definite 3x3 matrix.)doc";
+
 static const char *__doc_mitsuba_Sampler =
 R"doc(Base class of all sample generators.
 
