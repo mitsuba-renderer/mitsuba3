@@ -41,8 +41,8 @@ def test02_path_to_string(variant_scalar_rgb):
         path_here.__str__() + sep + "dir 1" + sep + "dir 2"
 
 
-def test03_create_and_remove_directory(variant_scalar_rgb):
-    new_dir = path_here / fs.path("my_shiny_new_directory")
+def test03_create_and_remove_directory(variant_scalar_rgb, tmp_path):
+    new_dir = fs.path(str(tmp_path)) / "my_shiny_new_directory"
     assert fs.create_directory(new_dir)
     assert fs.exists(new_dir)
     assert fs.is_directory(new_dir)
@@ -131,11 +131,13 @@ def test09_system_specific_tests(variant_scalar_rgb):
         assert fs.path('./hello').is_relative()
 
 
-def test10_equivalence(variant_scalar_rgb):
-    p1 = fs.path('../my_directory')
+def test10_equivalence(variant_scalar_rgb, tmp_path):
+    base_dir = fs.path(str(tmp_path)) / 'base_directory'
+    assert fs.create_directory(base_dir)
+    p1 = base_dir / fs.path('../my_directory')
     assert fs.create_directory(p1)
 
-    p2 = fs.path('././../././my_directory')
+    p2 = base_dir / fs.path('././../././my_directory')
     assert not p1 == p2
     assert fs.equivalent(p1, p2)
 
@@ -146,8 +148,8 @@ def test11_implicit_string_cast(variant_scalar_rgb):
     assert not fs.exists("some random" + sep + "path")
 
 
-def test12_truncate_and_file_size(variant_scalar_rgb):
-    p = path_here / 'test_file_for_resize.txt'
+def test12_truncate_and_file_size(variant_scalar_rgb, tmp_path):
+    p = fs.path(str(tmp_path)) / 'test_file_for_resize.txt'
     open(str(p), 'a').close()
     assert fs.resize_file(p, 42)
     assert fs.file_size(p) == 42
