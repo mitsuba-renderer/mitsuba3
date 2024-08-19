@@ -20,7 +20,7 @@ NAMESPACE_BEGIN(mitsuba)
 // -----------------------------------------------------------------------------
 
 MI_VARIANT Integrator<Float, Spectrum>::Integrator(const Properties & props)
-    : m_stop(false) {
+    : m_stop(false), m_id(props.id()) {
     m_timeout = props.get<ScalarFloat>("timeout", -1.f);
 
     // Disable direct visibility of emitters if needed
