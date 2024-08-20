@@ -344,7 +344,6 @@ protected:
     /// Identifier (if available)
     std::string m_id;
 };
-};
 
 /** \brief Abstract integrator that performs Monte Carlo sampling starting from
  * the sensor
