@@ -117,9 +117,9 @@ public:
                     static_assert(is_spectral_v<Spectrum>);
                     /// Note: this assumes that sensor used sample_rgb_spectrum() to generate 'ray.wavelengths'
                     auto pdf = pdf_rgb_spectrum(ray.wavelengths);
-                    UnpolarizedSpectrum spec =
+                    UnpolarizedSpectrum _spec =
                         spec.entry(i, 0) * dr::select(pdf != 0.f, dr::rcp(pdf), 0.f);
-                    rgb = spectrum_to_srgb(spec, ray.wavelengths, active);
+                    rgb = spectrum_to_srgb(_spec, ray.wavelengths, active);
                 }
 
                 *aovs++ = rgb.r(); *aovs++ = rgb.g(); *aovs++ = rgb.b();
