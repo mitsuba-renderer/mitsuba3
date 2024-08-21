@@ -101,24 +101,9 @@ MI_PY_EXPORT(Medium) {
         .def(nb::init<const Properties &>(), "props"_a)
         .def_method(Medium, id)
         .def_method(Medium, set_id)
-        .def_prop_rw("m_sample_emitters",
-            [](PyMedium &medium){ return medium.m_sample_emitters; },
-            [](PyMedium &medium, bool value){
-                medium.m_sample_emitters = value;
-            }
-        )
-        .def_prop_rw("m_is_homogeneous",
-            [](PyMedium &medium){ return medium.m_is_homogeneous; },
-            [](PyMedium &medium, bool value){
-                medium.m_is_homogeneous = value;
-            }
-        )
-        .def_prop_rw("m_has_spectral_extinction",
-            [](PyMedium &medium){ return medium.m_has_spectral_extinction; },
-            [](PyMedium &medium, bool value){
-                medium.m_has_spectral_extinction = value;
-            }
-        )
+        .def_field(PyMedium, m_sample_emitters, D(Medium, m_sample_emitters))
+        .def_field(PyMedium, m_is_homogeneous, D(Medium, m_is_homogeneous))
+        .def_field(PyMedium, m_has_spectral_extinction, D(Medium, m_has_spectral_extinction))
         .def("__repr__", &Medium::to_string, D(Medium, to_string));
 
     bind_medium_generic<Medium *>(medium);

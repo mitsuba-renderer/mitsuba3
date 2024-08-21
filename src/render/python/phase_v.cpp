@@ -110,12 +110,7 @@ MI_PY_EXPORT(PhaseFunction) {
             .def("flags", nb::overload_cast<size_t, Mask>(&PhaseFunction::flags, nb::const_),
                  "index"_a, "active"_a = true, D(PhaseFunction, flags, 2))
             .def_method(PhaseFunction, id)
-            .def_prop_rw("m_flags",
-                [](PhaseFunction &phase){ return phase.get_flags(); },
-                [](PhaseFunction &phase, uint32_t flags){
-                    phase.set_flags(flags);
-                }
-            )
+            .def_field(PyPhaseFunction, m_flags, D(PhaseFunction, m_flags))
             .def("__repr__", &PhaseFunction::to_string);
 
     bind_phase_generic<PhaseFunction *>(phase);

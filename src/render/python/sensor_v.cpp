@@ -171,9 +171,9 @@ MI_PY_EXPORT(Sensor) {
         .def_method(Sensor, needs_aperture_sample)
         .def("film", nb::overload_cast<>(&Sensor::film, nb::const_), D(Sensor, film))
         .def("sampler", nb::overload_cast<>(&Sensor::sampler, nb::const_), D(Sensor, sampler))
-        .def_rw("m_needs_sample_2", &PySensor::m_needs_sample_2)
-        .def_rw("m_needs_sample_3", &PySensor::m_needs_sample_3)
-        .def_rw("m_film", &PySensor::m_film);
+        .def_field(PySensor, m_needs_sample_2, D(Endpoint, m_needs_sample_3))
+        .def_field(PySensor, m_needs_sample_3, D(Endpoint, m_needs_sample_3))
+        .def_field(PySensor, m_film);
 
     bind_sensor_generic<Sensor *>(sensor);
 

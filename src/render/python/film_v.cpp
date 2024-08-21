@@ -124,7 +124,8 @@ MI_PY_EXPORT(Film) {
                     "normalize"_a = false, "borders"_a = false)
         .def_method(Film, schedule_storage)
         .def_method(Film, sensor_response_function)
-        .def_method(Film, flags);
+        .def_method(Film, flags)
+        .def_field(PyFilm, m_flags, D(Film, m_flags));
 
     MI_PY_REGISTER_OBJECT("register_film", Film)
 }
