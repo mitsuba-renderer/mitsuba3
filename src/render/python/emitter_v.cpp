@@ -160,8 +160,8 @@ MI_PY_EXPORT(Emitter) {
         .def_method(Emitter, is_environment)
         .def_method(Emitter, sampling_weight)
         .def_method(Emitter, flags, "active"_a = true)
-        .def_rw("m_needs_sample_2", &PyEmitter::m_needs_sample_2)
-        .def_rw("m_needs_sample_3", &PyEmitter::m_needs_sample_3)
+        .def_field(PyEmitter, m_needs_sample_2, D(Endpoint, m_needs_sample_2))
+        .def_field(PyEmitter, m_needs_sample_3, D(Endpoint, m_needs_sample_3))
         .def_field(PyEmitter, m_flags, D(Emitter, m_flags));
 
     if constexpr (dr::is_array_v<EmitterPtr>) {
