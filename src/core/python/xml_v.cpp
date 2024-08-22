@@ -294,6 +294,21 @@ void parse_dictionary(DictParseContext &ctx,
 
     std::string id;
 
+    // Temporarily disable nanobind's warnings for failed implicit casts
+    // We wrap our dict value cast attempts in try-catch blocks so it's unnecessary
+    struct scoped_nb_implicit_cast_warnings {
+        bool implicit_cast_warnings;
+
+        scoped_nb_implicit_cast_warnings(bool b) {
+            implicit_cast_warnings = nb::implicit_cast_warnings();
+            nb::set_implicit_cast_warnings(b);
+        }
+
+        ~scoped_nb_implicit_cast_warnings() {
+            nb::set_implicit_cast_warnings(implicit_cast_warnings);
+        }
+    } scoped_nb_warning(false);
+
     for (const auto& [k, value] : dict) {
         std::string key = nb::cast<std::string>(k);
 
