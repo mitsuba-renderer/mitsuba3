@@ -1117,7 +1117,7 @@ class PSIntegrator(ADIntegrator):
             J = self.proj_detail.perspective_sensor_jacobian(sensor, ss)
 
             ΔL = self.proj_detail.eval_primary_silhouette_radiance_difference(
-                scene, sampler, ss, sensor_center, active=active)
+                scene, sampler, ss, sensor, active=active)
             active &= dr.any(ΔL != 0)
 
         # ∂z/∂ⲡ * normal
