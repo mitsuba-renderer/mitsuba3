@@ -145,21 +145,33 @@ class ProjectiveDetail():
                                                     scene,
                                                     sampler,
                                                     ss,
-                                                    viewpoint,
+                                                    sensor,
                                                     active=True) -> mi.Float:
         """
         Compute the difference in radiance between two rays that hit and miss a
         silhouette point ``ss.p`` viewed from ``viewpoint``.
         """
+        if not sensor.__repr__().startswith('PerspectiveCamera'):
+            raise Exception("Only perspective cameras are supported")
+
         with dr.suspend_grad():
+            to_world = sensor.world_transform()
+            sensor_center = to_world @ mi.Point3f(0)
+
             # Is the boundary point visible or is occluded ?
             ss_invert = mi.SilhouetteSample3f(ss)
             ss_invert.d = -ss_invert.d
             ray_test = ss_invert.spawn_ray()
 
-            dist = dr.norm(viewpoint - ray_test.o)
+            dist = dr.norm(sensor_center - ray_test.o)
             ray_test.maxt = dist * (1 - mi.math.ShadowEpsilon)
             visible = ~scene.ray_test(ray_test, active) & active
+
+            # Is the boundary point within the view frustum ?
+            it = dr.zeros(mi.Interaction3f)
+            it.p = ss.p
+            ds, _ = sensor.sample_direction(it, mi.Point2f(0), active)
+            visible &= ds.pdf != 0
 
             # Estimate the radiance difference along that path
             radiance_diff, _ = self.parent.sample_radiance_difference(
