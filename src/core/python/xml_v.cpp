@@ -411,7 +411,7 @@ void parse_dictionary(DictParseContext &ctx,
 
         // Try to cast to TensorXf
         try {
-            TensorXf tensor = nb::cast<TensorXf>(nb::type<TensorXf>()(value));
+            TensorXf tensor = nb::cast<TensorXf>(value);
             // To support parallel loading we have to ensure tensor has been evaluated
             // because tracking of side effects won't persist across different ThreadStates
             dr::eval(tensor);
@@ -420,7 +420,7 @@ void parse_dictionary(DictParseContext &ctx,
         } catch (const nb::cast_error &) { }
 
         // Didn't match any of the other types above
-        Throw("Unkown value type: %s", nb::str(value.type()).c_str());
+        Throw("Unsupported value type: %s!\n", nb::str(value.type()).c_str());
     }
 
     // Set object id based on path in dictionary if no id is provided
