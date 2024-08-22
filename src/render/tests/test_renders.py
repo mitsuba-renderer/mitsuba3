@@ -112,7 +112,7 @@ def get_ref_fname(scene_fname):
                 basename(scene_fname))[0].rsplit('_', 1)[0] + '_ref_' + color_mode + '.exr')
             var_fname = ref_fname.replace('.exr', '_var.exr')
             return ref_fname, var_fname
-    assert False
+    pytest.fail("Could not find reference images for the given scene!")
 
 
 def xyz_to_rgb_bmp(arr):
@@ -266,7 +266,7 @@ def test_render(variant, scene_fname, integrator_type, jit_flags_key):
         xyz_to_rgb_bmp(p_value).write(pvalue_fname)
         print('Saved error image to: ' + pvalue_fname)
 
-        assert False
+        pytest.fail("Radiance values exceeded scene's tolerances!")
 
 
 def render_ref_images(scenes, spp, overwrite, scene=None, variant=None):

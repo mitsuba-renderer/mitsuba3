@@ -773,7 +773,7 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
         filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_primal.exr")
         print(f'-> write current image: {filename}')
         mi.util.write_bitmap(filename, image)
-        assert False
+        pytest.fail("Radiance values exceeded configuration's tolerances!")
 
 
 @pytest.mark.slow
@@ -820,7 +820,7 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
         filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_error.exr")
         print(f'-> write error image: {filename}')
         mi.util.write_bitmap(filename, error)
-        assert False
+        pytest.fail("Gradient values exceeded configuration's tolerances!")
 
 
 @pytest.mark.slow
@@ -860,7 +860,7 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
         print(f"-> grad_ref: {grad_ref}")
         print(f"-> error: {error} (threshold={config.error_mean_threshold_bwd})")
         print(f"-> ratio: {grad / grad_ref}")
-        assert False
+        pytest.fail("Gradient values exceeded configuration's tolerances!")
 
 
 @pytest.mark.slow
@@ -899,7 +899,7 @@ def test04_render_custom_op(variants_all_ad_rgb):
         filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_primal.exr")
         print(f'-> write current image: {filename}')
         mi.util.write_bitmap(filename, image_primal)
-        assert False
+        pytest.fail("Radiance values exceeded configuration's tolerances!")
 
     # Backward comparison
     obj = dr.mean(image_primal, axis=None)
@@ -915,7 +915,7 @@ def test04_render_custom_op(variants_all_ad_rgb):
         print(f"-> grad_ref: {grad_ref}")
         print(f"-> error: {error} (threshold={config.error_mean_threshold})")
         print(f"-> ratio: {grad / grad_ref}")
-        assert False
+        pytest.fail("Gradient values exceeded configuration's tolerances!")
 
     # Forward comparison
     theta = mi.Float(0.0)
@@ -940,7 +940,7 @@ def test04_render_custom_op(variants_all_ad_rgb):
         mi.util.write_bitmap(filename, image_fwd)
         filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_error.exr")
         mi.util.write_bitmap(filename, error)
-        assert False
+        pytest.fail("Gradient values exceeded configuration's tolerances!")
 
 # -------------------------------------------------------------------
 #                      Generate reference images
