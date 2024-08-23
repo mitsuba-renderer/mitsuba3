@@ -175,7 +175,8 @@ protected:
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(CppADIntegrator, SamplingIntegrator)
-MI_INSTANTIATE_CLASS(CppADIntegrator)
+
+template class CppADIntegrator<MI_VARIANT_FLOAT, MI_VARIANT_SPECTRUM>;
 
 MI_VARIANT class PyADIntegrator : public CppADIntegrator<Float, Spectrum> {
 public:
