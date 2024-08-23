@@ -48,7 +48,6 @@ tutorials = glob.glob(join(tutorials_dir, '*', './**/*.ipynb'), recursive=True)
 
 
 @pytest.mark.slow
-@pytest.mark.skip("Temporary")
 @pytest.mark.parametrize("notebook", tutorials)
 def test_tutorials(notebook, tmp_path):
     try:
