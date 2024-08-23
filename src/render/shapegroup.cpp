@@ -5,9 +5,6 @@
 NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
-    if constexpr (dr::is_jit_v<Float>)
-        jit_registry_put(dr::backend_v<Float>, "mitsuba::ShapeGroup", this);
-
     m_id = props.id();
 
 #if !defined(MI_ENABLE_EMBREE)
@@ -81,6 +78,9 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
             dr::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
     }
 #endif
+
+    if constexpr (dr::is_jit_v<Float>)
+        jit_registry_put(dr::backend_v<Float>, "mitsuba::ShapeGroup", this);
 }
 
 MI_VARIANT ShapeGroup<Float, Spectrum>::~ShapeGroup() {
