@@ -167,6 +167,17 @@ NB_MODULE(mitsuba_ext, m) {
         }
         Class::static_remove_functors();
         StructConverter::static_shutdown();
+
+        /* When the main thread's lifetime was shared with Python, it would be
+         * detected as a nanbonid leak as the last reference is held by C++.
+         * Calling `Thread::static_shutdown()` deletes this last reference,
+         * however the main thread is still needed to clean up other parts of
+         * the system. The solution is therefore to temporarily clean it up
+         * and then re-build it such that Python can no longer track it. */
+        if(Thread::thread()->self_py()) {
+            Thread::static_shutdown();
+            Thread::static_initialization();
+        }
     }));
 
     /* Callback function cleanup static data strucutres, this should be called
