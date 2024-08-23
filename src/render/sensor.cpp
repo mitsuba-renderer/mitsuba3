@@ -12,9 +12,6 @@ NAMESPACE_BEGIN(mitsuba)
 // =============================================================================
 
 MI_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props) {
-    if constexpr (dr::is_jit_v<Float>)
-        jit_registry_put(dr::backend_v<Float>, "mitsuba::Sensor", this);
-
     m_shutter_open      = props.get<ScalarFloat>("shutter_open", 0.f);
     m_shutter_open_time = props.get<ScalarFloat>("shutter_close", 0.f) - m_shutter_open;
 
@@ -68,12 +65,15 @@ MI_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props
 
     if (has_flag(m_film->flags(), FilmFlags::Spectral)) {
         if (m_srf != nullptr) {
-            Throw("Sensor(): Spectral response function defined previously in sensor,"
+            Throw("Sensor(): Spectral response function defined previously in sensor, "
                   "but another was found in film.");
         } else {
             m_srf = m_film->sensor_response_function();
         }
     }
+
+    if constexpr (dr::is_jit_v<Float>)
+        jit_registry_put(dr::backend_v<Float>, "mitsuba::Sensor", this);
 }
 
 MI_VARIANT Sensor<Float, Spectrum>::~Sensor() {
