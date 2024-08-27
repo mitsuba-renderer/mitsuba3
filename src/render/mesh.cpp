@@ -389,12 +389,9 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
             Float face_angle = dr::safe_acos(dr::dot(d0, d1));
 
             Vector3f nn = n * face_angle;
-            for (int j = 0; j < 3; ++j) {
-                // FIXME: CPP scatter_reduce seems broken in AD (LLVM only)
-                //dr::scatter_reduce(ReduceOp::Add, normals[j], nn[j], fi[i]);
-                auto curr = dr::gather<Float>(normals[j], fi[i]);
-                dr::scatter(normals[j], curr + nn[j], fi[i]);
-            }
+
+            for (int j = 0; j < 3; ++j)
+                dr::scatter_reduce(ReduceOp::Add, normals[j], nn[j], fi[i]);
         }
 
         // --------------------- Kernel 2 starts here ---------------------
