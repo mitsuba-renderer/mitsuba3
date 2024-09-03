@@ -9,6 +9,7 @@
 #include <sstream>
 #include <chrono>
 #include <cstring>
+#include <unordered_map>
 
 // Required for native thread functions
 #if defined(__linux__)
@@ -34,6 +35,9 @@ static __declspec(thread) int this_thread_id;
 #endif
 static std::mutex task_mutex;
 static std::vector<Task *> registered_tasks;
+
+static std::mutex thread_registry_mutex;
+static std::unordered_map<std::string, Thread*> thread_registry;
 
 #if defined(_MSC_VER)
 namespace {
@@ -78,13 +82,19 @@ protected:
 /// Dummy class to associate a thread identity with a worker thread
 class WorkerThread : public Thread {
 public:
-    WorkerThread(const std::string &prefix) : Thread(tfm::format("%s%i", prefix, m_counter++)) { }
+    WorkerThread(const std::string &prefix) : Thread(tfm::format("%s%i", prefix, m_counter++)) {
+        std::lock_guard guard(thread_registry_mutex);
+        thread_registry[this->name()] = this;
+    }
 
     virtual void run() override { Throw("The worker thread is already running!"); }
 
     MI_DECLARE_CLASS()
 protected:
-    virtual ~WorkerThread() { }
+    virtual ~WorkerThread() {
+        std::lock_guard guard(thread_registry_mutex);
+        thread_registry.erase(this->name());
+    }
     static std::atomic<uint32_t> m_counter;
 };
 
@@ -478,7 +488,7 @@ bool Thread::register_external_thread(const std::string &prefix) {
     self->d->running = true;
     self->d->external_thread = true;
 
-    // An external thread will re-use the main thread's Logger (thread safe) 
+    // An external thread will re-use the main thread's Logger (thread safe)
     // and create a new FileResolver (since the FileResolver is not thread safe).
     self->d->logger = main_thread->d->logger;
     self->d->fresolver = new FileResolver();
@@ -534,6 +544,20 @@ void Thread::static_shutdown() {
     for (auto& task : registered_tasks)
         task_wait_and_release(task);
     registered_tasks.clear();
+
+    /* Remove references to Loggers and FileResolvers from worker threads.
+     * _Important_: This might locally acquire the Python GIL due to reference
+     * counting. To prevent deadlocks, it's important that Thread::static_shutdown
+     * is run with the GIL acquired already. This ensures consistent lock
+     * acquisition order and prevents deadlocks. */
+    {
+        std::lock_guard guard(thread_registry_mutex);
+        for (auto &thread : thread_registry) {
+            thread.second->d->logger    = nullptr;
+            thread.second->d->fresolver = nullptr;
+        }
+        thread_registry.clear();
+    }
 
     thread()->d->running = false;
     self = nullptr;
