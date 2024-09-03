@@ -6,6 +6,12 @@
 
 /// Submit a log message to the Mitusba logging system and tag it with the Python caller
 static void PyLog(mitsuba::LogLevel level, const std::string &msg) {
+
+    // Do not log if no logger is available. This is consistent with the
+    // C++-side "Log" function in logger.h.
+    if (!Thread::thread()->logger())
+        return;
+
 #if PY_VERSION_HEX >= 0x03090000
     PyFrameObject *frame = PyThreadState_GetFrame(PyThreadState_Get());
     PyCodeObject *f_code = PyFrame_GetCode(frame);
@@ -28,18 +34,6 @@ static void PyLog(mitsuba::LogLevel level, const std::string &msg) {
 
     if (!name.empty() && name[0] != '<')
         fmt.insert(2, "()");
-
-    if (!Thread::thread()->logger()) {
-        Throw("No Logger instance is set on the current thread! This is likely due to Log being " 
-              "called from a non-Mitsuba thread. You can manually set a thread's ThreadEnvironment " 
-              "(which includes the logger) using ScopedSetThreadEnvironment e.g.\n"
-              "# Main thread\n"
-              "env = mi.ThreadEnvironment()\n"
-              "# Secondary thread\n"
-              "with mi.ScopedSetThreadEnvironment(env):\n"
-              "   mi.set_log_level(mi.LogLevel.Info)\n"
-              "   mi.Log(mi.LogLevel.Info, 'Message')\n");
-    }
 
     Thread::thread()->logger()->log(
         level, nullptr /* class_ */,
