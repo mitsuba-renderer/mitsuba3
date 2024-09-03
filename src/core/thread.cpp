@@ -23,6 +23,8 @@
 NAMESPACE_BEGIN(mitsuba)
 
 static size_t global_thread_count = 0;
+
+static ref<Thread> main_thread = nullptr;
 static thread_local ref<Thread> self = nullptr;
 static std::atomic<uint32_t> thread_ctr { 0 };
 #if defined(__linux__) || defined(__APPLE__)
@@ -476,6 +478,11 @@ bool Thread::register_external_thread(const std::string &prefix) {
     self->d->running = true;
     self->d->external_thread = true;
 
+    // An external thread will re-use the main thread's Logger (thread safe) 
+    // and create a new FileResolver (since the FileResolver is not thread safe).
+    self->d->logger = main_thread->d->logger;
+    self->d->fresolver = new FileResolver();
+
     const std::string &thread_name = self->name();
     #if defined(__linux__)
         pthread_setname_np(pthread_self(), thread_name.c_str());
@@ -520,6 +527,7 @@ void Thread::static_initialization() {
     self = new MainThread();
     self->d->running = true;
     self->d->fresolver = new FileResolver();
+    main_thread = self;
 }
 
 void Thread::static_shutdown() {
@@ -529,6 +537,7 @@ void Thread::static_shutdown() {
 
     thread()->d->running = false;
     self = nullptr;
+    main_thread = nullptr;
     #if defined(__linux__) || defined(__APPLE__)
         pthread_key_delete(this_thread_id);
     #endif
