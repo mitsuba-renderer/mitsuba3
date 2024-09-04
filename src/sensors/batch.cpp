@@ -268,6 +268,12 @@ public:
         return result;
     }
 
+    void traverse(TraversalCallback *callback) override {
+        Base::traverse(callback);
+        for(int i = 0; i < m_sensors.size(); i++)
+            callback->put_object("sensor" + std::to_string(i),                    m_sensors.at(i).get(),                      +ParamFlags::NonDifferentiable);
+    }
+
     MI_DECLARE_CLASS()
 private:
     std::vector<ref<Base>> m_sensors;
