@@ -1,3 +1,5 @@
+#include <shared_mutex>
+
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/jit.h>
 #include <mitsuba/core/logger.h>
@@ -5,6 +7,11 @@
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/profiler.h>
 #include <mitsuba/python/python.h>
+
+
+// Flag & mutex to explicitly track if Python is still available.
+static bool ready_flag = true;
+static std::shared_mutex ready_mutex;
 
 // core
 MI_PY_DECLARE(atomic);
@@ -80,6 +87,13 @@ NB_MODULE(mitsuba_ext, m) {
             Py_INCREF(o);
         },
         [](PyObject *o) noexcept {
+            std::shared_lock ready_guard(ready_mutex);
+            /* If the Python interpreter has already been shut down, we can no longer use
+             * its reference counting mechanism. This leaks memory on interpreter shutdown.
+             * However, this should only affect static, thread local objects, for which
+             * enforcing an orderly shutdown is difficult. */
+            if (!ready_flag)
+                return;
             nb::gil_scoped_acquire guard;
             Py_DECREF(o);
         }
@@ -177,6 +191,14 @@ NB_MODULE(mitsuba_ext, m) {
         if(Thread::thread()->self_py()) {
             Thread::static_shutdown();
             Thread::static_initialization();
+        }
+
+        /* After this point, we can no longer guarantee that the Python
+         * interpreter is available on all threads. */
+        {
+            nb::gil_scoped_release g;
+            std::unique_lock ready_guard(ready_mutex);
+            ready_flag = false;
         }
     }));
 
