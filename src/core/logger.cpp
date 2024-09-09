@@ -122,9 +122,8 @@ void Logger::static_initialization() {
 #endif
 }
 
-void Logger::static_shutdown() {
-    Thread::thread()->set_logger(nullptr);
-}
+// Removal of logger from main thread is handled in thread.cpp.
+void Logger::static_shutdown() { }
 
 size_t Logger::appender_count() const {
     return d->appenders.size();

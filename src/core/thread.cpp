@@ -186,6 +186,10 @@ Thread* Thread::thread() {
     return self_val;
 }
 
+bool Thread::has_initialized_thread() {
+    return self != nullptr;
+}
+
 bool Thread::is_running() const {
     return d->running;
 }
@@ -558,8 +562,9 @@ void Thread::static_shutdown() {
         }
         thread_registry.clear();
     }
-
-    thread()->d->running = false;
+    main_thread->d->logger    = nullptr;
+    main_thread->d->fresolver = nullptr;
+    main_thread->d->running   = false;
     self = nullptr;
     main_thread = nullptr;
     #if defined(__linux__) || defined(__APPLE__)

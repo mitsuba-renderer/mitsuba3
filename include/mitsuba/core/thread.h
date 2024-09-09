@@ -132,6 +132,9 @@ public:
     /// Return the current thread
     static Thread *thread();
 
+    /// Return whether the current thread data structure has been initialized.
+    static bool has_initialized_thread();
+
     /// Sleep for a certain amount of time (in milliseconds)
     static void sleep(uint32_t ms);
 
