@@ -270,8 +270,13 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         Base::traverse(callback);
-        for(int i = 0; i < m_sensors.size(); i++)
-            callback->put_object("sensor" + std::to_string(i),                    m_sensors.at(i).get(),                      +ParamFlags::NonDifferentiable);
+        std::string id;
+        for(size_t i = 0; i < m_sensors.size(); i++) {
+            id = m_sensors.at(i)->id();
+            if (id.empty() || string::starts_with(id, "_unnamed_"))
+                id = "sensor" + std::to_string(i);
+            callback->put_object(id, m_sensors.at(i).get(), +ParamFlags::NonDifferentiable);
+        }
     }
 
     MI_DECLARE_CLASS()
