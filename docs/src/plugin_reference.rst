@@ -107,3 +107,41 @@ These flags indicate whether the parameter is differentiable or not, or whether 
 discontinuities and thus needs special treatment.
 
 See :py:class:`mitsuba.ParamFlags` for their documentation.
+
+
+Scene-wide attributes
+---------------------
+
+The Scene object exposes scene-wide attributes. Currently, this functionality is
+only used to configure Embree's BVH. In the future, additional settings for the
+BVH behavior might be exposed.
+
+**Embree BVH mode:** We expose a scene-level flag to enable Embree's "robust"
+mode. Enabling this flag makes Embree use slightly slower but more robust ray
+intersection computations. Embree's default "fast" mode can miss ray
+intersections when a ray perfectly hits the edge between two adjacent triangles.
+Enabling the robust intersection mode fixes that in most cases. Note that Embree
+cannot guarantee that all intersections are reported for rays that exactly hit a
+vertex, which is a known limitation.
+
+.. pluginparameters::
+
+ * - embree_use_robust_intersection
+   - :paramtype:`bool`
+   - Whether Embree uses the robust mode flag `RTC_SCENE_FLAG_ROBUST` (Default: |false|).
+
+When creating a scene, the scene-wide attributes can be specified as follows:
+
+.. tabs::
+    .. code-tab:: xml
+
+        <scene version="3.0.0">
+            <boolean name="embree_use_robust_intersection" value="true"/>
+        </scene>
+
+    .. code-tab:: python
+
+        {
+            'type': 'scene',
+            'embree_use_robust_intersection': True,
+        }
