@@ -112,7 +112,8 @@ Scene<Float, Spectrum>::accel_init_cpu(const Properties &props) {
 
     s.accel = rtcNewScene(embree_device);
     rtcSetSceneBuildQuality(s.accel, RTC_BUILD_QUALITY_HIGH);
-    rtcSetSceneFlags(s.accel, RTC_SCENE_FLAG_NONE);
+    bool use_robust = props.get<bool>("embree_use_robust_intersections", false);
+    rtcSetSceneFlags(s.accel, use_robust ? RTC_SCENE_FLAG_ROBUST : RTC_SCENE_FLAG_NONE);
 
     ScopedPhase phase(ProfilerPhase::InitAccel);
     accel_parameters_changed_cpu();
