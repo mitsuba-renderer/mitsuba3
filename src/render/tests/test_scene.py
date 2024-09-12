@@ -319,12 +319,10 @@ def test11_sample_silhouette_bijective(variants_vec_rgb):
 
 def test_enable_embree_robust_flag(variants_any_llvm):
 
-    # We intersect a ray against two adjacent triangles. The ray hits exactly
+    # We intersect rays against two adjacent triangles. The rays hit exactly
     # the edge between two triangles, which Embree will not count as an
     # intersection if the "robust" flag is not set.
-    R = mi.Transform4f() \
-        .rotate(dr.normalize(mi.Vector3f(1, 1, 1)), 10) \
-        .rotate([0, 1, 0], 40)
+    R = mi.Transform4f().rotate(dr.normalize(mi.Vector3f(1, 1, 1)), 90)
     vertices = mi.Vector3f(
         [0.0, 1.0, 0.0, 1.0], [0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0])
     vertices = R @ vertices
@@ -334,11 +332,15 @@ def test_enable_embree_robust_flag(variants_any_llvm):
     params['vertex_positions'] = dr.ravel(vertices)
     params['faces'] = [0, 1, 2, 1, 3, 2]
     params.update()
-    ray = R @ mi.Ray3f(mi.Point3f(0.5, 0.5, 1), mi.Vector3f(0, 0, -1))
+
+    u, v = dr.meshgrid(dr.linspace(mi.Float, 0.05, 0.95, 32),
+                       dr.linspace(mi.Float, 0.05, 0.95, 32))
+    d = mi.warp.square_to_cosine_hemisphere(mi.Vector2f(u, v))
+    ray = R @ mi.Ray3f(mi.Point3f(0.5, 0.5, 0.0) + d, -d)
 
     scene = mi.load_dict({'type': 'scene', 'mesh': mesh})
-    assert not scene.ray_intersect(ray).is_valid()
+    assert dr.any(~scene.ray_intersect(ray).is_valid())
 
     scene = mi.load_dict({'type': 'scene', 'mesh': mesh,
                           'embree_use_robust_intersections': True})
-    assert scene.ray_intersect(ray).is_valid()
+    assert dr.all(scene.ray_intersect(ray).is_valid())
