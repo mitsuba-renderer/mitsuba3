@@ -207,16 +207,16 @@ if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
   nanobind_add_stub(
     mitsuba-stub
     MODULE mitsuba.mitsuba_stubs
-    OUTPUT ${MI_BINARY_DIR}/python/mitsuba/stubs.pyi
+    OUTPUT ${MI_BINARY_DIR}/python/mitsuba/_stubs.pyi
     MARKER_FILE ${MI_BINARY_DIR}/python/mitsuba/py.typed
     ${STUB_ARGS}
   )
 
   add_custom_command(
     OUTPUT ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
-    DEPENDS ${MI_BINARY_DIR}/python/mitsuba/stubs.pyi
+    DEPENDS ${MI_BINARY_DIR}/python/mitsuba/_stubs.pyi
     COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/variant-stub.cmake
-      ${MI_BINARY_DIR}/python/mitsuba/stubs.pyi
+      ${MI_BINARY_DIR}/python/mitsuba/_stubs.pyi
       ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
   )
 
@@ -229,15 +229,15 @@ if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
     nanobind_add_stub(
       mitsuba-stub-${value}
       MODULE mitsuba.mitsuba_stubs.${value}
-      OUTPUT ${MI_BINARY_DIR}/python/mitsuba/${value_path}_stubs.pyi
+      OUTPUT ${MI_BINARY_DIR}/python/mitsuba/_${value_path}_stubs.pyi
       ${STUB_ARGS}
     )
 
     add_custom_command(
       OUTPUT ${MI_BINARY_DIR}/python/mitsuba/${value_path}.pyi
-      DEPENDS ${MI_BINARY_DIR}/python/mitsuba/${value_path}_stubs.pyi
+      DEPENDS ${MI_BINARY_DIR}/python/mitsuba/_${value_path}_stubs.pyi
       COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/variant-stub.cmake
-        ${MI_BINARY_DIR}/python/mitsuba/${value_path}_stubs.pyi
+        ${MI_BINARY_DIR}/python/mitsuba/_${value_path}_stubs.pyi
         ${MI_BINARY_DIR}/python/mitsuba/${value_path}.pyi
     )
 
