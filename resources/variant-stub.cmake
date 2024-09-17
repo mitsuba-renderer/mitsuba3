@@ -1,6 +1,5 @@
 # Syntax:  cmake -P variant-stub.cmake <input> <output>
 # Applies post-cleanup of generated Mitsuba Python stubs
-# Will delete input after writing output
 
 file(READ ${CMAKE_ARGV3} FILE_CONTENTS)
 string(REPLACE "drjit.llvm" "drjit.auto" FILE_CONTENTS "${FILE_CONTENTS}")
@@ -14,4 +13,3 @@ string(REGEX REPLACE "[\n ]+python\\.[^-\\s]+ as python\\.[^-\\s]+," "" FILE_CON
 string(REGEX REPLACE "import mitsuba as [a-z_]+" "" FILE_CONTENTS "${FILE_CONTENTS}")
 
 file(WRITE "${CMAKE_ARGV4}" "${FILE_CONTENTS}")
-file(REMOVE "${CMAKE_ARGV3}")
