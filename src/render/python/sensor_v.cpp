@@ -193,4 +193,8 @@ MI_PY_EXPORT(Sensor) {
     m.def("perspective_projection", &perspective_projection<Float>,
           "film_size"_a, "crop_size"_a, "crop_offset"_a, "fov_x"_a, "near_clip"_a, "far_clip"_a,
           D(perspective_projection));
+
+    m.def("orthographic_projection", &orthographic_projection<Float>,
+          "film_size"_a, "crop_size"_a, "crop_offset"_a, "near_clip"_a, "far_clip"_a,
+          D(orthographic_projection));
 }
