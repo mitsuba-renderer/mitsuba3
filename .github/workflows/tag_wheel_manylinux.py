@@ -69,6 +69,11 @@ if __name__ == "__main__":
     ) as wheel_info_file:
         process_wheel_info_file(wheel_info_file)
 
+    subprocess.check_call([
+        sys.executable, "-m",
+        "pip", "install", "wheel"
+    ])
+
     # The `wheel` package will recompute the hash of every file and modify the RECORD file
     # It also renames the packed wheel to reflect the new platform tags
     subprocess.check_call([

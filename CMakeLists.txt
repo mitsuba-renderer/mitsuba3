@@ -47,6 +47,9 @@ if (NOT APPLE)
   option(MI_ENABLE_OPTIX_DEBUG_VALIDATION "Enable debug flag for OptiX" OFF)
 endif()
 
+option(MI_STABLE_ABI "Build Python extension using the CPython stable ABI? (Only relevant when using scikit-build)" OFF)
+mark_as_advanced(MI_STABLE_ABI)
+
 # ----------------------------------------------------------
 #  Check if submodules have been checked out, or fail early
 # ----------------------------------------------------------
@@ -84,6 +87,12 @@ include(ext/drjit/ext/drjit-core/ext/nanothread/ext/cmake-defaults/CMakeLists.tx
 # ----------------------------------------------------------
 
 if (SKBUILD)
+
+  set(CMAKE_INSTALL_LIBDIR mitsuba)
+  set(CMAKE_INSTALL_BINDIR mitsuba)
+  set(CMAKE_INSTALL_DATAROOTDIR mitsuba/data)
+  set(CMAKE_INSTALL_INCLUDEDIR mitsuba/include)
+
   set(MI_DRJIT_CMAKE_DIR "" CACHE STRING "Location of Dr.Jit's CMake directory that should be used instead of the output of `drjit.get_cmake_dir()` when building with scikit-build.")
   mark_as_advanced(MI_DRJIT_CMAKE_DIR)
 
