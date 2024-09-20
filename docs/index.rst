@@ -155,5 +155,6 @@ When using Mitsuba 3 in academic projects, please cite:
 
     src/gallery
     src/optix_setup
+    porting_3_6
     release_notes
     zz_bibliography
