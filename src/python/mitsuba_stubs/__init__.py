@@ -34,13 +34,21 @@ def stub_variant() -> str:
 
 v = stub_variant()
 
-try:
-    mi.set_variant(v)
-except ImportError:
+if v not in mi.variants():
     raise ImportError(f'Based on chosen set of Mitsuba variants, variant {v} ' 
                        'is required for stub generation. Please modify your '
                        'mitsuba.conf file to include this variant and recompile '
                        'Mitsuba.')
+
+# Mitsuba variant has static initialization that requires JIT to initialize
+# For generating stubs we don't actually care if JIT init is successful
+# e.g. if LLVM/CUDA wasn't installed
+# The sequence below allows the module to load regardless
+try:
+    mi.set_variant(v)
+except:
+    mi.set_variant('scalar_rgb')
+    mi.set_variant(v)
 
 sys.modules[__name__] = sys.modules['mitsuba']
 sys.modules[__name__ +'.math']      = mi.math

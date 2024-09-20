@@ -157,10 +157,6 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     m.attr("is_spectral") = is_spectral_v<Spectrum>;
     m.attr("is_polarized") = is_polarized_v<Spectrum>;
 
-    color_management_static_initialization(dr::is_cuda_v<Float>,
-                                           dr::is_llvm_v<Float>);
-    Scene::static_accel_initialization();
-
     MI_PY_IMPORT(Object);
     MI_PY_IMPORT(Ray);
     MI_PY_IMPORT(BoundingBox);
@@ -245,4 +241,9 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     paths.append(nb::str(mi_dir));
     paths.append(nb::str(mi_py_dir));
     m.attr("__path__") = paths;
+
+
+    color_management_static_initialization(dr::is_cuda_v<Float>,
+                                           dr::is_llvm_v<Float>);
+    Scene::static_accel_initialization();
 }

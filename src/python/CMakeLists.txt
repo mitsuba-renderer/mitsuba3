@@ -2,6 +2,15 @@
 #   Mitsuba python library
 # ----------------------------------------------------------
 
+if (SKBUILD)
+  # Enable LTO only for release builds targeting PyPI (~5% binary size reduction)
+  set(MI_DIST_FLAGS LTO)
+
+  if (MI_STABLE_ABI)
+    list(APPEND MI_DIST_FLAGS STABLE_ABI)
+  endif()
+endif()
+
 include_directories(
   ${PNG_INCLUDE_DIRS}
   ${PUGIXML_INCLUDE_DIRS}
@@ -20,6 +29,8 @@ foreach (MI_VARIANT ${MI_VARIANTS})
 
   nanobind_add_module(${TARGET_NAME}
       NB_DOMAIN drjit
+      NB_STATIC
+      ${MI_DIST_FLAGS}
       main_v.cpp
       ${CORE_PY_V_SRC}
       ${RENDER_PY_V_SRC}
@@ -48,6 +59,8 @@ endforeach()
 
 nanobind_add_module(mitsuba_ext
   NB_DOMAIN drjit
+  NB_STATIC
+  ${MI_DIST_FLAGS}
   main.cpp
   ${CORE_PY_SRC}
   ${RENDER_PY_SRC}
@@ -55,6 +68,8 @@ nanobind_add_module(mitsuba_ext
 
 nanobind_add_module(mitsuba_alias
   NB_DOMAIN drjit
+  NB_STATIC
+  ${MI_DIST_FLAGS}
   alias.cpp
 )
 
@@ -249,6 +264,8 @@ if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
     ALL
     DEPENDS ${MI_STUB_TARGET_DEPS}
   )
+
+  install(FILES ${MI_STUB_TARGET_DEPS} DESTINATION mitsuba)
 
 endif()
 
