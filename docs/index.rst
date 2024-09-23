@@ -35,6 +35,11 @@ This command will also install :monosp:`Dr.Jit` on your system if not already av
 See the :ref:`developer guide <sec-compiling>` for complete instructions on building
 from the git source tree.
 
+When using the `Windows Subsystem for Linux 2 (WSL2)
+<https://learn.microsoft.com/en-us/windows/wsl/compare-versions#whats-new-in-wsl-2>`__,
+you must follow the :ref:`linked instructions <optix-wsl2>` to enable hardware-accelerated
+ray tracing on NVIDIA GPUs.
+
 Requirements
 ^^^^^^^^^^^^
 
@@ -149,5 +154,6 @@ When using Mitsuba 3 in academic projects, please cite:
     :hidden:
 
     src/gallery
+    src/optix_setup
     release_notes
     zz_bibliography
