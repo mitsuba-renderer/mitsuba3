@@ -281,6 +281,14 @@ public:
         }
     }
 
+    Mask has_attribute(const std::string &name, Mask active) const override {
+        if (m_brdf[0] == m_brdf[1])
+            return m_brdf[0]->has_attribute(name);
+        else
+            return m_brdf[0]->has_attribute(name) ||
+                   m_brdf[1]->has_attribute(name);
+    }
+
     UnpolarizedSpectrum eval_attribute(const std::string &name,
                                        const SurfaceInteraction3f &si_,
                                        Mask active) const override {
@@ -289,7 +297,7 @@ public:
             si.wi.z() = dr::abs(si.wi.z());
             return m_brdf[0]->eval_attribute(name, si, active);
         } else {
-            Spectrum result = 0.f;
+            UnpolarizedSpectrum result = 0.f;
             Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active,
                  back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
 

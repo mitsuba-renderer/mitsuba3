@@ -161,6 +161,11 @@ def test05_eval_attribute(variants_vec_rgb):
     si.n = [0, 0, 1]
     si.sh_frame = mi.Frame3f(si.n)
 
+    value = bsdf.has_attribute("alpha")
+    value_front = bsdf_front.has_attribute("alpha")
+    value_back = bsdf_back.has_attribute("alpha")
+    assert (value == value_front) and (value == value_back)
+
     n = 5
     epsilon = 0.0001
     for u in dr.linspace(mi.Float, epsilon, 1 - epsilon, n):
