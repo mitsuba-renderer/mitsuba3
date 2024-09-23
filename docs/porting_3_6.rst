@@ -2,11 +2,10 @@ Porting to Mitsuba 3.6.0
 ========================
 
 .. _dr_main: https://drjit.readthedocs.io/en/latest/
-.. _dr_change_log: https://drjit.readthedocs.io/en/latest/changelog.html
 
 Mitsuba 3.6.0 contains a number of significant changes relative to the 
 prior release, some breaking, that are predominantly driven by the dependence 
-to the new version of `Dr.Jit v1.0.0 <dr_main>`_.
+to the new version of `Dr.Jit 1.0.0 <dr_main>`_.
 
 This guide is intended to assist users of prior releases of 
 Mitsuba 3 to quickly update their existing codebases to be compatible 
@@ -14,41 +13,45 @@ with Mitsuba 3.6.0 and we further highlight some key changes that are potential
 pitfalls.
 
 This guide is by no means comprehensive and we direct users to the 
-`Dr.Jit v1.0.0 changelog <dr_change_log>`_ for a more in-depth breakdown of all 
-the major Dr.Jit changes.
+`Dr.Jit documentation <dr_main>`_ that contains several dedicated sections
+on the design and core features of Dr.Jit 1.0.0 that Mitsuba users will find 
+invaluable. Historically, the Dr.Jit documentation in past releases has been 
+sparse so it's recommended that even more advanced users begin here.
 
 Symbolic control-flow
 ---------------------
 
 .. _dr_cflow: https://drjit.readthedocs.io/en/latest/cflow.html#symbolic-mode
-.. _dr_while_loop: https://drjit.readthedocs.io/en/latest/reference.html#drjit.while_loop
-.. _dr_if_stmt: https://drjit.readthedocs.io/en/latest/reference.html#drjit.if_stmt
-.. _dr_select: https://drjit.readthedocs.io/en/latest/reference.html#drjit.select
 
 `Symbolic loops <dr_cflow>`_
-in Mitsuba are no longer initialized by constructing a :py:func:`mi.Loop` instance. 
-Instead, Dr.Jit v1.0.0 introduces the :py:func:`@dr.syntax`
-function decorator that allows users to express symbolic loops as if they were
+in Mitsuba are no longer initialized by constructing a ``mitsuba.Loop`` 
+instance. Instead, Dr.Jit 1.0.0 introduces the :py:func:`drjit.syntax` function 
+decorator that allows users to express symbolic loops as if they were 
 immediately-evaluated Python control-flow. An example of a simple loop using 
-:py:func:`mi.Loop` previously looked like,
+``mitsuba.Loop`` previously looked like,
 
 .. code-block:: python
 
   import mitsuba as mi
 
-  var     = mi.Float(32)
-  rng     = mi.PCG32(size=102400)
-  count   = mi.Float(0)
-  loop    = mi.Loop(state=lambda: (var, rng, count))
+  var = mi.Float(32)
+  rng = mi.PCG32(size=102400)
 
-  while loop(count < 10):
+  def foo(var, rng):
+    count   = mi.UInt(0)
+    loop    = mi.Loop(state=lambda: (var, rng, count))
+
+    while loop(count < 10):
       var     += rng.next_float32()
       count   += 1
 
+    return var, rng
+
+  var, rng = foo(var, rng)
   var += 1
 
-and porting this to use the :py:func:`dr.syntax` decorator is relatively 
-straight-forward,
+and porting this to use the :py:func:`drjit.syntax` decorator is relatively 
+straightforward,
 
 .. code-block:: python
 
@@ -59,59 +62,42 @@ straight-forward,
   rng = mi.PCG32(size=102400)
 
   @dr.syntax
-  def my_loop(var, rng):
-      count = mi.Float(0)
-      while count < 10:
-          var     += rng.next_float32()
-          count   += 1
+  def foo(var, rng):
+    count = mi.UInt(0)
 
-      return var, rng
+    while count < 10:
+      var     += rng.next_float32()
+      count   += 1
 
-  var, rng = my_loop(var, rng)
+    return var, rng
+
+  var, rng = foo(var, rng)
   var += 1
 
 
-Internally, the :py:func:`@dr.syntax` decorator determines which JIT 
-variables should be tracked by the loop that is subsequently re-expressed as a 
-:py:func:`dr.while_loop` call. While the `Dr.Jit documentation <dr_while_loop>`_
-for :py:func:`dr.while_loop` further describes the implementation details, in 
-practice  users should prefer using :py:func:`@dr.syntax` when porting their \
-existing code rather than calling :py:func:`dr.while_loop` directly.
+Previously when using ``mitsuba.Loop``, it was necessary for the user to 
+determine the loop variables required, which was bug-prone. 
+:py:func:`drjit.syntax` automates this step and internally reexpresses the loop 
+as a :py:func:`drjit.while_loop` call. While the Dr.Jit API reference details 
+how to directly call :py:func:`drjit.while_loop`, users should prefer using 
+:py:func:`drjit.syntax` when porting their existing code.
 
-The decorator :py:func:`@dr.syntax` is not just limited to loops however and 
-`symbolic if-statements <dr_if_stmt>`_, a feature that wasn't available prior to
-Dr.Jit v1.0.0, can also be expressed as if they were standard Python if-statements
+Prior to Dr.Jit 1.0.0, tracing if-statements containing JIT variables was not 
+possible, and the only alternative was to replace conditionals with masked 
+operations, for example using :py:func:`drjit.select`. As experience has shown, 
+converting conditional code into masked form can be rather tedious and bug-prone.
 
-.. code-block:: python
-
-  import drjit as dr
-  import mitsuba as mi
-
-  var = dr.ones(mi.Float, 4)
-  rng = mi.PCG32(size=102400)
-
-  @dr.syntax
-  def my_if(var, rng):
-      count = mi.Float(0, 20, 10, 4)
-      if count < 10:
-          var += rng.next_float32()
-      else:
-          var -= 1
-
-      return var, rng
-
-  var, rng = my_if(var, rng)
-  var += 1
-
-Similar to loops, :py:func:`@dr.syntax` will internally re-express the 
-if-statements as a :py:func:`dr.if_stmt` call.
+Therefore, the :py:func:`dr.syntax` annotation additionally handles if-statements 
+analogously to while loops, where internally such statements are reexpressed as 
+:py:func:`drjit.if_stmt` calls. Masked code remains valid but it is often no 
+longer needed.
 
 .. warning::
 
-  Users familiar with Dr.Jit's `select function <dr_select>`_ may be tempted to 
-  modify calls to ``dr.select`` to instead use if-statements within a 
-  ``@dr.syntax`` decorated function. This is by no means necessary and in many 
-  cases may actually be harmful to performance. As a contrived example consider
+  While changing existing codebases to leverage symbolic if-statements can 
+  improve both readability and performance, it's important to highlight 
+  computational differences relative to :py:func:`drjit.select`. As a 
+  contrived example consider
 
   .. code-block:: python
 
@@ -137,50 +123,19 @@ if-statements as a :py:func:`dr.if_stmt` call.
     y = bad_code()
 
   is not only more cumbersome to write but will also give you worse performance 
-  relative to the ``dr.select`` call. This is because now computantially during
-  evaluation, we have to check the condition, perform a jump to either the
-  true or false branch of the if-statement and *then* step through the branch
-  to perform the output assignment. In contrast, evaluating a ``dr.select`` call
-  involves no additonal branching.
+  relative to the :py:func:`drjit.select` call. This is because now during 
+  evaluation, we have to check the condition, perform a jump to either the true 
+  or false branch of the if-statement and *then* step through the branch to 
+  perform the output assignment. In contrast, evaluating a 
+  :py:func:`drjit.select` call involves no additonal branching.
 
-  The real benefit of symbolic if-statements are when you have relatively expensive
-  operations that only need to be computed within a given branch, because unlike 
-  ``dr.select`` calls, computations for both the true or false conditions
-  do not have to be evaluated *prior* to evaluating the if-statement itself. 
-  In other words, you can potentially avoid a lot of expensive, branch-specific
-  computations when the condition for evaluating a particular branch is relatively rare.
-
-  In short, the use of ``dr.select`` still remains perfectly valid in existing 
-  codebases and users can judiciously decide when symbolic if-statements should
-  be applied.
-
-
-Dr.Jit horizontal reductions now default to axis=0
---------------------------------------------------
-
-Dr.Jit horizontal reductions such as :py:func:`dr.sum`,
-:py:func:`dr.prod` and :py:func:`dr.mean` provide an ``axis`` argument to specify
-which axis the reduction will be performed on multi-dimensional types such as
-tensors. Prior to Dr.Jit v1.0.0, the omission of a provided ``axis`` argument 
-would default to applying the reduction across all axes with the 
-argument ``axis=None``.
-
-However, from Dr.Jit v1.0.0 onwards, the default axis argument is set to 
-``axis=0``.
-
-The implication of this is that for existing codebases, any horizontal reduction 
-calls that omitted specifying an axis, such as
-
-.. code-block:: python
-
-   y = dr.mean(tensor)
-
-will now have to be modified to explicity specify that the reduction has to be 
-performed across all axes
-
-.. code-block:: python
-
-   y = dr.mean(tensor, axis=None)
+  The real performance benefit of symbolic if-statements are when you have 
+  relatively expensive operations that only need to be computed within a given 
+  branch, because unlike  :py:func:`drjit.select` calls, computations for both 
+  the true or false conditions do not have to be evaluated *prior* to evaluating 
+  the if-statement itself. In other words, you can potentially avoid a lot of 
+  expensive, branch-specific computations when the condition for evaluating a 
+  particular branch is relatively rare.
 
 
 Removal of static ``mi.Transform*`` functions
@@ -228,11 +183,11 @@ Bitmap textures: Half-precision storage by default where possible
 .. _dr_texture: https://drjit.readthedocs.io/en/latest/textures.html
 .. _spec_up: https://rgl.epfl.ch/publications/Jakob2019Spectral
 
-Dr.Jit v1.0.0 includes support for half-precision arrays and tensors, and further
+Dr.Jit 1.0.0 includes support for half-precision arrays and tensors, and further
 extends support for FP16 `Dr.Jit textures <dr_texture>`_ that are 
 hardware-accelerated on CUDA backends.
 
-From Mitsuba v3.6.0 onwards, bitmap textures initialized from data with bit
+From Mitsuba 3.6.0 onwards, bitmap textures initialized from data with bit
 depth 16 or lower will instantiate an underlying half-precision Dr.Jit texture.
 
 .. note::
@@ -242,13 +197,14 @@ depth 16 or lower will instantiate an underlying half-precision Dr.Jit texture.
   texture requires `spectral upsampling <spec_up>`_ and RGB input data is 
   first converted to their corresponding spectral coefficients.
 
-There may be cases where this default behavior is undersiable. For instance, if a 
-user is performing an iterative optimization of a given bitmap texture, a 
+There may be cases where this default behavior is undesirable. For instance, if 
+a user is performing an iterative optimization of a given bitmap texture, a 
 potential pitfall is highlighted in the following example
 
 .. code-block:: python
 
   import mitsuba as mi
+  import drjit as dr
   mi.set_variant('cuda_ad_rgb')
 
   # Bit depth of my_image.png is less than 16 so storage of texture is FP16
@@ -293,6 +249,6 @@ Miscellaneous
 -------------
 
 * Dr.Jit v1.0.0 raises the minimum supported LLVM version to 11
-* Rename of function ``dr.clamp`` to ``dr.clip``
-* Rename of function ``dr.sqr`` to ``dr.square``
-* Rename of function decorator ``dr.wrap_ad`` to ``dr.wrap``
+* Rename of function ``drjit.clamp`` to :py:func:`drjit.clip`
+* Rename of function ``drjit.sqr`` to :py:func:`drjit.square`
+* Rename of function decorator ``drjit.wrap_ad`` to :py:func:`drjit.wrap`

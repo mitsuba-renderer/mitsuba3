@@ -184,6 +184,7 @@ html_js_files = []
 # Register the theme as an extension to generate a sitemap.xml
 extensions = []
 extensions.append("sphinx.ext.mathjax")
+extensions.append("sphinx.ext.intersphinx")
 extensions.append("sphinx_tabs.tabs")
 extensions.append("hoverxref.extension")
 
@@ -202,6 +203,12 @@ extensions.append('sphinxcontrib.youtube')
 extensions.append('sphinx_design')
 
 extensions.append('nbsphinx')
+
+intersphinx_mapping = { 
+    "python": ("https://docs.python.org/3", None),
+    "drjit" : ("https://drjit.readthedocs.io/en/latest/", None)
+}
+
 nbsphinx_execute = 'never'
 
 # Inject javascript at the top of tutorial pages to add Download buttons
