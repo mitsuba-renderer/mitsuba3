@@ -4633,6 +4633,8 @@ static const char *__doc_mitsuba_Mesh_face_data_bytes = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_face_indices = R"doc(Returns the vertex indices associated with triangle ``index``)doc";
 
+static const char *__doc_mitsuba_Mesh_edge_indices = R"doc(Returns the vertex indices associated with edge ``edge_index`` (0..2) of triangle ``tri_index``.)doc";
+
 static const char *__doc_mitsuba_Mesh_face_normal = R"doc(Returns the normal direction of the face with index ``index``)doc";
 
 static const char *__doc_mitsuba_Mesh_faces_buffer = R"doc(Return face indices buffer)doc";

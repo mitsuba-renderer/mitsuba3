@@ -106,6 +106,20 @@ public:
         return dr::gather<Result>(m_faces, index, active);
     }
 
+    /**
+     * Returns the vertex indices associated with edge \c edge_index (0..2)
+     * of triangle \c tri_index.
+     */
+    template <typename Index>
+    MI_INLINE auto edge_indices(Index tri_index, Index edge_index,
+                                dr::mask_t<Index> active = true) const {
+        using UInt32 = dr::uint32_array_t<Index>;
+        return dr::Array<UInt32, 2>(
+            dr::gather<UInt32>(m_faces, 3 * tri_index + edge_index, active),
+            dr::gather<UInt32>(m_faces, 3 * tri_index + (edge_index + 1) % 3, active)
+        );
+    }
+
     /// Returns the world-space position of the vertex with index \c index
     template <typename Index>
     MI_INLINE auto vertex_position(Index index,
@@ -589,6 +603,7 @@ NAMESPACE_END(mitsuba)
 
 DRJIT_CALL_TEMPLATE_INHERITED_BEGIN(mitsuba::Mesh, mitsuba::Shape)
     DRJIT_CALL_METHOD(face_indices)
+    DRJIT_CALL_METHOD(edge_indices)
     DRJIT_CALL_METHOD(vertex_position)
     DRJIT_CALL_METHOD(vertex_normal)
     DRJIT_CALL_METHOD(vertex_texcoord)
