@@ -243,6 +243,9 @@ template <typename Ptr, typename Cls> void bind_mesh_generic(Cls &cls) {
        .def("face_indices", [](const Ptr m, UInt32 index, Mask active) {
                 return m->face_indices(index, active);
             }, D(Mesh, face_indices), "index"_a, "active"_a = true)
+       .def("edge_indices", [](const Ptr m, UInt32 tri_index, UInt32 edge_index, Mask active) {
+                return m->edge_indices(tri_index, edge_index, active);
+            }, D(Mesh, edge_indices), "tri_index"_a, "edge_index"_a, "active"_a = true)
        .def("vertex_position", [](const Ptr m, UInt32 index, Mask active) {
                 return m->vertex_position(index, active);
             }, D(Mesh, vertex_position), "index"_a, "active"_a = true)
