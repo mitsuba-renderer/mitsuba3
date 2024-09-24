@@ -36,3 +36,15 @@ def test01_ss_repr(variants_vec_backends_once_rgb):
             """
     assert expected.strip() == str(ss)
 
+
+def test02_shape_ptr(variants_vec_backends_once_rgb):
+   scene = mi.load_dict(mi.cornell_box())
+   shapes = scene.shapes_dr()
+
+   shapes_int = dr.reinterpret_array(mi.UInt32, shapes)
+   print(shapes_int)
+   assert isinstance(shapes_int, mi.UInt32)
+
+   shapes_ptr = dr.reinterpret_array(mi.ShapePtr, shapes_int)
+   print(shapes_ptr)
+   assert isinstance(shapes_ptr, mi.ShapePtr)
