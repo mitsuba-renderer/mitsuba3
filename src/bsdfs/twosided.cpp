@@ -283,10 +283,10 @@ public:
 
     Mask has_attribute(const std::string &name, Mask active) const override {
         if (m_brdf[0] == m_brdf[1])
-            return m_brdf[0]->has_attribute(name);
+            return m_brdf[0]->has_attribute(name, active);
         else
-            return m_brdf[0]->has_attribute(name) ||
-                   m_brdf[1]->has_attribute(name);
+            return m_brdf[0]->has_attribute(name, active) ||
+                   m_brdf[1]->has_attribute(name, active);
     }
 
     UnpolarizedSpectrum eval_attribute(const std::string &name,
