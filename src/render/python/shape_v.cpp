@@ -266,6 +266,11 @@ MI_PY_EXPORT(Shape) {
              "stream"_a, D(Mesh, write_ply, 2))
         .def("add_attribute", &Mesh::add_attribute, "name"_a, "size"_a, "buffer"_a,
              D(Mesh, add_attribute))
+        .def("vertex_positions_buffer", nb::overload_cast<>(&Mesh::vertex_positions_buffer))
+        .def("faces_buffer", nb::overload_cast<>(&Mesh::faces_buffer))
+        .def("face_indices", [](const Mesh &m, UInt32 index, Mask active) {
+                return m.face_indices(index, active);
+             }, D(Mesh, face_indices), "index"_a, "active"_a = true)
         .def("vertex_position", [](const Mesh &m, UInt32 index, Mask active) {
                 return m.vertex_position(index, active);
              }, D(Mesh, vertex_position), "index"_a, "active"_a = true)
@@ -275,9 +280,9 @@ MI_PY_EXPORT(Shape) {
         .def("vertex_texcoord", [](const Mesh &m, UInt32 index, Mask active) {
                 return m.vertex_texcoord(index, active);
              }, D(Mesh, vertex_texcoord), "index"_a, "active"_a = true)
-        .def("face_indices", [](const Mesh &m, UInt32 index, Mask active) {
-                return m.face_indices(index, active);
-             }, D(Mesh, face_indices), "index"_a, "active"_a = true)
+        .def("face_normal", [](const Mesh &m, UInt32 index, Mask active) {
+                return m.face_normal(index, active);
+             }, D(Mesh, face_normal), "index"_a, "active"_a = true)
         .def("ray_intersect_triangle", &Mesh::ray_intersect_triangle,
              "index"_a, "ray"_a, "active"_a = true,
              D(Mesh, ray_intersect_triangle));
