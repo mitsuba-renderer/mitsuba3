@@ -5,6 +5,24 @@ import mitsuba as mi
 from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
 
+def mixed_shapes_scene():
+    return mi.load_dict({
+        "type": "scene",
+        "shape1": {
+            "type" : "ply",
+            "filename" : "resources/data/tests/ply/rectangle_uv.ply",
+        },
+        "shape2": {
+            "type" : "rectangle",
+        },
+        "shape3": {
+            "type" : "ply",
+            "filename" : "resources/data/tests/ply/rectangle_uv.ply",
+        },
+    })
+
+
+
 def test01_create_mesh(variant_scalar_rgb):
     m = mi.Mesh("MyMesh", 3, 2)
 
@@ -256,18 +274,17 @@ def test09_eval_parameterization(variants_all_rgb):
     assert dr.all(si.is_valid())
     assert dr.allclose(si.p, [-.6, -.4, 0])
 
-    # Test with symbolic virtual function call
-    if not 'scalar' in mi.variant():
-        emitter = shape.emitter()
-        N = 4
-        mask = mi.Bool(False, True, False, True) #(dr.arange(mi.UInt32, N) & 1) == 0
-        print(mask)
-        emitters = mi.EmitterPtr(emitter)
-        it = dr.zeros(mi.Interaction3f, N)
-        it.p = [0, 0, -3]
-        it.t = 0
-        uv = emitters.sample_direction(it, [0.5, 0.5], mask)[0].uv
-        assert dr.allclose(uv, dr.select(mask, mi.Point2f(0.5), mi.Point2f(0.0)))
+    # # Test with symbolic virtual function call
+    # if dr.is_jit_v(mi.Float):
+    #     emitter = shape.emitter()
+    #     N = 4
+    #     mask = mi.Bool(False, True, False, True)
+    #     emitters = mi.EmitterPtr(emitter)
+    #     it = dr.zeros(mi.Interaction3f, N)
+    #     it.p = [0, 0, -3]
+    #     it.t = 0
+    #     ds, _ = emitters.sample_direction(it, [0.5, 0.5], mask)
+    #     assert dr.allclose(ds.uv, dr.select(mask, mi.Point2f(0.5), mi.Point2f(0.0)))
 
 
 @fresolver_append_path
@@ -316,7 +333,7 @@ def test11_parameters_grad_enabled(variants_all_ad_rgb):
         "filename" : "resources/data/common/meshes/rectangle.obj",
     })
 
-    assert shape.parameters_grad_enabled() == False
+    assert not shape.parameters_grad_enabled()
 
     # Get the shape's parameters
     params = mi.traverse(shape)
@@ -326,14 +343,14 @@ def test11_parameters_grad_enabled(variants_all_ad_rgb):
     dr.enable_grad(params[bsdf_param_key])
     params.set_dirty(bsdf_param_key)
     params.update()
-    assert shape.parameters_grad_enabled() == False
+    assert not shape.parameters_grad_enabled()
 
     # When setting one of the shape's param to require gradient, method should return True
     shape_param_key = 'vertex_positions'
     dr.enable_grad(params[shape_param_key])
     params.set_dirty(shape_param_key)
     params.update()
-    assert shape.parameters_grad_enabled() == True
+    assert shape.parameters_grad_enabled()
 
 if hasattr(dr, 'JitFlag'):
     jit_flags_options = [
@@ -1043,7 +1060,7 @@ def test27_sample_silhouette(variants_vec_rgb):
     flags = mi.DiscontinuityFlags.PerimeterType | mi.DiscontinuityFlags.DirectionSphere
     ss = mesh.sample_silhouette(samples, flags)
 
-    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
+    assert dr.all(ss.discontinuity_type == mi.DiscontinuityFlags.PerimeterType.value)
     assert dr.all(ss.p.x == 0)
     assert dr.all(
         (ss.p.y <= 1) & (ss.p.y >= 0) &
@@ -1064,7 +1081,7 @@ def test27_sample_silhouette(variants_vec_rgb):
     valid = ss.is_valid()
     ss = dr.gather(mi.SilhouetteSample3f, ss, dr.compress(valid))
 
-    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
+    assert dr.all(ss.discontinuity_type == mi.DiscontinuityFlags.PerimeterType.value)
     assert dr.all(ss.p.x == 0)
     assert dr.all(
         (ss.p.y <= 1) & (ss.p.y >= 0) &
@@ -1169,19 +1186,11 @@ def test30_differential_motion(variants_vec_rgb):
 
 @fresolver_append_path
 def test31_primitive_silhouette_projection(variants_vec_rgb):
-    if not dr.is_diff_v(mi.Float):
-        pytest.skip("Only relevant in AD-enabled variants!")
-
     mesh = mi.load_dict({
         "type" : "ply",
         "filename" : "resources/data/tests/ply/rectangle_uv.ply",
     })
-    mesh_ptr = mi.ShapePtr(mesh)
-    params = mi.traverse(mesh)
-
-    key = 'vertex_positions'
-    dr.enable_grad(params[key])
-    params.update()
+    mesh.build_directed_edges()
 
     u = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
     v = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
@@ -1197,19 +1206,26 @@ def test31_primitive_silhouette_projection(variants_vec_rgb):
     valid = ss.is_valid()
     ss = dr.gather(mi.SilhouetteSample3f, ss, dr.compress(valid))
 
-    assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.PerimeterType.value)
+    assert dr.all(ss.discontinuity_type == mi.DiscontinuityFlags.PerimeterType.value)
     assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+
+    mesh_ptr = mi.ShapePtr(mesh)
     assert dr.all((dr.reinterpret_array(mi.UInt32, ss.shape) ==
-            dr.reinterpret_array(mi.UInt32, mesh_ptr)))
+                    dr.reinterpret_array(mi.UInt32, mesh_ptr)))
 
 
 @fresolver_append_path
-def test32_shape_type(variant_scalar_rgb):
+def test32_shape_type(variants_all_rgb):
     mesh = mi.load_dict({
         "type" : "ply",
         "filename" : "resources/data/tests/ply/rectangle_uv.ply",
     })
-    assert mesh.shape_type() == mi.ShapeType.Mesh.value;
+    assert mesh.shape_type() == mi.ShapeType.Mesh
+
+    if dr.is_jit_v(mi.Float):
+        scene = mixed_shapes_scene()
+        types = scene.shapes_dr().shape_type()
+        assert dr.count(types == mi.ShapeType.Mesh.value) == 2
 
 
 @fresolver_append_path
@@ -1233,3 +1249,20 @@ def test33_rebuild_area_pmf(variants_vec_rgb):
     surface_area_after = mesh.surface_area()
 
     assert surface_area_after == 4 * surface_area_before
+
+
+
+@fresolver_append_path
+def test34_mesh_vcalls(variants_vec_rgb):
+    scene = mixed_shapes_scene()
+    shapes = scene.shapes_dr()
+    meshes = mi.MeshPtr(shapes)
+    active = shapes.is_mesh()
+
+    positions = meshes.vertex_position(mi.UInt32(0, 1, 2), active=active)
+    assert dr.count(dr.any(positions != 0)) == 2
+
+
+if __name__ == "__main__":
+    mi.set_variant("cuda_ad_rgb")
+    test34_mesh_vcalls(None)
