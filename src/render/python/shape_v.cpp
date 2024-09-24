@@ -74,6 +74,8 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             D(Shape, is_emitter))
        .def("is_sensor", [](Ptr shape) { return shape->is_sensor(); },
             D(Shape, is_sensor))
+       .def("is_mesh", [](Ptr shape) { return shape->is_mesh(); },
+            D(Shape, is_mesh))
        .def("is_medium_transition",
             [](Ptr shape) { return shape->is_medium_transition(); },
             D(Shape, is_medium_transition))
@@ -217,6 +219,54 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             D(Shape, surface_area));
 }
 
+template <typename Ptr, typename Cls> void bind_mesh_generic(Cls &cls) {
+    MI_PY_IMPORT_TYPES()
+    cls
+       .def("vertex_count", [](const Ptr ptr) {
+            return ptr->vertex_count();
+        }, D(Mesh, vertex_count))
+       .def("face_count", [](const Ptr ptr) {
+            return ptr->face_count();
+        }, D(Mesh, face_count))
+       .def("has_vertex_normals", [](const Ptr ptr) {
+            return ptr->has_vertex_normals();
+        }, D(Mesh, has_vertex_normals))
+       .def("has_vertex_texcoords", [](const Ptr ptr) {
+            return ptr->has_vertex_texcoords();
+        }, D(Mesh, has_vertex_texcoords))
+       .def("has_mesh_attributes", [](const Ptr ptr) {
+            return ptr->has_mesh_attributes();
+        }, D(Mesh, has_mesh_attributes))
+       .def("has_face_normals", [](const Ptr ptr) {
+            return ptr->has_face_normals();
+        }, D(Mesh, has_face_normals))
+       .def("face_indices", [](const Ptr m, UInt32 index, Mask active) {
+                return m->face_indices(index, active);
+            }, D(Mesh, face_indices), "index"_a, "active"_a = true)
+       .def("vertex_position", [](const Ptr m, UInt32 index, Mask active) {
+                return m->vertex_position(index, active);
+            }, D(Mesh, vertex_position), "index"_a, "active"_a = true)
+       .def("vertex_normal", [](const Ptr m, UInt32 index, Mask active) {
+                return m->vertex_normal(index, active);
+            }, D(Mesh, vertex_normal), "index"_a, "active"_a = true)
+       .def("vertex_texcoord", [](const Ptr m, UInt32 index, Mask active) {
+                return m->vertex_texcoord(index, active);
+            }, D(Mesh, vertex_texcoord), "index"_a, "active"_a = true)
+       .def("face_normal", [](const Ptr m, UInt32 index, Mask active) {
+                return m->face_normal(index, active);
+            }, D(Mesh, face_normal), "index"_a, "active"_a = true)
+       .def("opposite_dedge", [](const Ptr m, UInt32 index, Mask active) {
+                return m->opposite_dedge(index, active);
+            }, D(Mesh, opposite_dedge), "index"_a, "active"_a = true)
+
+       .def("ray_intersect_triangle", [](const Ptr ptr, const UInt32 &index,
+                                         const Ray3f &ray, Mask active) {
+                ptr->ray_intersect_triangle(index, ray, active);
+            },
+            "index"_a, "ray"_a, "active"_a = true,
+            D(Mesh, ray_intersect_triangle));
+}
+
 MI_PY_EXPORT(Shape) {
     MI_PY_IMPORT_TYPES(Shape, Mesh)
 
@@ -245,7 +295,7 @@ MI_PY_EXPORT(Shape) {
     using PyMesh = PyMesh<Float, Spectrum>;
     using ScalarSize = typename Mesh::ScalarSize;
     using Properties = PropertiesV<Float>;
-    MI_PY_TRAMPOLINE_CLASS(PyMesh, Mesh, Shape)
+    auto mesh_cls = MI_PY_TRAMPOLINE_CLASS(PyMesh, Mesh, Shape)
         .def(nb::init<const Properties&>(), "props"_a)
         .def(nb::init<const std::string &, ScalarSize, ScalarSize,
                       const Properties &, bool, bool>(),
@@ -254,38 +304,35 @@ MI_PY_EXPORT(Shape) {
              "has_vertex_normals"_a = false, "has_vertex_texcoords"_a = false,
              D(Mesh, Mesh))
         .def_method(Mesh, initialize)
-        .def_method(Mesh, vertex_count)
-        .def_method(Mesh, face_count)
-        .def_method(Mesh, has_vertex_normals)
-        .def_method(Mesh, has_vertex_texcoords)
         .def("write_ply",
              nb::overload_cast<const std::string &>(&Mesh::write_ply, nb::const_),
              "filename"_a, D(Mesh, write_ply))
         .def("write_ply",
              nb::overload_cast<Stream *>(&Mesh::write_ply, nb::const_),
              "stream"_a, D(Mesh, write_ply, 2))
+        .def("merge", &Mesh::merge, "other"_a,
+             D(Mesh, merge))
+
+        .def("vertex_positions_buffer", nb::overload_cast<>(&Mesh::vertex_positions_buffer))
+        .def("vertex_normals_buffer", nb::overload_cast<>(&Mesh::vertex_normals_buffer))
+        .def("vertex_texcoords_buffer", nb::overload_cast<>(&Mesh::vertex_texcoords_buffer))
+        .def("faces_buffer", nb::overload_cast<>(&Mesh::faces_buffer))
+
+        .def("attribute_buffer", &Mesh::attribute_buffer, "name"_a,
+             D(Mesh, attribute_buffer))
         .def("add_attribute", &Mesh::add_attribute, "name"_a, "size"_a, "buffer"_a,
              D(Mesh, add_attribute))
-        .def("vertex_positions_buffer", nb::overload_cast<>(&Mesh::vertex_positions_buffer))
-        .def("faces_buffer", nb::overload_cast<>(&Mesh::faces_buffer))
-        .def("face_indices", [](const Mesh &m, UInt32 index, Mask active) {
-                return m.face_indices(index, active);
-             }, D(Mesh, face_indices), "index"_a, "active"_a = true)
-        .def("vertex_position", [](const Mesh &m, UInt32 index, Mask active) {
-                return m.vertex_position(index, active);
-             }, D(Mesh, vertex_position), "index"_a, "active"_a = true)
-        .def("vertex_normal", [](const Mesh &m, UInt32 index, Mask active) {
-                return m.vertex_normal(index, active);
-             }, D(Mesh, vertex_normal), "index"_a, "active"_a = true)
-        .def("vertex_texcoord", [](const Mesh &m, UInt32 index, Mask active) {
-                return m.vertex_texcoord(index, active);
-             }, D(Mesh, vertex_texcoord), "index"_a, "active"_a = true)
-        .def("face_normal", [](const Mesh &m, UInt32 index, Mask active) {
-                return m.face_normal(index, active);
-             }, D(Mesh, face_normal), "index"_a, "active"_a = true)
-        .def("ray_intersect_triangle", &Mesh::ray_intersect_triangle,
-             "index"_a, "ray"_a, "active"_a = true,
-             D(Mesh, ray_intersect_triangle));
+
+        .def("recompute_vertex_normals", &Mesh::recompute_vertex_normals)
+        .def("recompute_bbox", &Mesh::recompute_bbox);
+
+     bind_mesh_generic<Mesh *>(mesh_cls);
+
+    if constexpr (dr::is_array_v<MeshPtr>) {
+        dr::ArrayBinding b;
+        auto mesh_ptr = dr::bind_array_t<MeshPtr>(b, m, "MeshPtr");
+        bind_mesh_generic<MeshPtr>(mesh_ptr);
+    }
 
     MI_PY_REGISTER_OBJECT("register_mesh", Mesh)
 }

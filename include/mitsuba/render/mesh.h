@@ -581,3 +581,28 @@ protected:
 
 MI_EXTERN_CLASS(Mesh)
 NAMESPACE_END(mitsuba)
+
+
+// -----------------------------------------------------------------------
+//! @{ \name Dr.Jit support for vectorized function calls
+// -----------------------------------------------------------------------
+
+DRJIT_CALL_TEMPLATE_INHERITED_BEGIN(mitsuba::Mesh, mitsuba::Shape)
+    DRJIT_CALL_METHOD(face_indices)
+    DRJIT_CALL_METHOD(vertex_position)
+    DRJIT_CALL_METHOD(vertex_normal)
+    DRJIT_CALL_METHOD(vertex_texcoord)
+    DRJIT_CALL_METHOD(face_normal)
+    DRJIT_CALL_METHOD(opposite_dedge)
+    DRJIT_CALL_METHOD(ray_intersect_triangle)
+
+    DRJIT_CALL_GETTER(vertex_count)
+    DRJIT_CALL_GETTER(face_count)
+    DRJIT_CALL_GETTER(has_vertex_normals)
+    DRJIT_CALL_GETTER(has_vertex_texcoords)
+    DRJIT_CALL_GETTER(has_mesh_attributes)
+    DRJIT_CALL_GETTER(has_face_normals)
+DRJIT_CALL_INHERITED_END(mitsuba::Mesh)
+
+//! @}
+// -----------------------------------------------------------------------
