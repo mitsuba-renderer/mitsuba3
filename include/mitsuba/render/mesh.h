@@ -204,6 +204,15 @@ public:
     /// Recompute the bounding box (e.g. after modifying the vertex positions)
     void recompute_bbox();
 
+    /**
+     * /brief Build directed edge data structure to efficiently access adjacent
+     * edges.
+     *
+     * This is an implementation of the technique described in:
+     * <tt>https://www.graphics.rwth-aachen.de/media/papers/directed.pdf</tt>.
+     */
+    void build_directed_edges();
+
     // =============================================================
     //! @{ \name Shape interface implementation
     // =============================================================
@@ -397,15 +406,6 @@ protected:
      * Thread-safe, since it uses a mutex.
      */
     void build_pmf();
-
-    /**
-     * /brief Build directed edge data structure to efficiently access adjacent
-     * edges.
-     *
-     * This is an implementation of the technique described in:
-     * <tt>https://www.graphics.rwth-aachen.de/media/papers/directed.pdf</tt>.
-     */
-    void build_directed_edges();
 
     /**
      * /brief Precompute the set of edges that could contribute to the indirect

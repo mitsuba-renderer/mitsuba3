@@ -327,7 +327,8 @@ MI_PY_EXPORT(Shape) {
              D(Mesh, add_attribute))
 
         .def("recompute_vertex_normals", &Mesh::recompute_vertex_normals)
-        .def("recompute_bbox", &Mesh::recompute_bbox);
+        .def("recompute_bbox", &Mesh::recompute_bbox)
+        .def("build_directed_edges", &Mesh::build_directed_edges);
 
      bind_mesh_generic<Mesh *>(mesh_cls);
 
