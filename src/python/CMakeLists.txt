@@ -214,7 +214,7 @@ if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
 
   add_custom_command(
     OUTPUT ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
-    DEPENDS ${MI_BINARY_DIR}/python/mitsuba/_stubs.pyi
+    DEPENDS mitsuba-stub
     COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/variant-stub.cmake
       ${MI_BINARY_DIR}/python/mitsuba/_stubs.pyi
       ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
@@ -235,7 +235,7 @@ if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
 
     add_custom_command(
       OUTPUT ${MI_BINARY_DIR}/python/mitsuba/${value_path}.pyi
-      DEPENDS ${MI_BINARY_DIR}/python/mitsuba/_${value_path}_stubs.pyi
+      DEPENDS mitsuba-stub-${value}
       COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/variant-stub.cmake
         ${MI_BINARY_DIR}/python/mitsuba/_${value_path}_stubs.pyi
         ${MI_BINARY_DIR}/python/mitsuba/${value_path}.pyi
