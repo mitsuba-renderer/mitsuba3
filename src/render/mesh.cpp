@@ -1049,7 +1049,9 @@ Mesh<Float, Spectrum>::primitive_silhouette_projection(const Point3f &viewpoint,
     the nearest edge, instead we randomly sample a point on any silhouette edge.
     This ensures that the triangle corners do not receive minimal samples. */
 
-    if (dr::width(m_E2E) == 0) // Shape is not being differentiated
+    // Directed edge data structure was not prepared,
+    // e.g. due to the shape not being differentiated.
+    if (dr::width(m_E2E) == 0)
         return dr::zeros<SilhouetteSample3f>();
 
     Vector3u fi = face_indices(si.prim_index, active);
