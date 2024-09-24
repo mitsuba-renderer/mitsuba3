@@ -1109,6 +1109,7 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Shape)
     DRJIT_CALL_GETTER(shape_type)
     auto is_emitter() const { return emitter() != nullptr; }
     auto is_sensor() const { return sensor() != nullptr; }
+    auto is_mesh() const { return shape_type() == (uint32_t) mitsuba::ShapeType::Mesh; }
     auto is_medium_transition() const { return interior_medium() != nullptr ||
                                                exterior_medium() != nullptr; }
 DRJIT_CALL_END(mitsuba::Shape)
