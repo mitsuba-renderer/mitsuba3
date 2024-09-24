@@ -8206,6 +8206,8 @@ static const char *__doc_mitsuba_SilhouetteSample_operator_assign_4 = R"doc()doc
 
 static const char *__doc_mitsuba_SilhouetteSample_prim_index = R"doc(Primitive index, e.g. the triangle ID (if applicable))doc";
 
+static const char *__doc_mitsuba_SilhouetteSample_opposite_prim_index = R"doc(Index of the primitive on the other side of the silhouette, e.g. the triangle ID (if applicable))doc";
+
 static const char *__doc_mitsuba_SilhouetteSample_projection_index =
 R"doc(Projection index indicator
 
@@ -12609,4 +12611,3 @@ static const char *__doc_operator_lshift = R"doc(Turns a vector of elements into
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif
-

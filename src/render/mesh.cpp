@@ -1094,8 +1094,7 @@ Mesh<Float, Spectrum>::primitive_silhouette_projection(const Point3f &viewpoint,
     SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
 
     if (has_flag(flags, DiscontinuityFlags::HeuristicWalk)) {
-        /// Project to any edge with heuristic probability. Note that this flag
-        /// modifies `ss.prim_index` directly to the selected new triangle.
+        /// Project to any edge with heuristic probability.
         weight = dr::safe_acos(cos_theta_oppo);
 
         // All silhouette edges are equally good regardless of the angle
@@ -1103,9 +1102,9 @@ Mesh<Float, Spectrum>::primitive_silhouette_projection(const Point3f &viewpoint,
         // least one neighboring silhouette edge. This can alleviate issues
         // with small "bumpy" features on the mesh.
         const float max_weight = dr::Pi<ScalarFloat> / 2.f;
-        weight[0] = dr::select(cos_theta_oppo[0] <= 0.f, max_weight, weight[0]);
-        weight[1] = dr::select(cos_theta_oppo[1] <= 0.f, max_weight, weight[1]);
-        weight[2] = dr::select(cos_theta_oppo[2] <= 0.f, max_weight, weight[2]);
+        weight[0] = dr::select(cos_theta_oppo[0] < 0.f, max_weight, weight[0]);
+        weight[1] = dr::select(cos_theta_oppo[1] < 0.f, max_weight, weight[1]);
+        weight[2] = dr::select(cos_theta_oppo[2] < 0.f, max_weight, weight[2]);
 
         // In case the weights are too small
         Float min_weight = dr::deg_to_rad(1.f);
@@ -1119,12 +1118,9 @@ Mesh<Float, Spectrum>::primitive_silhouette_projection(const Point3f &viewpoint,
         ss.projection_index = dr::select(sample >= weight[0], 1u, 0u);
         ss.projection_index = dr::select(sample >= weight[0] + weight[1], 2u, ss.projection_index);
 
-        ss.prim_index = dr::select(sample >= weight[0], prim_idx_1, prim_idx_0);
-        ss.prim_index = dr::select(sample >= weight[0] + weight[1], prim_idx_2, ss.prim_index);
-
-        failed_proj = ((ss.projection_index == 0u) && (cos_theta_oppo[0] > 0.f)) ||
-                      ((ss.projection_index == 1u) && (cos_theta_oppo[1] > 0.f)) ||
-                      ((ss.projection_index == 2u) && (cos_theta_oppo[2] > 0.f));
+        failed_proj = ((ss.projection_index == 0u) && (cos_theta_oppo[0] >= 0.f)) ||
+                      ((ss.projection_index == 1u) && (cos_theta_oppo[1] >= 0.f)) ||
+                      ((ss.projection_index == 2u) && (cos_theta_oppo[2] >= 0.f));
     } else {
         /// Project to any silhouette edge with equal probability.
         weight.x() = dr::select(cos_theta_oppo.x() < 0.f, 1.f, 0.f);
@@ -1138,8 +1134,6 @@ Mesh<Float, Spectrum>::primitive_silhouette_projection(const Point3f &viewpoint,
         dr::masked(weight, failed_proj) = Vector3f(1.f, 1.f, 1.f);
         dr::masked(sum, failed_proj) = 3.f;
         weight /= sum;
-
-        ss.prim_index = si.prim_index;
 
         ss.projection_index = dr::select(sample >= weight[0], 1u, 0u);
         ss.projection_index = dr::select(sample >= weight[0] + weight[1], 2u, ss.projection_index);
@@ -1169,7 +1163,15 @@ Mesh<Float, Spectrum>::primitive_silhouette_projection(const Point3f &viewpoint,
         dr::lerp(p2, p0, sample), ss.p
     );
 
+    ss.prim_index = si.prim_index;
+    ss.opposite_prim_index = dr::select(
+        ss.projection_index == 0, prim_idx_0,
+        dr::select(ss.projection_index == 1, prim_idx_1, prim_idx_2));
+
     ss.d = dr::normalize(ss.p - viewpoint);
+    ss.silhouette_d = dr::normalize(
+        dr::select(ss.projection_index == 0, p1 - p0,
+                   dr::select(ss.projection_index == 1, p2 - p1, p0 - p2)));
     ss.shape = this;
 
     ss.discontinuity_type = dr::select(
