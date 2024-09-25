@@ -268,6 +268,24 @@ template <typename Ptr, typename Cls> void bind_mesh_generic(Cls &cls) {
             },
             "index"_a, "ray"_a, "active"_a = true,
             D(Mesh, ray_intersect_triangle));
+
+    if constexpr (dr::is_array_v<Ptr> && dr::is_jit_v<Ptr>) {
+        // Custom constructor to automatically zero-out non-Mesh pointer entries.
+        // using ShapePtr = dr::replace_scalar_t<Ptr, Shape *>;
+        cls
+            .def("__init__", [](Ptr *dst, const ShapePtr &ptr) {
+                ShapePtr filtered = dr::select(ptr->is_mesh(), ptr, dr::zeros<ShapePtr>());
+                Ptr mesh = dr::reinterpret_array<Ptr>(filtered);
+                // Placement new.
+                new (dst) Ptr(mesh);
+            })
+            .def("__init__", [](Ptr *dst, const Shape *ptr) {
+                new (dst) Ptr(ptr->is_mesh() ? ptr : nullptr);
+            })
+            .def("__init__", [](Ptr *dst, const Mesh *ptr) {
+                new (dst) Ptr(ptr);
+            });
+    }
 }
 
 MI_PY_EXPORT(Shape) {

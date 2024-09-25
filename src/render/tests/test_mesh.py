@@ -19,7 +19,7 @@ def mixed_shapes_scene():
             "type" : "ply",
             "filename" : "resources/data/tests/ply/rectangle_uv.ply",
         },
-    })
+    }, parallel=False)
 
 
 
@@ -1253,7 +1253,29 @@ def test33_rebuild_area_pmf(variants_vec_rgb):
 
 
 @fresolver_append_path
-def test34_mesh_vcalls(variants_vec_rgb):
+def test34_mesh_ptr(variants_vec_rgb):
+    # dr.set_flag(dr.JitFlag.Debug, True)
+    scene = mixed_shapes_scene()
+    shapes_dr = scene.shapes_dr()
+
+    for i, sh in enumerate(scene.shapes()):
+        as_mesh = mi.MeshPtr(sh)
+        if sh.is_mesh():
+            assert dr.all(dr.gather(mi.MeshPtr, shapes_dr, i) == as_mesh)
+            assert as_mesh[0] == shapes_dr[i]
+            assert as_mesh[0] == sh
+        else:
+            assert dr.all(dr.reinterpret_array(mi.UInt32, as_mesh) == 0)
+            assert as_mesh[0] is None
+
+    # The `MeshPtr` constructor should automatically zero-out non-Mesh entries.
+    meshes = mi.MeshPtr(shapes_dr)
+    is_nnz = dr.reinterpret_array(mi.UInt32, meshes) != 0
+    assert dr.all(is_nnz == (True, False, True))
+
+
+@fresolver_append_path
+def test35_mesh_vcalls(variants_vec_rgb):
     scene = mixed_shapes_scene()
     shapes = scene.shapes_dr()
     meshes = mi.MeshPtr(shapes)
