@@ -1276,15 +1276,60 @@ def test34_mesh_ptr(variants_vec_rgb):
 
 @fresolver_append_path
 def test35_mesh_vcalls(variants_vec_rgb):
+    dr.set_flag(dr.JitFlag.Debug, True)
+
     scene = mixed_shapes_scene()
+    expected_ordering = [("shape1", True), ("shape2", False), ("shape3", True)]
+    for i, sh in enumerate(scene.shapes()):
+        assert (sh.id(), sh.is_mesh()) == expected_ordering[i]
+        if sh.is_mesh():
+            sh.build_directed_edges()
+
     shapes = scene.shapes_dr()
     meshes = mi.MeshPtr(shapes)
+
+    # Not strictly needed, since the non-Mesh pointers
+    # should already have been zeroed-out.
     active = shapes.is_mesh()
+    assert dr.all(active == mi.Mask([True, False, True]))
 
-    positions = meshes.vertex_position(mi.UInt32(0, 1, 2), active=active)
-    assert dr.count(dr.any(positions != 0)) == 2
+    # Shapes in the scene are: Mesh, Rectangle, Mesh
+    assert dr.all(meshes.vertex_count() == [4, 0, 4])
+    assert dr.all(meshes.face_count() == [2, 0, 2])
+    assert dr.all(meshes.has_vertex_normals() == active)
+    assert dr.all(meshes.has_vertex_texcoords() == active)
+    assert dr.all(meshes.has_mesh_attributes() == False)
+    assert dr.all(meshes.has_face_normals() == False)
 
+    idx = mi.UInt32([0, 99, 1])
+    face_idx = meshes.face_indices(idx, active=active)
+    edge_idx = meshes.edge_indices(idx, idx, active=active)
+    positions = meshes.vertex_position(idx, active=active)
+    normals = meshes.vertex_normal(idx, active=active)
+    texcoords = meshes.vertex_texcoord(idx, active=active)
+    face_normals = meshes.face_normal(idx, active=active)
+    opposite = meshes.opposite_dedge(idx, active=active)
 
-if __name__ == "__main__":
-    mi.set_variant("cuda_ad_rgb")
-    test34_mesh_vcalls(None)
+    dr.schedule(face_idx, edge_idx, positions, normals, texcoords,
+                face_normals, opposite)
+
+    # Check the vcall results against direct calls on the
+    # individual Mesh instances.
+    for i, sh in enumerate(scene.shapes()):
+        if not sh.is_mesh():
+            continue
+        idx_i = dr.gather(mi.UInt32, idx, i)
+        assert dr.all(dr.gather(type(face_idx), face_idx, i)
+                      == sh.face_indices(idx_i))
+        assert dr.all(dr.gather(type(edge_idx), edge_idx, i)
+                      == sh.edge_indices(idx_i, idx_i))
+        assert dr.all(dr.gather(type(positions), positions, i)
+                      == sh.vertex_position(idx_i))
+        assert dr.all(dr.gather(type(normals), normals, i)
+                      == sh.vertex_normal(idx_i))
+        assert dr.all(dr.gather(type(texcoords), texcoords, i)
+                      == sh.vertex_texcoord(idx_i))
+        assert dr.all(dr.gather(type(face_normals), face_normals, i)
+                      == sh.face_normal(idx_i))
+        assert dr.all(dr.gather(type(opposite), opposite, i)
+                      == sh.opposite_dedge(idx_i))
