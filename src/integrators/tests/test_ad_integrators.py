@@ -712,7 +712,7 @@ DISCONTINUOUS_CONFIGS_LIST = [
     # TranslateDiffuseRectangleConstantConfig,
     # TranslateRectangleEmitterOnBlackConfig,
     TranslateSphereEmitterOnBlackConfig,
-    #ScaleSphereEmitterOnBlackConfig,
+    ScaleSphereEmitterOnBlackConfig,
     TranslateOccluderAreaLightConfig,
     TranslateSelfShadowAreaLightConfig,
     # TranslateShadowReceiverAreaLightConfig,
