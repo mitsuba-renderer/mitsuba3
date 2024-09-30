@@ -5,7 +5,7 @@ Porting to Mitsuba 3.6.0
 
 Mitsuba 3.6.0 contains a number of significant changes relative to the 
 prior release, some breaking, that are predominantly driven by the dependence 
-to the new version of `Dr.Jit 1.0.0 <dr_main>`_.
+to the new version of `Dr.Jit 1.0.0 <dr_main_>`_.
 
 This guide is intended to assist users of prior releases of 
 Mitsuba 3 to quickly update their existing codebases to be compatible 
@@ -18,16 +18,16 @@ on the design and core features of Dr.Jit 1.0.0 that Mitsuba users will find
 invaluable. Historically, the Dr.Jit documentation in past releases has been 
 sparse so it's recommended that even more advanced users begin here.
 
-Symbolic control-flow
+Symbolic control flow
 ---------------------
 
 .. _dr_cflow: https://drjit.readthedocs.io/en/latest/cflow.html#symbolic-mode
 
-`Symbolic loops <dr_cflow>`_
+`Symbolic loops <dr_cflow_>`_
 in Mitsuba are no longer initialized by constructing a ``mitsuba.Loop`` 
 instance. Instead, Dr.Jit 1.0.0 introduces the :py:func:`drjit.syntax` function 
 decorator that allows users to express symbolic loops as if they were 
-immediately-evaluated Python control-flow. An example of a simple loop using 
+immediately-evaluated Python control flow. An example of a simple loop using 
 ``mitsuba.Loop`` previously looked like,
 
 .. code-block:: python
@@ -184,7 +184,7 @@ Bitmap textures: Half-precision storage by default where possible
 .. _spec_up: https://rgl.epfl.ch/publications/Jakob2019Spectral
 
 Dr.Jit 1.0.0 includes support for half-precision arrays and tensors, and further
-extends support for FP16 `Dr.Jit textures <dr_texture>`_ that are 
+extends support for FP16 `Dr.Jit textures <dr_texture_>`_ that are 
 hardware-accelerated on CUDA backends.
 
 From Mitsuba 3.6.0 onwards, bitmap textures initialized from data with bit
@@ -194,7 +194,7 @@ depth 16 or lower will instantiate an underlying half-precision Dr.Jit texture.
   Using spectral Mitsuba variants is an exception to this default behavior, and 
   the underlying storage of the bitmap texture will remain consistent to the variant 
   as with previous versions of Mitsuba 3. This is because here sampling a 
-  texture requires `spectral upsampling <spec_up>`_ and RGB input data is 
+  texture requires `spectral upsampling <spec_up_>`_ and RGB input data is 
   first converted to their corresponding spectral coefficients.
 
 There may be cases where this default behavior is undesirable. For instance, if 
@@ -244,6 +244,147 @@ parameter to ``variant``
 
   params = mi.traverse(bitmap)
   type(params['data']) # TensorXf
+
+C++ interface changes
+---------------------
+
+.. _dr_cpp: https://drjit.readthedocs.io/en/latest/cpp.html
+
+Mitsuba 3.6.0 has also introduced changes that affect C++ developers who have 
+extended Mitusba 3, such as by defining custom C++ plugins. As with the Python 
+interface, most of these changes are driven by Dr.Jit 1.0.0 and we again 
+recommend users first begin by reading the `Dr.Jit documentation <dr_main_>`_ 
+and in particular the dedicated section on the `Dr.Jit C++ interface <dr_cpp_>`_.
+
+Control flow
+~~~~~~~~~~~~
+
+.. _dr_cpp_custom_data: https://drjit.readthedocs.io/en/latest/cpp.html#custom-types-cpp
+.. _dr_cpp_if: https://drjit.readthedocs.io/en/latest/cpp.html#vectorized-conditionals
+
+Analogous to Dr.Jit's vectorized control flow changes in Python, in C++ 
+``drjit.Loop`` has similarly been removed in Dr.Jit 1.0.0. Here, however 
+there is no equivalent to the Python Dr.Jit function decorator 
+:py:func:`drjit.syntax` that automatically tracks which JIT variables are used 
+by the loop. Instead, users are required to call :py:func:`drjit.while_loop` 
+and, as with past releases, manually specify the loop variables
+
+.. code-block:: cpp
+
+  Float x;
+  Bool y;
+
+  dr::tie(x, y) = dr::while_loop(dr::make_tuple(x, y), /* initial state */
+    [](const Float& x, const Bool& y) { return y; },   /* condition     */
+    [](Float& x, Bool& y) { ... });                    /* body          */
+
+  x += 1;
+
+.. note::
+
+  Expressing a loop with a high number of tracked variables can be cumbersome
+  to write out. However, Dr.Jit 1.0.0 provides the ability to locally define
+  `custom traversable data types <dr_cpp_custom_data_>`_ that can be leveraged 
+  to specify the entire loop state
+
+  .. code-block:: cpp
+
+    struct LoopState {
+      Float foo;
+      Float bar;
+      Float more;
+      Bool active;
+    } = ls { x1, x2, x3, active };
+
+    dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),   /* initial state */
+      [](const LoopState& ls) { return ls.active; },   /* condition     */
+      [](LoopState& ls) { ... });                      /* body          */
+
+As with the Python interface, the C++ interface similarly exposes support for 
+vectorized conditionals using :py:func:`drjit.if_stmt` and we direct users to the 
+`Dr.Jit documentation <dr_cpp_if_>`_ for further details and example usage.
+
+Removal of ``dr::eq``, ``dr::neq``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Historically, the Dr.Jit functions ``drjit::eq`` and ``drjit::neq``
+performed elementwise comparisons on array types
+
+.. code-block:: cpp
+
+  Float a, b = ... ;
+  Float res = dr::eq(a, b);
+
+
+while the operators ``==`` and ``!=`` would implicitly evaluate and reduce the 
+result
+
+.. code-block:: cpp
+
+  bool res = a == b;
+
+
+Dr.Jit 1.0.0 removes ``drjit::eq`` and ``drjit::neq`` which are replaced by the 
+overloaded operators ``==`` and ``!=`` respectively. Any reductions now have
+to be explicitly specified by for instance using the :py:func:`drjit.all` or
+:py:func:`drjit.any` functions
+
+.. code-block:: cpp
+
+  bool res = dr::all(a == b);
+
+
+``dr::Matrix`` ordering now row-major
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In Dr.Jit 1.0.0, the internal storage of ``dr::Matrix`` types has changed from 
+column to row-major ordering. While common matrix operations such as multiplication
+are unaffected by this change, there is a potential pitfall for existing
+codebases that read or modify the storage directly, for example
+
+.. code-block:: cpp
+
+  dr::Matrix<Float, 3> m = ...;
+
+  // Returned array is now is first row, not column!
+  auto& v = m.entry(0);
+
+
+Simplified vectorized method getters: ``dr::set_attr`` removed
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _dr_vcall_get: https://drjit.readthedocs.io/en/latest/cpp.html#c.DRJIT_CALL_GETTER
+
+In past Mitsuba releases, defining custom C++ plugins with 
+`vectorized getters <dr_vcall_get>`_ was bug-prone as developers would be 
+required to additionally remember to call ``dr::set_attr`` during initialization
+
+.. code-block:: cpp
+
+  MyPlugin(const Properties &props) : Base(props) {
+    ...
+    m_getter = m_components[0];
+    dr::set_attr(this, "getter", m_getter);
+  }
+
+which allowed Dr.Jit to perform an optimization during tracing of getters to 
+avoid any actual method calls. Specifically, as getters are read-only and 
+have no side-effects, tracing of such calls can be interpreted as indexing into
+an array of variables that correspond to the result of each possible instance.
+
+In Dr.Jit 1.0.0, such an optimization remains however developers
+are no longer required to additionally call ``dr::set_attr``.
+
+.. code-block:: cpp
+
+  // Registered getter as DRJIT_CALL_GETTER
+  uint32_t Base::getter() const { return m_getter; }
+
+  MyPlugin(const Properties &props) : Base(props) {
+    ...
+    m_getter = m_components[0];
+  }
+
 
 Miscellaneous
 -------------
