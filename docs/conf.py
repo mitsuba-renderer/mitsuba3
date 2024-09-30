@@ -206,7 +206,9 @@ extensions.append('nbsphinx')
 
 intersphinx_mapping = { 
     "python": ("https://docs.python.org/3", None),
-    "drjit" : ("https://drjit.readthedocs.io/en/latest/", None)
+    "drjit" : (
+        "https://drjit.readthedocs.io/en/latest/", 
+        "https://drjit.readthedocs.io/en/v0.4.6/", None)
 }
 
 nbsphinx_execute = 'never'
