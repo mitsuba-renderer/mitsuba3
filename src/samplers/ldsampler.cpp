@@ -107,7 +107,7 @@ public:
         return new LowDiscrepancySampler (*this);
     }
 
-    void seed(uint32_t seed, uint32_t wavefront_size) override {
+    void seed(UInt32 seed, uint32_t wavefront_size) override {
         Base::seed(seed, wavefront_size);
         m_scramble_seed = compute_per_sequence_seed(seed);
     }
