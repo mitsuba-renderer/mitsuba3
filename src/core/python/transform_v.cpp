@@ -7,12 +7,13 @@
 #include <nanobind/stl/list.h>
 #include <nanobind/ndarray.h>
 
-template <typename Float>
+template <typename Float, typename Spectrum>
 void bind_transform3(nb::module_ &m, const char *name) {
     MI_IMPORT_CORE_TYPES()
     using ScalarType = drjit::scalar_t<Float>;
     using NdMatrix = nb::ndarray<ScalarType, nb::shape<3,3>,
         nb::c_contig, nb::device::cpu>;
+    using Ray2f = Ray<Point<Float, 2>, Spectrum>;
 
     auto trans3 = nb::class_<Transform3f>(m, name, D(Transform))
         .def(nb::init<>(), "Initialize with the identity matrix")
@@ -52,12 +53,18 @@ void bind_transform3(nb::module_ &m, const char *name) {
         .def("__matmul__", [](const Transform3f &a, const Vector2f &b) {
             return a * b;
         }, nb::is_operator())
+        .def("__matmul__", [](const Transform3f &a, const Ray2f &b) {
+            return a * b;
+        }, nb::is_operator())
         .def("transform_affine", [](const Transform3f &a, const Point2f &b) {
             return a.transform_affine(b);
         }, "p"_a, D(Transform, transform_affine))
         .def("transform_affine", [](const Transform3f &a, const Vector2f &b) {
             return a.transform_affine(b);
         }, "v"_a, D(Transform, transform_affine))
+        .def("transform_affine", [](const Transform3f &a, const Ray2f &b) {
+            return a.transform_affine(b);
+        }, "ray"_a, D(Transform, transform_affine))
         /// Chain transformations
         .def("translate", [](const Transform3f &t, const Point2f &v) {
             return Transform3f(t * Transform3f::translate(v));
@@ -191,23 +198,23 @@ MI_PY_EXPORT(Transform) {
     using ScalarSpectrum = scalar_spectrum_t<Spectrum>;
 
     MI_PY_CHECK_ALIAS(Transform3f, "Transform3f") {
-        bind_transform3<Float>(m, "Transform3f");
+        bind_transform3<Float, Spectrum>(m, "Transform3f");
     }
 
     MI_PY_CHECK_ALIAS(Transform3d, "Transform3d") {
-        bind_transform3<Float64>(m, "Transform3d");
+        bind_transform3<Float64, Spectrum>(m, "Transform3d");
     }
 
     MI_PY_CHECK_ALIAS(ScalarTransform3f, "ScalarTransform3f") {
         if constexpr (dr::is_dynamic_v<Float>) {
-            bind_transform3<ScalarFloat>(m, "ScalarTransform3f");
+            bind_transform3<ScalarFloat, ScalarSpectrum>(m, "ScalarTransform3f");
             nb::implicitly_convertible<ScalarTransform3f, Transform3f>();
         }
     }
 
     MI_PY_CHECK_ALIAS(ScalarTransform3d, "ScalarTransform3d") {
         if constexpr (dr::is_dynamic_v<Float>) {
-            bind_transform3<ScalarFloat64>(m, "ScalarTransform3d");
+            bind_transform3<ScalarFloat64, ScalarSpectrum>(m, "ScalarTransform3d");
             nb::implicitly_convertible<ScalarTransform3d, ScalarTransform3f>();
         }
     }
