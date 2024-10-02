@@ -251,10 +251,10 @@ C++ interface changes
 .. _dr_cpp: https://drjit.readthedocs.io/en/latest/cpp.html
 
 Mitsuba 3.6.0 has also introduced changes that affect C++ developers who have 
-extended Mitusba 3, such as by defining custom C++ plugins. As with the Python 
-interface, most of these changes are driven by Dr.Jit 1.0.0 and we again 
-recommend users first begin by reading the `Dr.Jit documentation <dr_main_>`_ 
-and in particular the dedicated section on the `Dr.Jit C++ interface <dr_cpp_>`_.
+extended Mitsuba 3. As with the Python interface, most of these changes are 
+driven by Dr.Jit 1.0.0 and we again recommend users first begin by reading 
+the `Dr.Jit documentation <dr_main_>`_ and in particular the dedicated section 
+on the `Dr.Jit C++ interface <dr_cpp_>`_.
 
 Control flow
 ~~~~~~~~~~~~
@@ -326,8 +326,8 @@ result
 
 Dr.Jit 1.0.0 removes ``drjit::eq`` and ``drjit::neq`` which are replaced by the 
 overloaded operators ``==`` and ``!=`` respectively. Any reductions now have
-to be explicitly specified by for instance using the :py:func:`drjit.all` or
-:py:func:`drjit.any` functions
+to be explicitly specified by using the :py:func:`drjit.all` or
+:py:func:`drjit.any` functions for instance 
 
 .. code-block:: cpp
 
@@ -346,7 +346,7 @@ codebases that read or modify the storage directly, for example
 
   dr::Matrix<Float, 3> m = ...;
 
-  // Returned array is now is first row, not column!
+  // Returned array is now first row, not column!
   auto& v = m.entry(0);
 
 
