@@ -39,3 +39,15 @@ def test04_copy_sampler_wavefront(variants_vec_backends_once):
     })
 
     check_deep_copy_sampler_wavefront(sampler)
+    
+def test05_jit_seed(variants_vec_rgb):
+    sampler = mi.load_dict({
+        "type": "independent",
+    })
+    seed = mi.UInt(0)
+    state_before = seed.state
+    sampler.seed(seed, 64)
+    assert seed.state == state_before
+
+    sample = sampler.next_1d()
+
