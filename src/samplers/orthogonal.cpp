@@ -127,7 +127,7 @@ public:
         return new OrthogonalSampler(*this);
     }
 
-    void seed(uint32_t seed, uint32_t wavefront_size) override {
+    void seed(UInt32 seed, uint32_t wavefront_size) override {
         Base::seed(seed, wavefront_size);
         m_permutation_seed = compute_per_sequence_seed(seed);
     }

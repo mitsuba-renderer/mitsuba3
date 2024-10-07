@@ -95,7 +95,7 @@ public:
      * In the context of wavefront ray tracing & dynamic arrays, this function
      * must be called with \c wavefront_size matching the size of the wavefront.
      */
-    virtual void seed(uint32_t seed,
+    virtual void seed(UInt32 seed,
                       uint32_t wavefront_size = (uint32_t) -1);
 
     /**
@@ -143,7 +143,7 @@ protected:
     Sampler(const Sampler&);
 
     /// Generates a array of seeds where the seed values are unique per sequence
-    UInt32 compute_per_sequence_seed(uint32_t seed) const;
+    UInt32 compute_per_sequence_seed(UInt32 seed) const;
     /// Return the index of the current sample
     UInt32 current_sample_index() const;
 
@@ -170,7 +170,7 @@ public:
     MI_IMPORT_TYPES()
     using PCG32 = mitsuba::PCG32<UInt32>;
 
-    void seed(uint32_t seed, uint32_t wavefront_size = (uint32_t) -1) override;
+    void seed(UInt32 seed, uint32_t wavefront_size = (uint32_t) -1) override;
     void schedule_state() override;
     void traverse_1_cb_ro(void *payload, void (*fn)(void *, uint64_t)) const override;
     void traverse_1_cb_rw(void *payload, uint64_t (*fn)(void *, uint64_t)) override;

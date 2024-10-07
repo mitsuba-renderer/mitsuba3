@@ -20,7 +20,7 @@ public:
         NB_OVERRIDE_PURE(fork);
     }
 
-    void seed(uint32_t seed, uint32_t wavefront_size = (uint32_t) -1) override {
+    void seed(UInt32 seed, uint32_t wavefront_size = (uint32_t) -1) override {
         NB_OVERRIDE(seed, seed, wavefront_size);
     }
 
