@@ -240,7 +240,7 @@ class ProjectiveDetail():
     def init_indirect_silhouette(self,
                                  scene: mi.Scene,
                                  sensor: mi.Sensor,
-                                 seed: int):
+                                 seed: mi.UInt32):
         """
         Initialize the guiding structure for indirect discontinuous derivatives
         based on the guiding mode. The result is stored in this python class.

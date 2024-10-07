@@ -46,7 +46,7 @@ class ADIntegrator(mi.CppADIntegrator):
     def render(self: mi.SamplingIntegrator,
                scene: mi.Scene,
                sensor: Union[int, mi.Sensor] = 0,
-               seed: int = 0,
+               seed: mi.UInt32 = 0,
                spp: int = 0,
                develop: bool = True,
                evaluate: bool = True) -> mi.TensorXf:
@@ -114,7 +114,7 @@ class ADIntegrator(mi.CppADIntegrator):
                        scene: mi.Scene,
                        params: Any,
                        sensor: Union[int, mi.Sensor] = 0,
-                       seed: int = 0,
+                       seed: mi.UInt32 = 0,
                        spp: int = 0) -> mi.TensorXf:
 
         if isinstance(sensor, int):
@@ -167,7 +167,7 @@ class ADIntegrator(mi.CppADIntegrator):
                         params: Any,
                         grad_in: mi.TensorXf,
                         sensor: Union[int, mi.Sensor] = 0,
-                        seed: int = 0,
+                        seed: mi.UInt32 = 0,
                         spp: int = 0) -> None:
 
         if isinstance(sensor, int):
@@ -313,7 +313,7 @@ class ADIntegrator(mi.CppADIntegrator):
 
     def prepare(self,
                 sensor: mi.Sensor,
-                seed: int = 0,
+                seed: mi.UInt32 = 0,
                 spp: int = 0,
                 aovs: list = []):
         """
@@ -499,7 +499,7 @@ class RBIntegrator(ADIntegrator):
                        scene: mi.Scene,
                        params: Any,
                        sensor: Union[int, mi.Sensor] = 0,
-                       seed: int = 0,
+                       seed: mi.UInt32 = 0,
                        spp: int = 0) -> mi.TensorXf:
         """
         Evaluates the forward-mode derivative of the rendering step.
@@ -633,7 +633,7 @@ class RBIntegrator(ADIntegrator):
                         params: Any,
                         grad_in: mi.TensorXf,
                         sensor: Union[int, mi.Sensor] = 0,
-                        seed: int = 0,
+                        seed: mi.UInt32 = 0,
                         spp: int = 0) -> None:
         """
         Evaluates the reverse-mode derivative of the rendering step.
@@ -916,7 +916,7 @@ class PSIntegrator(ADIntegrator):
     def render_ad(self,
                   scene: mi.Scene,
                   sensor: Union[int, mi.Sensor],
-                  seed: int,
+                  seed: mi.UInt32,
                   spp: int,
                   mode: dr.ADMode) -> mi.TensorXf:
         """
@@ -1015,7 +1015,7 @@ class PSIntegrator(ADIntegrator):
                        scene: mi.Scene,
                        params: Any,
                        sensor: Union[int, mi.Sensor] = 0,
-                       seed: int = 0,
+                       seed: mi.UInt32 = 0,
                        spp: int = 0) -> mi.TensorXf:
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
@@ -1058,7 +1058,7 @@ class PSIntegrator(ADIntegrator):
                         params: Any,
                         grad_in: mi.TensorXf,
                         sensor: Union[int, mi.Sensor] = 0,
-                        seed: int = 0,
+                        seed: mi.UInt32 = 0,
                         spp: int = 0) -> None:
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]

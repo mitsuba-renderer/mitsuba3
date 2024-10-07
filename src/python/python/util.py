@@ -379,7 +379,7 @@ def render(scene: mi.Scene,
            params: Any = None,
            sensor: Union[int, mi.Sensor] = 0,
            integrator: mi.Integrator = None,
-           seed: int = 0,
+           seed: mi.UInt32 = 0,
            seed_grad: int = 0,
            spp: int = 0,
            spp_grad: int = 0) -> mi.TensorXf:
@@ -433,14 +433,14 @@ def render(scene: mi.Scene,
         default, the integrator specified in the original scene description will
         be used.
 
-    Parameter ``seed`` (``int``)
+    Parameter ``seed`` (``mi.UInt32``)
         This parameter controls the initialization of the random number
         generator during the primal rendering step. It is crucial that you
         specify different seeds (e.g., an increasing sequence) if subsequent
         calls should produce statistically independent images (e.g. to
         de-correlate gradient-based optimization steps).
 
-    Parameter ``seed_grad`` (``int``)
+    Parameter ``seed_grad`` (``mi.UInt32``)
         This parameter is analogous to the ``seed`` parameter but targets the
         differential simulation phase. If not specified, the implementation will
         automatically compute a suitable value from the primal ``seed``.
