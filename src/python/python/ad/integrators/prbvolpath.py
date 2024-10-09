@@ -425,7 +425,7 @@ class PRBVolpathIntegrator(RBIntegrator):
             has_medium_trans = active_surface & si.is_medium_transition()
             medium[has_medium_trans] = si.target_medium(ray.d)
 
-        return emitter_val * transmittance, ds
+        return emitter_val * dr.detach(transmittance), ds
 
     def to_string(self):
         return f'PRBVolpathIntegrator[max_depth = {self.max_depth}]'

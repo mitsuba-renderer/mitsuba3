@@ -4,6 +4,8 @@
 #include <mitsuba/core/thread.h>
 #include <mitsuba/python/python.h>
 
+#include <nanobind/stl/string.h>
+
 /// Escape strings to make them HTML-safe
 std::string escape_html(const std::string& data) {
     std::string buffer;
@@ -117,8 +119,8 @@ private:
 MI_PY_EXPORT(ProgressReporter) {
     /* Install a custom appender for log + progress messages if Mitsuba is
      * running within Jupyter notebook */
-    nb::object modules = nb::module_::import_("sys").attr("modules");
-    if (!hasattr(modules,"ipykernel"))
+    nb::dict modules = nb::module_::import_("sys").attr("modules");
+    if (!modules.contains("ipykernel"))
         return;
 
     Logger *logger = Thread::thread()->logger();
