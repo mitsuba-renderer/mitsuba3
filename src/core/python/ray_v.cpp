@@ -7,18 +7,19 @@ void bind_ray(nb::module_ &m, const char *name) {
     MI_PY_IMPORT_TYPES()
     using Vector = typename Ray::Vector;
     using Point  = typename Ray::Point;
+    using RFloat = typename Vector::Value;
 
     MI_PY_CHECK_ALIAS(Ray, name) {
         auto ray = nb::class_<Ray>(m, name, D(Ray))
             .def(nb::init<>(), "Create an uninitialized ray")
             .def(nb::init<const Ray &>(), "Copy constructor", "other"_a)
-            .def(nb::init<Point, Vector, Float, const Wavelength &>(),
+            .def(nb::init<Point, Vector, RFloat, const Wavelength &>(),
                  D(Ray, Ray, 2),
-                 "o"_a, "d"_a, "time"_a=0.0, "wavelengths"_a=Wavelength())
-            .def(nb::init<Point, Vector, Float, Float, const Wavelength &>(),
+                 "o"_a, "d"_a, "time"_a = 0.f, "wavelengths"_a = Wavelength())
+            .def(nb::init<Point, Vector, RFloat, RFloat, const Wavelength &>(),
                  D(Ray, Ray, 3),
                 "o"_a, "d"_a, "maxt"_a, "time"_a, "wavelengths"_a)
-            .def(nb::init<const Ray &, Float>(),
+            .def(nb::init<const Ray &, RFloat>(),
                 D(Ray, Ray, 4), "other"_a, "maxt"_a)
             .def("__call__", &Ray::operator(), D(Ray, operator, call), "t"_a)
             .def_field(Ray, o,           D(Ray, o))

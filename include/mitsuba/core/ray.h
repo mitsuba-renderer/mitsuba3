@@ -34,7 +34,7 @@ template <typename Point_, typename Spectrum_> struct Ray {
     /// Maximum position on the ray segment
     Float maxt = dr::Largest<Float>;
     /// Time value associated with this ray
-    Float time = 0.f;
+    Float time = 0;
     /// Wavelength associated with the ray
     Wavelength wavelengths;
 
