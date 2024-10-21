@@ -61,7 +61,7 @@ test-requires = "typing_extensions==4.12.2"
 before-test = "python -m pip install --index-url https://test.pypi.org/simple/ throwaway8213fork"
 
 # Try to import the package to see if it was built correctly (compromise)
-test-command = ["python -c \"import mitsuba\""]
+test-command = ["python -c \"import mitsuba as mi; mi.set_variant('scalar_rgb')\""]
 
 # Needed for full C++17 support
 [tool.cibuildwheel.macos.environment]
