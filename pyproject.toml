@@ -1,8 +1,8 @@
 [build-system]
 requires = [
     "scikit-build-core",
-    "nanobind @ git+https://github.com/wjakob/nanobind", 
-    "drjit @ git+https://github.com/njroussel/drjit-fork@rami",
+    "nanobind==2.2.0",
+    "drjit==1.0.0",
     "typing_extensions>=4.12",
     "hatch-fancy-pypi-readme",
 ]
@@ -16,7 +16,7 @@ description = "Mitsuba 3: A Retargetable Forward and Inverse Renderer"
 readme = "README.md"
 dependencies = [
   "typing_extensions>=4.12;python_version<\"3.11\"",
-  "throwaway8213fork"
+  "drjit==1.0.0",
 ]
 requires-python = ">=3.8"
 authors = [
@@ -51,12 +51,6 @@ build-verbosity = 1
 build = ["cp38-*", "cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*"]
 archs = ["auto64"]
 skip = "*-musllinux* pp*"
-
-# Temp until Dr.Jit release is on PyPI
-before-all = "python -m pip install --index-url https://test.pypi.org/simple/ throwaway8213fork"
-
-# Temp until Dr.Jit release is on PyPI
-before-test = "python -m pip install --index-url https://test.pypi.org/simple/ throwaway8213fork"
 
 # Try to import the package to see if it was built correctly (compromise)
 test-command = ["python -c \"import mitsuba as mi; mi.set_variant('scalar_rgb')\""]
