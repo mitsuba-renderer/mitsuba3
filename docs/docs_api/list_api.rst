@@ -4,6 +4,20 @@
 
 .. autoclass:: mitsuba.ArgParser
 
+.. autoclass:: mitsuba.ArrayXb
+
+.. autoclass:: mitsuba.ArrayXd
+
+.. autoclass:: mitsuba.ArrayXf
+
+.. autoclass:: mitsuba.ArrayXi
+
+.. autoclass:: mitsuba.ArrayXi64
+
+.. autoclass:: mitsuba.ArrayXu
+
+.. autoclass:: mitsuba.ArrayXu64
+
 .. autoclass:: mitsuba.AtomicFloat
 
 .. autoclass:: mitsuba.BSDF
@@ -187,6 +201,8 @@
 .. autoclass:: mitsuba.MemoryStream
 
 .. autoclass:: mitsuba.Mesh
+
+.. autoclass:: mitsuba.MeshPtr
 
 .. autoclass:: mitsuba.MicrofacetDistribution
 

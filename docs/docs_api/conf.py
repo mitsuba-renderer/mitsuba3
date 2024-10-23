@@ -465,6 +465,11 @@ def process_docstring_callback(app, what, name, obj, options, lines):
     if type(obj) in (int, float, bool, str):
         what = 'data'
 
+    #print(f"{name=}")
+    #print(f"{what=}")
+    if name == "mitsuba.SurfaceInteraction3f.compute_uv_partials":
+        breakpoint()
+
     #----------------------------
     # Handle classes
 
@@ -797,6 +802,23 @@ def generate_list_api_callback(app):
 # -- Register event callbacks ----------------------------------------------
 
 def setup(app):
+    import inspect
+    from sphinx.util import inspect as sphinx_inspect
+
+    def tmp(object):
+        if hasattr(object, '__name__') and type(object).__name__ == "nb_method":
+            return True
+        return inspect.ismethod(object)
+
+    sphinx_inspect_isclassmethod = sphinx_inspect.isclassmethod 
+    def tmp2(object, cls=None, name=None):
+        if hasattr(object, '__name__') and type(object).__name__ == "nb_method":
+            return False
+        return sphinx_inspect_isclassmethod(object, cls,name)
+
+    sphinx_inspect.ismethod = tmp
+    sphinx_inspect.isclassmethod = tmp2
+
     # Texinfo
     app.connect("builder-inited", generate_list_api_callback)
     app.add_css_file('theme_overrides.css')

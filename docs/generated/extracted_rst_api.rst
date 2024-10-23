@@ -136,6 +136,18 @@
 
         Parse the given set of command line arguments
 
+.. py:class:: mitsuba.ArrayXb
+
+.. py:class:: mitsuba.ArrayXf
+
+.. py:class:: mitsuba.ArrayXi
+
+.. py:class:: mitsuba.ArrayXi64
+
+.. py:class:: mitsuba.ArrayXu
+
+.. py:class:: mitsuba.ArrayXu64
+
 .. py:class:: mitsuba.AtomicFloat
 
     Atomic floating point data type
@@ -494,7 +506,16 @@
 
     .. py:method:: __init__(mode=TransportMode.Radiance)
 
+        Overloaded function.
+        
+        1. ``__init__(self, mode: :py:obj:`mitsuba.TransportMode` = TransportMode.Radiance) -> None``
+        
         //! @}
+        
+        2. ``__init__(self, mode: :py:obj:`mitsuba.TransportMode`, type_mask: int, component: int) -> None``
+        
+        
+        3. ``__init__(self, mode: :py:obj:`mitsuba.TransportMode`, type_mask: int, component: int | None = None) -> None``
 
         Parameter ``mode`` (:py:obj:`mitsuba.TransportMode`):
             *no description available*
@@ -522,6 +543,11 @@
 
         This updates the transport mode (radiance to importance and vice
         versa).
+
+    .. py:method:: mitsuba.BSDFContext.type_mask
+        :property:
+
+        (self) -> int
 
 .. py:class:: mitsuba.BSDFFlags
 
@@ -803,6 +829,9 @@
 
         Overloaded function.
         
+        1. ``__init__(self) -> None``
+        
+        
         2. ``__init__(self, wo: :py:obj:`mitsuba.Vector3f`) -> None``
         
         Given a surface interaction and an incident/exitant direction pair
@@ -896,6 +925,15 @@
             External pointer to the image data. If set to ``nullptr``, the
             implementation will allocate memory itself.
         
+        2. ``__init__(self, arg: :py:obj:`mitsuba.Bitmap`) -> None``
+        
+        
+        3. ``__init__(self, path: :py:obj:`mitsuba.filesystem.path`, format: :py:obj:`mitsuba.Bitmap.FileFormat` = FileFormat.Auto) -> None``
+        
+        
+        4. ``__init__(self, stream: :py:obj:`mitsuba.Stream`, format: :py:obj:`mitsuba.Bitmap.FileFormat` = FileFormat.Auto) -> None``
+        
+        
         5. ``__init__(self, array: ndarray[order='C', device='cpu'], pixel_format: object | None = None, channel_names: collections.abc.Sequence[str] = []) -> None``
         
         Initialize a Bitmap from any array that implements the buffer or DLPack protocol.
@@ -985,6 +1023,10 @@
 
     .. py:attribute:: mitsuba.Bitmap.convert
 
+        Overloaded function.
+
+        1. ``convert(self, pixel_format: object | None = None, component_format: object | None = None, srgb_gamma: object | None = None, alpha_transform: :py:obj:`mitsuba.Bitmap.AlphaTransform` = AlphaTransform.Empty) -> :py:obj:`mitsuba.Bitmap```
+
         Convert the bitmap into another pixel and/or component format
 
         This helper function can be used to efficiently convert a bitmap
@@ -1026,6 +1068,8 @@
 
         srgb_gamma Specifies whether a sRGB gamma ramp should be applied to
         the output values.
+
+        2. ``convert(self, target: :py:obj:`mitsuba.Bitmap`) -> None``
 
     .. py:attribute:: mitsuba.Bitmap.has_alpha
 
@@ -1698,6 +1742,8 @@
         
         Create bounding sphere(s) from given center point(s) with given
         size(s)
+        
+        3. ``__init__(self, arg: :py:obj:`mitsuba.BoundingSphere3f`) -> None``
 
         
     .. py:method:: mitsuba.BoundingSphere3f.center
@@ -2218,6 +2264,16 @@
 
         Combined flags for all properties of this emitter.
 
+    .. py:method:: mitsuba.Emitter.m_needs_sample_2
+        :property:
+
+        (self) -> bool
+
+    .. py:method:: mitsuba.Emitter.m_needs_sample_3
+        :property:
+
+        (self) -> bool
+
     .. py:attribute:: mitsuba.Emitter.sampling_weight
 
         The emitter's sampling weight.
@@ -2261,12 +2317,7 @@
         However, the ability to re-evaluate the contribution of a generated
         sample is important for differentiable rendering. For example, we
         might want to track derivatives in the sampled direction (``ds.d``)
-        without also differentiating the sampling technique. Alternatively (or
-        additionally), it may be necessary to apply a spherical
-        reparameterization to ``ds.d`` to handle visibility-induced
-        discontinuities during differentiation. Both steps require re-
-        evaluating the contribution of the emitter while tracking derivative
-        information through the calculation.
+        without also differentiating the sampling technique.
 
         In contrast to pdf_direction(), evaluating this function can yield a
         nonzero result in the case of emission profiles containing a Dirac
@@ -2533,12 +2584,7 @@
         However, the ability to re-evaluate the contribution of a generated
         sample is important for differentiable rendering. For example, we
         might want to track derivatives in the sampled direction (``ds.d``)
-        without also differentiating the sampling technique. Alternatively (or
-        additionally), it may be necessary to apply a spherical
-        reparameterization to ``ds.d`` to handle visibility-induced
-        discontinuities during differentiation. Both steps require re-
-        evaluating the contribution of the emitter while tracking derivative
-        information through the calculation.
+        without also differentiating the sampling technique.
 
         In contrast to pdf_direction(), evaluating this function can yield a
         nonzero result in the case of emission profiles containing a Dirac
@@ -3019,6 +3065,11 @@
         2. ``__init__(self, arg: :py:obj:`mitsuba.Frame3f`) -> None``
         
         Copy constructor
+        
+        3. ``__init__(self, arg0: :py:obj:`mitsuba.Vector3f`, arg1: :py:obj:`mitsuba.Vector3f`, arg2: :py:obj:`mitsuba.Vector3f`, /) -> None``
+        
+        
+        4. ``__init__(self, arg: :py:obj:`mitsuba.Vector3f`, /) -> None``
 
         
     .. py:attribute:: mitsuba.Frame3f.assign
@@ -3476,6 +3527,10 @@
 
     .. py:attribute:: mitsuba.ImageBlock.put
 
+        Overloaded function.
+
+        1. ``put(self, pos: :py:obj:`mitsuba.Point2f`, wavelengths: :py:obj:`mitsuba.Color0f`, value: :py:obj:`mitsuba.Color3f`, alpha: drjit.llvm.ad.Float = 1.0, weight: drjit.llvm.ad.Float = 1, active: drjit.llvm.ad.Bool = True) -> None``
+
         Accumulate a single sample or a wavefront of samples into the image
         block.
 
@@ -3485,6 +3540,8 @@
         Parameter ``values``:
             Points to an array of length channel_count(), which specifies the
             sample value for each channel.
+
+        2. ``put(self, pos: :py:obj:`mitsuba.Point2f`, values: collections.abc.Sequence[drjit.llvm.ad.Float], active: drjit.llvm.ad.Bool = True) -> None``
 
     .. py:attribute:: mitsuba.ImageBlock.put_block
 
@@ -3698,6 +3755,13 @@
         Wavelengths associated with the ray that produced this interaction
 
     .. py:attribute:: mitsuba.Interaction3f.zero_
+
+        Overloaded function.
+
+        1. ``zero_(self, size: int = 1) -> None``
+
+
+        2. ``zero_(self, arg: int, /) -> None``
 
         This callback method is invoked by dr::zeros<>, and takes care of
         fields that deviate from the standard zero-initialization convention.
@@ -4744,6 +4808,21 @@
 
         Returns whether this medium is homogeneous
 
+    .. py:method:: mitsuba.Medium.m_has_spectral_extinction
+        :property:
+
+        (self) -> bool
+
+    .. py:method:: mitsuba.Medium.m_is_homogeneous
+        :property:
+
+        (self) -> bool
+
+    .. py:method:: mitsuba.Medium.m_sample_emitters
+        :property:
+
+        (self) -> bool
+
     .. py:attribute:: mitsuba.Medium.phase_function
 
         Return the phase function of this medium
@@ -4817,6 +4896,11 @@
         
     .. py:attribute:: mitsuba.MediumInteraction3f.assign
 
+    .. py:method:: mitsuba.MediumInteraction3f.combined_extinction
+        :property:
+
+        (self) -> :py:obj:`mitsuba.Color3f`
+
     .. py:method:: mitsuba.MediumInteraction3f.medium
         :property:
 
@@ -4831,6 +4915,21 @@
         :property:
 
         Shading frame
+
+    .. py:method:: mitsuba.MediumInteraction3f.sigma_n
+        :property:
+
+        (self) -> :py:obj:`mitsuba.Color3f`
+
+    .. py:method:: mitsuba.MediumInteraction3f.sigma_s
+        :property:
+
+        (self) -> :py:obj:`mitsuba.Color3f`
+
+    .. py:method:: mitsuba.MediumInteraction3f.sigma_t
+        :property:
+
+        (self) -> :py:obj:`mitsuba.Color3f`
 
     .. py:attribute:: mitsuba.MediumInteraction3f.to_local
 
@@ -4940,6 +5039,8 @@
         2. ``__init__(self, filename: :py:obj:`mitsuba.filesystem.path`, write: bool = False) -> None``
         
         Map the specified file into memory
+        
+        3. ``__init__(self, filename: :py:obj:`mitsuba.filesystem.path`, array: ndarray[device='cpu']) -> None``
 
         Parameter ``filename`` (:py:obj:`mitsuba.filesystem.path`):
             *no description available*
@@ -5014,11 +5115,39 @@
     ]
     , has_vertex_normals: bool = False, has_vertex_texcoords: bool = False) -> None
 
-    Create a new mesh with the given vertex and face data structures
+    Overloaded function.
+
+    1. ``__init__(self, props: :py:obj:`mitsuba.Properties`) -> None``
+
+
+    2. ``__init__(self, name: str, vertex_count: int, face_count: int, props: :py:obj:`mitsuba.Properties` = Properties[
+      plugin_name = "",
+      id = "",
+      elements = {
+      }
+    ]
+    , has_vertex_normals: bool = False, has_vertex_texcoords: bool = False) -> None``
+
+    Creates a zero-initialized mesh with the given vertex and face counts
+
+    The vertex and face buffers can be filled using the ``mi.traverse``
+    mechanism. When initializing these buffers through another method, an
+    explicit call to initialize must be made once all buffers are filled.
 
     .. py:attribute:: mitsuba.Mesh.add_attribute
 
         Add an attribute buffer with the given ``name`` and ``dim``
+
+    .. py:attribute:: mitsuba.Mesh.attribute_buffer
+
+        Return the mesh attribute associated with ``name``
+
+    .. py:attribute:: mitsuba.Mesh.build_directed_edges
+
+    .. py:attribute:: mitsuba.Mesh.edge_indices
+
+        Returns the vertex indices associated with edge ``edge_index`` (0..2)
+        of triangle ``tri_index``.
 
     .. py:attribute:: mitsuba.Mesh.face_count
 
@@ -5027,6 +5156,20 @@
     .. py:attribute:: mitsuba.Mesh.face_indices
 
         Returns the vertex indices associated with triangle ``index``
+
+    .. py:attribute:: mitsuba.Mesh.face_normal
+
+        Returns the normal direction of the face with index ``index``
+
+    .. py:attribute:: mitsuba.Mesh.faces_buffer
+
+    .. py:attribute:: mitsuba.Mesh.has_face_normals
+
+        Does this mesh use face normals?
+
+    .. py:attribute:: mitsuba.Mesh.has_mesh_attributes
+
+        Does this mesh have additional mesh attributes?
 
     .. py:attribute:: mitsuba.Mesh.has_vertex_normals
 
@@ -5038,9 +5181,26 @@
 
     .. py:attribute:: mitsuba.Mesh.initialize
 
-        Must be called at the end of the constructor of Mesh plugins
+        Must be called once at the end of the construction of a Mesh
+
+        This method computes internal data structures and notifies the parent
+        sensor or emitter (if there is one) that this instance is their
+        internal shape.
+
+    .. py:attribute:: mitsuba.Mesh.merge
+
+        Merge two meshes into one
+
+    .. py:attribute:: mitsuba.Mesh.opposite_dedge
+
+        Returns the opposite edge index associated with directed edge
+        ``index``
 
     .. py:attribute:: mitsuba.Mesh.ray_intersect_triangle
+
+    .. py:attribute:: mitsuba.Mesh.recompute_bbox
+
+    .. py:attribute:: mitsuba.Mesh.recompute_vertex_normals
 
     .. py:attribute:: mitsuba.Mesh.vertex_count
 
@@ -5050,13 +5210,19 @@
 
         Returns the normal direction of the vertex with index ``index``
 
+    .. py:attribute:: mitsuba.Mesh.vertex_normals_buffer
+
     .. py:attribute:: mitsuba.Mesh.vertex_position
 
         Returns the world-space position of the vertex with index ``index``
 
+    .. py:attribute:: mitsuba.Mesh.vertex_positions_buffer
+
     .. py:attribute:: mitsuba.Mesh.vertex_texcoord
 
         Returns the UV texture coordinates of the vertex with index ``index``
+
+    .. py:attribute:: mitsuba.Mesh.vertex_texcoords_buffer
 
     .. py:attribute:: mitsuba.Mesh.write_ply
 
@@ -5075,6 +5241,64 @@
 
         Parameter ``stream``:
             Target stream that will receive the encoded output
+
+.. py:class:: mitsuba.MeshPtr
+
+    .. py:attribute:: mitsuba.MeshPtr.edge_indices
+
+        Returns the vertex indices associated with edge ``edge_index`` (0..2)
+        of triangle ``tri_index``.
+
+    .. py:attribute:: mitsuba.MeshPtr.face_count
+
+        Return the total number of faces
+
+    .. py:attribute:: mitsuba.MeshPtr.face_indices
+
+        Returns the vertex indices associated with triangle ``index``
+
+    .. py:attribute:: mitsuba.MeshPtr.face_normal
+
+        Returns the normal direction of the face with index ``index``
+
+    .. py:attribute:: mitsuba.MeshPtr.has_face_normals
+
+        Does this mesh use face normals?
+
+    .. py:attribute:: mitsuba.MeshPtr.has_mesh_attributes
+
+        Does this mesh have additional mesh attributes?
+
+    .. py:attribute:: mitsuba.MeshPtr.has_vertex_normals
+
+        Does this mesh have per-vertex normals?
+
+    .. py:attribute:: mitsuba.MeshPtr.has_vertex_texcoords
+
+        Does this mesh have per-vertex texture coordinates?
+
+    .. py:attribute:: mitsuba.MeshPtr.opposite_dedge
+
+        Returns the opposite edge index associated with directed edge
+        ``index``
+
+    .. py:attribute:: mitsuba.MeshPtr.ray_intersect_triangle
+
+    .. py:attribute:: mitsuba.MeshPtr.vertex_count
+
+        Return the total number of vertices
+
+    .. py:attribute:: mitsuba.MeshPtr.vertex_normal
+
+        Returns the normal direction of the vertex with index ``index``
+
+    .. py:attribute:: mitsuba.MeshPtr.vertex_position
+
+        Returns the world-space position of the vertex with index ``index``
+
+    .. py:attribute:: mitsuba.MeshPtr.vertex_texcoord
+
+        Returns the UV texture coordinates of the vertex with index ``index``
 
 .. py:class:: mitsuba.MicrofacetDistribution
 
@@ -5239,8 +5463,11 @@
     in Mitsuba.
 
     In contrast, the ``Object`` class allows for a highly efficient
-    implementation that only adds 32 bits to the base object (for the
-    counter) and has no overhead for references.
+    implementation that only adds 64 bits to the base object (for the
+    counter) and has no overhead for references. In addition, when using
+    Mitsuba in Python, this counter is shared with Python such that the
+    ownerhsip and lifetime of any ``Object`` instance across C++ and
+    Python is managed by it.
 
     .. py:method:: __init__()
 
@@ -5263,13 +5490,6 @@
         See also:
             Class
 
-    .. py:attribute:: mitsuba.Object.dec_ref
-
-        Decrease the reference count of the object and possibly deallocate it.
-
-        The object will automatically be deallocated once the reference count
-        reaches zero.
-
     .. py:attribute:: mitsuba.Object.expand
 
         Expand the object into a list of sub-objects and return them
@@ -5283,10 +5503,6 @@
     .. py:attribute:: mitsuba.Object.id
 
         Return an identifier of the current instance (if available)
-
-    .. py:attribute:: mitsuba.Object.inc_ref
-
-        Increase the object's reference count by one
 
     .. py:attribute:: mitsuba.Object.parameters_changed
 
@@ -5536,6 +5752,13 @@
 
     .. py:attribute:: mitsuba.PCG32.next_float32
 
+        Overloaded function.
+
+        1. ``next_float32(self) -> drjit.llvm.ad.Float``
+
+
+        2. ``next_float32(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float``
+
         Generate a uniformly distributed single precision floating point number on the
         interval :math:`[0, 1)`.
 
@@ -5543,6 +5766,13 @@
         the PRNG state of entries ``i`` where ``mask[i] == False``.
 
     .. py:attribute:: mitsuba.PCG32.next_float64
+
+        Overloaded function.
+
+        1. ``next_float64(self) -> drjit.llvm.ad.Float64``
+
+
+        2. ``next_float64(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float64``
 
         Generate a uniformly distributed double precision floating point number on the
         interval :math:`[0, 1)`.
@@ -5552,10 +5782,16 @@
 
     .. py:attribute:: mitsuba.PCG32.next_uint32
 
+        Overloaded function.
+
+        1. ``next_uint32(self) -> drjit.llvm.ad.UInt``
+
         Generate a uniformly distributed unsigned 32-bit random number
 
         Two overloads of this function exist: the masked variant does not advance
         the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``next_uint32(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.UInt``
 
     .. py:attribute:: mitsuba.PCG32.next_uint32_bounded
 
@@ -5567,12 +5803,18 @@
 
     .. py:attribute:: mitsuba.PCG32.next_uint64
 
+        Overloaded function.
+
+        1. ``next_uint64(self) -> drjit.llvm.ad.UInt64``
+
         Generate a uniformly distributed unsigned 64-bit random number
 
         Internally, the function calls :py:func:`next_uint32` twice.
 
         Two overloads of this function exist: the masked variant does not advance
         the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``next_uint64(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.UInt64``
 
     .. py:attribute:: mitsuba.PCG32.next_uint64_bounded
 
@@ -5706,6 +5948,11 @@
 
     //! @}
 
+    .. py:method:: mitsuba.PhaseFunctionContext.component
+        :property:
+
+        (self) -> int
+
     .. py:method:: mitsuba.PhaseFunctionContext.mode
         :property:
 
@@ -5722,6 +5969,11 @@
         :property:
 
         Sampler object
+
+    .. py:method:: mitsuba.PhaseFunctionContext.type_mask
+        :property:
+
+        (self) -> int
 
 .. py:class:: mitsuba.PhaseFunctionFlags
 
@@ -6426,9 +6678,15 @@
 
         Overloaded function.
         
+        1. ``__init__(self, arg: :py:obj:`mitsuba.Ray3f`, /) -> None``
+        
+        
         2. ``__init__(self) -> None``
         
         Create an uninitialized ray
+        
+        3. ``__init__(self, ray: :py:obj:`mitsuba.Ray3f`) -> None``
+        
         
         4. ``__init__(self, o: :py:obj:`mitsuba.Point3f`, d: :py:obj:`mitsuba.Vector3f`, time: drjit.llvm.ad.Float = 0.0, wavelengths: :py:obj:`mitsuba.Color0f` = []) -> None``
         
@@ -6439,6 +6697,31 @@
 
         
     .. py:attribute:: mitsuba.RayDifferential3f.assign
+
+    .. py:method:: mitsuba.RayDifferential3f.d_x
+        :property:
+
+        (self) -> :py:obj:`mitsuba.Vector3f`
+
+    .. py:method:: mitsuba.RayDifferential3f.d_y
+        :property:
+
+        (self) -> :py:obj:`mitsuba.Vector3f`
+
+    .. py:method:: mitsuba.RayDifferential3f.has_differentials
+        :property:
+
+        (self) -> bool
+
+    .. py:method:: mitsuba.RayDifferential3f.o_x
+        :property:
+
+        (self) -> :py:obj:`mitsuba.Point3f`
+
+    .. py:method:: mitsuba.RayDifferential3f.o_y
+        :property:
+
+        (self) -> :py:obj:`mitsuba.Point3f`
 
     .. py:attribute:: mitsuba.RayDifferential3f.scale_differential
 
@@ -6595,6 +6878,14 @@
         Copy constructor
 
         Parameter ``arg`` (:py:obj:`mitsuba.SGGXPhaseFunctionParams`):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(arg)
+
+        Parameter ``arg`` (list, /):
             *no description available*
 
         Returns → None``:
@@ -7250,6 +7541,8 @@
         
         Create bounding sphere(s) from given center point(s) with given
         size(s)
+        
+        3. ``__init__(self, arg: :py:obj:`mitsuba.ScalarBoundingSphere3f`) -> None``
 
         
     .. py:method:: mitsuba.ScalarBoundingSphere3f.center
@@ -7367,6 +7660,12 @@
         
         Copy constructor
         
+        3. ``__init__(self, arg: ndarray[dtype=float64, shape=(3, 3), order='C', device='cpu'], /) -> None``
+        
+        
+        4. ``__init__(self) -> None``
+        
+        
         5. ``__init__(self, arg: drjit.scalar.Matrix3f64, /) -> None``
         
         Initialize the transformation from the given matrix (and compute its
@@ -7411,15 +7710,6 @@
 
     .. py:attribute:: mitsuba.ScalarTransform3d.transform_affine
 
-        Overloaded function.
-
-        1. ``transform_affine(self, p: :py:obj:`mitsuba.ScalarPoint2d`) -> :py:obj:`mitsuba.ScalarPoint2d```
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
-
-        2. ``transform_affine(self, v: :py:obj:`mitsuba.ScalarVector2d`) -> :py:obj:`mitsuba.ScalarVector2d```
-
         Transform a 3D vector/point/normal/ray by a transformation that is
         known to be an affine 3D transformation (i.e. no perspective)
 
@@ -7452,6 +7742,12 @@
         2. ``__init__(self, arg: :py:obj:`mitsuba.ScalarTransform3f`) -> None``
         
         Copy constructor
+        
+        3. ``__init__(self, arg: ndarray[dtype=float32, shape=(3, 3), order='C', device='cpu'], /) -> None``
+        
+        
+        4. ``__init__(self) -> None``
+        
         
         5. ``__init__(self, arg: drjit.scalar.Matrix3f, /) -> None``
         
@@ -7497,15 +7793,6 @@
 
     .. py:attribute:: mitsuba.ScalarTransform3f.transform_affine
 
-        Overloaded function.
-
-        1. ``transform_affine(self, p: :py:obj:`mitsuba.ScalarPoint2f`) -> :py:obj:`mitsuba.ScalarPoint2f```
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
-
-        2. ``transform_affine(self, v: :py:obj:`mitsuba.ScalarVector2f`) -> :py:obj:`mitsuba.ScalarVector2f```
-
         Transform a 3D vector/point/normal/ray by a transformation that is
         known to be an affine 3D transformation (i.e. no perspective)
 
@@ -7538,6 +7825,12 @@
         2. ``__init__(self, arg: :py:obj:`mitsuba.ScalarTransform4d`) -> None``
         
         Copy constructor
+        
+        3. ``__init__(self, arg: ndarray[dtype=float64, shape=(4, 4), order='C', device='cpu'], /) -> None``
+        
+        
+        4. ``__init__(self, arg: list, /) -> None``
+        
         
         5. ``__init__(self, arg: drjit.scalar.Matrix4f64, /) -> None``
         
@@ -7641,25 +7934,6 @@
 
     .. py:attribute:: mitsuba.ScalarTransform4d.transform_affine
 
-        Overloaded function.
-
-        1. ``transform_affine(self, p: :py:obj:`mitsuba.ScalarPoint3d`) -> :py:obj:`mitsuba.ScalarPoint3d```
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
-
-        2. ``transform_affine(self, ray: mitsuba::Ray<mitsuba::Point<double, 3ul>, mitsuba::Color<float, 3ul> >) -> mitsuba::Ray<mitsuba::Point<double, 3ul>, mitsuba::Color<float, 3ul> >``
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
-
-        3. ``transform_affine(self, v: :py:obj:`mitsuba.ScalarVector3d`) -> :py:obj:`mitsuba.ScalarVector3d```
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
-
-        4. ``transform_affine(self, n: :py:obj:`mitsuba.ScalarNormal3d`) -> :py:obj:`mitsuba.ScalarNormal3d```
-
         Transform a 3D vector/point/normal/ray by a transformation that is
         known to be an affine 3D transformation (i.e. no perspective)
 
@@ -7692,6 +7966,12 @@
         2. ``__init__(self, arg: :py:obj:`mitsuba.ScalarTransform4f`) -> None``
         
         Copy constructor
+        
+        3. ``__init__(self, arg: ndarray[dtype=float32, shape=(4, 4), order='C', device='cpu'], /) -> None``
+        
+        
+        4. ``__init__(self, arg: list, /) -> None``
+        
         
         5. ``__init__(self, arg: drjit.scalar.Matrix4f, /) -> None``
         
@@ -7794,25 +8074,6 @@
         'frame'
 
     .. py:attribute:: mitsuba.ScalarTransform4f.transform_affine
-
-        Overloaded function.
-
-        1. ``transform_affine(self, p: :py:obj:`mitsuba.ScalarPoint3f`) -> :py:obj:`mitsuba.ScalarPoint3f```
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
-
-        2. ``transform_affine(self, ray: mitsuba::Ray<mitsuba::Point<float, 3ul>, mitsuba::Color<float, 3ul> >) -> mitsuba::Ray<mitsuba::Point<float, 3ul>, mitsuba::Color<float, 3ul> >``
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
-
-        3. ``transform_affine(self, v: :py:obj:`mitsuba.ScalarVector3f`) -> :py:obj:`mitsuba.ScalarVector3f```
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
-
-        4. ``transform_affine(self, n: :py:obj:`mitsuba.ScalarNormal3f`) -> :py:obj:`mitsuba.ScalarNormal3f```
 
         Transform a 3D vector/point/normal/ray by a transformation that is
         known to be an affine 3D transformation (i.e. no perspective)
@@ -7927,11 +8188,6 @@
         illumination sample is important for differentiable rendering. For
         example, we might want to track derivatives in the sampled direction
         (``ds.d``) without also differentiating the sampling technique.
-        Alternatively (or additionally), it may be necessary to apply a
-        spherical reparameterization to ``ds.d`` to handle visibility-induced
-        discontinuities during differentiation. Both steps require re-
-        evaluating the contribution of the emitter while tracking derivative
-        information through the calculation.
 
         In contrast to pdf_emitter_direction(), evaluating this function can
         yield a nonzero result in the case of emission profiles containing a
@@ -8478,12 +8734,7 @@
         However, the ability to re-evaluate the contribution of a generated
         sample is important for differentiable rendering. For example, we
         might want to track derivatives in the sampled direction (``ds.d``)
-        without also differentiating the sampling technique. Alternatively (or
-        additionally), it may be necessary to apply a spherical
-        reparameterization to ``ds.d`` to handle visibility-induced
-        discontinuities during differentiation. Both steps require re-
-        evaluating the contribution of the emitter while tracking derivative
-        information through the calculation.
+        without also differentiating the sampling technique.
 
         In contrast to pdf_direction(), evaluating this function can yield a
         nonzero result in the case of emission profiles containing a Dirac
@@ -8512,6 +8763,16 @@
         :property:
 
         (self) -> :py:obj:`mitsuba.Film`
+
+    .. py:method:: mitsuba.Sensor.m_needs_sample_2
+        :property:
+
+        (self) -> bool
+
+    .. py:method:: mitsuba.Sensor.m_needs_sample_3
+        :property:
+
+        (self) -> bool
 
     .. py:attribute:: mitsuba.Sensor.needs_aperture_sample
 
@@ -8753,12 +9014,7 @@
         However, the ability to re-evaluate the contribution of a generated
         sample is important for differentiable rendering. For example, we
         might want to track derivatives in the sampled direction (``ds.d``)
-        without also differentiating the sampling technique. Alternatively (or
-        additionally), it may be necessary to apply a spherical
-        reparameterization to ``ds.d`` to handle visibility-induced
-        discontinuities during differentiation. Both steps require re-
-        evaluating the contribution of the emitter while tracking derivative
-        information through the calculation.
+        without also differentiating the sampling technique.
 
         In contrast to pdf_direction(), evaluating this function can yield a
         nonzero result in the case of emission profiles containing a Dirac
@@ -9186,8 +9442,8 @@
 
     .. py:attribute:: mitsuba.Shape.parameters_grad_enabled
 
-        Return whether any shape's parameters require gradients (default
-        return false)
+        Return whether any shape's parameters that introduce visibility
+        discontinuities require gradients (default return false)
 
     .. py:attribute:: mitsuba.Shape.pdf_direction
 
@@ -9621,6 +9877,10 @@
     .. py:attribute:: mitsuba.ShapePtr.is_medium_transition
 
         Does the surface of this shape mark a medium transition?
+
+    .. py:attribute:: mitsuba.ShapePtr.is_mesh
+
+        Is this shape a triangle mesh?
 
     .. py:attribute:: mitsuba.ShapePtr.is_sensor
 
@@ -10550,6 +10810,10 @@
 
     .. py:attribute:: mitsuba.SurfaceInteraction3f.bsdf
 
+        Overloaded function.
+
+        1. ``bsdf(self, ray: :py:obj:`mitsuba.RayDifferential3f`) -> :py:obj:`mitsuba.BSDFPtr```
+
         Returns the BSDF of the intersected shape.
 
         The parameter ``ray`` must match the one used to create the
@@ -10557,6 +10821,8 @@
         if this is required by the BSDF (e.g. for texture filtering).
 
         Implementation in 'bsdf.h'
+
+        2. ``bsdf(self) -> :py:obj:`mitsuba.BSDFPtr```
 
     .. py:attribute:: mitsuba.SurfaceInteraction3f.compute_uv_partials
 
@@ -10989,65 +11255,9 @@
 
     .. py:attribute:: mitsuba.Texture1f.eval
 
-        Overloaded function.
-
-        1. ``eval(self, pos: drjit.llvm.ad.Array1f, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[drjit.llvm.ad.Float]``
-
-        Evaluate the linear interpolant represented by this texture.
-
-        2. ``eval(self, pos: drjit.llvm.ad.Array1f16, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[drjit.llvm.ad.Float16]``
-
-        Evaluate the linear interpolant represented by this texture.
-
-        3. ``eval(self, pos: drjit.llvm.ad.Array1f64, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[drjit.llvm.ad.Float64]``
-
         Evaluate the linear interpolant represented by this texture.
 
     .. py:attribute:: mitsuba.Texture1f.eval_cubic
-
-        Overloaded function.
-
-        1. ``eval_cubic(self, pos: drjit.llvm.ad.Array1f, active: drjit.llvm.ad.Bool | None = Bool(True), force_nonaccel: bool = False) -> list[drjit.llvm.ad.Float]``
-
-        Evaluate a clamped cubic B-Spline interpolant represented by this
-        texture
-
-        Instead of interpolating the texture via B-Spline basis functions, the
-        implementation transforms this calculation into an equivalent weighted
-        sum of several linear interpolant evaluations. In CUDA mode, this can
-        then be accelerated by hardware texture units, which runs faster than
-        a naive implementation. More information can be found in:
-
-            GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
-            by Christian Sigg.
-
-        When the underlying grid data and the query position are differentiable,
-        this transformation cannot be used as it is not linear with respect to position
-        (thus the default AD graph gives incorrect results). The implementation
-        calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
-        direct evaluation of the B-Spline basis functions in that case.
-
-        2. ``eval_cubic(self, pos: drjit.llvm.ad.Array1f16, active: drjit.llvm.ad.Bool | None = Bool(True), force_nonaccel: bool = False) -> list[drjit.llvm.ad.Float16]``
-
-        Evaluate a clamped cubic B-Spline interpolant represented by this
-        texture
-
-        Instead of interpolating the texture via B-Spline basis functions, the
-        implementation transforms this calculation into an equivalent weighted
-        sum of several linear interpolant evaluations. In CUDA mode, this can
-        then be accelerated by hardware texture units, which runs faster than
-        a naive implementation. More information can be found in:
-
-            GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
-            by Christian Sigg.
-
-        When the underlying grid data and the query position are differentiable,
-        this transformation cannot be used as it is not linear with respect to position
-        (thus the default AD graph gives incorrect results). The implementation
-        calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
-        direct evaluation of the B-Spline basis functions in that case.
-
-        3. ``eval_cubic(self, pos: drjit.llvm.ad.Array1f64, active: drjit.llvm.ad.Bool | None = Bool(True), force_nonaccel: bool = False) -> list[drjit.llvm.ad.Float64]``
 
         Evaluate a clamped cubic B-Spline interpolant represented by this
         texture
@@ -11069,32 +11279,6 @@
 
     .. py:attribute:: mitsuba.Texture1f.eval_cubic_grad
 
-        Overloaded function.
-
-        1. ``eval_cubic_grad(self, pos: drjit.llvm.ad.Array1f, active: drjit.llvm.ad.Bool | None = Bool(True)) -> tuple``
-
-        Evaluate the positional gradient of a cubic B-Spline
-
-        This implementation computes the result directly from explicit
-        differentiated basis functions. It has no autodiff support.
-
-        The resulting gradient and hessian have been multiplied by the spatial extents
-        to count for the transformation from the unit size volume to the size of its
-        shape.
-
-        2. ``eval_cubic_grad(self, pos: drjit.llvm.ad.Array1f16, active: drjit.llvm.ad.Bool | None = Bool(True)) -> tuple``
-
-        Evaluate the positional gradient of a cubic B-Spline
-
-        This implementation computes the result directly from explicit
-        differentiated basis functions. It has no autodiff support.
-
-        The resulting gradient and hessian have been multiplied by the spatial extents
-        to count for the transformation from the unit size volume to the size of its
-        shape.
-
-        3. ``eval_cubic_grad(self, pos: drjit.llvm.ad.Array1f64, active: drjit.llvm.ad.Bool | None = Bool(True)) -> tuple``
-
         Evaluate the positional gradient of a cubic B-Spline
 
         This implementation computes the result directly from explicit
@@ -11106,28 +11290,6 @@
 
     .. py:attribute:: mitsuba.Texture1f.eval_cubic_helper
 
-        Overloaded function.
-
-        1. ``eval_cubic_helper(self, pos: drjit.llvm.ad.Array1f, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[drjit.llvm.ad.Float]``
-
-        Helper function to evaluate a clamped cubic B-Spline interpolant
-
-        This is an implementation detail and should only be called by the
-        :py:func:`eval_cubic()` function to construct an AD graph. When only the cubic
-        evaluation result is desired, the :py:func:`eval_cubic()` function is faster
-        than this simple implementation
-
-        2. ``eval_cubic_helper(self, pos: drjit.llvm.ad.Array1f16, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[drjit.llvm.ad.Float16]``
-
-        Helper function to evaluate a clamped cubic B-Spline interpolant
-
-        This is an implementation detail and should only be called by the
-        :py:func:`eval_cubic()` function to construct an AD graph. When only the cubic
-        evaluation result is desired, the :py:func:`eval_cubic()` function is faster
-        than this simple implementation
-
-        3. ``eval_cubic_helper(self, pos: drjit.llvm.ad.Array1f64, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[drjit.llvm.ad.Float64]``
-
         Helper function to evaluate a clamped cubic B-Spline interpolant
 
         This is an implementation detail and should only be called by the
@@ -11136,32 +11298,6 @@
         than this simple implementation
 
     .. py:attribute:: mitsuba.Texture1f.eval_cubic_hessian
-
-        Overloaded function.
-
-        1. ``eval_cubic_hessian(self, pos: drjit.llvm.ad.Array1f, active: drjit.llvm.ad.Bool | None = Bool(True)) -> tuple``
-
-        Evaluate the positional gradient and hessian matrix of a cubic B-Spline
-
-        This implementation computes the result directly from explicit
-        differentiated basis functions. It has no autodiff support.
-
-        The resulting gradient and hessian have been multiplied by the spatial extents
-        to count for the transformation from the unit size volume to the size of its
-        shape.
-
-        2. ``eval_cubic_hessian(self, pos: drjit.llvm.ad.Array1f16, active: drjit.llvm.ad.Bool | None = Bool(True)) -> tuple``
-
-        Evaluate the positional gradient and hessian matrix of a cubic B-Spline
-
-        This implementation computes the result directly from explicit
-        differentiated basis functions. It has no autodiff support.
-
-        The resulting gradient and hessian have been multiplied by the spatial extents
-        to count for the transformation from the unit size volume to the size of its
-        shape.
-
-        3. ``eval_cubic_hessian(self, pos: drjit.llvm.ad.Array1f64, active: drjit.llvm.ad.Bool | None = Bool(True)) -> tuple``
 
         Evaluate the positional gradient and hessian matrix of a cubic B-Spline
 
@@ -11173,20 +11309,6 @@
         shape.
 
     .. py:attribute:: mitsuba.Texture1f.eval_fetch
-
-        Overloaded function.
-
-        1. ``eval_fetch(self, pos: drjit.llvm.ad.Array1f, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[list[drjit.llvm.ad.Float]]``
-
-        Fetch the texels that would be referenced in a texture lookup with
-        linear interpolation without actually performing this interpolation.
-
-        2. ``eval_fetch(self, pos: drjit.llvm.ad.Array1f16, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[list[drjit.llvm.ad.Float16]]``
-
-        Fetch the texels that would be referenced in a texture lookup with
-        linear interpolation without actually performing this interpolation.
-
-        3. ``eval_fetch(self, pos: drjit.llvm.ad.Array1f64, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[list[drjit.llvm.ad.Float64]]``
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
@@ -11321,65 +11443,9 @@
 
     .. py:attribute:: mitsuba.Texture2f.eval
 
-        Overloaded function.
-
-        1. ``eval(self, pos: drjit.llvm.ad.Array2f, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[drjit.llvm.ad.Float]``
-
-        Evaluate the linear interpolant represented by this texture.
-
-        2. ``eval(self, pos: drjit.llvm.ad.Array2f16, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[drjit.llvm.ad.Float16]``
-
-        Evaluate the linear interpolant represented by this texture.
-
-        3. ``eval(self, pos: drjit.llvm.ad.Array2f64, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[drjit.llvm.ad.Float64]``
-
         Evaluate the linear interpolant represented by this texture.
 
     .. py:attribute:: mitsuba.Texture2f.eval_cubic
-
-        Overloaded function.
-
-        1. ``eval_cubic(self, pos: drjit.llvm.ad.Array2f, active: drjit.llvm.ad.Bool | None = Bool(True), force_nonaccel: bool = False) -> list[drjit.llvm.ad.Float]``
-
-        Evaluate a clamped cubic B-Spline interpolant represented by this
-        texture
-
-        Instead of interpolating the texture via B-Spline basis functions, the
-        implementation transforms this calculation into an equivalent weighted
-        sum of several linear interpolant evaluations. In CUDA mode, this can
-        then be accelerated by hardware texture units, which runs faster than
-        a naive implementation. More information can be found in:
-
-            GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
-            by Christian Sigg.
-
-        When the underlying grid data and the query position are differentiable,
-        this transformation cannot be used as it is not linear with respect to position
-        (thus the default AD graph gives incorrect results). The implementation
-        calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
-        direct evaluation of the B-Spline basis functions in that case.
-
-        2. ``eval_cubic(self, pos: drjit.llvm.ad.Array2f16, active: drjit.llvm.ad.Bool | None = Bool(True), force_nonaccel: bool = False) -> list[drjit.llvm.ad.Float16]``
-
-        Evaluate a clamped cubic B-Spline interpolant represented by this
-        texture
-
-        Instead of interpolating the texture via B-Spline basis functions, the
-        implementation transforms this calculation into an equivalent weighted
-        sum of several linear interpolant evaluations. In CUDA mode, this can
-        then be accelerated by hardware texture units, which runs faster than
-        a naive implementation. More information can be found in:
-
-            GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
-            by Christian Sigg.
-
-        When the underlying grid data and the query position are differentiable,
-        this transformation cannot be used as it is not linear with respect to position
-        (thus the default AD graph gives incorrect results). The implementation
-        calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
-        direct evaluation of the B-Spline basis functions in that case.
-
-        3. ``eval_cubic(self, pos: drjit.llvm.ad.Array2f64, active: drjit.llvm.ad.Bool | None = Bool(True), force_nonaccel: bool = False) -> list[drjit.llvm.ad.Float64]``
 
         Evaluate a clamped cubic B-Spline interpolant represented by this
         texture
@@ -11401,32 +11467,6 @@
 
     .. py:attribute:: mitsuba.Texture2f.eval_cubic_grad
 
-        Overloaded function.
-
-        1. ``eval_cubic_grad(self, pos: drjit.llvm.ad.Array2f, active: drjit.llvm.ad.Bool | None = Bool(True)) -> tuple``
-
-        Evaluate the positional gradient of a cubic B-Spline
-
-        This implementation computes the result directly from explicit
-        differentiated basis functions. It has no autodiff support.
-
-        The resulting gradient and hessian have been multiplied by the spatial extents
-        to count for the transformation from the unit size volume to the size of its
-        shape.
-
-        2. ``eval_cubic_grad(self, pos: drjit.llvm.ad.Array2f16, active: drjit.llvm.ad.Bool | None = Bool(True)) -> tuple``
-
-        Evaluate the positional gradient of a cubic B-Spline
-
-        This implementation computes the result directly from explicit
-        differentiated basis functions. It has no autodiff support.
-
-        The resulting gradient and hessian have been multiplied by the spatial extents
-        to count for the transformation from the unit size volume to the size of its
-        shape.
-
-        3. ``eval_cubic_grad(self, pos: drjit.llvm.ad.Array2f64, active: drjit.llvm.ad.Bool | None = Bool(True)) -> tuple``
-
         Evaluate the positional gradient of a cubic B-Spline
 
         This implementation computes the result directly from explicit
@@ -11438,28 +11478,6 @@
 
     .. py:attribute:: mitsuba.Texture2f.eval_cubic_helper
 
-        Overloaded function.
-
-        1. ``eval_cubic_helper(self, pos: drjit.llvm.ad.Array2f, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[drjit.llvm.ad.Float]``
-
-        Helper function to evaluate a clamped cubic B-Spline interpolant
-
-        This is an implementation detail and should only be called by the
-        :py:func:`eval_cubic()` function to construct an AD graph. When only the cubic
-        evaluation result is desired, the :py:func:`eval_cubic()` function is faster
-        than this simple implementation
-
-        2. ``eval_cubic_helper(self, pos: drjit.llvm.ad.Array2f16, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[drjit.llvm.ad.Float16]``
-
-        Helper function to evaluate a clamped cubic B-Spline interpolant
-
-        This is an implementation detail and should only be called by the
-        :py:func:`eval_cubic()` function to construct an AD graph. When only the cubic
-        evaluation result is desired, the :py:func:`eval_cubic()` function is faster
-        than this simple implementation
-
-        3. ``eval_cubic_helper(self, pos: drjit.llvm.ad.Array2f64, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[drjit.llvm.ad.Float64]``
-
         Helper function to evaluate a clamped cubic B-Spline interpolant
 
         This is an implementation detail and should only be called by the
@@ -11468,32 +11486,6 @@
         than this simple implementation
 
     .. py:attribute:: mitsuba.Texture2f.eval_cubic_hessian
-
-        Overloaded function.
-
-        1. ``eval_cubic_hessian(self, pos: drjit.llvm.ad.Array2f, active: drjit.llvm.ad.Bool | None = Bool(True)) -> tuple``
-
-        Evaluate the positional gradient and hessian matrix of a cubic B-Spline
-
-        This implementation computes the result directly from explicit
-        differentiated basis functions. It has no autodiff support.
-
-        The resulting gradient and hessian have been multiplied by the spatial extents
-        to count for the transformation from the unit size volume to the size of its
-        shape.
-
-        2. ``eval_cubic_hessian(self, pos: drjit.llvm.ad.Array2f16, active: drjit.llvm.ad.Bool | None = Bool(True)) -> tuple``
-
-        Evaluate the positional gradient and hessian matrix of a cubic B-Spline
-
-        This implementation computes the result directly from explicit
-        differentiated basis functions. It has no autodiff support.
-
-        The resulting gradient and hessian have been multiplied by the spatial extents
-        to count for the transformation from the unit size volume to the size of its
-        shape.
-
-        3. ``eval_cubic_hessian(self, pos: drjit.llvm.ad.Array2f64, active: drjit.llvm.ad.Bool | None = Bool(True)) -> tuple``
 
         Evaluate the positional gradient and hessian matrix of a cubic B-Spline
 
@@ -11505,20 +11497,6 @@
         shape.
 
     .. py:attribute:: mitsuba.Texture2f.eval_fetch
-
-        Overloaded function.
-
-        1. ``eval_fetch(self, pos: drjit.llvm.ad.Array2f, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[list[drjit.llvm.ad.Float]]``
-
-        Fetch the texels that would be referenced in a texture lookup with
-        linear interpolation without actually performing this interpolation.
-
-        2. ``eval_fetch(self, pos: drjit.llvm.ad.Array2f16, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[list[drjit.llvm.ad.Float16]]``
-
-        Fetch the texels that would be referenced in a texture lookup with
-        linear interpolation without actually performing this interpolation.
-
-        3. ``eval_fetch(self, pos: drjit.llvm.ad.Array2f64, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[list[drjit.llvm.ad.Float64]]``
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
@@ -11653,65 +11631,9 @@
 
     .. py:attribute:: mitsuba.Texture3f.eval
 
-        Overloaded function.
-
-        1. ``eval(self, pos: drjit.llvm.ad.Array3f, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[drjit.llvm.ad.Float]``
-
-        Evaluate the linear interpolant represented by this texture.
-
-        2. ``eval(self, pos: drjit.llvm.ad.Array3f16, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[drjit.llvm.ad.Float16]``
-
-        Evaluate the linear interpolant represented by this texture.
-
-        3. ``eval(self, pos: drjit.llvm.ad.Array3f64, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[drjit.llvm.ad.Float64]``
-
         Evaluate the linear interpolant represented by this texture.
 
     .. py:attribute:: mitsuba.Texture3f.eval_cubic
-
-        Overloaded function.
-
-        1. ``eval_cubic(self, pos: drjit.llvm.ad.Array3f, active: drjit.llvm.ad.Bool | None = Bool(True), force_nonaccel: bool = False) -> list[drjit.llvm.ad.Float]``
-
-        Evaluate a clamped cubic B-Spline interpolant represented by this
-        texture
-
-        Instead of interpolating the texture via B-Spline basis functions, the
-        implementation transforms this calculation into an equivalent weighted
-        sum of several linear interpolant evaluations. In CUDA mode, this can
-        then be accelerated by hardware texture units, which runs faster than
-        a naive implementation. More information can be found in:
-
-            GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
-            by Christian Sigg.
-
-        When the underlying grid data and the query position are differentiable,
-        this transformation cannot be used as it is not linear with respect to position
-        (thus the default AD graph gives incorrect results). The implementation
-        calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
-        direct evaluation of the B-Spline basis functions in that case.
-
-        2. ``eval_cubic(self, pos: drjit.llvm.ad.Array3f16, active: drjit.llvm.ad.Bool | None = Bool(True), force_nonaccel: bool = False) -> list[drjit.llvm.ad.Float16]``
-
-        Evaluate a clamped cubic B-Spline interpolant represented by this
-        texture
-
-        Instead of interpolating the texture via B-Spline basis functions, the
-        implementation transforms this calculation into an equivalent weighted
-        sum of several linear interpolant evaluations. In CUDA mode, this can
-        then be accelerated by hardware texture units, which runs faster than
-        a naive implementation. More information can be found in:
-
-            GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
-            by Christian Sigg.
-
-        When the underlying grid data and the query position are differentiable,
-        this transformation cannot be used as it is not linear with respect to position
-        (thus the default AD graph gives incorrect results). The implementation
-        calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
-        direct evaluation of the B-Spline basis functions in that case.
-
-        3. ``eval_cubic(self, pos: drjit.llvm.ad.Array3f64, active: drjit.llvm.ad.Bool | None = Bool(True), force_nonaccel: bool = False) -> list[drjit.llvm.ad.Float64]``
 
         Evaluate a clamped cubic B-Spline interpolant represented by this
         texture
@@ -11733,32 +11655,6 @@
 
     .. py:attribute:: mitsuba.Texture3f.eval_cubic_grad
 
-        Overloaded function.
-
-        1. ``eval_cubic_grad(self, pos: drjit.llvm.ad.Array3f, active: drjit.llvm.ad.Bool | None = Bool(True)) -> tuple``
-
-        Evaluate the positional gradient of a cubic B-Spline
-
-        This implementation computes the result directly from explicit
-        differentiated basis functions. It has no autodiff support.
-
-        The resulting gradient and hessian have been multiplied by the spatial extents
-        to count for the transformation from the unit size volume to the size of its
-        shape.
-
-        2. ``eval_cubic_grad(self, pos: drjit.llvm.ad.Array3f16, active: drjit.llvm.ad.Bool | None = Bool(True)) -> tuple``
-
-        Evaluate the positional gradient of a cubic B-Spline
-
-        This implementation computes the result directly from explicit
-        differentiated basis functions. It has no autodiff support.
-
-        The resulting gradient and hessian have been multiplied by the spatial extents
-        to count for the transformation from the unit size volume to the size of its
-        shape.
-
-        3. ``eval_cubic_grad(self, pos: drjit.llvm.ad.Array3f64, active: drjit.llvm.ad.Bool | None = Bool(True)) -> tuple``
-
         Evaluate the positional gradient of a cubic B-Spline
 
         This implementation computes the result directly from explicit
@@ -11770,28 +11666,6 @@
 
     .. py:attribute:: mitsuba.Texture3f.eval_cubic_helper
 
-        Overloaded function.
-
-        1. ``eval_cubic_helper(self, pos: drjit.llvm.ad.Array3f, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[drjit.llvm.ad.Float]``
-
-        Helper function to evaluate a clamped cubic B-Spline interpolant
-
-        This is an implementation detail and should only be called by the
-        :py:func:`eval_cubic()` function to construct an AD graph. When only the cubic
-        evaluation result is desired, the :py:func:`eval_cubic()` function is faster
-        than this simple implementation
-
-        2. ``eval_cubic_helper(self, pos: drjit.llvm.ad.Array3f16, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[drjit.llvm.ad.Float16]``
-
-        Helper function to evaluate a clamped cubic B-Spline interpolant
-
-        This is an implementation detail and should only be called by the
-        :py:func:`eval_cubic()` function to construct an AD graph. When only the cubic
-        evaluation result is desired, the :py:func:`eval_cubic()` function is faster
-        than this simple implementation
-
-        3. ``eval_cubic_helper(self, pos: drjit.llvm.ad.Array3f64, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[drjit.llvm.ad.Float64]``
-
         Helper function to evaluate a clamped cubic B-Spline interpolant
 
         This is an implementation detail and should only be called by the
@@ -11800,32 +11674,6 @@
         than this simple implementation
 
     .. py:attribute:: mitsuba.Texture3f.eval_cubic_hessian
-
-        Overloaded function.
-
-        1. ``eval_cubic_hessian(self, pos: drjit.llvm.ad.Array3f, active: drjit.llvm.ad.Bool | None = Bool(True)) -> tuple``
-
-        Evaluate the positional gradient and hessian matrix of a cubic B-Spline
-
-        This implementation computes the result directly from explicit
-        differentiated basis functions. It has no autodiff support.
-
-        The resulting gradient and hessian have been multiplied by the spatial extents
-        to count for the transformation from the unit size volume to the size of its
-        shape.
-
-        2. ``eval_cubic_hessian(self, pos: drjit.llvm.ad.Array3f16, active: drjit.llvm.ad.Bool | None = Bool(True)) -> tuple``
-
-        Evaluate the positional gradient and hessian matrix of a cubic B-Spline
-
-        This implementation computes the result directly from explicit
-        differentiated basis functions. It has no autodiff support.
-
-        The resulting gradient and hessian have been multiplied by the spatial extents
-        to count for the transformation from the unit size volume to the size of its
-        shape.
-
-        3. ``eval_cubic_hessian(self, pos: drjit.llvm.ad.Array3f64, active: drjit.llvm.ad.Bool | None = Bool(True)) -> tuple``
 
         Evaluate the positional gradient and hessian matrix of a cubic B-Spline
 
@@ -11837,20 +11685,6 @@
         shape.
 
     .. py:attribute:: mitsuba.Texture3f.eval_fetch
-
-        Overloaded function.
-
-        1. ``eval_fetch(self, pos: drjit.llvm.ad.Array3f, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[list[drjit.llvm.ad.Float]]``
-
-        Fetch the texels that would be referenced in a texture lookup with
-        linear interpolation without actually performing this interpolation.
-
-        2. ``eval_fetch(self, pos: drjit.llvm.ad.Array3f16, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[list[drjit.llvm.ad.Float16]]``
-
-        Fetch the texels that would be referenced in a texture lookup with
-        linear interpolation without actually performing this interpolation.
-
-        3. ``eval_fetch(self, pos: drjit.llvm.ad.Array3f64, active: drjit.llvm.ad.Bool | None = Bool(True)) -> list[list[drjit.llvm.ad.Float64]]``
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
@@ -12055,6 +11889,12 @@
         
         Copy constructor
         
+        3. ``__init__(self, arg: ndarray[dtype=float64, shape=(3, 3), order='C', device='cpu'], /) -> None``
+        
+        
+        4. ``__init__(self) -> None``
+        
+        
         5. ``__init__(self, arg: drjit.llvm.ad.Matrix3f64, /) -> None``
         
         Initialize the transformation from the given matrix (and compute its
@@ -12103,15 +11943,6 @@
 
     .. py:attribute:: mitsuba.Transform3d.transform_affine
 
-        Overloaded function.
-
-        1. ``transform_affine(self, p: :py:obj:`mitsuba.Point2d`) -> :py:obj:`mitsuba.Point2d```
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
-
-        2. ``transform_affine(self, v: :py:obj:`mitsuba.Vector2d`) -> :py:obj:`mitsuba.Vector2d```
-
         Transform a 3D vector/point/normal/ray by a transformation that is
         known to be an affine 3D transformation (i.e. no perspective)
 
@@ -12144,6 +11975,12 @@
         2. ``__init__(self, arg: :py:obj:`mitsuba.Transform3f`) -> None``
         
         Copy constructor
+        
+        3. ``__init__(self, arg: ndarray[dtype=float32, shape=(3, 3), order='C', device='cpu'], /) -> None``
+        
+        
+        4. ``__init__(self) -> None``
+        
         
         5. ``__init__(self, arg: drjit.llvm.ad.Matrix3f, /) -> None``
         
@@ -12193,15 +12030,6 @@
 
     .. py:attribute:: mitsuba.Transform3f.transform_affine
 
-        Overloaded function.
-
-        1. ``transform_affine(self, p: :py:obj:`mitsuba.Point2f`) -> :py:obj:`mitsuba.Point2f```
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
-
-        2. ``transform_affine(self, v: :py:obj:`mitsuba.Vector2f`) -> :py:obj:`mitsuba.Vector2f```
-
         Transform a 3D vector/point/normal/ray by a transformation that is
         known to be an affine 3D transformation (i.e. no perspective)
 
@@ -12234,6 +12062,12 @@
         2. ``__init__(self, arg: :py:obj:`mitsuba.Transform4d`) -> None``
         
         Copy constructor
+        
+        3. ``__init__(self, arg: ndarray[dtype=float64, shape=(4, 4), order='C', device='cpu'], /) -> None``
+        
+        
+        4. ``__init__(self, arg: list, /) -> None``
+        
         
         5. ``__init__(self, arg: drjit.llvm.ad.Matrix4f64, /) -> None``
         
@@ -12341,25 +12175,6 @@
 
     .. py:attribute:: mitsuba.Transform4d.transform_affine
 
-        Overloaded function.
-
-        1. ``transform_affine(self, p: :py:obj:`mitsuba.Point3d`) -> :py:obj:`mitsuba.Point3d```
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
-
-        2. ``transform_affine(self, ray: :py:obj:`mitsuba.Ray3d`) -> :py:obj:`mitsuba.Ray3d```
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
-
-        3. ``transform_affine(self, v: :py:obj:`mitsuba.Vector3d`) -> :py:obj:`mitsuba.Vector3d```
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
-
-        4. ``transform_affine(self, n: :py:obj:`mitsuba.Normal3d`) -> :py:obj:`mitsuba.Normal3d```
-
         Transform a 3D vector/point/normal/ray by a transformation that is
         known to be an affine 3D transformation (i.e. no perspective)
 
@@ -12392,6 +12207,12 @@
         2. ``__init__(self, arg: :py:obj:`mitsuba.Transform4f`) -> None``
         
         Copy constructor
+        
+        3. ``__init__(self, arg: ndarray[dtype=float32, shape=(4, 4), order='C', device='cpu'], /) -> None``
+        
+        
+        4. ``__init__(self, arg: list, /) -> None``
+        
         
         5. ``__init__(self, arg: drjit.llvm.ad.Matrix4f, /) -> None``
         
@@ -12498,25 +12319,6 @@
         'frame'
 
     .. py:attribute:: mitsuba.Transform4f.transform_affine
-
-        Overloaded function.
-
-        1. ``transform_affine(self, p: :py:obj:`mitsuba.Point3f`) -> :py:obj:`mitsuba.Point3f```
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
-
-        2. ``transform_affine(self, ray: :py:obj:`mitsuba.Ray3f`) -> :py:obj:`mitsuba.Ray3f```
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
-
-        3. ``transform_affine(self, v: :py:obj:`mitsuba.Vector3f`) -> :py:obj:`mitsuba.Vector3f```
-
-        Transform a 3D vector/point/normal/ray by a transformation that is
-        known to be an affine 3D transformation (i.e. no perspective)
-
-        4. ``transform_affine(self, n: :py:obj:`mitsuba.Normal3f`) -> :py:obj:`mitsuba.Normal3f```
 
         Transform a 3D vector/point/normal/ray by a transformation that is
         known to be an affine 3D transformation (i.e. no perspective)
@@ -12678,6 +12480,12 @@
     Base class: :py:obj:`mitsuba.Object`
 
     Overloaded function.
+
+    1. ``__init__(self, path: :py:obj:`mitsuba.filesystem.path`) -> None``
+
+
+    2. ``__init__(self, stream: :py:obj:`mitsuba.Stream`) -> None``
+
 
     3. ``__init__(self, array: ndarray[dtype=float32, order='C', device='cpu'], compute_max: bool = True) -> None``
 
@@ -13115,7 +12923,7 @@
         Parameter ``sensor`` (~:py:obj:`mitsuba.Sensor`):
             *no description available*
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (~drjit.llvm.ad.UInt):
             *no description available*
 
     .. py:method:: mitsuba.ad.ProjectiveDetail.init_indirect_silhouette_grid_unif()
@@ -13412,7 +13220,7 @@
         Parameter ``sensor`` (~:py:obj:`mitsuba.Sensor`):
             *no description available*
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (~drjit.llvm.ad.UInt):
             *no description available*
 
         Parameter ``spp`` (int):
@@ -13574,7 +13382,7 @@
         Parameter ``sensor`` (Union[int, mi.Sensor]):
             *no description available*
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (mi.UInt32):
             *no description available*
 
         Parameter ``spp`` (int):
@@ -13853,7 +13661,7 @@
         Parameter ``sensor`` (Union[int, mi.Sensor]):
             *no description available*
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (mi.UInt32):
             *no description available*
 
         Parameter ``spp`` (int):
@@ -13921,7 +13729,7 @@
         Parameter ``sensor`` (Union[int, mi.Sensor]):
             *no description available*
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (mi.UInt32):
             *no description available*
 
         Parameter ``spp`` (int):
@@ -14792,14 +14600,6 @@
 
 .. py:function:: mitsuba.math.legendre_p(l, x)
 
-    Overloaded function.
-
-    1. ``legendre_p(l: int, x: drjit.llvm.ad.Float) -> drjit.llvm.ad.Float``
-
-    Evaluate the l-th Legendre polynomial using recurrence
-
-    2. ``legendre_p(l: int, m: int, x: drjit.llvm.ad.Float) -> drjit.llvm.ad.Float``
-
     Evaluate the l-th Legendre polynomial using recurrence
 
     Parameter ``l`` (int):
@@ -14978,17 +14778,6 @@
 
 .. py:function:: mitsuba.mueller.absorber(value)
 
-    Overloaded function.
-
-    1. ``absorber(value: drjit.llvm.ad.Float) -> drjit.llvm.ad.Matrix4f``
-
-    Constructs the Mueller matrix of an ideal absorber
-
-    Parameter ``value`` (drjit.llvm.ad.Float):
-        The amount of absorption.
-
-    2. ``absorber(value: :py:obj:`mitsuba.Color3f`) -> drjit::Matrix<mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>, 4ul>``
-
     Constructs the Mueller matrix of an ideal absorber
 
     Parameter ``value`` (drjit.llvm.ad.Float):
@@ -14999,17 +14788,6 @@
 
 .. py:function:: mitsuba.mueller.depolarizer(value=1.0)
 
-    Overloaded function.
-
-    1. ``depolarizer(value: drjit.llvm.ad.Float = 1.0) -> drjit.llvm.ad.Matrix4f``
-
-    Constructs the Mueller matrix of an ideal depolarizer
-
-    Parameter ``value`` (drjit.llvm.ad.Float):
-        The value of the (0, 0) element
-
-    2. ``depolarizer(value: :py:obj:`mitsuba.Color3f` = 1.0) -> drjit::Matrix<mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>, 4ul>``
-
     Constructs the Mueller matrix of an ideal depolarizer
 
     Parameter ``value`` (drjit.llvm.ad.Float):
@@ -15019,16 +14797,6 @@
         *no description available*
 
 .. py:function:: mitsuba.mueller.diattenuator(x, y)
-
-    Overloaded function.
-
-    1. ``diattenuator(x: drjit.llvm.ad.Float, y: drjit.llvm.ad.Float) -> drjit.llvm.ad.Matrix4f``
-
-    Constructs the Mueller matrix of a linear diattenuator, which
-    attenuates the electric field components at 0 and 90 degrees by 'x'
-    and 'y', * respectively.
-
-    2. ``diattenuator(x: :py:obj:`mitsuba.Color3f`, y: :py:obj:`mitsuba.Color3f`) -> drjit::Matrix<mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>, 4ul>``
 
     Constructs the Mueller matrix of a linear diattenuator, which
     attenuates the electric field components at 0 and 90 degrees by 'x'
@@ -15045,16 +14813,6 @@
 
 .. py:function:: mitsuba.mueller.left_circular_polarizer()
 
-    Overloaded function.
-
-    1. ``left_circular_polarizer() -> drjit.llvm.ad.Matrix4f``
-
-    Constructs the Mueller matrix of a (left) circular polarizer.
-
-    "Polarized Light and Optical Systems" by Chipman et al. Table 6.2
-
-    2. ``left_circular_polarizer() -> drjit::Matrix<mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>, 4ul>``
-
     Constructs the Mueller matrix of a (left) circular polarizer.
 
     "Polarized Light and Optical Systems" by Chipman et al. Table 6.2
@@ -15063,21 +14821,6 @@
         *no description available*
 
 .. py:function:: mitsuba.mueller.linear_polarizer(value=1.0)
-
-    Overloaded function.
-
-    1. ``linear_polarizer(value: drjit.llvm.ad.Float = 1.0) -> drjit.llvm.ad.Matrix4f``
-
-    Constructs the Mueller matrix of a linear polarizer which transmits
-    linear polarization at 0 degrees.
-
-    "Polarized Light" by Edward Collett, Ch. 5 eq. (13)
-
-    Parameter ``value`` (drjit.llvm.ad.Float):
-        The amount of attenuation of the transmitted component (1
-        corresponds to an ideal polarizer).
-
-    2. ``linear_polarizer(value: :py:obj:`mitsuba.Color3f` = 1.0) -> drjit::Matrix<mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>, 4ul>``
 
     Constructs the Mueller matrix of a linear polarizer which transmits
     linear polarization at 0 degrees.
@@ -15092,26 +14835,6 @@
         *no description available*
 
 .. py:function:: mitsuba.mueller.linear_retarder(phase)
-
-    Overloaded function.
-
-    1. ``linear_retarder(phase: drjit.llvm.ad.Float) -> drjit.llvm.ad.Matrix4f``
-
-    Constructs the Mueller matrix of a linear retarder which has its fast
-    axis aligned horizontally.
-
-    This implements the general case with arbitrary phase shift and can be
-    used to construct the common special cases of quarter-wave and half-
-    wave plates.
-
-    "Polarized Light, Third Edition" by Dennis H. Goldstein, Ch. 6 eq.
-    (6.43) (Note that the fast and slow axis were flipped in the first
-    edition by Edward Collett.)
-
-    Parameter ``phase`` (drjit.llvm.ad.Float):
-        The phase difference between the fast and slow axis
-
-    2. ``linear_retarder(phase: :py:obj:`mitsuba.Color3f`) -> drjit::Matrix<mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>, 4ul>``
 
     Constructs the Mueller matrix of a linear retarder which has its fast
     axis aligned horizontally.
@@ -15132,16 +14855,6 @@
 
 .. py:function:: mitsuba.mueller.right_circular_polarizer()
 
-    Overloaded function.
-
-    1. ``right_circular_polarizer() -> drjit.llvm.ad.Matrix4f``
-
-    Constructs the Mueller matrix of a (right) circular polarizer.
-
-    "Polarized Light and Optical Systems" by Chipman et al. Table 6.2
-
-    2. ``right_circular_polarizer() -> drjit::Matrix<mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>, 4ul>``
-
     Constructs the Mueller matrix of a (right) circular polarizer.
 
     "Polarized Light and Optical Systems" by Chipman et al. Table 6.2
@@ -15151,10 +14864,6 @@
 
 .. py:function:: mitsuba.mueller.rotate_mueller_basis(M, in_forward, in_basis_current, in_basis_target, out_forward, out_basis_current, out_basis_target)
 
-    Overloaded function.
-
-    1. ``rotate_mueller_basis(M: drjit.llvm.ad.Matrix4f, in_forward: :py:obj:`mitsuba.Vector3f`, in_basis_current: :py:obj:`mitsuba.Vector3f`, in_basis_target: :py:obj:`mitsuba.Vector3f`, out_forward: :py:obj:`mitsuba.Vector3f`, out_basis_current: :py:obj:`mitsuba.Vector3f`, out_basis_target: :py:obj:`mitsuba.Vector3f`) -> drjit.llvm.ad.Matrix4f``
-
     Return the Mueller matrix for some new reference frames. This version
     rotates the input/output frames independently.
 
@@ -15182,51 +14891,11 @@
         Direction of travel for input Stokes vector (normalized)
 
     Parameter ``out_basis_current`` (:py:obj:`mitsuba.Vector3f`):
-        Current (normalized) input Stokes basis. Must be orthogonal to
+        Current (normalized) output Stokes basis. Must be orthogonal to
         ``out_forward``.
 
     Parameter ``out_basis_target`` (:py:obj:`mitsuba.Vector3f`):
-        Target (normalized) input Stokes basis. Must be orthogonal to
-        ``out_forward``.
-
-    Returns → drjit.llvm.ad.Matrix4f:
-        New Mueller matrix that operates from ``in_basis_target`` to
-        ``out_basis_target``.
-
-    2. ``rotate_mueller_basis(M: drjit::Matrix<mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>, 4ul>, in_forward: :py:obj:`mitsuba.Vector3f`, in_basis_current: :py:obj:`mitsuba.Vector3f`, in_basis_target: :py:obj:`mitsuba.Vector3f`, out_forward: :py:obj:`mitsuba.Vector3f`, out_basis_current: :py:obj:`mitsuba.Vector3f`, out_basis_target: :py:obj:`mitsuba.Vector3f`) -> drjit::Matrix<mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>, 4ul>``
-
-    Return the Mueller matrix for some new reference frames. This version
-    rotates the input/output frames independently.
-
-    This operation is often used in polarized light transport when we have
-    a known Mueller matrix 'M' that operates from 'in_basis_current' to
-    'out_basis_current' but instead want to re-express it as a Mueller
-    matrix that operates from 'in_basis_target' to 'out_basis_target'.
-
-    Parameter ``M`` (drjit.llvm.ad.Matrix4f):
-        The current Mueller matrix that operates from ``in_basis_current``
-        to ``out_basis_current``.
-
-    Parameter ``in_forward`` (:py:obj:`mitsuba.Vector3f`):
-        Direction of travel for input Stokes vector (normalized)
-
-    Parameter ``in_basis_current`` (:py:obj:`mitsuba.Vector3f`):
-        Current (normalized) input Stokes basis. Must be orthogonal to
-        ``in_forward``.
-
-    Parameter ``in_basis_target`` (:py:obj:`mitsuba.Vector3f`):
-        Target (normalized) input Stokes basis. Must be orthogonal to
-        ``in_forward``.
-
-    Parameter ``out_forward`` (:py:obj:`mitsuba.Vector3f`):
-        Direction of travel for input Stokes vector (normalized)
-
-    Parameter ``out_basis_current`` (:py:obj:`mitsuba.Vector3f`):
-        Current (normalized) input Stokes basis. Must be orthogonal to
-        ``out_forward``.
-
-    Parameter ``out_basis_target`` (:py:obj:`mitsuba.Vector3f`):
-        Target (normalized) input Stokes basis. Must be orthogonal to
+        Target (normalized) output Stokes basis. Must be orthogonal to
         ``out_forward``.
 
     Returns → drjit.llvm.ad.Matrix4f:
@@ -15234,39 +14903,6 @@
         ``out_basis_target``.
 
 .. py:function:: mitsuba.mueller.rotate_mueller_basis_collinear(M, forward, basis_current, basis_target)
-
-    Overloaded function.
-
-    1. ``rotate_mueller_basis_collinear(M: drjit.llvm.ad.Matrix4f, forward: :py:obj:`mitsuba.Vector3f`, basis_current: :py:obj:`mitsuba.Vector3f`, basis_target: :py:obj:`mitsuba.Vector3f`) -> drjit.llvm.ad.Matrix4f``
-
-    Return the Mueller matrix for some new reference frames. This version
-    applies the same rotation to the input/output frames.
-
-    This operation is often used in polarized light transport when we have
-    a known Mueller matrix 'M' that operates from 'basis_current' to
-    'basis_current' but instead want to re-express it as a Mueller matrix
-    that operates from 'basis_target' to 'basis_target'.
-
-    Parameter ``M`` (drjit.llvm.ad.Matrix4f):
-        The current Mueller matrix that operates from ``basis_current`` to
-        ``basis_current``.
-
-    Parameter ``forward`` (:py:obj:`mitsuba.Vector3f`):
-        Direction of travel for input Stokes vector (normalized)
-
-    Parameter ``basis_current`` (:py:obj:`mitsuba.Vector3f`):
-        Current (normalized) input Stokes basis. Must be orthogonal to
-        ``forward``.
-
-    Parameter ``basis_target`` (:py:obj:`mitsuba.Vector3f`):
-        Target (normalized) input Stokes basis. Must be orthogonal to
-        ``forward``.
-
-    Returns → drjit.llvm.ad.Matrix4f:
-        New Mueller matrix that operates from ``basis_target`` to
-        ``basis_target``.
-
-    2. ``rotate_mueller_basis_collinear(M: drjit::Matrix<mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>, 4ul>, forward: :py:obj:`mitsuba.Vector3f`, basis_current: :py:obj:`mitsuba.Vector3f`, basis_target: :py:obj:`mitsuba.Vector3f`) -> drjit::Matrix<mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>, 4ul>``
 
     Return the Mueller matrix for some new reference frames. This version
     applies the same rotation to the input/output frames.
@@ -15357,15 +14993,6 @@
 
 .. py:function:: mitsuba.mueller.rotated_element(theta, M)
 
-    Overloaded function.
-
-    1. ``rotated_element(theta: drjit.llvm.ad.Float, M: drjit.llvm.ad.Matrix4f) -> drjit.llvm.ad.Matrix4f``
-
-    Applies a counter-clockwise rotation to the mueller matrix of a given
-    element.
-
-    2. ``rotated_element(theta: :py:obj:`mitsuba.Color3f`, M: drjit::Matrix<mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>, 4ul>) -> drjit::Matrix<mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>, 4ul>``
-
     Applies a counter-clockwise rotation to the mueller matrix of a given
     element.
 
@@ -15379,23 +15006,6 @@
         *no description available*
 
 .. py:function:: mitsuba.mueller.rotator(theta)
-
-    Overloaded function.
-
-    1. ``rotator(theta: drjit.llvm.ad.Float) -> drjit.llvm.ad.Matrix4f``
-
-    Constructs the Mueller matrix of an ideal rotator, which performs a
-    counter-clockwise rotation of the electric field by 'theta' radians
-    (when facing the light beam from the sensor side).
-
-    To be more precise, it rotates the reference frame of the current
-    Stokes vector. For example: horizontally linear polarized light s1 =
-    [1,1,0,0] will look like -45˚ linear polarized light s2 = R(45˚) * s1
-    = [1,0,-1,0] after applying a rotator of +45˚ to it.
-
-    "Polarized Light" by Edward Collett, Ch. 5 eq. (43)
-
-    2. ``rotator(theta: :py:obj:`mitsuba.Color3f`) -> drjit::Matrix<mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>, 4ul>``
 
     Constructs the Mueller matrix of an ideal rotator, which performs a
     counter-clockwise rotation of the electric field by 'theta' radians
@@ -15416,24 +15026,6 @@
 
 .. py:function:: mitsuba.mueller.specular_reflection(cos_theta_i, eta)
 
-    Overloaded function.
-
-    1. ``specular_reflection(cos_theta_i: drjit.llvm.ad.Float, eta: drjit.llvm.ad.Complex2f) -> drjit.llvm.ad.Matrix4f``
-
-    Calculates the Mueller matrix of a specular reflection at an interface
-    between two dielectrics or conductors.
-
-    Parameter ``cos_theta_i`` (drjit.llvm.ad.Float):
-        Cosine of the angle between the surface normal and the incident
-        ray
-
-    Parameter ``eta`` (drjit.llvm.ad.Complex2f):
-        Complex-valued relative refractive index of the interface. In the
-        real case, a value greater than 1.0 case means that the surface
-        normal points into the region of lower density.
-
-    2. ``specular_reflection(cos_theta_i: :py:obj:`mitsuba.Color3f`, eta: drjit::Complex<mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul> >) -> drjit::Matrix<mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>, 4ul>``
-
     Calculates the Mueller matrix of a specular reflection at an interface
     between two dielectrics or conductors.
 
@@ -15450,24 +15042,6 @@
         *no description available*
 
 .. py:function:: mitsuba.mueller.specular_transmission(cos_theta_i, eta)
-
-    Overloaded function.
-
-    1. ``specular_transmission(cos_theta_i: drjit.llvm.ad.Float, eta: drjit.llvm.ad.Float) -> drjit.llvm.ad.Matrix4f``
-
-    Calculates the Mueller matrix of a specular transmission at an
-    interface between two dielectrics or conductors.
-
-    Parameter ``cos_theta_i`` (drjit.llvm.ad.Float):
-        Cosine of the angle between the surface normal and the incident
-        ray
-
-    Parameter ``eta`` (drjit.llvm.ad.Float):
-        Complex-valued relative refractive index of the interface. A value
-        greater than 1.0 in the real case means that the surface normal is
-        pointing into the region of lower density.
-
-    2. ``specular_transmission(cos_theta_i: :py:obj:`mitsuba.Color3f`, eta: :py:obj:`mitsuba.Color3f`) -> drjit::Matrix<mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>, 4ul>``
 
     Calculates the Mueller matrix of a specular transmission at an
     interface between two dielectrics or conductors.
@@ -15552,17 +15126,6 @@
         *no description available*
 
 .. py:function:: mitsuba.pdf_rgb_spectrum(wavelengths)
-
-    Overloaded function.
-
-    1. ``pdf_rgb_spectrum(wavelengths: drjit.llvm.ad.Float) -> drjit.llvm.ad.Float``
-
-    PDF for the sample_rgb_spectrum strategy. It is valid to call this
-    function for a single wavelength (Float), a set of wavelengths
-    (Spectrumf), a packet of wavelengths (SpectrumfP), etc. In all cases,
-    the PDF is returned per wavelength.
-
-    2. ``pdf_rgb_spectrum(wavelengths: :py:obj:`mitsuba.Color3f`) -> :py:obj:`mitsuba.Color3f```
 
     PDF for the sample_rgb_spectrum strategy. It is valid to call this
     function for a single wavelength (Float), a set of wavelengths
@@ -15995,14 +15558,14 @@
         default, the integrator specified in the original scene description will
         be used.
 
-    Parameter ``seed`` (``int``)
+    Parameter ``seed`` (``mi.UInt32``)
         This parameter controls the initialization of the random number
         generator during the primal rendering step. It is crucial that you
         specify different seeds (e.g., an increasing sequence) if subsequent
         calls should produce statistically independent images (e.g. to
         de-correlate gradient-based optimization steps).
 
-    Parameter ``seed_grad`` (``int``)
+    Parameter ``seed_grad`` (``mi.UInt32``)
         This parameter is analogous to the ``seed`` parameter but targets the
         differential simulation phase. If not specified, the implementation will
         automatically compute a suitable value from the primal ``seed``.
@@ -16026,7 +15589,7 @@
     Parameter ``integrator`` (mi.Integrator):
         *no description available*
 
-    Parameter ``seed`` (int):
+    Parameter ``seed`` (mi.UInt32):
         *no description available*
 
     Parameter ``seed_grad`` (int):
@@ -16043,20 +15606,6 @@
 
 .. py:function:: mitsuba.sample_rgb_spectrum(sample)
 
-    Overloaded function.
-
-    1. ``sample_rgb_spectrum(sample: drjit.llvm.ad.Float) -> tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]``
-
-    Importance sample a "importance spectrum" that concentrates the
-    computation on wavelengths that are relevant for rendering of RGB data
-
-    Based on "An Improved Technique for Full Spectral Rendering" by
-    Radziszewski, Boryczko, and Alda
-
-    Returns a tuple with the sampled wavelength and inverse PDF
-
-    2. ``sample_rgb_spectrum(sample: :py:obj:`mitsuba.Color3f`) -> tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]``
-
     Importance sample a "importance spectrum" that concentrates the
     computation on wavelengths that are relevant for rendering of RGB data
 
@@ -16072,32 +15621,6 @@
         *no description available*
 
 .. py:function:: mitsuba.sample_tea_32(v0, v1, rounds=4)
-
-    Overloaded function.
-
-    1. ``sample_tea_32(v0: int, v1: int, rounds: int = 4) -> tuple[int, int]``
-
-    Generate fast and reasonably good pseudorandom numbers using the Tiny
-    Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
-
-    For details, refer to "GPU Random Numbers via the Tiny Encryption
-    Algorithm" by Fahad Zafar, Marc Olano, and Aaron Curtis.
-
-    Parameter ``v0`` (int):
-        First input value to be encrypted (could be the sample index)
-
-    Parameter ``v1`` (int):
-        Second input value to be encrypted (e.g. the requested random
-        number dimension)
-
-    Parameter ``rounds`` (int):
-        How many rounds should be executed? The default for random number
-        generation is 4.
-
-    Returns → tuple[int, int]:
-        Two uniformly distributed 32-bit integers
-
-    2. ``sample_tea_32(v0: drjit.llvm.ad.UInt, v1: drjit.llvm.ad.UInt, rounds: int = 4) -> tuple[drjit.llvm.ad.UInt, drjit.llvm.ad.UInt]``
 
     Generate fast and reasonably good pseudorandom numbers using the Tiny
     Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
@@ -16120,32 +15643,6 @@
         Two uniformly distributed 32-bit integers
 
 .. py:function:: mitsuba.sample_tea_64(v0, v1, rounds=4)
-
-    Overloaded function.
-
-    1. ``sample_tea_64(v0: int, v1: int, rounds: int = 4) -> int``
-
-    Generate fast and reasonably good pseudorandom numbers using the Tiny
-    Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
-
-    For details, refer to "GPU Random Numbers via the Tiny Encryption
-    Algorithm" by Fahad Zafar, Marc Olano, and Aaron Curtis.
-
-    Parameter ``v0`` (int):
-        First input value to be encrypted (could be the sample index)
-
-    Parameter ``v1`` (int):
-        Second input value to be encrypted (e.g. the requested random
-        number dimension)
-
-    Parameter ``rounds`` (int):
-        How many rounds should be executed? The default for random number
-        generation is 4.
-
-    Returns → int:
-        A uniformly distributed 64-bit integer
-
-    2. ``sample_tea_64(v0: drjit.llvm.ad.UInt, v1: drjit.llvm.ad.UInt, rounds: int = 4) -> drjit.llvm.ad.UInt64``
 
     Generate fast and reasonably good pseudorandom numbers using the Tiny
     Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
@@ -16172,33 +15669,6 @@
     sample_tea_float64(v0: int, v1: int, rounds: int = 4) -> float
     sample_tea_float64(v0: drjit.llvm.ad.UInt, v1: drjit.llvm.ad.UInt, rounds: int = 4) -> drjit.llvm.ad.Float64
 
-    Overloaded function.
-
-    1. ``sample_tea_float64(v0: int, v1: int, rounds: int = 4) -> float``
-
-    Generate fast and reasonably good pseudorandom numbers using the Tiny
-    Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
-
-    This function uses sample_tea to return double precision floating
-    point numbers on the interval ``[0, 1)``
-
-    Parameter ``v0``:
-        First input value to be encrypted (could be the sample index)
-
-    Parameter ``v1``:
-        Second input value to be encrypted (e.g. the requested random
-        number dimension)
-
-    Parameter ``rounds``:
-        How many rounds should be executed? The default for random number
-        generation is 4.
-
-    Returns:
-        A uniformly distributed floating point number on the interval
-        ``[0, 1)``
-
-    2. ``sample_tea_float64(v0: drjit.llvm.ad.UInt, v1: drjit.llvm.ad.UInt, rounds: int = 4) -> drjit.llvm.ad.Float64``
-
     Generate fast and reasonably good pseudorandom numbers using the Tiny
     Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
 
@@ -16222,33 +15692,6 @@
 
 .. py:function:: mitsuba.sample_tea_float32(v0, v1, rounds=4)
 
-    Overloaded function.
-
-    1. ``sample_tea_float32(v0: int, v1: int, rounds: int = 4) -> float``
-
-    Generate fast and reasonably good pseudorandom numbers using the Tiny
-    Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
-
-    This function uses sample_tea to return single precision floating
-    point numbers on the interval ``[0, 1)``
-
-    Parameter ``v0`` (int):
-        First input value to be encrypted (could be the sample index)
-
-    Parameter ``v1`` (int):
-        Second input value to be encrypted (e.g. the requested random
-        number dimension)
-
-    Parameter ``rounds`` (int):
-        How many rounds should be executed? The default for random number
-        generation is 4.
-
-    Returns → float:
-        A uniformly distributed floating point number on the interval
-        ``[0, 1)``
-
-    2. ``sample_tea_float32(v0: drjit.llvm.ad.UInt, v1: drjit.llvm.ad.UInt, rounds: int = 4) -> drjit.llvm.ad.Float``
-
     Generate fast and reasonably good pseudorandom numbers using the Tiny
     Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
 
@@ -16271,33 +15714,6 @@
         ``[0, 1)``
 
 .. py:function:: mitsuba.sample_tea_float64(v0, v1, rounds=4)
-
-    Overloaded function.
-
-    1. ``sample_tea_float64(v0: int, v1: int, rounds: int = 4) -> float``
-
-    Generate fast and reasonably good pseudorandom numbers using the Tiny
-    Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
-
-    This function uses sample_tea to return double precision floating
-    point numbers on the interval ``[0, 1)``
-
-    Parameter ``v0`` (int):
-        First input value to be encrypted (could be the sample index)
-
-    Parameter ``v1`` (int):
-        Second input value to be encrypted (e.g. the requested random
-        number dimension)
-
-    Parameter ``rounds`` (int):
-        How many rounds should be executed? The default for random number
-        generation is 4.
-
-    Returns → float:
-        A uniformly distributed floating point number on the interval
-        ``[0, 1)``
-
-    2. ``sample_tea_float64(v0: drjit.llvm.ad.UInt, v1: drjit.llvm.ad.UInt, rounds: int = 4) -> drjit.llvm.ad.Float64``
 
     Generate fast and reasonably good pseudorandom numbers using the Tiny
     Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
@@ -16344,11 +15760,10 @@
         The microflake normal
 
     Parameter ``s`` (:py:obj:`mitsuba.SGGXPhaseFunctionParams`):
-        The parameters of the SGGX phase function stored as a 6D vector
-        [S_xx, S_yy, S_zz, S_xy, S_xz, S_yz]. The parameters describe the
-        entries of a symmetric positive definite 3x3 matrix. The user
-        needs to ensure that the parameters indeed represent a positive
-        definite matrix.
+        The parameters of the SGGX phase function S_xx, S_yy, S_zz, S_xy,
+        S_xz, and S_yz that describe the entries of a symmetric positive
+        definite 3x3 matrix. The user needs to ensure that the parameters
+        indeed represent a positive definite matrix.
 
     Returns → drjit.llvm.ad.Float:
         The probability of sampling a certain normal
@@ -16361,21 +15776,16 @@
         A 3D direction
 
     Parameter ``s`` (:py:obj:`mitsuba.SGGXPhaseFunctionParams`):
-        The parameters of the SGGX phase function stored as a 6D vector
-        [S_xx, S_yy, S_zz, S_xy, S_xz, S_yz]. The parameters describe the
-        entries of a symmetric positive definite 3x3 matrix. The user
-        needs to ensure that the parameters indeed represent a positive
-        definite matrix.
+        The parameters of the SGGX phase function S_xx, S_yy, S_zz, S_xy,
+        S_xz, and S_yz that describe the entries of a symmetric positive
+        definite 3x3 matrix. The user needs to ensure that the parameters
+        indeed represent a positive definite matrix.
 
     Returns → drjit.llvm.ad.Float:
         The projected area of the SGGX microflake distribution
 
 .. py:function:: mitsuba.sggx_sample(sh_frame, sample, s)
 
-    Overloaded function.
-
-    1. ``sggx_sample(sh_frame: :py:obj:`mitsuba.Frame3f`, sample: :py:obj:`mitsuba.Point2f`, s: :py:obj:`mitsuba.SGGXPhaseFunctionParams`) -> :py:obj:`mitsuba.Normal3f```
-
     Samples the visible normal distribution of the SGGX microflake
     distribution
 
@@ -16392,39 +15802,10 @@
         A uniformly distributed 2D sample
 
     Parameter ``s`` (:py:obj:`mitsuba.SGGXPhaseFunctionParams`):
-        The parameters of the SGGX phase function stored as a 6D vector
-        [S_xx, S_yy, S_zz, S_xy, S_xz, S_yz]. The parameters describe the
-        entries of a symmetric positive definite 3x3 matrix. The user
-        needs to ensure that the parameters indeed represent a positive
-        definite matrix.
-
-    Returns → :py:obj:`mitsuba.Normal3f`:
-        A normal (in world space) sampled from the distribution of visible
-        normals
-
-    2. ``sggx_sample(sh_frame: :py:obj:`mitsuba.Vector3f`, sample: :py:obj:`mitsuba.Point2f`, s: :py:obj:`mitsuba.SGGXPhaseFunctionParams`) -> :py:obj:`mitsuba.Normal3f```
-
-    Samples the visible normal distribution of the SGGX microflake
-    distribution
-
-    This function is based on the paper
-
-    "The SGGX microflake distribution", Siggraph 2015 by Eric Heitz,
-    Jonathan Dupuy, Cyril Crassin and Carsten Dachsbacher
-
-    Parameter ``sh_frame`` (:py:obj:`mitsuba.Frame3f`):
-        Shading frame aligned with the incident direction, e.g.
-        constructed as Frame3f(wi)
-
-    Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
-        A uniformly distributed 2D sample
-
-    Parameter ``s`` (:py:obj:`mitsuba.SGGXPhaseFunctionParams`):
-        The parameters of the SGGX phase function stored as a 6D vector
-        [S_xx, S_yy, S_zz, S_xy, S_xz, S_yz]. The parameters describe the
-        entries of a symmetric positive definite 3x3 matrix. The user
-        needs to ensure that the parameters indeed represent a positive
-        definite matrix.
+        The parameters of the SGGX phase function S_xx, S_yy, S_zz, S_xy,
+        S_xz, and S_yz that describe the entries of a symmetric positive
+        definite 3x3 matrix. The user needs to ensure that the parameters
+        indeed represent a positive definite matrix.
 
     Returns → :py:obj:`mitsuba.Normal3f`:
         A normal (in world space) sampled from the distribution of visible
