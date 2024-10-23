@@ -93,6 +93,11 @@ result = "{major}.{minor}.{patch}"
 content-type = "text/markdown"
 
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.fragments]]
+text = '''
+![Mitsuba banner](https://raw.githubusercontent.com/mitsuba-renderer/mitsuba-data/master/docs/images/banners/banner_01.jpg)
+'''
+
+[[tool.hatch.metadata.hooks.fancy-pypi-readme.fragments]]
 path = "README.md"
-start-after = "## Introduction"
+start-after = "Mitsuba banner\">\n"
 pattern = "(.*)"
