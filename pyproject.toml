@@ -3,7 +3,7 @@ requires = [
     "scikit-build-core",
     "nanobind @ git+https://github.com/wjakob/nanobind", 
     "drjit @ git+https://github.com/njroussel/drjit-fork@rami",
-    "typing_extensions",
+    "typing_extensions>=4.12",
     "hatch-fancy-pypi-readme",
 ]
 build-backend = "scikit_build_core.build"
@@ -15,7 +15,7 @@ dynamic = ["version", "readme"]
 description = "Mitsuba 3: A Retargetable Forward and Inverse Renderer"
 readme = "README.md"
 dependencies = [
-  "typing_extensions;python_version<\"3.11\"",
+  "typing_extensions>=4.12;python_version<\"3.11\"",
   "throwaway8213fork"
 ]
 requires-python = ">=3.8"
@@ -54,8 +54,6 @@ skip = "*-musllinux* pp*"
 
 # Temp until Dr.Jit release is on PyPI
 before-all = "python -m pip install --index-url https://test.pypi.org/simple/ throwaway8213fork"
-
-test-requires = "typing_extensions==4.12.2"
 
 # Temp until Dr.Jit release is on PyPI
 before-test = "python -m pip install --index-url https://test.pypi.org/simple/ throwaway8213fork"
