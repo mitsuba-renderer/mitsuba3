@@ -103,7 +103,6 @@ class ADIntegrator(mi.CppADIntegrator):
 
             # Explicitly delete any remaining unused variables
             del sampler, ray, weight, pos, L, valid
-            gc.collect()
 
             # Perform the weight division and return an image tensor
             film.put_block(block)
@@ -212,7 +211,6 @@ class ADIntegrator(mi.CppADIntegrator):
                 film.put_block(block)
 
                 del valid
-                gc.collect()
 
                 # This step launches a kernel
                 dr.schedule(block.tensor())
@@ -226,7 +224,6 @@ class ADIntegrator(mi.CppADIntegrator):
 
             # We don't need any of the outputs here
             del ray, weight, pos, block, sampler
-            gc.collect()
 
             # Run kernel representing side effects of the above
             dr.eval()
@@ -619,11 +616,6 @@ class RBIntegrator(ADIntegrator):
             del sampler, ray, weight, pos, L, valid, aovs, δL, δaovs, \
                 valid_2, params, state_out, state_out_2, block
 
-            # Probably a little overkill, but why not.. If there are any
-            # DrJit arrays to be collected by Python's cyclic GC, then
-            # freeing them may enable loop simplifications in dr.eval().
-            gc.collect()
-
             result_grad = film.develop()
 
         return result_grad
@@ -725,11 +717,6 @@ class RBIntegrator(ADIntegrator):
 
                 film.put_block(block)
 
-                # Probably a little overkill, but why not.. If there are any
-                # DrJit arrays to be collected by Python's cyclic GC, then
-                # freeing them may enable loop simplifications in dr.eval().
-                gc.collect()
-
                 image = film.develop()
 
                 dr.set_grad(image, grad_in)
@@ -790,7 +777,6 @@ class RBIntegrator(ADIntegrator):
             del L_2, valid_2, aovs_2, state_out, state_out_2, \
                 δL, δaovs, ray, weight, pos, sampler
 
-            gc.collect()
 
             # Run kernel representing side effects of the above
             dr.eval()
