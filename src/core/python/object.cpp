@@ -50,8 +50,6 @@ MI_PY_EXPORT(Object) {
         .def(nb::init<const Object &>(), D(Object, Object, 2))
         .def_method(Object, id)
         .def_method(Object, set_id, "id"_a)
-        .def_method(Object, inc_ref)
-        .def_method(Object, dec_ref)
         .def("expand", [](const Object &o) -> nb::list {
             auto result = o.expand();
             nb::list l;
