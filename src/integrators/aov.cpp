@@ -355,7 +355,7 @@ public:
 
     TensorXf render(Scene *scene,
                     Sensor *sensor,
-                    uint32_t seed,
+                    UInt32 seed,
                     uint32_t spp,
                     bool develop,
                     bool evaluate) override {
@@ -386,7 +386,7 @@ public:
     TensorXf render_forward(Scene* scene,
                             void* params,
                             Sensor *sensor,
-                            uint32_t seed = 0,
+                            UInt32 seed = 0,
                             uint32_t spp = 0) override {
 
         // Perform forward mode propagation just for AOV image
@@ -418,7 +418,7 @@ public:
                          void* params,
                          const TensorXf& grad_in,
                          Sensor* sensor,
-                         uint32_t seed = 0,
+                         UInt32 seed = 0,
                          uint32_t spp = 0) override {
         size_t base_ch_count = sensor->film()->base_channels_count();
         auto [image_grads, aovs_grad] = split_channels(base_ch_count, grad_in);
