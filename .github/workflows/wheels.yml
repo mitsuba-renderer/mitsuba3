@@ -7,38 +7,27 @@ on:
         required: true
         default: '0'
 
-env:
-  CIBW_BUILD_VERBOSITY: 1
-  CIBW_SKIP: "*-musllinux* pp*"
-  CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
-  CIBW_ARCHS_WINDOWS: auto64
-  CIBW_ARCHS_LINUX: auto64
-  CIBW_REPAIR_WHEEL_COMMAND_LINUX: "python .github/workflows/tag_wheel_manylinux.py {wheel} {dest_dir}"
-  CIBW_REPAIR_WHEEL_COMMAND_MACOS: "delocate-wheel --require-archs {delocate_archs} -w {dest_dir} --ignore-missing-dependencies {wheel}"
-  CIBW_TEST_COMMAND: "python -c \"import mitsuba as mi; mi.set_variant(\\\"scalar_rgb\\\")\""
-  CIBW_TEST_SKIP: "*-macosx_arm64"
-  MACOSX_DEPLOYMENT_TARGET: 10.14
-
 jobs:
   build_wheels:
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-latest, macos-latest]
-        python: [cp38, cp39, cp310, cp311, cp312]
-        cibw-arch: [x86_64, arm64]
+        os: [ubuntu-20.04, windows-latest, macos-13, macos-14]
+        python: [cp38, cp39, cp310, cp311, cp312, cp312_stable, cp313]
         exclude:
-          - os: ubuntu-20.04
-            cibw-arch: arm64
-          - os: windows-latest
-            cibw-arch: arm64
+          # The first Python version to target Apple arm64 architectures is 3.9
+          - os: macos-14
+            python: cp38
       fail-fast: false
 
     name: >
       ${{ matrix.python }} wheel for ${{ matrix.os }}
-      ${{ (matrix.os == 'macos-latest' && format('({0})', matrix.cibw-arch)) || '' }}
+      ${{ (endsWith(matrix.python, '_stable') && '(stable ABI)') || '' }}
     runs-on: ${{ matrix.os }}
 
     steps:
+      ###########################################################
+      # Setup local environment (source code, build requirements)
+      ###########################################################
       - uses: Wandalen/wretry.action@v1.2.0
         with:
           action: actions/checkout@v3
@@ -50,7 +39,7 @@ jobs:
       - uses: actions/setup-python@v4
         name: Install Python
         with:
-          python-version: '3.8'
+          python-version: '3.10'
 
       - name: Prepare compiler environment for Windows
         if: runner.os == 'Windows'
@@ -60,34 +49,46 @@ jobs:
 
       - name: Install cibuildwheel
         run: |
-          python -m pip install cibuildwheel==2.16.2
+          python -m pip install cibuildwheel==2.20.0
 
-      - name: Local build for macOS cross-compilation
-        if: runner.os == 'macOS' && matrix.cibw-arch == 'arm64'
+
+      ################################################################
+      # Set up envvars to build the correct wheel (stable ABI or not)
+      ################################################################
+
+
+
+      - name: Prepare cibuildwheel environment (UNIX)
+        if: ${{ ! endsWith(matrix.python, '_stable') && runner.os != 'Windows' }}
         run: |
-          pip install ninja cmake
-          mkdir build
-          cmake -B build -GNinja .
-          ninja -C build
+          echo "CIBW_BUILD=${{ matrix.python }}-*" >> $GITHUB_ENV &&
+          echo "CIBW_CONFIG_SETTINGS=\"cmake.args=-DMI_DEFAULT_VARIANTS=\"scalar_rgb,scalar_spectral,scalar_spectral_polarized,llvm_ad_rgb,llvm_ad_mono,llvm_ad_mono_polarized,llvm_ad_spectral,llvm_ad_spectral_polarized,cuda_ad_rgb,cuda_ad_mono,cuda_ad_mono_polarized,cuda_ad_spectral,cuda_ad_spectral_polarized\"\"" >> $GITHUB_ENV
 
-      - name: Prepare cibuildwheel environment for macOS
-        if: runner.os == 'macOS'
+      - name: Prepare cibuildwheel environment (Windows)
+        if: ${{ ! endsWith(matrix.python, '_stable') && runner.os == 'Windows' }}
         run: |
-          [[ "arm64" == "${{ matrix.cibw-arch }}" ]] && \
-          echo "MI_CMAKE_TOOLCHAIN_FILE=$(pwd)/.github/workflows/macOS_arm64_toolchain.cmake" >> $GITHUB_ENV && \
-          echo "CIBW_BEFORE_BUILD_MACOS=\
-          rm -rf /tmp/drjit_wheel && mkdir -p /tmp/drjit_wheel/ && cd /tmp/drjit_wheel && \
-          pip download --platform=macosx_11_0_arm64 --only-binary=:all: drjit==0.4.4 && \
-          unzip *.whl" >> $GITHUB_ENV && \
-          echo "MI_DRJIT_CMAKE_DIR=/tmp/drjit_wheel/drjit/share/cmake/drjit" >> $GITHUB_ENV && \
-          echo "MI_SRGB_COEFF_FILE=$(pwd)/build/data/srgb.coeff" >> $GITHUB_ENV && \
-          echo "MI_PYTHON_STUBS_DIR=$(pwd)/build/python/mitsuba" >> $GITHUB_ENV
+          echo "CIBW_BUILD=${{ matrix.python }}-*" >> $env:GITHUB_ENV
+          echo "CIBW_CONFIG_SETTINGS=cmake.args='-DMI_DEFAULT_VARIANTS='scalar_rgb,scalar_spectral,scalar_spectral_polarized,llvm_ad_rgb,llvm_ad_mono,llvm_ad_mono_polarized,llvm_ad_spectral,llvm_ad_spectral_polarized,cuda_ad_rgb,cuda_ad_mono,cuda_ad_mono_polarized,cuda_ad_spectral,cuda_ad_spectral_polarized''" >> $env:GITHUB_ENV
 
-          echo "CIBW_ARCHS_MACOS=${{ matrix.cibw-arch }}" >> $GITHUB_ENV
+      - name: Prepare cibuildwheel environment for stable ABI wheel (UNIX)
+        if: ${{ endsWith(matrix.python, '_stable') && runner.os != 'Windows' }}
+        run: |
+          stable_cp=$(echo ${{ matrix.python }} | cut -d_ -f1) &&
+          echo "CIBW_BUILD=${stable_cp}-*" >> $GITHUB_ENV &&
+          echo "CIBW_CONFIG_SETTINGS=\"wheel.py-api=cp312\" \"cmake.args=-DDRJIT_STABLE_ABI=ON -DMI_STABLE_ABI=ON -DMI_DEFAULT_VARIANTS=\"scalar_rgb,scalar_spectral,scalar_spectral_polarized,llvm_ad_rgb,llvm_ad_mono,llvm_ad_mono_polarized,llvm_ad_spectral,llvm_ad_spectral_polarized,cuda_ad_rgb,cuda_ad_mono,cuda_ad_mono_polarized,cuda_ad_spectral,cuda_ad_spectral_polarized\"\"" >> $GITHUB_ENV
 
-      - name: Build wheels
-        env:
-          CIBW_BUILD: ${{ matrix.python }}-*
+      - name: Prepare cibuildwheel environment for stable ABI wheel (Windows)
+        if: ${{ endsWith(matrix.python, '_stable') && runner.os == 'Windows' }}
+        run: |
+          $stable_cp = '${{ matrix.python }}' -split '_'
+          echo "CIBW_BUILD=$($stable_cp[0])-*" >> $env:GITHUB_ENV
+          echo "CIBW_CONFIG_SETTINGS=wheel.py-api=cp312 cmake.args='-DDRJIT_STABLE_ABI=ON -DMI_STABLE_ABI=ON -DMI_DEFAULT_VARIANTS='scalar_rgb,scalar_spectral,scalar_spectral_polarized,llvm_ad_rgb,llvm_ad_mono,llvm_ad_mono_polarized,llvm_ad_spectral,llvm_ad_spectral_polarized,cuda_ad_rgb,cuda_ad_mono,cuda_ad_mono_polarized,cuda_ad_spectral,cuda_ad_spectral_polarized''" >> $env:GITHUB_ENV
+
+
+      #########################
+      # Build and store wheels
+      #########################
+      - name: Build wheel
         run: |
           python -m cibuildwheel --output-dir wheelhouse
 
@@ -103,12 +104,15 @@ jobs:
     needs: [build_wheels]
 
     steps:
-      - uses: actions/download-artifact@v2
+      #########################
+      # Fetch and upload wheels
+      #########################
+      - uses: actions/download-artifact@v3
         with:
           name: wheels
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@v1.5.1
+      - uses: pypa/gh-action-pypi-publish@v1.10.2
         with:
           user: __token__
           password: ${{ secrets.PYPI_PASSWORD }}

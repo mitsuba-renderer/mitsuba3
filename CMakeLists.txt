@@ -47,6 +47,9 @@ if (NOT APPLE)
   option(MI_ENABLE_OPTIX_DEBUG_VALIDATION "Enable debug flag for OptiX" OFF)
 endif()
 
+option(MI_STABLE_ABI "Build Python extension using the CPython stable ABI? (Only relevant when using scikit-build)" OFF)
+mark_as_advanced(MI_STABLE_ABI)
+
 # ----------------------------------------------------------
 #  Check if submodules have been checked out, or fail early
 # ----------------------------------------------------------
@@ -84,6 +87,12 @@ include(ext/drjit/ext/drjit-core/ext/nanothread/ext/cmake-defaults/CMakeLists.tx
 # ----------------------------------------------------------
 
 if (SKBUILD)
+
+  set(CMAKE_INSTALL_LIBDIR mitsuba)
+  set(CMAKE_INSTALL_BINDIR mitsuba)
+  set(CMAKE_INSTALL_DATAROOTDIR mitsuba/data)
+  set(CMAKE_INSTALL_INCLUDEDIR mitsuba/include)
+
   set(MI_DRJIT_CMAKE_DIR "" CACHE STRING "Location of Dr.Jit's CMake directory that should be used instead of the output of `drjit.get_cmake_dir()` when building with scikit-build.")
   mark_as_advanced(MI_DRJIT_CMAKE_DIR)
 
@@ -105,8 +114,9 @@ endif()
 # ----------------------------------------------------------
 
 if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf)
-  # Default: only scalar modes (RGB, Spectral)
-  set(MI_DEFAULT_VARIANTS "scalar_rgb;scalar_spectral;cuda_ad_rgb;llvm_ad_rgb;llvm_ad_spectral" CACHE STRING "Default Mitsuba variants that should be included if no mitsuba.conf file exists")
+  set(MI_DEFAULT_VARIANTS "scalar_rgb,scalar_spectral,cuda_ad_rgb,llvm_ad_rgb,llvm_ad_spectral" CACHE STRING "Default Mitsuba variants that should be included if no mitsuba.conf file exists")
+  string(REPLACE "," ";" MI_DEFAULT_VARIANTS "${MI_DEFAULT_VARIANTS}")
+  message(STATUS "MI_DEFAULT_VARIANTS: ${MI_DEFAULT_VARIANTS}")
   mark_as_advanced(MI_DEFAULT_VARIANTS)
   foreach(TMP ${MI_DEFAULT_VARIANTS})
     string(APPEND INSERT_CONFIGURATIONS_HERE "\"${TMP}\", ")
