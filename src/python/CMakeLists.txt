@@ -32,7 +32,7 @@ foreach (MI_VARIANT ${MI_VARIANTS})
 
   nanobind_add_module(${TARGET_NAME}
       NB_DOMAIN ${MI_NB_DOMAIN}
-      NB_SHARED
+      #NB_SHARED
       ${MI_DIST_FLAGS}
       main_v.cpp
       ${CORE_PY_V_SRC}
@@ -60,24 +60,24 @@ foreach (MI_VARIANT ${MI_VARIANTS})
   )
 endforeach()
 
-set(nanobind_lib_name "nanobind")
-if (STABLE_ABI IN_LIST MI_DIST_FLAGS)
-    set(nanobind_lib_name "${nanobind_lib_name}-abi3")
-endif()
-set(nanobind_lib_name "${nanobind_lib_name}-${MI_NB_DOMAIN}") # Append domain name
-set_target_properties(${nanobind_lib_name}
-  PROPERTIES
-  LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
-  RUNTIME_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
-  FOLDER python
-)
-install(TARGETS ${nanobind_lib_name}
-  LIBRARY DESTINATION mitsuba
-)
+#set(nanobind_lib_name "nanobind")
+#if (STABLE_ABI IN_LIST MI_DIST_FLAGS)
+#    set(nanobind_lib_name "${nanobind_lib_name}-abi3")
+#endif()
+#set(nanobind_lib_name "${nanobind_lib_name}-${MI_NB_DOMAIN}") # Append domain name
+#set_target_properties(${nanobind_lib_name}
+#  PROPERTIES
+#  LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
+#  RUNTIME_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
+#  FOLDER python
+#)
+#install(TARGETS ${nanobind_lib_name}
+#  LIBRARY DESTINATION mitsuba
+#)
 
 nanobind_add_module(mitsuba_ext
   NB_DOMAIN drjit
-  NB_SHARED
+  #NB_SHARED
   ${MI_DIST_FLAGS}
   main.cpp
   ${CORE_PY_SRC}
@@ -86,7 +86,7 @@ nanobind_add_module(mitsuba_ext
 
 nanobind_add_module(mitsuba_alias
   NB_DOMAIN drjit
-  NB_SHARED
+  #NB_SHARED
   ${MI_DIST_FLAGS}
   alias.cpp
 )
