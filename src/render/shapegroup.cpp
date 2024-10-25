@@ -79,8 +79,7 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
     }
 #endif
 
-    if constexpr (dr::is_jit_v<Float>)
-        jit_registry_put(dr::backend_v<Float>, "mitsuba::ShapeGroup", this);
+    variant_registry_put<Float, Spectrum>("ShapeGroup", this);
 }
 
 MI_VARIANT ShapeGroup<Float, Spectrum>::~ShapeGroup() {

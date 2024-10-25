@@ -72,8 +72,7 @@ MI_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props
         }
     }
 
-    if constexpr (dr::is_jit_v<Float>)
-        jit_registry_put(dr::backend_v<Float>, "mitsuba::Sensor", this);
+    variant_registry_put<Float, Spectrum>("Sensor", this);
 }
 
 MI_VARIANT Sensor<Float, Spectrum>::~Sensor() {

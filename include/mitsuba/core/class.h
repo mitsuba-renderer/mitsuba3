@@ -136,6 +136,20 @@ private:
     static bool m_is_initialized;
 };
 
+
+/**
+ * Adds the given class instance to a DrJit registry domain that is specific
+ * to this backend and Mitsuba variant.
+ */
+template <typename Float, typename Spectrum>
+void variant_registry_put(const char *class_name, void *ptr) {
+    if constexpr (dr::is_jit_v<Float>) {
+        std::string variant = ::mitsuba::detail::get_variant<Float, Spectrum>();
+        std::string name = "mitsuba::" + variant + "__" + class_name;
+        jit_registry_put(dr::backend_v<Float>, name.c_str(), ptr);
+    }
+}
+
 /**
  * \brief Return the \ref Class object corresponding to a named class.
  *
