@@ -136,20 +136,6 @@ private:
     static bool m_is_initialized;
 };
 
-
-/**
- * Adds the given class instance to a DrJit registry domain that is specific
- * to this backend and Mitsuba variant.
- */
-template <typename Float, typename Spectrum>
-void variant_registry_put(const char *class_name, void *ptr) {
-    if constexpr (dr::is_jit_v<Float>) {
-        std::string variant = ::mitsuba::detail::get_variant<Float, Spectrum>();
-        std::string name = "mitsuba::" + variant + "__" + class_name;
-        jit_registry_put(dr::backend_v<Float>, name.c_str(), ptr);
-    }
-}
-
 /**
  * \brief Return the \ref Class object corresponding to a named class.
  *
@@ -256,5 +242,61 @@ template <typename T, std::enable_if_t<is_constructible_v<T, Stream*>, int> = 0>
 Class::UnserializeFunctor get_unserialize_functor() { return [](Stream* s) -> Object* { return new T(s); }; }
 template <typename T, std::enable_if_t<!is_constructible_v<T, Stream*>, int> = 0>
 Class::UnserializeFunctor get_unserialize_functor() { return {}; }
+
+/// Adapted from: https://stackoverflow.com/a/65440575
+template <unsigned... Len>
+constexpr auto constexpr_strcat(const char (&...strings)[Len]) {
+    constexpr unsigned N = (... + Len) - sizeof...(Len);
+    std::array<char, N + 1> result = {};
+    result[N] = '\0';
+
+    char *dst = result.data();
+    for (const char *src : { strings... }) {
+        for (; *src != '\0'; src++, dst++) {
+            *dst = *src;
+        }
+    }
+    return result;
+}
+
 NAMESPACE_END(detail)
+
+template <typename Float, typename Spectrum, typename String>
+constexpr auto domain_name_for_class(const String &class_name) {
+    DRJIT_MARK_USED(class_name);
+    const auto variant = ::mitsuba::detail::get_variant_padded<Float, Spectrum>();
+    char variant_str[sizeof(variant) / sizeof(char)];
+    for (size_t i = 0; i < sizeof(variant) / sizeof(char); ++i)
+        variant_str[i] = variant[i];
+
+    return detail::constexpr_strcat(
+        "mitsuba::",
+        variant_str,
+        "__",
+        class_name
+    );
+}
+
+/**
+ * Adds the given class instance to a DrJit registry domain that is specific
+ * to this backend and Mitsuba variant.
+ */
+#define MTS_REGISTRY_PUT(name, ptr)                                                       \
+    if constexpr (dr::is_jit_v<Float>) {                                                  \
+        static constexpr auto domain_name = domain_name_for_class<Float, Spectrum>(name); \
+        jit_registry_put(dr::backend_v<Float>, domain_name.data(), ptr);                  \
+    }
+
+
+#define MTS_CALL_TEMPLATE_BEGIN(Name)                                               \
+    DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Name)
+
+#define MTS_CALL_TEMPLATE_END(Name)                                                 \
+    static constexpr auto __Domain = mitsuba::domain_name_for_class<Ts...>(#Name);  \
+    static constexpr const char *__domain() {                                       \
+        return __Domain.data();                                                     \
+    }                                                                               \
+    DRJIT_CALL_END(mitsuba::Name)
+
+
 NAMESPACE_END(mitsuba)

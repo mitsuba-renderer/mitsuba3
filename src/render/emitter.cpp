@@ -9,7 +9,7 @@ MI_VARIANT Emitter<Float, Spectrum>::Emitter(const Properties &props)
     : Base(props) {
         m_sampling_weight = props.get<ScalarFloat>("sampling_weight", 1.0f);
 
-        variant_registry_put<Float, Spectrum>("Emitter", this);
+        MTS_REGISTRY_PUT("Emitter", this);
     }
 
 MI_VARIANT Emitter<Float, Spectrum>::~Emitter() {

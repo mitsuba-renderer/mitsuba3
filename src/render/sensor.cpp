@@ -72,7 +72,7 @@ MI_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props
         }
     }
 
-    variant_registry_put<Float, Spectrum>("Sensor", this);
+    MTS_REGISTRY_PUT("Sensor", this);
 }
 
 MI_VARIANT Sensor<Float, Spectrum>::~Sensor() {
