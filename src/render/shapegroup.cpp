@@ -79,7 +79,7 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
     }
 #endif
 
-    variant_registry_put<Float, Spectrum>("ShapeGroup", this);
+    MTS_REGISTRY_PUT("ShapeGroup", this);
 }
 
 MI_VARIANT ShapeGroup<Float, Spectrum>::~ShapeGroup() {

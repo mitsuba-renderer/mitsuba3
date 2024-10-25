@@ -7,7 +7,7 @@ NAMESPACE_BEGIN(mitsuba)
 MI_VARIANT
 PhaseFunction<Float, Spectrum>::PhaseFunction(const Properties &props)
     : m_flags(+PhaseFunctionFlags::Empty), m_id(props.id()) {
-    variant_registry_put<Float, Spectrum>("PhaseFunction", this);
+    MTS_REGISTRY_PUT("PhaseFunction", this);
 }
 
 MI_VARIANT PhaseFunction<Float, Spectrum>::~PhaseFunction() {
