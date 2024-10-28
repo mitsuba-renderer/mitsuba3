@@ -189,4 +189,3 @@ MI_PY_EXPORT(DrJit) {
     // Loop type alias
     m.attr("while_loop") = drjit.attr("while_loop");
 }
-
