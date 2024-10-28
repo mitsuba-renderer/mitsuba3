@@ -255,14 +255,14 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Dr.Jit support for vectorized function calls
 // -----------------------------------------------------------------------
 
-MTS_CALL_TEMPLATE_BEGIN(PhaseFunction)
+MI_CALL_TEMPLATE_BEGIN(PhaseFunction)
     DRJIT_CALL_METHOD(sample)
     DRJIT_CALL_METHOD(eval_pdf)
     DRJIT_CALL_METHOD(projected_area)
     DRJIT_CALL_METHOD(max_projected_area)
     DRJIT_CALL_GETTER(flags)
     DRJIT_CALL_GETTER(component_count)
-MTS_CALL_TEMPLATE_END(PhaseFunction)
+MI_CALL_TEMPLATE_END(PhaseFunction)
 
 //! @}
 // -----------------------------------------------------------------------

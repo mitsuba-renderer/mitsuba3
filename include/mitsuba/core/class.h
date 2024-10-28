@@ -280,22 +280,18 @@ constexpr auto domain_name_for_class(const String &class_name) {
 /**
  * Adds the given class instance to a DrJit registry domain that is specific
  * to this backend and Mitsuba variant.
+ *
+ * Example usage:
+ *     MI_REGISTRY_PUT("BSDF", this);
  */
-#define MTS_REGISTRY_PUT(name, ptr)                                                       \
-    if constexpr (dr::is_jit_v<Float>) {                                                  \
-        static constexpr auto domain_name = domain_name_for_class<Float, Spectrum>(name); \
-        jit_registry_put(dr::backend_v<Float>, domain_name.data(), ptr);                  \
+#define MI_REGISTRY_PUT(name, ptr)                                                           \
     }
 
 
 #define MTS_CALL_TEMPLATE_BEGIN(Name)                                               \
     DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Name)
 
-#define MTS_CALL_TEMPLATE_END(Name)                                                 \
-    static constexpr auto __Domain = mitsuba::domain_name_for_class<Ts...>(#Name);  \
-    static constexpr const char *__domain() {                                       \
-        return __Domain.data();                                                     \
-    }                                                                               \
+#define MI_CALL_TEMPLATE_END(Name)                                                      \
     DRJIT_CALL_END(mitsuba::Name)
 
 

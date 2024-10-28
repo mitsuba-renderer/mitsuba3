@@ -71,7 +71,7 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.i
 
     m_silhouette_sampling_weight = props.get<ScalarFloat>("silhouette_sampling_weight", 1.0f);
 
-    MTS_REGISTRY_PUT("Shape", this);
+    MI_REGISTRY_PUT("Shape", this);
 }
 
 MI_VARIANT Shape<Float, Spectrum>::~Shape() {

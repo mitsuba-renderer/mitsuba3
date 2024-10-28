@@ -103,7 +103,7 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Dr.Jit support for vectorized function calls
 // -----------------------------------------------------------------------
 
-MTS_CALL_TEMPLATE_BEGIN(Emitter)
+MI_CALL_TEMPLATE_BEGIN(Emitter)
     DRJIT_CALL_METHOD(sample_ray)
     DRJIT_CALL_METHOD(sample_direction)
     DRJIT_CALL_METHOD(pdf_direction)
@@ -117,7 +117,7 @@ MTS_CALL_TEMPLATE_BEGIN(Emitter)
     DRJIT_CALL_GETTER(shape)
     DRJIT_CALL_GETTER(medium)
     DRJIT_CALL_GETTER(sampling_weight)
-MTS_CALL_TEMPLATE_END(Emitter)
+MI_CALL_TEMPLATE_END(Emitter)
 
 //! @}
 // -----------------------------------------------------------------------
