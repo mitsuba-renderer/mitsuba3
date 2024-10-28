@@ -10,6 +10,10 @@ table.docutils th {
     width:100%;
 }
 
+.sidebar-brand-text {
+	text-align: center;
+}
+
 .toggle .header {
     display: block;
     clear: both;
