@@ -52,7 +52,7 @@ from pathlib import Path
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '2.4'
+needs_sphinx = '8.1.3'
 
 
 # Add any paths that contain templates here, relative to this directory.
@@ -208,7 +208,8 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "drjit" : (
         "https://drjit.readthedocs.io/en/latest/", 
-        "https://drjit.readthedocs.io/en/v0.4.6/", None)
+        ("https://drjit.readthedocs.io/en/v0.4.6/", None)
+    )
 }
 
 nbsphinx_execute = 'never'
@@ -541,6 +542,10 @@ def custom_step(app):
 
 
 def setup(app):
+    import sphinx
+    if sphinx.__version__ != "8.1.3":
+        raise Exception("Please run the documentation with the exact package "
+                        "versions provided in `docs/requirements.txt`!")
     # Texinfo
     app.connect("builder-inited", custom_step)
     app.add_css_file('theme_overrides.css')
