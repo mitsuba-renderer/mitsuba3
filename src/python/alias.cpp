@@ -23,7 +23,7 @@
 namespace nb = nanobind;
 
 /**
- * On Windows the GIL is not held when we load DLLs due to potential deadlocks 
+ * On Windows the GIL is not held when we load DLLs due to potential deadlocks
  * with the Windows loader-lock.
  * (see https://github.com/python/cpython/issues/78076 that describes a similar
  * issue). Here, initialization of static variables is performed during DLL
@@ -43,6 +43,10 @@ PyObject *mi_dict = nullptr;
 
 /// Current variant (string)
 nb::object curr_variant;
+
+/// Set of user-provided callback functions to call when switching variants
+PyObject *variant_change_callbacks;
+
 
 nb::object import_with_deepbind_if_necessary(const char* name) {
 #if defined(__clang__) && !defined(__APPLE__)
@@ -112,22 +116,55 @@ static void set_variant(nb::args args) {
     }
 
     if (!curr_variant.equal(new_variant)) {
-        curr_variant = new_variant;
-        nb::object curr_variant_module = variant_module(curr_variant);
+        nb::object new_variant_module = variant_module(new_variant);
 
-        nb::dict variant_dict = curr_variant_module.attr("__dict__");
+        nb::dict variant_dict = new_variant_module.attr("__dict__");
         for (const auto &k : variant_dict.keys())
             if (!nb::bool_(k.attr("startswith")("__")) &&
                 !nb::bool_(k.attr("endswith")("__")))
                 Safe_PyDict_SetItem(mi_dict, k.ptr(),
                     PyDict_GetItem(variant_dict.ptr(), k.ptr()));
 
+        const auto &callbacks = nb::borrow<nb::set>(variant_change_callbacks);
+        for (const auto &cb : callbacks)
+            cb(curr_variant, new_variant);
+
+        // TODO: replace this with a callback?
         if (new_variant.attr("startswith")(nb::make_tuple("llvm_", "cuda_"))) {
             nb::module_ mi_python = nb::module_::import_("mitsuba.python.ad.integrators");
             nb::steal(PyImport_ReloadModule(mi_python.ptr()));
         }
+
+        curr_variant = new_variant;
     }
 }
+
+/**
+ * The given callable will be called each time the Mitsuba variable is changed.
+ * Note that callbacks are kept in a set: a given callback function will only be
+ * called once, even if it is added multiple times.
+ *
+ * `callback` will be called with the arguments `old_variant: str, new_variant: str`.
+ */
+static void add_set_variant_callback(const nb::callable &callback) {
+    nb::borrow<nb::set>(variant_change_callbacks).add(callback);
+}
+
+/**
+ * Removes the given `callback` callable from the list of callbacks to be called
+ * when the Mitsuba variant changes.
+ */
+static void remove_set_variant_callback(const nb::callable &callback) {
+    nb::borrow<nb::set>(variant_change_callbacks).discard(callback);
+}
+
+/**
+ * Removes all callbacks to be called when the Mitsuba variant changes.
+ */
+static void clear_set_variant_callback() {
+    nb::borrow<nb::set>(variant_change_callbacks).clear();
+}
+
 
 /// Fallback for when we're attempting to fetch variant-specific attribute
 static nb::object get_attr(nb::handle key) {
@@ -142,6 +179,7 @@ NB_MODULE(mitsuba_alias, m) {
     m.attr("__name__") = "mitsuba";
 
     curr_variant = nb::none();
+    variant_change_callbacks = PySet_New(nullptr);
 
     if (!variant_modules) {
         variant_modules = PyDict_New();
@@ -175,6 +213,9 @@ NB_MODULE(mitsuba_alias, m) {
     m.def("variant", []() { return curr_variant ? curr_variant : nb::none(); });
     m.def("variants", []() { return nb::steal(PyDict_Keys(variant_modules)); });
     m.def("set_variant", set_variant);
+    m.def("add_set_variant_callback", add_set_variant_callback);
+    m.def("remove_set_variant_callback", remove_set_variant_callback);
+    m.def("clear_set_variant_callback", clear_set_variant_callback);
     /// Only used for variant-specific attributes e.g. mi.scalar_rgb.T
     m.def("__getattr__", [](nb::handle key) { return get_attr(key); });
 
@@ -204,9 +245,12 @@ NB_MODULE(mitsuba_alias, m) {
         PyDict_Clear(mi_dict);
         mi_dict = nullptr;
 
+        PySet_Clear(variant_change_callbacks);
+        variant_change_callbacks = nullptr;
+
         if (variant_modules) {
             Py_DECREF(variant_modules);
-            variant_modules = nullptr; 
+            variant_modules = nullptr;
         }
     }));
 }
