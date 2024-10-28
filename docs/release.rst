@@ -41,3 +41,6 @@ How to make a new release?
 
 16. Create a `release on GitHub <https://github.com/mitsuba-renderer/mitsuba3/releases/new>`__
     from the tag created at step 10. The changelog can be copied from step 2.
+
+17. Checkout the ``stable`` branch and run ``git pull --ff-only origin vX.Y.Z``
+    and ``git push``
