@@ -700,3 +700,5 @@ def variant_context(*args) -> None:
         raise
     finally:
         mi.set_variant(old_variant)
+
+scoped_set_variant = variant_context
