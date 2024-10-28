@@ -244,14 +244,14 @@ template <typename T, std::enable_if_t<!is_constructible_v<T, Stream*>, int> = 0
 Class::UnserializeFunctor get_unserialize_functor() { return {}; }
 
 /// Adapted from: https://stackoverflow.com/a/65440575
-template <unsigned... Len>
-constexpr auto constexpr_strcat(const char (&...strings)[Len]) {
-    constexpr unsigned N = (... + Len) - sizeof...(Len);
+template <size_t... Len>
+constexpr auto constexpr_array_concatenation(const std::array<char, Len> &...arrays) {
+    constexpr size_t N = (... + Len) - sizeof...(Len);
     std::array<char, N + 1> result = {};
     result[N] = '\0';
 
     char *dst = result.data();
-    for (const char *src : { strings... }) {
+    for (const char *src : { arrays.data()... }) {
         for (; *src != '\0'; src++, dst++) {
             *dst = *src;
         }
@@ -261,18 +261,13 @@ constexpr auto constexpr_strcat(const char (&...strings)[Len]) {
 
 NAMESPACE_END(detail)
 
-template <typename Float, typename Spectrum, typename String>
-constexpr auto domain_name_for_class(const String &class_name) {
-    DRJIT_MARK_USED(class_name);
-    const auto variant = ::mitsuba::detail::get_variant_padded<Float, Spectrum>();
-    char variant_str[sizeof(variant) / sizeof(char)];
-    for (size_t i = 0; i < sizeof(variant) / sizeof(char); ++i)
-        variant_str[i] = variant[i];
-
-    return detail::constexpr_strcat(
-        "mitsuba::",
-        variant_str,
-        "__",
+template <typename Float, typename Spectrum, size_t N>
+constexpr auto domain_name_for_class(const std::array<char, N> &class_name) {
+    constexpr std::array variant = ::mitsuba::detail::get_variant_padded<Float, Spectrum>();
+    return detail::constexpr_array_concatenation(
+        std::array<char, 10>{"mitsuba::"},
+        variant,
+        std::array<char, 3>{"__"},
         class_name
     );
 }
@@ -285,13 +280,22 @@ constexpr auto domain_name_for_class(const String &class_name) {
  *     MI_REGISTRY_PUT("BSDF", this);
  */
 #define MI_REGISTRY_PUT(name, ptr)                                                           \
+    if constexpr (dr::is_jit_v<Float>) {                                                     \
+        static constexpr std::array<char, sizeof(name) / sizeof(char)> class_name_arr{name}; \
+        static constexpr auto domain_name                                                    \
+            = domain_name_for_class<Float, Spectrum>(class_name_arr);                        \
+        jit_registry_put(dr::backend_v<Float>, domain_name.data(), ptr);                     \
     }
 
-
-#define MTS_CALL_TEMPLATE_BEGIN(Name)                                               \
+#define MI_CALL_TEMPLATE_BEGIN(Name)          \
     DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Name)
 
 #define MI_CALL_TEMPLATE_END(Name)                                                      \
+    static constexpr std::array<char, sizeof(#Name) / sizeof(char)> MIClass_{#Name};    \
+    static constexpr auto MIDomain_ = mitsuba::domain_name_for_class<Ts...>(MIClass_);  \
+    static constexpr const char *domain_() {                                            \
+        return MIDomain_.data();                                                        \
+    }                                                                                   \
     DRJIT_CALL_END(mitsuba::Name)
 
 
