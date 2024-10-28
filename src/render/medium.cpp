@@ -11,7 +11,7 @@ MI_VARIANT Medium<Float, Spectrum>::Medium() :
     m_is_homogeneous(false),
     m_has_spectral_extinction(true) {
 
-    MTS_REGISTRY_PUT("Medium", this);
+    MI_REGISTRY_PUT("Medium", this);
 }
 
 MI_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props.id()) {
@@ -32,7 +32,7 @@ MI_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props
 
     m_sample_emitters = props.get<bool>("sample_emitters", true);
 
-    MTS_REGISTRY_PUT("Medium", this);
+    MI_REGISTRY_PUT("Medium", this);
 }
 
 MI_VARIANT Medium<Float, Spectrum>::~Medium() {

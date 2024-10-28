@@ -52,7 +52,7 @@ public:
         Log(Info, "Collapsed %zu into %zu meshes. (took %s, %zu objects ignored)",
             visited, tbl.size(), util::time_string((float) timer.value()), ignored);
 
-        MTS_REGISTRY_PUT("Shape", this);
+        MI_REGISTRY_PUT("Shape", this);
     }
 
     std::vector<ref<Object>> expand() const override {
