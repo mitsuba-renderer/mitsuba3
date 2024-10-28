@@ -129,12 +129,6 @@ static void set_variant(nb::args args) {
         for (const auto &cb : callbacks)
             cb(curr_variant, new_variant);
 
-        // TODO: replace this with a callback?
-        if (new_variant.attr("startswith")(nb::make_tuple("llvm_", "cuda_"))) {
-            nb::module_ mi_python = nb::module_::import_("mitsuba.python.ad.integrators");
-            nb::steal(PyImport_ReloadModule(mi_python.ptr()));
-        }
-
         curr_variant = new_variant;
     }
 }
