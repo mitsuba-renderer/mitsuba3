@@ -291,8 +291,10 @@ constexpr auto domain_name_for_class(const std::array<char, N> &class_name) {
     DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Name)
 
 #define MI_CALL_TEMPLATE_END(Name)                                                      \
+private:                                                                                \
     static constexpr std::array<char, sizeof(#Name) / sizeof(char)> MIClass_{#Name};    \
     static constexpr auto MIDomain_ = mitsuba::domain_name_for_class<Ts...>(MIClass_);  \
+public:                                                                                 \
     static constexpr const char *domain_() {                                            \
         return MIDomain_.data();                                                        \
     }                                                                                   \
