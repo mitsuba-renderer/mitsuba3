@@ -8,6 +8,7 @@
 
 import sys
 import os
+import enum
 from os.path import join, realpath, dirname
 import shlex
 import subprocess
@@ -22,7 +23,7 @@ from pathlib import Path
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '2.4'
+needs_sphinx = '8.1.3'
 
 # Add any paths that contain templates here, relative to this directory.
 # templates_path = ['_templates']
@@ -256,6 +257,10 @@ def parse_signature_args(signature):
     else:
         # Remove parenthesis
         signature = signature[1:-1]
+
+        # If this is a signature of a method, `self` will be lost by the regex below
+        is_method = signature.startswith("self,")
+
         # Split the string based on 'arg: *'
         items_tmp = re.split(r'([a-zA-Z\_0-9]+): ', signature)
         # Remove first element as it is always ''
@@ -264,7 +269,14 @@ def parse_signature_args(signature):
         # Construct parameter list and new signature
         parameters = []
         new_signature = ''
+
+        if is_method:
+            new_signature += "self"
+
         for i in range(len(items_tmp) // 2):
+            if i == 0 and is_method:
+                new_signature += ', '
+
             p_name = items_tmp[2 * i]
             p_type = items_tmp[2 * i + 1]
 
@@ -483,33 +495,15 @@ def process_docstring_callback(app, what, name, obj, options, lines):
                     lines.insert(1, '')
 
             # Handle enums properly
-            # Search for 'Members:' line to define whether this class is an enum or not
-            is_enum = False
-            next_idx = 0
-            for i, l in enumerate(lines):
-                if 'Members:' in l:
-                    is_enum = True
-                    next_idx = i + 2
-                    break
-
+            is_enum = issubclass(obj, enum.Enum)
             if is_enum:
-                # Iterate over the enum members
-                while next_idx < len(lines) and not '__init__' in lines[next_idx]:
-                    l = lines[next_idx]
-                    # Skip empty lines
-                    if not l == '':
-                        # Check if this line defines a enum member
-                        if re.match(r'  [a-zA-Z\_0-9]+ : .*', l):
-                            e_name, e_desc = l[2:].split(' : ')
-                            lines[next_idx] = '.. py:data:: %s' % (e_name)
-                            next_idx += 1
-                            lines.insert(next_idx, '')
-                            next_idx += 1
-                            lines.insert(next_idx, '    %s' % e_desc)
-                        else:
-                            # Add indentation
-                            lines[next_idx] = '    %s' % l
-                    next_idx += 1
+                lines.append("Valid values are as follows:")
+                lines.append('')
+                for value in obj:
+                    lines.append('.. py:data:: %s' % (value.__name__))
+                    lines.append('')
+                    lines.append('    %s' % ' '.join(value.__doc__.splitlines()))
+                    lines.append('')
 
             # Handle aliases (will only call the callback once)
             if len(lines) > 0 and 'Overloaded function.' in lines[0]:
@@ -721,6 +715,7 @@ def generate_list_api_callback(app):
        and packages."""
 
     import importlib
+    import enum
     from inspect import isclass, isfunction, ismodule, ismethod
 
     list_api = {}
@@ -733,6 +728,7 @@ def generate_list_api_callback(app):
             # Skip private attributes
             return
         elif ((isclass(obj) and obj.__module__.startswith(drjit_variant_alias)) or
+              (ismethod(obj) and obj.__module__.startswith(drjit_variant_alias)) or
               (ismethod(obj) and obj.__module__.startswith(drjit_variant_alias)) or
               (isfunction(obj) and obj.__module__.startswith(drjit_variant_alias))):
             # Do not ignore "aliased" DrJit imports
@@ -789,14 +785,46 @@ def generate_list_api_callback(app):
     with open(list_api_filename, 'w', encoding='utf-8') as f:
         for k in dict(sorted(list_api.items(), key=lambda item: item[1][1])):
             obj, full_name = list_api[k]
-            f.write('.. auto%s:: %s\n\n' %
-                    ('class' if isclass(obj) else 'function', full_name))
+            specifier = 'function'
+            if isclass(obj):
+                specifier = 'class'
+
+            f.write('.. auto%s:: %s\n' %
+                    (specifier, full_name))
+
+            f.write('\n')
 
 
 
 # -- Register event callbacks ----------------------------------------------
 
 def setup(app):
+    import inspect
+    from sphinx.util import inspect as sphinx_inspect
+    import sphinx
+
+    if sphinx.__version__ != "8.1.3":
+        raise Exception("Please run the documentation with the exact package "
+                        "versions provided in `docs/requirements.txt`!")
+
+    # Sphinx inspects all objects in the module and tries to resolve their type
+    # (attribute, function, class, module, etc.) by using its own functions in
+    # `sphinx.util.inspect`. These functions misidentify certain nanobind
+    # objects. We monkey patch those functions here.
+    def mpatch_ismethod(object):
+        if hasattr(object, '__name__') and type(object).__name__ == "nb_method":
+            return True
+        return inspect.ismethod(object)
+
+    sphinx_inspect_isclassmethod = sphinx_inspect.isclassmethod
+    def mpatch_isclassmethod(object, cls=None, name=None):
+        if hasattr(object, '__name__') and type(object).__name__ == "nb_method":
+            return False
+        return sphinx_inspect_isclassmethod(object, cls,name)
+
+    sphinx_inspect.ismethod = mpatch_ismethod
+    sphinx_inspect.isclassmethod = mpatch_isclassmethod
+
     # Texinfo
     app.connect("builder-inited", generate_list_api_callback)
     app.add_css_file('theme_overrides.css')
