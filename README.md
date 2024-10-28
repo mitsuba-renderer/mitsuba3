@@ -89,10 +89,19 @@ pip install mitsuba
 
 on the command line. The Python package includes four variants by default:
 
-- ``scalar_spectral``
 - ``scalar_rgb``
+- ``scalar_spectral``
+- ``scalar_spectral_polarized``
 - ``llvm_ad_rgb``
+- ``llvm_ad_mono``
+- ``llvm_ad_mono_polarized``
+- ``llvm_ad_spectral``
+- ``llvm_ad_spectral_polarized``
 - ``cuda_ad_rgb``
+- ``cuda_ad_mono``
+- ``cuda_ad_mono_polarized``
+- ``cuda_ad_spectral``
+- ``cuda_ad_spectral_polarized``
 
 The first two perform classic one-ray-at-a-time simulation using either a RGB
 or spectral color representation, while the latter two can be used for inverse
