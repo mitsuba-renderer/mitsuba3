@@ -261,29 +261,15 @@ constexpr auto constexpr_array_concatenation(const std::array<char, Len> &...arr
 
 NAMESPACE_END(detail)
 
-template <typename Float, typename Spectrum, size_t N>
-constexpr auto domain_name_for_class(const std::array<char, N> &class_name) {
-    constexpr std::array variant = ::mitsuba::detail::get_variant_padded<Float, Spectrum>();
-    return detail::constexpr_array_concatenation(
-        std::array<char, 10>{"mitsuba::"},
-        variant,
-        std::array<char, 3>{"__"},
-        class_name
-    );
-}
-
-/**
- * Adds the given class instance to a DrJit registry domain that is specific
- * to this backend and Mitsuba variant.
- *
- * Example usage:
- *     MI_REGISTRY_PUT("BSDF", this);
- */
 #define MI_REGISTRY_PUT(name, ptr)                                                           \
     if constexpr (dr::is_jit_v<Float>) {                                                     \
-        static constexpr std::array<char, sizeof(name) / sizeof(char)> class_name_arr{name}; \
         static constexpr auto domain_name                                                    \
-            = domain_name_for_class<Float, Spectrum>(class_name_arr);                        \
+            = detail::constexpr_array_concatenation(                                         \
+                std::array<char, 10>{"mitsuba::"},                                           \
+                detail::get_variant_padded<Float, Spectrum>(),                               \
+                std::array<char, 3>{"__"},                                                   \
+                std::array<char, sizeof(name) / sizeof(char)>{name}                          \
+            );                                                                               \
         jit_registry_put(dr::backend_v<Float>, domain_name.data(), ptr);                     \
     }
 
@@ -292,12 +278,18 @@ constexpr auto domain_name_for_class(const std::array<char, N> &class_name) {
 
 #define MI_CALL_TEMPLATE_END(Name)                                                      \
 private:                                                                                \
-    static constexpr std::array<char, sizeof(#Name) / sizeof(char)> MIClass_{#Name};    \
-    static constexpr auto MIDomain_ = mitsuba::domain_name_for_class<Ts...>(MIClass_);  \
+    static constexpr auto MIDomain_                                                     \
+            = ::mitsuba::detail::constexpr_array_concatenation(                         \
+                std::array<char, 10>{"mitsuba::"},                                      \
+                ::mitsuba::detail::get_variant_padded<Ts...>(),                         \
+                std::array<char, 3>{"__"},                                              \
+                std::array<char, sizeof(#Name) / sizeof(char)>{#Name}                   \
+            );                                                                          \
 public:                                                                                 \
     static constexpr const char *domain_() {                                            \
         return MIDomain_.data();                                                        \
     }                                                                                   \
+    static_assert(is_detected_v<detail::has_domain_override, CallSupport_>);            \
     DRJIT_CALL_END(mitsuba::Name)
 
 
