@@ -25,4 +25,4 @@ def integrators_variants_cb(old, new):
     importlib.reload(prb_projective)
 
 
-mi.add_set_variant_callback(integrators_variants_cb)
+mi.detail.add_variant_callback(integrators_variants_cb)
