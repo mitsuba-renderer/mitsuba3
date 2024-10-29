@@ -140,7 +140,7 @@ static void set_variant(nb::args args) {
  *
  * `callback` will be called with the arguments `old_variant: str, new_variant: str`.
  */
-static void add_set_variant_callback(const nb::callable &callback) {
+static void add_variant_callback(const nb::callable &callback) {
     nb::borrow<nb::set>(variant_change_callbacks).add(callback);
 }
 
@@ -148,14 +148,14 @@ static void add_set_variant_callback(const nb::callable &callback) {
  * Removes the given `callback` callable from the list of callbacks to be called
  * when the Mitsuba variant changes.
  */
-static void remove_set_variant_callback(const nb::callable &callback) {
+static void remove_variant_callback(const nb::callable &callback) {
     nb::borrow<nb::set>(variant_change_callbacks).discard(callback);
 }
 
 /**
  * Removes all callbacks to be called when the Mitsuba variant changes.
  */
-static void clear_set_variant_callback() {
+static void clear_variant_callbacks() {
     nb::borrow<nb::set>(variant_change_callbacks).clear();
 }
 
@@ -207,16 +207,18 @@ NB_MODULE(mitsuba_alias, m) {
     m.def("variant", []() { return curr_variant ? curr_variant : nb::none(); });
     m.def("variants", []() { return nb::steal(PyDict_Keys(variant_modules)); });
     m.def("set_variant", set_variant);
-    m.def("add_set_variant_callback", add_set_variant_callback);
-    m.def("remove_set_variant_callback", remove_set_variant_callback);
-    m.def("clear_set_variant_callback", clear_set_variant_callback);
     /// Only used for variant-specific attributes e.g. mi.scalar_rgb.T
     m.def("__getattr__", [](nb::handle key) { return get_attr(key); });
+
+    // `mitsuba.detail` submodule
+    nb::module_ mi_detail = m.def_submodule("detail");
+    mi_detail.def("add_variant_callback", add_variant_callback);
+    mi_detail.def("remove_variant_callback", remove_variant_callback);
+    mi_detail.def("clear_variant_callbacks", clear_variant_callbacks);
 
     /// Fill `__dict__` with all objects in `mitsuba_ext` and `mitsuba.python`
     mi_dict = m.attr("__dict__").ptr();
     nb::object mi_ext = import_with_deepbind_if_necessary("mitsuba.mitsuba_ext");
-    nb::object mi_python = nb::module_::import_("mitsuba.python");
     nb::dict mitsuba_ext_dict = mi_ext.attr("__dict__");
     for (const auto &k : mitsuba_ext_dict.keys())
         if (!nb::bool_(k.attr("startswith")("__")) &&
@@ -224,6 +226,8 @@ NB_MODULE(mitsuba_alias, m) {
             Safe_PyDict_SetItem(mi_dict, k.ptr(), mitsuba_ext_dict[k].ptr());
         }
 
+    // Import contents of `mitsuba.python` into top-level `mitsuba` module
+    nb::object mi_python = nb::module_::import_("mitsuba.python");
     nb::dict mitsuba_python_dict = mi_python.attr("__dict__");
     for (const auto &k : mitsuba_python_dict.keys())
         if (!nb::bool_(k.attr("startswith")("__")) &&

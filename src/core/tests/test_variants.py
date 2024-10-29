@@ -15,12 +15,12 @@ def test01_variants_callbacks(variants_all_backends_once):
         nonlocal change_count
         change_count += 1
 
-    mi.add_set_variant_callback(track_changes)
-    mi.add_set_variant_callback(count_changes)
+    mi.detail.add_variant_callback(track_changes)
+    mi.detail.add_variant_callback(count_changes)
     # Adding the same callback multiple times does nothing.
     # It won't be called multiple times.
-    mi.add_set_variant_callback(track_changes)
-    mi.add_set_variant_callback(track_changes)
+    mi.detail.add_variant_callback(track_changes)
+    mi.detail.add_variant_callback(track_changes)
 
     try:
         previous = mi.variant()
@@ -43,8 +43,8 @@ def test01_variants_callbacks(variants_all_backends_once):
             assert h == e
 
     finally:
-        # The callback shouldn't survive
-        mi.remove_set_variant_callback(track_changes)
+        # The callback shouldn't stay on even if the test fails.
+        mi.detail.remove_variant_callback(track_changes)
 
     # Callback shouldn't be called anymore
     len_e = len(expected)
