@@ -138,7 +138,6 @@ class PRBVolpathIntegrator(RBIntegrator):
             channel = mi.UInt32(dr.minimum(n_channels * sampler.next_1d(active), n_channels - 1))
 
         while dr.hint(active,
-                      max_iterations=self.max_depth,
                       label=f"Path Replay Backpropagation ({mode.name})"):
             active &= dr.any(throughput != 0.0)
 
@@ -334,7 +333,7 @@ class PRBVolpathIntegrator(RBIntegrator):
 
         return L if is_primal else δL, valid_ray, [], L
 
-    @dr.syntax
+    @dr.syntax(print_code=True)
     def sample_emitter(self, mei, si, active_medium, active_surface, scene, sampler, medium, channel,
                        active, adj_emitted=None, δL=None, mode=None):
         is_primal = mode == dr.ADMode.Primal
@@ -363,7 +362,11 @@ class PRBVolpathIntegrator(RBIntegrator):
         needs_intersection = mi.Bool(True)
         transmittance = mi.Spectrum(1.0)
 
+        print(f"Outside: {dr.grad_enabled(transmittance)=}")
         while dr.hint(active, label=f"PRB Next Event Estimation ({mode.name})"):
+            print(f"Inside: {dr.grad_enabled(transmittance)=}")
+            print(f"Inside: {transmittance[0].index=}")
+            print(f"Inside: {transmittance[0].index_ad=}")
             remaining_dist = max_dist - total_dist
             ray.maxt = dr.detach(remaining_dist)
             active &= remaining_dist > 0.0
@@ -411,6 +414,8 @@ class PRBVolpathIntegrator(RBIntegrator):
                 dr.backward(tr_multiplier * dr.detach(dr.select(active_adj, δL * adj_emitted / tr_multiplier, 0.0)))
 
             transmittance *= dr.detach(tr_multiplier)
+            print(f"Inside (after mult): {transmittance[0].index=}")
+            print(f"Inside (after mult): {transmittance[0].index_ad=}")
 
             # Update the ray with new origin & t parameter
             ray[active_surface] = dr.detach(si.spawn_ray(mi.Vector3f(ray.d)))
@@ -425,7 +430,13 @@ class PRBVolpathIntegrator(RBIntegrator):
             has_medium_trans = active_surface & si.is_medium_transition()
             medium[has_medium_trans] = si.target_medium(ray.d)
 
-        return emitter_val * dr.detach(transmittance), ds
+        print(f"After: {dr.grad_enabled(transmittance)=}")
+        print(f"After: {transmittance[0].index=}")
+        print(f"After: {transmittance[0].index_ad=}")
+
+        #return emitter_val * dr.detach(transmittance), ds
+
+        return emitter_val * transmittance, ds
 
     def to_string(self):
         return f'PRBVolpathIntegrator[max_depth = {self.max_depth}]'
