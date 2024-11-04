@@ -544,6 +544,10 @@ void Thread::static_initialization() {
     main_thread = self;
 }
 
+void Thread::tls_shutdown() {
+    self = nullptr;
+}
+
 void Thread::static_shutdown() {
     for (auto& task : registered_tasks)
         task_wait_and_release(task);
