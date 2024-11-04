@@ -316,16 +316,30 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         std::unique_ptr<Float[]> aovs(new Float[n_channels]);
 
         // Potentially render multiple passes
-        for (size_t i = 0; i < n_passes; i++) {
-            render_sample(scene, sensor, sampler, block, aovs.get(), pos,
-                          diff_scale_factor);
+        struct LoopState {
+            UInt32 idx;
+            Sampler* sampler;
+            ImageBlock* block;
+            Float* aovs;
 
-            if (n_passes > 1) {
-                sampler->advance(); // Will trigger a kernel launch of size 1
-                sampler->schedule_state();
-                dr::eval(block->tensor());
-            }
-        }
+            DRJIT_STRUCT(LoopState, idx, sampler, block, aovs)
+        } ls = {
+            dr::zeros<UInt32>(wavefront_size),
+            sampler,
+            block,
+            aovs.get()
+        };
+
+        dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),
+            [n_passes](const LoopState& ls) { return ls.idx < n_passes; },
+            [this, scene, sensor, pos, diff_scale_factor](LoopState& ls) {
+
+            render_sample(scene, sensor, ls.sampler, ls.block, ls.aovs,
+                pos, diff_scale_factor);
+
+            ls.sampler->advance();
+            ls.idx++;
+        }, "SamplingIntegrator::render() Multi-pass");
 
         film->put_block(block);
 

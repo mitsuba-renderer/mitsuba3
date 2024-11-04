@@ -80,7 +80,7 @@ template <typename Float, typename Spectrum>
 class OrthogonalSampler final : public PCG32Sampler<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(PCG32Sampler, m_sample_count, m_base_seed, m_rng, seeded,
-                    m_samples_per_wavefront, m_dimension_index,
+                    m_samples_per_wavefront, m_dimension_index, m_sample_index,
                     current_sample_index, compute_per_sequence_seed)
     MI_IMPORT_TYPES()
 
@@ -158,12 +158,14 @@ public:
     }
 
     void traverse_1_cb_ro(void *payload, void (*fn)(void *, uint64_t)) const override {
-        auto fields = dr::make_tuple(m_rng, m_dimension_index, m_permutation_seed);
+        auto fields = dr::make_tuple(m_rng,
+            m_dimension_index, m_sample_index, m_permutation_seed);
         dr::traverse_1_fn_ro(fields, payload, fn);
     }
 
     void traverse_1_cb_rw(void *payload, uint64_t (*fn)(void *, uint64_t)) override {
-        auto fields = dr::tie(m_rng, m_dimension_index, m_permutation_seed);
+        auto fields = dr::tie(m_rng,
+            m_dimension_index, m_sample_index, m_permutation_seed);
         dr::traverse_1_fn_rw(fields, payload, fn);
     }
 
