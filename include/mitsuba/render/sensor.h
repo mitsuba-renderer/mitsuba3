@@ -313,7 +313,7 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Dr.Jit support for vectorized function calls
 // -----------------------------------------------------------------------
 
-MI_CALL_TEMPLATE_BEGIN(Sensor)
+DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Sensor)
     DRJIT_CALL_METHOD(sample_ray)
     DRJIT_CALL_METHOD(sample_ray_differential)
     DRJIT_CALL_METHOD(sample_direction)
@@ -326,4 +326,4 @@ MI_CALL_TEMPLATE_BEGIN(Sensor)
     DRJIT_CALL_GETTER(flags)
     DRJIT_CALL_GETTER(shape)
     DRJIT_CALL_GETTER(medium)
-MI_CALL_TEMPLATE_END(Sensor)
+DRJIT_CALL_END(mitsuba::Sensor)

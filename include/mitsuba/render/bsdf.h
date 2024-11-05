@@ -654,7 +654,7 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Dr.Jit support for vectorized function calls
 // -----------------------------------------------------------------------
 
-MI_CALL_TEMPLATE_BEGIN(BSDF)
+DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::BSDF)
     DRJIT_CALL_METHOD(sample)
     DRJIT_CALL_METHOD(eval)
     DRJIT_CALL_METHOD(eval_null_transmission)
@@ -670,7 +670,7 @@ MI_CALL_TEMPLATE_BEGIN(BSDF)
     auto needs_differentials() const {
         return has_flag(flags(), mitsuba::BSDFFlags::NeedsDifferentials);
     }
-MI_CALL_TEMPLATE_END(BSDF)
+DRJIT_CALL_END(mitsuba::BSDF)
 
 //! @}
 // -----------------------------------------------------------------------

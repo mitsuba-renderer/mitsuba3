@@ -28,7 +28,6 @@ def write_core_config_cpp(f, enabled, default_variant):
     f.write('   helper various macros to instantiate multiple variants of Mitsuba. */\n\n')
 
     f.write('#pragma once\n\n')
-    f.write('#include <array>\n')
     f.write('#include <mitsuba/core/fwd.h>\n')
 
     enable_jit = False
@@ -90,7 +89,6 @@ def write_core_config_cpp(f, enabled, default_variant):
 
     f.write('NAMESPACE_BEGIN(mitsuba)\n')
     f.write('NAMESPACE_BEGIN(detail)\n')
-
     f.write('/// Convert a <Float, Spectrum> type pair into one of the strings in MI_VARIANT\n')
     f.write('template <typename Float_, typename Spectrum_> constexpr const char *get_variant() {\n')
     for index, (name, float_, spectrum) in enumerate(enabled):
@@ -100,18 +98,6 @@ def write_core_config_cpp(f, enabled, default_variant):
     f.write('    else\n')
     f.write('        return "";\n')
     f.write('}\n')
-
-    max_len = max(len(e[0]) for e in enabled)
-    f.write('/// Convert a <Float, Spectrum> type pair into a fixed-length string\n')
-    f.write('template <typename Float_, typename Spectrum_> constexpr std::array<char, %d> get_variant_padded() {\n' % (max_len+1))
-    for index, (name, float_, spectrum) in enumerate(enabled):
-        f.write('    %sif constexpr (std::is_same_v<Float_, %s> &&\n' % ('else ' if index > 0 else '', float_))
-        f.write('    %s              std::is_same_v<Spectrum_, %s>)\n' % ('     ' if index > 0 else '', spectrum))
-        f.write('        return std::array<char, %d>{"%s"};\n' % (max_len+1, name.ljust(max_len, '_')))
-    f.write('    else\n')
-    f.write('        return std::array<char, %d>{"%s"};\n' % (max_len+1, '_' * max_len))
-    f.write('}\n')
-
     f.write('NAMESPACE_END(detail)\n')
     f.write('NAMESPACE_END(mitsuba)\n')
 
