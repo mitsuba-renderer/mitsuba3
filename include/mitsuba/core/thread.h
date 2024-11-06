@@ -141,6 +141,9 @@ public:
     /// Initialize the threading system
     static void static_initialization();
 
+    /// Shut down any thread local state
+    static void tls_shutdown();
+
     /// Shut down the threading system
     static void static_shutdown();
 
