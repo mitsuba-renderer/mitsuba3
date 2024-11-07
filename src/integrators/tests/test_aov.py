@@ -180,3 +180,75 @@ def test05_check_aov_film(variants_all_rgb):
 
     # Make sure radiance is consistent
     assert(np.allclose(bitmap_aov.split()[0][1],bitmap_path.split()[0][1]))
+
+def test06_test_aov_ad_forward(variants_all_ad_rgb):
+    scene = mi.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'), res=32)
+
+    path_integrator = mi.load_dict({
+        'type': 'path',
+        'max_depth': 6
+    })
+
+    aov_integrator = mi.load_dict({
+        'type': 'aov',
+        'aovs': 'ab:albedo,dd.y:depth,nn:sh_normal',
+        'my_image': path_integrator
+    })
+
+    spp = 16
+
+    params = mi.traverse(scene)
+    params.keep('red.reflectance.value')
+    dr.enable_grad(params['red.reflectance.value'])
+    dr.set_grad(params['red.reflectance.value'], 1.0)
+    params.update()
+
+    image = mi.render(scene, params, integrator=path_integrator, spp=spp)
+    grad_image = dr.forward_to(image)
+    dr.eval(grad_image)
+
+    dr.set_grad(params['red.reflectance.value'], 1.0)
+    params.update()
+
+    aov_image = mi.render(scene, params, integrator=aov_integrator, spp=spp)
+    grad_aov_image = dr.forward_to(image)
+    dr.eval(grad_aov_image)
+
+    assert dr.allclose(grad_image, grad_aov_image[:,:,:3])
+
+def test06_test_aov_ad_backward(variants_all_ad_rgb):
+    scene = mi.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'), res=32)
+
+    path_integrator = mi.load_dict({
+        'type': 'path',
+        'max_depth': 6
+    })
+
+    aov_integrator = mi.load_dict({
+        'type': 'aov',
+        'aovs': 'ab:albedo,dd.y:depth,nn:sh_normal',
+        'my_image': path_integrator
+    })
+
+    spp = 16
+
+    params = mi.traverse(scene)
+    params.keep('red.reflectance.value')
+    dr.enable_grad(params['red.reflectance.value'])
+    dr.set_grad(params['red.reflectance.value'], 1.0)
+    params.update()
+
+    image = mi.render(scene, params, integrator=path_integrator, spp=spp)
+    dr.backward(image)
+    grad_image = dr.grad(params['red.reflectance.value'])
+    dr.eval(grad_image)
+
+    dr.set_grad(params['red.reflectance.value'], 1.0)
+    params.update()
+    aov_image = mi.render(scene, params, integrator=aov_integrator, spp=spp)
+    dr.backward_from(aov_image[:,:,:3])
+    grad_aov_image = dr.grad(params['red.reflectance.value'])
+    dr.eval(grad_aov_image)
+
+    assert dr.allclose(grad_image, grad_aov_image)
+

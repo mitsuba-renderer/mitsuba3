@@ -401,9 +401,12 @@ public:
 
             // Perform an AD traversal of all registered AD variables that
             // influence 'aovs_image' in a differentiable manner
-            dr::forward_to(aovs_image.array());
-
-            aovs_grad = TensorXf(dr::grad(aovs_image.array()), 3, aovs_image.shape().data());
+            if (dr::grad_enabled(aovs_image.array())) {
+                dr::forward_to(aovs_image.array(), (uint32_t) dr::ADFlag::ClearInterior);
+                aovs_grad = TensorXf(dr::grad(aovs_image.array()), 3, aovs_image.shape().data());
+            } else {
+                aovs_grad = TensorXf(dr::zeros<Float>(aovs_image.array().size()), 3, aovs_image.shape().data());
+            }
         }
 
         // Let inner integrators handle forward differentiation for radiance
@@ -432,7 +435,7 @@ public:
             size_t num_aovs = m_aov_names.size() - m_integrator_aovs_count;
             aovs_image = get_channels_slice(aovs_image, aovs_image.shape(2) - num_aovs, num_aovs);
 
-            dr::backward_from((aovs_image * aovs_grad).array());
+            dr::backward_from((aovs_image * aovs_grad).array(), (uint32_t) dr::ADFlag::ClearInterior);
         }
 
         // Let inner integrators handle backwards differentiation for radiance
