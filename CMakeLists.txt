@@ -502,6 +502,14 @@ endif()
 
 if (NOT SKBUILD)
   list(APPEND MI_DEPEND nanothread)
+
+  if (MI_ENABLE_JIT)
+    list(APPEND MI_DEPEND drjit-core)
+  endif()
+
+  if (MI_ENABLE_AUTODIFF)
+    list(APPEND MI_DEPEND drjit-extra)
+  endif()
 endif()
 
 # Copy shared libraries to Python folders (no rpath on Windows)
