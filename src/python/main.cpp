@@ -83,6 +83,7 @@ NB_MODULE(mitsuba_ext, m) {
             Py_INCREF(o);
         },
         [](PyObject *o) noexcept {
+            sleep(2);
             nb::gil_scoped_acquire guard;
             Py_DECREF(o);
         }

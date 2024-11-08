@@ -187,6 +187,15 @@ private:
     std::unique_ptr<ThreadPrivate> d;
 };
 
+struct MI_EXPORT_LIB ThreadNotifier {
+    ThreadNotifier();
+    ~ThreadNotifier();
+    void ensure_initialized();
+    static void set_callback(std::function<void()>);
+    static std::atomic<uint32_t> m_counter;
+    static std::function<void()> m_cb;
+};
+
 /**
  * \brief Captures a thread environment (logger and file resolver).
  * Used with \ref ScopedSetThreadEnvironment

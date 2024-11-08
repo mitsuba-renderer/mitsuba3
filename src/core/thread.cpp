@@ -100,24 +100,32 @@ protected:
 
 std::atomic<uint32_t> WorkerThread::m_counter{0};
 
-struct ThreadNotifier {
-    ThreadNotifier() {
-        // Do not register the main thread
-        if (m_counter > 0)
-            Thread::register_external_thread("wrk");
-        m_counter++;
-    }
-    ~ThreadNotifier() {
-        if (self)
-            Thread::unregister_external_thread();
-        m_counter--;
-    }
-    void ensure_initialized() {}
-    static std::atomic<uint32_t> m_counter;
-};
-
 std::atomic<uint32_t> ThreadNotifier::m_counter{0};
+std::function<void()> ThreadNotifier::m_cb = []() -> void {};
 static thread_local ThreadNotifier notifier{};
+
+ThreadNotifier::ThreadNotifier() {
+    // Do not register the main thread
+    if (m_counter > 0) {
+        Thread::register_external_thread("wrk");
+        std::cout << self << std::endl;
+    }
+    m_cb();
+    m_counter++;
+}
+
+ThreadNotifier::~ThreadNotifier() {
+    if (self)
+        Thread::unregister_external_thread();
+    m_counter--;
+}
+
+void ThreadNotifier::ensure_initialized() {
+}
+
+void ThreadNotifier::set_callback(std::function<void()> cb) {
+    m_cb = cb;
+}
 
 struct Thread::ThreadPrivate {
     std::thread thread;

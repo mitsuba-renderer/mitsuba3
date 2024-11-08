@@ -88,7 +88,6 @@ MI_PY_EXPORT(Thread) {
         .value("ERealtimePriority", Thread::ERealtimePriority, D(Thread, EPriority, ERealtimePriority))
         .export_values();
 
-    nb::class_<ThreadCanary>(m, "_ThreadCanary").def(nb::init<>());
 
     thr.def(nb::init<const std::string &>(), "name"_a)
        .def("parent", (Thread * (Thread::*) ()) & Thread::parent,
@@ -108,40 +107,7 @@ MI_PY_EXPORT(Thread) {
        .def_method(Thread, logger)
        .def_method(Thread, set_logger)
        .def_method(Thread, set_file_resolver)
-       .def_static("thread",
-        [&]() {
-            /* The thread local information stored by `self` only gets freed
-             * when the TLS destructor is called. This is problematic as Python
-             * does not wait for the TLS destrcutors to be finished before
-             * shutting down the interpreter - even if some of those
-             * destructors require the interpreter to be alive. Ultimately,
-             * this can lead to leaks or crashes.
-             *
-             * Below, we create a canary object that will clear the `self`
-             * variable whenever it is deleted and we attach it to the Python
-             * `thread.Thread` that called this method. Functionally, we're
-             * tying the lifetime of the `self` variable to the Python
-             * `thread.Thread` object and therefore forcing Python to wait on
-             * the TLS data to be cleared. The TLS destructors will still be
-             * called but they will no longer require access to the Python
-             * interpreter as `self` will be empty. */
-
-            nb::object threading = nb::module_::import_("threading");
-            nb::object current_thread = threading.attr("current_thread")();
-
-            // Only do this the first time
-            if (!nb::hasattr(current_thread, "mitsuba_tls")) {
-                nb::object tls = threading.attr("local")();
-                nb::object mitsuba = nb::module_::import_("mitsuba");
-                nb::object canary = mitsuba.attr("_ThreadCanary")();
-
-                // Attach canary to Python thread.
-                tls.attr("mitsuba_canary") = canary;
-                current_thread.attr("mitsuba_tls") = tls;
-            }
-
-            return Thread::thread();
-        }, D(Thread, thread))
+       .def_static_method(Thread, thread)
        .def_static_method(Thread, register_external_thread)
        .def_method(Thread, start)
        .def_method(Thread, is_running)
@@ -159,5 +125,39 @@ MI_PY_EXPORT(Thread) {
         .def("__enter__", &PyScopedSetThreadEnvironment::enter)
         .def("__exit__", &PyScopedSetThreadEnvironment::exit,
              "exc_type"_a.none(), "exc_val"_a.none(), "exc_tb"_a.none());
-}
 
+    nb::class_<ThreadCanary>(m, "_ThreadCanary").def(nb::init<>());
+
+    ThreadNotifier::set_callback([]() -> void {
+        /* The thread local information stored by `self` only gets freed
+         * when the TLS destructor is called. This is problematic as Python
+         * does not wait for the TLS destrcutors to be finished before
+         * shutting down the interpreter - even if some of those
+         * destructors require the interpreter to be alive. Ultimately,
+         * this can lead to leaks or crashes.
+         *
+         * Below, we create a canary object that will clear the `self`
+         * variable whenever it is deleted and we attach it to the Python
+         * `thread.Thread` that called this method. Functionally, we're
+         * tying the lifetime of the `self` variable to the Python
+         * `thread.Thread` object and therefore forcing Python to wait on
+         * the TLS data to be cleared. The TLS destructors will still be
+         * called but they will no longer require access to the Python
+         * interpreter as `self` will be empty. */
+        nb::gil_scoped_acquire guard;
+        nb::object threading = nb::module_::import_("threading");
+        nb::object current_thread = threading.attr("current_thread")();
+
+        // Only do this the first time
+        if (!nb::hasattr(current_thread, "mitsuba_tls")) {
+
+            nb::object tls = threading.attr("local")();
+            nb::object mitsuba = nb::module_::import_("mitsuba");
+            nb::object canary = mitsuba.attr("_ThreadCanary")();
+
+            // Attach canary to Python thread.
+            tls.attr("mitsuba_canary")         = canary;
+            current_thread.attr("mitsuba_tls") = tls;
+        }
+    });
+}
