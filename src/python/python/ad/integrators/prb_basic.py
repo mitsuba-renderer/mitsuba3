@@ -47,6 +47,7 @@ class BasicPRBIntegrator(RBIntegrator):
 
     """
 
+    @dr.syntax
     def sample(self,
                mode: dr.ADMode,
                scene: mi.Scene,
@@ -78,11 +79,9 @@ class BasicPRBIntegrator(RBIntegrator):
         β = mi.Spectrum(1)                            # Path throughput weight
         active = mi.Bool(active)                      # Active SIMD lanes
 
-        # Record the following loop in its entirety
-        loop = mi.Loop(name="Path Replay Backpropagation (%s)" % mode.name,
-                       state=lambda: (sampler, ray, depth, L, δL, β, active))
-
-        while loop(active):
+        while dr.hint(active,
+                      max_iterations=self.max_depth,
+                      label="Path Replay Backpropagation (%s)" % mode.name):
             active_next = mi.Bool(active)
 
             # ---------------------- Direct emission ----------------------
@@ -95,7 +94,7 @@ class BasicPRBIntegrator(RBIntegrator):
 
             # Hide the environment emitter if necessary
             if self.hide_emitters:
-                active_next &= ~(dr.eq(depth, 0) & ~si.is_valid())
+                active_next &= ~((depth == 0) & ~si.is_valid())
 
             # Differentiable evaluation of intersected emitter / envmap
             with dr.resume_grad(when=not primal):
@@ -121,7 +120,7 @@ class BasicPRBIntegrator(RBIntegrator):
             β *= bsdf_weight
 
             # Don't run another iteration if the throughput has reached zero
-            active_next &= dr.any(dr.neq(β, 0))
+            active_next &= dr.any(β != 0)
 
             # ------------------ Differential phase only ------------------
 
@@ -141,7 +140,7 @@ class BasicPRBIntegrator(RBIntegrator):
 
                     # Detached version of the above term and inverse
                     bsdf_val_detach = bsdf_weight * bsdf_sample.pdf
-                    inv_bsdf_val_detach = dr.select(dr.neq(bsdf_val_detach, 0),
+                    inv_bsdf_val_detach = dr.select(bsdf_val_detach != 0,
                                                     dr.rcp(bsdf_val_detach), 0)
 
                     # Differentiable version of the reflected radiance. Minor
@@ -163,7 +162,7 @@ class BasicPRBIntegrator(RBIntegrator):
 
         return (
             L if primal else δL, # Radiance/differential radiance
-            dr.neq(depth, 0),    # Ray validity flag for alpha blending
+            depth != 0,          # Ray validity flag for alpha blending
             [],                  # Empty typle of AOVs
             L                    # State the for differential phase
         )
