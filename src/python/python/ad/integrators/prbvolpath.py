@@ -138,7 +138,6 @@ class PRBVolpathIntegrator(RBIntegrator):
             channel = mi.UInt32(dr.minimum(n_channels * sampler.next_1d(active), n_channels - 1))
 
         while dr.hint(active,
-                      max_iterations=self.max_depth,
                       label=f"Path Replay Backpropagation ({mode.name})"):
             active &= dr.any(throughput != 0.0)
 
