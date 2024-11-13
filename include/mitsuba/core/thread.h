@@ -132,6 +132,9 @@ public:
     /// Return the current thread
     static Thread *thread();
 
+    /// Return the main thread
+    static Thread *get_main_thread();
+
     /// Return whether the current thread data structure has been initialized.
     static bool has_initialized_thread();
 
@@ -140,9 +143,6 @@ public:
 
     /// Initialize the threading system
     static void static_initialization();
-
-    /// Shut down any thread local state
-    static void tls_shutdown();
 
     /// Shut down the threading system
     static void static_shutdown();

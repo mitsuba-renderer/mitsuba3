@@ -186,6 +186,12 @@ Thread* Thread::thread() {
     return self_val;
 }
 
+Thread* Thread::get_main_thread() {
+    Thread *main_val = main_thread;
+    assert(main_val);
+    return main_val;
+}
+
 bool Thread::has_initialized_thread() {
     return self != nullptr;
 }
@@ -542,10 +548,6 @@ void Thread::static_initialization() {
     self->d->running = true;
     self->d->fresolver = new FileResolver();
     main_thread = self;
-}
-
-void Thread::tls_shutdown() {
-    self = nullptr;
 }
 
 void Thread::static_shutdown() {
