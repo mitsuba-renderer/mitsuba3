@@ -87,7 +87,7 @@ We provide pre-compiled binary wheels via PyPI. Installing Mitsuba this way is a
 pip install mitsuba
 ```
 
-on the command line. The Python package includes four variants by default:
+on the command line. The Python package includes thirteen variants by default:
 
 - ``scalar_rgb``
 - ``scalar_spectral``
