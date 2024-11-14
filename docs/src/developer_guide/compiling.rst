@@ -19,12 +19,16 @@ are subsequently compiled using a single unified build system. This dramatically
 reduces the number steps needed to set up the renderer compared to previous
 versions of Mitsuba.
 
+Most of Mitsuba's active development happens on the ``master`` Git branch. We
+therefore recommend using the ``stable`` branch which points to the most recent
+release.
+
 For all of this to work out properly, you will have to specify the
 ``--recursive`` flag when cloning the repository:
 
 .. code-block:: bash
 
-    git clone --recursive https://github.com/mitsuba-renderer/mitsuba3
+    git clone -b stable --recursive https://github.com/mitsuba-renderer/mitsuba3
 
 If you already cloned the repository and forgot to specify this flag, it's
 possible to fix the repository in retrospect using the following command:
@@ -64,13 +68,14 @@ declaration of the enabled variants (around line 86):
 .. code-block:: text
 
     "enabled": [
-        "scalar_rgb", "scalar_spectral", "cuda_ad_rgb", "llvm_ad_rgb"
+        "scalar_rgb", "scalar_spectral", "cuda_ad_rgb", "llvm_ad_rgb", "llvm_ad_spectral"
     ],
 
 The default file specifies two scalar variants that you may wish to extend
 according to your requirements and the explanations given above. Note that
 ``scalar_spectral`` can be removed, but ``scalar_rgb`` *must* currently be part
-of the list as some core components of Mitsuba depend on it. If Mitsuba is
+of the list as some core components of Mitsuba depend on it. In addition,
+at least one ``ad``-enabled variant must also be compiled. If Mitsuba is
 launched from the command line without any specific mode parameter, the first
 variant of the list below will be used.
 
@@ -117,7 +122,7 @@ To fetch all dependencies and Clang, enter the following commands on Ubuntu:
 .. code-block:: bash
 
     # Install recent versions build tools, including Clang and libc++ (Clang's C++ library)
-    sudo apt install clang-10 libc++-10-dev libc++abi-10-dev cmake ninja-build
+    sudo apt install clang-17 libc++-17-dev libc++abi-17-dev cmake ninja-build
 
     # Install libraries for image I/O
     sudo apt install libpng-dev libjpeg-dev
@@ -141,7 +146,7 @@ CMake will always use the correct compiler.
 
 .. code-block:: bash
 
-    export CC=clang-10 export CXX=clang++-10
+    export CC=clang-17 export CXX=clang++-17
 
 If you installed another version of Clang, the version suffix of course has to
 be adjusted. Now, compilation should be as simple as running the following from
@@ -156,18 +161,24 @@ inside the :monosp:`mitsuba3` root directory:
     ninja
 
 
-**Tested version**
+**Tested versions**
 
 The above procedure will likely work on many different flavors of Linux (with
 slight adjustments for the package manager and package names). We have mainly
-worked with software environment listed below, and our instructions should work
-without modifications in that case.
+worked with software environments listed below, and our instructions should work
+without modifications in those cases.
 
-* Ubuntu 20.04
-* clang 10.0.0
-* cmake 3.16.3
-* ninja 1.10.0
-* python 3.8.2
+.. tabularcolumns:: |p{0.33\width}|p{0.33\width}|p{0.33\width}|
+
++--------------------------+--------------------------+--------------------------+
+| **Focal**                | **Jammy**                | **Noble**                |
+|                          |                          |                          |
+| - Ubuntu 20.04           | - Ubuntu 22.04           | - Ubuntu 24.04           |
+| - g++ 9.4.0              | - clang 17.0.6           | - g++ 13.2.0             |
+| - cmake 3.16.3           | - cmake 3.22.1           | - cmake 3.28.3           |
+| - ninja 1.10.0           | - ninja 1.10.1           | - ninja 1.11.1           |
+| - python 3.8.10          | - python 3.10.12         | - python 3.12.3          |
++--------------------------+--------------------------+--------------------------+
 
 Windows
 -------
@@ -201,10 +212,11 @@ command:
 **Tested version**
 
 * Windows 10
-* Visual Studio 2022 (Community Edition) Version 16.4.5
-* cmake 3.22.2 (64bit)
+* Visual Studio 17 2022 (Community Edition)
+* MSVC 19.41.34123.0
+* cmake 3.28.1 (64bit)
 * git 2.34.1 (64bit)
-* Python 3.10.1 (64bit)
+* Python 3.11.1 (64bit)
 
 
 macOS
@@ -237,6 +249,7 @@ Now, compilation should be as simple as running the following from inside the
 **Tested version**
 
 * macOS Big Sur 11.5.2
+* AppleClang 13.2.0.0.1.1638488800
 * Xcode 12.0.5
 * cmake 3.24.2
 * Python 3.9.5
