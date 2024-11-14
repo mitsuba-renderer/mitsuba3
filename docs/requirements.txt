@@ -10,5 +10,5 @@ sphinx-design==0.6.1
 sphinx-gallery==0.18.0
 sphinx-copybutton==0.5.2
 sphinx-hoverxref==1.4.1
-sphinx_tabs==3.4.7
+sphinx_tabs==3.4.5
 sphinx-toolbox==3.8.1

@@ -5784,7 +5784,7 @@
 
 .. py:data:: mitsuba.MI_VERSION
     :type: str
-    :value: 3.5.0
+    :value: 3.6.0
 
 .. py:data:: mitsuba.MI_VERSION_MAJOR
     :type: int
@@ -5792,7 +5792,7 @@
 
 .. py:data:: mitsuba.MI_VERSION_MINOR
     :type: int
-    :value: 5
+    :value: 6
 
 .. py:data:: mitsuba.MI_VERSION_PATCH
     :type: int
@@ -9380,15 +9380,15 @@
         
         Copy constructor
         
-        3. ``__init__(self, o: :py:obj:`mitsuba.Point3d`, d: :py:obj:`mitsuba.Vector3d`, time: drjit.llvm.ad.Float = 0.0, wavelengths: :py:obj:`mitsuba.Color0f` = []) -> None``
+        3. ``__init__(self, o: :py:obj:`mitsuba.Point3d`, d: :py:obj:`mitsuba.Vector3d`, time: drjit.llvm.ad.Float64 = 0.0, wavelengths: :py:obj:`mitsuba.Color0f` = []) -> None``
         
         Construct a new ray (o, d) with time
         
-        4. ``__init__(self, o: :py:obj:`mitsuba.Point3d`, d: :py:obj:`mitsuba.Vector3d`, maxt: drjit.llvm.ad.Float, time: drjit.llvm.ad.Float, wavelengths: :py:obj:`mitsuba.Color0f`) -> None``
+        4. ``__init__(self, o: :py:obj:`mitsuba.Point3d`, d: :py:obj:`mitsuba.Vector3d`, maxt: drjit.llvm.ad.Float64, time: drjit.llvm.ad.Float64, wavelengths: :py:obj:`mitsuba.Color0f`) -> None``
         
         Construct a new ray (o, d) with bounds
         
-        5. ``__init__(self, other: :py:obj:`mitsuba.Ray3d`, maxt: drjit.llvm.ad.Float) -> None``
+        5. ``__init__(self, other: :py:obj:`mitsuba.Ray3d`, maxt: drjit.llvm.ad.Float64) -> None``
         
         Copy a ray, but change the maxt value
 

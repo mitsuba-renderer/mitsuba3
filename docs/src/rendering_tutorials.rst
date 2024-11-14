@@ -11,7 +11,6 @@ cover the basic operations ones might need to know when it comes to rendering
 with Mitsuba 3:
 
 .. nbgallery::
-    :caption: rendering
 
     quickstart/mitsuba_quickstart
     rendering/editing_a_scene

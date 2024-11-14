@@ -258,18 +258,6 @@ img {
     display: none;
 }
 
-/* sphinx-gallery thumbnails */
-.sphx-glr-thumbcontainer  {
-    border: 1px solid #ccc !important;
-}
-.sphx-glr-thumbcontainer .figure.align-center {
-    border: 0;
-}
-.sphx-glr-thumbcontainer img {
-    margin-top: 0;
-    margin-bottom: 0;
-}
-
 #plugin-reference .toctree-wrapper { column-count: 2; }
 
 #plugin-reference .toctree-wrapper > ul { margin: 0; }

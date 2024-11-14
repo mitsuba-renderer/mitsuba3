@@ -282,7 +282,6 @@ nbsphinx_prolog = """
 
 """
 
-extensions.append('sphinx_gallery.load_style')
 nbsphinx_thumbnails = {
     'src/getting_started/quickstart/drjit_quickstart': '_static/drjit-logo-dark.png',
 }
