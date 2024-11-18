@@ -176,74 +176,75 @@ chaining any subsequent transforms
   # mi.Transform4f() is the identity transform
   x = mi.Transform4f().translate([1,2,3]).scale(3.0).rotate([1, 0, 0], 0.5)
 
+..
 
-Bitmap textures: Half-precision storage by default where possible
------------------------------------------------------------------
+  Bitmap textures: Half-precision storage by default where possible
+  -----------------------------------------------------------------
 
-.. _dr_texture: https://drjit.readthedocs.io/en/latest/textures.html
-.. _spec_up: https://rgl.epfl.ch/publications/Jakob2019Spectral
+  .. _dr_texture: https://drjit.readthedocs.io/en/latest/textures.html
+  .. _spec_up: https://rgl.epfl.ch/publications/Jakob2019Spectral
 
-Dr.Jit 1.0.0 includes support for half-precision arrays and tensors, and further
-extends support for FP16 `Dr.Jit textures <dr_texture_>`_ that are 
-hardware-accelerated on CUDA backends.
+  Dr.Jit 1.0.0 includes support for half-precision arrays and tensors, and further
+  extends support for FP16 `Dr.Jit textures <dr_texture_>`_ that are 
+  hardware-accelerated on CUDA backends.
 
-From Mitsuba 3.6.0 onwards, bitmap textures initialized from data with bit
-depth 16 or lower will instantiate an underlying half-precision Dr.Jit texture.
+  From Mitsuba 3.6.0 onwards, bitmap textures initialized from data with bit
+  depth 16 or lower will instantiate an underlying half-precision Dr.Jit texture.
 
-.. note::
-  Using spectral Mitsuba variants is an exception to this default behavior, and 
-  the underlying storage of the bitmap texture will remain consistent to the variant 
-  as with previous versions of Mitsuba 3. This is because here sampling a 
-  texture requires `spectral upsampling <spec_up_>`_ and RGB input data is 
-  first converted to their corresponding spectral coefficients.
+  .. note::
+    Using spectral Mitsuba variants is an exception to this default behavior, and 
+    the underlying storage of the bitmap texture will remain consistent to the variant 
+    as with previous versions of Mitsuba 3. This is because here sampling a 
+    texture requires `spectral upsampling <spec_up_>`_ and RGB input data is 
+    first converted to their corresponding spectral coefficients.
 
-There may be cases where this default behavior is undesirable. For instance, if 
-a user is performing an iterative optimization of a given bitmap texture, a 
-potential pitfall is highlighted in the following example
+  There may be cases where this default behavior is undesirable. For instance, if 
+  a user is performing an iterative optimization of a given bitmap texture, a 
+  potential pitfall is highlighted in the following example
 
-.. code-block:: python
+  .. code-block:: python
 
-  import mitsuba as mi
-  import drjit as dr
-  mi.set_variant('cuda_ad_rgb')
+    import mitsuba as mi
+    import drjit as dr
+    mi.set_variant('cuda_ad_rgb')
 
-  # Bit depth of my_image.png is less than 16 so storage of texture is FP16
-  bitmap = mi.load_dict({
-      "type" : "bitmap",
-      "filename" : "my_image.png"
-  })
+    # Bit depth of my_image.png is less than 16 so storage of texture is FP16
+    bitmap = mi.load_dict({
+        "type" : "bitmap",
+        "filename" : "my_image.png"
+    })
 
-  params = mi.traverse(bitmap)
+    params = mi.traverse(bitmap)
 
-  # Want to update the associated tensor but using TensorXf (single-precision)
-  x = dr.ones(mi.TensorXf, shape=(9,10,3))
+    # Want to update the associated tensor but using TensorXf (single-precision)
+    x = dr.ones(mi.TensorXf, shape=(9,10,3))
 
-  # Implicit conversion from TensorXf to TensorXf16
-  params['data'] = x
-  params.update()
+    # Implicit conversion from TensorXf to TensorXf16
+    params['data'] = x
+    params.update()
 
-  type(params['data']) # TensorXf16 not TensorXf
+    type(params['data']) # TensorXf16 not TensorXf
 
-The above example is somewhat contrived because in practice, for an optimization, a 
-user would likely initialize their bitmap texture from a tensor and hence the 
-underlying storage precision would be explicitly specified. Regardless, opting
-out of this default behavior is possible by setting the plugin ``format`` 
-parameter to ``variant``
+  The above example is somewhat contrived because in practice, for an optimization, a 
+  user would likely initialize their bitmap texture from a tensor and hence the 
+  underlying storage precision would be explicitly specified. Regardless, opting
+  out of this default behavior is possible by setting the plugin ``format`` 
+  parameter to ``variant``
 
-.. code-block:: python
+  .. code-block:: python
 
-  import mitsuba as mi
-  mi.set_variant('cuda_ad_rgb')
+    import mitsuba as mi
+    mi.set_variant('cuda_ad_rgb')
 
-  # Storage precision is consistent with variant specified (i.e. float)
-  bitmap = mi.load_dict({
-      "type" : "bitmap",
-      "filename" : "my_image.png"
-      "format" : "variant"
-  })
+    # Storage precision is consistent with variant specified (i.e. float)
+    bitmap = mi.load_dict({
+        "type" : "bitmap",
+        "filename" : "my_image.png"
+        "format" : "variant"
+    })
 
-  params = mi.traverse(bitmap)
-  type(params['data']) # TensorXf
+    params = mi.traverse(bitmap)
+    type(params['data']) # TensorXf
 
 C++ interface changes
 ---------------------
