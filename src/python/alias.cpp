@@ -45,7 +45,7 @@ PyObject *mi_dict = nullptr;
 nb::object curr_variant;
 
 /// Set of user-provided callback functions to call when switching variants
-PyObject *variant_change_callbacks;
+nb::object variant_change_callbacks;
 
 
 nb::object import_with_deepbind_if_necessary(const char* name) {
@@ -173,7 +173,7 @@ NB_MODULE(mitsuba_alias, m) {
     m.attr("__name__") = "mitsuba";
 
     curr_variant = nb::none();
-    variant_change_callbacks = PySet_New(nullptr);
+    variant_change_callbacks = nb::set();
 
     if (!variant_modules) {
         variant_modules = PyDict_New();
@@ -243,8 +243,7 @@ NB_MODULE(mitsuba_alias, m) {
         PyDict_Clear(mi_dict);
         mi_dict = nullptr;
 
-        PySet_Clear(variant_change_callbacks);
-        variant_change_callbacks = nullptr;
+        variant_change_callbacks.reset();
 
         if (variant_modules) {
             Py_DECREF(variant_modules);
