@@ -28,7 +28,7 @@ jobs:
       ###########################################################
       # Setup local environment (source code, build requirements)
       ###########################################################
-      - uses: Wandalen/wretry.action@v1.2.0
+      - uses: Wandalen/wretry.action@v3.7.3
         with:
           action: actions/checkout@v3
           with: |
