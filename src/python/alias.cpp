@@ -18,6 +18,7 @@
  */
 
 #include <mitsuba/core/config.h>
+#include <mitsuba/mitsuba.h>
 #include <nanobind/nanobind.h>
 
 namespace nb = nanobind;
@@ -171,6 +172,7 @@ static nb::object get_attr(nb::handle key) {
 
 NB_MODULE(mitsuba_alias, m) {
     m.attr("__name__") = "mitsuba";
+    m.attr("__version__")      = MI_VERSION;
 
     curr_variant = nb::none();
     variant_change_callbacks = nb::set();
