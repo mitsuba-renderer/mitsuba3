@@ -1,11 +1,8 @@
 # Import/re-import all files in this folder to register AD integrators
+import importlib
 import mitsuba as mi
 
-def integrators_variants_cb(old, new):
-    if new is None or new.startswith("scalar"):
-        return
-
-    import importlib
+if mi.variant() is not None and not mi.variant().startswith('scalar'):
     from . import common
     importlib.reload(common)
 
@@ -24,5 +21,4 @@ def integrators_variants_cb(old, new):
     from . import prb_projective
     importlib.reload(prb_projective)
 
-
-mi.detail.add_variant_callback(integrators_variants_cb)
+del importlib, mi

@@ -126,11 +126,21 @@ static void set_variant(nb::args args) {
                 Safe_PyDict_SetItem(mi_dict, k.ptr(),
                     PyDict_GetItem(variant_dict.ptr(), k.ptr()));
 
+        nb::object old_variant = curr_variant;
+
+        // Need to update curr_variant = mi.variant() before reloading internal plugins
+        curr_variant = new_variant;
+        if (new_variant.attr("startswith")(nb::make_tuple("llvm_", "cuda_"))) {
+            nb::module_ mi_python = nb::module_::import_("mitsuba.python.ad.integrators");
+            nb::steal(PyImport_ReloadModule(mi_python.ptr()));
+        }
+
+        // Only invoke callbacks after Mitsuba plugins have reloaded as there
+        // may be a dependency
         const auto &callbacks = nb::borrow<nb::set>(variant_change_callbacks);
         for (const auto &cb : callbacks)
-            cb(curr_variant, new_variant);
+            cb(old_variant, new_variant);
 
-        curr_variant = new_variant;
     }
 }
 
