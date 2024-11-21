@@ -118,19 +118,6 @@ def generate_emitter_data(photon_data):
 # gen_photon_datas = []
 photon_lists = []
 
-# # Loop to generate photon data from the photon_detected data frame
-
-# for n_photons in [10**n_size for n_size in range(9)]:
-#     # If the size is bigger than the whole dataset then pandas is sensible and just gives you the whole dataset
-#     gen_photon_data = generate_emitter_data(photon_detected.head(n_photons))
-#     photon_list = mi.VolumeGrid(gen_photon_data)
-#     print("--------------------------------")
-#     photon_lists.append(photon_list)
-#     print (photon_list)
-#     print (np.array(photon_list))
-#     print (gen_photon_data)
-#     print ("n_photons into mitsuba ", (len(np.array(photon_list)[0][0]) - 1) // 6)
-
 # Run for 10^7 photons
 n_photons = 10**7
 gen_photon_data = generate_emitter_data(photon_detected.head(n_photons))
@@ -144,6 +131,7 @@ print (gen_photon_data)
 
 print ("n_photons into mitsuba ", (len(np.array(photon_list)[0][0]) - 1) // 6)
 
+intensity = 1000.0
 sensor_sizes = []
 
 for size in [256, 512, 768, 1024, 1536, 2048, 3072, 4096, 6144, 8192]:
@@ -323,7 +311,7 @@ scene_description = {
     'photons': {
         'type': 'photon_emitter',
         'photon_list': photon_list,
-        'intensity': 1000.0,
+        'intensity': intensity,
     },        
 }
 
@@ -358,11 +346,11 @@ def run_sensor_experiment(sensor_size):
     end_time = time.time()
     elapsed_time = end_time - start_time
     print(f"Full elapsed time: {elapsed_time:.2f} seconds")
-    print(mi.variant(), "intensity = 1000, sensor size = ", sensor_size['width'])
-    plt.savefig('png/' + mi.variant() + ' new intensity = 1000, sensor size = ' + str(sensor_size['width']))
+    print(mi.variant(), "intensity = ", int(intensity), ", sensor size = ", sensor_size['width'])
+    plt.savefig('png/' + mi.variant() + ' new intensity = ' + int(intensity) + ', sensor size = ' + str(sensor_size['width']))
     plt.close(fig)
 
-    return (n_photons, load_time, load_and_render_time, elapsed_time)
+    return (sensor_size['width'], load_time, load_and_render_time, elapsed_time)
 
 # Loop to run experiments for sensor size
 full_timing_vs_sensor_size = []
@@ -372,7 +360,7 @@ for sensor_size in sensor_sizes:
     # Run the experiments multiple times (take averages in plotting script)
     n_exps = 11
     for n in range(n_exps):
-        (n_photons, load_time, load_and_render_time, elapsed_time) = run_sensor_experiment(sensor_size)
+        (sensor_size['width'], load_time, load_and_render_time, elapsed_time) = run_sensor_experiment(sensor_size)
         # The first run is often longer than any other, so don't count it
         if n!=0:
             full_timing_vs_sensor_size.append([sensor_size['width'], load_time, load_and_render_time - load_time, load_and_render_time, elapsed_time])
@@ -383,17 +371,3 @@ for n in range(len(full_timing_vs_sensor_size)):
 
 # Save timing data to CSV files
 np.savetxt('csv/' + mi.variant()+'_full_timing_for_sensor_size.csv', np.array(full_timing_vs_sensor_size), delimiter=',')
-
-# fig = plt.figure()
-# plt.plot([tn[0] for tn in average_timing_vs_nphotons], [tn[1] for tn in average_timing_vs_nphotons], label='load')
-# plt.plot([tn[0] for tn in average_timing_vs_nphotons], [tn[2] for tn in average_timing_vs_nphotons], label='load and render')
-# plt.plot([tn[0] for tn in average_timing_vs_nphotons], [tn[3] for tn in average_timing_vs_nphotons], label='full elapsed')
-# plt.plot([tn[0] for tn in average_timing_vs_nphotons], [tn[2]-tn[1] for tn in average_timing_vs_nphotons], label='render')
-# plt.legend()
-# plt.xscale('log')
-# plt.yscale('log')
-# plt.ylabel('time (s)')
-# plt.xlabel('Number of photons')
-# plt.title('timing vs n_photons, mitsuba3 single photon emitter (' + mi.variant() + ')')
-# plt.savefig('png/' + mi.variant()+'_timing_for_n_photons')
-# plt.close(fig)
