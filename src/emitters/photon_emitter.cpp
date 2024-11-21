@@ -32,72 +32,96 @@ public:
         m_flags = +EmitterFlags::DeltaPosition;
         m_intensity = props.texture_d65<Texture>("intensity", 1.f);
 
-        ref<Object> other = props.object("photon_list");
-        VolumeGrid *volume_grid = dynamic_cast<VolumeGrid *>(other.get());
-        float *ptr = volume_grid->data();
-        int count= ptr[0];
-        int counter = 0.;
-        std::vector<float> origin_x, origin_y, origin_z, target_x, target_y, target_z;
-        while (counter != count) {
-            float x = ptr[1+counter*6];
-            float y = ptr[2+counter*6];
-            float z = ptr[3+counter*6];
+        // Declare Float arrays for origin and target coordinates
+        Float float_origin_x, float_origin_y, float_origin_z, float_target_x, float_target_y, float_target_z;
 
-            origin_x.push_back(x);
-            origin_y.push_back(y);
-            origin_z.push_back(z);
-            // Declare three float variables
-            float a = ptr[4+counter*6];
-            float b = ptr[5+counter*6];
-            float c = ptr[6+counter*6];
+        // If a photon_list property exists then load as a VolumeGrid code object
+        if (props.has_property("photon_list")) {
+            // Log(Info, "photon emitter reading from code object (VolumeGrid)");
+            // If filename has also been specified then ignore it
+            if (props.has_property("filename")) {
+                FileResolver *fs = Thread::thread()->file_resolver();
+                fs::path file_path = fs->resolve(props.string("filename"));
+                Log(Info, "The parameters 'filename' and 'photon_list' were both specified; ignoring 'filename'.");
+            }
 
-            target_x.push_back(a);
-            target_y.push_back(b);
-            target_z.push_back(c);
-            counter ++;
+            ref<Object> other = props.object("photon_list");
+            VolumeGrid *volume_grid = dynamic_cast<VolumeGrid *>(other.get());
+            float *ptr = volume_grid->data();
+            int count = ptr[0];
+            int counter = 0.;
+            std::vector<float> origin_x, origin_y, origin_z, target_x, target_y, target_z;
+            while (counter != count) {
+                float x = ptr[1+counter*6];
+                float y = ptr[2+counter*6];
+                float z = ptr[3+counter*6];
+
+                origin_x.push_back(x);
+                origin_y.push_back(y);
+                origin_z.push_back(z);
+                // Declare three float variables
+                float a = ptr[4+counter*6];
+                float b = ptr[5+counter*6];
+                float c = ptr[6+counter*6];
+
+                target_x.push_back(a);
+                target_y.push_back(b);
+                target_z.push_back(c);
+                counter ++;
+            }
+            // Load them each into separate Float variables
+            float_origin_x = dr::load<Float>(origin_x.data(), count);
+            float_origin_y = dr::load<Float>(origin_y.data(), count);
+            float_origin_z = dr::load<Float>(origin_z.data(), count);
+            float_target_x = dr::load<Float>(target_x.data(), count);
+            float_target_y = dr::load<Float>(target_y.data(), count);
+            float_target_z = dr::load<Float>(target_z.data(), count);
+        // Otherwise look for a filename property and load that
+        } else if (props.has_property("filename")) {
+            // Read the file
+            FileResolver *fs = Thread::thread()->file_resolver();
+            fs::path file_path = fs->resolve(props.string("filename"));
+            m_filename = file_path.filename().string();
+            ref<FileStream> binaryStream = new FileStream(file_path, FileStream::ERead);
+            binaryStream -> set_byte_order(Stream::ELittleEndian);
+
+            // The first line of the file shows the number of the photons
+            size_t count;
+            binaryStream->read(&count, sizeof(size_t));
+            // std::cout << "The number of photons is: " << count << std::endl;
+            size_t counter = 0.;
+            std::vector<float> origin_x, origin_y, origin_z, target_x, target_y, target_z;
+            while (counter != count) {
+                // Declare three float variables
+                float x,y,z;
+                binaryStream->read(&x, sizeof(float));
+                binaryStream->read(&y, sizeof(float));
+                binaryStream->read(&z, sizeof(float));
+                origin_x.push_back(x);
+                origin_y.push_back(y);
+                origin_z.push_back(z);
+                // Declare three float variables
+                float a,b,c;
+                binaryStream->read(&a, sizeof(float));
+                binaryStream->read(&b, sizeof(float));
+                binaryStream->read(&c, sizeof(float));
+                target_x.push_back(a);
+                target_y.push_back(b);
+                target_z.push_back(c);
+                counter ++;
+            }
+            binaryStream->close();
+            // Load them each into separate Float variables
+            float_origin_x = dr::load<Float>(origin_x.data(), count);
+            float_origin_y = dr::load<Float>(origin_y.data(), count);
+            float_origin_z = dr::load<Float>(origin_z.data(), count);
+            float_target_x = dr::load<Float>(target_x.data(), count);
+            float_target_y = dr::load<Float>(target_y.data(), count);
+            float_target_z = dr::load<Float>(target_z.data(), count);
+        } else {
+            Throw("A photon emitter requires one of 'photon_list' (VolumeGrid code object) or 'filename' (binary file) to be specified.");
         }
 
-        // // Read the file
-        // FileResolver *fs = Thread::thread()->file_resolver();
-        // fs::path file_path = fs->resolve(props.string("filename"));
-        // m_filename = file_path.filename().string();
-        // ref<FileStream> binaryStream = new FileStream(file_path, FileStream::ERead);
-        // binaryStream -> set_byte_order(Stream::ELittleEndian);
-
-        // // The first line of the file shows the number of the photons
-        // size_t count;
-        // binaryStream->read(&count, sizeof(size_t));
-        // // std::cout << "The number of photons is: " << count << std::endl;
-        // size_t counter = 0.;
-        // // Create vectors to store the coodrinations
-        // std::vector<float> origin_x, origin_y, origin_z, target_x, target_y, target_z;
-        // while (counter != count) {
-        //     // Declare three float variables
-        //     float x,y,z;
-        //     binaryStream->read(&x, sizeof(float));
-        //     binaryStream->read(&y, sizeof(float));
-        //     binaryStream->read(&z, sizeof(float));
-        //     origin_x.push_back(x);
-        //     origin_y.push_back(y);
-        //     origin_z.push_back(z);
-        //     // Declare three float variables
-        //     float a,b,c;
-        //     binaryStream->read(&a, sizeof(float));
-        //     binaryStream->read(&b, sizeof(float));
-        //     binaryStream->read(&c, sizeof(float));
-        //     target_x.push_back(a);
-        //     target_y.push_back(b);
-        //     target_z.push_back(c);
-        //     counter ++;
-        // }
-        // binaryStream->close();
-        // Load them each into separate Float variables
-        Float float_origin_x = dr::load<Float>(origin_x.data(), count);
-        Float float_origin_y = dr::load<Float>(origin_y.data(), count);
-        Float float_origin_z = dr::load<Float>(origin_z.data(), count);
-        Float float_target_x = dr::load<Float>(target_x.data(), count);
-        Float float_target_y = dr::load<Float>(target_y.data(), count);
-        Float float_target_z = dr::load<Float>(target_z.data(), count);
         // Create two Point3f and one Vector3f for origins, targets and ups from these Float variables
         Point3f origin(float_origin_x, float_origin_y, float_origin_z);
         Point3f target(float_target_x, float_target_y, float_target_z);
