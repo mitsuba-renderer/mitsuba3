@@ -18,9 +18,69 @@
 #include <drjit/texture.h>
 #include <vector>
 
-// std::cout << "!!!" << std::endl;
-
 NAMESPACE_BEGIN(mitsuba)
+
+/**!
+
+.. _emitter-photon:
+
+Photon light source (:monosp:`photon_emitter`)
+----------------------------------------------
+TODO: rename this to "photon" rather than "photon_emitter"
+
+.. pluginparameters::
+
+ * - intensity
+   - |spectrum|
+   - Specifies the maximum radiant intensity at the center in units of power per unit steradian. (Default: 1).
+     This cannot be spatially varying (e.g. have bitmap as type).
+   - |exposed|, |differentiable|
+
+ * - filename
+   - |string|
+   - Specifies a binary file from which photon ray locations are loaded in the form origin x,y,z, target x,y,z
+
+ * - photon_list
+   - |VolumeGrid|
+   - Specifies a mitsuba VolumeGrid object from which photon ray locations can be loaded in the form origin x,y,z, target x,y,z
+
+TODO: Does to_world work for this emitter?  It seems to have been turned off in some functions but not others.
+ * - to_world
+   - |transform|
+   - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
+   - |exposed|
+
+This plugin provides a photon light source. The coordinates of rays associated with photons can be loaded
+in from either a binary file (see tests for an example) using the 'filename' parameter in a dict or XML, or 
+optionally from a VolumeGrid code object when using a scene description (Python) dictionary.
+
+.. tabs::
+    .. code-tab:: xml
+        :name: photon-emitter
+
+        <emitter type="photon_emitter">
+            <rgb name="intensity" value="1.0"/>
+            <string name="filename" value="bintxt/photon_geometry.bin"/>
+        </emitter>
+
+    .. code-tab:: python
+
+        'type': 'photon_emitter',
+        'photon_list': photon_list,
+        'intensity': intensity,
+
+The intensity is a fixed value.
+
+TODO: Add some figures showing what's happening here?
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/render/emitter_spot_no_texture.jpg
+   :caption: Two spot lights with different colors and no texture specified.
+.. subfigure:: ../../resources/data/docs/images/render/emitter_spot_texture.jpg
+   :caption: A spot light with a texture specified.
+.. subfigend::
+   :label: fig-spot-light
+
+ */
 
 template <typename Float, typename Spectrum>
 class PhotonEmitter final : public Emitter<Float, Spectrum> {
