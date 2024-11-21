@@ -610,6 +610,12 @@
 
 .. autofunction:: mitsuba.depolarizer
 
+.. autofunction:: mitsuba.detail.add_variant_callback
+
+.. autofunction:: mitsuba.detail.clear_variant_callbacks
+
+.. autofunction:: mitsuba.detail.remove_variant_callback
+
 .. autofunction:: mitsuba.eval_reflectance
 
 .. autofunction:: mitsuba.filesystem.absolute
@@ -811,6 +817,8 @@
 .. autofunction:: mitsuba.sample_tea_float32
 
 .. autofunction:: mitsuba.sample_tea_float64
+
+.. autofunction:: mitsuba.scoped_set_variant
 
 .. autofunction:: mitsuba.set_log_level
 

@@ -2755,7 +2755,7 @@
 
 .. py:data:: mitsuba.DEBUG
     :type: bool
-    :value: True
+    :value: False
 
 .. py:class:: mitsuba.DefaultFormatter
 
@@ -19190,6 +19190,27 @@
     Returns → :py:obj:`mitsuba.Color3f`:
         *no description available*
 
+.. py:function:: mitsuba.detail.add_variant_callback(arg)
+
+    Parameter ``arg`` (collections.abc.Callable, /):
+        *no description available*
+
+    Returns → None:
+        *no description available*
+
+.. py:function:: mitsuba.detail.clear_variant_callbacks()
+
+    Returns → None:
+        *no description available*
+
+.. py:function:: mitsuba.detail.remove_variant_callback(arg)
+
+    Parameter ``arg`` (collections.abc.Callable, /):
+        *no description available*
+
+    Returns → None:
+        *no description available*
+
 .. py:function:: mitsuba.eval_reflectance(type, alpha_u, alpha_v, wi, eta)
 
     Parameter ``type`` (:py:obj:`mitsuba.MicrofacetType`):
@@ -20900,6 +20921,14 @@
     Returns → float:
         A uniformly distributed floating point number on the interval
         ``[0, 1)``
+
+.. py:function:: mitsuba.scoped_set_variant()
+
+    Temporarily override the active variant. Arguments are interpreted as
+    they are in :func:`mitsuba.set_variant`.
+
+    Returns → None:
+        *no description available*
 
 .. py:function:: mitsuba.set_log_level(arg)
 
