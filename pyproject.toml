@@ -29,6 +29,9 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/mitsuba-renderer/mitsuba3"
 
+[project.scripts]
+mitsuba  = "mitsuba.cli:_main"
+
 
 [tool.scikit-build]
 # Protect the configuration against future changes in scikit-build-core
