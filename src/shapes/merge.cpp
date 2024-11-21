@@ -52,8 +52,7 @@ public:
         Log(Info, "Collapsed %zu into %zu meshes. (took %s, %zu objects ignored)",
             visited, tbl.size(), util::time_string((float) timer.value()), ignored);
 
-        if constexpr (dr::is_jit_v<Float>)
-            jit_registry_put(dr::backend_v<Float>, "mitsuba::Shape", this);
+        MI_REGISTRY_PUT("Shape", this);
     }
 
     std::vector<ref<Object>> expand() const override {

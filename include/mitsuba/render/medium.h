@@ -121,7 +121,7 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Dr.Jit support for packets of Medium pointers
 // -----------------------------------------------------------------------
 
-DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Medium)
+MI_CALL_TEMPLATE_BEGIN(Medium)
     DRJIT_CALL_GETTER(phase_function)
     DRJIT_CALL_GETTER(use_emitter_sampling)
     DRJIT_CALL_GETTER(is_homogeneous)
@@ -131,7 +131,7 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Medium)
     DRJIT_CALL_METHOD(sample_interaction)
     DRJIT_CALL_METHOD(transmittance_eval_pdf)
     DRJIT_CALL_METHOD(get_scattering_coefficients)
-DRJIT_CALL_END(mitsuba::Medium)
+MI_CALL_TEMPLATE_END(Medium)
 
 //! @}
 // -----------------------------------------------------------------------
