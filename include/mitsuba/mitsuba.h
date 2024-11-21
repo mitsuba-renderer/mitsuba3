@@ -22,7 +22,7 @@
     MI_TOSTRING(MI_VERSION_PATCH)
 
 /// Year of the current release
-#define MI_YEAR "2022"
+#define MI_YEAR "2024"
 
 /// Authors list
 #define MI_AUTHORS "Realistic Graphics Lab, EPFL"
