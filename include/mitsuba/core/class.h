@@ -242,5 +242,55 @@ template <typename T, std::enable_if_t<is_constructible_v<T, Stream*>, int> = 0>
 Class::UnserializeFunctor get_unserialize_functor() { return [](Stream* s) -> Object* { return new T(s); }; }
 template <typename T, std::enable_if_t<!is_constructible_v<T, Stream*>, int> = 0>
 Class::UnserializeFunctor get_unserialize_functor() { return {}; }
+
+/// Adapted from: https://stackoverflow.com/a/65440575
+template <size_t... Len>
+constexpr auto constexpr_array_concatenation(const std::array<char, Len> &...arrays) {
+    constexpr size_t N = (... + Len) - sizeof...(Len);
+    std::array<char, N + 1> result = {};
+    result[N] = '\0';
+
+    char *dst = result.data();
+    for (const char *src : { arrays.data()... }) {
+        for (; *src != '\0'; src++, dst++) {
+            *dst = *src;
+        }
+    }
+    return result;
+}
+
 NAMESPACE_END(detail)
+
+#define MI_REGISTRY_PUT(name, ptr)                                                           \
+    if constexpr (dr::is_jit_v<Float>) {                                                     \
+        static constexpr auto domain_name                                                    \
+            = detail::constexpr_array_concatenation(                                         \
+                std::array<char, 10>{"mitsuba::"},                                           \
+                detail::get_variant_padded<Float, Spectrum>(),                               \
+                std::array<char, 3>{"__"},                                                   \
+                std::array<char, sizeof(name) / sizeof(char)>{name}                          \
+            );                                                                               \
+        jit_registry_put(dr::backend_v<Float>, domain_name.data(), ptr);                     \
+    }
+
+#define MI_CALL_TEMPLATE_BEGIN(Name)          \
+    DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Name)
+
+#define MI_CALL_TEMPLATE_END(Name)                                                      \
+private:                                                                                \
+    static constexpr auto MIDomain_                                                     \
+            = ::mitsuba::detail::constexpr_array_concatenation(                         \
+                std::array<char, 10>{"mitsuba::"},                                      \
+                ::mitsuba::detail::get_variant_padded<Ts...>(),                         \
+                std::array<char, 3>{"__"},                                              \
+                std::array<char, sizeof(#Name) / sizeof(char)>{#Name}                   \
+            );                                                                          \
+public:                                                                                 \
+    static constexpr const char *domain_() {                                            \
+        return MIDomain_.data();                                                        \
+    }                                                                                   \
+    static_assert(is_detected_v<detail::has_domain_override, CallSupport_>);            \
+    DRJIT_CALL_END(mitsuba::Name)
+
+
 NAMESPACE_END(mitsuba)
