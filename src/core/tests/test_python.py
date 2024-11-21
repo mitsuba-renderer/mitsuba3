@@ -135,3 +135,23 @@ def test09_import_torch_order(order):
     })
 
     print(bsdf)
+
+
+def test10_variant_switching_vcall():
+    import mitsuba as mi
+
+    # Switch variants between two scenes and try to render the second scene.
+    # This will only work if the two scenes do not share the same JIT vectorized
+    # call registry
+    if ('llvm_ad_spectral' not in mi.variants() or
+        'llvm_ad_rgb' not in mi.variants()):
+        pytest.skip(f"Missing variants to properly run the test.")
+
+    mi.set_variant('llvm_ad_spectral')
+    scene1 = mi.load_dict(mi.cornell_box())
+
+    mi.set_variant('llvm_ad_rgb')
+    scene2 = mi.load_dict(mi.cornell_box())
+
+    mi.render(scene2, spp=1)
+
