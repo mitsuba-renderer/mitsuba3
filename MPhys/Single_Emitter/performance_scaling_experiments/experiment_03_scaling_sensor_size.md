@@ -6,7 +6,13 @@ This is similar to experiment 01, but the parameter that is changed this time is
 
 In this particular instance, it is also possible to load a single `scene_description` at the start of a testing run, and then modify the size of the sensor by modifying the `params = mi.traverse(scene)` function and then calling `params.update()`, rather than having to call `mi.load_dict(..)` on every run.  [Note: there does appear to be some kind of memory issue or leak associated with this function, so being able to update the parameters without having to call it allowed me to increase the size of the sensor more than I originally thought possible.]
 
-The experimental setup is otherwise identical (creating a Cherenkov ring) as experiment 01.
+The experimental setup is otherwise identical (creating a Cherenkov ring) as experiment 01, but this time running the relevant sensor_size script via:
+
+```
+python single_emitter_test_new_change_sensor_size.py variant n_repeats
+```
+
+where `variant` is the mitsuba variant and `n_repeats` the number of repeats of the initial CSV dataset.  In all examples below `n_repeats` is set to 11 in order to be able to run with $10^7$ photons.
 
 ## Results
 
