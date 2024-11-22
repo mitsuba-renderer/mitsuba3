@@ -46,14 +46,6 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
-          toolset: 14.41.34120
-          sdk: 10.0.22621.0
-
-      - name: Setup cmake
-        if: runner.os == 'Windows'
-        uses: jwlawson/actions-setup-cmake@v2
-        with:
-          cmake-version: '3.30.5'
 
       - name: Install cibuildwheel
         run: |
