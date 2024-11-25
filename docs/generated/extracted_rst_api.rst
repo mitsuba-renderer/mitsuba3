@@ -5800,7 +5800,7 @@
 
 .. py:data:: mitsuba.MI_YEAR
     :type: str
-    :value: 2022
+    :value: 2024
 
 .. py:class:: mitsuba.MarginalContinuous2D0
 

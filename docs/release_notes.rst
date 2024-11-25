@@ -8,8 +8,76 @@ strive to document breaking API changes in the release notes below.
 Incoming changes
 ----------------
 
-- The ``sdfgrid`` has its ``watertight`` parameter set to ``false`` by default
+This release comes with a major overhaul of some of the internal components of
+Mitsuba 3. Namely, the Python bindings are now created using
+`nanobind <https://github.com/wjakob/nanobind>`_ and the just-in-time compiler
+Dr.Jit was updated to `version 1.0.0 <https://drjit.readthedocs.io/en/stable/changelog.html#drjit-1-0-0-november-21-2024>`_.
 
+These upgrades lead to the following:
+
+- Performance boost: 1.2x to 2x speedups depending on the JIT backend and scene size
+- Improved stubs: auto-completion and type-checking has been greatly improved
+- More variants on PyPI: thirteen variants are available in the pre-built wheels
+
+Some breaking changes were made in this process. Please refer to the
+`porting guide <https://mitsuba.readthedocs.io/en/v3.6.0/porting_3_6.html>`_ to
+get a comprehensive overview of these changes.
+
+This release also includes a series of bug fixes, quality of life improvements
+and new features. Here's a non-exhaustive list:
+
+- Support for Embree's robust intersection flag
+  `[96e0af2] <https://github.com/mitsuba-renderer/mitsuba3/commit/96e0af2de054c6d21e0ac2f68dd41bcd2cb469e5>`_
+- Callback system for variant changes
+  `#1367 <https://github.com/mitsuba-renderer/mitsuba3/pull/1367>`_
+- ``MeshPtr`` for vectorized ``Mesh`` method calls
+  `#1319 <https://github.com/mitsuba-renderer/mitsuba3/pull/1319>`_
+- Aliases for the ``ArrayX`` types of Dr.Jit
+  `[2e86e5e] <https://github.com/mitsuba-renderer/mitsuba3/commit/2e86e5e013b397391d6a59b09ee8238df03589b4>`_
+- Fix attribute evaluation for ``twosided`` BSDFs
+  `[5508ee6] <https://github.com/mitsuba-renderer/mitsuba3/commit/5508ee6a392e2b32c1a4360742cbe9c966586458>`_ .. `[7528d9f] <https://github.com/mitsuba-renderer/mitsuba3/commit/7528d9fb2d9012e97ebade224685cc8620a647cd>`_
+- A new `guide for using Mitsuba 3 in WSL 2 <https://mitsuba.readthedocs.io/en/v3.6.0/src/optix_setup.html>`_
+- ``batch`` sensors expose their inner ``Sensor`` objects when traversed with ``mi.traverse()``
+  `#1297 <https://github.com/mitsuba-renderer/mitsuba3/pull/1297>`_
+- Python stubs improvements
+  `#1260 <https://github.com/mitsuba-renderer/mitsuba3/pull/1260>`_ `#1238 <https://github.com/mitsuba-renderer/mitsuba3/pull/1238>`_
+- Updated wheel build process with new variants
+  `#1355 <https://github.com/mitsuba-renderer/mitsuba3/pull/1355>`_
+
+Mitsuba 3.5.2
+-------------
+
+*June 5, 2024*
+
+Most likely the last release which uses `pybind11 <https://pybind11.readthedocs.io>`_.
+
+- OptiX scene clean-ups could segfault
+  `[03f5e13] <https://github.com/mitsuba-renderer/mitsuba3/commit/03f5e1362d0cf1cc8c4edbd6e0e7bfd5ee8705a0>`_
+
+Mitsuba 3.5.1
+-------------
+
+*June 5, 2024*
+
+- Upgrade Dr.Jit to `[v0.4.6] <https://github.com/mitsuba-renderer/drjit/releases/tag/v0.4.6>`_
+- More robust scene clean-up when using Embree
+  `[7bb672c] <https://github.com/mitsuba-renderer/mitsuba3/commit/7bb672c32d64ad9a4996d3c7700d445d2c5750bc>`_
+- Support for AOV fields in Python AD integrators
+  `[f3b427e] <https://github.com/mitsuba-renderer/mitsuba3/commit/f3b427e02ca9dd1fb2e0fb9b993c67a2779d2052>`_
+- Fix potential segfault during OptiX scene clean-up
+  `[0bcfc72] <https://github.com/mitsuba-renderer/mitsuba3/commit/0bcfc72b846cd5483109b1323301755e23926e76>`_
+- Improve and fix Mesh PMF computations
+  `[ced7b22] <https://github.com/mitsuba-renderer/mitsuba3/commit/ced7b2204d7d8beefa149a6c5b43e2ff5796a725>`_ .. `[7d2951a] <https://github.com/mitsuba-renderer/mitsuba3/commit/7d2951a5f3f55a0bda4f40e3c4299441f05e70d5>`_
+- ``Shape.parameters_grad_enabled`` now only applies to parameters that introduce visibility discontinuities
+  `[3013adb] <https://github.com/mitsuba-renderer/mitsuba3/commit/3013adb4f12a491f8dd37c32bcedf55c7998f9e8>`_
+- The ``measuredpolarized`` plugin is now supported in vectorized variants
+  `[68b3a5f] <https://github.com/mitsuba-renderer/mitsuba3/commit/68b3a5f20ea00eb83631a7c48585162c6d901a7d>`_
+- Fix an issue where the ``constant`` plugin would not reuse kernels
+  `[deebe4c] <https://github.com/mitsuba-renderer/mitsuba3/commit/deebe4c64586c129bb0b0280bbaf376e2315991c>`_
+- Minor changes to support Nvidia v555 drivers
+  `[19bf5a4] <https://github.com/mitsuba-renderer/mitsuba3/commit/19bf5a4d82e760614f766067baf0c8add3bc8a41>`_
+- Many numerical and performance improvements to the ``sdfgrid`` shape
+  `[455de40] <https://github.com/mitsuba-renderer/mitsuba3/commit/455de408abf7660e1667a1ed810fc6fd903b9db3>`_ .. `[9e156bd] <https://github.com/mitsuba-renderer/mitsuba3/commit/9e156bdf3a33042b16593e3f5de40acb7d22da64>`_
 
 Mitsuba 3.5.0
 -------------
