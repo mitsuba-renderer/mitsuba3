@@ -5,8 +5,10 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`_ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
-Incoming changes
-----------------
+Mitsuba 3.6.0
+-------------
+
+*November 25, 2024*
 
 This release comes with a major overhaul of some of the internal components of
 Mitsuba 3. Namely, the Python bindings are now created using
