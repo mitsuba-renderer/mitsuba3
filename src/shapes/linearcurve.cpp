@@ -105,7 +105,7 @@ points and increasing radii::
 
         'curves': {
             'type': 'linearcurve',
-            'to_world': mi.ScalarTransform4f.scale([2, 2, 2]).translate([1, 0, 0]),
+            'to_world': mi.ScalarTransform4f().scale([2, 2, 2]).translate([1, 0, 0]),
             'filename': 'curves.txt'
         },
 

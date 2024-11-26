@@ -58,7 +58,7 @@ using the lookat tag, e.g.:
     .. code-tab:: python
 
         'type': 'spot',
-        'to_world': mi.ScalarTransform4f.look_at(
+        'to_world': mi.ScalarTransform4f().look_at(
             origin=[1, 1, 1],
             target=[1, 2, 1],
             up=[0, 0, 1]

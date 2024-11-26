@@ -92,7 +92,7 @@ on the command line. The Python package includes thirteen variants by default:
 - ``cuda_ad_spectral``
 - ``cuda_ad_spectral_polarized``
 
-The scalar variants perform one-ray-at-a-time simulation, while the LLVM and CUDA 
+The scalar variants perform one-ray-at-a-time simulations, while the LLVM and CUDA 
 variants can be used for inverse rendering on the CPU or GPU respectively. To access additional 
 variants, you will need to compile a custom version of Dr.Jit using CMake. Please see the
 [documentation](https://mitsuba.readthedocs.io/en/latest/src/developer_guide/compiling.html)

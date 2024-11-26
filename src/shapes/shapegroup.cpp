@@ -69,7 +69,7 @@ where only a few distinct types of trees have to be kept in memory. An example i
             },
             'second_object': {
                 'type': 'sphere',
-                'to_world': mi.ScalarTransform4f.scale([5, 5, 5]).translate([0, 20, 0])
+                'to_world': mi.ScalarTransform4f().scale([5, 5, 5]).translate([0, 20, 0])
                 'bsdf': {
                     'type': 'diffuse',
                 }
@@ -88,7 +88,7 @@ where only a few distinct types of trees have to be kept in memory. An example i
         # Create instance of the shape group, but rotated, scaled, and translated
         'second_instance': {
             'type': 'instance',
-            'to_world': mi.ScalarTransform4f.rotate([1, 0, 0], 45).scale([1.5, 1.5, 1.5]).translate([0, 10, 0]),
+            'to_world': mi.ScalarTransform4f().rotate([1, 0, 0], 45).scale([1.5, 1.5, 1.5]).translate([0, 10, 0]),
             'shapegroup': {
                 'type': 'ref',
                 'id': 'my_shape_group'

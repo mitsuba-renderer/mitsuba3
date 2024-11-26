@@ -60,7 +60,7 @@ timings specified for the `batch` sensor itself.
         'sensor1': {
             'type': 'perspective',
             'fov': 45,
-            'to_world': mi.ScalarTransform4f.look_at(
+            'to_world': mi.ScalarTransform4f().look_at(
                 origin=[0, 0, 1],
                 target=[0, 0, 0],
                 up=[0, 1, 0]
@@ -69,7 +69,7 @@ timings specified for the `batch` sensor itself.
         'sensor2': {
             'type': 'perspective',
             'fov': 45,
-            'to_world': mi.ScalarTransform4f.look_at(
+            'to_world': mi.ScalarTransform4f().look_at(
                 origin=[1, 0, 0],
                 target=[0, 0, 0],
                 up=[0, 1, 0]

@@ -84,7 +84,7 @@ The two declarations below are equivalent.
 
         'sphere_1': {
             'type': 'sphere',
-            'to_world': mi.ScalarTransform4f.scale([2, 2, 2]).translate([1, 0, 0]),
+            'to_world': mi.ScalarTransform4f().scale([2, 2, 2]).translate([1, 0, 0]),
             'bsdf': {
                 'type': 'diffuse'
             }

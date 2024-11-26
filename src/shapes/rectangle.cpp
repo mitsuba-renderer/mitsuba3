@@ -79,7 +79,7 @@ The following XML snippet showcases a simple example of a textured rectangle:
             'type': 'diffuse',
             'reflectance': {
                 'type': 'checkerboard',
-                'to_uv': mi.ScalarTransform4f.scale([5, 5, 1])
+                'to_uv': mi.ScalarTransform4f().scale([5, 5, 1])
             }
         }
 

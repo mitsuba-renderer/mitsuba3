@@ -67,11 +67,11 @@ The exact camera position and orientation is most easily expressed using the
     .. code-tab:: python
 
         'type': 'orthographic',
-        'to_world': mi.ScalarTransform4f.look_at(
+        'to_world': mi.ScalarTransform4f().look_at(
             origin=[1, 1, 1],
             target=[1, 2, 1],
             up=[0, 0, 1]
-        ) @ mi.ScalarTransform4f.scale([10, 10, 1])
+        ) @ mi.ScalarTransform4f().scale([10, 10, 1])
 
  */
 

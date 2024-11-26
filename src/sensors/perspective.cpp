@@ -112,7 +112,7 @@ The exact camera position and orientation is most easily expressed using the
 
         'type': 'perspective',
         'fov': 45,
-        'to_world': mi.ScalarTransform4f.look_at(
+        'to_world': mi.ScalarTransform4f().look_at(
             origin=[1, 1, 1],
             target=[1, 2, 1],
             up=[0, 0, 1]
