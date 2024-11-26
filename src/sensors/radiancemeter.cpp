@@ -124,7 +124,7 @@ public:
                             const Point2f & /*aperture_sample*/,
                             Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
-        RayDifferential3f ray;
+        RayDifferential3f ray = dr::zeros<RayDifferential3f>();
         ray.time = time;
 
         // 1. Sample spectrum
