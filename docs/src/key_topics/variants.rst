@@ -92,8 +92,17 @@ those variants will be installed.
 
     - :monosp:`scalar_rgb`
     - :monosp:`scalar_spectral`
-    - :monosp:`cuda_ad_rgb`
+    - :monosp:`scalar_spectral_polarized`
     - :monosp:`llvm_ad_rgb`
+    - :monosp:`llvm_ad_mono`
+    - :monosp:`llvm_ad_mono_polarized`
+    - :monosp:`llvm_ad_spectral`
+    - :monosp:`llvm_ad_spectral_polarized`
+    - :monosp:`cuda_ad_rgb`
+    - :monosp:`cuda_ad_mono`
+    - :monosp:`cuda_ad_mono_polarized`
+    - :monosp:`cuda_ad_spectral`
+    - :monosp:`cuda_ad_spectral_polarized`
 
 This is to avoid the burden of downloading massive binaries, but those should be
 enough to get you started with Mitsuba 3. For advanced applications that require
