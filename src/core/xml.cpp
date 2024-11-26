@@ -189,7 +189,6 @@ struct XMLObject {
     size_t location = 0;
     ref<Object> object;
     std::mutex mutex;
-    uint32_t scope = 0;
 };
 
 enum class ColorMode {
@@ -543,13 +542,6 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                     inst.class_ = it2->second;
                     inst.offset = src.offset;
                     inst.src_id = src.id;
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
-                    // Deterministically assign a scope to each scene object
-                    if (ctx.backend && ctx.parallel) {
-                        jit_new_scope((JitBackend) ctx.backend);
-                        inst.scope = jit_scope((JitBackend) ctx.backend);
-                    }
-#endif
                     inst.location = node.offset_debug();
                     return std::make_pair(name, id);
                 }
@@ -1026,8 +1018,6 @@ static Task *instantiate_node(XMLParseContext &ctx,
 
     Properties &props = inst.props;
     const auto &named_references = props.named_references();
-    uint32_t scope = inst.scope;
-
     // Recursive graph traversal to gather dependency tasks
     std::vector<Task *> deps;
     for (auto &kv : named_references) {
@@ -1038,6 +1028,15 @@ static Task *instantiate_node(XMLParseContext &ctx,
         }
         deps.push_back(task_map.find(child_id)->second);
     }
+
+    uint32_t scope = 0;
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+    // Deterministically assign a scope to each scene object
+    if (ctx.backend && ctx.parallel) {
+        jit_new_scope((JitBackend) ctx.backend);
+        scope = jit_scope((JitBackend) ctx.backend);
+    }
+#endif
 
     auto instantiate = [&ctx, &env, id, scope]() {
         ScopedSetThreadEnvironment set_env(env);

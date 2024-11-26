@@ -21,7 +21,6 @@ extern Caster cast_object;
 struct DictInstance {
     Properties props;
     ref<Object> object = nullptr;
-    uint32_t scope = 0;
     std::vector<std::pair<std::string, std::string>> dependencies;
 };
 
@@ -210,7 +209,7 @@ ref<Object> create_texture_from(const nb::dict &dict, bool within_emitter) {
                 try {
                     color = nb::cast<Color3f>(value2);
                 } catch (const nb::cast_error &) {
-                    Throw("Could not convert %s into Color3f", 
+                    Throw("Could not convert %s into Color3f",
                         nb::str(value2).c_str());
                 }
             } else if (key2 != "type")
@@ -426,13 +425,6 @@ void parse_dictionary(DictParseContext &ctx,
     // Set object id based on path in dictionary if no id is provided
     props.set_id(id.empty() ? string::tokenize(path, ".").back() : id);
 
-    if constexpr (dr::is_jit_v<Float>) {
-        if (ctx.parallel) {
-            jit_new_scope(dr::backend_v<Float>);
-            inst.scope = jit_scope(dr::backend_v<Float>);
-        }
-    }
-
     if (!id.empty()) {
         if (ctx.aliases.count(id) != 0)
             Throw("%s has duplicate id: %s", path, id);
@@ -448,9 +440,8 @@ Task *instantiate_node(DictParseContext &ctx,
         return task_map.find(path)->second;
 
     auto &inst = ctx.instances[path];
-    uint32_t scope = inst.scope;
-    uint32_t backend = (uint32_t) dr::backend_v<Float>;
     bool is_root = path == "__root__";
+    uint32_t backend = (uint32_t) dr::backend_v<Float>;
 
     // Early exit if the object was already instantiated
     if (inst.object)
@@ -463,6 +454,14 @@ Task *instantiate_node(DictParseContext &ctx,
             task_map.insert({path2, task});
         }
         deps.push_back(task_map.find(path2)->second);
+    }
+
+    uint32_t scope = 0;
+    if constexpr (dr::is_jit_v<Float>) {
+        if (ctx.parallel) {
+            jit_new_scope(dr::backend_v<Float>);
+            scope = jit_scope(dr::backend_v<Float>);
+        }
     }
 
     auto instantiate = [&ctx, path, scope, backend]() {
