@@ -91,3 +91,7 @@ def test07_permute_kensler_uniform(variant_scalar_rgb):
 
         mean = np.mean(histogram)
         assert dr.allclose(1.0 / sample_count, mean)
+
+def test08_sample_tea_float(variants_all):
+    f = mi.sample_tea_float(mi.UInt(0), mi.UInt(0))
+    assert type(f) == mi.Float
