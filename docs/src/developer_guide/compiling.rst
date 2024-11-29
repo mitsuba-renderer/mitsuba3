@@ -98,10 +98,20 @@ TLDR: If you plan to use Mitsuba from Python, we recommend adding one of
 
     Note that compilation time and compilation memory usage is roughly
     proportional to the number of enabled variants, hence including many of them
-    (more than five) may not be advisable. Mitsuba 3 developers will typically
-    want to restrict themselves to 1-2 variants used by their current experiment
-    to minimize edit-recompile times. Also note that the ``scalar_rgb`` variant
-    is mandatory.
+    (more than five) may not be advisable. Also note that the ``scalar_rgb`` 
+    and *at least one AD variant* is mandatory.
+
+.. warning::
+
+    Mitsuba 3 also generates corresponding
+    `Python stub files <https://typing.readthedocs.io/en/latest/spec/distributing.html#stub-files>`_
+    during compilation. The process involves selecting one of the available variants
+    to extract the relevant type information. However, these stub files have to
+    be variant-agnostic and hence certain combinations of variants won't be allowed.
+    For example, including just `scalar_rgb`, `scalar_spectral` and `llvm_ad_rgb`
+    creates ambiguity as to which variant we should select to generate the Python stubs.
+    In short, if a disallowed combination of variants is selected, a compilation 
+    error will report what variant should be added to remove any ambiguity.
 
 Linux
 -----
