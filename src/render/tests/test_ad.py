@@ -462,3 +462,37 @@ def test07_masked_updates(variants_all_ad_rgb, opt):
 
         prev_x = mi.Float(params['x'])
         prev_state = [mi.Float(vv) for vv in ensure_iterable(opt.state['x'])]
+
+@pytest.mark.parametrize('special_type', ['Complex2f', 'Quaternion4f', 'Matrix2f'])
+def test07_adam_special_types(variants_all_ad_rgb, special_type):
+    import sys
+    st = getattr(mi, special_type)
+    at = dr.array_t(st)
+
+    grad_v = dr.scalar.PCG32().next_float32()
+
+    # Step with special type
+    x = st(dr.full(at, 1.0))
+    dr.set_grad_enabled(x, True)
+    params = { 'x': x }
+    opt = mi.ad.Adam(lr=1.0, params=params, mask_updates=True)
+    for _ in range(5):
+        dr.set_grad(params['x'], st(dr.full(at, grad_v)))
+        opt.step()
+        params.update(opt)
+
+    update_st = params['x']
+
+    # Step with array type
+    x = dr.full(at, 1.0)
+    dr.set_grad_enabled(x, True)
+    params = { 'x': x }
+    opt = mi.ad.Adam(lr=1.0, params=params, mask_updates=True)
+    for _ in range(5):
+        dr.set_grad(params['x'], dr.full(at, grad_v))
+        opt.step()
+        params.update(opt)
+
+    update_at = params['x']
+
+    assert dr.allclose(update_at, at(update_st))

@@ -278,13 +278,26 @@ class Adam(Optimizer):
                 self.reset(k)
 
             m_tp, v_tp = self.state[k]
+
+            # Ensure that operations to compute moments and step size are 
+            # element-wise.
+            # e.g. dr.square(complex2f) != dr.square(array2f)
+            m_type = type(m_tp)
+            v_type = type(v_tp)
+            grad_type = type(g_p)
+            if dr.is_special_v(grad_type):
+                g_p = dr.array_t(g_p)(g_p)
+                m_tp = dr.array_t(m_tp)(m_tp)
+                v_tp = dr.array_t(v_tp)(v_tp)
+
             m_t = self.beta_1 * m_tp + (1 - self.beta_1) * g_p
             v_t = self.beta_2 * v_tp + (1 - self.beta_2) * dr.square(g_p)
+
             if self.mask_updates:
                 nonzero = g_p != 0.
                 m_t = dr.select(nonzero, m_t, m_tp)
                 v_t = dr.select(nonzero, v_t, v_tp)
-            self.state[k] = (m_t, v_t)
+            self.state[k] = (m_type(m_t), v_type(v_t))
             dr.schedule(self.state[k])
 
             if self.uniform:
@@ -293,7 +306,8 @@ class Adam(Optimizer):
                 step = lr_t * m_t / (dr.sqrt(v_t) + self.epsilon)
             if self.mask_updates:
                 step = dr.select(nonzero, step, 0.)
-            u = dr.detach(p) - step
+
+            u = dr.detach(p) - m_type(step)
             u = type(p)(u)
             dr.enable_grad(u)
             self.variables[k] = u
