@@ -5,8 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Load in data from different mitsuba variant tests
-# variants = ["llvm_mono", "llvm_ad_rgb", "cuda_mono", "cuda_ad_rgb"]
-variants = ["llvm_mono", "llvm_ad_rgb"]
+variants = ["llvm_mono", "llvm_ad_rgb", "cuda_mono", "cuda_ad_rgb"]
+# variants = ["llvm_mono", "llvm_ad_rgb"]
 
 max_time = 0
 timing_data = []

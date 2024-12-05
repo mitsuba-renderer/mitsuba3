@@ -80,6 +80,9 @@ for n in range(len(stats_timing_vs_nphotons_data)):
     max_full = stats_timing_vs_nphotons_data[n][7]
     if max_full > max_time:
         max_time = max_full
+    max_generate = stats_timing_vs_nphotons_data[n][9]
+    if max_generate > max_time:
+        max_time = max_generate
 
 # Save timing data to CSV files
 np.savetxt('csv/' + variant + '_stats_timing_for_n_photons.csv', np.array(stats_timing_vs_nphotons_data), delimiter=',')
