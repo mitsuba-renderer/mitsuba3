@@ -194,6 +194,8 @@ public:
             Throw("The parameter 'intensity' cannot be spatially varying (e.g. bitmap type)!");
         // dr::set_attr(this, "flags", m_flags);
         // degree to radiance: degree * pi / 180
+        // TODO: do these need to be parameters for this emitter, or are they
+        ///      covered by the information in the photon list that's been loaded in?
         m_cutoff_angle = dr::deg_to_rad(0.01f);
         m_beam_width   = dr::deg_to_rad(0.01f*3.0f / 4.0f);
         // if the m_cutoff_angle is equal to m_beam_width, the denominator will be 0, it's impossible!
@@ -213,6 +215,7 @@ public:
                                           Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
         // 1. Sample directional component
+        // TODO: again this is a single direction? Should it be allowed to be multiple?
         ScalarVector3f local_dir =  ScalarVector3f(0.f, 0.f, 1.f);
         Float pdf_dir = 445029;
         // Uniformly sample the light rays
@@ -230,6 +233,7 @@ public:
         // generate a set of random wavelengths and the corresponding spectral weight
         auto [wavelengths, spec_weight] =
             sample_wavelengths(si, wavelength_sample, active);
+        // TODO: calculate falloff using falloff_curve ?
         Float falloff = 1.0f;
         Ray3f result = Ray3f(si.p, new_dir, time, wavelengths);
         return {result, depolarizer<Spectrum>(spec_weight * falloff / pdf_dir)};
@@ -311,6 +315,7 @@ public:
         oss << "PhotonEmitter[" << std::endl
             << "  to_world = " << string::indent(m_to_world) << "," << std::endl
             << "  intensity = " << m_intensity << "," << std::endl
+            // TODO: cutoff_angle isn't a parameter, so should it be here?
             << "  cutoff_angle = " << m_cutoff_angle << "," << std::endl
             << "  beam_width = " << m_beam_width << "," << std::endl
             << "  medium = " << (m_medium ? string::indent(m_medium) : "")
