@@ -8,7 +8,7 @@ The code changes required to do this will be saved to a new branch, but not (yet
 
 ## Results
 
-Results were obtained both on my local laptop's CPU `12th Gen Intel(R) Core(TM) i7-1255U   1.70 GHz` using 16GB of RAM.
+Results were obtained on my local laptop's CPU `12th Gen Intel(R) Core(TM) i7-1255U   1.70 GHz` using 16GB of RAM.
 
 All PNGs and CSVs created for this experiment can be found in the `experiment_02` directory at the level of this file.
 
