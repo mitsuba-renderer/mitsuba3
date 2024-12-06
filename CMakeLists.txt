@@ -374,9 +374,6 @@ if (MSVC)
 
   # Don't complain about incompatible modifier on explicit instantiations
   add_compile_options(/wd4910)
-
-  # Ensure text is encoded as UTF-8
-  add_compile_options("/execution-charset:utf-8")
 endif()
 
 include(TestBigEndian)
