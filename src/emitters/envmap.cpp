@@ -245,6 +245,17 @@ public:
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
         if (keys.empty() || string::contains(keys, "data")) {
 
+            if (m_data.ndim() != 3)
+                    Throw("Environment map data has dimension %lu, expected 3", m_data.ndim());
+
+            if constexpr (is_spectral_v<Spectrum>) {
+                if (m_data.shape(2) != 4)
+                    Throw("Environment map data has %lu channels, expected 4", m_data.shape(2));
+            } else {
+                if (m_data.shape(2) != 3)
+                    Throw("Environment map data has %lu channels, expected 3", m_data.shape(2));
+            }
+
             ScalarVector2u res = { m_data.shape(1), m_data.shape(0) };
 
             if constexpr (dr::is_jit_v<Float>) {
