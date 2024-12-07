@@ -1079,7 +1079,7 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Dr.Jit support for vectorized function calls
 // -----------------------------------------------------------------------
 
-DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Shape)
+MI_CALL_TEMPLATE_BEGIN(Shape)
     DRJIT_CALL_METHOD(compute_surface_interaction)
     DRJIT_CALL_METHOD(has_attribute)
     DRJIT_CALL_METHOD(eval_attribute)
@@ -1112,7 +1112,7 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Shape)
     auto is_mesh() const { return shape_type() == (uint32_t) mitsuba::ShapeType::Mesh; }
     auto is_medium_transition() const { return interior_medium() != nullptr ||
                                                exterior_medium() != nullptr; }
-DRJIT_CALL_END(mitsuba::Shape)
+MI_CALL_TEMPLATE_END(Shape)
 
 //! @}
 // -----------------------------------------------------------------------
