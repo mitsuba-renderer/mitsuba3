@@ -112,7 +112,7 @@ jobs:
           name: wheels
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@v1.10.2
+      - uses: pypa/gh-action-pypi-publish@v1.12.3
         with:
           user: __token__
           password: ${{ secrets.PYPI_PASSWORD }}
