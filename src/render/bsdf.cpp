@@ -8,8 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT BSDF<Float, Spectrum>::BSDF(const Properties &props)
     : m_flags(+BSDFFlags::Empty), m_id(props.id()) {
-    if constexpr (dr::is_jit_v<Float>)
-        jit_registry_put(dr::backend_v<Float>, "mitsuba::BSDF", this);
+    MI_REGISTRY_PUT("BSDF", this);
 }
 
 MI_VARIANT BSDF<Float, Spectrum>::~BSDF() {

@@ -7,12 +7,11 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MI_VARIANT Medium<Float, Spectrum>::Medium() : 
-    m_is_homogeneous(false), 
+MI_VARIANT Medium<Float, Spectrum>::Medium() :
+    m_is_homogeneous(false),
     m_has_spectral_extinction(true) {
 
-    if constexpr (dr::is_jit_v<Float>)
-        jit_registry_put(dr::backend_v<Float>, "mitsuba::Medium", this);
+    MI_REGISTRY_PUT("Medium", this);
 }
 
 MI_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props.id()) {
@@ -33,8 +32,7 @@ MI_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props
 
     m_sample_emitters = props.get<bool>("sample_emitters", true);
 
-    if constexpr (dr::is_jit_v<Float>)
-        jit_registry_put(dr::backend_v<Float>, "mitsuba::Medium", this);
+    MI_REGISTRY_PUT("Medium", this);
 }
 
 MI_VARIANT Medium<Float, Spectrum>::~Medium() {

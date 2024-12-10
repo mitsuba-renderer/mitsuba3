@@ -188,6 +188,9 @@ NAMESPACE_END(mitsuba)
 namespace drjit {
     template <typename Array>
     struct call_support<mitsuba::Object, Array> {
+        // This is for pointers to general `Object` instances, we don't have access
+        // to specific `Float` and `Spectrum` types here.
+        static constexpr const char *Variant = "";
         static constexpr const char *Domain = "mitsuba::Object";
     };
 }
