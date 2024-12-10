@@ -1,4 +1,4 @@
-# Add a step to measure dictionary creation time to experiment 01
+# Add a step to measure generation steps in experiment 01
 
 ## Background / Method
 
