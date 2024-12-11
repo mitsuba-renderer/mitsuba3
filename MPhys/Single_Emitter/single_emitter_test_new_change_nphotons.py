@@ -120,11 +120,22 @@ photon_lists = []
 
 # Loop to generate photon data from the photon_detected data frame
 
+generate_times = {}
+volume_times = {}
+
 for n_photons in [10**n_size for n_size in range(9)]:
     # If the size is bigger than the whole dataset then pandas is sensible and just gives you the whole dataset
+    start_time = time.time()
     gen_photon_data = generate_emitter_data(photon_detected.head(n_photons))
+    generate_time = time.time() - start_time
     photon_list = mi.VolumeGrid(gen_photon_data)
+    volume_time = time.time() - (start_time + generate_time)
+    print("----- n_photons ", n_photons, "---------------------------")
+    print("Generate time: ", generate_time)
+    print("Volume time: ", volume_time)
     print("--------------------------------")
+    generate_times[n_photons] = generate_time
+    volume_times[n_photons] = volume_time
     photon_lists.append(photon_list)
     print (photon_list)
     print (np.array(photon_list))
@@ -132,11 +143,17 @@ for n_photons in [10**n_size for n_size in range(9)]:
     print ("n_photons into mitsuba ", (len(np.array(photon_list)[0][0]) - 1) // 6)
 
 # Do it for the whole dataset too
+start_time = time.time()
 gen_photon_data = generate_emitter_data(photon_detected)
+generate_time = time.time() - start_time
 photon_list = mi.VolumeGrid(gen_photon_data)
+volume_time = time.time() - (start_time + generate_time)
 photon_lists.append(photon_list)
+generate_times[len(photon_detected)] = generate_time
+volume_times[len(photon_detected)] = volume_time
 
 print("--------------------------------")
+print("----- n_photons ", len(photon_detected), "---------------------------")
 print (photon_list)
 print (np.array(photon_list))
 print (gen_photon_data)
@@ -380,7 +397,8 @@ for photon_list in photon_lists:
         (n_photons, load_time, load_and_render_time, elapsed_time) = run_experiment(photon_list)
         # The first run is often longer than any other, so don't count it
         if n!=0:
-            full_timing_vs_nphotons.append([n_photons, load_time, load_and_render_time - load_time, load_and_render_time, elapsed_time])
+            full_timing_vs_nphotons.append([n_photons, load_time, load_and_render_time - load_time, load_and_render_time, elapsed_time,
+                                            generate_times[n_photons], volume_times[n_photons]])
 
     # Compare this image to the previous one
     old_fname = 'png/intensity = 1000.png'
