@@ -377,6 +377,12 @@ if (MSVC)
 
   # Ensure source and execution charset is encoded as UTF-8
   add_compile_options(/utf-8)
+
+  # Workaround to avoid a particular crash due to MS VC++ runtime library binary 
+  # incompatibility. In general the runtime version needs to be at least as new 
+  # as toolset version but this define provides one such "escape hatch" if that 
+  # strictly isn't the case to combat against a commonly encountered reported crash
+  add_compile_options(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 endif()
 
 include(TestBigEndian)
