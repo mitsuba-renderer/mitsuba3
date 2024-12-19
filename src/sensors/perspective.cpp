@@ -91,7 +91,7 @@ Alternatively, it is also possible to specify a field of view in degrees
 along a given axis (see the :monosp:`fov` and :monosp:`fov_axis` parameters).
 
 The exact camera position and orientation is most easily expressed using the
-:monosp:`look_at` tag, i.e.:
+:monosp:`lookat` tag, i.e.:
 
 .. tabs::
     .. code-tab:: xml
@@ -102,7 +102,7 @@ The exact camera position and orientation is most easily expressed using the
             <transform name="to_world">
                 <!-- Move and rotate the camera so that looks from (1, 1, 1) to (1, 2, 1)
                     and the direction (0, 0, 1) points "up" in the output image -->
-                <look_at origin="1, 1, 1" target="1, 2, 1" up="0, 0, 1"/>
+                <lookat origin="1, 1, 1" target="1, 2, 1" up="0, 0, 1"/>
             </transform>
             <!-- film -->
             <!-- sampler -->
