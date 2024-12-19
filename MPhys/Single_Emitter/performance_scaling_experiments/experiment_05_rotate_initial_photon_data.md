@@ -1,4 +1,4 @@
-# Add a step to measure generation steps in experiment 01
+# Repeat experiment 04, but with rotations applied to initial data
 
 ## Background / Method
 
