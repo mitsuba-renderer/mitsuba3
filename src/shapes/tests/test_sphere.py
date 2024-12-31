@@ -11,6 +11,7 @@ def test01_create(variant_scalar_rgb):
     assert s is not None
     assert s.primitive_count() == 1
     assert dr.allclose(s.surface_area(), 4 * dr.pi)
+    assert dr.allclose(s.volume(), (4/3) * dr.pi)
 
     T = mi.ScalarTransform4f
 

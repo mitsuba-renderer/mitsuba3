@@ -118,7 +118,7 @@ public:
 
         // 3.a. Infinite emitters
         Mask is_infinite = has_flag(emitter->flags(), EmitterFlags::Infinite),
-             active_e = active && is_infinite && !has_flag(emitter->flags(), EmitterFlags::Medium);
+             active_e = active && is_infinite;
         if (dr::any_or<true>(active_e)) {
             /* Sample a direction toward an envmap emitter starting
                from the center of the scene (the sensor is not part of the

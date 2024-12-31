@@ -259,8 +259,6 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
                                            const Point2f &sample3,
                                            Mask active) const {
     MI_MASKED_FUNCTION(ProfilerPhase::SampleEmitterRay, active);
-    // TODO: Add volume emitter ray sampling, requires an additional volume sample
-
 
     Ray3f ray;
     Spectrum weight;

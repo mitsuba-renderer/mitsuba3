@@ -1,3 +1,5 @@
+import gc
+
 import pytest
 import drjit as dr
 import mitsuba as mi
@@ -23,6 +25,12 @@ def create_emitter_and_spectrum(s_key='d65'):
     emitter = mi.load_dict({
         "type": "obj",
         "filename": "resources/data/tests/obj/cbox_smallbox.obj",
+        "interior": {
+            "type": "homogeneous", "sigma_t": {
+                "type": "rgb",
+                "value": [1.0, 1.0, 1.0]
+            }
+        },
         "emitter" : { "type": "volumelight", "radiance" : spectrum_dicts[s_key] }
     })
     spectrum = mi.load_dict(spectrum_dicts[s_key])
@@ -43,7 +51,7 @@ def create_emitter_rgb():
         "emitter" : { "type": "volumelight", "radiance" : {
             "type": "rgb",
             "value": [1.0, 2.0, 1.0]
-        } }
+        }}
     })
 
     return r, c, emitter
@@ -58,14 +66,13 @@ def test01_constructor(variant_scalar_rgb):
     with pytest.raises(RuntimeError):
         e = mi.load_dict({
             "type" : "volumelight",
-            "to_world" : mi.ScalarTransform4f.translate([5, 0, 0])
+            "to_world" : mi.ScalarTransform4f().translate([5, 0, 0])
         })
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
 def test02_eval(variants_vec_spectral, spectrum_key):
     # Check that eval() return the same values as the 'radiance' spectrum
-
     shape, spectrum = create_emitter_and_spectrum(spectrum_key)
     emitter = shape.emitter()
 
@@ -80,7 +87,6 @@ def test02_eval(variants_vec_spectral, spectrum_key):
 @pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
 def test03_sample_ray(variants_vec_spectral, spectrum_key):
     # Check the correctness of the sample_ray() method
-
 
     shape, spectrum = create_emitter_and_spectrum(spectrum_key)
     emitter = shape.emitter()
@@ -188,7 +194,7 @@ def test06_sample_direction_rgb(variants_vec_rgb):
 
     # Direction sampling is conditioned on a sampled position
     it = dr.zeros(mi.SurfaceInteraction3f, 3)
-    it.p = [[0.0, 0.48, 0.19, 10, -2], [0.0, 0.9018, 2.19, 2, 1.02], [0.0, 0.5, 3.291, 3.1, 9.1]]  # Some positions
+    it.p = mi.Point3f([[0.0, 0.48, 0.19, 10, -2], [0.0, 0.9018, 2.19, 2, 1.02], [0.0, 0.5, 3.291, 3.1, 9.1]])  # Some positions
     it.time = 1.0
 
     # Sample direction on the emitter
@@ -211,12 +217,12 @@ def test06_sample_direction_rgb(variants_vec_rgb):
     A = 1
     dist_from_c = dr.norm(it.p - center)
     B = 2*dr.dot(shape_ds.d, it.p - center + dist_from_c*shape_ds.d)
-    C = dr.squared_norm(it.p - center + dist_from_c*shape_ds.d) - dr.sqr(radius)
+    C = dr.squared_norm(it.p - center + dist_from_c*shape_ds.d) - dr.square(radius)
 
-    r0 = 0.5 * (-B - dr.sqrt(dr.sqr(B) - 4*A*C))+dist_from_c
-    r1 = 0.5 * (-B + dr.sqrt(dr.sqr(B) - 4*A*C))+dist_from_c
-    r0 = dr.clamp(r0, 0.0, dr.inf)
-    r1 = dr.clamp(r1, 0.0, dr.inf)
+    r0 = 0.5 * (-B - dr.sqrt(dr.square(B) - 4*A*C))+dist_from_c
+    r1 = 0.5 * (-B + dr.sqrt(dr.square(B) - 4*A*C))+dist_from_c
+    r0 = dr.clip(r0, 0.0, dr.inf)
+    r1 = dr.clip(r1, 0.0, dr.inf)
 
     analytic_pdf = dr.select(
         dr.isfinite(r0) & dr.isfinite(r1),
@@ -231,3 +237,17 @@ def test06_sample_direction_rgb(variants_vec_rgb):
     assert dr.allclose(res, spec)
 
     assert dr.allclose(emitter.eval_direction(it, ds) / ds.pdf, spec)
+
+
+def test07_shape_accessors(variants_vec_rgb):
+    shape, _ = create_emitter_and_spectrum()
+    shape_ptr = mi.ShapePtr(shape)
+
+    assert type(shape.emitter()) == mi.Emitter
+    assert type(shape_ptr.emitter()) == mi.EmitterPtr
+
+    emitter = shape.emitter()
+    emitter_ptr = mi.EmitterPtr(emitter)
+
+    assert type(emitter.get_shape()) == mi.Mesh
+    assert type(emitter_ptr.get_shape()) == mi.ShapePtr

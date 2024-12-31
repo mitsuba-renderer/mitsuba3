@@ -79,6 +79,7 @@ class PRBVolpathIntegrator(RBIntegrator):
         self.hide_emitters = props.get('hide_emitters', False)
 
         self.use_nee = False
+        self.use_nee_medium = False
         self.nee_handle_homogeneous = False
         self.handle_null_scattering = False
         self.is_prepared = False
@@ -91,12 +92,14 @@ class PRBVolpathIntegrator(RBIntegrator):
             for medium in [shape.interior_medium(), shape.exterior_medium()]:
                 if medium is not None:
                     # Enable NEE if a medium specifically asks for it
-                    self.use_nee = self.use_nee or medium.use_emitter_sampling() or medium.is_emitter()
+                    self.use_nee = self.use_nee or medium.use_emitter_sampling()
+                    self.use_nee_medium = self.use_nee or medium.is_emitter()
                     self.nee_handle_homogeneous = self.nee_handle_homogeneous or medium.is_homogeneous()
                     self.handle_null_scattering = self.handle_null_scattering or not medium.is_homogeneous() or medium.is_emitter()
         self.is_prepared = True
         # By default, always enable NEE in case there are surfaces
         self.use_nee = True
+        self.use_nee_medium = True
 
     @dr.syntax
     def sample(self,
@@ -109,30 +112,35 @@ class PRBVolpathIntegrator(RBIntegrator):
                initial_medium: mi.MediumPtr,
                active: mi.Bool,
                **kwargs # Absorbs unused arguments
-    ) -> Tuple[mi.Spectrum, mi.Bool, List[mi.Float], mi.Spectrum]:
+               ) -> Tuple[mi.Spectrum, mi.Bool, List[mi.Float], mi.Spectrum]:
         self.prepare_scene(scene)
 
         is_primal = mode == dr.ADMode.Primal
 
-        ray = mi.Ray3f(ray)
+        # Copy input arguments to avoid mutating the caller's state
+        ray = mi.Ray3f(dr.detach(ray))
         depth = mi.UInt32(0)                          # Depth of current vertex
         L = mi.Spectrum(0 if is_primal else state_in) # Radiance accumulator
         δL = mi.Spectrum(δL if δL is not None else 0) # Differential/adjoint radiance
-        throughput = mi.Spectrum(1)                   # Path throughput weight
+        β = mi.Spectrum(1)                            # Path throughput weight
         η = mi.Float(1)                               # Index of refraction
-        active = mi.Bool(active)
+        active = mi.Bool(active)                      # Active SIMD lanes
 
         si = dr.zeros(mi.SurfaceInteraction3f)
         needs_intersection = mi.Bool(True)
         last_scatter_event = dr.zeros(mi.Interaction3f)
         last_scatter_direction_pdf = mi.Float(1.0)
 
-        initial_medium_ptr = initial_medium if (isinstance(initial_medium, mi.MediumPtr) or initial_medium is None) else mi.MediumPtr(initial_medium)
-        medium = dr.select(dr.neq(initial_medium, None), initial_medium_ptr, dr.zeros(mi.MediumPtr))
+        if initial_medium is None:
+            initial_medium_ptr = dr.zeros(mi.MediumPtr)
+        elif isinstance(initial_medium, mi.MediumPtr):
+            initial_medium_ptr = initial_medium
+        else:
+            initial_medium_ptr = mi.MediumPtr(initial_medium)
+        medium = dr.select((initial_medium != None), initial_medium_ptr, dr.zeros(mi.MediumPtr))
 
         channel = 0
-        depth = mi.UInt32(0)
-        valid_ray = mi.Bool(dr.neq(scene.environment(), dr.zeros(mi.EmitterPtr)))
+        valid_ray = mi.Bool(scene.environment() != dr.zeros(mi.EmitterPtr))
         specular_chain = mi.Bool(active)
 
         if mi.is_rgb:
@@ -142,152 +150,151 @@ class PRBVolpathIntegrator(RBIntegrator):
 
         while dr.hint(active,
                       label=f"Path Replay Backpropagation ({mode.name})"):
-            active &= dr.any(throughput != 0.0)
-
             # --------------------- Perform russian roulette --------------------
 
-            q = dr.minimum(dr.max(throughput) * dr.square(η), 0.95)
+            active &= dr.any(β != 0.0)
+            q = dr.minimum(dr.max(β) * dr.square(η), 0.95)
             perform_rr = (depth > self.rr_depth)
             active &= (sampler.next_1d(active) < q) | ~perform_rr
-            throughput[perform_rr] = throughput * dr.rcp(q)
+            β[perform_rr] = β * dr.rcp(q)
 
             active_medium = active & (medium != None)
             active_surface = active & ~active_medium
 
-            with dr.resume_grad(when=not is_primal):
-                # --------------------- Sample medium interaction -------------------
+            # --------------------- Sample medium interaction -------------------
 
-                # Handle medium sampling and potential medium escape
-                u = sampler.next_1d(active_medium)
+            # Handle medium sampling and potential medium escape
+            u = sampler.next_1d(active_medium)
+            with dr.resume_grad(when=not is_primal):
                 mei = medium.sample_interaction(ray, u, channel, active_medium)
-                mei.t = dr.detach(mei.t)
 
                 ray.maxt[active_medium & medium.is_homogeneous() & mei.is_valid()] = mei.t
                 intersect = needs_intersection & active_medium
                 si[intersect] = scene.ray_intersect(ray, intersect)
 
-                needs_intersection &= ~active_medium
-                mei.t[active_medium & (si.t < mei.t)] = dr.inf
+            needs_intersection &= ~active_medium
+            mei.t[active_medium & (si.t < mei.t)] = dr.inf
 
-                # Evaluate ratio of transmittance and free-flight PDF
+            # Evaluate ratio of transmittance and free-flight PDF
+            with dr.resume_grad(when=not is_primal):
+                weight_medium = mi.Spectrum(1.0)
                 tr, free_flight_pdf = medium.transmittance_eval_pdf(mei, si, active_medium)
                 tr_pdf = index_spectrum(free_flight_pdf, channel)
-                weight = mi.Spectrum(1.0)
-                weight[active_medium] *= dr.select(tr_pdf > 0.0, tr / dr.detach(tr_pdf), 0.0)
+                weight_medium[active_medium] *= dr.select(tr_pdf > 0.0, tr * dr.detach(dr.rcp(tr_pdf)), 1.0)
 
                 escaped_medium = active_medium & ~mei.is_valid()
                 active_medium &= mei.is_valid()
 
-                # Handle null and real scatter events
-                radiance = medium.get_radiance(mei, active_medium)
+            # ---------------- Intersection with medium emitter ----------------
+            count_direct_medium = (active_medium & ((depth == 0) | specular_chain))
+            emitter_medium = medium.emitter()
+            active_e_medium_sampl = active_medium & (emitter_medium != None) & \
+                                    ~((depth == 0) & self.hide_emitters)
+            ds = mi.DirectionSample3f(mei, last_scatter_event)
+            if dr.hint(self.use_nee and self.use_nee_medium, mode='scalar'):
+                emitter_pdf = scene.pdf_emitter_direction(last_scatter_event, ds, active_e_medium_sampl)
+            else:
+                emitter_pdf = 0.0
 
-                # ---------------- Intersection with emitters ----------------
-                count_direct_medium = (active_medium & dr.eq(depth, 0)) | specular_chain
-                emitter_medium = medium.emitter()
-                active_e_medium = active_medium & dr.neq(emitter_medium, None) & \
-                                  ~(dr.eq(depth, 0) & self.hide_emitters)
-                ds = mi.DirectionSample3f(mei, last_scatter_event)
-                if self.use_nee:
-                    emitter_pdf = scene.pdf_emitter_direction(last_scatter_event, ds, active_e_medium)
-                else:
-                    emitter_pdf = 0.0
+            em_mis = dr.select(count_direct_medium, 1.0, mis_weight(last_scatter_direction_pdf, emitter_pdf))
 
-                contrib_medium_weight = dr.select(count_direct_medium, 1.0, mis_weight(last_scatter_direction_pdf, emitter_pdf))
-                contrib_medium = throughput * weight * contrib_medium_weight * radiance
+            with dr.resume_grad(when=not is_primal):
+                Le_medium = dr.detach(β * em_mis) * weight_medium * dr.select(active_e_medium_sampl, mei.radiance, 0.0)
 
-                L[active_e_medium] += dr.detach(contrib_medium if is_primal else -contrib_medium)
-                if dr.hint(not is_primal and dr.grad_enabled(contrib_medium) and mode == dr.ADMode.Backward, mode='scalar'):
-                    inv_rad_det = dr.select(dr.neq(radiance, 0.0), dr.rcp(dr.detach(radiance)), 0.0)
-                    Le = dr.replace_grad(1.0, radiance * inv_rad_det) * dr.detach(dr.select(active_e_medium, contrib_medium, 0.0))
+            L[active_e_medium_sampl] += dr.detach(Le_medium if is_primal else -Le_medium)
 
-                    inv_weight_det = dr.select(dr.neq(weight, 0.0), dr.rcp(dr.detach(weight)), 0.0)
-                    Lo = dr.replace_grad(1.0, weight * inv_weight_det) * dr.detach(dr.select(active_e_medium, contrib_medium, 0.0))
-
-                    if dr.hint(dr.grad_enabled(Lo), mode='scalar'):
-                        dr.backward_from(δL * Lo, flags=dr.ADFlag.ClearNone)
-                    if dr.hint(dr.grad_enabled(Le), mode='scalar'):
-                        dr.backward_from(δL * Le, flags=dr.ADFlag.ClearNone)
-
-                if dr.hint(self.handle_null_scattering, mode='scalar'):
-                    (prob_scatter, _), (weight_scatter, weight_null) = medium.get_interaction_probabilities(
-                        dr.detach(radiance), dr.detach(mei), dr.detach(throughput * weight)
-                    )
-
-                    act_null_scatter = (sampler.next_1d(active_medium) >= index_spectrum(prob_scatter, channel)) & active_medium
-                    act_medium_scatter = ~act_null_scatter & active_medium
-                    weight[act_null_scatter] *= mei.sigma_n * dr.detach(index_spectrum(weight_null, channel))
-                else:
-                    weight_scatter = mi.UnpolarizedSpectrum(1.0)
-                    act_medium_scatter = active_medium
-
-                depth[act_medium_scatter] += 1
-                last_scatter_event[act_medium_scatter] = dr.detach(mei)
-
-                # Don't estimate lighting if we exceeded number of bounces
-                active &= depth < self.max_depth
-                act_medium_scatter &= active
-                if dr.hint(self.handle_null_scattering, mode='scalar'):
+            # Handle null and real scatter events
+            if dr.hint(self.handle_null_scattering, mode='scalar'):
+                (prob_scatter, prob_null), (weight_scatter, weight_null) = medium.get_interaction_probabilities(
+                    dr.detach(mei.radiance), mei, dr.detach(β * weight_medium)
+                )
+                act_null_scatter = (sampler.next_1d(active_medium) >= index_spectrum(prob_scatter, channel)) & active_medium
+                act_medium_scatter = ~act_null_scatter & active_medium
+                with dr.resume_grad(when=not is_primal):
+                    weight_medium[act_null_scatter] *= mei.sigma_n * dr.detach(index_spectrum(weight_null, channel))
                     ray.o[act_null_scatter] = dr.detach(mei.p)
                     si.t[act_null_scatter] = si.t - dr.detach(mei.t)
+            else:
+                weight_scatter = mi.UnpolarizedSpectrum(1.0)
+                act_medium_scatter = active_medium
 
-                weight[act_medium_scatter] *= mei.sigma_s * dr.detach(index_spectrum(weight_scatter, channel))
-                throughput *= dr.detach(weight)
+            depth[act_medium_scatter] += 1
+            last_scatter_event[act_medium_scatter] = dr.detach(mei, True)
 
-                mei = dr.detach(mei)
+            # Don't estimate lighting if we exceeded number of bounces
+            active &= depth < self.max_depth
+            act_medium_scatter &= active
 
-                if dr.hint(not is_primal and dr.grad_enabled(weight), mode='scalar'):
-                    inv_weight_det = dr.select(dr.neq(weight, 0.0), dr.rcp(dr.detach(weight)), 0.0)
-                    Lo = dr.replace_grad(1.0, weight * inv_weight_det) * dr.detach(dr.select(active_medium | escaped_medium, L, 0.0))
-                    if dr.hint(mode == dr.ADMode.Backward, mode='scalar'):
-                        dr.backward_from(δL * Lo)
-                    else:
-                        δL += dr.forward_to(Lo)
+            with dr.resume_grad(when=not is_primal):
+                weight_medium[act_medium_scatter] *= mei.sigma_s * dr.detach(index_spectrum(weight_scatter, channel))
 
-                if dr.hint(not is_primal and dr.grad_enabled(contrib_medium) and mode == dr.ADMode.Forward, mode='scalar'):
-                    δL += dr.forward_to(contrib_medium)
+                if dr.hint(not is_primal, mode='scalar'):
+                    inv_weight_det = dr.select((weight_medium != 0.0), dr.detach(dr.rcp(weight_medium)), 0.0)
+                    adj_L = (weight_medium * dr.detach(dr.select(active_medium | escaped_medium, L * inv_weight_det, 0.0)) + Le_medium)
 
-                phase_ctx = mi.PhaseFunctionContext(sampler)
-                phase = mei.medium.phase_function()
-                phase[~act_medium_scatter] = dr.zeros(mi.PhaseFunctionPtr)
+                    if dr.hint(dr.grad_enabled(adj_L), mode='scalar'):
+                        if dr.hint(mode == dr.ADMode.Backward, mode='scalar'):
+                            dr.backward_from(δL * adj_L)
+                        else:
+                            δL += dr.forward_to(adj_L)
 
-                # --------------------- Surface Interactions --------------------
+            mei = dr.detach(mei)
+            β *= dr.detach(weight_medium)
+            del weight_medium
 
-                active_surface |= escaped_medium
-                intersect = active_surface & needs_intersection
+            phase_ctx = mi.PhaseFunctionContext(sampler)
+            phase = mei.medium.phase_function()
+            phase[~act_medium_scatter] = dr.zeros(mi.PhaseFunctionPtr)
+
+            # --------------------- Surface Interactions --------------------
+
+            active_surface |= escaped_medium
+            active_surface &= active
+            intersect = active_surface & needs_intersection
+            with dr.resume_grad(when=not is_primal):
                 si[intersect] = scene.ray_intersect(ray, intersect)
 
-                # ----------------- Intersection with emitters -----------------
+            # ----------------- Intersection with emitters -----------------
 
-                ray_from_camera = active_surface & (depth == 0)
-                count_direct = ray_from_camera | specular_chain
-                emitter = si.emitter(scene)
-                active_e = active_surface & (emitter != None) & \
-                           ~((depth == 0) & self.hide_emitters) & \
-                           ~mi.has_flag(emitter.flags(), mi.EmitterFlags.Medium)
+            ray_from_camera = active_surface & (depth == 0)
+            count_direct_surface = ray_from_camera | specular_chain
+            emitter_surface = si.emitter(scene)
+            active_e_surface_sampl = active_surface & (emitter_surface != None) & \
+                                     ~((depth == 0) & self.hide_emitters)
 
-                # Get the PDF of sampling this emitter using next event estimation
-                ds = mi.DirectionSample3f(scene, si, last_scatter_event)
-                if dr.hint(self.use_nee, mode='scalar'):
-                    emitter_pdf = scene.pdf_emitter_direction(last_scatter_event, ds, active_e)
-                else:
-                    emitter_pdf = 0.0
-                emitted = emitter.eval(si, active_e)
-                contrib = dr.select(count_direct, throughput * emitted,
-                                    throughput * mis_weight(last_scatter_direction_pdf, emitter_pdf) * emitted)
-                L[active_e] += dr.detach(contrib if is_primal else -contrib)
-                if dr.hint(not is_primal and dr.grad_enabled(contrib), mode='scalar'):
+            # Get the PDF of sampling this emitter using next event estimation
+            ds = mi.DirectionSample3f(scene, si, last_scatter_event)
+            if dr.hint(self.use_nee, mode='scalar'):
+                emitter_pdf = scene.pdf_emitter_direction(last_scatter_event, ds, active_e_surface_sampl)
+            else:
+                emitter_pdf = 0.0
+
+            em_mis = dr.select(count_direct_surface, 1.0, mis_weight(last_scatter_direction_pdf, emitter_pdf))
+
+            with dr.resume_grad(when=not is_primal):
+                Le_surface = β * em_mis * emitter_surface.eval(si, active_e_surface_sampl)
+
+                dr.set_label(Le_surface, "Emitted Light")
+                dr.set_label(em_mis, "MIS Weight")
+                dr.set_label(active_e_surface_sampl, "Active (Mask)")
+                dr.set_label(si, "Surface Interaction")
+
+                if dr.hint(not is_primal and dr.grad_enabled(Le_surface), mode='scalar'):
                     if dr.hint(mode == dr.ADMode.Backward, mode='scalar'):
-                        dr.backward_from(δL * contrib)
+                        dr.backward_from(δL * Le_surface)
                     else:
-                        δL += dr.forward_to(contrib)
+                        δL += dr.forward_to(Le_surface)
 
-                active_surface &= si.is_valid()
-                ctx = mi.BSDFContext()
-                bsdf = si.bsdf(ray)
+            L[active_e_surface_sampl] += dr.detach(Le_surface)
 
-                # ---------------------- Emitter sampling ----------------------
+            active_surface &= si.is_valid()
+            bsdf_ctx = mi.BSDFContext()
+            bsdf = si.bsdf(ray)
 
-                if dr.hint(self.use_nee, mode='scalar'):
+            # ---------------------- Emitter sampling ----------------------
+
+            if dr.hint(self.use_nee, mode='scalar'):
+                with dr.resume_grad(when=not is_primal):
                     active_e_surface = active_surface & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth) & (depth + 1 < self.max_depth)
                     sample_emitters = mei.medium.use_emitter_sampling()
                     specular_chain &= ~act_medium_scatter
@@ -295,103 +302,120 @@ class PRBVolpathIntegrator(RBIntegrator):
 
                     active_e_medium = act_medium_scatter & sample_emitters
                     active_e = active_e_surface | active_e_medium
-
                     nee_sampler = sampler if is_primal else sampler.clone()
+
                     emitted, ds = self.sample_emitter(mei, si, active_e_medium, active_e_surface,
                                                       scene, sampler, medium, channel, active_e, mode=dr.ADMode.Primal)
 
+                    active_e &= (ds.pdf != 0.0)
+                    active_e_surface &= active_e
+                    active_e_medium &= active_e
+
+                    wo = dr.select(active_e_surface, si.to_local(ds.d), ds.d)
                     # Query the BSDF for that emitter-sampled direction
-                    bsdf_val, bsdf_pdf = bsdf.eval_pdf(ctx, si, si.to_local(ds.d), active_e_surface)
-                    phase_val, phase_pdf = phase.eval_pdf(phase_ctx, mei, ds.d, active_e_medium)
-                    nee_weight = dr.select(active_e_surface, bsdf_val, phase_val)
-                    nee_directional_pdf = dr.select(ds.delta, 0.0, dr.select(active_e_surface, bsdf_pdf, phase_pdf))
+                    bsdf_val, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_e_surface)
+                    # Query the Medium Phase Function for that emitter-sampled direction
+                    phase_val, phase_pdf = phase.eval_pdf(phase_ctx, mei, wo, active_e_medium)
 
-                    contrib = throughput * nee_weight * mis_weight(ds.pdf, nee_directional_pdf) * emitted
-                    L[active_e] += dr.detach(contrib if is_primal else -contrib)
+                    em_weight = dr.select(active_e_surface, bsdf_val, phase_val)
+                    em_pdf = dr.select(ds.delta, 0.0, dr.select(active_e_surface, bsdf_pdf, phase_pdf))
+                    em_throughput = β * em_weight * mis_weight(ds.pdf, em_pdf)
+                    Lr_dir = dr.select(active_e, em_throughput * emitted, 0.0)
 
-                    if dr.hint(not is_primal, mode='scalar'):
-                        adj_throughput = dr.detach(throughput * nee_weight * mis_weight(ds.pdf, nee_directional_pdf))
-                        self.sample_emitter(mei, si, active_e_medium, active_e_surface,
-                                            scene, nee_sampler, medium, channel, active_e,
-                                            adj_emitted=contrib, adj_throughput=adj_throughput,
-                                            δL=δL, mode=mode)
+                    if dr.hint(dr.grad_enabled(Lr_dir), mode='scalar'):
+                        if dr.hint(mode == dr.ADMode.Forward, mode='scalar'):
+                            δL += dr.forward_to(Lr_dir, flags=dr.ADFlag.ClearEdges)
+                            Lr_dir = dr.detach(Lr_dir)
 
-                        if dr.hint(dr.grad_enabled(nee_weight) or dr.grad_enabled(emitted), mode='scalar'):
-                            if dr.hint(mode == dr.ADMode.Backward, mode='scalar'):
-                                dr.backward_from(δL * contrib)
-                            else:
-                                δL += dr.forward_to(contrib)
+                if dr.hint(not is_primal, mode='scalar'):
+                    adj_throughput = dr.detach(em_throughput)
+                    adj_emitted = dr.detach(Lr_dir)
+                    self.sample_emitter(mei, si, active_e_medium, active_e_surface,
+                                        scene, nee_sampler, medium, channel, active_e,
+                                        adj_emitted=adj_emitted, adj_throughput=adj_throughput,
+                                        δL=δL, mode=mode)
 
-                # -------------------- Phase function sampling ------------------
+                L[active_e] += dr.detach(Lr_dir)
 
-                valid_ray |= act_medium_scatter
-                with dr.suspend_grad():
-                    wo, phase_weight, phase_pdf = phase.sample(phase_ctx, mei,
-                                                               sampler.next_1d(act_medium_scatter),
-                                                               sampler.next_2d(act_medium_scatter),
-                                                               act_medium_scatter)
-                act_medium_scatter &= phase_pdf > 0.0
+            # -------------------- Phase function sampling ------------------
 
-                # Re evaluate the phase function value in an attached manner
-                phase_eval, _ = phase.eval_pdf(phase_ctx, mei, wo, act_medium_scatter)
-                if dr.hint(not is_primal and dr.grad_enabled(phase_eval), mode='scalar'):
-                    phase_val_det = phase_weight * phase_pdf
-                    inv_phase_val_det = dr.select(dr.neq(phase_val_det, 0),
-                                                  dr.rcp(phase_val_det), 0)
-                    Lo = dr.select(act_medium_scatter, L, 0.0) * dr.replace_grad(1.0, inv_phase_val_det * phase_eval)
-                    if dr.hint(mode == dr.ADMode.Backward, mode='scalar'):
-                        dr.backward_from(δL * Lo)
-                    else:
-                        δL += dr.forward_to(Lo)
+            valid_ray |= act_medium_scatter
+            phase_wo, phase_weight, phase_pdf = phase.sample(phase_ctx, mei,
+                                                             sampler.next_1d(act_medium_scatter),
+                                                             sampler.next_2d(act_medium_scatter),
+                                                             act_medium_scatter)
+            act_medium_scatter &= phase_pdf > 0.0
 
-                throughput[act_medium_scatter] *= phase_weight
-                ray[act_medium_scatter] = mei.spawn_ray(wo)
-                needs_intersection |= act_medium_scatter
-                last_scatter_direction_pdf[act_medium_scatter] = phase_pdf
+            β[act_medium_scatter] *= phase_weight
+            ray[act_medium_scatter] = mei.spawn_ray(phase_wo)
 
-                # ------------------------ BSDF sampling -----------------------
+            needs_intersection |= act_medium_scatter
+            last_scatter_direction_pdf[act_medium_scatter] = dr.detach(phase_pdf)
 
-                with dr.suspend_grad():
-                    bs, bsdf_weight = bsdf.sample(ctx, si,
-                                                  sampler.next_1d(active_surface),
-                                                  sampler.next_2d(active_surface),
-                                                  active_surface)
-                    active_surface &= bs.pdf > 0
+            # ------------------------ BSDF sampling -----------------------
 
-                bsdf_eval = bsdf.eval(ctx, si, bs.wo, active_surface)
+            bsdf_sample, bsdf_weight = bsdf.sample(bsdf_ctx, si,
+                                                   sampler.next_1d(active_surface),
+                                                   sampler.next_2d(active_surface),
+                                                   active_surface)
+            active_surface &= bsdf_sample.pdf > 0
 
-                if dr.hint(not is_primal and dr.grad_enabled(bsdf_eval), mode='scalar'):
-                    bsdf_val_det = bsdf_weight * bs.pdf
-                    inv_bsdf_val_det = dr.select(dr.neq(bsdf_val_det, 0),
-                                                 dr.rcp(bsdf_val_det), 0)
-                    Lo = dr.select(active_surface, L, 0.0) * dr.replace_grad(1.0, inv_bsdf_val_det * bsdf_eval)
-                    if dr.hint(mode == dr.ADMode.Backward, mode='scalar'):
-                        dr.backward_from(δL * Lo)
-                    else:
-                        δL += dr.forward_to(Lo)
+            β[active_surface] *= bsdf_weight
+            η[active_surface] *= bsdf_sample.eta
+            ray[active_surface] = si.spawn_ray(si.to_world(bsdf_sample.wo))
 
-                throughput[active_surface] *= bsdf_weight
-                η[active_surface] *= bs.eta
-                bsdf_ray = si.spawn_ray(si.to_world(bs.wo))
-                ray[active_surface] = bsdf_ray
+            needs_intersection |= active_surface
 
-                needs_intersection |= active_surface
-                non_null_bsdf = active_surface & ~mi.has_flag(bs.sampled_type, mi.BSDFFlags.Null)
-                depth[non_null_bsdf] += 1
+            non_null_bsdf = active_surface & ~mi.has_flag(bsdf_sample.sampled_type, mi.BSDFFlags.Null)
+            depth[non_null_bsdf] += 1
 
-                # update the last scatter PDF event if we encountered a non-null scatter event
-                last_scatter_event[non_null_bsdf] = dr.detach(si)
-                last_scatter_direction_pdf[non_null_bsdf] = dr.detach(bs.pdf)
+            # update the last scatter PDF event if we encountered a non-null scatter event
+            last_scatter_event[non_null_bsdf] = dr.detach(si, True)
+            last_scatter_direction_pdf[non_null_bsdf] = dr.detach(bsdf_sample.pdf)
 
-                valid_ray |= non_null_bsdf
-                specular_chain |= non_null_bsdf & mi.has_flag(bs.sampled_type, mi.BSDFFlags.Delta)
-                specular_chain &= ~(active_surface & mi.has_flag(bs.sampled_type, mi.BSDFFlags.Smooth))
-                has_medium_trans = active_surface & si.is_medium_transition()
-                medium[has_medium_trans] = si.target_medium(ray.d)
-                active &= (active_surface | active_medium)
+            # ------------------ Differential phase only ------------------
 
-                ray = dr.detach(ray)
-                si = dr.detach(si)
+            if dr.hint(not is_primal, mode='scalar'):
+                with dr.resume_grad():
+                    # Re-evaluate BSDF * cos(theta) differentiably
+                    bsdf_eval = bsdf.eval(bsdf_ctx, si, si.to_local(ray.d), active_surface)
+                    bsdf_eval_detach = bsdf_weight * bsdf_sample.pdf
+                    inv_bsdf_eval_detach = dr.select(bsdf_eval_detach != 0,
+                                                     dr.rcp(bsdf_eval_detach), 0)
+
+                    # Re-evaluate the phase function value in an attached manner
+                    phase_eval, _ = phase.eval_pdf(phase_ctx, mei, ray.d, act_medium_scatter)
+                    phase_eval_detach = phase_weight * phase_pdf
+                    inv_phase_eval_detach = dr.select(phase_eval_detach != 0,
+                                                      dr.rcp(phase_eval_detach), 0)
+
+
+                    Lr_ind_surface     = dr.select(active_surface, L, 0.0) * dr.replace_grad(1.0, inv_bsdf_eval_detach * bsdf_eval)
+                    Lr_ind_medium      = dr.select(act_medium_scatter, L, 0.0) * dr.replace_grad(1.0, inv_phase_eval_detach * phase_eval)
+                    Lr_ind = Lr_ind_medium + Lr_ind_surface
+                    Lo = Lr_dir + Lr_ind
+
+                    dr.set_label(Lr_dir, "Direct Reflected Light")
+                    dr.set_label(Lr_ind, "Indirect Reflected Light")
+                    dr.set_label(bsdf_eval, "(Attached) BSDF Value")
+                    dr.set_label(bsdf_eval_detach, "(Detached) BSDF Value")
+
+                    # Propagate derivatives from/to 'Lo' based on 'mode'
+                    if dr.hint(dr.grad_enabled(Lo), mode='scalar'):
+                        if dr.hint(mode == dr.ADMode.Backward, mode='scalar'):
+                            dr.backward_from(δL * Lo)
+                        else:
+                            δL += dr.forward_to(Lo)
+
+            valid_ray |= non_null_bsdf
+            specular_chain |= non_null_bsdf & mi.has_flag(bsdf_sample.sampled_type, mi.BSDFFlags.Delta)
+            specular_chain &= ~(active_surface & mi.has_flag(bsdf_sample.sampled_type, mi.BSDFFlags.Smooth))
+            has_medium_trans = active_surface & si.is_medium_transition()
+            medium[has_medium_trans] = si.target_medium(ray.d)
+            active &= (active_surface | active_medium)
+
+            ray = dr.detach(ray)
+            si = dr.detach(si)
 
         return L if is_primal else δL, valid_ray, [], L
 
@@ -406,27 +430,37 @@ class PRBVolpathIntegrator(RBIntegrator):
         ref_interaction[active_medium] = mei
         ref_interaction[active_surface] = si
 
+        if dr.hint(self.use_nee_medium, mode='scalar'):
+            em_sample = sampler.next_3d(active)
+        else:
+            em_sample = sampler.next_2d(active)
+            em_sample = mi.Point3f(em_sample.x, em_sample.y, 0.0)
+
         ds, emitter_val = scene.sample_emitter_direction(ref_interaction,
-                                                         sampler.next_3d(active),
+                                                         em_sample,
                                                          False, active)
+        if dr.hint(self.use_nee_medium, mode='scalar'):
+            disable_medium_emitters = False
+        else:
+            disable_medium_emitters = active & mi.has_flag(ds.emitter.flags(), mi.EmitterFlags.Medium)
         ds = dr.detach(ds)
-        invalid = (ds.pdf == 0.0)
+        invalid = (ds.pdf == 0.0) | disable_medium_emitters
         emitter_val[invalid] = 0.0
         active &= ~invalid
 
         is_medium_emitter = active & mi.has_flag(ds.emitter.flags(), mi.EmitterFlags.Medium)
-        medium_contribution = dr.zeros(mi.UnpolarizedSpectrum)
 
         medium = dr.select(active, medium, dr.zeros(mi.MediumPtr))
         medium[(active_surface & si.is_medium_transition())] = si.target_medium(ds.d)
-
-        sampled_medium_emitter = dr.select(is_medium_emitter, ds.emitter, dr.zeros(mi.EmitterPtr))
+        medium = dr.detach(medium, True)
 
         ray = dr.detach(ref_interaction.spawn_ray_to(ds.p))
+
         max_dist = mi.Float(ray.maxt)
         total_dist = mi.Float(0.0)
         si = dr.zeros(mi.SurfaceInteraction3f)
         mei = dr.zeros(mi.MediumInteraction3f)
+        medium_contribution = dr.zeros(mi.UnpolarizedSpectrum)
         needs_intersection = mi.Bool(True)
         transmittance = mi.Spectrum(1.0)
 
@@ -437,82 +471,80 @@ class PRBVolpathIntegrator(RBIntegrator):
 
             # This ray will not intersect if it reached the end of the segment
             needs_intersection &= active
-            si[needs_intersection] = scene.ray_intersect(ray, needs_intersection)
+            with dr.resume_grad(when=not is_primal):
+                si[needs_intersection] = scene.ray_intersect(ray, needs_intersection)
             needs_intersection &= False
 
             active_medium = active & (medium != None)
             active_surface = active & ~active_medium
 
             # Handle medium interactions / transmittance
-            mei[active_medium] = medium.sample_interaction(ray, sampler.next_1d(active_medium), channel, active_medium)
-            mei.t[active_medium & (si.t < mei.t)] = dr.inf
-            mei.t = dr.detach(mei.t)
+            with dr.resume_grad(when=not is_primal):
+                mei[active_medium] = medium.sample_interaction(ray, sampler.next_1d(active_medium), channel, active_medium)
+                mei.t[active_medium & (si.t < mei.t)] = dr.inf
+                mei.t = dr.detach(mei.t)
+            is_sampled_medium = active_medium & (mei.emitter(active_medium) == ds.emitter) & is_medium_emitter
 
-            tr_multiplier = mi.Spectrum(1.0)
-            medium_em = mei.emitter(active_medium)
+            is_spectral = medium.has_spectral_extinction() & active_medium & (~medium.is_homogeneous() | is_sampled_medium)
+            not_spectral = (~is_spectral) & active_medium
 
-            # Special case for homogeneous media: directly advance to the next surface / end of the segment
-            active_homogeneous = active_medium & medium.is_homogeneous() & (dr.neq(medium_em, sampled_medium_emitter) | ~is_medium_emitter)
-            if dr.hint(self.nee_handle_homogeneous, mode='scalar'):
-                active_homogeneous = active_medium & medium.is_homogeneous()
-                mei.t[active_homogeneous] = dr.minimum(remaining_dist, si.t)
-                tr_multiplier[active_homogeneous] = medium.transmittance_eval_pdf(mei, si, active_homogeneous)[0]
-                mei.t[active_homogeneous] = dr.inf
+            with dr.resume_grad(when=not is_primal):
+                t  = dr.minimum(remaining_dist, dr.minimum(mei.t, si.t)) - mei.mint
+                tr  = dr.exp(-t * mei.combined_extinction)
+                free_flight_pdf = dr.select((si.t < mei.t) | (mei.t > remaining_dist), tr, tr * mei.combined_extinction)
+                tr_pdf = index_spectrum(free_flight_pdf, channel)
+                free_flight_tr = dr.select(is_spectral, dr.select(tr_pdf > 0, tr / dr.detach(tr_pdf), 0), 1.0)
+                tr_multiplier = dr.select(is_spectral, free_flight_tr, 1.0)
+
+                # Special case for homogeneous media: directly advance to the next surface / end of the segment
+                if dr.hint(self.nee_handle_homogeneous, mode='scalar'):
+                    active_homogeneous = active_medium & medium.is_homogeneous() & ~is_sampled_medium
+                    mei.t[active_homogeneous] = dr.minimum(remaining_dist, si.t)
+                    tr_multiplier[active_homogeneous] *= medium.transmittance_eval_pdf(mei, si, active_homogeneous)[0]
+                    mei.t[active_homogeneous] = dr.inf
 
             escaped_medium = active_medium & ~mei.is_valid()
             active_medium &= mei.is_valid()
-            mei[escaped_medium] = dr.zeros(mi.MediumInteraction3f)
+            is_sampled_medium &= active_medium
 
             # Radiance contribution from medium
-            active_heterogeneous = active_medium & ~active_homogeneous
-            t_hetero = dr.minimum(remaining_dist, dr.minimum(mei.t, si.t)) - mei.mint
-            tr_hetero = dr.exp(-t_hetero * mei.combined_extinction)
-            free_flight_pdf = dr.select(
-                (si.t < mei.t) | (mei.t > remaining_dist),
-                tr_hetero,
-                tr_hetero * mei.combined_extinction
-            )
-            tr_pdf_hetero = index_spectrum(free_flight_pdf, channel)
-
-            is_sampled_medium = active_medium & dr.eq(medium_em, sampled_medium_emitter) & is_medium_emitter
-            radiance = medium.get_radiance(mei, is_sampled_medium)
-
-            contrib_weight = dr.select(active_heterogeneous, dr.select(tr_pdf_hetero > 0.0, tr_hetero / dr.detach(tr_pdf_hetero), 0.0), mi.Spectrum(1.0))
-            contrib_medium = transmittance * radiance * contrib_weight * dr.detach(tr_multiplier * dr.select(ds.pdf > 0.0, dr.rcp(ds.pdf), 0.0))
+            with dr.resume_grad(when=not is_primal):
+                medium_attenuation = dr.detach(transmittance * dr.select(ds.pdf > 0.0, dr.rcp(ds.pdf), 0.0))
+                contrib_medium = tr_multiplier * medium_attenuation * dr.select(is_sampled_medium, mei.radiance, 0.0)
             medium_contribution[is_sampled_medium] += dr.detach(contrib_medium)
 
             # Ratio tracking transmittance computation
             ray[active_medium] = dr.detach(mei.spawn_ray_to(ds.p))
             si.t[active_medium] = dr.detach(si.t - mei.t)
-            tr_multiplier[active_medium] *= mei.sigma_n / mei.combined_extinction
+            with dr.resume_grad(when=not is_primal):
+                tr_multiplier[active_medium] *= mei.sigma_n * dr.select(not_spectral, dr.rcp(mei.combined_extinction), 1.0)
 
             # Handle interactions with surfaces
             active_surface |= escaped_medium
             active_surface &= si.is_valid() & ~active_medium
+
             bsdf = si.bsdf(ray)
-            bsdf_val = bsdf.eval_null_transmission(si, active_surface)
-            tr_multiplier[active_surface] *= bsdf_val
+            with dr.resume_grad(when=not is_primal):
+                bsdf_val = bsdf.eval_null_transmission(si, active_surface)
+                tr_multiplier[active_surface] *= bsdf_val
 
-            if dr.hint(not is_primal and dr.grad_enabled(tr_multiplier), mode='scalar'):
-                active_adj = (active_surface | active_medium) & (tr_multiplier > 0.0)
-                adj_Lo = dr.replace_grad(1.0, tr_multiplier / dr.detach(tr_multiplier)) * dr.detach(dr.select(active_adj, adj_emitted - adj_throughput * medium_contribution, 0.0))
-                if dr.hint(mode == dr.ADMode.Backward, mode='scalar'):
-                    dr.backward_from(δL * adj_Lo)
-                else:
-                    δL += dr.forward_to(adj_Lo)
+                if dr.hint(not is_primal, mode='scalar'):
+                    active_adj = (active_surface | active_medium) & (tr_multiplier > 0.0)
+                    inv_tr_det = dr.rcp(dr.maximum(tr_multiplier, 1e-8))
+                    adj_Lo = tr_multiplier * dr.detach(dr.select(active_adj & ~is_sampled_medium, (adj_emitted - medium_contribution) * inv_tr_det, 0.0))
+                    adj_Lo = adj_Lo + contrib_medium * dr.detach(adj_throughput)
 
-            if dr.hint(not is_primal and dr.grad_enabled(contrib_medium), mode='scalar'):
-                adj_contrib_medium = dr.detach(dr.select(is_sampled_medium, adj_throughput, 0.0)) * contrib_medium
-                if dr.hint(mode == dr.ADMode.Backward, mode='scalar'):
-                    dr.backward_from(δL * adj_contrib_medium)
-                else:
-                    δL += dr.forward_to(adj_contrib_medium)
+                    if dr.hint(dr.grad_enabled(adj_Lo), mode='scalar'):
+                        if dr.hint(mode == dr.ADMode.Backward, mode='scalar'):
+                            dr.backward_from(δL * adj_Lo)
+                        else:
+                            δL += dr.forward_to(adj_Lo)
 
             transmittance *= dr.detach(tr_multiplier)
-
-            mei = dr.detach(mei)
-            si = dr.detach(si)
-            ray = dr.detach(ray)
+            si = dr.detach(si, True)
+            mei = dr.detach(mei, True)
+            ray = dr.detach(ray, True)
+            medium_contribution = dr.detach(medium_contribution, True)
 
             # Update the ray with new origin & t parameter
             ray[active_surface] = dr.detach(si.spawn_ray_to(ds.p))
@@ -526,8 +558,9 @@ class PRBVolpathIntegrator(RBIntegrator):
             # If a medium transition is taking place: Update the medium pointer
             has_medium_trans = active_surface & si.is_medium_transition()
             medium[has_medium_trans] = si.target_medium(ray.d)
+            medium = dr.detach(medium, True)
 
-        return dr.select(is_medium_emitter, medium_contribution, emitter_val * dr.detach(transmittance), ds
+        return dr.select(is_medium_emitter, medium_contribution, emitter_val * dr.detach(transmittance)), ds
 
     def to_string(self):
         return f'PRBVolpathIntegrator[max_depth = {self.max_depth}]'

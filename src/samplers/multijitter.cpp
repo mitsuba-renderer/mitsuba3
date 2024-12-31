@@ -88,7 +88,7 @@ public:
     void set_sample_count(uint32_t spp) override {
         // Find stratification grid resolution with aspect ratio close to 1
         m_resolution[1] = uint32_t(dr::cbrt(ScalarFloat(spp)));
-        m_resolution[0] = (spp + dr::sqr(m_resolution[1]) - 1) / dr::sqr(m_resolution[1]);
+        m_resolution[0] = (spp + dr::square(m_resolution[1]) - 1) / dr::square(m_resolution[1]);
         m_resolution[2] = m_resolution[1];
 
         if (spp != dr::prod(m_resolution))

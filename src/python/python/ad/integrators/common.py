@@ -82,7 +82,7 @@ class ADIntegrator(mi.CppADIntegrator):
                 δL=None,
                 δaovs=None,
                 state_in=None,
-                initial_medium=mi.MediumPtr(sensor.medium()),
+                initial_medium=mi.MediumPtr(sensor.get_medium()),
                 active=mi.Bool(True)
             )
 
@@ -137,7 +137,7 @@ class ADIntegrator(mi.CppADIntegrator):
                     scene=scene,
                     sampler=sampler,
                     ray=ray,
-                    initial_medium=mi.MediumPtr(sensor.medium()),
+                    initial_medium=mi.MediumPtr(sensor.get_medium()),
                     active=mi.Bool(True)
                 )
 
@@ -191,7 +191,7 @@ class ADIntegrator(mi.CppADIntegrator):
                     scene=scene,
                     sampler=sampler,
                     ray=ray,
-                    initial_medium=mi.MediumPtr(sensor.medium()),
+                    initial_medium=mi.MediumPtr(sensor.get_medium()),
                     active=mi.Bool(True)
                 )
 
@@ -586,7 +586,7 @@ class RBIntegrator(ADIntegrator):
                 depth=mi.UInt32(0),
                 δL=None,
                 state_in=None,
-                initial_medium=mi.MediumPtr(sensor.medium()),
+                initial_medium=mi.MediumPtr(sensor.get_medium()),
                 active=mi.Bool(True)
             )
 
@@ -600,7 +600,7 @@ class RBIntegrator(ADIntegrator):
                 δL=None,
                 δaovs=None,
                 state_in=state_out,
-                initial_medium=mi.MediumPtr(sensor.medium()),
+                initial_medium=mi.MediumPtr(sensor.get_medium()),
                 active=mi.Bool(True)
             )
 
@@ -768,7 +768,7 @@ class RBIntegrator(ADIntegrator):
                 δL=None,
                 δaovs=None,
                 state_in=None,
-                initial_medium=mi.MediumPtr(sensor.medium()),
+                initial_medium=mi.MediumPtr(sensor.get_medium()),
                 active=mi.Bool(True)
             )
 
@@ -782,7 +782,7 @@ class RBIntegrator(ADIntegrator):
                 δL=δL,
                 δaovs=δaovs,
                 state_in=state_out,
-                initial_medium=mi.MediumPtr(sensor.medium()),
+                initial_medium=mi.MediumPtr(sensor.get_medium()),
                 active=mi.Bool(True)
             )
 

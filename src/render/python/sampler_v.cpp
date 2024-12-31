@@ -35,7 +35,7 @@ public:
     }
 
     Point3f next_3d(Mask active = true) override {
-        PYBIND11_OVERRIDE_PURE(Point3f, Sampler, next_3d, active);
+        NB_OVERRIDE_PURE(next_3d, active);
     }
 
     void set_sample_count(uint32_t spp) override {

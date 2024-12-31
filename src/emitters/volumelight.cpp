@@ -73,11 +73,10 @@ public:
         m_needs_sample_2_3d = true;
 
         m_flags = +EmitterFlags::Medium;
-
-        dr::set_attr(this, "flags", m_flags);
     }
 
     void traverse(TraversalCallback *callback) override {
+        Base::traverse(callback);
         callback->put_object("radiance", m_radiance.get(), +ParamFlags::Differentiable);
     }
 
@@ -115,8 +114,16 @@ public:
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &it, const Point3f &sample, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
-        Assert(m_shape, "Can't sample from a volume emitter without an associated Shape.");
 
+        if constexpr (drjit::is_jit_v<Float>) {
+            if (!m_shape)
+                return { dr::zeros<DirectionSample3f>(), 0.f };
+        } else {
+            Assert(m_shape, "Can't sample from a volume emitter without an "
+                            "associated Shape.");
+        }
+
+        // auto ds = m_shape->sample_direction_surface(it, Point2f(sample.x(), sample.y()), active);
         auto ds = m_shape->sample_direction_volume(it, sample, active);
         ds.emitter = this;
 
@@ -128,7 +135,7 @@ public:
         si.n = ds.n;
         active &= ds.pdf > 0.f;
 
-        UnpolarizedSpectrum spec = dr::select(active, m_radiance->eval(si, active) / ds.pdf, 0.0f);
+        UnpolarizedSpectrum spec = dr::select(active, m_radiance->eval(si, active) * dr::rcp(ds.pdf), 0.0f);
 
         return { ds, depolarizer<Spectrum>(spec) & active };
     }
@@ -136,8 +143,15 @@ public:
     Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
                         Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
-        MI_MASK_ARGUMENT(active);
 
+        if constexpr (drjit::is_jit_v<Float>) {
+            if (!m_shape)
+                return 0.f;
+        } else {
+            Assert(m_shape,
+                   "The volume emitter has no associated Shape!");
+        }
+        // Float pdf = m_shape->pdf_direction_surface(it, ds, active);
         Float pdf = m_shape->pdf_direction_volume(it, ds, active);
 
         return dr::select(active, pdf, 0.f);
@@ -158,7 +172,14 @@ public:
     sample_position(Float time, const Point3f &sample,
                     Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
-        Assert(m_shape, "Cannot sample from a volume emitter without an associated Shape.");
+
+        if constexpr (drjit::is_jit_v<Float>) {
+            if (!m_shape)
+                return { dr::zeros<DirectionSample3f>(), 0.f };
+        } else {
+            Assert(m_shape, "Can't sample from a volume emitter without an "
+                            "associated Shape.");
+        }
 
         auto ps = m_shape->sample_position_volume(time, sample, active);
         auto weight = dr::select(active && (ps.pdf > 0.f), dr::rcp(ps.pdf), 0.f);

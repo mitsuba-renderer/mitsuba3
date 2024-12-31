@@ -124,6 +124,8 @@ def test_cube_to_uniform_sphere_vec(variant_scalar_rgb):
     check_inverse(mi.warp.cube_to_uniform_sphere, mi.warp.uniform_sphere_to_cube, is_3d=True)
     check_warp_vectorization("cube_to_uniform_sphere", is_3d=True)
 
+    dr.set_flag(dr.JitFlag.Debug, False)
+
 
 def test_square_to_uniform_hemisphere(variant_scalar_rgb):
     assert(dr.allclose(mi.warp.square_to_uniform_hemisphere([0.5, 0.5]), [0, 0, 1]))

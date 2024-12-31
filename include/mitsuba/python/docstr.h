@@ -2549,6 +2549,8 @@ static const char *__doc_mitsuba_Endpoint_m_needs_sample_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_m_needs_sample_3 = R"doc()doc";
 
+static const char *__doc_mitsuba_Endpoint_m_needs_sample_2_3d = R"doc()doc";
+
 static const char *__doc_mitsuba_Endpoint_m_shape = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_m_to_world = R"doc()doc";
@@ -4259,6 +4261,8 @@ static const char *__doc_mitsuba_MediumInteraction_sigma_s = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumInteraction_sigma_t = R"doc()doc";
 
+static const char *__doc_mitsuba_MediumInteraction_radiance = R"doc()doc";
+
 static const char *__doc_mitsuba_MediumInteraction_to_local =
 R"doc(Convert a world-space vector into local shading coordinates (defined
 by ``wi``))doc";
@@ -4291,6 +4295,18 @@ static const char *__doc_mitsuba_Medium_get_interaction_probabilities =
     R"doc(Returns the real scatter event probability, and the
 weights of a real and null scattering event at a given MediumInteraction mi)doc";
 
+static const char *__doc_mitsuba_Medium_medium_probabilities_analog =
+    R"doc(Computes the probabilities of interacting with a medium based on the point-wise
+density of each event)doc";
+
+static const char *__doc_mitsuba_Medium_medium_probabilities_max =
+    R"doc(Computes the probabilities of interacting with a medium based on the maximum
+density of each event multiplied by the throughput)doc";
+
+static const char *__doc_mitsuba_Medium_medium_probabilities_mean =
+    R"doc(Computes the probabilities of interacting with a medium based on the mean
+density of each event multiplied by the throughput)doc";
+
 static const char *__doc_mitsuba_Medium_get_radiance = R"doc(Returns the medium's radiance used for emissive media)doc";
 
 static const char *__doc_mitsuba_Medium_has_spectral_extinction = R"doc(Returns whether this medium has a spectrally varying extinction)doc";
@@ -4312,6 +4328,16 @@ static const char *__doc_mitsuba_Medium_m_is_homogeneous = R"doc()doc";
 static const char *__doc_mitsuba_Medium_m_phase_function = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_m_sample_emitters = R"doc()doc";
+
+static const char *__doc_mitsuba_Medium_m_medium_sampling_mode =
+R"doc(Determine how free-flight distances are sampled in the medium
+
+Takes on one of three values --- Analogue, Maximum and Mean --- which
+consider the probability of interacting with the medium based on the
+point-wise densities of each event, the maximum density of each event
+convolved with the throughput of the path, and the mean density of
+each event convolved with the throughput of the path.
+)doc";
 
 static const char *__doc_mitsuba_Medium_phase_function = R"doc(Return the phase function of this medium)doc";
 

@@ -863,14 +863,16 @@ Mesh<Float, Spectrum>::sample_position_volume(Float time, const Point3f &sample,
     if (!m_volume_parameterization)
         const_cast<Mesh *>(this)->build_volume_parameterization();
 
-    auto bsphere = m_bbox.bounding_sphere();
+    auto ext_bbox = m_bbox.extents();
+
     auto ps = dr::zeros<PositionSample3f>();
-    ps.p = warp::cube_to_uniform_sphere(sample)*bsphere.radius + bsphere.center;
-    ps.n = warp::square_to_uniform_sphere(Point2f(sample.x(), sample.y()));
+    ps.p = dr::fmadd(sample, ext_bbox, m_bbox.min);
+    ps.n = sample;
+
     ps.time = time;
-    ps.delta = dr::eq(bsphere.radius, 0.f);
-    ps.pdf = pdf_position_volume(ps, active);
-    ps.pdf = dr::select(ps.delta, 1.0f, ps.pdf);
+    ps.delta = dr::all(ext_bbox == 0.0f);
+    ps.pdf = dr::select(ps.delta, 1.0f, pdf_position_volume(ps, active));
+    ps.uv = Point2f(sample.x(), sample.y());
 
     return ps;
 }
@@ -884,17 +886,11 @@ Mesh<Float, Spectrum>::get_intersection_extents(const Interaction3f &it,
     if (!m_volume_parameterization)
         const_cast<Mesh *>(this)->build_volume_parameterization();
 
-    Point3f bbox_min = m_bbox.min,
-            bbox_extent = m_bbox.extents();
+    auto ray = Ray3f(it.p, ds.d, dr::Largest<Float>, it.time, it.wavelengths);
 
-    auto ray = Ray3f(it.p, dr::normalize(ds.p - it.p),
-                     (1.0f + dr::norm(m_bbox.center())*math::RayEpsilon<Float>)*(dr::norm(bbox_extent) + dr::norm(ds.p - it.p)),
-                     it.time, it.wavelengths);
-
-    /// Disable any lanes where the ray doesn't even pass through the shape
-    auto pi = dr::zeros<PreliminaryIntersection3f>();
-    pi = m_volume_parameterization->ray_intersect_preliminary(
-        ray, true, active
+    /// Disable any lanes where the ray doesn't pass through the shape
+    auto pi = m_volume_parameterization->ray_intersect_preliminary(
+        ray, false, active
     );
     active &= pi.is_valid();
 
@@ -905,31 +901,50 @@ Mesh<Float, Spectrum>::get_intersection_extents(const Interaction3f &it,
     dr::masked(si, active) = compute_surface_interaction(ray, pi, +RayFlags::Minimal, 0, active);
     si.finalize_surface_interaction(pi, ray, +RayFlags::Minimal, active);
 
-    /// We're inside if the ray direction is congruent with the normal
-    auto ps = dr::zeros<PositionSample3f>();
-    ps.p = ray.o;
-    ps.n = ray.d;
-    ps.time = it.time;
-    ps.uv = dr::zeros<Point2f>();
-    Mask is_inside = (dr::dot(ray.d, si.n) > 0.0f);
+    Mask is_inside = true;
+    auto near_t = dr::norm(si.p - it.p);
 
-    auto near_t = dr::select(is_inside, 0.0f, dr::norm(si.p - it.p));
-
-    UInt32 num_intersections = dr::select(is_inside, 1, 0);
-    Float t0 = 0.0f, t1 = 0.0f, pdf_integral = 0.0f, kahan_c = 0.0f,
-          inv_volume_cbrt = dr::pow(dr::clamp(m_inv_volume, 0.0f, dr::Infinity<Float>), 1.0f/3.0f);
+    UInt32 num_intersections = 0;
+    Float t0 = 0.0f, t1 = 0.0f;
+    Float pdf_integral_0 = 0.0f, pdf_integral_1 = 0.0f;
 
     auto loop_name = "Mesh[" + std::string(m_name) + "] - PDF Direction Volume";
-    dr::Loop<Mask> loop(loop_name.c_str(), si, pi, t0, t1,
-                        pdf_integral, kahan_c, is_inside, active, ray, num_intersections,
-                        inv_volume_cbrt, *this);
-    /// This is the absolute upper bound for the number of intersections as
-    /// it's impossible for a straight ray, except in very specific tangential
-    /// to triangle cases to intersect more than the number of faces in the mesh
-    loop.set_max_iterations(m_face_count);
-    while (loop(active)) {
+    /* Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
+           generates wavefront or megakernel renderer based on configuration).
+           Register everything that changes as part of the loop here */
+    struct LoopState {
+        SurfaceInteraction3f si;
+        Float t0;
+        Float t1;
+        Float pdf_integral_0;
+        Float pdf_integral_1;
+        Mask is_inside;
+        Mask active;
+        Ray3f ray;
+        UInt32 num_intersections;
+
+        DRJIT_STRUCT(LoopState, si, t0, t1,
+        pdf_integral_0, pdf_integral_1, is_inside, active, ray, num_intersections)
+    } ls = {
+        si, t0, t1, pdf_integral_0, pdf_integral_1,
+        is_inside, active, ray, num_intersections
+    };
+
+    dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),
+            [](const LoopState& ls) { return ls.active; },
+            [this](LoopState& ls) {
+        SurfaceInteraction3f& si = ls.si;
+        Float& t0 = ls.t0;
+        Float& t1 = ls.t1;
+        Float& pdf_integral_0 = ls.pdf_integral_0;
+        Float& pdf_integral_1 = ls.pdf_integral_1;
+        Mask& is_inside = ls.is_inside;
+        Mask& active = ls.active;
+        Ray3f& ray = ls.ray;
+        UInt32& num_intersections = ls.num_intersections;
+
         /// Preliminary intersection to see if the ray intersects the geometry
-        pi = m_volume_parameterization->ray_intersect_preliminary(
+        auto pi = this->m_volume_parameterization->ray_intersect_preliminary(
             ray, true, active
         );
         active &= pi.is_valid() && (pi.t > 0.f);
@@ -952,109 +967,28 @@ Mesh<Float, Spectrum>::get_intersection_extents(const Interaction3f &it,
 
         /// First we rescale the distances according to the 'length scale'
         /// derived from the volume.
-        auto st0 = t0*inv_volume_cbrt, st = si.t*inv_volume_cbrt;
         /// We need to compute (t1**3 - t0**3)/3, but we can factor this into
-        /// (t1 - t0)*(t1**2 - t0*t1 + t0**2)/3 =
+        /// (t1 - t0)*(t1**2 + t0*t1 + t0**2)/3 =
         ///                         (t1 - t0)*((t1 - t0)**2 + 3*t1*t0)/3
         /// Where (t1 - t0) = si.t, which after subbing gives
         /// si.t*(si.t**2 + 3*(t0**2 + t0*si.t))/3
-        auto integral = st * (dr::sqr(st) + 3.0f*(dr::sqr(st0) + st0*st))/3.0f;
-        auto kahan_t = integral + pdf_integral;
-        dr::masked(kahan_c, is_inside && active) += dr::select(dr::abs(pdf_integral) >= dr::abs(integral), (pdf_integral - kahan_t) + integral, (integral - kahan_t) + pdf_integral);
-        dr::masked(pdf_integral, is_inside && active) = kahan_t;
+        auto integral = (dr::square(t1) * t1 - dr::square(t0) * t0)/3.0f;
+        dr::masked(pdf_integral_0, is_inside && active) += dr::abs(integral);
+        dr::masked(pdf_integral_1,  !is_inside && active) += dr::abs(integral);
 
         /// Finally we update our mask that tracks whether we're
         /// inside or outside the shape and spawn a new ray
-        is_inside = (num_intersections % 2);
-        auto maxt = ray.maxt - si.t;
+        is_inside = !is_inside;
         dr::masked(ray, active) = si.spawn_ray(ray.d);
-        dr::masked(ray.maxt, active) = maxt;
-    }
+    }, loop_name.c_str());
+
+    is_inside = (ls.num_intersections % 2) == 1u;
+    auto pdf_integral = this->m_inv_volume * dr::select(is_inside, ls.pdf_integral_0, ls.pdf_integral_1);
 
     return std::make_pair(
-        std::make_pair(near_t, dr::maximum(t0, t1)),
-        (pdf_integral + kahan_c)
+        std::make_pair(dr::select(is_inside, 0.0f, near_t), dr::maximum(ls.t0, ls.t1)),
+        pdf_integral
     );
-}
-
-
-
-MI_VARIANT typename Mesh<Float, Spectrum>::DirectionSample3f
-Mesh<Float, Spectrum>::sample_direction_volume(const Interaction3f &it, const Point3f &sample,
-                                               Mask active) const {
-    auto bsphere = m_bbox.bounding_sphere();
-    auto ds      = dr::zeros<DirectionSample3f>();
-    ds.p = warp::cube_to_uniform_sphere(sample)*bsphere.radius + bsphere.center;
-    ds.d = dr::normalize(ds.p - it.p);
-    ds.delta = dr::eq(bsphere.radius, 0.f);
-    ds.uv = dr::zeros<Point2f>();
-    ds.n = warp::square_to_uniform_sphere(Point2f(sample.x(), sample.y()));
-    ds.time = it.time;
-
-    auto ray = Ray3f(
-        it.p,
-        ds.d,
-        (1.0f + math::ShadowEpsilon<Float>)*(2.0f*bsphere.radius + ds.dist),
-        it.time,
-        it.wavelengths
-    );
-
-    Float radius = bsphere.radius;
-    Vector3f center = bsphere.center;
-
-    // We define a plane which is perpendicular to the ray direction and
-    // contains the sphere center and intersect it. We then solve the
-    // ray-sphere intersection as if the ray origin was this new
-    // intersection point. This additional step makes the whole intersection
-    // routine numerically more robust.
-
-    Vector3f l = ray.o - center;
-    Vector3f d(ray.d);
-    Float plane_t = dot(-l, d) / norm(d);
-
-    // Ray is perpendicular to plane
-    dr::mask_t<Float> no_hit =
-        dr::eq(plane_t, 0) && dr::all(dr::neq(ray.o, center));
-
-    Vector3f plane_p = ray(plane_t);
-
-    // Intersection with plane outside of the sphere
-    no_hit &= (norm(plane_p - center) > radius);
-
-    Vector3f o = plane_p - center;
-
-    Float A = dr::squared_norm(d);
-    Float B = 2.0f * dr::dot(o, d);
-    Float C = dr::squared_norm(o) - dr::sqr(radius);
-
-    auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
-
-    near_t += plane_t;
-    far_t += plane_t;
-
-    // Sphere doesn't intersect with the segment on the ray
-    dr::mask_t<Float> out_bounds = !(near_t <= ray.maxt && far_t >= 0.0f); // NaN-aware conditionals
-
-    active &= solution_found && !no_hit && !out_bounds;
-
-    near_t = dr::clamp(near_t, 0.0f, dr::Infinity<Float>);
-
-    dr::masked(near_t, !active) = 0.0f;
-    dr::masked(far_t, !active) = 0.0f;
-    ds.dist = far_t;
-
-    near_t *= dr::rcp(radius);
-    far_t *= dr::rcp(radius);
-
-    ds.pdf = dr::select(ds.delta, dr::squared_norm(ds.p - it.p), (dr::sqr(far_t)*far_t - dr::sqr(near_t)*near_t)*dr::InvFourPi<Float>);
-
-//    auto [extents, pdf] = get_intersection_extents(it, ds, active);
-//    auto [near_t, far_t] = extents;
-//    ds.pdf = dr::select(ds.delta, dr::squared_norm(ds.p - it.p), pdf);
-//    Log(mitsuba::LogLevel::Debug, "%s %s | %s %s %s", it, ds.d, near_t, far_t, ds.pdf);
-//    ds.dist = far_t;
-
-    return ds;
 }
 
 MI_VARIANT
@@ -1082,6 +1016,39 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
     return si;
 }
 
+MI_VARIANT typename Mesh<Float, Spectrum>::DirectionSample3f
+Mesh<Float, Spectrum>::sample_direction_volume(const Interaction3f &it, const Point3f &sample,
+                                               Mask active) const {
+    auto ps = sample_position_volume(it.time, sample, active);
+    auto ds      = dr::zeros<DirectionSample3f>();
+    ds.p = ps.p;
+    ds.d = ds.p - it.p;
+    ds.dist = dr::norm(ds.d);
+    ds.d = ds.d / ds.dist;
+    ds.n = -ds.d;
+    ds.delta = ps.delta;
+    ds.time = it.time;
+
+    // auto [t_extents, line_pdf] = get_intersection_extents(it, ds, active);
+    // auto [near_t, far_t] = t_extents;
+
+    auto ray = Ray3f(it.p, dr::normalize(ps.p - it.p), dr::Largest<Float>, it.time, it.wavelengths);
+    auto [valid_intersection, near_t, far_t] = m_bbox.ray_intersect(ray);
+    auto bbox_volume = m_bbox.volume();
+    auto bbox_volume_inv_cbrt = dr::rcp(dr::safe_cbrt(bbox_volume));
+    dr::masked(near_t, active && (near_t < 0.f)) = 0.0f;
+    ds.dist = far_t;
+    near_t *= bbox_volume_inv_cbrt;
+    far_t *= bbox_volume_inv_cbrt;
+    auto line_pdf = (dr::square(far_t) * far_t - dr::square(near_t) * near_t) / 3.f;
+
+    auto pdf = dr::select(active && !ds.delta, line_pdf, 0.0f);
+    ds.pdf = dr::select(ds.delta, dr::squared_norm(ds.p - it.p), pdf);
+    ds.p = it.p + ds.dist * ds.d;
+
+    return ds;
+}
+
 MI_VARIANT Float Mesh<Float, Spectrum>::pdf_position_surface(const PositionSample3f &, Mask) const {
     ensure_pmf_built();
     return m_area_pmf.normalization();
@@ -1095,24 +1062,51 @@ MI_VARIANT Float Mesh<Float, Spectrum>::pdf_position_volume(const PositionSample
     Point3f bbox_min = m_bbox.min,
             bbox_extent = m_bbox.extents();
 
-    Mask delta = dr::all(dr::eq(bbox_extent, 0.f));
+    Mask delta = dr::all(bbox_extent == 0.f);
 
     active &= !delta;
-    UInt32 num_intersections = 0;
 
-    auto ray = Ray3f(ps.p, dr::normalize(ps.p - m_bbox.center() + Vector3f(1.0, 0.0, 0.0)), ps.time);
+    auto ray = Ray3f(ps.p, dr::normalize(dr::abs(ps.p) + Vector3f(0.0, 1.0, 0.0)), ps.time);
     ray.maxt = dr::norm(m_bbox.extents());
     ray.wavelengths = dr::zeros<Wavelength>();
+    /// Disable any lanes where the ray doesn't even pass through the shape
+    auto pi = dr::zeros<PreliminaryIntersection3f>();
+    pi = m_volume_parameterization->ray_intersect_preliminary(
+        ray, false, active
+    );
+    active &= pi.is_valid();
+
+    if (dr::none_or<false>(active))
+        return dr::zeros<Float>();
 
     auto si = dr::zeros<SurfaceInteraction3f>();
-    auto pi = dr::zeros<PreliminaryIntersection3f>();
+
+    UInt32 num_intersections = 0;
     auto loop_name = "Mesh[" + std::string(m_name) + "] - PDF Position Volume";
 
-    dr::Loop<Mask> loop(loop_name.c_str(), si, pi,
-                        active, ray, num_intersections);
-    loop.set_max_iterations(m_face_count);
-    while (loop(active)) {
-        pi = m_volume_parameterization->ray_intersect_preliminary(
+    /* Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
+               generates wavefront or megakernel renderer based on configuration).
+               Register everything that changes as part of the loop here */
+    struct LoopState {
+        SurfaceInteraction3f si;
+        PreliminaryIntersection3f pi;
+        Mask active;
+        Ray3f ray;
+        UInt32 num_intersections;
+
+        DRJIT_STRUCT(LoopState, si, pi, active, ray, num_intersections)
+    } ls = {
+        si, pi, active, ray, num_intersections
+    };
+    dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),
+            [](const LoopState& ls) { return ls.active; },
+            [this](LoopState& ls) {
+        SurfaceInteraction3f& si = ls.si;
+        PreliminaryIntersection3f& pi = ls.pi;
+        Mask& active = ls.active;
+        Ray3f& ray = ls.ray;
+        UInt32& num_intersections = ls.num_intersections;
+        pi = this->m_volume_parameterization->ray_intersect_preliminary(
             ray, true, active
         );
         active &= pi.is_valid() && (pi.t > 0.f);
@@ -1122,78 +1116,27 @@ MI_VARIANT Float Mesh<Float, Spectrum>::pdf_position_volume(const PositionSample
         auto maxt = ray.maxt - si.t;
         dr::masked(ray, active) = si.spawn_ray(ray.d);
         dr::masked(ray.maxt, active) = maxt;
-    }
+    }, loop_name.c_str());
 
-    auto is_inside = (num_intersections % 2) == 1u;
-    return dr::select(is_inside, m_inv_volume, dr::zeros<Float>());
+    return dr::select((ls.num_intersections % 2) == 1u, m_inv_volume, dr::zeros<Float>());
 }
 
 MI_VARIANT Float Mesh<Float, Spectrum>::pdf_direction_volume(const Interaction3f &it, const DirectionSample3f &ds,
                                                              Mask active) const {
-    auto bsphere = bbox().bounding_sphere();
+    // auto [t_extents, line_pdf] = get_intersection_extents(it, ds, active);
 
-    Mask delta = dr::eq(bsphere.radius, 0.f); /// Check degeneracy of mesh
-    active &= !delta;
+    auto ray = Ray3f(it.p, dr::normalize(ds.p - it.p), dr::Largest<Float>, it.time, it.wavelengths);
+    auto [valid_intersection, near_t, far_t] = m_bbox.ray_intersect(ray);
+    auto bbox_volume = m_bbox.volume();
+    auto bbox_volume_inv_cbrt = dr::rcp(dr::safe_cbrt(bbox_volume));
+    dr::masked(near_t, active && (near_t < 0.f)) = 0.0f;
+    near_t *= bbox_volume_inv_cbrt;
+    far_t *= bbox_volume_inv_cbrt;
+    auto line_pdf = (dr::square(far_t) * far_t - dr::square(near_t) * near_t) / 3.f;
 
-//    auto [extents, pdf] = get_intersection_extents(it, ds, active);
+    auto pdf = dr::select(active && !ds.delta, line_pdf, 0.0f);
 
-    auto ray = Ray3f(
-        it.p,
-        ds.d,
-        (1.0f + math::ShadowEpsilon<Float>)*(2.0f*bsphere.radius + ds.dist),
-        it.time,
-        it.wavelengths
-    );
-
-    Float radius = bsphere.radius;
-    Vector3f center = bsphere.center;
-
-    // We define a plane which is perpendicular to the ray direction and
-    // contains the sphere center and intersect it. We then solve the
-    // ray-sphere intersection as if the ray origin was this new
-    // intersection point. This additional step makes the whole intersection
-    // routine numerically more robust.
-
-    Vector3f l = ray.o - center;
-    Vector3f d(ray.d);
-    Float plane_t = dot(-l, d) / norm(d);
-
-    // Ray is perpendicular to plane
-    dr::mask_t<Float> no_hit =
-        dr::eq(plane_t, 0) && dr::all(dr::neq(ray.o, center));
-
-    Vector3f plane_p = ray(plane_t);
-
-    // Intersection with plane outside of the sphere
-    no_hit &= (norm(plane_p - center) > radius);
-
-    Vector3f o = plane_p - center;
-
-    Float A = dr::squared_norm(d);
-    Float B = 2.0f * dr::dot(o, d);
-    Float C = dr::squared_norm(o) - dr::sqr(radius);
-
-    auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
-
-    near_t += plane_t;
-    far_t += plane_t;
-
-    // Sphere doesn't intersect with the segment on the ray
-    dr::mask_t<Float> out_bounds = !(near_t <= ray.maxt && far_t >= 0.0f); // NaN-aware conditionals
-
-    active &= solution_found && !no_hit && !out_bounds;
-
-    near_t = dr::clamp(near_t, 0.0f, dr::Infinity<Float>);
-
-    dr::masked(near_t, !active) = 0.0f;
-    dr::masked(far_t, !active) = 0.0f;
-
-    near_t *= dr::rcp(radius);
-    far_t *= dr::rcp(radius);
-
-    auto pdf = (dr::sqr(far_t)*far_t - dr::sqr(near_t)*near_t)*dr::InvFourPi<Float>;
-
-    return dr::select(active, pdf, 0.0f);
+    return pdf;
 }
 
 //! @}

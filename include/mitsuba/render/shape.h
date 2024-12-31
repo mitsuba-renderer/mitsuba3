@@ -221,7 +221,7 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Shape : public Object {
 public:
-    MI_IMPORT_TYPES(BSDF, Medium, Volume, Emitter, Sensor, MeshAttribute, Texture)
+    MI_IMPORT_TYPES(BSDF, Medium, Volume, Emitter, Sensor, MeshAttribute, Texture, EmitterPtr)
 
     // Use 32 bit indices to keep track of indices to conserve memory
     using ScalarIndex = uint32_t;

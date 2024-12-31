@@ -57,7 +57,7 @@ def check_uniform_wavefront_sampler(sampler, res=16, atol=0.5):
         mi.UInt32(v_2d.x * res + v_2d.y)
     )
 
-    v_3d = mi.Vector3u(dr.clamp(sampler.next_3d() * res, 0, res))
+    v_3d = mi.Vector3u(dr.clip(sampler.next_3d() * res, 0, res))
     dr.scatter_reduce(
         dr.ReduceOp.Add,
         hist_3d,

@@ -564,7 +564,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     /// Incident direction in world frame
     Vector3f wi;
 
-    UnpolarizedSpectrum sigma_s, sigma_n, sigma_t, combined_extinction;
+    UnpolarizedSpectrum sigma_s, sigma_n, sigma_t, radiance, combined_extinction;
 
     /// mint used when sampling the given distance ``t``
     Float mint;
@@ -587,6 +587,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
         sigma_s             = dr::zeros<UnpolarizedSpectrum>(size);
         sigma_n             = dr::zeros<UnpolarizedSpectrum>(size);
         sigma_t             = dr::zeros<UnpolarizedSpectrum>(size);
+        radiance            = dr::zeros<UnpolarizedSpectrum>(size);
         combined_extinction = dr::zeros<UnpolarizedSpectrum>(size);
         mint                = dr::zeros<Float>(size);
 
@@ -615,7 +616,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     // =============================================================
 
     DRJIT_STRUCT(MediumInteraction, t, time, wavelengths, p, n, medium,
-                 sh_frame, wi, sigma_s, sigma_n, sigma_t,
+                 sh_frame, wi, sigma_s, sigma_n, sigma_t, radiance,
                  combined_extinction, mint)
 };
 

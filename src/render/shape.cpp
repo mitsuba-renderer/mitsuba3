@@ -76,12 +76,11 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.i
             Properties props2("homogeneous"), props_sigma_t("constvolume"), props_albedo("constvolume");
             props_sigma_t.set_color("rgb", { 1.f, 1.f, 1.f });
             props_albedo.set_color("rgb", { 0.f, 0.f, 0.f });
-            props2.set_object("sigma_t", PluginManager::instance()->create_object<Volume>(props_sigma_t));
-            props2.set_object("albedo", PluginManager::instance()->create_object<Volume>(props_albedo));
+            props2.set_object("sigma_t", PluginManager::instance()->create_object<Volume>(props_sigma_t).get());
+            props2.set_object("albedo", PluginManager::instance()->create_object<Volume>(props_albedo).get());
             m_interior_medium = PluginManager::instance()->create_object<Medium>(props2);
         }
-        if (m_interior_medium->emitter() != m_emitter.get())
-            m_interior_medium->set_emitter(m_emitter);
+        m_interior_medium->set_emitter(m_emitter);
     }
 
     m_silhouette_sampling_weight = props.get<ScalarFloat>("silhouette_sampling_weight", 1.0f);
@@ -410,49 +409,22 @@ MI_VARIANT Float Shape<Float, Spectrum>::pdf_direction_surface(const Interaction
 }
 
 MI_VARIANT typename Shape<Float, Spectrum>::DirectionSample3f
-Shape<Float, Spectrum>::sample_direction_volume(const Interaction3f &it,
-                                         const Point3f &sample,
-                                         Mask active) const {
-    MI_MASK_ARGUMENT(active);
-
-    auto ps = sample_position_volume(it.time, sample, active);
-    auto ds = DirectionSample3f(ps);
-
-    ds.time = it.time;
-    ds.p = ps.p;
-    ds.d = ps.p - it.p;
-    auto dist_squared = dr::squared_norm(ds.d);
-    ds.dist = dr::sqrt(dist_squared);
-    ds.d = ds.d / ds.dist;
-
-    ds.n = -ds.d;
-
-    auto [center, radius] = bbox().bounding_sphere();
-    Float min_r = dr::maximum(ds.dist - 2.0f*radius, 0.0f), max_r = ds.dist + 2.0f*radius;
-
-    /// While not exact, here we assume that a given shape has an extent `r`
-    /// defined by the bounding sphere and we simply compute the integral of
-    /// ``p(x)r^2`` from ``max(0, ds.d - 2r)`` to ``ds.d+2r`` assuming that
-    /// p(x) is constant.
-    ds.pdf = ps.pdf * (dr::sqr(max_r)*max_r - dr::sqr(min_r)*min_r)/3.f;
-    ds.delta = ps.delta;
-    ds.uv = dr::zeros<Point2f>();
-
-    return ds;
+Shape<Float, Spectrum>::sample_direction_volume(const Interaction3f &/*it*/,
+                                         const Point3f &/*sample*/,
+                                         Mask /*active*/) const {
+    if constexpr (dr::is_jit_v<Float>)
+        return dr::zeros<DirectionSample3f>();
+    else
+        NotImplementedError("sample_direction_volume");
 }
 
 MI_VARIANT Float Shape<Float, Spectrum>::pdf_direction_volume(const Interaction3f & /*it*/,
-                                                        const DirectionSample3f &ds,
-                                                        Mask active) const {
-    MI_MASK_ARGUMENT(active);
-
-    Float pdf = pdf_position_volume(ds, active);
-
-    auto [center, radius] = bbox().bounding_sphere();
-    Float min_r = dr::maximum(ds.dist - 2.0f*radius, 0.0f), max_r = ds.dist + 2.0f*radius;
-    pdf *= (dr::sqr(max_r)*max_r - dr::sqr(min_r)*min_r)/3.f;
-
-    return pdf;
+                                                        const DirectionSample3f &/*ds*/,
+                                                        Mask /*active*/) const {
+    if constexpr (dr::is_jit_v<Float>)
+        return dr::zeros<Float>();
+    else
+        NotImplementedError("pdf_direction_volume");
 }
 
 MI_VARIANT typename Shape<Float, Spectrum>::SilhouetteSample3f
@@ -709,12 +681,11 @@ MI_VARIANT void Shape<Float, Spectrum>::initialize() {
                 Properties props2("homogeneous"), props_sigma_t("constvolume"), props_albedo("constvolume");
                 props_sigma_t.set_color("rgb", { 1.f, 1.f, 1.f });
                 props_albedo.set_color("rgb", { 0.f, 0.f, 0.f });
-                props2.set_object("sigma_t", PluginManager::instance()->create_object<Volume>(props_sigma_t));
-                props2.set_object("albedo", PluginManager::instance()->create_object<Volume>(props_albedo));
+                props2.set_object("sigma_t", PluginManager::instance()->create_object<Volume>(props_sigma_t).get());
+                props2.set_object("albedo", PluginManager::instance()->create_object<Volume>(props_albedo).get());
                 m_interior_medium = PluginManager::instance()->create_object<Medium>(props2);
             }
-            if (m_interior_medium->emitter() != m_emitter.get())
-                m_interior_medium->set_emitter(m_emitter);
+            m_interior_medium->set_emitter(m_emitter);
         }
     }
     if (m_sensor)

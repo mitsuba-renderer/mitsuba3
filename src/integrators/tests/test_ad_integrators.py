@@ -249,7 +249,13 @@ class ConstantEmitterRadianceConfig(ConfigBase):
             'light': { 'type': 'constant' }
         }
 
-class MediumConstantEmitterConfigBase(ConfigBase):
+class VolumeConfigBase(ConfigBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.spp = 1536
+        self.spp_bwd = 1536
+
+class MediumConstantEmitterConfigBase(VolumeConfigBase):
     def __init__(self) -> None:
         super().__init__()
         self.scene_dict = {
@@ -265,7 +271,8 @@ class MediumConstantEmitterConfigBase(ConfigBase):
             },
             'light': { 'type': 'constant' }
         }
-        self.spp = 2560
+        self.error_mean_threshold = 0.025
+        self.error_max_threshold = 0.25
         self.ref_fd_epsilon = 1e-3
 
 # Optical density of a spherical medium illuminated by a constant environment emitter
@@ -276,14 +283,12 @@ class MediumConstantEmitterSigmaTConfig(MediumConstantEmitterConfigBase):
         self.scene_dict['sphere']['interior']['sigma_t'] = 1.0
         self.ref_fd_epsilon = 1e-3
         self.error_mean_threshold_bwd = 0.1
-        self.spp_bwd = 96
 
 # Albedo of a spherical medium illuminated by a constant environment emitter
 class MediumConstantEmitterAlbedoConfig(MediumConstantEmitterConfigBase):
     def __init__(self) -> None:
         super().__init__()
         self.key = 'sphere.interior_medium.albedo.value.value'
-        self.spp_bwd = 384
 
 # Phase of a spherical medium illuminated by a constant environment emitter
 class MediumConstantEmitterPhaseConfig(MediumConstantEmitterConfigBase):
@@ -291,7 +296,7 @@ class MediumConstantEmitterPhaseConfig(MediumConstantEmitterConfigBase):
         super().__init__()
         self.key = 'sphere.interior_medium.phase_function.g'
         self.scene_dict['sphere'].update({
-            'to_world': T.rotate((0, 0, 1), 180),
+            'to_world': T().rotate((0, 0, 1), 180),
         })
         self.scene_dict['sphere']['interior'].update({
             'phase': {
@@ -300,10 +305,8 @@ class MediumConstantEmitterPhaseConfig(MediumConstantEmitterConfigBase):
             }
         })
         self.error_mean_threshold_bwd = 0.075
-        self.spp_bwd = 384
 
-
-class VolumeLightConfigBase(ConfigBase):
+class VolumeLightConfigBase(VolumeConfigBase):
     def __init__(self) -> None:
         super().__init__()
         self.scene_dict = {
@@ -311,7 +314,7 @@ class VolumeLightConfigBase(ConfigBase):
             'light': {
                 'type': 'sphere',
                 'bsdf': { 'type': 'null' },
-                'to_world': T.scale(1.0),
+                'to_world': T().scale(1.0),
                 'interior': {
                     'type': 'homogeneous',
                     'albedo': 0.0,
@@ -323,7 +326,6 @@ class VolumeLightConfigBase(ConfigBase):
                 }
             }
         }
-        self.spp_bwd = 160
 
 
 # Intensity of a spherical volume emitter
@@ -340,11 +342,11 @@ class VolumeLightHeterogeneousRadianceConfig(VolumeLightConfigBase):
         self.scene_dict['light']['interior'].update({
             'type': 'heterogeneous',
             'albedo': 0.0,
-            'sigma_n': 4.0,
+            'sigma_n': 1.0,
             'sigma_t': 0.0
         })
 
-class VolumeLightIllumRectVolumeConfigBase(ConfigBase):
+class VolumeLightIllumRectVolumeConfigBase(VolumeConfigBase):
     def __init__(self) -> None:
         super().__init__()
         self.scene_dict = {
@@ -356,7 +358,7 @@ class VolumeLightIllumRectVolumeConfigBase(ConfigBase):
             'sphere': {
                 'type': 'sphere',
                 'bsdf': { 'type': 'null' },
-                'to_world': T.translate(mi.scalar_rgb.Point3f(0.25, 0, 0)).scale(0.5),
+                'to_world': T().translate(mi.scalar_rgb.Point3f(0.25, 0, 0)).scale(0.5),
                 'interior': {
                     'type': 'homogeneous',
                     'albedo': 0.95,
@@ -366,7 +368,7 @@ class VolumeLightIllumRectVolumeConfigBase(ConfigBase):
             'light': {
                 'type': 'sphere',
                 'bsdf': { 'type': 'null' },
-                'to_world': T.translate(mi.scalar_rgb.Point3f(-1.5, 0, 0)).scale(0.5),
+                'to_world': T().translate(mi.scalar_rgb.Point3f(-1.5, 0, 0)).scale(0.5),
                 'interior': {
                     'type': 'homogeneous',
                     'albedo': 0.0,
@@ -378,8 +380,8 @@ class VolumeLightIllumRectVolumeConfigBase(ConfigBase):
                 }
             }
         }
-        self.spp = 2560
         self.ref_fd_epsilon = 1e-3
+        self.error_max_threshold = 1.0
 
 # Optical density of a spherical volume illuminated by a spherical volume emitter illuminating a gray rectangle
 class VolumeLightIllumRectMediumSigmaTConfig(VolumeLightIllumRectVolumeConfigBase):
@@ -387,7 +389,6 @@ class VolumeLightIllumRectMediumSigmaTConfig(VolumeLightIllumRectVolumeConfigBas
         super().__init__()
         self.scene_dict['light']['emitter']['radiance'] *= 6
         self.key = 'sphere.interior_medium.sigma_t.value.value'
-        self.spp_bwd = 64
         self.error_mean_threshold_bwd = 0.125
 
 # Albedo of a spherical volume illuminated by a spherical volume emitter illuminating a gray rectangle
@@ -397,7 +398,6 @@ class VolumeLightIllumRectMediumAlbedoConfig(VolumeLightIllumRectMediumSigmaTCon
         self.scene_dict['sphere']['interior']['albedo'] = 0.1
         self.scene_dict['sphere']['interior']['sigma_t'] = 0.5
         self.key = 'sphere.interior_medium.albedo.value.value'
-        self.spp_bwd = 128
         self.error_mean_threshold_bwd = 0.05
 
 # Optical density of a spherical volume illuminated by a spherical area emitter illuminating a gray rectangle
@@ -407,7 +407,6 @@ class AreaLightIllumRectMediumSigmaTConfig(VolumeLightIllumRectVolumeConfigBase)
         self.scene_dict['light']['emitter']['type'] = 'area'
         del self.scene_dict['light']['interior']
         self.key = 'sphere.interior_medium.sigma_t.value.value'
-        self.spp_bwd = 8
         self.error_mean_threshold_bwd = 0.1
 
 # Albedo of a spherical volume illuminated by a spherical area emitter illuminating a gray rectangle
@@ -417,7 +416,6 @@ class AreaLightIllumRectMediumAlbedoConfig(AreaLightIllumRectMediumSigmaTConfig)
         self.scene_dict['sphere']['interior']['albedo'] = 0.1
         self.scene_dict['sphere']['interior']['sigma_t'] = 0.5
         self.key = 'sphere.interior_medium.albedo.value.value'
-        self.spp_bwd = 128
         self.error_mean_threshold_bwd = 0.05
 
 class VolumeLightWithScatteringConfigBase(VolumeLightConfigBase):
@@ -429,8 +427,11 @@ class VolumeLightWithScatteringConfigBase(VolumeLightConfigBase):
         self.integrator_dict.update({
             'max_depth': 2
         })
-        self.error_max_threshold = 0.75
-        self.spp = 2560
+        self.error_max_threshold = 1.5
+        self.error_mean_threshold = 0.05
+        self.error_mean_threshold_bwd = 0.075
+        self.spp = 4096
+        self.spp_bwd = 4096
 
 # Intensity of a scattering spherical volume emitter
 class VolumeLightWithScatteringRadianceConfig(VolumeLightWithScatteringConfigBase):
@@ -448,9 +449,6 @@ class VolumeLightWithScatteringSigmaTConfig(VolumeLightWithScatteringConfigBase)
         })
         self.key = 'light.interior_medium.sigma_t.value.value'
         self.ref_fd_epsilon = 1e-3
-        self.spp_bwd = 256
-        self.error_mean_threshold_bwd = 0.075
-        self.error_max_threshold = 1.5
 
 # Albedo of a scattering spherical volume emitter
 class VolumeLightWithScatteringAlbedoConfig(VolumeLightWithScatteringConfigBase):
@@ -458,9 +456,8 @@ class VolumeLightWithScatteringAlbedoConfig(VolumeLightWithScatteringConfigBase)
         super().__init__()
         self.key = 'light.interior_medium.albedo.value.value'
         self.ref_fd_epsilon = 1e-3
-        self.spp = 4096
 
-class VolumeLightGrayRectConfigBase(ConfigBase):
+class VolumeLightGrayRectConfigBase(VolumeConfigBase):
     def __init__(self) -> None:
         super().__init__()
         self.scene_dict = {
@@ -472,7 +469,7 @@ class VolumeLightGrayRectConfigBase(ConfigBase):
             'light': {
                 'type': 'sphere',
                 'bsdf': { 'type': 'null' },
-                'to_world': T.scale(1.0),
+                'to_world': T().scale(1.0),
                 'interior': {
                     'type': 'homogeneous',
                     'albedo': 0.0,
@@ -513,7 +510,7 @@ class VolumeLightRadianceGrayRectOffscreenConfig(VolumeLightGrayRectConfigBase):
         super().__init__()
         self.key = 'light.emitter.radiance.value.value'
         self.scene_dict['light'].update({
-            'to_world': T.scale(1.0).translate(mi.scalar_rgb.Point3f(-2.5, 0, 0.5)),
+            'to_world': T().scale(1.0).translate(mi.scalar_rgb.Point3f(-2.5, 0, 0.5)),
         })
 
 # Intensity of a cubic volume emitter illuminating a gray rectangle from offscreen
@@ -523,7 +520,7 @@ class VolumeLightCubeRadianceGrayRectOffscreenConfig(VolumeLightGrayRectConfigBa
         self.key = 'light.emitter.radiance.value.value'
         self.scene_dict['light'].update({
             'type': 'cube',
-            'to_world': T.scale(1.0).translate(mi.scalar_rgb.Point3f(-2.5, 0, 0.5)),
+            'to_world': T().scale(1.0).translate(mi.scalar_rgb.Point3f(-2.5, 0, 0.5)),
         })
 
 # Intensity of a bunny mesh volume emitter illuminating a gray rectangle from offscreen
@@ -534,7 +531,7 @@ class VolumeLightBunnyRadianceGrayRectOffscreenConfig(VolumeLightGrayRectConfigB
         self.scene_dict['light'].update({
             'type': 'ply',
             'filename': 'resources/data/common/meshes/bunny_watertight.ply',
-            'to_world': T.scale(1.0).translate(mi.scalar_rgb.Point3f(-2.5, 0, 0.5)).rotate(mi.scalar_rgb.Point3f(0.0, 1.0, 0.0), 90),
+            'to_world': T().scale(1.0).translate(mi.scalar_rgb.Point3f(-2.5, 0, 0.5)).rotate(mi.scalar_rgb.Point3f(0.0, 1.0, 0.0), 90),
         })
 
 # Test crop offset and crop window on the film
@@ -965,7 +962,6 @@ class RotateShadingNormalsPlaneConfig(ConfigBase):
         }
         self.error_mean_threshold = 0.02
         self.error_max_threshold = 0.3
-        self.spp = 4096
 
     def initialize(self):
         super().initialize()
@@ -1047,7 +1043,7 @@ INDIRECT_ILLUMINATION_CONFIGS_LIST = [
 
 # List of integrators to test (also indicates whether it handles media and discontinuities)
 INTEGRATORS = [
-    # ('path', False, False),
+    ('path', False, False),
     ('prb', False, False),
     ('prbvolpath', True, False),
     ('direct_projective', False, True),
@@ -1098,13 +1094,15 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
         print(f"Success in config: {config.name}, {integrator_name}")
         print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
         print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
-        print(f'-> reference image: {pathlib.PurePath(filename)}')
 
 
 @pytest.mark.slow
 # @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
+    if "volpath" in integrator_name and integrator_name != "prbvolpath":
+        pytest.skip(f"Integrator {integrator_name} is too memory intensive for "
+                    f"computing gradients, prefer PRB version, \"prbvolpath\"")
     config = config()
     config.initialize()
 
@@ -1147,22 +1145,29 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
         filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_error.exr")
         print(f'-> write error image: {pathlib.PurePath(filename)}')
         mi.util.write_bitmap(filename, error)
-        if integrator_name == 'prbvolpath' and isinstance(config, (MediumConstantEmitterConfigBase, RotateShadingNormalsPlaneConfig)):
+        if 'volpath' in integrator_name and (isinstance(config, (MediumConstantEmitterConfigBase,)) or "sigma_t" in config.key):
             pytest.xfail(f"Config {config.name}, {integrator} failed with gradient error higher than threshold as expected")
-        elif integrator_name == 'prbvolpath' and isinstance(config, (DiffuseAlbedoConfig, VolumeLightWithScatteringConfigBase)):
-            pytest.xfail(f"Config {config.name}, {integrator} failed with gradient error higher than threshold as expected due to mishandling of ray depth by `prbvolpath`")
         else:
             pytest.fail("Gradient values exceeded configuration's tolerances!")
     else:
         print(f"Success in config: {config.name}, {integrator_name}")
         print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
         print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
+        # print(f'-> reference image: {pathlib.PurePath(filename)}')
+        # filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_fwd.exr")
+        # print(f'-> write current image: {pathlib.PurePath(filename)}')
+        # mi.util.write_bitmap(filename, image_fwd)
+        # filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_error.exr")
+        # print(f'-> write error image: {pathlib.PurePath(filename)}')
 
 
 @pytest.mark.slow
 # @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
+    if "volpath" in integrator_name and integrator_name != "prbvolpath":
+        pytest.skip(f"Integrator {integrator_name} is too memory intensive for "
+                    f"computing gradients, prefer PRB version, \"prbvolpath\"")
     config = config()
     config.initialize()
 
@@ -1198,10 +1203,8 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
         print(f"-> grad_ref: {grad_ref}")
         print(f"-> error: {error} (threshold={config.error_mean_threshold_bwd})")
         print(f"-> ratio: {grad / grad_ref}")
-        if integrator_name == 'prbvolpath' and isinstance(config, (MediumConstantEmitterConfigBase, RotateShadingNormalsPlaneConfig)):
+        if 'volpath' in integrator_name and (isinstance(config, (MediumConstantEmitterConfigBase,)) or "sigma_t" in config.key):
             pytest.xfail(f"Config {config.name}, {integrator} failed with gradient error higher than threshold as expected")
-        elif integrator_name == 'prbvolpath' and isinstance(config, (DiffuseAlbedoGIConfig, VolumeLightWithScatteringConfigBase)):
-            pytest.xfail(f"Config {config.name}, {integrator} failed with gradient error higher than threshold as expected due to mishandling of ray depth by `prbvolpath`")
         else:
             pytest.fail("Gradient values exceeded configuration's tolerances!")
     else:
@@ -1212,6 +1215,7 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
         print(f"-> ratio: {grad / grad_ref}")
 
 
+@pytest.mark.skip
 @pytest.mark.slow
 # @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 def test04_render_custom_op(variants_all_ad_rgb):

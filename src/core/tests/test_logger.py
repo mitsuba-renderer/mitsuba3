@@ -29,11 +29,12 @@ def test01_custom(variant_scalar_rgb):
         logger.set_formatter(MyFormatter())
         logger.add_appender(MyAppender())
 
-        mi.Log(mi.LogLevel.Warn, "This is a test message")
-        assert len(messages) == 1
-        assert messages[0].startswith(
-                '300: class=None, thread=main, text=test01_custom(): This is a'
-                ' test message, filename=')
+        with mi.scoped_log_level(mi.LogLevel.Warn):
+            mi.Log(mi.LogLevel.Warn, "This is a test message")
+            assert len(messages) == 1
+            assert messages[0].startswith(
+                    '300: class=None, thread=main, text=test01_custom(): This is a'
+                    ' test message, filename=')
     finally:
         logger.clear_appenders()
         for app in appenders:

@@ -166,7 +166,7 @@ public:
         m_to_object = m_to_world.value().inverse();
 
         m_inv_surface_area = dr::rcp(surface_area());
-        m_inv_volume = 3*dr::InvFourPi<Float>*dr::rcp(dr::sqr(m_radius.value())*m_radius.value());
+        m_inv_volume = 3*dr::InvFourPi<Float>*dr::rcp(dr::square(m_radius.value())*m_radius.value());
 
         dr::make_opaque(m_radius, m_center, m_inv_surface_area, m_inv_volume);
         mark_dirty();
@@ -203,7 +203,7 @@ public:
     }
 
     Float volume() const override {
-        return 4.f * dr::Pi<ScalarFloat> * dr::sqr(m_radius.value()) * m_radius.value() / 3.f;
+        return 4.f * dr::Pi<ScalarFloat> * dr::square(m_radius.value()) * m_radius.value() / 3.f;
     }
 
     // =============================================================
@@ -237,7 +237,7 @@ public:
     }
 
     PositionSample3f sample_position_volume(Float time, const Point3f &sample,
-                                     Mask active) const override {
+                                            Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
         Point3f local = warp::cube_to_uniform_sphere(sample);
@@ -360,7 +360,7 @@ public:
         auto ray = Ray3f(
             it.p,
             ds.d,
-            (1.0f + math::ShadowEpsilon<Float>)*(3.0f*m_radius.value() + ds.dist),
+            dr::Largest<Float>,
             it.time,
             it.wavelengths
         );
@@ -379,8 +379,7 @@ public:
         Float plane_t = dot(-l, d) / norm(d);
 
         // Ray is perpendicular to plane
-        dr::mask_t<Float> no_hit =
-            dr::eq(plane_t, 0) && dr::all(dr::neq(ray.o, center));
+        dr::mask_t<Float> no_hit = (plane_t == 0) && dr::all((ray.o != center));
 
         Vector3f plane_p = ray(plane_t);
 
@@ -391,7 +390,7 @@ public:
 
         Float A = dr::squared_norm(d);
         Float B = 2.0f * dr::dot(o, d);
-        Float C = dr::squared_norm(o) - dr::sqr(radius);
+        Float C = dr::squared_norm(o) - dr::square(radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
@@ -403,8 +402,8 @@ public:
 
         active &= solution_found && !no_hit && !out_bounds;
 
-        near_t = dr::clamp(near_t, 0.0f, dr::Infinity<Float>);
-        far_t  = dr::clamp(far_t, 0.0f, dr::Infinity<Float>);
+        near_t = dr::clip(near_t, 0.0f, dr::Infinity<Float>);
+        far_t  = dr::clip(far_t, 0.0f, dr::Infinity<Float>);
 
         dr::masked(near_t, !active) = 0.0f;
         dr::masked(far_t, !active) = 0.0f;
@@ -417,23 +416,14 @@ public:
                                               Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
-        auto ds = dr::zeros<DirectionSample3f>();
         auto ps = sample_position_volume(it.time, sample, active);
+        auto ds = DirectionSample3f(ps.p, ps.n, ps.uv, ps.time, ps.pdf, ps.delta, dr::normalize(ps.p - it.p), dr::norm(ps.p - it.p), nullptr);
 
-        ds.p = ps.p;
-        ds.uv = ps.uv;
-        ds.n = ps.n;
-        ds.delta = ps.delta;
-        ds.time = it.time;
-        ds.pdf = ps.pdf;
-        ds.d = ds.p - it.p;
-        ds.dist = dr::norm(ds.d);
-        ds.d = ds.d / ds.dist;
         auto [near_t, far_t] = get_intersection_extents(it, ds, active);
-        auto t0 = near_t*dr::rcp(m_radius.value()), t1 = far_t*dr::rcp(m_radius.value());
-        auto pdf = (dr::sqr(t1)*t1 - dr::sqr(t0)*t0)*dr::InvFourPi<Float>;
-        ds.pdf = dr::select(ds.delta, dr::squared_norm(ds.p - it.p), pdf);
+        auto line_integral_pdf = ps.pdf * (dr::square(far_t) * far_t - dr::square(near_t) * near_t) / 3.0f;
         ds.dist = far_t;
+        ds.p = it.p + ds.dist * ds.d;
+        ds.pdf = dr::select(ds.delta, dr::squared_norm(ds.p - it.p), line_integral_pdf);
 
         return ds;
     }
@@ -443,12 +433,11 @@ public:
         MI_MASK_ARGUMENT(active);
 
         auto [near_t, far_t] = get_intersection_extents(it, ds, active);
-        auto inv_radius = dr::rcp(m_radius.value());
+        auto line_integral_pdf = m_inv_volume * (dr::square(far_t) * far_t - dr::square(near_t) * near_t) / 3.0f;
 
-        near_t *= inv_radius;
-        far_t *= inv_radius;
+        auto pdf = dr::select(active && (m_radius.value() > 0.f), line_integral_pdf, 0.0f);
 
-        return dr::select(active && (m_radius.value() > 0.f), (dr::sqr(far_t)*far_t - dr::sqr(near_t)*near_t)*dr::InvFourPi<Float>, 0.0f);
+        return pdf;
     }
 
     SurfaceInteraction3f eval_parameterization(const Point2f &uv,

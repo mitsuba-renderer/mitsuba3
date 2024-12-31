@@ -13,7 +13,7 @@
 MI_VARIANT class PyMedium : public Medium<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Medium, Sampler, Scene)
-    NB_TRAMPOLINE(Medium, 6);
+    NB_TRAMPOLINE(Medium, 7);
 
     PyMedium(const Properties &props) : Medium(props) {}
 
@@ -29,6 +29,14 @@ public:
     get_scattering_coefficients(const MediumInteraction3f &mi, Mask active = true) const override {
         NB_OVERRIDE_PURE(get_scattering_coefficients, mi, active);
     }
+
+    std::pair<std::pair<UnpolarizedSpectrum, UnpolarizedSpectrum>,
+               std::pair<UnpolarizedSpectrum, UnpolarizedSpectrum>>
+    get_interaction_probabilities(const Spectrum &radiance,
+                                  const MediumInteraction3f &mi,
+                                  const Spectrum &throughput) const override {
+        NB_OVERRIDE_PURE(get_interaction_probabilities, radiance, mi, throughput);
+    };
 
     std::string to_string() const override {
         NB_OVERRIDE_PURE(to_string);
@@ -107,6 +115,21 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
                 return ptr->get_interaction_probabilities(radiance, mei, throughput); },
             "radiance"_a, "mei"_a, "throughput"_a,
             D(Medium, get_interaction_probabilities));
+       // .def("medium_probabilities_analog",
+       //      [](Ptr ptr, const Spectrum &radiance, const MediumInteraction3f &mei, const Spectrum &throughput) {
+       //          return ptr->medium_probabilities_analog(radiance, mei, throughput); },
+       //      "radiance"_a, "mei"_a, "throughput"_a,
+       //      D(Medium, medium_probabilities_analog))
+       // .def("medium_probabilities_max",
+       //      [](Ptr ptr, const Spectrum &radiance, const MediumInteraction3f &mei, const Spectrum &throughput) {
+       //          return ptr->medium_probabilities_max(radiance, mei, throughput); },
+       //      "radiance"_a, "mei"_a, "throughput"_a,
+       //      D(Medium, medium_probabilities_max))
+       // .def("medium_probabilities_mean",
+       //      [](Ptr ptr, const Spectrum &radiance, const MediumInteraction3f &mei, const Spectrum &throughput) {
+       //          return ptr->medium_probabilities_mean(radiance, mei, throughput); },
+       //      "radiance"_a, "mei"_a, "throughput"_a,
+       //      D(Medium, medium_probabilities_mean));
 }
 
 MI_PY_EXPORT(Medium) {
@@ -119,7 +142,7 @@ MI_PY_EXPORT(Medium) {
         .def_method(Medium, id)
         .def_method(Medium, set_id)
         .def_field(PyMedium, m_sample_emitters, D(Medium, m_sample_emitters))
-        .def_field(PyMedium, m_medium_sampling_mode, D(Medium, medium_sampling_mode))
+        .def_field(PyMedium, m_medium_sampling_mode, D(Medium, m_medium_sampling_mode))
         .def_field(PyMedium, m_is_homogeneous, D(Medium, m_is_homogeneous))
         .def_field(PyMedium, m_has_spectral_extinction, D(Medium, m_has_spectral_extinction))
         .def("__repr__", &Medium::to_string, D(Medium, to_string));

@@ -255,7 +255,7 @@ public:
     }
 
     Float volume() const override {
-        return dr::Pi<ScalarFloat> * dr::sqr(m_radius.value()) * m_length.value();
+        return dr::Pi<ScalarFloat> * dr::square(m_radius.value()) * m_length.value();
     }
 
     PositionSample3f sample_position_surface(Float time, const Point2f &sample,
@@ -315,7 +315,7 @@ public:
         MI_MASK_ARGUMENT(active);
         const Transform4f& to_object = m_to_object.value();
         auto p_local = to_object.transform_affine(ps.p);
-        auto r = dr::safe_sqrt(dr::sqr(p_local.x()) + dr::sqr(p_local.y()));
+        auto r = dr::safe_sqrt(dr::square(p_local.x()) + dr::square(p_local.y()));
         return dr::select(active && (r <= 1.0f) && (p_local.z() >= 0.0f) && (p_local.z() <= 1.0f), m_inv_volume, 0.0f);
     }
 

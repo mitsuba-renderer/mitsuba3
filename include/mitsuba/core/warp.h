@@ -282,19 +282,19 @@ MI_INLINE Vector<Value, 3> cube_to_uniform_sphere(const Point<Value, 3> &sample)
     Value radius = dr::safe_cbrt(sample.x()),
           phi = 2.f * dr::Pi<Value> * sample.z(),
           u = dr::fmsub(2.f, sample.y(), 1.f);
-    radius = dr::select(dr::neq(sample.x(), 0.f), radius, sample.x());
+    radius = dr::select(sample.x() == 0.f, sample.x(), radius);
     auto [s, c] = dr::sincos(phi);
-    return { radius * c * dr::safe_sqrt(1 - dr::sqr(u)), radius * s * dr::safe_sqrt(1 - dr::sqr(u)), radius * u };
+    return { radius * c * dr::safe_sqrt(1 - dr::square(u)), radius * s * dr::safe_sqrt(1 - dr::square(u)), radius * u };
 }
 
 /// Inverse of the mapping \ref square_to_uniform_sphere
 template <typename Value>
 MI_INLINE Point<Value, 3> uniform_sphere_to_cube(const Vector<Value, 3> &p) {
     Value phi = dr::atan2(p.y(), p.x()) * dr::InvTwoPi<Value>,
-          radius = dr::safe_sqrt(dr::sqr(p.x()) + dr::sqr(p.y()) + dr::sqr(p.z())),
+          radius = dr::safe_sqrt(dr::square(p.x()) + dr::square(p.y()) + dr::square(p.z())),
           u = (p.z() / radius + 1.f) / 2.f;
     return {
-        dr::sqr(radius) * radius,
+        dr::square(radius) * radius,
         u,
         dr::select(phi < 0.f, phi + 1.f, phi),
     };

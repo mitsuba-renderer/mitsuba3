@@ -26,7 +26,7 @@ MI_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props
         }
         auto *emitter = dynamic_cast<Emitter *>(obj.get());
         if (emitter) {
-            if (m_emitter)
+            if (m_emitter.get())
                 Throw("Only a single emitter can be specified per medium");
             m_emitter = emitter;
             props.mark_queried(name);
@@ -76,6 +76,7 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
     mei.sh_frame    = Frame3f(mei.wi);
     mei.time        = ray.time;
     mei.wavelengths = ray.wavelengths;
+    mei.n = ray.d;
 
     auto [aabb_its, mint, maxt] = intersect_aabb(ray);
     aabb_its &= (dr::isfinite(mint) || dr::isfinite(maxt));
@@ -105,6 +106,7 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
     std::tie(mei.sigma_s, mei.sigma_n, mei.sigma_t) =
         get_scattering_coefficients(mei, valid_mi);
     mei.combined_extinction = combined_extinction;
+    mei.radiance = get_radiance(mei, valid_mi && is_emitter());
     return mei;
 }
 
@@ -155,7 +157,8 @@ Medium<Float, Spectrum>::get_interaction_probabilities(const Spectrum &radiance,
 
     if (m_medium_sampling_mode == MediumEventSamplingMode::Analogue) {
         std::tie(prob_scatter, prob_null) =
-            medium_probabilities_analog(unpolarized_spectrum(radiance), mei);
+            medium_probabilities_analog(unpolarized_spectrum(radiance), mei,
+                                        unpolarized_spectrum(throughput));
     } else if (m_medium_sampling_mode == MediumEventSamplingMode::Maximum) {
         std::tie(prob_scatter, prob_null) =
             medium_probabilities_max(unpolarized_spectrum(radiance), mei,
@@ -167,7 +170,7 @@ Medium<Float, Spectrum>::get_interaction_probabilities(const Spectrum &radiance,
     }
 
     c                             = prob_scatter + prob_null;
-    dr::masked(c, dr::eq(c, 0.f)) = 1.0f;
+    dr::masked(c, c == 0.f) = 1.0f;
     prob_scatter /= c;
     prob_null /= c;
 
@@ -175,10 +178,10 @@ Medium<Float, Spectrum>::get_interaction_probabilities(const Spectrum &radiance,
     dr::masked(weight_scatter, prob_scatter > 0.f) = dr::rcp(prob_scatter);
 
     dr::masked(weight_null,
-               dr::neq(weight_null, weight_null) ||
+               (weight_null != weight_null) ||
                    !(dr::abs(weight_null) < dr::Infinity<Float>) )    = 0.f;
     dr::masked(weight_scatter,
-               dr::neq(weight_scatter, weight_scatter) ||
+               (weight_scatter != weight_scatter) ||
                    !(dr::abs(weight_scatter) < dr::Infinity<Float>) ) = 0.f;
 
     return std::make_pair(std::make_pair(prob_scatter, prob_null),
@@ -188,12 +191,10 @@ Medium<Float, Spectrum>::get_interaction_probabilities(const Spectrum &radiance,
 static std::mutex set_dependency_lock_medium;
 
 MI_VARIANT void Medium<Float, Spectrum>::set_emitter(Emitter* emitter) {
-    std::unique_lock<std::mutex> guard(set_dependency_lock_medium);
-    if (m_emitter)
-        Throw("A medium can only have one emitter attached");
-
+    std::unique_lock guard(set_dependency_lock_medium);
+    if (emitter != nullptr && !has_flag(emitter->flags(), EmitterFlags::Medium))
+        Throw("Cannot attach a surface emitter to a medium!");
     m_emitter = emitter;
-    MI_REGISTRY_PUT("Medium", this);
 }
 
 MI_IMPLEMENT_CLASS_VARIANT(Medium, Object, "medium")

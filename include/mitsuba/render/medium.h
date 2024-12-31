@@ -41,7 +41,7 @@ public:
 
     /// Returns the radiance, the probability of a scatter event, and
     /// the weights associated with real and null scattering events
-    std::pair<std::pair<UnpolarizedSpectrum, UnpolarizedSpectrum>,
+    virtual std::pair<std::pair<UnpolarizedSpectrum, UnpolarizedSpectrum>,
                std::pair<UnpolarizedSpectrum, UnpolarizedSpectrum>>
     get_interaction_probabilities(const Spectrum &radiance,
                                   const MediumInteraction3f &mi,
@@ -49,7 +49,8 @@ public:
 
     MI_INLINE std::pair<UnpolarizedSpectrum, UnpolarizedSpectrum>
     medium_probabilities_analog(const UnpolarizedSpectrum &radiance,
-                                const MediumInteraction3f &mi) const {
+                                const MediumInteraction3f &mi,
+                                const UnpolarizedSpectrum &/*throughput*/) const {
         auto prob_s = mi.sigma_t;
         auto prob_n = mi.sigma_n + dr::maximum(radiance, dr::mean(dr::abs(radiance)));
         return std::make_pair( prob_s, prob_n );
@@ -192,6 +193,7 @@ MI_CALL_TEMPLATE_BEGIN(Medium)
     DRJIT_CALL_GETTER(emitter)
     DRJIT_CALL_GETTER(use_emitter_sampling)
     DRJIT_CALL_GETTER(is_homogeneous)
+    DRJIT_CALL_GETTER(is_emitter)
     DRJIT_CALL_GETTER(has_spectral_extinction)
     DRJIT_CALL_METHOD(get_majorant)
     DRJIT_CALL_METHOD(get_radiance)
@@ -203,7 +205,6 @@ MI_CALL_TEMPLATE_BEGIN(Medium)
     DRJIT_CALL_METHOD(medium_probabilities_analog)
     DRJIT_CALL_METHOD(medium_probabilities_max)
     DRJIT_CALL_METHOD(medium_probabilities_mean)
-    auto is_emitter() const { return emitter() != nullptr; }
 MI_CALL_TEMPLATE_END(Medium)
 
 //! @}
