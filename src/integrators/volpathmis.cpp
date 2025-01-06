@@ -637,7 +637,7 @@ public:
                 UnpolarizedSpectrum ratio = p / f.entry(i);
                 ratio = dr::select(dr::isfinite(ratio), ratio, 0.f);
                 ratio *= p_over_f[i];
-                dr::masked(p_over_f[i], active) = dr::select(dr::isnan(ratio), 0.f, ratio);
+                dr::masked(p_over_f[i], active) = dr::select(dr::isfinite(ratio), ratio, 0.f);
             }
         } else {
             // If we don't do spectral MIS: We need to use a specific channel of the spectrum "p" as the PDF
@@ -653,12 +653,14 @@ public:
             UnpolarizedSpectrum weight(0.0f);
             for (size_t i = 0; i < n; ++i) {
                 Float sum = dr::sum(p_over_f[i]);
-                weight[i] = dr::select(sum == 0.f, 0.0f, n / sum);
+                auto inv_sum = dr::rcp(sum);
+                weight[i] = dr::select(dr::isfinite(inv_sum), n * inv_sum, 0.0f);
             }
             return weight;
         } else {
-            Mask invalid = (min(dr::abs(p_over_f)) == 0.f);
-            return dr::select(invalid, 0.f, 1.f / p_over_f);
+            auto inv_p_over_f = dr::rcp(p_over_f);
+            Mask valid = dr::all(dr::isfinite(inv_p_over_f));
+            return dr::select(valid, inv_p_over_f, 0.0f);
         }
     }
 
@@ -670,11 +672,13 @@ public:
             auto sum_matrix = p_over_f1 + p_over_f2;
             for (size_t i = 0; i < n; ++i) {
                 Float sum = dr::sum(sum_matrix[i]);
-                weight[i] = dr::select(sum == 0.f, 0.0f, n / sum);
+                auto inv_sum = dr::rcp(sum);
+                weight[i] = dr::select(dr::isfinite(inv_sum), n * inv_sum, 0.0f);
             }
         } else {
             auto sum = p_over_f1 + p_over_f2;
-            weight = dr::select(min(dr::abs(sum)) == 0.f, 0.0f, 1.f / sum);
+            auto inv_sum = dr::rcp(sum);
+            weight = dr::select(dr::all(dr::isfinite(inv_sum)) == 0.f, inv_sum, 0.0f);
         }
         return weight;
     }
