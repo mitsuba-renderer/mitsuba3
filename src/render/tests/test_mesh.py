@@ -1337,35 +1337,100 @@ def test35_mesh_vcalls(variants_vec_rgb):
 
 
 @fresolver_append_path
-def test36_volume_sampling(variants_all_rgb):
+def test36_correct_volume(variants_all_rgb):
+    objects_to_test = ["obj/cbox_smallbox.obj", "ply/bunny_watertight.ply"]
+    object_volumes = [4559445.0373, 1.6012674570083618]
+    for mesh_path, mesh_volume in zip(objects_to_test, object_volumes):
+        shape = mi.load_dict({
+            "type": "obj" if mesh_path.endswith("obj") else "ply",
+            "filename": f"resources/data/tests/{mesh_path}",
+        })
+        assert dr.allclose(shape.volume(), mesh_volume)
+
+
+@pytest.mark.slow
+@fresolver_append_path
+def test37_volume_position_sampling_normalisation(variants_vec_rgb):
     shape = mi.load_dict({
         "type": "obj",
         "filename": f"resources/data/tests/obj/cbox_smallbox.obj",
     })
 
+    iter_count = 32
+
     sampler = mi.load_dict({
-        "type": "independent",
-        "sample_count": 1
+        "type": "multijitter",
+        "sample_count": iter_count * 2
     })
 
-    sampler.seed(0, 0 if "scalar" in variants_all_rgb else 256)
-    time = mi.Float(0.0)
+    sampler.seed(0, 131072)
     active = mi.Mask(True)
-    sample = sampler.next_3d()
 
-    ps = shape.sample_position_volume(time, sample, active)
+    resulting_vol_pdfs = 0.0
 
-    assert dr.allclose(dr.select(ps.pdf > 0.0, dr.rcp(shape.volume()), 0.0), ps.pdf)
-    assert dr.allclose(shape.pdf_position_volume(ps, active), ps.pdf)
+    for iter_num in range(iter_count):
+        ps = shape.sample_position_volume(mi.Float(0.0), sampler.next_3d(), active)
+        resulting_vol_pdfs = resulting_vol_pdfs + dr.select(ps.pdf != 0.0, shape.bbox().volume(), 0.0)
 
-    bbox_center = mi.PositionSample3f()
-    bbox_center.time = time
-    bbox_center.p = shape.bbox().center()
-    bbox_center.n = mi.Vector3f([1.0, 0.0, 0.0])
+    sum_pdf = dr.mean(resulting_vol_pdfs/iter_count, axis=None, mode="evaluated")
 
-    assert dr.allclose(shape.pdf_position_volume(bbox_center, active), dr.rcp(shape.volume()))
-    bbox_center.p = shape.bbox().center() + 5*dr.norm(shape.bbox().extents())*(shape.bbox().max - shape.bbox().center())
-    assert dr.allclose(shape.pdf_position_volume(bbox_center, active), 0.0)
+    assert(dr.allclose(sum_pdf, shape.volume(), atol=32/(32*131072)**0.5))
 
 
+@pytest.mark.slow
+@fresolver_append_path
+def test38_volume_direction_sampling_normalisation(variants_vec_rgb):
+    shape = mi.load_dict({
+        "type": "ply",
+        "filename": f"resources/data/tests/ply/bunny_watertight.ply",
+    })
 
+    iter_count = 32
+
+    for iter_index in range(33):
+        sampler = mi.load_dict({
+            "type": "multijitter",
+            "sample_count": iter_count * 2
+        })
+
+        sampler_offset = mi.load_dict({
+            "type": "multijitter",
+            "sample_count": 36
+        })
+
+        sampler.seed(iter_index, 131072)
+        sampler_offset.seed(iter_index + 64, 1)
+        active = mi.Mask(True)
+
+        bsphere = shape.bbox().bounding_sphere()
+
+        resulting_line_pdfs = 0.0
+
+        if iter_index == 0:
+            ray_offset = mi.Vector3f(0.0, 0.0, 0.0)
+        else:
+            ray_offset = 4 * mi.warp.cube_to_uniform_sphere(sampler_offset.next_3d()) * bsphere.radius
+        for iter_num in range(iter_count):
+            ray = mi.Ray3f()
+            ray.o = bsphere.center + ray_offset
+            ray.d = mi.warp.square_to_uniform_sphere(sampler.next_2d())
+            pdf = mi.warp.square_to_uniform_sphere_pdf(ray.d)
+
+            test_si = dr.zeros(mi.SurfaceInteraction3f)
+            test_si.p = ray.o
+            test_si.time = 0.0
+
+
+            if "scalar" in variants_vec_rgb:
+                test_ds = mi.DirectionSample3f()
+            else:
+                test_ds = dr.zeros(mi.DirectionSample3f)
+            test_ds.p = ray.o + bsphere.radius * 2 * ray.d
+            test_ds.time = 0.0
+            test_ds.d = ray.d
+
+            underlying_pdf = shape.pdf_direction_volume(test_si, test_ds, active)
+            resulting_line_pdfs = resulting_line_pdfs + (underlying_pdf / pdf)
+
+        sum_pdf = dr.mean(resulting_line_pdfs / iter_count, axis=None, mode="evaluated")
+        assert(dr.allclose(sum_pdf, 1.0, atol=32/(32*131072)**0.5))
