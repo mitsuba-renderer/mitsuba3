@@ -1338,12 +1338,13 @@ def test35_mesh_vcalls(variants_vec_rgb):
 
 @fresolver_append_path
 def test36_correct_volume(variants_all_rgb):
-    objects_to_test = ["obj/cbox_smallbox.obj", "ply/bunny_watertight.ply"]
+    # Test that the correct volume is computed for both simple and complex meshes
+    objects_to_test = ["tests/obj/cbox_smallbox.obj", "common/meshes/bunny_watertight.ply"]
     object_volumes = [4559445.0373, 1.6012674570083618]
     for mesh_path, mesh_volume in zip(objects_to_test, object_volumes):
         shape = mi.load_dict({
             "type": "obj" if mesh_path.endswith("obj") else "ply",
-            "filename": f"resources/data/tests/{mesh_path}",
+            "filename": f"resources/data/{mesh_path}",
         })
         assert dr.allclose(shape.volume(), mesh_volume)
 
@@ -1380,9 +1381,10 @@ def test37_volume_position_sampling_normalisation(variants_vec_rgb):
 @pytest.mark.slow
 @fresolver_append_path
 def test38_volume_direction_sampling_normalisation(variants_vec_rgb):
+    # Test that the directional pdf is normalised
     shape = mi.load_dict({
         "type": "ply",
-        "filename": f"resources/data/tests/ply/bunny_watertight.ply",
+        "filename": f"resources/data/common/meshes/bunny_watertight.ply",
     })
 
     iter_count = 32
@@ -1406,6 +1408,9 @@ def test38_volume_direction_sampling_normalisation(variants_vec_rgb):
 
         resulting_line_pdfs = 0.0
 
+        # We select a set of random points both inside and outside the bounding sphere
+        # and then sample the entire sphere of directions. A normalised directional pdf
+        # will integrate to 1 over the entire sphere centered at any arbitrary point.
         if iter_index == 0:
             ray_offset = mi.Vector3f(0.0, 0.0, 0.0)
         else:
@@ -1430,7 +1435,7 @@ def test38_volume_direction_sampling_normalisation(variants_vec_rgb):
             test_ds.d = ray.d
 
             underlying_pdf = shape.pdf_direction_volume(test_si, test_ds, active)
-            resulting_line_pdfs = resulting_line_pdfs + (underlying_pdf / pdf)
+            resulting_line_pdfs = resulting_line_pdfs + underlying_pdf * dr.select(pdf != 0.0, dr.rcp(pdf), 0.0)
 
         sum_pdf = dr.mean(resulting_line_pdfs / iter_count, axis=None, mode="evaluated")
         assert(dr.allclose(sum_pdf, 1.0, atol=32/(32*131072)**0.5))

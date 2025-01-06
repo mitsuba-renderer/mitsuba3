@@ -285,7 +285,7 @@ class PRBVolpathIntegrator(RBIntegrator):
                     else:
                         δL += dr.forward_to(Le_surface)
 
-            L[active_e_surface_sampl] += dr.detach(Le_surface)
+            L[active_e_surface_sampl] += dr.detach(Le_surface if is_primal else -Le_surface)
 
             active_surface &= si.is_valid()
             bsdf_ctx = mi.BSDFContext()
@@ -335,7 +335,9 @@ class PRBVolpathIntegrator(RBIntegrator):
                                         adj_emitted=adj_emitted, adj_throughput=adj_throughput,
                                         δL=δL, mode=mode)
 
-                L[active_e] += dr.detach(Lr_dir)
+                L[active_e] += dr.detach(Lr_dir if is_primal else -Lr_dir)
+            else:
+                Lr_dir = mi.Spectrum(0.0)
 
             # -------------------- Phase function sampling ------------------
 

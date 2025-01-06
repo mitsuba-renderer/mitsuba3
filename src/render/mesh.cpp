@@ -1037,6 +1037,7 @@ Mesh<Float, Spectrum>::sample_direction_volume(const Interaction3f &it, const Po
     auto bbox_volume = m_bbox.volume();
     auto bbox_volume_inv_cbrt = dr::rcp(dr::safe_cbrt(bbox_volume));
     dr::masked(near_t, active && (near_t < 0.f)) = 0.0f;
+    active &= (far_t > near_t);
     ds.dist = far_t;
     near_t *= bbox_volume_inv_cbrt;
     far_t *= bbox_volume_inv_cbrt;
@@ -1130,6 +1131,7 @@ MI_VARIANT Float Mesh<Float, Spectrum>::pdf_direction_volume(const Interaction3f
     auto bbox_volume = m_bbox.volume();
     auto bbox_volume_inv_cbrt = dr::rcp(dr::safe_cbrt(bbox_volume));
     dr::masked(near_t, active && (near_t < 0.f)) = 0.0f;
+    active &= (far_t > near_t);
     near_t *= bbox_volume_inv_cbrt;
     far_t *= bbox_volume_inv_cbrt;
     auto line_pdf = (dr::square(far_t) * far_t - dr::square(near_t) * near_t) / 3.f;

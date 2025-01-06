@@ -1097,7 +1097,7 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
 
 
 @pytest.mark.slow
-# @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
+@pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
     if "volpath" in integrator_name and integrator_name != "prbvolpath":
@@ -1153,16 +1153,10 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
         print(f"Success in config: {config.name}, {integrator_name}")
         print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
         print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
-        # print(f'-> reference image: {pathlib.PurePath(filename)}')
-        # filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_fwd.exr")
-        # print(f'-> write current image: {pathlib.PurePath(filename)}')
-        # mi.util.write_bitmap(filename, image_fwd)
-        # filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_error.exr")
-        # print(f'-> write error image: {pathlib.PurePath(filename)}')
 
 
 @pytest.mark.slow
-# @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
+@pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
     if "volpath" in integrator_name and integrator_name != "prbvolpath":
@@ -1217,7 +1211,7 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
 
 @pytest.mark.skip
 @pytest.mark.slow
-# @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
+@pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 def test04_render_custom_op(variants_all_ad_rgb):
     config = DiffuseAlbedoConfig()
     config.initialize()
@@ -1361,11 +1355,14 @@ if __name__ == "__main__":
 
         integrator_path = mi.load_dict({
             'type': 'volpath',
-            'max_depth': config.integrator_dict['max_depth']
+            'max_depth': config.integrator_dict['max_depth'],
+            # Use unidirectional sampling for the forward renders, best way to
+            # eliminate any bugs in things like Next-Event Estimation
+            'sampling_mode': 1
         })
 
         # Primal render
-        image_ref = integrator_path.render(config.scene, seed=0, spp=args.spp)
+        image_ref = integrator_path.render(config.scene, seed=0, spp=args.spp if args.spp > 1e5 else 192000)
 
         filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
         mi.util.write_bitmap(filename, image_ref)
@@ -1379,7 +1376,7 @@ if __name__ == "__main__":
                 theta = mi.Float(fd_step * config.ref_fd_epsilon)
                 config.update(theta)
                 # Accumulate final image in double precision to avoid truncation error/underflow
-                image_1 = mi.TensorXd(integrator_path.render(config.scene, seed=0, spp=args.spp))
+                image_1 = mi.TensorXd(integrator_path.render(config.scene, seed=0, spp=args.spp if args.spp > 1e5 else 192000))
                 dr.eval(image_1)
                 if image_cumulative is not None:
                     image_cumulative = image_cumulative + fd_weight * image_1
