@@ -92,14 +92,16 @@ public:
         m_flags = +EmitterFlags::DeltaPosition;
         m_intensity = props.texture_d65<Texture>("intensity", 1.f);
 
-        // Declare Float arrays for origin and target coordinates
+        // Declare arrays for origin and target coordinates
         Float float_origin_x, float_origin_y, float_origin_z, float_target_x, float_target_y, float_target_z;
+        std::vector<float> origin_x, origin_y, origin_z, target_x, target_y, target_z;
+        int count;
 
         // If a photon_list property exists then load as a VolumeGrid code object
         if (props.has_property("photon_list")) {
-            // Log(Info, "photon emitter reading from code object (VolumeGrid)");
             // If filename has also been specified then ignore it
             if (props.has_property("filename")) {
+                // If filename has been specified it needs to be resolved otherwise there will be a RuntimeError
                 FileResolver *fs = Thread::thread()->file_resolver();
                 fs::path file_path = fs->resolve(props.string("filename"));
                 Log(Info, "The parameters 'filename' and 'photon_list' were both specified; ignoring 'filename'.");
@@ -108,9 +110,8 @@ public:
             ref<Object> other = props.object("photon_list");
             VolumeGrid *volume_grid = dynamic_cast<VolumeGrid *>(other.get());
             float *ptr = volume_grid->data();
-            int count = ptr[0];
+            count = ptr[0];
             int counter = 0.;
-            std::vector<float> origin_x, origin_y, origin_z, target_x, target_y, target_z;
             while (counter != count) {
                 float x = ptr[1+counter*6];
                 float y = ptr[2+counter*6];
@@ -129,13 +130,6 @@ public:
                 target_z.push_back(c);
                 counter ++;
             }
-            // Load them each into separate Float variables
-            float_origin_x = dr::load<Float>(origin_x.data(), count);
-            float_origin_y = dr::load<Float>(origin_y.data(), count);
-            float_origin_z = dr::load<Float>(origin_z.data(), count);
-            float_target_x = dr::load<Float>(target_x.data(), count);
-            float_target_y = dr::load<Float>(target_y.data(), count);
-            float_target_z = dr::load<Float>(target_z.data(), count);
         // Otherwise look for a filename property and load that
         } else if (props.has_property("filename")) {
             // Read the file
@@ -146,12 +140,12 @@ public:
             binaryStream -> set_byte_order(Stream::ELittleEndian);
 
             // The first line of the file shows the number of the photons
-            size_t count;
-            binaryStream->read(&count, sizeof(size_t));
+            size_t count_size;
+            binaryStream->read(&count_size, sizeof(size_t));
+            count = int(count_size);
             // std::cout << "The number of photons is: " << count << std::endl;
             size_t counter = 0.;
-            std::vector<float> origin_x, origin_y, origin_z, target_x, target_y, target_z;
-            while (counter != count) {
+            while (counter != count_size) {
                 // Declare three float variables
                 float x,y,z;
                 binaryStream->read(&x, sizeof(float));
@@ -171,16 +165,17 @@ public:
                 counter ++;
             }
             binaryStream->close();
-            // Load them each into separate Float variables
-            float_origin_x = dr::load<Float>(origin_x.data(), count);
-            float_origin_y = dr::load<Float>(origin_y.data(), count);
-            float_origin_z = dr::load<Float>(origin_z.data(), count);
-            float_target_x = dr::load<Float>(target_x.data(), count);
-            float_target_y = dr::load<Float>(target_y.data(), count);
-            float_target_z = dr::load<Float>(target_z.data(), count);
         } else {
             Throw("A photon emitter requires one of 'photon_list' (VolumeGrid code object) or 'filename' (binary file) to be specified.");
         }
+
+        // Load them each into separate Float variables
+        float_origin_x = dr::load<Float>(origin_x.data(), count);
+        float_origin_y = dr::load<Float>(origin_y.data(), count);
+        float_origin_z = dr::load<Float>(origin_z.data(), count);
+        float_target_x = dr::load<Float>(target_x.data(), count);
+        float_target_y = dr::load<Float>(target_y.data(), count);
+        float_target_z = dr::load<Float>(target_z.data(), count);
 
         // Create two Point3f and one Vector3f for origins, targets and ups from these Float variables
         Point3f origin(float_origin_x, float_origin_y, float_origin_z);
