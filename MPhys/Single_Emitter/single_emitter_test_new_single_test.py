@@ -17,7 +17,7 @@ nm_per_ev_constant = (float(6.6260715e-34)*float(3.00e8)*float(1e9))/(float(1.60
 # Load in the CSV file
 # column_names = ["time (ps)", "x", "y", "z", "px", "py", "pz", "E (MeV)"]
 # The first column in the CSV file is an index column and we don't want to load that in
-photon_detected = pd.read_csv('csv/test_new_photons_detected_spectral.csv', index_col=0) #, names = column_names)
+photon_detected = pd.read_csv('csv/photons_detected_spectral.csv', index_col=0) #, names = column_names)
 print(photon_detected)
 
 def generate_emitter_data(photon_data):
@@ -264,7 +264,12 @@ def compare_images(old_fname, new_fname):
     diff_image = old_image - new_image
 
     print(type(diff_image))
-    print(np.max(diff_image), np.min(diff_image))
+    print("Max/min in old image ", np.max(old_image), np.min(old_image))
+    print("Max/min in new image ", np.max(new_image), np.min(new_image))
+    print("Max/min in diff image ", np.max(diff_image), np.min(diff_image))
+    print("Average/median in diff image ", np.average(diff_image), np.median(diff_image))
+    print("Average/median of non-zero diffs ", np.average(diff_image[np.nonzero(diff_image)]),
+          np.median(diff_image[np.nonzero(diff_image)]))
     print(diff_image.shape)
     
     fig, (ax1, ax2, ax3) = plt.subplots(3)
