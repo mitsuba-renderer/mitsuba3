@@ -1,3 +1,6 @@
+// TODO: check which of these includes are needed
+//       (This is effectively a "simplified" version of spot.cpp
+//        so it shouldnt need all the extra headers?)
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/core/plugin.h>
@@ -187,21 +190,9 @@ public:
 
         if (m_intensity->is_spatially_varying())
             Throw("The parameter 'intensity' cannot be spatially varying (e.g. bitmap type)!");
-        // dr::set_attr(this, "flags", m_flags);
-        // degree to radiance: degree * pi / 180
-        // TODO: do these need to be parameters for this emitter, or are they
-        ///      covered by the information in the photon list that's been loaded in?
-        m_cutoff_angle = dr::deg_to_rad(0.01f);
-        m_beam_width   = dr::deg_to_rad(0.01f*3.0f / 4.0f);
-        // if the m_cutoff_angle is equal to m_beam_width, the denominator will be 0, it's impossible!
-        m_inv_transition_width = 1.0f / (m_cutoff_angle - m_beam_width);
-        m_cos_cutoff_angle = dr::cos(m_cutoff_angle);
-        m_cos_beam_width   = dr::cos(m_beam_width);
-        Assert(dr::all(m_cutoff_angle >= m_beam_width));
+
         // Avoid baking
-        dr::make_opaque(m_beam_width, m_cutoff_angle,
-                        m_cos_beam_width, m_cos_cutoff_angle,
-                        m_inv_transition_width, m_transforms);
+        dr::make_opaque(m_transforms);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -210,7 +201,6 @@ public:
                                           Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
         // 1. Sample directional component
-        // TODO: again this is a single direction? Should it be allowed to be multiple?
         ScalarVector3f local_dir =  ScalarVector3f(0.f, 0.f, 1.f);
         Float pdf_dir = 445029;
         // Uniformly sample the light rays
@@ -224,11 +214,11 @@ public:
         auto si = dr::zeros<SurfaceInteraction3f>();
         si.time = time;
         si.p    = Transform4f(transforms).translation();
-        si.uv   = Point2f(0.5,0.5);
+        si.uv   = Point2f(0.5f,0.5f);
         // generate a set of random wavelengths and the corresponding spectral weight
         auto [wavelengths, spec_weight] =
             sample_wavelengths(si, wavelength_sample, active);
-        // TODO: calculate falloff using falloff_curve ?
+        // TODO: rename this to something other than "falloff"
         Float falloff = 1.0f;
         Ray3f result = Ray3f(si.p, new_dir, time, wavelengths);
         return {result, depolarizer<Spectrum>(spec_weight * falloff / pdf_dir)};
@@ -242,7 +232,6 @@ public:
         Matrix4f transforms = dr::gather<Matrix4f>(m_transforms, index);
         DirectionSample3f ds;
         ds.p        = Transform4f(transforms).translation();
-        // ds.p        = m_to_world.value().translation();
         ds.n        = 0.f;
         ds.uv       = 0.f;
         ds.pdf      = 1.f;
@@ -253,7 +242,7 @@ public:
         ds.dist     = dr::norm(ds.d);
         Float inv_dist = dr::rcp(ds.dist);
         ds.d        *= inv_dist;
-        // Vector3f local_d = m_to_world.value().inverse() * -ds.d;
+        // TODO: rename this to something other than "falloff"
         Float falloff = 1.0f;
         active &= falloff > 0.f;  // Avoid invalid texture lookups
 
@@ -310,9 +299,6 @@ public:
         oss << "PhotonEmitter[" << std::endl
             << "  to_world = " << string::indent(m_to_world) << "," << std::endl
             << "  intensity = " << m_intensity << "," << std::endl
-            // TODO: cutoff_angle isn't a parameter, so should it be here?
-            << "  cutoff_angle = " << m_cutoff_angle << "," << std::endl
-            << "  beam_width = " << m_beam_width << "," << std::endl
             << "  medium = " << (m_medium ? string::indent(m_medium) : "")
             << "]";
         return oss.str();
@@ -323,8 +309,6 @@ private:
     Matrix4f m_transforms;
     std::string m_filename;
     ref<Texture> m_intensity;
-    Float m_beam_width, m_cutoff_angle;
-    Float m_cos_beam_width, m_cos_cutoff_angle, m_inv_transition_width;
 };
 
 
