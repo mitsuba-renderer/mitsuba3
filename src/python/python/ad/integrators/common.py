@@ -726,23 +726,22 @@ class RBIntegrator(ADIntegrator):
             # Differentiate sample splatting and weight division steps to
             # retrieve the adjoint radiance (e.g. 'δL')
             with dr.resume_grad():
-                with dr.suspend_grad(pos, ray, weight):
-                    L = dr.full(mi.Spectrum, 1.0, dr.width(ray))
-                    dr.enable_grad(L)
-                    aovs = []
-                    for _ in self.aov_names():
-                        aov = dr.ones(mi.Float, dr.width(ray))
-                        dr.enable_grad(aov)
-                        aovs.append(aov)
-                    splatting_and_backward_gradient_image(
-                        value=L * weight,
-                        weight=1.0,
-                        alpha=1.0,
-                        aovs=[aov * weight for aov in aovs]
-                    )
+                L = dr.full(mi.Spectrum, 1.0, dr.width(ray))
+                dr.enable_grad(L)
+                aovs = []
+                for _ in self.aov_names():
+                    aov = dr.ones(mi.Float, dr.width(ray))
+                    dr.enable_grad(aov)
+                    aovs.append(aov)
+                splatting_and_backward_gradient_image(
+                    value=L * weight,
+                    weight=1.0,
+                    alpha=1.0,
+                    aovs=[aov * weight for aov in aovs]
+                )
 
-                    δL = dr.grad(L)
-                    δaovs = dr.grad(aovs)
+                δL = dr.grad(L)
+                δaovs = dr.grad(aovs)
 
             # Clear the dummy data splatted on the film above
             film.clear()
