@@ -9,6 +9,7 @@ import gc
 import drjit as dr
 import mitsuba as mi
 
+
 re1 = re.compile(r'<built-in method (\w*) of PyCapsule object at 0x[0-9a-f]*>')
 re2 = re.compile(r'<bound method PyCapsule.(\w*)[^>]*>')
 

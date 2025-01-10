@@ -40,6 +40,7 @@ MI_PY_DECLARE(misc);
 // render
 MI_PY_DECLARE(BSDFContext);
 MI_PY_DECLARE(EmitterExtras);
+MI_PY_DECLARE(MediumExtras);
 MI_PY_DECLARE(RayFlags);
 MI_PY_DECLARE(MicrofacetType);
 MI_PY_DECLARE(PhaseFunctionExtras);
@@ -120,6 +121,41 @@ NB_MODULE(mitsuba_ext, m) {
         return Thread::thread()->logger()->log_level();
     }, "Returns the current log level.");
 
+    struct scoped_log_level_py {
+        mitsuba::LogLevel level, backup;
+        scoped_log_level_py(mitsuba::LogLevel ll)
+            : level(ll) {
+            if (!Thread::thread()->logger()) {
+                Throw("No Logger instance is set on the current thread! This is likely due to "
+                      "set_log_level being called from a non-Mitsuba thread. You can manually set a "
+                      "thread's ThreadEnvironment (which includes the logger) using "
+                      "ScopedSetThreadEnvironment e.g.\n"
+                      "# Main thread\n"
+                      "env = mi.ThreadEnvironment()\n"
+                      "# Secondary thread\n"
+                      "with mi.ScopedSetThreadEnvironment(env):\n"
+                      "   mi.set_log_level(mi.LogLevel.Info)\n"
+                      "   mi.Log(mi.LogLevel.Info, 'Message')\n");
+            }
+            backup = Thread::thread()->logger()->log_level();
+        }
+
+        void __enter__() {
+            Thread::thread()->logger()->set_log_level(level);
+        }
+
+        void __exit__(nb::handle, nb::handle, nb::handle) {
+            Thread::thread()->logger()->set_log_level(backup);
+        }
+    };
+
+    nb::class_<scoped_log_level_py>(m, "scoped_log_level",
+    "Context manager, which sets the Mitsuba log level in a local execution scope.")
+        .def(nb::init<mitsuba::LogLevel>(), "level"_a)
+        .def("__enter__", &scoped_log_level_py::__enter__)
+        .def("__exit__", &scoped_log_level_py::__exit__, nb::arg().none(),
+             nb::arg().none(), nb::arg().none());
+
     Jit::static_initialization();
     Class::static_initialization();
     Thread::static_initialization();
@@ -164,6 +200,7 @@ NB_MODULE(mitsuba_ext, m) {
 
     MI_PY_IMPORT(BSDFContext);
     MI_PY_IMPORT(EmitterExtras);
+    MI_PY_IMPORT(MediumExtras);
     MI_PY_IMPORT(RayFlags);
     MI_PY_IMPORT(MicrofacetType);
     MI_PY_IMPORT(PhaseFunctionExtras);

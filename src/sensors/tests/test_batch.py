@@ -76,7 +76,7 @@ def test02_sample_ray(variants_vec_spectral, s_open, s_time):
 
     time = 0.5
     wav_sample = [0.5, 0.33, 0.1]
-    pos_sample = [[0.2, 0.1, 0.6], [0.6, 0.9, 0.2]]
+    pos_sample = [[0.2, 0.1, 0.6], [0.6, 0.9, 0.2], [0.0]*3]
     aperture_sample = 0 # Not being used
 
     ray, spec_weight = camera.sample_ray(time, wav_sample, pos_sample, aperture_sample)
@@ -98,7 +98,7 @@ def test02_sample_ray(variants_vec_spectral, s_open, s_time):
 
     # Check that a [(2*i + 1)/(2 * N), 0.5] for i = 0, 1, ..., #cameras
     # `position_sample` generates a ray that points in the camera direction
-    position_sample = mi.Point2f([0.25, 0.25, 0.75], [0.5, 0.5, 0.5])
+    position_sample = mi.Point3f([0.25, 0.25, 0.75], [0.5, 0.5, 0.5], [0.0]*3)
     ray, _ = camera.sample_ray(0, 0, position_sample, 0)
     direction = dr.zeros(mi.Vector3f, 3)
     dr.scatter(direction, mi.Vector3f(directions[0]), mi.UInt32([0, 1]))

@@ -228,11 +228,28 @@ public:
 
     Float surface_area() const override;
 
-    PositionSample3f sample_position(Float time,
+    Float volume() const override;
+
+    PositionSample3f sample_position_surface(Float time,
                                      const Point2f &sample,
                                      Mask active = true) const override;
 
-    Float pdf_position(const PositionSample3f &ps, Mask active = true) const override;
+    Float pdf_position_surface(const PositionSample3f &ps, Mask active = true) const override;
+
+    DirectionSample3f sample_direction_volume(const Interaction3f &it, const Point3f &sample,
+                                                      Mask active = true) const override;
+
+    std::pair<std::pair<Float, Float>, Float> get_intersection_extents(const Interaction3f &it,
+                                                                       const DirectionSample3f &ds,
+                                                                       Mask active) const;
+
+    Float pdf_direction_volume(const Interaction3f &it, const DirectionSample3f &ds,
+                                       Mask active = true) const override;
+
+    PositionSample3f sample_position_volume(Float time, const Point3f &sample,
+                                             Mask active = true) const override;
+
+    Float pdf_position_volume(const PositionSample3f &ps, Mask active = true) const override;
 
     Point3f barycentric_coordinates(const SurfaceInteraction3f &si,
                                     Mask active = true) const;
@@ -428,6 +445,15 @@ protected:
      */
     void build_parameterization();
 
+    /**
+     * \brief Initialize the \c m_volume_parameterization field for running
+     * ray/object intersections.
+     *
+     * Internally, the function creates a nested scene to leverage optimized
+     * ray tracing functionality in \ref pdf_position_volume()
+     */
+    void build_volume_parameterization();
+
     // Ensures that the sampling table are ready.
     DRJIT_INLINE void ensure_pmf_built() const {
         if (unlikely(m_area_pmf.empty()))
@@ -586,8 +612,12 @@ protected:
     DiscreteDistribution<Float> m_area_pmf;
     std::mutex m_mutex;
 
+    /* Inverse volume of mesh, assumes mesh is watertight -- computed on
+     * demand when \ref prepare_area_pmf() is first called */
+    Float m_inv_volume;
+
     /// Optional: used in eval_parameterization()
-    ref<Scene<Float, Spectrum>> m_parameterization;
+    ref<Scene<Float, Spectrum>> m_parameterization, m_volume_parameterization;
 
     /// Pointer to the scene that owns this mesh
     Scene<Float, Spectrum>* m_scene = nullptr;

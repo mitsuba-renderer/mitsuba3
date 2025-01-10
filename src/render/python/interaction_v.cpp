@@ -97,7 +97,7 @@ MI_PY_EXPORT(SurfaceInteraction) {
 }
 
 MI_PY_EXPORT(MediumInteraction) {
-    MI_PY_IMPORT_TYPES()
+    MI_PY_IMPORT_TYPES(EmitterPtr)
     auto mi =
         nb::class_<MediumInteraction3f, Interaction3f>(m, "MediumInteraction3f",
                                                         D(MediumInteraction))
@@ -108,18 +108,20 @@ MI_PY_EXPORT(MediumInteraction) {
         .def_field(MediumInteraction3f, sigma_s,    D(MediumInteraction, sigma_s))
         .def_field(MediumInteraction3f, sigma_n,    D(MediumInteraction, sigma_n))
         .def_field(MediumInteraction3f, sigma_t,    D(MediumInteraction, sigma_t))
+        .def_field(MediumInteraction3f, radiance,   D(MediumInteraction, radiance))
         .def_field(MediumInteraction3f, combined_extinction, D(MediumInteraction, combined_extinction))
         .def_field(MediumInteraction3f, mint, D(MediumInteraction, mint))
 
         // Methods
         .def(nb::init<>(), D(MediumInteraction, MediumInteraction))
         .def(nb::init<const MediumInteraction3f &>(), "Copy constructor")
+        .def("emitter",  &MediumInteraction3f::emitter, D(MediumInteraction, emitter))
         .def("to_world", &MediumInteraction3f::to_world, "v"_a, D(MediumInteraction, to_world))
         .def("to_local", &MediumInteraction3f::to_local, "v"_a, D(MediumInteraction, to_local))
         .def_repr(MediumInteraction3f);
 
     MI_PY_DRJIT_STRUCT(mi, MediumInteraction3f, t, time, wavelengths, p, n,
-                       medium, sh_frame, wi, sigma_s, sigma_n, sigma_t,
+                       medium, sh_frame, wi, sigma_s, sigma_n, sigma_t, radiance,
                        combined_extinction, mint)
 }
 

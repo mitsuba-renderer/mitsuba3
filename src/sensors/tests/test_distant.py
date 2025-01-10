@@ -104,10 +104,10 @@ def test_sample_ray_direction(variant_scalar_rgb, direction):
 
     # Check that directions are appropriately set
     for (sample1, sample2) in [
-        [[0.32, 0.87], [0.16, 0.44]],
-        [[0.17, 0.44], [0.22, 0.81]],
-        [[0.12, 0.82], [0.99, 0.42]],
-        [[0.72, 0.40], [0.01, 0.61]],
+        [[0.32, 0.87, 0.0], [0.16, 0.44]],
+        [[0.17, 0.44, 0.0], [0.22, 0.81]],
+        [[0.12, 0.82, 0.0], [0.99, 0.42]],
+        [[0.72, 0.40, 0.0], [0.01, 0.61]],
     ]:
         ray, _ = sensor.sample_ray(1.0, 1.0, sample1, sample2, True)
 

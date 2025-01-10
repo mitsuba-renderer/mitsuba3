@@ -141,28 +141,50 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
                 return shape->ray_test(ray, 0, active);
             },
             "ray"_a, "active"_a = true, D(Shape, ray_test))
-       .def("sample_position",
+       .def("sample_position_surface",
             [](Ptr shape, Float time, const Point2f &sample, Mask active) {
-                return shape->sample_position(time, sample, active);
+                return shape->sample_position_surface(time, sample, active);
             },
-            "time"_a, "sample"_a, "active"_a = true, D(Shape, sample_position))
-       .def("pdf_position",
+            "time"_a, "sample"_a, "active"_a = true, D(Shape, sample_position_surface))
+       .def("pdf_position_surface",
             [](Ptr shape, const PositionSample3f &ps, Mask active) {
-                return shape->pdf_position(ps, active);
+                return shape->pdf_position_surface(ps, active);
             },
-            "ps"_a, "active"_a = true, D(Shape, pdf_position))
-       .def("sample_direction",
+            "ps"_a, "active"_a = true, D(Shape, pdf_position_surface))
+       .def("sample_position_volume",
+            [](Ptr shape, Float time, const Point3f &sample, Mask active) {
+                return shape->sample_position_volume(time, sample, active);
+            },
+            "time"_a, "sample"_a, "active"_a = true, D(Shape, sample_position_volume))
+       .def("pdf_position_volume",
+            [](Ptr shape, const PositionSample3f &ps, Mask active) {
+                return shape->pdf_position_volume(ps, active);
+            },
+            "ps"_a, "active"_a = true, D(Shape, pdf_position_volume))
+       .def("sample_direction_surface",
             [](Ptr shape, const Interaction3f &it, const Point2f &sample,
                Mask active) {
-                return shape->sample_direction(it, sample, active);
+                return shape->sample_direction_surface(it, sample, active);
             },
-            "it"_a, "sample"_a, "active"_a = true, D(Shape, sample_direction))
-       .def("pdf_direction",
+            "it"_a, "sample"_a, "active"_a = true, D(Shape, sample_direction_surface))
+       .def("pdf_direction_surface",
             [](Ptr shape, const Interaction3f &it, const DirectionSample3f &ds,
                Mask active) {
-                return shape->pdf_direction(it, ds, active);
+                return shape->pdf_direction_surface(it, ds, active);
             },
-            "it"_a, "ps"_a, "active"_a = true, D(Shape, pdf_direction))
+            "it"_a, "ds"_a, "active"_a = true, D(Shape, pdf_direction_surface))
+       .def("sample_direction_volume",
+            [](Ptr shape, const Interaction3f &it, const Point3f &sample,
+               Mask active) {
+                return shape->sample_direction_volume(it, sample, active);
+            },
+            "it"_a, "sample"_a, "active"_a = true, D(Shape, sample_direction_volume))
+       .def("pdf_direction_volume",
+            [](Ptr shape, const Interaction3f &it, const DirectionSample3f &ds,
+               Mask active) {
+                return shape->pdf_direction_volume(it, ds, active);
+            },
+            "it"_a, "ds"_a, "active"_a = true, D(Shape, pdf_direction_volume))
        .def("silhouette_discontinuity_types",
             [](Ptr shape) {
                 return shape->silhouette_discontinuity_types();
@@ -216,7 +238,12 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             [](Ptr shape) {
                 return shape->surface_area();
             },
-            D(Shape, surface_area));
+            D(Shape, surface_area))
+       .def("volume",
+            [](Ptr shape) {
+                return shape->volume();
+            },
+            D(Shape, volume));
 }
 
 template <typename Ptr, typename Cls> void bind_mesh_generic(Cls &cls) {

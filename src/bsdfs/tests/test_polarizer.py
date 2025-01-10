@@ -209,7 +209,7 @@ def test04_path_tracer_polarizer(variant_scalar_mono_polarized):
         sampler.seed(0)
 
         # Sample ray from sensor
-        ray, _ = sensor.sample_ray_differential(0.0, 0.5, [0.5, 0.5], [0.5, 0.5])
+        ray, _ = sensor.sample_ray_differential(0.0, 0.5, [0.5, 0.5, 0.0], [0.5, 0.5])
 
         # Call integrator
         value, _, _ = integrator.sample(scene, sampler, ray)
@@ -311,7 +311,7 @@ def test05_path_tracer_malus_law(variant_scalar_mono_polarized):
         sampler.seed(0)
 
         # Sample ray from sensor
-        ray, _ = sensor.sample_ray_differential(0.0, 0.5, [0.5, 0.5], [0.5, 0.5])
+        ray, _ = sensor.sample_ray_differential(0.0, 0.5, [0.5, 0.5, 0.0], [0.5, 0.5])
 
         # Call integrator
         value, _, _ = integrator.sample(scene, sampler, ray)
