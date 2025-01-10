@@ -100,7 +100,7 @@ more complex example:
              (compact) binary representation -->
         <shape type="serialized">
             <string name="filename" value="lightsource.serialized"/>
-            <transform name="toWorld">
+            <transform name="to_world">
                 <translate x="5" y="-3" z="1"/>
             </transform>
 
