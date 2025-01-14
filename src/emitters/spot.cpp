@@ -197,7 +197,6 @@ public:
         active &= falloff > 0.f;  // Avoid invalid texture lookups
 
         SurfaceInteraction3f si      = dr::zeros<SurfaceInteraction3f>();
-        si.t                         = 0.f;
         si.time                      = it.time;
         si.wavelengths               = it.wavelengths;
         si.p                         = ds.p;
@@ -260,7 +259,6 @@ public:
         active &= falloff > 0.f;  // Avoid invalid texture lookups
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
-        si.t                    = 0.f;
         si.time                 = it.time;
         si.wavelengths          = it.wavelengths;
         si.p                    = ds.p;
