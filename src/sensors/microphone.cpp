@@ -113,7 +113,7 @@ public:
         ds.n = -ds.d;
         ds.delta = Mask(true);
         // dir in local space
-        auto d_local = trafo_inv * ds.n;
+        Vector3f d_local = trafo_inv * ds.n;
         // Set to sample point that would produce it. Is this rational? Is the microphone point parameterized?
         ds.uv = warp::von_mises_fisher_to_square(d_local, m_kappa);
 
