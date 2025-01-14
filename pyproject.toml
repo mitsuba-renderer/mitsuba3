@@ -16,7 +16,7 @@ description = "Mitsuba 3: A Retargetable Forward and Inverse Renderer"
 readme = "README.md"
 dependencies = [
   "typing_extensions>=4.12;python_version<\"3.11\"",
-  "drjit==1.0.1",
+  "drjit==1.0.2",
 ]
 requires-python = ">=3.8"
 authors = [
