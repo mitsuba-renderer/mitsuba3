@@ -5,6 +5,18 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`_ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
+Incoming changes
+-----------------
+
+- Improve robustness of parallel scene loading
+  `[8d48f58] <https://github.com/mitsuba-renderer/mitsuba3/commit/8d48f585f07c6559d9aa346507b5e0c007c02513>`_
+- Fixes to ``mi.sample_tea_float``
+  `[fd16fbe] <https://github.com/mitsuba-renderer/mitsuba3/commit/fd16fbe2e711379bfb36c3d8bcd5bb066ad0ae82>`_
+- Support for complex numbers or quaternions in ``mi.ad.Adam`` optimizer
+  `[eff5bf6] <https://github.com/mitsuba-renderer/mitsuba3/commit/eff5bf6eae8cc5448af0193f7be0d0cdbf9c41d2>`_
+- Improved error message when ``mi.load_dict`` fails
+  `[7db5401] <https://github.com/mitsuba-renderer/mitsuba3/commit/7db5401dcdbdcee70fd28b0736313f1365f279f8>`_
+
 Mitsuba 3.6.0
 -------------
 
