@@ -135,6 +135,34 @@ def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_
     assert dr.allclose(ray.d, trafo @ local_dir)
     assert dr.allclose(ray.o, lookat.translation())
 
+@pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
+@pytest.mark.parametrize("it_pos", [[2.0, 0.5, 0.0], [1.0, 0.5, -5.0]])
+@pytest.mark.parametrize("wavelength_sample", [0.7])
+@pytest.mark.parametrize("cutoff_angle", [20, 80])
+@pytest.mark.parametrize("lookat", lookat_transforms)
+def test_eval_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelength_sample, cutoff_angle, lookat):
+    """ Check the correctness of the sample_direction() method """
+
+    cutoff_angle_rad = cutoff_angle / 180 * dr.pi
+    beam_width_rad = cutoff_angle_rad * 0.75
+    inv_transition_width = 1 / (cutoff_angle_rad - beam_width_rad)
+    emitter, spectrum = create_emitter_and_spectrum(lookat, cutoff_angle, spectrum_key)
+    eval_t = 0.3
+    trafo = mi.Transform4f(emitter.world_transform())
+
+    # Create a surface iteration
+    it = dr.zeros(mi.SurfaceInteraction3f)
+    it.p = it_pos
+    it.time = eval_t
+
+    # Sample a wavelength from spectrum
+    wav, spec = spectrum.sample_spectrum(it, mi.sample_shifted(wavelength_sample))
+    it.wavelengths = wav
+
+    # Sample a direction from the emitter
+    ds, res = emitter.sample_direction(it, [0, 0])
+
+    assert dr.allclose(emitter.eval_direction(it, ds), res)
 
 @pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
 @pytest.mark.parametrize("cutoff_angle", [20, 60])

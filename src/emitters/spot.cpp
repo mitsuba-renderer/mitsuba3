@@ -197,7 +197,6 @@ public:
         active &= falloff > 0.f;  // Avoid invalid texture lookups
 
         SurfaceInteraction3f si      = dr::zeros<SurfaceInteraction3f>();
-        si.t                         = 0.f;
         si.time                      = it.time;
         si.wavelengths               = it.wavelengths;
         si.p                         = ds.p;
@@ -247,6 +246,30 @@ public:
         }
 
         return { wav, weight };
+    }
+
+    Spectrum eval_direction(const Interaction3f &it,
+                            const DirectionSample3f &ds,
+                            Mask active) const override {
+        Float inv_dist = dr::rcp(ds.dist);
+        Vector3f local_d = m_to_world.value().inverse() * -ds.d;
+
+        // Evaluate emitted radiance & falloff profile
+        Float falloff = falloff_curve(local_d, active);
+        active &= falloff > 0.f;  // Avoid invalid texture lookups
+
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        si.time                 = it.time;
+        si.wavelengths          = it.wavelengths;
+        si.p                    = ds.p;
+
+        UnpolarizedSpectrum radiance = m_intensity->eval(si, active);
+        if (m_texture->is_spatially_varying()) {
+            si.uv = direction_to_uv(local_d);
+            radiance *= m_texture->eval(si, active);
+        }
+
+        return depolarizer<Spectrum>(radiance & active) * (falloff * dr::sqr(inv_dist));
     }
 
     Spectrum eval(const SurfaceInteraction3f &, Mask) const override {
