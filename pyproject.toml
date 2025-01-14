@@ -2,7 +2,7 @@
 requires = [
     "scikit-build-core",
     "nanobind==2.2.0",
-    "drjit==1.0.1",
+    "drjit==1.0.2",
     "typing_extensions>=4.12",
     "hatch-fancy-pypi-readme",
 ]
