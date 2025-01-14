@@ -98,21 +98,28 @@ public:
     }
 
     std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &it, const Point2f &sample, Mask /* active */) const override {
+    sample_direction(const Interaction3f &it, const Point2f &, Mask /* active */) const override {        
+        Transform4f trafo = m_to_world.value();
+        Transform4f trafo_inv = trafo.inverse();
+
         DirectionSample3f ds = dr::zeros<PositionSample3f>();
-        ds.p = m_to_world.value().translation(),
+        ds.p = trafo.translation(),
         ds.d = ds.p - it.p;
 
         Float dist_squared = dr::squared_norm(ds.d);
         ds.dist = dr::sqrt(dist_squared);
         ds.d /= ds.dist;
 
-        // TODO (UF): I think this is wrong, we should provide the normal of the hit, which is the direction -ds.d?
-        ds.n = m_to_world.value() * warp::square_to_uniform_cone(sample, m_kappa);
+        ds.n = -ds.d;
         ds.delta = Mask(true);
-        ds.uv = sample;
+        // dir in local space
+        auto d_local = trafo_inv * ds.n;
+        // Set to sample point that would produce it. Is this rational? Is the microphone point parameterized?
+        ds.uv = warp::von_mises_fisher_to_square(d_local, m_kappa);
 
-        return { ds, dr::Pi<ScalarFloat> };
+        Spectrum wav_weight(warp::square_to_von_mises_fisher_pdf(d_local, m_kappa));
+
+        return { ds, wav_weight };
     }
 
     ScalarBoundingBox3f bbox() const override {
