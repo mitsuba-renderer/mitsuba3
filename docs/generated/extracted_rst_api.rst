@@ -20852,13 +20852,13 @@
 
 .. py:function:: mitsuba.sample_tea_float
 
-    sample_tea_float64(v0: int, v1: int, rounds: int = 4) -> float
-    sample_tea_float64(v0: drjit.llvm.ad.UInt, v1: drjit.llvm.ad.UInt, rounds: int = 4) -> drjit.llvm.ad.Float64
+    sample_tea_float32(v0: int, v1: int, rounds: int = 4) -> float
+    sample_tea_float32(v0: drjit.llvm.ad.UInt, v1: drjit.llvm.ad.UInt, rounds: int = 4) -> drjit.llvm.ad.Float
 
     Generate fast and reasonably good pseudorandom numbers using the Tiny
     Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
 
-    This function uses sample_tea to return double precision floating
+    This function uses sample_tea to return single precision floating
     point numbers on the interval ``[0, 1)``
 
     Parameter ``v0``:
