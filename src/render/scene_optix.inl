@@ -22,7 +22,8 @@ NAMESPACE_BEGIN(mitsuba)
 #  define strdup(x) _strdup(x)
 #endif
 
-static constexpr size_t MAX_PROGRAM_GROUP_COUNT = 2 + OPTIX_SHAPE_TYPE_COUNT;
+/// Number of optix program groups (miss, meshes, ellispoidsmeshes, ... customs ...)
+static constexpr size_t MAX_PROGRAM_GROUP_COUNT = 3 + OPTIX_SHAPE_TYPE_COUNT;
 
 // Per scene OptiX state data structure
 struct OptixSceneState {
@@ -57,16 +58,20 @@ struct OptixConfig {
     char *custom_shapes_program_names[2 * OPTIX_SHAPE_TYPE_COUNT];
     std::unordered_map<size_t, size_t> program_index_mapping;
     uint32_t pipeline_jit_index;
+    bool has_only_meshes;
 };
 
 // Array storing previously initialized optix configurations
-static constexpr int32_t OPTIX_CONFIG_COUNT = 32;
+static constexpr int32_t OPTIX_CONFIG_COUNT = 64;
 static OptixConfig optix_configs[OPTIX_CONFIG_COUNT] = {};
 
 size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
-                         bool has_bspline_curves, bool has_linear_curves) {
+                         bool has_bspline_curves, bool has_linear_curves,
+                         bool has_ellipsoid_meshes) {
     // Compute config index in optix_configs based on required set of features
     size_t config_index =
+        // WARNING: make sure to update OPTIX_CONFIG_COUNT if you change this!
+        (has_ellipsoid_meshes ? 32 : 0) +
         (has_bspline_curves ? 16 : 0) +
         (has_linear_curves ? 8 : 0) +
         (has_instances ? 4 : 0) +
@@ -102,8 +107,9 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
 
         bool at_least_two_gas = [&]() {
             uint32_t counter = 0;
-            for (bool has_gas : { has_meshes, has_bspline_curves,
-                                  has_linear_curves, has_others })
+            for (bool has_gas :
+                 { has_meshes, has_ellipsoid_meshes, has_bspline_curves,
+                   has_linear_curves, has_others })
                 if (has_gas)
                     if (++counter >= 2)
                         return true;
@@ -129,7 +135,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
     #endif
 
         unsigned int prim_flags = 0;
-        if (has_meshes)
+        if (has_meshes || has_ellipsoid_meshes)
             prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
         if (has_others)
             prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
@@ -139,6 +145,8 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
             prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_LINEAR;
 
         config.pipeline_compile_options.usesPrimitiveTypeFlags = prim_flags;
+
+        config.has_only_meshes = !at_least_two_gas && has_meshes;
 
         // =====================================================
         // Logging infrastructure for pipeline setup
@@ -242,6 +250,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
         pgd[pgd_index].kind = OPTIX_PROGRAM_GROUP_KIND_MISS;
         pgd[pgd_index].miss.module = config.main_module;
         pgd[pgd_index].miss.entryFunctionName  = "__miss__ms";
+
         if (has_meshes) {
             pgd_index++;
             pgd[pgd_index].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
@@ -250,7 +259,17 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
             config.program_index_mapping[1] = pgd_index;
         }
 
+        if (has_ellipsoid_meshes) {
+            pgd_index++;
+            pgd[pgd_index].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+            pgd[pgd_index].hitgroup.moduleCH = config.main_module;
+            pgd[pgd_index].hitgroup.entryFunctionNameCH = "__closesthit__ellipsoidsmesh";
+            config.program_index_mapping[2] = pgd_index;
+        }
+
         for (size_t i = 0; i < OPTIX_SHAPE_TYPE_COUNT; i++) {
+            pgd[3+i].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+
             OptixShapeType optix_shape_type = OPTIX_SHAPE_ORDER[i];
             if (optix_shape_type == BSplineCurve && has_bspline_curves)
                 pgd_index++;
@@ -272,7 +291,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
                 config.custom_shapes_program_names[2 * i + 1] =
                     strdup(optix_shape.is_name().c_str());
 
-            config.program_index_mapping[2+i] = pgd_index;
+            config.program_index_mapping[3+i] = pgd_index;
             pgd[pgd_index].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
             pgd[pgd_index].hitgroup.moduleCH = config.main_module;
             pgd[pgd_index].hitgroup.entryFunctionNameCH = config.custom_shapes_program_names[2*i];
@@ -407,29 +426,33 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
             bool has_instances = false;
             bool has_bspline_curves = false;
             bool has_linear_curves = false;
+            bool has_ellipsoids_meshes = false;
 
             for (auto& shape : m_shapes) {
                 uint32_t type = shape->shape_type();
 
-                has_meshes           |= (type == +ShapeType::Mesh);
-                has_instances        |= (type == +ShapeType::Instance);
-                has_bspline_curves   |= (type == +ShapeType::BSplineCurve);
-                has_linear_curves    |= (type == +ShapeType::LinearCurve);
-                has_others           |= (type != +ShapeType::Mesh) &&
-                                        (type != +ShapeType::Instance) &&
-                                        (type != +ShapeType::BSplineCurve) &&
-                                        (type != +ShapeType::LinearCurve);
+                has_meshes            |= shape->is_mesh() && (type != +ShapeType::Ellipsoids);
+                has_ellipsoids_meshes |= shape->is_mesh() && (type == +ShapeType::Ellipsoids);
+                has_instances         |= (type == +ShapeType::Instance);
+                has_bspline_curves    |= (type == +ShapeType::BSplineCurve);
+                has_linear_curves     |= (type == +ShapeType::LinearCurve);
+                has_others            |= (type != +ShapeType::Mesh) &&
+                                         (type != +ShapeType::Instance) &&
+                                         (type != +ShapeType::BSplineCurve) &&
+                                         (type != +ShapeType::LinearCurve);
             }
 
             for (auto& shape : m_shapegroups) {
-                has_meshes |= shape->has_meshes();
-                has_bspline_curves |= shape->has_bspline_curves();
-                has_linear_curves |= shape->has_linear_curves();
-                has_others |= shape->has_others();
+                has_meshes            |= shape->has_meshes();
+                has_ellipsoids_meshes |= shape->has_ellipsoids_meshes();
+                has_bspline_curves    |= shape->has_bspline_curves();
+                has_linear_curves     |= shape->has_linear_curves();
+                has_others            |= shape->has_others();
             }
 
-            s.config_index = init_optix_config(has_meshes, has_others,
-                has_instances, has_bspline_curves, has_linear_curves);
+            s.config_index = init_optix_config(has_meshes, has_others, has_instances,
+                                               has_bspline_curves, has_linear_curves,
+                                               has_ellipsoids_meshes);
             const OptixConfig &config = optix_configs[s.config_index];
 
             // =====================================================
@@ -638,6 +661,7 @@ MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
 
 MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
+                                                      uint32_t ray_flags_,
                                                       Mask active) const {
     if constexpr (dr::is_cuda_v<Float>) {
         OptixSceneState &s = *(OptixSceneState *) m_accel;
@@ -645,6 +669,12 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
 
         UInt32 ray_mask(255), ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT),
                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
+
+        // TODO currently the logic doesn't work for a single IAS, hence the check below
+        if (!config.has_only_meshes) {
+            if (has_flag(ray_flags_, RayFlags::BackfaceCulling))
+                ray_flags |= OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES;
+        }
 
         UInt32 payload_t(0),
                payload_prim_u(0),
@@ -737,6 +767,12 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
         UInt32 payload_hit(1);
+
+        // Enforce backface culling, which is only enabled on the EllipsoidsMesh IAS
+        // TODO this could be enabled/disabled using a flag argument to this method.
+        // TODO currently the logic doesn't work for a single IAS, hence the check below
+        if (!config.has_only_meshes)
+            ray_flags |= OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES;
 
         using Single = dr::float32_array_t<Float>;
         dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);

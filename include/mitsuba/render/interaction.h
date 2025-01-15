@@ -53,6 +53,9 @@ enum class RayFlags : uint32_t {
     /// Derivatives of the SurfaceInteraction fields ignore shape's motion
     DetachShape = 0x100,
 
+    /// Enable backface culling
+    BackfaceCulling = 0x200,
+
     // =============================================================
     //!                 Compound compute flags
     // =============================================================
@@ -495,7 +498,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      *      Flags specifying which information should be computed
      */
     void finalize_surface_interaction(
-        const PreliminaryIntersection<Float, Shape> &pi, const Ray3f &ray,
+        const PreliminaryIntersection<Float, Shape> & /*pi*/, const Ray3f &ray,
         uint32_t ray_flags, Mask active) {
         dr::masked(t, !active) = dr::Infinity<Float>;
         active &= is_valid();
@@ -503,7 +506,6 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         dr::masked(shape, !active)    = nullptr;
         dr::masked(instance, !active) = nullptr;
 
-        prim_index  = pi.prim_index;
         time        = ray.time;
         wavelengths = ray.wavelengths;
 

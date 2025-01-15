@@ -164,7 +164,7 @@ public:
 
             update();
         }
-        Base::parameters_changed();
+        Base::parameters_changed(keys);
     }
 
     Float surface_area() const override {
@@ -572,6 +572,8 @@ public:
                                 dr::fmadd(prim_uv.y(), 0.5f, 0.5f));
 
         si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
+
+        si.prim_index = pi.prim_index;
         si.shape    = this;
         si.instance = nullptr;
 
