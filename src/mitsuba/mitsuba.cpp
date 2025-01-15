@@ -356,7 +356,7 @@ int main(int argc, char *argv[]) {
             // Try and parse a scene from the passed file.
             std::vector<ref<Object>> parsed =
                 xml::load_file(arg_extra->as_string(), mode, params,
-                               *arg_update, false);
+                               *arg_update, true);
 
             if (parsed.size() != 1)
                 Throw("Root element of the input file is expanded into "
