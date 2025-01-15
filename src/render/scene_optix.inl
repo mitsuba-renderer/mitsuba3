@@ -38,7 +38,7 @@ struct MiOptixSceneState {
 };
 
 /// Maximum number of OptiX program groups that can be instantiated by any kernel
-#define MI_MAX_PROGRAM_GROUPS  7
+#define MI_MAX_PROGRAM_GROUPS  8
 
 
 /**
@@ -281,6 +281,13 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types) {
         pgd[pg_count].hitgroup.entryFunctionNameIS = "__intersection__sdfgrid";
         pgd[pg_count].hitgroup.moduleIS = config.main_module;
         config.pg_mapping[ShapeType::SDFGrid] = pg_count++;
+    }
+
+    if (shape_types & (uint32_t) ShapeType::Ellipsoids) {
+        pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+        pgd[pg_count].hitgroup.entryFunctionNameIS = "__intersection__ellipsoids";
+        pgd[pg_count].hitgroup.moduleIS = config.main_module;
+        config.pg_mapping[ShapeType::Ellipsoids] = pg_count++;
     }
 
     // Note: adding further hit groups will likely require bumping
@@ -691,6 +698,10 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
                          OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
                          OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
+
+        // Enforce backface culling, which is only enabled on EllipsoidsMesh
+        // instances.
+        ray_flags |= OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES;
 
         using Single = dr::float32_array_t<Float>;
         dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);

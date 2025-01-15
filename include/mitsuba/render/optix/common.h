@@ -39,6 +39,7 @@ constexpr float Pi       = float(3.14159265358979323846);
 constexpr float TwoPi    = float(6.28318530717958647692);
 constexpr float InvPi    = float(0.31830988618379067154);
 constexpr float InvTwoPi = float(0.15915494309189533577);
+constexpr float SqrtTwo  = float(1.41421356237309504880);
 
 using namespace optix;
 

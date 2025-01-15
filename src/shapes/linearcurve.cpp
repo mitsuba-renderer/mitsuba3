@@ -334,7 +334,7 @@ public:
 
         // It seems that the `v_local` given by Embree and OptiX has already
         // taken into account the changing radius: `v_local` is shifted such
-        // that the normal can be easily computed as `si.p - c`, 
+        // that the normal can be easily computed as `si.p - c`,
         // where `c = (1 - c_local) * cp1 + v_local * cp2`
         UInt32 idx = dr::gather<UInt32>(m_indices, prim_idx, active);
         Point4f c0 = dr::gather<Point4f>(m_control_points, idx, active),
@@ -344,7 +344,7 @@ public:
 
         Vector3f u_rot, u_rad;
         std::tie(u_rot, u_rad) = local_frame(dr::normalize(p1 - p0));
-        
+
         Point3f c = p0 * (1.f - v_local) + p1 * v_local;
         si.n = si.sh_frame.n = dr::normalize(si.p - c);
 
@@ -361,6 +361,7 @@ public:
             si.uv = Point2f(u, v);
         }
 
+        si.prim_index = pi.prim_index;
         si.shape    = this;
         si.instance = nullptr;
 
@@ -518,4 +519,3 @@ private:
 MI_IMPLEMENT_CLASS_VARIANT(LinearCurve, Shape)
 MI_EXPORT_PLUGIN(LinearCurve, "Linear curve intersection primitive");
 NAMESPACE_END(mitsuba)
-

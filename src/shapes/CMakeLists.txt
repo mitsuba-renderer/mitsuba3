@@ -18,6 +18,9 @@ add_plugin(shapegroup   shapegroup.cpp)
 add_plugin(instance     instance.cpp)
 add_plugin(merge        merge.cpp)
 
+add_plugin(ellipsoids ellipsoids.cpp)
+add_plugin(ellipsoidsmesh ellipsoidsmesh.cpp)
+
 if (MI_ENABLE_EMBREE)
     target_link_libraries(sphere   PRIVATE embree)
     target_link_libraries(instance PRIVATE embree)

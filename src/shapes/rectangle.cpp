@@ -250,7 +250,7 @@ public:
 
             initialize();
         }
-        Base::parameters_changed();
+        Base::parameters_changed(keys);
     }
 
     SurfaceInteraction3f eval_parameterization(const Point2f &uv, uint32_t, Mask active) const override {
@@ -605,7 +605,6 @@ public:
 
     //! @}
     // =============================================================
-
 
     std::string to_string() const override {
         std::ostringstream oss;
