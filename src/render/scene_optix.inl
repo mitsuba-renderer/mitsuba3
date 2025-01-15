@@ -714,7 +714,7 @@ MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
                                           Mask active) const {
     if constexpr (dr::is_cuda_v<Float>) {
-        PreliminaryIntersection3f pi = ray_intersect_preliminary_gpu(ray, active);
+        PreliminaryIntersection3f pi = ray_intersect_preliminary_gpu(ray, ray_flags, active);
         return pi.compute_surface_interaction(ray, ray_flags, active);
     } else {
         DRJIT_MARK_USED(ray);
