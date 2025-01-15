@@ -5556,6 +5556,8 @@ discontinuities)doc";
 
 static const char *__doc_mitsuba_ParamFlags_NonDifferentiable = R"doc(Tracking gradients w.r.t. this parameter is not allowed)doc";
 
+static const char *__doc_mitsuba_ParamFlags_ReadOnly = R"doc()doc";
+
 static const char *__doc_mitsuba_PhaseFunction = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunction_2 = R"doc()doc";
@@ -6406,6 +6408,8 @@ differentiable with respect to the shapes parameters.)doc";
 static const char *__doc_mitsuba_RayFlags_All = R"doc(//! Compound compute flags)doc";
 
 static const char *__doc_mitsuba_RayFlags_AllNonDifferentiable = R"doc(Compute all fields of the surface interaction ignoring shape's motion)doc";
+
+static const char *__doc_mitsuba_RayFlags_BackfaceCulling = R"doc(Enable backface culling)doc";
 
 static const char *__doc_mitsuba_RayFlags_DetachShape = R"doc(Derivatives of the SurfaceInteraction fields ignore shape's motion)doc";
 
@@ -7687,6 +7691,8 @@ static const char *__doc_mitsuba_ShapeKDTree_shape_count = R"doc(Return the numb
 static const char *__doc_mitsuba_ShapeKDTree_to_string = R"doc(Return a human-readable string representation of the scene contents.)doc";
 
 static const char *__doc_mitsuba_ShapeType = R"doc(Enumeration of all shape types in Mitsuba)doc";
+
+static const char *__doc_mitsuba_ShapeType_Ellipsoids = R"doc(Ellipsoids (`ellipsoids`))doc";
 
 static const char *__doc_mitsuba_ShapeType_BSplineCurve = R"doc(B-Spline curves (`bsplinecurve`))doc";
 
@@ -12933,4 +12939,3 @@ static const char *__doc_operator_lshift = R"doc(Turns a vector of elements into
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif
-

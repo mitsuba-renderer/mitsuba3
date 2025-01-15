@@ -11,7 +11,8 @@ MI_PY_EXPORT(Object) {
     auto e = nb::enum_<ParamFlags>(m, "ParamFlags", nb::is_arithmetic(), D(ParamFlags))
         .def_value(ParamFlags, Differentiable)
         .def_value(ParamFlags, NonDifferentiable)
-        .def_value(ParamFlags, Discontinuous);
+        .def_value(ParamFlags, Discontinuous)
+        .def_value(ParamFlags, ReadOnly);
 
     nb::class_<Class>(m, "Class", D(Class))
         .def_method(Class, name)
