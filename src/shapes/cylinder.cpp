@@ -184,7 +184,7 @@ public:
             update();
         }
 
-        Base::parameters_changed();
+        Base::parameters_changed(keys);
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -761,6 +761,7 @@ public:
             si.dn_dv = Vector3f(0.f);
         }
 
+        si.prim_index = pi.prim_index;
         si.shape    = this;
         si.instance = nullptr;
 

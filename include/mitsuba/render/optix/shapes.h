@@ -7,6 +7,7 @@
 #include "disk.cuh"
 #include "sdfgrid.cuh"
 #include "sphere.cuh"
+#include "ellipsoids.cuh"
 #else
 
 #include <drjit-core/optix.h>
@@ -25,12 +26,14 @@ struct MiOptixAccelData {
         uint32_t count = 0u;
     };
     HandleData meshes;
+    HandleData ellipsoids_meshes; // Separate from `meshes`, as we'll want to enable face culling
     HandleData bspline_curves;
     HandleData linear_curves;
     HandleData custom_shapes;
 
     ~MiOptixAccelData() {
         if (meshes.buffer) jit_free(meshes.buffer);
+        if (ellipsoids_meshes.buffer) jit_free(ellipsoids_meshes.buffer);
         if (bspline_curves.buffer) jit_free(bspline_curves.buffer);
         if (linear_curves.buffer) jit_free(linear_curves.buffer);
         if (custom_shapes.buffer) jit_free(custom_shapes.buffer);
@@ -38,7 +41,7 @@ struct MiOptixAccelData {
 };
 
 /// Highest bit that may be set in a ShapeType flag vector
-#define MI_SHAPE_TYPE_HIGHEST_BIT 7
+#define MI_SHAPE_TYPE_HIGHEST_BIT 10
 
 // Map ShapeType to an OptiX program group
 struct OptixProgramGroupMapping {
@@ -76,17 +79,24 @@ void fill_hitgroup_records(
     const OptixProgramGroup *pg,
     const OptixProgramGroupMapping& pg_mapping) {
 
-    // Fill records in this order: meshes, b-spline curves, linear curves, other
+    // In order to match the IAS indexing (see `prepare_ias()`), records must be
+    // filled out in the following order: meshes, ellipsoids meshes, bspline
+    // curves, linear curves, custom shapes
     struct {
         size_t idx(const ref<Shape>& shape) const {
             uint32_t type = (uint32_t) shape->shape_type();
-            if (type & ShapeType::Mesh)
-                return 0;
-            if (type & ShapeType::BSplineCurve)
-                return 1;
-            if (type & ShapeType::LinearCurve)
+            if (type & ShapeType::Mesh) {
+                if (type != +ShapeType::EllipsoidsMesh)
+                    return 0;
+                else
+                    return 1;
+            } else if (type & ShapeType::BSplineCurve) {
                 return 2;
-            return 3;
+            } else if (type & ShapeType::LinearCurve) {
+                return 3;
+            } else {
+                return 4;
+            }
         };
 
         bool operator()(const ref<Shape> &a, const ref<Shape> &b) const {
@@ -116,12 +126,14 @@ void build_gas(const OptixDeviceContext &context,
                MiOptixAccelData& out_accel) {
 
     // Separate geometry types
-    std::vector<ref<Shape>> meshes, bspline_curves,
+    std::vector<ref<Shape>> meshes, ellipsoids_meshes, bspline_curves,
         linear_curves, custom_shapes;
     for (auto shape : shapes) {
         uint32_t type = (uint32_t) shape->shape_type();
-        if (type & ShapeType::Mesh)
+        if (type & ShapeType::Mesh && type != +ShapeType::Ellipsoids)
             meshes.push_back(shape);
+        else if (type & ShapeType::EllipsoidsMesh)
+            ellipsoids_meshes.push_back(shape);
         else if (type & ShapeType::BSplineCurve)
             bspline_curves.push_back(shape);
         else if (type & ShapeType::LinearCurve)
@@ -218,7 +230,9 @@ void build_gas(const OptixDeviceContext &context,
 
     scoped_optix_context guard;
 
+    // The order of the following function calls does NOT matter
     build_single_gas(meshes, out_accel.meshes);
+    build_single_gas(ellipsoids_meshes, out_accel.ellipsoids_meshes);
     build_single_gas(bspline_curves, out_accel.bspline_curves);
     build_single_gas(linear_curves, out_accel.linear_curves);
     build_single_gas(custom_shapes, out_accel.custom_shapes);
@@ -242,20 +256,31 @@ void prepare_ias(const OptixDeviceContext &context,
                     (float) transf.matrix(2, 0), (float) transf.matrix(2, 1),
                     (float) transf.matrix(2, 2), (float) transf.matrix(2, 3) };
 
-    auto build_optix_instance = [&](const MiOptixAccelData::HandleData &handle) {
+    auto build_optix_instance = [&](const MiOptixAccelData::HandleData &handle,
+                                    bool disable_face_culling = true) {
+
+        // Here we are forcing backface culling to be disabled for meshes other
+        // than EllipsoidsMeshes.
+        uint32_t flags = disable_face_culling ?
+                         OPTIX_INSTANCE_FLAG_DISABLE_TRIANGLE_FACE_CULLING :
+                         OPTIX_INSTANCE_FLAG_NONE;
+
         if (handle.handle) {
             OptixInstance instance = {
                 { T[0], T[1], T[2], T[3], T[4], T[5], T[6], T[7], T[8], T[9], T[10], T[11] },
                 instance_id, sbt_offset, /* visibilityMask = */ 255,
-                OPTIX_INSTANCE_FLAG_NONE, handle.handle, /* pads = */ { 0, 0 }
+                flags, handle.handle, /* pads = */ { 0, 0 }
             };
             out_instances.push_back(instance);
             sbt_offset += (unsigned int) handle.count;
         }
     };
 
-    // Order: meshes, b-spline curves, linear curves, other
-    build_optix_instance(accel.meshes);
+    // The order matters here, as it defines the SBT offsets. We packed them in
+    // the following order: meshes, ellipsoids_meshes, b-spline curves,
+    // linear curves, custom shapes
+    build_optix_instance(accel.meshes, /* disable_face_culling */ true);
+    build_optix_instance(accel.ellipsoids_meshes, /* disable_face_culling */ false);
     build_optix_instance(accel.bspline_curves);
     build_optix_instance(accel.linear_curves);
     build_optix_instance(accel.custom_shapes);

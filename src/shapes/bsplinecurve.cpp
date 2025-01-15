@@ -718,15 +718,15 @@ public:
                  active_loop = Mask(success);
             UInt32 cnt = 0u;
 
-            std::tie(u_lower, u_upper, f_lower, f_upper, cnt, 
+            std::tie(u_lower, u_upper, f_lower, f_upper, cnt,
                 active_loop) = dr::while_loop(
-                std::make_tuple(u_lower, u_upper, f_lower, f_upper, cnt, 
+                std::make_tuple(u_lower, u_upper, f_lower, f_upper, cnt,
                 active_loop),
-            [](const Float&, const Float&, const Float&, const Float&, 
+            [](const Float&, const Float&, const Float&, const Float&,
                 const UInt32&, const Mask& active_loop) {
                 return active_loop;
             },
-            [normal_eq](Float& u_lower, Float& u_upper, Float& f_lower, 
+            [normal_eq](Float& u_lower, Float& u_upper, Float& f_lower,
                 Float& f_upper, UInt32& cnt, Mask& active_loop) {
 
                 Float u_middle = 0.5f * (u_lower + u_upper);
@@ -1003,6 +1003,7 @@ public:
             }
         }
 
+        si.prim_index = pi.prim_index;
         si.shape = this;
         si.instance = nullptr;
 

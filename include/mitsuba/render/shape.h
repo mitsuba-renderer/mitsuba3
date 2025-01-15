@@ -21,30 +21,34 @@ enum class ShapeType : uint32_t {
     Mesh = 1u << 0,
 
     /// Rectangle: a particular type of mesh
-    Rectangle = Mesh | (1u << 8), // Tagged with an extra bit
+    Rectangle = Mesh | (1u << 1), // Tagged with an extra bit
 
     /// B-Spline curves (`bsplinecurve`)
-    BSplineCurve = 1u << 1,
+    BSplineCurve = 1u << 2,
 
     /// Linear curves (`linearcurve`)
-    LinearCurve = 1u << 2,
+    LinearCurve = 1u << 3,
 
     /// Cylinders (`cylinder`)
-    Cylinder = 1u << 3,
+    Cylinder = 1u << 4,
 
     /// Disks (`disk`)
-    Disk = 1u << 4,
+    Disk = 1u << 5,
 
     /// SDF Grids (`sdfgrid`)
-    SDFGrid = 1u << 5,
+    SDFGrid = 1u << 6,
 
     /// Spheres (`sphere`)
-    Sphere = 1u << 6,
+    Sphere = 1u << 7,
+
+    /// Ellipsoids (`ellipsoids`)
+    Ellipsoids = 1u << 8,
+
+    /// Ellipsoids (`ellipsoidsmesh`)
+    EllipsoidsMesh = Mesh | (1u << 9), // Tagged with an extra bit
 
     /// Instance (`instance`)
-    Instance = 1u << 7,
-
-    // Note: 1u << 8 is taken by Rectangle, continue with 1 << 9
+    Instance = 1u << 10,
 
     /// Invalid for default initialization
     Invalid = 0

@@ -94,6 +94,22 @@ template <typename Value_, size_t Size_> struct Matrix {
         }
         printf("]\n");
     }
+
+    DEVICE Vector3f prod(const Vector3f &v) const {
+        Vector3f result(0.f);
+        for (size_t i = 0; i < 3; ++i)
+            for (size_t j = 0; j < 3; ++j)
+                result = ::fmaf(v[j], m[j][i], result[i]);
+        return result;
+    }
+
+    DEVICE Vector3f prod_inv(const Vector3f &v) const {
+        Vector3f result = m[0];
+        result *= v.x();
+        for (size_t i = 1; i < 3; ++i)
+            result = fmaf(v[i], m[i], result);
+        return result;
+    }
 #endif
 
     Row m[Size];
