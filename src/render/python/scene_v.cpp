@@ -50,8 +50,8 @@ MI_PY_EXPORT(Scene) {
     MI_PY_CLASS(Scene, Object)
         .def(nb::init<const Properties>())
         .def("ray_intersect_preliminary",
-             nb::overload_cast<const Ray3f &, Mask, Mask>(&Scene::ray_intersect_preliminary, nb::const_),
-             "ray"_a, "coherent"_a = false, "active"_a = true, D(Scene, ray_intersect_preliminary))
+             nb::overload_cast<const Ray3f &, uint32_t, Mask, Mask>(&Scene::ray_intersect_preliminary, nb::const_),
+             "ray"_a, "ray_flags"_a = +RayFlags::All, "coherent"_a = false, "active"_a = true, D(Scene, ray_intersect_preliminary))
         .def("ray_intersect",
              nb::overload_cast<const Ray3f &, Mask>(&Scene::ray_intersect, nb::const_),
              "ray"_a, "active"_a = true, D(Scene, ray_intersect))
