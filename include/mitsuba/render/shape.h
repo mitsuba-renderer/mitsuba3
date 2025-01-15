@@ -801,6 +801,22 @@ public:
                                      Mask active = true) const;
 
     /**
+     * \brief Evaluate a dynamically sized shape attribute at the given surface interaction.
+     *
+     * \param name
+     *     Name of the attribute to evaluate
+     *
+     * \param si
+     *     Surface interaction associated with the query
+     *
+     * \return
+     *     An dynamic array of attribute values
+     */
+    virtual dr::DynamicArray<Float> eval_attribute_x(const std::string &name,
+                                                     const SurfaceInteraction3f &si,
+                                                     Mask active = true) const;
+
+    /**
      * \brief Parameterize the mesh using UV values
      *
      * This function maps a 2D UV value to a surface interaction data
@@ -1142,6 +1158,7 @@ MI_CALL_TEMPLATE_BEGIN(Shape)
     DRJIT_CALL_METHOD(eval_attribute)
     DRJIT_CALL_METHOD(eval_attribute_1)
     DRJIT_CALL_METHOD(eval_attribute_3)
+    DRJIT_CALL_METHOD(eval_attribute_x)
     DRJIT_CALL_METHOD(eval_parameterization)
     DRJIT_CALL_METHOD(ray_intersect_preliminary)
     DRJIT_CALL_METHOD(ray_intersect)

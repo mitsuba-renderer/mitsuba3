@@ -7877,6 +7877,18 @@ Parameter ``si``:
 Returns:
     An trichromatic intensity or reflectance value)doc";
 
+static const char *__doc_mitsuba_Shape_eval_attribute_x =
+R"doc(Evaluate a dynamic shape attribute at the given surface interaction.
+
+Parameter ``name``:
+    Name of the attribute to evaluate
+
+Parameter ``si``:
+    Surface interaction associated with the query
+
+Returns:
+    An dynamic array of attribute values)doc";
+
 static const char *__doc_mitsuba_Shape_eval_parameterization =
 R"doc(Parameterize the mesh using UV values
 
