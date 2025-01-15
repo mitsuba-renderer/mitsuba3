@@ -2031,8 +2031,10 @@ protected:
     BoundingBox m_bbox;
 };
 
+extern MI_EXPORT_LIB Class *__kdtree_class;
+
 template <typename BoundingBox, typename Index, typename CostModel, typename Derived>
-Class * TShapeKDTree<BoundingBox, Index, CostModel, Derived>::m_class = new Class("TShapeKDTree", "Object", "", nullptr, nullptr);
+Class * TShapeKDTree<BoundingBox, Index, CostModel, Derived>::m_class = __kdtree_class;
 
 template <typename BoundingBox, typename Index, typename CostModel, typename Derived>
 const Class *TShapeKDTree<BoundingBox, Index, CostModel, Derived>::class_() const {
