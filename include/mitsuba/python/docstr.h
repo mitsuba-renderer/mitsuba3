@@ -11187,6 +11187,14 @@ R"doc(Solve a quadratic equation of the form a*x^2 + b*x + c = 0.
 Returns:
     ``True`` if a solution could be found)doc";
 
+static const char *__doc_mitsuba_math_improved_solve_quadratic =
+R"doc(Solve a quadratic equation of the form a*x^2 + b*x + c = 0.
+
+Taken from "Precision Improvements for Ray/Sphere Intersection", Ray Tracing Gems 2
+
+Returns:
+    ``True`` if a solution could be found)doc";
+
 static const char *__doc_mitsuba_math_ulpdiff =
 R"doc(Compare the difference in ULPs between a reference value and another
 given floating point number)doc";
