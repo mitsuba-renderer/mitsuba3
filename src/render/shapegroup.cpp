@@ -89,7 +89,7 @@ MI_VARIANT void ShapeGroup<Float, Spectrum>::traverse(TraversalCallback *callbac
     }
 }
 
-MI_VARIANT void ShapeGroup<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
+MI_VARIANT void ShapeGroup<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
     for (auto &s : m_shapes) {
         if (s->dirty()) {
             m_dirty = true;
@@ -97,7 +97,7 @@ MI_VARIANT void ShapeGroup<Float, Spectrum>::parameters_changed(const std::vecto
         }
     }
 
-    Base::parameters_changed();
+    Base::parameters_changed(keys);
 }
 
 

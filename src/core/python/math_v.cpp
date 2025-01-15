@@ -4,6 +4,7 @@
 #include <drjit/morton.h>
 #include <bitset>
 #include <mitsuba/python/python.h>
+#include <mitsuba/core/spectrum.h>
 #include <nanobind/stl/tuple.h>
 #include <nanobind/stl/pair.h>
 
@@ -38,10 +39,6 @@ MI_PY_EXPORT(math) {
 
     m.def("round_to_power_of_two", &math::round_to_power_of_two<ScalarUInt64>,
           D(math, round_to_power_of_two));
-
-    m.def("linear_to_srgb",
-          [](Float &c) { return dr::linear_to_srgb(c); },
-          "Applies the sRGB gamma curve to the given argument.");
 
     m.def("srgb_to_linear",
           [](Float &c) { return dr::srgb_to_linear(c); },

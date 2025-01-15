@@ -638,6 +638,9 @@ MI_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
         callback->put_object("exterior_medium", m_exterior_medium.get(), +ParamFlags::Differentiable);
 
     callback->put_parameter("silhouette_sampling_weight", m_silhouette_sampling_weight, +ParamFlags::NonDifferentiable);
+
+    for (auto& [name, texture]: m_texture_attributes)
+        callback->put_object(name, texture.get(), +ParamFlags::Differentiable);
 }
 
 MI_VARIANT
