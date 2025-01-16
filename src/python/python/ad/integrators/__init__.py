@@ -21,4 +21,7 @@ if mi.variant() is not None and not mi.variant().startswith('scalar'):
     from . import prb_projective
     importlib.reload(prb_projective)
 
+    from . import volprim_rf_basic
+    importlib.reload(volprim_rf_basic)
+
 del importlib, mi
