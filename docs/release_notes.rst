@@ -5,8 +5,8 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`_ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
-Incoming changes
------------------
+Mitsuba 3.6.1
+-------------
 
 - Improve robustness of parallel scene loading
   `[8d48f58] <https://github.com/mitsuba-renderer/mitsuba3/commit/8d48f585f07c6559d9aa346507b5e0c007c02513>`_
