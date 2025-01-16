@@ -27,10 +27,10 @@ How to make a new release?
 
 9. Update the version number in ``include/mitsuba/mitsuba.h``.
 
-10. Regenerate the documentation again using the same command:
-   ``ninja docstrings && ninja && ninja mkdoc-api mkdoc``.
+10. Add release number and date to ``docs/release_notes.rst``.
 
-11. Add release number and date to ``docs/release_notes.rst``.
+11. Regenerate the documentation again using the same command:
+   ``ninja docstrings && ninja && ninja mkdoc-api mkdoc``.
 
 12. Commit: ``git commit -am "vX.Y.Z release"``
 
