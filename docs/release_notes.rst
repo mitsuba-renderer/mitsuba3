@@ -16,6 +16,8 @@ Incoming changes
   `[eff5bf6] <https://github.com/mitsuba-renderer/mitsuba3/commit/eff5bf6eae8cc5448af0193f7be0d0cdbf9c41d2>`_
 - Improved error message when ``mi.load_dict`` fails
   `[7db5401] <https://github.com/mitsuba-renderer/mitsuba3/commit/7db5401dcdbdcee70fd28b0736313f1365f279f8>`_
+- Add missing implementations for `spot` emitter (for AD)
+  `[9336491] <https://github.com/mitsuba-renderer/mitsuba3/commit/933649143dbce3086cb6316a9ee928d29c9053b5>`_
 
 Mitsuba 3.6.0
 -------------
