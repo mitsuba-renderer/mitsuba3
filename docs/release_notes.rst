@@ -5,6 +5,14 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`_ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
+Unreleased changes
+------------------
+
+- Enable parallel scene loading by default in ``mitsuba`` CLI (regression)
+  `[338898d] <https://github.com/mitsuba-renderer/mitsuba3/commit/338898dcf7b26d70523f22a58d4ac474a6cf8e5c>`_
+- Improved ``bitmap`` construction in scalar variants
+  `[6af4d37] <https://github.com/mitsuba-renderer/mitsuba3/commit/6af4d377c52bc13b7cafa24cd17b96d68b898f87>`_
+
 Mitsuba 3.6.1
 -------------
 
