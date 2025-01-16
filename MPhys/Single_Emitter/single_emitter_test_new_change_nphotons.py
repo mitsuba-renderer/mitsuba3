@@ -90,36 +90,36 @@ photon_detected_load = pd.read_csv('csv/test_new_photons_detected_spectral.csv',
 # The number of photons actually in this file is somewhere just under 10^6
 # In order to test the theory that the render step is independent of the number of photons,
 # rather than repeating the same data over again, add a small rotation to the data instead
-# photon_detected = pd.concat([photon_detected_load for _ in range(n_repeats)], ignore_index=True)
+# By default, don't do this
+rotate_photon_data = False
+photon_detected = None
+if rotate_photon_data:
+    photons_detected = [photon_detected_load]
 
-print("---------------------------> photon_detected_load ", photon_detected_load)
+    def rotate_xy(df, theta):
+        print(df.keys())
+        new_df = pd.DataFrame()
+        x = df["x"].copy()
+        y = df["y"].copy()
+        new_df["time (ps)"] = df["time (ps)"].copy()
+        new_df["x"] = x * np.cos(theta) - y * np.sin(theta)
+        new_df["y"] = y * np.cos(theta) + x * np.sin(theta)
+        new_df["z"] = df["z"].copy()
+        new_df["px"] = df["px"].copy()
+        new_df["py"] = df["py"].copy()
+        new_df["pz"] = df["pz"].copy()
+        new_df["Wavelength (nm)"] = df["Wavelength (nm)"].copy()
+        return new_df
 
-photons_detected = [photon_detected_load]
+    for n in range(n_repeats):
+        # Rotate point and target by small amount, and add to photons_detected
+        photon_detected_rot = rotate_xy(photon_detected_load, (n+1)*0.1)
+        photons_detected.append(photon_detected_rot)
 
-def rotate_xy(df, theta):
-    print(df.keys())
-    new_df = pd.DataFrame()
-    x = df["x"].copy()
-    y = df["y"].copy()
-    new_df["time (ps)"] = df["time (ps)"].copy()
-    new_df["x"] = x * np.cos(theta) - y * np.sin(theta)
-    new_df["y"] = y * np.cos(theta) + x * np.sin(theta)
-    new_df["z"] = df["z"].copy()
-    new_df["px"] = df["px"].copy()
-    new_df["py"] = df["py"].copy()
-    new_df["pz"] = df["pz"].copy()
-    new_df["Wavelength (nm)"] = df["Wavelength (nm)"].copy()
-    return new_df
+    photon_detected = pd.concat(photons_detected, ignore_index=True)
+else:
+    photon_detected = pd.concat([photon_detected_load for _ in range(n_repeats)], ignore_index=True)
 
-for n in range(n_repeats):
-    # Rotate point and target by small amount, and add to photons_detected
-    photon_detected_rot = rotate_xy(photon_detected_load, (n+1)*0.1)
-    print("rotated -------------> ", photon_detected_rot)
-
-    photons_detected.append(photon_detected_rot)
-
-
-photon_detected = pd.concat(photons_detected, ignore_index=True)
 
 print(photon_detected_load)
 print(photon_detected)
