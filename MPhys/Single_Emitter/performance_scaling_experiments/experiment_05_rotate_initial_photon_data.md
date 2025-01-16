@@ -4,7 +4,7 @@
 
 This is a repeat of experiment_04, but rather than repeating the initial photon data in order to run large numbers of photons, each repeat adds a small rotation to the initial photon data and then appends that to a set of data starting from the initial photon data.  This was done in order to avoid repeated data / ray paths where possible, which may tell us whether Mitsuba / Dr.Jit are doing something clever when repeated data / ray paths are discovered prior or during the rendering step.
 
-The code changes required to do this are on a new branch, but not (yet) merged into `dev`, with the name `rotate_input_photons`.
+To rotate photon data, modify the script so that `rotate_photon_data = True`.
 
 ## Results
 
