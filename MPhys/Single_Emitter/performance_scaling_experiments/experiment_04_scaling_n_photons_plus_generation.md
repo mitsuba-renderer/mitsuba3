@@ -4,8 +4,6 @@
 
 This is a repeat of experiment_01, but with timing measurements for the calls to `generate_emitter_data(...)` (which converts "Geant4" photons into a `numpy` object that can be understood by Mitsuba3), and the call to `mi.VolumeGrid(...)` which takes the result of the generated data and creates a `VolumeGrid` Mitsuba3 code object that can then be placed into a Mitsuba3 scene.
 
-The code changes required to do this are on a new branch, but not (yet) merged into `dev`, with the name `21-update-the-scripts-to-measure-time-to-generate-photon-lists`.
-
 ## Results
 
 Results were obtained on both the CPUs and GPUs of the Noether HEP cluster, details of which can be found in experiment 01's write-up.
