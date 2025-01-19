@@ -524,7 +524,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                 [count](const UInt32 &ys, const UInt32 &) {
                     return ys < count;
                 },
-                [this, active, count, values, x, y, rel_f, 
+                [this, active, count, values, x, y, rel_f,
                     size](UInt32 &ys, UInt32 &index) {
                     Float weight_y = m_rfilter->eval(rel_f.y() + Float(ys));
                     Mask active_1 = active && (y + ys < size.y());
@@ -538,7 +538,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                         },
                         [this, values, rel_f, weight_y, x, y, size,
                             active_1](UInt32 &xs, UInt32 &index) {
-                            Float weight_x = 
+                            Float weight_x =
                                     m_rfilter->eval(rel_f.x() + Float(xs)),
                                   weight = weight_x * weight_y;
 
@@ -735,12 +735,12 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
 
         std::tie(ys, index, weight_sum, dr_values) = dr::while_loop(
             std::make_tuple(ys, index, weight_sum, dr_values),
-            [count](const UInt32 &ys, const UInt32 &, const Float&, 
+            [count](const UInt32 &ys, const UInt32 &, const Float&,
                 const Values&) {
                 return ys < count.y();
             },
             [this, active, count, pos_0_u, pos_1_u, size,
-            rel_f](UInt32& ys, UInt32& index, Float& weight_sum, 
+            rel_f](UInt32& ys, UInt32& index, Float& weight_sum,
             Values& dr_values) {
                 Float weight_y = m_rfilter->eval(rel_f.y() + Float(ys));
                 Mask active_1 = active && (pos_0_u.y() + ys <= pos_1_u.y());
@@ -749,18 +749,18 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
 
                 std::tie(xs, index, weight_sum, dr_values) = dr::while_loop(
                     std::make_tuple(xs, index, weight_sum, dr_values),
-                    [count](const UInt32& xs, const UInt32&, const Float&, 
+                    [count](const UInt32& xs, const UInt32&, const Float&,
                         const Values&) {
                         return xs < count.x();
                     },
-                    [this, rel_f, weight_y, pos_0_u, pos_1_u, 
-                    active_1](UInt32& xs, UInt32& index, Float& weight_sum, 
+                    [this, rel_f, weight_y, pos_0_u, pos_1_u,
+                    active_1](UInt32& xs, UInt32& index, Float& weight_sum,
                         Values& dr_values) {
 
                         Float weight_x = m_rfilter->eval(rel_f.x() + Float(xs)),
                         weight = weight_x * weight_y;
 
-                        Mask active_2 = 
+                        Mask active_2 =
                             active_1 && (pos_0_u.x() + xs <= pos_1_u.x());
                         for (uint32_t k = 0; k < m_channel_count; ++k) {
                             dr_values.entry(k) = dr::fmadd(

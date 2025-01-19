@@ -263,7 +263,7 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
 
     Ray3f ray;
     Spectrum weight;
-    EmitterPtr emitter;
+    EmitterPtr emitter{};
 
     // Potentially disable inlining of emitter sampling (if there is just a single emitter)
     bool vcall_inline = true;

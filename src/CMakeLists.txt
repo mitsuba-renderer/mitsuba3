@@ -13,6 +13,8 @@ set_target_properties(mitsuba PROPERTIES INTERPROCEDURAL_OPTIMIZATION ON)
 if (CMAKE_CXX_COMPILER_ID MATCHES "^(GNU)$")
   # Treat undefined symbols as errors when linking
   target_link_libraries(mitsuba PRIVATE -Wl,--no-undefined)
+  # Silence an incorrect warning message in GCC LTO builds
+  target_link_options(mitsuba PRIVATE -Walloc-size-larger-than=18446744073709551615)
 endif()
 
 # ----------------------------------------------------------

@@ -269,7 +269,7 @@ public:
             radiance *= m_texture->eval(si, active);
         }
 
-        return depolarizer<Spectrum>(radiance & active) * (falloff * dr::sqr(inv_dist));
+        return depolarizer<Spectrum>(radiance & active) * (falloff * dr::square(inv_dist));
     }
 
     Spectrum eval(const SurfaceInteraction3f &, Mask) const override {
