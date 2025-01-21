@@ -86,7 +86,7 @@ print ("{0:.4} of emitted photon in G4 are actually detected.".format(fraction_d
 
 def generate_emitter_data(photon_data):
     """
-    Generates the data for the photon_emitter plugin of Mitsuba using the photon data
+    Generates the data for the photon plugin of Mitsuba using the photon data
     """
     x_position, y_position, z_position = photon_data.values[:, 1:4].T
     x_momentum, y_momentum, z_momentum = photon_data.values[:, 4:7].T
@@ -283,7 +283,7 @@ scene_description = {
     },
 
     'photons': {
-        'type': 'photon_emitter',
+        'type': 'photon',
         'photon_list': photon_list,
         'intensity': 1000.0,
     },        
@@ -510,7 +510,7 @@ scene_description = {
     },
 
     'photons': {
-        'type': 'photon_emitter',
+        'type': 'photon',
         'photon_list': photon_list,
         'intensity': 500.0,
     },        
@@ -705,7 +705,7 @@ scene_description = {
     },
 
     'photons': {
-        'type': 'photon_emitter',
+        'type': 'photon',
         'photon_list': photon_list,
         'intensity': 1000.0,
     },        
@@ -901,7 +901,7 @@ scene_description = {
     },
 
     'photons': {
-        'type': 'photon_emitter',
+        'type': 'photon',
         'photon_list': photon_list,
         'intensity': 5000.0,
     },        
@@ -1097,7 +1097,7 @@ scene_description = {
     },
 
     'photons': {
-        'type': 'photon_emitter',
+        'type': 'photon',
         'photon_list': photon_list,
         'intensity': 10000.0,
     },        
@@ -1293,7 +1293,7 @@ scene_description = {
     },
 
     'photons': {
-        'type': 'photon_emitter',
+        'type': 'photon',
         'photon_list': photon_list,
         'intensity': 15000.0,
     },        
@@ -1489,7 +1489,7 @@ scene_description = {
     },
 
     'photons': {
-        'type': 'photon_emitter',
+        'type': 'photon',
         'photon_list': photon_list,
         'intensity': 20000.0,
     },        
@@ -1685,7 +1685,7 @@ scene_description = {
     },
 
     'photons': {
-        'type': 'photon_emitter',
+        'type': 'photon',
         'photon_list': photon_list,
         'intensity': 2000000.0,
     },        
@@ -1883,7 +1883,7 @@ scene_description = {
     },
 
     'photons': {
-        'type': 'photon_emitter',
+        'type': 'photon',
         'photon_list': photon_list,
         'intensity': 20000.0,
         # 'to_world': mi.ScalarTransform4f().look_at(origin=[0, 2700, 300],

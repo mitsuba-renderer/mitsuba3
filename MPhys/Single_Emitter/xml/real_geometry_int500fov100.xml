@@ -133,7 +133,7 @@
             <rgb name="reflectance" value="0.56, 0.23, 0.54" />
         </bsdf>
 	</shape>
-    <emitter type="photon_emitter_old" id="pE1">
+    <emitter type="photon" id="pE1">
 		<string name="filename" value="bintxt/photon_geometry.bin"/>
         <rgb name="intensity" value="500.0"/>
     </emitter>

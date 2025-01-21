@@ -97,7 +97,7 @@ print(photon_detected)
 
 def generate_emitter_data(photon_data):
     """
-    Generates the data for the photon_emitter plugin of Mitsuba using the photon data
+    Generates the data for the photon plugin of Mitsuba using the photon data
     """
     x_position, y_position, z_position = photon_data.values[:, 1:4].T
     x_momentum, y_momentum, z_momentum = photon_data.values[:, 4:7].T
@@ -309,7 +309,7 @@ scene_description = {
     },
 
     'photons': {
-        'type': 'photon_emitter',
+        'type': 'photon',
         'photon_list': photon_list,
         'intensity': intensity,
     },        
