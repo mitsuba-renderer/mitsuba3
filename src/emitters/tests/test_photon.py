@@ -34,7 +34,7 @@ def create_emitter_and_spectrum(lookat, s_key='d65'):
 
     photon_list = mi.VolumeGrid(photon_data)
     emitter = mi.load_dict({
-        'type' : 'photon_emitter',
+        'type' : 'photon',
         'photon_list' : photon_list,
         # 'cutoff_angle' : cutoff_angle,
         'to_world' : lookat,

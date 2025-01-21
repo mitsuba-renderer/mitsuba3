@@ -27,9 +27,8 @@ NAMESPACE_BEGIN(mitsuba)
 
 .. _emitter-photon:
 
-Photon light source (:monosp:`photon_emitter`)
-----------------------------------------------
-TODO: rename this to "photon" rather than "photon_emitter"
+Photon light source (:monosp:`photon`)
+--------------------------------------
 
 .. pluginparameters::
 
@@ -47,7 +46,6 @@ TODO: rename this to "photon" rather than "photon_emitter"
    - |VolumeGrid|
    - Specifies a mitsuba VolumeGrid object from which photon ray locations can be loaded in the form origin x,y,z, target x,y,z
 
-TODO: Does to_world work for this emitter?  It seems to have been turned off in some functions but not others.
  * - to_world
    - |transform|
    - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
@@ -61,14 +59,14 @@ optionally from a VolumeGrid code object when using a scene description (Python)
     .. code-tab:: xml
         :name: photon-emitter
 
-        <emitter type="photon_emitter">
+        <emitter type="photon">
             <rgb name="intensity" value="1.0"/>
             <string name="filename" value="bintxt/photon_geometry.bin"/>
         </emitter>
 
     .. code-tab:: python
 
-        'type': 'photon_emitter',
+        'type': 'photon',
         'photon_list': photon_list,
         'intensity': intensity,
 
