@@ -138,3 +138,12 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "slow: marks tests as slow (deselect with -m 'not slow')"
     )
+
+# Add support for generating reference images for RenderRegressionTest
+
+def pytest_addoption(parser):
+    parser.addoption("--generate_ref", action="store_true")
+
+@pytest.fixture(scope='session')
+def regression_test_options(request):
+    return { 'generate_ref':  request.config.option.generate_ref }
