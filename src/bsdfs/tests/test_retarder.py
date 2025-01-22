@@ -360,7 +360,7 @@ def test06_path_tracer_quarter_wave(variant_scalar_mono_polarized):
         sampler.seed(0)
 
         # Sample ray from sensor
-        ray, _ = sensor.sample_ray_differential(0.0, 0.5, [0.5, 0.5], [0.5, 0.5])
+        ray, _ = sensor.sample_ray_differential(0.0, 0.5, [0.5, 0.5, 0.0], [0.5, 0.5])
 
         # Call integrator
         value, _, _ = integrator.sample(scene, sampler, ray)
@@ -476,7 +476,7 @@ def test07_path_tracer_half_wave(variant_scalar_mono_polarized):
         sampler.seed(0)
 
         # Sample ray from sensor
-        ray, _ = sensor.sample_ray_differential(0.0, 0.5, [0.5, 0.5], [0.5, 0.5])
+        ray, _ = sensor.sample_ray_differential(0.0, 0.5, [0.5, 0.5, 0.0], [0.5, 0.5])
 
         # Call integrator
         value, _, _ = integrator.sample(scene, sampler, ray)

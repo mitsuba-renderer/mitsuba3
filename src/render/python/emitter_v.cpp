@@ -15,14 +15,14 @@ public:
     PyEmitter(const Properties &props) : Emitter(props) { }
 
     std::pair<Ray3f, Spectrum>
-    sample_ray(Float time, Float sample1, const Point2f &sample2,
+    sample_ray(Float time, Float sample1, const Point3f &sample2,
            const Point2f &sample3, Mask active) const override {
         NB_OVERRIDE_PURE(sample_ray, time, sample1, sample2, sample3, active);
     }
 
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &ref,
-                     const Point2f &sample,
+                     const Point3f &sample,
                      Mask active) const override {
         NB_OVERRIDE_PURE(sample_direction, ref, sample, active);
     }
@@ -40,7 +40,7 @@ public:
     }
 
     std::pair<PositionSample3f, Float>
-    sample_position(Float time, const Point2f &sample,
+    sample_position(Float time, const Point3f &sample,
                     Mask active) const override {
         NB_OVERRIDE_PURE(sample_position, time, sample, active);
     }
@@ -83,6 +83,7 @@ public:
 
     using Emitter::m_flags;
     using Emitter::m_needs_sample_2;
+    using Emitter::m_needs_sample_2_3d;
     using Emitter::m_needs_sample_3;
 };
 
@@ -93,14 +94,14 @@ template <typename Ptr, typename Cls> void bind_emitter_generic(Cls &cls) {
     using RetMedium = std::conditional_t<drjit::is_array_v<Ptr>, MediumPtr, drjit::scalar_t<MediumPtr>>;
 
     cls.def("sample_ray",
-            [](Ptr ptr, Float time, Float sample1, const Point2f &sample2,
+            [](Ptr ptr, Float time, Float sample1, const Point3f &sample2,
             const Point2f &sample3, Mask active) {
                 return ptr->sample_ray(time, sample1, sample2, sample3, active);
             },
             "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
             D(Endpoint, sample_ray))
     .def("sample_direction",
-            [](Ptr ptr, const Interaction3f &it, const Point2f &sample, Mask active) {
+            [](Ptr ptr, const Interaction3f &it, const Point3f &sample, Mask active) {
                 return ptr->sample_direction(it, sample, active);
             },
             "it"_a, "sample"_a, "active"_a = true,
@@ -118,7 +119,7 @@ template <typename Ptr, typename Cls> void bind_emitter_generic(Cls &cls) {
             "it"_a, "ds"_a, "active"_a = true,
             D(Endpoint, eval_direction))
     .def("sample_position",
-            [](Ptr ptr, Float time, const Point2f &sample, Mask active) {
+            [](Ptr ptr, Float time, const Point3f &sample, Mask active) {
                 return ptr->sample_position(time, sample, active);
             },
             "time"_a, "sample"_a, "active"_a = true,
@@ -162,6 +163,7 @@ MI_PY_EXPORT(Emitter) {
         .def_method(Emitter, flags, "active"_a = true)
         .def_field(PyEmitter, m_needs_sample_2, D(Endpoint, m_needs_sample_2))
         .def_field(PyEmitter, m_needs_sample_3, D(Endpoint, m_needs_sample_3))
+        .def_field(PyEmitter, m_needs_sample_2_3d, D(Endpoint, m_needs_sample_2_3d))
         .def_field(PyEmitter, m_flags, D(Emitter, m_flags));
 
     if constexpr (dr::is_array_v<EmitterPtr>) {

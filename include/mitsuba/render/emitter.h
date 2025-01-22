@@ -32,12 +32,15 @@ enum class EmitterFlags : uint32_t {
     /// The emitter is attached to a surface (e.g. area emitters)
     Surface              = 0x00008,
 
+    /// The emitter is attached to a medium (e.g. emissive media)
+    Medium               = 0x00010,
+
     // =============================================================
     //!                   Other lobe attributes
     // =============================================================
 
     /// The emission depends on the UV coordinates
-    SpatiallyVarying     = 0x00010,
+    SpatiallyVarying     = 0x00020,
 
     // =============================================================
     //!                 Compound lobe attributes

@@ -46,7 +46,7 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
                 mesh->set_scene(this);
         } else if (emitter) {
             // Surface emitters will be added to the list when attached to a shape
-            if (!has_flag(emitter->flags(), EmitterFlags::Surface))
+            if (!has_flag(emitter->flags(), EmitterFlags(EmitterFlags::Surface | EmitterFlags::Medium)))
                 m_emitters.push_back(emitter);
 
             if (emitter->is_environment()) {
@@ -255,11 +255,10 @@ MI_VARIANT Float Scene<Float, Spectrum>::pdf_emitter(UInt32 index,
 MI_VARIANT std::tuple<typename Scene<Float, Spectrum>::Ray3f, Spectrum,
                        const typename Scene<Float, Spectrum>::EmitterPtr>
 Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
-                                           const Point2f &sample2,
+                                           const Point3f &sample2,
                                            const Point2f &sample3,
                                            Mask active) const {
     MI_MASKED_FUNCTION(ProfilerPhase::SampleEmitterRay, active);
-
 
     Ray3f ray;
     Spectrum weight;
@@ -292,11 +291,10 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
 }
 
 MI_VARIANT std::pair<typename Scene<Float, Spectrum>::DirectionSample3f, Spectrum>
-Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const Point2f &sample_,
+Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const Point3f &sample_,
                                                  bool test_visibility, Mask active) const {
     MI_MASKED_FUNCTION(ProfilerPhase::SampleEmitterDirection, active);
-
-    Point2f sample(sample_);
+    Point3f sample(sample_);
     DirectionSample3f ds;
     Spectrum spec;
 

@@ -14,16 +14,16 @@ from .utils import (
 def test01_stratified_scalar(variant_scalar_rgb):
     sampler = mi.load_dict({
         "type" : "stratified",
-        "sample_count" : 1024,
+        "sample_count" : 4096,
     })
 
-    check_uniform_scalar_sampler(sampler)
+    check_uniform_scalar_sampler(sampler, res=4)
 
 
 def test02_stratified_wavefront(variants_vec_backends_once):
     sampler = mi.load_dict({
         "type" : "stratified",
-        "sample_count" : 1024,
+        "sample_count" : 4096,
     })
 
     check_uniform_wavefront_sampler(sampler)
@@ -32,7 +32,7 @@ def test02_stratified_wavefront(variants_vec_backends_once):
 def test03_copy_sampler_scalar(variants_any_scalar):
     sampler = mi.load_dict({
         "type" : "stratified",
-        "sample_count" : 1024,
+        "sample_count" : 4096,
     })
 
     check_deep_copy_sampler_scalar(sampler)
@@ -41,7 +41,7 @@ def test03_copy_sampler_scalar(variants_any_scalar):
 def test04_copy_sampler_wavefront(variants_vec_backends_once):
     sampler = mi.load_dict({
         "type" : "stratified",
-        "sample_count" : 1024,
+        "sample_count" : 4096,
     })
 
     check_deep_copy_sampler_wavefront(sampler)

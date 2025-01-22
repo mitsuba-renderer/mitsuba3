@@ -139,10 +139,11 @@ public:
      *     dimension of the emission profile.
      *
      * \param sample2
-     *    A uniformly distributed sample on the domain <tt>[0,1]^2</tt>. For
-     *    sensor endpoints, this argument corresponds to the sample position in
-     *    fractional pixel coordinates relative to the crop window of the
-     *    underlying film.
+     *    A uniformly distributed sample on the domain <tt>[0,1]^2</tt> (or
+     *    <tt>[0,1]^3</tt> if needs_sample_2_3d() == true). For sensor
+     *    endpoints, this argument corresponds to the sample position in
+     *    fractional pixel coordinates relative to the crop window of
+     *    the underlying film.
      *    This argument is ignored if <tt>needs_sample_2() == false</tt>.
      *
      * \param sample3
@@ -157,7 +158,7 @@ public:
      *    and the actual used sampling density function.
      */
     virtual std::pair<Ray3f, Spectrum>
-    sample_ray(Float time, Float sample1, const Point2f &sample2,
+    sample_ray(Float time, Float sample1, const Point3f &sample2,
                const Point2f &sample3, Mask active = true) const;
 
     //! @}
@@ -190,7 +191,8 @@ public:
      *    A reference position somewhere within the scene.
      *
      * \param sample
-     *     A uniformly distributed 2D point on the domain <tt>[0,1]^2</tt>.
+     *     A uniformly distributed 2D point on the domain <tt>[0,1]^2</tt> (
+     *     or <tt>[0,1]^3</tt> if <tt>needs_sample_2_3d() == true)</tt>.
      *
      * \return
      *     A \ref DirectionSample instance describing the generated sample
@@ -198,7 +200,7 @@ public:
      */
     virtual std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &ref,
-                     const Point2f &sample,
+                     const Point3f &sample,
                      Mask active = true) const;
 
     /**
@@ -272,7 +274,7 @@ public:
      *     along with an importance weight.
      */
     virtual std::pair<PositionSample3f, Float>
-    sample_position(Float time, const Point2f &sample,
+    sample_position(Float time, const Point3f &sample,
                     Mask active = true) const;
 
     /**
@@ -323,6 +325,12 @@ public:
      * 2D sample for the \c sample2 parameter?
      */
     bool needs_sample_2() const { return m_needs_sample_2; }
+
+    /**
+     * \brief Does the method \ref sample_ray() require a uniformly distributed
+     * 2D or 3D sample for the \c sample2 parameter?
+     */
+    bool needs_sample_2_3d() const { return m_needs_sample_2_3d; }
 
     /**
      * \brief Does the method \ref sample_ray() require a uniformly distributed
@@ -395,6 +403,7 @@ protected:
     ref<Medium> m_medium;
     Shape *m_shape = nullptr;
     bool m_needs_sample_2 = true;
+    bool m_needs_sample_2_3d = false;
     bool m_needs_sample_3 = true;
     std::string m_id;
 };
