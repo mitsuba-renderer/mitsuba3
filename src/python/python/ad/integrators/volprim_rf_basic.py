@@ -3,9 +3,9 @@ from __future__ import annotations  # Delayed parsing of type annotations
 import drjit as dr
 import mitsuba as mi
 
-from mitsuba.ad.integrators.common import RBIntegrator
+from .common import RBIntegrator
 
-class VolumetricPrimitiveRadianceFieldIntegrator(RBIntegrator):
+class BasicVolumetricPrimitiveRadianceFieldIntegrator(RBIntegrator):
     r"""
     .. _integrator-volprim_rf_basic:
 
@@ -34,8 +34,8 @@ class VolumetricPrimitiveRadianceFieldIntegrator(RBIntegrator):
             'max_depth': 8
     """
 
-    def __init__(self, props=mi.Properties()):
-        super().__init__(props)
+    def __init__(self, props):
+        super().__init__(mi.Properties())
 
         max_depth = int(props.get("max_depth", 64))
         if max_depth < 0 and max_depth != -1:
@@ -181,6 +181,8 @@ class VolumetricPrimitiveRadianceFieldIntegrator(RBIntegrator):
         return L if primal else δL, True, [], L
 
     def to_string(self):
-        return f"VolumetricPrimitiveRadianceFieldIntegrator[]"
+        return f"BasicVolumetricPrimitiveRadianceFieldIntegrator[]"
 
-mi.register_integrator("volprim_rf_basic", lambda props: VolumetricPrimitiveRadianceFieldIntegrator(props))
+mi.register_integrator("volprim_rf_basic", lambda props: BasicVolumetricPrimitiveRadianceFieldIntegrator(props))
+
+del RBIntegrator
