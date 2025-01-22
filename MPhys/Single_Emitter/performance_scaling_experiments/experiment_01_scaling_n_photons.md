@@ -108,7 +108,7 @@ One conclusion to make here is to ask whether there is any "rendering" taking pl
 
 I have also just noticed that my timing starts before creating the dictionary that is called by `mi.load_dict(...)` is done; it may be that the time is taken in creating the dictionary rather than loading it into Mitsuba3; this needs to be investigated, since there is some disagreement between my timing results and the timing results in the paper draft.
 
-There are also different loading methods which could be investigated; using `photon_emitter` (loading a python list created from a CSV file) and `photon_emitter_old` (loading a binary file) may have timing differences.  It is also possible to load in scenes from XML files rather than using python dictionaries, and this should also be checked.
+There are also different loading methods which could be investigated; using `photon` (loading a python list created from a CSV file) and `photon_emitter_old` (loading a binary file) may have timing differences.  It is also possible to load in scenes from XML files rather than using python dictionaries, and this should also be checked.
 
 GitHub issues have been created to follow up on this work and further investigate the performance and scaling:
 

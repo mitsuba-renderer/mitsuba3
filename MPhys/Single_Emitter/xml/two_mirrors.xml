@@ -43,7 +43,7 @@
    		</transform>
         <rgb name="intensity" value="20000.0"/>
     </emitter> -->
-    <emitter type="photon_emitter" id="pE1">
+    <emitter type="photon" id="pE1">
 		<string name="filename" value="bintxt/emitters.txt"/>
         <rgb name="intensity" value="20000.0"/>
     </emitter>

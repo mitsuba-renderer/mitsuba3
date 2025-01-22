@@ -29,9 +29,10 @@ __pycache__
 /docs/src/generated
 /docs/resources
 
-# new png output / csv input
+# new png output / csv input / profiling output
 /MPhys/Single_Emitter/png/*intensity* 
 /MPhys/Single_Emitter/png/*diff* 
 /MPhys/Single_Emitter/png/*new* 
 *1000000*csv
 /MPhys/Single_Emitter/cluster*
+/MPhys/Single_Emitter/profiling*

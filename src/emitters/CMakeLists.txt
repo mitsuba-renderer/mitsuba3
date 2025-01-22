@@ -8,7 +8,7 @@ add_plugin(directional     directional.cpp)
 add_plugin(directionalarea directionalarea.cpp)
 add_plugin(spot            spot.cpp)
 add_plugin(projector       projector.cpp)
-add_plugin(photon_emitter  photon_emitter.cpp)
+add_plugin(photon          photon.cpp)
 add_plugin(photon_emitter_old  photon_emitter_old.cpp)
 
 
