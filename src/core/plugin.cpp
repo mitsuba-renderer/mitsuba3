@@ -88,6 +88,7 @@ private:
 struct PluginManager::PluginManagerPrivate {
     std::unordered_map<std::string, Plugin *> m_plugins;
     std::unordered_set<std::string> m_python_plugins;
+    std::unordered_map<std::string, std::string> m_plugin_types;
     std::mutex m_mutex;
 
     Plugin *plugin(const std::string &name) {
@@ -119,6 +120,7 @@ struct PluginManager::PluginManagerPrivate {
             Class::static_initialization();
             // Statistics::instance()->log_plugin(shortName, description()); XXX
             m_plugins[name] = plugin;
+            m_plugin_types[plugin->plugin_name] = name;
             return plugin;
         }
 
@@ -155,6 +157,14 @@ const Class *PluginManager::get_plugin_class(const std::string &name,
     }
 
     return plugin_class;
+}
+
+std::string PluginManager::get_plugin_type(const std::string &plugin_name) {
+    auto it = d->m_plugin_types.find(plugin_name);
+    if (it != d->m_plugin_types.end())
+        return it->second;
+    else
+        return "";
 }
 
 std::vector<std::string> PluginManager::loaded_plugins() const {
