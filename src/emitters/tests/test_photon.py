@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import pandas as pd
 import drjit as dr
 import mitsuba as mi
 
@@ -20,8 +21,18 @@ lookat_transforms = [
 ]
 
 # Set up some basic photon data
-emitter_data = [2, -8.6815998e-02, 1.0280000e+03, 1.0275000e+02, -1.3769200e-01,  1.0289886e+03,  1.0284847e+02, 
-                -8.6815998e-02, 1.0280000e+03,  1.0275000e+02, -3.8943999e-02,  1.0289916e+03, 1.0286631e+02]
+photon_detected = pd.DataFrame([[1,-0.086816,102.75,1028.0,0.047872,0.11631,0.99156,412.48667183165185],
+                                [1,-0.086816,102.75,1028.0,0.029383,0.14085,0.98779,412.48667183165185]])
+x_position, y_position, z_position = photon_detected.values[:, 1:4].T
+x_momentum, y_momentum, z_momentum = photon_detected.values[:, 4:7].T
+print(x_position, z_position)
+# calculate the target coordinates of the photons
+x_target = x_position + x_momentum
+y_target = y_position + y_momentum
+z_target = z_position + z_momentum
+
+emitter_data = np.column_stack((x_position, z_position, y_position, x_target, z_target, y_target)).flatten()
+emitter_data = np.insert(emitter_data, 0, len(x_position))
 photon_data = np.zeros((1, 1, len(emitter_data)), dtype=np.float32)
 photon_data[0, 0, :] = emitter_data
 
@@ -168,3 +179,72 @@ def test_eval(variants_vec_spectral, spectrum_key, lookat):
     it = dr.zeros(mi.SurfaceInteraction3f, 3)
     it.wi = [0, 1, 0]
     assert dr.allclose(emitter.eval(it), 0.)
+
+
+def test_load_methods():
+    # Check that the same emitter is created for each type of loading method
+    photon_list = mi.VolumeGrid(photon_data)
+    intensity = 1000.0
+    volume_grid_emitter = mi.load_dict({
+        'type' : 'photon',
+        'photon_list' : photon_list,
+        # 'cutoff_angle' : cutoff_angle,
+        'intensity' : intensity
+    })
+
+    # Create a binary file from the photon data
+    import struct
+
+    with open("photon_geometry.bin", "wb") as f:
+        f.write(struct.pack("<Q", len(x_position)))  # Use 'Q' format for 64-bit unsigned integer (size_t)
+        for x1, y1, z1, x2, y2, z2 in zip(x_position, y_position, z_position, x_target, y_target, z_target):
+            f.write(struct.pack("<f", x1))
+            f.write(struct.pack("<f", z1))
+            f.write(struct.pack("<f", y1))
+            f.write(struct.pack("<f", x2))
+            f.write(struct.pack("<f", z2))
+            f.write(struct.pack("<f", y2))
+
+    binary_file_emitter = mi.load_dict({
+        'type' : 'photon',
+        'filename' : 'photon_geometry.bin',
+        'intensity' : intensity
+    })
+
+    # We now have two emitters so compare the two using the same sampling parameters
+    cutoff_angle = 20
+    cutoff_angle_rad = cutoff_angle / 180 * dr.pi
+    beam_width_rad = cutoff_angle_rad * 0.75
+    eval_t = 0.3
+    # TODO: work out how to test the transforms used in the photon emitter here
+    vol_trafo = mi.Transform4f(volume_grid_emitter.world_transform())
+    bin_trafo = mi.Transform4f(binary_file_emitter.world_transform())
+
+    # Sample a local direction and calculate local angle
+    pos_sample = [0.4, 0.5]
+    dir_sample = pos_sample
+    local_dir = mi.ScalarVector3f(0., 0., 1.)     
+    angle = dr.acos(local_dir[2])
+    angle = dr.select(dr.abs(angle - beam_width_rad)
+                      < 1e-3, beam_width_rad, angle)
+    angle = dr.select(dr.abs(angle - cutoff_angle_rad)
+                      < 1e-3, cutoff_angle_rad, angle)
+    
+    wavelength_sample = 0.7
+
+    # Sample a ray (position, direction, wavelengths) from the emitters
+    vol_ray, vol_res = volume_grid_emitter.sample_ray(
+        eval_t, wavelength_sample, pos_sample, dir_sample)
+
+    bin_ray, bin_res = binary_file_emitter.sample_ray(
+        eval_t, wavelength_sample, pos_sample, dir_sample)
+
+    assert(vol_ray.o[0] == bin_ray.o[0])
+    assert(vol_ray.d[0] == bin_ray.d[0])
+    assert(vol_ray.wavelengths[0] == bin_ray.wavelengths[0])
+    assert(vol_res[0] == bin_res[0])
+
+    # Delete the photon_geometry binary file
+    import os
+    os.remove('photon_geometry.bin')
+    
