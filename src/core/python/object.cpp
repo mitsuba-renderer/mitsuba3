@@ -34,6 +34,11 @@ MI_PY_EXPORT(Object) {
              },
              "name"_a, "variant"_a, nb::rv_policy::copy,
              D(PluginManager, get_plugin_class))
+        .def("get_plugin_type",
+             [](PluginManager &pmgr, const std::string &plugin_name) {
+                return pmgr.get_plugin_type(plugin_name);
+             }, "plugin_name"_a)
+        .def("loaded_plugins", [](PluginManager &pmgr) { return pmgr.loaded_plugins(); })
         .def("create_object", [](PluginManager &pmgr, const Properties &props) {
             auto mi = nb::module_::import_("mitsuba");
             std::string variant = nb::cast<std::string>(mi.attr("variant")());
