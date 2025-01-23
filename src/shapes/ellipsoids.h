@@ -28,8 +28,6 @@ public:
     EllipsoidsData() { }
 
     EllipsoidsData(const Properties &props) {
-        m_extent = props.get<ScalarFloat>("extent", 3.f);
-
         if (props.has_property("filename")) {
             if (props.has_property("data"))
                 Throw("Cannot specify both \"data\" and \"filename\".");
@@ -252,6 +250,10 @@ public:
 
         m_data_pointer = m_data.data();
 
+        m_extent_multiplier = props.get<ScalarFloat>("extent", 3.f);
+        m_extents = dr::full<FloatStorage>(m_extent_multiplier, count());
+        m_extent_adaptive_clamping = props.get<bool>("extent_adaptive_clamping", false);
+
         // Load any other ellipsoids attributes
         auto unqueried = props.unqueried();
         if (!unqueried.empty()) {
@@ -267,13 +269,21 @@ public:
                 m_attributes.insert({ key , tensor->array() });
             }
         }
+
+        if (m_extent_adaptive_clamping && (!has_attribute("opacities"))) {
+            Log(Warn, "Ellipsoids must have attribute \"opacities\" to use adaptive clamping! Disabling adaptive clamping.");
+            m_extent_adaptive_clamping = false;
+        }
+
+        compute_extents();
     }
 
     void traverse(TraversalCallback *callback) {
         callback->put_parameter("data", m_data, +ParamFlags::Differentiable);
         for (auto& [name, attr]: m_attributes)
             callback->put_parameter(name, attr, +ParamFlags::Differentiable);
-        callback->put_parameter("extent", m_extent, +ParamFlags::ReadOnly);
+        callback->put_parameter("extent", m_extent_multiplier, +ParamFlags::ReadOnly);
+        callback->put_parameter("extent_adaptive_clamping", m_extent_adaptive_clamping, +ParamFlags::ReadOnly);
     }
 
     void parameters_changed() {
@@ -284,6 +294,19 @@ public:
             if (dr::width(attr) % count() != 0)
                 Throw("Attribute \"%s\" must have the same number of entries as ellipsoids (%u vs %u)", name.c_str(), dr::width(attr), count());
         }
+
+        compute_extents();
+    }
+
+    void compute_extents() {
+        if (m_extent_adaptive_clamping) {
+            auto indices = dr::arange<UInt32>(count());
+            Float opacities = dr::gather<Float>(m_attributes["opacities"], indices);
+            float alpha = 0.01f; // minimum response of the Gaussian
+            m_extents = dr::sqrt(2.f * dr::log(opacities / alpha)) * 3.0 / m_extent_multiplier;
+        }
+
+        m_extents_pointer = m_extents.data();
     }
 
     size_t count() const { return dr::width(m_data) / EllipsoidStructSize; }
@@ -307,7 +330,7 @@ public:
         }
 
         if (name == "extent")
-            return Float(m_extent);
+            return extents<Float>(si.prim_index, active);
 
         Throw("Unknown attribute %s!", name.c_str());
     }
@@ -424,7 +447,17 @@ public:
     }
 
     /// Various getters
-    ScalarFloat extent() const { return m_extent; }
+    template <typename Float_, typename Index_, typename Mask_ = dr::mask_t<Index_>>
+    Float_ extents(Index_ index, Mask_ active = true) const {
+        if constexpr (!dr::is_jit_v<Index_>) {
+            DRJIT_MARK_USED(active);
+            return m_extents_pointer[index];
+        } else {
+            return dr::gather<Float_>(m_extents, index, active);
+        }
+    }
+    FloatStorage& extents_data() { return m_extents; }
+    const FloatStorage& extents_data() const { return m_extents; }
     FloatStorage& data() { return m_data; }
     const FloatStorage& data() const { return m_data; }
     AttributesMap& attributes() { return m_attributes; }
@@ -438,7 +471,12 @@ private:
     float *m_data_pointer;
 
     /// The extent of the ellipsoid support defined by its shell
-    ScalarFloat m_extent;
+    ScalarFloat m_extent_multiplier;
+    bool m_extent_adaptive_clamping;
+    FloatStorage m_extents;
+
+    /// The pointer to the ellipsoid extents data above (used in Embree's kernel)
+    float *m_extents_pointer;
 
     /// Arbitrary attributes for ellipsoids
     AttributesMap m_attributes;
