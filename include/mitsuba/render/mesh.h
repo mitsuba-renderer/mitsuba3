@@ -428,6 +428,9 @@ protected:
      */
     void build_parameterization();
 
+    // Apply displacement map to vertex position (and recompute surface normals)
+    void apply_displacement_map();
+
     // Ensures that the sampling table are ready.
     DRJIT_INLINE void ensure_pmf_built() const {
         if (unlikely(m_area_pmf.empty()))
@@ -591,6 +594,9 @@ protected:
 
     /// Pointer to the scene that owns this mesh
     Scene<Float, Spectrum>* m_scene = nullptr;
+
+    /// Optional: displacement map to be applied during initialization
+    ref<Texture> m_displacement_map;
 };
 
 MI_EXTERN_CLASS(Mesh)
