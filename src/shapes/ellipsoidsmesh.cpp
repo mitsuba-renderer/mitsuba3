@@ -55,6 +55,10 @@ Mesh ellipsoids (:monosp:`EllipsoidsMesh`)
    - |float|
    - Specifies the extent of the ellipsoid shells. (Default: 3.0)
 
+ * - extent_adaptive_clamping
+   - |float|
+   - If True, use adaptive extent values based on the `opacities` attribute of the volumetric primitives. (Default: False)
+
  * - shell
    - |string| or |mesh|
    - Specifies the shell type. Could be one of :monosp:`box`, :monosp:`ico_sphere`,
@@ -356,7 +360,7 @@ private:
             const Transform4f& to_world = Transform4f::translate(ellipsoid.center) *
                                           Transform4f(rot) *
                                           Transform4f::scale(ellipsoid.scale) *
-                                          Transform4f::scale(m_ellipsoids.extent());
+                                          Transform4f::scale(m_ellipsoids.template extents<Float>(idx));
 
             int nb_vertices = (int) m_shell_vertices.size();
             int nb_faces    = (int) m_shell_faces.size();
@@ -374,7 +378,9 @@ private:
 
             for (int i = 0; i < nb_vertices; ++i) {
                 Point3f v = to_world.transform_affine(Point3f(m_shell_vertices[i]));
-                dr::scatter(m_vertex_positions, v, idx * nb_vertices + i);
+                // Convert to 32-bit precision
+                using JitInputPoint3f = Point<dr::replace_scalar_t<Float, InputFloat>, 3>;
+                dr::scatter(m_vertex_positions, JitInputPoint3f(v), idx * nb_vertices + i);
             }
 
             UInt32 offset = idx * uint32_t(nb_vertices);

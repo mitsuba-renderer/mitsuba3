@@ -7,7 +7,7 @@
 
 struct OptixEllipsoidsData {
     optix::BoundingBox3f bbox;
-    float extent;
+    float* extents;
     float* data;
 
 #ifdef __CUDACC__
@@ -41,8 +41,9 @@ extern "C" __global__ void __intersection__ellipsoids() {
 
     unsigned int prim_index = optixGetPrimitiveIndex();
     Vector3f center   = ellipsoid.center(prim_index);
-    Vector3f scale    = ellipsoid.scale(prim_index) * ellipsoid.extent;
+    Vector3f scale    = ellipsoid.scale(prim_index);
     Matrix3f rotation = ellipsoid.rotation(prim_index);
+    scale *= ellipsoid.extents[prim_index];
 
     // Ray in instance-space
     Ray3f ray = get_ray();

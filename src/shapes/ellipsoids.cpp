@@ -63,6 +63,10 @@ Ellipsoids (:monosp:`ellipsoids`)
    - |float|
    - Specifies the extent of the ellipsoid shells. (Default: 3.0)
 
+ * - extent_adaptive_clamping
+   - |float|
+   - If True, use adaptive extent values based on the `opacities` attribute of the volumetric primitives. (Default: False)
+
  * - to_world
    - |transform|
    - Specifies an optional linear object-to-world transformation.
@@ -310,7 +314,7 @@ public:
                                          dr::float64_array_t<FloatP>>;
         using ScalarValue  = dr::scalar_t<Value>;
         auto ellipsoid = m_ellipsoids.template get_ellipsoid<ScalarValue>(prim_index, active);
-        ellipsoid.scale *= m_ellipsoids.extent();
+        ellipsoid.scale *= m_ellipsoids.template extents<ScalarValue>(prim_index);
         auto [t, valid] = ray_ellipsoid_intersection<FloatP, Ray3fP>(ray, ellipsoid, active);
         return { t, dr::zeros<Point<FloatP, 2>>(), ((uint32_t) -1), prim_index };
     }
@@ -325,7 +329,7 @@ public:
                                          dr::float64_array_t<FloatP>>;
         using ScalarValue  = dr::scalar_t<Value>;
         auto ellipsoid = m_ellipsoids.template get_ellipsoid<ScalarValue>(prim_index, active);
-        ellipsoid.scale *= m_ellipsoids.extent();
+        ellipsoid.scale *= m_ellipsoids.template extents<ScalarValue>(prim_index);
         auto [t, valid] = ray_ellipsoid_intersection<FloatP>(ray, ellipsoid, active);
         return valid;
     }
@@ -351,7 +355,7 @@ public:
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
         auto ellipsoid = m_ellipsoids.template get_ellipsoid<Float>(pi.prim_index, active);
-        ellipsoid.scale *= m_ellipsoids.extent();
+        ellipsoid.scale *= m_ellipsoids.template extents<Float>(pi.prim_index, active);
         auto rot = dr::quat_to_matrix<Matrix3f>(ellipsoid.quat);
 
         si.t = dr::select(active, pi.t, dr::Infinity<Float>);
@@ -385,7 +389,7 @@ public:
             dr::eval(m_ellipsoids.data()); // Make sure the data is evaluated
             OptixEllipsoidsData data = {
                 m_bbox,
-                m_ellipsoids.extent(),
+                m_ellipsoids.extents_data().data(),
                 m_ellipsoids.data().data()
             };
             jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data, sizeof(OptixEllipsoidsData));
@@ -434,12 +438,14 @@ private:
     void recompute_bbox() {
         size_t ellipsoid_count = primitive_count();
         auto&& data = dr::migrate(m_ellipsoids.data(), AllocType::Host);
+        auto&& extents = dr::migrate(m_ellipsoids.extents_data(), AllocType::Host);
 
         Log(Debug, "Recomputing bounding boxes for \"%s\" ellipsoid ellipsoids", ellipsoid_count);
         if constexpr (dr::is_jit_v<Float>)
             dr::sync_thread();
 
         const float *ptr = data.data();
+        const float *ptr_extents = extents.data();
 
         BoundingBoxType *host_aabbs = (BoundingBoxType *) jit_malloc(
             AllocType::Host, sizeof(BoundingBoxType) * ellipsoid_count);
@@ -451,7 +457,7 @@ private:
             ScalarPoint3f center(ptr[idx + 0], ptr[idx + 1], ptr[idx + 2]);
             ScalarVector3f scale(ptr[idx + 3], ptr[idx + 4], ptr[idx + 5]);
             ScalarQuaternion4f quat(ptr[idx + 6], ptr[idx + 7], ptr[idx + 8], ptr[idx + 9]);
-            scale *= m_ellipsoids.extent();
+            scale *= ptr_extents[i];
             auto rot = dr::quat_to_matrix<ScalarMatrix3f>(quat);
 
             // Derivation here https://tavianator.com/2014/ellipsoid_bounding_boxes.html
