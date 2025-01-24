@@ -184,6 +184,12 @@ class Principled final : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
     MI_IMPORT_TYPES(Texture, MicrofacetDistribution)
+
+    DR_TRAVERSE_CB(Base, m_base_color, m_roughness, m_anisotropic, m_sheen,
+                   m_sheen_tint, m_spec_trans, m_flatness, m_spec_tint,
+                   m_clearcoat, m_clearcoat_gloss, m_metallic, m_eta,
+                   m_specular);
+
     using GTR1 = GTR1Isotropic<Float, Spectrum>;
 
     Principled(const Properties &props) : Base(props) {

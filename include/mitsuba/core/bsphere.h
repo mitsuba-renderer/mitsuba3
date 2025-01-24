@@ -74,6 +74,8 @@ template <typename Point_> struct BoundingSphere {
             dr::squared_norm(o) - dr::square(radius)
         );
     }
+
+    DRJIT_STRUCT_NODEF(BoundingSphere, center, radius)
 };
 
 /// Print a string representation of the bounding sphere

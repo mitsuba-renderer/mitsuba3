@@ -785,6 +785,12 @@ private:
     Float m_v[P_MAX + 1]; /// Longitudinal variance due to roughness
     Float m_s; /// Azimuthal roughness scaling factor
     Float m_sin_2k_alpha[3], m_cos_2k_alpha[3];
+
+    DR_TRAVERSE_CB(Base, m_longitudinal_roughness, m_azimuthal_roughness,
+                   m_alpha, m_eta, m_eumelanin, m_pheomelanin, m_sigma_a,
+                   m_v[0], m_v[1], m_v[2], m_v[3], m_s, m_sin_2k_alpha[0],
+                   m_sin_2k_alpha[1], m_sin_2k_alpha[2], m_cos_2k_alpha[0],
+                   m_cos_2k_alpha[1], m_cos_2k_alpha[2])
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(Hair, BSDF)

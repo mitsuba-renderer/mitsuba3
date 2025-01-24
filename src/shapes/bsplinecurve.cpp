@@ -1310,6 +1310,8 @@ private:
     mutable CUdeviceptr* m_radius_buffer_ptr = nullptr;
     mutable CUdeviceptr* m_index_buffer_ptr = nullptr;
 #endif
+
+    DR_TRAVERSE_CB(Base, m_curves_prim_idx, m_indices, m_control_points)
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(BSplineCurve, Shape)
