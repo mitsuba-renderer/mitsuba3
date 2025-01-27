@@ -5,7 +5,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /// Generic n-dimensional bounding sphere data structure
-template <typename Point_> struct BoundingSphere {
+template <typename Point_> struct BoundingSphere: drjit::TraversableBase {
     static constexpr size_t Size = Point_::Size;
     using Point                  = Point_;
     using Float                  = dr::value_t<Point>;
@@ -75,7 +75,7 @@ template <typename Point_> struct BoundingSphere {
         );
     }
 
-    DRJIT_STRUCT_NODEF(BoundingSphere, center, radius)
+    DR_TRAVERSE_CB(drjit::TraversableBase, center, radius);
 };
 
 /// Print a string representation of the bounding sphere
