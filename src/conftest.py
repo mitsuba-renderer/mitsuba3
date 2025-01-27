@@ -141,7 +141,7 @@ def pytest_configure(config):
 
 # Add support for generating reference images for RenderRegressionTest
 
-def pytest_addoption(parser):
+def pytest_addoption(parser, pluginmanager):
     parser.addoption("--generate_ref", action="store_true")
 
 @pytest.fixture(scope='session')
