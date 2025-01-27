@@ -185,10 +185,10 @@ Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask
 }
 
 MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
-Scene<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray, Mask coherent, Mask active) const {
+Scene<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray, uint32_t ray_flags, Mask coherent, Mask active) const {
     DRJIT_MARK_USED(coherent);
     if constexpr (dr::is_cuda_v<Float>)
-        return ray_intersect_preliminary_gpu(ray, active);
+        return ray_intersect_preliminary_gpu(ray, ray_flags, active);
     else
         return ray_intersect_preliminary_cpu(ray, coherent, active);
 }
@@ -574,7 +574,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
     NotImplementedError("accel_release_gpu");
 }
 MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
-Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &, Mask) const {
+Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &, uint32_t, Mask) const {
     NotImplementedError("ray_intersect_preliminary_gpu");
 }
 MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f

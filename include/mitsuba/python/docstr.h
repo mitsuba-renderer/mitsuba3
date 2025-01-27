@@ -5362,6 +5362,8 @@ discontinuities)doc";
 
 static const char *__doc_mitsuba_ParamFlags_NonDifferentiable = R"doc(Tracking gradients w.r.t. this parameter is not allowed)doc";
 
+static const char *__doc_mitsuba_ParamFlags_ReadOnly = R"doc()doc";
+
 static const char *__doc_mitsuba_PhaseFunction = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunction_2 = R"doc()doc";
@@ -6212,6 +6214,8 @@ differentiable with respect to the shapes parameters.)doc";
 static const char *__doc_mitsuba_RayFlags_All = R"doc(//! Compound compute flags)doc";
 
 static const char *__doc_mitsuba_RayFlags_AllNonDifferentiable = R"doc(Compute all fields of the surface interaction ignoring shape's motion)doc";
+
+static const char *__doc_mitsuba_RayFlags_BackfaceCulling = R"doc(Enable backface culling)doc";
 
 static const char *__doc_mitsuba_RayFlags_DetachShape = R"doc(Derivatives of the SurfaceInteraction fields ignore shape's motion)doc";
 
@@ -7494,6 +7498,8 @@ static const char *__doc_mitsuba_ShapeKDTree_to_string = R"doc(Return a human-re
 
 static const char *__doc_mitsuba_ShapeType = R"doc(Enumeration of all shape types in Mitsuba)doc";
 
+static const char *__doc_mitsuba_ShapeType_Ellipsoids = R"doc(Ellipsoids (`ellipsoids`))doc";
+
 static const char *__doc_mitsuba_ShapeType_BSplineCurve = R"doc(B-Spline curves (`bsplinecurve`))doc";
 
 static const char *__doc_mitsuba_ShapeType_Cylinder = R"doc(Cylinders (`cylinder`))doc";
@@ -7666,6 +7672,18 @@ Parameter ``si``:
 
 Returns:
     An trichromatic intensity or reflectance value)doc";
+
+static const char *__doc_mitsuba_Shape_eval_attribute_X =
+R"doc(Evaluate a dynamic shape attribute at the given surface interaction.
+
+Parameter ``name``:
+    Name of the attribute to evaluate
+
+Parameter ``si``:
+    Surface interaction associated with the query
+
+Returns:
+    An dynamic array of attribute values)doc";
 
 static const char *__doc_mitsuba_Shape_eval_parameterization =
 R"doc(Parameterize the mesh using UV values
@@ -10887,6 +10905,14 @@ R"doc(Solve a quadratic equation of the form a*x^2 + b*x + c = 0.
 Returns:
     ``True`` if a solution could be found)doc";
 
+static const char *__doc_mitsuba_math_improved_solve_quadratic =
+R"doc(Solve a quadratic equation of the form a*x^2 + b*x + c = 0.
+
+Taken from "Precision Improvements for Ray/Sphere Intersection", Ray Tracing Gems 2
+
+Returns:
+    ``True`` if a solution could be found)doc";
+
 static const char *__doc_mitsuba_math_ulpdiff =
 R"doc(Compare the difference in ULPs between a reference value and another
 given floating point number)doc";
@@ -12513,4 +12539,3 @@ static const char *__doc_operator_lshift = R"doc(Turns a vector of elements into
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif
-

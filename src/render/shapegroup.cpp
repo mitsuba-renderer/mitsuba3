@@ -12,6 +12,7 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
         m_kdtree = new ShapeKDTree(props);
 #endif
     m_has_meshes = false;
+    m_has_ellipsoids_meshes = false;
     m_has_others = false;
     m_has_bspline_curves = false;
     m_has_linear_curves = false;
@@ -43,8 +44,12 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
                     m_kdtree->add_shape(shape);
 #endif
                 uint32_t type = shape->shape_type();
-                bool is_mesh = (type == +ShapeType::Mesh);
+
+                bool is_mesh = shape->is_mesh() && (type == +ShapeType::Mesh);
                 m_has_meshes |= is_mesh;
+
+                bool is_ellipsoids_mesh = shape->is_mesh() && (type == +ShapeType::Ellipsoids);
+                m_has_ellipsoids_meshes |= is_ellipsoids_mesh;
 
                 bool is_bspline = (type == +ShapeType::BSplineCurve);
                 m_has_bspline_curves |= is_bspline;
@@ -52,7 +57,7 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
                 bool is_linear = (type == +ShapeType::LinearCurve);
                 m_has_linear_curves |= is_linear;
 
-                bool is_other = !is_mesh && !is_bspline && !is_linear;
+                bool is_other = !is_mesh && !is_ellipsoids_mesh && !is_bspline && !is_linear;
                 m_has_others |= is_other;
             }
         } else {
@@ -103,7 +108,7 @@ MI_VARIANT void ShapeGroup<Float, Spectrum>::traverse(TraversalCallback *callbac
     }
 }
 
-MI_VARIANT void ShapeGroup<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
+MI_VARIANT void ShapeGroup<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
     for (auto &s : m_shapes) {
         if (s->dirty()) {
             m_dirty = true;
@@ -111,7 +116,7 @@ MI_VARIANT void ShapeGroup<Float, Spectrum>::parameters_changed(const std::vecto
         }
     }
 
-    Base::parameters_changed();
+    Base::parameters_changed(keys);
 }
 
 
@@ -151,7 +156,7 @@ ShapeGroup<Float, Spectrum>::primitive_count() const {
 
     ScalarSize count = 0;
     for (auto shape : m_shapes)
-        count += shape->primitive_count();
+            count += shape->primitive_count();
 
     return count;
 }

@@ -395,6 +395,8 @@ public:
     size_t vertex_data_bytes() const;
     size_t face_data_bytes() const;
 
+    bool is_mesh(Mask /*unused*/ = true) const override;
+
 protected:
     Mesh(const Properties &);
     inline Mesh() {}

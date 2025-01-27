@@ -51,6 +51,9 @@ public:
     /// Return whether this shapegroup contains triangle mesh shapes
     bool has_meshes() const { return m_has_meshes; }
 
+    /// Return whether this shapegroup contains triangle ellipsoids mesh shapes
+    bool has_ellipsoids_meshes() const { return m_has_ellipsoids_meshes; }
+
     /// Return whether this shapegroup contains B-spline curve shapes
     bool has_bspline_curves() const { return m_has_bspline_curves; }
 
@@ -86,10 +89,7 @@ public:
 private:
     ScalarBoundingBox3f m_bbox;
     std::vector<ref<Base>> m_shapes;
-
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
     DynamicBuffer<UInt32> m_shapes_registry_ids;
-#endif
 
 #if defined(MI_ENABLE_EMBREE)
     RTCScene m_embree_scene = nullptr;
@@ -104,7 +104,8 @@ private:
     uint32_t m_sbt_offset;
 #endif
 
-    bool m_has_meshes, m_has_bspline_curves, m_has_linear_curves, m_has_others;
+    bool m_has_meshes, m_has_ellipsoids_meshes, m_has_bspline_curves,
+         m_has_linear_curves, m_has_others;
 };
 
 MI_EXTERN_CLASS(ShapeGroup)
