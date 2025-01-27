@@ -610,8 +610,6 @@ def process_docstring_callback(app, what, name, obj, options, lines):
     # Don't write class directive twice
     if not (what == 'class' and last_class_name == name):
         directive_type = what
-        if what == 'property':
-            directive_type = 'method'
 
         # Add the corresponding RST directive
         directive = '%s.. py:%s:: %s' % (
@@ -626,10 +624,6 @@ def process_docstring_callback(app, what, name, obj, options, lines):
             directive += cached_signature
 
         extracted_rst.append(directive + '\n')
-
-        # 'property' fields need an extra argument to the directive
-        if what == 'property':
-            extracted_rst.append(doc_indent + ':property:\n')
 
         # 'data' fields get extra arguments
         if what == 'data':

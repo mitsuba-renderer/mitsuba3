@@ -539,13 +539,11 @@
         Returns → str:
             *no description available*
 
-    .. py:method:: mitsuba.BSDF.m_components
-        :property:
+    .. py:property:: mitsuba.BSDF.m_components
 
         Flags for each component of this BSDF.
 
-    .. py:method:: mitsuba.BSDF.m_flags
-        :property:
+    .. py:property:: mitsuba.BSDF.m_flags
 
         Combined flags for all components of this BSDF.
 
@@ -668,8 +666,7 @@
             *no description available*
 
         
-    .. py:method:: mitsuba.BSDFContext.component
-        :property:
+    .. py:property:: mitsuba.BSDFContext.component
 
         Integer value of requested BSDF component index to be
         sampled/evaluated.
@@ -688,8 +685,7 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.BSDFContext.mode
-        :property:
+    .. py:property:: mitsuba.BSDFContext.mode
 
         Transported mode (radiance or importance)
 
@@ -703,8 +699,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.BSDFContext.type_mask
-        :property:
+    .. py:property:: mitsuba.BSDFContext.type_mask
 
         (self) -> int
 
@@ -1170,28 +1165,23 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.BSDFSample3f.eta
-        :property:
+    .. py:property:: mitsuba.BSDFSample3f.eta
 
         Relative index of refraction in the sampled direction
 
-    .. py:method:: mitsuba.BSDFSample3f.pdf
-        :property:
+    .. py:property:: mitsuba.BSDFSample3f.pdf
 
         Probability density at the sample
 
-    .. py:method:: mitsuba.BSDFSample3f.sampled_component
-        :property:
+    .. py:property:: mitsuba.BSDFSample3f.sampled_component
 
         Stores the component index that was sampled by BSDF::sample()
 
-    .. py:method:: mitsuba.BSDFSample3f.sampled_type
-        :property:
+    .. py:property:: mitsuba.BSDFSample3f.sampled_type
 
         Stores the component type that was sampled by BSDF::sample()
 
-    .. py:method:: mitsuba.BSDFSample3f.wo
-        :property:
+    .. py:property:: mitsuba.BSDFSample3f.wo
 
         Normalized outgoing direction in local coordinates
 
@@ -2024,13 +2014,11 @@
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox2f.max
-        :property:
+    .. py:property:: mitsuba.BoundingBox2f.max
 
         (self) -> :py:obj:`mitsuba.Point2f`
 
-    .. py:method:: mitsuba.BoundingBox2f.min
-        :property:
+    .. py:property:: mitsuba.BoundingBox2f.min
 
         (self) -> :py:obj:`mitsuba.Point2f`
 
@@ -2304,13 +2292,11 @@
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox3f.max
-        :property:
+    .. py:property:: mitsuba.BoundingBox3f.max
 
         (self) -> :py:obj:`mitsuba.Point3f`
 
-    .. py:method:: mitsuba.BoundingBox3f.min
-        :property:
+    .. py:property:: mitsuba.BoundingBox3f.min
 
         (self) -> :py:obj:`mitsuba.Point3f`
 
@@ -2435,8 +2421,7 @@
         3. ``__init__(self, arg: :py:obj:`mitsuba.BoundingSphere3f`) -> None``
 
         
-    .. py:method:: mitsuba.BoundingSphere3f.center
-        :property:
+    .. py:property:: mitsuba.BoundingSphere3f.center
 
         (self) -> :py:obj:`mitsuba.Point3f`
 
@@ -2478,8 +2463,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingSphere3f.radius
-        :property:
+    .. py:property:: mitsuba.BoundingSphere3f.radius
 
         (self) -> drjit.llvm.ad.Float
 
@@ -2595,8 +2579,7 @@
         Initialize from a given density function on the interval ``range``
 
         
-    .. py:method:: mitsuba.ContinuousDistribution.cdf
-        :property:
+    .. py:property:: mitsuba.ContinuousDistribution.cdf
 
         Return the unnormalized discrete cumulative distribution function over
         intervals
@@ -2690,13 +2673,11 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.ContinuousDistribution.pdf
-        :property:
+    .. py:property:: mitsuba.ContinuousDistribution.pdf
 
         Return the unnormalized discretized probability density function
 
-    .. py:method:: mitsuba.ContinuousDistribution.range
-        :property:
+    .. py:property:: mitsuba.ContinuousDistribution.range
 
         Return the range of the distribution
 
@@ -2895,18 +2876,15 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.DirectionSample3f.d
-        :property:
+    .. py:property:: mitsuba.DirectionSample3f.d
 
         Unit direction from the reference point to the target shape
 
-    .. py:method:: mitsuba.DirectionSample3f.dist
-        :property:
+    .. py:property:: mitsuba.DirectionSample3f.dist
 
         Distance from the reference point to the target shape
 
-    .. py:method:: mitsuba.DirectionSample3f.emitter
-        :property:
+    .. py:property:: mitsuba.DirectionSample3f.emitter
 
         Optional: pointer to an associated object
 
@@ -2985,8 +2963,7 @@
         Initialize from a given probability mass function
 
         
-    .. py:method:: mitsuba.DiscreteDistribution.cdf
-        :property:
+    .. py:property:: mitsuba.DiscreteDistribution.cdf
 
         Return the unnormalized cumulative distribution function
 
@@ -3060,8 +3037,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.DiscreteDistribution.pmf
-        :property:
+    .. py:property:: mitsuba.DiscreteDistribution.pmf
 
         Return the unnormalized probability mass function
 
@@ -3224,18 +3200,15 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Emitter.m_flags
-        :property:
+    .. py:property:: mitsuba.Emitter.m_flags
 
         Combined flags for all properties of this emitter.
 
-    .. py:method:: mitsuba.Emitter.m_needs_sample_2
-        :property:
+    .. py:property:: mitsuba.Emitter.m_needs_sample_2
 
         (self) -> bool
 
-    .. py:method:: mitsuba.Emitter.m_needs_sample_3
-        :property:
+    .. py:property:: mitsuba.Emitter.m_needs_sample_3
 
         (self) -> bool
 
@@ -4104,8 +4077,7 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Film.m_flags
-        :property:
+    .. py:property:: mitsuba.Film.m_flags
 
         Combined flags for all properties of this film.
 
@@ -4346,18 +4318,15 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Frame3f.n
-        :property:
+    .. py:property:: mitsuba.Frame3f.n
 
         (self) -> :py:obj:`mitsuba.Normal3f`
 
-    .. py:method:: mitsuba.Frame3f.s
-        :property:
+    .. py:property:: mitsuba.Frame3f.s
 
         (self) -> :py:obj:`mitsuba.Vector3f`
 
-    .. py:method:: mitsuba.Frame3f.t
-        :property:
+    .. py:property:: mitsuba.Frame3f.t
 
         (self) -> :py:obj:`mitsuba.Vector3f`
 
@@ -5296,13 +5265,11 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.Interaction3f.n
-        :property:
+    .. py:property:: mitsuba.Interaction3f.n
 
         Geometric normal (only valid for ``SurfaceInteraction``)
 
-    .. py:method:: mitsuba.Interaction3f.p
-        :property:
+    .. py:property:: mitsuba.Interaction3f.p
 
         Position of the interaction in world coordinates
 
@@ -5326,18 +5293,15 @@
         Returns → :py:obj:`mitsuba.Ray3f`:
             *no description available*
 
-    .. py:method:: mitsuba.Interaction3f.t
-        :property:
+    .. py:property:: mitsuba.Interaction3f.t
 
         Distance traveled along the ray
 
-    .. py:method:: mitsuba.Interaction3f.time
-        :property:
+    .. py:property:: mitsuba.Interaction3f.time
 
         Time value associated with the interaction
 
-    .. py:method:: mitsuba.Interaction3f.wavelengths
-        :property:
+    .. py:property:: mitsuba.Interaction3f.wavelengths
 
         Wavelengths associated with the ray that produced this interaction
 
@@ -5403,8 +5367,7 @@
         ``nodes``
 
         
-    .. py:method:: mitsuba.IrregularContinuousDistribution.cdf
-        :property:
+    .. py:property:: mitsuba.IrregularContinuousDistribution.cdf
 
         Return the nodes of the underlying discretization
 
@@ -5490,8 +5453,7 @@
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.IrregularContinuousDistribution.nodes
-        :property:
+    .. py:property:: mitsuba.IrregularContinuousDistribution.nodes
 
         Return the nodes of the underlying discretization
 
@@ -5502,13 +5464,11 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.IrregularContinuousDistribution.pdf
-        :property:
+    .. py:property:: mitsuba.IrregularContinuousDistribution.pdf
 
         Return the nodes of the underlying discretization
 
-    .. py:method:: mitsuba.IrregularContinuousDistribution.range
-        :property:
+    .. py:property:: mitsuba.IrregularContinuousDistribution.range
 
         Return the range of the distribution
 
@@ -6870,18 +6830,15 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Medium.m_has_spectral_extinction
-        :property:
+    .. py:property:: mitsuba.Medium.m_has_spectral_extinction
 
         (self) -> bool
 
-    .. py:method:: mitsuba.Medium.m_is_homogeneous
-        :property:
+    .. py:property:: mitsuba.Medium.m_is_homogeneous
 
         (self) -> bool
 
-    .. py:method:: mitsuba.Medium.m_sample_emitters
-        :property:
+    .. py:property:: mitsuba.Medium.m_sample_emitters
 
         (self) -> bool
 
@@ -6988,38 +6945,31 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.MediumInteraction3f.combined_extinction
-        :property:
+    .. py:property:: mitsuba.MediumInteraction3f.combined_extinction
 
         (self) -> :py:obj:`mitsuba.Color3f`
 
-    .. py:method:: mitsuba.MediumInteraction3f.medium
-        :property:
+    .. py:property:: mitsuba.MediumInteraction3f.medium
 
         Pointer to the associated medium
 
-    .. py:method:: mitsuba.MediumInteraction3f.mint
-        :property:
+    .. py:property:: mitsuba.MediumInteraction3f.mint
 
         mint used when sampling the given distance ``t``
 
-    .. py:method:: mitsuba.MediumInteraction3f.sh_frame
-        :property:
+    .. py:property:: mitsuba.MediumInteraction3f.sh_frame
 
         Shading frame
 
-    .. py:method:: mitsuba.MediumInteraction3f.sigma_n
-        :property:
+    .. py:property:: mitsuba.MediumInteraction3f.sigma_n
 
         (self) -> :py:obj:`mitsuba.Color3f`
 
-    .. py:method:: mitsuba.MediumInteraction3f.sigma_s
-        :property:
+    .. py:property:: mitsuba.MediumInteraction3f.sigma_s
 
         (self) -> :py:obj:`mitsuba.Color3f`
 
-    .. py:method:: mitsuba.MediumInteraction3f.sigma_t
-        :property:
+    .. py:property:: mitsuba.MediumInteraction3f.sigma_t
 
         (self) -> :py:obj:`mitsuba.Color3f`
 
@@ -7045,8 +6995,7 @@
         Returns → :py:obj:`mitsuba.Vector3f`:
             *no description available*
 
-    .. py:method:: mitsuba.MediumInteraction3f.wi
-        :property:
+    .. py:property:: mitsuba.MediumInteraction3f.wi
 
         Incident direction in world frame
 
@@ -8027,8 +7976,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Object.ptr
-        :property:
+    .. py:property:: mitsuba.Object.ptr
 
         (self) -> int
 
@@ -8258,8 +8206,7 @@
             *no description available*
 
         
-    .. py:method:: mitsuba.PCG32.inc
-        :property:
+    .. py:property:: mitsuba.PCG32.inc
 
         Sequence increment of the PCG32 PRNG (an unsigned 64-bit integer or integer array). Please see the original paper for details on this field.
 
@@ -8384,8 +8331,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.state
-        :property:
+    .. py:property:: mitsuba.PCG32.state
 
         Sequence state of the PCG32 PRNG (an unsigned 64-bit integer or integer array). Please see the original paper for details on this field.
 
@@ -8480,8 +8426,7 @@
         Returns → str:
             *no description available*
 
-    .. py:method:: mitsuba.PhaseFunction.m_flags
-        :property:
+    .. py:property:: mitsuba.PhaseFunction.m_flags
 
         Type of phase function (e.g. anisotropic)
 
@@ -8544,13 +8489,11 @@
 
     //! @}
 
-    .. py:method:: mitsuba.PhaseFunctionContext.component
-        :property:
+    .. py:property:: mitsuba.PhaseFunctionContext.component
 
         (self) -> int
 
-    .. py:method:: mitsuba.PhaseFunctionContext.mode
-        :property:
+    .. py:property:: mitsuba.PhaseFunctionContext.mode
 
         Transported mode (radiance or importance)
 
@@ -8564,13 +8507,11 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.PhaseFunctionContext.sampler
-        :property:
+    .. py:property:: mitsuba.PhaseFunctionContext.sampler
 
         Sampler object
 
-    .. py:method:: mitsuba.PhaseFunctionContext.type_mask
-        :property:
+    .. py:property:: mitsuba.PhaseFunctionContext.type_mask
 
         (self) -> int
 
@@ -8828,34 +8769,28 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.PositionSample3f.delta
-        :property:
+    .. py:property:: mitsuba.PositionSample3f.delta
 
         Set if the sample was drawn from a degenerate (Dirac delta)
         distribution
 
-    .. py:method:: mitsuba.PositionSample3f.n
-        :property:
+    .. py:property:: mitsuba.PositionSample3f.n
 
         Sampled surface normal (if applicable)
 
-    .. py:method:: mitsuba.PositionSample3f.p
-        :property:
+    .. py:property:: mitsuba.PositionSample3f.p
 
         Sampled position
 
-    .. py:method:: mitsuba.PositionSample3f.pdf
-        :property:
+    .. py:property:: mitsuba.PositionSample3f.pdf
 
         Probability density at the sample
 
-    .. py:method:: mitsuba.PositionSample3f.time
-        :property:
+    .. py:property:: mitsuba.PositionSample3f.time
 
         Associated time value
 
-    .. py:method:: mitsuba.PositionSample3f.uv
-        :property:
+    .. py:property:: mitsuba.PositionSample3f.uv
 
         Optional: 2D sample position associated with the record
 
@@ -8915,8 +8850,7 @@
         Returns → :py:obj:`mitsuba.SurfaceInteraction3f`:
             A data structure containing the detailed information
 
-    .. py:method:: mitsuba.PreliminaryIntersection3f.instance
-        :property:
+    .. py:property:: mitsuba.PreliminaryIntersection3f.instance
 
         Stores a pointer to the parent instance (if applicable)
 
@@ -8927,28 +8861,23 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.PreliminaryIntersection3f.prim_index
-        :property:
+    .. py:property:: mitsuba.PreliminaryIntersection3f.prim_index
 
         Primitive index, e.g. the triangle ID (if applicable)
 
-    .. py:method:: mitsuba.PreliminaryIntersection3f.prim_uv
-        :property:
+    .. py:property:: mitsuba.PreliminaryIntersection3f.prim_uv
 
         2D coordinates on the primitive surface parameterization
 
-    .. py:method:: mitsuba.PreliminaryIntersection3f.shape
-        :property:
+    .. py:property:: mitsuba.PreliminaryIntersection3f.shape
 
         Pointer to the associated shape
 
-    .. py:method:: mitsuba.PreliminaryIntersection3f.shape_index
-        :property:
+    .. py:property:: mitsuba.PreliminaryIntersection3f.shape_index
 
         Shape index, e.g. the shape ID in shapegroup (if applicable)
 
-    .. py:method:: mitsuba.PreliminaryIntersection3f.t
-        :property:
+    .. py:property:: mitsuba.PreliminaryIntersection3f.t
 
         Distance traveled along the ray
 
@@ -9335,28 +9264,23 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Ray2f.d
-        :property:
+    .. py:property:: mitsuba.Ray2f.d
 
         Ray direction
 
-    .. py:method:: mitsuba.Ray2f.maxt
-        :property:
+    .. py:property:: mitsuba.Ray2f.maxt
 
         Maximum position on the ray segment
 
-    .. py:method:: mitsuba.Ray2f.o
-        :property:
+    .. py:property:: mitsuba.Ray2f.o
 
         Ray origin
 
-    .. py:method:: mitsuba.Ray2f.time
-        :property:
+    .. py:property:: mitsuba.Ray2f.time
 
         Time value associated with this ray
 
-    .. py:method:: mitsuba.Ray2f.wavelengths
-        :property:
+    .. py:property:: mitsuba.Ray2f.wavelengths
 
         Wavelength associated with the ray
 
@@ -9411,28 +9335,23 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Ray3d.d
-        :property:
+    .. py:property:: mitsuba.Ray3d.d
 
         Ray direction
 
-    .. py:method:: mitsuba.Ray3d.maxt
-        :property:
+    .. py:property:: mitsuba.Ray3d.maxt
 
         Maximum position on the ray segment
 
-    .. py:method:: mitsuba.Ray3d.o
-        :property:
+    .. py:property:: mitsuba.Ray3d.o
 
         Ray origin
 
-    .. py:method:: mitsuba.Ray3d.time
-        :property:
+    .. py:property:: mitsuba.Ray3d.time
 
         Time value associated with this ray
 
-    .. py:method:: mitsuba.Ray3d.wavelengths
-        :property:
+    .. py:property:: mitsuba.Ray3d.wavelengths
 
         Wavelength associated with the ray
 
@@ -9487,28 +9406,23 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Ray3f.d
-        :property:
+    .. py:property:: mitsuba.Ray3f.d
 
         Ray direction
 
-    .. py:method:: mitsuba.Ray3f.maxt
-        :property:
+    .. py:property:: mitsuba.Ray3f.maxt
 
         Maximum position on the ray segment
 
-    .. py:method:: mitsuba.Ray3f.o
-        :property:
+    .. py:property:: mitsuba.Ray3f.o
 
         Ray origin
 
-    .. py:method:: mitsuba.Ray3f.time
-        :property:
+    .. py:property:: mitsuba.Ray3f.time
 
         Time value associated with this ray
 
-    .. py:method:: mitsuba.Ray3f.wavelengths
-        :property:
+    .. py:property:: mitsuba.Ray3f.wavelengths
 
         Wavelength associated with the ray
 
@@ -9549,28 +9463,23 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.RayDifferential3f.d_x
-        :property:
+    .. py:property:: mitsuba.RayDifferential3f.d_x
 
         (self) -> :py:obj:`mitsuba.Vector3f`
 
-    .. py:method:: mitsuba.RayDifferential3f.d_y
-        :property:
+    .. py:property:: mitsuba.RayDifferential3f.d_y
 
         (self) -> :py:obj:`mitsuba.Vector3f`
 
-    .. py:method:: mitsuba.RayDifferential3f.has_differentials
-        :property:
+    .. py:property:: mitsuba.RayDifferential3f.has_differentials
 
         (self) -> bool
 
-    .. py:method:: mitsuba.RayDifferential3f.o_x
-        :property:
+    .. py:property:: mitsuba.RayDifferential3f.o_x
 
         (self) -> :py:obj:`mitsuba.Point3f`
 
-    .. py:method:: mitsuba.RayDifferential3f.o_y
-        :property:
+    .. py:property:: mitsuba.RayDifferential3f.o_y
 
         (self) -> :py:obj:`mitsuba.Point3f`
 
@@ -9859,13 +9768,11 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.SGGXPhaseFunctionParams.diag
-        :property:
+    .. py:property:: mitsuba.SGGXPhaseFunctionParams.diag
 
         (self) -> drjit.llvm.ad.Array3f
 
-    .. py:method:: mitsuba.SGGXPhaseFunctionParams.off_diag
-        :property:
+    .. py:property:: mitsuba.SGGXPhaseFunctionParams.off_diag
 
         (self) -> drjit.llvm.ad.Array3f
 
@@ -10063,8 +9970,7 @@
             *no description available*
 
 
-    .. py:method:: mitsuba.SamplingIntegrator.hide_emitters
-        :property:
+    .. py:property:: mitsuba.SamplingIntegrator.hide_emitters
 
         (self) -> bool
 
@@ -10331,13 +10237,11 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox2f.max
-        :property:
+    .. py:property:: mitsuba.ScalarBoundingBox2f.max
 
         (self) -> :py:obj:`mitsuba.ScalarPoint2f`
 
-    .. py:method:: mitsuba.ScalarBoundingBox2f.min
-        :property:
+    .. py:property:: mitsuba.ScalarBoundingBox2f.min
 
         (self) -> :py:obj:`mitsuba.ScalarPoint2f`
 
@@ -10611,13 +10515,11 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox3f.max
-        :property:
+    .. py:property:: mitsuba.ScalarBoundingBox3f.max
 
         (self) -> :py:obj:`mitsuba.ScalarPoint3f`
 
-    .. py:method:: mitsuba.ScalarBoundingBox3f.min
-        :property:
+    .. py:property:: mitsuba.ScalarBoundingBox3f.min
 
         (self) -> :py:obj:`mitsuba.ScalarPoint3f`
 
@@ -10742,8 +10644,7 @@
         3. ``__init__(self, arg: :py:obj:`mitsuba.ScalarBoundingSphere3f`) -> None``
 
         
-    .. py:method:: mitsuba.ScalarBoundingSphere3f.center
-        :property:
+    .. py:property:: mitsuba.ScalarBoundingSphere3f.center
 
         (self) -> :py:obj:`mitsuba.ScalarPoint3f`
 
@@ -10785,8 +10686,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingSphere3f.radius
-        :property:
+    .. py:property:: mitsuba.ScalarBoundingSphere3f.radius
 
         (self) -> float
 
@@ -10919,13 +10819,11 @@
         Returns → :py:obj:`mitsuba.ScalarTransform3d`:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarTransform3d.inverse_transpose
-        :property:
+    .. py:property:: mitsuba.ScalarTransform3d.inverse_transpose
 
         (self) -> drjit.scalar.Matrix3f64
 
-    .. py:method:: mitsuba.ScalarTransform3d.matrix
-        :property:
+    .. py:property:: mitsuba.ScalarTransform3d.matrix
 
         (self) -> drjit.scalar.Matrix3f64
 
@@ -11041,13 +10939,11 @@
         Returns → :py:obj:`mitsuba.ScalarTransform3f`:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarTransform3f.inverse_transpose
-        :property:
+    .. py:property:: mitsuba.ScalarTransform3f.inverse_transpose
 
         (self) -> drjit.scalar.Matrix3f
 
-    .. py:method:: mitsuba.ScalarTransform3f.matrix
-        :property:
+    .. py:property:: mitsuba.ScalarTransform3f.matrix
 
         (self) -> drjit.scalar.Matrix3f
 
@@ -11181,8 +11077,7 @@
         Returns → :py:obj:`mitsuba.ScalarTransform4d`:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarTransform4d.inverse_transpose
-        :property:
+    .. py:property:: mitsuba.ScalarTransform4d.inverse_transpose
 
         (self) -> drjit.scalar.Matrix4f64
 
@@ -11202,8 +11097,7 @@
         Returns → :py:obj:`mitsuba.ScalarTransform4d`:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarTransform4d.matrix
-        :property:
+    .. py:property:: mitsuba.ScalarTransform4d.matrix
 
         (self) -> drjit.scalar.Matrix4f64
 
@@ -11388,8 +11282,7 @@
         Returns → :py:obj:`mitsuba.ScalarTransform4f`:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarTransform4f.inverse_transpose
-        :property:
+    .. py:property:: mitsuba.ScalarTransform4f.inverse_transpose
 
         (self) -> drjit.scalar.Matrix4f
 
@@ -11409,8 +11302,7 @@
         Returns → :py:obj:`mitsuba.ScalarTransform4f`:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarTransform4f.matrix
-        :property:
+    .. py:property:: mitsuba.ScalarTransform4f.matrix
 
         (self) -> drjit.scalar.Matrix4f
 
@@ -12274,18 +12166,15 @@
         Returns → :py:obj:`mitsuba.Shape`:
             *no description available*
 
-    .. py:method:: mitsuba.Sensor.m_film
-        :property:
+    .. py:property:: mitsuba.Sensor.m_film
 
         (self) -> :py:obj:`mitsuba.Film`
 
-    .. py:method:: mitsuba.Sensor.m_needs_sample_2
-        :property:
+    .. py:property:: mitsuba.Sensor.m_needs_sample_2
 
         (self) -> bool
 
-    .. py:method:: mitsuba.Sensor.m_needs_sample_3
-        :property:
+    .. py:property:: mitsuba.Sensor.m_needs_sample_3
 
         (self) -> bool
 
@@ -14034,24 +13923,20 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.SilhouetteSample3f.d
-        :property:
+    .. py:property:: mitsuba.SilhouetteSample3f.d
 
         Direction of the boundary segment sample
 
-    .. py:method:: mitsuba.SilhouetteSample3f.discontinuity_type
-        :property:
+    .. py:property:: mitsuba.SilhouetteSample3f.discontinuity_type
 
         Type of discontinuity (DiscontinuityFlags)
 
-    .. py:method:: mitsuba.SilhouetteSample3f.flags
-        :property:
+    .. py:property:: mitsuba.SilhouetteSample3f.flags
 
         The set of ``DiscontinuityFlags`` that were used to generate this
         sample
 
-    .. py:method:: mitsuba.SilhouetteSample3f.foreshortening
-        :property:
+    .. py:property:: mitsuba.SilhouetteSample3f.foreshortening
 
         Local-form boundary foreshortening term.
 
@@ -14065,19 +13950,16 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.SilhouetteSample3f.offset
-        :property:
+    .. py:property:: mitsuba.SilhouetteSample3f.offset
 
         Offset along the boundary segment direction (`d`) to avoid self-
         intersections.
 
-    .. py:method:: mitsuba.SilhouetteSample3f.prim_index
-        :property:
+    .. py:property:: mitsuba.SilhouetteSample3f.prim_index
 
         Primitive index, e.g. the triangle ID (if applicable)
 
-    .. py:method:: mitsuba.SilhouetteSample3f.projection_index
-        :property:
+    .. py:property:: mitsuba.SilhouetteSample3f.projection_index
 
         Projection index indicator
 
@@ -14090,18 +13972,15 @@
         the opposite edge p1->p2), index 1 stands for the edge p1->p2, and
         index 2 for p2->p0.
 
-    .. py:method:: mitsuba.SilhouetteSample3f.scene_index
-        :property:
+    .. py:property:: mitsuba.SilhouetteSample3f.scene_index
 
         Index of the shape in the scene (if applicable)
 
-    .. py:method:: mitsuba.SilhouetteSample3f.shape
-        :property:
+    .. py:property:: mitsuba.SilhouetteSample3f.shape
 
         Pointer to the associated shape
 
-    .. py:method:: mitsuba.SilhouetteSample3f.silhouette_d
-        :property:
+    .. py:property:: mitsuba.SilhouetteSample3f.silhouette_d
 
         Direction of the silhouette curve at the boundary point
 
@@ -14736,8 +14615,7 @@
 
         Field specifier with size and offset
 
-    .. py:method:: mitsuba.Struct.Field.blend
-        :property:
+    .. py:property:: mitsuba.Struct.Field.blend
 
         For use with StructConverter::convert()
 
@@ -14747,8 +14625,7 @@
         Flags::Normalized flag. Gamma-corrected fields will be blended in
         linear space.
 
-    .. py:method:: mitsuba.Struct.Field.flags
-        :property:
+    .. py:property:: mitsuba.Struct.Field.flags
 
         Additional flags
 
@@ -14772,13 +14649,11 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Struct.Field.name
-        :property:
+    .. py:property:: mitsuba.Struct.Field.name
 
         Name of the field
 
-    .. py:method:: mitsuba.Struct.Field.offset
-        :property:
+    .. py:property:: mitsuba.Struct.Field.offset
 
         Offset within the ``Struct`` (in bytes)
 
@@ -14787,13 +14662,11 @@
         Returns → tuple[float, float]:
             *no description available*
 
-    .. py:method:: mitsuba.Struct.Field.size
-        :property:
+    .. py:property:: mitsuba.Struct.Field.size
 
         Size in bytes
 
-    .. py:method:: mitsuba.Struct.Field.type
-        :property:
+    .. py:property:: mitsuba.Struct.Field.type
 
         Type identifier
 
@@ -15119,33 +14992,27 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.dn_du
-        :property:
+    .. py:property:: mitsuba.SurfaceInteraction3f.dn_du
 
         Normal partials wrt. the UV parameterization
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.dn_dv
-        :property:
+    .. py:property:: mitsuba.SurfaceInteraction3f.dn_dv
 
         Normal partials wrt. the UV parameterization
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.dp_du
-        :property:
+    .. py:property:: mitsuba.SurfaceInteraction3f.dp_du
 
         Position partials wrt. the UV parameterization
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.dp_dv
-        :property:
+    .. py:property:: mitsuba.SurfaceInteraction3f.dp_dv
 
         Position partials wrt. the UV parameterization
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.duv_dx
-        :property:
+    .. py:property:: mitsuba.SurfaceInteraction3f.duv_dx
 
         UV partials wrt. changes in screen-space
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.duv_dy
-        :property:
+    .. py:property:: mitsuba.SurfaceInteraction3f.duv_dy
 
         UV partials wrt. changes in screen-space
 
@@ -15180,8 +15047,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.instance
-        :property:
+    .. py:property:: mitsuba.SurfaceInteraction3f.instance
 
         Stores a pointer to the parent instance (if applicable)
 
@@ -15199,18 +15065,15 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.prim_index
-        :property:
+    .. py:property:: mitsuba.SurfaceInteraction3f.prim_index
 
         Primitive index, e.g. the triangle ID (if applicable)
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.sh_frame
-        :property:
+    .. py:property:: mitsuba.SurfaceInteraction3f.sh_frame
 
         Shading frame
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.shape
-        :property:
+    .. py:property:: mitsuba.SurfaceInteraction3f.shape
 
         Pointer to the associated shape
 
@@ -15320,13 +15183,11 @@
             Equivalent Mueller matrix that operates in world-space
             coordinates.
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.uv
-        :property:
+    .. py:property:: mitsuba.SurfaceInteraction3f.uv
 
         UV surface coordinates
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.wi
-        :property:
+    .. py:property:: mitsuba.SurfaceInteraction3f.wi
 
         Incident direction in the local shading frame
 
@@ -15819,8 +15680,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.shape
-        :property:
+    .. py:property:: mitsuba.Texture1f.shape
 
         Return the texture shape
 
@@ -16100,8 +15960,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.shape
-        :property:
+    .. py:property:: mitsuba.Texture2f.shape
 
         Return the texture shape
 
@@ -16381,8 +16240,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.shape
-        :property:
+    .. py:property:: mitsuba.Texture3f.shape
 
         Return the texture shape
 
@@ -16720,13 +16578,11 @@
         Returns → :py:obj:`mitsuba.Transform3d`:
             *no description available*
 
-    .. py:method:: mitsuba.Transform3d.inverse_transpose
-        :property:
+    .. py:property:: mitsuba.Transform3d.inverse_transpose
 
         (self) -> drjit.llvm.ad.Matrix3f64
 
-    .. py:method:: mitsuba.Transform3d.matrix
-        :property:
+    .. py:property:: mitsuba.Transform3d.matrix
 
         (self) -> drjit.llvm.ad.Matrix3f64
 
@@ -16846,13 +16702,11 @@
         Returns → :py:obj:`mitsuba.Transform3f`:
             *no description available*
 
-    .. py:method:: mitsuba.Transform3f.inverse_transpose
-        :property:
+    .. py:property:: mitsuba.Transform3f.inverse_transpose
 
         (self) -> drjit.llvm.ad.Matrix3f
 
-    .. py:method:: mitsuba.Transform3f.matrix
-        :property:
+    .. py:property:: mitsuba.Transform3f.matrix
 
         (self) -> drjit.llvm.ad.Matrix3f
 
@@ -16990,8 +16844,7 @@
         Returns → :py:obj:`mitsuba.Transform4d`:
             *no description available*
 
-    .. py:method:: mitsuba.Transform4d.inverse_transpose
-        :property:
+    .. py:property:: mitsuba.Transform4d.inverse_transpose
 
         (self) -> drjit.llvm.ad.Matrix4f64
 
@@ -17011,8 +16864,7 @@
         Returns → :py:obj:`mitsuba.Transform4d`:
             *no description available*
 
-    .. py:method:: mitsuba.Transform4d.matrix
-        :property:
+    .. py:property:: mitsuba.Transform4d.matrix
 
         (self) -> drjit.llvm.ad.Matrix4f64
 
@@ -17201,8 +17053,7 @@
         Returns → :py:obj:`mitsuba.Transform4f`:
             *no description available*
 
-    .. py:method:: mitsuba.Transform4f.inverse_transpose
-        :property:
+    .. py:property:: mitsuba.Transform4f.inverse_transpose
 
         (self) -> drjit.llvm.ad.Matrix4f
 
@@ -17222,8 +17073,7 @@
         Returns → :py:obj:`mitsuba.Transform4f`:
             *no description available*
 
-    .. py:method:: mitsuba.Transform4f.matrix
-        :property:
+    .. py:property:: mitsuba.Transform4f.matrix
 
         (self) -> drjit.llvm.ad.Matrix4f
 
