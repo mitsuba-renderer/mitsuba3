@@ -36,14 +36,15 @@ def test01_empty(variants_vec_backends_once_rgb):
     bs_test, weight_test = normalmap_bsdf.sample(mi.BSDFContext(), si, sample1, sample2)
 
     # ignore quantities for zero-weight samples!
-    bs_ref.wo[dr.all(dr.eq(weight_ref, 0))] = 0
-    bs_test.wo[dr.all(dr.eq(weight_test, 0))] = 0
-    bs_ref.pdf[dr.all(dr.eq(weight_ref, 0))] = 0
-    bs_test.pdf[dr.all(dr.eq(weight_test, 0))] = 0
+    bs_ref.wo[dr.all(weight_ref == 0)] = 0
+    bs_test.wo[dr.all(weight_test == 0)] = 0
+    bs_ref.pdf[dr.all(weight_ref == 0)] = 0
+    bs_test.pdf[dr.all(weight_test == 0)] = 0
 
     assert dr.allclose(bs_ref.wo, bs_test.wo)
     assert dr.allclose(bs_ref.pdf, bs_test.pdf)
     assert dr.allclose(weight_ref, weight_test)
+
 
 def test02_tilted(variants_vec_backends_once_rgb):
     # Construct a "local" frame representing a normal perturbation
@@ -97,10 +98,10 @@ def test02_tilted(variants_vec_backends_once_rgb):
     weight_raw[wo_raw.z * bs_raw.wo.z <= 0] = 0
 
     # ignore quantities for zero-weight samples!
-    wo_raw[dr.all(dr.eq(weight_raw, 0))] = 0
-    wo_test[dr.all(dr.eq(weight_test, 0))] = 0
-    bs_raw.pdf[dr.all(dr.eq(weight_raw, 0))] = 0
-    bs_test.pdf[dr.all(dr.eq(weight_test, 0))] = 0
+    wo_raw[dr.all(weight_raw == 0)] = 0
+    wo_test[dr.all(weight_test == 0)] = 0
+    bs_raw.pdf[dr.all(weight_raw == 0)] = 0
+    bs_test.pdf[dr.all(weight_test == 0)] = 0
 
     assert dr.allclose(wo_raw, wo_test, atol=1e-4)
     assert dr.allclose(bs_raw.pdf, bs_test.pdf, atol=1e-4)

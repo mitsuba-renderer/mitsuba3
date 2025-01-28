@@ -197,7 +197,7 @@ public:
 
         Frame3f frame_wrt_si;
         frame_wrt_si.n = dr::normalize(n);
-        frame_wrt_si.s = dr::normalize(dr::fnmadd(frame_wrt_si.n, frame_wrt_si.n.x(), ScalarVector3f(1, 0, 0)));
+        frame_wrt_si.s = dr::normalize(dr::fnmadd(frame_wrt_si.n, frame_wrt_si.n.x(), Vector3f(1, 0, 0)));
         frame_wrt_si.t = dr::cross(frame_wrt_si.n, frame_wrt_si.s);
 
         Frame3f frame_wrt_world;
