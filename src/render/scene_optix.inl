@@ -643,7 +643,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
         OptixSceneState &s = *(OptixSceneState *) m_accel;
         const OptixConfig &config = optix_configs[s.config_index];
 
-        UInt32 ray_mask(255), ray_flags(OPTIX_RAY_FLAG_NONE),
+        UInt32 ray_mask(255), ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT),
                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
         UInt32 payload_t(0),
@@ -731,7 +731,8 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
         const OptixConfig &config = optix_configs[s.config_index];
 
         UInt32 ray_mask(255),
-               ray_flags(OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
+               ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT |
+                         OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
                          OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
