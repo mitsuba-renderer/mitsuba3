@@ -921,7 +921,8 @@ public:
      * type of the Shape, see \ref get_shape_descr_idx()).
      */
     virtual void optix_fill_hitgroup_records(std::vector<HitGroupSbtRecord> &hitgroup_records,
-                                             const OptixProgramGroup *program_groups);
+                                             const OptixProgramGroup *program_groups,
+                                             const std::unordered_map<size_t, size_t> &program_index_mapping);
 #endif
 
     void traverse(TraversalCallback *callback) override;

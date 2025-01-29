@@ -36,8 +36,8 @@ enum OptixShapeType {
 };
 static std::string OPTIX_SHAPE_TYPE_NAMES[NumOptixShapeTypes] = {
     "BSplineCurve",
-    "LinearCurve", 
-    "Disk",  
+    "LinearCurve",
+    "Disk",
     "Rectangle",
     "Sphere",
     "Cylinder",
@@ -112,9 +112,11 @@ struct OptixAccelData {
 
 /// Creates and appends the HitGroupSbtRecord for a given list of shapes
 template <typename Shape>
-void fill_hitgroup_records(std::vector<ref<Shape>> &shapes,
-                           std::vector<HitGroupSbtRecord> &out_hitgroup_records,
-                           const OptixProgramGroup *program_groups) {
+void fill_hitgroup_records(
+    std::vector<ref<Shape>> &shapes,
+    std::vector<HitGroupSbtRecord> &out_hitgroup_records,
+    const OptixProgramGroup *program_groups,
+    const std::unordered_map<size_t, size_t>& program_index_mapping) {
 
     // Fill records in this order: meshes, b-spline curves, linear curves, other
     struct {
@@ -138,8 +140,13 @@ void fill_hitgroup_records(std::vector<ref<Shape>> &shapes,
     std::copy(shapes.begin(), shapes.end(), shapes_sorted.begin());
     std::stable_sort(shapes_sorted.begin(), shapes_sorted.end(), ShapeSorter);
 
-    for (ref<Shape>& shape : shapes_sorted)
-        shape->optix_fill_hitgroup_records(out_hitgroup_records, program_groups);
+    for (ref<Shape> &shape : shapes_sorted) {
+        shape->optix_fill_hitgroup_records(
+            out_hitgroup_records,
+            program_groups,
+            program_index_mapping
+        );
+    }
 }
 
 /**
