@@ -6,7 +6,7 @@ from mitsuba.scalar_rgb.test.util import find_resource
 
 ###
 ### Reference images are generated using the `optixDenoiser` example provided
-### with the OptiX 7.4 SDK. The example will always output float16 EXRs with an
+### with the OptiX 7.4 SDK. The example will always output float32 EXRs with an
 ### alpha channel. The script to generate the reference images is located at
 ### `mitsuba3/resources/data/tests/denoiser/denoiser_ref.py`.
 ###
@@ -17,7 +17,12 @@ def fix_normals(normals):
     # by 180 degrees first as the OptixDenoiser always does that
     new_normals = dr.zeros(mi.Normal3f, normals.shape[0] * normals.shape[1])
     for i in range(3):
-        new_normals[i] = dr.ravel(normals)[i::3]
+        new_normals[i] = dr.gather(
+            mi.Float,
+            dr.ravel(normals),
+            i + dr.arange(mi.UInt32, normals.shape[0] * normals.shape[1]) * 3
+        )
+
     new_normals[0] = -new_normals[0]
     new_normals[2] = -new_normals[2]
     for i in range(3):
@@ -35,7 +40,7 @@ def skip_if_wrong_driver_version(func):
 
     from functools import wraps
 
-    REF_DRIVER_VERSION = '515.65.01'
+    REF_DRIVER_VERSION = '550.90.07'
 
     def run(command):
         p = subprocess.Popen(command,
@@ -109,10 +114,7 @@ def test02_denoiser_denoise(variant_cuda_ad_rgb):
     ref = mi.TensorXf(mi.Bitmap(find_resource("resources/data/tests/denoiser/ref.exr")))[...,:3]
 
     denoiser = mi.OptixDenoiser(noisy.shape[:2])
-    denoised = mi.util.convert_to_bitmap(
-        denoiser(noisy), uint8_srgb=False
-    )
-    denoised = mi.TensorXf(denoised.convert(component_format=mi.Struct.Type.Float16))
+    denoised = denoiser(noisy)
 
     ref_array = ref.array
     denoised_array = denoised.array
@@ -127,10 +129,7 @@ def test03_denoiser_denoise_albedo(variant_cuda_ad_rgb):
     ref = mi.TensorXf(mi.Bitmap(find_resource("resources/data/tests/denoiser/ref_albedo.exr")))
 
     denoiser = mi.OptixDenoiser(noisy.shape[:2], True)
-    denoised = mi.util.convert_to_bitmap(
-        denoiser(noisy, False, albedo), uint8_srgb=False
-    )
-    denoised = mi.TensorXf(denoised.convert(component_format=mi.Struct.Type.Float16))
+    denoised = denoiser(noisy, albedo)
 
     ref_tensor = mi.TensorXf(ref)[...,:3]
     denoised_tensor = mi.TensorXf(denoised)
@@ -151,10 +150,7 @@ def test04_denoiser_denoise_normals(variant_cuda_ad_rgb):
     normals = fix_normals(normals)
 
     denoiser = mi.OptixDenoiser(noisy.shape[:2], True, True)
-    denoised = mi.util.convert_to_bitmap(
-        denoiser(noisy, False, albedo, normals), uint8_srgb=False
-    )
-    denoised = mi.TensorXf(denoised.convert(component_format=mi.Struct.Type.Float16))
+    denoised = denoiser(noisy, albedo, normals)
 
     ref_tensor = mi.TensorXf(ref)[...,:3]
     denoised_tensor = mi.TensorXf(denoised)
@@ -177,23 +173,18 @@ def test05_denoiser_denoise_temporal(variant_cuda_ad_rgb):
     normals = fix_normals(mi.TensorXf(normals))
 
     denoiser = mi.OptixDenoiser(noisy.shape[:2], True, True, True)
-    denoised = mi.util.convert_to_bitmap(
-        denoiser(noisy, False, albedo, normals, flow=flow, previous_denoised=previous_denoised),
-        uint8_srgb=False
-    )
-    denoised = mi.TensorXf(denoised.convert(component_format=mi.Struct.Type.Float16))
+    denoised = denoiser(noisy, albedo, normals, flow=flow, previous_denoised=previous_denoised)
 
     ref_tensor = mi.TensorXf(ref)[...,:3]
-    denoised_tensor = mi.TensorXf(denoised)
 
     ref_array = ref_tensor.array
-    denoised_array = denoised_tensor.array
+    denoised_array = denoised.array
 
     assert dr.allclose(denoised_array, ref_array)
 
 
 @skip_if_wrong_driver_version
-def test05_denoiser_denoise_multichannel_bitmap(variant_cuda_ad_rgb):
+def test06_denoiser_denoise_multichannel_bitmap(variant_cuda_ad_rgb):
     ref = mi.TensorXf(mi.Bitmap(find_resource("resources/data/tests/denoiser/ref_normals.exr")))
 
     scene = mi.load_file(find_resource("resources/data/scenes/cbox/cbox-rgb.xml"), res=64)
@@ -210,8 +201,7 @@ def test05_denoiser_denoise_multichannel_bitmap(variant_cuda_ad_rgb):
     multichannel = sensor.film().bitmap()
 
     denoiser = mi.OptixDenoiser(multichannel.size(), True, True)
-    denoised = denoiser(multichannel, False, "albedo", "sh_normal", sensor.world_transform().inverse())
-    denoised = mi.TensorXf(denoised.convert(component_format=mi.Struct.Type.Float16))
+    denoised = denoiser(multichannel, "albedo", "sh_normal", sensor.world_transform().inverse())
 
     ref_tensor = mi.TensorXf(ref)[...,:3]
     denoised_tensor = mi.TensorXf(denoised)
@@ -221,7 +211,7 @@ def test05_denoiser_denoise_multichannel_bitmap(variant_cuda_ad_rgb):
 
     assert dr.allclose(denoised_array, ref_array)
 
-def test05_denoiser_denoise_multichannel_bitmap_runs(variant_cuda_ad_rgb):
+def test07_denoiser_denoise_multichannel_bitmap_runs(variant_cuda_ad_rgb):
     scene = mi.load_file(find_resource("resources/data/scenes/cbox/cbox-rgb.xml"), res=64)
     sensor = scene.sensors()[0]
     integrator = mi.load_dict({
@@ -236,7 +226,7 @@ def test05_denoiser_denoise_multichannel_bitmap_runs(variant_cuda_ad_rgb):
     multichannel = sensor.film().bitmap()
 
     denoiser = mi.OptixDenoiser(multichannel.size(), True, True)
-    denoised = denoiser(multichannel, False, "albedo", "sh_normal", sensor.world_transform().inverse())
+    denoised = denoiser(multichannel, "albedo", "sh_normal", sensor.world_transform().inverse())
     denoised = mi.TensorXf(denoised.convert(component_format=mi.Struct.Type.Float32))
     dr.eval(denoised)
 
