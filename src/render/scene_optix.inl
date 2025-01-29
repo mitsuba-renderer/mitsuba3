@@ -158,7 +158,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
         // =====================================================
 
         OptixTask task;
-        check_log(optixModuleCreateFromPTXWithTasks(
+        check_log(optixModuleCreateWithTasks(
             config.context,
             &module_compile_options,
             &config.pipeline_compile_options,
