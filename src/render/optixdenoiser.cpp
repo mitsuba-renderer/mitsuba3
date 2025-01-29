@@ -89,7 +89,7 @@ OptixDenoiser<Float, Spectrum>::operator()(
     OptixDenoiserParams params = {};
     params.blendFactor = 0.0f;
     params.hdrAverageColor = nullptr;
-    params.denoiseAlpha = denoise_alpha;
+    //params.denoiseAlpha = denoise_alpha;
     params.hdrIntensity = m_hdr_intensity;
     jit_optix_check(optixDenoiserComputeIntensity(
         m_denoiser, stream, &layers.input, m_hdr_intensity, m_scratch,
