@@ -94,6 +94,7 @@ using OptixOpacityMicromapArrayIndexingMode       = int;
 #define OPTIX_INSTANCE_FLAG_DISABLE_TRANSFORM (1u << 6)
 
 #define OPTIX_RAY_FLAG_NONE                   0
+#define OPTIX_RAY_FLAG_DISABLE_ANYHIT         (1u << 0)
 #define OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT (1u << 2)
 #define OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT     (1u << 3)
 
