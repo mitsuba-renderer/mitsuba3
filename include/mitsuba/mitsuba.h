@@ -10,7 +10,7 @@
 
 #define MI_VERSION_MAJOR 3
 #define MI_VERSION_MINOR 6
-#define MI_VERSION_PATCH 2
+#define MI_VERSION_PATCH 3
 
 #define MI_STRINGIFY(x) #x
 #define MI_TOSTRING(x)  MI_STRINGIFY(x)

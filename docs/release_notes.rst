@@ -5,6 +5,14 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`_ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
+Mitsuba 3.6.3
+-------------
+*January 29, 2025*
+
+- Fix normalmap `[1a4bea2] <https://github.com/mitsuba-renderer/mitsuba3/commit/1a4bea212c129a5d0239e533107473a5ca89230a>`_
+- Fallback mechanism for numerical issues in silhouette sampling `[ce4af8d] <https://github.com/mitsuba-renderer/mitsuba3/commit/ce4af8d31b464f1fc5f52688365eb598272e0153>`_
+
+
 Mitsuba 3.6.2
 -------------
 *January 16, 2025*
