@@ -65,7 +65,13 @@ Bitmap texture (:monosp:`bitmap`)
    - Specifies the underlying texture storage format. The following options are
      currently available:
 
-     - ``variant``(default): Use the corresponding native floating point representation
+     - ``auto`` (default): If loading a texture from a bitmap, use half
+         precision for bitmap data with 16 or lower bit depth, otherwise use
+         the native floating point representation of the Mitsuba variant. For
+         variants using a spectral color representation this option is the same
+         as `variant`.
+
+     - ``variant``: Use the corresponding native floating point representation
          of the Mitsuba variant
 
      - ``fp16``: Forcibly store the texture in half precision
@@ -167,13 +173,15 @@ public:
 
         // Format
         {
-            std::string format_str = props.string("format", "variant");
-            if (format_str == "variant")
+            std::string format_str = props.string("format", "auto");
+            if (format_str == "auto")
+                m_format = Format::Auto;
+            else if (format_str == "variant")
                 m_format = Format::Variant;
             else if (format_str == "fp16")
                 m_format = Format::Float16;
             else
-                Throw("Invalid format \"%s\", must be one of: "
+                Throw("Invalid format \"%s\", must be one of: \"auto\", "
                       "\"variant\", or \"fp16\"!", format_str);
         }
 
@@ -221,9 +229,6 @@ protected:
     Object* expand_1() const {
         if (m_bitmap) {
             Format format = m_format;
-
-// TODO: Temporarily disable this as LLVM FP16 gather/scatter operations are costly
-#if 0
             // Format auto means we store texture as FP16 when possible.
             // Skip this conversion for spectral variants as we want to perform
             // spectral upsampling in the variant's native FP representation
@@ -233,7 +238,6 @@ protected:
                 if (m_format == Format::Auto && bytes_p_ch <= 2)
                     format = Format::Float16;
             }
-#endif
 
             if (format == Format::Float16)
                 return expand_bitmap<dr::replace_scalar_t<Float, dr::half>>();
@@ -338,6 +342,7 @@ private:
     }
 
     enum class Format {
+        Auto,
         Variant,
         Float16
     } m_format;
