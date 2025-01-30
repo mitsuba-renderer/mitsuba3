@@ -74,6 +74,8 @@ public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
     MI_IMPORT_TYPES()
 
+    DR_TRAVERSE_CB(Base, m_ndf, m_sigma, m_vndf, m_luminance, m_spectra);
+
     using Warp2D0 = Marginal2D<Float, 0, true>;
     using Warp2D2 = Marginal2D<Float, 2, true>;
     using Warp2D3 = Marginal2D<Float, 3, true>;

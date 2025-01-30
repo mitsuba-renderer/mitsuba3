@@ -176,7 +176,9 @@ class PathProjectiveIntegrator(PSIntegrator):
 
         while dr.hint(active,
                       max_iterations=self.max_depth,
-                      label="PRB Projective (%s)" % mode.name):
+                      label="PRB Projective (%s)" % mode.name,
+                      exclude = [scene],
+                      ):
             active_next = mi.Bool(active)
 
             # Compute a surface interaction that tracks derivatives arising
@@ -480,7 +482,8 @@ class PathProjectiveIntegrator(PSIntegrator):
         bsdf_ctx = mi.BSDFContext(mi.TransportMode.Importance)
 
         while dr.hint(active_loop,
-                      label="Estimate Importance"):
+                      label="Estimate Importance", 
+                      exclude = [scene]):
             # Is it possible to connect the current vertex to the sensor?
             bsdf = si_loop.bsdf()
             active_connect = active_loop & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth)

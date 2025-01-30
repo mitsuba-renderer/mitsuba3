@@ -98,9 +98,13 @@ class PRBIntegrator(RBIntegrator):
         prev_bsdf_pdf   = mi.Float(1.0)
         prev_bsdf_delta = mi.Bool(True)
 
-        while dr.hint(active,
-                      max_iterations=self.max_depth,
-                      label="Path Replay Backpropagation (%s)" % mode.name):
+        while dr.hint(
+            active,
+            max_iterations=self.max_depth,
+            label="Path Replay Backpropagation (%s)" % mode.name,
+            # include=[ sampler, ray, depth, L, δL, β, active ],
+            exclude=[ scene, ],
+        ):
             active_next = mi.Bool(active)
 
             # Compute a surface interaction that tracks derivatives arising

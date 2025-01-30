@@ -76,7 +76,7 @@ public:
      */
     virtual TensorXf render(Scene *scene,
                             Sensor *sensor,
-                            uint32_t seed = 0,
+                            UInt32 seed = 0,
                             uint32_t spp = 0,
                             bool develop = true,
                             bool evaluate = true) = 0;
@@ -90,7 +90,7 @@ public:
      */
     TensorXf render(Scene *scene,
                     uint32_t sensor_index = 0,
-                    uint32_t seed = 0,
+                    UInt32 seed = 0,
                     uint32_t spp = 0,
                     bool develop = true,
                     bool evaluate = true);
@@ -167,7 +167,7 @@ public:
     virtual TensorXf render_forward(Scene* scene,
                                     void* params,
                                     Sensor *sensor,
-                                    uint32_t seed = 0,
+                                    UInt32 seed = 0,
                                     uint32_t spp = 0);
 
     /**
@@ -180,7 +180,7 @@ public:
     TensorXf render_forward(Scene* scene,
                             void* params,
                             uint32_t sensor_index = 0,
-                            uint32_t seed = 0,
+                            UInt32 seed = 0,
                             uint32_t spp = 0) {
 
         if (sensor_index >= scene->sensors().size())
@@ -257,7 +257,7 @@ public:
                                  void* params,
                                  const TensorXf& grad_in,
                                  Sensor* sensor,
-                                 uint32_t seed = 0,
+                                 UInt32 seed = 0,
                                  uint32_t spp = 0);
 
     /**
@@ -271,7 +271,7 @@ public:
                          void* params,
                          const TensorXf& grad_in,
                          uint32_t sensor_index = 0,
-                         uint32_t seed = 0,
+                         UInt32 seed = 0,
                          uint32_t spp = 0) {
 
         if (sensor_index >= scene->sensors().size())
@@ -340,9 +340,11 @@ protected:
 
     /// Flag for disabling direct visibility of emitters
     bool m_hide_emitters;
-    
+
     /// Identifier (if available)
     std::string m_id;
+
+    DR_TRAVERSE_CB(Object)
 };
 
 /** \brief Abstract integrator that performs Monte Carlo sampling starting from
@@ -417,7 +419,7 @@ public:
 
     TensorXf render(Scene *scene,
                     Sensor *sensor,
-                    uint32_t seed = 0,
+                    UInt32 seed = 0,
                     uint32_t spp = 0,
                     bool develop = true,
                     bool evaluate = true) override;
@@ -435,7 +437,7 @@ protected:
                               ImageBlock *block,
                               Float *aovs,
                               uint32_t sample_count,
-                              uint32_t seed,
+                              UInt32 seed,
                               uint32_t block_id,
                               uint32_t block_size) const;
 
@@ -460,6 +462,8 @@ protected:
      * If set to (uint32_t) -1, all the work is done in a single pass (default).
      */
     uint32_t m_samples_per_pass;
+
+    DR_TRAVERSE_CB(Base)
 };
 
 /** \brief Abstract integrator that performs *recursive* Monte Carlo sampling
@@ -487,6 +491,8 @@ protected:
 protected:
     uint32_t m_max_depth;
     uint32_t m_rr_depth;
+
+    DR_TRAVERSE_CB(Base)
 };
 
 /** \brief Abstract adjoint integrator that performs Monte Carlo sampling
@@ -542,7 +548,7 @@ public:
 
     TensorXf render(Scene *scene,
                     Sensor *sensor,
-                    uint32_t seed = 0,
+                    UInt32 seed = 0,
                     uint32_t spp = 0,
                     bool develop = true,
                     bool evaluate = true) override;
@@ -574,6 +580,8 @@ protected:
 
     /// Depth to begin using russian roulette
     int m_rr_depth;
+
+    DR_TRAVERSE_CB(Base)
 };
 
 
