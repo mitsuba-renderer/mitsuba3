@@ -638,9 +638,9 @@ protected:
     bool m_shapes_grad_enabled;
 
     void traverse_1_cb_ro_cpu(void *payload,
-                              void (*fn)(void *, uint64_t, const char *,
-                                         const char *)) const;
-    void traverse_1_cb_rw_cpu(void *payload, uint64_t (*fn)(void *, uint64_t));
+                              drjit::detail::traverse_callback_ro fn) const;
+    void traverse_1_cb_rw_cpu(void *payload,
+                              drjit::detail::traverse_callback_rw fn);
 
     MI_DECLARE_TRAVERSE_CB()
 };
