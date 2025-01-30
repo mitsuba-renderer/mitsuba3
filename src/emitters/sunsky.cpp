@@ -211,7 +211,6 @@ public:
         about the scene and default to the unit bounding sphere. */
         m_bsphere = BoundingSphere3f(ScalarPoint3f(0.f), 1.f);
 
-        m_d65 = Texture::D65(1.f);
         m_flags = +EmitterFlags::Infinite | +EmitterFlags::SpatiallyVarying;
     }
 
@@ -352,41 +351,43 @@ public:
                                       Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
-
-        const Mask pick_sky = sample2.x() < m_sky_sampling_w;
-
         // 1. Sample spatial component
-        Vector3f v0 = dr::select(
+        Point2f offset = warp::square_to_uniform_disk_concentric(sample2);
+
+        // 2. Sample directional component
+        const Mask pick_sky = sample3.x() < m_sky_sampling_w;
+        Vector3f d = dr::select(
                 pick_sky,
-                sample_sky({sample2.x() / m_sky_sampling_w, sample2.y()}, active),
-                sample_sun({(sample2.x() - m_sky_sampling_w) / (1 - m_sky_sampling_w), sample2.y()})
+                sample_sky({sample3.x() / m_sky_sampling_w, sample3.y()}, active),
+                sample_sun({(sample3.x() - m_sky_sampling_w) / (1 - m_sky_sampling_w), sample3.y()})
         );
-        active &= Frame3f::cos_theta(v0) >= 0.f;
+        // Unlike \ref sample_direction, ray goes from the envmap toward the scene
+        Vector3f d_world = m_to_world.value().transform_affine(-d);
 
-        Point3f orig = m_to_world.value().transform_affine(v0);
-                orig = dr::fmadd(orig, m_bsphere.radius, m_bsphere.center);
 
-        // 2. Sample diral component
-        Vector3f v1 = warp::square_to_cosine_hemisphere(sample3),
-                 dir = Frame3f(-v0).to_world(v1);
+        active &= Frame3f::cos_theta(d) >= 0.f;
 
-        // 3. Sample spectrum
-        auto [wavelengths, weight] = sample_wavelengths(
-            dr::zeros<SurfaceInteraction3f>(), wavelength_sample, active);
-
-        // 4. PDF
-        const auto [sky_pdf, sun_pdf] = compute_pdfs(v0, pick_sky, active);
+        // 3. PDF
+        const auto [sky_pdf, sun_pdf] = compute_pdfs(d, pick_sky, active);
         Float pdf = dr::lerp(sun_pdf, sky_pdf, m_sky_sampling_w);
-              pdf *= warp::square_to_cosine_hemisphere_pdf(v1);
+        // Apply pdf of the origin offset
+        pdf *= dr::InvPi<Float> * dr::rcp(dr::square(m_bsphere.radius));
 
-        // 5. Emitted radiance
+        active &= pdf > 0.f;
+
+        // 4. Sample spectrum
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
-        si.wavelengths = wavelengths;
-        si.wi = -dir;
+        si.wi = d_world;
+        auto [wavelengths, weight] = sample_wavelengths(si, wavelength_sample, active);
 
-        weight *= eval(si, active) / pdf;
+
+        // 5. Compute ray origin
+        Vector3f perpendicular_offset = Frame3f(d_world).to_world(Vector3f(offset.x(), offset.y(), 0));
+        Point3f origin = m_bsphere.center + (perpendicular_offset - d_world) * m_bsphere.radius;
+
+        weight /= pdf;
         weight &= dr::isfinite(weight);
-        return { Ray3f(orig, dir, time, wavelengths), weight };
+        return { Ray3f(origin, d_world, time, wavelengths), weight };
     }
 
     std::pair<DirectionSample3f, Spectrum> sample_direction(const Interaction3f &it,
@@ -456,13 +457,13 @@ public:
     std::pair<Wavelength, Spectrum>
     sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
                    Mask active) const override {
-        auto [wavelengths, weight] = m_d65->sample_spectrum(
-            si, math::sample_shifted<Wavelength>(sample), active);
-
+        // Uniformly sample the spectrum for the valid wavelengths
+        // Mitsuba 3 is defined over the range [360, 830] nm
+        // And the model is defined for the range [320, 720] nm
         SurfaceInteraction3f si_query = si;
-        si_query.wavelengths = wavelengths;
+        si_query.wavelengths = MI_CIE_MIN + (720 - MI_CIE_MIN) * math::sample_shifted<Wavelength>(sample);
 
-        return { wavelengths, weight * eval(si, active) };
+        return { si_query.wavelengths, eval(si_query, active) * (720 - MI_CIE_MIN) };
     }
 
 
@@ -959,7 +960,6 @@ private:
     ScalarFloat m_sky_scale;
     ScalarFloat m_sun_scale;
     ref<Texture> m_albedo;
-    ref<Texture> m_d65;
 
     // ========= Sun parameters =========
 
