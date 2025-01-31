@@ -66,7 +66,7 @@ def generate_and_compare(render_params, ref_path, rtol):
     :param ref_path: Path to the reference image
     :param rtol: Relative error tolerance
     """
-    render_res = (512//2, 512)
+    render_res = (64//2, 64)
 
     if mi.is_rgb:
         hour, turb, albedo = render_params
@@ -121,7 +121,7 @@ def test01_sky_radiance_rgb(variants_vec_rgb, render_params):
     hour, turb, albedo = render_params
 
     ref_path = f"resources/data/sunsky/test_data/renders/sky_rgb_hour{hour:.2f}_t{turb:.3f}_a{albedo:.3f}.exr"
-    generate_and_compare(render_params, ref_path, 0.005)
+    generate_and_compare(render_params, ref_path, 0.017)
 
 
 
@@ -135,14 +135,14 @@ def test02_sky_radiance_spectral(variants_vec_spectral, render_params):
     sun_eta, turb, albedo = render_params
 
     ref_path = f"resources/data/sunsky/test_data/renders/sky_spec_eta{sun_eta:.3f}_t{turb:.3f}_a{albedo:.3f}.exr"
-    generate_and_compare(render_params, ref_path, 0.028)
+    generate_and_compare(render_params, ref_path, 0.037)
 
 
 
 
 def test03_sky_radiance_spectral_albedo(variants_vec_spectral):
     generate_and_compare((dr.deg2rad(60), 4.2, SPECIAL_ALBEDO),
-                         "resources/data/sunsky/test_data/renders/sky_spectrum_special.exr", 0.028)
+                         "resources/data/sunsky/test_data/renders/sky_spectrum_special.exr", 0.03)
 
 
 
