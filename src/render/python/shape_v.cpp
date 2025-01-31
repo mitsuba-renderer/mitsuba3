@@ -32,6 +32,7 @@ MI_PY_EXPORT(SilhouetteSample) {
         .def_rw("flags",              &SilhouetteSample3f::flags,              D(SilhouetteSample, flags))
         .def_rw("projection_index",   &SilhouetteSample3f::projection_index,   D(SilhouetteSample, projection_index))
         .def_rw("shape",              &SilhouetteSample3f::shape,              D(SilhouetteSample, shape))
+        .def_rw("sensor",              &SilhouetteSample3f::sensor,              D(SilhouetteSample, shape))
         .def_rw("foreshortening",     &SilhouetteSample3f::foreshortening,     D(SilhouetteSample, foreshortening))
         .def_rw("offset",             &SilhouetteSample3f::offset,             D(SilhouetteSample, offset))
         // Methods

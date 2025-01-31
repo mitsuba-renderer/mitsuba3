@@ -1090,19 +1090,16 @@ class PSIntegrator(ADIntegrator):
 
         # Explicit sampling to handle the primarily visible discontinuous derivative
         with dr.suspend_grad():
-            # Get the viewpoint
-            sensor_center = sensor.world_transform() @ mi.Point3f(0)
-
             # Sample silhouette point
             ss = self.proj_detail.sample_primarily_visible_silhouette(
-                scene, sensor_center, sampler.next_2d(), True)
+                scene, sampler.next_2d(), True)
             active = ss.is_valid() & (ss.pdf > 0)
 
             # Jacobian (motion correction included)
-            J = self.proj_detail.perspective_sensor_jacobian(sensor, ss)
+            J = self.proj_detail.perspective_sensor_jacobian(ss)
 
             ΔL = self.proj_detail.eval_primary_silhouette_radiance_difference(
-                scene, sampler, ss, sensor, active=active)
+                scene, sampler, ss, active=active)
             active &= dr.any(ΔL != 0)
 
         # ∂z/∂ⲡ * normal
