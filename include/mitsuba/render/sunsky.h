@@ -281,90 +281,90 @@ NAMESPACE_BEGIN(mitsuba)
      * in "Solar energy", vol 27, number 5, 2001 by Pergamon Press.
      */
     template <typename Float>
-    Vector<Float, 3> compute_sun_coordinates(const DateTimeRecord<Float>& dateTime, const LocationRecord<Float>& location) {
+    Vector<Float, 3> compute_sun_coordinates(const DateTimeRecord<Float>& date_time, const LocationRecord<Float>& location) {
         using Int32 = dr::int32_array_t<Float>;
 
         // Main variables
-        Float elapsedJulianDays, decHours;
-        Float eclipticLongitude, eclipticObliquity;
-        Float rightAscension, declination;
+        Float elapsed_julian_days, dec_hours;
+        Float ecliptic_longitude, ecliptic_obliquity;
+        Float right_ascension, declination;
         Float elevation, azimuth;
 
         // Auxiliary variables
-        Float dY;
-        Float dX;
+        Float d_y;
+        Float d_x;
 
         /* Calculate difference in days between the current Julian Day
            and JD 2451545.0, which is noon 1 January 2000 Universal Time */
         {
             // Calculate time of the day in UT decimal hours
-            decHours = dateTime.hour - location.timezone +
-                (dateTime.minute + dateTime.second / 60.0 ) / 60.0;
+            dec_hours = date_time.hour - location.timezone +
+                (date_time.minute + date_time.second / 60.f ) / 60.f;
 
             // Calculate current Julian Day
-            Int32 liAux1 = (dateTime.month-14) / 12;
-            Int32 liAux2 = (1461*(dateTime.year + 4800 + liAux1)) / 4
-                + (367 * (dateTime.month - 2 - 12 * liAux1)) / 12
-                - (3 * ((dateTime.year + 4900 + liAux1) / 100)) / 4
-                + dateTime.day - 32075;
-            Float dJulianDate = liAux2 - 0.5 + decHours / 24.0;
+            Int32 li_aux_1 = (date_time.month-14) / 12;
+            Int32 li_aux_2 = (1461*(date_time.year + 4800 + li_aux_1)) / 4
+                + (367 * (date_time.month - 2 - 12 * li_aux_1)) / 12
+                - (3 * ((date_time.year + 4900 + li_aux_1) / 100)) / 4
+                + date_time.day - 32075;
+            Float d_julian_date = li_aux_2 - 0.5f + dec_hours / 24.f;
 
             // Calculate difference between current Julian Day and JD 2451545.0
-            elapsedJulianDays = dJulianDate - 2451545.0;
+            elapsed_julian_days = d_julian_date - 2451545.f;
         }
 
         /* Calculate ecliptic coordinates (ecliptic longitude and obliquity of the
            ecliptic in radians but without limiting the angle to be less than 2*Pi
            (i.e., the result may be greater than 2*Pi) */
         {
-            Float omega = 2.1429 - 0.0010394594 * elapsedJulianDays;
-            Float meanLongitude = 4.8950630 + 0.017202791698 * elapsedJulianDays; // Radians
-            Float anomaly = 6.2400600 + 0.0172019699 * elapsedJulianDays;
+            Float omega = 2.1429f - 0.0010394594f * elapsed_julian_days;
+            Float mean_longitude = 4.8950630f + 0.017202791698f * elapsed_julian_days; // Radians
+            Float anomaly = 6.2400600f + 0.0172019699f * elapsed_julian_days;
 
-            eclipticLongitude = meanLongitude + 0.03341607 * dr::sin(anomaly)
-                + 0.00034894 * dr::sin(2*anomaly) - 0.0001134
-                - 0.0000203 * dr::sin(omega);
+            ecliptic_longitude = mean_longitude + 0.03341607f * dr::sin(anomaly)
+                + 0.00034894f * dr::sin(2*anomaly) - 0.0001134f
+                - 0.0000203f * dr::sin(omega);
 
-            eclipticObliquity = 0.4090928 - 6.2140e-9 * elapsedJulianDays
-                + 0.0000396 * dr::cos(omega);
+            ecliptic_obliquity = 0.4090928f - 6.2140e-9f * elapsed_julian_days
+                + 0.0000396f * dr::cos(omega);
         }
 
         /* Calculate celestial coordinates ( right ascension and declination ) in radians
            but without limiting the angle to be less than 2*Pi (i.e., the result may be
            greater than 2*Pi) */
         {
-            Float sinEclipticLongitude = dr::sin(eclipticLongitude);
-            dY = dr::cos(eclipticObliquity) * sinEclipticLongitude;
-            dX = dr::cos(eclipticLongitude);
-            rightAscension = dr::atan2(dY, dX);
-            rightAscension += dr::select(rightAscension < 0.0, dr::TwoPi<Float>, 0.0);
+            Float sin_ecliptic_longitude = dr::sin(ecliptic_longitude);
+            d_y = dr::cos(ecliptic_obliquity) * sin_ecliptic_longitude;
+            d_x = dr::cos(ecliptic_longitude);
+            right_ascension = dr::atan2(d_y, d_x);
+            right_ascension += dr::select(right_ascension < 0.f, dr::TwoPi<Float>, 0.f);
 
-            declination = dr::asin(dr::sin(eclipticObliquity) * sinEclipticLongitude);
+            declination = dr::asin(dr::sin(ecliptic_obliquity) * sin_ecliptic_longitude);
         }
 
         // Calculate local coordinates (azimuth and zenith angle) in degrees
         {
-            Float greenwichMeanSiderealTime = 6.6974243242
-                + 0.0657098283 * elapsedJulianDays + decHours;
+            Float greenwich_mean_sidereal_time = 6.6974243242f
+                + 0.0657098283f * elapsed_julian_days + dec_hours;
 
-            Float localMeanSiderealTime = dr::deg_to_rad(greenwichMeanSiderealTime * 15
+            Float local_mean_sidereal_time = dr::deg_to_rad(greenwich_mean_sidereal_time * 15
                 + location.longitude);
 
-            Float latitudeInRadians = dr::deg_to_rad(location.latitude);
-            Float cosLatitude = dr::cos(latitudeInRadians);
-            Float sinLatitude = dr::sin(latitudeInRadians);
+            Float latitude_in_radians = dr::deg_to_rad(location.latitude);
+            Float cos_latitude = dr::cos(latitude_in_radians);
+            Float sin_latitude = dr::sin(latitude_in_radians);
 
-            Float hourAngle = localMeanSiderealTime - rightAscension;
-            Float cosHourAngle = dr::cos(hourAngle);
+            Float hour_angle = local_mean_sidereal_time - right_ascension;
+            Float cos_hour_angle = dr::cos(hour_angle);
 
-            elevation = dr::acos(cosLatitude * cosHourAngle
-                * dr::cos(declination) + dr::sin(declination) * sinLatitude);
+            elevation = dr::acos(cos_latitude * cos_hour_angle
+                * dr::cos(declination) + dr::sin(declination) * sin_latitude);
 
-            dY = -dr::sin(hourAngle);
-            dX = dr::tan(declination) * cosLatitude - sinLatitude * cosHourAngle;
+            d_y = -dr::sin(hour_angle);
+            d_x = dr::tan(declination) * cos_latitude - sin_latitude * cos_hour_angle;
 
-            azimuth = dr::atan2(dY, dX);
-            azimuth += dr::select(azimuth < 0.0, dr::TwoPi<Float>, 0.0);
+            azimuth = dr::atan2(d_y, d_x);
+            azimuth += dr::select(azimuth < 0.f, dr::TwoPi<Float>, 0.f);
 
             // Parallax Correction
             elevation += (EARTH_MEAN_RADIUS / ASTRONOMICAL_UNIT) * dr::sin(elevation);
