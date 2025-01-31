@@ -874,6 +874,9 @@ private:
                 for (ScalarUInt32 i = 0; i < NB_CHANNELS - 1; ++i)
                     dr::scatter(spectrum, avg_spec[i + 1], (UInt32) i);
 
+                if (dr::all(spectrum == 0.f))
+                    spectrum += 1.f; // Prevent error in the distribution
+
                 return { res, ContinuousDistribution<Wavelength>(range, spectrum) };
             } else {
                 return { res, ContinuousDistribution<Wavelength>() };
