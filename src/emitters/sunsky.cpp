@@ -203,7 +203,10 @@ public:
         m_gaussians = distrib_params;
         m_gaussian_distr = DiscreteDistribution<Float>(mis_weights);
 
-        m_sky_sampling_w = estimate_sky_sun_ratio();
+        // ================= AVERAGE RADIANCE =================
+        const auto [sampling_w, wav_dist] = estimate_sky_sun_ratio();
+        m_sky_sampling_w = sampling_w;
+        m_spectral_distr = wav_dist;
 
         // ================= GENERAL PARAMETERS =================
 
@@ -275,7 +278,10 @@ public:
         m_gaussians = gaussian_params;
         m_gaussian_distr = DiscreteDistribution<Float>(mis_weights);
 
-        m_sky_sampling_w = estimate_sky_sun_ratio();
+        // Update sky-sun ratio and radiance distribution
+        const auto [sampling_w, wav_dist] = estimate_sky_sun_ratio();
+        m_sky_sampling_w = sampling_w;
+        m_spectral_distr = wav_dist;
     }
 
     void set_scene(const Scene *scene) override {
@@ -456,14 +462,21 @@ public:
 
     std::pair<Wavelength, Spectrum>
     sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
-                   Mask active) const override {
-        // Uniformly sample the spectrum for the valid wavelengths
-        // Mitsuba 3 is defined over the range [360, 830] nm
-        // And the model is defined for the range [320, 720] nm
-        SurfaceInteraction3f si_query = si;
-        si_query.wavelengths = MI_CIE_MIN + (720 - MI_CIE_MIN) * math::sample_shifted<Wavelength>(sample);
+                      Mask active) const override {
+        if constexpr (is_spectral_v<Spectrum>) {
+            Wavelength w_sample = math::sample_shifted<Wavelength>(sample);
+            const auto [wavelengths, pdf] = m_spectral_distr.sample_pdf(w_sample, active);
 
-        return { si_query.wavelengths, eval(si_query, active) * (720 - MI_CIE_MIN) };
+            SurfaceInteraction3f si_query = si;
+            si_query.wavelengths = wavelengths;
+
+            return { si_query.wavelengths, eval(si_query, active) / pdf };
+        } else {
+            DRJIT_MARK_USED(sample);
+
+            return { Wavelength(0.f), eval(si, active) };
+        }
+
     }
 
 
@@ -753,11 +766,19 @@ private:
      * \brief Estimates the ratio of sky to sun luminance over the hemisphere,
      * can be used to estimate the sampling weight of the sun and sky.
      *
-     * @return The sky's ratio of luminance, in [0, 1]
+     * @return The sky's ratio of luminance, in [0, 1] <br>
+     *         The continuous distribution of the sky-dome's integrated radiance
      */
-    Float estimate_sky_sun_ratio() const {
+    std::pair<Float, ContinuousDistribution<Wavelength>> estimate_sky_sun_ratio() const {
+        const ScalarVector2f range = {
+            WAVELENGTHS<ScalarFloat>[1],
+            WAVELENGTHS<ScalarFloat>[NB_WAVELENGTHS - 1]
+        };
+
         if constexpr (!dr::is_array_v<Float>)
-            return 0.5f; // Mean ratio over the range of parameters (turbidity, sun angle)
+            // Mean ratio over the range of parameters (turbidity, sun angle)
+            // And uniform spectral sampling
+            return { 0.5f, ContinuousDistribution<Wavelength>(range, 1.f) };
         else {
 
             FullSpectrum sky_radiance = dr::zeros<FullSpectrum>(),
@@ -840,8 +861,23 @@ private:
             }
 
             // Normalize quantities for valid distribution
-            const Float res = sky_lum / (sky_lum + sun_lum);
-            return dr::select(dr::isnan(res), 0.0f, res);
+            Float res = sky_lum / (sky_lum + sun_lum);
+                  res = dr::select(dr::isnan(res), 0.f, res);
+
+            if constexpr (is_spectral_v<Spectrum>) {
+                // Compute spectrum distribution
+                FullSpectrum avg_spec = sun_radiance + sky_radiance;
+                FloatStorage spectrum = dr::zeros<FloatStorage>(NB_CHANNELS - 1);
+
+                // Skip first spectral value since 320nm is not
+                // currently supported in Mitsuba
+                for (ScalarUInt32 i = 0; i < NB_CHANNELS - 1; ++i)
+                    dr::scatter(spectrum, avg_spec[i + 1], (UInt32) i);
+
+                return { res, ContinuousDistribution<Wavelength>(range, spectrum) };
+            } else {
+                return { res, ContinuousDistribution<Wavelength>() };
+            }
         }
     }
 
@@ -982,6 +1018,7 @@ private:
     // ========= Sampling parameters =========
     FloatStorage m_gaussians;
     DiscreteDistribution<Float> m_gaussian_distr;
+    ContinuousDistribution<Wavelength> m_spectral_distr;
 
     // Permanent datasets loaded from files/memory
     FloatStorage m_sky_rad_dataset;
