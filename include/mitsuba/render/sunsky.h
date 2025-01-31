@@ -3,6 +3,7 @@
 #include <utility>
 #include <vector>
 
+#include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/fstream.h>
 
 // Used for creating the RGB solar dataset
@@ -61,7 +62,7 @@ NAMESPACE_BEGIN(mitsuba)
     #define SPEC_TO_RGB_SUN_CONV 467.069280386
 
 
-    #define DATABASE_PATH "resources/data/sunsky/datasets/"
+    #define DATABASE_PATH "data/sunsky/"
 
     enum class Dataset {
         Sky_Params, Sky_Radiance,
@@ -516,7 +517,12 @@ NAMESPACE_BEGIN(mitsuba)
      */
     template <typename FileType, typename OutType>
     DynamicBuffer<OutType> array_from_file(const std::string &path) {
-        FileStream file(path, FileStream::EMode::ERead);
+        auto fs = Thread::thread()->file_resolver();
+        fs::path file_path = fs->resolve(path);
+        if (!fs::exists(file_path))
+            Log(Error, "\"%s\": file does not exist!", file_path);
+
+        FileStream file(file_path, FileStream::EMode::ERead);
 
         using ScalarFileType = dr::value_t<FileType>;
         using FileStorage = DynamicBuffer<FileType>;
