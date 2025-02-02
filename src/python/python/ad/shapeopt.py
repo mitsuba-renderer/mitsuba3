@@ -3,30 +3,6 @@ from __future__ import annotations as __annotations__ # Delayed parsing of type 
 import mitsuba as mi
 import drjit as dr
 
-def mesh_laplacian(n_verts, faces, lambda_):
-    """
-    Compute the index and data arrays of the (combinatorial) Laplacian matrix of
-    a given mesh.
-    """
-    import numpy as np
-
-    # Neighbor indices
-    ii = faces[:, [1, 2, 0]].flatten()
-    jj = faces[:, [2, 0, 1]].flatten()
-    adj = np.unique(np.stack([np.concatenate([ii, jj]), np.concatenate([jj, ii])], axis=0), axis=1)
-    adj_values = np.ones(adj.shape[1], dtype=np.float64) * lambda_
-
-    # Diagonal indices, duplicated as many times as the connectivity of each index
-    diag_idx = np.stack((adj[0], adj[0]), axis=0)
-
-    diag = np.stack((np.arange(n_verts), np.arange(n_verts)), axis=0)
-
-    # Build the sparse matrix
-    idx = np.concatenate((adj, diag_idx, diag), axis=1)
-    values = np.concatenate((-adj_values, adj_values, np.ones(n_verts)))
-
-    return idx, values
-
 class SolveCholesky(dr.CustomOp):
     """
     DrJIT custom operator to solve a linear system using a Cholesky factorization.
@@ -52,14 +28,14 @@ class SolveCholesky(dr.CustomOp):
         return "Cholesky solve"
 
 
-class LargeSteps():
+class ShapeOptimizer:
     """
     Implementation of the algorithm described in the paper "Large Steps in
     Inverse Rendering of Geometry" (Nicolet et al. 2021).
 
     It consists in computing a latent variable u = (I + λL) v from the vertex
-    positions v, where L is the (combinatorial) Laplacian matrix of the input
-    mesh. Optimizing these variables instead of the vertex positions allows to
+    positions v, where L is a Laplacian matrix of the input mesh. 
+    Optimizing these variables instead of the vertex positions allows to
     diffuse gradients on the surface, which helps fight their sparsity.
 
     This class builds the system matrix (I + λL) for a given mesh and hyper
@@ -70,7 +46,7 @@ class LargeSteps():
     differentiable, meshes can therefore be optimized by using the differential
     form as a latent variable.
     """
-    def __init__(self, verts, faces, lambda_=19.0):
+    def __init__(self, verts, faces, lambda_, alpha, laplacian):
         """
         Build the system matrix and its Cholesky factorization.
 
@@ -85,6 +61,19 @@ class LargeSteps():
             on the surface. this value should increase with the tesselation of
             the mesh.
 
+        Parameter ``alpha`` (``float``):
+            Alternative hyper parameter, used to compute the parameterization 
+            matrix as ((1-alpha) * I + alpha * L). 
+            It has precedence over ``lambda_``.
+
+        Parameter ``laplacian`` (``(numpy.ndarray, numpy.ndarray) -> (numpy.ndarray, numpy.ndarray)``):
+            Function used to compute the Laplacian matrix used to build the system matrix (I + λL).
+
+            It should expect two parameters: vertex positions as a numpy array of shape ``(V, 3)`` 
+            and face indices as a numpy array of shape ``(F, 3)``.
+
+            It should return the index and data arrays (COO format) of a Laplacian matrix 
+            associated to these vertex and face sets.
         """
         if mi.variant().endswith('double'):
             from cholespy import CholeskySolverD as CholeskySolver
@@ -107,17 +96,36 @@ class LargeSteps():
         self.inverse = mi.UInt(inverse_v)
         self.n_verts = v_unique.shape[0]
 
-        # Solver expects matrices without duplicate entries as input, so we need to sum them manually
-        indices, values = mesh_laplacian(self.n_verts, f_unique, lambda_)
-        indices_unique, inverse_idx = np.unique(indices, axis=1, return_inverse=True)
+        # Compute laplacian matrix
+        self.lap_idx, self.lap_val = laplacian(v_unique, f_unique)
+        idx, val = np.copy(self.lap_idx), np.copy(self.lap_val)
+
+        # Multiply by lambda or alpha
+        if alpha is None:
+            val *= lambda_
+        else:
+            if alpha < 0.0 or alpha >= 1.0:
+                raise ValueError(f"Invalid value for alpha: {alpha} : it should take values between 0 (included) and 1 (excluded)")
+            val *= alpha
+
+        # Add diagonal entries ((1-alpha)I - sum of the row)
+        idx = np.concatenate((
+            idx, 
+            [idx[0], idx[0]], 
+            [np.arange(self.n_verts), np.arange(self.n_verts)]
+        ), axis=1)
+        val = np.concatenate((
+            val, 
+            -val, 
+            np.ones((self.n_verts,)) * (1.0 if alpha is None else (1 - alpha)),
+        ))
+        idx_unique, inverse_idx = np.unique(idx, axis=1, return_inverse=True)
         inverse_idx = inverse_idx.flatten()
+        data = dr.zeros(mi.TensorXd, shape=(idx_unique.shape[1],))
+        dr.scatter_add(data.array, mi.Float64(val), mi.UInt(inverse_idx))
 
-        self.rows = mi.TensorXi(indices_unique[0])
-        self.cols = mi.TensorXi(indices_unique[1])
-        data = dr.zeros(mi.TensorXd, shape=(indices_unique.shape[1],))
-
-        dr.scatter_reduce(dr.ReduceOp.Add, data.array, mi.Float64(values), mi.UInt(inverse_idx))
-
+        self.rows = mi.TensorXi(idx_unique[0])
+        self.cols = mi.TensorXi(idx_unique[1])
         self.solver = CholeskySolver(self.n_verts, self.rows, self.cols, data, MatrixType.COO)
         self.data = mi.TensorXf(data)
 
@@ -131,15 +139,15 @@ class LargeSteps():
         Parameter ``v`` (``mitsuba.Float``):
             Vertex coordinates of the mesh.
 
-        Returns ``mitsuba.Float`:
+        Returns ``mitsuba.Float``:
             Differential form of v.
         """
+
         # Manual matrix-vector multiplication
         v_unique = dr.gather(mi.Point3f, dr.unravel(mi.Point3f, v), self.index)
         row_prod = dr.gather(mi.Point3f, v_unique, self.cols.array) * self.data.array
         u = dr.zeros(mi.Point3f, dr.width(v_unique))
-        dr.scatter_reduce(dr.ReduceOp.Add, u, row_prod, self.rows.array)
-
+        dr.scatter_add(u, row_prod, self.rows.array)
         return dr.ravel(u)
 
     def from_differential(self, u):
@@ -161,3 +169,12 @@ class LargeSteps():
         """
         v_unique = dr.unravel(mi.Point3f, dr.custom(SolveCholesky, self.solver, mi.TensorXf(u, (self.n_verts, 3))).array)
         return dr.ravel(dr.gather(mi.Point3f, v_unique, self.inverse))
+
+class LargeSteps(ShapeOptimizer):
+    """
+    Specific ``ShapeOptimizer`` using a combinatorial Laplacian.
+    """
+
+    def __init__(self, verts, faces, lambda_=19.0, alpha=None):
+        laplacian = lambda _, f: mi.ad.combinatorial_laplacian(f)
+        super().__init__(verts, faces, lambda_=lambda_, alpha=alpha, laplacian=laplacian)
