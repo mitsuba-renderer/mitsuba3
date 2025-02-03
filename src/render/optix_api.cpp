@@ -27,7 +27,7 @@ void optix_initialize() {
     L(optixDenoiserSetup);
     L(optixDenoiserInvoke);
     L(optixDenoiserComputeIntensity);
-    L(optixModuleCreateFromPTXWithTasks);
+    L(optixModuleCreateWithTasks);
     L(optixModuleGetCompilationState);
     L(optixTaskExecute);
     L(optixProgramGroupCreate);

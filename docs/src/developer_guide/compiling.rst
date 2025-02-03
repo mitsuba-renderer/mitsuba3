@@ -309,7 +309,7 @@ libraries from your system. There is no need to manually install any specific
 version of CUDA.
 
 Make sure to have an up-to-date GPU driver if the framework fails to compile
-the GPU variants of Mitsuba. The minimum requirement is currently v495.89.
+the GPU variants of Mitsuba. The minimum requirement is currently v535.
 
 By default, Mitsuba is also able to resolve the OptiX API itself, and therefore
 does not rely on the ``optix.h`` header file. The ``MI_USE_OPTIX_HEADERS`` CMake
