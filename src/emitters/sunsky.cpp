@@ -775,11 +775,12 @@ private:
             WAVELENGTHS<ScalarFloat>[NB_WAVELENGTHS - 1]
         };
 
-        if constexpr (!dr::is_array_v<Float>)
+        if constexpr (!dr::is_array_v<Float>) {
             // Mean ratio over the range of parameters (turbidity, sun angle)
             // And uniform spectral sampling
-            return { 0.5f, ContinuousDistribution<Wavelength>(range, 1.f) };
-        else {
+            ScalarFloat distribution[2] = {1.f, 1.f};
+            return { 0.5f, ContinuousDistribution<Wavelength>(range, distribution, 2) };
+        } else {
 
             FullSpectrum sky_radiance = dr::zeros<FullSpectrum>(),
                          sun_radiance = dr::zeros<FullSpectrum>();
