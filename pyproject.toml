@@ -1,8 +1,8 @@
 [build-system]
 requires = [
     "scikit-build-core",
-    "nanobind==2.2.0",
-    "drjit==1.0.4",
+    "nanobind==2.5.0",
+    "drjit==1.0.5",
     "typing_extensions>=4.12",
     "hatch-fancy-pypi-readme",
 ]
@@ -16,9 +16,9 @@ description = "Mitsuba 3: A Retargetable Forward and Inverse Renderer"
 readme = "README.md"
 dependencies = [
   "typing_extensions>=4.12;python_version<\"3.11\"",
-  "drjit==1.0.4",
+  "drjit==1.0.5",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 authors = [
     { name = "Wenzel Jakob", email = "wenzel.jakob@epfl.ch" }
 ]
@@ -51,7 +51,7 @@ logging.level = "INFO"
 # Necessary to see build output from the actual compilation
 build-verbosity = 1
 
-build = ["cp38-*", "cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*"]
+build = ["cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*"]
 archs = ["auto64"]
 skip = "*-musllinux* pp*"
 
