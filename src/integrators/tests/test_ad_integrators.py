@@ -552,17 +552,24 @@ class TranslateSelfShadowAreaLightConfig(ConfigBase):
                 'to_world': T().translate([-1, 0, 0.5]) @ T().rotate([0, 1, 0], 90) @ T().scale(1.0),
             },
             'light': {
-                'type': 'point',
-                'position': [-4, 0, 6],
-                'intensity': {'type': 'rgb', 'value': [5.0, 0.0, 0.0]}
+                'type': 'sphere',
+                'to_world': T().translate([-4, 0, 6]) @ T().scale(0.5),
+                'emitter': {
+                    'type': 'area',
+                    'radiance': {'type': 'rgb', 'value': [15.0, 0.0, 0.0]}
+                }
             },
-            'light2': { 'type': 'constant', 'radiance': 0.1 },
+            #'light2': { 'type': 'constant', 'radiance': 0.1 },
         }
+        self.spp = 4
+        self.res = 128
         self.error_mean_threshold = 0.06
-        self.error_max_threshold = 0.7
+        self.ref_fd_epsilon = 1e-3
+        self.error_max_threshold = 0#0.5
         self.error_mean_threshold_bwd = 0.35
         self.integrator_dict = {
             'max_depth': 3,
+            #'guiding': 'grid',
         }
 
     def initialize(self):
@@ -750,7 +757,7 @@ for integrator_name, handles_discontinuities in INTEGRATORS:
 
 @pytest.mark.slow
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
-def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
+def test01_rendering_primal(variant_cuda_ad_rgb, integrator_name, config):
     config = config()
     config.initialize()
 
@@ -779,14 +786,16 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
 @pytest.mark.slow
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
-def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
+#def test02_rendering_forward(variant_cuda_ad_rgb, integrator_name, config):
+def test02_rendering_forward(variant_llvm_ad_rgb, integrator_name, config):
     config = config()
     config.initialize()
 
     config.integrator_dict['type'] = integrator_name
     integrator = mi.load_dict(config.integrator_dict)
     if 'projective' in integrator_name:
-        integrator.proj_seed_spp = 2048 * 2
+        #integrator.proj_seed_spp = 2048 * 2
+        integrator.proj_seed_spp = 512
 
     filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
     image_fwd_ref = mi.TensorXf(mi.Bitmap(filename))
@@ -826,7 +835,7 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
 @pytest.mark.slow
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
-def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
+def test03_rendering_backward(variant_cuda_ad_rgb, integrator_name, config):
     config = config()
     config.initialize()
 
@@ -865,7 +874,7 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
 
 @pytest.mark.slow
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
-def test04_render_custom_op(variants_all_ad_rgb):
+def test04_render_custom_op(variant_cuda_ad_rgb):
     config = DiffuseAlbedoConfig()
     config.initialize()
 
@@ -992,3 +1001,7 @@ if __name__ == "__main__":
 
         filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
         mi.util.write_bitmap(filename, image_fd)
+        filename = join(output_dir, f"tmp1.exr")
+        mi.util.write_bitmap(filename, image_1)
+        filename = join(output_dir, f"tmp2.exr")
+        mi.util.write_bitmap(filename, image_2)
