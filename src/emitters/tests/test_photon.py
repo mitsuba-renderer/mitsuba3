@@ -22,10 +22,10 @@ lookat_transforms = [
 
 # Set up some basic photon data
 photon_detected = pd.DataFrame([[1,-0.086816,102.75,1028.0,0.047872,0.11631,0.99156,412.48667183165185],
-                                [1,-0.086816,102.75,1028.0,0.029383,0.14085,0.98779,412.48667183165185]])
+                                [1,-0.086816,102.75,1028.0,0.029383,0.14085,0.98779,412.48667183165185],
+                                [1,-0.086816,102.75,1028.0,-0.040829,0.069474,0.9925,412.48667183165185]])
 x_position, y_position, z_position = photon_detected.values[:, 1:4].T
 x_momentum, y_momentum, z_momentum = photon_detected.values[:, 4:7].T
-print(x_position, z_position)
 # calculate the target coordinates of the photons
 x_target = x_position + x_momentum
 y_target = y_position + y_momentum
@@ -58,20 +58,24 @@ def create_emitter_and_spectrum(lookat, s_key='d65'):
 @pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
 @pytest.mark.parametrize("it_pos", [[2.0, 0.5, 0.0], [1.0, 0.5, -5.0]])
 @pytest.mark.parametrize("wavelength_sample", [0.7])
-# @pytest.mark.parametrize("cutoff_angle", [20, 80])
 @pytest.mark.parametrize("lookat", lookat_transforms)
 def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelength_sample, lookat):
     """ Check the correctness of the sample_direction() method """
 
-    # Test a fixed cutoff angle?
-    cutoff_angle = 20
-    cutoff_angle_rad = cutoff_angle / 180 * dr.pi
-    beam_width_rad = cutoff_angle_rad * 0.75
-    inv_transition_width = 1 / (cutoff_angle_rad - beam_width_rad)
+    # Create an emitter and spectrum
     emitter, spectrum = create_emitter_and_spectrum(lookat, spectrum_key)
     eval_t = 0.3
-    # TODO: work out how to test the transforms used in the photon emitter here
-    trafo = mi.Transform4f(emitter.world_transform())
+
+    # Get the transforms for this photon data
+    origins = [mi.Point3f(mi.Float(x_position[c]), 
+                           mi.Float(z_position[c]), 
+                           mi.Float(y_position[c])) for c in range(len(x_position))]
+    targets = [mi.Point3f(mi.Float(x_target[c]), 
+                           mi.Float(z_target[c]),
+                           mi.Float(y_target[c])) for c in range(len(x_target))]
+    up = mi.Point3f(0, 0, 1)
+    camera_coords = [mi.Transform4f().look_at(origin=origin, target=target, up=up) for origin, target in zip(origins, targets)]
+    m_transforms = [camera_coord.matrix for camera_coord in camera_coords]
 
     # Create a surface iteration
     it = mi.SurfaceInteraction3f()
@@ -83,38 +87,35 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelen
     wav, spec = spectrum.sample_spectrum(it, mi.sample_shifted(wavelength_sample))
     it.wavelengths = wav
 
+    # Mimic what the matrix gather does in the C++ code (not available in python)
+    sample = [0,0]
+    index =  dr.arange(dr.llvm.UInt32, dr.width(sample) % dr.width(m_transforms))
+    m_trans_at_index = [[m_transforms[0][n][index[0]]] * 4 for n in range(len(m_transforms[0]))]
+    m_matrix = mi.Matrix4f(m_trans_at_index)
+    m_transform = mi.Transform4f(m_matrix)
+    m_vector = m_transform.translation()
+
     # Direction from the position to the point emitter
-    d = mi.Vector3f(-it.p + lookat.translation())
+    d = mi.Vector3f(-it.p + m_vector)
     dist = dr.norm(d)
     d /= dist
 
-    # Calculate angle between lookat direction and ray direction
-    angle = dr.acos((trafo.inverse() @ (-d))[2])
-    angle = dr.select(dr.abs(angle - beam_width_rad)
-                      < 1e-3, beam_width_rad, angle)
-    angle = dr.select(dr.abs(angle - cutoff_angle_rad)
-                      < 1e-3, cutoff_angle_rad, angle)
-
     # Sample a direction from the emitter
-    ds, res = emitter.sample_direction(it, [0, 0])
+    ds, res = emitter.sample_direction(it, sample)
 
     # Evaluate the spectrum
     spec = spectrum.eval(it)
-    spec = dr.select(angle <= beam_width_rad, spec, spec *
-                     ((cutoff_angle_rad - angle) * inv_transition_width))
-    spec = dr.select(angle <= cutoff_angle_rad, spec, 0)
 
     assert ds.time == it.time
     assert ds.pdf == 1.0
     assert ds.delta
-    # assert dr.allclose(ds.d, d)
-    # assert dr.allclose(res, spec / (dist**2))
+    assert dr.allclose(ds.d, d)
+    assert dr.allclose(res, spec / (dist**2))
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
 @pytest.mark.parametrize("wavelength_sample", [0.7])
 @pytest.mark.parametrize("pos_sample", [[0.4, 0.5], [0.1, 0.4]])
-# @pytest.mark.parametrize("cutoff_angle", [20, 80])
 @pytest.mark.parametrize("lookat", lookat_transforms)
 def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_sample, lookat):
     # Check the correctness of the sample_ray() method
@@ -125,11 +126,19 @@ def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_
     cos_cutoff_angle_rad = dr.cos(cutoff_angle_rad)
     beam_width_rad = cutoff_angle_rad * 0.75
     inv_transition_width = 1 / (cutoff_angle_rad - beam_width_rad)
-    emitter, spectrum = create_emitter_and_spectrum(
-        lookat, spectrum_key)
+    emitter, spectrum = create_emitter_and_spectrum(lookat, spectrum_key)
     eval_t = 0.3
-    # TODO: work out how to test the transforms used in the photon emitter here
-    trafo = mi.Transform4f(emitter.world_transform())
+
+    # Get the transforms for this photon data
+    origins = [mi.Point3f(mi.Float(x_position[c]), 
+                          mi.Float(z_position[c]), 
+                          mi.Float(y_position[c])) for c in range(len(x_position))]
+    targets = [mi.Point3f(mi.Float(x_target[c]), 
+                          mi.Float(z_target[c]),
+                          mi.Float(y_target[c])) for c in range(len(x_target))]
+    up = mi.Point3f(0, 0, 1)
+    camera_coords = [mi.Transform4f().look_at(origin=origin, target=target, up=up) for origin, target in zip(origins, targets)]
+    m_transforms = [camera_coord.matrix for camera_coord in camera_coords]
 
     # Sample a local direction and calculate local angle
     dir_sample = pos_sample  # not being used anyway
@@ -140,6 +149,10 @@ def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_
                       < 1e-3, beam_width_rad, angle)
     angle = dr.select(dr.abs(angle - cutoff_angle_rad)
                       < 1e-3, cutoff_angle_rad, angle)
+
+    index =  dr.arange(dr.llvm.UInt32, dr.width(wavelength_sample))
+    new_dir_4f = m_transforms[index[0]] * mi.Vector4f(0., 0., 1., 0.)
+    new_dir = mi.Vector3f([new_dir_4f[n] for n in range(3)])
 
     # Sample a ray (position, direction, wavelengths) from the emitter
     ray, res = emitter.sample_ray(
@@ -154,20 +167,16 @@ def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_
                             ((cutoff_angle_rad - angle) * inv_transition_width))
     spec = dr.select(angle <= cutoff_angle_rad, spec, 0)
 
-    # assert dr.allclose(
-    #     res, spec / mi.warp.square_to_uniform_cone_pdf(trafo.inverse() @ ray.d, cos_cutoff_angle_rad))
     pdf_dir = 445029
     assert dr.allclose(res, spec / pdf_dir)
     assert dr.allclose(ray.time, eval_t)
     assert dr.all(local_dir.z >= cos_cutoff_angle_rad)
     assert dr.allclose(ray.wavelengths, wav)
-    # TODO: work out how to test the transforms used in the photon emitter here
-    # assert dr.allclose(ray.d, trafo @ local_dir)
-    # assert dr.allclose(ray.o, lookat.translation())
+    assert dr.allclose(ray.d, new_dir)
+    assert dr.allclose(ray.o, mi.Transform4f(m_transforms[0]).translation())
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
-# @pytest.mark.parametrize("cutoff_angle", [20, 60])
 @pytest.mark.parametrize("lookat", lookat_transforms)
 def test_eval(variants_vec_spectral, spectrum_key, lookat):
     # Check the correctness of the eval() method
