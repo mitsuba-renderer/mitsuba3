@@ -787,6 +787,5 @@ private:
     Float m_sin_2k_alpha[3], m_cos_2k_alpha[3];
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Hair, BSDF)
-MI_EXPORT_PLUGIN(Hair, "Hair material")
+MI_EXPORT_PLUGIN(Hair)
 NAMESPACE_END(mitsuba)

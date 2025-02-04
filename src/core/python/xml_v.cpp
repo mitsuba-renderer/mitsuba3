@@ -180,13 +180,13 @@ std::string get_type(const nb::dict &dict) {
 void expand_and_set_object(Properties &props, const std::string &name, const ref<Object> &obj) {
     std::vector<ref<Object>> children = obj->expand();
     if (children.empty()) {
-        props.set_object(name, obj);
+        props.set(name, obj);
     } else if (children.size() == 1) {
-        props.set_object(name, children[0]);
+        props.set(name, children[0]);
     } else {
         int ctr = 0;
         for (auto c : children)
-            props.set_object(name + "_" + std::to_string(ctr++), c);
+            props.set(name + "_" + std::to_string(ctr++), c);
     }
 }
 
@@ -340,7 +340,7 @@ void parse_dictionary(DictParseContext &ctx,
             std::string type2 = get_type(dict2);
 
             if (type2 == "spectrum" || type2 == "rgb") {
-                props.set_object(key, create_texture_from<Float, Spectrum>(dict2, within_emitter));
+                props.set(key, create_texture_from<Float, Spectrum>(dict2, within_emitter));
                 continue;
             }
 

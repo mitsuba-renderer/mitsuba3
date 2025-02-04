@@ -14,18 +14,30 @@ public:
 
     /**
      * \brief Turn a log message into a human-readable format
-     * \param level     The importance of the debug message
-     * \param class_    Originating class or \c nullptr
-     * \param thread    Thread, which is responsible for creating the message
-     * \param file      File, which is responsible for creating the message
-     * \param line      Associated line within the source file
-     * \param msg       Text content associated with the log message
+     *
+     * \param level
+     *     The importance of the debug message
+     *
+     * \param cname
+     *     Name of the class (if present)
+     *
+     * \param thread
+     *      Thread, which is responsible for creating the message
+     *
+     * \param fname
+     *      Source location (file)
+     *
+     * \param line
+     *      Source location (line number)
+     *
+     * \param msg
+     *      Text content associated with the log message
      */
-    virtual std::string format(LogLevel level, const Class *class_,
-                               const Thread *thread, const char *file, int line,
+    virtual std::string format(LogLevel level, const char *cname,
+                               const Thread *thread, const char *fname, int line,
                                const std::string &msg) = 0;
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Formatter)
 };
 
 /** \brief The default formatter used to turn log messages into
@@ -37,8 +49,8 @@ public:
     /// Create a new default formatter
     DefaultFormatter();
 
-    std::string format(LogLevel level, const Class *class_,
-                       const Thread *thread, const char *file, int line,
+    std::string format(LogLevel level, const char *cname,
+                       const Thread *thread, const char *fname, int line,
                        const std::string &msg) override;
 
     /// Should date information be included? The default is yes.
@@ -61,7 +73,7 @@ public:
     /// \sa set_has_class
     bool has_class() { return m_has_class; }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(DefaultFormatter)
 protected:
     bool m_has_date;
     bool m_has_log_level;

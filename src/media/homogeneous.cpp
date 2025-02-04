@@ -196,6 +196,5 @@ private:
     ScalarFloat m_scale;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(HomogeneousMedium, Medium)
-MI_EXPORT_PLUGIN(HomogeneousMedium, "Homogeneous Medium")
+MI_EXPORT_PLUGIN(HomogeneousMedium)
 NAMESPACE_END(mitsuba)

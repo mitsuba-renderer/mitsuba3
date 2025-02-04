@@ -209,6 +209,5 @@ private:
 };
 
 
-MI_IMPLEMENT_CLASS_VARIANT(PointLight, Emitter)
-MI_EXPORT_PLUGIN(PointLight, "Point emitter")
+MI_EXPORT_PLUGIN(PointLight)
 NAMESPACE_END(mitsuba)

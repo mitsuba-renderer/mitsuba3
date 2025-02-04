@@ -170,6 +170,5 @@ private:
     ContinuousDistribution<Wavelength> m_distr;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(RegularSpectrum, Texture)
-MI_EXPORT_PLUGIN(RegularSpectrum, "Regular interpolated spectrum")
+MI_EXPORT_PLUGIN(RegularSpectrum)
 NAMESPACE_END(mitsuba)

@@ -1,0 +1,8 @@
+Fix super eval_attribute inefficient callback in src/render/bsdf.cpp
+
+Move jitc_eval() from plugin.cpp to plugin instantiation
+
+Shorten traversal callbacks in all Plugins (put_parameter -> put, callback -> cb)
+Alias for std::vector<std::string> -> str_vector Hmm
+
+Move image resampling to Dr.Jit

@@ -310,6 +310,5 @@ private:
    ref<ShapeGroup_> m_shapegroup;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Instance, Shape)
-MI_EXPORT_PLUGIN(Instance, "Instanced geometry")
+MI_EXPORT_PLUGIN(Instance)
 NAMESPACE_END(mitsuba)

@@ -276,6 +276,5 @@ private:
     ScalarVector2f m_wavelength_range;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(BlackBodySpectrum, Texture)
-MI_EXPORT_PLUGIN(BlackBodySpectrum, "Black body spectrum")
+MI_EXPORT_PLUGIN(BlackBodySpectrum)
 NAMESPACE_END(mitsuba)

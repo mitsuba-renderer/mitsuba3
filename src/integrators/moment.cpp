@@ -143,6 +143,5 @@ private:
     std::vector<std::pair<ref<Base>, size_t>> m_integrators;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(MomentIntegrator, SamplingIntegrator)
-MI_EXPORT_PLUGIN(MomentIntegrator, "Moment integrator");
+MI_EXPORT_PLUGIN(MomentIntegrator)
 NAMESPACE_END(mitsuba)

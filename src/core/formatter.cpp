@@ -10,7 +10,7 @@ DefaultFormatter::DefaultFormatter()
     : m_has_date(true), m_has_log_level(true), m_has_thread(true),
       m_has_class(true) { }
 
-std::string DefaultFormatter::format(mitsuba::LogLevel level, const Class *class_,
+std::string DefaultFormatter::format(mitsuba::LogLevel level, const char *class_name,
                                      const Thread *thread, const char *file, int line,
                                      const std::string &msg) {
     std::ostringstream oss;
@@ -51,8 +51,8 @@ std::string DefaultFormatter::format(mitsuba::LogLevel level, const Class *class
 
         /* Class */
         if (m_has_class) {
-            if (class_)
-                oss << "[" << class_->name() << "] ";
+            if (class_name)
+                oss << "[" << class_name << "] ";
             else if (line != -1 && file)
                 oss << "[" << fs::path(file).filename() << ":" << line << "] ";
         }
@@ -64,8 +64,5 @@ std::string DefaultFormatter::format(mitsuba::LogLevel level, const Class *class
 
     return oss.str();
 }
-
-MI_IMPLEMENT_CLASS(Formatter, Object)
-MI_IMPLEMENT_CLASS(DefaultFormatter, Formatter)
 
 NAMESPACE_END(mitsuba)

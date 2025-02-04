@@ -134,6 +134,5 @@ public:
     MI_DECLARE_CLASS()
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(IrradianceMeter, Sensor)
-MI_EXPORT_PLUGIN(IrradianceMeter, "IrradianceMeter");
+MI_EXPORT_PLUGIN(IrradianceMeter)
 NAMESPACE_END(mitsuba)

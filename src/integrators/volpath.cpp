@@ -556,6 +556,5 @@ public:
     MI_DECLARE_CLASS()
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(VolumetricPathIntegrator, MonteCarloIntegrator);
-MI_EXPORT_PLUGIN(VolumetricPathIntegrator, "Volumetric Path Tracer integrator");
+MI_EXPORT_PLUGIN(VolumetricPathIntegrator)
 NAMESPACE_END(mitsuba)

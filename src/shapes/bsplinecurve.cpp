@@ -1302,6 +1302,5 @@ private:
 #endif
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(BSplineCurve, Shape)
-MI_EXPORT_PLUGIN(BSplineCurve, "B-spline curve intersection primitive");
+MI_EXPORT_PLUGIN(BSplineCurve);
 NAMESPACE_END(mitsuba)

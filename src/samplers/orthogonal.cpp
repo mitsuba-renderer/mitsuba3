@@ -272,6 +272,5 @@ private:
     UInt32 m_permutation_seed;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(OrthogonalSampler, Sampler)
-MI_EXPORT_PLUGIN(OrthogonalSampler, "Orthogonal Array Sampler");
+MI_EXPORT_PLUGIN(OrthogonalSampler)
 NAMESPACE_END(mitsuba)

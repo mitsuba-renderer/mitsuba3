@@ -292,6 +292,5 @@ private:
     mutable UInt32 m_last_index;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(BatchSensor, Sensor)
-MI_EXPORT_PLUGIN(BatchSensor, "BatchSensor");
+MI_EXPORT_PLUGIN(BatchSensor)
 NAMESPACE_END(mitsuba)

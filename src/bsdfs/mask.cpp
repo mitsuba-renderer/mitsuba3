@@ -248,6 +248,5 @@ private:
     ref<Base> m_nested_bsdf;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(MaskBSDF, BSDF)
-MI_EXPORT_PLUGIN(MaskBSDF, "Mask material")
+MI_EXPORT_PLUGIN(MaskBSDF)
 NAMESPACE_END(mitsuba)

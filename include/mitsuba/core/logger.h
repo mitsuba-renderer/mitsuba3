@@ -34,30 +34,49 @@ public:
 
     /**
      * \brief Process a log message
-     * \param level      Log level of the message
-     * \param class_     Class descriptor of the message creator
-     * \param filename   Source file of the message creator
-     * \param line       Source line number of the message creator
-     * \param fmt        printf-style string formatter
+     *
+     * \param level
+     *     Log level of the message
+     *
+     * \param cname
+     *     Name of the class (if present)
+     *
+     * \param fname
+     *      Source filename
+     *
+     * \param line
+     *      Source line number
+     *
+     * \param msg
+     *      Log message
      *
      * \note This function is not exposed in the Python bindings.
      *       Instead, please use \cc mitsuba.core.Log
      */
-    void log(LogLevel level, const Class *class_, const char *filename,
-             int line, const std::string &message);
+    void log(LogLevel level, const char *cname, const char *fname,
+             int line, const char *msg);
 
     /**
      * \brief Process a progress message
-     * \param progress Percentage value in [0, 100]
-     * \param name Title of the progress message
-     * \param formatted Formatted string representation of the message
-     * \param eta Estimated time until 100% is reached.
-     * \param ptr Custom pointer payload. This is used to express the
-     *    context of a progress message. When rendering a scene, it
-     *    will usually contain a pointer to the associated \c RenderJob.
+     *
+     * \param progress
+     *     Percentage value in [0, 100]
+     *
+     * \param name
+     *     Title of the progress message
+     *
+     * \param formatted
+     *     Formatted string representation of the message
+     *
+     * \param eta
+     *     Estimated time until 100% is reached.
+     *
+     * \param ptr
+     *     Custom pointer payload. This is used to express the
+     *     context of a progress message.
      */
-    void log_progress(float progress, const std::string &name,
-        const std::string &formatted, const std::string &eta,
+    void log_progress(float progress, const char *name,
+        const char *formatted, const char *eta,
         const void *ptr = nullptr);
 
     /// Set the log level (everything below will be ignored)
@@ -119,7 +138,7 @@ public:
     /// Shutdown logging
     static void static_shutdown();
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Logger)
 
 private:
     struct LoggerPrivate;
@@ -129,16 +148,18 @@ private:
 
 NAMESPACE_BEGIN(detail)
 
-[[noreturn]] extern MI_EXPORT_LIB
-void Throw(LogLevel level, const Class *class_, const char *file,
-           int line, const std::string &msg);
+[[noreturn]] extern MI_EXPORT_LIB void Throw(LogLevel level,
+                                             const char *cname,
+                                             const char *fname, int line,
+                                             const std::string &msg);
 
-template <typename... Args> MI_INLINE
-static void Log(LogLevel level, const Class *class_,
-                const char *filename, int line, Args &&... args) {
+template <typename... Args>
+MI_INLINE static void Log(LogLevel level, const char *cname,
+                          const char *fname, int line, Args &&...args) {
     auto logger = mitsuba::Thread::thread()->logger();
     if (logger && level >= logger->log_level())
-        logger->log(level, class_, filename, line, tfm::format(std::forward<Args>(args)...));
+        logger->log(level, cname, fname, line,
+                    tfm::format(std::forward<Args>(args)...).c_str());
 }
 
 NAMESPACE_END(detail)
@@ -146,14 +167,14 @@ NAMESPACE_END(detail)
 /// Write a log message to the console
 #define Log(level, ...)                                                        \
     do {                                                                       \
-        mitsuba::detail::Log(level, m_class, __FILE__, __LINE__,               \
+        mitsuba::detail::Log(level, ClassName, __FILE__, __LINE__,             \
                                ##__VA_ARGS__);                                 \
     } while (0)
 
 /// Throw an exception
 #define Throw(...)                                                             \
     do {                                                                       \
-        mitsuba::detail::Throw(Error, m_class, __FILE__, __LINE__,            \
+        mitsuba::detail::Throw(Error, ClassName, __FILE__, __LINE__,           \
                       tfm::format(__VA_ARGS__));                               \
     } while (0)
 
@@ -179,6 +200,6 @@ NAMESPACE_END(detail)
 
 /// Throw an exception reporting that the given function is not implemented
 #define NotImplementedError(Name) \
-    Throw("%s::" Name "(): not implemented!", class_()->name());
+    Throw("%s::" Name "(): not implemented!", ClassName);
 
 NAMESPACE_END(mitsuba)

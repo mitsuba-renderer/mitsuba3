@@ -596,6 +596,5 @@ protected:
     Float m_scale;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(EnvironmentMapEmitter, Emitter)
-MI_EXPORT_PLUGIN(EnvironmentMapEmitter, "Environment map emitter")
+MI_EXPORT_PLUGIN(EnvironmentMapEmitter)
 NAMESPACE_END(mitsuba)

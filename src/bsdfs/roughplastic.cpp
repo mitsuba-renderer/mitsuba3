@@ -538,6 +538,5 @@ private:
     Float m_internal_reflectance;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(RoughPlastic, BSDF);
-MI_EXPORT_PLUGIN(RoughPlastic, "Rough plastic");
+MI_EXPORT_PLUGIN(RoughPlastic)
 NAMESPACE_END(mitsuba)

@@ -546,6 +546,5 @@ private:
     ref<Texture> m_specular_reflectance;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(RoughConductor, BSDF)
-MI_EXPORT_PLUGIN(RoughConductor, "Rough conductor")
+MI_EXPORT_PLUGIN(RoughConductor)
 NAMESPACE_END(mitsuba)

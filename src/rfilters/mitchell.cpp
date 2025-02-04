@@ -87,6 +87,5 @@ protected:
     ScalarFloat m_b, m_c;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(MitchellNetravaliFilter, ReconstructionFilter)
-MI_EXPORT_PLUGIN(MitchellNetravaliFilter, "Mitchell-Netravali filter");
+MI_EXPORT_PLUGIN(MitchellNetravaliFilter)
 NAMESPACE_END(mitsuba)

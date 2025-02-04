@@ -281,8 +281,7 @@ protected:
     Point3f m_target_point;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(DistantSensor, Sensor)
-MI_EXPORT_PLUGIN(DistantSensor, "DistantSensor")
+MI_EXPORT_PLUGIN(DistantSensor)
 
 NAMESPACE_BEGIN(detail)
 template <RayTargetType TargetType>

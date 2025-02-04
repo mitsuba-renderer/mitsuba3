@@ -233,6 +233,5 @@ protected:
     ScalarBoundingSphere3f m_bsphere;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(DirectionalEmitter, Emitter)
-MI_EXPORT_PLUGIN(DirectionalEmitter, "Distant directional emitter")
+MI_EXPORT_PLUGIN(DirectionalEmitter)
 NAMESPACE_END(mitsuba)

@@ -814,6 +814,5 @@ private:
     static constexpr float silhouette_offset = 1e-3f;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Cylinder, Shape)
-MI_EXPORT_PLUGIN(Cylinder, "Cylinder intersection primitive");
+MI_EXPORT_PLUGIN(Cylinder)
 NAMESPACE_END(mitsuba)

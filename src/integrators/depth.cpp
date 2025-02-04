@@ -54,6 +54,5 @@ public:
     MI_DECLARE_CLASS()
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(DepthIntegrator, SamplingIntegrator)
-MI_EXPORT_PLUGIN(DepthIntegrator, "Depth integrator");
+MI_EXPORT_PLUGIN(DepthIntegrator)
 NAMESPACE_END(mitsuba)

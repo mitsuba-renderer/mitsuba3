@@ -108,7 +108,7 @@ public:
         : m_type(type), m_alpha_u(alpha_u), m_alpha_v(alpha_v) {
 
         if (props.has_property("distribution")) {
-            std::string distr = string::to_lower(props.string("distribution"));
+            std::string distr = string::to_lower(props.get<std::string>("distribution"));
             if (distr == "beckmann")
                 m_type = MicrofacetType::Beckmann;
             else if (distr == "ggx")

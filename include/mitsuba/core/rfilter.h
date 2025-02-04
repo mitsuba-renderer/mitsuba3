@@ -46,7 +46,8 @@ enum class FilterBoundaryCondition {
  * representation, whose resolution given by \ref MI_FILTER_RESOLUTION.
  */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB ReconstructionFilter : public Object {
+class MI_EXPORT_LIB ReconstructionFilter
+    : public VariantObject<Float, Spectrum> {
 public:
     MI_IMPORT_CORE_TYPES()
 
@@ -77,7 +78,7 @@ public:
         }
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_PLUGIN_BASE_CLASS(ReconstructionFilter)
 protected:
     /// Create a new reconstruction filter
     ReconstructionFilter(const Properties &props);

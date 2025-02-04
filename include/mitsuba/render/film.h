@@ -11,7 +11,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-
 /**
  * \brief This list of flags is used to classify the different types of films.
  */
@@ -47,7 +46,7 @@ MI_DECLARE_ENUM_OPERATORS(FilmFlags)
  * is then committed to the film using the \ref put() method.
  */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB Film : public Object {
+class MI_EXPORT_LIB Film : public VariantObject<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(ImageBlock, ReconstructionFilter, Texture)
 
@@ -209,7 +208,7 @@ public:
 
     std::string to_string() const override;
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_PLUGIN_BASE_CLASS(Film)
 protected:
     /// Create a film
     Film(const Properties &props);

@@ -643,15 +643,15 @@ Mesh<Float, Spectrum>::merge(const Mesh *other) const {
 
     Properties props;
     if (m_bsdf)
-        props.set_object("bsdf", (Object *) m_bsdf.get());
+        props.set("bsdf", (Object *) m_bsdf.get());
     if (m_interior_medium)
-        props.set_object("interior", (Object *) m_interior_medium.get());
+        props.set("interior", (Object *) m_interior_medium.get());
     if (m_exterior_medium)
-        props.set_object("exterior", (Object *) m_exterior_medium.get());
+        props.set("exterior", (Object *) m_exterior_medium.get());
     if (m_sensor)
-        props.set_object("sensor", (Object *) m_sensor.get());
+        props.set("sensor", (Object *) m_sensor.get());
     if (m_emitter)
-        props.set_object("emitter", (Object *) m_emitter.get());
+        props.set("emitter", (Object *) m_emitter.get());
     props.set_bool("face_normals", m_face_normals);
 
     ref<Mesh> result = new Mesh(
@@ -731,10 +731,10 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
     mesh->m_bbox = bbox;
     mesh->initialize();
 
-    props.set_object("mesh", mesh.get());
+    props.set("mesh", mesh.get());
 
     if (m_scene)
-        props.set_object("parent_scene", m_scene);
+        props.set("parent_scene", m_scene);
 
     m_parameterization = new Scene<Float, Spectrum>(props);
 }
@@ -1883,6 +1883,5 @@ MI_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
     return dr::grad_enabled(m_vertex_positions);
 }
 
-MI_IMPLEMENT_CLASS_VARIANT(Mesh, Shape)
 MI_INSTANTIATE_CLASS(Mesh)
 NAMESPACE_END(mitsuba)

@@ -3,17 +3,12 @@
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/core/properties.h>
+#include <functional>
 
 NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT BSDF<Float, Spectrum>::BSDF(const Properties &props)
-    : m_flags(+BSDFFlags::Empty), m_id(props.id()) {
-    MI_REGISTRY_PUT("BSDF", this);
-}
-
-MI_VARIANT BSDF<Float, Spectrum>::~BSDF() {
-    if constexpr (dr::is_jit_v<Float>)
-        jit_registry_remove(this);
+    : VariantObject<Float, Spectrum>(props), m_flags(+BSDFFlags::Empty) {
 }
 
 MI_VARIANT std::pair<Spectrum, Float>
@@ -299,6 +294,5 @@ std::ostream &operator<<(std::ostream &os, const TransportMode &mode) {
     return os;
 }
 
-MI_IMPLEMENT_CLASS_VARIANT(BSDF, Object, "bsdf")
 MI_INSTANTIATE_CLASS(BSDF)
 NAMESPACE_END(mitsuba)

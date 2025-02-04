@@ -627,7 +627,5 @@ protected:
     std::vector<ScalarFloat> m_max_per_channel;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(GridVolume, Volume)
-MI_EXPORT_PLUGIN(GridVolume, "GridVolume texture")
-
+MI_EXPORT_PLUGIN(GridVolume)
 NAMESPACE_END(mitsuba)

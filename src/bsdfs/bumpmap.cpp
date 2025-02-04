@@ -246,6 +246,5 @@ protected:
     ref<Base> m_nested_bsdf;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(BumpMap, BSDF)
-MI_EXPORT_PLUGIN(BumpMap, "Bump map material adapter")
+MI_EXPORT_PLUGIN(BumpMap)
 NAMESPACE_END(mitsuba)

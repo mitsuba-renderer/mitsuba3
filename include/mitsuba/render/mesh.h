@@ -487,7 +487,7 @@ protected:
         return { t, { u, v }, active };
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Mesh)
 
 protected:
     enum MeshAttributeType {

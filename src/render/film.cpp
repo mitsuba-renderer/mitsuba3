@@ -4,7 +4,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MI_VARIANT Film<Float, Spectrum>::Film(const Properties &props) : Object() {
+MI_VARIANT Film<Float, Spectrum>::Film(const Properties &props)
+    : VariantObject<Float, Spectrum>(props) {
     bool is_m_film = string::to_lower(props.plugin_name()) == "mfilm";
 
     // Horizontal and vertical film resolution in pixels
@@ -39,7 +40,7 @@ MI_VARIANT Film<Float, Spectrum>::Film(const Properties &props) : Object() {
                 Throw("A film can only have one reconstruction filter.");
 
             m_filter = rfilter;
-            props.mark_queried(name);
+            props.mark_queried(name.c_str());
         }
     }
 
@@ -89,7 +90,7 @@ Film<Float, Spectrum>::sensor_response_function() {
 }
 
 MI_VARIANT void Film<Float, Spectrum>::set_crop_window(const ScalarPoint2u &crop_offset,
-                                                        const ScalarVector2u &crop_size) {
+                                                       const ScalarVector2u &crop_size) {
     if (dr::any(crop_offset + crop_size > m_size))
         Throw("Invalid crop window specification: crop_offset(%u, %u) + "
               "crop_size(%u, %u) > size(%u, %u)", crop_offset.x(), crop_offset.y(),
@@ -117,7 +118,5 @@ MI_VARIANT std::string Film<Float, Spectrum>::to_string() const {
     return oss.str();
 }
 
-
-MI_IMPLEMENT_CLASS_VARIANT(Film, Object, "film")
 MI_INSTANTIATE_CLASS(Film)
 NAMESPACE_END(mitsuba)

@@ -232,6 +232,5 @@ private:
     ref<Texture> m_specular_reflectance;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(ThinDielectric, BSDF)
-MI_EXPORT_PLUGIN(ThinDielectric, "Thin dielectric")
+MI_EXPORT_PLUGIN(ThinDielectric)
 NAMESPACE_END(mitsuba)

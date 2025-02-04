@@ -1154,6 +1154,5 @@ private:
     NormalMethod m_normal_method;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SDFGrid, Shape)
-MI_EXPORT_PLUGIN(SDFGrid, "SDFGrid intersection primitive");
+MI_EXPORT_PLUGIN(SDFGrid)
 NAMESPACE_END(mitsuba)

@@ -173,6 +173,5 @@ private:
     IrregularContinuousDistribution<Wavelength> m_distr;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(IrregularSpectrum, Texture)
-MI_EXPORT_PLUGIN(IrregularSpectrum, "Irregular interpolated spectrum")
+MI_EXPORT_PLUGIN(IrregularSpectrum)
 NAMESPACE_END(mitsuba)

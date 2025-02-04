@@ -201,6 +201,5 @@ private:
     Vector3f m_dx, m_dy;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(OrthographicCamera, ProjectiveCamera)
-MI_EXPORT_PLUGIN(OrthographicCamera, "Orthographic Camera");
+MI_EXPORT_PLUGIN(OrthographicCamera)
 NAMESPACE_END(mitsuba)

@@ -69,7 +69,7 @@ public:
     /// Return a human-readable representation of this instance
     std::string to_string() const override;
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(FileResolver)
 private:
     std::vector<fs::path> m_paths;
 };

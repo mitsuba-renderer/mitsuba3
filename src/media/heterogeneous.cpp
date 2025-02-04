@@ -218,6 +218,5 @@ private:
     Float m_max_density;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(HeterogeneousMedium, Medium)
-MI_EXPORT_PLUGIN(HeterogeneousMedium, "Heterogeneous Medium")
+MI_EXPORT_PLUGIN(HeterogeneousMedium)
 NAMESPACE_END(mitsuba)

@@ -63,6 +63,5 @@ public:
 private:
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(IsotropicPhaseFunction, PhaseFunction)
-MI_EXPORT_PLUGIN(IsotropicPhaseFunction, "Isotropic phase function")
+MI_EXPORT_PLUGIN(IsotropicPhaseFunction)
 NAMESPACE_END(mitsuba)

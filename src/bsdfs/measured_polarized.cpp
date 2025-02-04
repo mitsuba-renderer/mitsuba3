@@ -400,6 +400,5 @@ private:
     Interpolator  m_interpolator;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(MeasuredPolarized, BSDF)
-MI_EXPORT_PLUGIN(MeasuredPolarized, "Measured polarized material")
+MI_EXPORT_PLUGIN(MeasuredPolarized)
 NAMESPACE_END(mitsuba)

@@ -570,6 +570,5 @@ private:
     Float m_inv_surface_area;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Disk, Shape)
-MI_EXPORT_PLUGIN(Disk, "Disk intersection primitive");
+MI_EXPORT_PLUGIN(Disk)
 NAMESPACE_END(mitsuba)

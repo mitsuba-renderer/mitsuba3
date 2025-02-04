@@ -321,6 +321,5 @@ protected:
     Float m_sensor_area;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Projector, Emitter)
-MI_EXPORT_PLUGIN(Projector, "Projection emitter")
+MI_EXPORT_PLUGIN(Projector)
 NAMESPACE_END(mitsuba)

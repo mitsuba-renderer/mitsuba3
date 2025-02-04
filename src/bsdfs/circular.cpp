@@ -168,6 +168,5 @@ private:
     bool m_left_handed;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(CircularPolarizer, BSDF)
-MI_EXPORT_PLUGIN(CircularPolarizer, "Circular polarizer material")
+MI_EXPORT_PLUGIN(CircularPolarizer)
 NAMESPACE_END(mitsuba)

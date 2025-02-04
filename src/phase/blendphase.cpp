@@ -201,6 +201,5 @@ protected:
     ref<Base> m_nested_phase[2];
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(BlendPhaseFunction, PhaseFunction)
-MI_EXPORT_PLUGIN(BlendPhaseFunction, "Blended phase function")
+MI_EXPORT_PLUGIN(BlendPhaseFunction)
 NAMESPACE_END(mitsuba)

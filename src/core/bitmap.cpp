@@ -267,7 +267,7 @@ resample(Bitmap *target, const Bitmap *source,
     if (!rfilter) {
         // Upsample using a 2-lobed Lanczos reconstruction filter
         Properties props("lanczos");
-        props.set_int("lobes", 2);
+        props.set("lobes", 2);
         rfilter = PluginManager::instance()->create_object<ReconstructionFilter>(props);
     }
 
@@ -846,7 +846,7 @@ std::string Bitmap::to_string() const {
     if (!keys.empty()) {
         oss << "  metadata = {" << std::endl;
         for (auto it = keys.begin(); it != keys.end(); ) {
-            std::string value = m_metadata.as_string(*it);
+            std::string value = m_metadata.as_string(it->c_str());
             if (value.length() > 50) {
                 value = value.substr(0, 50);
                 if (value[0] == '\"')
@@ -956,34 +956,34 @@ void Bitmap::read_exr(Stream *stream) {
 
         if (type_name == "string") {
             auto v = static_cast<const Imf::StringAttribute *>(attr);
-            m_metadata.set_string(name, v->value());
+            m_metadata.set(name, v->value());
         } else if (type_name == "int") {
             auto v = static_cast<const Imf::IntAttribute *>(attr);
-            m_metadata.set_long(name, v->value());
+            m_metadata.set(name, v->value());
         } else if (type_name == "float") {
             auto v = static_cast<const Imf::FloatAttribute *>(attr);
-            m_metadata.set_float(name, Properties::Float(v->value()));
+            m_metadata.set(name, Properties::Float(v->value()));
         } else if (type_name == "double") {
             auto v = static_cast<const Imf::DoubleAttribute *>(attr);
-            m_metadata.set_float(name, Properties::Float(v->value()));
+            m_metadata.set(name, Properties::Float(v->value()));
         } else if (type_name == "v3f") {
             auto v = static_cast<const Imf::V3fAttribute *>(attr);
             Imath::V3f vec = v->value();
-            m_metadata.set_array3f(name, Vector3f(vec.x, vec.y, vec.z));
+            m_metadata.set(name, Vector3f(vec.x, vec.y, vec.z));
         } else if (type_name == "m44f") {
             auto v = static_cast<const Imf::M44fAttribute *>(attr);
             Matrix4f M;
             for (size_t i = 0; i < 4; ++i)
                 for (size_t j = 0; j < 4; ++j)
                     M(i, j) = v->value().x[i][j];
-            m_metadata.set_transform(name, Transform4f(M));
+            m_metadata.set(name, Transform4f(M));
         } else if (type_name == "m33f") {
             auto v = static_cast<const Imf::M33fAttribute *>(attr);
             Matrix3f M;
             for (size_t i = 0; i < 3; ++i)
                 for (size_t j = 0; j < 3; ++j)
                     M(i, j) = v->value().x[i][j];
-            m_metadata.set_transform3f(name, Transform3f(M));
+            m_metadata.set(name, Transform3f(M));
         }
     }
 
@@ -1336,7 +1336,7 @@ void Bitmap::write_exr(Stream *stream, int quality) const {
 
     Properties metadata(m_metadata);
     if (!metadata.has_property("generatedBy"))
-        metadata.set_string("generatedBy", "Mitsuba version " MI_VERSION);
+        metadata.set("generatedBy", "Mitsuba version " MI_VERSION);
 
     std::vector<std::string> keys = metadata.property_names();
 
@@ -1356,36 +1356,38 @@ void Bitmap::write_exr(Stream *stream, int quality) const {
     for (auto it = keys.begin(); it != keys.end(); ++it) {
         using Type = Properties::Type;
 
-        Type type = metadata.type(*it);
+        Type type = metadata.type(it->c_str());
         if (*it == "pixelAspectRatio" || *it == "screenWindowWidth" ||
             *it == "screenWindowCenter")
             continue;
 
+        const char *name = it->c_str();
+
         switch (type) {
             case Type::String:
-                header.insert(it->c_str(), Imf::StringAttribute(metadata.string(*it)));
+                header.insert(it->c_str(), Imf::StringAttribute(metadata.get<std::string>(name)));
                 break;
             case Type::Long:
-                header.insert(it->c_str(), Imf::IntAttribute(metadata.get<int>(*it)));
+                header.insert(it->c_str(), Imf::IntAttribute(metadata.get<int>(name)));
                 break;
             case Type::Float:
-                header.insert(it->c_str(), Imf::DoubleAttribute(metadata.get<double>(*it)));
+                header.insert(it->c_str(), Imf::DoubleAttribute(metadata.get<double>(name)));
                 break;
             case Type::Array3f: {
-                    Vector3f val = metadata.get<Vector3f>(*it);
+                    Vector3f val = metadata.get<Vector3f>(name);
                     header.insert(it->c_str(), Imf::V3fAttribute(
                         Imath::V3f((float) val.x(), (float) val.y(), (float) val.z())));
                 }
                 break;
             case Type::Transform3f: {
-                   Matrix3f val = metadata.get<ScalarTransform3f>(*it).matrix;
+                   Matrix3f val = metadata.get<ScalarTransform3f>(name).matrix;
                     header.insert(it->c_str(), Imf::M33fAttribute(Imath::M33f(
                         (float) val(0, 0), (float) val(0, 1), (float) val(0, 2),
                         (float) val(1, 0), (float) val(1, 1), (float) val(1, 2),
                         (float) val(2, 0), (float) val(2, 1), (float) val(2, 2))));
                 } break;
             case Type::Transform4f: {
-                    Matrix4f val = metadata.get<ScalarTransform4f>(*it).matrix;
+                    Matrix4f val = metadata.get<ScalarTransform4f>(name).matrix;
                     header.insert(it->c_str(), Imf::M44fAttribute(Imath::M44f(
                         (float) val(0, 0), (float) val(0, 1),
                         (float) val(0, 2), (float) val(0, 3),
@@ -1398,7 +1400,7 @@ void Bitmap::write_exr(Stream *stream, int quality) const {
                 }
                 break;
             default:
-                header.insert(it->c_str(), Imf::StringAttribute(metadata.as_string(*it)));
+                header.insert(it->c_str(), Imf::StringAttribute(metadata.as_string(name)));
                 break;
         }
     }
@@ -1758,7 +1760,7 @@ void Bitmap::read_png(Stream *stream) {
     png_get_text(png_ptr, info_ptr, &text_ptr, &text_idx);
 
     for (int i = 0; i < text_idx; ++i, text_ptr++)
-        m_metadata.set_string(text_ptr->key, text_ptr->text);
+        m_metadata.set(text_ptr->key, text_ptr->text);
 
     auto fs = dynamic_cast<FileStream *>(stream);
     Log(Debug, "Loading PNG file \"%s\" (%ix%i, %s, %s) ..",
@@ -1832,7 +1834,7 @@ void Bitmap::write_png(Stream *stream, int compression) const {
 
     Properties metadata(m_metadata);
     if (!metadata.has_property("generated_by"))
-        metadata.set_string("generated_by", "Mitsuba version " MI_VERSION);
+        metadata.set("generated_by", "Mitsuba version " MI_VERSION);
 
     std::vector<std::string> keys = metadata.property_names();
     std::vector<std::string> values(keys.size());
@@ -2552,7 +2554,5 @@ void Bitmap::static_initialization() {
 }
 
 void Bitmap::static_shutdown() { }
-
-MI_IMPLEMENT_CLASS(Bitmap, Object)
 
 NAMESPACE_END(mitsuba)

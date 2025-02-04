@@ -165,6 +165,5 @@ public:
     MI_DECLARE_CLASS()
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Cube, Mesh)
-MI_EXPORT_PLUGIN(Cube, "Cube intersection primitive");
+MI_EXPORT_PLUGIN(Cube)
 NAMESPACE_END(mitsuba)

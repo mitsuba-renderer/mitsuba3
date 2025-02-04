@@ -303,6 +303,5 @@ private:
 };
 
 
-MI_IMPLEMENT_CLASS_VARIANT(SpotLight, Emitter)
-MI_EXPORT_PLUGIN(SpotLight, "Spot emitter")
+MI_EXPORT_PLUGIN(SpotLight)
 NAMESPACE_END(mitsuba)

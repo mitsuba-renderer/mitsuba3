@@ -113,6 +113,5 @@ private:
     IndependentSampler(const IndependentSampler &sampler) : Base(sampler) {}
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(IndependentSampler, Sampler)
-MI_EXPORT_PLUGIN(IndependentSampler, "Independent Sampler");
+MI_EXPORT_PLUGIN(IndependentSampler)
 NAMESPACE_END(mitsuba)

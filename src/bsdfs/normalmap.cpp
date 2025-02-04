@@ -234,6 +234,5 @@ protected:
     ref<Texture> m_normalmap;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(NormalMap, BSDF)
-MI_EXPORT_PLUGIN(NormalMap, "Normal map material adapter");
+MI_EXPORT_PLUGIN(NormalMap);
 NAMESPACE_END(mitsuba)

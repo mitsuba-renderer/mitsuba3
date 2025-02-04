@@ -20,12 +20,9 @@ NAMESPACE_BEGIN(mitsuba)
  * the underlying function it is not required to be smooth or even continuous.
  */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB Texture : public Object {
+class MI_EXPORT_LIB Texture : public VariantObject<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES()
-
-    /// Destructor
-    ~Texture();
 
     // =============================================================
     //! @{ \name Standard sampling interface
@@ -223,19 +220,10 @@ public:
     /// standard D65 illuminant
     static ref<Texture> D65(ref<Texture> texture);
 
-    /// Return a string identifier
-    std::string id() const override { return m_id; }
-
-    /// Set a string identifier
-    void set_id(const std::string& id) override { m_id = id; };
-
-    MI_DECLARE_CLASS()
+    MI_DECLARE_PLUGIN_BASE_CLASS(Texture)
 
 protected:
     Texture(const Properties &);
-
-protected:
-    std::string m_id;
 };
 
 MI_EXTERN_CLASS(Texture)

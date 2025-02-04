@@ -623,6 +623,5 @@ private:
     Float m_inv_surface_area;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Rectangle, Shape)
-MI_EXPORT_PLUGIN(Rectangle, "Rectangle intersection primitive");
+MI_EXPORT_PLUGIN(Rectangle)
 NAMESPACE_END(mitsuba)

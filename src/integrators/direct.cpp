@@ -231,6 +231,5 @@ private:
     ScalarFloat m_weight_bsdf, m_weight_lum;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(DirectIntegrator, SamplingIntegrator)
-MI_EXPORT_PLUGIN(DirectIntegrator, "Direct integrator");
+MI_EXPORT_PLUGIN(DirectIntegrator)
 NAMESPACE_END(mitsuba)

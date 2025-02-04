@@ -20,9 +20,7 @@ namespace dr = drjit;
 // =============================================================
 
 class Object;
-class Class;
 
-// class AnimatedTransform;
 class AnnotatedStream;
 class Appender;
 class ArgParser;
@@ -46,6 +44,7 @@ class Thread;
 class TraversalCallback;
 class ZStream;
 enum LogLevel : int;
+enum class ObjectType : uint32_t;
 
 template <typename> class AtomicFloat;
 
@@ -299,8 +298,8 @@ template <typename Float_> struct CoreAliases {
 #define MI_USING_MEMBERS(...) DRJIT_MAP(__MI_USING_MEMBERS_MACRO__, __VA_ARGS__)
 
 #define MI_IMPORT_CORE_TYPES()                                                 \
-    MI_IMPORT_CORE_TYPES_PREFIX(Float, )                                       \
     using ScalarFloat = dr::scalar_t<Float>;                                   \
+    MI_IMPORT_CORE_TYPES_PREFIX(Float, )                                       \
     MI_IMPORT_CORE_TYPES_PREFIX(ScalarFloat, Scalar)
 
 #define MI_MASK_ARGUMENT(mask)                                                 \

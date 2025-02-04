@@ -398,6 +398,5 @@ private:
     ref<Texture> m_specular_transmittance;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SmoothDielectric, BSDF)
-MI_EXPORT_PLUGIN(SmoothDielectric, "Smooth dielectric")
+MI_EXPORT_PLUGIN(SmoothDielectric)
 NAMESPACE_END(mitsuba)

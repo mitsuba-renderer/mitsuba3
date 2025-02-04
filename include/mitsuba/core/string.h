@@ -69,21 +69,21 @@ template <typename T> T strtof(const char *s, char **endptr) {
 }
 
 /// Check if the given string starts with a specified prefix
-inline bool starts_with(const std::string &string, const std::string &prefix) {
+inline bool starts_with(std::string_view string, std::string_view prefix) {
     if (prefix.size() > string.size())
         return false;
     return std::equal(prefix.begin(), prefix.end(), string.begin());
 }
 
 /// Check if the given string ends with a specified suffix
-inline bool ends_with(const std::string &string, const std::string &suffix) {
+inline bool ends_with(std::string_view string, std::string_view suffix) {
     if (suffix.size() > string.size())
         return false;
     return std::equal(suffix.rbegin(), suffix.rend(), string.rbegin());
 }
 
 /// Return a lower-case version of the given string (warning: not unicode compliant)
-inline std::string to_lower(const std::string &s) {
+inline std::string to_lower(std::string_view s) {
     std::string result;
     result.resize(s.length());
     for (size_t i = 0; i < s.length(); ++i)
@@ -92,7 +92,7 @@ inline std::string to_lower(const std::string &s) {
 }
 
 /// Return a upper-case version of the given string (warning: not unicode compliant)
-inline std::string to_upper(const std::string &s) {
+inline std::string to_upper(std::string_view s) {
     std::string result;
     result.resize(s.length());
     for (size_t i = 0; i < s.length(); ++i)

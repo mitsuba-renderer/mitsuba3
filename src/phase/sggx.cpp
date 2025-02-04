@@ -141,6 +141,5 @@ private:
     ref<Volume> m_ndf_params;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SGGXPhaseFunction, PhaseFunction)
-MI_EXPORT_PLUGIN(SGGXPhaseFunction, "SGGX phase function")
+MI_EXPORT_PLUGIN(SGGXPhaseFunction)
 NAMESPACE_END(mitsuba)

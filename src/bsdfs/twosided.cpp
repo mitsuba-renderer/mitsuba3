@@ -378,6 +378,5 @@ protected:
     ref<Base> m_brdf[2];
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(TwoSidedBRDF, BSDF)
-MI_EXPORT_PLUGIN(TwoSidedBRDF, "Two-sided material adapter")
+MI_EXPORT_PLUGIN(TwoSidedBRDF)
 NAMESPACE_END(mitsuba)

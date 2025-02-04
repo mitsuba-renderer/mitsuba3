@@ -60,6 +60,5 @@ public:
     MI_DECLARE_CLASS()
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(CatmullRomFilter, ReconstructionFilter)
-MI_EXPORT_PLUGIN(CatmullRomFilter, "Catmull-Rom filter");
+MI_EXPORT_PLUGIN(CatmullRomFilter)
 NAMESPACE_END(mitsuba)

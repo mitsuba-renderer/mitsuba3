@@ -90,6 +90,5 @@ public:
     MI_DECLARE_CLASS()
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Null, BSDF)
-MI_EXPORT_PLUGIN(Null, "Null material")
+MI_EXPORT_PLUGIN(Null)
 NAMESPACE_END(mitsuba)

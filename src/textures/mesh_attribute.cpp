@@ -121,7 +121,5 @@ protected:
     float m_scale;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(MeshAttribute, Texture)
-MI_EXPORT_PLUGIN(MeshAttribute, "Mesh attribute")
-
+MI_EXPORT_PLUGIN(MeshAttribute)
 NAMESPACE_END(mitsuba)

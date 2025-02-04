@@ -34,7 +34,7 @@ NAMESPACE_BEGIN(mitsuba)
  * </ul>
  */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB Scene : public Object {
+class MI_EXPORT_LIB Scene final : public Object {
 public:
     MI_IMPORT_TYPES(BSDF, Emitter, EmitterPtr, SensorPtr, Film, Sampler, Shape,
                     ShapePtr, ShapeGroup, Sensor, Integrator, Medium, MediumPtr,
@@ -563,7 +563,7 @@ public:
     /// Static shutdown of ray-intersection acceleration data structure
     static void static_accel_shutdown();
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_PLUGIN_BASE_CLASS(Scene)
 
 protected:
     /// Unmarks all shapes as dirty

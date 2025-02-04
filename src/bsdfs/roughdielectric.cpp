@@ -638,6 +638,5 @@ private:
     bool m_sample_visible;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(RoughDielectric, BSDF)
-MI_EXPORT_PLUGIN(RoughDielectric, "Rough dielectric")
+MI_EXPORT_PLUGIN(RoughDielectric)
 NAMESPACE_END(mitsuba)

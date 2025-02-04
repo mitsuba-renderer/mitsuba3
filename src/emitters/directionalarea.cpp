@@ -192,6 +192,5 @@ private:
     Float m_area = 0.f;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(DirectionalArea, Emitter)
-MI_EXPORT_PLUGIN(DirectionalArea, "Directional area emitter");
+MI_EXPORT_PLUGIN(DirectionalArea)
 NAMESPACE_END(mitsuba)

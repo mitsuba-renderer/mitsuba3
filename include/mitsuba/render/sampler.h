@@ -60,7 +60,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB Sampler : public Object {
+class MI_EXPORT_LIB Sampler : public VariantObject<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES()
 
@@ -135,7 +135,7 @@ public:
     /// Traversal callback mechanism for symbolic loops
     virtual void traverse_1_cb_rw(void *payload, uint64_t (*fn)(void *, uint64_t));
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_PLUGIN_BASE_CLASS(Sampler)
 
 protected:
     Sampler(const Properties &props);
@@ -175,7 +175,7 @@ public:
     void traverse_1_cb_ro(void *payload, void (*fn)(void *, uint64_t)) const override;
     void traverse_1_cb_rw(void *payload, uint64_t (*fn)(void *, uint64_t)) override;
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(PCG32Sampler)
 protected:
     PCG32Sampler(const Properties &props);
 

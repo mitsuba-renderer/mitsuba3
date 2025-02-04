@@ -91,8 +91,11 @@ Options:
 )";
 }
 
-std::function<void(void)> develop_callback;
-std::mutex develop_callback_mutex;
+static Film *develop_film = nullptr;
+static void develop_callback() {
+    if (develop_film)
+        develop_film->develop();
+}
 
 template <typename Float, typename Spectrum>
 void scene_static_accel_initialization() {
@@ -119,10 +122,7 @@ void render(Object *scene_, size_t sensor_i, fs::path filename) {
     if (!integrator)
         Throw("No integrator specified for scene: %s", scene);
 
-    /* critical section */ {
-        std::lock_guard<std::mutex> guard(develop_callback_mutex);
-        develop_callback = [&]() { film->write(filename); };
-    }
+    develop_film = film;
 
     integrator->render(scene, (uint32_t) sensor_i,
                        0 /* seed */,
@@ -130,10 +130,7 @@ void render(Object *scene_, size_t sensor_i, fs::path filename) {
                        false /* develop */,
                        true /* evaluate */);
 
-    /* critical section */ {
-        std::lock_guard<std::mutex> guard(develop_callback_mutex);
-        develop_callback = nullptr;
-    }
+    develop_film = nullptr;
 
     film->write(filename);
 }
@@ -143,9 +140,7 @@ void render(Object *scene_, size_t sensor_i, fs::path filename) {
 void hup_signal_handler(int signal) {
     if (signal != SIGHUP)
         return;
-    std::lock_guard<std::mutex> guard(develop_callback_mutex);
-    if (develop_callback)
-        develop_callback();
+    develop_callback();
 }
 #endif
 

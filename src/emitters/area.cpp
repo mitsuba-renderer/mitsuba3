@@ -271,6 +271,5 @@ private:
     ref<Texture> m_radiance;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(AreaLight, Emitter)
-MI_EXPORT_PLUGIN(AreaLight, "Area emitter")
+MI_EXPORT_PLUGIN(AreaLight)
 NAMESPACE_END(mitsuba)

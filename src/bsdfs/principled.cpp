@@ -896,6 +896,5 @@ private:
     bool m_has_flatness;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Principled, BSDF)
-MI_EXPORT_PLUGIN(Principled, "The Principled Material")
+MI_EXPORT_PLUGIN(Principled)
 NAMESPACE_END(mitsuba)

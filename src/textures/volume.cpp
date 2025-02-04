@@ -94,6 +94,5 @@ protected:
     ref<Volume> m_volume;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(VolumeAdapter, Texture)
-MI_EXPORT_PLUGIN(VolumeAdapter, "Volumetric texture")
+MI_EXPORT_PLUGIN(VolumeAdapter)
 NAMESPACE_END(mitsuba)

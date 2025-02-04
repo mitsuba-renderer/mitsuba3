@@ -572,6 +572,5 @@ private:
     std::vector<ref<Base>> m_integrators;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(AOVIntegrator, SamplingIntegrator)
-MI_EXPORT_PLUGIN(AOVIntegrator, "AOV integrator");
+MI_EXPORT_PLUGIN(AOVIntegrator)
 NAMESPACE_END(mitsuba)

@@ -50,7 +50,7 @@ public:
      */
     std::tuple<Vector2i, Vector2u, uint32_t> next_block();
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Spiral)
 protected:
     enum class Direction { Right, Down, Left, Up };
 

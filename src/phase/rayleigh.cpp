@@ -87,6 +87,5 @@ public:
     MI_DECLARE_CLASS()
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(RayleighPhaseFunction, PhaseFunction)
-MI_EXPORT_PLUGIN(RayleighPhaseFunction, "Rayleigh phase function")
+MI_EXPORT_PLUGIN(RayleighPhaseFunction)
 NAMESPACE_END(mitsuba)

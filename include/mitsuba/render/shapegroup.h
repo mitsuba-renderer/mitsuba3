@@ -74,7 +74,7 @@ public:
     void optix_build_gas(const OptixDeviceContext& context);
 #endif
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(ShapeGroup)
 private:
     ScalarBoundingBox3f m_bbox;
     std::vector<ref<Base>> m_shapes;

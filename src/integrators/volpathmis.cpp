@@ -665,8 +665,7 @@ public:
     MI_DECLARE_CLASS()
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(VolumetricMisPathIntegrator, MonteCarloIntegrator);
-MI_EXPORT_PLUGIN(VolumetricMisPathIntegrator, "Volumetric Path Tracer integrator");
+MI_EXPORT_PLUGIN(VolumetricMisPathIntegrator)
 
 NAMESPACE_BEGIN(detail)
 template <bool SpectralMis>

@@ -220,6 +220,5 @@ private:
     ref<Texture> m_transmittance;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(LinearPolarizer, BSDF)
-MI_EXPORT_PLUGIN(LinearPolarizer, "Linear polarizer material")
+MI_EXPORT_PLUGIN(LinearPolarizer)
 NAMESPACE_END(mitsuba)

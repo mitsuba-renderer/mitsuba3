@@ -121,7 +121,6 @@ NB_MODULE(mitsuba_ext, m) {
     }, "Returns the current log level.");
 
     Jit::static_initialization();
-    Class::static_initialization();
     Thread::static_initialization();
     Logger::static_initialization();
     Bitmap::static_initialization();
@@ -180,7 +179,10 @@ NB_MODULE(mitsuba_ext, m) {
             nb::gil_scoped_release g;
             Thread::wait_for_tasks();
         }
-        Class::static_remove_functors();
+
+        // Release all loaded plugins
+        PluginManager::instance()->release_all();
+
         StructConverter::static_shutdown();
 
         /* Potentially re-initialize the threading system:
@@ -209,7 +211,6 @@ NB_MODULE(mitsuba_ext, m) {
         Bitmap::static_shutdown();
         Logger::static_shutdown();
         Thread::static_shutdown();
-        Class::static_shutdown();
         Jit::static_shutdown();
     };
 

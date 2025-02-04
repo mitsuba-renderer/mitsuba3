@@ -317,7 +317,7 @@ public:
         std::lock_guard<std::mutex> lock(m_mutex);
         m_storage->put_block(block);
     }
-    
+
     void clear() override {
         if (m_storage)
             m_storage->clear();
@@ -493,6 +493,5 @@ protected:
     ScalarVector2f m_range { dr::Infinity<ScalarFloat>, -dr::Infinity<ScalarFloat> };
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SpecFilm, Film)
-MI_EXPORT_PLUGIN(SpecFilm, "Spectral Bands Film")
+MI_EXPORT_PLUGIN(SpecFilm)
 NAMESPACE_END(mitsuba)

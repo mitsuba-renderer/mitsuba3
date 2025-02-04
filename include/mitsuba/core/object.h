@@ -1,44 +1,42 @@
 #pragma once
 
-#include <atomic>
-#include <stdexcept>
-#include <mitsuba/core/class.h>
+#define NB_INTRUSIVE_EXPORT MI_EXPORT
+
+#include <mitsuba/mitsuba.h>
+#include <nanobind/intrusive/ref.h>
+#include <typeinfo>
+#include <string>
+#include <string_view>
 
 NAMESPACE_BEGIN(mitsuba)
+
+/// Helper macro to declare a class
+#define MI_DECLARE_CLASS(Name)                                                 \
+    static constexpr const char *ClassName = #Name;
+
+template <typename T> using ref = nanobind::ref<T>;
 
 /**
  * \brief Object base class with builtin reference counting
  *
- * This class (in conjunction with the ``ref`` reference counter) constitutes the
- * foundation of an efficient reference-counted object hierarchy. The
- * implementation here is an alternative to standard mechanisms for reference
- * counting such as ``std::shared_ptr`` from the STL.
+ * This class (in conjunction with the ``ref`` reference counter) constitutes
+ * the foundation of an efficient reference-counted object hierarchy.
  *
- * Why not simply use ``std::shared_ptr``? To be spec-compliant, such shared
- * pointers must associate a special record with every instance, which stores
- * at least two counters plus a deletion function. Allocating this record
- * naturally incurs further overheads to maintain data structures within the
- * memory allocator. In addition to this, the size of an individual
- * ``shared_ptr`` references is at least two data words. All of this quickly
- * adds up and leads to significant overheads for large collections of
- * instances, hence the need for an alternative in Mitsuba.
+ * We use an intrusive reference counting approach to avoid various gnarly
+ * issues that arise in combined Python/C++ codebase, see the following page for
+ * details: https://nanobind.readthedocs.io/en/latest/ownership_adv.html
  *
- * In contrast, the ``Object`` class allows for a highly efficient
- * implementation that only adds 64 bits to the base object (for the counter)
- * and has no overhead for references. In addition, when using Mitsuba in
- * Python, this counter is shared with Python such that the ownerhsip and
- * lifetime of any ``Object`` instance across C++ and Python is managed by it.
+ * The counter provided by ``nb::intrusive_base`` establishes a unified
+ * reference count that is consistent across both C++ and Python. It is more
+ * efficient than ``std::shared_ptr<T>`` (as no external control block is
+ * needed) and works without Python actually being present.
  */
 class MI_EXPORT_LIB Object : public nanobind::intrusive_base {
 public:
-    /// Default constructor
-    Object() { }
-
-    /// Copy constructor
-    Object(const Object &) { }
-
-    /// Destructor
-    ~Object() { };
+    /// Import default constructors
+    Object() = default;
+    Object(const Object &) = default;
+    Object(Object &&) = default;
 
     /**
      * \brief Expand the object into a list of sub-objects and return them
@@ -86,19 +84,6 @@ public:
     virtual void parameters_changed(const std::vector<std::string> &/*keys*/ = {});
 
     /**
-     * \brief Return a \ref Class instance containing run-time type information
-     * about this Object
-     * \sa Class
-     */
-    virtual const Class *class_() const;
-
-    /// Return an identifier of the current instance (if available)
-    virtual std::string id() const;
-
-    /// Set an identifier to the current instance (if applicable)
-    virtual void set_id(const std::string& id);
-
-    /**
      * \brief Return a human-readable string representation of the object's
      * contents.
      *
@@ -109,10 +94,165 @@ public:
      */
     virtual std::string to_string() const;
 
-private:
-    static Class *m_class;
+    /// Return the object type. The default is \ref ObjectType::Unknown.
+    virtual ObjectType type() const;
+
+    /// Return the instance variant (or NULL, if this is not a variant object)
+    virtual std::string_view variant() const;
+
+    MI_DECLARE_CLASS(Object)
 };
 
+/**
+ * \brief Available scene object types
+ *
+ * This enumeration lists high-level interfaces that can be implemented
+ * by Mitsuba scene objects. The scene loader to uses these to ensure
+ * that a loaded object matches the expected interface.
+ */
+enum class ObjectType : uint32_t {
+    /// The default returned by Object subclasses
+    Unknown,
+
+    /// The top-level scene object. No subclasses exist
+    Scene,
+
+    /// A filter used to reconstruct/resample images
+    ReconstructionFilter,
+
+    /// Carries out radiance measurements, subclasses \ref Sensor
+    Sensor,
+
+    /// Storage representation of the sensor
+    Film,
+
+    /// Emits radiance, subclasses \ref Emitter
+    Emitter,
+
+    /// Sensor,
+    Sampler,
+
+    /// Denotes an arbitrary shape (including meshes)
+    Shape,
+
+    /// A 2D texture data source
+    Texture,
+
+    /// A 3D volume data source
+    Volume,
+
+    /// A participating medium
+    Medium,
+
+    /// A bidirectional reflectance distribution function
+    BSDF,
+
+    /// A phase function characterizing scattering in volumes
+    PhaseFunction,
+
+    /// A rendering algorithm aka. Integrator
+    Integrator
+};
+
+namespace detail {
+    /// Helper partial template overload to determine the variant string
+    /// associated with a given floating point and spectral type
+
+    template <typename Float, typename Spectrum> struct variant {
+        static constexpr const char *name = nullptr;
+    };
+
+    MI_VARIANT_TEMPLATE()
+}
+
+/// Global to indicate that we are not currently in a class (used by the Logger)
+static constexpr const char *ClassName = nullptr;
+
+/// Helper macro to a variant-specific plugin base class
+#define MI_DECLARE_PLUGIN_BASE_CLASS(Name)                                     \
+    static constexpr ObjectType Type       = ObjectType::Name;                 \
+    static constexpr const char *ClassName = #Name;                            \
+    virtual ObjectType type() const override { return Type; };                 \
+
+/**
+ * \brief Variant-specific object base class
+ *
+ * Mitsuba scene objects are parameterized by a *variant*, which refers to a
+ * floating point and radiance representation driving the underlying computation.
+ *
+ * Objects indicate their variant by deriving from the VariantObject base class.
+ *
+ * In JIT-compiled variants of Mitsuba, the variant object automatically registers
+ * the scene object with Dr.Jit's instance registry, which is required to dispatch
+ * polymorphic method calls.
+ */
+template <typename Float_, typename Spectrum_>
+class VariantObject : public Object {
+public:
+    using Float = Float_;
+    using Spectrum = Spectrum_;
+
+    /// String identifying the (Float, Spectrum) variant
+    static constexpr const char *Variant = detail::variant<Float, Spectrum>::name;
+
+    /// Construct the variant object and potentially register it
+    VariantObject();
+
+    /**
+     * \brief Construct the variant object and potentially register it
+     *
+     * This version of the constructor checks if the object has an identifier
+     * and preserves it in that case. Use \ref id() to later query this
+     * identifier.
+     */
+    VariantObject(const Properties &props);
+
+    /// Copy constructor
+    VariantObject(const VariantObject &);
+
+    /// Move constructor
+    VariantObject(VariantObject &&);
+
+    /// Destruct the variant object and potentially deregister it
+    ~VariantObject();
+
+    /// Virtual method that returns the instance's variant name or NULL
+    virtual std::string_view variant() const override;
+
+    /// Return an identifier of the current instance
+    virtual std::string_view id() const;
+
+protected:
+    char *m_id;
+};
+
+// -----------------------------------------------------------------------------
+//                 Type declarations and macros for plugins
+// -----------------------------------------------------------------------------
+
+/// Represents a function that instantiate a plugin from a \ref Properties object
+using PluginInstantiateFn = ref<Object> (*)(void *payload, const Properties &);
+
+/// Reprsents a function that releases the resources of a plugin. It should only
+/// be called when the plugin is no longer in use. See 'plugin.cpp'.
+using PluginReleaseFn = void (*)(void *payload);
+
+/// Represents a function that can be used to register variants of a plugin
+using PluginRegisterFn = void (*)(std::string_view name, std::string_view variant,
+                                  PluginInstantiateFn cons);
+
+/// Represents the entry point of a plugin
+using PluginEntryFn = void (*)(std::string_view name, PluginRegisterFn);
+
+/// Entry point of plugins, registers provided classes with the plugin manager
+#define MI_EXPORT_PLUGIN(Name)                                                 \
+    extern "C" MI_EXPORT void init_plugin(std::string_view name,               \
+                                          PluginRegisterFn fn) {               \
+        MTS_REGISTER_PLUGIN(cb, name, Name);                                   \
+    }
+
+// -----------------------------------------------------------------------------
+//                          Scene Traversal API
 // -----------------------------------------------------------------------------
 
 /**
@@ -125,10 +265,10 @@ private:
  */
 enum class ParamFlags : uint32_t {
     /// Tracking gradients w.r.t. this parameter is allowed
-    Differentiable = 0x0,
+    Differentiable = 0,
 
     /// Tracking gradients w.r.t. this parameter is not allowed
-    NonDifferentiable = 0x1,
+    NonDifferentiable = 1,
 
     /// Tracking gradients w.r.t. this parameter will introduce discontinuities
     Discontinuous = 0x2,
@@ -154,7 +294,7 @@ public:
     void put_parameter(const std::string &name, T &v, uint32_t flags) {
         if constexpr (!dr::is_drjit_struct_v<T> || !(dr::is_diff_v<T> && dr::is_floating_point_v<T>))
             if ((flags & ParamFlags::Differentiable) != 0)
-                throw("Parameter can't be differentiable because of its type!");
+                throw std::runtime_error("The specificied parameter type cannot be differentiable!");
         put_parameter_impl(name, &v, flags, typeid(T));
     }
 
@@ -180,20 +320,6 @@ std::ostream& operator<<(std::ostream &os, const ref<T> &object) {
     return operator<<(os, object.get());
 }
 
-// This checks that it is safe to reinterpret a \c ref object into the
-// underlying pointer type.
-static_assert(sizeof(ref<Object>) == sizeof(Object *),
-              "ref<T> must be reinterpretable as a T*.");
+MI_EXTERN_CLASS(VariantObject)
 
 NAMESPACE_END(mitsuba)
-
-// Necessary when printing jit arrays of pointers to mitsuba::Object
-namespace drjit {
-    template <typename Array>
-    struct call_support<mitsuba::Object, Array> {
-        // This is for pointers to general `Object` instances, we don't have access
-        // to specific `Float` and `Spectrum` types here.
-        static constexpr const char *Variant = "";
-        static constexpr const char *Domain = "mitsuba::Object";
-    };
-}

@@ -213,6 +213,5 @@ private:
     UInt32 m_permutation_seed;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(MultijitterSampler, Sampler)
-MI_EXPORT_PLUGIN(MultijitterSampler, "Correlated Multi-Jittered Sampler");
+MI_EXPORT_PLUGIN(MultijitterSampler);
 NAMESPACE_END(mitsuba)

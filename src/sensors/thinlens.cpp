@@ -385,6 +385,5 @@ private:
     Vector3f m_dx, m_dy;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(ThinLensCamera, ProjectiveCamera)
-MI_EXPORT_PLUGIN(ThinLensCamera, "Thin Lens Camera");
+MI_EXPORT_PLUGIN(ThinLensCamera)
 NAMESPACE_END(mitsuba)

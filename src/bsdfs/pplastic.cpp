@@ -472,6 +472,5 @@ private:
     Float m_specular_sampling_weight;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(PolarizedPlastic, BSDF)
-MI_EXPORT_PLUGIN(PolarizedPlastic, "Polarized plastic")
+MI_EXPORT_PLUGIN(PolarizedPlastic)
 NAMESPACE_END(mitsuba)

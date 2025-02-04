@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
 // =======================================================================
 
 MI_VARIANT Sampler<Float, Spectrum>::Sampler(const Properties &props)
-    : Object() {
+    : VariantObject<Float, Spectrum>(props) {
     m_sample_count = props.get<uint32_t>("sample_count", 4);
     m_base_seed = props.get<uint32_t>("seed", 0);
 
@@ -21,7 +21,7 @@ MI_VARIANT Sampler<Float, Spectrum>::Sampler(const Properties &props)
 }
 
 MI_VARIANT Sampler<Float, Spectrum>::Sampler(const Sampler &sampler)
-    : Object() {
+    : VariantObject<Float, Spectrum>(sampler) {
     m_sample_count          = sampler.m_sample_count;
     m_base_seed             = sampler.m_base_seed;
     m_wavefront_size        = sampler.m_wavefront_size;
@@ -168,9 +168,6 @@ PCG32Sampler<Float, Spectrum>::PCG32Sampler(const PCG32Sampler &sampler)
 
 //! @}
 // =======================================================================
-
-MI_IMPLEMENT_CLASS_VARIANT(Sampler, Object, "sampler")
-MI_IMPLEMENT_CLASS_VARIANT(PCG32Sampler, Sampler, "PCG32 sampler")
 
 MI_INSTANTIATE_CLASS(Sampler)
 MI_INSTANTIATE_CLASS(PCG32Sampler)

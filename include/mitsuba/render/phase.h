@@ -102,13 +102,10 @@ struct MI_EXPORT_LIB PhaseFunctionContext {
  * Mitsuba. It exposes functions for evaluating and sampling the model.
  */
 
-MI_VARIANT
-class MI_EXPORT_LIB PhaseFunction : public Object {
+template <typename Float, typename Spectrum>
+class MI_EXPORT_LIB PhaseFunction : public VariantObject<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(PhaseFunctionContext);
-
-    /// Destructor
-    ~PhaseFunction();
 
     /**
      * \brief Importance sample the phase function model
@@ -198,12 +195,6 @@ public:
         return m_components.size();
     }
 
-    /// Return a string identifier
-    std::string id() const override { return m_id; }
-
-    /// Set a string identifier
-    void set_id(const std::string& id) override { m_id = id; };
-
     /// Return a human-readable representation of the phase function
     std::string to_string() const override = 0;
 
@@ -216,7 +207,7 @@ public:
     //! @}
     // -----------------------------------------------------------------------
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_PLUGIN_BASE_CLASS(PhaseFunction)
 
 protected:
     PhaseFunction(const Properties &props);
@@ -227,9 +218,6 @@ protected:
 
     /// Flags for each component of this phase function.
     std::vector<uint32_t> m_components;
-
-    /// Identifier (if available)
-    std::string m_id;
 };
 
 MI_VARIANT
@@ -248,21 +236,22 @@ std::ostream &operator<<(std::ostream &os, const PhaseFunctionContext<Float, Spe
 
 //! @}
 // -----------------------------------------------------------------------
+
 MI_EXTERN_CLASS(PhaseFunction)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Dr.Jit support for vectorized function calls
+//! @{ \name Enables vectorized calls on Dr.Jit arrays of phase functions
 // -----------------------------------------------------------------------
 
-MI_CALL_TEMPLATE_BEGIN(PhaseFunction)
+DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::PhaseFunction)
     DRJIT_CALL_METHOD(sample)
     DRJIT_CALL_METHOD(eval_pdf)
     DRJIT_CALL_METHOD(projected_area)
     DRJIT_CALL_METHOD(max_projected_area)
     DRJIT_CALL_GETTER(flags)
     DRJIT_CALL_GETTER(component_count)
-MI_CALL_TEMPLATE_END(PhaseFunction)
+DRJIT_CALL_END()
 
 //! @}
 // -----------------------------------------------------------------------

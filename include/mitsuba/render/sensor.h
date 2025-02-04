@@ -24,9 +24,6 @@ public:
     //! @{ \name Sensor-specific sampling functions
     // =============================================================
 
-    /// Destructor
-    ~Sensor();
-
     /**
      * \brief Importance sample a ray differential proportional to the sensor's
      * sensitivity profile.
@@ -115,22 +112,20 @@ public:
     /**
      * \brief Return the sensor's sample generator
      *
-     * This is the \a root sampler, which will later be forked a
-     * number of times to provide each participating worker thread
-     * with its own instance (see \ref Scene::sampler()).
-     * Therefore, this sampler should never be used for anything
-     * except creating forks.
+     * This is the \a root sampler, which will later be forked a number of times
+     * to provide each participating worker thread with its own instance (see
+     * \ref Scene::sampler()). Therefore, this sampler should never be used for
+     * anything except creating forks.
      */
     ref<Sampler> sampler() { return m_sampler; }
 
     /**
      * \brief Return the sensor's sampler (const version).
      *
-     * This is the \a root sampler, which will later be cloned a
-     * number of times to provide each participating worker thread
-     * with its own instance (see \ref Scene::sampler()).
-     * Therefore, this sampler should never be used for anything
-     * except creating clones.
+     * This is the \a root sampler, which will later be cloned a number of times
+     * to provide each participating worker thread with its own instance (see
+     * \ref Scene::sampler()). Therefore, this sampler should never be used for
+     * anything except creating clones.
      */
     ref<const Sampler> sampler() const { return m_sampler.get(); }
 
@@ -150,7 +145,8 @@ public:
         Base::parameters_changed(keys);
     }
 
-    MI_DECLARE_CLASS()
+    /// This is both a class and the base of various Mitsuba plugins
+    MI_DECLARE_PLUGIN_BASE_CLASS(Sensor)
 
 protected:
     Sensor(const Properties &props);
@@ -207,7 +203,7 @@ public:
         Base::traverse(callback);
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(ProjectiveCamera)
 
 protected:
     ProjectiveCamera(const Properties &props);
@@ -310,10 +306,10 @@ MI_EXTERN_CLASS(ProjectiveCamera)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Dr.Jit support for vectorized function calls
+//! @{ \name Enables vectorized method calls on Dr.Jit arrays of sensors
 // -----------------------------------------------------------------------
 
-MI_CALL_TEMPLATE_BEGIN(Sensor)
+DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Sensor)
     DRJIT_CALL_METHOD(sample_ray)
     DRJIT_CALL_METHOD(sample_ray_differential)
     DRJIT_CALL_METHOD(sample_direction)
@@ -326,4 +322,4 @@ MI_CALL_TEMPLATE_BEGIN(Sensor)
     DRJIT_CALL_GETTER(flags)
     DRJIT_CALL_GETTER(shape)
     DRJIT_CALL_GETTER(medium)
-MI_CALL_TEMPLATE_END(Sensor)
+DRJIT_CALL_END()

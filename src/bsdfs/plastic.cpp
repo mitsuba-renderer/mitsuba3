@@ -392,6 +392,5 @@ private:
     bool m_nonlinear;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SmoothPlastic, BSDF)
-MI_EXPORT_PLUGIN(SmoothPlastic, "Smooth plastic")
+MI_EXPORT_PLUGIN(SmoothPlastic)
 NAMESPACE_END(mitsuba)

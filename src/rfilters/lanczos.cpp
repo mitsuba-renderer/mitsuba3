@@ -73,6 +73,5 @@ public:
     MI_DECLARE_CLASS()
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(LanczosSincFilter, ReconstructionFilter)
-MI_EXPORT_PLUGIN(LanczosSincFilter, "Lanczos Sinc filter")
+MI_EXPORT_PLUGIN(LanczosSincFilter)
 NAMESPACE_END(mitsuba)

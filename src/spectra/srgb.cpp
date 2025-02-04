@@ -147,6 +147,5 @@ protected:
     Color<Float, ChannelCount> m_value;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SRGBReflectanceSpectrum, Texture)
-MI_EXPORT_PLUGIN(SRGBReflectanceSpectrum, "sRGB spectrum")
+MI_EXPORT_PLUGIN(SRGBReflectanceSpectrum)
 NAMESPACE_END(mitsuba)

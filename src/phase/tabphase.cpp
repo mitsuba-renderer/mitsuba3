@@ -130,6 +130,5 @@ private:
     ContinuousDistribution<Float> m_distr;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(TabulatedPhaseFunction, PhaseFunction)
-MI_EXPORT_PLUGIN(TabulatedPhaseFunction, "Tabulated phase function")
+MI_EXPORT_PLUGIN(TabulatedPhaseFunction)
 NAMESPACE_END(mitsuba)

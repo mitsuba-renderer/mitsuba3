@@ -19,8 +19,8 @@ NAMESPACE_BEGIN(mitsuba)
 
 // -----------------------------------------------------------------------------
 
-MI_VARIANT Integrator<Float, Spectrum>::Integrator(const Properties & props)
-    : m_stop(false), m_id(props.id()) {
+MI_VARIANT Integrator<Float, Spectrum>::Integrator(const Properties &props)
+    : VariantObject<Float, Spectrum>(props), m_stop(false), {
     m_timeout = props.get<ScalarFloat>("timeout", -1.f);
 
     // Disable direct visibility of emitters if needed
@@ -761,11 +761,6 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
 }
 
 // -----------------------------------------------------------------------------
-
-MI_IMPLEMENT_CLASS_VARIANT(Integrator, Object, "integrator")
-MI_IMPLEMENT_CLASS_VARIANT(SamplingIntegrator, Integrator)
-MI_IMPLEMENT_CLASS_VARIANT(MonteCarloIntegrator, SamplingIntegrator)
-MI_IMPLEMENT_CLASS_VARIANT(AdjointIntegrator, Integrator)
 
 MI_INSTANTIATE_CLASS(Integrator)
 MI_INSTANTIATE_CLASS(SamplingIntegrator)

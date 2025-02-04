@@ -3,7 +3,6 @@
 #include <set>
 #include <unordered_map>
 #include <mutex>
-#include <map>
 
 #include <mitsuba/core/class.h>
 #include <mitsuba/core/config.h>
@@ -22,15 +21,6 @@
 #include <mitsuba/core/timer.h>
 #include <pugixml.hpp>
 #include <nanothread/nanothread.h>
-
-/// Linux <sys/sysmacros.h> defines these as macros .. :(
-#if defined(major)
-#  undef major
-#endif
-
-#if defined(minor)
-#  undef minor
-#endif
 
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(xml)
@@ -67,63 +57,46 @@ static int64_t stoll(const std::string &s) {
     return result;
 }
 
+struct TagMapping {
+    std::string_view key;
+    Tag value;
+};
 
-static std::unordered_map<std::string, Tag> *tags = nullptr;
-static std::unordered_map<std::string, // e.g. bsdf.scalar_rgb
-                          const Class *> *tag_class = nullptr;
+static TagMapping tag_mapping[] = {
+    { "boolean", Tag::Boolean },
+    { "integer", Tag::Integer },
+    { "float", Tag::Float },
+    { "string", Tag::String },
+    { "point", Tag::Point },
+    { "vector", Tag::Vector },
+    { "transform", Tag::Transform },
+    { "translate", Tag::Translate },
+    { "matrix", Tag::Matrix },
+    { "rotate", Tag::Rotate },
+    { "scale", Tag::Scale },
+    { "lookat", Tag::LookAt },
+    { "ref", Tag::NamedReference },
+    { "spectrum", Tag::Spectrum },
+    { "rgb", Tag::RGB },
+    { "include", Tag::Include },
+    { "alias", Tag::Alias },
+    { "default", Tag::Default },
+    { "path", Tag::Resource },
 
-inline std::string class_key(const std::string &name, const std::string &variant) {
-    return name + "." + variant;
-}
-
-// Called by Class::Class()
-void register_class(const Class *class_) {
-    Assert(class_ != nullptr);
-
-    if (!tags) {
-        tags = new std::unordered_map<std::string, Tag>();
-        tag_class = new std::unordered_map<std::string, const Class *>();
-
-        // Create an initial mapping of tag names to IDs
-        (*tags)["boolean"]       = Tag::Boolean;
-        (*tags)["integer"]       = Tag::Integer;
-        (*tags)["float"]         = Tag::Float;
-        (*tags)["string"]        = Tag::String;
-        (*tags)["point"]         = Tag::Point;
-        (*tags)["vector"]        = Tag::Vector;
-        (*tags)["transform"]     = Tag::Transform;
-        (*tags)["translate"]     = Tag::Translate;
-        (*tags)["matrix"]        = Tag::Matrix;
-        (*tags)["rotate"]        = Tag::Rotate;
-        (*tags)["scale"]         = Tag::Scale;
-        (*tags)["lookat"]        = Tag::LookAt;
-        (*tags)["ref"]           = Tag::NamedReference;
-        (*tags)["spectrum"]      = Tag::Spectrum;
-        (*tags)["rgb"]           = Tag::RGB;
-        (*tags)["include"]       = Tag::Include;
-        (*tags)["alias"]         = Tag::Alias;
-        (*tags)["default"]       = Tag::Default;
-        (*tags)["path"]          = Tag::Resource;
-    }
-
-    // Register the new class as an object tag
-    const std::string &alias = class_->alias();
-
-    if (tags->find(alias) == tags->end())
-        (*tags)[alias] = Tag::Object;
-    (*tag_class)[class_key(alias, class_->variant())] = class_;
-
-    if (alias == "texture")
-        (*tag_class)[class_key("spectrum", class_->variant())] = class_;
-}
-
-// Called by Class::static_shutdown()
-void cleanup() {
-    delete tags;
-    delete tag_class;
-    tags = nullptr;
-    tag_class = nullptr;
-}
+    { "scene", Tag::Object },
+    { "sensor", Tag::Object },
+    { "film", Tag::Object },
+    { "emitter", Tag::Object },
+    { "sampler", Tag::Object },
+    { "shape", Tag::Object },
+    { "texture", Tag::Object },
+    { "volume", Tag::Object },
+    { "medium", Tag::Object },
+    { "bsdf", Tag::Object },
+    { "integrator", Tag::Object },
+    { "phase", Tag::Object },
+    { "rfilter", Tag::Object }
+};
 
 /// Helper function: map a position offset in bytes to a more readable line/column value
 static std::string string_offset(const std::string &string, ptrdiff_t pos) {
@@ -182,7 +155,6 @@ struct XMLSource {
 
 struct XMLObject {
     Properties props;
-    const Class *class_ = nullptr;
     std::string src_id;
     std::string alias;
     std::function<std::string(ptrdiff_t)> offset;
@@ -425,15 +397,21 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
         if (node.type() != pugi::node_element)
             src.throw_error(node, "unexpected content");
 
+        std::string_view node_name(node.name());
+
         // Look up the name of the current element
-        auto it = tags->find(node.name());
-        if (it == tags->end())
-            src.throw_error(node, "unexpected tag \"%s\"", node.name());
+        Tag tag = Tag::Invalid;
+        for (TagMapping tm : tag_mapping) {
+            if (tm.key == node_name) {
+                tag = tm.value;
+                break;
+            }
+        }
 
-        Tag tag = it->second;
+        if (tag == Tag::Invalid)
+            src.throw_error(node, "unexpected tag \"%s\"", node_name);
 
-        if (node.attribute("type") && tag != Tag::Object
-            && tag_class->find(class_key(node.name(), ctx.variant)) != tag_class->end())
+        if (node.attribute("type"))
             tag = Tag::Object;
 
         // Perform some safety checks to make sure that the XML tree really makes sense
@@ -663,7 +641,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                                 auto [arg_name, nested_id] = parse_xml(nested_src, ctx, ch, parent_tag,
                                           props, param, arg_counter, 1);
                                 if (!nested_id.empty())
-                                    props.set_named_reference(arg_name, nested_id);
+                                    props.set(arg_name, Properties::NamedReference(nested_id));
                             }
                         } else {
                             return parse_xml(nested_src, ctx, *doc.begin(), parent_tag,
@@ -677,7 +655,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
 
             case Tag::String: {
                     check_attributes(src, node, { "name", "value" });
-                    props.set_string(node.attribute("name").value(), node.attribute("value").value());
+                    props.set(node.attribute("name").value(), node.attribute("value").value());
                 }
                 break;
 
@@ -690,7 +668,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                     } catch (...) {
                         src.throw_error(node, "could not parse floating point value \"%s\"", value);
                     }
-                    props.set_float(node.attribute("name").value(), value_float);
+                    props.set(node.attribute("name").value(), value_float);
                 }
                 break;
 
@@ -703,7 +681,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                     } catch (...) {
                         src.throw_error(node, "could not parse integer value \"%s\"", value);
                     }
-                    props.set_long(node.attribute("name").value(), value_long);
+                    props.set(node.attribute("name").value(), value_long);
                 }
                 break;
 
@@ -719,23 +697,23 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         src.throw_error(node, "could not parse boolean value "
                                              "\"%s\" -- must be \"true\" or "
                                              "\"false\"", value);
-                    props.set_bool(node.attribute("name").value(), result);
+                    props.set(node.attribute("name").value(), result);
                 }
                 break;
 
             case Tag::Vector: {
                     detail::expand_value_to_xyz(src, node);
                     check_attributes(src, node, { "name", "x", "y", "z" });
-                    props.set_array3f(node.attribute("name").value(),
-                                       detail::parse_vector(src, node));
+                    props.set(node.attribute("name").value(),
+                              detail::parse_vector(src, node));
                 }
                 break;
 
             case Tag::Point: {
                     detail::expand_value_to_xyz(src, node);
                     check_attributes(src, node, { "name", "x", "y", "z" });
-                    props.set_array3f(node.attribute("name").value(),
-                                      detail::parse_vector(src, node));
+                    props.set(node.attribute("name").value(),
+                              detail::parse_vector(src, node));
                 }
                 break;
 
@@ -764,9 +742,9 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         std::string name = node.attribute("name").value();
                         ref<Object> obj = detail::create_texture_from_rgb(
                             name, color, ctx.variant, within_emitter);
-                        props.set_object(name, obj);
+                        props.set(name, obj);
                     } else {
-                        props.set_color("color", color);
+                        props.set("color", color);
                     }
                 }
                 break;
@@ -825,7 +803,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         ctx.color_mode == ColorMode::Spectral,
                         ctx.color_mode == ColorMode::Monochromatic);
 
-                    props.set_object(name, obj);
+                    props.set(name, obj);
                 }
                 break;
 
@@ -930,7 +908,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
             parse_xml(src, ctx, ch, tag, props, param, arg_counter, depth + 1);
 
         if (tag == Tag::Transform)
-            props.set_transform(node.attribute("name").value(), ctx.transform);
+            props.set(node.attribute("name").value(), ctx.transform);
     } catch (const std::exception &e) {
         if (strstr(e.what(), "Error while loading") == nullptr)
             src.throw_error(node, "%s", e.what());
@@ -1062,13 +1040,13 @@ static Task *instantiate_node(XMLParseContext &ctx,
             // Give the object a chance to recursively expand into sub-objects
             std::vector<ref<Object>> children = obj->expand();
             if (children.empty()) {
-                props.set_object(kv.first, obj, false);
+                props.set(kv.first, obj, false);
             } else if (children.size() == 1) {
-                props.set_object(kv.first, children[0], false);
+                props.set(kv.first, children[0], false);
             } else {
                 int ctr = 0;
                 for (auto c : children)
-                    props.set_object(kv.first + "_" + std::to_string(ctr++), c, false);
+                    props.set(kv.first + "_" + std::to_string(ctr++), c, false);
             }
         }
 

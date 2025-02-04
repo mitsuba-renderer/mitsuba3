@@ -755,6 +755,5 @@ private:
     bool m_has_flatness;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(PrincipledThin, BSDF)
-MI_EXPORT_PLUGIN(PrincipledThin, "The Principled Thin Material")
+MI_EXPORT_PLUGIN(PrincipledThin)
 NAMESPACE_END(mitsuba)

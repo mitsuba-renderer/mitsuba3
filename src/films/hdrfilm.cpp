@@ -615,6 +615,5 @@ protected:
     std::vector<std::string> m_channels;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(HDRFilm, Film)
-MI_EXPORT_PLUGIN(HDRFilm, "HDR Film")
+MI_EXPORT_PLUGIN(HDRFilm)
 NAMESPACE_END(mitsuba)

@@ -439,6 +439,5 @@ public:
     MI_DECLARE_CLASS()
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(BlenderMesh, Mesh)
-MI_EXPORT_PLUGIN(BlenderMesh, "Blender Mesh")
+MI_EXPORT_PLUGIN(BlenderMesh)
 NAMESPACE_END(mitsuba)

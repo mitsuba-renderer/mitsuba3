@@ -89,7 +89,7 @@ public:
             }
         }
 
-        m_weight = props.texture<Texture>("weight");
+        m_weight = props.get<Texture>("weight");
         if (bsdf_index != 2)
             Throw("BlendBSDF: Two child BSDFs must be specified!");
 
@@ -239,6 +239,5 @@ protected:
     ref<Base> m_nested_bsdf[2];
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(BlendBSDF, BSDF)
-MI_EXPORT_PLUGIN(BlendBSDF, "BlendBSDF material")
+MI_EXPORT_PLUGIN(BlendBSDF)
 NAMESPACE_END(mitsuba)

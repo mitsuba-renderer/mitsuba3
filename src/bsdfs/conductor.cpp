@@ -332,6 +332,5 @@ private:
     ref<Texture> m_eta, m_k;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SmoothConductor, BSDF)
-MI_EXPORT_PLUGIN(SmoothConductor, "Smooth conductor")
+MI_EXPORT_PLUGIN(SmoothConductor)
 NAMESPACE_END(mitsuba)

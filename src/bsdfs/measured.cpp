@@ -497,6 +497,5 @@ private:
     int m_reduction;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Measured, BSDF)
-MI_EXPORT_PLUGIN(Measured, "Measured material")
+MI_EXPORT_PLUGIN(Measured)
 NAMESPACE_END(mitsuba)

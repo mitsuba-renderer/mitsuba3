@@ -146,6 +146,5 @@ private:
     ref<Base> m_integrator;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(StokesIntegrator, SamplingIntegrator)
-MI_EXPORT_PLUGIN(StokesIntegrator, "Stokes integrator");
+MI_EXPORT_PLUGIN(StokesIntegrator)
 NAMESPACE_END(mitsuba)

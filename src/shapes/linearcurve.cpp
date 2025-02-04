@@ -516,6 +516,5 @@ private:
 #endif
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(LinearCurve, Shape)
-MI_EXPORT_PLUGIN(LinearCurve, "Linear curve intersection primitive");
+MI_EXPORT_PLUGIN(LinearCurve)
 NAMESPACE_END(mitsuba)

@@ -125,6 +125,5 @@ private:
     ScalarVector2f m_range;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(UniformSpectrum, Texture)
-MI_EXPORT_PLUGIN(UniformSpectrum, "Uniform spectrum")
+MI_EXPORT_PLUGIN(UniformSpectrum)
 NAMESPACE_END(mitsuba)

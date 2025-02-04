@@ -434,6 +434,5 @@ public:
     MI_DECLARE_CLASS()
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SerializedMesh, Mesh)
-MI_EXPORT_PLUGIN(SerializedMesh, "Serialized mesh file")
+MI_EXPORT_PLUGIN(SerializedMesh)
 NAMESPACE_END(mitsuba)

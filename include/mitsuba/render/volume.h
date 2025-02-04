@@ -11,12 +11,9 @@ NAMESPACE_BEGIN(mitsuba)
 
 /// Abstract base class for 3D volumes.
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB Volume : public Object {
+class MI_EXPORT_LIB Volume : public VariantObject<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Texture)
-
-    /// Destructor
-    ~Volume() {}
 
     // ======================================================================
     //! @{ \name Volume interface
@@ -94,7 +91,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_PLUGIN_BASE_CLASS(Volume)
 
 protected:
     Volume(const Properties &props);

@@ -15,8 +15,6 @@
 
 #include "docstr.h"
 
-//PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
-
 #define D(...) DOC(mitsuba, __VA_ARGS__)
 
 /// Shorthand notation for defining a data structure
@@ -51,44 +49,8 @@
 #define def_repr(Class) \
     def("__repr__", [](const Class &c) { std::ostringstream oss; oss << c; return oss.str(); } )
 
-/// Shorthand notation for defining object registration routine for trampoline objects
-#define MI_PY_REGISTER_OBJECT(Function, Name)                                  \
-    m.def(                                                                     \
-        Function,                                                              \
-        [](const std::string &name,                                            \
-           std::function<nb::object(const Properties&)> &constructor) {        \
-            auto variant = ::mitsuba::detail::get_variant<Float, Spectrum>();  \
-            (void) new Class(                                                  \
-                name, #Name, variant,                                          \
-                [=](const Properties &p) -> ref<Object> {                      \
-                    nb::gil_scoped_acquire gil;                                \
-                                                                               \
-                    nb::object o;                                              \
-                    {                                                          \
-                        nb::gil_scoped_release release;                        \
-                        PropertiesV p_v(p);                                    \
-                        o = constructor(p_v);                                  \
-                    }                                                          \
-                                                                               \
-                    Name* ptr = nb::cast<Name*>(o);                            \
-                    o.release();                                               \
-                    /* At this point `ptr` has a reference count of 1. By
-                     * creating at `ref<>` of if it will increase to 2. So we
-                     * manually decrease the reference count to compensate. */ \
-                    ref<Object> out(ptr);                                      \
-                    ptr->dec_ref();                                            \
-                                                                               \
-                    return ptr;                                                \
-                },                                                             \
-                nullptr);                                                      \
-            PluginManager::instance()->register_python_plugin(name, variant);  \
-        }                                                                      \
-    );
-
 using namespace mitsuba;
-
 namespace nb = nanobind;
-
 using namespace nb::literals;
 
 template <typename T>

@@ -799,6 +799,5 @@ private:
     bool m_flip_normals;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Sphere, Shape)
-MI_EXPORT_PLUGIN(Sphere, "Sphere intersection primitive");
+MI_EXPORT_PLUGIN(Sphere)
 NAMESPACE_END(mitsuba)

@@ -52,7 +52,7 @@ NAMESPACE_BEGIN(mitsuba)
  * these redundancies and remove them retroactively.
  */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB Endpoint : public Object {
+class MI_EXPORT_LIB Endpoint : public VariantObject<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Medium, Scene, Shape)
 
@@ -372,12 +372,6 @@ public:
      */
     virtual void set_scene(const Scene *scene);
 
-    /// Return a string identifier
-    std::string id() const override { return m_id; }
-
-    /// Set a string identifier
-    void set_id(const std::string& id) override { m_id = id; };
-
     //! @}
     // =============================================================
 
@@ -385,7 +379,7 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override;
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Endpoint)
 
 protected:
     Endpoint(const Properties &props);
@@ -396,7 +390,6 @@ protected:
     Shape *m_shape = nullptr;
     bool m_needs_sample_2 = true;
     bool m_needs_sample_3 = true;
-    std::string m_id;
 };
 
 MI_EXTERN_CLASS(Endpoint)

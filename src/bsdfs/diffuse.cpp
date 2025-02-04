@@ -196,6 +196,5 @@ private:
     ref<Texture> m_reflectance;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SmoothDiffuse, BSDF)
-MI_EXPORT_PLUGIN(SmoothDiffuse, "Smooth diffuse material")
+MI_EXPORT_PLUGIN(SmoothDiffuse)
 NAMESPACE_END(mitsuba)

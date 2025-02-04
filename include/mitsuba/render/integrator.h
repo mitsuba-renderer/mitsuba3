@@ -34,12 +34,9 @@ NAMESPACE_BEGIN(mitsuba)
  * implementations.
  */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB Integrator : public Object {
+class MI_EXPORT_LIB Integrator : public VariantObject<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Scene, Sensor)
-
-    /// Destructor
-    ~Integrator() { }
 
     /**
      * \brief Render the scene
@@ -312,13 +309,7 @@ public:
      */
     virtual std::vector<std::string> aov_names() const;
 
-    /// Return a string identifier
-    std::string id() const override { return m_id; }
-
-    /// Set a string identifier
-    void set_id(const std::string& id) override { m_id = id; };
-
-    MI_DECLARE_CLASS()
+    MI_DECLARE_PLUGIN_BASE_CLASS(Integrator)
 
 protected:
     /// Create an integrator
@@ -340,9 +331,6 @@ protected:
 
     /// Flag for disabling direct visibility of emitters
     bool m_hide_emitters;
-
-    /// Identifier (if available)
-    std::string m_id;
 };
 
 /** \brief Abstract integrator that performs Monte Carlo sampling starting from
@@ -425,7 +413,7 @@ public:
     //! @}
     // =========================================================================
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(SamplingIntegrator)
 protected:
     SamplingIntegrator(const Properties &props);
 
@@ -483,7 +471,7 @@ protected:
     /// Create an integrator
     MonteCarloIntegrator(const Properties &props);
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(MonteCarloIntegrator)
 protected:
     uint32_t m_max_depth;
     uint32_t m_rr_depth;
@@ -550,7 +538,7 @@ public:
     //! @}
     // =========================================================================
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(AdjointIntegrator)
 
 protected:
     /// Create an integrator

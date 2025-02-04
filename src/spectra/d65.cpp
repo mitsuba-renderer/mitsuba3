@@ -315,6 +315,5 @@ private:
     bool m_has_value = false;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(D65Spectrum, Texture)
-MI_EXPORT_PLUGIN(D65Spectrum, "CIE D65 Spectrum")
+MI_EXPORT_PLUGIN(D65Spectrum)
 NAMESPACE_END(mitsuba)

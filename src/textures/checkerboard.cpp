@@ -132,6 +132,5 @@ protected:
     ScalarTransform3f m_transform;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Checkerboard, Texture)
-MI_EXPORT_PLUGIN(Checkerboard, "Checkerboard texture")
+MI_EXPORT_PLUGIN(Checkerboard)
 NAMESPACE_END(mitsuba)

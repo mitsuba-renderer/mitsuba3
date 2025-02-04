@@ -180,6 +180,5 @@ private:
     UInt32 m_scramble_seed;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(LowDiscrepancySampler , Sampler)
-MI_EXPORT_PLUGIN(LowDiscrepancySampler , "Low Discrepancy Sampler");
+MI_EXPORT_PLUGIN(LowDiscrepancySampler)
 NAMESPACE_END(mitsuba)

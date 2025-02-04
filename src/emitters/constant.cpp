@@ -206,6 +206,5 @@ protected:
     Float m_surface_area;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(ConstantBackgroundEmitter, Emitter)
-MI_EXPORT_PLUGIN(ConstantBackgroundEmitter, "Constant background emitter")
+MI_EXPORT_PLUGIN(ConstantBackgroundEmitter)
 NAMESPACE_END(mitsuba)

@@ -341,6 +341,5 @@ public:
     MI_DECLARE_CLASS()
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(PathIntegrator, MonteCarloIntegrator)
-MI_EXPORT_PLUGIN(PathIntegrator, "Path Tracer integrator");
+MI_EXPORT_PLUGIN(PathIntegrator)
 NAMESPACE_END(mitsuba)

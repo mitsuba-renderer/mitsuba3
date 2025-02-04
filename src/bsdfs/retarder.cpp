@@ -208,6 +208,5 @@ private:
     ref<Texture> m_transmittance;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(LinearRetarder, BSDF)
-MI_EXPORT_PLUGIN(LinearRetarder, "Linear retarder material")
+MI_EXPORT_PLUGIN(LinearRetarder)
 NAMESPACE_END(mitsuba)

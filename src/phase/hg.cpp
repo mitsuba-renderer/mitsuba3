@@ -112,6 +112,5 @@ private:
     Float m_g;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(HGPhaseFunction, PhaseFunction)
-MI_EXPORT_PLUGIN(HGPhaseFunction, "Henyey-Greenstein phase function")
+MI_EXPORT_PLUGIN(HGPhaseFunction)
 NAMESPACE_END(mitsuba)

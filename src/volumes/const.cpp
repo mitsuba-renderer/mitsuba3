@@ -97,6 +97,5 @@ protected:
     ref<Texture> m_value;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(ConstVolume, Volume)
-MI_EXPORT_PLUGIN(ConstVolume, "Constant 3D texture")
+MI_EXPORT_PLUGIN(ConstVolume)
 NAMESPACE_END(mitsuba)
