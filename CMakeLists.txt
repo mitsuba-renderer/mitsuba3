@@ -297,7 +297,7 @@ set(CMAKE_INSTALL_RPATH "${MI_ORIGIN};${MI_ORIGIN}/../drjit")
 # Build the dependencies
 add_subdirectory(ext)
 
-# Always add the include directories for tinyformat, Dr.Jit and Eigen
+# Always add the include directories for tinyformat, nanobind, Dr.Jit and Eigen
 include_directories(include
   ${TINYFORMAT_INCLUDE_DIRS}
   ${NANOBIND_INCLUDE_DIRS}

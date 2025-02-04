@@ -364,7 +364,7 @@ unset(CMAKE_CXX_STANDARD CACHE)
 #  Nanobind headers
 # ----------------------------------------------------------
 
-set(NANOBIND_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/nanobind/include PARENT_SCOPE)
+set(NANOBIND_INCLUDE_DIRS ${NB_DIR}/include PARENT_SCOPE)
 
 # ----------------------------------------------------------
 #  Hide a few more settings that aren't relevant for users
