@@ -35,8 +35,10 @@ enum class ShapeType : uint32_t {
     Sphere = 7u,
     /// Instance (`instance`)
     Instance = 8u,
+    /// ShapeGroup (`shapegroup`)
+    ShapeGroup = 9u,
     /// Other shapes
-    Other = 9u
+    Other = 10u
 };
 MI_DECLARE_ENUM_OPERATORS(ShapeType)
 
@@ -778,8 +780,8 @@ public:
     /// Returns the shape type \ref ShapeType of this shape
     uint32_t shape_type() const { return (uint32_t) m_shape_type; }
 
-    /// Is this shape a shapegroup?
-    bool is_shapegroup() const { return class_()->name() == "ShapeGroupPlugin"; };
+    /// Is this shape a shape group?
+    bool is_shape_group() const { return (shape_type() == +ShapeType::ShapeGroup); };
 
     /// Is this shape an instance?
     bool is_instance() const { return (shape_type() == +ShapeType::Instance); };

@@ -15,6 +15,7 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
     m_has_others = false;
     m_has_bspline_curves = false;
     m_has_linear_curves = false;
+    m_shape_type = ShapeType::ShapeGroup;
 
     // Add children to the underlying data structure
     for (auto &kv : props.objects()) {
@@ -23,8 +24,7 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
             Throw("Nested instancing is not permitted");
         } else if (c_class->derives_from(MI_CLASS(Base))) {
             Base *shape = static_cast<Base *>(kv.second.get());
-            ShapeGroup *shapegroup = dynamic_cast<ShapeGroup *>(kv.second.get());
-            if (shapegroup)
+            if (shape->is_shape_group())
                 Throw("Nested ShapeGroup is not permitted");
             if (shape->is_emitter())
                 Throw("Instancing of emitters is not supported");
@@ -79,7 +79,7 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
     }
 #endif
 
-    MI_REGISTRY_PUT("ShapeGroup", this);
+    MI_REGISTER_OBJECT("ShapeGroup", this);
 }
 
 MI_VARIANT ShapeGroup<Float, Spectrum>::~ShapeGroup() {
@@ -254,6 +254,5 @@ MI_VARIANT std::string ShapeGroup<Float, Spectrum>::to_string() const {
     return oss.str();
 }
 
-MI_IMPLEMENT_CLASS_VARIANT(ShapeGroup, Shape)
 MI_INSTANTIATE_CLASS(ShapeGroup)
 NAMESPACE_END(mitsuba)

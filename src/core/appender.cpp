@@ -15,7 +15,7 @@ StreamAppender::StreamAppender(std::ostream *stream)
 }
 
 StreamAppender::StreamAppender(const std::string &filename)
- : m_fileName(filename), m_is_file(true) {
+ : m_fname(filename), m_is_file(true) {
     std::fstream *stream = new std::fstream();
     stream->open(filename.c_str(),
         std::fstream::in | std::fstream::out | std::fstream::trunc);
@@ -47,7 +47,7 @@ std::string StreamAppender::read_log() {
     return result;
 }
 
-void StreamAppender::append(LogLevel level, const std::string &text) {
+void StreamAppender::append(LogLevel level, const char *text) {
 #if defined(_WIN32)
     HANDLE console = nullptr;
     CONSOLE_SCREEN_BUFFER_INFO console_info;
@@ -85,8 +85,8 @@ void StreamAppender::append(LogLevel level, const std::string &text) {
     m_last_message_was_progress = false;
 }
 
-void StreamAppender::log_progress(float, const std::string &,
-    const std::string &formatted, const std::string &, const void *) {
+void StreamAppender::log_progress(float, const char *, const char *formatted,
+                                  const char *, const void *) {
     if (!m_is_file) {
         (*m_stream) << formatted;
         m_stream->flush();
@@ -99,7 +99,7 @@ std::string StreamAppender::to_string() const {
 
     oss << "StreamAppender[stream=";
     if (m_is_file)
-        oss << "\"" << m_fileName << "\"";
+        oss << "\"" << m_fname<< "\"";
     else
         oss << "<std::ostream>";
     oss << "]";
@@ -113,8 +113,5 @@ StreamAppender::~StreamAppender() {
         delete m_stream;
     }
 }
-
-MI_IMPLEMENT_CLASS(Appender, Object)
-MI_IMPLEMENT_CLASS(StreamAppender, Appender)
 
 NAMESPACE_END(mitsuba)

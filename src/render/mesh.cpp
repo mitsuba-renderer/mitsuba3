@@ -1858,6 +1858,5 @@ MI_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
     return dr::grad_enabled(m_vertex_positions);
 }
 
-MI_IMPLEMENT_CLASS_VARIANT(Mesh, Shape)
 MI_INSTANTIATE_CLASS(Mesh)
 NAMESPACE_END(mitsuba)

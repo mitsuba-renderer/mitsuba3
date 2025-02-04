@@ -76,6 +76,8 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             D(Shape, is_sensor))
        .def("is_mesh", [](Ptr shape) { return shape->is_mesh(); },
             D(Shape, is_mesh))
+       .def("is_shape_group", [](Ptr shape) { return shape->is_shape_group(); },
+            D(Shape, is_shape_group))
        .def("is_medium_transition",
             [](Ptr shape) { return shape->is_medium_transition(); },
             D(Shape, is_medium_transition))

@@ -69,12 +69,6 @@ static int64_t stoll(const std::string &s) {
 
 
 static std::unordered_map<std::string, Tag> *tags = nullptr;
-static std::unordered_map<std::string, // e.g. bsdf.scalar_rgb
-                          const Class *> *tag_class = nullptr;
-
-inline std::string class_key(const std::string &name, const std::string &variant) {
-    return name + "." + variant;
-}
 
 // Called by Class::Class()
 void register_class(const Class *class_) {
@@ -82,7 +76,6 @@ void register_class(const Class *class_) {
 
     if (!tags) {
         tags = new std::unordered_map<std::string, Tag>();
-        tag_class = new std::unordered_map<std::string, const Class *>();
 
         // Create an initial mapping of tag names to IDs
         (*tags)["boolean"]       = Tag::Boolean;
@@ -104,6 +97,8 @@ void register_class(const Class *class_) {
         (*tags)["alias"]         = Tag::Alias;
         (*tags)["default"]       = Tag::Default;
         (*tags)["path"]          = Tag::Resource;
+
+        (*tags)["integrator"]    = Tag::Object;
     }
 
     // Register the new class as an object tag

@@ -1,10 +1,10 @@
 #include <mitsuba/core/object.h>
-#include <cstdlib>
-#include <cstdio>
 #include <sstream>
 #include <nanobind/intrusive/counter.inl>
 
 NAMESPACE_BEGIN(mitsuba)
+
+Object::~Object() { }
 
 std::vector<ref<Object>> Object::expand() const { return { }; }
 
@@ -16,9 +16,11 @@ std::string Object::id() const { return std::string(); }
 
 void Object::set_id(const std::string&/*id*/) { }
 
+const char *Object::class_name() const { return ClassName; }
+
 std::string Object::to_string() const {
     std::ostringstream oss;
-    oss << class_()->name() << "[" << (void *) this << "]";
+    oss << class_name() << "[" << (void *) this << "]";
     return oss.str();
 }
 
@@ -27,5 +29,8 @@ std::ostream& operator<<(std::ostream &os, const Object *object) {
     return os;
 }
 
-MI_IMPLEMENT_CLASS(Object,)
+ObjectType Object::type() const {
+    return ObjectType::Unknown;
+}
+
 NAMESPACE_END(mitsuba)

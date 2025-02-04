@@ -1,43 +1,51 @@
 #pragma once
 
+#include <drjit-core/nanostl.h>
 #include <mitsuba/core/object.h>
-#include <memory>
 
 NAMESPACE_BEGIN(mitsuba)
 
+// Metadata needed to register a new plugin with Mitsuba
+struct PluginInfo {
+    // Compact plugin name used in scene descriptions (e.g. 'spot')
+    const char *name;
+
+    // Supported variant (e.g. 'scalar_rgb')
+    const char *variant;
+
+    // Opaque payload to be passed to the callbacks below
+    void *payload;
+
+    // Instantiate a plugin with specified properties
+    PluginInstantiateFn instantiate;
+
+    // Release all resources of the plugin
+    PluginReleaseFn release;
+};
+
 /**
- * \brief The object factory is responsible for loading plugin modules and
- * instantiating object instances.
+ * \brief Plugin manager
  *
- * Ordinarily, this class will be used by making repeated calls to
- * the \ref create_object() methods. The generated instances are then
- * assembled into a final object graph, such as a scene. One such
- * examples is the \ref SceneHandler class, which parses an XML
- * scene file by essentially translating the XML elements into calls
- * to \ref create_object().
+ * The plugin manager's main feature is the \ref create_object() function that
+ * instantiates scene objects. To do its job, it loads external Mitsuba plugins
+ * as needed.
+ *
+ * When used from Python, it is also possible to register external plugins so
+ * that they can be instantiated analogously.
  */
 class MI_EXPORT_LIB PluginManager : public Object {
 public:
-
     /// Destruct and unload all plugins
     ~PluginManager();
 
     /// Return the global plugin manager
     static PluginManager *instance() { return m_instance; }
 
-    /// Ensure that a plugin is loaded and ready
-    void ensure_plugin_loaded(const std::string &name);
+    /// Release all registered plugins
+    void reset();
 
-    /// Return the class corresponding to a plugin for a specific variant
-    const Class *get_plugin_class(const std::string &name,
-                                  const std::string &variant);
-
-    /// Return the list of loaded plugins
-    std::vector<std::string> loaded_plugins() const;
-
-    /// Register a Python plugin
-    void register_python_plugin(const std::string &plugin_name,
-                                const std::string &variant);
+    /// Register a new plugin with the plugin manager
+    void register_plugin(PluginInfo info);
 
     /**
      * \brief Instantiate a plugin, verify its type, and return the newly
@@ -46,26 +54,24 @@ public:
      * \param props
      *     A \ref Properties instance containing all information required to
      *     find and construct the plugin.
-     *
-     * \param class_type
-     *     Expected type of the instance. An exception will be thrown if it
-     *     turns out not to derive from this class.
      */
-    ref<Object> create_object(const Properties &props, const Class *class_);
+    ref<Object> create_object(const char *variant,
+                              ObjectType type,
+                              const Properties &props);
 
-    /// Convenience template wrapper around \ref create_object()
-    template <typename T> ref<T> create_object(const Properties &props) {
-        return static_cast<T *>(create_object(props, MI_CLASS(T)).get());
-    }
-
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(PluginManager)
 
 protected:
     PluginManager();
 
+    // Called when an instantiated plugin doesn't match the expected type
+    [[noreturn]] void raise_type_error(const Properties &props,
+                                       const char *actual,
+                                       const char *expected);
+
 private:
     struct PluginManagerPrivate;
-    std::unique_ptr<PluginManagerPrivate> d;
+    dr::unique_ptr<PluginManagerPrivate> d;
     static ref<PluginManager> m_instance;
 };
 

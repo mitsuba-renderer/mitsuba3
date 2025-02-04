@@ -27,6 +27,10 @@ MI_VARIANT Integrator<Float, Spectrum>::Integrator(const Properties & props)
     m_hide_emitters = props.get<bool>("hide_emitters", false);
 }
 
+MI_VARIANT ObjectType Integrator<Float, Spectrum>::type() const {
+    return ObjectType::Integrator;
+}
+
 MI_VARIANT typename Integrator<Float, Spectrum>::TensorXf
 Integrator<Float, Spectrum>::render(Scene *scene,
                                     uint32_t sensor_index,
@@ -761,11 +765,6 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
 }
 
 // -----------------------------------------------------------------------------
-
-MI_IMPLEMENT_CLASS_VARIANT(Integrator, Object, "integrator")
-MI_IMPLEMENT_CLASS_VARIANT(SamplingIntegrator, Integrator)
-MI_IMPLEMENT_CLASS_VARIANT(MonteCarloIntegrator, SamplingIntegrator)
-MI_IMPLEMENT_CLASS_VARIANT(AdjointIntegrator, Integrator)
 
 MI_INSTANTIATE_CLASS(Integrator)
 MI_INSTANTIATE_CLASS(SamplingIntegrator)

@@ -18,7 +18,7 @@ MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props) : m_id(p
             if (m_medium)
                 Throw("Only a single medium can be specified per endpoint (e.g. per emitter or sensor)");
             set_medium(medium);
-            props.mark_queried(name);
+            props.mark_queried(name.c_str());
         }
     }
 }
@@ -118,6 +118,5 @@ MI_VARIANT void Endpoint<Float, Spectrum>::parameters_changed(const std::vector<
     }
 }
 
-MI_IMPLEMENT_CLASS_VARIANT(Endpoint, Object)
 MI_INSTANTIATE_CLASS(Endpoint)
 NAMESPACE_END(mitsuba)

@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
 /// Wrapper object used to represent named references to Object instances
 class NamedReference {
 public:
-    NamedReference(const std::string &value) : m_value(value) { }
+    NamedReference(const char *value) : m_value(value) { }
     operator const std::string&() const { return m_value; }
     bool operator==(const NamedReference &r) const { return r.m_value == m_value; }
     bool operator!=(const NamedReference &r) const { return r.m_value != m_value; }
@@ -78,60 +78,57 @@ public:
     Properties();
 
     /// Construct an empty property container with a specific plugin name
-    Properties(const std::string &plugin_name);
+    Properties(const char *plugin_name);
 
     /// Copy constructor
     Properties(const Properties &props);
 
     /// Share the internals. Used exclusively for Python bindings
-    void share(const Properties& props);
+    void share(const Properties &props);
 
     /// Assignment operator
     void operator=(const Properties &props);
 
-    /// Release all memory
-    virtual ~Properties();
-
     /// Get the associated plugin name
-    const std::string &plugin_name() const;
+    const char *plugin_name() const;
 
     /// Set the associated plugin name
-    void set_plugin_name(const std::string &name);
+    void set_plugin_name(const char *name);
 
     /// Verify if a value with the specified name exists
-    bool has_property(const std::string &name) const;
+    bool has_property(const char *name) const;
 
     /** \brief Returns the type of an existing property.
      * If no property exists under that name, an error is logged
      * and type <tt>void</tt> is returned.
      */
-    Type type(const std::string &name) const;
+    Type type(const char *name) const;
 
     /**
      * \brief Remove a property with the specified name
      * \return \c true upon success
      */
-    bool remove_property(const std::string &name);
+    bool remove_property(const char *name);
 
     /**
      * \brief Manually mark a certain property as queried
      * \return \c true upon success
      */
-    bool mark_queried(const std::string &name) const;
+    bool mark_queried(const char *name) const;
 
     /// Check if a certain property was queried
-    bool was_queried(const std::string &name) const;
+    bool was_queried(const char *name) const;
 
     /// Returns a unique identifier associated with this instance (or an empty string)
-    const std::string &id() const;
+    const char *id() const;
 
     /// Set the unique identifier associated with this instance
-    void set_id(const std::string &id);
+    void set_id(const char *id);
 
     /// Copy a single attribute from another Properties object and potentially rename it
     void copy_attribute(const Properties &properties,
-                        const std::string &source_name,
-                        const std::string &targetName);
+                        const char *source_name,
+                        const char *target_name);
 
     /// Return an array containing the names of all stored properties
     std::vector<std::string> property_names() const;
@@ -151,10 +148,10 @@ public:
     std::vector<std::string> unqueried() const;
 
     /// Return one of the parameters (converting it to a string if necessary)
-    std::string as_string(const std::string &name) const;
+    std::string as_string(const char *name) const;
 
     /// Return one of the parameters (converting it to a string if necessary, with default value)
-    std::string as_string(const std::string &name, const std::string &def_val) const;
+    std::string as_string(const char *name, const std::string &def_val) const;
 
     /**
      * \brief Merge another properties record into the current one.
@@ -178,94 +175,94 @@ public:
 public:  // Type-specific getters and setters ----------------------------------
 
     /// Generic getter method to retrieve properties. (throw an error if type isn't supported)
-    template <typename T> T get(const std::string &name) const;
+    template <typename T> T get(const char *name) const;
     /// Generic getter method to retrieve properties. (use default value if no entry exists)
-    template <typename T> T get(const std::string &name, const T &def_val) const;
+    template <typename T> T get(const char *name, const T &def_val) const;
 
     /// Store a boolean value in the Properties instance
-    void set_bool(const std::string &name, const bool &value, bool error_duplicates = true);
+    void set_bool(const char *name, const bool &value, bool error_duplicates = true);
 
     /// Set an integer value in the Properties instance
-    void set_int(const std::string &name, const int &value, bool error_duplicates = true) {
+    void set_int(const char *name, const int &value, bool error_duplicates = true) {
         set_long(name, (int64_t) value, error_duplicates);
     }
 
     /// Store a long value in the Properties instance
-    void set_long(const std::string &name, const int64_t &value, bool error_duplicates = true);
+    void set_long(const char *name, const int64_t &value, bool error_duplicates = true);
 
     /// Store a floating point value in the Properties instance
-    void set_float(const std::string &name, const Float &value, bool error_duplicates = true);
+    void set_float(const char *name, const Float &value, bool error_duplicates = true);
 
     /// Store a string in the Properties instance
-    void set_string(const std::string &name, const std::string &value, bool error_duplicates = true);
+    void set_string(const char *name, const std::string &value, bool error_duplicates = true);
     /// Retrieve a string value
-    const std::string& string(const std::string &name) const;
+    const std::string& string(const char *name) const;
     /// Retrieve a string value (use default value if no entry exists)
-    const std::string& string(const std::string &name, const std::string &def_val) const;
+    const std::string& string(const char *name, const std::string &def_val) const;
 
     /// Store a named reference in the Properties instance
-    void set_named_reference(const std::string &name, const NamedReference &value, bool error_duplicates = true);
+    void set_named_reference(const char *name, const NamedReference &value, bool error_duplicates = true);
     /// Retrieve a named reference value
-    const NamedReference& named_reference(const std::string &name) const;
+    const NamedReference& named_reference(const char *name) const;
     /// Retrieve a named reference value (use default value if no entry exists)
-    const NamedReference& named_reference(const std::string &name, const NamedReference &def_val) const;
+    const NamedReference& named_reference(const char *name, const NamedReference &def_val) const;
 
     /// Store a 3D array in the Properties instance
-    void set_array3f(const std::string &name, const Array3f &value, bool error_duplicates = true);
+    void set_array3f(const char *name, const Array3f &value, bool error_duplicates = true);
 
     /// Store a color in the Properties instance
-    void set_color(const std::string &name, const Color3f &value, bool error_duplicates = true);
+    void set_color(const char *name, const Color3f &value, bool error_duplicates = true);
 
     /// Store a 3x3 homogeneous coordinate transformation in the Properties instance
-    void set_transform3f(const std::string &name, const Transform3f &value, bool error_duplicates = true);
+    void set_transform3f(const char *name, const Transform3f &value, bool error_duplicates = true);
 
     /// Store a 4x4 homogeneous coordinate transformation in the Properties instance
-    void set_transform(const std::string &name, const Transform4f &value, bool error_duplicates = true);
+    void set_transform(const char *name, const Transform4f &value, bool error_duplicates = true);
 
     /// Store a tensor handle in the Properties instance
-    void set_tensor_handle(const std::string &name, const TensorHandle &value, bool error_duplicates = true);
+    void set_tensor_handle(const char *name, const TensorHandle &value, bool error_duplicates = true);
 
 #if 0
     /// Store an animated transformation in the Properties instance
-    void set_animated_transform(const std::string &name, ref<AnimatedTransform> value,
+    void set_animated_transform(const char *name, ref<AnimatedTransform> value,
                                 bool error_duplicates = true);
     /// Store a (constant) animated transformation in the Properties instance
-    void set_animated_transform(const std::string &name, const Transform4f &value,
+    void set_animated_transform(const char *name, const Transform4f &value,
                                 bool error_duplicates = true);
     /// Retrieve an animated transformation
-    ref<AnimatedTransform> animated_transform(const std::string &name) const;
+    ref<AnimatedTransform> animated_transform(const char *name) const;
     /// Retrieve an animated transformation (use default value if no entry exists)
     ref<AnimatedTransform> animated_transform(
             const std::string &name, ref<AnimatedTransform> def_val) const;
     /// Retrieve an animated transformation (default value is a constant transform)
-    ref<AnimatedTransform> animated_transform(const std::string &name,
+    ref<AnimatedTransform> animated_transform(const char *name,
                                               const Transform<Point4f> &def_val) const;
 #endif
 
     /// Store an arbitrary object in the Properties instance
-    void set_object(const std::string &name, const ref<Object> &value, bool error_duplicates = true);
+    void set_object(const char *name, const ref<Object> &value, bool error_duplicates = true);
     /// Retrieve an arbitrary object
-    const ref<Object>& object(const std::string &name) const;
+    const ref<Object>& object(const char *name) const;
     /// Retrieve an arbitrary object (use default value if no entry exists)
-    const ref<Object>& object(const std::string &name, const ref<Object> &def_val) const;
+    const ref<Object>& object(const char *name, const ref<Object> &def_val) const;
 
     /// Store an arbitrary pointer in the Properties instance
-    void set_pointer(const std::string &name, const void * const &value, bool error_duplicates = true);
+    void set_pointer(const char *name, const void * const &value, bool error_duplicates = true);
     /// Retrieve an arbitrary pointer
-    const void * const& pointer(const std::string &name) const;
+    const void * const& pointer(const char *name) const;
     /// Retrieve an arbitrary pointer (use default value if no entry exists)
-    const void * const& pointer(const std::string &name, const void * const &def_val) const;
+    const void * const& pointer(const char *name, const void * const &def_val) const;
 
     /// Retrieve a texture (if the property is a float, create a uniform texture instead)
     template <typename Texture>
-    ref<Texture> texture(const std::string &name) const {
+    ref<Texture> texture(const char *name) const {
         if (!has_property(name))
             Throw("Property \"%s\" has not been specified!", name);
 
         auto p_type = type(name);
         if (p_type == Properties::Type::Object) {
             ref<Object> object = find_object(name);
-            if (!object->class_()->derives_from(MI_CLASS(Texture)))
+            if (!dynamic_cast<Texture *>(object.get()))
                 Throw("The property \"%s\" has the wrong type (expected "
                       " <spectrum> or <texture>).", name);
             mark_queried(name);
@@ -282,7 +279,7 @@ public:  // Type-specific getters and setters ----------------------------------
 
     /// Retrieve a texture (use the provided texture if no entry exists)
     template <typename Texture>
-    ref<Texture> texture(const std::string &name, ref<Texture> def_val) const {
+    ref<Texture> texture(const char *name, ref<Texture> def_val) const {
         if (!has_property(name))
             return def_val;
         return texture<Texture>(name);
@@ -290,7 +287,7 @@ public:  // Type-specific getters and setters ----------------------------------
 
     /// Retrieve a texture (or create uniform texture with default value)
     template <typename Texture, typename FloatType>
-    ref<Texture> texture(const std::string &name, FloatType def_val) const {
+    ref<Texture> texture(const char *name, FloatType def_val) const {
         if (!has_property(name)) {
             Properties props("uniform");
             props.set_float("value", Float(def_val));
@@ -301,18 +298,19 @@ public:  // Type-specific getters and setters ----------------------------------
 
     /// Retrieve a texture multiplied by D65 if necessary (if the property is a float, create a D65 texture instead)
     template <typename Texture>
-    ref<Texture> texture_d65(const std::string &name) const {
+    ref<Texture> texture_d65(const char *name) const {
         if (!has_property(name))
             Throw("Property \"%s\" has not been specified!", name);
 
         auto p_type = type(name);
         if (p_type == Properties::Type::Object) {
             ref<Object> object = find_object(name);
-            if (!object->class_()->derives_from(MI_CLASS(Texture)))
+            Texture *tex = dynamic_cast<Texture *>(object);
+            if (!tex)
                 Throw("The property \"%s\" has the wrong type (expected "
                       " <spectrum> or <texture>).", name);
             mark_queried(name);
-            return (Texture *) Texture::D65((Texture *) object.get()).get();
+            return (Texture *) Texture::D65(tex).get();
         } else if (p_type == Properties::Type::Float) {
             return (Texture *) Texture::D65((typename Texture::ScalarFloat) get<Float>(name)).get();
         } else {
@@ -323,7 +321,7 @@ public:  // Type-specific getters and setters ----------------------------------
 
     /// Retrieve a texture multiplied by D65 if necessary (use the provided texture if no entry exists)
     template <typename Texture>
-    ref<Texture> texture_d65(const std::string &name, ref<Texture> def_val) const {
+    ref<Texture> texture_d65(const char *name, ref<Texture> def_val) const {
         if (!has_property(name))
             return def_val;
         return texture_d65<Texture>(name);
@@ -331,7 +329,7 @@ public:  // Type-specific getters and setters ----------------------------------
 
     /// Retrieve a texture multiplied by D65 if necessary (or create D65 texture with default value)
     template <typename Texture, typename FloatType>
-    ref<Texture> texture_d65(const std::string &name, FloatType def_val) const {
+    ref<Texture> texture_d65(const char *name, FloatType def_val) const {
         if (!has_property(name))
             return (Texture *) Texture::D65(def_val).get();
         return texture_d65<Texture>(name);
@@ -339,7 +337,7 @@ public:  // Type-specific getters and setters ----------------------------------
 
     /// Retrieve a 3D texture
     template <typename Volume>
-    ref<Volume> volume(const std::string &name) const {
+    ref<Volume> volume(const char *name) const {
 
         if (!has_property(name))
             Throw("Property \"%s\" has not been specified!", name);
@@ -347,14 +345,15 @@ public:  // Type-specific getters and setters ----------------------------------
         auto p_type = type(name);
         if (p_type == Properties::Type::Object) {
             ref<Object> object = find_object(name);
-            if (!object->class_()->derives_from(MI_CLASS(Volume::Texture)) &&
-                !object->class_()->derives_from(MI_CLASS(Volume)))
+            Volume *vol = dynamic_cast<Volume*>(object.get());
+
+            if (!vol && !dynamic_cast<typename Volume::Texture *>(object.get()))
                 Throw("The property \"%s\" has the wrong type (expected "
                     " <spectrum>, <texture>. or <volume>).", name);
 
             mark_queried(name);
-            if (object->class_()->derives_from(MI_CLASS(Volume))) {
-                return (Volume *) object.get();
+            if (vol) {
+                return vol;
             } else {
                 Properties props("constvolume");
                 props.set_object("value", object);
@@ -372,14 +371,14 @@ public:  // Type-specific getters and setters ----------------------------------
 
     /// Retrieve a 3D texture (use the provided texture if no entry exists)
     template <typename Volume>
-    ref<Volume> volume(const std::string &name, ref<Volume> def_val) const {
+    ref<Volume> volume(const char *name, ref<Volume> def_val) const {
         if (!has_property(name))
             return def_val;
         return volume<Volume>(name);
     }
 
     template <typename Volume, typename FloatType>
-    ref<Volume> volume(const std::string &name, FloatType def_val) const {
+    ref<Volume> volume(const char *name, FloatType def_val) const {
         if (!has_property(name)) {
             Properties props("constvolume");
             props.set_float("value", Float(def_val));
@@ -390,14 +389,14 @@ public:  // Type-specific getters and setters ----------------------------------
 
     /// Retrieve a tensor
     template <typename Tensor>
-    Tensor* tensor(const std::string &name) const {
+    Tensor* tensor(const char *name) const {
         TensorHandle handle = get<Properties::TensorHandle>(name);
         return reinterpret_cast<Tensor*>(handle.get());
     }
 
 private:
     /// Return a reference to an object for a specific name (return null ref if doesn't exist)
-    ref<Object> find_object(const std::string &name) const;
+    ref<Object> find_object(const char *name) const;
     struct PropertiesPrivate;
     std::shared_ptr<PropertiesPrivate> d;
 };
@@ -408,12 +407,12 @@ public:
     PropertiesV() : Properties() {};
     PropertiesV(const PropertiesV& p) : Properties() { share(p); }
     PropertiesV(const Properties& p) : Properties() { share(p); }
-    PropertiesV(const std::string &plugin_name) : Properties(plugin_name) {}
+    PropertiesV(const char *plugin_name) : Properties(plugin_name) {}
 };
 
 #define EXTERN_EXPORT_PROPERTY_ACCESSOR(T) \
-    extern template MI_EXPORT_LIB T Properties::get<T>(const std::string &) const; \
-    extern template MI_EXPORT_LIB T Properties::get<T>(const std::string &, const T&) const;
+    extern template MI_EXPORT_LIB T Properties::get<T>(const char *) const; \
+    extern template MI_EXPORT_LIB T Properties::get<T>(const char *, const T&) const;
 
 #define T(...) __VA_ARGS__
 EXTERN_EXPORT_PROPERTY_ACCESSOR(T(bool))

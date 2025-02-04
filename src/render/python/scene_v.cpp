@@ -17,37 +17,9 @@
 
 #include "signal.h"
 
-MI_PY_EXPORT(ShapeKDTree) {
-    MI_PY_IMPORT_TYPES(ShapeKDTree, Shape, Mesh)
-
-#if !defined(MI_ENABLE_EMBREE)
-    MI_PY_CLASS(ShapeKDTree, Object)
-        .def(nb::init<const Properties &>(), D(ShapeKDTree, ShapeKDTree))
-        .def_method(ShapeKDTree, add_shape)
-        .def_method(ShapeKDTree, primitive_count)
-        .def_method(ShapeKDTree, shape_count)
-        .def("shape", (Shape *(ShapeKDTree::*)(size_t)) &ShapeKDTree::shape, D(ShapeKDTree, shape))
-        .def("__getitem__", [](ShapeKDTree &s, size_t i) -> nb::object {
-            if (i >= s.primitive_count())
-                throw nb::index_error();
-            Shape *shape = s.shape(i);
-            if (shape->is_mesh())
-                return nb::cast(static_cast<Mesh *>(s.shape(i)));
-            else
-                return nb::cast(s.shape(i));
-        })
-        .def("__len__", &ShapeKDTree::primitive_count)
-        .def("bbox", [] (ShapeKDTree &s) { return s.bbox(); })
-        .def_method(ShapeKDTree, build)
-        .def_method(ShapeKDTree, build);
-#else
-    DRJIT_MARK_USED(m);
-#endif
-}
-
 MI_PY_EXPORT(Scene) {
     MI_PY_IMPORT_TYPES(Scene, Integrator, SamplingIntegrator, MonteCarloIntegrator, Sensor)
-    MI_PY_CLASS(Scene, Object)
+    MI_PY_CLASS(Scene, Object, nb::is_final())
         .def(nb::init<const Properties>())
         .def("ray_intersect_preliminary",
              nb::overload_cast<const Ray3f &, Mask, Mask>(&Scene::ray_intersect_preliminary, nb::const_),
@@ -152,4 +124,19 @@ MI_PY_EXPORT(Scene) {
              D(Scene, integrator))
         .def_method(Scene, shapes_grad_enabled)
         .def("__repr__", &Scene::to_string);
+
+    m.def("register_plugin,
+          [](const char *name, nb::function func) {
+              PluginInfo plugin_info{
+                  name, ::mitsuba::detail::get_variant<Float, Spectrum>(),
+                  func.inc_ref().ptr(),
+                  [](const Properties &props, void *p) -> ref<Object> {
+                      nb::gil_scoped_acquire gil;
+                      return nb::cast<Object *>(
+                          handle((PyObject *) p)(PropertiesV(props)));
+                  },
+                  [](void *p) { handle((PyObject *) p).dec_ref() }
+              };
+              PluginManager::register_plugin(plugin_info);
+          });
 }

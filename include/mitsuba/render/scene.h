@@ -34,7 +34,7 @@ NAMESPACE_BEGIN(mitsuba)
  * </ul>
  */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB Scene : public Object {
+class MI_EXPORT_LIB Scene final : public Object {
 public:
     MI_IMPORT_TYPES(BSDF, Emitter, EmitterPtr, SensorPtr, Film, Sampler, Shape,
                     ShapePtr, ShapeGroup, Sensor, Integrator, Medium, MediumPtr,

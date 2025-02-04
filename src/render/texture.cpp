@@ -7,7 +7,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 // =======================================================================
-//! @{ \name Texture implementations
+//! Texture base implementation
 // =======================================================================
 
 MI_VARIANT Texture<Float, Spectrum>::Texture(const Properties &props)
@@ -79,10 +79,12 @@ Texture<Float, Spectrum>::D65(ref<Texture> texture) {
     if constexpr (!is_spectral_v<Spectrum>) {
         return texture;
     } else {
-        std::vector<std::string> plugins = {
+        const char *plugins[] = {
             "srgb", "bitmap", "checkerboard", "mesh_attribute"
         };
-        if (string::contains(plugins, texture->class_()->name())) {
+        for (const char *name : plugins) {
+            if (strcmp(texture->class_name(), name) != 0)
+                continue;
             Properties props("d65");
             props.set_object("nested", ref<Object>(texture));
             ref<Texture> texture2 = PluginManager::instance()->create_object<Texture>(props);
@@ -114,11 +116,6 @@ MI_VARIANT typename Texture<Float, Spectrum>::ScalarFloat
 Texture<Float, Spectrum>::max() const {
     NotImplementedError("max");
 }
-
-//! @}
-// =======================================================================
-
-MI_IMPLEMENT_CLASS_VARIANT(Texture, Object, "texture")
 
 MI_INSTANTIATE_CLASS(Texture)
 NAMESPACE_END(mitsuba)

@@ -7,13 +7,17 @@
 NAMESPACE_BEGIN(mitsuba)
 
 // =======================================================================
-//! @{ \name Volume implementations
+//! Volume base implementation
 // =======================================================================
 
 MI_VARIANT Volume<Float, Spectrum>::Volume(const Properties &props) {
     m_to_local = props.get<ScalarTransform4f>("to_world", ScalarTransform4f()).inverse();
     m_channel_count = 0;
     update_bbox();
+}
+
+MI_VARIANT ObjectType Volume<Float, Spectrum>::type() const {
+    return ObjectType::Volume;
 }
 
 MI_VARIANT typename Volume<Float, Spectrum>::UnpolarizedSpectrum
@@ -61,10 +65,7 @@ Volume<Float, Spectrum>::resolution() const {
     return ScalarVector3i(1, 1, 1);
 }
 
-//! @}
 // =======================================================================
-
-MI_IMPLEMENT_CLASS_VARIANT(Volume, Object, "volume")
 
 MI_INSTANTIATE_CLASS(Volume)
 NAMESPACE_END(mitsuba)

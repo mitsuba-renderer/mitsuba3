@@ -1883,6 +1883,4 @@ std::string StructConverter::to_string() const {
     return oss.str();
 }
 
-MI_IMPLEMENT_CLASS(Struct, Object)
-MI_IMPLEMENT_CLASS(StructConverter, Object)
 NAMESPACE_END(mitsuba)

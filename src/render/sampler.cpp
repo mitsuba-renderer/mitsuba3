@@ -32,6 +32,10 @@ MI_VARIANT Sampler<Float, Spectrum>::Sampler(const Sampler &sampler)
 
 MI_VARIANT Sampler<Float, Spectrum>::~Sampler() { }
 
+MI_VARIANT ObjectType Sampler<Float, Spectrum>::type() const {
+    return ObjectType::Sampler;
+}
+
 MI_VARIANT void Sampler<Float, Spectrum>::seed(UInt32 /* seed */,
                                                uint32_t wavefront_size) {
     if constexpr (dr::is_array_v<Float>) {
@@ -168,9 +172,6 @@ PCG32Sampler<Float, Spectrum>::PCG32Sampler(const PCG32Sampler &sampler)
 
 //! @}
 // =======================================================================
-
-MI_IMPLEMENT_CLASS_VARIANT(Sampler, Object, "sampler")
-MI_IMPLEMENT_CLASS_VARIANT(PCG32Sampler, Sampler, "PCG32 sampler")
 
 MI_INSTANTIATE_CLASS(Sampler)
 MI_INSTANTIATE_CLASS(PCG32Sampler)

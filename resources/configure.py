@@ -87,6 +87,12 @@ def write_core_config_cpp(f, enabled, default_variant):
     w('    }()')
     f.write('\n')
 
+    f.write('/// Register a plugin with the plugin manager\n')
+    w('#define MI_REGISTER_PLUGIN(cb, id, Name)')
+    for index, (name, float_, spectrum) in enumerate(enabled):
+        w('    cb(id, "%s", [](void *, const Properties &p) -> ref<Object> { return new Name<%s, %s>(p); });' % (name, float_, spectrum))
+    f.write('\n')
+
     f.write('NAMESPACE_BEGIN(mitsuba)\n')
     f.write('NAMESPACE_BEGIN(detail)\n')
     f.write('/// Convert a <Float, Spectrum> type pair into one of the strings in MI_VARIANT\n')

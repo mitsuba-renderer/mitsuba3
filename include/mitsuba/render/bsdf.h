@@ -592,6 +592,9 @@ public:
     /// Return a human-readable representation of the BSDF
     std::string to_string() const override = 0;
 
+    /// Return the type of this object
+    ObjectType type() const override;
+
     //! @}
     // -----------------------------------------------------------------------
 

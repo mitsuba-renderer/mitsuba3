@@ -27,7 +27,6 @@ add_library(mitsuba-core OBJECT
                     ${INC_DIR}/bbox.h
   bitmap.cpp        ${INC_DIR}/bitmap.h
                     ${INC_DIR}/bsphere.h
-  class.cpp         ${INC_DIR}/class.h
                     ${INC_DIR}/distr_1d.h
                     ${INC_DIR}/distr_2d.h
   dstream.cpp       ${INC_DIR}/dstream.h

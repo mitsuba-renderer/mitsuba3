@@ -3,7 +3,6 @@
 #include <mitsuba/core/appender.h>
 #include <mitsuba/core/formatter.h>
 
-#include <thread>
 #include <iostream>
 #include <algorithm>
 #include <mutex>
@@ -51,29 +50,29 @@ LogLevel Logger::error_level() const {
 
 #undef Throw
 
-void Logger::log(LogLevel level, const Class *class_, const char *file,
-                 int line, const std::string &msg) {
+void Logger::log(LogLevel level, const char *cname, const char *fname,
+                 int line, const char *msg) {
 
     if (level < m_log_level)
         return;
     else if (level >= d->error_level)
-        detail::Throw(level, class_, file, line, msg);
+        detail::Throw(level, cname, fname, line, msg);
 
     if (!d->formatter) {
         std::cerr << "PANIC: Logging has not been properly initialized!" << std::endl;
         abort();
     }
 
-    std::string text = d->formatter->format(level, class_,
-        Thread::thread(), file, line, msg);
+    std::string text = d->formatter->format(level, cname,
+        Thread::thread(), fname, line, msg);
 
     std::lock_guard<std::mutex> guard(d->mutex);
     for (auto entry : d->appenders)
-        entry->append(level, text);
+        entry->append(level, text.c_str());
 }
 
-void Logger::log_progress(float progress, const std::string &name,
-    const std::string &formatted, const std::string &eta, const void *ptr) {
+void Logger::log_progress(float progress, const char *name,
+    const char *formatted, const char *eta, const void *ptr) {
     std::lock_guard<std::mutex> guard(d->mutex);
     for (auto entry : d->appenders)
         entry->log_progress(progress, name, formatted, eta, ptr);
@@ -92,12 +91,10 @@ void Logger::remove_appender(Appender *appender) {
 
 std::string Logger::read_log() {
     std::lock_guard<std::mutex> guard(d->mutex);
-    for (auto appender: d->appenders) {
-        if (appender->class_()->derives_from(MI_CLASS(StreamAppender))) {
-            auto sa = static_cast<StreamAppender *>(appender.get());
-            if (sa->logs_to_file())
-                return sa->read_log();
-        }
+    for (Appender *appender: d->appenders) {
+        StreamAppender *sa = dynamic_cast<StreamAppender*>(appender);
+        if (sa && sa->logs_to_file())
+            return sa->read_log();
     }
     Log(Error, "No stream appender with a file attachment could be found");
     return std::string(); /* Don't warn */
@@ -139,7 +136,7 @@ const Appender *Logger::appender(size_t index) const {
 
 NAMESPACE_BEGIN(detail)
 
-void Throw(LogLevel level, const Class *class_, const char *file,
+void Throw(LogLevel level, const char *cname, const char *fname,
            int line, const std::string &msg_) {
     // Trap if we're running in a debugger to facilitate debugging.
     #if defined(MI_THROW_TRAPS_DEBUGGER)
@@ -161,12 +158,9 @@ void Throw(LogLevel level, const Class *class_, const char *file,
         msg = msg.substr(0, it) + "\n  " + msg.substr(it + 3);
 
     std::string text =
-        formatter.format(level, class_, Thread::thread(), file, line, msg);
+        formatter.format(level, cname, Thread::thread(), fname, line, msg);
     throw std::runtime_error(zerowidth_space + text);
 }
 
 NAMESPACE_END(detail)
-
-MI_IMPLEMENT_CLASS(Logger, Object)
-
 NAMESPACE_END(mitsuba)

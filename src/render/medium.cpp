@@ -11,7 +11,7 @@ MI_VARIANT Medium<Float, Spectrum>::Medium() :
     m_is_homogeneous(false),
     m_has_spectral_extinction(true) {
 
-    MI_REGISTRY_PUT("Medium", this);
+    MI_REGISTER_OBJECT("Medium", this);
 }
 
 MI_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props.id()) {
@@ -32,12 +32,15 @@ MI_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props
 
     m_sample_emitters = props.get<bool>("sample_emitters", true);
 
-    MI_REGISTRY_PUT("Medium", this);
+    MI_REGISTER_OBJECT("Medium", this);
 }
 
 MI_VARIANT Medium<Float, Spectrum>::~Medium() {
-    if constexpr (dr::is_jit_v<Float>)
-        jit_registry_remove(this);
+    MI_UNREGISTER_OBJECT(this);
+}
+
+MI_VARIANT ObjectType Medium<Float, Spectrum>::type() const {
+    return ObjectType::Medium;
 }
 
 MI_VARIANT void Medium<Float, Spectrum>::traverse(TraversalCallback *callback) {
@@ -102,6 +105,5 @@ Medium<Float, Spectrum>::transmittance_eval_pdf(const MediumInteraction3f &mi,
     return { tr, pdf };
 }
 
-MI_IMPLEMENT_CLASS_VARIANT(Medium, Object, "medium")
 MI_INSTANTIATE_CLASS(Medium)
 NAMESPACE_END(mitsuba)

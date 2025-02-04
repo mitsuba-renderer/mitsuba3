@@ -414,6 +414,5 @@ private:
     Vector2f m_principal_point_offset;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(PerspectiveCamera, ProjectiveCamera)
 MI_EXPORT_PLUGIN(PerspectiveCamera, "Perspective Camera");
 NAMESPACE_END(mitsuba)

@@ -72,12 +72,11 @@ MI_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props
         }
     }
 
-    MI_REGISTRY_PUT("Sensor", this);
+    MI_REGISTER_OBJECT("Sensor", this);
 }
 
 MI_VARIANT Sensor<Float, Spectrum>::~Sensor() {
-    if constexpr (dr::is_jit_v<Float>)
-        jit_registry_remove(this);
+    MI_UNREGISTER_OBJECT(this);
 }
 
 MI_VARIANT std::pair<typename Sensor<Float, Spectrum>::RayDifferential3f, Spectrum>
@@ -206,9 +205,6 @@ double parse_fov(const Properties &props, double aspect) {
 
     return result;
 }
-
-MI_IMPLEMENT_CLASS_VARIANT(Sensor, Endpoint, "sensor")
-MI_IMPLEMENT_CLASS_VARIANT(ProjectiveCamera, Sensor)
 
 MI_INSTANTIATE_CLASS(Sensor)
 MI_INSTANTIATE_CLASS(ProjectiveCamera)

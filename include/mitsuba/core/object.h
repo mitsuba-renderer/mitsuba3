@@ -1,44 +1,40 @@
 #pragma once
 
-#include <atomic>
-#include <stdexcept>
-#include <mitsuba/core/class.h>
+#define NB_INTRUSIVE_EXPORT MI_EXPORT
+
+#include <mitsuba/mitsuba.h>
+#include <nanobind/intrusive/ref.h>
+#include <typeinfo>
 
 NAMESPACE_BEGIN(mitsuba)
+
+template <typename T> using ref = nanobind::ref<T>;
 
 /**
  * \brief Object base class with builtin reference counting
  *
- * This class (in conjunction with the ``ref`` reference counter) constitutes the
- * foundation of an efficient reference-counted object hierarchy. The
- * implementation here is an alternative to standard mechanisms for reference
- * counting such as ``std::shared_ptr`` from the STL.
+ * This class (in conjunction with the ``ref`` reference counter) constitutes
+ * the foundation of an efficient reference-counted object hierarchy.
  *
- * Why not simply use ``std::shared_ptr``? To be spec-compliant, such shared
- * pointers must associate a special record with every instance, which stores
- * at least two counters plus a deletion function. Allocating this record
- * naturally incurs further overheads to maintain data structures within the
- * memory allocator. In addition to this, the size of an individual
- * ``shared_ptr`` references is at least two data words. All of this quickly
- * adds up and leads to significant overheads for large collections of
- * instances, hence the need for an alternative in Mitsuba.
+ * We use an intrusive reference counting approach to avoid various gnarly
+ * issues that arise in combined Python/C++ codebase, see the following page for
+ * details: https://nanobind.readthedocs.io/en/latest/ownership_adv.html
  *
- * In contrast, the ``Object`` class allows for a highly efficient
- * implementation that only adds 64 bits to the base object (for the counter)
- * and has no overhead for references. In addition, when using Mitsuba in
- * Python, this counter is shared with Python such that the ownerhsip and
- * lifetime of any ``Object`` instance across C++ and Python is managed by it.
+ * The counter provided by ``nb::intrusive_base`` establishes a unified
+ * reference count that is consistent across both C++ and Python. It is more
+ * efficient than ``std::shared_ptr<T>`` (as no external control block is
+ * needed) and works without Python actually being present.
  */
 class MI_EXPORT_LIB Object : public nanobind::intrusive_base {
 public:
     /// Default constructor
-    Object() { }
+    Object() = default;
 
     /// Copy constructor
-    Object(const Object &) { }
+    Object(const Object &) = default;
 
     /// Destructor
-    ~Object() { };
+    ~Object();
 
     /**
      * \brief Expand the object into a list of sub-objects and return them
@@ -85,13 +81,6 @@ public:
      */
     virtual void parameters_changed(const std::vector<std::string> &/*keys*/ = {});
 
-    /**
-     * \brief Return a \ref Class instance containing run-time type information
-     * about this Object
-     * \sa Class
-     */
-    virtual const Class *class_() const;
-
     /// Return an identifier of the current instance (if available)
     virtual std::string id() const;
 
@@ -109,10 +98,85 @@ public:
      */
     virtual std::string to_string() const;
 
-private:
-    static Class *m_class;
+    /// Return the type of this object
+    virtual ObjectType type() const;
+
+    /// Static class name identifier
+    static constexpr const char *ClassName = "Object";
+
+    /// Virtual method that returns 'ClassName' (mainly used for logging)
+    virtual const char *class_name() const;
 };
 
+/// This enumeration lists high-level interfaces that can be implemented
+/// by Mitsuba scene objects. The scene loader to uses these to ensure
+/// that a loaded object matches the expected interface.
+enum class ObjectType : uint32_t {
+    /// The default returned by Object subclasses
+    Unknown,
+    /// The top-level scene object. No subclasses exist
+    Scene,
+    /// Carries out radiance measurements, subclasses \ref Sensor
+    Sensor,
+    /// Storage representation of the sensor
+    Film,
+    /// Emits radiance, subclasses \ref Emitter
+    Emitter,
+    /// Sensor,
+    Sampler,
+    /// Denotes an arbitrary shape (including meshes)
+    Shape,
+    /// A 2D texture data source
+    Texture,
+    /// A 3D volume data source
+    Volume,
+    /// A participating medium
+    Medium,
+    /// A bidirectional reflectance distribution function
+    BSDF,
+    /// A rendering algorithm aka. Integrator
+    Integrator,
+    /// A phase function characterizing scattering in volumes
+    PhaseFunction,
+    /// A filter used to reconstruct/resample images
+    ReconstructionFilter
+};
+
+
+/// Global to indicate that we are not currently in a class
+static constexpr const char *ClassName = nullptr;
+
+#define MI_DECLARE_CLASS(Name)                                                 \
+    static constexpr const char *ClassName = #Name;                            \
+    virtual const char *class_name() const override { return ClassName; };
+
+// -----------------------------------------------------------------------------
+//                 Type declarations and macros for plugins
+// -----------------------------------------------------------------------------
+
+/// Represents a function that instantiate a plugin from a \ref Properties object
+using PluginInstantiateFn = ref<Object> (*)(void *payload, const Properties &);
+
+/// Reprsents a function that releases the resources of a plugin. It should only
+/// be called when the plugin is no longer in use. See 'plugin.cpp'.
+using PluginReleaseFn = void (*)(void *payload);
+
+/// Represents a function that can be used to register variants of a plugin
+using PluginRegisterFn = void (*)(const char *name, const char *variant,
+                                  PluginInstantiateFn cons);
+
+/// Represents the entry point of a plugin
+using PluginEntryFn = void (*)(const char *name, PluginRegisterFn);
+
+/// Entry point of plugins, registers provided classes with the plugin manager
+#define MI_EXPORT_PLUGIN(Name)                                                 \
+    extern "C" MI_EXPORT void init_plugin(const char *name,                    \
+                                          PluginRegisterFn fn) {               \
+        MTS_REGISTER_PLUGIN(cb, name, Name);                                   \
+    }
+
+// -----------------------------------------------------------------------------
+//                          Scene Traversal API
 // -----------------------------------------------------------------------------
 
 /**
@@ -125,13 +189,13 @@ private:
  */
 enum class ParamFlags : uint32_t {
     /// Tracking gradients w.r.t. this parameter is allowed
-    Differentiable = 0x0,
+    Differentiable = 0,
 
     /// Tracking gradients w.r.t. this parameter is not allowed
-    NonDifferentiable = 0x1,
+    NonDifferentiable = 1,
 
     /// Tracking gradients w.r.t. this parameter will introduce discontinuities
-    Discontinuous = 0x2,
+    Discontinuous = 2,
 };
 
 MI_DECLARE_ENUM_OPERATORS(ParamFlags)
@@ -151,7 +215,7 @@ public:
     void put_parameter(const std::string &name, T &v, uint32_t flags) {
         if constexpr (!dr::is_drjit_struct_v<T> || !(dr::is_diff_v<T> && dr::is_floating_point_v<T>))
             if ((flags & ParamFlags::Differentiable) != 0)
-                throw("Parameter can't be differentiable because of its type!");
+                throw std::runtime_error("The specificied parameter type cannot be differentiable!");
         put_parameter_impl(name, &v, flags, typeid(T));
     }
 
@@ -177,14 +241,31 @@ std::ostream& operator<<(std::ostream &os, const ref<T> &object) {
     return operator<<(os, object.get());
 }
 
-// This checks that it is safe to reinterpret a \c ref object into the
-// underlying pointer type.
-static_assert(sizeof(ref<Object>) == sizeof(Object *),
-              "ref<T> must be reinterpretable as a T*.");
+/// Register an instance with the Dr.Jit instance registry (for symbolic calls)
+#define MI_REGISTER_OBJECT(name, self)                                         \
+    if constexpr (dr::is_jit_v<Float>)                                         \
+        jit_registry_put(detail::get_variant<Float, Spectrum>(),               \
+                         "mitsuba::" name, self);
+
+/// Unregister an instance from the Dr.Jit instance registroy
+#define MI_UNREGISTER_OBJECT(self)                                             \
+    if constexpr (dr::is_jit_v<Float>)                                         \
+        jit_registry_remove(self);
+
+#define MI_CALL_TEMPLATE_BEGIN(Name) DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Name)
+#define MI_CALL_TEMPLATE_END(Name)                                             \
+public:                                                                        \
+    static constexpr const char *variant_() {                                  \
+        return ::mitsuba::detail::get_variant<Ts...>();                        \
+    }                                                                          \
+    static_assert(is_detected_v<detail::has_variant_override, CallSupport_>);  \
+    DRJIT_CALL_END(mitsuba::Name)
+
+
 
 NAMESPACE_END(mitsuba)
 
-// Necessary when printing jit arrays of pointers to mitsuba::Object
+// Necessary when printing Dr.Jit arrays of mitsuba::Object* pointers
 namespace drjit {
     template <typename Array>
     struct call_support<mitsuba::Object, Array> {
@@ -194,3 +275,4 @@ namespace drjit {
         static constexpr const char *Domain = "mitsuba::Object";
     };
 }
+

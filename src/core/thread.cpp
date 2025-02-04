@@ -608,8 +608,4 @@ ScopedSetThreadEnvironment::~ScopedSetThreadEnvironment() {
     thread->set_file_resolver(m_file_resolver);
 }
 
-MI_IMPLEMENT_CLASS(Thread, Object)
-MI_IMPLEMENT_CLASS(MainThread, Thread)
-MI_IMPLEMENT_CLASS(WorkerThread, Thread)
-
 NAMESPACE_END(mitsuba)

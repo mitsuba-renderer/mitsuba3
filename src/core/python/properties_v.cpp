@@ -152,24 +152,5 @@ MI_PY_EXPORT(Properties) {
             .def(nb::self == nb::self, D(Properties, operator_eq))
             .def(nb::self != nb::self, D(Properties, operator_ne))
             .def_repr(PropertiesV);
-
-        // FIXME: Binding this enumeration leaks. Defining an internal enum to
-        // an arbitrary class is fine, this seems to be specifically an issue
-        // with defining an internal enum in Properties
-        //nb::enum_<Properties::Type>(p, "Type");
-            //.value("Bool",              Properties::Type::Bool,           D(Properties, Type, Bool))
-            //.value("Long",              Properties::Type::Long,           D(Properties, Type, Long))
-            //.value("Float",             Properties::Type::Float,          D(Properties, Type, Float))
-            //.value("Array3f",           Properties::Type::Array3f,        D(Properties, Type, Array3f))
-            //.value("Transform3f",       Properties::Type::Transform3f,    D(Properties, Type, Transform3f))
-            //.value("Transform4f",       Properties::Type::Transform4f,    D(Properties, Type, Transform4f))
-            //// .value("AnimatedTransform", Properties::Type::AnimatedTransform, D(Properties, Type, AnimatedTransform))
-            //.value("TensorHandle",      Properties::Type::Tensor,         D(Properties, Type, Tensor))
-            //.value("Color",             Properties::Type::Color,          D(Properties, Type, Color))
-            //.value("String",            Properties::Type::String,         D(Properties, Type, String))
-            //.value("NamedReference",    Properties::Type::NamedReference, D(Properties, Type, NamedReference))
-            //.value("Object",            Properties::Type::Object,         D(Properties, Type, Object))
-            //.value("Pointer",           Properties::Type::Pointer,        D(Properties, Type, Pointer))
-            //.export_values();
     }
 }

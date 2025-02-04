@@ -47,16 +47,16 @@ struct alignas(32) Entry {
 };
 
 struct SortKey {
-    bool operator()(const std::string &a, const std::string &b) const {
+    bool operator()(const char *a, const char *b) const {
         size_t i = 0;
-        while (i < a.size() && i < b.size() && a[i] == b[i])
+        while (a[i] == b[i] && a[i] != '\0' && b[i] != '\0')
             ++i;
 
         while (i > 0 && std::isdigit(a[i-1]))
             --i;
 
-        const char *a_ptr = a.c_str() + i;
-        const char *b_ptr = b.c_str() + i;
+        const char *a_ptr = a + i;
+        const char *b_ptr = b + i;
 
         if (std::isdigit(*a_ptr) && std::isdigit(*b_ptr)) {
             char *a_end, *b_end;
@@ -157,7 +157,7 @@ T get_routing(const Iterator &it) {
 }
 
 template <typename T>
-T Properties::get(const std::string &name) const {
+T Properties::get(const char *name) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
         Throw("Property \"%s\" has not been specified!", name);
@@ -165,14 +165,14 @@ T Properties::get(const std::string &name) const {
 }
 
 template <typename T>
-T Properties::get(const std::string &name, const T &def_val) const {
+T Properties::get(const char *name, const T &def_val) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
         return def_val;
     return get_routing<T>(it);
 }
 #define DEFINE_PROPERTY_SETTER(Type, SetterName) \
-    void Properties::SetterName(const std::string &name, Type const &value, bool error_duplicates) { \
+    void Properties::SetterName(const char *name, Type const &value, bool error_duplicates) { \
         if (has_property(name) && error_duplicates) \
             Log(Error, "Property \"%s\" was specified multiple times!", name); \
         d->entries[name].data = (Type) value; \
@@ -182,7 +182,7 @@ T Properties::get(const std::string &name, const T &def_val) const {
 #define DEFINE_PROPERTY_ACCESSOR(Type, TagName, SetterName, GetterName) \
     DEFINE_PROPERTY_SETTER(Type, SetterName) \
     \
-    Type const & Properties::GetterName(const std::string &name) const { \
+    Type const & Properties::GetterName(const char *name) const { \
         const auto it = d->entries.find(name); \
         if (it == d->entries.end()) \
             Throw("Property \"%s\" has not been specified!", name); \
@@ -192,7 +192,7 @@ T Properties::get(const std::string &name, const T &def_val) const {
         return (Type const &) it->second.data; \
     } \
     \
-    Type const & Properties::GetterName(const std::string &name, Type const &def_val) const { \
+    Type const & Properties::GetterName(const char *name, Type const &def_val) const { \
         const auto it = d->entries.find(name); \
         if (it == d->entries.end()) \
             return def_val; \
@@ -218,15 +218,13 @@ DEFINE_PROPERTY_ACCESSOR(const void *,   pointer, set_pointer,         pointer)
 Properties::Properties()
     : d(new PropertiesPrivate()) { }
 
-Properties::Properties(const std::string &plugin_name)
+Properties::Properties(const char *plugin_name)
     : d(new PropertiesPrivate()) {
     d->plugin_name = plugin_name;
 }
 
 Properties::Properties(const Properties &props)
     : d(new PropertiesPrivate(*props.d)) { }
-
-Properties::~Properties() { }
 
 void Properties::share(const Properties &props) {
     d = props.d;
@@ -236,7 +234,7 @@ void Properties::operator=(const Properties &props) {
     (*d) = *props.d;
 }
 
-bool Properties::has_property(const std::string &name) const {
+bool Properties::has_property(const char *name) const {
     return d->entries.find(name) != d->entries.end();
 }
 
@@ -271,13 +269,13 @@ namespace {
         void operator()(const Transform4f &t) { os << t; }
         void operator()(const TensorHandle &t) { os << t.get(); }
         void operator()(const Color3f &t) { os << t; }
-        void operator()(const NamedReference &nr) { os << "\"" << (const std::string &) nr << "\""; }
+        void operator()(const NamedReference &nr) { os << "\"" << (const char *) nr << "\""; }
         void operator()(const ref<Object> &o) { os << o->to_string(); }
         void operator()(const void *&p) { os << p; }
     };
 }
 
-Properties::Type Properties::type(const std::string &name) const {
+Properties::Type Properties::type(const char *name) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
         Throw("type(): Could not find property named \"%s\"!", name);
@@ -285,7 +283,7 @@ Properties::Type Properties::type(const std::string &name) const {
     return it->second.data.visit(PropertyTypeVisitor());
 }
 
-bool Properties::mark_queried(const std::string &name) const {
+bool Properties::mark_queried(const char *name) const {
     auto it = d->entries.find(name);
     if (it == d->entries.end())
         return false;
@@ -293,14 +291,14 @@ bool Properties::mark_queried(const std::string &name) const {
     return true;
 }
 
-bool Properties::was_queried(const std::string &name) const {
+bool Properties::was_queried(const char *name) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
         Throw("Could not find property named \"%s\"!", name);
     return it->second.queried;
 }
 
-bool Properties::remove_property(const std::string &name) {
+bool Properties::remove_property(const char *name) {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
         return false;
@@ -308,11 +306,11 @@ bool Properties::remove_property(const std::string &name) {
     return true;
 }
 
-const std::string &Properties::plugin_name() const {
-    return d->plugin_name;
+const char *Properties::plugin_name() const {
+    return d->plugin_name.c_str();
 }
 
-void Properties::set_plugin_name(const std::string &name) {
+void Properties::set_plugin_name(const char *name) {
     d->plugin_name = name;
 }
 
@@ -320,7 +318,7 @@ const std::string &Properties::id() const {
     return d->id;
 }
 
-void Properties::set_id(const std::string &id) {
+void Properties::set_id(const char *id) {
     d->id = id;
 }
 
@@ -399,7 +397,7 @@ bool Properties::operator==(const Properties &p) const {
     return true;
 }
 
-std::string Properties::as_string(const std::string &name) const {
+std::string Properties::as_string(const char *name) const {
     std::ostringstream oss;
     bool found = false;
     for (auto &e : d->entries) {
@@ -414,7 +412,7 @@ std::string Properties::as_string(const std::string &name) const {
     return oss.str();
 }
 
-std::string Properties::as_string(const std::string &name, const std::string &def_val) const {
+std::string Properties::as_string(const char *name, const std::string &def_val) const {
     std::ostringstream oss;
     bool found = false;
     for (auto &e : d->entries) {
@@ -453,7 +451,7 @@ std::ostream &operator<<(std::ostream &os, const Properties &p) {
 // =============================================================================
 
 /// Float setter
-void Properties::set_float(const std::string &name, const Float &value, bool error_duplicates) {
+void Properties::set_float(const char *name, const Float &value, bool error_duplicates) {
     if (has_property(name) && error_duplicates)
         Log(Error, "Property \"%s\" was specified multiple times!", name);
     d->entries[name].data = (Float) value;
@@ -461,89 +459,14 @@ void Properties::set_float(const std::string &name, const Float &value, bool err
 }
 
 /// Array3f setter
-void Properties::set_array3f(const std::string &name, const Array3f &value, bool error_duplicates) {
+void Properties::set_array3f(const char *name, const Array3f &value, bool error_duplicates) {
     if (has_property(name) && error_duplicates)
         Log(Error, "Property \"%s\" was specified multiple times!", name);
     d->entries[name].data = (Array3f) value;
     d->entries[name].queried = false;
 }
 
-#if 0
-/// AnimatedTransform setter.
-void Properties::set_animated_transform(const std::string &name,
-                                        ref<AnimatedTransform> value,
-                                        bool error_duplicates) {
-    if (has_property(name) && error_duplicates)
-        Log(Error, "Property \"%s\" was specified multiple times!", name);
-    d->entries[name].data = ref<Object>(value.get());
-    d->entries[name].queried = false;
-}
-
-/// AnimatedTransform setter (from a simple Transform).
-void Properties::set_animated_transform(const std::string &name,
-                                        const Transform4f &value,
-                                        bool error_duplicates) {
-    ref<AnimatedTransform> trafo(new AnimatedTransform(value));
-    return set_animated_transform(name, trafo, error_duplicates);
-}
-
-/// AnimatedTransform getter (without default value).
-ref<AnimatedTransform> Properties::animated_transform(const std::string &name) const {
-    const auto it = d->entries.find(name);
-    if (it == d->entries.end())
-        Throw("Property \"%s\" has not been specified!", name);
-    if (it->second.data.is<Transform4f>()) {
-        // Also accept simple transforms, from which we can build
-        // an AnimatedTransform.
-        it->second.queried = true;
-        return new AnimatedTransform(
-            static_cast<const Transform4f &>(it->second.data));
-    }
-    if (!it->second.data.is<ref<Object>>()) {
-        Throw("The property \"%s\" has the wrong type (expected "
-              " <animated_transform> or <transform>).", name);
-    }
-    ref<Object> o = it->second.data;
-    if (!o->class_()->derives_from(MI_CLASS(AnimatedTransform)))
-        Throw("The property \"%s\" has the wrong type (expected "
-              " <animated_transform> or <transform>).", name);
-    it->second.queried = true;
-    return (AnimatedTransform *) o.get();
-}
-
-/// AnimatedTransform getter (with default value).
-ref<AnimatedTransform> Properties::animated_transform(
-        const std::string &name, ref<AnimatedTransform> def_val) const {
-    const auto it = d->entries.find(name);
-    if (it == d->entries.end())
-        return def_val;
-    if (it->second.data.is<Transform4f>()) {
-        // Also accept simple transforms, from which we can build
-        // an AnimatedTransform.
-        it->second.queried = true;
-        return new AnimatedTransform(
-            static_cast<const Transform4f &>(it->second.data));
-    }
-    if (!it->second.data.is<ref<Object>>()) {
-        Throw("The property \"%s\" has the wrong type (expected "
-              " <animated_transform> or <transform>).", name);
-    }
-    ref<Object> o = it->second.data;
-    if (!o->class_()->derives_from(MI_CLASS(AnimatedTransform)))
-        Throw("The property \"%s\" has the wrong type (expected "
-              " <animated_transform> or <transform>).", name);
-    it->second.queried = true;
-    return (AnimatedTransform *) o.get();
-}
-
-/// Retrieve an animated transformation (default value is a constant transform)
-ref<AnimatedTransform> Properties::animated_transform(
-        const std::string &name, const Transform4f &def_val) const {
-    return animated_transform(name, new AnimatedTransform(def_val));
-}
-#endif
-
-ref<Object> Properties::find_object(const std::string &name) const {
+ref<Object> Properties::find_object(const char *name) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
         return ref<Object>();
@@ -555,8 +478,8 @@ ref<Object> Properties::find_object(const std::string &name) const {
 }
 
 #define EXPORT_PROPERTY_ACCESSOR(T) \
-    template MI_EXPORT_LIB T Properties::get<T>(const std::string &) const; \
-    template MI_EXPORT_LIB T Properties::get<T>(const std::string &, const T&) const;
+    template MI_EXPORT_LIB T Properties::get<T>(const char *) const; \
+    template MI_EXPORT_LIB T Properties::get<T>(const char *, const T&) const;
 
 #define T(...) __VA_ARGS__
 EXPORT_PROPERTY_ACCESSOR(T(bool))

@@ -598,8 +598,5 @@ MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_gpu() { }
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() { }
 #endif
 
-Class *__kdtree_class = new Class("TShapeKDTree", "Object", "", nullptr, nullptr);
-
-MI_IMPLEMENT_CLASS_VARIANT(Scene, Object, "scene")
 MI_INSTANTIATE_CLASS(Scene)
 NAMESPACE_END(mitsuba)

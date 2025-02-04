@@ -20,9 +20,7 @@ namespace dr = drjit;
 // =============================================================
 
 class Object;
-class Class;
 
-// class AnimatedTransform;
 class AnnotatedStream;
 class Appender;
 class ArgParser;
@@ -46,6 +44,7 @@ class Thread;
 class TraversalCallback;
 class ZStream;
 enum LogLevel : int;
+enum class ObjectType : uint32_t;
 
 template <typename> class AtomicFloat;
 

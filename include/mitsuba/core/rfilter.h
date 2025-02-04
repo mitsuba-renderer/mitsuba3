@@ -77,7 +77,7 @@ public:
         }
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(ReconstructionFilter)
 protected:
     /// Create a new reconstruction filter
     ReconstructionFilter(const Properties &props);

@@ -71,7 +71,7 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.i
 
     m_silhouette_sampling_weight = props.get<ScalarFloat>("silhouette_sampling_weight", 1.0f);
 
-    MI_REGISTRY_PUT("Shape", this);
+    MI_REGISTER_OBJECT("Shape", this);
 }
 
 MI_VARIANT Shape<Float, Spectrum>::~Shape() {
@@ -80,8 +80,11 @@ MI_VARIANT Shape<Float, Spectrum>::~Shape() {
         jit_free(m_optix_data_ptr);
 #endif
 
-    if constexpr (dr::is_jit_v<Float>)
-        jit_registry_remove(this);
+    MI_UNREGISTER_OBJECT(this);
+}
+
+MI_VARIANT ObjectType Shape<Float, Spectrum>::type() const {
+    return ObjectType::Shape;
 }
 
 MI_VARIANT typename Shape<Float, Spectrum>::PositionSample3f
@@ -657,6 +660,5 @@ MI_VARIANT std::string Shape<Float, Spectrum>::get_children_string() const {
     return oss.str();
 }
 
-MI_IMPLEMENT_CLASS_VARIANT(Shape, Object, "shape")
 MI_INSTANTIATE_CLASS(Shape)
 NAMESPACE_END(mitsuba)

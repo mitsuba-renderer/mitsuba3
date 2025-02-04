@@ -2,6 +2,9 @@
 #  Mitsuba library
 # ----------------------------------------------------------
 
+# Some parts of Mitsuba use the TSL hash map class
+include_directories(../ext/nanobind/ext/robin_map/include)
+
 add_subdirectory(core)
 add_subdirectory(render)
 

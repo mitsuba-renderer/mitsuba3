@@ -168,7 +168,7 @@ public:
     /// Wait for previously registered nanothread tasks to complete
     static void wait_for_tasks();
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Thread)
 protected:
     /// Initialize thread execution environment and then call \ref run()
     void dispatch();

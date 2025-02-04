@@ -320,7 +320,6 @@ void OptixDenoiser<Float, Spectrum>::validate_input(
               "channels as the noisy input!");
 }
 
-MI_IMPLEMENT_CLASS_VARIANT(OptixDenoiser, Object, "denoiser")
 MI_INSTANTIATE_CLASS(OptixDenoiser)
 
 NAMESPACE_END(mitsuba)
