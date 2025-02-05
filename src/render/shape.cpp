@@ -53,7 +53,7 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.i
                 m_exterior_medium = medium;
             }
         } else if (texture) {
-            m_texture_attributes.insert({ name, texture });
+            add_texture_attribute(name, texture);
         } else {
             continue;
         }
@@ -502,6 +502,37 @@ Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask
     MI_MASK_ARGUMENT(active);
     auto pi = ray_intersect_preliminary(ray, 0, active);
     return pi.compute_surface_interaction(ray, ray_flags, active);
+}
+
+MI_VARIANT void
+Shape<Float, Spectrum>::add_texture_attribute(const std::string& name, Texture *texture) {
+    // Replaces existing attribute with name `name`, if any.
+    m_texture_attributes.insert_or_assign(name, texture);
+}
+
+MI_VARIANT typename Shape<Float, Spectrum>::Texture *
+Shape<Float, Spectrum>::texture_attribute(const std::string &name) {
+    auto it = m_texture_attributes.find(name);
+    if (it == m_texture_attributes.end())
+        Throw("texture_attribute(): attribute %s doesn't exist.", name.c_str());
+    return it->second.get();
+}
+
+MI_VARIANT const typename Shape<Float, Spectrum>::Texture *
+Shape<Float, Spectrum>::texture_attribute(const std::string &name) const {
+    const auto it = m_texture_attributes.find(name);
+    if (it == m_texture_attributes.end())
+        Throw("texture_attribute(): attribute %s doesn't exist.", name.c_str());
+    return it->second.get();
+}
+
+
+MI_VARIANT void
+Shape<Float, Spectrum>::remove_attribute(const std::string& name) {
+    const auto& it = m_texture_attributes.find(name);
+    if (it == m_texture_attributes.end())
+        Throw("remove_attribute(): Attribute \"%s\" not found.", name);
+    m_texture_attributes.erase(it);
 }
 
 MI_VARIANT typename Shape<Float, Spectrum>::Mask

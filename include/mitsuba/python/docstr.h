@@ -4525,6 +4525,12 @@ static const char *__doc_mitsuba_Mesh_MeshAttribute_type = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_add_attribute = R"doc(Add an attribute buffer with the given ``name`` and ``dim``)doc";
 
+static const char *__doc_mitsuba_Mesh_remove_attribute = R"doc(Remove an attribute with the given ``name``.
+
+Affects both mesh and texture attributes.
+
+Throws an exception if the attribute was not previously registered.)doc";
+
 static const char *__doc_mitsuba_Mesh_attribute_buffer = R"doc(Return the mesh attribute associated with ``name``)doc";
 
 static const char *__doc_mitsuba_Mesh_barycentric_coordinates = R"doc()doc";
@@ -7616,6 +7622,27 @@ static const char *__doc_mitsuba_Shape_embree_geometry = R"doc(Return the Embree
 static const char *__doc_mitsuba_Shape_emitter = R"doc(Return the area emitter associated with this shape (if any))doc";
 
 static const char *__doc_mitsuba_Shape_emitter_2 = R"doc(Return the area emitter associated with this shape (if any))doc";
+
+static const char *__doc_mitsuba_Shape_add_texture_attribute =
+R"doc(Add a texture attribute with the given ``name``.
+
+If an attribute with the same name already exists, it is replaced.
+
+Note that ``Mesh`` shapes can additionally handle per-vertex
+and per-face attributes via the ``Mesh::add_attribute method``.
+
+Parameter ``name``:
+    Name of the attribute
+Parameter ``texture``:
+    Texture to store. The dimensionality of the attribute
+    is simply the channel count of the texture.)doc";
+
+static const char *__doc_mitsuba_Shape_texture_attribute = R"doc(Return the texture attribute associated with \c name.)doc";
+
+static const char *__doc_mitsuba_Shape_remove_attribute =
+R"doc(Remove a texture texture with the given ``name``.
+
+Throws an exception if the attribute was not registered.)doc";
 
 static const char *__doc_mitsuba_Shape_eval_attribute =
 R"doc(Evaluate a specific shape attribute at the given surface interaction.

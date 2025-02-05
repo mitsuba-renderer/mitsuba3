@@ -90,16 +90,20 @@ public:
     const DynamicBuffer<UInt32>& faces_buffer() const { return m_faces; }
 
     /// Return the mesh attribute associated with \c name
-    FloatStorage& attribute_buffer(const std::string& name) {
-        auto attribute = m_mesh_attributes.find(name);
-        if (attribute == m_mesh_attributes.end())
-            Throw("attribute_buffer(): attribute %s doesn't exist.", name.c_str());
-        return attribute->second.buf;
-    }
+    FloatStorage& attribute_buffer(const std::string& name);
 
     /// Add an attribute buffer with the given \c name and \c dim
     void add_attribute(const std::string &name, size_t dim,
                        const std::vector<InputFloat> &buf);
+
+    /**
+     * Remove an attribute with the given \c name.
+     *
+     * Affects both mesh and texture attributes.
+     *
+     * Throws an exception if the attribute was not previously registered.
+     */
+    void remove_attribute(const std::string &name) override;
 
     /// Returns the vertex indices associated with triangle \c index
     template <typename Index>
