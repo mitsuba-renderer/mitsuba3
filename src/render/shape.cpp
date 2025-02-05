@@ -573,6 +573,11 @@ Shape<Float, Spectrum>::bbox(ScalarIndex index, const ScalarBoundingBox3f &clip)
     return result;
 }
 
+MI_VARIANT void
+Shape<Float, Spectrum>::set_bsdf(BSDF *bsdf) {
+    m_bsdf = bsdf;
+}
+
 MI_VARIANT typename Shape<Float, Spectrum>::ScalarSize
 Shape<Float, Spectrum>::primitive_count() const {
     return 1;

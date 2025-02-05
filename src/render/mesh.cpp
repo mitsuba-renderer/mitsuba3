@@ -185,6 +185,19 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
                                                                dr::maximum(dr::maximum(v0, v1), v2));
 }
 
+MI_VARIANT void
+Mesh<Float, Spectrum>::set_bsdf(typename Mesh<Float, Spectrum>::BSDF *bsdf) {
+    bool backside_changed =
+        !m_bsdf || (bsdf && (has_flag(m_bsdf->flags(), BSDFFlags::BackSide) !=
+                             has_flag(bsdf->flags(), BSDFFlags::BackSide)));
+    m_bsdf = bsdf;
+
+    // Since `build_indirect_silhouette_distribution()` checks attributes of the BSDF
+    // while building the silhouette sampling distribution, we have to re-run it
+    // here to be safe if the relevant BSDF flags changed.
+    if (backside_changed && !m_sil_dedge_pmf.empty())
+        build_indirect_silhouette_distribution();
+}
 
 MI_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) const {
     ref<FileStream> stream =
