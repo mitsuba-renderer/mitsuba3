@@ -48,16 +48,40 @@ public:
     void register_plugin(PluginInfo info);
 
     /**
-     * \brief Instantiate a plugin, verify its type, and return the newly
-     * created object instance.
+     * \brief Create a plugin object with the provided information
+     *
+     * This function potentially loads an external plugin module (if not
+     * already present), creates an instance, verifies its type, and finally
+     * returns the newly created object instance.
      *
      * \param props
      *     A \ref Properties instance containing all information required to
      *     find and construct the plugin.
+     *
+     * \param variant
+     *     The variant (e.g. 'scalar_rgb') of the plugin to instantiate
+     *
+     * \param type
+     *     The expected interface of the instantiated plugin. Mismatches
+     *     here will produce an error message.
      */
-    ref<Object> create_object(const char *variant,
-                              ObjectType type,
-                              const Properties &props);
+    ref<Object> create_object(const Properties &props,
+                              const char *variant,
+                              ObjectType type);
+
+    /**
+     * \brief Create a plugin object with the provided information
+     *
+     * This template function wraps the ordinary <tt>create_object()</tt>
+     * function defined above. It automatically infers variant and object
+     * type from the provided class 'T'.
+     */
+    template <typename T> ref<T> create_object(const Properties &props) {
+        return create_object(
+            props,
+            detail::get_variant<typename T::Float, typename T::Spectrum>(),
+            T::Type);
+    }
 
     MI_DECLARE_CLASS(PluginManager)
 

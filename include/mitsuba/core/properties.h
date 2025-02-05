@@ -222,23 +222,6 @@ public:  // Type-specific getters and setters ----------------------------------
     /// Store a tensor handle in the Properties instance
     void set_tensor_handle(const char *name, const TensorHandle &value, bool error_duplicates = true);
 
-#if 0
-    /// Store an animated transformation in the Properties instance
-    void set_animated_transform(const char *name, ref<AnimatedTransform> value,
-                                bool error_duplicates = true);
-    /// Store a (constant) animated transformation in the Properties instance
-    void set_animated_transform(const char *name, const Transform4f &value,
-                                bool error_duplicates = true);
-    /// Retrieve an animated transformation
-    ref<AnimatedTransform> animated_transform(const char *name) const;
-    /// Retrieve an animated transformation (use default value if no entry exists)
-    ref<AnimatedTransform> animated_transform(
-            const std::string &name, ref<AnimatedTransform> def_val) const;
-    /// Retrieve an animated transformation (default value is a constant transform)
-    ref<AnimatedTransform> animated_transform(const char *name,
-                                              const Transform<Point4f> &def_val) const;
-#endif
-
     /// Store an arbitrary object in the Properties instance
     void set_object(const char *name, const ref<Object> &value, bool error_duplicates = true);
     /// Retrieve an arbitrary object
@@ -270,6 +253,7 @@ public:  // Type-specific getters and setters ----------------------------------
         } else if (p_type == Properties::Type::Float) {
             Properties props("uniform");
             props.set_float("value", get<Float>(name));
+
             return (Texture *) PluginManager::instance()->create_object<Texture>(props).get();
         } else {
             Throw("The property \"%s\" has the wrong type (expected "
