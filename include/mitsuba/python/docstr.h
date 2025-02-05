@@ -7832,6 +7832,8 @@ static const char *__doc_mitsuba_Shape_parameters_grad_enabled =
 R"doc(Return whether any shape's parameters that introduce visibility
 discontinuities require gradients (default return false))doc";
 
+static const char *__doc_mitsuba_Shape_set_bsdf = R"doc(Set the shape's BSDF)doc";
+
 static const char *__doc_mitsuba_Shape_pdf_direction =
 R"doc(Query the probability density of sample_direction()
 
@@ -12513,4 +12515,3 @@ static const char *__doc_operator_lshift = R"doc(Turns a vector of elements into
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif
-

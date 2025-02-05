@@ -301,6 +301,7 @@ MI_PY_EXPORT(Shape) {
         .def_method(Shape, id)
         .def_method(Shape, is_mesh)
         .def_method(Shape, parameters_grad_enabled)
+        .def_method(Shape, set_bsdf, "bsdf"_a.none())
         .def_method(Shape, primitive_count)
         .def_method(Shape, effective_primitive_count)
         .def_method(Shape, precompute_silhouette, "viewpoint"_a);

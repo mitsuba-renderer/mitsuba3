@@ -800,6 +800,9 @@ public:
     /// Return the shape's BSDF
     BSDF *bsdf(Mask /*unused*/ = true) { return m_bsdf.get(); }
 
+    /// Set the shape's BSDF
+    virtual void set_bsdf(BSDF *bsdf);
+
     /// Is this shape also an area emitter?
     bool is_emitter() const { return (bool) m_emitter; }
 
