@@ -730,6 +730,13 @@ struct PreliminaryIntersection {
             ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
 
             ShapePtr target = dr::select(instance == nullptr, shape, instance);
+            //ShapePtr target = shape;
+            //UInt32 target_uint = dr::reinterpret_array<UInt32>(target);
+            //target_uint = dr::select(active, target_uint, 0);
+            //dr::eval(target_uint);
+            //std::cout << "Max shape ID: " << dr::max(target_uint) << std::endl;
+            //std::cout << "Min shape ID: " << dr::min(target_uint) << std::endl;;
+            //std::cout << "shape ID: " << target_uint << std::endl;;
             SurfaceInteraction3f si =
                 target->compute_surface_interaction(ray, *this, ray_flags, 0u, active);
             si.finalize_surface_interaction(*this, ray, ray_flags, active);

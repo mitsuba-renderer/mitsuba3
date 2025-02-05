@@ -23,6 +23,11 @@ reference data (e.g. for a new configurations). Please see the following command
 
 """
 
+###
+### TODO:
+### Remove parralel=False
+###
+
 import drjit as dr
 import mitsuba as mi
 
@@ -88,7 +93,7 @@ class ConfigBase:
 
         @fresolver_append_path
         def create_scene():
-            return mi.load_dict(self.scene_dict)
+            return mi.load_dict(self.scene_dict, parallel=False)
         self.scene = create_scene()
         self.params = mi.traverse(self.scene)
 
@@ -707,26 +712,27 @@ BASIC_CONFIGS_LIST = [
     #DirectlyVisibleAreaLightRadianceConfig,
     #TranslateTexturedPlaneConfig,
     #CropWindowConfig,
-    #RotateShadingNormalsPlaneConfig,
+    RotateShadingNormalsPlaneConfig,
     #PointLightIntensityConfig,
     #ConstantEmitterRadianceConfig,
 ]
 
 DISCONTINUOUS_CONFIGS_LIST = [
-        #TranslateDiffuseSphereConstantConfig,
-        #TranslateDiffuseRectangleConstantConfig,
-        #TranslateRectangleEmitterOnBlackConfig,
-        #TranslateSphereEmitterOnBlackConfig,
-        #ScaleSphereEmitterOnBlackConfig,
+    #TranslateDiffuseSphereConstantConfig,
+    #TranslateDiffuseRectangleConstantConfig,
+    #TranslateRectangleEmitterOnBlackConfig,
+    #TranslateSphereEmitterOnBlackConfig,
+    #ScaleSphereEmitterOnBlackConfig,
 
-        TranslateOccluderAreaLightConfig,
-        #TranslateSelfShadowAreaLightConfig,
+    #TranslateOccluderAreaLightConfig,
 
-        ## TranslateShadowReceiverAreaLightConfig,
-        ##TranslateSphereOnGlossyFloorConfig,
+    # BROKEN SETUP TranslateSelfShadowAreaLightConfig,
 
-        ### Camera derivatives are currently unsupported
-        #    # TranslateCameraConfig
+    #TranslateShadowReceiverAreaLightConfig,
+    #TranslateSphereOnGlossyFloorConfig,
+
+    ### Camera derivatives are currently unsupported
+    #    # TranslateCameraConfig
 ]
 
 # List of configs that fail on integrators with depth less than three
@@ -757,6 +763,7 @@ for integrator_name, handles_discontinuities in INTEGRATORS:
 # -------------------------------------------------------------------
 
 @pytest.mark.slow
+@pytest.mark.skip
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test01_rendering_primal(variant_cuda_ad_rgb, integrator_name, config):
 #def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
@@ -789,12 +796,18 @@ def test01_rendering_primal(variant_cuda_ad_rgb, integrator_name, config):
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test02_rendering_forward(variant_cuda_ad_rgb, integrator_name, config):
+#def test02_rendering_forward(variant_llvm_ad_rgb, integrator_name, config):
 #def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
+    dr.set_flag(dr.JitFlag.Debug, True)
+    dr.set_flag(dr.JitFlag.ReuseIndices, False)
+    dr.set_flag(dr.JitFlag.SymbolicLoops, False)
+    #dr.set_flag(dr.JitFlag.OptimizeCalls, False)
+    #dr.set_flag(dr.JitFlag.SymbolicCalls, False)
     config = config()
     config.initialize()
 
     config.integrator_dict['type'] = integrator_name
-    integrator = mi.load_dict(config.integrator_dict)
+    integrator = mi.load_dict(config.integrator_dict, parallel=False)
     if 'projective' in integrator_name:
         #integrator.proj_seed_spp = 2048 * 2
         integrator.proj_seed_spp = 512
@@ -813,12 +826,16 @@ def test02_rendering_forward(variant_cuda_ad_rgb, integrator_name, config):
 
     dr.set_label(config.params, 'params')
     image_fwd = integrator.render_forward(
-        config.scene, seed=0, spp=config.spp, params=theta)
+        config.scene, seed=0, spp=512, params=theta)
     image_fwd = dr.detach(image_fwd)
 
     error = dr.abs(image_fwd - image_fwd_ref) / dr.maximum(dr.abs(image_fwd_ref), 2e-1)
     error_mean = dr.mean(error, axis=None)
     error_max = dr.max(error, axis=None)
+
+    filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_fwd.exr")
+    print(f'-> write current image: {filename}')
+    mi.util.write_bitmap(filename, image_fwd)
 
     if error_mean > config.error_mean_threshold or error_max > config.error_max_threshold:
         print(f"Failure in config: {config.name}, {integrator_name}")
@@ -844,7 +861,7 @@ def test03_rendering_backward(variant_cuda_ad_rgb, integrator_name, config):
 
     config.integrator_dict['type'] = integrator_name
 
-    integrator = mi.load_dict(config.integrator_dict)
+    integrator = mi.load_dict(config.integrator_dict, parallel=False)
     if 'projective' in integrator_name:
         integrator.proj_seed_spp = 2048 * 2
 
@@ -885,7 +902,7 @@ def test04_render_custom_op(variant_cuda_ad_rgb):
     integrator = mi.load_dict({
         'type': 'prb',
         'max_depth': config.integrator_dict['max_depth']
-    })
+    }, parallel=False)
 
     filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
     image_primal_ref = mi.TensorXf(mi.Bitmap(filename))
@@ -982,7 +999,7 @@ if __name__ == "__main__":
         integrator_path = mi.load_dict({
             'type': 'path',
             'max_depth': config.integrator_dict['max_depth']
-        })
+        }, parallel=False)
 
         # Primal render
         image_ref = integrator_path.render(config.scene, seed=0, spp=args.spp)

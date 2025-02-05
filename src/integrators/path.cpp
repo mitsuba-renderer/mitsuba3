@@ -162,10 +162,20 @@ public:
             /* dr::while_loop implicitly masks all code in the loop using the
                'active' flag, so there is no need to pass it to every function */
 
+            //std::cout << "Before" << std::endl;
+            //std::cout << "depth: " << ls.depth << std::endl;
+            std::cout << "ls.active: " << ls.active << std::endl;
+            if constexpr(drjit::is_jit_v<Float>) {
+                std::cout << "ls.active.index(): " << ls.active.index() << std::endl;
+            }
+
             SurfaceInteraction3f si =
                 scene->ray_intersect(ls.ray,
                                      /* ray_flags = */ +RayFlags::All,
-                                     /* coherent = */ ls.depth == 0u);
+                                     /* coherent = */ ls.depth == 0u
+                        );
+                                     //,/* active = */ ls.active);
+            //std::cout << "After" << std::endl;
 
             // ---------------------- Direct emission ----------------------
 
