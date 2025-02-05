@@ -114,8 +114,7 @@ def test03_invalid_attribute(variant_scalar_rgb):
         "name" : "vertex_colorr",
     })
 
-    si =  mesh.eval_parameterization([0, 0])
+    si = mesh.eval_parameterization([0, 0])
 
-    with pytest.raises(Exception) as e:
+    with pytest.raises(Exception, match="Invalid attribute requested"):
         texture.eval(si)
-    e.match("Invalid attribute requested")

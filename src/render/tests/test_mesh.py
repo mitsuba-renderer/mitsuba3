@@ -222,7 +222,7 @@ def test07_ply_stored_attribute(variant_scalar_rgb):
 ]"""
 
 
-def test08_mesh_add_attribute(variant_scalar_rgb):
+def test08_mesh_manage_attributes(variant_scalar_rgb):
     m = mi.Mesh("MyMesh", 3, 2)
 
     params = mi.traverse(m)
@@ -247,6 +247,12 @@ def test08_mesh_add_attribute(variant_scalar_rgb):
     vertex_color: 3 floats
   ]
 ]"""
+
+    with pytest.raises(Exception, match='Attribute "vertex_wrong" not found.'):
+        m.remove_attribute("vertex_wrong")
+
+    m.remove_attribute("vertex_color")
+    assert not m.has_attribute("vertex_color")
 
 
 @fresolver_append_path
@@ -959,21 +965,54 @@ def test23_texture_attributes(variants_all_rgb):
         "type": "bitmap",
         "filename" : "resources/data/common/textures/flower.bmp",
     })
-
-    mesh = mi.load_dict({
-        "type" : "obj",
-        "id" : "rect",
-        "filename" : "resources/data/common/meshes/rectangle.obj",
-        "attribute_1": texture
+    texture2 = mi.load_dict({
+        "type": "bitmap",
+        "filter_type": "nearest",
+        "data" : dr.full(mi.TensorXf, 0.3, [1, 1, 3])
     })
 
-    assert dr.all(mesh.has_attribute('attribute_1'))
-    assert not dr.any(mesh.has_attribute('foo'))
+    # Texture attributes are supported by shapes in general, not only meshes.
+    shapes = [
+        mi.load_dict({
+            "type" : "obj",
+            "filename" : "resources/data/common/meshes/rectangle.obj",
+            "attribute_1": texture
+        }),
+        mi.load_dict({
+            "type" : "sphere",
+            "attribute_1": texture
+        }),
+    ]
 
-    si = mi.SurfaceInteraction3f()
-    si.uv = mi.Point2f(0.5)
+    for shape in shapes:
+        # --- Texture attribute registered at creation
+        assert dr.all(shape.has_attribute('attribute_1'))
+        assert not dr.any(shape.has_attribute('foo'))
 
-    assert dr.allclose(mesh.eval_attribute('attribute_1', si), texture.eval(si))
+        si = mi.SurfaceInteraction3f()
+        si.uv = mi.Point2f(0.5)
+        assert dr.allclose(shape.eval_attribute('attribute_1', si), texture.eval(si))
+
+        # --- Texture attribute registered later
+        shape.add_texture_attribute('attribute_2', texture2)
+        assert dr.all(shape.has_attribute('attribute_2'))
+
+        # --- Texture attribute replacement
+        shape.add_texture_attribute('attribute_2', texture)
+        assert shape.texture_attribute('attribute_2') == texture
+        shape.add_texture_attribute('attribute_2', texture2)
+
+        # --- Texture attribute deletion
+        shape.remove_attribute('attribute_1')
+        assert not dr.any(shape.has_attribute('attribute_1'))
+        with pytest.raises(RuntimeError, match='Attribute "attribute_1" not found'):
+            shape.remove_attribute('attribute_1')
+
+        # --- Constant-valued texture attribute
+        for p in (0.0, 1.0):
+            si.uv = mi.Point2f(p)
+            assert dr.allclose(shape.eval_attribute_3('attribute_2', si), mi.Color3f(0.3))
+
 
 
 @fresolver_append_path
