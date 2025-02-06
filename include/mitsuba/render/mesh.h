@@ -17,8 +17,8 @@ template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Mesh : public Shape<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(BSDF)
-    MI_IMPORT_BASE(Shape, set_bsdf, m_to_world, mark_dirty, m_emitter, m_sensor,
-                   m_bsdf, m_interior_medium, m_exterior_medium, m_is_instance,
+    MI_IMPORT_BASE(Shape, m_to_world, mark_dirty, m_emitter, m_sensor, m_bsdf,
+                   m_interior_medium, m_exterior_medium, m_is_instance,
                    m_discontinuity_types, m_shape_type, m_initialized)
 
     // Mesh is always stored in single precision
