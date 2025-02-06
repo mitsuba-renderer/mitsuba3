@@ -345,9 +345,7 @@ class PathProjectiveIntegrator(PSIntegrator):
                     # Differentiable version of the reflected indirect
                     # radiance. Minor optional tweak: indicate that the primal
                     # value of the second term is always 1.
-                    tmp = inv_bsdf_val_det * bsdf_val
-                    tmp_replaced = dr.replace_grad(dr.ones(mi.Float, dr.width(tmp)), tmp) #FIXME
-                    Lr_ind = L * tmp_replaced
+                    Lr_ind = L * dr.replace_grad(1, inv_bsdf_val_det * bsdf_val)
 
                     # Differentiable Monte Carlo estimate of all contributions
                     Lo = Le + Lr_dir + Lr_ind
