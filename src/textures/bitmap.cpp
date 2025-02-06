@@ -242,7 +242,7 @@ protected:
             if (format == Format::Float16)
                 return expand_bitmap<dr::replace_scalar_t<Float, dr::half>>();
             else
-               return expand_bitmap<Float>();
+                return expand_bitmap<Float>();
         }
 
         // Otherwise, initializing using tensor
