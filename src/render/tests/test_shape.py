@@ -73,9 +73,10 @@ def test03_shape_set_bsdf(variants_all_backends_once):
         shape.set_bsdf(new_bsdf)
         assert mi.has_flag(shape.bsdf().flags(), mi.BSDFFlags.DeltaReflection)
 
-    # It is allowed to set the BSDF to None
-    shapes[-1].set_bsdf(None)
-    assert shapes[-1].bsdf() is None
+    # Cannot set the BSDF to None
+    with pytest.raises(TypeError, match="incompatible function arguments"):
+        shapes[-1].set_bsdf(None)
+    assert shapes[-1].bsdf() is not None
 
     if dr.is_jit_v(mi.Float):
         shapes_ptr = scene.shapes_dr()
