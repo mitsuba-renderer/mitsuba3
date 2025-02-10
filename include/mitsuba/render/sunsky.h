@@ -1,16 +1,9 @@
 #pragma once
 
-#include <utility>
-#include <vector>
 
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/fstream.h>
-
-// Used for creating the RGB solar dataset
 #include <mitsuba/core/spectrum.h>
-
-#include <drjit/dynamic.h>
-#include <drjit/tensor.h>
 #include <drjit/sphere.h>
 
 
@@ -97,7 +90,7 @@ NAMESPACE_BEGIN(mitsuba)
      */
     template <typename Value>
     MI_INLINE Value get_area_ratio(const Value& custom_half_aperture) {
-        return (1 - dr::cos(SUN_HALF_APERTURE)) / (1 - dr::cos(custom_half_aperture));
+        return (1 - Value(dr::cos(SUN_HALF_APERTURE))) / (1 - dr::cos(custom_half_aperture));
     }
 
     /**
@@ -367,7 +360,7 @@ NAMESPACE_BEGIN(mitsuba)
             azimuth += dr::select(azimuth < 0.f, dr::TwoPi<Float>, 0.f);
 
             // Parallax Correction
-            elevation += (EARTH_MEAN_RADIUS / ASTRONOMICAL_UNIT) * dr::sin(elevation);
+            elevation += Float(EARTH_MEAN_RADIUS / ASTRONOMICAL_UNIT) * dr::sin(elevation);
         }
 
         return dr::sphdir(elevation, azimuth - dr::Pi<Float>);
@@ -384,9 +377,9 @@ NAMESPACE_BEGIN(mitsuba)
     template <typename Value>
     MI_INLINE Value compute_cos_psi(const Value& gamma, const Value& sun_half_aperture) {
         const Value sol_rad_sin = dr::sin(sun_half_aperture),
-                    ar2 = 1 / (sol_rad_sin * sol_rad_sin),
-                    singamma = dr::sin(gamma),
-                    sc2 = 1.0 - ar2 * singamma * singamma;
+                    ar2 = 1.f / (sol_rad_sin * sol_rad_sin),
+                    sin_gamma = dr::sin(gamma),
+                    sc2 = 1.f - ar2 * sin_gamma * sin_gamma;
 
         return dr::safe_sqrt(sc2);
     }
