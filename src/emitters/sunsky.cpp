@@ -1,11 +1,10 @@
 #include <mitsuba/core/bsphere.h>
-#include <mitsuba/core/properties.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/core/quad.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/scene.h>
-
 #include <mitsuba/render/sunsky.h>
+
 
 NAMESPACE_BEGIN(mitsuba)
 
