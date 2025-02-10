@@ -15,6 +15,8 @@ SPECIAL_ALBEDO = {
     'values': '0.56, 0.21, 0.58, 0.24, 0.92, 0.42, 0.53, 0.75, 0.54, 0.20, 0.46'
 }
 
+sunsky_ref_folder = "resources/data/tests/sunsky"
+
 def make_emitter_hour(turb, hour, albedo, sky_scale, sun_scale):
     return mi.load_dict({
         "type": "sunsky",
@@ -120,7 +122,7 @@ def generate_and_compare(render_params, ref_path, rtol):
 def test01_sky_radiance_rgb(variants_vec_rgb, render_params):
     hour, turb, albedo = render_params
 
-    ref_path = f"resources/data/sunsky/test_data/renders/sky_rgb_hour{hour:.2f}_t{turb:.3f}_a{albedo:.3f}.exr"
+    ref_path = f"{sunsky_ref_folder}/renders/sky_rgb_hour{hour:.2f}_t{turb:.3f}_a{albedo:.3f}.exr"
     generate_and_compare(render_params, ref_path, 0.017)
 
 
@@ -134,7 +136,7 @@ def test01_sky_radiance_rgb(variants_vec_rgb, render_params):
 def test02_sky_radiance_spectral(variants_vec_spectral, render_params):
     sun_eta, turb, albedo = render_params
 
-    ref_path = f"resources/data/sunsky/test_data/renders/sky_spec_eta{sun_eta:.3f}_t{turb:.3f}_a{albedo:.3f}.exr"
+    ref_path = f"{sunsky_ref_folder}/renders/sky_spec_eta{sun_eta:.3f}_t{turb:.3f}_a{albedo:.3f}.exr"
     generate_and_compare(render_params, ref_path, 0.037)
 
 
@@ -142,12 +144,12 @@ def test02_sky_radiance_spectral(variants_vec_spectral, render_params):
 
 def test03_sky_radiance_spectral_albedo(variants_vec_spectral):
     generate_and_compare((dr.deg2rad(60), 4.2, SPECIAL_ALBEDO),
-                         "resources/data/sunsky/test_data/renders/sky_spectrum_special.exr", 0.03)
+                         f"{sunsky_ref_folder}/renders/sky_spectrum_special.exr", 0.03)
 
 
 
 def extract_spectrum(turb, eta, gamma):
-    with open(f"resources/data/sunsky/test_data/spectrum/sun_spectrum_t{turb:.1f}_eta{eta:.2f}_gamma{gamma:.3e}.spd", "r") as f:
+    with open(f"{sunsky_ref_folder}/spectrum/sun_spectrum_t{turb:.1f}_eta{eta:.2f}_gamma{gamma:.3e}.spd", "r") as f:
         return [float(line.split()[1]) for line in f.readlines()]
 
 
