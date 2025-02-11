@@ -12,7 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 .. _emitter-sunsky:
 
-Sun and Sky emitter (:monosp:`sunsky`)
+Sun and sky emitter (:monosp:`sunsky`)
 -------------------------------------------------
 
 .. pluginparameters::
@@ -23,13 +23,13 @@ Sun and Sky emitter (:monosp:`sunsky`)
      Smaller turbidity values (∼ 1 − 2) produce an arctic-like clear blue sky,
      whereas larger values (∼ 8 − 10) create an atmosphere that is more typical
      of a warm, humid day.
-   - |exposed|, |differentiable|
+   - |exposed|
 
  * - albedo
    - |spectrum|
    - Ground albedo, must be within [0, 1] for each wavelength/channel, (Default: 0.3).
      This cannot be spatially varying (e.g. have bitmap as type).
-   - |exposed|, |differentiable|
+   - |exposed|
 
  * - latitude
    - |float|
@@ -105,15 +105,14 @@ Sun and Sky emitter (:monosp:`sunsky`)
    - |exposed|
 
 This plugin implements an environment emitter for the sun and sky dome.
-It uses the Hosek-Wilkie sun [1] and sky model [2] to generate strong
-approximations of the sky-dome without the cost of path tracing the atmosphere.
-For that it uses datasets stored in "resources/data/sunsky/datasets/"
-that are pre-processed on plugin instantiation/parameter-traversal.
+It uses the Hosek-Wilkie sun :cite:`HosekSun2013` and sky model
+:cite:`HosekSky2012` to generate strong approximations of the sky-dome without
+the cost of path tracing the atmosphere.
 
 Internally, this emitter does not compute a bitmap of the sky-dome like an
 environment map, but evaluates the irradiance whenever it is needed.
 Consequently, sampling is done through a Truncated Gaussian Mixture Model
-pre-fitted to the given parameters [3].
+pre-fitted to the given parameters :cite:`vitsas2021tgmm`.
 
 Users should be aware that given certain parameters, the sun's radiance is
 ill-represented by the linear sRGB color space. Whether Mitsuba is rendering in
@@ -128,19 +127,6 @@ Specifically, the evaluated irradiance has units of power (:math:`W`) per
 unit area (:math:`m^{-2}`) per steradian (:math:`sr^{-1}`) per unit wavelength
 (:math:`nm^{-1}`). As a consequence, your scene should be modeled in meters for
 this plugin to work properly.
-
- - [1] Lukáš Hošek and Alexander Wilkie. 2013. Adding a Solar-Radiance Function to
-   the Hošek-Wilkie Skylight Model. IEEE Computer Graphics and Applications 33, 3
-   (2013), 44–52. https://doi.org/10.1109/MCG.2013.18
-
- - [2] Lukas Hosek and Alexander Wilkie. 2012. An analytic model for full spectral
-   sky-dome radiance. ACM Trans. Graph. 31, 4, Article 95 (July 2012), 9 pages.
-   https://doi.org/10.1145/2185520.2185591
-
- - [3] Nick Vitsas, Konstantinos Vardis, and Georgios Papaioannou. 2021. Sampling
-   Clear Sky Models using Truncated Gaussian Mixtures. In Eurographics Symposium
-   on Rendering - DL-only Track, Adrien Bousseau and Morgan McGuire (Eds.). The
-   Eurographics Association. https://doi.org/10.2312/sr.20211288
 
 .. tabs::
     .. code-tab:: xml
@@ -241,10 +227,10 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         Base::traverse(callback);
-        callback->put_parameter("turbidity", m_turbidity, +ParamFlags::Differentiable);
+        callback->put_parameter("turbidity", m_turbidity, +ParamFlags::NonDifferentiable);
         callback->put_parameter("sky_scale", m_sky_scale, +ParamFlags::NonDifferentiable);
         callback->put_parameter("sun_scale", m_sun_scale, +ParamFlags::NonDifferentiable);
-        callback->put_object("albedo", m_albedo.get(), +ParamFlags::Differentiable);
+        callback->put_object("albedo", m_albedo.get(), +ParamFlags::NonDifferentiable);
         if (m_active_record) {
             callback->put_parameter("latitude", m_location.latitude, +ParamFlags::NonDifferentiable);
             callback->put_parameter("longitude", m_location.longitude, +ParamFlags::NonDifferentiable);
