@@ -54,8 +54,11 @@ EMITTER_ORDERING = [
     'point',
     'constant',
     'envmap',
+    'sunsky',
     'spot',
     'projector'
+    'directional',
+    'directionalarea',
 ]
 
 SENSOR_ORDERING = [
