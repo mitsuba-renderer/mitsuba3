@@ -5744,7 +5744,11 @@
 
 .. py:data:: mitsuba.MI_VERSION
     :type: str
+<<<<<<< HEAD
     :value: 3.6.4
+=======
+    :value: 3.6.3
+>>>>>>> [Sunsky] Generate documentation
 
 .. py:data:: mitsuba.MI_VERSION_MAJOR
     :type: int
@@ -5756,7 +5760,11 @@
 
 .. py:data:: mitsuba.MI_VERSION_PATCH
     :type: int
+<<<<<<< HEAD
     :value: 4
+=======
+    :value: 3
+>>>>>>> [Sunsky] Generate documentation
 
 .. py:data:: mitsuba.MI_YEAR
     :type: str
