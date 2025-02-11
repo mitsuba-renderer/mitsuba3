@@ -32,26 +32,74 @@ class ProjectiveDetail():
         Precompute the silhouette of the scene as seen from the sensor and store
         the result in this python class.
         """
+
+        params = mi.traverse(sensor)
+        if 'child_sensors' in params:
+            self.sensors = dr.reinterpret_array(mi.SensorPtr, params['child_sensors'])
+        else:
+            self.sensors = mi.SensorPtr(sensor)
+
+        scalar_viewpoints = []
+        scalar_viewpoints_x = []
+        scalar_viewpoints_y = []
+        scalar_viewpoints_z = []
+
+        for s_i in range(len(self.sensors)):
+            viewpoint = mi.ScalarPoint3f(dr.slice(self.sensors[s_i].world_transform() @ mi.Point3f(0)))
+            scalar_viewpoints.append(viewpoint)
+            scalar_viewpoints_x.append(viewpoint[0])
+            scalar_viewpoints_y.append(viewpoint[1])
+            scalar_viewpoints_z.append(viewpoint[2])
+
+
+        self.viewpoints = mi.Point3f(
+            scalar_viewpoints_x, 
+            scalar_viewpoints_y, 
+            scalar_viewpoints_z)
+
         self.primary_indices = []
         self.primary_distributions = []
+        self.primary_sensor_indices = []
 
         silhouette_shapes = scene.silhouette_shapes()
-        viewpoint = mi.ScalarPoint3f(dr.slice(sensor.world_transform() @ mi.Point3f(0)))
         shapes_weight = []
 
         for i in range(len(silhouette_shapes)):
-            indices, weights = silhouette_shapes[i].precompute_silhouette(viewpoint)
+            vp_shape_data = []
+
+            for s_i in range(len(self.sensors)):
+                vp_i, vp_w = silhouette_shapes[i].\
+                    precompute_silhouette(scalar_viewpoints[s_i])
+                vp_shape_data.append((vp_i, vp_w))
+
+            num_shape_indices = 0
+            for vp_i, vp_w in vp_shape_data:
+                num_shape_indices += len(vp_i)
+
+            indices = dr.empty(mi.UInt32, num_shape_indices)
+            weights = dr.empty(mi.Float, num_shape_indices)
+            sensor_indices = dr.empty(mi.UInt32, num_shape_indices)
+
+            offset = mi.UInt32(0)
+            for s_i in range(len(self.sensors)):
+                vp_i, vp_w = vp_shape_data[s_i]
+                idx = dr.arange(mi.UInt32, len(vp_i)) + offset
+                dr.scatter(indices, vp_i, idx, mode=dr.ReduceMode.Permute)
+                dr.scatter(weights, vp_w, idx, mode=dr.ReduceMode.Permute)
+                dr.scatter(sensor_indices, s_i, idx, mode=dr.ReduceMode.Permute)
+                offset += len(vp_i)
 
             self.primary_indices.append(indices)
             shapes_weight.append(silhouette_shapes[i].silhouette_sampling_weight())
+            self.primary_sensor_indices.append(sensor_indices)
             self.primary_distributions.append(mi.DiscreteDistribution(weights))
+
 
         shapes_weight = mi.Float(shapes_weight)
         self.primary_shape_distribution = mi.DiscreteDistribution(shapes_weight)
 
     def sample_primarily_visible_silhouette(self,
                                             scene: mi.Scene,
-                                            viewpoint: mi.Point3f,
                                             sample2: mi.Point2f,
                                             active: mi.Mask) -> mi.SilhouetteSample3f:
         """
@@ -63,22 +111,31 @@ class ProjectiveDetail():
         shape_idx, sample2.x, shape_pmf = \
             self.primary_shape_distribution.sample_reuse_pmf(sample2.x, active)
 
-        def sample_precomputed_silhouette(i: int, viewpoint: mi.Point3f,
-                sample2: mi.Point2f, shape_pmf: mi.Float, active: mi.Mask):
+        def sample_precomputed_silhouette(i: int, sample2: mi.Point2f,
+            shape_pmf: mi.Float, active: mi.Mask):
+
             shape_distr = self.primary_distributions[i]
             shape_indices = self.primary_indices[i]
+            sensor_indices = self.primary_sensor_indices[i]
 
             distr_idx, silhouette_idx_pmf = shape_distr.sample_pmf(sample2.x, active)
             silhouette_idx = dr.gather(mi.UInt32, shape_indices, distr_idx, active)
+            sensor_idx = dr.gather(mi.UInt32, sensor_indices, distr_idx, active)
 
             valid = ((silhouette_idx_pmf != 0) &
                      (shape_pmf != 0) &
                      active)
 
+            sensor = dr.gather(mi.SensorPtr, self.sensors, sensor_idx, valid)
+            viewpoint = dr.gather(mi.Point3f, self.viewpoints, sensor_idx, valid)
+
             ss = silhouette_shapes[i].sample_precomputed_silhouette(
                 viewpoint, silhouette_idx, sample2.y, valid)
             ss.pdf *= silhouette_idx_pmf
             ss.pdf *= shape_pmf
+            ss.pdf *= float(len(self.sensors))
+
+            ss.sensor = dr.reinterpret_array(mi.UInt32, sensor)
 
             return ss
 
@@ -94,88 +151,106 @@ class ProjectiveDetail():
         return dr.switch(
             shape_idx,
             funcs,
-            viewpoint, sample2, shape_pmf, active
+            sample2, shape_pmf, active
         )
 
     def perspective_sensor_jacobian(self,
-                                    sensor: mi.Sensor,
                                     ss: mi.SilhouetteSample3f):
         """
         The silhouette sample `ss` stores (1) the sampling density in the scene
         space, and (2) the motion of the silhouette point in the scene space.
         This Jacobian corrects both quantities to the camera sample space.
         """
-        if not sensor.__repr__().startswith('PerspectiveCamera'):
-            raise Exception("Only perspective cameras are supported")
+        def inner_sensor_jacobian(sensor : mi.Sensor, ss: mi.SilhouetteSample3f):
+            if not sensor.__repr__().startswith('PerspectiveCamera'):
+                return mi.Float(0)
 
-        to_world = sensor.world_transform()
-        near_clip = sensor.near_clip()
-        sensor_center = to_world @ mi.Point3f(0)
-        sensor_lookat_dir = to_world @ mi.Vector3f(0, 0, 1)
-        x_fov = mi.traverse(sensor)["x_fov"][0]
-        film = sensor.film()
+            to_world = sensor.world_transform()
+            near_clip = sensor.near_clip()
+            sensor_center = to_world @ mi.Point3f(0)
+            sensor_lookat_dir = to_world @ mi.Vector3f(0, 0, 1)
+            x_fov = mi.traverse(sensor)["x_fov"][0]
+            film = sensor.film()
 
-        camera_to_sample = mi.perspective_projection(
-            film.size(),
-            film.crop_size(),
-            film.crop_offset(),
-            x_fov,
-            near_clip,
-            sensor.far_clip()
-        )
+            camera_to_sample = mi.perspective_projection(
+                film.size(),
+                film.crop_size(),
+                film.crop_offset(),
+                x_fov,
+                near_clip,
+                sensor.far_clip()
+            )
 
-        sample_to_camera = camera_to_sample.inverse()
-        p_min = sample_to_camera @ mi.Point3f(0, 0, 0)
-        multiplier = dr.square(near_clip) / dr.abs(p_min[0] * p_min[1] * 4.0)
+            sample_to_camera = camera_to_sample.inverse()
+            p_min = sample_to_camera @ mi.Point3f(0, 0, 0)
+            multiplier = dr.square(near_clip) / dr.abs(p_min[0] * p_min[1] * 4.0)
 
-        # Frame
-        frame_t = dr.normalize(sensor_center - ss.p)
-        frame_n = ss.n
-        frame_s = dr.cross(frame_t, frame_n)
+            # Frame
+            frame_t = dr.normalize(sensor_center - ss.p)
+            frame_n = ss.n
+            frame_s = dr.cross(frame_t, frame_n)
 
-        J_num = dr.norm(dr.cross(frame_n, sensor_lookat_dir)) * \
-                dr.norm(dr.cross(frame_s, sensor_lookat_dir)) * \
-                dr.abs(dr.dot(frame_s, ss.silhouette_d))
-        J_den = dr.square(dr.square(dr.dot(frame_t, sensor_lookat_dir))) * \
-                dr.squared_norm(ss.p - sensor_center)
+            J_num = dr.norm(dr.cross(frame_n, sensor_lookat_dir)) * \
+                    dr.norm(dr.cross(frame_s, sensor_lookat_dir)) * \
+                    dr.abs(dr.dot(frame_s, ss.silhouette_d))
+            J_den = dr.square(dr.square(dr.dot(frame_t, sensor_lookat_dir))) * \
+                    dr.squared_norm(ss.p - sensor_center)
 
-        return J_num / J_den * multiplier
+            return J_num / J_den * multiplier
+
+        return dr.dispatch(
+            dr.reinterpret_array(mi.SensorPtr, ss.sensor),
+            inner_sensor_jacobian,
+            ss)
 
     def eval_primary_silhouette_radiance_difference(self,
                                                     scene,
                                                     sampler,
                                                     ss,
-                                                    sensor,
                                                     active=True) -> mi.Float:
         """
         Compute the difference in radiance between two rays that hit and miss a
         silhouette point ``ss.p`` viewed from ``viewpoint``.
         """
-        if not sensor.__repr__().startswith('PerspectiveCamera'):
-            raise Exception("Only perspective cameras are supported")
+        def inner_check_visibility(sensor: mi.Sensor,
+            ss: mi.SilhouetteSample3f,
+            scene,
+            active):
 
-        with dr.suspend_grad():
-            to_world = sensor.world_transform()
-            sensor_center = to_world @ mi.Point3f(0)
+            if not sensor.__repr__().startswith('PerspectiveCamera'):
+                return mi.Bool(False)
 
-            # Is the boundary point visible or is occluded ?
-            ss_invert = mi.SilhouetteSample3f(ss)
-            ss_invert.d = -ss_invert.d
-            ray_test = ss_invert.spawn_ray()
+            with dr.suspend_grad():
+                to_world = sensor.world_transform()
+                sensor_center = to_world @ mi.Point3f(0)
 
-            dist = dr.norm(sensor_center - ray_test.o)
-            ray_test.maxt = dist * (1 - mi.math.ShadowEpsilon)
-            visible = ~scene.ray_test(ray_test, active) & active
+                # Is the boundary point visible or is occluded ?
+                ss_invert = mi.SilhouetteSample3f(ss)
+                ss_invert.d = -ss_invert.d
+                ray_test = ss_invert.spawn_ray()
 
-            # Is the boundary point within the view frustum ?
-            it = dr.zeros(mi.Interaction3f)
-            it.p = ss.p
-            ds, _ = sensor.sample_direction(it, mi.Point2f(0), active)
-            visible &= ds.pdf != 0
+                dist = dr.norm(sensor_center - ray_test.o)
+                ray_test.maxt = dist * (1 - mi.math.ShadowEpsilon)
+                visible = ~scene.ray_test(ray_test, active) & active
 
-            # Estimate the radiance difference along that path
-            radiance_diff, _ = self.parent.sample_radiance_difference(
-                scene, ss, 0, sampler, visible)
+                # Is the boundary point within the view frustum ?
+                it = dr.zeros(mi.Interaction3f)
+                it.p = ss.p
+                ds, _ = sensor.sample_direction(it, mi.Point2f(0), active)
+                visible &= ds.pdf != 0
+
+            return visible
+
+        visible = dr.dispatch(
+            dr.reinterpret_array(mi.SensorPtr, ss.sensor),
+            inner_check_visibility,
+            ss,
+            scene,
+            active)
+
+        # Estimate the radiance difference along that path
+        radiance_diff, _ = self.parent.sample_radiance_difference(
+            scene, ss, 0, sampler, visible)
 
         return radiance_diff
 

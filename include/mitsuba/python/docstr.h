@@ -8171,6 +8171,8 @@ static const char *__doc_mitsuba_SilhouetteSample_scene_index = R"doc(Index of t
 
 static const char *__doc_mitsuba_SilhouetteSample_shape = R"doc(Pointer to the associated shape)doc";
 
+static const char *__doc_mitsuba_SilhouetteSample_sensor = R"doc(Pointer to the associated sensor)doc";
+
 static const char *__doc_mitsuba_SilhouetteSample_silhouette_d = R"doc(Direction of the silhouette curve at the boundary point)doc";
 
 static const char *__doc_mitsuba_SilhouetteSample_spawn_ray =

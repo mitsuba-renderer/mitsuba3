@@ -1090,19 +1090,16 @@ class PSIntegrator(ADIntegrator):
 
         # Explicit sampling to handle the primarily visible discontinuous derivative
         with dr.suspend_grad():
-            # Get the viewpoint
-            sensor_center = sensor.world_transform() @ mi.Point3f(0)
-
             # Sample silhouette point
             ss = self.proj_detail.sample_primarily_visible_silhouette(
-                scene, sensor_center, sampler.next_2d(), True)
+                scene, sampler.next_2d(), True)
             active = ss.is_valid() & (ss.pdf > 0)
 
             # Jacobian (motion correction included)
-            J = self.proj_detail.perspective_sensor_jacobian(sensor, ss)
+            J = self.proj_detail.perspective_sensor_jacobian(ss)
 
             ΔL = self.proj_detail.eval_primary_silhouette_radiance_difference(
-                scene, sampler, ss, sensor, active=active)
+                scene, sampler, ss, active=active)
             active &= dr.any(ΔL != 0)
 
         # ∂z/∂ⲡ * normal
@@ -1116,18 +1113,32 @@ class PSIntegrator(ADIntegrator):
         # Compute the derivative
         derivative = ΔL * motion * dr.rcp(ss.pdf) * J
 
+        ss_sensor = dr.reinterpret_array(mi.SensorPtr, ss.sensor)
+
         # Prepare a new imageblock and compute splatting coordinates
         film.prepare(aovs)
         with dr.suspend_grad():
             it = dr.zeros(mi.Interaction3f)
             it.p = ss.p
-            sensor_ds, _ = sensor.sample_direction(it, mi.Point2f(0))
+            sensor_ds, _ = ss_sensor.sample_direction(it, mi.Point2f(0))
+
+        params = mi.traverse(sensor)
+        if 'child_sensors' in params:
+            sensors = dr.reinterpret_array(mi.SensorPtr, params['child_sensors'])
+        else:
+            sensors = mi.SensorPtr(sensor)
+
+        uv_offset_x = mi.Float(0)
+
+        for i in range(len(sensors)):
+            uv_offset_x += dr.select(ss_sensor == sensors[i],
+                i * sensors[i].film().size().x, 0)
 
         # Particle tracer style imageblock to accumulate primarily visible derivatives
         block = film.create_block(normalize=True)
         block.set_coalesce(block.coalesce() and spp >= 4)
         block.put(
-            pos=sensor_ds.uv,
+            pos=sensor_ds.uv + mi.Point2f(uv_offset_x, 0),
             wavelengths=[],
             value=derivative * dr.rcp(mi.ScalarFloat(spp)),
             weight=0,

@@ -125,6 +125,8 @@ public:
 
         m_sensors_dr = dr::load<DynamicBuffer<SensorPtr>>(m_sensors.data(),
                                                           m_sensors.size());
+        if constexpr (dr::is_jit_v<UInt32>)
+            m_sensors_dr_uint = dr::reinterpret_array<UInt32>(m_sensors_dr);
     }
 
     virtual std::pair<Ray3f, Spectrum>
@@ -277,12 +279,15 @@ public:
                 id = "sensor" + std::to_string(i);
             callback->put_object(id, m_sensors.at(i).get(), +ParamFlags::NonDifferentiable);
         }
+
+        callback->put_parameter("child_sensors", m_sensors_dr_uint, +ParamFlags::NonDifferentiable);
     }
 
     MI_DECLARE_CLASS()
 private:
     std::vector<ref<Base>> m_sensors;
     DynamicBuffer<SensorPtr> m_sensors_dr;
+    DynamicBuffer<UInt32> m_sensors_dr_uint;
     mutable UInt32 m_last_index;
 };
 

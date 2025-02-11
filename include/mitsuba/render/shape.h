@@ -156,6 +156,9 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
     /// Pointer to the associated shape
     ShapePtr shape = nullptr;
 
+    /// Pointer to the associated sensor
+    UInt32 sensor;
+
     /**
      * \brief Local-form boundary foreshortening term.
      *
@@ -181,7 +184,8 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
     SilhouetteSample(const PositionSample<Float, Spectrum> &ps)
         : Base(ps), discontinuity_type((uint32_t) DiscontinuityFlags::Empty),
           d(0), silhouette_d(0), prim_index(0), scene_index(0), flags(0),
-          projection_index(0), shape(nullptr), foreshortening(0), offset(0) {}
+          projection_index(0), shape(nullptr), sensor(0), 
+          foreshortening(0), offset(0) {}
 
     /// Is the current boundary segment valid=
     Mask is_valid() const {
@@ -208,7 +212,7 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
 
     DRJIT_STRUCT(SilhouetteSample, p, n, uv, time, pdf, delta,
                  discontinuity_type, d, silhouette_d, prim_index, scene_index,
-                 flags, projection_index, shape, foreshortening, offset)
+                 flags, projection_index, shape, sensor, foreshortening, offset)
 };
 
 /**
