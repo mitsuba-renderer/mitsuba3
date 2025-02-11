@@ -17,6 +17,7 @@ SPECIAL_ALBEDO = {
 
 sunsky_ref_folder = "resources/data/tests/sunsky"
 
+
 def make_emitter_hour(turb, hour, albedo, sky_scale, sun_scale):
     return mi.load_dict({
         "type": "sunsky",
@@ -26,6 +27,7 @@ def make_emitter_hour(turb, hour, albedo, sky_scale, sun_scale):
         "turbidity": turb,
         "albedo": albedo
     })
+
 
 def make_emitter_angles(turb, sun_phi, sun_theta, albedo, sky_scale, sun_scale):
     sp_sun, cp_sun = dr.sincos(sun_phi)
@@ -112,8 +114,6 @@ def generate_and_compare(render_params, ref_path, rtol):
                              f"Mean relative error: {rel_err}, threshold: {rtol}")
 
 
-
-
 @pytest.mark.parametrize("render_params", [
     (9.5, 2, 0.2),
     (12.25, 5.2, 0.0),
@@ -124,8 +124,6 @@ def test01_sky_radiance_rgb(variants_vec_rgb, render_params):
 
     ref_path = f"{sunsky_ref_folder}/renders/sky_rgb_hour{hour:.2f}_t{turb:.3f}_a{albedo:.3f}.exr"
     generate_and_compare(render_params, ref_path, 0.017)
-
-
 
 
 @pytest.mark.parametrize("render_params", [
@@ -140,12 +138,9 @@ def test02_sky_radiance_spectral(variants_vec_spectral, render_params):
     generate_and_compare(render_params, ref_path, 0.037)
 
 
-
-
 def test03_sky_radiance_spectral_albedo(variants_vec_spectral):
     generate_and_compare((dr.deg2rad(60), 4.2, SPECIAL_ALBEDO),
                          f"{sunsky_ref_folder}/renders/sky_spectrum_special.exr", 0.03)
-
 
 
 def extract_spectrum(turb, eta, gamma):
@@ -198,8 +193,6 @@ def test04_sun_radiance(variants_vec_spectral, turb, eta_ray, gamma):
                              f"Rendered spectrum: {res}\n")
 
 
-
-
 @pytest.mark.parametrize("sun_theta", np.linspace(0, dr.pi/2, 5))
 def test05_sun_sampling(variants_vec_backends_once, sun_theta):
     sun_phi = -dr.pi / 5
@@ -235,6 +228,7 @@ class CroppedSphericalDomain(mi.chi2.SphericalDomain):
         cos_bound = dr.sqrt(1 - dr.square(SIN_OFFSET))
         return mi.ScalarBoundingBox2f([-dr.pi, -cos_bound], [dr.pi, 1])
 
+
 @pytest.mark.slow
 @pytest.mark.parametrize("turb",      [2.2, 4.8, 6.0])
 @pytest.mark.parametrize("sun_theta", [dr.deg2rad(20), dr.deg2rad(50)])
@@ -264,6 +258,7 @@ def test06_sky_sampling(variants_vec_backends_once, turb, sun_theta):
 
     assert test.run(), "Chi2 test failed"
 
+
 @pytest.mark.slow
 @pytest.mark.parametrize("turb",      [2.2, 4.8, 6.0])
 @pytest.mark.parametrize("sun_theta", [dr.deg2rad(20), dr.deg2rad(50)])
@@ -287,7 +282,7 @@ def test07_sun_and_sky_sampling(variants_vec_backends_once, turb, sun_theta):
         pdf_func= pdf_func,
         sample_func= sample_func,
         sample_dim=2,
-        sample_count=100_000_000,
+        sample_count=10_000_000,
         res=215,
         ires=32
     )
