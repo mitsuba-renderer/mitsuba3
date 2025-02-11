@@ -2110,6 +2110,34 @@ static const char *__doc_mitsuba_ContinuousDistribution_size = R"doc(Return the 
 
 static const char *__doc_mitsuba_ContinuousDistribution_update = R"doc(Update the internal state. Must be invoked when changing the pdf.)doc";
 
+static const char *__doc_mitsuba_Dataset = R"doc()doc";
+
+static const char *__doc_mitsuba_Dataset_SkyParams = R"doc()doc";
+
+static const char *__doc_mitsuba_Dataset_SkyRadiance = R"doc()doc";
+
+static const char *__doc_mitsuba_Dataset_SunLimbDarkening = R"doc()doc";
+
+static const char *__doc_mitsuba_Dataset_SunRadiance = R"doc()doc";
+
+static const char *__doc_mitsuba_Dataset_TGMMTables = R"doc()doc";
+
+static const char *__doc_mitsuba_DateTimeRecord = R"doc()doc";
+
+static const char *__doc_mitsuba_DateTimeRecord_day = R"doc()doc";
+
+static const char *__doc_mitsuba_DateTimeRecord_hour = R"doc()doc";
+
+static const char *__doc_mitsuba_DateTimeRecord_minute = R"doc()doc";
+
+static const char *__doc_mitsuba_DateTimeRecord_month = R"doc()doc";
+
+static const char *__doc_mitsuba_DateTimeRecord_second = R"doc()doc";
+
+static const char *__doc_mitsuba_DateTimeRecord_to_string = R"doc()doc";
+
+static const char *__doc_mitsuba_DateTimeRecord_year = R"doc()doc";
+
 static const char *__doc_mitsuba_DefaultFormatter =
 R"doc(The default formatter used to turn log messages into a human-readable
 form)doc";
@@ -4145,6 +4173,16 @@ processor supports all instruction sets which were selected at compile
 time. If not, the application is terminated via ``abort()``.)doc";
 
 static const char *__doc_mitsuba_Jit_static_shutdown = R"doc(Release all memory used by JIT-compiled routines)doc";
+
+static const char *__doc_mitsuba_LocationRecord = R"doc()doc";
+
+static const char *__doc_mitsuba_LocationRecord_latitude = R"doc()doc";
+
+static const char *__doc_mitsuba_LocationRecord_longitude = R"doc()doc";
+
+static const char *__doc_mitsuba_LocationRecord_timezone = R"doc()doc";
+
+static const char *__doc_mitsuba_LocationRecord_to_string = R"doc()doc";
 
 static const char *__doc_mitsuba_LogLevel = R"doc(Available Log message types)doc";
 
@@ -10319,6 +10357,27 @@ Out-of-bounds regions are safely ignored. It is assumed that ``source
 The function supports `T` being a raw pointer or an arbitrary Dr.Jit
 array that can potentially live on the GPU and/or be differentiable.)doc";
 
+static const char *__doc_mitsuba_bezier_interpolate =
+R"doc(Interpolates the dataset along a quintic bezier curve
+
+Parameter ``dataset``:
+    Dataset to interpolate using a degree 5 bezier curve
+
+Parameter ``out_size``:
+    Size of the data to interpolate
+
+Parameter ``offset``:
+    Offset to apply to the indices
+
+Parameter ``x``:
+    Interpolation factor
+
+Parameter ``active``:
+    Indicates if the offsets are valid
+
+Returns:
+    Interpolated data)doc";
+
 static const char *__doc_mitsuba_bsdf =
 R"doc(Returns the BSDF of the intersected shape.
 
@@ -10335,6 +10394,27 @@ shapes.
 Two different GAS will be created for the meshes and the custom
 shapes. Optix handles to those GAS will be stored in an
 OptixAccelData.)doc";
+
+static const char *__doc_mitsuba_build_tgmm_distribution =
+R"doc(Extracts the Gaussian Mixture Model parameters from the TGMM dataset
+The 4 * (5 gaussians) cannot be interpolated directly, so we need to
+combine them and adjust the weights based on the elevation and
+turbidity linear interpolation parameters.
+
+Template parameter ``dataset_size``:
+    Size of the TGMM dataset
+
+Parameter ``tgmm_tables``:
+    Dataset for the Gaussian Mixture Models
+
+Parameter ``turbidity``:
+    Turbidity used for the skylight model
+
+Parameter ``eta``:
+    Elevation of the sun
+
+Returns:
+    The new distribution parameters and the mixture weights)doc";
 
 static const char *__doc_mitsuba_cie1931_xyz =
 R"doc(Evaluate the CIE 1931 XYZ color matching functions given a wavelength
@@ -10891,6 +10971,43 @@ eta_ti Reciprocal of the relative index of refraction in the direction
 of travel. In the real-valued case, this also happens to be equal to
 the scale factor that must be applied to the X and Y component of the
 refracted direction.)doc";
+
+static const char *__doc_mitsuba_from_spherical =
+R"doc(Converts a spherical unit vector to it's angles
+
+Parameter ``v``:
+    Vector to convert
+
+Returns:
+    The {phi, theta} angles)doc";
+
+static const char *__doc_mitsuba_gaussian_cdf =
+R"doc(Computes the Gaussian CDF for the given mean and standard deviation
+
+Template parameter ``Value``:
+    Type to compute on
+
+Parameter ``mu``:
+    Mean of the gaussian
+
+Parameter ``sigma``:
+    Standard deviation of the gaussian
+
+Parameter ``x``:
+    Point to evaluate
+
+Returns:
+    The Gaussian cumulative distribution function at x)doc";
+
+static const char *__doc_mitsuba_get_area_ratio =
+R"doc(Provides the ratio of the sun's original area to that of a custom
+aperture angle
+
+Parameter ``custom_half_aperture``:
+    Angle of the sun's half aperture
+
+Returns:
+    The ratio of the sun's area to the custom aperture's area)doc";
 
 static const char *__doc_mitsuba_get_shape_descr_idx = R"doc(Retrieve index of shape descriptor)doc";
 
@@ -11460,6 +11577,18 @@ matrix)doc";
 
 static const char *__doc_mitsuba_parse_fov = R"doc(Helper function to parse the field of view field of a camera)doc";
 
+static const char *__doc_mitsuba_path_to_dataset =
+R"doc(Extracts the relative path to the given dataset
+
+Template parameter ``IsRGB``:
+    Indicates if the dataset is RGB or spectral
+
+Parameter ``dataset``:
+    Dataset to retrieve the path for
+
+Returns:
+    The path to the dataset)doc";
+
 static const char *__doc_mitsuba_pdf_rgb_spectrum =
 R"doc(PDF for the sample_rgb_spectrum strategy. It is valid to call this
 function for a single wavelength (Float), a set of wavelengths
@@ -11804,6 +11933,27 @@ Returns:
     normals)doc";
 
 static const char *__doc_mitsuba_sggx_sample_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_sky_radiance_params =
+R"doc(Pre-computes the sky dataset using turbidity, albedo and sun elevation
+
+Template parameter ``dataset_size``:
+    Size of the dataset
+
+Parameter ``dataset``:
+    Dataset to interpolate
+
+Parameter ``albedo``:
+    Albedo values corresponding to each channel
+
+Parameter ``turbidity``:
+    Turbidity used for the skylight model
+
+Parameter ``eta``:
+    Sun elevation angle
+
+Returns:
+    The interpolated dataset)doc";
 
 static const char *__doc_mitsuba_sobol_2 = R"doc(Sobol' radical inverse in base 2)doc";
 
@@ -12376,6 +12526,62 @@ R"doc(Chop up the string given a set of delimiters (warning: not unicode
 compliant))doc";
 
 static const char *__doc_mitsuba_string_trim = R"doc(Remove leading and trailing characters)doc";
+
+static const char *__doc_mitsuba_sun_coordinates =
+R"doc(Compute the elevation and azimuth of the sun as seen by an observer at
+``location`` at the date and time specified in ``dateTime``.
+
+Based on "Computing the Solar Vector" by Manuel Blanco-Muriel, Diego
+C. Alarcon-Padilla, Teodoro Lopez-Moratalla, and Martin Lara-Coira, in
+"Solar energy", vol 27, number 5, 2001 by Pergamon Press.)doc";
+
+static const char *__doc_mitsuba_sun_cos_psi =
+R"doc(Computes the cosine of the angle made between the sun's radius and the
+viewing direction
+
+Template parameter ``Value``:
+    Type to compute on
+
+Parameter ``gamma``:
+    Angle between the sun's center and the viewing direction
+
+Parameter ``sun_half_aperture``:
+    Half aperture angle of the sun
+
+Returns:
+    The cosine of the angle between the sun's radius and the viewing
+    direction)doc";
+
+static const char *__doc_mitsuba_sun_params =
+R"doc(Collects and linearly interpolates the sun radiance dataset along
+turbidity
+
+Template parameter ``dataset_size``:
+    Size of the dataset
+
+Parameter ``sun_radiance_dataset``:
+    Dataset to interpolate
+
+Parameter ``turbidity``:
+    Turbidity used for the skylight model
+
+Returns:
+    The interpolated dataset)doc";
+
+static const char *__doc_mitsuba_sunsky_array_from_file =
+R"doc(Extracts an array from a compatible file
+
+Template parameter ``FileType``:
+    Type of the data stored in the file
+
+Template parameter ``OutType``:
+    The type of the data to return
+
+Parameter ``path``:
+    Path of the data file
+
+Returns:
+    The extracted array)doc";
 
 static const char *__doc_mitsuba_tuple_hasher = R"doc()doc";
 
