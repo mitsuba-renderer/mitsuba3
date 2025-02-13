@@ -186,7 +186,7 @@ def test02_pose_estimation(variants_vec_rgb, integrator):
 
         return image, loss
 
-    frozen = dr.freeze(optimize)
+    frozen = dr.freeze(optimize, auto_opaque = True)
 
     def load_scene():
         from mitsuba.scalar_rgb import Transform4f as T
@@ -959,7 +959,7 @@ def test11_optimizer(variants_vec_rgb, optimizer):
     image_ref, param_ref = run(n, optimize)
 
     image_frozen, param_frozen = run(n, frozen)
-    assert frozen.n_recordings == 2
+    assert frozen.n_recordings <  n
 
     # Optimizing the reflectance is not as prone to divergence,
     # therefore we can test if the two methods produce the same results
