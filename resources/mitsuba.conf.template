@@ -121,12 +121,12 @@
     },
 
     "llvm_ad_acoustic": {
-        "float": "dr::DiffArray<dr::LLVMArray<float>>",
+        "float": "dr::DiffArray<JitBackend::LLVM, float>",
         "spectrum": "Spectrum<Float, 1>"
     },
 
     "llvm_ad_acoustic_double": {
-        "float": "dr::DiffArray<dr::LLVMArray<double>>",
+        "float": "dr::DiffArray<JitBackend::LLVM, double>",
         "spectrum": "Spectrum<Float, 1>"
     },
 
@@ -141,12 +141,12 @@
     },
 
     "cuda_ad_acoustic": {
-        "float": "dr::DiffArray<dr::CUDAArray<float>>",
+        "float": "dr::DiffArray<JitBackend::CUDA, float>",
         "spectrum": "Spectrum<Float, 1>"
     },
 
     "cuda_ad_acoustic_double": {
-        "float": "dr::DiffArray<dr::CUDAArray<double>>",
+        "float": "dr::DiffArray<JitBackend::CUDA, double>",
         "spectrum": "Spectrum<Float, 1>"
     },
 

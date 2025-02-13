@@ -5,9 +5,9 @@ import drjit as dr
 import mitsuba as mi
 import gc
 
-from mitsuba.ad.integrators.common import RBIntegrator, _ReparamWrapper, mis_weight
+from .common import RBIntegrator, mis_weight
 
-class ADThreePointAcousticIntegrator(RBIntegrator):
+class AcousticADIntegrator(RBIntegrator):
     def __init__(self, props = mi.Properties()):
         super().__init__(props)
 
@@ -16,11 +16,11 @@ class ADThreePointAcousticIntegrator(RBIntegrator):
         if self.max_time <= 0. or self.speed_of_sound <= 0.:
             raise Exception("\"max_time\" and \"speed_of_sound\" must be set to a value greater than zero!")
 
+        self.is_detached = props.get("is_detached", True)
+
         self.skip_direct = props.get("skip_direct", False)
 
         self.track_time_derivatives = props.get("track_time_derivatives", True)
-
-        self.debug = [props.get("debug0", 1), props.get("debug1", 1), props.get("debug2", 1), props.get("debug3", 1), props.get("debug4", 1), props.get("debug5", 1), props.get("debug6", 1)]
 
         max_depth = props.get('max_depth', 6)
         if max_depth < 0 and max_depth != -1:
@@ -32,6 +32,7 @@ class ADThreePointAcousticIntegrator(RBIntegrator):
         self.rr_depth = props.get('rr_depth', self.max_depth)
         if self.rr_depth <= 0:
             raise Exception("\"rr_depth\" must be set to a value greater than zero!")
+
 
     def render(self: mi.SamplingIntegrator,
                scene: mi.Scene,
@@ -57,7 +58,7 @@ class ADThreePointAcousticIntegrator(RBIntegrator):
                 sensor=sensor,
                 seed=seed,
                 spp=spp,
-                aovs=self.aovs()
+                aovs=self.aov_names()
             )
 
             # Generate a set of rays starting at the sensor
@@ -90,9 +91,8 @@ class ADThreePointAcousticIntegrator(RBIntegrator):
         self,
         scene: mi.Scene,
         sensor: mi.Sensor,
-        sampler: mi.Sampler,
-        reparam: Callable[[mi.Ray3f, mi.UInt32, mi.Bool],
-                          Tuple[mi.Vector3f, mi.Float]] = None) -> Tuple[mi.RayDifferential3f, mi.Spectrum, mi.Vector2f, mi.Float]:
+        sampler: mi.Sampler
+    ) -> Tuple[mi.RayDifferential3f, mi.Spectrum, mi.Vector2f, mi.Float]:
 
         film = sensor.film()
         film_size = film.crop_size()
@@ -191,7 +191,8 @@ class ADThreePointAcousticIntegrator(RBIntegrator):
                ray: mi.Ray3f,
                block: mi.ImageBlock,
                active: mi.Bool,
-               **_ ) -> Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
+               **_ # Absorbs unused arguments
+    ) -> None:
 
         # Standard BSDF evaluation context for path tracing
         bsdf_ctx = mi.BSDFContext()
@@ -202,8 +203,8 @@ class ADThreePointAcousticIntegrator(RBIntegrator):
         max_distance = self.max_time * self.speed_of_sound
 
         # Copy input arguments to avoid mutating the caller's state
-        ray = mi.Ray3f(dr.detach(ray))
-        depth = mi.UInt32(0)                               # Depth of current vertex
+        ray = mi.Ray3f(ray)
+        depth = mi.UInt32(0)  # Depth of current vertex
         β = mi.Spectrum(1)                                 # Path throughput weight
         η = mi.Float(1)                                    # Index of refraction
         active = mi.Bool(active)                           # Active SIMD lanes
@@ -216,18 +217,14 @@ class ADThreePointAcousticIntegrator(RBIntegrator):
         for it in range(self.max_depth):
             active_next = mi.Bool(active)
 
-            # The first path vertex requires some special handling (see below)
-            first_vertex = dr.eq(depth, 0)
-            if it == 0:
-                si = scene.ray_intersect(dr.detach(ray),
-                                        ray_flags=mi.RayFlags.All | mi.RayFlags.FollowShape,
-                                        coherent=first_vertex)
-                weight = dr.select(si.is_valid(), sensor.sample_direction(si, [0, 0], active=si.is_valid())[1], 1)
-                β *= weight/dr.detach(weight) # could be set as well
-
-            active_next &= si.is_valid()
-
-            si.wi = dr.select(active_next, si.to_local(dr.normalize(ray.o - si.p)), si.wi)
+            # Compute a surface interaction that tracks derivatives arising
+            # from differentiable shape parameters (position, normals, etc.)
+            # In primal mode, this is just an ordinary ray tracing operation.
+            si = scene.ray_intersect(ray,
+                                        ray_flags=mi.RayFlags.All,
+                                        coherent=(depth == 0))
+            
+            τ = si.t
 
             # Get the BSDF, potentially computes texture-space differentials
             bsdf = si.bsdf(ray)
@@ -236,42 +233,30 @@ class ADThreePointAcousticIntegrator(RBIntegrator):
 
             # Hide the environment emitter if necessary
             if self.hide_emitters:
-                active_next &= ~(dr.eq(depth, 0) & ~si.is_valid())
-                
-        
+                active_next &= ~((depth == 0) & ~si.is_valid())
+
             # Compute MIS weight for emitter sample from previous bounce
             ds = mi.DirectionSample3f(scene, si=si, ref=prev_si)
-            
-            si_pdf = scene.pdf_emitter_direction(prev_si, ds, ~prev_bsdf_delta)
-            dr.disable_grad(si_pdf)
 
-            dist_squared = dr.squared_norm(si.p-ray.o)
-            dp = dr.dot(si.to_world(si.wi), si.n)
-            D = dr.select(active_next, dr.norm(dr.cross(si.dp_du, si.dp_dv)) * dp / dist_squared, 1.)
+            si_pdf = scene.pdf_emitter_direction(prev_si, ds, ~prev_bsdf_delta)
+            if self.is_detached:
+                dr.disable_grad(si_pdf)
 
             mis = mis_weight(
-                prev_bsdf_pdf*D,
-                si_pdf*D
+                prev_bsdf_pdf,
+                si_pdf
             )
 
-            # The first samples are sampled differently
-            mis = dr.select(first_vertex, 1, mis)
-
-            β *= dr.replace_grad(1, D/dr.detach(D))
-            
             # Intensity of current emitter weighted by importance (def. by prev bsdf hits)
-            Le = β * dr.detach(mis) * si.emitter(scene).eval(si, active_next)
+            Le = β * mis * ds.emitter.eval(si, active_next)
 
-            τ = dr.norm(si.p - ray.o)
-            
+            # Store (direct) intensity to the image block
+            T      = distance + τ
             active_next &= si.is_valid()
+            Le_pos = mi.Point2f(ray.wavelengths[0] - mi.Float(1.0),
+                                block.size().y * T / max_distance)
+            block.put(pos=Le_pos, values=mi.Vector2f(Le[0], 1.0), active=active_next & (Le[0] > 0))
 
-            T       = distance + τ
-
-
-            Le_pos     = mi.Point2f(ray.wavelengths.x - mi.Float(1.0), block.size().y * T     / max_distance)
-            block.put(pos=Le_pos,     values=mi.Vector2f(Le.x,     1.0), active=active_next)
-            
             # ---------------------- Emitter sampling ----------------------
 
             # Should we continue tracing to reach one more vertex?
@@ -281,80 +266,78 @@ class ADThreePointAcousticIntegrator(RBIntegrator):
             active_em = active_next & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth)
 
             # If so, randomly sample an emitter without derivative tracking.
-            ds_em, em_weight = scene.sample_emitter_direction(si, sampler.next_2d(), True, active_em)
-            em_weight *= dr.replace_grad(1, ds_em.pdf/dr.detach(ds_em.pdf))
+            with dr.suspend_grad(when=not self.is_detached):
+                ds, em_weight = scene.sample_emitter_direction(si, sampler.next_2d(), True, active_em)
 
-            active_em &= dr.neq(ds_em.pdf, 0.0)
-            
-            # We need to recompute the sample with follow shape so it is a detached uv sample
-            si_em = scene.ray_intersect(dr.detach(si.spawn_ray(ds_em.d)), 
-                                        ray_flags=mi.RayFlags.All | mi.RayFlags.FollowShape,
-                                        coherent=mi.Bool(False),
-                                        active=active_em)
+            # Retrace the ray towards the emitter because ds is directly sampled
+            # from the emitter shape instead of tracing a ray against it.
+            # This contradicts the definition of "sampling of *directions*"
+            si_em       = scene.ray_intersect(si.spawn_ray(ds.d), active=active_em)
+            ds_attached = mi.DirectionSample3f(scene, si_em, ref=si)
+            ds_attached.pdf, ds_attached.delta, ds_attached.uv, ds_attached.n = (ds.pdf, ds.delta, si_em.uv, si_em.n)
+            ds = ds_attached
 
-            # calculate the bsdf weight (for path througput) and pdf (for mis weighting)
-            diff_em = si_em.p - si.p
-            ds_em.d = dr.normalize(diff_em)
-            wo = si.to_local(ds_em.d)
+            if self.is_detached:
+                # The sampled emitter direction and the pdf must be detached
+                # Recompute `em_weight = em_val / ds.pdf` with only `em_val` attached
+                dr.disable_grad(ds.d, ds.pdf)
+                em_val    = scene.eval_emitter_direction(si, ds, active_em)
+                em_weight = dr.replace_grad(em_weight, dr.select((ds.pdf != 0), em_val / ds.pdf, 0))
+
+            active_em &= (ds.pdf != 0.0)
+
+            # Evaluate BSDF * cos(theta) differentiably (and detach the bsdf pdf)
+            wo = si.to_local(ds.d)
             bsdf_value_em, bsdf_pdf_em = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
-            
-            # ds_em.pdf includes the inv geometry term, 
-            # and bsdf_pdf_em does not contain the geometry term.
-            # -> We need to multiply both with the geometry term:
-            dp_em = dr.dot(ds_em.d, si_em.n)
-            dist_squared_em = dr.squared_norm(diff_em)
-            D_em = dr.select(active_em, dr.norm(dr.cross(si_em.dp_du, si_em.dp_dv)) * -dp_em / dist_squared_em , 0.) 
-            mis_em = dr.select(ds_em.delta, 1, mis_weight(ds_em.pdf*D_em, bsdf_pdf_em*D_em))
-            # Detached Sampling
-            em_weight *= dr.replace_grad(1, D_em/dr.detach(D_em))
+            if self.is_detached:
+                dr.disable_grad(bsdf_pdf_em)
+            mis_em = dr.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf_em))
+            Lr_dir = β * mis_em * bsdf_value_em * em_weight
 
-            Lr_dir = β * dr.detach(mis_em) * bsdf_value_em * em_weight
-
-            τ_dir = dr.norm(si_em.p - si.p)
-
-            # 
-            T_dir       = distance + τ + τ_dir
-
-            Lr_dir_pos = mi.Point2f(ray.wavelengths.x - mi.Float(1.0), block.size().y * T_dir / max_distance)                         
-            block.put(pos=Lr_dir_pos, values=mi.Vector2f(Lr_dir.x, 1.0), active=active_em)           
+            # Store (emission sample) intensity to the image block
+            τ_dir      = ds.dist
+            T_dir      = T + τ_dir
+            Lr_dir_pos = mi.Point2f(ray.wavelengths[0] - mi.Float(1.0),
+                                    block.size().y * T_dir / max_distance)
+            block.put(pos=Lr_dir_pos, values=mi.Vector2f(Lr_dir[0], 1.0), active=active_em & (Lr_dir[0] > 0))
 
             # ------------------ Detached BSDF sampling -------------------
-            with dr.suspend_grad():
-                bsdf_sample, bsdf_weight = bsdf.sample(bsdf_ctx, si,
-                                                    sampler.next_1d(),
-                                                    sampler.next_2d(),
-                                                    active_next)
+
+            bsdf_sample, bsdf_weight = bsdf.sample(bsdf_ctx, si,
+                                                sampler.next_1d(),
+                                                sampler.next_2d(),
+                                                active_next)
+            
+            if self.is_detached:
+                # The sampled bsdf direction and the pdf must be detached
+                # Recompute `bsdf_weight = bsdf_val / bsdf_sample.pdf` with only `bsdf_val` attached
+                dr.disable_grad(bsdf_sample.wo, bsdf_sample.pdf)
+                bsdf_val    = bsdf.eval(bsdf_ctx, si, bsdf_sample.wo, active_next)
+                bsdf_weight = dr.replace_grad(bsdf_weight, dr.select((bsdf_sample.pdf != 0), bsdf_val / bsdf_sample.pdf, 0))
 
             # ---- Update loop variables based on current interaction -----
-            ray = si.spawn_ray(si.to_world(bsdf_sample.wo))
 
-            si_next = scene.ray_intersect(dr.detach(ray),
-                                            ray_flags=mi.RayFlags.All | mi.RayFlags.FollowShape,
-                                            coherent=mi.Bool(False))
-            
-            diff_next = si_next.p - si.p
-            dir_next = dr.normalize(diff_next)
-            wo = si.to_local(dir_next)
-            bsdf_val    = bsdf.eval(bsdf_ctx, si, wo, active_next)
-            bsdf_weight = dr.replace_grad(bsdf_weight, dr.select(dr.neq(bsdf_sample.pdf, 0), bsdf_val / dr.detach(bsdf_sample.pdf), 0))
-            
-            
-            # ---- Update loop variables based on current interaction -----
+            wo_world = si.to_world(bsdf_sample.wo)
+            if self.is_detached:
+                # The direction in *world space* is detached
+                wo_world = dr.detach(wo_world)
 
+            ray = si.spawn_ray(wo_world) 
             η *= bsdf_sample.eta
             β *= bsdf_weight
 
-            distance = T
             # Information about the current vertex needed by the next iteration
+
             prev_si = si
             prev_bsdf_pdf = bsdf_sample.pdf
             prev_bsdf_delta = mi.has_flag(bsdf_sample.sampled_type, mi.BSDFFlags.Delta)
-            si = si_next
+            distance = T
+
             # -------------------- Stopping criterion ---------------------
 
             # Don't run another iteration if the throughput has reached zero
             β_max = dr.max(β)
-            active_next &= dr.neq(β_max, 0)
+            active_next &= (β_max != 0)
             active_next &= distance <= max_distance
 
             # Russian roulette stopping probability (must cancel out ior^2
@@ -367,101 +350,44 @@ class ADThreePointAcousticIntegrator(RBIntegrator):
             rr_continue = sampler.next_1d() < rr_prob
             active_next &= ~rr_active | rr_continue
 
+
             depth[si.is_valid()] += 1
             active = active_next
 
+        return block
 
-        return (
-            si,                   # Radiance/differential radiance
-            dr.neq(depth, 0),      # Ray validity flag for alpha blending
-            si                 # State for the differential phase
-        )
-
-    def render_backward(self: mi.SamplingIntegrator,
-                        scene: mi.Scene,
-                        params: Any,
-                        grad_in: mi.TensorXf,
-                        sensor: Union[int, mi.Sensor] = 0,
-                        seed: int = 0,
-                        spp: int = 0) -> None:
-
-        if isinstance(sensor, int):
-            sensor = scene.sensors()[sensor]
-
-        film = sensor.film()
-        aovs = self.aovs()
-
-        # Disable derivatives in all of the following
-        with dr.suspend_grad():
-            # Prepare the film and sample generator for rendering
-            sampler, spp = self.prepare(sensor, seed, spp, aovs)
-
-            # Generate a set of rays starting at the sensor, keep track of
-            # derivatives wrt. sample positions ('pos') if there are any
-            ray, weight = self.sample_rays(scene, sensor, sampler, None)
-
-            # actually only to get film width. Is completely ignored for gradient calculation.
-            block = film.create_block()
-
-            with dr.resume_grad():
-                # Launch the Monte Carlo sampling process in primal mode (1)
-                # Contrary to the light case we already need the input gradient as we return δH dot L to avoid storing L which is a function. 
-                _, valid, _ = self.sample(
-                    scene=scene,
-                    sampler=sampler.clone(),
-                    sensor=sensor,
-                    ray=ray,
-                    block=block,
-                    reparam=None,
-                    active=mi.Bool(True)
-                )
-                
-                film.put_block(block)
-                result_img = film.develop()
-
-                # Differentiate sample splatting and weight division steps to
-                # retrieve the adjoint radiance
-                dr.set_grad(result_img, grad_in)
-                dr.enqueue(dr.ADMode.Backward, result_img)
-                dr.traverse(type(result_img), dr.ADMode.Backward)
-
-                # We don't need any of the outputs here
-                del ray, weight, block, sampler
-
-                gc.collect()
-
-                # Run kernel representing side effects of the above
-                dr.eval()
-   
     def render_forward(self: mi.SamplingIntegrator,
                        scene: mi.Scene,
                        params: Any,
                        sensor: Union[int, mi.Sensor] = 0,
-                       seed: mi.UInt32 = 0,
+                       seed: int = 0,
                        spp: int = 0) -> mi.TensorXf:
 
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
-        film = sensor.film()
-        aovs = self.aovs()
-        
-        # Prepare the film and sample generator for rendering
-        sampler, spp = self.prepare(sensor, seed, spp, aovs)
 
-        # Generate a set of rays starting at the sensor, keep track of
-        # derivatives wrt. sample positions ('pos') if there are any
-        ray, weight = self.sample_rays(scene, sensor, sampler, None)
-                
+        film = sensor.film()
+
         # Disable derivatives in all of the following
         with dr.suspend_grad():
-            
-            # actually only to get film width. Is completely ignored for gradient calculation.
+            # Prepare the film and sample generator for rendering
+            sampler, spp = self.prepare(
+                sensor=sensor,
+                seed=seed,
+                spp=spp,
+                aovs=self.aov_names()
+            )
+
+            # Generate a set of rays starting at the sensor
+            ray, weight = self.sample_rays(scene, sensor, sampler)
+
+            # Prepare an ImageBlock as specified by the film
             block = film.create_block()
 
             with dr.resume_grad():
                 # Launch the Monte Carlo sampling process in primal mode (1)
                 # Contrary to the light case we already need the input gradient as we return δH dot L to avoid storing L which is a function. 
-                _, valid, _ = self.sample(
+                self.sample(
                     scene=scene,
                     sampler=sampler.clone(),
                     sensor=sensor,
@@ -477,5 +403,65 @@ class ADThreePointAcousticIntegrator(RBIntegrator):
                 dr.forward_to(result_img)
 
         return dr.grad(result_img)
-    
-mi.register_integrator("ad_threepoint_acoustic", lambda props: ADThreePointAcousticIntegrator(props))
+
+
+    def render_backward(self: mi.SamplingIntegrator,
+                        scene: mi.Scene,
+                        params: Any,
+                        grad_in: mi.TensorXf,
+                        sensor: Union[int, mi.Sensor] = 0,
+                        seed: int = 0,
+                        spp: int = 0) -> None:
+
+        if isinstance(sensor, int):
+            sensor = scene.sensors()[sensor]
+
+        film = sensor.film()
+
+        # Disable derivatives in all of the following
+        with dr.suspend_grad():
+            # Prepare the film and sample generator for rendering
+            sampler, spp = self.prepare(
+                sensor=sensor,
+                seed=seed,
+                spp=spp,
+                aovs=self.aov_names()
+            )
+
+            # Generate a set of rays starting at the sensor
+            ray, weight = self.sample_rays(scene, sensor, sampler)
+
+            # Prepare an ImageBlock as specified by the film
+            block = film.create_block()
+
+            with dr.resume_grad():
+                # Launch the Monte Carlo sampling process in primal mode (1)
+                # Contrary to the light case we already need the input gradient as we return δH dot L to avoid storing L which is a function. 
+                self.sample(
+                    scene=scene,
+                    sampler=sampler.clone(),
+                    sensor=sensor,
+                    ray=ray,
+                    block=block,
+                    active=mi.Bool(True)
+                )
+                
+                film.put_block(block)
+                result_img = film.develop()
+
+                # Differentiate sample splatting and weight division steps to
+                # retrieve the adjoint radiance
+                dr.set_grad(result_img, grad_in)
+                dr.enqueue(dr.ADMode.Backward, result_img)
+                dr.traverse(dr.ADMode.Backward)
+
+                # We don't need any of the outputs here
+                del ray, weight, block, sampler
+
+                gc.collect()
+
+                # Run kernel representing side effects of the above
+                dr.eval()
+
+
+mi.register_integrator("acoustic_ad", lambda props: AcousticADIntegrator(props))

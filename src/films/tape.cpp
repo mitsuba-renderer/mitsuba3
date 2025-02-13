@@ -87,7 +87,7 @@ public:
         bool warn = !dr::is_jit_v<Float> && !is_spectral_v<Spectrum> &&
                     m_channels.size() <= 5;
 
-        bool default_config = size == ScalarVector2u(0);
+        bool default_config = dr::all(size == ScalarVector2u(0));
 
         return new ImageBlock(default_config ? m_crop_size : size,
                               default_config ? m_crop_offset : ScalarPoint2u(0),

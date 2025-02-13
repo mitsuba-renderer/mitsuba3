@@ -421,6 +421,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                             accum(values[k] * weight_y, index + k, active_1);
 
                         index += size.x() * m_channel_count;
+                        ys++;
                         return;
                     }
                     UInt32 xs = 0;
@@ -579,6 +580,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                             accum(values[k] * weight_y, index + k, active_1);
 
                         index += size.x() * m_channel_count;
+                        ys++;
                         return;
                     }
                     std::tie(xs, index) = dr::while_loop(
@@ -824,6 +826,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
 
                     weight_sum += dr::select(active_1, weight, 0.f);
                     index += size.x() * m_channel_count;
+                    ys++;
                     return;
                 }
 

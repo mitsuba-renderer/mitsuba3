@@ -21,4 +21,16 @@ if mi.variant() is not None and not mi.variant().startswith('scalar'):
     from . import prb_projective
     importlib.reload(prb_projective)
 
+    from . import acoustic_prb
+    importlib.reload(acoustic_prb)
+
+    from . import acoustic_prb_threepoint
+    importlib.reload(acoustic_prb_threepoint)
+
+    from . import acoustic_ad
+    importlib.reload(acoustic_ad)
+
+    from . import acoustic_ad_threepoint
+    importlib.reload(acoustic_ad_threepoint)
+
 del importlib, mi
