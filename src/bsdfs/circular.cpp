@@ -61,6 +61,8 @@ public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
     MI_IMPORT_TYPES(Texture)
 
+    DR_TRAVERSE_CB(Base, m_transmittance);
+
     CircularPolarizer(const Properties &props) : Base(props) {
         m_transmittance = props.texture<Texture>("transmittance", 1.f);
         m_left_handed = props.get<bool>("left_handed", false);

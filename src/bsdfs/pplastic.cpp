@@ -149,6 +149,9 @@ public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
     MI_IMPORT_TYPES(Texture, MicrofacetDistribution)
 
+    DR_TRAVERSE_CB(Base, m_diffuse_reflectance, m_specular_reflectance,
+                   m_alpha_u, m_alpha_v, m_eta, m_specular_sampling_weight);
+
     PolarizedPlastic(const Properties &props) : Base(props) {
         m_diffuse_reflectance  = props.texture<Texture>("diffuse_reflectance",  .5f);
 
