@@ -470,6 +470,9 @@ private:
 
     /// Sampling weight for specular component
     Float m_specular_sampling_weight;
+
+    DR_TRAVERSE_CB(Base, m_diffuse_reflectance, m_specular_reflectance,
+                   m_alpha_u, m_alpha_v, m_eta, m_specular_sampling_weight);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(PolarizedPlastic, BSDF)

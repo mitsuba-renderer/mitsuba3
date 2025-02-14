@@ -1139,6 +1139,9 @@ private:
 
     uint32_t m_filled_voxel_count = 0;
     NormalMethod m_normal_method;
+
+    DR_TRAVERSE_CB(Base, m_grid_texture, m_inv_shape, m_voxel_size,
+                   m_jit_bboxes, m_jit_voxel_indices)
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(SDFGrid, Shape)

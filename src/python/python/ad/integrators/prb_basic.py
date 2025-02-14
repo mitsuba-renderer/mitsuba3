@@ -81,7 +81,8 @@ class BasicPRBIntegrator(RBIntegrator):
 
         while dr.hint(active,
                       max_iterations=self.max_depth,
-                      label="Path Replay Backpropagation (%s)" % mode.name):
+                      label="Path Replay Backpropagation (%s)" % mode.name,
+                      exclude = [scene]):
             active_next = mi.Bool(active)
 
             # ---------------------- Direct emission ----------------------

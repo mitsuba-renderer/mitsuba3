@@ -157,16 +157,6 @@ public:
         dr::schedule(m_permutation_seed);
     }
 
-    void traverse_1_cb_ro(void *payload, void (*fn)(void *, uint64_t)) const override {
-        auto fields = dr::make_tuple(m_rng, m_dimension_index, m_permutation_seed);
-        dr::traverse_1_fn_ro(fields, payload, fn);
-    }
-
-    void traverse_1_cb_rw(void *payload, uint64_t (*fn)(void *, uint64_t)) override {
-        auto fields = dr::tie(m_rng, m_dimension_index, m_permutation_seed);
-        dr::traverse_1_fn_rw(fields, payload, fn);
-    }
-
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "StratifiedSampler[" << std::endl
@@ -198,6 +188,8 @@ private:
 
     /// Per-sequence permutation seed
     UInt32 m_permutation_seed;
+
+    DR_TRAVERSE_CB(Base, m_permutation_seed);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(StratifiedSampler, Sampler)

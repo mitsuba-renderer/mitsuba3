@@ -368,6 +368,62 @@ extern "C" {
                             })
 #endif
 
+#define MI_DECLARE_TRAVERSE_CB(...)                                            \
+        DRJIT_INLINE auto traverse_1_cb_fields_() {                            \
+            return drjit::tie(__VA_ARGS__);                                    \
+        }                                                                      \
+        DRJIT_INLINE auto traverse_1_cb_fields_() const {                      \
+            return drjit::tie(__VA_ARGS__);                                    \
+        }                                                                      \
+                                                                               \
+    public:                                                                    \
+        void traverse_1_cb_ro(void *payload,                                   \
+                              drjit::detail::traverse_callback_ro fn)          \
+            const override;                                                    \
+        void traverse_1_cb_rw(                                                 \
+            void *payload, drjit::detail::traverse_callback_rw fn) override;
+
+#define MI_IMPLEMENT_TRAVERSE_CB(Type, Base)                                   \
+        MI_VARIANT                                                             \
+        void Type<Float, Spectrum>::traverse_1_cb_ro(                          \
+            void *payload, drjit::detail::traverse_callback_ro fn) const {     \
+                                                                               \
+            /*                                                                 \
+             * Only traverse the scene for frozen functions, since             \
+             * accidentally traversing the scene in loops or vcalls can cause  \
+             * issues.                                                         \
+             */                                                                \
+            if (!jit_flag(JitFlag::EnableObjectTraversal))                     \
+                return;                                                        \
+                                                                               \
+            if constexpr (!std ::is_same_v<Base, drjit ::TraversableBase>)     \
+                Base::traverse_1_cb_ro(payload, fn);                           \
+                                                                               \
+            drjit::traverse_1(this->traverse_1_cb_fields_(),                   \
+                              [payload, fn](auto &x) {                         \
+                                  drjit::traverse_1_fn_ro(x, payload, fn);     \
+                              });                                              \
+        }                                                                      \
+        MI_VARIANT                                                             \
+        void Type<Float, Spectrum>::traverse_1_cb_rw(                          \
+            void *payload, drjit::detail::traverse_callback_rw fn) {           \
+                                                                               \
+            /*                                                                 \
+             * Only traverse the scene for frozen functions, since             \
+             * accidentally traversing the scene in loops or vcalls can cause  \
+             * issues.                                                         \
+             */                                                                \
+            if (!jit_flag(JitFlag::EnableObjectTraversal))                     \
+                return;                                                        \
+                                                                               \
+            if constexpr (!std ::is_same_v<Base, drjit ::TraversableBase>)     \
+                Base::traverse_1_cb_rw(payload, fn);                           \
+            drjit::traverse_1(this->traverse_1_cb_fields_(),                   \
+                              [payload, fn](auto &x) {                         \
+                                  drjit::traverse_1_fn_rw(x, payload, fn);     \
+                              });                                              \
+        }
+
 //! @}
 // =============================================================
 

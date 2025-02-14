@@ -105,7 +105,11 @@ private:
     uint32_t m_sbt_offset;
 #endif
 
+    std::vector<UInt64> m_accel_handles;
+
     bool m_has_meshes, m_has_bspline_curves, m_has_linear_curves, m_has_others;
+
+    MI_DECLARE_TRAVERSE_CB(m_shapes, m_shapes_registry_ids, m_accel_handles)
 };
 
 MI_EXTERN_CLASS(ShapeGroup)
