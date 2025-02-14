@@ -3,9 +3,9 @@
 #include <mitsuba/core/distr_1d.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/render/emitter.h>
-#include <mitsuba/render/shapegroup.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/sensor.h>
+#include <mitsuba/render/shapegroup.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -636,6 +636,13 @@ protected:
     std::unique_ptr<DiscreteDistribution<Float>> m_silhouette_distr = nullptr;
 
     bool m_shapes_grad_enabled;
+
+    void traverse_1_cb_ro_cpu(void *payload,
+                              drjit::detail::traverse_callback_ro fn) const;
+    void traverse_1_cb_rw_cpu(void *payload,
+                              drjit::detail::traverse_callback_rw fn);
+
+    MI_DECLARE_TRAVERSE_CB()
 };
 
 /// Dummy function which can be called to ensure that the librender shared library is loaded

@@ -159,6 +159,10 @@ public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
     MI_IMPORT_TYPES(Texture, MicrofacetDistribution)
 
+    DR_TRAVERSE_CB(Base, m_base_color, m_roughness, m_anisotropic, m_sheen,
+                   m_sheen_tint, m_spec_trans, m_flatness, m_spec_tint,
+                   m_diff_trans, m_eta_thin);
+
     PrincipledThin(const Properties &props) : Base(props) {
 
         m_base_color = props.texture<Texture>("base_color", 0.5f);

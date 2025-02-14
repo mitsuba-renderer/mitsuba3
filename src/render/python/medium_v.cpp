@@ -45,6 +45,8 @@ public:
     using Medium::m_sample_emitters;
     using Medium::m_is_homogeneous;
     using Medium::m_has_spectral_extinction;
+
+    DR_TRAMPOLINE_TRAVERSE_CB(Medium)
 };
 
 template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
@@ -105,6 +107,8 @@ MI_PY_EXPORT(Medium) {
         .def_field(PyMedium, m_is_homogeneous, D(Medium, m_is_homogeneous))
         .def_field(PyMedium, m_has_spectral_extinction, D(Medium, m_has_spectral_extinction))
         .def("__repr__", &Medium::to_string, D(Medium, to_string));
+
+    drjit::bind_traverse(medium);
 
     bind_medium_generic<Medium *>(medium);
 

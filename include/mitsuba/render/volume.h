@@ -119,6 +119,8 @@ protected:
     ScalarBoundingBox3f m_bbox;
     /// Number of channels stored in the volume
     uint32_t m_channel_count;
+
+    DR_TRAVERSE_CB(Object);
 };
 
 MI_EXTERN_CLASS(Volume)

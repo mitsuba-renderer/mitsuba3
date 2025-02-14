@@ -117,7 +117,7 @@ MI_VARIANT std::string Film<Float, Spectrum>::to_string() const {
     return oss.str();
 }
 
-
+MI_IMPLEMENT_TRAVERSE_CB(Film, Object, m_srf)
 MI_IMPLEMENT_CLASS_VARIANT(Film, Object, "film")
 MI_INSTANTIATE_CLASS(Film)
 NAMESPACE_END(mitsuba)
