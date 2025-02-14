@@ -30,7 +30,7 @@ MI_VARIANT Integrator<Float, Spectrum>::Integrator(const Properties & props)
 MI_VARIANT typename Integrator<Float, Spectrum>::TensorXf
 Integrator<Float, Spectrum>::render(Scene *scene,
                                     uint32_t sensor_index,
-                                    uint32_t seed,
+                                    UInt32 seed,
                                     uint32_t spp,
                                     bool develop,
                                     bool evaluate) {
@@ -45,7 +45,7 @@ MI_VARIANT typename Integrator<Float, Spectrum>::TensorXf
 Integrator<Float, Spectrum>::render_forward(Scene* scene,
                                             void* /*params*/,
                                             Sensor *sensor,
-                                            uint32_t seed,
+                                            UInt32 seed,
                                             uint32_t spp) {
     auto forward_gradients = [&]() -> TensorXf {
         auto image = render(scene, sensor, seed, spp, true, false);
@@ -67,7 +67,7 @@ Integrator<Float, Spectrum>::render_backward(Scene* scene,
                                              void* /*params */,
                                              const TensorXf& grad_in,
                                              Sensor* sensor,
-                                             uint32_t seed,
+                                             UInt32 seed,
                                              uint32_t spp) {
     auto backward_gradients = [&]() -> void {
         auto image = render(scene, sensor, seed, spp, true, false);
@@ -120,7 +120,7 @@ MI_VARIANT SamplingIntegrator<Float, Spectrum>::~SamplingIntegrator() { }
 MI_VARIANT typename SamplingIntegrator<Float, Spectrum>::TensorXf
 SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                                             Sensor *sensor,
-                                            uint32_t seed,
+                                            UInt32 seed,
                                             uint32_t spp,
                                             bool develop,
                                             bool evaluate) {
@@ -372,7 +372,7 @@ MI_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *s
                                                                    ImageBlock *block,
                                                                    Float *aovs,
                                                                    uint32_t sample_count,
-                                                                   uint32_t seed,
+                                                                   UInt32 seed,
                                                                    uint32_t block_id,
                                                                    uint32_t block_size) const {
 
@@ -544,7 +544,7 @@ MI_VARIANT AdjointIntegrator<Float, Spectrum>::~AdjointIntegrator() { }
 MI_VARIANT typename AdjointIntegrator<Float, Spectrum>::TensorXf
 AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
                                            Sensor *sensor,
-                                           uint32_t seed,
+                                           UInt32 seed,
                                            uint32_t spp,
                                            bool develop,
                                            bool evaluate) {

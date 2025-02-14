@@ -69,7 +69,7 @@ public:
 
     TensorXf render(Scene *scene,
                     Sensor *sensor,
-                    uint32_t seed,
+                    UInt32 seed,
                     uint32_t spp,
                     bool develop,
                     bool evaluate) override {
@@ -79,7 +79,7 @@ public:
     TensorXf render_forward(Scene* scene,
                             void* params,
                             Sensor *sensor,
-                            uint32_t seed = 0,
+                            UInt32 seed = 0,
                             uint32_t spp = 0) override {
         NB_OVERRIDE(render_forward, scene, params, sensor, seed, spp);
     }
@@ -88,7 +88,7 @@ public:
                          void* params,
                          const TensorXf& grad_in,
                          Sensor* sensor,
-                         uint32_t seed = 0,
+                         UInt32 seed = 0,
                          uint32_t spp = 0) override {
         NB_OVERRIDE(render_backward, scene, params, grad_in, sensor, seed, spp);
     }
@@ -135,7 +135,7 @@ public:
 
     TensorXf render(Scene *scene,
                     Sensor *sensor,
-                    uint32_t seed,
+                    UInt32 seed,
                     uint32_t spp,
                     bool develop,
                     bool evaluate) override {
@@ -194,7 +194,7 @@ public:
 
     TensorXf render(Scene *scene,
                     Sensor *sensor,
-                    uint32_t seed,
+                    UInt32 seed,
                     uint32_t spp,
                     bool develop,
                     bool evaluate) override {
@@ -204,7 +204,7 @@ public:
     TensorXf render_forward(Scene* scene,
                             void* params,
                             Sensor *sensor,
-                            uint32_t seed = 0,
+                            UInt32 seed = 0,
                             uint32_t spp = 0) override {
         nanobind::detail::ticket nb_ticket(nb_trampoline, "render_forward", false);
         if (nb_ticket.key.is_valid())
@@ -219,7 +219,7 @@ public:
                          void* params,
                          const TensorXf& grad_in,
                          Sensor* sensor,
-                         uint32_t seed = 0,
+                         UInt32 seed = 0,
                          uint32_t spp = 0) override {
         nanobind::detail::ticket nb_ticket(nb_trampoline, "render_backward", false);
         if (nb_ticket.key.is_valid())
@@ -281,7 +281,7 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "render",
             [&](Integrator *integrator, Scene *scene, Sensor *sensor,
-                uint32_t seed, uint32_t spp, bool develop, bool evaluate) {
+                UInt32 seed, uint32_t spp, bool develop, bool evaluate) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
                 return integrator->render(scene, sensor, seed, spp, develop,
@@ -293,7 +293,7 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "render",
             [&](Integrator *integrator, Scene *scene, uint32_t sensor,
-                uint32_t seed, uint32_t spp, bool develop, bool evaluate) {
+                UInt32 seed, uint32_t spp, bool develop, bool evaluate) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
                 return integrator->render(scene, sensor, seed, spp,
@@ -323,7 +323,7 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "render_forward",
             [](SamplingIntegrator *integrator, Scene *scene, nb::object* params,
-                Sensor* sensor, uint32_t seed, uint32_t spp) {
+                Sensor* sensor, UInt32 seed, uint32_t spp) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
                 return integrator->render_forward(scene, params, sensor, seed, spp);
@@ -332,7 +332,7 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "render_forward",
             [](SamplingIntegrator *integrator, Scene *scene, nb::object* params,
-                uint32_t sensor, uint32_t seed, uint32_t spp) {
+                uint32_t sensor, UInt32 seed, uint32_t spp) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
                 return integrator->render_forward(scene, params, sensor, seed, spp);
@@ -341,7 +341,7 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "render_backward",
             [](SamplingIntegrator *integrator, Scene *scene, nb::object* params,
-                const TensorXf& grad_in, Sensor* sensor, uint32_t seed,
+                const TensorXf& grad_in, Sensor* sensor, UInt32 seed,
                 uint32_t spp) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
@@ -353,7 +353,7 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "render_backward",
             [](SamplingIntegrator *integrator, Scene *scene, nb::object* params,
-                const TensorXf& grad_in, uint32_t sensor, uint32_t seed,
+                const TensorXf& grad_in, uint32_t sensor, UInt32 seed,
                 uint32_t spp) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
@@ -377,7 +377,7 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "render_forward",
             [](AdjointIntegrator *integrator, Scene *scene, nb::object* params,
-                Sensor* sensor, uint32_t seed, uint32_t spp) {
+                Sensor* sensor, UInt32 seed, uint32_t spp) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
                 return integrator->render_forward(scene, params, sensor, seed, spp);
@@ -386,7 +386,7 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "render_forward",
             [](AdjointIntegrator *integrator, Scene *scene, nb::object* params,
-                uint32_t sensor, uint32_t seed, uint32_t spp) {
+                uint32_t sensor, UInt32 seed, uint32_t spp) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
                 return integrator->render_forward(scene, params, sensor, seed, spp);
@@ -395,7 +395,7 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "render_backward",
             [](AdjointIntegrator *integrator, Scene *scene, nb::object* params,
-                const TensorXf& grad_in, Sensor* sensor, uint32_t seed,
+                const TensorXf& grad_in, Sensor* sensor, UInt32 seed,
                 uint32_t spp) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
@@ -407,7 +407,7 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "render_backward",
             [](AdjointIntegrator *integrator, Scene *scene, nb::object* params,
-                const TensorXf& grad_in, uint32_t sensor, uint32_t seed,
+                const TensorXf& grad_in, uint32_t sensor, UInt32 seed,
                 uint32_t spp) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
