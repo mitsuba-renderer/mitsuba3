@@ -354,7 +354,7 @@ class _RenderOp(dr.CustomOp):
         self.spp = spp
 
         with dr.suspend_grad():
-            return self.integrator.render(
+            res = self.integrator.render(
                 scene=self.scene,
                 sensor=sensor,
                 seed=seed[0],
@@ -362,6 +362,8 @@ class _RenderOp(dr.CustomOp):
                 develop=True,
                 evaluate=False
             )
+            sensor.sampler().seed(0, 1)
+            return res
 
     def forward(self):
         self.set_grad_out(

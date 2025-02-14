@@ -766,6 +766,8 @@ private:
     Float m_inv_surface_area;
 
     bool m_flip_normals;
+
+    DR_TRAVERSE_CB(Base, m_center, m_radius, m_inv_surface_area)
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(Sphere, Shape)

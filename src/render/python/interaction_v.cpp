@@ -6,6 +6,7 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/stl/string.h>
+#include <drjit/python.h>
 
 MI_PY_EXPORT(Interaction) {
     MI_PY_IMPORT_TYPES()

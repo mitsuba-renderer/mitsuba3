@@ -121,6 +121,8 @@ public:
 private:
     Float m_value;
     ScalarVector2f m_range;
+
+    DR_TRAVERSE_CB(Texture, m_value);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(UniformSpectrum, Texture)

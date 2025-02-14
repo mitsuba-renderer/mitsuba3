@@ -108,6 +108,8 @@ public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
     MI_IMPORT_TYPES(Texture, MicrofacetDistribution)
 
+    DR_TRAVERSE_CB(Base, m_interpolator);
+
     using Interpolator = Marginal2D<Float, 4, true>;
 
     MeasuredPolarized(const Properties &props) : Base(props) {
