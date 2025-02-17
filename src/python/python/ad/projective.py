@@ -135,7 +135,7 @@ class ProjectiveDetail():
             ss.pdf *= shape_pmf
             ss.pdf *= float(len(self.sensors))
 
-            ss.sensor = dr.reinterpret_array(mi.UInt32, sensor)
+            ss.sensor = sensor
 
             return ss
 
@@ -199,7 +199,7 @@ class ProjectiveDetail():
             return J_num / J_den * multiplier
 
         return dr.dispatch(
-            dr.reinterpret_array(mi.SensorPtr, ss.sensor),
+            ss.sensor,
             inner_sensor_jacobian,
             ss)
 

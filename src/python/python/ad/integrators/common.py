@@ -1113,14 +1113,12 @@ class PSIntegrator(ADIntegrator):
         # Compute the derivative
         derivative = ΔL * motion * dr.rcp(ss.pdf) * J
 
-        ss_sensor = dr.reinterpret_array(mi.SensorPtr, ss.sensor)
-
         # Prepare a new imageblock and compute splatting coordinates
         film.prepare(aovs)
         with dr.suspend_grad():
             it = dr.zeros(mi.Interaction3f)
             it.p = ss.p
-            sensor_ds, _ = ss_sensor.sample_direction(it, mi.Point2f(0))
+            sensor_ds, _ = ss.sensor.sample_direction(it, mi.Point2f(0))
 
         params = mi.traverse(sensor)
         if 'child_sensors' in params:
@@ -1131,7 +1129,7 @@ class PSIntegrator(ADIntegrator):
         uv_offset_x = mi.Float(0)
 
         for i in range(len(sensors)):
-            uv_offset_x += dr.select(ss_sensor == sensors[i],
+            uv_offset_x += dr.select(ss.sensor == sensors[i],
                 i * sensors[i].film().size().x, 0)
 
         # Particle tracer style imageblock to accumulate primarily visible derivatives

@@ -186,6 +186,7 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT(Shape);
     MI_PY_IMPORT(Medium);
     MI_PY_IMPORT(Endpoint);
+    MI_PY_IMPORT(Sensor);
     MI_PY_IMPORT(Emitter);
     MI_PY_IMPORT(Interaction);
     MI_PY_IMPORT(SurfaceInteraction);
@@ -208,7 +209,6 @@ NB_MODULE(MI_VARIANT_NAME, m) {
 #endif // defined(MI_ENABLE_CUDA)
     MI_PY_IMPORT(PhaseFunction);
     MI_PY_IMPORT(Sampler);
-    MI_PY_IMPORT(Sensor);
 //    MI_PY_IMPORT(ShapeKDTree);
     MI_PY_IMPORT(srgb);
     MI_PY_IMPORT(Texture);

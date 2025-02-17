@@ -157,7 +157,7 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
     ShapePtr shape = nullptr;
 
     /// Pointer to the associated sensor
-    UInt32 sensor;
+    SensorPtr sensor = nullptr;
 
     /**
      * \brief Local-form boundary foreshortening term.
@@ -184,7 +184,7 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
     SilhouetteSample(const PositionSample<Float, Spectrum> &ps)
         : Base(ps), discontinuity_type((uint32_t) DiscontinuityFlags::Empty),
           d(0), silhouette_d(0), prim_index(0), scene_index(0), flags(0),
-          projection_index(0), shape(nullptr), sensor(0), 
+          projection_index(0), shape(nullptr), sensor(nullptr), 
           foreshortening(0), offset(0) {}
 
     /// Is the current boundary segment valid=
