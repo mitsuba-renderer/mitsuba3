@@ -1120,23 +1120,24 @@ class PSIntegrator(ADIntegrator):
             it.p = ss.p
             sensor_ds, _ = ss.sensor.sample_direction(it, mi.Point2f(0))
 
+        splat_pos = sensor_ds.uv
+
+        # Adjust splatting coordinates if using batch sensor
         params = mi.traverse(sensor)
         if 'child_sensors' in params:
             sensors = dr.reinterpret_array(mi.SensorPtr, params['child_sensors'])
         else:
             sensors = mi.SensorPtr(sensor)
 
-        uv_offset_x = mi.Float(0)
-
         for i in range(len(sensors)):
-            uv_offset_x += dr.select(ss.sensor == sensors[i],
+            splat_pos.x += dr.select(ss.sensor == sensors[i],
                 i * sensors[i].film().size().x, 0)
 
         # Particle tracer style imageblock to accumulate primarily visible derivatives
         block = film.create_block(normalize=True)
         block.set_coalesce(block.coalesce() and spp >= 4)
         block.put(
-            pos=sensor_ds.uv + mi.Point2f(uv_offset_x, 0),
+            pos=splat_pos,
             wavelengths=[],
             value=derivative * dr.rcp(mi.ScalarFloat(spp)),
             weight=0,
