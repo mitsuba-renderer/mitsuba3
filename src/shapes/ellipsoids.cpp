@@ -234,14 +234,14 @@ public:
         }
     }
 
-    ArrayXf eval_attribute_X(const std::string& name,
+    ArrayXf eval_attribute_x(const std::string& name,
                              const SurfaceInteraction3f &si,
                              Mask active) const override {
         MI_MASK_ARGUMENT(active);
         try {
-            return m_ellipsoids.eval_attribute_X(name, si, active);
+            return m_ellipsoids.eval_attribute_x(name, si, active);
         } catch (...) {
-            return Base::eval_attribute_X(name, si, active);
+            return Base::eval_attribute_x(name, si, active);
         }
     }
     //! @}

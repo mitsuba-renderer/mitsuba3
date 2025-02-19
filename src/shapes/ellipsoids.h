@@ -377,7 +377,7 @@ public:
         }
     }
 
-    ArrayXf eval_attribute_X(const std::string& name,
+    ArrayXf eval_attribute_x(const std::string& name,
                              const SurfaceInteraction3f &si,
                              Mask active) const {
         const auto& it = m_attributes.find(name);
