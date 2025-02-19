@@ -90,7 +90,10 @@ public:
 private:
     ScalarBoundingBox3f m_bbox;
     std::vector<ref<Base>> m_shapes;
+
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
     DynamicBuffer<UInt32> m_shapes_registry_ids;
+#endif
 
 #if defined(MI_ENABLE_EMBREE)
     RTCScene m_embree_scene = nullptr;

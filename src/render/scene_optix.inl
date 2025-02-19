@@ -761,7 +761,7 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
 
         UInt32 payload_hit(1);
 
-        // Enforce backface culling, which is only enabled on the EllipsoidsMesh IAS
+        // Enforce backface culling, which is only enabled on the MeshEllipsoids IAS
         // TODO this could be enabled/disabled using a flag argument to this method.
         // TODO currently the logic doesn't work for a single IAS, hence the check below
         if (!config.has_only_meshes)
