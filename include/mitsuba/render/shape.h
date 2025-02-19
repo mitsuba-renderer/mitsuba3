@@ -749,7 +749,7 @@ public:
                                      const SurfaceInteraction3f &si,
                                      Mask active = true) const;
 /**
-     * \brief Evaluate a dynamic shape attribute at the given surface interaction.
+     * \brief Evaluate a dynamically sized shape attribute at the given surface interaction.
      *
      * \param name
      *     Name of the attribute to evaluate
@@ -760,7 +760,7 @@ public:
      * \return
      *     An dynamic array of attribute values
      */
-    virtual dr::DynamicArray<Float> eval_attribute_X(const std::string &name,
+    virtual dr::DynamicArray<Float> eval_attribute_x(const std::string &name,
                                                      const SurfaceInteraction3f &si,
                                                      Mask active = true) const;
 
@@ -1102,7 +1102,7 @@ MI_CALL_TEMPLATE_BEGIN(Shape)
     DRJIT_CALL_METHOD(eval_attribute)
     DRJIT_CALL_METHOD(eval_attribute_1)
     DRJIT_CALL_METHOD(eval_attribute_3)
-    DRJIT_CALL_METHOD(eval_attribute_X)
+    DRJIT_CALL_METHOD(eval_attribute_x)
     DRJIT_CALL_METHOD(eval_parameterization)
     DRJIT_CALL_METHOD(ray_intersect_preliminary)
     DRJIT_CALL_METHOD(ray_intersect)

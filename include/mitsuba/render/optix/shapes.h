@@ -302,7 +302,6 @@ void prepare_ias(const OptixDeviceContext &context,
                     (float) transf.matrix(2, 0), (float) transf.matrix(2, 1),
                     (float) transf.matrix(2, 2), (float) transf.matrix(2, 3) };
 
-
     auto build_optix_instance = [&](const OptixAccelData::HandleData &handle,
                                     bool disable_face_culling = true) {
         // TODO: Here we are forcing backface culling to be disabled for meshes other
@@ -312,6 +311,9 @@ void prepare_ias(const OptixDeviceContext &context,
         uint32_t flags = disable_face_culling ?
                             OPTIX_INSTANCE_FLAG_DISABLE_TRIANGLE_FACE_CULLING :
                             OPTIX_INSTANCE_FLAG_NONE;
+
+        if (transf == Transform4f())
+            flags |= OPTIX_INSTANCE_FLAG_DISABLE_TRANSFORM;
 
         if (handle.handle) {
             OptixInstance instance = {

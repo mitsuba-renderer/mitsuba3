@@ -87,6 +87,7 @@ using OptixDenoiserStructPtr = void*;
 
 #define OPTIX_INSTANCE_FLAG_NONE                           0
 #define OPTIX_INSTANCE_FLAG_DISABLE_TRIANGLE_FACE_CULLING  (1u << 0)
+#define OPTIX_INSTANCE_FLAG_DISABLE_TRANSFORM (1u << 6)
 
 #define OPTIX_RAY_FLAG_NONE                       0
 #define OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT     (1u << 2)

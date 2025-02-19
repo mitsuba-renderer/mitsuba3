@@ -553,13 +553,13 @@ Shape<Float, Spectrum>::eval_attribute_3(const std::string& name,
 }
 
 MI_VARIANT typename dr::DynamicArray<Float>
-Shape<Float, Spectrum>::eval_attribute_X(const std::string& /*name*/,
+Shape<Float, Spectrum>::eval_attribute_x(const std::string& /*name*/,
                                          const SurfaceInteraction3f & /*si*/,
                                          Mask /*active*/) const {
     if constexpr (dr::is_jit_v<Float>)
         return 0.f;
     else
-        NotImplementedError("eval_attribute_X");
+        NotImplementedError("eval_attribute_x");
 }
 
 MI_VARIANT Float Shape<Float, Spectrum>::surface_area() const {

@@ -709,12 +709,13 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
         const OptixConfig &config = optix_configs[s.config_index];
 
         UInt32 ray_mask(255),
-               ray_flags(OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
+               ray_flags(OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
+                         OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
         UInt32 payload_hit(1);
 
-        // Enforce backface culling, which is only enabled on the EllipsoidsMesh IAS
+        // Enforce backface culling, which is only enabled on the MeshEllipsoids IAS
         // TODO this could be enabled/disabled using a flag argument to this method.
         // TODO currently the logic doesn't work for a single IAS, hence the check below
         if (!config.has_only_meshes)
