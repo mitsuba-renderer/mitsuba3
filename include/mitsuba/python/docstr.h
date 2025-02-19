@@ -7882,7 +7882,7 @@ Parameter ``si``:
 Returns:
     An trichromatic intensity or reflectance value)doc";
 
-static const char *__doc_mitsuba_Shape_eval_attribute_X =
+static const char *__doc_mitsuba_Shape_eval_attribute_x =
 R"doc(Evaluate a dynamic shape attribute at the given surface interaction.
 
 Parameter ``name``:
