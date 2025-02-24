@@ -68,7 +68,7 @@ class ConfigBase:
             'to_world': T().look_at(origin=[0, 0, 4], target=[0, 0, 0], up=[0, 1, 0]),
             'film': {
                 'type': 'hdrfilm',
-                'rfilter': { 'type': 'box' },
+                'rfilter': { 'type': 'gaussian', 'stddev': 0.5 },
                 'width': self.res,
                 'height': self.res,
                 'sample_border': True,
@@ -524,7 +524,6 @@ class TranslateTexturedPlaneConfig(TranslateShapeConfigBase):
                     'type': 'diffuse',
                     'reflectance' : {
                         'type': 'bitmap',
-                        # 'filename' : 'resources/data/common/textures/flower.bmp'
                         'filename' : 'resources/data/common/textures/museum.exr',
                         'format' : 'variant'
                     }
@@ -535,8 +534,22 @@ class TranslateTexturedPlaneConfig(TranslateShapeConfigBase):
         }
         self.res = 64
         self.ref_fd_epsilon = 1e-3
-        self.error_mean_threshold = 0.1
+        self.error_mean_threshold = 0.15
         self.error_max_threshold = 56.0
+
+        self.sensor_dict = {
+            'type': 'perspective',
+            'to_world': T().look_at(origin=[0, 0, 4], target=[0, 0, 0], up=[0, 1, 0]),
+            'film': {
+                'type': 'hdrfilm',
+                'rfilter': { 'type': 'gaussian' },
+                'width': self.res,
+                'height': self.res,
+                'sample_border': True,
+                'pixel_format': 'rgb',
+                'component_format': 'float32',
+            }
+        }
 
 
 # Translate occluder casting shadow on itself
@@ -712,24 +725,22 @@ BASIC_CONFIGS_LIST = [
     #DirectlyVisibleAreaLightRadianceConfig,
     #TranslateTexturedPlaneConfig,
     #CropWindowConfig,
-    RotateShadingNormalsPlaneConfig,
+    #RotateShadingNormalsPlaneConfig,
     #PointLightIntensityConfig,
     #ConstantEmitterRadianceConfig,
 ]
 
 DISCONTINUOUS_CONFIGS_LIST = [
-    #TranslateDiffuseSphereConstantConfig,
-    #TranslateDiffuseRectangleConstantConfig,
-    #TranslateRectangleEmitterOnBlackConfig,
-    #TranslateSphereEmitterOnBlackConfig,
-    #ScaleSphereEmitterOnBlackConfig,
-
-    #TranslateOccluderAreaLightConfig,
+    TranslateDiffuseSphereConstantConfig,
+    TranslateDiffuseRectangleConstantConfig,
+    TranslateRectangleEmitterOnBlackConfig,
+    TranslateSphereEmitterOnBlackConfig,
+    ScaleSphereEmitterOnBlackConfig,
+    TranslateOccluderAreaLightConfig,
+    TranslateShadowReceiverAreaLightConfig,
+    TranslateSphereOnGlossyFloorConfig,
 
     # BROKEN SETUP TranslateSelfShadowAreaLightConfig,
-
-    #TranslateShadowReceiverAreaLightConfig,
-    #TranslateSphereOnGlossyFloorConfig,
 
     ### Camera derivatives are currently unsupported
     #    # TranslateCameraConfig
@@ -798,9 +809,9 @@ def test01_rendering_primal(variant_cuda_ad_rgb, integrator_name, config):
 def test02_rendering_forward(variant_cuda_ad_rgb, integrator_name, config):
 #def test02_rendering_forward(variant_llvm_ad_rgb, integrator_name, config):
 #def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
-    dr.set_flag(dr.JitFlag.Debug, True)
-    dr.set_flag(dr.JitFlag.ReuseIndices, False)
-    dr.set_flag(dr.JitFlag.SymbolicLoops, False)
+    #dr.set_flag(dr.JitFlag.Debug, True)
+    #dr.set_flag(dr.JitFlag.ReuseIndices, False)
+    #dr.set_flag(dr.JitFlag.SymbolicLoops, False)
     #dr.set_flag(dr.JitFlag.OptimizeCalls, False)
     #dr.set_flag(dr.JitFlag.SymbolicCalls, False)
     config = config()

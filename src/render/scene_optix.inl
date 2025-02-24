@@ -644,12 +644,6 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
         pi.prim_uv[1] = dr::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[17]));
         pi.prim_index = UInt32::steal(trace_args[18]);
         pi.shape      = ShapePtr::steal(trace_args[19]);
-
-        //UInt32 pi_shape_uint = dr::reinterpret_array<UInt32>(pi.shape);
-        //dr::eval(pi_shape_uint, active, pi);
-        //std::cout << "pi.shape: " << pi_shape_uint << std::endl;
-        //std::cout << "active: " << active << std::endl;
-        //std::cout << "pi.is_valid(): " << pi.is_valid() << std::endl;
         pi.instance   = ShapePtr::steal(trace_args[20]);
 
         // This field is only used by embree, but we still need to initialize it for vcalls

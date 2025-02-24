@@ -560,14 +560,14 @@ class ProjectiveDetail():
                 scene, sensor, ss, parent.max_depth, sampler, preprocess, active)
             active &= active_i
 
-            dr.eval(sensor_depth)
+            #dr.eval(sensor_depth)
 
             # Estimate the radiance difference
             fE, active_e = parent.sample_radiance_difference(
                 scene, ss, sensor_depth - 1, sampler, active)
             active &= active_e
 
-            active &= (sensor_depth == 2)
+            #active &= (sensor_depth == 2)
 
             # Local boundary term without the local speed term
             fB = ss.foreshortening
