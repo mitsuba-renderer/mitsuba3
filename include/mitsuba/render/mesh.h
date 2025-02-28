@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <mutex>
 #include <drjit/dynamic.h>
+#include <drjit/array_traverse.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -502,6 +503,8 @@ protected:
         MeshAttribute migrate(AllocType at) const {
             return MeshAttribute { size, type, dr::migrate(buf, at) };
         }
+
+        DRJIT_STRUCT_NODEF(MeshAttribute, buf);
     };
 
     template <uint32_t Size, bool Raw>
@@ -598,6 +601,8 @@ protected:
 
     /// Pointer to the scene that owns this mesh
     Scene<Float, Spectrum>* m_scene = nullptr;
+
+    MI_DECLARE_TRAVERSE_CB()
 };
 
 MI_EXTERN_CLASS(Mesh)

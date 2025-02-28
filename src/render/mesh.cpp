@@ -1889,6 +1889,9 @@ MI_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
     return dr::grad_enabled(m_vertex_positions);
 }
 
+MI_IMPLEMENT_TRAVERSE_CB(Mesh, Base, m_vertex_positions, m_vertex_normals,
+                         m_vertex_texcoords, m_faces, m_E2E, m_sil_dedge_pmf,
+                         m_mesh_attributes, m_area_pmf, m_parameterization)
 MI_IMPLEMENT_CLASS_VARIANT(Mesh, Shape)
 MI_INSTANTIATE_CLASS(Mesh)
 NAMESPACE_END(mitsuba)
