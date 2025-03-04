@@ -78,6 +78,7 @@ SPECTRUM_ORDERING = [
     'srgb',
     'd65',
     'blackbody'
+    'rawconstant'
 ]
 
 SAMPLER_ORDERING = [
