@@ -35,7 +35,7 @@
         Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
             *no description available*
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Parameter ``spp`` (int):
@@ -55,7 +55,7 @@
         Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
             *no description available*
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Parameter ``spp`` (int):
@@ -2736,7 +2736,7 @@
 
 .. py:data:: mitsuba.DEBUG
     :type: bool
-    :value: False
+    :value: True
 
 .. py:class:: mitsuba.DefaultFormatter
 
@@ -5166,7 +5166,7 @@
 
         Overloaded function.
 
-        1. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: :py:obj:`mitsuba.Sensor`, seed: int = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
+        1. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: :py:obj:`mitsuba.Sensor`, seed: drjit.llvm.ad.UInt = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
 
         Render the scene
 
@@ -5174,7 +5174,7 @@
         other parameters are optional and control different aspects of the
         rendering process. In particular:
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
             This parameter controls the initialization of the random number
             generator. It is crucial that you specify different seeds (e.g.,
             an increasing sequence) if subsequent ``render``() calls should
@@ -5200,7 +5200,7 @@
             (``develop=true``) or modified film (``develop=false``) represent
             the rendering task as an unevaluated computation graph.
 
-        2. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: int = 0, seed: int = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
+        2. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: int = 0, seed: drjit.llvm.ad.UInt = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
 
         Render the scene
 
@@ -5744,7 +5744,7 @@
 
 .. py:data:: mitsuba.MI_VERSION
     :type: str
-    :value: 3.6.2
+    :value: 3.6.4
 
 .. py:data:: mitsuba.MI_VERSION_MAJOR
     :type: int
@@ -5756,7 +5756,7 @@
 
 .. py:data:: mitsuba.MI_VERSION_PATCH
     :type: int
-    :value: 2
+    :value: 4
 
 .. py:data:: mitsuba.MI_YEAR
     :type: str
@@ -7394,7 +7394,7 @@
         Parameter ``other`` (:py:obj:`mitsuba.Mesh`):
             *no description available*
 
-        Returns → ref<mitsuba::Mesh<drjit::DiffArray<(JitBackend)2, float>, mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>>>:
+        Returns → ref<mitsuba::Mesh<drjit::DiffArray<(JitBackend)2, float>, mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul> > >:
             *no description available*
 
     .. py:method:: mitsuba.Mesh.opposite_dedge(self, index, active=True)
@@ -7431,6 +7431,20 @@
             *no description available*
 
     .. py:method:: mitsuba.Mesh.recompute_vertex_normals()
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Mesh.remove_attribute(self, name)
+
+        Remove an attribute with the given ``name``.
+
+        Affects both mesh and texture attributes.
+
+        Throws an exception if the attribute was not previously registered.
+
+        Parameter ``name`` (str):
+            *no description available*
 
         Returns → None:
             *no description available*
@@ -8026,7 +8040,7 @@
     filter that spans multiple pixels, the denoiser might identify some
     local variance as a feature of the scene and will not denoise it.
 
-    .. py:method:: __init__(self, input_size, albedo=False, normals=False, temporal=False)
+    .. py:method:: __init__(self, input_size, albedo=False, normals=False, temporal=False, denoise_alpha=False)
 
         Constructs an OptiX denoiser
         
@@ -8035,34 +8049,35 @@
         
         Parameter ``albedo`` (bool):
             Whether or not albedo information will also be given to the
-            denoiser.
+            denoiser. This parameter is optional, by default it is false.
         
         Parameter ``normals`` (bool):
             Whether or not shading normals information will also be given to
-            the Denoiser.
+            the denoiser. This parameter is optional, by default it is false.
+        
+        Parameter ``temporal`` (bool):
+            Whether or not temporal information will also be given to the
+            denoiser. This parameter is optional, by default it is false.
+        
+        Parameter ``denoise_alpha`` (bool):
+            Whether or not the alpha channel (if specified in the noisy input)
+            should be denoised too. This parameter is optional, by default it
+            is false.
         
         Returns:
             A callable object which will apply the OptiX denoiser.
 
-        Parameter ``temporal`` (bool):
-            *no description available*
-
         
-    .. py:method:: mitsuba.OptixDenoiser.__call__(self, noisy, denoise_alpha=True, albedo, normals, to_sensor=None, flow, previous_denoised)
+    .. py:method:: mitsuba.OptixDenoiser.__call__(self, noisy, albedo, normals, to_sensor=None, flow, previous_denoised)
 
         Overloaded function.
 
-        1. ``__call__(self, noisy: drjit.llvm.ad.TensorXf, denoise_alpha: bool = True, albedo: drjit.llvm.ad.TensorXf, normals: drjit.llvm.ad.TensorXf, to_sensor: object | None = None, flow: drjit.llvm.ad.TensorXf, previous_denoised: drjit.llvm.ad.TensorXf) -> drjit.llvm.ad.TensorXf``
+        1. ``__call__(self, noisy: drjit.llvm.ad.TensorXf, albedo: drjit.llvm.ad.TensorXf, normals: drjit.llvm.ad.TensorXf, to_sensor: object | None = None, flow: drjit.llvm.ad.TensorXf, previous_denoised: drjit.llvm.ad.TensorXf) -> drjit.llvm.ad.TensorXf``
 
         Apply denoiser on inputs which are TensorXf objects.
 
         Parameter ``noisy`` (drjit.llvm.ad.TensorXf):
             The noisy input. (tensor shape: (width, height, 3 | 4))
-
-        Parameter ``denoise_alpha`` (bool):
-            Whether or not the alpha channel (if specified in the noisy input)
-            should be denoised too. This parameter is optional, by default it
-            is true.
 
         Parameter ``albedo`` (drjit.llvm.ad.TensorXf):
             Albedo information of the noisy rendering. This parameter is
@@ -8101,7 +8116,7 @@
         Returns → drjit.llvm.ad.TensorXf:
             The denoised input.
 
-        2. ``__call__(self, noisy: :py:obj:`mitsuba.Bitmap`, denoise_alpha: bool = True, albedo_ch: str = '', normals_ch: str = '', to_sensor: object | None = None, flow_ch: str = '', previous_denoised_ch: str = '', noisy_ch: str = '<root>') -> :py:obj:`mitsuba.Bitmap```
+        2. ``__call__(self, noisy: :py:obj:`mitsuba.Bitmap`, albedo_ch: str = '', normals_ch: str = '', to_sensor: object | None = None, flow_ch: str = '', previous_denoised_ch: str = '', noisy_ch: str = '<root>') -> :py:obj:`mitsuba.Bitmap```
 
         Apply denoiser on inputs which are Bitmap objects.
 
@@ -8109,11 +8124,6 @@
             The noisy input. When passing additional information like albedo
             or normals to the denoiser, this Bitmap object must be a
             MultiChannel bitmap.
-
-        Parameter ``denoise_alpha`` (bool):
-            Whether or not the alpha channel (if specified in the noisy input)
-            should be denoised too. This parameter is optional, by default it
-            is true.
 
         Parameter ``albedo_ch``:
             The name of the channel in the ``noisy`` parameter which contains
@@ -9988,7 +9998,7 @@
         Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
             *no description available*
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Parameter ``spp`` (int):
@@ -10008,7 +10018,7 @@
         Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
             *no description available*
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Parameter ``spp`` (int):
@@ -12713,6 +12723,25 @@
 
     Forward declaration for `SilhouetteSample`
 
+    .. py:method:: mitsuba.Shape.add_texture_attribute(self, name, texture)
+
+        Add a texture attribute with the given ``name``.
+
+        If an attribute with the same name already exists, it is replaced.
+
+        Note that ``Mesh`` shapes can additionally handle per-vertex and per-
+        face attributes via the ``Mesh::add_attribute`` method.
+
+        Parameter ``name`` (str):
+            Name of the attribute
+
+        Parameter ``texture`` (:py:obj:`mitsuba.Texture`):
+            Texture to store. The dimensionality of the attribute is simply
+            the channel count of the texture.
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Shape.bbox()
 
         Overloaded function.
@@ -13186,6 +13215,18 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
+    .. py:method:: mitsuba.Shape.remove_attribute(self, name)
+
+        Remove a texture texture with the given ``name``.
+
+        Throws an exception if the attribute was not registered.
+
+        Parameter ``name`` (str):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Shape.sample_direction(self, it, sample, active=True)
 
         Sample a direction towards this shape with respect to solid angles
@@ -13294,6 +13335,16 @@
         Returns → :py:obj:`mitsuba.Sensor`:
             *no description available*
 
+    .. py:method:: mitsuba.Shape.set_bsdf(self, bsdf)
+
+        Set the shape's BSDF
+
+        Parameter ``bsdf`` (:py:obj:`mitsuba.BSDF`):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Shape.shape_type()
 
         Returns the shape type ShapeType of this shape
@@ -13325,6 +13376,16 @@
         The default implementation throws an exception.
 
         Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.Shape.texture_attribute(self, name)
+
+        Return the texture attribute associated with ``name``.
+
+        Parameter ``name`` (str):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Texture`:
             *no description available*
 
 .. py:class:: mitsuba.ShapePtr
@@ -16821,7 +16882,7 @@
         Creates a transformation that converts from 'frame' to the standard
         basis
 
-        Parameter ``frame`` (mitsuba::Frame<drjit::DiffArray<(JitBackend)2, double>>):
+        Parameter ``frame`` (mitsuba::Frame<drjit::DiffArray<(JitBackend)2, double> >):
             *no description available*
 
         Returns → :py:obj:`mitsuba.Transform4d`:
@@ -16934,7 +16995,7 @@
         Creates a transformation that converts from the standard basis to
         'frame'
 
-        Parameter ``frame`` (mitsuba::Frame<drjit::DiffArray<(JitBackend)2, double>>):
+        Parameter ``frame`` (mitsuba::Frame<drjit::DiffArray<(JitBackend)2, double> >):
             *no description available*
 
         Returns → :py:obj:`mitsuba.Transform4d`:
@@ -18060,7 +18121,7 @@
 
         Overloaded function.
 
-        1. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: :py:obj:`mitsuba.Sensor`, seed: int = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
+        1. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: :py:obj:`mitsuba.Sensor`, seed: drjit.llvm.ad.UInt = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
 
         Render the scene
 
@@ -18068,7 +18129,7 @@
         other parameters are optional and control different aspects of the
         rendering process. In particular:
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
             This parameter controls the initialization of the random number
             generator. It is crucial that you specify different seeds (e.g.,
             an increasing sequence) if subsequent ``render``() calls should
@@ -18094,7 +18155,7 @@
             (``develop=true``) or modified film (``develop=false``) represent
             the rendering task as an unevaluated computation graph.
 
-        2. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: int = 0, seed: int = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
+        2. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: int = 0, seed: drjit.llvm.ad.UInt = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
 
         Render the scene
 
@@ -18122,7 +18183,7 @@
         Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
             *no description available*
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Parameter ``spp`` (int):
@@ -18145,7 +18206,7 @@
         Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
             *no description available*
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Parameter ``spp`` (int):
@@ -18390,7 +18451,7 @@
         Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
             *no description available*
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Parameter ``spp`` (int):
@@ -18413,7 +18474,7 @@
         Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
             *no description available*
 
-        Parameter ``seed`` (int):
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
             *no description available*
 
         Parameter ``spp`` (int):

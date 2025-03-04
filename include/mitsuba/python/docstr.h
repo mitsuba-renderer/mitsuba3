@@ -101,13 +101,95 @@ static const char *__doc_OptixBuildInputCustomPrimitiveArray_sbtIndexOffsetStrid
 
 static const char *__doc_OptixBuildInputCustomPrimitiveArray_strideInBytes = R"doc()doc";
 
+static const char *__doc_OptixBuildInputDisplacementMicromap = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_displacementMicromapArray = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_displacementMicromapIndexBuffer = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_displacementMicromapIndexOffset = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_displacementMicromapIndexSizeInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_displacementMicromapIndexStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_displacementMicromapUsageCounts = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_indexingMode = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_numDisplacementMicromapUsageCounts = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_triangleFlagsBuffer = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_triangleFlagsStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_vertexBiasAndScaleBuffer = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_vertexBiasAndScaleFormat = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_vertexBiasAndScaleStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_vertexDirectionFormat = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_vertexDirectionStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputDisplacementMicromap_vertexDirectionsBuffer = R"doc()doc";
+
 static const char *__doc_OptixBuildInputInstanceArray = R"doc()doc";
+
+static const char *__doc_OptixBuildInputInstanceArray_instanceStride = R"doc()doc";
 
 static const char *__doc_OptixBuildInputInstanceArray_instances = R"doc()doc";
 
 static const char *__doc_OptixBuildInputInstanceArray_numInstances = R"doc()doc";
 
+static const char *__doc_OptixBuildInputOpacityMicromap = R"doc()doc";
+
+static const char *__doc_OptixBuildInputOpacityMicromap_indexBuffer = R"doc()doc";
+
+static const char *__doc_OptixBuildInputOpacityMicromap_indexOffset = R"doc()doc";
+
+static const char *__doc_OptixBuildInputOpacityMicromap_indexSizeInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputOpacityMicromap_indexStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputOpacityMicromap_indexingMode = R"doc()doc";
+
+static const char *__doc_OptixBuildInputOpacityMicromap_micromapUsageCounts = R"doc()doc";
+
+static const char *__doc_OptixBuildInputOpacityMicromap_numMicromapUsageCounts = R"doc()doc";
+
+static const char *__doc_OptixBuildInputOpacityMicromap_opacityMicromapArray = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_flags = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_numSbtRecords = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_numVertices = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_primitiveIndexOffset = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_radiusBuffers = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_radiusStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_sbtIndexOffsetBuffer = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_sbtIndexOffsetSizeInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_sbtIndexOffsetStrideInBytes = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_singleRadius = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_vertexBuffers = R"doc()doc";
+
+static const char *__doc_OptixBuildInputSphereArray_vertexStrideInBytes = R"doc()doc";
+
 static const char *__doc_OptixBuildInputTriangleArray = R"doc()doc";
+
+static const char *__doc_OptixBuildInputTriangleArray_displacementMicromap = R"doc()doc";
 
 static const char *__doc_OptixBuildInputTriangleArray_flags = R"doc()doc";
 
@@ -122,6 +204,8 @@ static const char *__doc_OptixBuildInputTriangleArray_numIndexTriplets = R"doc()
 static const char *__doc_OptixBuildInputTriangleArray_numSbtRecords = R"doc()doc";
 
 static const char *__doc_OptixBuildInputTriangleArray_numVertices = R"doc()doc";
+
+static const char *__doc_OptixBuildInputTriangleArray_opacityMicromap = R"doc()doc";
 
 static const char *__doc_OptixBuildInputTriangleArray_preTransform = R"doc()doc";
 
@@ -153,13 +237,39 @@ static const char *__doc_OptixBuiltinISOptions_curveEndcapFlags = R"doc()doc";
 
 static const char *__doc_OptixBuiltinISOptions_usesMotionBlur = R"doc()doc";
 
+static const char *__doc_OptixDenoiserAOVType = R"doc()doc";
+
+static const char *__doc_OptixDenoiserAOVType_OPTIX_DENOISER_AOV_TYPE_BEAUTY = R"doc()doc";
+
+static const char *__doc_OptixDenoiserAOVType_OPTIX_DENOISER_AOV_TYPE_DIFFUSE = R"doc()doc";
+
+static const char *__doc_OptixDenoiserAOVType_OPTIX_DENOISER_AOV_TYPE_NONE = R"doc()doc";
+
+static const char *__doc_OptixDenoiserAOVType_OPTIX_DENOISER_AOV_TYPE_REFLECTION = R"doc()doc";
+
+static const char *__doc_OptixDenoiserAOVType_OPTIX_DENOISER_AOV_TYPE_REFRACTION = R"doc()doc";
+
+static const char *__doc_OptixDenoiserAOVType_OPTIX_DENOISER_AOV_TYPE_SPECULAR = R"doc()doc";
+
+static const char *__doc_OptixDenoiserAlphaMode = R"doc()doc";
+
+static const char *__doc_OptixDenoiserAlphaMode_OPTIX_DENOISER_ALPHA_MODE_COPY = R"doc()doc";
+
+static const char *__doc_OptixDenoiserAlphaMode_OPTIX_DENOISER_ALPHA_MODE_DENOISE = R"doc()doc";
+
 static const char *__doc_OptixDenoiserGuideLayer = R"doc()doc";
 
 static const char *__doc_OptixDenoiserGuideLayer_albedo = R"doc()doc";
 
 static const char *__doc_OptixDenoiserGuideLayer_flow = R"doc()doc";
 
+static const char *__doc_OptixDenoiserGuideLayer_flowTrustworthiness = R"doc()doc";
+
 static const char *__doc_OptixDenoiserGuideLayer_normal = R"doc()doc";
+
+static const char *__doc_OptixDenoiserGuideLayer_outputInternalGuideLayer = R"doc()doc";
+
+static const char *__doc_OptixDenoiserGuideLayer_previousOutputInternalGuideLayer = R"doc()doc";
 
 static const char *__doc_OptixDenoiserLayer = R"doc()doc";
 
@@ -169,6 +279,8 @@ static const char *__doc_OptixDenoiserLayer_output = R"doc()doc";
 
 static const char *__doc_OptixDenoiserLayer_previousOutput = R"doc()doc";
 
+static const char *__doc_OptixDenoiserLayer_type = R"doc()doc";
+
 static const char *__doc_OptixDenoiserModelKind = R"doc()doc";
 
 static const char *__doc_OptixDenoiserModelKind_OPTIX_DENOISER_MODEL_KIND_HDR = R"doc()doc";
@@ -176,6 +288,8 @@ static const char *__doc_OptixDenoiserModelKind_OPTIX_DENOISER_MODEL_KIND_HDR = 
 static const char *__doc_OptixDenoiserModelKind_OPTIX_DENOISER_MODEL_KIND_TEMPORAL = R"doc()doc";
 
 static const char *__doc_OptixDenoiserOptions = R"doc()doc";
+
+static const char *__doc_OptixDenoiserOptions_denoiseAlpha = R"doc()doc";
 
 static const char *__doc_OptixDenoiserOptions_guideAlbedo = R"doc()doc";
 
@@ -185,13 +299,19 @@ static const char *__doc_OptixDenoiserParams = R"doc()doc";
 
 static const char *__doc_OptixDenoiserParams_blendFactor = R"doc()doc";
 
-static const char *__doc_OptixDenoiserParams_denoiseAlpha = R"doc()doc";
-
 static const char *__doc_OptixDenoiserParams_hdrAverageColor = R"doc()doc";
 
 static const char *__doc_OptixDenoiserParams_hdrIntensity = R"doc()doc";
 
+static const char *__doc_OptixDenoiserParams_temporalModeUsePreviousLayers = R"doc()doc";
+
 static const char *__doc_OptixDenoiserSizes = R"doc()doc";
+
+static const char *__doc_OptixDenoiserSizes_computeAverageColorSizeInBytes = R"doc()doc";
+
+static const char *__doc_OptixDenoiserSizes_computeIntensitySizeInBytes = R"doc()doc";
+
+static const char *__doc_OptixDenoiserSizes_internalGuideLayerPixelSizeInBytes = R"doc()doc";
 
 static const char *__doc_OptixDenoiserSizes_overlapWindowSizeInPixels = R"doc()doc";
 
@@ -200,6 +320,14 @@ static const char *__doc_OptixDenoiserSizes_stateSizeInBytes = R"doc()doc";
 static const char *__doc_OptixDenoiserSizes_withOverlapScratchSizeInBytes = R"doc()doc";
 
 static const char *__doc_OptixDenoiserSizes_withoutOverlapScratchSizeInBytes = R"doc()doc";
+
+static const char *__doc_OptixDisplacementMicromapUsageCount = R"doc()doc";
+
+static const char *__doc_OptixDisplacementMicromapUsageCount_count = R"doc()doc";
+
+static const char *__doc_OptixDisplacementMicromapUsageCount_format = R"doc()doc";
+
+static const char *__doc_OptixDisplacementMicromapUsageCount_subdivisionLevel = R"doc()doc";
 
 static const char *__doc_OptixHitGroupData = R"doc(Stores information about a Shape on the Optix side)doc";
 
@@ -263,6 +391,14 @@ static const char *__doc_OptixMotionOptions_timeBegin = R"doc()doc";
 
 static const char *__doc_OptixMotionOptions_timeEnd = R"doc()doc";
 
+static const char *__doc_OptixOpacityMicromapUsageCount = R"doc()doc";
+
+static const char *__doc_OptixOpacityMicromapUsageCount_count = R"doc()doc";
+
+static const char *__doc_OptixOpacityMicromapUsageCount_format = R"doc()doc";
+
+static const char *__doc_OptixOpacityMicromapUsageCount_subdivisionLevel = R"doc()doc";
+
 static const char *__doc_OptixPayloadType = R"doc()doc";
 
 static const char *__doc_OptixPayloadType_numPayloadValues = R"doc()doc";
@@ -270,6 +406,8 @@ static const char *__doc_OptixPayloadType_numPayloadValues = R"doc()doc";
 static const char *__doc_OptixPayloadType_payloadSemantics = R"doc()doc";
 
 static const char *__doc_OptixPipelineCompileOptions = R"doc()doc";
+
+static const char *__doc_OptixPipelineCompileOptions_allowOpacityMicromaps = R"doc()doc";
 
 static const char *__doc_OptixPipelineCompileOptions_exceptionFlags = R"doc()doc";
 
@@ -302,6 +440,16 @@ static const char *__doc_OptixPixelFormat_OPTIX_PIXEL_FORMAT_HALF4 = R"doc()doc"
 static const char *__doc_OptixPixelFormat_OPTIX_PIXEL_FORMAT_UCHAR3 = R"doc()doc";
 
 static const char *__doc_OptixPixelFormat_OPTIX_PIXEL_FORMAT_UCHAR4 = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupCallables = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupCallables_entryFunctionNameCC = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupCallables_entryFunctionNameDC = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupCallables_moduleCC = R"doc()doc";
+
+static const char *__doc_OptixProgramGroupCallables_moduleDC = R"doc()doc";
 
 static const char *__doc_OptixProgramGroupDesc = R"doc()doc";
 
@@ -391,7 +539,7 @@ static const char *__doc_mitsuba_AdjointIntegrator_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator_AdjointIntegrator = R"doc(Create an integrator)doc";
 
-static const char *__doc_mitsuba_AdjointIntegrator_class = R"doc(//! @})doc";
+static const char *__doc_mitsuba_AdjointIntegrator_class = R"doc()doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator_m_max_depth =
 R"doc(Longest visualized path depth (\c -1 = infinite). A value of ``1``
@@ -732,13 +880,13 @@ static const char *__doc_mitsuba_BSDFSample3_BSDFSample3_4 = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_BSDFSample3_eta = R"doc(Relative index of refraction in the sampled direction)doc";
 
-static const char *__doc_mitsuba_BSDFSample3_fields = R"doc(//! @})doc";
+static const char *__doc_mitsuba_BSDFSample3_fields = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDFSample3_fields_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_BSDFSample3_fields_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDFSample3_labels = R"doc(//! @})doc";
+static const char *__doc_mitsuba_BSDFSample3_labels = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDFSample3_name = R"doc(//! @})doc";
+static const char *__doc_mitsuba_BSDFSample3_name = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFSample3_operator_assign = R"doc(//! @})doc";
 
@@ -754,7 +902,7 @@ static const char *__doc_mitsuba_BSDFSample3_wo = R"doc(Normalized outgoing dire
 
 static const char *__doc_mitsuba_BSDF_BSDF = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_BSDF_class = R"doc(//! @})doc";
+static const char *__doc_mitsuba_BSDF_class = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_component_count = R"doc(Number of components this BSDF is comprised of.)doc";
 
@@ -2061,13 +2209,13 @@ choosing one of several objects (shapes, emitters, ..) on which the
 position lies. In that case, the ``object`` attribute stores a pointer
 to this object.)doc";
 
-static const char *__doc_mitsuba_DirectionSample_fields = R"doc(//! @})doc";
+static const char *__doc_mitsuba_DirectionSample_fields = R"doc()doc";
 
-static const char *__doc_mitsuba_DirectionSample_fields_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_DirectionSample_fields_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_DirectionSample_labels = R"doc(//! @})doc";
+static const char *__doc_mitsuba_DirectionSample_labels = R"doc()doc";
 
-static const char *__doc_mitsuba_DirectionSample_name = R"doc(//! @})doc";
+static const char *__doc_mitsuba_DirectionSample_name = R"doc()doc";
 
 static const char *__doc_mitsuba_DirectionSample_operator_array = R"doc(Convenience operator for masking)doc";
 
@@ -2335,7 +2483,7 @@ static const char *__doc_mitsuba_DummyStream_can_read = R"doc()doc";
 
 static const char *__doc_mitsuba_DummyStream_can_write = R"doc()doc";
 
-static const char *__doc_mitsuba_DummyStream_class = R"doc(//! @})doc";
+static const char *__doc_mitsuba_DummyStream_class = R"doc()doc";
 
 static const char *__doc_mitsuba_DummyStream_close =
 R"doc(Closes the stream. No further read or write operations are permitted.
@@ -2816,7 +2964,7 @@ static const char *__doc_mitsuba_FileStream_can_read = R"doc(True except if the 
 
 static const char *__doc_mitsuba_FileStream_can_write = R"doc(Whether the field was open in write-mode (and was not closed))doc";
 
-static const char *__doc_mitsuba_FileStream_class = R"doc(//! @})doc";
+static const char *__doc_mitsuba_FileStream_class = R"doc()doc";
 
 static const char *__doc_mitsuba_FileStream_close =
 R"doc(Closes the stream and the underlying file. No further read or write
@@ -3817,17 +3965,17 @@ static const char *__doc_mitsuba_Interaction_Interaction_3 = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_Interaction_Interaction_4 = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_Interaction_fields = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Interaction_fields = R"doc()doc";
 
-static const char *__doc_mitsuba_Interaction_fields_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Interaction_fields_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Interaction_is_valid = R"doc(Is the current interaction valid?)doc";
 
-static const char *__doc_mitsuba_Interaction_labels = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Interaction_labels = R"doc()doc";
 
 static const char *__doc_mitsuba_Interaction_n = R"doc(Geometric normal (only valid for ``SurfaceInteraction``))doc";
 
-static const char *__doc_mitsuba_Interaction_name = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Interaction_name = R"doc()doc";
 
 static const char *__doc_mitsuba_Interaction_offset_p =
 R"doc(Compute an offset position, used when spawning a ray from this
@@ -4229,17 +4377,17 @@ static const char *__doc_mitsuba_MediumInteraction_MediumInteraction_3 = R"doc(/
 
 static const char *__doc_mitsuba_MediumInteraction_combined_extinction = R"doc()doc";
 
-static const char *__doc_mitsuba_MediumInteraction_fields = R"doc(//! @})doc";
+static const char *__doc_mitsuba_MediumInteraction_fields = R"doc()doc";
 
-static const char *__doc_mitsuba_MediumInteraction_fields_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_MediumInteraction_fields_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_MediumInteraction_labels = R"doc(//! @})doc";
+static const char *__doc_mitsuba_MediumInteraction_labels = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumInteraction_medium = R"doc(Pointer to the associated medium)doc";
 
 static const char *__doc_mitsuba_MediumInteraction_mint = R"doc(mint used when sampling the given distance ``t``)doc";
 
-static const char *__doc_mitsuba_MediumInteraction_name = R"doc(//! @})doc";
+static const char *__doc_mitsuba_MediumInteraction_name = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumInteraction_operator_assign = R"doc(//! @})doc";
 
@@ -4421,7 +4569,7 @@ static const char *__doc_mitsuba_MemoryStream_can_write = R"doc(Always returns t
 
 static const char *__doc_mitsuba_MemoryStream_capacity = R"doc(Return the current capacity of the underlying memory buffer)doc";
 
-static const char *__doc_mitsuba_MemoryStream_class = R"doc(//! @})doc";
+static const char *__doc_mitsuba_MemoryStream_class = R"doc()doc";
 
 static const char *__doc_mitsuba_MemoryStream_close =
 R"doc(Closes the stream. No further read or write operations are permitted.
@@ -4524,12 +4672,6 @@ static const char *__doc_mitsuba_Mesh_MeshAttribute_size = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_MeshAttribute_type = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_add_attribute = R"doc(Add an attribute buffer with the given ``name`` and ``dim``)doc";
-
-static const char *__doc_mitsuba_Mesh_remove_attribute = R"doc(Remove an attribute with the given ``name``.
-
-Affects both mesh and texture attributes.
-
-Throws an exception if the attribute was not previously registered.)doc";
 
 static const char *__doc_mitsuba_Mesh_attribute_buffer = R"doc(Return the mesh attribute associated with ``name``)doc";
 
@@ -4748,11 +4890,20 @@ static const char *__doc_mitsuba_Mesh_recompute_bbox = R"doc(Recompute the bound
 
 static const char *__doc_mitsuba_Mesh_recompute_vertex_normals = R"doc(Compute smooth vertex normals and replace the current normal values)doc";
 
+static const char *__doc_mitsuba_Mesh_remove_attribute =
+R"doc(Remove an attribute with the given ``name``.
+
+Affects both mesh and texture attributes.
+
+Throws an exception if the attribute was not previously registered.)doc";
+
 static const char *__doc_mitsuba_Mesh_sample_position = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_sample_precomputed_silhouette = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_sample_silhouette = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_set_bsdf = R"doc(Set the shape's BSDF)doc";
 
 static const char *__doc_mitsuba_Mesh_set_scene = R"doc()doc";
 
@@ -5153,11 +5304,20 @@ Parameter ``input_size``:
 
 Parameter ``albedo``:
     Whether or not albedo information will also be given to the
-    denoiser.
+    denoiser. This parameter is optional, by default it is false.
 
 Parameter ``normals``:
     Whether or not shading normals information will also be given to
-    the Denoiser.
+    the denoiser. This parameter is optional, by default it is false.
+
+Parameter ``temporal``:
+    Whether or not temporal information will also be given to the
+    denoiser. This parameter is optional, by default it is false.
+
+Parameter ``denoise_alpha``:
+    Whether or not the alpha channel (if specified in the noisy input)
+    should be denoised too. This parameter is optional, by default it
+    is false.
 
 Returns:
     A callable object which will apply the OptiX denoiser.)doc";
@@ -5191,11 +5351,6 @@ R"doc(Apply denoiser on inputs which are TensorXf objects.
 
 Parameter ``noisy``:
     The noisy input. (tensor shape: (width, height, 3 | 4))
-
-Parameter ``denoise_alpha``:
-    Whether or not the alpha channel (if specified in the noisy input)
-    should be denoised too. This parameter is optional, by default it
-    is true.
 
 Parameter ``albedo``:
     Albedo information of the noisy rendering. This parameter is
@@ -5241,11 +5396,6 @@ Parameter ``noisy``:
     The noisy input. When passing additional information like albedo
     or normals to the denoiser, this Bitmap object must be a
     MultiChannel bitmap.
-
-Parameter ``denoise_alpha``:
-    Whether or not the alpha channel (if specified in the noisy input)
-    should be denoised too. This parameter is optional, by default it
-    is true.
 
 Parameter ``albedo_ch``:
     The name of the channel in the ``noisy`` parameter which contains
@@ -5424,7 +5574,7 @@ static const char *__doc_mitsuba_PhaseFunctionFlags_Microflake = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunction_PhaseFunction = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_PhaseFunction_class = R"doc(//! @})doc";
+static const char *__doc_mitsuba_PhaseFunction_class = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunction_component_count = R"doc(Number of components this phase function is comprised of.)doc";
 
@@ -5596,15 +5746,15 @@ static const char *__doc_mitsuba_PositionSample_delta =
 R"doc(Set if the sample was drawn from a degenerate (Dirac delta)
 distribution)doc";
 
-static const char *__doc_mitsuba_PositionSample_fields = R"doc(//! @})doc";
+static const char *__doc_mitsuba_PositionSample_fields = R"doc()doc";
 
-static const char *__doc_mitsuba_PositionSample_fields_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_PositionSample_fields_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_PositionSample_labels = R"doc(//! @})doc";
+static const char *__doc_mitsuba_PositionSample_labels = R"doc()doc";
 
 static const char *__doc_mitsuba_PositionSample_n = R"doc(Sampled surface normal (if applicable))doc";
 
-static const char *__doc_mitsuba_PositionSample_name = R"doc(//! @})doc";
+static const char *__doc_mitsuba_PositionSample_name = R"doc()doc";
 
 static const char *__doc_mitsuba_PositionSample_operator_assign = R"doc(//! @})doc";
 
@@ -5667,17 +5817,17 @@ Parameter ``ray_flags``:
 Returns:
     A data structure containing the detailed information)doc";
 
-static const char *__doc_mitsuba_PreliminaryIntersection_fields = R"doc(//! @})doc";
+static const char *__doc_mitsuba_PreliminaryIntersection_fields = R"doc()doc";
 
-static const char *__doc_mitsuba_PreliminaryIntersection_fields_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_PreliminaryIntersection_fields_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_instance = R"doc(Stores a pointer to the parent instance (if applicable))doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_is_valid = R"doc(Is the current interaction valid?)doc";
 
-static const char *__doc_mitsuba_PreliminaryIntersection_labels = R"doc(//! @})doc";
+static const char *__doc_mitsuba_PreliminaryIntersection_labels = R"doc()doc";
 
-static const char *__doc_mitsuba_PreliminaryIntersection_name = R"doc(//! @})doc";
+static const char *__doc_mitsuba_PreliminaryIntersection_name = R"doc()doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_operator_assign = R"doc(//! @})doc";
 
@@ -6609,7 +6759,7 @@ static const char *__doc_mitsuba_SamplingIntegrator_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_SamplingIntegrator = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_SamplingIntegrator_class = R"doc(//! @})doc";
+static const char *__doc_mitsuba_SamplingIntegrator_class = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_m_block_size = R"doc(Size of (square) image blocks to render in parallel (in scalar mode))doc";
 
@@ -7524,6 +7674,21 @@ static const char *__doc_mitsuba_Shape_Shape = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_Shape_Shape_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_Shape_add_texture_attribute =
+R"doc(Add a texture attribute with the given ``name``.
+
+If an attribute with the same name already exists, it is replaced.
+
+Note that ``Mesh`` shapes can additionally handle per-vertex and per-
+face attributes via the ``Mesh::add_attribute`` method.
+
+Parameter ``name``:
+    Name of the attribute
+
+Parameter ``texture``:
+    Texture to store. The dimensionality of the attribute is simply
+    the channel count of the texture.)doc";
+
 static const char *__doc_mitsuba_Shape_bbox =
 R"doc(Return an axis aligned box that bounds all shape primitives (including
 any transformations that may have been applied to them))doc";
@@ -7547,7 +7712,7 @@ static const char *__doc_mitsuba_Shape_bsdf = R"doc(Return the shape's BSDF)doc"
 
 static const char *__doc_mitsuba_Shape_bsdf_2 = R"doc(Return the shape's BSDF)doc";
 
-static const char *__doc_mitsuba_Shape_class = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Shape_class = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_compute_surface_interaction =
 R"doc(Compute and return detailed information related to a surface
@@ -7622,27 +7787,6 @@ static const char *__doc_mitsuba_Shape_embree_geometry = R"doc(Return the Embree
 static const char *__doc_mitsuba_Shape_emitter = R"doc(Return the area emitter associated with this shape (if any))doc";
 
 static const char *__doc_mitsuba_Shape_emitter_2 = R"doc(Return the area emitter associated with this shape (if any))doc";
-
-static const char *__doc_mitsuba_Shape_add_texture_attribute =
-R"doc(Add a texture attribute with the given ``name``.
-
-If an attribute with the same name already exists, it is replaced.
-
-Note that ``Mesh`` shapes can additionally handle per-vertex
-and per-face attributes via the ``Mesh::add_attribute method``.
-
-Parameter ``name``:
-    Name of the attribute
-Parameter ``texture``:
-    Texture to store. The dimensionality of the attribute
-    is simply the channel count of the texture.)doc";
-
-static const char *__doc_mitsuba_Shape_texture_attribute = R"doc(Return the texture attribute associated with \c name.)doc";
-
-static const char *__doc_mitsuba_Shape_remove_attribute =
-R"doc(Remove a texture texture with the given ``name``.
-
-Throws an exception if the attribute was not registered.)doc";
 
 static const char *__doc_mitsuba_Shape_eval_attribute =
 R"doc(Evaluate a specific shape attribute at the given surface interaction.
@@ -7859,8 +8003,6 @@ static const char *__doc_mitsuba_Shape_parameters_grad_enabled =
 R"doc(Return whether any shape's parameters that introduce visibility
 discontinuities require gradients (default return false))doc";
 
-static const char *__doc_mitsuba_Shape_set_bsdf = R"doc(Set the shape's BSDF)doc";
-
 static const char *__doc_mitsuba_Shape_pdf_direction =
 R"doc(Query the probability density of sample_direction()
 
@@ -8029,6 +8171,11 @@ static const char *__doc_mitsuba_Shape_ray_test_packet_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_ray_test_scalar = R"doc()doc";
 
+static const char *__doc_mitsuba_Shape_remove_attribute =
+R"doc(Remove a texture texture with the given ``name``.
+
+Throws an exception if the attribute was not registered.)doc";
+
 static const char *__doc_mitsuba_Shape_sample_direction =
 R"doc(Sample a direction towards this shape with respect to solid angles
 measured at a reference position within the scene
@@ -8118,6 +8265,8 @@ static const char *__doc_mitsuba_Shape_sensor = R"doc(Return the area sensor ass
 
 static const char *__doc_mitsuba_Shape_sensor_2 = R"doc(Return the area sensor associated with this shape (if any))doc";
 
+static const char *__doc_mitsuba_Shape_set_bsdf = R"doc(Set the shape's BSDF)doc";
+
 static const char *__doc_mitsuba_Shape_set_id = R"doc(Set a string identifier)doc";
 
 static const char *__doc_mitsuba_Shape_shape_type = R"doc(Returns the shape type ShapeType of this shape)doc";
@@ -8133,6 +8282,10 @@ The function assumes that the object is not undergoing some kind of
 time-dependent scaling.
 
 The default implementation throws an exception.)doc";
+
+static const char *__doc_mitsuba_Shape_texture_attribute = R"doc(Return the texture attribute associated with ``name``.)doc";
+
+static const char *__doc_mitsuba_Shape_texture_attribute_2 = R"doc(Return the texture attribute associated with ``name``.)doc";
 
 static const char *__doc_mitsuba_Shape_traverse = R"doc()doc";
 
@@ -8152,9 +8305,9 @@ static const char *__doc_mitsuba_SilhouetteSample_d = R"doc(Direction of the bou
 
 static const char *__doc_mitsuba_SilhouetteSample_discontinuity_type = R"doc(Type of discontinuity (DiscontinuityFlags))doc";
 
-static const char *__doc_mitsuba_SilhouetteSample_fields = R"doc(//! @})doc";
+static const char *__doc_mitsuba_SilhouetteSample_fields = R"doc()doc";
 
-static const char *__doc_mitsuba_SilhouetteSample_fields_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_SilhouetteSample_fields_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_SilhouetteSample_flags =
 R"doc(The set of ``DiscontinuityFlags`` that were used to generate this
@@ -8168,9 +8321,9 @@ curvature for interior silhouettes.)doc";
 
 static const char *__doc_mitsuba_SilhouetteSample_is_valid = R"doc(Is the current boundary segment valid=)doc";
 
-static const char *__doc_mitsuba_SilhouetteSample_labels = R"doc(//! @})doc";
+static const char *__doc_mitsuba_SilhouetteSample_labels = R"doc()doc";
 
-static const char *__doc_mitsuba_SilhouetteSample_name = R"doc(//! @})doc";
+static const char *__doc_mitsuba_SilhouetteSample_name = R"doc()doc";
 
 static const char *__doc_mitsuba_SilhouetteSample_offset =
 R"doc(Offset along the boundary segment direction (`d`) to avoid self-
@@ -8351,7 +8504,7 @@ static const char *__doc_mitsuba_Stream_can_read = R"doc(Can we read from the st
 
 static const char *__doc_mitsuba_Stream_can_write = R"doc(Can we write to the stream?)doc";
 
-static const char *__doc_mitsuba_Stream_class = R"doc(@})doc";
+static const char *__doc_mitsuba_Stream_class = R"doc()doc";
 
 static const char *__doc_mitsuba_Stream_close =
 R"doc(Closes the stream.
@@ -8814,9 +8967,9 @@ static const char *__doc_mitsuba_SurfaceInteraction_emitter =
 R"doc(Return the emitter associated with the intersection (if any) \note
 Defined in scene.h)doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_fields = R"doc(//! @})doc";
+static const char *__doc_mitsuba_SurfaceInteraction_fields = R"doc()doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_fields_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_SurfaceInteraction_fields_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_finalize_surface_interaction =
 R"doc(Fills uninitialized fields after a call to
@@ -8844,9 +8997,9 @@ static const char *__doc_mitsuba_SurfaceInteraction_is_medium_transition = R"doc
 
 static const char *__doc_mitsuba_SurfaceInteraction_is_sensor = R"doc(Is the intersected shape also a sensor?)doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_labels = R"doc(//! @})doc";
+static const char *__doc_mitsuba_SurfaceInteraction_labels = R"doc()doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_name = R"doc(//! @})doc";
+static const char *__doc_mitsuba_SurfaceInteraction_name = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_operator_array = R"doc(Convenience operator for masking)doc";
 
@@ -9760,9 +9913,9 @@ static const char *__doc_mitsuba_Transform_Transform_6 = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_Transform_extract = R"doc(Extract a lower-dimensional submatrix)doc";
 
-static const char *__doc_mitsuba_Transform_fields = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Transform_fields = R"doc()doc";
 
-static const char *__doc_mitsuba_Transform_fields_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Transform_fields_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_from_frame =
 R"doc(Creates a transformation that converts from 'frame' to the standard
@@ -9779,7 +9932,7 @@ arithmetic))doc";
 
 static const char *__doc_mitsuba_Transform_inverse_transpose = R"doc()doc";
 
-static const char *__doc_mitsuba_Transform_labels = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Transform_labels = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_look_at =
 R"doc(Create a look-at camera transformation
@@ -9795,7 +9948,7 @@ Parameter ``up``:
 
 static const char *__doc_mitsuba_Transform_matrix = R"doc(//! @{ \name Fields)doc";
 
-static const char *__doc_mitsuba_Transform_name = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Transform_name = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_operator_assign = R"doc()doc";
 
@@ -10111,7 +10264,7 @@ static const char *__doc_mitsuba_ZStream_child_stream = R"doc(Returns the child 
 
 static const char *__doc_mitsuba_ZStream_child_stream_2 = R"doc(Returns the child stream of this compression stream)doc";
 
-static const char *__doc_mitsuba_ZStream_class = R"doc(//! @})doc";
+static const char *__doc_mitsuba_ZStream_class = R"doc()doc";
 
 static const char *__doc_mitsuba_ZStream_close =
 R"doc(Closes the stream, but not the underlying child stream. No further
@@ -12542,3 +12695,4 @@ static const char *__doc_operator_lshift = R"doc(Turns a vector of elements into
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif
+
