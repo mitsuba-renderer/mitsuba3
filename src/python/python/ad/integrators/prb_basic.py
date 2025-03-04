@@ -81,7 +81,8 @@ class BasicPRBIntegrator(RBIntegrator):
 
         while dr.hint(active,
                       max_iterations=self.max_depth,
-                      label="Path Replay Backpropagation (%s)" % mode.name):
+                      label="Path Replay Backpropagation (%s)" % mode.name, 
+                      exclude = [scene]):
             active_next = mi.Bool(active)
 
             # ---------------------- Direct emission ----------------------
@@ -162,7 +163,7 @@ class BasicPRBIntegrator(RBIntegrator):
 
         return (
             L if primal else δL, # Radiance/differential radiance
-            depth != 0,          # Ray validity flag for alpha blending
+            depth != 0,    # Ray validity flag for alpha blending
             [],                  # Empty typle of AOVs
             L                    # State the for differential phase
         )

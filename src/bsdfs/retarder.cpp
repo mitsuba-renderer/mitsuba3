@@ -72,6 +72,8 @@ public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
     MI_IMPORT_TYPES(Texture)
 
+    DR_TRAVERSE_CB(Base, m_theta, m_delta, m_transmittance);
+
     LinearRetarder(const Properties &props) : Base(props) {
         m_theta = props.texture<Texture>("theta", 0.f);
         // As default, instantiate as a quarter-wave plate

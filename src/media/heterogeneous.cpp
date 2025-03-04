@@ -216,6 +216,8 @@ private:
     ScalarFloat m_scale;
 
     Float m_max_density;
+
+    DR_TRAVERSE_CB(Base, m_sigmat, m_albedo, m_max_density);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(HeterogeneousMedium, Medium)
