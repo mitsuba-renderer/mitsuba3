@@ -251,7 +251,6 @@ public:
         m_data_pointer = m_data.data();
 
         m_extent_multiplier = props.get<ScalarFloat>("extent", 3.f);
-        m_extents = dr::full<FloatStorage>(m_extent_multiplier, count());
         m_extent_adaptive_clamping = props.get<bool>("extent_adaptive_clamping", false);
 
         // Load any other ellipsoids attributes
@@ -303,7 +302,9 @@ public:
             auto indices = dr::arange<UInt32>(count());
             Float opacities = dr::gather<Float>(m_attributes["opacities"], indices);
             float alpha = 0.01f; // minimum response of the Gaussian
-            m_extents = dr::sqrt(2.f * dr::log(opacities / alpha)) * 3.0 / m_extent_multiplier;
+            m_extents = dr::sqrt(2.f * dr::log(opacities / alpha)) * m_extent_multiplier / 3.f;
+        } else {
+            m_extents = dr::full<FloatStorage>(m_extent_multiplier, count());
         }
 
         m_extents_pointer = m_extents.data();
@@ -451,7 +452,7 @@ public:
     Float_ extents(Index_ index, Mask_ active = true) const {
         if constexpr (!dr::is_jit_v<Index_>) {
             DRJIT_MARK_USED(active);
-            return m_extents_pointer[index];
+            return (Float_) m_extents_pointer[index];
         } else {
             return dr::gather<Float_>(m_extents, index, active);
         }
