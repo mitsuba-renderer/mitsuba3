@@ -7,6 +7,10 @@
 
 #include "ellipsoids.h"
 
+#if defined(MI_ENABLE_EMBREE)
+    #include <embree3/rtcore.h>
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 
 /// Forward declaration of template shell mesh data buffers
@@ -85,10 +89,6 @@ ellipsoid representations.
 It supports various shell types, including box, ico_sphere, and uv_sphere, as
 well as custom mesh shells.
 
-The Embree ray-tracing backend does not support per-shape backface culling, so
-Mitsuba defaults to the :monosp:`ellipsoids` shape when using
-:monosp:`ellipsoidsmesh` shapes with Embree.
-
 This shape is designed for use with volumetric primitive integrators, as detailed in
 this [paper](https://arxiv.org/abs/2405.15425).
 
@@ -131,130 +131,111 @@ public:
     EllipsoidsMesh(const Properties &props) : Base(props) {
         m_shape_type = ShapeType::Ellipsoids;
 
-        if constexpr (dr::is_cuda_v<Float>) {
-            Timer timer;
+        Timer timer;
 
-            m_ellipsoids = EllipsoidsData<Float, Spectrum>(props);
+        m_ellipsoids = EllipsoidsData<Float, Spectrum>(props);
 
-            std::string shell_type = "default";
-            if (props.has_property("shell")) {
-                if (props.type("shell") == Properties::Type::String) {
-                    shell_type = props.get<std::string>("shell");
-                    if (shell_type != "box" && shell_type != "default" && shell_type != "ico_sphere" && shell_type != "uv_sphere")
-                        Throw("Shell type '%s' is not supported. Should be one of: [\"default\", \"box\", \"ico_sphere\", \"uv_sphere\"]", shell_type.c_str());
-                } else {
-                    shell_type = "mesh";
-                }
-            }
-
-            if (shell_type == "box") {
-                Log(Debug, "Load box shell template (12 triangles)");
-                m_shell_vertices = box_vertices;
-                m_shell_faces    = box_faces;
-            } else if (shell_type == "default" || shell_type == "ico_sphere") {
-                Log(Debug, "Load default ICO sphere shell template (20 triangles)");
-                m_shell_vertices = ico_sphere_20_vertices;
-                m_shell_faces    = ico_sphere_20_faces;
-            } else if (shell_type == "uv_sphere") {
-                Log(Debug, "Load default UV sphere shell template (72 triangles)");
-                m_shell_vertices = uv_sphere_72_vertices;
-                m_shell_faces    = uv_sphere_72_faces;
+        std::string shell_type = "default";
+        if (props.has_property("shell")) {
+            if (props.type("shell") == Properties::Type::String) {
+                shell_type = props.get<std::string>("shell");
+                if (shell_type != "box" && shell_type != "default" && shell_type != "ico_sphere" && shell_type != "uv_sphere")
+                    Throw("Shell type '%s' is not supported. Should be one of: [\"default\", \"box\", \"ico_sphere\", \"uv_sphere\"]", shell_type.c_str());
             } else {
-                Log(Debug, "Load shell template from nested mesh object.");
-                ref<Base> mesh(dynamic_cast<Base *>(props.get<ref<Object>>("shell").get()));
+                shell_type = "mesh";
+            }
+        }
 
-                struct MeshDataRetriever : public TraversalCallback {
-                    void put_object(const std::string &, Object *, uint32_t) override {}
-                    void put_parameter_impl(const std::string &name, void *val, uint32_t, const std::type_info &) override {
-                        if (name == "vertex_positions") {
-                            vertex_positions = *((FloatStorage *) val);
-                        } else if (name == "faces") {
-                            faces = *((IndexStorage *) val);
-                        }
-                    };
-                    FloatStorage vertex_positions;
-                    IndexStorage faces;
+        if (shell_type == "box") {
+            Log(Debug, "Load box shell template (12 triangles)");
+            m_shell_vertices = box_vertices;
+            m_shell_faces    = box_faces;
+        } else if (shell_type == "default" || shell_type == "ico_sphere") {
+            Log(Debug, "Load default ICO sphere shell template (20 triangles)");
+            m_shell_vertices = ico_sphere_20_vertices;
+            m_shell_faces    = ico_sphere_20_faces;
+        } else if (shell_type == "uv_sphere") {
+            Log(Debug, "Load default UV sphere shell template (72 triangles)");
+            m_shell_vertices = uv_sphere_72_vertices;
+            m_shell_faces    = uv_sphere_72_faces;
+        } else {
+            Log(Debug, "Load shell template from nested mesh object.");
+            ref<Base> mesh(dynamic_cast<Base *>(props.get<ref<Object>>("shell").get()));
+
+            struct MeshDataRetriever : public TraversalCallback {
+                void put_object(const std::string &, Object *, uint32_t) override {}
+                void put_parameter_impl(const std::string &name, void *val, uint32_t, const std::type_info &) override {
+                    if (name == "vertex_positions") {
+                        vertex_positions = *((FloatStorage *) val);
+                    } else if (name == "faces") {
+                        faces = *((IndexStorage *) val);
+                    }
                 };
+                FloatStorage vertex_positions;
+                IndexStorage faces;
+            };
 
-                MeshDataRetriever retriever = MeshDataRetriever();
-                mesh->traverse((TraversalCallback *) &retriever);
+            MeshDataRetriever retriever = MeshDataRetriever();
+            mesh->traverse((TraversalCallback *) &retriever);
 
-                auto&& vertex_positions = dr::migrate(retriever.vertex_positions, AllocType::Host);
-                auto&& faces            = dr::migrate(retriever.faces,            AllocType::Host);
+            auto&& vertex_positions = dr::migrate(retriever.vertex_positions, AllocType::Host);
+            auto&& faces            = dr::migrate(retriever.faces,            AllocType::Host);
 
-                if constexpr (dr::is_jit_v<Float>)
-                    dr::sync_thread();
+            if constexpr (dr::is_jit_v<Float>)
+                dr::sync_thread();
 
-                const InputFloat *vertex_positions_ptr = vertex_positions.data();
-                const ScalarIndex *faces_ptr           = faces.data();
+            const InputFloat *vertex_positions_ptr = vertex_positions.data();
+            const ScalarIndex *faces_ptr           = faces.data();
 
-                m_shell_vertices.clear();
-                for (size_t i = 0; i < dr::width(vertex_positions) / 3; ++i) {
-                    m_shell_vertices.push_back({
-                        vertex_positions_ptr[3 * i + 0],
-                        vertex_positions_ptr[3 * i + 1],
-                        vertex_positions_ptr[3 * i + 2],
-                    });
-                }
-
-                m_shell_faces.clear();
-                for (size_t i = 0; i < dr::width(faces) / 3; ++i) {
-                    m_shell_faces.push_back({
-                        faces_ptr[3 * i + 0],
-                        faces_ptr[3 * i + 1],
-                        faces_ptr[3 * i + 2],
-                    });
-                }
+            m_shell_vertices.clear();
+            for (size_t i = 0; i < dr::width(vertex_positions) / 3; ++i) {
+                m_shell_vertices.push_back({
+                    vertex_positions_ptr[3 * i + 0],
+                    vertex_positions_ptr[3 * i + 1],
+                    vertex_positions_ptr[3 * i + 2],
+                });
             }
 
-            // Scale vertex positions of shell to ensure that it full encapsulates the unit sphere
-            {
-                InputFloat scaling = dr::Largest<InputFloat>;
-                for (size_t i = 0; i < m_shell_faces.size(); ++i) {
-                    InputPoint3f v0 = m_shell_vertices[m_shell_faces[i][0]];
-                    InputPoint3f v1 = m_shell_vertices[m_shell_faces[i][1]];
-                    InputPoint3f v2 = m_shell_vertices[m_shell_faces[i][2]];
+            m_shell_faces.clear();
+            for (size_t i = 0; i < dr::width(faces) / 3; ++i) {
+                m_shell_faces.push_back({
+                    faces_ptr[3 * i + 0],
+                    faces_ptr[3 * i + 1],
+                    faces_ptr[3 * i + 2],
+                });
+            }
+        }
 
-                    // Ensures that all vertices are outside of unit sphere
-                    scaling = std::min(scaling, dr::norm(v0));
-                    scaling = std::min(scaling, dr::norm(v1));
-                    scaling = std::min(scaling, dr::norm(v2));
+        // Scale vertex positions of shell to ensure that it full encapsulates the unit sphere
+        {
+            InputFloat scaling = dr::Largest<InputFloat>;
+            for (size_t i = 0; i < m_shell_faces.size(); ++i) {
+                InputPoint3f v0 = m_shell_vertices[m_shell_faces[i][0]];
+                InputPoint3f v1 = m_shell_vertices[m_shell_faces[i][1]];
+                InputPoint3f v2 = m_shell_vertices[m_shell_faces[i][2]];
 
-                    // Ensures that face center is outside of unit sphere
-                    scaling = std::min(scaling, dr::norm((v0 + v1 + v2) / 3.f));
-                }
+                // Ensures that all vertices are outside of unit sphere
+                scaling = std::min(scaling, dr::norm(v0));
+                scaling = std::min(scaling, dr::norm(v1));
+                scaling = std::min(scaling, dr::norm(v2));
 
-                for (size_t i = 0; i < m_shell_vertices.size(); ++i)
-                    m_shell_vertices[i] /= scaling;
+                // Ensures that face center is outside of unit sphere
+                scaling = std::min(scaling, dr::norm((v0 + v1 + v2) / 3.f));
             }
 
-            Log(Debug, "Template mesh shell contains %zu faces and %zu vertices", m_shell_faces.size(), m_shell_vertices.size());
-
-            recompute_mesh();
-
-            ScalarSize shell_count_bytes = 15 * sizeof(InputFloat) + 24 * sizeof(InputFloat) + 12 * sizeof(ScalarIndex);
-            Log(Debug, "Initialize %i mesh ellipsoid shells (%s in %s)",
-                m_ellipsoids.count(),
-                util::mem_string(m_ellipsoids.count() * shell_count_bytes),
-                util::time_string((float) timer.value()));
-        } else {
-            Log(Warn, "LLVM backend (with Embree) doesn't support mesh ellipsoid shells! Falling back to analytical ellipsoids.");
-
-            // Embree doesn't support backface culling to we are falling back to the ellipsoids plugin
-            m_props = Properties(props);
-            for (auto& name: props.property_names())
-                props.mark_queried(name);
+            for (size_t i = 0; i < m_shell_vertices.size(); ++i)
+                m_shell_vertices[i] /= scaling;
         }
-    }
 
-    std::vector<ref<Object>> expand() const override {
-        if constexpr (dr::is_llvm_v<Float>) {
-            Properties props = Properties(m_props);
-            props.set_plugin_name("ellipsoids");
-            return { (Object *) PluginManager::instance()->create_object<Shape>(props) };
-        } else {
-            return { };
-        }
+        Log(Debug, "Template mesh shell contains %zu faces and %zu vertices", m_shell_faces.size(), m_shell_vertices.size());
+
+        recompute_mesh();
+
+        ScalarSize shell_count_bytes = 15 * sizeof(InputFloat) + 24 * sizeof(InputFloat) + 12 * sizeof(ScalarIndex);
+        Log(Debug, "Initialize %i mesh ellipsoid shells (%s in %s)",
+            m_ellipsoids.count(),
+            util::mem_string(m_ellipsoids.count() * shell_count_bytes),
+            util::time_string((float) timer.value()));
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -400,6 +381,93 @@ private:
             mark_dirty();
         }
     }
+
+#if defined(MI_ENABLE_EMBREE)
+    template <size_t N, typename RTCRay_, typename RTCHit_>
+    static void embree_filter_backface_culling_packet(
+        const RTCFilterFunctionNArguments *args, RTCRay_ *ray, RTCHit_ *hit) {
+        using FloatP    = dr::Packet<float, N>;
+        using Int32P    = dr::Packet<int, N>;
+        using Vector3fP = dr::Array<FloatP, 3>;
+
+        Vector3fP d;
+        d.x() = dr::load_aligned<FloatP>(ray->dir_x);
+        d.y() = dr::load_aligned<FloatP>(ray->dir_y);
+        d.z() = dr::load_aligned<FloatP>(ray->dir_z);
+
+        Vector3fP n;
+        n.x() = dr::load_aligned<FloatP>(hit->Ng_x);
+        n.y() = dr::load_aligned<FloatP>(hit->Ng_y);
+        n.z() = dr::load_aligned<FloatP>(hit->Ng_z);
+
+        Int32P valid = dr::load_aligned<Int32P>(args->valid);
+        valid = dr::select(dr::dot(d, n) > 0.0f, 0, valid);
+        dr::store_aligned(args->valid, valid);
+    }
+
+    static void embree_filter_backface_culling(const RTCFilterFunctionNArguments *args) {
+        switch (args->N) {
+            case 1:
+                {
+                    const RTCRay *ray = (RTCRay *)args->ray;
+                    RTCHit *hit = (RTCHit *)args->hit;
+
+                    auto d = dr::Array<float, 3>(ray->dir_x, ray->dir_y, ray->dir_z);
+                    auto n = dr::Array<float, 3>(hit->Ng_x, hit->Ng_y, hit->Ng_z);
+
+                    // Always ignore back-facing intersections
+                    if (dr::dot(d, n) > 0.0f) {
+                        *args->valid = 0;
+                    }
+                }
+                break;
+
+            case 4:
+                embree_filter_backface_culling_packet<4>(
+                    args,
+                    (RTCRay4 *) args->ray,
+                    (RTCHit4 *) args->hit
+                );
+                break;
+
+            case 8:
+                embree_filter_backface_culling_packet<8>(
+                    args,
+                    (RTCRay8 *) args->ray,
+                    (RTCHit8 *) args->hit
+                );
+                break;
+
+            case 16:
+                embree_filter_backface_culling_packet<16>(
+                    args,
+                    (RTCRay16 *) args->ray,
+                    (RTCHit16 *) args->hit
+                );
+                break;
+
+            default:
+                Throw("embree_filter_backface_culling(): unsupported packet size!");
+        }
+    }
+
+    RTCGeometry embree_geometry(RTCDevice device) override {
+        RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
+
+        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3,
+                                m_vertex_positions.data(), 0, 3 * sizeof(InputFloat),
+                                m_vertex_count);
+        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3,
+                                m_faces.data(), 0, 3 * sizeof(ScalarIndex),
+                                m_face_count);
+
+        rtcSetGeometryIntersectFilterFunction(geom, embree_filter_backface_culling);
+        rtcSetGeometryOccludedFilterFunction(geom,  embree_filter_backface_culling);
+
+        rtcCommitGeometry(geom);
+        return geom;
+    }
+#endif
 
 private:
     /// Object holding the ellipsoid data and attributes
