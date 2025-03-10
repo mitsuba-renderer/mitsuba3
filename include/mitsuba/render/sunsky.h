@@ -520,7 +520,6 @@ build_tgmm_distribution(const DynamicBuffer<Float> &tgmm_tables,
         FloatStorage params = dr::gather<FloatStorage>(tgmm_tables, indices[mixture_idx] + param_indices);
 
         // Apply lerp factor to gaussian weights
-        //dr::scatter_reduce(ReduceOp::Mul, params, (FloatStorage)lerp_factors[mixture_idx], gaussian_weight_idx);
         for (ScalarUInt32 weight_idx = 0; weight_idx < TGMM_COMPONENTS; ++weight_idx) {
             ScalarUInt32 gaussian_weight_idx = weight_idx * TGMM_GAUSSIAN_PARAMS + (TGMM_GAUSSIAN_PARAMS - 1);
             dr::scatter(params, params[gaussian_weight_idx] * lerp_factors[mixture_idx], (UInt32) gaussian_weight_idx);
