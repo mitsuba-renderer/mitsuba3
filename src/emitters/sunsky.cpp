@@ -119,7 +119,7 @@ ill-represented by the linear sRGB color space. Whether Mitsuba is rendering in
 spectral or RGB mode, if the final output is an sRGB image, it can happen that
 it contains negative pixel values or be over-saturated. These results are left
 un-clamped to let the user post-process the image to their liking, without
-loosing information.
+losing information.
 
 Note that attaching a ``sunsky`` emitter to the scene introduces physical units
 into the rendering process of Mitsuba 3, which is ordinarily a unitless system.
