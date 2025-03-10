@@ -5744,11 +5744,7 @@
 
 .. py:data:: mitsuba.MI_VERSION
     :type: str
-<<<<<<< HEAD
     :value: 3.6.4
-=======
-    :value: 3.6.3
->>>>>>> [Sunsky] Generate documentation
 
 .. py:data:: mitsuba.MI_VERSION_MAJOR
     :type: int
@@ -5760,11 +5756,7 @@
 
 .. py:data:: mitsuba.MI_VERSION_PATCH
     :type: int
-<<<<<<< HEAD
     :value: 4
-=======
-    :value: 3
->>>>>>> [Sunsky] Generate documentation
 
 .. py:data:: mitsuba.MI_YEAR
     :type: str
@@ -7402,7 +7394,7 @@
         Parameter ``other`` (:py:obj:`mitsuba.Mesh`):
             *no description available*
 
-        Returns → ref<mitsuba::Mesh<drjit::DiffArray<(JitBackend)2, float>, mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul> > >:
+        Returns → ref<mitsuba::Mesh<drjit::DiffArray<(JitBackend)2, float>, mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>>>:
             *no description available*
 
     .. py:method:: mitsuba.Mesh.opposite_dedge(self, index, active=True)
@@ -16890,7 +16882,7 @@
         Creates a transformation that converts from 'frame' to the standard
         basis
 
-        Parameter ``frame`` (mitsuba::Frame<drjit::DiffArray<(JitBackend)2, double> >):
+        Parameter ``frame`` (mitsuba::Frame<drjit::DiffArray<(JitBackend)2, double>>):
             *no description available*
 
         Returns → :py:obj:`mitsuba.Transform4d`:
@@ -17003,7 +16995,7 @@
         Creates a transformation that converts from the standard basis to
         'frame'
 
-        Parameter ``frame`` (mitsuba::Frame<drjit::DiffArray<(JitBackend)2, double> >):
+        Parameter ``frame`` (mitsuba::Frame<drjit::DiffArray<(JitBackend)2, double>>):
             *no description available*
 
         Returns → :py:obj:`mitsuba.Transform4d`:
