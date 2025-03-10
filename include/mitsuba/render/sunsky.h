@@ -69,19 +69,6 @@ enum class Dataset {
 // ================================================================================================
 
 /**
- * \brief Converts a spherical unit vector to it's angles
- *
- * \param v
- *      Vector to convert
- * \return
- *      The {phi, theta} angles
- */
-template <typename Value>
-MI_INLINE Point<Value, 2> from_spherical(const Vector<Value, 3> &v) {
-    return { dr::atan2(v.y(), v.x()), dr::unit_angle_z(v) };
-}
-
-/**
  * \brief Provides the ratio of the sun's original area to that
  * of a custom aperture angle
  *
@@ -391,7 +378,7 @@ Vector<Float, 3> sun_coordinates(const DateTimeRecord<Float> &date_time,
         elevation += Float(EARTH_MEAN_RADIUS / ASTRONOMICAL_UNIT) * dr::sin(elevation);
     }
 
-    return dr::sphdir(elevation, azimuth - dr::Pi<Float>);
+    return sph_to_dir(elevation, azimuth - dr::Pi<Float>);
 }
 
 /**
@@ -439,7 +426,7 @@ DynamicBuffer<Float> sun_params(const DynamicBuffer<Float>& sun_radiance_dataset
            t_low = t_high - 1;
     Float  t_rem = turbidity - t_high;
 
-    constexpr uint32_t t_block_size = dataset_size / TURBITDITY_LVLS;
+    uint32_t t_block_size = dataset_size / TURBITDITY_LVLS;
 
     UInt32Storage idx = dr::arange<UInt32Storage>(t_block_size);
     return dr::lerp(
@@ -494,17 +481,17 @@ build_tgmm_distribution(const DynamicBuffer<Float> &tgmm_tables,
     Float eta_rem = eta_idx_f - eta_idx_low,
           t_rem = t_idx_f - t_idx_low;
 
-    constexpr uint32_t t_block_size = dataset_size / (TURBITDITY_LVLS - 1),
-                       result_size = t_block_size / ELEVATION_CTRL_PTS;
+    uint32_t t_block_size = dataset_size / (TURBITDITY_LVLS - 1),
+             result_size  = t_block_size / ELEVATION_CTRL_PTS;
 
-    const UInt32 indices[4] = {
+    UInt32 indices[4] = {
         t_idx_low * t_block_size + eta_idx_low * result_size,
         t_idx_low * t_block_size + eta_idx_high * result_size,
         t_idx_high * t_block_size + eta_idx_low * result_size,
         t_idx_high * t_block_size + eta_idx_high * result_size
     };
 
-    const Float lerp_factors[4] = {
+    Float lerp_factors[4] = {
         (1 - t_rem) * (1 - eta_rem),
         (1 - t_rem) * eta_rem,
         t_rem * (1 - eta_rem),

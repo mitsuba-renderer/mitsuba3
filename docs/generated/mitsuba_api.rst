@@ -2,26 +2,46 @@ Core
 ----
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20606
   :end-line: 20702
+=======
+  :start-line: 20555
+  :end-line: 20651
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20853
   :end-line: 20857
+=======
+  :start-line: 20802
+  :end-line: 20806
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21554
   :end-line: 21558
+=======
+  :start-line: 21516
+  :end-line: 21520
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21524
   :end-line: 21536
+=======
+  :start-line: 21486
+  :end-line: 21498
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
@@ -32,14 +52,24 @@ Core
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21567
   :end-line: 21571
+=======
+  :start-line: 21529
+  :end-line: 21533
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20843
   :end-line: 20852
+=======
+  :start-line: 20792
+  :end-line: 20801
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
@@ -176,6 +206,7 @@ Core
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19144
   :end-line: 19157
 
@@ -184,138 +215,258 @@ Core
 .. include:: generated/extracted_rst_api.rst
   :start-line: 19158
   :end-line: 19170
+=======
+  :start-line: 19093
+  :end-line: 19106
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19171
   :end-line: 19177
+=======
+  :start-line: 19107
+  :end-line: 19119
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19178
   :end-line: 19192
+=======
+  :start-line: 19120
+  :end-line: 19126
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19193
   :end-line: 19202
+=======
+  :start-line: 19127
+  :end-line: 19141
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19203
   :end-line: 19214
+=======
+  :start-line: 19142
+  :end-line: 19151
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19215
   :end-line: 19224
+=======
+  :start-line: 19152
+  :end-line: 19163
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19225
   :end-line: 19235
+=======
+  :start-line: 19164
+  :end-line: 19173
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19236
   :end-line: 19341
+=======
+  :start-line: 19174
+  :end-line: 19184
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19342
   :end-line: 19345
+=======
+  :start-line: 19185
+  :end-line: 19290
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19346
   :end-line: 19356
+=======
+  :start-line: 19291
+  :end-line: 19294
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19357
   :end-line: 19371
+=======
+  :start-line: 19295
+  :end-line: 19305
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19472
   :end-line: 19482
+=======
+  :start-line: 19306
+  :end-line: 19320
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20485
   :end-line: 20495
+=======
+  :start-line: 19421
+  :end-line: 19431
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20496
   :end-line: 20506
+=======
+  :start-line: 20434
+  :end-line: 20444
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20507
   :end-line: 20517
+=======
+  :start-line: 20445
+  :end-line: 20455
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20518
   :end-line: 20528
+=======
+  :start-line: 20456
+  :end-line: 20466
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20529
   :end-line: 20539
+=======
+  :start-line: 20467
+  :end-line: 20477
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20540
   :end-line: 20550
+=======
+  :start-line: 20478
+  :end-line: 20488
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20551
   :end-line: 20561
+=======
+  :start-line: 20489
+  :end-line: 20499
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20562
   :end-line: 20572
+=======
+  :start-line: 20500
+  :end-line: 20510
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20573
   :end-line: 20583
+=======
+  :start-line: 20511
+  :end-line: 20521
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20584
   :end-line: 20594
+=======
+  :start-line: 20522
+  :end-line: 20532
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20595
   :end-line: 20605
+=======
+  :start-line: 20533
+  :end-line: 20543
+
+------------
+
+.. include:: generated/extracted_rst_api.rst
+  :start-line: 20544
+  :end-line: 20554
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
@@ -329,32 +480,57 @@ Parsing
 -------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19510
   :end-line: 19522
+=======
+  :start-line: 19459
+  :end-line: 19471
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19523
   :end-line: 19548
+=======
+  :start-line: 19472
+  :end-line: 19497
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19549
   :end-line: 19561
+=======
+  :start-line: 19498
+  :end-line: 19510
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 22597
   :end-line: 22607
+=======
+  :start-line: 22559
+  :end-line: 22569
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 22608
   :end-line: 22617
+=======
+  :start-line: 22570
+  :end-line: 22579
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
@@ -413,6 +589,7 @@ Warp
 ----
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21572
   :end-line: 21584
 
@@ -421,124 +598,224 @@ Warp
 .. include:: generated/extracted_rst_api.rst
   :start-line: 21585
   :end-line: 21606
+=======
+  :start-line: 21534
+  :end-line: 21546
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21607
   :end-line: 21616
+=======
+  :start-line: 21547
+  :end-line: 21568
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21617
   :end-line: 21637
+=======
+  :start-line: 21569
+  :end-line: 21578
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21638
   :end-line: 21657
+=======
+  :start-line: 21579
+  :end-line: 21599
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21658
   :end-line: 21671
+=======
+  :start-line: 21600
+  :end-line: 21619
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21672
   :end-line: 21681
+=======
+  :start-line: 21620
+  :end-line: 21633
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21682
   :end-line: 21697
+=======
+  :start-line: 21634
+  :end-line: 21643
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21698
   :end-line: 21710
+=======
+  :start-line: 21644
+  :end-line: 21659
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21711
   :end-line: 21723
+=======
+  :start-line: 21660
+  :end-line: 21672
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21724
   :end-line: 21757
+=======
+  :start-line: 21673
+  :end-line: 21685
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21758
   :end-line: 21777
+=======
+  :start-line: 21686
+  :end-line: 21719
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21778
   :end-line: 21788
+=======
+  :start-line: 21720
+  :end-line: 21739
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21789
   :end-line: 21798
+=======
+  :start-line: 21740
+  :end-line: 21750
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21799
   :end-line: 21818
+=======
+  :start-line: 21751
+  :end-line: 21760
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21819
   :end-line: 21837
+=======
+  :start-line: 21761
+  :end-line: 21780
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21838
   :end-line: 21848
+=======
+  :start-line: 21781
+  :end-line: 21799
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21849
   :end-line: 21856
+=======
+  :start-line: 21800
+  :end-line: 21810
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21857
   :end-line: 21866
+=======
+  :start-line: 21811
+  :end-line: 21818
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21867
   :end-line: 21876
+=======
+  :start-line: 21819
+  :end-line: 21828
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21877
   :end-line: 21893
+=======
+  :start-line: 21829
+  :end-line: 21838
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21894
   :end-line: 21906
 
@@ -547,114 +824,208 @@ Warp
 .. include:: generated/extracted_rst_api.rst
   :start-line: 21907
   :end-line: 21916
+=======
+  :start-line: 21839
+  :end-line: 21855
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21917
   :end-line: 21926
+=======
+  :start-line: 21856
+  :end-line: 21868
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21927
   :end-line: 21936
+=======
+  :start-line: 21869
+  :end-line: 21878
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21937
   :end-line: 21946
+=======
+  :start-line: 21879
+  :end-line: 21888
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21947
   :end-line: 21957
+=======
+  :start-line: 21889
+  :end-line: 21898
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21958
   :end-line: 21967
+=======
+  :start-line: 21899
+  :end-line: 21908
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21968
   :end-line: 21978
+=======
+  :start-line: 21909
+  :end-line: 21919
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21979
   :end-line: 21988
+=======
+  :start-line: 21920
+  :end-line: 21929
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21989
   :end-line: 22006
+=======
+  :start-line: 21930
+  :end-line: 21940
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 22007
   :end-line: 22022
+=======
+  :start-line: 21941
+  :end-line: 21950
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 22023
   :end-line: 22033
+=======
+  :start-line: 21951
+  :end-line: 21968
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 22034
   :end-line: 22044
+=======
+  :start-line: 21969
+  :end-line: 21984
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 22045
   :end-line: 22054
+=======
+  :start-line: 21985
+  :end-line: 21995
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 22055
   :end-line: 22068
+=======
+  :start-line: 21996
+  :end-line: 22006
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 22069
   :end-line: 22081
+=======
+  :start-line: 22007
+  :end-line: 22016
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 22082
   :end-line: 22094
+=======
+  :start-line: 22017
+  :end-line: 22030
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 22095
   :end-line: 22104
+=======
+  :start-line: 22031
+  :end-line: 22043
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 22105
   :end-line: 22114
+=======
+  :start-line: 22044
+  :end-line: 22056
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 22115
   :end-line: 22127
+=======
+  :start-line: 22057
+  :end-line: 22066
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
@@ -665,38 +1036,80 @@ Warp
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 22138
   :end-line: 22147
+=======
+  :start-line: 22077
+  :end-line: 22089
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 22148
   :end-line: 22157
+=======
+  :start-line: 22090
+  :end-line: 22099
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 22158
   :end-line: 22167
+=======
+  :start-line: 22100
+  :end-line: 22109
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 22168
   :end-line: 22183
+=======
+  :start-line: 22110
+  :end-line: 22119
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 22184
   :end-line: 22193
+=======
+  :start-line: 22120
+  :end-line: 22129
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 22194
   :end-line: 22206
+=======
+  :start-line: 22130
+  :end-line: 22145
+>>>>>>> Add bindings for spherical coordinate parameterizations
+
+------------
+
+.. include:: generated/extracted_rst_api.rst
+  :start-line: 22146
+  :end-line: 22155
+
+------------
+
+.. include:: generated/extracted_rst_api.rst
+  :start-line: 22156
+  :end-line: 22168
 
 ------------
 
@@ -809,30 +1222,51 @@ Math
 ----
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19599
   :end-line: 19602
+=======
+  :start-line: 19548
+  :end-line: 19551
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19603
   :end-line: 19606
+=======
+  :start-line: 19552
+  :end-line: 19555
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19607
   :end-line: 19610
+=======
+  :start-line: 19556
+  :end-line: 19559
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19611
   :end-line: 19644
+=======
+  :start-line: 19560
+  :end-line: 19593
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19645
   :end-line: 19686
 
@@ -841,162 +1275,302 @@ Math
 .. include:: generated/extracted_rst_api.rst
   :start-line: 19687
   :end-line: 19696
+=======
+  :start-line: 19594
+  :end-line: 19635
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19697
   :end-line: 19709
+=======
+  :start-line: 19636
+  :end-line: 19645
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19710
   :end-line: 19723
+=======
+  :start-line: 19646
+  :end-line: 19658
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19724
   :end-line: 19736
+=======
+  :start-line: 19659
+  :end-line: 19672
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19737
   :end-line: 19746
+=======
+  :start-line: 19673
+  :end-line: 19685
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19747
   :end-line: 19754
+=======
+  :start-line: 19686
+  :end-line: 19695
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19755
   :end-line: 19762
+=======
+  :start-line: 19696
+  :end-line: 19703
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19763
   :end-line: 19770
+=======
+  :start-line: 19704
+  :end-line: 19711
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19771
   :end-line: 19778
+=======
+  :start-line: 19712
+  :end-line: 19719
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19779
   :end-line: 19788
+=======
+  :start-line: 19720
+  :end-line: 19727
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19789
   :end-line: 19804
+=======
+  :start-line: 19728
+  :end-line: 19737
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19805
   :end-line: 19814
+=======
+  :start-line: 19738
+  :end-line: 19753
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19815
   :end-line: 19828
+=======
+  :start-line: 19754
+  :end-line: 19763
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+  :start-line: 19764
+  :end-line: 19777
+>>>>>>> Add bindings for spherical coordinate parameterizations
+
+------------
+
+.. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20993
   :end-line: 21077
+=======
+  :start-line: 20955
+  :end-line: 21039
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21078
   :end-line: 21128
+=======
+  :start-line: 21040
+  :end-line: 21090
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21129
   :end-line: 21152
+=======
+  :start-line: 21091
+  :end-line: 21114
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21153
   :end-line: 21176
+=======
+  :start-line: 21115
+  :end-line: 21138
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21177
   :end-line: 21200
+=======
+  :start-line: 21139
+  :end-line: 21162
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21201
   :end-line: 21281
+=======
+  :start-line: 21163
+  :end-line: 21243
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21282
   :end-line: 21347
+=======
+  :start-line: 21244
+  :end-line: 21309
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21348
   :end-line: 21407
+=======
+  :start-line: 21310
+  :end-line: 21369
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21408
   :end-line: 21478
+=======
+  :start-line: 21370
+  :end-line: 21440
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20328
   :end-line: 20340
+=======
+  :start-line: 20277
+  :end-line: 20289
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20341
   :end-line: 20358
+=======
+  :start-line: 20290
+  :end-line: 20307
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20359
   :end-line: 20376
+=======
+  :start-line: 20308
+  :end-line: 20325
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20377
   :end-line: 20398
+=======
+  :start-line: 20326
+  :end-line: 20347
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20399
   :end-line: 20422
+=======
+  :start-line: 20348
+  :end-line: 20371
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
@@ -1007,8 +1581,13 @@ Math
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20423
   :end-line: 20435
+=======
+  :start-line: 20372
+  :end-line: 20384
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
@@ -1019,44 +1598,79 @@ Math
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20436
   :end-line: 20453
+=======
+  :start-line: 20385
+  :end-line: 20402
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20454
   :end-line: 20484
+=======
+  :start-line: 20403
+  :end-line: 20433
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19372
   :end-line: 19399
+=======
+  :start-line: 19321
+  :end-line: 19348
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19400
   :end-line: 19420
+=======
+  :start-line: 19349
+  :end-line: 19369
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19421
   :end-line: 19434
+=======
+  :start-line: 19370
+  :end-line: 19383
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19435
   :end-line: 19471
+=======
+  :start-line: 19384
+  :end-line: 19420
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20302
   :end-line: 20327
+=======
+  :start-line: 20251
+  :end-line: 20276
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
@@ -1064,32 +1678,57 @@ Random
 ------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20719
   :end-line: 20740
+=======
+  :start-line: 20668
+  :end-line: 20689
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20741
   :end-line: 20762
+=======
+  :start-line: 20690
+  :end-line: 20711
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20763
   :end-line: 20788
+=======
+  :start-line: 20712
+  :end-line: 20737
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20789
   :end-line: 20811
+=======
+  :start-line: 20738
+  :end-line: 20760
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20812
   :end-line: 20834
+=======
+  :start-line: 20761
+  :end-line: 20783
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
@@ -1100,20 +1739,35 @@ Random
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20237
   :end-line: 20265
+=======
+  :start-line: 20186
+  :end-line: 20214
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20266
   :end-line: 20301
+=======
+  :start-line: 20215
+  :end-line: 20250
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20918
   :end-line: 20930
+=======
+  :start-line: 20867
+  :end-line: 20879
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
@@ -2051,26 +2705,46 @@ Constants
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19483
   :end-line: 19486
+=======
+  :start-line: 19432
+  :end-line: 19435
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19487
   :end-line: 19490
+=======
+  :start-line: 19436
+  :end-line: 19439
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19491
   :end-line: 19494
+=======
+  :start-line: 19440
+  :end-line: 19443
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19495
   :end-line: 19498
+=======
+  :start-line: 19444
+  :end-line: 19447
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
@@ -2243,8 +2917,13 @@ Sensor
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20211
   :end-line: 20223
+=======
+  :start-line: 20160
+  :end-line: 20172
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
@@ -2474,44 +3153,79 @@ Spectrum
 --------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20931
   :end-line: 20954
+=======
+  :start-line: 20880
+  :end-line: 20903
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20955
   :end-line: 20971
+=======
+  :start-line: 20904
+  :end-line: 20920
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20972
   :end-line: 20992
+=======
+  :start-line: 20921
+  :end-line: 20941
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21479
   :end-line: 21489
+=======
+  :start-line: 21441
+  :end-line: 21451
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21490
   :end-line: 21502
+=======
+  :start-line: 21452
+  :end-line: 21464
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21503
   :end-line: 21510
+=======
+  :start-line: 21465
+  :end-line: 21472
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21511
   :end-line: 21523
+=======
+  :start-line: 21473
+  :end-line: 21485
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
@@ -2534,38 +3248,68 @@ Spectrum
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 22618
   :end-line: 22631
+=======
+  :start-line: 22580
+  :end-line: 22593
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20224
   :end-line: 20236
+=======
+  :start-line: 20173
+  :end-line: 20185
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19585
   :end-line: 19598
+=======
+  :start-line: 19534
+  :end-line: 19547
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19124
   :end-line: 19143
+=======
+  :start-line: 19073
+  :end-line: 19092
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19499
   :end-line: 19509
+=======
+  :start-line: 19448
+  :end-line: 19458
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20703
   :end-line: 20718
+=======
+  :start-line: 20652
+  :end-line: 20667
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
@@ -2573,104 +3317,189 @@ Polarization
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19875
   :end-line: 19884
+=======
+  :start-line: 19824
+  :end-line: 19833
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19885
   :end-line: 19894
+=======
+  :start-line: 19834
+  :end-line: 19843
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19895
   :end-line: 19909
+=======
+  :start-line: 19844
+  :end-line: 19858
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19910
   :end-line: 19918
+=======
+  :start-line: 19859
+  :end-line: 19867
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19919
   :end-line: 19932
+=======
+  :start-line: 19868
+  :end-line: 19881
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19933
   :end-line: 19951
+=======
+  :start-line: 19882
+  :end-line: 19900
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19952
   :end-line: 19960
+=======
+  :start-line: 19901
+  :end-line: 19909
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19961
   :end-line: 20000
+=======
+  :start-line: 19910
+  :end-line: 19949
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20001
   :end-line: 20029
+=======
+  :start-line: 19950
+  :end-line: 19978
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20030
   :end-line: 20059
+=======
+  :start-line: 19979
+  :end-line: 20008
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20060
   :end-line: 20089
+=======
+  :start-line: 20009
+  :end-line: 20038
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20090
   :end-line: 20103
+=======
+  :start-line: 20039
+  :end-line: 20052
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20104
   :end-line: 20122
+=======
+  :start-line: 20053
+  :end-line: 20071
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20123
   :end-line: 20139
+=======
+  :start-line: 20072
+  :end-line: 20088
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20140
   :end-line: 20156
+=======
+  :start-line: 20089
+  :end-line: 20105
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20157
   :end-line: 20176
+=======
+  :start-line: 20106
+  :end-line: 20125
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20177
   :end-line: 20187
+=======
+  :start-line: 20126
+  :end-line: 20136
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
@@ -2681,8 +3510,13 @@ Polarization
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21537
   :end-line: 21544
+=======
+  :start-line: 21499
+  :end-line: 21506
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
@@ -2690,14 +3524,24 @@ Util
 ----
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21545
   :end-line: 21549
+=======
+  :start-line: 21507
+  :end-line: 21511
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21550
   :end-line: 21553
+=======
+  :start-line: 21512
+  :end-line: 21515
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
@@ -2915,86 +3759,168 @@ Other
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19562
   :end-line: 19568
+=======
+  :start-line: 19063
+  :end-line: 19072
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19569
   :end-line: 19584
+=======
+  :start-line: 19511
+  :end-line: 19517
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19829
   :end-line: 19832
+=======
+  :start-line: 19518
+  :end-line: 19533
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19833
   :end-line: 19839
+=======
+  :start-line: 19778
+  :end-line: 19781
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19840
   :end-line: 19852
+=======
+  :start-line: 19782
+  :end-line: 19788
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19853
   :end-line: 19866
+=======
+  :start-line: 19789
+  :end-line: 19801
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 19867
   :end-line: 19874
+=======
+  :start-line: 19802
+  :end-line: 19815
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20188
   :end-line: 20210
+=======
+  :start-line: 19816
+  :end-line: 19823
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20835
   :end-line: 20842
+=======
+  :start-line: 20137
+  :end-line: 20159
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20858
   :end-line: 20874
+=======
+  :start-line: 20784
+  :end-line: 20791
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20875
   :end-line: 20890
+=======
+  :start-line: 20807
+  :end-line: 20823
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 20891
   :end-line: 20917
+=======
+  :start-line: 20824
+  :end-line: 20839
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 21559
   :end-line: 21566
+=======
+  :start-line: 20840
+  :end-line: 20866
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
+<<<<<<< HEAD
   :start-line: 22207
   :end-line: 22596
+=======
+  :start-line: 20942
+  :end-line: 20954
+
+------------
+
+.. include:: generated/extracted_rst_api.rst
+  :start-line: 21521
+  :end-line: 21528
+
+------------
+
+.. include:: generated/extracted_rst_api.rst
+  :start-line: 22169
+  :end-line: 22558
+>>>>>>> Add bindings for spherical coordinate parameterizations
 
 ------------
 
