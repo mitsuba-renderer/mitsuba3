@@ -247,7 +247,7 @@ public:
         callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
     }
 
-    void parameters_changed(const std::vector<std::string> & /*unused*/) override {
+    void parameters_changed(const std::vector<std::string> &keys) override {
         if (m_sun_scale < 0.f)
             Log(Error, "Invalid sun scale: %f, must be positive!", m_sun_scale);
         if (m_sky_scale < 0.f)
@@ -260,11 +260,16 @@ public:
         if (m_albedo->is_spatially_varying())
             Log(Error, "Expected a non-spatially varying radiance spectra!");
 
-        FloatStorage albedo = extract_albedo(m_albedo);
+        #define CHANGED(word) string::contains(keys, "albedo")
 
         // Update sun angles
         Vector3f local_sun_dir;
-        if (m_active_record) {
+        if (m_active_record &&
+            (keys.empty() || CHANGED("timezone") || CHANGED("year") ||
+             CHANGED("day") || CHANGED("month") || CHANGED("hour") ||
+             CHANGED("minute") || CHANGED("second") || CHANGED("latitude") ||
+             CHANGED("longitude")))
+        {
             local_sun_dir = sun_coordinates(m_time, m_location);
             m_sun_dir = m_to_world.value().transform_affine(local_sun_dir);
         } else {
@@ -276,22 +281,39 @@ public:
         Float eta = 0.5f * dr::Pi<Float> - m_sun_angles.y();
 
         // Update sky
-        m_sky_params = sky_radiance_params<SKY_DATASET_SIZE>(
-            m_sky_params_dataset, albedo, m_turbidity, eta);
-        m_sky_radiance = sky_radiance_params<SKY_DATASET_RAD_SIZE>(
-            m_sky_rad_dataset, albedo, m_turbidity, eta);
+        if (keys.empty() ||
+            CHANGED("albedo") || CHANGED("turbidity") ||
+            CHANGED("timezone") || CHANGED("year") || CHANGED("day") ||
+            CHANGED("month") || CHANGED("hour") || CHANGED("minute") || CHANGED("second") ||
+            CHANGED("latitude") || CHANGED("longitude")
+        ) {
+            FloatStorage albedo = extract_albedo(m_albedo);
+            m_sky_params = sky_radiance_params<SKY_DATASET_SIZE>(
+                m_sky_params_dataset, albedo, m_turbidity, eta);
+            m_sky_radiance = sky_radiance_params<SKY_DATASET_RAD_SIZE>(
+                m_sky_rad_dataset, albedo, m_turbidity, eta);
+        }
 
         // Update sun
-        m_sun_radiance = sun_params<SUN_DATASET_SIZE>(
-            m_sun_rad_dataset, m_turbidity);
+        if (keys.empty() || CHANGED("albedo") || CHANGED("turbidity")) {
+            m_sun_radiance =
+                sun_params<SUN_DATASET_SIZE>(m_sun_rad_dataset, m_turbidity);
+        }
 
         // Update TGMM
-        FloatStorage gaussian_params, mis_weights;
-        std::tie(gaussian_params, mis_weights) =
-            build_tgmm_distribution<TGMM_DATA_SIZE>(m_tgmm_tables, m_turbidity, eta);
+        if (keys.empty() ||
+            CHANGED("albedo") || CHANGED("turbidity") ||
+            CHANGED("timezone") || CHANGED("year") || CHANGED("day") ||
+            CHANGED("month") || CHANGED("hour") || CHANGED("minute") || CHANGED("second") ||
+            CHANGED("latitude") || CHANGED("longitude")
+        ) {
+            FloatStorage gaussian_params, mis_weights;
+            std::tie(gaussian_params, mis_weights) =
+                build_tgmm_distribution<TGMM_DATA_SIZE>(m_tgmm_tables, m_turbidity, eta);
 
-        m_gaussians = gaussian_params;
-        m_gaussian_distr = DiscreteDistribution<Float>(mis_weights);
+            m_gaussians = gaussian_params;
+            m_gaussian_distr = DiscreteDistribution<Float>(mis_weights);
+        }
 
         // Update sky-sun ratio and radiance distribution
         Float sampling_w;
@@ -300,6 +322,8 @@ public:
 
         m_sky_sampling_w = sampling_w;
         m_spectral_distr = wav_dist;
+
+        #undef CHANGED
     }
 
     void set_scene(const Scene *scene) override {
