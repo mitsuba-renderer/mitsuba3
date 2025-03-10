@@ -1,9 +1,9 @@
 import pytest
-
 import numpy as np
-
 import drjit as dr
 import mitsuba as mi
+
+from mitsuba.scalar_rgb.test.util import find_resource
 
 eps = 1e-4
 SIN_OFFSET = 0.00775
@@ -107,7 +107,7 @@ def generate_and_compare(render_params, ref_path, rtol):
                 else eval_full_spec(plugin, si, wavelengths, render_res)
 
     # Load the reference image
-    reference_scene = mi.TensorXf(mi.Bitmap(ref_path))
+    reference_scene = mi.TensorXf(mi.Bitmap(find_resource(ref_path)))
     rel_err = dr.mean(dr.abs(rendered_scene - reference_scene) / (dr.abs(reference_scene) + 0.001))
 
     assert rel_err <= rtol, (f"Fail when rendering plugin: {plugin}\n"
@@ -144,7 +144,7 @@ def test03_sky_radiance_spectral_albedo(variants_vec_spectral):
 
 
 def extract_spectrum(turb, eta, gamma):
-    with open(f"{sunsky_ref_folder}/spectrum/sun_spectrum_t{turb:.1f}_eta{eta:.2f}_gamma{gamma:.3e}.spd", "r") as f:
+    with open(find_resource(f"{sunsky_ref_folder}/spectrum/sun_spectrum_t{turb:.1f}_eta{eta:.2f}_gamma{gamma:.3e}.spd"), "r") as f:
         return [float(line.split()[1]) for line in f.readlines()]
 
 
