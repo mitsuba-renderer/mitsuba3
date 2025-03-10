@@ -602,6 +602,10 @@ Class *__kdtree_class = new Class("TShapeKDTree", "Object", "", nullptr, nullptr
 MI_VARIANT
 void Scene<Float, Spectrum>::traverse_1_cb_ro(
     void *payload, drjit::detail::traverse_callback_ro fn) const {
+
+    if (!jit_flag(JitFlag::FreezingTraverseScope))
+        return;
+
     if constexpr (!std::is_same_v<Object, drjit::TraversableBase>)
         Object::traverse_1_cb_ro(payload, fn);
     DRJIT_MAP(DR_TRAVERSE_MEMBER_RO, m_accel_handle, m_emitters, m_emitters_dr,
@@ -618,6 +622,10 @@ void Scene<Float, Spectrum>::traverse_1_cb_ro(
 MI_VARIANT
 void Scene<Float, Spectrum>::traverse_1_cb_rw(
     void *payload, drjit::detail::traverse_callback_rw fn) {
+
+    if (!jit_flag(JitFlag::FreezingTraverseScope))
+        return;
+
     if constexpr (!std::is_same_v<Object, drjit::TraversableBase>)
         Object::traverse_1_cb_rw(payload, fn);
     DRJIT_MAP(DR_TRAVERSE_MEMBER_RW, m_accel_handle, m_emitters, m_emitters_dr,
