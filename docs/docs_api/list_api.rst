@@ -616,6 +616,8 @@
 
 .. autofunction:: mitsuba.detail.remove_variant_callback
 
+.. autofunction:: mitsuba.dir_to_sph
+
 .. autofunction:: mitsuba.eval_reflectance
 
 .. autofunction:: mitsuba.filesystem.absolute
@@ -837,6 +839,8 @@
 .. autofunction:: mitsuba.spectrum_list_to_srgb
 
 .. autofunction:: mitsuba.spectrum_to_file
+
+.. autofunction:: mitsuba.sph_to_dir
 
 .. autofunction:: mitsuba.spline.eval_1d
 

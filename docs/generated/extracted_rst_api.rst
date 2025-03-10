@@ -7394,7 +7394,7 @@
         Parameter ``other`` (:py:obj:`mitsuba.Mesh`):
             *no description available*
 
-        Returns → ref<mitsuba::Mesh<drjit::DiffArray<(JitBackend)2, float>, mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul> > >:
+        Returns → ref<mitsuba::Mesh<drjit::DiffArray<(JitBackend)2, float>, mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>>>:
             *no description available*
 
     .. py:method:: mitsuba.Mesh.opposite_dedge(self, index, active=True)
@@ -16882,7 +16882,7 @@
         Creates a transformation that converts from 'frame' to the standard
         basis
 
-        Parameter ``frame`` (mitsuba::Frame<drjit::DiffArray<(JitBackend)2, double> >):
+        Parameter ``frame`` (mitsuba::Frame<drjit::DiffArray<(JitBackend)2, double>>):
             *no description available*
 
         Returns → :py:obj:`mitsuba.Transform4d`:
@@ -16995,7 +16995,7 @@
         Creates a transformation that converts from the standard basis to
         'frame'
 
-        Parameter ``frame`` (mitsuba::Frame<drjit::DiffArray<(JitBackend)2, double> >):
+        Parameter ``frame`` (mitsuba::Frame<drjit::DiffArray<(JitBackend)2, double>>):
             *no description available*
 
         Returns → :py:obj:`mitsuba.Transform4d`:
@@ -19122,6 +19122,16 @@
     Returns → None:
         *no description available*
 
+.. py:function:: mitsuba.dir_to_sph(v)
+
+    Converts a unit vector to its spherical coordinates parameterization
+
+    Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+        Vector to convert
+
+    Returns → :py:obj:`mitsuba.Point2f`:
+        The azimuthal and polar angles respectively.
+
 .. py:function:: mitsuba.eval_reflectance(type, alpha_u, alpha_v, wi, eta)
 
     Parameter ``type`` (:py:obj:`mitsuba.MicrofacetType`):
@@ -20990,6 +21000,19 @@
 
     Returns → None:
         *no description available*
+
+.. py:function:: mitsuba.sph_to_dir(theta, phi)
+
+    Converts spherical coordinates to a cartesian vector
+
+    Parameter ``theta`` (drjit.llvm.ad.Float):
+        The polar angle
+
+    Parameter ``phi`` (drjit.llvm.ad.Float):
+        The azimuth angle
+
+    Returns → :py:obj:`mitsuba.Vector3f`:
+        Unit vector corresponding to the input angles
 
 .. py:function:: mitsuba.spline.eval_1d(min, max, values, x)
 
