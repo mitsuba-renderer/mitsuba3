@@ -154,7 +154,7 @@ public:
     using FullSpectrum = std::conditional_t<
         is_spectral_v<Spectrum>,
         unpolarized_spectrum_t<mitsuba::Spectrum<Float, WAVELENGTH_COUNT>>,
-        Spectrum>;
+        unpolarized_spectrum_t<Spectrum>>;
 
     SunskyEmitter(const Properties &props) : Base(props) {
         if constexpr (!(is_rgb_v<Spectrum> || is_spectral_v<Spectrum>))
@@ -890,13 +890,14 @@ private:
             ScalarFloat distribution[2] = {1.f, 1.f};
             return { 0.5f, ContinuousDistribution<Wavelength>(range, distribution, 2) };
         } else {
-
             FullSpectrum sky_radiance = dr::zeros<FullSpectrum>(),
                          sun_radiance = dr::zeros<FullSpectrum>();
 
             dr::uint32_array_t<FullSpectrum> channel_idx;
             if constexpr (is_rgb_v<Spectrum>)
                 channel_idx = {0, 1, 2};
+            else if constexpr (is_monochromatic_v<Spectrum>)
+                channel_idx = {0};
             else
                 channel_idx = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
@@ -966,7 +967,11 @@ private:
             if constexpr (is_rgb_v<Spectrum>) {
                 sky_lum *= luminance(sky_radiance);
                 sun_lum *= luminance(sun_radiance) * get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
-            } else {
+            } else if constexpr (is_monochromatic_v<Spectrum>) {
+                // Use dummy wavelength
+                sky_lum *= luminance(sky_radiance, {0});
+                sun_lum *= luminance(sun_radiance, {0}) * get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
+            } else  {
                 FullSpectrum wavelengths = {320, 360, 400, 440, 480, 520, 560, 600, 640, 680, 720};
 
                 sky_lum *= luminance(sky_radiance, wavelengths);
@@ -1076,7 +1081,8 @@ private:
             albedo = albedo_tex->eval(si)[0];
         } else if (!dr::is_array_v<Float> && is_spectral_v<Spectrum>) {
             for (ScalarUInt32 i = 0; i < CHANNEL_COUNT; ++i) {
-                si.wavelengths = WAVELENGTHS<ScalarFloat>[i];
+                if constexpr (!is_monochromatic_v<Spectrum>)
+                    si.wavelengths = WAVELENGTHS<ScalarFloat>[i];
                 dr::scatter(albedo, albedo_tex->eval(si)[0], (UInt32) i);
             }
         }
@@ -1092,7 +1098,10 @@ private:
     // ================================================================================================
 
     /// Number of channels used in the skylight model
-    static constexpr uint32_t CHANNEL_COUNT = is_spectral_v<Spectrum> ? WAVELENGTH_COUNT : 3;
+    static constexpr uint32_t CHANNEL_COUNT =
+        is_spectral_v<Spectrum> ?
+        WAVELENGTH_COUNT :
+        (is_monochromatic_v<Spectrum> ? 1 : 3);
 
     // Dataset sizes
     static constexpr
