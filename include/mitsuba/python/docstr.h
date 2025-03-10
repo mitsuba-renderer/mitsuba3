@@ -10674,6 +10674,15 @@ static const char *__doc_mitsuba_detail_variant_helper_move = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_variant_helper_visit = R"doc()doc";
 
+static const char *__doc_mitsuba_dir_to_sph =
+R"doc(Converts a unit vector to its spherical coordinates parameterization
+
+Parameter ``v``:
+    Vector to convert
+
+Returns:
+    The azimuthal and polar angles respectively.)doc";
+
 static const char *__doc_mitsuba_emitter =
 R"doc(Return the emitter associated with the intersection (if any) \note
 Defined in scene.h)doc";
@@ -12015,6 +12024,18 @@ ensure that a unit-valued spectrum integrates to a luminance of 1.0.)doc";
 static const char *__doc_mitsuba_spectrum_to_xyz =
 R"doc(Spectral responses to XYZ normalized according to the CIE curves to
 ensure that a unit-valued spectrum integrates to a luminance of 1.0.)doc";
+
+static const char *__doc_mitsuba_sph_to_dir =
+R"doc(Converts spherical coordinates to a cartesian vector
+
+Parameter ``theta``:
+    The polar angle
+
+Parameter ``phi``:
+    The azimuth angle
+
+Returns:
+    Unit vector corresponding to the input angles)doc";
 
 static const char *__doc_mitsuba_spline_eval_1d =
 R"doc(Evaluate a cubic spline interpolant of a *uniformly* sampled 1D
