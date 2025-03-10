@@ -10981,15 +10981,6 @@ of travel. In the real-valued case, this also happens to be equal to
 the scale factor that must be applied to the X and Y component of the
 refracted direction.)doc";
 
-static const char *__doc_mitsuba_from_spherical =
-R"doc(Converts a spherical unit vector to it's angles
-
-Parameter ``v``:
-    Vector to convert
-
-Returns:
-    The {phi, theta} angles)doc";
-
 static const char *__doc_mitsuba_gaussian_cdf =
 R"doc(Computes the Gaussian CDF for the given mean and standard deviation
 
