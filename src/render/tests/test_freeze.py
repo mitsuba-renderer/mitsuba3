@@ -1,5 +1,5 @@
 import os
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Tuple
 import pytest
 import drjit as dr
 import mitsuba as mi
@@ -196,7 +196,7 @@ def test02_pose_estimation(variants_vec_rgb, integrator):
         scene = mi.load_dict(scene, parallel=False)
         return scene
 
-    def run(scene: mi.Scene, optimize, n) -> tuple[mi.TensorXf, mi.Point3f, mi.Float]:
+    def run(scene: mi.Scene, optimize, n) -> Tuple[mi.TensorXf, mi.Point3f, mi.Float]:
         params = mi.traverse(scene)
 
         params.keep("bunny.vertex_positions")
