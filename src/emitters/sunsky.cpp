@@ -360,7 +360,7 @@ public:
         if constexpr (!is_spectral_v<Spectrum>) {
             SpecUInt32 idx = dr::zeros<SpecUInt32>();
             if constexpr (is_rgb_v<Spectrum>)
-                idx = SpecUInt32({0, 1, 2});
+                idx = {0, 1, 2};
             else
                 idx = SpecUInt32(0);
 
@@ -1104,11 +1104,17 @@ private:
         (is_monochromatic_v<Spectrum> ? 1 : 3);
 
     // Dataset sizes
-    static constexpr
-    uint32_t SKY_DATASET_SIZE = TURBITDITY_LVLS * ALBEDO_LVLS * SKY_CTRL_PTS * CHANNEL_COUNT * SKY_PARAMS,
-             SKY_DATASET_RAD_SIZE = TURBITDITY_LVLS * ALBEDO_LVLS * SKY_CTRL_PTS * CHANNEL_COUNT,
-             SUN_DATASET_SIZE = TURBITDITY_LVLS * CHANNEL_COUNT * SUN_SEGMENTS * SUN_CTRL_PTS * (is_spectral_v<Spectrum> ? 1 : SUN_LD_PARAMS),
-             TGMM_DATA_SIZE = (TURBITDITY_LVLS - 1) * ELEVATION_CTRL_PTS * TGMM_COMPONENTS * TGMM_GAUSSIAN_PARAMS;
+    static constexpr uint32_t SKY_DATASET_SIZE =
+        TURBITDITY_LVLS * ALBEDO_LVLS * SKY_CTRL_PTS * CHANNEL_COUNT *
+        SKY_PARAMS;
+    static constexpr uint32_t SKY_DATASET_RAD_SIZE =
+        TURBITDITY_LVLS * ALBEDO_LVLS * SKY_CTRL_PTS * CHANNEL_COUNT;
+    static constexpr uint32_t SUN_DATASET_SIZE =
+        TURBITDITY_LVLS * CHANNEL_COUNT * SUN_SEGMENTS * SUN_CTRL_PTS *
+        (is_spectral_v<Spectrum> ? 1 : SUN_LD_PARAMS);
+    static constexpr uint32_t TGMM_DATA_SIZE =
+        (TURBITDITY_LVLS - 1) * ELEVATION_CTRL_PTS * TGMM_COMPONENTS *
+        TGMM_GAUSSIAN_PARAMS;
 
     BoundingSphere3f m_bsphere;
 
