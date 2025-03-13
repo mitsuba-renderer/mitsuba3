@@ -55,6 +55,8 @@ public:
 
     using PhaseFunction::m_flags;
     using PhaseFunction::m_components;
+
+    DR_TRAMPOLINE_TRAVERSE_CB(PhaseFunction)
 };
 
 template <typename Ptr, typename Cls> void bind_phase_generic(Cls &cls) {
@@ -112,6 +114,8 @@ MI_PY_EXPORT(PhaseFunction) {
             .def_method(PhaseFunction, id)
             .def_field(PyPhaseFunction, m_flags, D(PhaseFunction, m_flags))
             .def("__repr__", &PhaseFunction::to_string);
+
+    drjit::bind_traverse(phase);
 
     bind_phase_generic<PhaseFunction *>(phase);
 

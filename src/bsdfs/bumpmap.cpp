@@ -240,6 +240,8 @@ protected:
     ScalarFloat m_scale;
     ref<Texture> m_nested_texture;
     ref<Base> m_nested_bsdf;
+
+    DR_TRAVERSE_CB(Base, m_nested_texture, m_nested_bsdf);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(BumpMap, BSDF)

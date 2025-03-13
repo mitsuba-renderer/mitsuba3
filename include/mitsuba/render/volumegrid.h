@@ -120,6 +120,8 @@ protected:
     ScalarBoundingBox3f m_bbox;
     ScalarFloat m_max;
     std::vector<ScalarFloat> m_max_per_channel;
+
+    DR_TRAVERSE_CB(Object)
 };
 
 MI_EXTERN_CLASS(VolumeGrid)

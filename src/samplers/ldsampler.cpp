@@ -151,16 +151,6 @@ public:
         dr::schedule(m_scramble_seed);
     }
 
-    void traverse_1_cb_ro(void *payload, void (*fn)(void *, uint64_t)) const override {
-        auto fields = dr::make_tuple(m_scramble_seed, m_dimension_index);
-        dr::traverse_1_fn_ro(fields, payload, fn);
-    }
-
-    void traverse_1_cb_rw(void *payload, uint64_t (*fn)(void *, uint64_t)) override {
-        auto fields = dr::tie(m_scramble_seed, m_dimension_index);
-        dr::traverse_1_fn_rw(fields, payload, fn);
-    }
-
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "LowDiscrepancySampler [" << std::endl
@@ -178,6 +168,8 @@ private:
 
     /// Per-sequence scramble seed
     UInt32 m_scramble_seed;
+
+    DR_TRAVERSE_CB(Base, m_scramble_seed);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(LowDiscrepancySampler , Sampler)

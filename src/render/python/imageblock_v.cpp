@@ -2,10 +2,11 @@
 #include <mitsuba/render/imageblock.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/stl/vector.h>
+#include <drjit/python.h>
 
 MI_PY_EXPORT(ImageBlock) {
     MI_PY_IMPORT_TYPES(ImageBlock, ReconstructionFilter)
-    MI_PY_CLASS(ImageBlock, Object)
+    auto image_block = MI_PY_CLASS(ImageBlock, Object)
         .def(nb::init<const ScalarVector2u &, const ScalarPoint2i &, uint32_t,
                       const ReconstructionFilter *, bool, bool, bool,
                       bool, bool, bool>(),
@@ -67,4 +68,6 @@ MI_PY_EXPORT(ImageBlock) {
         .def("tensor", nb::overload_cast<>(&ImageBlock::tensor),
              nb::rv_policy::reference_internal,
              D(ImageBlock, tensor));
+
+    drjit::bind_traverse(image_block);
 }
