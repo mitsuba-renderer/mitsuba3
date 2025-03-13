@@ -8,31 +8,40 @@ from os.path import join, realpath, dirname, basename, splitext, exists
 from mitsuba.scalar_rgb.test.util import find_resource
 
 TUTORIALS_DIR = realpath(join(dirname(__file__), "../../../tutorials"))
+BSDFS = [
+    "diffuse",
+    "dielectric",
+    "thindielectric",
+    "roughdielectric",
+    "conductor",
+    "roughconductor",
+    "hair",
+    "plastic",
+    "roughplastic",
+    "bumpmap",
+    "normalmap",
+    "blendbsdf",
+    "mask",
+    "twosided",
+    "principled",
+    "principledthin",
+    "custom",
+]
 
-def run_assert(scene, n, func, update: Optional[Callable] = None, n_recordings=2):
-    def run(func: Callable[[mi.Scene], mi.TensorXf]) -> List[mi.TensorXf]:
-        images = []
-        for i in range(n):
-            if update:
-                params = mi.traverse(scene)
-                update(i, params)
-                params.update()
-
-            img = func(scene)
-            dr.eval(img)
-
-            images.append(img)
-
-        return images
-
+def run_assert(input, n, func, update: Optional[Callable] = None, n_recordings=2):
     frozen = dr.freeze(func)
 
-    images_ref = run(func)
-    images_frozen = run(frozen)
+    for i in range(n):
+        if update:
+            params = mi.traverse(input)
+            update(i, params)
+            params.update()
 
+        res = frozen(input)
+        ref = func(input)
+
+        assert dr.allclose(ref, res)
     assert frozen.n_recordings == n_recordings
-    for ref, frozen in zip(images_ref, images_frozen):
-        assert dr.allclose(ref, frozen)
 
 def test01_cornell_box(variants_vec_rgb):
     w, h = (16, 16)
@@ -285,32 +294,12 @@ def test03_optimize_color(variants_vec_rgb):
     assert dr.allclose(param_ref, param_frozen)
 
 
-@pytest.mark.parametrize(
-    "bsdf",
-    [
-        "diffuse",
-        "dielectric",
-        "thindielectric",
-        "roughdielectric",
-        "conductor",
-        "roughconductor",
-        "hair",
-        "plastic",
-        "roughplastic",
-        "bumpmap",
-        "normalmap",
-        "blendbsdf",
-        "mask",
-        "twosided",
-        "principled",
-        "principledthin",
-        "custom",
-    ],
-)
-def test04_bsdf(variants_vec_rgb, bsdf):
-
+def bsdf_dict(bsdf: str):
+    """
+    Generate dictionaries, defining default versions of BSDFs, that are used
+    in the bsdf tests, based on the bsdf name.
+    """
     if bsdf == "custom":
-
         class MyBSDF(mi.BSDF):
             def __init__(self, props):
                 mi.BSDF.__init__(self, props)
@@ -404,112 +393,151 @@ def test04_bsdf(variants_vec_rgb, bsdf):
 
         mi.register_bsdf("mybsdf", lambda props: MyBSDF(props))
 
+    if bsdf == "twosided":
+        return {
+            "type": "twosided",
+            "material": {
+                "type": "diffuse",
+                "reflectance": {"type": "rgb", "value": 0.4},
+            },
+        }
+    elif bsdf == "mask":
+        return {
+            "type": "mask",
+            # Base material: a two-sided textured diffuse BSDF
+            "material": {
+                "type": "twosided",
+                "bsdf": {
+                    "type": "diffuse",
+                    "reflectance": {
+                        "type": "bitmap",
+                        "filename": find_resource(
+                            "resources/data/common/textures/wood.jpg"
+                        ),
+                    },
+                },
+            },
+            # Fetch the opacity mask from a monochromatic texture
+            "opacity": {
+                "type": "bitmap",
+                "filename": find_resource(
+                    "resources/data/common/textures/leaf_mask.png"
+                ),
+            },
+        }
+    elif bsdf == "bumpmap":
+        return {
+            "type": "bumpmap",
+            "arbitrary": {
+                "type": "bitmap",
+                "raw": True,
+                "filename": find_resource(
+                    "resources/data/common/textures/floor_tiles_bumpmap.png"
+                ),
+            },
+            "bsdf": {"type": "roughplastic"},
+        }
+    elif bsdf == "normalmap":
+        return {
+            "type": "normalmap",
+            "normalmap": {
+                "type": "bitmap",
+                "raw": True,
+                "filename": find_resource(
+                    "resources/data/common/textures/floor_tiles_normalmap.jpg"
+                ),
+            },
+            "bsdf": {"type": "roughplastic"},
+        }
+    elif bsdf == "blendbsdf":
+        return {
+            "type": "blendbsdf",
+            "weight": {
+                "type": "bitmap",
+                "filename": find_resource(
+                    "resources/data/common/textures/noise_01.jpg"
+                ),
+            },
+            "bsdf_0": {"type": "conductor"},
+            "bsdf_1": {"type": "roughplastic", "diffuse_reflectance": 0.1},
+        }
+    elif bsdf == "diffuse":
+        return {
+            "type": "diffuse",
+            "reflectance": {
+                "type": "bitmap",
+                "filename": find_resource(
+                    "resources/data/common/textures/wood.jpg"
+                ),
+            },
+        }
+    elif bsdf == "custom":
+        return {
+            "type": "mybsdf",
+            "tint": [0.2, 0.9, 0.2],
+            "eta": 1.33,
+        }
+    else:
+        return {
+            "type": bsdf,
+        }
+
+@pytest.mark.parametrize("bsdf", BSDFS)
+def test04_bsdf(variants_vec_rgb, bsdf):
     w, h = (16, 16)
     n = 5
+
+    def load_scene(bsdf: str):
+        scene = mi.cornell_box()
+        scene["sensor"]["film"]["width"] = w
+        scene["sensor"]["film"]["height"] = h
+        scene["white"] = bsdf_dict(bsdf)
+        scene = mi.load_dict(scene, parallel=True)
+        return scene
 
     def func(scene: mi.Scene) -> mi.TensorXf:
         with dr.profile_range("render"):
             result = mi.render(scene, spp=1)
         return result
 
-    def load_scene(bsdf: str):
-        scene = mi.cornell_box()
-        scene["sensor"]["film"]["width"] = w
-        scene["sensor"]["film"]["height"] = h
-        if bsdf == "twosided":
-            scene["white"] = {
-                "type": "twosided",
-                "material": {
-                    "type": "diffuse",
-                    "reflectance": {"type": "rgb", "value": 0.4},
-                },
-            }
-        elif bsdf == "mask":
-            scene["white"] = {
-                "type": "mask",
-                # Base material: a two-sided textured diffuse BSDF
-                "material": {
-                    "type": "twosided",
-                    "bsdf": {
-                        "type": "diffuse",
-                        "reflectance": {
-                            "type": "bitmap",
-                            "filename": find_resource(
-                                "resources/data/common/textures/wood.jpg"
-                            ),
-                        },
-                    },
-                },
-                # Fetch the opacity mask from a monochromatic texture
-                "opacity": {
-                    "type": "bitmap",
-                    "filename": find_resource(
-                        "resources/data/common/textures/leaf_mask.png"
-                    ),
-                },
-            }
-        elif bsdf == "bumpmap":
-            scene["white"] = {
-                "type": "bumpmap",
-                "arbitrary": {
-                    "type": "bitmap",
-                    "raw": True,
-                    "filename": find_resource(
-                        "resources/data/common/textures/floor_tiles_bumpmap.png"
-                    ),
-                },
-                "bsdf": {"type": "roughplastic"},
-            }
-        elif bsdf == "normalmap":
-            scene["white"] = {
-                "type": "normalmap",
-                "normalmap": {
-                    "type": "bitmap",
-                    "raw": True,
-                    "filename": find_resource(
-                        "resources/data/common/textures/floor_tiles_normalmap.jpg"
-                    ),
-                },
-                "bsdf": {"type": "roughplastic"},
-            }
-        elif bsdf == "blendbsdf":
-            scene["white"] = {
-                "type": "blendbsdf",
-                "weight": {
-                    "type": "bitmap",
-                    "filename": find_resource(
-                        "resources/data/common/textures/noise_01.jpg"
-                    ),
-                },
-                "bsdf_0": {"type": "conductor"},
-                "bsdf_1": {"type": "roughplastic", "diffuse_reflectance": 0.1},
-            }
-        elif bsdf == "diffuse":
-            scene["white"] = {
-                "type": "diffuse",
-                "reflectance": {
-                    "type": "bitmap",
-                    "filename": find_resource(
-                        "resources/data/common/textures/wood.jpg"
-                    ),
-                },
-            }
-        elif bsdf == "custom":
-            scene["white"] = {
-                "type": "mybsdf",
-                "tint": [0.2, 0.9, 0.2],
-                "eta": 1.33,
-            }
-        else:
-            scene["white"] = {
-                "type": bsdf,
-            }
-        scene = mi.load_dict(scene, parallel=True)
-        return scene
-
     scene2 = load_scene(bsdf)
     scene = load_scene(bsdf)
     run_assert(scene, n, func)
+
+@pytest.mark.parametrize("bsdf", BSDFS)
+def test05_bsdf_eval(variants_vec_rgb, bsdf):
+    n = 5
+
+    def func(bsdf: mi.BSDF, uv: mi.Point2f) -> mi.Spectrum:
+        with dr.profile_range("eval"):
+            si = mi.SurfaceInteraction3f()
+            si.t = 0.1
+            si.dp_du = mi.Vector3f(0.5514372, 0.84608955, 0.41559092)
+            si.dp_dv = mi.Vector3f(0.14551054, 0.54917541, 0.39286475)
+            si.p = mi.Point3f(0, 0, 0)
+            si.n = mi.Vector3f(0, 0, 1)
+            si.sh_frame = mi.Frame3f(0, 0, 1)
+            si.wi = mi.Vector3f(0, 0, 1)
+            si.uv = uv
+
+            wo = mi.Vector3f(0, 0, 1)
+            ctx = mi.BSDFContext()
+
+            return bsdf.eval(ctx, si, wo, active = True)
+
+    frozen = dr.freeze(func)
+
+    bsdf = mi.load_dict(bsdf_dict(bsdf))
+
+    for i in range(n):
+        uv = dr.full(mi.Point2f, 0.5, n + 2)
+
+        res = frozen(bsdf, uv)
+        ref = func(bsdf, uv)
+
+        assert dr.allclose(res, ref)
+
+    assert frozen.n_recordings > 0 and frozen.n_recordings <= 2
 
 @pytest.mark.parametrize(
     "emitter",
@@ -524,7 +552,7 @@ def test04_bsdf(variants_vec_rgb, bsdf):
         "directionalarea",
     ],
 )
-def test05_emitter(variants_vec_rgb, emitter):
+def test06_emitter(variants_vec_rgb, emitter):
     w, h = (16, 16)
     n = 5
 
@@ -630,7 +658,7 @@ def test05_emitter(variants_vec_rgb, emitter):
         "depth",
     ],
 )
-def test06_integrators(variants_vec_rgb, integrator):
+def test07_integrators(variants_vec_rgb, integrator):
     w, h = (16, 16)
     n = 5
 
@@ -684,7 +712,7 @@ def test06_integrators(variants_vec_rgb, integrator):
         "sphere",
     ],
 )
-def test07_shape(variants_vec_rgb, shape):
+def test08_shape(variants_vec_rgb, shape):
     w, h = (16, 16)
     n = 5
 
@@ -804,7 +832,7 @@ def test07_shape(variants_vec_rgb, shape):
 
 
 @pytest.mark.parametrize("optimizer", ["sgd", "adam"])
-def test07_optimizer(variants_vec_rgb, optimizer):
+def test08_optimizer(variants_vec_rgb, optimizer):
     w, h = (16, 16)
     n = 10
     k = "red.reflectance.value"
@@ -870,7 +898,7 @@ def test07_optimizer(variants_vec_rgb, optimizer):
         "heterogeneous",
     ],
 )
-def test08_medium(variants_vec_rgb, medium):
+def test09_medium(variants_vec_rgb, medium):
     w, h = (16, 16)
     n = 5
 
@@ -924,7 +952,7 @@ def test08_medium(variants_vec_rgb, medium):
         "ldsampler",
     ],
 )
-def test09_sampler(variants_vec_rgb, sampler):
+def test10_sampler(variants_vec_rgb, sampler):
     w, h = (16, 16)
     n = 5
 
