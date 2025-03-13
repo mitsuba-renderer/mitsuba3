@@ -8,25 +8,6 @@ from os.path import join, realpath, dirname, basename, splitext, exists
 from mitsuba.scalar_rgb.test.util import find_resource
 
 TUTORIALS_DIR = realpath(join(dirname(__file__), "../../../tutorials"))
-BSDFS = [
-    "diffuse",
-    "dielectric",
-    "thindielectric",
-    "roughdielectric",
-    "conductor",
-    "roughconductor",
-    "hair",
-    "plastic",
-    "roughplastic",
-    "bumpmap",
-    "normalmap",
-    "blendbsdf",
-    "mask",
-    "twosided",
-    "principled",
-    "principledthin",
-    "custom",
-]
 
 def run_assert(input, n, func, update: Optional[Callable] = None, n_recordings=2):
     frozen = dr.freeze(func)
@@ -294,6 +275,27 @@ def test03_optimize_color(variants_vec_rgb):
     assert dr.allclose(param_ref, param_frozen)
 
 
+BSDFS = [
+    "diffuse",
+    "dielectric",
+    "thindielectric",
+    "roughdielectric",
+    "conductor",
+    "roughconductor",
+    "hair",
+    "plastic",
+    "roughplastic",
+    "bumpmap",
+    "normalmap",
+    "blendbsdf",
+    "mask",
+    "twosided",
+    "principled",
+    "principledthin",
+    "custom",
+]
+
+
 def bsdf_dict(bsdf: str):
     """
     Generate dictionaries, defining default versions of BSDFs, that are used
@@ -539,19 +541,99 @@ def test05_bsdf_eval(variants_vec_rgb, bsdf):
 
     assert frozen.n_recordings > 0 and frozen.n_recordings <= 2
 
-@pytest.mark.parametrize(
-    "emitter",
-    [
-        "area",
-        "point",
-        "constant",
-        "envmap",
-        "spot",
-        "projector",
-        "directional",
-        "directionalarea",
-    ],
-)
+EMITTERS = [
+    "area",
+    "point",
+    "constant",
+    "envmap",
+    "spot",
+    "projector",
+    "directional",
+    "directionalarea",
+]
+
+
+def emitter_dict(emitter: str):
+    if emitter == "area":
+        return {
+            "type": "area",
+            "radiance": {
+                "type": "rgb",
+                "value": [18.387, 13.9873, 6.75357],
+            },
+        }
+    elif emitter == "point":
+        return {
+            "type": "point",
+            "position": [0.0, 0.0, 0.0],
+            "intensity": {
+                "type": "rgb",
+                "value": mi.ScalarColor3d(50, 50, 50),
+            },
+        }
+    elif emitter == "constant":
+        return {
+            "type": "constant",
+            "radiance": {
+                "type": "rgb",
+                "value": 1.0,
+            },
+        }
+    elif emitter == "envmap":
+        return {
+            "type": "envmap",
+            "filename": find_resource(
+                "resources/data/scenes/matpreview/envmap.exr"
+            ),
+        }
+    elif emitter == "spot":
+        return {
+            "type": "spot",
+            "to_world": mi.ScalarTransform4f().look_at(
+                origin=[0, 0, 0],
+                target=[0, -1, 0],
+                up=[0, 0, 1],
+            ),
+            "intensity": {
+                "type": "rgb",
+                "value": 1.0,
+            },
+        }
+    elif emitter == "projector":
+        return {
+            "type": "projector",
+            "to_world": mi.ScalarTransform4f().look_at(
+                origin=[0, 0, 0],
+                target=[0, -1, 0],
+                up=[0, 0, 1],
+            ),
+            "fov": 45,
+            "irradiance": {
+                "type": "bitmap",
+                "filename": find_resource(
+                    "resources/data/common/textures/flower.bmp"
+                ),
+            },
+        }
+    elif emitter == "directional":
+        return {
+            "type": "directional",
+            "direction": [0, 0, -1],
+            "irradiance": {
+                "type": "rgb",
+                "value": 1.0,
+            },
+        }
+    elif emitter == "directionalarea":
+        return {
+            "type": "directionalarea",
+            "radiance": {
+                "type": "rgb",
+                "value": 1.0,
+            },
+        }
+
+@pytest.mark.parametrize("emitter", EMITTERS)
 def test06_emitter(variants_vec_rgb, emitter):
     w, h = (16, 16)
     n = 5
@@ -565,84 +647,44 @@ def test06_emitter(variants_vec_rgb, emitter):
         scene = mi.cornell_box()
         scene["sensor"]["film"]["width"] = w
         scene["sensor"]["film"]["height"] = h
-
-        if emitter == "point":
-            scene["emitter"] = {
-                "type": "point",
-                "position": [0.0, 0.0, 0.0],
-                "intensity": {
-                    "type": "rgb",
-                    "value": mi.ScalarColor3d(50, 50, 50),
-                },
-            }
-        elif emitter == "constant":
-            scene["emitter"] = {
-                "type": "constant",
-                "radiance": {
-                    "type": "rgb",
-                    "value": 1.0,
-                },
-            }
-        elif emitter == "envmap":
-            scene["emitter"] = {
-                "type": "envmap",
-                "filename": find_resource(
-                    "resources/data/scenes/matpreview/envmap.exr"
-                ),
-            }
-        elif emitter == "spot":
-            scene["emitter"] = {
-                "type": "spot",
-                "to_world": mi.ScalarTransform4f().look_at(
-                    origin=[0, 0, 0],
-                    target=[0, -1, 0],
-                    up=[0, 0, 1],
-                ),
-                "intensity": {
-                    "type": "rgb",
-                    "value": 1.0,
-                },
-            }
-        elif emitter == "projector":
-            scene["emitter"] = {
-                "type": "projector",
-                "to_world": mi.ScalarTransform4f().look_at(
-                    origin=[0, 0, 0],
-                    target=[0, -1, 0],
-                    up=[0, 0, 1],
-                ),
-                "fov": 45,
-                "irradiance": {
-                    "type": "bitmap",
-                    "filename": find_resource(
-                        "resources/data/common/textures/flower.bmp"
-                    ),
-                },
-            }
-        elif emitter == "directional":
-            scene["emitter"] = {
-                "type": "directional",
-                "direction": [0, 0, -1],
-                "irradiance": {
-                    "type": "rgb",
-                    "value": 1.0,
-                },
-            }
-        elif emitter == "directionalarea":
-            scene["light"]["emitter"] = {
-                "type": "directionalarea",
-                "radiance": {
-                    "type": "rgb",
-                    "value": 1.0,
-                },
-            }
-
+        scene["emitter"] = emitter_dict(emitter)
         scene = mi.load_dict(scene, parallel=True)
         return scene
 
     scene = load_scene(emitter)
     run_assert(scene, n, func)
 
+
+@pytest.mark.parametrize("emitter", EMITTERS)
+def test07_emitter_eval(variants_vec_rgb, emitter):
+    n = 5
+
+    def func(emitter: mi.Emitter, uv) -> mi.Spectrum:
+        si = mi.SurfaceInteraction3f()
+        si.t = 0.1
+        si.dp_du = mi.Vector3f(0.5514372, 0.84608955, 0.41559092)
+        si.dp_dv = mi.Vector3f(0.14551054, 0.54917541, 0.39286475)
+        si.p = mi.Point3f(0, 0, 0)
+        si.n = mi.Vector3f(0, 0, 1)
+        si.sh_frame = mi.Frame3f(0, 0, 1)
+        si.wi = mi.Vector3f(0, 0, 1)
+        si.uv = uv
+
+        return emitter.eval(si, True)
+
+    frozen = dr.freeze(func)
+
+    emitter = mi.load_dict(emitter_dict(emitter))
+
+    for i in range(n):
+        uv = dr.full(mi.Point2f, 0.5, n + 2)
+
+        res = frozen(emitter, uv)
+        ref = func(emitter, uv)
+
+        assert dr.allclose(res, ref)
+
+    assert frozen.n_recordings > 0 and frozen.n_recordings <= 2
 
 @pytest.mark.parametrize(
     "integrator",
@@ -658,7 +700,7 @@ def test06_emitter(variants_vec_rgb, emitter):
         "depth",
     ],
 )
-def test07_integrators(variants_vec_rgb, integrator):
+def test08_integrators(variants_vec_rgb, integrator):
     w, h = (16, 16)
     n = 5
 
@@ -712,7 +754,7 @@ def test07_integrators(variants_vec_rgb, integrator):
         "sphere",
     ],
 )
-def test08_shape(variants_vec_rgb, shape):
+def test09_shape(variants_vec_rgb, shape):
     w, h = (16, 16)
     n = 5
 
@@ -832,7 +874,7 @@ def test08_shape(variants_vec_rgb, shape):
 
 
 @pytest.mark.parametrize("optimizer", ["sgd", "adam"])
-def test08_optimizer(variants_vec_rgb, optimizer):
+def test09_optimizer(variants_vec_rgb, optimizer):
     w, h = (16, 16)
     n = 10
     k = "red.reflectance.value"
@@ -898,7 +940,7 @@ def test08_optimizer(variants_vec_rgb, optimizer):
         "heterogeneous",
     ],
 )
-def test09_medium(variants_vec_rgb, medium):
+def test10_medium(variants_vec_rgb, medium):
     w, h = (16, 16)
     n = 5
 
@@ -952,7 +994,7 @@ def test09_medium(variants_vec_rgb, medium):
         "ldsampler",
     ],
 )
-def test10_sampler(variants_vec_rgb, sampler):
+def test11_sampler(variants_vec_rgb, sampler):
     w, h = (16, 16)
     n = 5
 
