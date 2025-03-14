@@ -8,6 +8,36 @@ from os.path import join, realpath, dirname, basename, splitext, exists
 from mitsuba.scalar_rgb.test.util import find_resource
 
 TUTORIALS_DIR = realpath(join(dirname(__file__), "../../../tutorials"))
+EMITTERS = [
+    "area",
+    "point",
+    "constant",
+    "envmap",
+    "spot",
+    "projector",
+    "directional",
+    "directionalarea",
+]
+BSDFS = [
+    "diffuse",
+    "dielectric",
+    "thindielectric",
+    "roughdielectric",
+    "conductor",
+    "roughconductor",
+    "hair",
+    "plastic",
+    "roughplastic",
+    "bumpmap",
+    "normalmap",
+    "blendbsdf",
+    "mask",
+    "twosided",
+    "principled",
+    "principledthin",
+    "custom",
+]
+
 
 def run_assert(input, n, func, update: Optional[Callable] = None, n_recordings=2):
     frozen = dr.freeze(func)
@@ -275,27 +305,6 @@ def test03_optimize_color(variants_vec_rgb):
     assert dr.allclose(param_ref, param_frozen)
 
 
-BSDFS = [
-    "diffuse",
-    "dielectric",
-    "thindielectric",
-    "roughdielectric",
-    "conductor",
-    "roughconductor",
-    "hair",
-    "plastic",
-    "roughplastic",
-    "bumpmap",
-    "normalmap",
-    "blendbsdf",
-    "mask",
-    "twosided",
-    "principled",
-    "principledthin",
-    "custom",
-]
-
-
 def bsdf_dict(bsdf: str):
     """
     Generate dictionaries, defining default versions of BSDFs, that are used
@@ -540,17 +549,6 @@ def test05_bsdf_eval(variants_vec_rgb, bsdf):
         assert dr.allclose(res, ref)
 
     assert frozen.n_recordings > 0 and frozen.n_recordings <= 2
-
-EMITTERS = [
-    "area",
-    "point",
-    "constant",
-    "envmap",
-    "spot",
-    "projector",
-    "directional",
-    "directionalarea",
-]
 
 
 def emitter_dict(emitter: str):

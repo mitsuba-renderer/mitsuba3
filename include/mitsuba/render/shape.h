@@ -1033,7 +1033,7 @@ protected:
     /// True if the shape's geometry has changed
     bool m_dirty = true;
 
-    /// True if the shape has called iniatlize() at least once
+    /// True if the shape has called initialize() at least once
     bool m_initialized = false;
 
     MI_DECLARE_TRAVERSE_CB(m_bsdf, m_emitter, m_sensor, m_interior_medium,
