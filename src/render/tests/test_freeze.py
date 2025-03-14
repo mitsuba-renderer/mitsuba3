@@ -1,9 +1,8 @@
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Callable, Optional, Tuple
 import pytest
 import drjit as dr
 import mitsuba as mi
-import numpy as np
-from os.path import join, realpath, dirname, basename, splitext, exists
+from os.path import join, realpath, dirname
 
 from mitsuba.scalar_rgb.test.util import find_resource
 
@@ -39,7 +38,14 @@ BSDFS = [
 ]
 
 
-def run_assert(input, n, func, update: Optional[Callable] = None, n_recordings=2):
+def assert_render(
+    input, n, update: Optional[Callable] = None, n_recordings=2, tmp_path=None, spp=1
+):
+    def func(scene: mi.Scene) -> mi.TensorXf:
+        with dr.profile_range("render"):
+            result = mi.render(scene, spp=spp)
+        return result
+
     frozen = dr.freeze(func)
 
     for i in range(n):
@@ -51,6 +57,11 @@ def run_assert(input, n, func, update: Optional[Callable] = None, n_recordings=2
         res = frozen(input)
         ref = func(input)
 
+        # NOTE: uncomment to save rendered images
+        # if tmp_path:
+        #     mi.util.write_bitmap(f"{tmp_path}/res{i}.exr", res)
+        #     mi.util.write_bitmap(f"{tmp_path}/ref{i}.exr", ref)
+
         assert dr.allclose(ref, res)
     assert frozen.n_recordings == n_recordings
 
@@ -58,11 +69,6 @@ def test01_cornell_box(variants_vec_rgb):
     w, h = (16, 16)
     n = 5
     k = "light.emitter.radiance.value"
-
-    def func(scene: mi.Scene) -> mi.TensorXf:
-        with dr.profile_range("render"):
-            result = mi.render(scene, spp=1)
-        return result
 
     scene = mi.cornell_box()
     scene["sensor"]["film"]["width"] = w
@@ -75,7 +81,7 @@ def test01_cornell_box(variants_vec_rgb):
     def update(i, params):
         params[k].x = value + 10.0 * i
 
-    run_assert(scene, n, func, update)
+    assert_render(scene, n, update)
 
 
 def test02_cornell_box_native(variants_vec_rgb):
@@ -86,11 +92,6 @@ def test02_cornell_box_native(variants_vec_rgb):
     n = 5
     k = "light.emitter.radiance.value"
 
-    def func(scene: mi.Scene) -> mi.TensorXf:
-        with dr.profile_range("render"):
-            result = mi.render(scene, spp=1)
-        return result
-
     scene = mi.cornell_box()
     scene["sensor"]["film"]["width"] = w
     scene["sensor"]["film"]["height"] = h
@@ -102,7 +103,7 @@ def test02_cornell_box_native(variants_vec_rgb):
     def update(i, params):
         params[k].x = value + 10.0 * i
 
-    run_assert(scene, n, func, update)
+    assert_render(scene, n, update)
 
 
 @pytest.mark.parametrize(
@@ -494,7 +495,7 @@ def bsdf_dict(bsdf: str):
         }
 
 @pytest.mark.parametrize("bsdf", BSDFS)
-def test04_bsdf(variants_vec_rgb, bsdf):
+def test04_bsdf(variants_vec_rgb, tmp_path, bsdf):
     w, h = (16, 16)
     n = 5
 
@@ -506,14 +507,10 @@ def test04_bsdf(variants_vec_rgb, bsdf):
         scene = mi.load_dict(scene, parallel=True)
         return scene
 
-    def func(scene: mi.Scene) -> mi.TensorXf:
-        with dr.profile_range("render"):
-            result = mi.render(scene, spp=1)
-        return result
-
     scene2 = load_scene(bsdf)
     scene = load_scene(bsdf)
-    run_assert(scene, n, func)
+    assert_render(scene, n, tmp_path=tmp_path)
+
 
 @pytest.mark.parametrize("bsdf", BSDFS)
 def test05_bsdf_eval(variants_vec_rgb, bsdf):
@@ -632,14 +629,9 @@ def emitter_dict(emitter: str):
         }
 
 @pytest.mark.parametrize("emitter", EMITTERS)
-def test06_emitter(variants_vec_rgb, emitter):
+def test06_emitter(variants_vec_rgb, tmp_path, emitter):
     w, h = (16, 16)
     n = 5
-
-    def func(scene: mi.Scene) -> mi.TensorXf:
-        with dr.profile_range("render"):
-            result = mi.render(scene, spp=1)
-        return result
 
     def load_scene(emitter):
         scene = mi.cornell_box()
@@ -650,7 +642,7 @@ def test06_emitter(variants_vec_rgb, emitter):
         return scene
 
     scene = load_scene(emitter)
-    run_assert(scene, n, func)
+    assert_render(scene, n, tmp_path = tmp_path)
 
 
 @pytest.mark.parametrize("emitter", EMITTERS)
@@ -698,14 +690,9 @@ def test07_emitter_eval(variants_vec_rgb, emitter):
         "depth",
     ],
 )
-def test08_integrators(variants_vec_rgb, integrator):
+def test08_integrators(variants_vec_rgb, tmp_path, integrator):
     w, h = (16, 16)
     n = 5
-
-    def func(scene: mi.Scene) -> mi.TensorXf:
-        with dr.profile_range("render"):
-            result = mi.render(scene, spp=1)
-        return result
 
     def load_scene():
         scene = mi.cornell_box()
@@ -736,7 +723,7 @@ def test08_integrators(variants_vec_rgb, integrator):
         return scene
 
     scene = load_scene()
-    run_assert(scene, n, func)
+    assert_render(scene, n, tmp_path = tmp_path)
 
 
 @pytest.mark.parametrize(
@@ -752,14 +739,9 @@ def test08_integrators(variants_vec_rgb, integrator):
         "sphere",
     ],
 )
-def test09_shape(variants_vec_rgb, shape):
+def test09_shape(variants_vec_rgb, tmp_path, shape):
     w, h = (16, 16)
     n = 5
-
-    def func(scene: mi.Scene) -> mi.TensorXf:
-        with dr.profile_range("render"):
-            result = mi.render(scene, spp=1)
-        return result
 
     def load_scene():
         from mitsuba.scalar_rgb import Transform4f as T
@@ -868,7 +850,7 @@ def test09_shape(variants_vec_rgb, shape):
             params["shape.control_points"][0] = i * 0.1
 
     scene = load_scene()
-    run_assert(scene, n, func, update)
+    assert_render(scene, n, update, tmp_path=tmp_path)
 
 
 @pytest.mark.parametrize("optimizer", ["sgd", "adam"])
@@ -938,14 +920,9 @@ def test09_optimizer(variants_vec_rgb, optimizer):
         "heterogeneous",
     ],
 )
-def test10_medium(variants_vec_rgb, medium):
+def test10_medium(variants_vec_rgb, tmp_path, medium):
     w, h = (16, 16)
     n = 5
-
-    def func(scene: mi.Scene) -> mi.TensorXf:
-        with dr.profile_range("render"):
-            result = mi.render(scene, spp=1)
-        return result
 
     def load_scene():
         scene = mi.cornell_box()
@@ -979,7 +956,7 @@ def test10_medium(variants_vec_rgb, medium):
         return scene
 
     scene = load_scene()
-    run_assert(scene, n, func)
+    assert_render(scene, n, tmp_path=tmp_path)
 
 
 @pytest.mark.parametrize(
@@ -992,15 +969,9 @@ def test10_medium(variants_vec_rgb, medium):
         "ldsampler",
     ],
 )
-def test11_sampler(variants_vec_rgb, sampler):
+def test11_sampler(variants_vec_rgb, tmp_path, sampler):
     w, h = (16, 16)
     n = 5
-
-    def func(scene: mi.Scene) -> mi.TensorXf:
-        with dr.profile_range("render"):
-            # spp of 4 to suppress warning
-            result = mi.render(scene, spp=4)
-        return result
 
     def load_scene():
         scene = mi.cornell_box()
@@ -1013,5 +984,5 @@ def test11_sampler(variants_vec_rgb, sampler):
         return scene
 
     scene = load_scene()
-    run_assert(scene, n, func)
-
+    # spp of 4 to suppress warning
+    assert_render(scene, n, tmp_path=tmp_path, spp = 4)
