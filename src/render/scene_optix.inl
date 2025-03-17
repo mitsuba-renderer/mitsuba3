@@ -680,7 +680,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
         };
 
         jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t),
-                            trace_args, active.index(),
+                            trace_args, false, active.index(),
                             config.pipeline_jit_index, s.sbt_jit_index);
 
         PreliminaryIntersection3f pi;
@@ -757,11 +757,10 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
         };
 
         jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t),
-                            trace_args, active.index(),
+                            trace_args, true, active.index(),
                             config.pipeline_jit_index, s.sbt_jit_index);
 
-        Single t = dr::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[15]));
-        return active && (t != dr::Infinity<Single>);
+        return active && (UInt32::steal(trace_args[15]) == 1);
     } else {
         DRJIT_MARK_USED(ray);
         DRJIT_MARK_USED(active);
