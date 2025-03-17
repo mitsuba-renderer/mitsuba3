@@ -46,6 +46,17 @@ INTEGRATORS = [
     "moment",
     "ptracer",
     "depth",
+    "aov",
+]
+SHAPES = [
+    "mesh",
+    "disk",
+    "cylinder",
+    "bsplinecurve",
+    "linearcurve",
+    "sdfgrid",
+    # "instance",
+    "sphere",
 ]
 
 
@@ -702,6 +713,14 @@ def integrator_dict(integrator: str):
             "type": "ptracer",
             "max_depth": 8,
         }
+    elif integrator == "aov":
+        return {
+            "type": "aov",
+            "aovs": "dd.y:depth,nn:sh_normal",
+            "my_image": {
+                "type": "path",
+            },
+        }
     else:
         return {"type": integrator}
 
@@ -722,121 +741,81 @@ def test08_integrators(variants_vec_rgb, tmp_path, integrator):
     assert_render(scene, n, tmp_path = tmp_path)
 
 
-@pytest.mark.parametrize(
-    "shape",
-    [
-        "mesh",
-        "disk",
-        "cylinder",
-        "bsplinecurve",
-        "linearcurve",
-        "sdfgrid",
-        # "instance",
-        "sphere",
-    ],
-)
+def shape_dict(shape: str):
+    if shape == "mesh":
+        from mitsuba.scalar_rgb import Transform4f as T
+        return {
+            "type": "ply",
+            "filename": find_resource("resources/data/common/meshes/teapot.ply"),
+            "to_world": T().scale(0.1),
+        }
+    elif shape == "disk":
+        return {
+            "type": "disk",
+            "material": {
+                "type": "diffuse",
+                "reflectance": {
+                    "type": "checkerboard",
+                    "to_uv": mi.ScalarTransform4f().rotate(
+                        axis=[1, 0, 0], angle=45
+                    ),
+                },
+            },
+        }
+    elif shape == "cylinder":
+        return {
+            "type": "cylinder",
+            "radius": 0.3,
+            "material": {"type": "diffuse"},
+            "to_world": mi.ScalarTransform4f().rotate(axis=[1, 0, 0], angle=10),
+        }
+    elif shape == "bsplinecurve":
+        return {
+            "type": "bsplinecurve",
+            "to_world": mi.ScalarTransform4f()
+            .scale(1.0)
+            .rotate(axis=[0, 1, 0], angle=45),
+            "filename": find_resource("resources/data/common/meshes/curve.txt"),
+            "silhouette_sampling_weight": 1.0,
+        }
+    elif shape == "linearcurve":
+        return {
+            "type": "linearcurve",
+            "to_world": mi.ScalarTransform4f()
+            .translate([0, -1, 0])
+            .scale(1)
+            .rotate(axis=[0, 1, 0], angle=45),
+            "filename": find_resource("resources/data/common/meshes/curve.txt"),
+        }
+    elif shape == "sdfgrid":
+        return {
+            "type": "sdfgrid",
+            "bsdf": {"type": "diffuse"},
+            "filename": find_resource(
+                "resources/data/docs/scenes/sdfgrid/torus_sdfgrid.vol"
+            ),
+        }
+    elif shape == "sphere":
+        return {
+            "type": "sphere",
+            "center": [0, 0, 0],
+            "radius": 0.5,
+            "bsdf": {"type": "diffuse"},
+        }
+
+@pytest.mark.parametrize("shape", SHAPES)
 def test09_shape(variants_vec_rgb, tmp_path, shape):
     w, h = (16, 16)
     n = 5
 
     def load_scene():
-        from mitsuba.scalar_rgb import Transform4f as T
 
         scene = mi.cornell_box()
         scene["sensor"]["film"]["width"] = w
         scene["sensor"]["film"]["height"] = h
         del scene["small-box"]
         del scene["large-box"]
-
-        if shape == "mesh":
-            scene["shape"] = {
-                "type": "ply",
-                "filename": find_resource("resources/data/common/meshes/teapot.ply"),
-                "to_world": T().scale(0.1),
-            }
-        elif shape == "disk":
-            scene["shape"] = {
-                "type": "disk",
-                "material": {
-                    "type": "diffuse",
-                    "reflectance": {
-                        "type": "checkerboard",
-                        "to_uv": mi.ScalarTransform4f().rotate(
-                            axis=[1, 0, 0], angle=45
-                        ),
-                    },
-                },
-            }
-        elif shape == "cylinder":
-            scene["shape"] = {
-                "type": "cylinder",
-                "radius": 0.3,
-                "material": {"type": "diffuse"},
-                "to_world": mi.ScalarTransform4f().rotate(axis=[1, 0, 0], angle=10),
-            }
-        elif shape == "bsplinecurve":
-            scene["shape"] = {
-                "type": "bsplinecurve",
-                "to_world": mi.ScalarTransform4f()
-                .scale(1.0)
-                .rotate(axis=[0, 1, 0], angle=45),
-                "filename": find_resource("resources/data/common/meshes/curve.txt"),
-                "silhouette_sampling_weight": 1.0,
-            }
-        elif shape == "linearcurve":
-            scene["shape"] = {
-                "type": "linearcurve",
-                "to_world": mi.ScalarTransform4f()
-                .translate([0, -1, 0])
-                .scale(1)
-                .rotate(axis=[0, 1, 0], angle=45),
-                "filename": find_resource("resources/data/common/meshes/curve.txt"),
-            }
-        elif shape == "sdfgrid":
-            scene["shape"] = {
-                "type": "sdfgrid",
-                "bsdf": {"type": "diffuse"},
-                "filename": find_resource(
-                    "resources/data/docs/scenes/sdfgrid/torus_sdfgrid.vol"
-                ),
-            }
-        elif shape == "instance":
-            scene["sg"] = {
-                "type": "shapegroup",
-                "first_object": {
-                    "type": "ply",
-                    "filename": find_resource(
-                        "resources/data/common/meshes/teapot.ply"
-                    ),
-                    "bsdf": {
-                        "type": "roughconductor",
-                    },
-                    "to_world": mi.ScalarTransform4f()
-                    .translate([0.5, 0, 0])
-                    .scale([0.2, 0.2, 0.2]),
-                },
-                "second_object": {
-                    "type": "sphere",
-                    "to_world": mi.ScalarTransform4f()
-                    .translate([-0.5, 0, 0])
-                    .scale([0.2, 0.2, 0.2]),
-                    "bsdf": {
-                        "type": "diffuse",
-                    },
-                },
-            }
-            scene["first_instance"] = {
-                "type": "instance",
-                "shapegroup": {"type": "ref", "id": "sg"},
-            }
-        elif shape == "sphere":
-            scene["shape"] = {
-                "type": "sphere",
-                "center": [0, 0, 0],
-                "radius": 0.5,
-                "bsdf": {"type": "diffuse"},
-            }
-
+        scene["shape"] = shape_dict(shape)
         scene = mi.load_dict(scene, parallel=True)
         return scene
 
