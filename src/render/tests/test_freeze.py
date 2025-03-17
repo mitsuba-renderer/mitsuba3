@@ -827,8 +827,41 @@ def test09_shape(variants_vec_rgb, tmp_path, shape):
     assert_render(scene, n, update, tmp_path=tmp_path)
 
 
+@pytest.mark.parametrize("shape", SHAPES)
+def test10_shape_sample_position(variants_vec_rgb, shape):
+    if shape == "bsplinecurve" or shape == "linearcurve":
+        pytest.skip("Embree enabled, cannot test the native KD-Tree")
+
+    n = 5
+
+    def func(shape: mi.Shape, sample: mi.Point2f) -> mi.PositionSample3f:
+        return shape.sample_position(0, sample)
+
+    frozen = dr.freeze(func)
+
+    shape = mi.load_dict(shape_dict(shape))
+
+    for i in range(n):
+        print(f"{i=}")
+        sampler: mi.Sampler = mi.load_dict({"type": "independent"})
+        sampler.seed(i, i + 2)
+
+        sample = sampler.next_2d()
+        dr.make_opaque(sample)
+
+        res = frozen(shape, sample)
+        ref = func(shape, sample)
+
+        assert dr.allclose(res.n, ref.n)
+        assert dr.allclose(res.p, ref.p)
+        assert dr.allclose(res.pdf, ref.pdf)
+        assert dr.allclose(res.time, ref.time)
+        assert dr.allclose(res.uv, ref.uv)
+        assert dr.all(res.delta == ref.delta)
+
+
 @pytest.mark.parametrize("optimizer", ["sgd", "adam"])
-def test09_optimizer(variants_vec_rgb, optimizer):
+def test11_optimizer(variants_vec_rgb, optimizer):
     w, h = (16, 16)
     n = 10
     k = "red.reflectance.value"
@@ -891,7 +924,7 @@ def test09_optimizer(variants_vec_rgb, optimizer):
         "heterogeneous",
     ],
 )
-def test10_medium(variants_vec_rgb, tmp_path, medium):
+def test12_medium(variants_vec_rgb, tmp_path, medium):
     w, h = (16, 16)
     n = 5
 
@@ -940,7 +973,7 @@ def test10_medium(variants_vec_rgb, tmp_path, medium):
         "ldsampler",
     ],
 )
-def test11_sampler(variants_vec_rgb, tmp_path, sampler):
+def test13_sampler(variants_vec_rgb, tmp_path, sampler):
     w, h = (16, 16)
     n = 5
 
