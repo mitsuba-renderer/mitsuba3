@@ -144,6 +144,8 @@ public:
     MI_DECLARE_CLASS()
 private:
     ref<Base> m_integrator;
+
+    MI_TRAVERSE_CB(Base, m_integrator);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(StokesIntegrator, SamplingIntegrator)
