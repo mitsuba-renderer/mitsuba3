@@ -91,6 +91,9 @@ def assert_render(
     assert frozen.n_recordings == n_recordings
 
 def test01_cornell_box(variants_vec_rgb):
+    """
+    Test that it is possible to render the cornell_box in a frozen function.
+    """
     w, h = (16, 16)
     n = 5
     k = "light.emitter.radiance.value"
@@ -110,6 +113,10 @@ def test01_cornell_box(variants_vec_rgb):
 
 
 def test02_cornell_box_native(variants_vec_rgb):
+    """
+    Test that it is possible to render the cornell_box with the native acceleration
+    structure.
+    """
     if mi.MI_ENABLE_EMBREE:
         pytest.skip("Embree enabled, cannot test the native KD-Tree")
 
@@ -142,6 +149,15 @@ def test02_cornell_box_native(variants_vec_rgb):
     ],
 )
 def test02_pose_estimation(variants_vec_rgb, integrator):
+    """
+    Tests that it is possible to optimize the pose of an object, when freezing
+    the forward and backward pass. Gradients are propagated through the inputs
+    of the frozen function.
+
+    Updates of the scene geometry is not possible inside of frozen functions,
+    as this would require us to re-build the acceleration structure, which
+    currently cannot be recorded.
+    """
     w, h = (16, 16)
     n = 10
 
@@ -269,6 +285,10 @@ def test02_pose_estimation(variants_vec_rgb, integrator):
 
 
 def test03_optimize_color(variants_vec_rgb):
+    """
+    Tests freezing of optimizing a color parameter through backpropagation, by
+    passing the gradients through the frozen function inputs.
+    """
     k = "red.reflectance.value"
     w, h = (16, 16)
     n = 10
@@ -515,6 +535,9 @@ def bsdf_dict(bsdf: str):
 
 @pytest.mark.parametrize("bsdf", BSDFS)
 def test04_bsdf(variants_vec_rgb, tmp_path, bsdf):
+    """
+    Tests that it is possible to freeze rendeirng a scene with each BSDF type.
+    """
     w, h = (16, 16)
     n = 5
 
@@ -533,6 +556,9 @@ def test04_bsdf(variants_vec_rgb, tmp_path, bsdf):
 
 @pytest.mark.parametrize("bsdf", BSDFS)
 def test05_bsdf_eval(variants_vec_rgb, bsdf):
+    """
+    Tests that it is possible to evaluate a BSDF inside a frozen function.
+    """
     n = 5
 
     def func(bsdf: mi.BSDF, uv: mi.Point2f) -> mi.Spectrum:
@@ -649,6 +675,9 @@ def emitter_dict(emitter: str):
 
 @pytest.mark.parametrize("emitter", EMITTERS)
 def test06_emitter(variants_vec_rgb, tmp_path, emitter):
+    """
+    Tests that it is possible to freeze rendeirng a scene with each emitter type.
+    """
     w, h = (16, 16)
     n = 5
 
@@ -666,6 +695,9 @@ def test06_emitter(variants_vec_rgb, tmp_path, emitter):
 
 @pytest.mark.parametrize("emitter", EMITTERS)
 def test07_emitter_eval(variants_vec_rgb, emitter):
+    """
+    Tests that it is possible to evaluate an emitter inside a frozen function.
+    """
     n = 5
 
     def func(emitter: mi.Emitter, uv) -> mi.Spectrum:
@@ -726,6 +758,9 @@ def integrator_dict(integrator: str):
 
 @pytest.mark.parametrize("integrator", INTEGRATORS)
 def test08_integrators(variants_vec_rgb, tmp_path, integrator):
+    """
+    Tests that it is possible to freeze rendeirng a scene with each integrator type.
+    """
     w, h = (16, 16)
     n = 5
 
@@ -805,6 +840,9 @@ def shape_dict(shape: str):
 
 @pytest.mark.parametrize("shape", SHAPES)
 def test09_shape(variants_vec_rgb, tmp_path, shape):
+    """
+    Tests that it is possible to freeze rendeirng a scene with each shape type.
+    """
     w, h = (16, 16)
     n = 5
 
@@ -829,6 +867,10 @@ def test09_shape(variants_vec_rgb, tmp_path, shape):
 
 @pytest.mark.parametrize("shape", SHAPES)
 def test10_shape_sample_position(variants_vec_rgb, shape):
+    """
+    Tests that it is possible to call ``sample_position`` on a shape inside a
+    frozen function.
+    """
     if shape == "bsplinecurve" or shape == "linearcurve":
         pytest.skip(
             "bsplinecurve and linearcurve do not implement ``sample_position`` for now."
@@ -864,6 +906,11 @@ def test10_shape_sample_position(variants_vec_rgb, shape):
 
 @pytest.mark.parametrize("optimizer", ["sgd", "adam"])
 def test11_optimizer(variants_vec_rgb, optimizer):
+    """
+    Tests optimizing a non-geometric scene parameter using different optimizers
+    in a frozen function. This also updates the parameters in the frozen function,
+    which is not possible if the acceleration structure whould have to be updated.
+    """
     w, h = (16, 16)
     n = 10
     k = "red.reflectance.value"
@@ -927,6 +974,9 @@ def test11_optimizer(variants_vec_rgb, optimizer):
     ],
 )
 def test12_medium(variants_vec_rgb, tmp_path, medium):
+    """
+    Tests that it is possible to freeze rendeirng a scene with each medium type.
+    """
     w, h = (16, 16)
     n = 5
 
@@ -976,6 +1026,9 @@ def test12_medium(variants_vec_rgb, tmp_path, medium):
     ],
 )
 def test13_sampler(variants_vec_rgb, tmp_path, sampler):
+    """
+    Tests that it is possible to freeze rendeirng a scene with each sampler type.
+    """
     w, h = (16, 16)
     n = 5
 
