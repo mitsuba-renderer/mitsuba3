@@ -714,6 +714,8 @@ MI_VARIANT std::string Shape<Float, Spectrum>::get_children_string() const {
     return oss.str();
 }
 
+MI_IMPLEMENT_TRAVERSE_CB(Shape, Object);
+
 MI_IMPLEMENT_CLASS_VARIANT(Shape, Object, "shape")
 MI_INSTANTIATE_CLASS(Shape)
 NAMESPACE_END(mitsuba)

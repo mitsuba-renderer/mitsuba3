@@ -171,6 +171,8 @@ public:
     MI_DECLARE_CLASS()
 private:
     IrregularContinuousDistribution<Wavelength> m_distr;
+
+    MI_TRAVERSE_CB(Texture, m_distr);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(IrregularSpectrum, Texture)

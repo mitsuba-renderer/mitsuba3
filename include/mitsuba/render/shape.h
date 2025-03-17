@@ -1,5 +1,6 @@
 #pragma once
 
+#include <mitsuba/render/bsdf.h>
 #include <drjit/call.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/core/spectrum.h>
@@ -1071,8 +1072,12 @@ protected:
     /// True if the shape's geometry has changed
     bool m_dirty = true;
 
-    /// True if the shape has called iniatlize() at least once
+    /// True if the shape has called initialize() at least once
     bool m_initialized = false;
+
+    MI_DECLARE_TRAVERSE_CB(m_bsdf, m_emitter, m_sensor, m_interior_medium,
+                           m_exterior_medium, m_texture_attributes, m_to_world,
+                           m_to_object)
 };
 
 // -----------------------------------------------------------------------

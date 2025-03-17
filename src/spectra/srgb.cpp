@@ -145,6 +145,8 @@ protected:
     static constexpr size_t ChannelCount = is_monochromatic_v<Spectrum> ? 1 : 3;
 
     Color<Float, ChannelCount> m_value;
+
+    MI_TRAVERSE_CB(Texture, m_value);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(SRGBReflectanceSpectrum, Texture)

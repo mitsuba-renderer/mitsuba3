@@ -194,6 +194,8 @@ public:
     MI_DECLARE_CLASS()
 private:
     ref<Texture> m_reflectance;
+
+    MI_TRAVERSE_CB(Base, m_reflectance);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(SmoothDiffuse, BSDF)

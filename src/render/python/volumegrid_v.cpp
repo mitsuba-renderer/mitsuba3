@@ -6,6 +6,7 @@
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 #include <nanobind/ndarray.h>
+#include <drjit/python.h>
 
 MI_PY_EXPORT(VolumeGrid) {
     MI_PY_IMPORT_TYPES(VolumeGrid)
@@ -44,7 +45,7 @@ MI_PY_EXPORT(VolumeGrid) {
         volumegrid->set_max_per_channel(max_per_channel.data());
     };
 
-    MI_PY_CLASS(VolumeGrid, Object)
+    auto volume_grid = MI_PY_CLASS(VolumeGrid, Object)
         .def(nb::init<const fs::path &>(), "path"_a,
             nb::call_guard<nb::gil_scoped_release>())
         .def(nb::init<Stream *>(), "stream"_a,
@@ -118,4 +119,6 @@ MI_PY_EXPORT(VolumeGrid) {
             result["version"] = 3;
             return nb::object(result);
         });
+
+    drjit::bind_traverse(volume_grid);
 }

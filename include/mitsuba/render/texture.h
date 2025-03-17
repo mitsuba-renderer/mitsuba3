@@ -236,6 +236,8 @@ protected:
 
 protected:
     std::string m_id;
+
+    MI_TRAVERSE_CB(Object);
 };
 
 MI_EXTERN_CLASS(Texture)

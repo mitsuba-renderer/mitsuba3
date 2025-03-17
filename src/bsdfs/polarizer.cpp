@@ -218,6 +218,8 @@ private:
     bool m_polarizing;
     ref<Texture> m_theta;
     ref<Texture> m_transmittance;
+
+    MI_TRAVERSE_CB(Base, m_theta, m_transmittance);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(LinearPolarizer, BSDF)

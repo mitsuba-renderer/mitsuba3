@@ -356,7 +356,7 @@ class _RenderOp(dr.CustomOp):
         self.spp = spp
 
         with dr.suspend_grad():
-            return self.integrator.render(
+            res = self.integrator.render(
                 scene=self.scene,
                 sensor=sensor,
                 seed=seed[0],
@@ -364,6 +364,13 @@ class _RenderOp(dr.CustomOp):
                 develop=True,
                 evaluate=False
             )
+            # After rendering an image, the sampler state is dependent on the
+            # rendering loop. When a frozen function is recorded, the sampler
+            # might be evaluated, which causes parts of the rendering loop to
+            # be re-evaluated. To prevent this overhead, we reset the state
+            # of the sampler, by re-seeding it.
+            sensor.sampler().seed(0, 1)
+            return res
 
     def forward(self):
         self.set_grad_out(

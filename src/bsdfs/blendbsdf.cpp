@@ -237,6 +237,8 @@ public:
 protected:
     ref<Texture> m_weight;
     ref<Base> m_nested_bsdf[2];
+
+    MI_TRAVERSE_CB(Base, m_weight, m_nested_bsdf[0], m_nested_bsdf[1])
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(BlendBSDF, BSDF)

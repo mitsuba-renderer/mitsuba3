@@ -514,6 +514,8 @@ private:
     mutable void* m_vertex_buffer_ptr = nullptr;
     mutable void* m_radius_buffer_ptr = nullptr;
 #endif
+
+    MI_TRAVERSE_CB(Base, m_indices, m_control_points)
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(LinearCurve, Shape)

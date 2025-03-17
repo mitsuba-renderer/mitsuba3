@@ -319,6 +319,9 @@ protected:
     Transform4f m_sample_to_camera;
     ScalarFloat m_x_fov;
     Float m_sensor_area;
+
+    MI_TRAVERSE_CB(Base, m_irradiance, m_intensity_scale, m_camera_to_sample,
+                   m_sample_to_camera, m_x_fov, m_sensor_area)
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(Projector, Emitter)

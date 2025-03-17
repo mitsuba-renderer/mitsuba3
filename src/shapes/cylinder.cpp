@@ -812,6 +812,8 @@ private:
     Float m_inv_surface_area;
     bool m_flip_normals;
     static constexpr float silhouette_offset = 1e-3f;
+
+    MI_TRAVERSE_CB(Base, m_radius, m_length, m_inv_surface_area);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(Cylinder, Shape)
