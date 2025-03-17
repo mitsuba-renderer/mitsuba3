@@ -230,6 +230,9 @@ private:
     Float m_eta;
     ref<Texture> m_specular_transmittance;
     ref<Texture> m_specular_reflectance;
+
+    MI_TRAVERSE_CB(Base, m_eta, m_specular_reflectance,
+                   m_specular_transmittance);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(ThinDielectric, BSDF)

@@ -594,6 +594,8 @@ protected:
     Warp m_warp;
     ref<Texture> m_d65;
     Float m_scale;
+
+    MI_TRAVERSE_CB(Base, m_bsphere, m_data, m_warp, m_d65, m_scale)
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(EnvironmentMapEmitter, Emitter)
