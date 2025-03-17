@@ -830,7 +830,9 @@ def test09_shape(variants_vec_rgb, tmp_path, shape):
 @pytest.mark.parametrize("shape", SHAPES)
 def test10_shape_sample_position(variants_vec_rgb, shape):
     if shape == "bsplinecurve" or shape == "linearcurve":
-        pytest.skip("Embree enabled, cannot test the native KD-Tree")
+        pytest.skip(
+            "bsplinecurve and linearcurve do not implement ``sample_position`` for now."
+        )
 
     n = 5
 

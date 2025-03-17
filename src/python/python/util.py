@@ -362,7 +362,13 @@ class _RenderOp(dr.CustomOp):
                 develop=True,
                 evaluate=False
             )
-            sensor.sampler().seed(0, 1)
+            if dr.flag(dr.JitFlag.FreezingScope):
+                # After rendering an image, the sampler state is dependent on the
+                # rendering loop. When a frozen function is recorded, the sampler
+                # might be evaluated, which causes parts of the rendering loop to
+                # be re-evaluated. To prevent this overhead, we reset the state
+                # of the sampler, by re-seeding it.
+                sensor.sampler().seed(0, 1)
             return res
 
     def forward(self):
