@@ -7,11 +7,8 @@
 extern "C" __global__ void __closesthit__bsplinecurve() {
     const OptixHitGroupData *sbt_data = (OptixHitGroupData *) optixGetSbtDataPointer();
     unsigned int prim_index = optixGetPrimitiveIndex();
-
-    float t = optixGetRayTmax();
-    float u = optixGetCurveParameter();
-
+    Vector2f prim_uv = Vector2f(__uint_as_float(optixGetAttribute_0()), 0);
     set_preliminary_intersection_to_payload(
-        t, Vector2f(u, 0), prim_index, sbt_data->shape_registry_id);
+        optixGetRayTmax(), prim_uv, prim_index, sbt_data->shape_registry_id);
 }
 #endif
