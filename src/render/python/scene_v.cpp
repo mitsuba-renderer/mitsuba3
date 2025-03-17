@@ -10,6 +10,7 @@
 #include <nanobind/stl/vector.h>
 #include <nanobind/stl/tuple.h>
 #include <nanobind/stl/pair.h>
+#include <drjit/python.h>
 
 #if !defined(MI_ENABLE_EMBREE)
 #  include <mitsuba/render/kdtree.h>
@@ -47,7 +48,7 @@ MI_PY_EXPORT(ShapeKDTree) {
 
 MI_PY_EXPORT(Scene) {
     MI_PY_IMPORT_TYPES(Scene, Integrator, SamplingIntegrator, MonteCarloIntegrator, Sensor)
-    MI_PY_CLASS(Scene, Object)
+    auto scene = MI_PY_CLASS(Scene, Object)
         .def(nb::init<const Properties>())
         .def("ray_intersect_preliminary",
              nb::overload_cast<const Ray3f &, Mask, Mask>(&Scene::ray_intersect_preliminary, nb::const_),
@@ -153,4 +154,5 @@ MI_PY_EXPORT(Scene) {
              D(Scene, integrator))
         .def_method(Scene, shapes_grad_enabled)
         .def("__repr__", &Scene::to_string);
+    dr::bind_traverse(scene);
 }

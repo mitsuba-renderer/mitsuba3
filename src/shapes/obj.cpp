@@ -409,6 +409,8 @@ public:
     }
 
     MI_DECLARE_CLASS()
+
+    MI_TRAVERSE_CB(Base);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(OBJMesh, Mesh)

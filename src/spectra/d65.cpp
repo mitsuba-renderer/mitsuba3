@@ -313,6 +313,8 @@ private:
     ScalarFloat m_scale;
 
     bool m_has_value = false;
+
+    MI_TRAVERSE_CB(Base, m_value, m_nested_texture, m_d65);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(D65Spectrum, Texture)

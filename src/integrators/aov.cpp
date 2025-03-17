@@ -570,6 +570,8 @@ private:
     std::vector<Type> m_aov_types;
     std::vector<std::string> m_aov_names;
     std::vector<ref<Base>> m_integrators;
+
+    MI_TRAVERSE_CB(Base, m_integrators);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(AOVIntegrator, SamplingIntegrator)

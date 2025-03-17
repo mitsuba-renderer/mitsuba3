@@ -412,6 +412,10 @@ private:
     Float m_x_fov;
     Vector3f m_dx, m_dy;
     Vector2f m_principal_point_offset;
+
+    MI_TRAVERSE_CB(Base, m_camera_to_sample, m_sample_to_camera, m_image_rect,
+                   m_normalization, m_x_fov, m_dx, m_dy,
+                   m_principal_point_offset);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(PerspectiveCamera, ProjectiveCamera)
