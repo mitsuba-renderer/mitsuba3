@@ -8,6 +8,7 @@
 #include <nanobind/stl/vector.h>
 #include <nanobind/stl/tuple.h>
 #include <drjit/python.h>
+#include <drjit/traversable_base.h>
 
 MI_PY_EXPORT(BSDFSample) {
     MI_PY_IMPORT_TYPES()
@@ -105,6 +106,8 @@ public:
 
     using BSDF::m_flags;
     using BSDF::m_components;
+
+    DR_TRAMPOLINE_TRAVERSE_CB(BSDF);
 };
 
 template <typename Ptr, typename Cls> void bind_bsdf_generic(Cls &cls) {
@@ -189,6 +192,8 @@ MI_PY_EXPORT(BSDF) {
         .def_field(PyBSDF, m_flags, D(BSDF, m_flags))
         .def_field(PyBSDF, m_components, D(BSDF, m_components))
         .def("__repr__", &BSDF::to_string, D(BSDF, to_string));
+
+    drjit::bind_traverse(bsdf);
 
     bind_bsdf_generic<BSDF *>(bsdf);
 
