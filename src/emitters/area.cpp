@@ -5,6 +5,7 @@
 #include <mitsuba/render/medium.h>
 #include <mitsuba/render/shape.h>
 #include <mitsuba/render/texture.h>
+#include <drjit/traversable_base.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -269,6 +270,8 @@ public:
     MI_DECLARE_CLASS()
 private:
     ref<Texture> m_radiance;
+
+    MI_TRAVERSE_CB(Base, m_radiance);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(AreaLight, Emitter)

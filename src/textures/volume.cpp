@@ -92,6 +92,8 @@ public:
     MI_DECLARE_CLASS()
 protected:
     ref<Volume> m_volume;
+
+    MI_TRAVERSE_CB(Texture, m_volume);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(VolumeAdapter, Texture)
