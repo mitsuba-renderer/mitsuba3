@@ -809,7 +809,6 @@ def test09_shape(variants_vec_rgb, tmp_path, shape):
     n = 5
 
     def load_scene():
-
         scene = mi.cornell_box()
         scene["sensor"]["film"]["width"] = w
         scene["sensor"]["film"]["height"] = h
