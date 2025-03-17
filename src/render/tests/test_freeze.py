@@ -49,6 +49,9 @@ INTEGRATORS = [
 ]
 
 
+def mse(image, image_ref):
+    return dr.sum(dr.square(image - image_ref), axis=None)
+
 def assert_render(
     input, n, update: Optional[Callable] = None, n_recordings=2, tmp_path=None, spp=1
 ):
@@ -142,9 +145,6 @@ def test02_pose_estimation(variants_vec_rgb, integrator):
         )
 
         params["bunny.vertex_positions"] = dr.ravel(trafo @ initial_vertex_positions)
-
-    def mse(image, image_ref):
-        return dr.sum(dr.square(image - image_ref), axis=None)
 
     def optimize(scene, ref, initial_vertex_positions, other):
         params = mi.traverse(scene)
@@ -261,9 +261,6 @@ def test03_optimize_color(variants_vec_rgb):
     k = "red.reflectance.value"
     w, h = (16, 16)
     n = 10
-
-    def mse(image, image_ref):
-        return dr.sum(dr.square(image - image_ref), axis=None)
 
     def optimize(scene, image_ref):
         params = mi.traverse(scene)
@@ -857,9 +854,6 @@ def test09_optimizer(variants_vec_rgb, optimizer):
     w, h = (16, 16)
     n = 10
     k = "red.reflectance.value"
-
-    def mse(image, image_ref):
-        return dr.sum(dr.square(image - image_ref), axis=None)
 
     def optimize(scene, opt, image_ref):
         params = mi.traverse(scene)
