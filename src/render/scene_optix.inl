@@ -760,7 +760,8 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
                             trace_args, active.index(),
                             config.pipeline_jit_index, s.sbt_jit_index);
 
-        return active && (UInt32::steal(trace_args[15]) == 1);
+        Single t = dr::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[15]));
+        return active && (t != dr::Infinity<Single>);
     } else {
         DRJIT_MARK_USED(ray);
         DRJIT_MARK_USED(active);
