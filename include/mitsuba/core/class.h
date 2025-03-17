@@ -247,8 +247,8 @@ NAMESPACE_END(detail)
 
 #define MI_REGISTRY_PUT(name, ptr)                                             \
     if constexpr (dr::is_jit_v<Float>) {                                       \
-        jit_registry_put(::mitsuba::detail::get_variant<Float, Spectrum>(),    \
-                         "mitsuba::" name, ptr);                               \
+        drjit::registry_put(::mitsuba::detail::get_variant<Float, Spectrum>(), \
+                            "mitsuba::" name, ptr);                            \
     }
 
 #define MI_CALL_TEMPLATE_BEGIN(Name)          \

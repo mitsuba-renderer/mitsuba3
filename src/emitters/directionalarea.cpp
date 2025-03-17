@@ -190,6 +190,8 @@ public:
 private:
     ref<Texture> m_radiance;
     Float m_area = 0.f;
+
+    MI_TRAVERSE_CB(Base, m_radiance, m_area)
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(DirectionalArea, Emitter)

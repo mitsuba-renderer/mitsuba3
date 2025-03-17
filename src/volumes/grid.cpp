@@ -625,6 +625,8 @@ protected:
     bool m_fixed_max = false;
     ScalarFloat m_max;
     std::vector<ScalarFloat> m_max_per_channel;
+
+    MI_TRAVERSE_CB(Base, m_texture);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(GridVolume, Volume)

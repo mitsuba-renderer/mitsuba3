@@ -95,6 +95,8 @@ public:
     MI_DECLARE_CLASS()
 protected:
     ref<Texture> m_value;
+
+    MI_TRAVERSE_CB(Base, m_value);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(ConstVolume, Volume)
