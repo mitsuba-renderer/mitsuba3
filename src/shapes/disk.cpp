@@ -568,6 +568,8 @@ private:
     Frame3f m_frame;
     Float m_du, m_dv;
     Float m_inv_surface_area;
+
+    MI_TRAVERSE_CB(Base, m_frame, m_du, m_dv, m_inv_surface_area)
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(Disk, Shape)

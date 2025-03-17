@@ -45,6 +45,8 @@ public:
     std::string to_string() const override {
         NB_OVERRIDE(to_string);
     }
+    
+    DR_TRAMPOLINE_TRAVERSE_CB(Sampler);
 };
 
 MI_PY_EXPORT(Sampler) {

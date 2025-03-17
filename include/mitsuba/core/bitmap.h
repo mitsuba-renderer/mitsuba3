@@ -652,6 +652,8 @@ public:
      bool m_premultiplied_alpha;
      bool m_owns_data;
      Properties m_metadata;
+
+    MI_TRAVERSE_CB(Object, m_size);
 };
 
 

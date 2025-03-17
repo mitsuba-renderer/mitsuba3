@@ -204,6 +204,8 @@ protected:
 
     /// Surface area of the bounding sphere
     Float m_surface_area;
+
+    MI_TRAVERSE_CB(Base, m_radiance, m_bsphere, m_surface_area)
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(ConstantBackgroundEmitter, Emitter)

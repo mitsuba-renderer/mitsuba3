@@ -308,6 +308,8 @@ public:
     MI_DECLARE_CLASS()
 private:
    ref<ShapeGroup_> m_shapegroup;
+
+   MI_TRAVERSE_CB(Base, m_shapegroup)
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(Instance, Shape)

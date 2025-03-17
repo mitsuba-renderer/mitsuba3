@@ -613,6 +613,8 @@ protected:
     ref<ImageBlock> m_storage;
     mutable std::mutex m_mutex;
     std::vector<std::string> m_channels;
+
+    MI_TRAVERSE_CB(Base, m_storage);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(HDRFilm, Film)

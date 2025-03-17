@@ -206,6 +206,8 @@ public:
 private:
     ref<Texture> m_intensity;
     field<Point3f> m_position;
+
+    MI_TRAVERSE_CB(Base, m_intensity, m_position);
 };
 
 

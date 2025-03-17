@@ -495,6 +495,8 @@ private:
     bool m_isotropic;
     bool m_jacobian;
     int m_reduction;
+
+    MI_TRAVERSE_CB(Base, m_ndf, m_sigma, m_vndf, m_luminance, m_spectra);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(Measured, BSDF)

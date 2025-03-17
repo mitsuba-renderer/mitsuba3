@@ -229,6 +229,8 @@ private:
     size_t m_bsdf_samples;
     ScalarFloat m_frac_bsdf, m_frac_lum;
     ScalarFloat m_weight_bsdf, m_weight_lum;
+
+    MI_TRAVERSE_CB(Base, m_frac_bsdf, m_frac_lum, m_weight_bsdf, m_weight_lum)
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(DirectIntegrator, SamplingIntegrator)

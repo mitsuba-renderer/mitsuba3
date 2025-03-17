@@ -130,6 +130,8 @@ protected:
     ref<Texture> m_color0;
     ref<Texture> m_color1;
     ScalarTransform3f m_transform;
+
+    MI_TRAVERSE_CB(Texture, m_color0, m_color1)
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(Checkerboard, Texture)

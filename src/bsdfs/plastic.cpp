@@ -390,6 +390,9 @@ private:
     ScalarFloat m_fdr_ext;
     Float m_specular_sampling_weight;
     bool m_nonlinear;
+
+    MI_TRAVERSE_CB(Base, m_diffuse_reflectance, m_specular_reflectance,
+                   m_specular_sampling_weight);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(SmoothPlastic, BSDF)

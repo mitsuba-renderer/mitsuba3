@@ -112,6 +112,8 @@ protected:
 
     /// Identifier (if available)
     std::string m_id;
+
+    MI_DECLARE_TRAVERSE_CB(m_phase_function)
 };
 
 MI_EXTERN_CLASS(Medium)

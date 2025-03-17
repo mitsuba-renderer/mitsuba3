@@ -330,6 +330,8 @@ public:
 private:
     ref<Texture> m_specular_reflectance;
     ref<Texture> m_eta, m_k;
+
+    MI_TRAVERSE_CB(Base, m_specular_reflectance, m_eta, m_k);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(SmoothConductor, BSDF)

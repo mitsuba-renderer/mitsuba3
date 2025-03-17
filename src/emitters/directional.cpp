@@ -231,6 +231,8 @@ public:
 protected:
     ref<Texture> m_irradiance;
     ScalarBoundingSphere3f m_bsphere;
+
+    MI_TRAVERSE_CB(Base, m_irradiance);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(DirectionalEmitter, Emitter)
