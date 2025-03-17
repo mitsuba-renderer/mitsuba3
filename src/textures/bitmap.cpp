@@ -355,6 +355,8 @@ private:
     dr::WrapMode m_wrap_mode;
     mutable ref<Bitmap> m_bitmap;
     TensorXf* m_tensor;
+
+    MI_TRAVERSE_CB(Texture, m_bitmap, *m_tensor);
 };
 
 template <typename Float, typename Spectrum, typename StoredType>
@@ -917,6 +919,8 @@ protected:
     // Optional: distribution for importance sampling
     mutable std::mutex m_mutex;
     std::unique_ptr<DiscreteDistribution2D<Float>> m_distr2d;
+
+    MI_TRAVERSE_CB(Texture, m_mean, m_texture, m_distr2d);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(BitmapTexture, Texture)

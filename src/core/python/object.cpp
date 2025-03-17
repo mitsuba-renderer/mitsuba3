@@ -46,7 +46,7 @@ MI_PY_EXPORT(Object) {
             return cast_object(pmgr.create_object(props, class_));
         }, D(PluginManager, create_object));
 
-    nb::class_<Object>(
+    nb::class_<Object, drjit::TraversableBase>(
             m, "Object",
             nb::intrusive_ptr<Object>(
                 [](Object *o, PyObject *po) noexcept { o->set_self_py(po); }),

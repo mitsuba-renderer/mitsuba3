@@ -753,6 +753,10 @@ private:
     bool m_has_sheen_tint;
     bool m_has_anisotropic;
     bool m_has_flatness;
+
+    MI_TRAVERSE_CB(Base, m_base_color, m_roughness, m_anisotropic, m_sheen,
+                   m_sheen_tint, m_spec_trans, m_flatness, m_spec_tint,
+                   m_diff_trans, m_eta_thin);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(PrincipledThin, BSDF)
