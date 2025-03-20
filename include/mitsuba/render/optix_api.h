@@ -290,6 +290,7 @@ struct OptixPipelineCompileOptions {
     const char* pipelineLaunchParamsVariableName;
     unsigned int usesPrimitiveTypeFlags;
     int allowOpacityMicromaps;
+    int allowClusteredGeometry; // OptiX 9.0 ABI
 };
 
 struct OptixAccelEmitDesc {
