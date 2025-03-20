@@ -208,6 +208,10 @@ public:
         return { frame_wrt_si, frame_wrt_world };
     }
 
+    Frame3f sh_frame(const SurfaceInteraction3f &si, Mask active) const override {
+        return frame(si, active).second;
+    }
+
     Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
                                       Mask active) const override {
         return m_nested_bsdf->eval_diffuse_reflectance(si, active);
