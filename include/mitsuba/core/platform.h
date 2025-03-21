@@ -20,11 +20,13 @@
 #  define MI_IMPORT   __declspec(dllimport)
 #  define MI_NOINLINE __declspec(noinline)
 #  define MI_INLINE   __forceinline
+#  define MI_RESTRICT  __restrict
 #else
 #  define MI_EXPORT    __attribute__ ((visibility("default")))
 #  define MI_IMPORT
 #  define MI_NOINLINE  __attribute__ ((noinline))
 #  define MI_INLINE    __attribute__((always_inline)) inline
+#  define MI_RESTRICT  __restrict__
 #endif
 
 #define MI_MODULE_LIB    1

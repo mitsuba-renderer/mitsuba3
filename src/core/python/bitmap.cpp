@@ -100,7 +100,7 @@ void from_cpu_dlpack(Bitmap *b, ContigCpuNdArray data,
         memcpy(b->data(), data.data(), b->buffer_size());
 }
 
-char *base64_encode(char * __restrict__ p, const uint8_t * __restrict__ src, size_t size) {
+char *base64_encode(char * MI_RESTRICT p, const uint8_t * MI_RESTRICT src, size_t size) {
     const char *map = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     const size_t triplets = size / 3, remain = size - triplets * 3;
 
