@@ -15,8 +15,8 @@ class Optimizer:
         Parameter ``params`` (:py:class:`dict`):
             Dictionary-like object containing parameters to optimize.
         """
-        self.lr   = defaultdict(lambda: self.lr_default)
-        self.lr_v = defaultdict(lambda: self.lr_default_v)
+        self.lr   = {}
+        self.lr_v = {}
 
         self.set_learning_rate(lr)
         self.variables = {}
@@ -128,7 +128,16 @@ class SGD(Optimizer):
     :math:`\\varepsilon` is the learning rate, and :math:`\\mu` is
     the momentum parameter.
     """
-    def __init__(self, lr, momentum=0, mask_updates=False, params:dict=None):
+
+    DRJIT_STRUCT = {
+        "state": dict,
+        "variables": dict,
+        "lr_default_v": None,
+        "lr_v": dict,
+        "lr": dict,
+    }
+
+    def __init__(self, lr, momentum=0, mask_updates=False, params: dict = None):
         """
         Parameter ``lr``:
             learning rate
@@ -154,6 +163,12 @@ class SGD(Optimizer):
     def step(self):
         """Take a gradient step"""
         for k, p in self.variables.items():
+            # Ensure that self.lr and self.lr_v contain key
+            if k not in self.lr:
+                self.lr[k] = self.lr_default
+            if k not in self.lr_v:
+                self.lr_v[k] = self.lr_default_v
+            
             g_p = dr.grad(p)
             shape = dr.shape(g_p)
             if shape == 0:
@@ -224,6 +239,14 @@ class Adam(Optimizer):
     Enabling ``mask_updates`` avoids these two issues. This is similar to
     `PyTorch's SparseAdam optimizer <https://pytorch.org/docs/1.9.0/generated/torch.optim.SparseAdam.html>`_.
     """
+    DRJIT_STRUCT = {
+        "state": dict,
+        "variables": dict,
+        "lr_default_v": None,
+        "lr_v": dict,
+        "lr": dict,
+        "t": dict,
+    }
     def __init__(self, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-8,
                  mask_updates=False, uniform=False, params: dict=None):
         """
@@ -257,15 +280,23 @@ class Adam(Optimizer):
         self.epsilon = epsilon
         self.mask_updates = mask_updates
         self.uniform = uniform
-        self.t = defaultdict(lambda: 0)
+        self.t = {}
         super().__init__(lr, params)
 
     def step(self):
         """Take a gradient step"""
         for k, p in self.variables.items():
+            # Ensure that self.t, self.lr and self.lr_v contain key
+            if k not in self.t:
+                self.t[k] = mi.UInt(0)
+            if k not in self.lr:
+                self.lr[k] = self.lr_default
+            if k not in self.lr_v:
+                self.lr_v[k] = self.lr_default_v
+
             self.t[k] += 1
             lr_scale = dr.sqrt(1 - self.beta_2 ** self.t[k]) / (1 - self.beta_1 ** self.t[k])
-            lr_scale = dr.opaque(dr.detached_t(mi.Float), lr_scale, shape=1)
+            dr.make_opaque(lr_scale)
 
             lr_t = self.lr_v[k] * lr_scale
             g_p = dr.grad(p)
@@ -321,7 +352,7 @@ class Adam(Optimizer):
         shape = dr.shape(p) if dr.is_tensor_v(p) else dr.width(p)
         self.state[key] = (dr.zeros(dr.detached_t(p), shape),
                            dr.zeros(dr.detached_t(p), shape))
-        self.t[key] = 0
+        self.t[key] = mi.UInt(0)
 
     def __repr__(self):
         return ('Adam[\n'

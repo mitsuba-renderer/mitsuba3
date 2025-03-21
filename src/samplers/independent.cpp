@@ -111,6 +111,8 @@ public:
 
 private:
     IndependentSampler(const IndependentSampler &sampler) : Base(sampler) {}
+
+    DR_TRAVERSE_CB(Base)
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(IndependentSampler, Sampler)

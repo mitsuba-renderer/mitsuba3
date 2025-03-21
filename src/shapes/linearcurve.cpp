@@ -517,6 +517,8 @@ private:
     mutable void* m_radius_buffer_ptr = nullptr;
     mutable void* m_index_buffer_ptr = nullptr;
 #endif
+
+    DR_TRAVERSE_CB(Base, m_indices, m_control_points)
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(LinearCurve, Shape)
