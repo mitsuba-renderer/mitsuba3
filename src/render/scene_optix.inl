@@ -96,8 +96,8 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
     #endif
 
         config.pipeline_compile_options.usesMotionBlur     = false;
-        config.pipeline_compile_options.numPayloadValues   = 6;
-        config.pipeline_compile_options.numAttributeValues = 2; // the minimum legal value
+        config.pipeline_compile_options.numPayloadValues   = 6; // TODO: remove me
+        config.pipeline_compile_options.numAttributeValues = 2;// the minimum legal value
         config.pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
         bool at_least_two_gas = [&]() {
@@ -643,17 +643,12 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
         OptixSceneState &s = *(OptixSceneState *) m_accel;
         const OptixConfig &config = optix_configs[s.config_index];
 
-        UInt32 ray_mask(255), ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT),
+        UInt32 ray_mask(255),
+               ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT |
+                         OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
-        UInt32 payload_t(0),
-               payload_prim_u(0),
-               payload_prim_v(0),
-               payload_prim_index(0),
-               payload_shape_ptr(0);
-
-        // Instance index is initialized to 0 when there is no instancing in the scene
-        UInt32 payload_inst_index(m_shapegroups.empty() ? 0u : 1u);
+        bool has_instances = !m_shapegroups.empty();
 
         using Single = dr::float32_array_t<Float>;
         dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
@@ -671,25 +666,38 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
             ray_mask.index(), ray_flags.index(),
             sbt_offset.index(), sbt_stride.index(),
             miss_sbt_index.index(),
-            payload_t.index(),
-            payload_prim_u.index(),
-            payload_prim_v.index(),
-            payload_prim_index.index(),
-            payload_shape_ptr.index(),
-            payload_inst_index.index(),
         };
+        OptixHitObjectField fields[] {
+            OptixHitObjectField::IsHit,
+            OptixHitObjectField::RayTMax,
+            OptixHitObjectField::Attribute0,
+            OptixHitObjectField::Attribute1,
+            OptixHitObjectField::PrimitiveIndex,
+            OptixHitObjectField::SBTDataPointer,
+            OptixHitObjectField::InstanceId
+        };
+        uint32_t hitobject_out[7];
 
-        jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t),
-                            trace_args, false, active.index(),
-                            config.pipeline_jit_index, s.sbt_jit_index);
+        jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
+                            has_instances ? 7 : 6, fields, hitobject_out, false,
+                            active.index(), config.pipeline_jit_index,
+                            s.sbt_jit_index);
+
+        Mask hitobject_is_hit = UInt32::steal(hitobject_out[0]) != 0;
+        active &= hitobject_is_hit;
+
+        // Get shape registry ID from SBT data (first 32 bits of `OptixHitGroupData`)
+        UInt64 hitobject_sbt_ptr = UInt64::steal(hitobject_out[5]);
+        uint32_t shape_id_idx = jit_optix_sbt_data_load(
+            hitobject_sbt_ptr.index(), VarType::UInt32, 0, active.index());
 
         PreliminaryIntersection3f pi;
-        pi.t          = dr::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[15]));
-        pi.prim_uv[0] = dr::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[16]));
-        pi.prim_uv[1] = dr::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[17]));
-        pi.prim_index = UInt32::steal(trace_args[18]);
-        pi.shape      = ShapePtr::steal(trace_args[19]);
-        pi.instance   = ShapePtr::steal(trace_args[20]);
+        pi.t          = dr::reinterpret_array<Single, UInt32>(UInt32::steal(hitobject_out[1]));
+        pi.prim_uv[0] = dr::reinterpret_array<Single, UInt32>(UInt32::steal(hitobject_out[2]));
+        pi.prim_uv[1] = dr::reinterpret_array<Single, UInt32>(UInt32::steal(hitobject_out[3]));
+        pi.prim_index = UInt32::steal(hitobject_out[4]);
+        pi.shape      = dr::reinterpret_array<ShapePtr, UInt32>(UInt32::steal(shape_id_idx));
+        pi.instance   = has_instances ? ShapePtr::steal(hitobject_out[6]) : dr::zeros<ShapePtr>();
 
         // This field is only used by embree, but we still need to initialize it for vcalls
         pi.shape_index = dr::zeros<UInt32>();
@@ -736,8 +744,6 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
                          OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
-        UInt32 payload_hit(1);
-
         using Single = dr::float32_array_t<Float>;
         dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
         Single ray_mint(0.f), ray_maxt(ray.maxt), ray_time(ray.time);
@@ -753,14 +759,20 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
             ray_mint.index(), ray_maxt.index(), ray_time.index(),
             ray_mask.index(), ray_flags.index(),
             sbt_offset.index(), sbt_stride.index(),
-            miss_sbt_index.index(), payload_hit.index()
+            miss_sbt_index.index()
         };
 
-        jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t),
-                            trace_args, true, active.index(),
-                            config.pipeline_jit_index, s.sbt_jit_index);
+        OptixHitObjectField field = OptixHitObjectField::IsHit;
+        uint32_t hitobject_out;
 
-        return active && (UInt32::steal(trace_args[15]) == 1);
+        jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
+                                1, &field, &hitobject_out,
+                                false, active.index(),
+                                config.pipeline_jit_index, s.sbt_jit_index);
+
+        UInt32 hitobject_is_hit = UInt32::steal(hitobject_out);
+
+        return active && (hitobject_is_hit != 0);
     } else {
         DRJIT_MARK_USED(ray);
         DRJIT_MARK_USED(active);
