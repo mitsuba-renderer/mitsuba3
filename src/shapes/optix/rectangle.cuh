@@ -33,5 +33,6 @@ extern "C" __global__ void __closesthit__rectangle() {
                                 __uint_as_float(optixGetAttribute_1()));
     set_preliminary_intersection_to_payload(optixGetRayTmax(), prim_uv, 0,
                                             sbt_data->shape_registry_id);
+    printf("INSIDE CLOSESTHIT RECTANGLE!");
 }
 #endif

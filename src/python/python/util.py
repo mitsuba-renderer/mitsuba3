@@ -580,6 +580,10 @@ def cornell_box():
                 'type': 'hdrfilm',
                 'width' : 256,
                 'height': 256,
+                'crop_offset_x': 86,
+                'crop_offset_y': 146,
+                'crop_width': 2,
+                'crop_height': 2,
                 'rfilter': {
                     'type': 'gaussian',
                 },
