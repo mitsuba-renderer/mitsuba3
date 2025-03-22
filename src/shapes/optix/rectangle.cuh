@@ -26,12 +26,4 @@ extern "C" __global__ void __intersection__rectangle() {
                                 __float_as_uint(local.x()),
                                 __float_as_uint(local.y()));
 }
-
-extern "C" __global__ void __closesthit__rectangle() {
-    const OptixHitGroupData *sbt_data = (OptixHitGroupData *) optixGetSbtDataPointer();
-    Vector2f prim_uv = Vector2f(__uint_as_float(optixGetAttribute_0()),
-                                __uint_as_float(optixGetAttribute_1()));
-    set_preliminary_intersection_to_payload(optixGetRayTmax(), prim_uv, 0,
-                                            sbt_data->shape_registry_id);
-}
 #endif

@@ -100,7 +100,7 @@ private:
 #endif
 
 #if defined(MI_ENABLE_CUDA)
-    OptixAccelData m_accel;
+    MiOptixAccelData m_accel;
     /// OptiX hitgroup sbt offset
     uint32_t m_sbt_offset;
 #endif

@@ -288,11 +288,4 @@ extern "C" __global__ void __intersection__sdfgrid() {
             optixReportIntersection(t_bbox_beg + root_1, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
     }
 }
-
-extern "C" __global__ void __closesthit__sdfgrid() {
-    const OptixHitGroupData *sbt_data = (OptixHitGroupData *) optixGetSbtDataPointer();
-    unsigned int prim_index = optixGetPrimitiveIndex();
-    set_preliminary_intersection_to_payload(
-        optixGetRayTmax(), Vector2f(), prim_index, sbt_data->shape_registry_id);
-}
 #endif
