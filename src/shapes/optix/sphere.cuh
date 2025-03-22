@@ -62,10 +62,4 @@ extern "C" __global__ void __intersection__sphere() {
     if (solution_found && !out_bounds && !in_bounds)
         optixReportIntersection(t, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
 }
-
-extern "C" __global__ void __closesthit__sphere() {
-    const OptixHitGroupData *sbt_data = (OptixHitGroupData *) optixGetSbtDataPointer();
-    set_preliminary_intersection_to_payload(
-        optixGetRayTmax(), Vector2f(), 0, sbt_data->shape_registry_id);
-}
 #endif
