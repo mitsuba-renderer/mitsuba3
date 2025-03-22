@@ -18,7 +18,6 @@
 # if defined(MI_USE_OPTIX_HEADERS)
     #include <optix_function_table_definition.h>
 # endif
-    #include "../shapes/optix/mesh.cuh"
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
