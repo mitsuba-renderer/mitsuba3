@@ -938,7 +938,7 @@ public:
      * The default implementation throws an exception.
      */
     virtual void optix_prepare_ias(const OptixDeviceContext& /*context*/,
-                                   std::vector<OptixInstance>& /*instances*/,
+                                   std::vector<OptixInstance>& /*out_instances*/,
                                    uint32_t /*instance_id*/,
                                    const ScalarTransform4f& /*transf*/);
 
