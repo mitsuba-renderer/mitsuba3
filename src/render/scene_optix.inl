@@ -130,10 +130,9 @@ size_t init_optix_config(uint32_t optix_config_shapes) {
     uint32_t traversable_flag = 0;
     if (optix_config_shapes & MiOptixConfigShapes::HasInstances)
         traversable_flag = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
-    else if (at_least_two_gas)
-        traversable_flag = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
     else
-        traversable_flag = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
+        traversable_flag = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
+
     config.pipeline_compile_options.traversableGraphFlags = traversable_flag;
 
 #if !defined(MI_ENABLE_OPTIX_DEBUG_VALIDATION_ON)
