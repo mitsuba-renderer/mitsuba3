@@ -113,28 +113,8 @@ size_t init_optix_config(uint32_t optix_config_shapes) {
     config.pipeline_compile_options.numPayloadValues   = 0;
     config.pipeline_compile_options.numAttributeValues = 2; // the minimum legal value
     config.pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
-
-    bool at_least_two_gas = [&]() {
-        uint32_t counter = 0;
-        for (MiOptixConfigShapes requires_gas :
-             { MiOptixConfigShapes::HasMeshes,
-               MiOptixConfigShapes::HasBSplineCurves,
-               MiOptixConfigShapes::HasLinearCurves,
-               MiOptixConfigShapes::HasCustom })
-            if (optix_config_shapes & requires_gas)
-                if (++counter >= 2)
-                    return true;
-        return false;
-    }();
-
-    uint32_t traversable_flag = 0;
-    if (optix_config_shapes & MiOptixConfigShapes::HasInstances)
-        traversable_flag = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
-    else if (at_least_two_gas)
-        traversable_flag = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
-    else
-        traversable_flag = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
-    config.pipeline_compile_options.traversableGraphFlags = traversable_flag;
+    config.pipeline_compile_options.traversableGraphFlags =
+        OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
 
 #if !defined(MI_ENABLE_OPTIX_DEBUG_VALIDATION_ON)
     config.pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
@@ -523,76 +503,68 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
         const MiOptixConfig &config = optix_configs[s.config_index];
 
         if (!m_shapes.empty()) {
+            scoped_optix_context guard;
+
             // Build geometry acceleration structures for all the shapes
             build_gas(config.context, m_shapes, s.accel);
             for (auto& shapegroup: m_shapegroups)
                 shapegroup->optix_build_gas(config.context);
 
-            // Gather information about the instance acceleration structures to be built
+            // Gather information about the instance acceleration structure to be built
             std::vector<OptixInstance> ias;
             prepare_ias(config.context, m_shapes, 0, s.accel, 0u, ScalarTransform4f(), ias);
 
-            // If we expect only a single IAS, no need to build the "master" IAS
-            if (config.pipeline_compile_options.traversableGraphFlags == OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS) {
-                if (ias.size() != 1)
-                    Throw("OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS used but found multiple IASs.");
-                s.ias_data = {};
-                s.ias_handle = ias[0].traversableHandle;
-            } else {
-                scoped_optix_context guard;
+            // Build a "master" IAS that contains all the GAS of the scene (meshes,
+            // custom shapes, curves, ...)
+            OptixAccelBuildOptions accel_options = {};
+            accel_options.buildFlags = OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
+            accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
+            accel_options.motionOptions.numKeys = 0;
 
-                // Build a "master" IAS that contains all the IAS of the scene (meshes,
-                // custom shapes, instances, ...)
-                OptixAccelBuildOptions accel_options = {};
-                accel_options.buildFlags = OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
-                accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
-                accel_options.motionOptions.numKeys = 0;
+            size_t ias_data_size = ias.size() * sizeof(OptixInstance);
+            void* d_ias = jit_malloc(AllocType::HostPinned, ias_data_size);
+            jit_memcpy_async(JitBackend::CUDA, d_ias, ias.data(), ias_data_size);
 
-                size_t ias_data_size = ias.size() * sizeof(OptixInstance);
-                void* d_ias = jit_malloc(AllocType::HostPinned, ias_data_size);
-                jit_memcpy_async(JitBackend::CUDA, d_ias, ias.data(), ias_data_size);
+            jit_free(s.ias_data.buffer);
+            jit_free(s.ias_data.inputs);
+            s.ias_data = {};
+            s.ias_data.inputs = jit_malloc_migrate(d_ias, AllocType::Device, 1);
 
-                jit_free(s.ias_data.buffer);
-                jit_free(s.ias_data.inputs);
-                s.ias_data = {};
-                s.ias_data.inputs = jit_malloc_migrate(d_ias, AllocType::Device, 1);
+            OptixBuildInput build_input{};
+            build_input.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
+            build_input.instanceArray.instances = (CUdeviceptr) s.ias_data.inputs;
+            build_input.instanceArray.numInstances = (unsigned int) ias.size();
 
-                OptixBuildInput build_input{};
-                build_input.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
-                build_input.instanceArray.instances = (CUdeviceptr)s.ias_data.inputs;
-                build_input.instanceArray.numInstances = (unsigned int) ias.size();
+            OptixAccelBufferSizes buffer_sizes{};
+            jit_optix_check(optixAccelComputeMemoryUsage(
+                config.context,
+                &accel_options,
+                &build_input,
+                1,
+                &buffer_sizes
+            ));
 
-                OptixAccelBufferSizes buffer_sizes{};
-                jit_optix_check(optixAccelComputeMemoryUsage(
-                    config.context,
-                    &accel_options,
-                    &build_input,
-                    1,
-                    &buffer_sizes
-                ));
+            void* d_temp_buffer
+                = jit_malloc(AllocType::Device, buffer_sizes.tempSizeInBytes);
+            s.ias_data.buffer
+                = jit_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes);
 
-                void* d_temp_buffer
-                    = jit_malloc(AllocType::Device, buffer_sizes.tempSizeInBytes);
-                s.ias_data.buffer
-                    = jit_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes);
+            jit_optix_check(optixAccelBuild(
+                config.context,
+                (CUstream) jit_cuda_stream(),
+                &accel_options,
+                &build_input,
+                1, // num build inputs
+                (CUdeviceptr) d_temp_buffer,
+                buffer_sizes.tempSizeInBytes,
+                (CUdeviceptr) s.ias_data.buffer,
+                buffer_sizes.outputSizeInBytes,
+                &s.ias_handle,
+                0, // emitted property list
+                0  // num emitted properties
+            ));
 
-                jit_optix_check(optixAccelBuild(
-                    config.context,
-                    (CUstream) jit_cuda_stream(),
-                    &accel_options,
-                    &build_input,
-                    1, // num build inputs
-                    (CUdeviceptr)d_temp_buffer,
-                    buffer_sizes.tempSizeInBytes,
-                    (CUdeviceptr)s.ias_data.buffer,
-                    buffer_sizes.outputSizeInBytes,
-                    &s.ias_handle,
-                    0, // emitted property list
-                    0  // num emitted properties
-                ));
-
-                jit_free(d_temp_buffer);
-            }
+            jit_free(d_temp_buffer);
         }
 
         /* Set up a callback on the handle variable to release the OptiX scene

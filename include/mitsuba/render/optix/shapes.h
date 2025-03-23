@@ -332,7 +332,10 @@ void prepare_ias(const OptixDeviceContext &context,
     build_optix_instance(accel.linear_curves);
     build_optix_instance(accel.custom_shapes);
 
-    // Apply the same process to every shape instances
+    // Apply the same process to every shape instance: each instance will query
+    // its group's geometry acceleration structure(s) and add them as an
+    // `OptixInstance` to `out_instances`. Effectively, this is flattening the
+    // tree of shapes into a single level of instances.
     for (Shape* shape: shapes) {
         if (shape->is_instance())
             shape->optix_prepare_ias(
