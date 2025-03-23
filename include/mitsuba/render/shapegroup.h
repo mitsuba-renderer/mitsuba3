@@ -79,7 +79,7 @@ public:
 
     void optix_prepare_geometry() override;
 
-    /// Build OptiX geometry acceleration structures
+    /// Build OptiX geometry acceleration structures for this group's shapes
     void optix_build_gas(const OptixDeviceContext& context);
 #endif
 

@@ -287,10 +287,10 @@ public:
 
 #if defined(MI_ENABLE_CUDA)
     virtual void optix_prepare_ias(const OptixDeviceContext& context,
-                                   std::vector<OptixInstance>& instances,
+                                   std::vector<OptixInstance>& out_instances,
                                    uint32_t instance_id,
                                    const ScalarTransform4f& transf) override {
-        m_shapegroup->optix_prepare_ias(context, instances, instance_id,
+        m_shapegroup->optix_prepare_ias(context, out_instances, instance_id,
                                         transf * m_to_world.scalar());
     }
 
