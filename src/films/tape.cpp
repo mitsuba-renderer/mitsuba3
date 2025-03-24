@@ -15,7 +15,7 @@ template <typename Float, typename Spectrum>
 class Tape final : public Film<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset, m_sample_border,
-                   m_filter, set_crop_window)
+                   m_filter, m_flags, set_crop_window)
     MI_IMPORT_TYPES(ImageBlock)
 
     Tape(const Properties &props) : Base(props) {
@@ -27,7 +27,7 @@ public:
         );
         set_crop_window(ScalarPoint2u(0, 0), m_size);
 
-        m_count = props.get<bool>("count", true);
+        m_count = props.get<bool>("count", false);
 
         std::string file_format = string::to_lower(
             props.string("file_format", "openexr"));
@@ -59,6 +59,9 @@ public:
                   "equal to \"float16\", \"float32\", or \"uint32\"."
                   " Found %s instead.", component_format);
 
+        // set flags
+        m_flags = +FilmFlags::Special; // the film provides a special prepare method
+
         props.mark_queried("banner"); // no banner in Mitsuba 3
     }
 
@@ -66,15 +69,17 @@ public:
         return m_channels.size();
     }
 
-    size_t prepare(const std::vector<std::string> & /* aovs */) override {
+    size_t prepare(const std::vector<std::string> & /*aovs*/) override {    
+        m_channels = { "values" };
+
+        if (m_count) {
+            // extra channel that counts the write accesses
+            m_channels.push_back("count");
+        }
+        Log(Info, "Tape film will store %i channel(s): %s", m_channels.size(), m_channels);
+
         /* locked */ {
             std::lock_guard<std::mutex> lock(m_mutex);
-
-            if (m_count)
-                m_channels = { "V", "W" };
-            else
-                m_channels = { "V" };
-
             m_storage = new ImageBlock(m_crop_size,
                                        m_crop_offset,
                                        (uint32_t) m_channels.size());
@@ -152,6 +157,26 @@ public:
         return new Bitmap(
             Bitmap::PixelFormat::MultiChannel, struct_type_v<ScalarFloat>, m_storage->size(),
             m_storage->channel_count(), m_channels, (uint8_t *) storage.data());
+    }
+
+
+    void prepare_sample(const UnpolarizedSpectrum &spec, 
+                        const Wavelength & /* wavelengths */,
+                        Float* aovs, // result array. Length need to match number of channels.
+                        Float weight,
+                        Float /* alpha */,
+                        Mask /* active */) const override {
+
+        size_t channel_count = m_channels.size();
+        
+        if (spec.size() > 1)
+            Throw("Tape only supports single spectrum values. Use an acoustic variant instead.");
+        
+        aovs[0] = weight * spec[0];
+
+        if (m_count) {
+            aovs[channel_count-1] = 1;
+        }
     }
 
     void write(const fs::path &path) const override {
