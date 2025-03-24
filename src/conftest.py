@@ -107,11 +107,14 @@ any_cuda_spectral = 'cuda_spectral' if 'cuda_spectral' in variants else 'cuda_ad
 any_cuda_acoustic = 'cuda_acoustic' if 'cuda_acoustic' in variants else 'cuda_ad_acoustic'
 any_llvm_acoustic = 'llvm_acoustic' if 'llvm_acoustic' in variants else 'llvm_ad_acoustic'
 any_jit_acoustic  = 'cuda_acoustic' if 'cuda_acoustic' in variants else 'llvm_acoustic'
+any_acoustic      = next((x for x in variants if x.endswith('acoustic')),   'scalar_acoustic')
+
 
 variant_groups = {
     'any_scalar' : [any_scalar],
     'any_llvm' : [any_llvm],
     'any_cuda' : [any_cuda],
+    'any_acoustic' : [any_acoustic],
     'all' : variants,
     'all_scalar' : [x for x in variants if x.startswith('scalar')],
     'all_rgb' : [x for x in variants if x.endswith('rgb')],
