@@ -194,6 +194,9 @@ class AcousticADIntegrator(RBIntegrator):
                **_ # Absorbs unused arguments
     ) -> None:
 
+        film = sensor.film()
+        nChannels = film.base_channels_count()
+        
         # Standard BSDF evaluation context for path tracing
         bsdf_ctx = mi.BSDFContext()
 
@@ -255,7 +258,9 @@ class AcousticADIntegrator(RBIntegrator):
             active_next &= si.is_valid()
             Le_pos = mi.Point2f(ray.wavelengths[0] - mi.Float(1.0),
                                 block.size().y * T / max_distance)
-            block.put(pos=Le_pos, values=mi.Vector2f(Le[0], 1.0), active=active_next & (Le[0] > 0))
+            block.put(pos=Le_pos,
+                      values=film.prepare_sample(Le[0], si.wavelengths, nChannels),
+                      active=active_next &(Le[0] > 0.))
 
             # ---------------------- Emitter sampling ----------------------
 
@@ -299,7 +304,9 @@ class AcousticADIntegrator(RBIntegrator):
             T_dir      = T + τ_dir
             Lr_dir_pos = mi.Point2f(ray.wavelengths[0] - mi.Float(1.0),
                                     block.size().y * T_dir / max_distance)
-            block.put(pos=Lr_dir_pos, values=mi.Vector2f(Lr_dir[0], 1.0), active=active_em & (Lr_dir[0] > 0))
+            block.put(pos=Lr_dir_pos,
+                      values=film.prepare_sample(Lr_dir[0], si.wavelengths, nChannels),
+                      active=active_em & (Lr_dir[0] > 0.))
 
             # ------------------ Detached BSDF sampling -------------------
 

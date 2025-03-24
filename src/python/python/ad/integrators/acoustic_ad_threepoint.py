@@ -21,6 +21,9 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
                active: mi.Bool,
                **_ # Absorbs unused arguments
     ) -> Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
+        
+        film = sensor.film()
+        nChannels = film.base_channels_count()
 
         # Standard BSDF evaluation context for path tracing
         bsdf_ctx = mi.BSDFContext()
@@ -98,7 +101,9 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
 
 
             Le_pos     = mi.Point2f(ray.wavelengths[0] - mi.Float(1.0), block.size().y * T     / max_distance)
-            block.put(pos=Le_pos,     values=mi.Vector2f(Le[0],     1.0), active=active_next)
+            block.put(pos=Le_pos,
+                      values=film.prepare_sample(Le[0], si.wavelengths, nChannels),
+                      active=(Le[0] > 0.))
             
             # ---------------------- Emitter sampling ----------------------
 
@@ -144,7 +149,9 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
             T_dir       = distance + τ + τ_dir
 
             Lr_dir_pos = mi.Point2f(ray.wavelengths[0] - mi.Float(1.0), block.size().y * T_dir / max_distance)                         
-            block.put(pos=Lr_dir_pos, values=mi.Vector2f(Lr_dir[0], 1.0), active=active_em)           
+            block.put(pos=Lr_dir_pos,
+                      values=film.prepare_sample(Lr_dir[0], si.wavelengths, nChannels),
+                      active=active_em)
 
             # ------------------ Detached BSDF sampling -------------------
             with dr.suspend_grad():

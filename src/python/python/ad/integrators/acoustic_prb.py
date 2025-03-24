@@ -32,6 +32,9 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
         adjoint = prb_mode and (not primal)
         assert primal or prb_mode
 
+        film = sensor.film()
+        nChannels = film.base_channels_count()
+        
         # Standard BSDF evaluation context for path tracing
         bsdf_ctx = mi.BSDFContext()
 
@@ -201,8 +204,12 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                 # FIXME (MW): Why are we ignoring active and active_em when writing to the block?
                 #       Should still work for samples that don't hit geometry (because distance will be inf)
                 #       but what about other reasons for becoming inactive?                             
-                block.put(pos=Le_pos,     values=[Le[0],     1.0], active=(Le[0]     > 0.))
-                block.put(pos=Lr_dir_pos, values=[Lr_dir[0], 1.0], active=(Lr_dir[0] > 0.))
+                block.put(pos=Le_pos,
+                          values=film.prepare_sample(Le[0], si.wavelengths, nChannels),
+                          active=(Le[0] > 0.))
+                block.put(pos=Lr_dir_pos, 
+                          values=film.prepare_sample(Lr_dir[0], si.wavelengths, nChannels),
+                          active=(Lr_dir[0] > 0.))
 
             # ---- Update loop variables based on current interaction -----
 
