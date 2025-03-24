@@ -220,6 +220,10 @@ public:
         return result;
     }
 
+    Frame3f sh_frame(const SurfaceInteraction3f &si, Mask active) const override {
+        return frame(si, active);
+    }
+
     Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
                                       Mask active) const override {
         return m_nested_bsdf->eval_diffuse_reflectance(si, active);

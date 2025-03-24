@@ -589,6 +589,21 @@ public:
     virtual Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
                                               Mask active = true) const;
 
+    /**
+     * \brief Returns the shading frame accounting for any pertubations that may 
+     * performed by the BSDF during evaluation.
+     *
+     * \param si
+     *     Surface interaction associated with the query
+     *
+     * \return
+     *     The perturbed shading frame. By default simply returns the surface
+     *     interaction shading frame.
+     */
+    virtual Frame3f sh_frame(const SurfaceInteraction3f &si, Mask /*active*/) const {
+        return si.sh_frame;
+    }
+
     /// Return a human-readable representation of the BSDF
     std::string to_string() const override = 0;
 
@@ -666,6 +681,7 @@ MI_CALL_TEMPLATE_BEGIN(BSDF)
     DRJIT_CALL_METHOD(eval_attribute)
     DRJIT_CALL_METHOD(eval_attribute_1)
     DRJIT_CALL_METHOD(eval_attribute_3)
+    DRJIT_CALL_METHOD(sh_frame)
     DRJIT_CALL_GETTER(flags)
     auto needs_differentials() const {
         return has_flag(flags(), mitsuba::BSDFFlags::NeedsDifferentials);

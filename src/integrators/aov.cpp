@@ -281,10 +281,18 @@ public:
                     *aovs++ = si.n.z();
                     break;
 
-                case Type::ShadingNormal:
-                    *aovs++ = si.sh_frame.n.x();
-                    *aovs++ = si.sh_frame.n.y();
-                    *aovs++ = si.sh_frame.n.z();
+                case Type::ShadingNormal: {
+                        Frame3f sh_frame = dr::zeros<Frame3f>();
+                        if (dr::any_or<true>(si.is_valid()))
+                        {
+                            Mask valid = active && si.is_valid();
+                            BSDFPtr m_bsdf = si.bsdf(ray);
+                            sh_frame = m_bsdf->sh_frame(si, valid);
+                        }
+                        *aovs++ = sh_frame.n.x();
+                        *aovs++ = sh_frame.n.y();
+                        *aovs++ = sh_frame.n.z();
+                    }
                     break;
 
                 case Type::dPdU:
