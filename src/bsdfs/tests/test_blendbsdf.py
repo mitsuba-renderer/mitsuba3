@@ -184,3 +184,93 @@ def test05_sample_components(variant_scalar_rgb):
     expected_b = weight*1.0    # InvPi will cancel out with sampling pdf, but still need to apply weight
     bs_b, weight_b = bsdf.sample(ctx, si, 0.3, [0.5, 0.5])
     assert dr.allclose(weight_b, expected_b)
+
+
+def test06_eval_spectrally_varying_weight_acoustic(variants_all_acoustic):
+    weight = mi.load_dict({
+        'type': 'irregular',
+        'wavelengths': "400, 500, 600",
+        'values': "0., 0.3, 1"
+    })
+
+    bsdf = mi.load_dict({
+        'type': 'blendbsdf',
+        'nested1': {
+            'type': 'diffuse',
+            'reflectance': {'type': 'spectrum', 'value': 0.0}
+        },
+        'nested2': {
+            'type': 'diffuse',
+            'reflectance': {'type': 'spectrum', 'value': 1.0}
+        },
+        'weight': weight,
+    })
+
+    si = mi.SurfaceInteraction3f()
+    si.t = 0.1
+    si.p = [0, 0, 0]
+    si.n = [0, 0, 1]
+    si.sh_frame = mi.Frame3f(si.n)
+    si.wi = [0, 0, 1]
+    wo = [0, 0, 1]
+
+    ctx = mi.BSDFContext()
+    # pdf doesn't change with wavelength -> no ray splitting
+    pdf_expected = mi.Spectrum(1/dr.pi) 
+
+    si.wavelengths = [400]
+    eval_expected = mi.Spectrum(0.0)
+    eval, pdf = bsdf.eval_pdf(ctx, si, wo)
+    assert dr.allclose(eval, eval_expected)
+    assert dr.allclose(pdf, pdf_expected)
+
+    si.wavelengths = [500]
+    eval_expected = mi.Spectrum(0.3/dr.pi)
+    eval, pdf = bsdf.eval_pdf(ctx, si, wo)
+    assert dr.allclose(eval, eval_expected)
+    assert dr.allclose(pdf, pdf_expected)
+
+
+    si.wavelengths = [600]
+    eval_expected = mi.Spectrum(1./dr.pi)
+    eval, pdf = bsdf.eval_pdf(ctx, si, wo)
+    assert dr.allclose(eval, eval_expected)
+    assert dr.allclose(pdf, pdf_expected)
+    
+
+def test07_eval_spectrally_varying_weight_spectral(variants_all_spectral):
+    weight = mi.load_dict({
+        'type': 'irregular',
+        'wavelengths': "400, 500, 600, 700",
+        'values': "0., 0.3, 0.6, 1."
+    })
+
+    bsdf = mi.load_dict({
+        'type': 'blendbsdf',
+        'nested1': {
+            'type': 'diffuse',
+            'reflectance': {'type': 'spectrum', 'value': 0.0}
+        },
+        'nested2': {
+            'type': 'diffuse',
+            'reflectance': {'type': 'spectrum', 'value': 1.0}
+        },
+        'weight': weight,
+    })
+
+    si = mi.SurfaceInteraction3f()
+    si.t = 0.1
+    si.p = [0, 0, 0]
+    si.n = [0, 0, 1]
+    si.sh_frame = mi.Frame3f(si.n)
+    si.wi = [0, 0, 1]
+    wo = [0, 0, 1]
+
+    ctx = mi.BSDFContext()
+
+    si.wavelengths = [400, 500, 600, 700]
+    eval_expected = mi.Spectrum([0., 0.3/dr.pi, 0.6/dr.pi, 1./dr.pi])
+    pdf_expected = mi.Spectrum(1/dr.pi)
+    eval, pdf = bsdf.eval_pdf(ctx, si, wo)
+    assert dr.allclose(eval, eval_expected)
+    assert dr.allclose(pdf, pdf_expected)

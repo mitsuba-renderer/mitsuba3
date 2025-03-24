@@ -104,6 +104,9 @@ any_llvm_rgb = 'llvm_rgb' if 'llvm_rgb' in variants else 'llvm_ad_rgb'
 any_cuda_rgb = 'cuda_rgb' if 'cuda_rgb' in variants else 'cuda_ad_rgb'
 any_llvm_spectral = 'llvm_spectral' if 'llvm_spectral' in variants else 'llvm_ad_spectral'
 any_cuda_spectral = 'cuda_spectral' if 'cuda_spectral' in variants else 'cuda_ad_spectral'
+any_cuda_acoustic = 'cuda_acoustic' if 'cuda_acoustic' in variants else 'cuda_ad_acoustic'
+any_llvm_acoustic = 'llvm_acoustic' if 'llvm_acoustic' in variants else 'llvm_ad_acoustic'
+any_jit_acoustic  = 'cuda_acoustic' if 'cuda_acoustic' in variants else 'llvm_acoustic'
 
 variant_groups = {
     'any_scalar' : [any_scalar],
@@ -121,6 +124,9 @@ variant_groups = {
     'vec_spectral' : [x for x in variants if x.endswith('spectral') and not x.startswith('scalar')],
     'all_ad_rgb' : [x for x in variants if x.endswith('ad_rgb')],
     'all_ad_spectral' : [x for x in variants if x.endswith('ad_spectral')],
+    'all_acoustic': [x for x in variants if x.endswith('acoustic')],
+    'all_ad_acoustic': [x for x in variants if x.endswith('ad_acoustic')]
+    
 }
 
 del variants
