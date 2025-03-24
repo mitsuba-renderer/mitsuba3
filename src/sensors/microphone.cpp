@@ -18,23 +18,25 @@ public:
             // to_world, they must still be marked as queried
             props.mark_queried("direction");
             props.mark_queried("origin");
+            props.mark_queried("up");
         } else {
-            if (props.has_property("direction") !=
-                props.has_property("origin")) {
-                Throw("If the sensor is specified through origin and direction "
-                      "both values must be set!");
-            }
-
             if (props.has_property("direction")) {
+                if (!props.has_property("up") || !props.has_property("origin"))
+                    Throw("If the sensor is specified through origin, direction and up, "
+                      "all values must be set!");
+
                 ScalarPoint3f origin     = props.get<ScalarPoint3f>("origin");
                 ScalarVector3f direction = props.get<ScalarVector3f>("direction");
+                ScalarVector3f up        = props.get<ScalarVector3f>("up");
                 ScalarPoint3f target     = origin + direction;
-                auto [up, unused]        = coordinate_system(dr::normalize(direction));
 
                 m_to_world = ScalarTransform4f::look_at(origin, target, up);
                 dr::make_opaque(m_to_world);
             }
         }
+
+        if (is_polarized_v<Spectrum>)
+            Throw("Polarized rendering is not supported by the microphone sensor.");
 
         m_kappa = props.get<ScalarFloat>("kappa", 0.f),
 
