@@ -639,9 +639,9 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
         uint32_t hitobject_out[7];
 
         jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
-                            has_instances ? 7 : 6, fields, hitobject_out, false,
-                            active.index(), s.pipeline_jit_index,
-                            s.sbt_jit_index);
+                            has_instances ? 7 : 6, fields, hitobject_out,
+                            true, false, active.index(),
+                            s.pipeline_jit_index, s.sbt_jit_index);
 
         Mask hitobject_is_hit = UInt32::steal(hitobject_out[0]) != 0;
         active &= hitobject_is_hit;
@@ -729,9 +729,9 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
         uint32_t hitobject_out;
 
         jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
-                                1, &field, &hitobject_out,
-                                false, active.index(),
-                                s.pipeline_jit_index, s.sbt_jit_index);
+                            1, &field, &hitobject_out,
+                            false, false, active.index(),
+                            s.pipeline_jit_index, s.sbt_jit_index);
 
         UInt32 hitobject_is_hit = UInt32::steal(hitobject_out);
 
