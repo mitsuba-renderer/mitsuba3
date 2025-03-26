@@ -915,6 +915,10 @@ class PSIntegrator(ADIntegrator):
         derivatives it should be manually added to the gradient obtained by
         traversing the result of this method.
         """
+        if dr.flag(dr.JitFlag.FreezingScope):
+            raise RuntimeError(
+                "Projective Integrators are not yet supported inside of frozen functions."
+            )
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
 
