@@ -6,6 +6,7 @@
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/pair.h>
+#include <drjit/python.h>
 
 /// Trampoline for derived types implemented in Python
 MI_VARIANT class PyTexture : public Texture<Float, Spectrum> {
@@ -80,6 +81,8 @@ public:
     std::string to_string() const override {
         NB_OVERRIDE(to_string);
     }
+
+    DR_TRAMPOLINE_TRAVERSE_CB(Texture)
 };
 
 MI_PY_EXPORT(Texture) {
@@ -87,7 +90,7 @@ MI_PY_EXPORT(Texture) {
     using PyTexture = PyTexture<Float, Spectrum>;
     using Properties = PropertiesV<Float>;
 
-    MI_PY_TRAMPOLINE_CLASS(PyTexture, Texture, Object)
+    auto texture = MI_PY_TRAMPOLINE_CLASS(PyTexture, Texture, Object)
         .def(nb::init<const Properties &>(), "props"_a)
         .def_static("D65", nb::overload_cast<ScalarFloat>(&Texture::D65), "scale"_a = 1.f)
         .def_method(Texture, mean, D(Texture, mean))
@@ -105,6 +108,8 @@ MI_PY_EXPORT(Texture) {
         .def_method(Texture, pdf_position, "p"_a, "active"_a = true)
         .def_method(Texture, spectral_resolution)
         .def_method(Texture, wavelength_range);
+
+    drjit::bind_traverse(texture);
 
     MI_PY_REGISTER_OBJECT("register_texture", Texture)
 }

@@ -11,6 +11,7 @@
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 #include <drjit/python.h>
+#include <drjit/traversable_base.h>
 
 /// Trampoline for derived types implemented in Python
 MI_VARIANT class PyFilm : public Film<Float, Spectrum> {
@@ -76,6 +77,8 @@ public:
     using Film::m_sample_border;
     using Film::m_filter;
     using Film::m_srf;
+
+    DR_TRAMPOLINE_TRAVERSE_CB(Film)
 };
 
 MI_PY_EXPORT(Film) {
@@ -126,6 +129,8 @@ MI_PY_EXPORT(Film) {
         .def_method(Film, sensor_response_function)
         .def_method(Film, flags)
         .def_field(PyFilm, m_flags, D(Film, m_flags));
+
+    drjit::bind_traverse(film);
 
     MI_PY_REGISTER_OBJECT("register_film", Film)
 }
