@@ -319,7 +319,7 @@ public:
                       "to have %d channels, only volumes with 1, 3 or 6 "
                       "channels are supported!", to_string(), channels);
 
-            m_texture.set_tensor(m_texture.tensor());
+            m_texture.inplace_update();
 
             if (!m_fixed_max)
                 m_max = (float) dr::max_nested(dr::detach(m_texture.value()));
