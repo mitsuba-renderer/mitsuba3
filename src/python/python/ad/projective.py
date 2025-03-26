@@ -32,6 +32,11 @@ class ProjectiveDetail():
         Precompute the silhouette of the scene as seen from the sensor and store
         the result in this python class.
         """
+        if dr.flag(dr.JitFlag.FreezingScope):
+            raise RuntimeError(
+                "Initializing the primary visible silhouette inside a frozen"
+                "function is not yet supported."
+            )
         self.primary_indices = []
         self.primary_distributions = []
 
