@@ -64,14 +64,20 @@ def mse(image, image_ref):
     return dr.sum(dr.square(image - image_ref), axis=None)
 
 def assert_render(
-    input, n, update: Optional[Callable] = None, n_recordings=2, tmp_path=None, spp=1
+    input,
+    n,
+    update: Optional[Callable] = None,
+    n_recordings=2,
+    tmp_path=None,
+    spp=1,
+    auto_opaque: bool = True,
 ):
     def func(scene: mi.Scene) -> mi.TensorXf:
         with dr.profile_range("render"):
             result = mi.render(scene, spp=spp)
         return result
 
-    frozen = dr.freeze(func)
+    frozen = dr.freeze(func, auto_opaque=auto_opaque)
 
     for i in range(n):
         if update:
@@ -90,7 +96,8 @@ def assert_render(
         assert dr.allclose(ref, res)
     assert frozen.n_recordings == n_recordings
 
-def test01_cornell_box(variants_vec_rgb):
+@pytest.mark.parametrize("auto_opaque", [False, True])
+def test01_cornell_box(variants_vec_rgb, auto_opaque):
     """
     Test that it is possible to render the cornell_box in a frozen function.
     """
@@ -109,10 +116,11 @@ def test01_cornell_box(variants_vec_rgb):
     def update(i, params):
         params[k].x = value + 10.0 * i
 
-    assert_render(scene, n, update)
+    assert_render(scene, n, update, auto_opaque=auto_opaque)
 
 
-def test02_cornell_box_native(variants_vec_rgb):
+@pytest.mark.parametrize("auto_opaque", [False, True])
+def test02_cornell_box_native(variants_vec_rgb, auto_opaque):
     """
     Test that it is possible to render the cornell_box with the native acceleration
     structure.
@@ -135,7 +143,7 @@ def test02_cornell_box_native(variants_vec_rgb):
     def update(i, params):
         params[k].x = value + 10.0 * i
 
-    assert_render(scene, n, update)
+    assert_render(scene, n, update, auto_opaque = auto_opaque)
 
 
 @pytest.mark.parametrize(
@@ -148,7 +156,8 @@ def test02_cornell_box_native(variants_vec_rgb):
         "prb_projective",
     ],
 )
-def test02_pose_estimation(variants_vec_rgb, integrator):
+@pytest.mark.parametrize("auto_opaque", [False, True])
+def test02_pose_estimation(variants_vec_rgb, integrator, auto_opaque):
     """
     Tests that it is possible to optimize the pose of an object, when freezing
     the forward and backward pass. Gradients are propagated through the inputs
@@ -186,7 +195,7 @@ def test02_pose_estimation(variants_vec_rgb, integrator):
 
         return image, loss
 
-    frozen = dr.freeze(optimize)
+    frozen = dr.freeze(optimize, auto_opaque = auto_opaque)
 
     def load_scene():
         from mitsuba.scalar_rgb import Transform4f as T
@@ -284,7 +293,8 @@ def test02_pose_estimation(variants_vec_rgb, integrator):
         assert dr.allclose(img_ref, img_frozen, atol=1e-4)
 
 
-def test03_optimize_color(variants_vec_rgb):
+@pytest.mark.parametrize("auto_opaque", [False, True])
+def test03_optimize_color(variants_vec_rgb, auto_opaque):
     """
     Tests freezing of optimizing a color parameter through backpropagation, by
     passing the gradients through the frozen function inputs.
@@ -305,7 +315,7 @@ def test03_optimize_color(variants_vec_rgb):
 
         return image, loss
 
-    frozen = dr.freeze(optimize)
+    frozen = dr.freeze(optimize, auto_opaque = auto_opaque)
 
     def run(n: int, optimize):
         scene = mi.cornell_box()
@@ -534,7 +544,8 @@ def bsdf_dict(bsdf: str):
         }
 
 @pytest.mark.parametrize("bsdf", BSDFS)
-def test04_bsdf(variants_vec_rgb, tmp_path, bsdf):
+@pytest.mark.parametrize("auto_opaque", [False, True])
+def test04_bsdf(variants_vec_rgb, tmp_path, bsdf, auto_opaque):
     """
     Tests that it is possible to freeze rendeirng a scene with each BSDF type.
     """
@@ -551,11 +562,12 @@ def test04_bsdf(variants_vec_rgb, tmp_path, bsdf):
 
     scene2 = load_scene(bsdf)
     scene = load_scene(bsdf)
-    assert_render(scene, n, tmp_path=tmp_path)
+    assert_render(scene, n, tmp_path=tmp_path, auto_opaque=auto_opaque)
 
 
 @pytest.mark.parametrize("bsdf", BSDFS)
-def test05_bsdf_eval(variants_vec_rgb, bsdf):
+@pytest.mark.parametrize("auto_opaque", [False, True])
+def test05_bsdf_eval(variants_vec_rgb, bsdf, auto_opaque):
     """
     Tests that it is possible to evaluate a BSDF inside a frozen function.
     """
@@ -578,7 +590,7 @@ def test05_bsdf_eval(variants_vec_rgb, bsdf):
 
             return bsdf.eval(ctx, si, wo, active = True)
 
-    frozen = dr.freeze(func)
+    frozen = dr.freeze(func, auto_opaque=auto_opaque)
 
     bsdf = mi.load_dict(bsdf_dict(bsdf))
 
@@ -674,7 +686,8 @@ def emitter_dict(emitter: str):
         }
 
 @pytest.mark.parametrize("emitter", EMITTERS)
-def test06_emitter(variants_vec_rgb, tmp_path, emitter):
+@pytest.mark.parametrize("auto_opaque", [False, True])
+def test06_emitter(variants_vec_rgb, tmp_path, emitter, auto_opaque):
     """
     Tests that it is possible to freeze rendeirng a scene with each emitter type.
     """
@@ -690,11 +703,12 @@ def test06_emitter(variants_vec_rgb, tmp_path, emitter):
         return scene
 
     scene = load_scene(emitter)
-    assert_render(scene, n, tmp_path = tmp_path)
+    assert_render(scene, n, tmp_path = tmp_path, auto_opaque=auto_opaque)
 
 
 @pytest.mark.parametrize("emitter", EMITTERS)
-def test07_emitter_eval(variants_vec_rgb, emitter):
+@pytest.mark.parametrize("auto_opaque", [False, True])
+def test07_emitter_eval(variants_vec_rgb, emitter, auto_opaque):
     """
     Tests that it is possible to evaluate an emitter inside a frozen function.
     """
@@ -713,7 +727,7 @@ def test07_emitter_eval(variants_vec_rgb, emitter):
 
         return emitter.eval(si, True)
 
-    frozen = dr.freeze(func)
+    frozen = dr.freeze(func, auto_opaque = auto_opaque)
 
     emitter = mi.load_dict(emitter_dict(emitter))
 
@@ -757,7 +771,8 @@ def integrator_dict(integrator: str):
         return {"type": integrator}
 
 @pytest.mark.parametrize("integrator", INTEGRATORS)
-def test08_integrators(variants_vec_rgb, tmp_path, integrator):
+@pytest.mark.parametrize("auto_opaque", [False, True])
+def test08_integrators(variants_vec_rgb, tmp_path, integrator, auto_opaque):
     """
     Tests that it is possible to freeze rendeirng a scene with each integrator type.
     """
@@ -773,7 +788,7 @@ def test08_integrators(variants_vec_rgb, tmp_path, integrator):
         return scene
 
     scene = load_scene()
-    assert_render(scene, n, tmp_path = tmp_path)
+    assert_render(scene, n, tmp_path = tmp_path, auto_opaque=auto_opaque)
 
 
 def shape_dict(shape: str):
@@ -839,7 +854,8 @@ def shape_dict(shape: str):
         }
 
 @pytest.mark.parametrize("shape", SHAPES)
-def test09_shape(variants_vec_rgb, tmp_path, shape):
+@pytest.mark.parametrize("auto_opaque", [False, True])
+def test09_shape(variants_vec_rgb, tmp_path, shape, auto_opaque):
     """
     Tests that it is possible to freeze rendeirng a scene with each shape type.
     """
@@ -862,11 +878,12 @@ def test09_shape(variants_vec_rgb, tmp_path, shape):
             params["shape.control_points"][0] = i * 0.1
 
     scene = load_scene()
-    assert_render(scene, n, update, tmp_path=tmp_path)
+    assert_render(scene, n, update, tmp_path=tmp_path, auto_opaque = auto_opaque)
 
 
 @pytest.mark.parametrize("shape", SHAPES)
-def test10_shape_sample_position(variants_vec_rgb, shape):
+@pytest.mark.parametrize("auto_opaque", [False, True])
+def test10_shape_sample_position(variants_vec_rgb, shape, auto_opaque):
     """
     Tests that it is possible to call ``sample_position`` on a shape inside a
     frozen function.
@@ -881,7 +898,7 @@ def test10_shape_sample_position(variants_vec_rgb, shape):
     def func(shape: mi.Shape, sample: mi.Point2f) -> mi.PositionSample3f:
         return shape.sample_position(0, sample)
 
-    frozen = dr.freeze(func)
+    frozen = dr.freeze(func, auto_opaque = auto_opaque)
 
     shape = mi.load_dict(shape_dict(shape))
 
@@ -904,7 +921,8 @@ def test10_shape_sample_position(variants_vec_rgb, shape):
 
 
 @pytest.mark.parametrize("optimizer", ["sgd", "adam"])
-def test11_optimizer(variants_vec_rgb, optimizer):
+@pytest.mark.parametrize("auto_opaque", [False, True])
+def test11_optimizer(variants_vec_rgb, optimizer, auto_opaque):
     """
     Tests optimizing a non-geometric scene parameter using different optimizers
     in a frozen function. This also updates the parameters in the frozen function,
@@ -928,7 +946,7 @@ def test11_optimizer(variants_vec_rgb, optimizer):
 
         return image, loss
 
-    frozen = dr.freeze(optimize)
+    frozen = dr.freeze(optimize, auto_opaque = auto_opaque)
 
     def run(n: int, optimize):
         scene = mi.cornell_box()
@@ -958,7 +976,11 @@ def test11_optimizer(variants_vec_rgb, optimizer):
     image_ref, param_ref = run(n, optimize)
 
     image_frozen, param_frozen = run(n, frozen)
-    assert frozen.n_recordings == 2
+
+    if auto_opaque:
+        assert frozen.n_recordings == 3
+    else:
+        assert frozen.n_recordings == 2
 
     # Optimizing the reflectance is not as prone to divergence,
     # therefore we can test if the two methods produce the same results
@@ -972,7 +994,8 @@ def test11_optimizer(variants_vec_rgb, optimizer):
         "heterogeneous",
     ],
 )
-def test12_medium(variants_vec_rgb, tmp_path, medium):
+@pytest.mark.parametrize("auto_opaque", [False, True])
+def test12_medium(variants_vec_rgb, tmp_path, medium, auto_opaque):
     """
     Tests that it is possible to freeze rendeirng a scene with each medium type.
     """
@@ -1011,7 +1034,7 @@ def test12_medium(variants_vec_rgb, tmp_path, medium):
         return scene
 
     scene = load_scene()
-    assert_render(scene, n, tmp_path=tmp_path)
+    assert_render(scene, n, tmp_path=tmp_path, auto_opaque=auto_opaque)
 
 
 @pytest.mark.parametrize(
@@ -1024,7 +1047,8 @@ def test12_medium(variants_vec_rgb, tmp_path, medium):
         "ldsampler",
     ],
 )
-def test13_sampler(variants_vec_rgb, tmp_path, sampler):
+@pytest.mark.parametrize("auto_opaque", [False, True])
+def test13_sampler(variants_vec_rgb, tmp_path, sampler, auto_opaque):
     """
     Tests that it is possible to freeze rendeirng a scene with each sampler type.
     """
@@ -1043,4 +1067,4 @@ def test13_sampler(variants_vec_rgb, tmp_path, sampler):
 
     scene = load_scene()
     # spp of 4 to suppress warning
-    assert_render(scene, n, tmp_path=tmp_path, spp = 4)
+    assert_render(scene, n, tmp_path=tmp_path, spp = 4, auto_opaque = auto_opaque)
