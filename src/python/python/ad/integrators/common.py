@@ -337,7 +337,7 @@ class ADIntegrator(mi.CppADIntegrator):
         spp = sampler.sample_count()
 
         # Compute discrete sample position
-        idx = mi.Uint32(0)
+        idx = 0
         if film_size.x > 1:
             idx = dr.arange(mi.UInt32, dr.prod(film_size.x) * spp)
 
@@ -357,7 +357,8 @@ class ADIntegrator(mi.CppADIntegrator):
             raise NotImplementedError("Acoustic sampling does not support border sampling")
             pos -= border_size
 
-        if film.crop_offset() != (0, 0):
+        if not (film.crop_offset()[0] == 0 and film.crop_offset()[1] == 0):
+            mi.Log(mi.LogLevel.Debug, str(film.crop_offset()))
             raise NotImplementedError("Acoustic sampling does not support crop offset")
             pos += mi.Vector2i(film.crop_offset())
 
