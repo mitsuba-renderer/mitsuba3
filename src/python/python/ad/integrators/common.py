@@ -308,6 +308,96 @@ class ADIntegrator(mi.CppADIntegrator):
 
         return ray, weight, splatting_pos
 
+    def sample_rays_acoustic(
+        self,
+        scene: mi.Scene,
+        sensor: mi.Sensor,
+        sampler: mi.Sampler,
+    ) -> Tuple[mi.RayDifferential3f, mi.Spectrum, mi.Vector2f, mi.Float]:
+        """
+        Sample a set of primary rays for a given sensor
+
+        Returns a tuple containing
+
+        - the set of sampled rays
+        - a ray weight (usually 1 if the sensor's response function is sampled
+          perfectly)
+        - the continuous positions on the Imageblock associated with each ray. 
+          The first value contains the wavelength index, the second value is not used.
+        """
+
+        film = sensor.film()
+        film_size = film.crop_size()
+        rfilter = film.rfilter()
+        border_size = rfilter.border_size()
+
+        if film.sample_border():
+            film_size += 2 * border_size
+
+        spp = sampler.sample_count()
+
+        # Compute discrete sample position
+        idx = mi.Uint32(0)
+        if film_size.x > 1:
+            idx = dr.arange(mi.UInt32, dr.prod(film_size.x) * spp)
+
+            # Try to avoid a division by an unknown constant if we can help it
+            log_spp = dr.log2i(spp)
+            if 1 << log_spp == spp:
+                idx >>= dr.opaque(mi.UInt32, log_spp)
+            else:
+                idx //= dr.opaque(mi.UInt32, spp)
+
+        # Compute the position on the image plane
+        pos = mi.Vector2i()      
+        pos.x = idx // film_size[0]
+        pos.y = 0
+
+        if film.sample_border():
+            raise NotImplementedError("Acoustic sampling does not support border sampling")
+            pos -= border_size
+
+        if film.crop_offset() != (0, 0):
+            raise NotImplementedError("Acoustic sampling does not support crop offset")
+            pos += mi.Vector2i(film.crop_offset())
+
+        # Cast to floating point, random offset not needed for acoustic sampling
+        pos_f = mi.Vector2f(pos)
+
+        # Re-scale the position to [0, 1]^2
+        scale = dr.rcp(mi.ScalarVector2f(film.crop_size()))
+        offset = -mi.ScalarVector2f(film.crop_offset()) * scale
+        pos_adjusted = dr.fma(pos_f, scale, offset)
+
+        aperture_sample = mi.Vector2f(0.0)
+        if sensor.needs_aperture_sample():
+            aperture_sample = sampler.next_2d()
+
+        time = sensor.shutter_open()
+        if sensor.shutter_open_time() > 0:
+            raise NotImplementedError("Acoustic sampling does not support shutter times")
+            time += sampler.next_1d() * sensor.shutter_open_time()
+
+        if not mi.is_spectral:
+            raise NotImplementedError("Acoustic Integrator does not support non-spectral variants")
+        
+        wavelength_sample = 0
+        if mi.has_flag(film.flags(), mi.FilmFlags.Spectral):
+            raise NotImplementedError("Spectral acoustic rendering not yet implemented.")
+            wavelength_sample = sampler.next_1d()
+        else:
+            pass # wavelength determined from the wavelength bin (stored in pos.x).
+
+        with dr.resume_grad():
+            ray, weight = sensor.sample_ray_differential(
+                time=time,
+                sample1=wavelength_sample,
+                sample2=pos_adjusted,
+                sample3=aperture_sample
+            )
+
+        return ray, weight, pos
+    
     def prepare(self,
                 sensor: mi.Sensor,
                 seed: mi.UInt32 = 0,
