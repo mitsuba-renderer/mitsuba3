@@ -204,6 +204,9 @@ public:
     void traverse(TraversalCallback *callback) override;
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override;
 
+    /// Return the wavelength used by the film (only used in tape)
+    const ScalarFloat &wavelength(size_t index) const {return m_wavelengths[index];}
+
     //! @}
     // =============================================================
 
@@ -223,6 +226,7 @@ protected:
     ScalarPoint2u m_crop_offset;
     bool m_sample_border;
     ref<ReconstructionFilter> m_filter;
+    std::vector<ScalarFloat> m_wavelengths; //used in tape
     ref<Texture> m_srf;
 };
 
