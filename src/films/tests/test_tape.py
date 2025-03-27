@@ -5,7 +5,7 @@ import drjit as dr
 def create_tape(wav_bins=1, time_bins=1, count=False):
     tape_dict = {
         "type": "tape",
-        "wav_bins": wav_bins,
+        "wav_bins": wav_bins,#FIXME: implement list of values
         "time_bins": time_bins,
         "count": count,
     }

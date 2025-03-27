@@ -20,9 +20,34 @@ public:
 
     Tape(const Properties &props) : Base(props) {
         if (props.has_property("width") || props.has_property("height"))
-            Throw("Tape Plugin should use (time_steps, wav_bins) instead of (width, height).");
+            Throw("Tape Plugin does not support (width, height). Set time_bins and specify a list of wavelengths instead.");
+        
+        
+        // load wavelengths that should be rendered (-> copy from irregular spectrum)
+        if (props.type("wavelengths") == Properties::Type::String) {
+            std::vector<std::string> wavelengths_str =
+                string::tokenize(props.string("wavelengths"), " ,");
+            
+            std::vector<ScalarFloat> wavelengths;
+            wavelengths.reserve(wavelengths_str.size());
+
+            for (size_t i = 0; i < wavelengths_str.size(); ++i) {
+                try {
+                    wavelengths.push_back(string::stof<ScalarFloat>(wavelengths_str[i]));
+                } catch (...) {
+                    Throw("Could not parse floating point value '%s'", wavelengths_str[i]);
+                }
+            }
+
+            m_wavelengths = wavelengths;
+            Log(Info, "Tape will store %i wavelengths: %s", m_wavelengths.size(), m_wavelengths);
+            
+        } else {
+            NotImplementedError("Tape Plugin expects the 'frequencies' to be a string containing a comma-separated list of frequencies).");
+        }
+
         m_size = ScalarVector2u(
-            props.get<uint32_t>("wav_bins", 1),
+            m_wavelengths.size(),
             props.get<uint32_t>("time_bins", 1)
         );
         set_crop_window(ScalarPoint2u(0, 0), m_size);
@@ -245,6 +270,7 @@ protected:
     ref<ImageBlock> m_storage;
     mutable std::mutex m_mutex;
     std::vector<std::string> m_channels;
+    std::vector<ScalarFloat> m_wavelengths;
     bool m_count;
 };
 
