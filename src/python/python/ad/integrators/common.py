@@ -308,6 +308,58 @@ class ADIntegrator(mi.CppADIntegrator):
 
         return ray, weight, splatting_pos
 
+    def render_acoustic(self: mi.SamplingIntegrator,
+                        scene: mi.Scene,
+                        sensor: Union[int, mi.Sensor] = 0,
+                        seed: int = 0,
+                        spp: int = 0,
+                        develop: bool = True,
+                        evaluate: bool = True) -> None:
+
+        if isinstance(sensor, int):
+            sensor = scene.sensors()[sensor]
+
+        film = sensor.film()
+
+        # Disable derivatives in all of the following
+        with dr.suspend_grad():
+            # Prepare the film and sample generator for rendering
+            sampler, spp = self.prepare(
+                sensor=sensor,
+                seed=seed,
+                spp=spp,
+                aovs=self.aov_names()
+            )
+
+            # Generate a set of rays starting at the sensor
+            ray, weight, pos = self.sample_rays_acoustic(scene, sensor, sampler)
+            mi.Log(mi.LogLevel.Debug, "Rendering ray at pos %s", pos)
+            
+            block = film.create_block()
+
+            # Launch the Monte Carlo sampling process in primal mode (1)
+            H, valid, _ = self.sample(
+                scene=scene,
+                sampler=sampler.clone(),
+                sensor=sensor,
+                ray=ray,
+                block=block,
+                active=mi.Bool(True),
+                mode=dr.ADMode.Primal,
+                δH=None,
+                state_in_δHL=None,
+                state_in_δHdT=None
+            )
+
+            del H, valid, ray, weight, pos, sampler
+            
+            gc.collect() #TODO: copied from acoustic_prb:render_backward, do we need this?
+            # Run kernel, writing data to imageblock
+            dr.eval() #TODO: copied from acoustic_prb:render_backward, do we need this?
+            
+            return film.develop()
+            
+            
     def sample_rays_acoustic(
         self,
         scene: mi.Scene,

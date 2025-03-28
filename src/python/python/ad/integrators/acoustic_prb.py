@@ -287,6 +287,16 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
             δHdLdT                 # State for the differential phase
         )
 
+    def render(self: mi.SamplingIntegrator,
+               scene: mi.Scene,
+               sensor: Union[int, mi.Sensor] = 0,
+               seed: int = 0,
+               spp: int = 0,
+               develop: bool = True,
+               evaluate: bool = True) -> None:
+
+        self.render_acoustic(scene, sensor, seed, spp, develop, evaluate)
+    
     def render_backward(self: mi.SamplingIntegrator,
                         scene: mi.Scene,
                         params: Any,
