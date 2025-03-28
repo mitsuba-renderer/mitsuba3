@@ -22,6 +22,7 @@ public:
         if (props.has_property("width") || props.has_property("height"))
             Throw("Tape Plugin does not support (width, height). Set time_bins and specify a list of wavelengths instead.");
         
+        //TODO: use box filter as default instead of gaussian
         
         // load wavelengths that should be rendered (-> copy from irregular spectrum)
         if (props.type("wavelengths") == Properties::Type::String) {
@@ -152,6 +153,7 @@ public:
     }
 
     TensorXf develop(bool raw = false) const override {
+        Log(Info, "developing tape");
         if (!m_storage)
             Throw("No storage allocated, was prepare() called first?");
 
