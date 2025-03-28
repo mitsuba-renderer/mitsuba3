@@ -41,43 +41,41 @@ public:
         m_needs_sample_2 = false;
     }
 
-    std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
-                                          const Point2f & /*position_sample*/,
-                                          const Point2f & sample3 /*aperture_sample*/,
-                                          Mask active) const override {
-        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
-        Ray3f ray;
-        ray.time = time;
-
-        // 1. Sample spectrum
-        ray.wavelengths = wavelength_sample;
-
-        // 2. Set ray origin and direction
-        ray.o = m_to_world.value().translation();
-        auto sample_dir = warp::square_to_von_mises_fisher(sample3, m_kappa);
-        ray.d = m_to_world.value() * sample_dir;
-        Spectrum wav_weight(warp::square_to_von_mises_fisher_pdf(sample_dir, m_kappa));
-        ray.o += ray.d * math::RayEpsilon<Float>;
-
-        return { ray, wav_weight };
+    std::pair<Ray3f, Spectrum> sample_ray(Float /*time*/, Float /*wavelength_sample*/, //wavelength sample only needed for spectral tape
+                                          const Point2f & /*position_sample*/, //position_sample.x stores the wavelength bin
+                                          const Point2f & /*aperture_sample*/,
+                                          Mask /*active*/) const override {
+        NotImplementedError("Needs to be copied from sample_ray_differential if required");
     }
 
     std::pair<RayDifferential3f, Spectrum>
     sample_ray_differential(Float time,
-                            Float wavelength_sample,
-                            const Point2f & /*position_sample*/,
-                            const Point2f & sample3 /*aperture_sample*/,
+                            Float /*wavelength_sample*/, //wavelength sample only needed for spectral tape
+                            const Point2f & position_sample,
+                            const Point2f & aperture_sample,
                             Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
         RayDifferential3f ray;
         ray.time = time;
+        
+        
+        Log(Debug, "crop size: {%s}", m_film->crop_size()[0]);
+        Point2i position_sample_i = Point2i(position_sample*m_film->crop_size()[0]);
 
         // 1. Sample spectrum
-        ray.wavelengths = wavelength_sample;
+        auto wavelength_index = position_sample_i.x();
+        
+        Log(Debug, "Sampled wavelength index: {%i}", wavelength_index);
+        
+        IrregularContinuousDistribution<Wavelength> wavelengths_spectrum = m_film->wavelengths_spectrum();
+        Log(Debug, "Sampled wavelengths: {%s}", wavelengths_spectrum);
+        ray.wavelengths = wavelengths_spectrum.eval_pdf(wavelength_index);
 
+        Log(Debug, "Sampled wavelengths: {%s}", ray.wavelengths);
+        // NotImplementedError(); // Remove this line as the functionality is now implemented
         // 2. Set ray origin and direction
         ray.o = m_to_world.value().translation();
-        auto sample_dir = warp::square_to_von_mises_fisher(sample3, m_kappa);
+        auto sample_dir = warp::square_to_von_mises_fisher(aperture_sample, m_kappa);
         ray.d = m_to_world.value() * sample_dir;
         Spectrum wav_weight(warp::square_to_von_mises_fisher_pdf(sample_dir, m_kappa));
 

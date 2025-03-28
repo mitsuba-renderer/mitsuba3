@@ -15,7 +15,7 @@ template <typename Float, typename Spectrum>
 class Tape final : public Film<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset, m_sample_border,
-                   m_filter, m_flags, set_crop_window)
+                   m_filter, m_flags, set_crop_window, m_wavelengths_spectrum)
     MI_IMPORT_TYPES(ImageBlock)
 
     Tape(const Properties &props) : Base(props) {
@@ -27,21 +27,29 @@ public:
         if (props.type("wavelengths") == Properties::Type::String) {
             std::vector<std::string> wavelengths_str =
                 string::tokenize(props.string("wavelengths"), " ,");
-            
+                
             std::vector<ScalarFloat> wavelengths;
+            std::vector<ScalarFloat> indices; // wavelength bin indices
             wavelengths.reserve(wavelengths_str.size());
+            indices.reserve(wavelengths_str.size());
 
             for (size_t i = 0; i < wavelengths_str.size(); ++i) {
                 try {
                     wavelengths.push_back(string::stof<ScalarFloat>(wavelengths_str[i]));
+                    indices.push_back((ScalarFloat) i);
                 } catch (...) {
                     Throw("Could not parse floating point value '%s'", wavelengths_str[i]);
                 }
             }
-
+            
             m_wavelengths = wavelengths;
             Log(Info, "Tape will store %i wavelengths: %s", m_wavelengths.size(), m_wavelengths);
-            
+            Log(Debug, "Wavelength Indices: %s", indices);
+
+            // load into spectrum for parallel evaluation
+            m_wavelengths_spectrum = IrregularContinuousDistribution<Wavelength>(
+                indices.data(), wavelengths.data(), indices.size()
+            );
         } else {
             NotImplementedError("Tape Plugin expects the 'frequencies' to be a string containing a comma-separated list of frequencies).");
         }

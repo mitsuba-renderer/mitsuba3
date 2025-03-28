@@ -8,6 +8,7 @@
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/texture.h>
+#include <mitsuba/core/distr_1d.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -205,7 +206,7 @@ public:
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override;
 
     /// Return the wavelength used by the film (only used in tape)
-    const ScalarFloat &wavelength(size_t index) const {return m_wavelengths[index];}
+    const IrregularContinuousDistribution<Wavelength> &wavelengths_spectrum() const { return m_wavelengths_spectrum;}
 
     //! @}
     // =============================================================
@@ -226,7 +227,7 @@ protected:
     ScalarPoint2u m_crop_offset;
     bool m_sample_border;
     ref<ReconstructionFilter> m_filter;
-    std::vector<ScalarFloat> m_wavelengths; //used in tape
+    IrregularContinuousDistribution<Wavelength> m_wavelengths_spectrum; //used in tape
     ref<Texture> m_srf;
 };
 
