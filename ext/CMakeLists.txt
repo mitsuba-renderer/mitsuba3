@@ -94,13 +94,18 @@ if (MI_ENABLE_EMBREE)
   set(EMBREE_TASKING_SYSTEM            "INTERNAL" CACHE STRING " " FORCE)
   set(EMBREE_ISA_SSE2                  OFF CACHE BOOL " " FORCE)
 
-  if (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
+  if ((CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64") OR (CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64"))
+    set(EMBREE_ISA_SSE42            OFF CACHE BOOL " " FORCE)
     set(EMBREE_ISA_SSE42            OFF CACHE BOOL " " FORCE)
     set(EMBREE_ISA_AVX              OFF CACHE BOOL " " FORCE)
     set(EMBREE_ISA_AVX2             OFF CACHE BOOL " " FORCE)
     set(EMBREE_ISA_AVX512           OFF CACHE BOOL " " FORCE)
     set(EMBREE_ISA_NEON             ON CACHE BOOL " " FORCE)
-    set(EMBREE_ISA_NEON2X           ON CACHE BOOL " " FORCE)
+    if (APPLE)
+      set(EMBREE_ISA_NEON2X           ON CACHE BOOL " " FORCE)
+    else()
+      set(EMBREE_ISA_NEON2X           OFF CACHE BOOL " " FORCE)
+    endif()
   else()
     set(EMBREE_ISA_SSE42            ON CACHE BOOL " " FORCE)
     set(EMBREE_ISA_AVX              ON CACHE BOOL " " FORCE)
@@ -359,7 +364,7 @@ unset(CMAKE_CXX_STANDARD CACHE)
 #  Nanobind headers
 # ----------------------------------------------------------
 
-set(NANOBIND_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/nanobind/include PARENT_SCOPE)
+set(NANOBIND_INCLUDE_DIRS ${NB_DIR}/include PARENT_SCOPE)
 
 # ----------------------------------------------------------
 #  Hide a few more settings that aren't relevant for users

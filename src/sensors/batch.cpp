@@ -98,8 +98,13 @@ public:
             if (sensor) {
                 m_sensors.push_back(sensor);
             } else if (shape) {
-                if (shape->is_sensor())
+                if (shape->is_sensor()) {
+                    /* Inner sensors only have a weak ref to any parent shape
+                     * so make sure lifetime of shapes are at least that of 
+                     * batch sensor */
+                    m_shapes.push_back(shape);
                     m_sensors.push_back(shape->sensor());
+                }
                 else
                     Throw("BatchSensor: shapes can only be specified as "
                           "children if a sensor is associated with them!");
@@ -281,6 +286,7 @@ public:
 
     MI_DECLARE_CLASS()
 private:
+    std::vector<ref<Shape>> m_shapes;
     std::vector<ref<Base>> m_sensors;
     DynamicBuffer<SensorPtr> m_sensors_dr;
     mutable UInt32 m_last_index;

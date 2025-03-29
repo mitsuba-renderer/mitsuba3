@@ -117,14 +117,7 @@ points and increasing radii::
             'type': 'bsplinecurve',
             'to_world': mi.ScalarTransform4f().translate([1, 0, 0]).scale([2, 2, 2]),
             'filename': 'curves.txt'
-        },
-
-.. note:: The backfaces of the curves are culled. It is therefore impossible to
-          intersect a curve with a ray, whose origin lies inside the curve.
-          In addition, prior to the NVIDIA v531.18 drivers for Windows and
-          v530.30.02 drivers for Linux, `important inconsistencies <https://forums.developer.nvidia.com/t/orthographic-camera-with-b-spline-curves/238650>`_
-          in the ray intersection code have been identified.
-          We recommend updating to newer drivers.
+        }
  */
 
 template <typename Float, typename Spectrum>
@@ -1059,7 +1052,7 @@ public:
 
         build_input.curveArray.normalBuffers        = 0;
         build_input.curveArray.normalStrideInBytes  = 0;
-        build_input.curveArray.flag                 = OPTIX_GEOMETRY_FLAG_NONE;
+        build_input.curveArray.flag                 = OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT;
         build_input.curveArray.primitiveIndexOffset = 0;
         build_input.curveArray.endcapFlags          = OPTIX_CURVE_ENDCAP_DEFAULT;
     }

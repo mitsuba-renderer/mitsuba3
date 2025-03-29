@@ -297,7 +297,7 @@ set(CMAKE_INSTALL_RPATH "${MI_ORIGIN};${MI_ORIGIN}/../drjit")
 # Build the dependencies
 add_subdirectory(ext)
 
-# Always add the include directories for tinyformat, Dr.Jit and Eigen
+# Always add the include directories for tinyformat, nanobind, Dr.Jit and Eigen
 include_directories(include
   ${TINYFORMAT_INCLUDE_DIRS}
   ${NANOBIND_INCLUDE_DIRS}
@@ -600,6 +600,7 @@ install(
 
 add_custom_target(copy-resources ALL DEPENDS ${MI_COPY_FILES})
 
+# IOR data
 file(GLOB IOR_FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/ior/*spd")
 add_custom_command(
   TARGET copy-resources DEPENDS IOR_FILES
@@ -617,5 +618,26 @@ if (MSVC AND MI_ENABLE_PYTHON)
 endif()
 install(
   DIRECTORY ${MI_BINARY_DIR}/data/ior
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}
+)
+
+# Sunsky data
+file(GLOB SUNSKY_FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/sunsky/output/*.bin")
+add_custom_command(
+  TARGET copy-resources DEPENDS SUNSKY_FILES
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+  "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/sunsky/output"
+  "${MI_BINARY_DIR}/data/sunsky"
+)
+if (MSVC AND MI_ENABLE_PYTHON)
+  add_custom_command(
+    TARGET copy-resources DEPENDS SUNSKY_FILES
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/sunsky/output"
+    "${MI_BINARY_DIR}/python/mitsuba/data/sunsky"
+  )
+endif()
+install(
+  DIRECTORY ${MI_BINARY_DIR}/data/sunsky
   DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}
 )

@@ -419,7 +419,12 @@ void parse_dictionary(DictParseContext &ctx,
         } catch (const nb::cast_error &) { }
 
         // Didn't match any of the other types above
-        Throw("Unsupported value type: %s!\n", nb::str(value.type()).c_str());
+        Throw("Unsupported value type for parameter \"%s.%s\": %s! One of the "
+              "following types is expected: "
+              "bool, int, float, str, mitsuba.ScalarColor3f, "
+              "mitsuba.ScalarArray3f, mitsuba.ScalarTransform3f, "
+              "mitsuba.ScalarTransform4f, mitsuba.TensorXf, mitsuba.Object",
+              path, key, nb::str(value.type()).c_str());
     }
 
     // Set object id based on path in dictionary if no id is provided

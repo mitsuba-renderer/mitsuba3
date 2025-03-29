@@ -76,7 +76,7 @@ public:
      */
     virtual TensorXf render(Scene *scene,
                             Sensor *sensor,
-                            uint32_t seed = 0,
+                            UInt32 seed = 0,
                             uint32_t spp = 0,
                             bool develop = true,
                             bool evaluate = true) = 0;
@@ -90,7 +90,7 @@ public:
      */
     TensorXf render(Scene *scene,
                     uint32_t sensor_index = 0,
-                    uint32_t seed = 0,
+                    UInt32 seed = 0,
                     uint32_t spp = 0,
                     bool develop = true,
                     bool evaluate = true);
@@ -167,7 +167,7 @@ public:
     virtual TensorXf render_forward(Scene* scene,
                                     void* params,
                                     Sensor *sensor,
-                                    uint32_t seed = 0,
+                                    UInt32 seed = 0,
                                     uint32_t spp = 0);
 
     /**
@@ -180,7 +180,7 @@ public:
     TensorXf render_forward(Scene* scene,
                             void* params,
                             uint32_t sensor_index = 0,
-                            uint32_t seed = 0,
+                            UInt32 seed = 0,
                             uint32_t spp = 0) {
 
         if (sensor_index >= scene->sensors().size())
@@ -257,7 +257,7 @@ public:
                                  void* params,
                                  const TensorXf& grad_in,
                                  Sensor* sensor,
-                                 uint32_t seed = 0,
+                                 UInt32 seed = 0,
                                  uint32_t spp = 0);
 
     /**
@@ -271,7 +271,7 @@ public:
                          void* params,
                          const TensorXf& grad_in,
                          uint32_t sensor_index = 0,
-                         uint32_t seed = 0,
+                         UInt32 seed = 0,
                          uint32_t spp = 0) {
 
         if (sensor_index >= scene->sensors().size())
@@ -340,7 +340,7 @@ protected:
 
     /// Flag for disabling direct visibility of emitters
     bool m_hide_emitters;
-    
+
     /// Identifier (if available)
     std::string m_id;
 };
@@ -417,7 +417,7 @@ public:
 
     TensorXf render(Scene *scene,
                     Sensor *sensor,
-                    uint32_t seed = 0,
+                    UInt32 seed = 0,
                     uint32_t spp = 0,
                     bool develop = true,
                     bool evaluate = true) override;
@@ -435,7 +435,7 @@ protected:
                               ImageBlock *block,
                               Float *aovs,
                               uint32_t sample_count,
-                              uint32_t seed,
+                              UInt32 seed,
                               uint32_t block_id,
                               uint32_t block_size) const;
 
@@ -542,7 +542,7 @@ public:
 
     TensorXf render(Scene *scene,
                     Sensor *sensor,
-                    uint32_t seed = 0,
+                    UInt32 seed = 0,
                     uint32_t spp = 0,
                     bool develop = true,
                     bool evaluate = true) override;

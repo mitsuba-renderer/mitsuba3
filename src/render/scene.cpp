@@ -262,7 +262,7 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
 
     Ray3f ray;
     Spectrum weight;
-    EmitterPtr emitter;
+    EmitterPtr emitter{};
 
     // Potentially disable inlining of emitter sampling (if there is just a single emitter)
     bool vcall_inline = true;
@@ -426,6 +426,15 @@ Scene<Float, Spectrum>::sample_silhouette(const Point3f &sample_,
     ss.pdf *= shape_weight;
     ss.scene_index = shape_idx;
 
+    /* This is an escape hatch for any failed sample. Ideally these cases should
+     * be resolved directly in each shape's `sample_silhouette`. Just in case,
+     * they are caught and ignored here. */
+    Mask to_ignore =
+        (dr::isnan(ss.p.x()) || dr::isnan(ss.p.y()) || dr::isnan(ss.p.z()) ||
+         dr::isnan(ss.d.x()) || dr::isnan(ss.d.y()) || dr::isnan(ss.d.z()) ||
+         dr::isnan(ss.n.x()) || dr::isnan(ss.n.y()) || dr::isnan(ss.n.z()));
+    dr::masked(ss, to_ignore) = dr::zeros<SilhouetteSample3f>();
+
     return ss;
 }
 
@@ -586,6 +595,8 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &, Mask) const {
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_gpu() { }
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() { }
 #endif
+
+Class *__kdtree_class = new Class("TShapeKDTree", "Object", "", nullptr, nullptr);
 
 MI_IMPLEMENT_CLASS_VARIANT(Scene, Object, "scene")
 MI_INSTANTIATE_CLASS(Scene)

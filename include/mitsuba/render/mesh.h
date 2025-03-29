@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Mesh : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES()
+    MI_IMPORT_TYPES(BSDF)
     MI_IMPORT_BASE(Shape, m_to_world, mark_dirty, m_emitter, m_sensor, m_bsdf,
                    m_interior_medium, m_exterior_medium, m_is_instance,
                    m_discontinuity_types, m_shape_type, m_initialized)
@@ -61,6 +61,9 @@ public:
     //! @{ \name Accessors (vertices, faces, normals, etc)
     // =========================================================================
 
+    /// Set the shape's BSDF
+    void set_bsdf(BSDF *bsdf) override;
+
     /// Return the total number of vertices
     ScalarSize vertex_count() const { return m_vertex_count; }
     /// Return the total number of faces
@@ -87,16 +90,20 @@ public:
     const DynamicBuffer<UInt32>& faces_buffer() const { return m_faces; }
 
     /// Return the mesh attribute associated with \c name
-    FloatStorage& attribute_buffer(const std::string& name) {
-        auto attribute = m_mesh_attributes.find(name);
-        if (attribute == m_mesh_attributes.end())
-            Throw("attribute_buffer(): attribute %s doesn't exist.", name.c_str());
-        return attribute->second.buf;
-    }
+    FloatStorage& attribute_buffer(const std::string& name);
 
     /// Add an attribute buffer with the given \c name and \c dim
     void add_attribute(const std::string &name, size_t dim,
                        const std::vector<InputFloat> &buf);
+
+    /**
+     * Remove an attribute with the given \c name.
+     *
+     * Affects both mesh and texture attributes.
+     *
+     * Throws an exception if the attribute was not previously registered.
+     */
+    void remove_attribute(const std::string &name) override;
 
     /// Returns the vertex indices associated with triangle \c index
     template <typename Index>

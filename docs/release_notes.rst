@@ -5,6 +5,45 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`_ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
+Mitsuba 3.6.4
+-------------
+*February 4, 2025*
+
+- Upgrade Dr.Jit to `[v1.0.5] <https://github.com/mitsuba-renderer/drjit/releases/tag/v1.0.5>`_
+- Fix normalmap `[1a4bea2] <https://github.com/mitsuba-renderer/mitsuba3/commit/1a4bea212c129a5d0239e533107473a5ca89230a>`_
+- Fallback mechanism for numerical issues in silhouette sampling `[ce4af8d] <https://github.com/mitsuba-renderer/mitsuba3/commit/ce4af8d31b464f1fc5f52688365eb598272e0153>`_
+
+Mitsuba 3.6.3
+-------------
+*January 29, 2025*
+
+- Release was retracted
+
+
+Mitsuba 3.6.2
+-------------
+*January 16, 2025*
+
+- Enable parallel scene loading by default in ``mitsuba`` CLI (regression)
+  `[338898d] <https://github.com/mitsuba-renderer/mitsuba3/commit/338898dcf7b26d70523f22a58d4ac474a6cf8e5c>`_
+- Improved ``bitmap`` construction in scalar variants
+  `[6af4d37] <https://github.com/mitsuba-renderer/mitsuba3/commit/6af4d377c52bc13b7cafa24cd17b96d68b898f87>`_
+
+Mitsuba 3.6.1
+-------------
+*January 16, 2025*
+
+- Improve robustness of parallel scene loading
+  `[8d48f58] <https://github.com/mitsuba-renderer/mitsuba3/commit/8d48f585f07c6559d9aa346507b5e0c007c02513>`_
+- Fixes to ``mi.sample_tea_float``
+  `[fd16fbe] <https://github.com/mitsuba-renderer/mitsuba3/commit/fd16fbe2e711379bfb36c3d8bcd5bb066ad0ae82>`_
+- Support for complex numbers or quaternions in ``mi.ad.Adam`` optimizer
+  `[eff5bf6] <https://github.com/mitsuba-renderer/mitsuba3/commit/eff5bf6eae8cc5448af0193f7be0d0cdbf9c41d2>`_
+- Improved error message when ``mi.load_dict`` fails
+  `[7db5401] <https://github.com/mitsuba-renderer/mitsuba3/commit/7db5401dcdbdcee70fd28b0736313f1365f279f8>`_
+- Add missing implementations for `spot` emitter (for AD)
+  `[9336491] <https://github.com/mitsuba-renderer/mitsuba3/commit/933649143dbce3086cb6316a9ee928d29c9053b5>`_
+
 Mitsuba 3.6.0
 -------------
 

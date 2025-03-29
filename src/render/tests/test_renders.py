@@ -206,7 +206,7 @@ def test_render(variant, scene_fname, integrator_type, jit_flags_key):
     significance_level = 0.01
 
     # Compute spp budget
-    sample_budget = int(2e6)
+    sample_budget = int(2e6) if "volpath" not in integrator_type else int(8e6)
     pixel_count = dr.prod(ref_bmp.size())
     spp = (sample_budget // pixel_count)
 
@@ -275,7 +275,7 @@ def test_render(variant, scene_fname, integrator_type, jit_flags_key):
         xyz_to_rgb_bmp(p_value).write(pvalue_fname)
         print('Saved error image to: ' + pvalue_fname)
 
-        if integrator_type == "volpathmis" and "emissive" in scene_fname:
+        if integrator_type == "volpathmis" and "emissive" in scene_fname.stem:
             pytest.xfail("Radiance values exceeded scene's tolerances, but this is expected of the `volpathmis` integrator")
         else:
             pytest.fail("Radiance values exceeded scene's tolerances!")

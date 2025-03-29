@@ -22,7 +22,7 @@ NAMESPACE_BEGIN(mitsuba)
 #  define strdup(x) _strdup(x)
 #endif
 
-static constexpr size_t PROGRAM_GROUP_COUNT = 2 + OPTIX_SHAPE_TYPE_COUNT;
+static constexpr size_t MAX_PROGRAM_GROUP_COUNT = 2 + OPTIX_SHAPE_TYPE_COUNT;
 
 // Per scene OptiX state data structure
 struct OptixSceneState {
@@ -53,8 +53,9 @@ struct OptixConfig {
     OptixModule main_module;
     OptixModule bspline_curve_module; /// Built-in module for B-spline curves
     OptixModule linear_curve_module; /// Built-in module for linear curves
-    OptixProgramGroup program_groups[PROGRAM_GROUP_COUNT];
+    OptixProgramGroup program_groups[MAX_PROGRAM_GROUP_COUNT];
     char *custom_shapes_program_names[2 * OPTIX_SHAPE_TYPE_COUNT];
+    std::unordered_map<size_t, size_t> program_index_mapping;
     uint32_t pipeline_jit_index;
 };
 
@@ -158,7 +159,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
         // =====================================================
 
         OptixTask task;
-        check_log(optixModuleCreateFromPTXWithTasks(
+        check_log(optixModuleCreateWithTasks(
             config.context,
             &module_compile_options,
             &config.pipeline_compile_options,
@@ -235,50 +236,74 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
         // =====================================================
 
         OptixProgramGroupOptions program_group_options = {};
-        OptixProgramGroupDesc pgd[PROGRAM_GROUP_COUNT] {};
+        OptixProgramGroupDesc pgd[MAX_PROGRAM_GROUP_COUNT] {};
 
-        pgd[0].kind                         = OPTIX_PROGRAM_GROUP_KIND_MISS;
-        pgd[0].miss.module                  = config.main_module;
-        pgd[0].miss.entryFunctionName       = "__miss__ms";
-        pgd[1].kind                         = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-        pgd[1].hitgroup.moduleCH            = config.main_module;
-        pgd[1].hitgroup.entryFunctionNameCH = "__closesthit__mesh";
+        size_t pgd_index = 0;
+        pgd[pgd_index].kind = OPTIX_PROGRAM_GROUP_KIND_MISS;
+        pgd[pgd_index].miss.module = config.main_module;
+        pgd[pgd_index].miss.entryFunctionName  = "__miss__ms";
+        if (has_meshes) {
+            pgd_index++;
+            pgd[pgd_index].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+            pgd[pgd_index].hitgroup.moduleCH = config.main_module;
+            pgd[pgd_index].hitgroup.entryFunctionNameCH = "__closesthit__mesh";
+            config.program_index_mapping[1] = pgd_index;
+        }
 
         for (size_t i = 0; i < OPTIX_SHAPE_TYPE_COUNT; i++) {
-            pgd[2+i].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-
             OptixShapeType optix_shape_type = OPTIX_SHAPE_ORDER[i];
-            OptixShape& optix_shape = OPTIX_SHAPES.at(optix_shape_type);
+            if (optix_shape_type == BSplineCurve && has_bspline_curves)
+                pgd_index++;
+            else if (optix_shape_type == LinearCurve && has_linear_curves)
+                pgd_index++;
+            else if ((optix_shape_type != BSplineCurve) &&
+                     (optix_shape_type != LinearCurve) && has_others)
+                pgd_index++;
+            else
+                continue;
 
-            config.custom_shapes_program_names[2*i]   = strdup(optix_shape.ch_name().c_str());
+            OptixShape& optix_shape = OPTIX_SHAPES.at(optix_shape_type);
+            config.custom_shapes_program_names[2*i] =
+                strdup(optix_shape.ch_name().c_str());
+
             if (optix_shape.is_builtin)
                 config.custom_shapes_program_names[2*i+1] = nullptr;
             else
-                config.custom_shapes_program_names[2*i+1] = strdup(optix_shape.is_name().c_str());
+                config.custom_shapes_program_names[2 * i + 1] =
+                    strdup(optix_shape.is_name().c_str());
 
-            pgd[2+i].hitgroup.moduleCH            = config.main_module;
-            pgd[2+i].hitgroup.entryFunctionNameCH = config.custom_shapes_program_names[2*i];
-            pgd[2+i].hitgroup.entryFunctionNameIS = config.custom_shapes_program_names[2*i+1];
+            config.program_index_mapping[2+i] = pgd_index;
+            pgd[pgd_index].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+            pgd[pgd_index].hitgroup.moduleCH = config.main_module;
+            pgd[pgd_index].hitgroup.entryFunctionNameCH = config.custom_shapes_program_names[2*i];
+            pgd[pgd_index].hitgroup.entryFunctionNameIS = config.custom_shapes_program_names[2*i+1];
+
             if (optix_shape.is_builtin) {
                 switch(optix_shape_type) {
                     case BSplineCurve:
-                        pgd[2 + i].hitgroup.moduleIS = config.bspline_curve_module; break;
+                        pgd[pgd_index].hitgroup.moduleIS = config.bspline_curve_module;
+                        break;
                     case LinearCurve:
-                        pgd[2 + i].hitgroup.moduleIS = config.linear_curve_module; break;
+                        pgd[pgd_index].hitgroup.moduleIS = config.linear_curve_module; break;
                     default:
                         Throw("Unknown builtin OptiX shape type: \"%s\"!",
                               OPTIX_SHAPE_TYPE_NAMES[optix_shape_type]);
                 }
             }
-            else
-                pgd[2+i].hitgroup.moduleIS = config.main_module;
+            else {
+                pgd[pgd_index].hitgroup.moduleIS = config.main_module;
+            }
         }
+
+        size_t program_group_count = 1 + has_meshes + has_bspline_curves +
+                                     has_linear_curves +
+                                     has_others * (OPTIX_SHAPE_TYPE_COUNT - 2);
 
         optix_log_size = sizeof(optix_log);
         check_log(optixProgramGroupCreate(
             config.context,
             pgd,
-            PROGRAM_GROUP_COUNT,
+            program_group_count,
             &program_group_options,
             optix_log,
             &optix_log_size,
@@ -292,7 +317,8 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
         config.pipeline_jit_index = jit_optix_configure_pipeline(
             &config.pipeline_compile_options,
             config.main_module,
-            config.program_groups, PROGRAM_GROUP_COUNT
+            config.program_groups,
+            program_group_count
         );
         jit_set_scope(JitBackend::CUDA, scope);
     }
@@ -337,9 +363,19 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
             hg_sbts.assign(prev_data, prev_data + s2.sbt.hitgroupRecordCount);
             jit_free(prev_data);
 
-            fill_hitgroup_records(m_shapes, hg_sbts, config.program_groups);
-            for (auto& shapegroup: m_shapegroups)
-                shapegroup->optix_fill_hitgroup_records(hg_sbts, config.program_groups);
+            fill_hitgroup_records(
+                    m_shapes,
+                    hg_sbts,
+                    config.program_groups,
+                    config.program_index_mapping
+            );
+            for (auto &shapegroup : m_shapegroups) {
+                shapegroup->optix_fill_hitgroup_records(
+                    hg_sbts,
+                    config.program_groups,
+                    config.program_index_mapping
+                );
+            }
 
             size_t shapes_count = hg_sbts.size();
 
@@ -379,7 +415,10 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
                 has_instances        |= (type == +ShapeType::Instance);
                 has_bspline_curves   |= (type == +ShapeType::BSplineCurve);
                 has_linear_curves    |= (type == +ShapeType::LinearCurve);
-                has_others           |= !shape->is_mesh() && !shape->is_instance();
+                has_others           |= (type != +ShapeType::Mesh) &&
+                                        (type != +ShapeType::Instance) &&
+                                        (type != +ShapeType::BSplineCurve) &&
+                                        (type != +ShapeType::LinearCurve);
             }
 
             for (auto& shape : m_shapegroups) {
@@ -406,9 +445,15 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
                                                      s.sbt.missRecordBase));
 
             std::vector<HitGroupSbtRecord> hg_sbts;
-            fill_hitgroup_records(m_shapes, hg_sbts, config.program_groups);
-            for (auto& shapegroup: m_shapegroups)
-                shapegroup->optix_fill_hitgroup_records(hg_sbts, config.program_groups);
+            fill_hitgroup_records(m_shapes, hg_sbts, config.program_groups,
+                                  config.program_index_mapping);
+            for (auto &shapegroup : m_shapegroups) {
+                shapegroup->optix_fill_hitgroup_records(
+                        hg_sbts,
+                        config.program_groups,
+                        config.program_index_mapping
+                );
+            }
 
             size_t shapes_count = hg_sbts.size();
 
@@ -479,12 +524,12 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
                 s.ias_data = {};
                 s.ias_data.inputs = jit_malloc_migrate(d_ias, AllocType::Device, 1);
 
-                OptixBuildInput build_input;
+                OptixBuildInput build_input{};
                 build_input.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
                 build_input.instanceArray.instances = (CUdeviceptr)s.ias_data.inputs;
                 build_input.instanceArray.numInstances = (unsigned int) ias.size();
 
-                OptixAccelBufferSizes buffer_sizes;
+                OptixAccelBufferSizes buffer_sizes{};
                 jit_optix_check(optixAccelComputeMemoryUsage(
                     config.context,
                     &accel_options,
@@ -598,7 +643,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
         OptixSceneState &s = *(OptixSceneState *) m_accel;
         const OptixConfig &config = optix_configs[s.config_index];
 
-        UInt32 ray_mask(255), ray_flags(OPTIX_RAY_FLAG_NONE),
+        UInt32 ray_mask(255), ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT),
                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
         UInt32 payload_t(0),
@@ -686,7 +731,8 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
         const OptixConfig &config = optix_configs[s.config_index];
 
         UInt32 ray_mask(255),
-               ray_flags(OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
+               ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT |
+                         OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
                          OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 

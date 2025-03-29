@@ -65,7 +65,13 @@ Bitmap texture (:monosp:`bitmap`)
    - Specifies the underlying texture storage format. The following options are
      currently available:
 
-     - ``variant``(default): Use the corresponding native floating point representation
+     - ``auto`` (default): If loading a texture from a bitmap, use half
+         precision for bitmap data with 16 or lower bit depth, otherwise use
+         the native floating point representation of the Mitsuba variant. For
+         variants using a spectral color representation this option is the same
+         as `variant`.
+
+     - ``variant``: Use the corresponding native floating point representation
          of the Mitsuba variant
 
      - ``fp16``: Forcibly store the texture in half precision
@@ -167,13 +173,15 @@ public:
 
         // Format
         {
-            std::string format_str = props.string("format", "variant");
-            if (format_str == "variant")
+            std::string format_str = props.string("format", "auto");
+            if (format_str == "auto")
+                m_format = Format::Auto;
+            else if (format_str == "variant")
                 m_format = Format::Variant;
             else if (format_str == "fp16")
                 m_format = Format::Float16;
             else
-                Throw("Invalid format \"%s\", must be one of: "
+                Throw("Invalid format \"%s\", must be one of: \"auto\", "
                       "\"variant\", or \"fp16\"!", format_str);
         }
 
@@ -221,9 +229,6 @@ protected:
     Object* expand_1() const {
         if (m_bitmap) {
             Format format = m_format;
-
-// TODO: Temporarily disable this as LLVM FP16 gather/scatter operations are costly
-#if 0
             // Format auto means we store texture as FP16 when possible.
             // Skip this conversion for spectral variants as we want to perform
             // spectral upsampling in the variant's native FP representation
@@ -233,12 +238,11 @@ protected:
                 if (m_format == Format::Auto && bytes_p_ch <= 2)
                     format = Format::Float16;
             }
-#endif
 
             if (format == Format::Float16)
                 return expand_bitmap<dr::replace_scalar_t<Float, dr::half>>();
             else
-               return expand_bitmap<Float>();
+                return expand_bitmap<Float>();
         }
 
         // Otherwise, initializing using tensor
@@ -338,6 +342,7 @@ private:
     }
 
     enum class Format {
+        Auto,
         Variant,
         Float16
     } m_format;
@@ -798,50 +803,67 @@ protected:
 
         size_t pixel_count = (size_t) dr::prod(resolution());
         const size_t channels = m_texture.shape()[2];
+        bool range_issue = false;
 
         using FloatStorage = DynamicBuffer<Float>;
-        FloatStorage values;
+        using StoredTypeArray= DynamicBuffer<StoredType>;
+        FloatStorage values = dr::empty<FloatStorage>(pixel_count);
 
         if (channels == 3) {
-            Color<FloatStorage, 3> colors_fl;
-
             if constexpr (dr::is_jit_v<Float>) {
                 StoredColor3f colors = dr::gather<StoredColor3f>(
                     tensor.array(),
                     dr::arange<UInt32>(pixel_count));
 
                 // Potentially upcast values before attempting to compute mean
-                colors_fl = colors;
+                Color<FloatStorage, 3> colors_fl = colors;
+
+                if (is_spectral_v<Spectrum> && !m_raw)
+                    values = srgb_model_mean(colors_fl);
+                else
+                    values = luminance(colors_fl);
             } else {
                 StoredScalar* ptr = (StoredScalar*) tensor.data();
-                DynamicBuffer<UInt32> index
-                    = dr::arange<DynamicBuffer<UInt32>>(0, pixel_count) * 3;
+                ScalarFloat *out = values.data(), mean = 0;
 
-                using StoredTypeArray= DynamicBuffer<StoredType>;
-                auto colors = Color<StoredTypeArray, 3>(
-                    dr::gather<StoredTypeArray>(ptr, index + 0),
-                    dr::gather<StoredTypeArray>(ptr, index + 1),
-                    dr::gather<StoredTypeArray>(ptr, index + 2));
+                for (size_t i = 0; i < pixel_count; ++i) {
+                    Color3f col(ptr[0], ptr[1], ptr[2]);
+                    ptr += 3;
 
-                // Potentially upcast values before attempting to compute mean
-                colors_fl = colors;
+                    ScalarFloat lum;
+                    if (is_spectral_v<Spectrum> && !m_raw)
+                        lum = srgb_model_mean(col);
+                    else
+                        lum = luminance(col);
+
+                    *out++ = lum;
+                    mean += lum;
+                    range_issue |= lum < 0 || lum > 1;
+                }
+
+                m_mean = mean / pixel_count;
             }
-
-            if (is_spectral_v<Spectrum> && !m_raw)
-                values = srgb_model_mean(colors_fl);
-            else
-                values = luminance(colors_fl);
         } else {
-            if constexpr (dr::is_jit_v<Float>)
+            if constexpr (dr::is_jit_v<Float>) {
                 values = tensor.array();
-            else {
-                using StoredTypeArray= DynamicBuffer<StoredType>;
-                values = dr::load<StoredTypeArray>(tensor.data(), pixel_count);
+            } else {
+                StoredScalar* ptr = (StoredScalar*) tensor.data();
+                ScalarFloat *out = values.data(), mean = 0;
+                for (size_t i = 0; i < pixel_count; ++i) {
+                    ScalarFloat value = ptr[i];
+                    *out++ = value;
+                    m_mean += value;
+                    range_issue |= value < 0 || value > 1;
+                }
+                m_mean = mean / pixel_count;
             }
         }
 
-        if (init_mean) {
-            m_mean = dr::mean(values);
+        if constexpr (dr::is_jit_v<Float>) {
+            if (init_mean)
+                m_mean = dr::mean(values);
+            if (!m_raw)
+                range_issue = dr::any(values < 0 || values > 1);
         }
 
         if (init_distr) {
@@ -854,7 +876,7 @@ protected:
                 data.data(), resolution());
         }
 
-        if (!m_raw && any(values < 0 || values > 1))
+        if (!m_raw && range_issue)
             Log(Warn,
                 "BitmapTexture: texture named \"%s\" contains pixels that "
                 "exceed the [0, 1] range!",

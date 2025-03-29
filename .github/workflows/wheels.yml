@@ -12,11 +12,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-20.04, windows-latest, macos-13, macos-14]
-        python: [cp38, cp39, cp310, cp311, cp312, cp312_stable, cp313]
-        exclude:
-          # The first Python version to target Apple arm64 architectures is 3.9
-          - os: macos-14
-            python: cp38
+        python: [cp39, cp310, cp311, cp312, cp312_stable, cp313]
       fail-fast: false
 
     name: >
@@ -92,9 +88,9 @@ jobs:
         run: |
           python -m cibuildwheel --output-dir wheelhouse
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheels-${{ matrix.os }}-${{ matrix.python }}
           path: ./wheelhouse/*.whl
 
   upload_pypi:
@@ -107,9 +103,10 @@ jobs:
       #########################
       # Fetch and upload wheels
       #########################
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: wheels
+          pattern: wheels-*
+          merge-multiple: true
           path: dist
 
       - uses: pypa/gh-action-pypi-publish@v1.10.2

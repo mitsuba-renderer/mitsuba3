@@ -98,7 +98,7 @@ TLDR: If you plan to use Mitsuba from Python, we recommend adding one of
 
     Note that compilation time and compilation memory usage is roughly
     proportional to the number of enabled variants, hence including many of them
-    (more than five) may not be advisable. Also note that the ``scalar_rgb`` 
+    (more than five) may not be advisable. Also note that the ``scalar_rgb``
     and *at least one AD variant* is mandatory.
 
 .. warning::
@@ -110,7 +110,7 @@ TLDR: If you plan to use Mitsuba from Python, we recommend adding one of
     be variant-agnostic and hence certain combinations of variants won't be allowed.
     For example, including just `scalar_rgb`, `scalar_spectral` and `llvm_ad_rgb`
     creates ambiguity as to which variant we should select to generate the Python stubs.
-    In short, if a disallowed combination of variants is selected, a compilation 
+    In short, if a disallowed combination of variants is selected, a compilation
     error will report what variant should be added to remove any ambiguity.
 
 Linux
@@ -131,8 +131,8 @@ To fetch all dependencies and Clang, enter the following commands on Ubuntu:
 
 .. code-block:: bash
 
-    # Install recent versions build tools, including Clang and libc++ (Clang's C++ library)
-    sudo apt install clang-17 libc++-17-dev libc++abi-17-dev cmake ninja-build
+    # Install recent versions build tools, including Clang
+    sudo apt install clang-17 cmake ninja-build
 
     # Install libraries for image I/O
     sudo apt install libpng-dev libjpeg-dev
@@ -167,7 +167,7 @@ inside the :monosp:`mitsuba3` root directory:
     # Create a directory where build products are stored
     mkdir build
     cd build
-    cmake -GNinja .. 
+    cmake -GNinja ..
     ninja
 
 
@@ -250,9 +250,9 @@ Now, compilation should be as simple as running the following from inside the
 
 .. code-block:: bash
 
-    mkdir build 
-    cd build 
-    cmake -GNinja .. 
+    mkdir build
+    cd build
+    cmake -GNinja ..
     ninja
 
 
@@ -309,7 +309,7 @@ libraries from your system. There is no need to manually install any specific
 version of CUDA.
 
 Make sure to have an up-to-date GPU driver if the framework fails to compile
-the GPU variants of Mitsuba. The minimum requirement is currently v495.89.
+the GPU variants of Mitsuba. The minimum requirement is currently v535.
 
 By default, Mitsuba is also able to resolve the OptiX API itself, and therefore
 does not rely on the ``optix.h`` header file. The ``MI_USE_OPTIX_HEADERS`` CMake

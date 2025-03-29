@@ -55,7 +55,7 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.i
                 m_exterior_medium = medium;
             }
         } else if (texture) {
-            m_texture_attributes.insert({ name, texture });
+            add_texture_attribute(name, texture);
         } else {
             continue;
         }
@@ -335,15 +335,18 @@ MI_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice device)
 #endif
 
 #if defined(MI_ENABLE_CUDA)
-static const uint32_t optix_geometry_flags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
+static const uint32_t optix_geometry_flags[1] = { OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT };
 
 MI_VARIANT void Shape<Float, Spectrum>::optix_prepare_geometry() {
     NotImplementedError("optix_prepare_geometry");
 }
 
 MI_VARIANT
-void Shape<Float, Spectrum>::optix_fill_hitgroup_records(std::vector<HitGroupSbtRecord> &hitgroup_records,
-                                                         const OptixProgramGroup *program_groups) {
+void Shape<Float, Spectrum>::optix_fill_hitgroup_records(
+    std::vector<HitGroupSbtRecord> &hitgroup_records,
+    const OptixProgramGroup *program_groups,
+    const std::unordered_map<size_t, size_t> &program_index_mapping) {
+
     optix_prepare_geometry();
     // Set hitgroup record data
     hitgroup_records.push_back(HitGroupSbtRecord());
@@ -351,7 +354,9 @@ void Shape<Float, Spectrum>::optix_fill_hitgroup_records(std::vector<HitGroupSbt
         jit_registry_id(this), m_optix_data_ptr
     };
 
-    size_t program_group_idx = (is_mesh() ? 1 : 2 + get_shape_descr_idx(this));
+    size_t shape_index = (is_mesh() ? 1 : 2 + get_shape_descr_idx(this));
+    size_t program_group_idx = program_index_mapping.at(shape_index);
+
     // Setup the hitgroup record and copy it to the hitgroup records array
     jit_optix_check(optixSbtRecordPackHeader(program_groups[program_group_idx],
                                              &hitgroup_records.back()));
@@ -542,6 +547,37 @@ Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask
     return pi.compute_surface_interaction(ray, ray_flags, active);
 }
 
+MI_VARIANT void
+Shape<Float, Spectrum>::add_texture_attribute(const std::string& name, Texture *texture) {
+    // Replaces existing attribute with name `name`, if any.
+    m_texture_attributes.insert_or_assign(name, texture);
+}
+
+MI_VARIANT typename Shape<Float, Spectrum>::Texture *
+Shape<Float, Spectrum>::texture_attribute(const std::string &name) {
+    auto it = m_texture_attributes.find(name);
+    if (it == m_texture_attributes.end())
+        Throw("texture_attribute(): attribute %s doesn't exist.", name.c_str());
+    return it->second.get();
+}
+
+MI_VARIANT const typename Shape<Float, Spectrum>::Texture *
+Shape<Float, Spectrum>::texture_attribute(const std::string &name) const {
+    const auto it = m_texture_attributes.find(name);
+    if (it == m_texture_attributes.end())
+        Throw("texture_attribute(): attribute %s doesn't exist.", name.c_str());
+    return it->second.get();
+}
+
+
+MI_VARIANT void
+Shape<Float, Spectrum>::remove_attribute(const std::string& name) {
+    const auto& it = m_texture_attributes.find(name);
+    if (it == m_texture_attributes.end())
+        Throw("remove_attribute(): Attribute \"%s\" not found.", name);
+    m_texture_attributes.erase(it);
+}
+
 MI_VARIANT typename Shape<Float, Spectrum>::Mask
 Shape<Float, Spectrum>::has_attribute(const std::string& name, Mask /*active*/) const {
     return m_texture_attributes.find(name) != m_texture_attributes.end();
@@ -613,6 +649,11 @@ Shape<Float, Spectrum>::bbox(ScalarIndex index, const ScalarBoundingBox3f &clip)
     ScalarBoundingBox3f result = bbox(index);
     result.clip(clip);
     return result;
+}
+
+MI_VARIANT void
+Shape<Float, Spectrum>::set_bsdf(BSDF *bsdf) {
+    m_bsdf = bsdf;
 }
 
 MI_VARIANT typename Shape<Float, Spectrum>::ScalarSize
