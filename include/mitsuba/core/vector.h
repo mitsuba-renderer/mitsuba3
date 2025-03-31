@@ -143,11 +143,11 @@ template <typename Vector3f> std::pair<Vector3f, Vector3f> coordinate_system(con
  * \param v
  *      Vector to convert
  * \return
- *      The azimuthal and polar angles respectively.
+ *      The polar and azimuthal angles respectively.
  */
 template <typename Value>
 MI_INLINE Point<Value, 2> dir_to_sph(const Vector<Value, 3> &v) {
-    return { dr::atan2(v.y(), v.x()), dr::unit_angle_z(v) };
+    return { dr::unit_angle_z(v), dr::atan2(v.y(), v.x()) };
 }
 
 /**
