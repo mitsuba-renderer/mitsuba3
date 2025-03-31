@@ -469,3 +469,30 @@ def test18_sample_precomputed_silhouette(variants_vec_rgb):
 def test19_shape_type(variant_scalar_rgb):
     sphere = mi.load_dict({ 'type': 'sphere' })
     assert sphere.shape_type() == mi.ShapeType.Sphere.value;
+
+
+@pytest.mark.parametrize('r', [1, 3])
+def test20_eval_param_consistency(variants_vec_rgb, r):
+    s = mi.load_dict({
+        "type" : "sphere",
+        "radius" : r,
+        "to_world": mi.ScalarTransform4f().translate([0, 1, 0]) @
+                    mi.ScalarTransform4f().rotate([0, 1, 0], 30.0)
+    })
+
+    x = dr.linspace(mi.Float, 1e-3, 1-1e-3, 10)
+    y = dr.linspace(mi.Float, 1e-3, 1-1e-3, 10)
+    samples = mi.Point2f(dr.meshgrid(x, y))
+    ps = s.sample_position(0, samples)
+
+    si_param = s.eval_parameterization(ps.uv)
+
+    center = mi.Point3f(0, 1, 0)
+    ray = mi.Ray3f(o=dr.fma(2, ps.p - center, center), d=(center - ps.p),
+                   time=0.0, wavelengths=[])
+    si_ray = s.ray_intersect(ray)
+
+    assert dr.allclose(si_param.p, ps.p)
+    assert dr.allclose(si_ray.p, ps.p)
+    assert dr.allclose(si_param.uv, ps.uv)
+    assert dr.allclose(si_ray.uv, ps.uv)

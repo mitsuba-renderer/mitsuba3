@@ -225,7 +225,7 @@ public:
         Point3f local = warp::square_to_uniform_sphere(sample);
 
         PositionSample3f ps = dr::zeros<PositionSample3f>();
-        ps.p = dr::fmadd(local, m_radius.value(), m_center.value());
+        ps.p = m_to_world.value().transform_affine(local);
         ps.n = local;
 
         if (m_flip_normals)
@@ -234,7 +234,12 @@ public:
         ps.time = time;
         ps.delta = m_radius.value() == 0.f;
         ps.pdf = m_inv_surface_area;
-        ps.uv = sample;
+
+        Point2f angles = dir_to_sph(Vector3f(local));
+        Float theta = angles.x();
+        Float phi = angles.y();
+        dr::masked(phi, phi < 0.f) += 2.f * dr::Pi<Float>;
+        ps.uv = Point2f(phi * dr::InvTwoPi<Float>, theta * dr::InvPi<Float>);
 
         return ps;
     }
@@ -339,8 +344,11 @@ public:
     SurfaceInteraction3f eval_parameterization(const Point2f &uv,
                                                uint32_t ray_flags,
                                                Mask active) const override {
-        Point3f local = warp::square_to_uniform_sphere(uv);
-        Point3f p = dr::fmadd(local, m_radius.value(), m_center.value());
+        Float phi = uv.x() * dr::TwoPi<Float>;
+        Float theta = uv.y() * dr::Pi<Float>;
+
+        Point3f local = sph_to_dir(theta, phi);
+        Point3f p = m_to_world.value().transform_affine(local);
 
         Ray3f ray(p + local, -local, 0, Wavelength(0));
 
@@ -395,8 +403,14 @@ public:
 
         Point3f sample = dr::zeros<Point3f>(dr::width(ss));
         sample.x() = warp::tangent_direction_to_interval(ss.n, ss.d);
-        sample.y() = ss.uv.x();
-        sample.z() = ss.uv.y();
+
+        Float theta = ss.uv.y() * dr::Pi<Float>;
+        Float phi = ss.uv.x() * dr::TwoPi<Float>;
+        Vector3f local = sph_to_dir(theta, phi);
+
+        Point2f sample_square = warp::uniform_sphere_to_square(local);
+        sample.y() = sample_square.x();
+        sample.z() = sample_square.y();
 
         return sample;
     }
@@ -408,7 +422,10 @@ public:
         if constexpr (!dr::is_diff_v<Float>) {
             return si.p;
         } else {
-            Point3f local  = warp::square_to_uniform_sphere(dr::detach(si.uv));
+            Float phi = si.uv.x() * dr::TwoPi<Float>;
+            Float theta = si.uv.y() * dr::Pi<Float>;
+            Point3f local = dr::detach(sph_to_dir(theta, phi));
+
             Point3f p_diff = m_to_world.value().transform_affine(local);
 
             return dr::replace_grad(si.p, p_diff);
@@ -444,7 +461,13 @@ public:
         ss.p = dr::fmadd(OXd, radius, center);
         ss.d = dr::normalize(ss.p - viewpoint);
         ss.n = dr::normalize(ss.p - center);
-        ss.uv = warp::uniform_sphere_to_square(Vector3f(ss.n));
+
+        Point3f local = m_to_object.value().transform_affine(ss.p);
+        Point2f angles = dir_to_sph(Vector3f(local));
+        Float theta = angles.x();
+        Float phi = angles.y();
+        dr::masked(phi, phi < 0.f) += 2.f * dr::Pi<Float>;
+        ss.uv = Point2f(phi * dr::InvTwoPi<Float>, theta * dr::InvPi<Float>);
 
         Vector3f frame_t = dr::normalize(viewpoint - ss.p);
         ss.silhouette_d = dr::cross(ss.n, frame_t);
@@ -686,17 +709,18 @@ public:
         si.t = dr::select(active, si.t, dr::Infinity<Float>);
 
         if (likely(need_uv)) {
-            Float rd_2  = dr::square(local.x()) + dr::square(local.y()),
-                  theta = unit_angle_z(local),
-                  phi   = dr::atan2(local.y(), local.x());
+            Point2f angles = dir_to_sph(Vector3f(local));
+            Float theta = angles.x();
+            Float phi = angles.y();
 
             dr::masked(phi, phi < 0.f) += 2.f * dr::Pi<Float>;
-
             si.uv = Point2f(phi * dr::InvTwoPi<Float>, theta * dr::InvPi<Float>);
+
             if (likely(need_dp_duv)) {
                 si.dp_du = Vector3f(-local.y(), local.x(), 0.f);
 
-                Float rd      = dr::sqrt(rd_2),
+                Float rd_2    = dr::square(local.x()) + dr::square(local.y()),
+                      rd      = dr::sqrt(rd_2),
                       inv_rd  = dr::rcp(rd),
                       cos_phi = local.x() * inv_rd,
                       sin_phi = local.y() * inv_rd;
