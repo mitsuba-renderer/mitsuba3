@@ -23,3 +23,20 @@ def test01_trampoline_id(variants_vec_backends_once_rgb):
 
     params = mi.traverse(scene)
     assert 'my_integrator.depth' in params
+
+
+def test02_path_directly_visible(variants_all_rgb):
+    scene_description = mi.cornell_box()
+    # Look only at light
+    scene_description['sensor']['film']['crop_offset_x'] = 124
+    scene_description['sensor']['film']['crop_offset_y'] = 36
+    scene_description['sensor']['film']['crop_width'] = 1
+    scene_description['sensor']['film']['crop_height'] = 1
+    scene = mi.load_dict(scene_description)
+
+    integrator = mi.load_dict({
+        'type': 'path',
+        'max_depth': 1,
+    })
+    img = mi.render(scene, integrator=integrator)
+    assert dr.allclose(img.array, [18.387, 13.9873, 6.75357])

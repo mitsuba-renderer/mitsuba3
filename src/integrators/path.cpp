@@ -197,6 +197,7 @@ public:
 
             if (dr::none_or<false>(active_next)) {
                 ls.active = active_next;
+                ls.valid_ray |= (si.emitter(scene) != nullptr) && !m_hide_emitters;
                 return; // early exit for scalar mode
             }
 
