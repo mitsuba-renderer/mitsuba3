@@ -7,9 +7,9 @@ NAMESPACE_BEGIN(mitsuba)
 
 /**!
 
-.. _shape-meshholder:
+.. _shape-buffermesh:
 
-Simple mesh holder (:monosp:`meshholder`)
+Simple buffer mesh (:monosp:`buffermesh`)
 -------------------------
 
 Simple mesh plugin that loads geometry directly from buffers. This is useful to
@@ -18,7 +18,7 @@ hold existing meshes in Python dictionaries.
  */
 
 template <typename Float, typename Spectrum>
-class MeshHolder final : public Mesh<Float, Spectrum> {
+class BufferMesh final : public Mesh<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Mesh, m_vertex_count, m_face_count, m_vertex_positions,
                    m_vertex_normals, m_vertex_texcoords, m_faces,
@@ -26,7 +26,7 @@ public:
     MI_IMPORT_TYPES()
     using typename Base::ScalarSize;
 
-    MeshHolder(const Properties &props) : Base(props) {
+    BufferMesh(const Properties &props) : Base(props) {
         auto vertex_positions = props.tensor<TensorXf>("vertex_positions");
         auto vertex_normals   = props.tensor<TensorXf>("vertex_normals");
         auto vertex_texcoords = props.tensor<TensorXf>("vertex_texcoords");
@@ -47,6 +47,6 @@ private:
     MI_DECLARE_CLASS()
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(MeshHolder, Mesh)
-MI_EXPORT_PLUGIN(MeshHolder, "Mesh Holder")
+MI_IMPLEMENT_CLASS_VARIANT(BufferMesh, Mesh)
+MI_EXPORT_PLUGIN(BufferMesh, "Buffer Mesh")
 NAMESPACE_END(mitsuba)
