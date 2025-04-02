@@ -236,8 +236,20 @@ public:
             if constexpr (dr::is_jit_v<Float>)
                 dr::sync_thread();
 
-            // Update the scalar value of the matrix
-            m_to_world = m_to_world.value();
+            if constexpr (dr::is_diff_v<Float>) {
+                Transform4f to_world = m_to_world.value();
+                // Re-attach inverse_transpose to original matrix
+                if (dr::grad_enabled(to_world.matrix)) {
+                    Matrix4f invt_diff = dr::inverse_transpose(to_world.matrix);
+                    to_world.inverse_transpose =
+                        dr::replace_grad(to_world.inverse_transpose, invt_diff);
+                }
+                m_to_world = to_world;
+            } else {
+                // Update the scalar value of the matrix
+                m_to_world = m_to_world.value();
+            }
+
             m_grid_texture.set_tensor(m_grid_texture.tensor());
 
             update();
