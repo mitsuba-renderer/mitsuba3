@@ -346,6 +346,8 @@ protected:
     bool m_compensate;
     bool m_warn_negative;
     bool m_warn_invalid;
+
+    MI_TRAVERSE_CB(Object, m_tensor, m_tensor_compensation)
 };
 
 MI_EXTERN_CLASS(ImageBlock)

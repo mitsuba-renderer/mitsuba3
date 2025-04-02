@@ -102,6 +102,7 @@ Medium<Float, Spectrum>::transmittance_eval_pdf(const MediumInteraction3f &mi,
     return { tr, pdf };
 }
 
+MI_IMPLEMENT_TRAVERSE_CB(Medium, Object)
 MI_IMPLEMENT_CLASS_VARIANT(Medium, Object, "medium")
 MI_INSTANTIATE_CLASS(Medium)
 NAMESPACE_END(mitsuba)

@@ -224,6 +224,8 @@ protected:
     bool m_sample_border;
     ref<ReconstructionFilter> m_filter;
     ref<Texture> m_srf;
+
+    MI_DECLARE_TRAVERSE_CB(m_srf)
 };
 
 MI_EXTERN_CLASS(Film)
