@@ -327,7 +327,7 @@ def test26_xml_to_props_empty_scene(variant_scalar_rgb, tmp_path):
     props = mi.xml_to_props(filepath)
     assert len(props) == 1
 
-    class_name, properties = props[0]
+    class_name, properties = next(iter(props.values()))
     assert class_name == 'Scene'
     assert properties.plugin_name() == 'scene'
     assert len(properties.property_names()) == 0
@@ -350,13 +350,13 @@ def test27_xml_to_props_named_references(variant_scalar_rgb, tmp_path):
     assert len(props) == 2
 
     has_scene = False
-    for cls, prop in props:
+    for cls, prop in iter(props.values()):
         if cls == 'Scene':
             has_scene = True
             assert len(prop.named_references()) == 1
             _, ref_id = prop.named_references()[0]
             has_ref_id = False
-            for cls, prop in props:
+            for cls, prop in iter(props.values()):
                 if prop.id() == ref_id:
                     has_ref_id = True
                     assert prop.plugin_name() == 'point'
@@ -383,7 +383,7 @@ def test28_xml_to_props_property_args(variant_scalar_rgb, tmp_path):
     assert len(props) == 2
 
     has_sphere = False
-    for _, prop in props:
+    for _, prop in iter(props.values()):
         if prop.plugin_name() == 'sphere':
             has_sphere = True
             assert dr.allclose(prop['center'], [0, 0, -10])
