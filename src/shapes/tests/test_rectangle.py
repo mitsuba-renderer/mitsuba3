@@ -424,3 +424,28 @@ def test17_sample_precomputed_silhouette(variants_vec_rgb):
 def test18_shape_type(variant_scalar_rgb):
     rectangle = mi.load_dict({ 'type': 'rectangle' })
     assert rectangle.shape_type() == int(mi.ShapeType.Rectangle)
+
+
+def test19_(variants_all_ad_rgb):
+    # `ray_intersect` only relies on `to_world.inverse_transpose`. We want to make
+    # sure that gradients can flow back from the inversetranspose to the
+    # original matrix transform.
+    #
+    # This is a regression test for #1545
+    rect = mi.load_dict({
+        'type': 'rectangle'
+    })
+
+    params = mi.traverse(rect)
+    dr.enable_grad(params['to_world'])
+    params.update()
+
+    si = rect.ray_intersect(mi.Ray3f([0, 0, 2], [0, 0, -1]), mi.RayFlags.All)
+    dr.backward(si.t)
+    assert dr.allclose(
+        dr.grad(params['to_world']).matrix,
+        mi.Matrix4f([[0, 0, 0, 0],
+                     [0, 0, 0, 0],
+                     [0, 0, 0, -1],
+                     [0, 0, 0, 0]])
+    )
