@@ -111,6 +111,7 @@ public:
 
 private:
     IndependentSampler(const IndependentSampler &sampler) : Base(sampler) {}
+
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(IndependentSampler, Sampler)

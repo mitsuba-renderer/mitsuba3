@@ -5,6 +5,7 @@
 #include <type_traits>
 
 #include <drjit/array.h>
+#include <drjit/array_traverse.h>
 namespace dr = drjit;
 
 NAMESPACE_BEGIN(mitsuba)
@@ -62,6 +63,12 @@ struct field<DeviceType, HostType,
     }
 private:
     DeviceType m_scalar;
+
+public:
+    void traverse_1_cb_ro(void * /*payload*/,
+                          drjit::detail::traverse_callback_ro) const {}
+    void traverse_1_cb_rw(void * /*payload*/,
+                          drjit::detail::traverse_callback_rw) {}
 };
 
 template <typename DeviceType, typename HostType>
@@ -105,6 +112,16 @@ struct field<DeviceType, HostType,
 private:
     DeviceType m_value;
     HostType m_scalar;
+
+public:
+    void traverse_1_cb_ro(void *payload,
+                          drjit::detail::traverse_callback_ro fn) const {
+        drjit ::traverse_1_fn_ro(m_value, payload, fn);
+    }
+    void traverse_1_cb_rw(void *payload,
+                          drjit::detail::traverse_callback_rw fn) {
+        drjit ::traverse_1_fn_rw(m_value, payload, fn);
+    }
 };
 
 /// Prints the canonical string representation of a field
