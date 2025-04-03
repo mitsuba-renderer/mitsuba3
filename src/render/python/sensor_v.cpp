@@ -1,5 +1,6 @@
 #include <nanobind/nanobind.h> // Needs to be first, to get `ref<T>` caster
 #include <mitsuba/render/sensor.h>
+#include <mitsuba/render/emitter.h> // Has to be included, so that Emitter::CallSupport::Variant is instantiated here
 #include <mitsuba/core/properties.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/trampoline.h>

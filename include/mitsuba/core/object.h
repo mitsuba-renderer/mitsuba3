@@ -3,6 +3,7 @@
 #include <atomic>
 #include <stdexcept>
 #include <mitsuba/core/class.h>
+#include <drjit/traversable_base.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
