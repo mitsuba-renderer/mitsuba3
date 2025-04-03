@@ -368,6 +368,149 @@ extern "C" {
                             })
 #endif
 
+/**
+ * \brief Macro, generating the implementation of the ``traverse_1_cb_ro``
+ *     method.
+ *
+ * The first argument should be the base class, from which the current class
+ * inherits. The other arguments should list all members of that class, which
+ * are supposed to be read only traversable.
+ */
+#define MI_TRAVERSE_CB_RO(Base, ...)                                           \
+        void traverse_1_cb_ro(void *payload,                                   \
+                              drjit::detail::traverse_callback_ro fn)          \
+            const override {                                                   \
+            static_assert(std::is_base_of<                                     \
+                          drjit::TraversableBase,                              \
+                          std::remove_pointer_t<decltype(this)>>::value);      \
+            /*                                                                 \
+             * Only traverse the objects for frozen functions, since           \
+             * accidentally traversing the scene in loops or vcalls can cause  \
+             * issues.                                                         \
+             */                                                                \
+            if (!jit_flag(JitFlag::EnableObjectTraversal))                     \
+                return;                                                        \
+            if constexpr (!std::is_same_v<Base, drjit::TraversableBase>)       \
+                Base::traverse_1_cb_ro(payload, fn);                           \
+            DRJIT_MAP(DR_TRAVERSE_MEMBER_RO, __VA_ARGS__)                      \
+        }
+
+/**
+ * \breif Macro, generating the implementation of the ``traverse_1_cb_rw``
+ *     method.
+ *
+ * The first argument should be the base class, from which the current class
+ * inherits. The other arguments should list all members of that class, which
+ * are supposed to be read and write traversable.
+ */
+#define MI_TRAVERSE_CB_RW(Base, ...)                                           \
+        void traverse_1_cb_rw(                                                 \
+            void *payload, drjit::detail::traverse_callback_rw fn) override {  \
+            static_assert(std::is_base_of<                                     \
+                          drjit::TraversableBase,                              \
+                          std::remove_pointer_t<decltype(this)>>::value);      \
+            /*                                                                 \
+             * Only traverse the objects for frozen functions, since           \
+             * accidentally traversing the scene in loops or vcalls can cause  \
+             * issues.                                                         \
+             */                                                                \
+            if (!jit_flag(JitFlag::EnableObjectTraversal))                     \
+                return;                                                        \
+            if constexpr (!std::is_same_v<Base, drjit::TraversableBase>)       \
+                Base::traverse_1_cb_rw(payload, fn);                           \
+            DRJIT_MAP(DR_TRAVERSE_MEMBER_RW, __VA_ARGS__)                      \
+        }
+
+/**
+ * \brief Macro, generating the both the implementations of the
+ *     ``traverse_1_cb_ro`` and ``traverse_1_cb_rw`` methods.
+ *
+ * The first argument should be the base class, from which the current class
+ * inherits. The other arguments should list all members of that class, which
+ * are supposed to be read and write traversable.
+ *
+ * This macro differs to ``DR_TRAVERSE_CB`` in that the functions it generates
+ * do not traverse the object if the flag ``JitFlag::EnableObjectTraversal``
+ * is not set. This is required, to circumvent issues where scene variables would
+ * accidentally be added to loop states, and dispatch arguments.
+ */
+#define MI_TRAVERSE_CB(Base, ...)                                              \
+public:                                                                        \
+    MI_TRAVERSE_CB_RO(Base, __VA_ARGS__)                                       \
+    MI_TRAVERSE_CB_RW(Base, __VA_ARGS__)
+
+/**
+ * \brief Macro, generating the both the implementations of the
+ *     ``traverse_1_cb_ro`` and ``traverse_1_cb_rw`` methods.
+ *
+ * In contrast to ``MI_TRAVERSE_CB``, this macro only declares the functions and
+ * ``MI_IMPLEMENT_TRAVERSE_CB`` implements them. Use this macro if the class is
+ * declared in a header file and implemented in a source file.
+ */
+#define MI_DECLARE_TRAVERSE_CB(...)                                            \
+        DRJIT_INLINE auto traverse_1_cb_fields_() {                            \
+            return drjit::tie(__VA_ARGS__);                                    \
+        }                                                                      \
+        DRJIT_INLINE auto traverse_1_cb_fields_() const {                      \
+            return drjit::tie(__VA_ARGS__);                                    \
+        }                                                                      \
+                                                                               \
+    public:                                                                    \
+        void traverse_1_cb_ro(void *payload,                                   \
+                              drjit::detail::traverse_callback_ro fn)          \
+            const override;                                                    \
+        void traverse_1_cb_rw(                                                 \
+            void *payload, drjit::detail::traverse_callback_rw fn) override;
+
+/**
+ * \brief Macro, generating the both the implementations of the
+ *     ``traverse_1_cb_ro`` and ``traverse_1_cb_rw`` methods.
+ *
+ * In contrast to ``MI_TRAVERSE_CB``, this macro generates the function implementation,
+ * for the functions declared by ``MI_DECLARE_TRAVERSE_CB``. Use this macro if
+ * the class is declared in a header file and implemented in a source file.
+ */
+#define MI_IMPLEMENT_TRAVERSE_CB(Type, Base)                                   \
+        MI_VARIANT                                                             \
+        void Type<Float, Spectrum>::traverse_1_cb_ro(                          \
+            void *payload, drjit::detail::traverse_callback_ro fn) const {     \
+                                                                               \
+            /*                                                                 \
+             * Only traverse the objects for frozen functions, since           \
+             * accidentally traversing the scene in loops or vcalls can cause  \
+             * issues.                                                         \
+             */                                                                \
+            if (!jit_flag(JitFlag::EnableObjectTraversal))                     \
+                return;                                                        \
+                                                                               \
+            if constexpr (!std ::is_same_v<Base, drjit ::TraversableBase>)     \
+                Base::traverse_1_cb_ro(payload, fn);                           \
+                                                                               \
+            drjit::traverse_1(this->traverse_1_cb_fields_(),                   \
+                              [payload, fn](auto &x) {                         \
+                                  drjit::traverse_1_fn_ro(x, payload, fn);     \
+                              });                                              \
+        }                                                                      \
+        MI_VARIANT                                                             \
+        void Type<Float, Spectrum>::traverse_1_cb_rw(                          \
+            void *payload, drjit::detail::traverse_callback_rw fn) {           \
+                                                                               \
+            /*                                                                 \
+             * Only traverse the scene for frozen functions, since             \
+             * accidentally traversing the objects in loops or vcalls can      \
+             * cause issues.                                                   \
+             */                                                                \
+            if (!jit_flag(JitFlag::EnableObjectTraversal))                     \
+                return;                                                        \
+                                                                               \
+            if constexpr (!std ::is_same_v<Base, drjit ::TraversableBase>)     \
+                Base::traverse_1_cb_rw(payload, fn);                           \
+            drjit::traverse_1(this->traverse_1_cb_fields_(),                   \
+                              [payload, fn](auto &x) {                         \
+                                  drjit::traverse_1_fn_rw(x, payload, fn);     \
+                              });                                              \
+        }
+
 //! @}
 // =============================================================
 

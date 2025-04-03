@@ -264,12 +264,12 @@ private:
 public:
     void
     traverse_1_cb_ro(void *payload,
-                     drjit ::detail ::traverse_callback_ro fn) const {
+                     drjit ::detail ::traverse_callback_ro fn) const override {
         Base ::traverse_1_cb_ro(payload, fn);
         drjit ::traverse_1_fn_ro(m_permutation_seed, payload, fn);
     }
     void traverse_1_cb_rw(void *payload,
-                          drjit ::detail ::traverse_callback_rw fn) {
+                          drjit ::detail ::traverse_callback_rw fn) override {
         Base ::traverse_1_cb_rw(payload, fn);
         drjit ::traverse_1_fn_rw(m_permutation_seed, payload, fn);
     }

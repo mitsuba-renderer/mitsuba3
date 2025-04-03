@@ -159,14 +159,16 @@ protected:
 public:
     void
     traverse_1_cb_ro(void *payload,
-                     drjit ::detail ::traverse_callback_ro fn) const {
+                     drjit ::detail ::traverse_callback_ro fn) const override {
+        Object::traverse_1_cb_ro(payload, fn);
         drjit ::traverse_1_fn_ro(m_dimension_index, payload, fn);
-        // drjit ::traverse_1_fn_ro(m_sample_index, payload, fn);
+        drjit ::traverse_1_fn_ro(m_sample_index, payload, fn);
     }
     void traverse_1_cb_rw(void *payload,
-                          drjit ::detail ::traverse_callback_rw fn) {
+                          drjit ::detail ::traverse_callback_rw fn) override {
+        Object::traverse_1_cb_rw(payload, fn);
         drjit ::traverse_1_fn_rw(m_dimension_index, payload, fn);
-        // drjit ::traverse_1_fn_rw(m_sample_index, payload, fn);
+        drjit ::traverse_1_fn_rw(m_sample_index, payload, fn);
     }
 };
 
@@ -195,12 +197,12 @@ protected:
 public:
     void
     traverse_1_cb_ro(void *payload,
-                     drjit ::detail ::traverse_callback_ro fn) const {
+                     drjit ::detail ::traverse_callback_ro fn) const override {
         Base ::traverse_1_cb_ro(payload, fn);
         drjit ::traverse_1_fn_ro(m_rng, payload, fn);
     }
     void traverse_1_cb_rw(void *payload,
-                          drjit ::detail ::traverse_callback_rw fn) {
+                          drjit ::detail ::traverse_callback_rw fn) override {
         Base ::traverse_1_cb_rw(payload, fn);
         drjit ::traverse_1_fn_rw(m_rng, payload, fn);
     }
