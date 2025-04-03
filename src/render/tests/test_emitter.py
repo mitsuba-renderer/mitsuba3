@@ -43,4 +43,4 @@ def test02_trampoline(variants_vec_backends_once_rgb):
         'type': 'dummy_emitter'
     })
 
-    assert str(emitter) == "DummyEmitter (16)"
+    assert str(emitter) == "DummyEmitter (32)"

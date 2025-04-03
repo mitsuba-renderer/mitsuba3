@@ -146,6 +146,24 @@ public:
         return Point2f(x, y);
     }
 
+    Point3f next_3d(Mask /*active*/ = true) override {
+        Assert(seeded());
+
+        UInt32 sample_indices = current_sample_index();
+        UInt32 perm_seed = m_scramble_seed + m_dimension_index++;
+
+        // Shuffle the samples order
+        UInt32 i = permute(sample_indices, m_sample_count, perm_seed);
+
+        // Compute scramble values (unique per sequence) for both axis
+        auto [scramble_x, scramble_y] = sample_tea_32(m_scramble_seed, UInt32(0x98bc51ab));
+
+        Float x = radical_inverse_2(i, scramble_x),
+              y = sobol_2(i, scramble_y),
+              z = Float(i) * dr::rcp(Float(m_sample_count));
+        return Point3f(x, y, z);
+    }
+
     void schedule_state() override {
         Base::schedule_state();
         dr::schedule(m_scramble_seed);

@@ -137,6 +137,8 @@ MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std:
 
         if (m_parameterization)
             m_parameterization = nullptr;
+        if (m_volume_parameterization)
+            m_volume_parameterization = nullptr;
 
         if (parameters_grad_enabled()) {
             // A topology change could have been made in a first update, and
@@ -462,15 +464,20 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
         const ScalarIndex *idx_p = faces.data();
 
         std::vector<ScalarFloat> table(m_face_count);
+        auto bbox_center = m_bbox.center();
+        ScalarFloat volume = 0.f;
+
         for (ScalarIndex i = 0; i < m_face_count; i++) {
             ScalarPoint3u idx = dr::load<ScalarPoint3u>(idx_p + 3 * i);
 
-            ScalarPoint3f p0 = dr::load<InputPoint3f>(pos_p + 3 * idx.x()),
-                          p1 = dr::load<InputPoint3f>(pos_p + 3 * idx.y()),
-                          p2 = dr::load<InputPoint3f>(pos_p + 3 * idx.z());
+                ScalarPoint3f p0 = dr::load<InputPoint3f>(pos_p + 3 * idx.x()),
+                              p1 = dr::load<InputPoint3f>(pos_p + 3 * idx.y()),
+                              p2 = dr::load<InputPoint3f>(pos_p + 3 * idx.z());
 
             table[i] = .5f * dr::norm(dr::cross(p1 - p0, p2 - p0));
+            volume = volume + dr::dot(p0 - bbox_center, dr::cross(p1 - bbox_center, p2 - bbox_center)) / 6.0f;
         }
+        m_inv_volume = dr::rcp(dr::abs(volume));
 
         m_area_pmf = DiscreteDistribution<Float>(table.data(), m_face_count);
     } else {
@@ -479,6 +486,8 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
                 p2 = vertex_position(v_idx[2]);
 
         Float face_surface_area = .5f * dr::norm(dr::cross(p1 - p0, p2 - p0));
+
+        m_inv_volume = dr::rcp(dr::abs(dr::sum_nested(dr::dot(p0, dr::cross(p1, p2)) / 6.0f)));
 
         m_area_pmf = DiscreteDistribution<Float>(dr::detach(face_surface_area));
     }
@@ -633,6 +642,8 @@ Mesh<Float, Spectrum>::build_indirect_silhouette_distribution() {
     dr::masked(weight, valid || boundary) = dr::detach(dr::norm(p1 - p0));
 
     m_sil_dedge_pmf = DiscreteDistribution<Float>(weight);
+
+    dr::make_opaque(m_inv_volume);
 }
 
 MI_VARIANT
@@ -747,6 +758,42 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
     m_parameterization = new Scene<Float, Spectrum>(props);
 }
 
+
+MI_VARIANT void Mesh<Float, Spectrum>::build_volume_parameterization() {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (m_volume_parameterization)
+        return; // already built!
+
+    Properties props;
+    ref<Mesh> mesh =
+        new Mesh(m_name + "_vol_param", m_vertex_count, m_face_count,
+                 props, has_vertex_normals(), false);
+
+    auto&& vertex_positions = dr::migrate(m_vertex_positions, AllocType::Host);
+    auto&& faces = dr::migrate(m_faces, AllocType::Host);
+    if constexpr (dr::is_jit_v<Float>)
+        dr::sync_thread();
+
+    mesh->m_faces = faces;
+    mesh->m_vertex_positions = vertex_positions;
+    if (has_vertex_normals()) {
+        auto&& vertex_normals = dr::migrate(m_vertex_normals, AllocType::Host);
+        if constexpr (dr::is_jit_v<Float>)
+            dr::sync_thread();
+        mesh->m_vertex_normals = vertex_normals;
+    }
+    mesh->m_bbox = m_bbox;
+    mesh->m_to_world = m_to_world.value();
+    mesh->initialize();
+
+    props.set_object("mesh", mesh.get());
+
+    if (m_scene)
+        props.set_object("parent_scene", m_scene);
+
+    m_volume_parameterization = new Scene<Float, Spectrum>(props);
+}
+
 MI_VARIANT typename Mesh<Float, Spectrum>::ScalarSize
 Mesh<Float, Spectrum>::primitive_count() const {
     return face_count();
@@ -757,12 +804,17 @@ MI_VARIANT Float Mesh<Float, Spectrum>::surface_area() const {
     return m_area_pmf.sum();
 }
 
+MI_VARIANT Float Mesh<Float, Spectrum>::volume() const {
+    ensure_pmf_built();
+    return dr::rcp(m_inv_volume);
+}
+
 // =============================================================
 //! @{ \name Surface sampling routines
 // =============================================================
 
 MI_VARIANT typename Mesh<Float, Spectrum>::PositionSample3f
-Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask active) const {
+Mesh<Float, Spectrum>::sample_position_surface(Float time, const Point2f &sample_, Mask active) const {
     ensure_pmf_built();
 
     using Index = dr::replace_scalar_t<Float, ScalarIndex>;
@@ -817,8 +869,142 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
     return ps;
 }
 
-MI_VARIANT
 
+MI_VARIANT typename Mesh<Float, Spectrum>::PositionSample3f
+Mesh<Float, Spectrum>::sample_position_volume(Float time, const Point3f &sample, Mask active) const {
+    ensure_pmf_built();
+    if (!m_volume_parameterization)
+        const_cast<Mesh *>(this)->build_volume_parameterization();
+
+    auto ext_bbox = m_bbox.extents();
+
+    auto ps = dr::zeros<PositionSample3f>();
+    ps.p = dr::fmadd(sample, ext_bbox, m_bbox.min);
+    ps.n = sample;
+
+    ps.time = time;
+    ps.delta = dr::all(ext_bbox == 0.0f);
+    ps.pdf = dr::select(ps.delta, 1.0f, pdf_position_volume(ps, active));
+    ps.uv = Point2f(sample.x(), sample.y());
+
+    return ps;
+}
+
+
+MI_VARIANT std::pair<std::pair<Float, Float>, Float>
+Mesh<Float, Spectrum>::get_intersection_extents(const Interaction3f &it,
+                                                const DirectionSample3f &ds,
+                                                Mask active) const {
+    ensure_pmf_built();
+    if (!m_volume_parameterization)
+        const_cast<Mesh *>(this)->build_volume_parameterization();
+
+    auto ray = Ray3f(it.p, ds.d, dr::Largest<Float>, it.time, it.wavelengths);
+
+    /// Disable any lanes where the ray doesn't pass through the shape
+    auto pi = m_volume_parameterization->ray_intersect_preliminary(
+        ray, false, active
+    );
+    active &= pi.is_valid();
+
+    if (dr::none_or<false>(active))
+        return std::make_pair(std::make_pair(dr::zeros<Float>(), dr::zeros<Float>()), dr::zeros<Float>());
+
+    auto si = dr::zeros<SurfaceInteraction3f>();
+    dr::masked(si, active) = compute_surface_interaction(ray, pi, +RayFlags::Minimal, 0, active);
+    si.finalize_surface_interaction(pi, ray, +RayFlags::Minimal, active);
+
+    Mask is_inside = true;
+    auto near_t = dr::norm(si.p - it.p);
+
+    UInt32 num_intersections = 0;
+    Float t0 = 0.0f, t1 = 0.0f;
+    Float pdf_integral_0 = 0.0f, pdf_integral_1 = 0.0f;
+
+    auto loop_name = "Mesh[" + std::string(m_name) + "] - PDF Direction Volume";
+    /* Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
+           generates wavefront or megakernel renderer based on configuration).
+           Register everything that changes as part of the loop here */
+    struct LoopState {
+        SurfaceInteraction3f si;
+        Float t0;
+        Float t1;
+        Float pdf_integral_0;
+        Float pdf_integral_1;
+        Mask is_inside;
+        Mask active;
+        Ray3f ray;
+        UInt32 num_intersections;
+
+        DRJIT_STRUCT(LoopState, si, t0, t1,
+        pdf_integral_0, pdf_integral_1, is_inside, active, ray, num_intersections)
+    } ls = {
+        si, t0, t1, pdf_integral_0, pdf_integral_1,
+        is_inside, active, ray, num_intersections
+    };
+
+    dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),
+            [](const LoopState& ls) { return ls.active; },
+            [this](LoopState& ls) {
+        SurfaceInteraction3f& si = ls.si;
+        Float& t0 = ls.t0;
+        Float& t1 = ls.t1;
+        Float& pdf_integral_0 = ls.pdf_integral_0;
+        Float& pdf_integral_1 = ls.pdf_integral_1;
+        Mask& is_inside = ls.is_inside;
+        Mask& active = ls.active;
+        Ray3f& ray = ls.ray;
+        UInt32& num_intersections = ls.num_intersections;
+
+        /// Preliminary intersection to see if the ray intersects the geometry
+        auto pi = this->m_volume_parameterization->ray_intersect_preliminary(
+            ray, true, active
+        );
+        active &= pi.is_valid() && (pi.t > 0.f);
+        dr::masked(si, active) = compute_surface_interaction(ray, pi, +RayFlags::Minimal, 0, active);
+        si.finalize_surface_interaction(pi, ray, +RayFlags::Minimal, active);
+
+        /// If the geometry is intersected we increment the intersection counter
+        dr::masked(num_intersections, active) += 1;
+
+        /// If we're outside, then this intersection should update
+        /// t0 which tracks the ray entry point into the shape
+        dr::masked(t0, !is_inside && active) = t1 + si.t;
+        /// Otherwise, if we're inside, we update t1
+        /// which tracks the ray exit point.
+        dr::masked(t1,  is_inside && active) = t0 + si.t;
+
+        /// We assume that the medium has a constant volumetric pdf equal to
+        /// the inverse of its volume and thus the integral of the pdf
+        /// in the ray direction is simply the integral of r^2 dr from t0 to t1.
+
+        /// First we rescale the distances according to the 'length scale'
+        /// derived from the volume.
+        /// We need to compute (t1**3 - t0**3)/3, but we can factor this into
+        /// (t1 - t0)*(t1**2 + t0*t1 + t0**2)/3 =
+        ///                         (t1 - t0)*((t1 - t0)**2 + 3*t1*t0)/3
+        /// Where (t1 - t0) = si.t, which after subbing gives
+        /// si.t*(si.t**2 + 3*(t0**2 + t0*si.t))/3
+        auto integral = (dr::square(t1) * t1 - dr::square(t0) * t0)/3.0f;
+        dr::masked(pdf_integral_0, is_inside && active) += dr::abs(integral);
+        dr::masked(pdf_integral_1,  !is_inside && active) += dr::abs(integral);
+
+        /// Finally we update our mask that tracks whether we're
+        /// inside or outside the shape and spawn a new ray
+        is_inside = !is_inside;
+        dr::masked(ray, active) = si.spawn_ray(ray.d);
+    }, loop_name.c_str());
+
+    is_inside = (ls.num_intersections % 2) == 1u;
+    auto pdf_integral = this->m_inv_volume * dr::select(is_inside, ls.pdf_integral_0, ls.pdf_integral_1);
+
+    return std::make_pair(
+        std::make_pair(dr::select(is_inside, 0.0f, near_t), dr::maximum(ls.t0, ls.t1)),
+        pdf_integral
+    );
+}
+
+MI_VARIANT
 typename Mesh<Float, Spectrum>::SurfaceInteraction3f
 Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
                                              uint32_t ray_flags,
@@ -843,9 +1029,129 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
     return si;
 }
 
-MI_VARIANT Float Mesh<Float, Spectrum>::pdf_position(const PositionSample3f &, Mask) const {
+MI_VARIANT typename Mesh<Float, Spectrum>::DirectionSample3f
+Mesh<Float, Spectrum>::sample_direction_volume(const Interaction3f &it, const Point3f &sample,
+                                               Mask active) const {
+    auto ps = sample_position_volume(it.time, sample, active);
+    auto ds      = dr::zeros<DirectionSample3f>();
+    ds.p = ps.p;
+    ds.d = ds.p - it.p;
+    ds.dist = dr::norm(ds.d);
+    ds.d = ds.d / ds.dist;
+    ds.n = -ds.d;
+    ds.delta = ps.delta;
+    ds.time = it.time;
+
+    // auto [t_extents, line_pdf] = get_intersection_extents(it, ds, active);
+    // auto [near_t, far_t] = t_extents;
+
+    auto ray = Ray3f(it.p, dr::normalize(ps.p - it.p), dr::Largest<Float>, it.time, it.wavelengths);
+    auto [valid_intersection, near_t, far_t] = m_bbox.ray_intersect(ray);
+    auto bbox_volume = m_bbox.volume();
+    auto bbox_volume_inv_cbrt = dr::rcp(dr::safe_cbrt(bbox_volume));
+    dr::masked(near_t, active && (near_t < 0.f)) = 0.0f;
+    active &= (far_t > near_t);
+    ds.dist = far_t;
+    near_t *= bbox_volume_inv_cbrt;
+    far_t *= bbox_volume_inv_cbrt;
+    auto line_pdf = (dr::square(far_t) * far_t - dr::square(near_t) * near_t) / 3.f;
+
+    auto pdf = dr::select(active && !ds.delta, line_pdf, 0.0f);
+    ds.pdf = dr::select(ds.delta, dr::squared_norm(ds.p - it.p), pdf);
+    ds.p = it.p + ds.dist * ds.d;
+
+    return ds;
+}
+
+MI_VARIANT Float Mesh<Float, Spectrum>::pdf_position_surface(const PositionSample3f &, Mask) const {
     ensure_pmf_built();
     return m_area_pmf.normalization();
+}
+
+MI_VARIANT Float Mesh<Float, Spectrum>::pdf_position_volume(const PositionSample3f &ps, Mask active) const {
+    ensure_pmf_built();
+    if (!m_volume_parameterization)
+        const_cast<Mesh *>(this)->build_volume_parameterization();
+
+    Point3f bbox_min = m_bbox.min,
+            bbox_extent = m_bbox.extents();
+
+    Mask delta = dr::all(bbox_extent == 0.f);
+
+    active &= !delta;
+
+    auto ray = Ray3f(ps.p, dr::normalize(dr::abs(ps.p) + Vector3f(0.0, 1.0, 0.0)), ps.time);
+    ray.maxt = dr::norm(m_bbox.extents());
+    ray.wavelengths = dr::zeros<Wavelength>();
+    /// Disable any lanes where the ray doesn't even pass through the shape
+    auto pi = dr::zeros<PreliminaryIntersection3f>();
+    pi = m_volume_parameterization->ray_intersect_preliminary(
+        ray, false, active
+    );
+    active &= pi.is_valid();
+
+    if (dr::none_or<false>(active))
+        return dr::zeros<Float>();
+
+    auto si = dr::zeros<SurfaceInteraction3f>();
+
+    UInt32 num_intersections = 0;
+    auto loop_name = "Mesh[" + std::string(m_name) + "] - PDF Position Volume";
+
+    /* Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
+               generates wavefront or megakernel renderer based on configuration).
+               Register everything that changes as part of the loop here */
+    struct LoopState {
+        SurfaceInteraction3f si;
+        PreliminaryIntersection3f pi;
+        Mask active;
+        Ray3f ray;
+        UInt32 num_intersections;
+
+        DRJIT_STRUCT(LoopState, si, pi, active, ray, num_intersections)
+    } ls = {
+        si, pi, active, ray, num_intersections
+    };
+    dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),
+            [](const LoopState& ls) { return ls.active; },
+            [this](LoopState& ls) {
+        SurfaceInteraction3f& si = ls.si;
+        PreliminaryIntersection3f& pi = ls.pi;
+        Mask& active = ls.active;
+        Ray3f& ray = ls.ray;
+        UInt32& num_intersections = ls.num_intersections;
+        pi = this->m_volume_parameterization->ray_intersect_preliminary(
+            ray, true, active
+        );
+        active &= pi.is_valid() && (pi.t > 0.f);
+        dr::masked(num_intersections, active) += 1;
+        dr::masked(si, active) = compute_surface_interaction(ray, pi, +RayFlags::Minimal, 0, active);
+        si.finalize_surface_interaction(pi, ray, +RayFlags::Minimal, active);
+        auto maxt = ray.maxt - si.t;
+        dr::masked(ray, active) = si.spawn_ray(ray.d);
+        dr::masked(ray.maxt, active) = maxt;
+    }, loop_name.c_str());
+
+    return dr::select((ls.num_intersections % 2) == 1u, m_inv_volume, dr::zeros<Float>());
+}
+
+MI_VARIANT Float Mesh<Float, Spectrum>::pdf_direction_volume(const Interaction3f &it, const DirectionSample3f &ds,
+                                                             Mask active) const {
+    // auto [t_extents, line_pdf] = get_intersection_extents(it, ds, active);
+
+    auto ray = Ray3f(it.p, dr::normalize(ds.p - it.p), dr::Largest<Float>, it.time, it.wavelengths);
+    auto [valid_intersection, near_t, far_t] = m_bbox.ray_intersect(ray);
+    auto bbox_volume = m_bbox.volume();
+    auto bbox_volume_inv_cbrt = dr::rcp(dr::safe_cbrt(bbox_volume));
+    dr::masked(near_t, active && (near_t < 0.f)) = 0.0f;
+    active &= (far_t > near_t);
+    near_t *= bbox_volume_inv_cbrt;
+    far_t *= bbox_volume_inv_cbrt;
+    auto line_pdf = (dr::square(far_t) * far_t - dr::square(near_t) * near_t) / 3.f;
+
+    auto pdf = dr::select(active && !ds.delta, line_pdf, 0.0f);
+
+    return pdf;
 }
 
 //! @}
@@ -1804,8 +2110,10 @@ MI_VARIANT std::string Mesh<Float, Spectrum>::to_string() const {
         << "  face_count = " << m_face_count << "," << std::endl
         << "  faces = [" << util::mem_string(face_data_bytes() * m_face_count) << " of face data]," << std::endl;
 
-    if (!m_area_pmf.empty())
+    if (!m_area_pmf.empty()) {
         oss << "  surface_area = " << m_area_pmf.sum() << "," << std::endl;
+        oss << "  volume = " << dr::rcp(m_inv_volume) << "," << std::endl;
+    }
 
     oss << "  face_normals = " << m_face_normals;
 

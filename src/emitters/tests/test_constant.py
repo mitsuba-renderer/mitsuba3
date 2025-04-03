@@ -47,7 +47,7 @@ def test02_sample_ray(variants_vec_spectral, spectrum_key):
 
     time = 0.5
     wavelength_sample = [0.5, 0.33, 0.1]
-    pos_sample = [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2]]
+    pos_sample = [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2], [0.0]*3]
     dir_sample = [[0.4, 0.5, 0.3], [0.1, 0.4, 0.9]]
 
     # Sample a ray (position, direction, wavelengths) on the emitter
@@ -60,7 +60,7 @@ def test02_sample_ray(variants_vec_spectral, spectrum_key):
     assert dr.allclose(res, spec * 4 * dr.pi * dr.pi)
     assert dr.allclose(ray.time, time)
     assert dr.allclose(ray.wavelengths, wav)
-    assert dr.allclose(ray.o, mi.warp.square_to_uniform_sphere(pos_sample))
+    assert dr.allclose(ray.o, mi.warp.square_to_uniform_sphere(pos_sample[:2]))
     assert dr.allclose(
         ray.d, mi.Frame3f(-ray.o).to_world(mi.warp.square_to_cosine_hemisphere(dir_sample)))
 
@@ -76,11 +76,11 @@ def test03_sample_direction(variants_vec_spectral):
     it.time = 1.0
 
     # Sample direction on the emitter
-    samples = [[0.4, 0.5, 0.3], [0.1, 0.4, 0.9]]
+    samples = [[0.4, 0.5, 0.3], [0.1, 0.4, 0.9], [0.0]*3]
     ds, res = emitter.sample_direction(it, samples)
 
     assert dr.allclose(ds.pdf, dr.inv_four_pi)
-    assert dr.allclose(ds.d, mi.warp.square_to_uniform_sphere(samples))
+    assert dr.allclose(ds.d, mi.warp.square_to_uniform_sphere(samples[:2]))
     assert dr.allclose(emitter.pdf_direction(it, ds), dr.inv_four_pi)
     assert dr.allclose(ds.time, it.time)
 

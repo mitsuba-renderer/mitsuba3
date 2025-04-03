@@ -214,7 +214,7 @@ public:
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
-                                          const Point2f &position_sample,
+                                          const Point3f &position_sample,
                                           const Point2f &aperture_sample,
                                           Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
@@ -228,8 +228,7 @@ public:
         ray.wavelengths = wavelengths;
 
         // Compute the sample position on the near plane (local camera space).
-        Point3f near_p = m_sample_to_camera *
-                        Point3f(position_sample.x(), position_sample.y(), 0.f);
+        Point3f near_p = m_sample_to_camera * position_sample;
 
         // Aperture position
         Point2f tmp = m_aperture_radius * warp::square_to_uniform_disk_concentric(aperture_sample);
@@ -255,7 +254,7 @@ public:
 
     std::pair<RayDifferential3f, Spectrum>
     sample_ray_differential_impl(Float time, Float wavelength_sample,
-                                 const Point2f &position_sample, const Point2f &aperture_sample,
+                                 const Point3f &position_sample, const Point2f &aperture_sample,
                                  Mask active) const {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
@@ -268,8 +267,7 @@ public:
         ray.wavelengths = wavelengths;
 
         // Compute the sample position on the near plane (local camera space).
-        Point3f near_p = m_sample_to_camera *
-                        Point3f(position_sample.x(), position_sample.y(), 0.f);
+        Point3f near_p = m_sample_to_camera * position_sample;
 
         // Aperture position
         Point2f tmp = m_aperture_radius * warp::square_to_uniform_disk_concentric(aperture_sample);
@@ -303,7 +301,7 @@ public:
     }
 
     std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &it, const Point2f &sample,
+    sample_direction(const Interaction3f &it, const Point3f &sample,
                      Mask active) const override {
         // Transform the reference point into the local coordinate system
         Transform4f trafo = m_to_world.value();
@@ -317,7 +315,7 @@ public:
             return { ds, dr::zeros<Spectrum>() };
 
         // Sample a position on the aperture (in local coordinates)
-        Point2f tmp = warp::square_to_uniform_disk_concentric(sample) * m_aperture_radius;
+        Point2f tmp = warp::square_to_uniform_disk_concentric(Point2f(sample.x(), sample.y())) * m_aperture_radius;
         Point3f aperture_p(tmp.x(), tmp.y(), 0);
 
         // Compute the normalized direction vector from the aperture position to the referent point

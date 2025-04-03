@@ -66,7 +66,7 @@ def test02_sample_ray(variants_vec_spectral, origin, direction, aperture_rad, fo
 
     time = 0.0
     wav_sample = [0.5, 0.33, 0.1]
-    pos_sample = [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2]]
+    pos_sample = [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2], [0.0]*3]
     aperture_sample = [0.5, 0.5]
 
     ray, spec_weight = cam.sample_ray(
@@ -87,13 +87,13 @@ def test02_sample_ray(variants_vec_spectral, origin, direction, aperture_rad, fo
     # Check that a [0.5, 0.5] position_sample and [0.5, 0.5] aperture_sample
     # generates a ray that points in the camera direction
 
-    ray, _ = cam.sample_ray(0, 0, [0.5, 0.5], [0.5, 0.5])
+    ray, _ = cam.sample_ray(0, 0, [0.5, 0.5, 0.0], [0.5, 0.5])
     assert dr.allclose(ray.d, direction, atol=1e-7)
 
     # ----------------------------------------
     # Check correctness of aperture sampling
 
-    pos_sample = [0.5, 0.5]
+    pos_sample = [0.5, 0.5, 0.0]
     aperture_sample = [[0.9, 0.4, 0.2], [0.6, 0.9, 0.7]]
     ray, _ = cam.sample_ray(time, wav_sample, pos_sample, aperture_sample)
 
@@ -123,7 +123,7 @@ def test03_sample_ray_diff(variants_vec_spectral, origin, direction, aperture_ra
 
     time = 0.5
     wav_sample = [0.5, 0.33, 0.1]
-    pos_sample = [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2]]
+    pos_sample = [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2], [0.0]*3]
     aperture_sample = [0.5, 0.5]
 
     ray, spec_weight = cam.sample_ray_differential(
@@ -148,22 +148,22 @@ def test03_sample_ray_diff(variants_vec_spectral, origin, direction, aperture_ra
     # Check that a [0.5, 0.5] position_sample and [0.5, 0.5] aperture_sample
     # generates a ray that points in the camera direction
 
-    ray_center, _ = cam.sample_ray_differential(0, 0, [0.5, 0.5], [0.5, 0.5])
+    ray_center, _ = cam.sample_ray_differential(0, 0, [0.5, 0.5, 0.0], [0.5, 0.5])
     assert dr.allclose(ray_center.d, direction, atol=1e-7)
 
     # ----------------------------------------
     # Check correctness of the ray derivatives
 
     aperture_sample = [[0.9, 0.4, 0.2], [0.6, 0.9, 0.7]]
-    ray_center, _ = cam.sample_ray_differential(0, 0, [0.5, 0.5], aperture_sample)
+    ray_center, _ = cam.sample_ray_differential(0, 0, [0.5, 0.5, 0.0], aperture_sample)
 
     # Deltas in screen space
     dx = 1.0 / cam.film().crop_size().x
     dy = 1.0 / cam.film().crop_size().y
 
     # Sample the rays by offsetting the position_sample with the deltas (aperture centered)
-    ray_dx, _ = cam.sample_ray_differential(0, 0, [0.5 + dx, 0.5], aperture_sample)
-    ray_dy, _ = cam.sample_ray_differential(0, 0, [0.5, 0.5 + dy], aperture_sample)
+    ray_dx, _ = cam.sample_ray_differential(0, 0, [0.5 + dx, 0.5, 0.0], aperture_sample)
+    ray_dy, _ = cam.sample_ray_differential(0, 0, [0.5, 0.5 + dy, 0.0], aperture_sample)
 
     assert dr.allclose(ray_dx.d, ray_center.d_x)
     assert dr.allclose(ray_dy.d, ray_center.d_y)
@@ -171,7 +171,7 @@ def test03_sample_ray_diff(variants_vec_spectral, origin, direction, aperture_ra
     # --------------------------------------
     # Check correctness of aperture sampling
 
-    pos_sample = [0.5, 0.5]
+    pos_sample = [0.5, 0.5, 0.0]
     aperture_sample = [[0.9, 0.4, 0.2], [0.6, 0.9, 0.7]]
     ray, _ = cam.sample_ray(time, wav_sample, pos_sample, aperture_sample)
 
@@ -208,18 +208,18 @@ def test04_fov_axis(variants_vec_spectral, origin, direction, fov):
     # In the configuration, aspect==1.5, so 'larger' should give the 'x'-axis
     for fov_axis in ['x', 'larger']:
         camera = create_camera(origin, direction, fov=fov, fov_axis=fov_axis)
-        for sample in [[0.0, 0.5], [1.0, 0.5]]:
+        for sample in [[0.0, 0.5, 0.0], [1.0, 0.5, 0.0]]:
             check_fov(camera, sample)
 
     # In the configuration, aspect==1.5, so 'smaller' should give the 'y'-axis
     for fov_axis in ['y', 'smaller']:
         camera = create_camera(origin, direction, fov=fov, fov_axis=fov_axis)
-        for sample in [[0.5, 0.0], [0.5, 1.0]]:
+        for sample in [[0.5, 0.0, 0.0], [0.5, 1.0, 0.0]]:
             check_fov(camera, sample)
 
     # Check the 4 corners for the `diagonal` case
     camera = create_camera(origin, direction, fov=fov, fov_axis='diagonal')
-    for sample in [[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]]:
+    for sample in [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 0.0]]:
         check_fov(camera, sample)
 
 

@@ -150,13 +150,13 @@ public:
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
-                                          const Point2f &spatial_sample,
+                                          const Point3f &spatial_sample,
                                           const Point2f & /*dir_sample*/,
                                           Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         // 1. Sample directional component
-        Vector3f local_dir = warp::square_to_uniform_cone(spatial_sample, (Float) m_cos_cutoff_angle);
+        Vector3f local_dir = warp::square_to_uniform_cone(Point2f(spatial_sample.x(), spatial_sample.y()), (Float) m_cos_cutoff_angle);
         Float pdf_dir = warp::square_to_uniform_cone_pdf(local_dir, (Float) m_cos_cutoff_angle);
 
         // 2. Sample spectrum
@@ -174,7 +174,7 @@ public:
     }
 
     std::pair<DirectionSample3f, Spectrum> sample_direction(const Interaction3f &it,
-                                                            const Point2f &/*sample*/,
+                                                            const Point3f &/*sample*/,
                                                             Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
@@ -215,7 +215,7 @@ public:
     }
 
     std::pair<PositionSample3f, Float>
-    sample_position(Float time, const Point2f & /*sample*/,
+    sample_position(Float time, const Point3f & /*sample*/,
                     Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
 

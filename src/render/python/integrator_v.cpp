@@ -232,7 +232,7 @@ public:
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler *sampler,
                                      const RayDifferential3f &ray,
-                                     const Medium * /* unused */,
+                                     const Medium * medium,
                                      Float *aovs,
                                      Mask active) const override {
         nanobind::detail::ticket nb_ticket(nb_trampoline, "sample", true);
@@ -244,6 +244,7 @@ public:
         kwargs["sampler"] = sampler;
         kwargs["ray"] = ray;
         kwargs["depth"] = 0;
+        kwargs["initial_medium"] = medium;
         kwargs["δL"] = nb::none();
         kwargs["δaovs"] = nb::none();
         kwargs["state_in"] = nb::none();

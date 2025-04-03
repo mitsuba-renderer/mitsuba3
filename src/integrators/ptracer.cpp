@@ -126,8 +126,10 @@ public:
             Interaction3f ref_it(0.f, time, dr::zeros<Wavelength>(),
                                  sensor->world_transform().translation());
 
+            auto emitter_sample_2d = sampler->next_2d();
+            auto emitter_sample = Point3f(emitter_sample_2d.x(), emitter_sample_2d.y(), 0.0f); // We assume that any emitter rendered with this integrator excludes medium emitters
             auto [ds, dir_weight] = emitter->sample_direction(
-                ref_it, sampler->next_2d(active), active_e);
+                ref_it, emitter_sample, active_e);
 
             /* Note: `dir_weight` already includes the emitter radiance, but
                that will be accounted for again when sampling the wavelength
@@ -143,8 +145,10 @@ public:
         // 3.b. Finite emitters
         active_e = active && !is_infinite;
         if (dr::any_or<true>(active_e)) {
+            auto emitter_sample_2d = sampler->next_2d(active_e); // We assume that any emitter rendered with this integrator excludes medium emitters
+            auto emitter_sample = Point3f(emitter_sample_2d.x(), emitter_sample_2d.y(), 0.0f);
             auto [ps, pos_weight] =
-                emitter->sample_position(time, sampler->next_2d(active), active_e);
+                emitter->sample_position(time, emitter_sample, active_e);
 
             emitter_weight[active_e] = pos_weight;
             si[active_e] = SurfaceInteraction3f(ps, dr::zeros<Wavelength>());
@@ -154,7 +158,8 @@ public:
            Query sensor for a direction connecting to `si.p`, which also
            produces UVs on the sensor (for splatting). The resulting direction
            points from si.p (on the emitter) toward the sensor. */
-        auto [sensor_ds, sensor_weight] = sensor->sample_direction(si, sampler->next_2d(), active);
+        auto sensor_sample = sampler->next_2d();
+        auto [sensor_ds, sensor_weight] = sensor->sample_direction(si, Point3f(sensor_sample.x(), sensor_sample.y(), 0.0f), active);
         si.wi = sensor_ds.d;
 
         // 5. Sample spectrum of the emitter (accounts for its radiance)
@@ -183,8 +188,9 @@ public:
                 position_sample  = sampler->next_2d();
 
         // Sample one ray from an emitter in the scene.
+        auto emitter_sample = Point3f(direction_sample.x(), direction_sample.y(), 0.0f);
         auto [ray, ray_weight, emitter] = scene->sample_emitter_ray(
-            time, wavelength_sample, direction_sample, position_sample);
+            time, wavelength_sample, emitter_sample, position_sample);
 
         return { ray, ray_weight };
     }
@@ -252,8 +258,10 @@ public:
 
             /* Connect to sensor and splat if successful. Sample a direction
                from the sensor to the current surface point. */
+            auto emitter_sample_2d = ls.sampler->next_2d();
+            auto emitter_sample = Point3f(emitter_sample_2d.x(), emitter_sample_2d.y(), 0.0f);
             auto [sensor_ds, sensor_weight] =
-                sensor->sample_direction(ls.si, ls.sampler->next_2d(), ls.active);
+                sensor->sample_direction(ls.si, emitter_sample, ls.active);
             connect_sensor(scene, ls.si, sensor_ds, bsdf,
                            ls.throughput * sensor_weight, block, sample_scale,
                            ls.active);

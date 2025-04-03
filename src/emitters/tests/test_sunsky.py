@@ -208,9 +208,10 @@ def test05_sun_sampling(variants_vec_backends_once, sun_theta):
                           sky_scale=0.0)
 
     rng = mi.PCG32(size=10_000)
-    sample = mi.Point2f(
+    sample = mi.Point3f(
         rng.next_float32(),
-        rng.next_float32())
+        rng.next_float32(),
+        0.0)
 
     it = dr.zeros(mi.Interaction3f)
     ds, w = plugin.sample_direction(it, sample, True)

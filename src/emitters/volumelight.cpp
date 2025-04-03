@@ -5,6 +5,8 @@
 #include <mitsuba/render/medium.h>
 #include <mitsuba/render/shape.h>
 #include <mitsuba/render/texture.h>
+#include <mitsuba/render/volume.h>
+#include <mitsuba/render/volumegrid.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -56,23 +58,21 @@ emitter shape and specify an :monosp:`area` instance as its child:
  */
 
 template <typename Float, typename Spectrum>
-class AreaLight final : public Emitter<Float, Spectrum> {
+class VolumeLight final : public Emitter<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Emitter, m_flags, m_shape, m_medium, m_needs_sample_2_3d)
-    MI_IMPORT_TYPES(Scene, Shape, Texture)
+    MI_IMPORT_TYPES(Scene, Shape, Texture, Volume)
 
-    AreaLight(const Properties &props) : Base(props) {
+    VolumeLight(const Properties &props) : Base(props) {
         if (props.has_property("to_world"))
             Throw("Found a 'to_world' transformation -- this is not allowed. "
-                  "The area light inherits this transformation from its parent "
+                  "The volume light inherits this transformation from its parent "
                   "shape.");
 
-        m_radiance = props.texture_d65<Texture>("radiance", 1.f);
-        m_needs_sample_2_3d = false;
+        m_radiance = props.volume<Volume>("radiance", 0.f);
+        m_needs_sample_2_3d = true;
 
-        m_flags = +EmitterFlags::Surface;
-        if (m_radiance->is_spatially_varying())
-            m_flags |= +EmitterFlags::SpatiallyVarying;
+        m_flags = +EmitterFlags::Medium;
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -82,23 +82,21 @@ public:
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
-
-        auto result = depolarizer<Spectrum>(m_radiance->eval(si, active)) &
-                      (Frame3f::cos_theta(si.wi) > 0.f);
-
-        return result;
+        return m_radiance->eval(si, active);
     }
 
-    std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
-                                          const Point3f &sample2, const Point2f &sample3,
+    std::pair<Ray3f, Spectrum> sample_ray(Float time,
+                                          Float wavelength_sample,
+                                          const Point3f &spatial_sample,
+                                          const Point2f &direction_sample,
                                           Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         // 1. Sample spatial component
-        auto [ps, pos_weight] = sample_position(time, sample2, active);
+        auto [ps, pos_weight] = sample_position(time, spatial_sample, active);
 
         // 2. Sample directional component
-        Vector3f local = warp::square_to_cosine_hemisphere(sample3);
+        Vector3f local = warp::square_to_uniform_sphere(direction_sample);
 
         // 3. Sample spectral component
         SurfaceInteraction3f si(ps, dr::zeros<Wavelength>());
@@ -107,8 +105,7 @@ public:
         si.time = time;
         si.wavelengths = wavelength;
 
-        // Note: some terms cancelled out with `warp::square_to_cosine_hemisphere_pdf`.
-        Spectrum weight = pos_weight * wav_weight * dr::Pi<ScalarFloat>;
+        Spectrum weight = pos_weight * wav_weight * dr::rcp(warp::square_to_uniform_sphere_pdf(local));
 
         return { si.spawn_ray(si.to_world(local)),
                  depolarizer<Spectrum>(weight) };
@@ -122,90 +119,52 @@ public:
             if (!m_shape)
                 return { dr::zeros<DirectionSample3f>(), 0.f };
         } else {
-            Assert(m_shape, "Can't sample from an area emitter without an "
+            Assert(m_shape, "Can't sample from a volume emitter without an "
                             "associated Shape.");
         }
 
-        DirectionSample3f ds;
-        SurfaceInteraction3f si;
-
-        // One of two very different strategies is used depending on 'm_radiance'
-        if (likely(!m_radiance->is_spatially_varying())) {
-            // Texture is uniform, try to importance sample the shape wrt. solid angle at 'it'
-            ds = m_shape->sample_direction_surface(
-                it, Point2f(sample.x(), sample.y()), active);
-            active &= dr::dot(ds.d, ds.n) < 0.f && (ds.pdf != 0.f);
-
-            si = SurfaceInteraction3f(ds, it.wavelengths);
-        } else {
-            // Importance sample the texture, then map onto the shape
-            auto [uv, pdf] = m_radiance->sample_position(Point2f(sample.x(), sample.y()), active);
-            active &= (pdf != 0.f);
-
-            si = m_shape->eval_parameterization(uv, +RayFlags::All, active);
-            si.wavelengths = it.wavelengths;
-            active &= si.is_valid();
-
-            ds.p = si.p;
-            ds.n = si.n;
-            ds.uv = si.uv;
-            ds.time = it.time;
-            ds.delta = false;
-            ds.d = ds.p - it.p;
-
-            Float dist_squared = dr::squared_norm(ds.d);
-            ds.dist = dr::sqrt(dist_squared);
-            ds.d /= ds.dist;
-
-            Float dp = dr::dot(ds.d, ds.n);
-            active &= dp < 0.f;
-            ds.pdf = dr::select(active, pdf / dr::norm(dr::cross(si.dp_du, si.dp_dv)) *
-                                        dist_squared / -dp, 0.f);
-        }
-
-        UnpolarizedSpectrum spec = m_radiance->eval(si, active) / ds.pdf;
+        // auto ds = m_shape->sample_direction_surface(it, Point2f(sample.x(), sample.y()), active);
+        auto ds = m_shape->sample_direction_volume(it, sample, active);
         ds.emitter = this;
+
+        auto si = dr::zeros<SurfaceInteraction3f>();
+        si.time = ds.time;
+        si.p = ds.p;
+        si.wavelengths = it.wavelengths;
+        si.shape = m_shape;
+        si.n = ds.n;
+        active &= ds.pdf > 0.f;
+
+        UnpolarizedSpectrum spec = dr::select(active, m_radiance->eval(si, active) * dr::rcp(ds.pdf), 0.0f);
+
         return { ds, depolarizer<Spectrum>(spec) & active };
     }
 
     Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
                         Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
-        Float dp = dr::dot(ds.d, ds.n);
-        active &= dp < 0.f;
 
         if constexpr (drjit::is_jit_v<Float>) {
             if (!m_shape)
                 return 0.f;
         } else {
             Assert(m_shape,
-                   "The area emitter without has no associated Shape!");
+                   "The volume emitter has no associated Shape!");
         }
+        // Float pdf = m_shape->pdf_direction_surface(it, ds, active);
+        Float pdf = m_shape->pdf_direction_volume(it, ds, active);
 
-        Float value;
-        if (!m_radiance->is_spatially_varying()) {
-            value = m_shape->pdf_direction_surface(it, ds, active);
-        } else {
-            // This surface intersection would be nice to avoid..
-            SurfaceInteraction3f si = m_shape->eval_parameterization(ds.uv, +RayFlags::dPdUV, active);
-            active &= si.is_valid();
-
-            value = m_radiance->pdf_position(ds.uv, active) * dr::square(ds.dist) /
-                    (dr::norm(dr::cross(si.dp_du, si.dp_dv)) * -dp);
-        }
-
-        return dr::select(active, value, 0.f);
+        return dr::select(active, pdf, 0.f);
     }
 
     Spectrum eval_direction(const Interaction3f &it,
                             const DirectionSample3f &ds,
                             Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
-        Float dp = dr::dot(ds.d, ds.n);
-        active &= dp < 0.f;
 
         SurfaceInteraction3f si(ds, it.wavelengths);
         UnpolarizedSpectrum spec = m_radiance->eval(si, active);
+
         return dr::select(active, depolarizer<Spectrum>(spec), 0.f);
     }
 
@@ -216,48 +175,47 @@ public:
 
         if constexpr (drjit::is_jit_v<Float>) {
             if (!m_shape)
-                return { dr::zeros<PositionSample3f>(), 0.f };
+                return { dr::zeros<DirectionSample3f>(), 0.f };
         } else {
-            Assert(m_shape, "Cannot sample from an area emitter without an "
+            Assert(m_shape, "Can't sample from a volume emitter without an "
                             "associated Shape.");
         }
 
-        // Two strategies to sample the spatial component based on 'm_radiance'
-        PositionSample3f ps;
-        if (!m_radiance->is_spatially_varying()) {
-            // Radiance not spatially varying, use area-based sampling of shape
-            ps = m_shape->sample_position_surface(
-                time, Point2f(sample.x(), sample.y()), active);
-        } else {
-            // Importance sample texture
-            auto [uv, pdf] = m_radiance->sample_position(Point2f(sample.x(), sample.y()), active);
-            active &= (pdf != 0.f);
+        auto ps = m_shape->sample_position_volume(time, sample, active);
+        auto weight = dr::select(active && (ps.pdf > 0.f), dr::rcp(ps.pdf), 0.f);
 
-            auto si = m_shape->eval_parameterization(uv, +RayFlags::All, active);
-            active &= si.is_valid();
-            pdf /= dr::norm(dr::cross(si.dp_du, si.dp_dv));
-
-            ps = si;
-            ps.pdf = pdf;
-            ps.delta = false;
-        }
-
-        Float weight = dr::select(active && ps.pdf > 0.f, dr::rcp(ps.pdf), Float(0.f));
         return { ps, weight };
     }
 
+    Float pdf_position(const PositionSample3f &ps,
+                       Mask active = true) const override {
+        return m_shape->pdf_position_volume(ps, active);
+    };
+
     std::pair<Wavelength, Spectrum>
-    sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
+    sample_wavelengths(const SurfaceInteraction3f &_si, Float sample,
                        Mask active) const override {
-        return m_radiance->sample_spectrum(
-            si, math::sample_shifted<Wavelength>(sample), active);
+
+        if (dr::none_or<false>(active))
+            return { dr::zeros<Wavelength>(), dr::zeros<UnpolarizedSpectrum>() };
+
+        if constexpr (is_spectral_v<Spectrum>) {
+            SurfaceInteraction3f si(_si);
+            si.wavelengths = MI_CIE_MIN + (MI_CIE_MAX - MI_CIE_MIN) * sample;
+            return { si.wavelengths,
+                     eval(si, active) * (MI_CIE_MAX - MI_CIE_MIN) };
+        } else {
+            DRJIT_MARK_USED(sample);
+            auto value = eval(_si, active);
+            return { dr::empty<Wavelength>(), value };
+        }
     }
 
     ScalarBoundingBox3f bbox() const override { return m_shape->bbox(); }
 
     std::string to_string() const override {
         std::ostringstream oss;
-        oss << "AreaLight[" << std::endl
+        oss << "VolumeLight[" << std::endl
             << "  radiance = " << string::indent(m_radiance) << "," << std::endl
             << "  surface_area = ";
         if (m_shape) oss << m_shape->surface_area();
@@ -271,9 +229,9 @@ public:
 
     MI_DECLARE_CLASS()
 private:
-    ref<Texture> m_radiance;
+    ref<Volume> m_radiance;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(AreaLight, Emitter)
-MI_EXPORT_PLUGIN(AreaLight, "Area emitter")
+MI_IMPLEMENT_CLASS_VARIANT(VolumeLight, Emitter)
+MI_EXPORT_PLUGIN(VolumeLight, "Volume emitter")
 NAMESPACE_END(mitsuba)

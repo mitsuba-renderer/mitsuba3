@@ -148,34 +148,36 @@ and both parameters are allowed to be spectrally varying.
 template <typename Float, typename Spectrum>
 class HeterogeneousMedium final : public Medium<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction,
-                    m_phase_function)
+    MI_IMPORT_BASE(Medium, get_radiance, m_is_homogeneous, m_has_spectral_extinction,
+                    m_phase_function, m_medium_sampling_mode)
     MI_IMPORT_TYPES(Scene, Sampler, Texture, Volume)
 
     HeterogeneousMedium(const Properties &props) : Base(props) {
         m_is_homogeneous = false;
         m_albedo = props.volume<Volume>("albedo", 0.75f);
         m_sigmat = props.volume<Volume>("sigma_t", 1.f);
+        m_sigman = props.volume<Volume>("sigma_n", 0.f);
 
         m_scale = props.get<ScalarFloat>("scale", 1.0f);
         m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);
 
-        m_max_density = dr::opaque<Float>(m_scale * m_sigmat->max());
+        m_max_density = dr::opaque<Float>(m_scale * (m_sigmat->max() + m_sigman->max()));
     }
 
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("scale", m_scale,        +ParamFlags::NonDifferentiable);
         callback->put_object("albedo",   m_albedo.get(), +ParamFlags::Differentiable);
         callback->put_object("sigma_t",  m_sigmat.get(), +ParamFlags::Differentiable);
+        callback->put_object("sigma_n",  m_sigman.get(), +ParamFlags::Differentiable);
         Base::traverse(callback);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        m_max_density = dr::opaque<Float>(m_scale * m_sigmat->max());
+        m_max_density = dr::opaque<Float>(m_scale * (m_sigmat->max() + m_sigman->max()));
     }
 
     UnpolarizedSpectrum
-    get_majorant(const MediumInteraction3f & /* mi */,
+    get_majorant(const MediumInteraction3f &/*mi*/,
                  Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
         return m_max_density;
@@ -203,16 +205,18 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "HeterogeneousMedium[" << std::endl
-            << "  albedo  = " << string::indent(m_albedo) << std::endl
-            << "  sigma_t = " << string::indent(m_sigmat) << std::endl
-            << "  scale   = " << string::indent(m_scale) << std::endl
+            << "  albedo              = " << string::indent(m_albedo) << std::endl
+            << "  sigma_t             = " << string::indent(m_sigmat) << std::endl
+            << "  sigma_n             = " << string::indent(m_sigman) << std::endl
+            << "  scale               = " << string::indent(m_scale) << std::endl
+            << "  event_sampling_mode = " << string::indent(m_medium_sampling_mode == MediumEventSamplingMode::Analogue ? "Analogue" : (m_medium_sampling_mode == MediumEventSamplingMode::Mean ? "Mean" : "Maximum")) << std::endl
             << "]";
         return oss.str();
     }
 
     MI_DECLARE_CLASS()
 private:
-    ref<Volume> m_sigmat, m_albedo;
+    ref<Volume> m_sigmat, m_albedo, m_sigman;
     ScalarFloat m_scale;
 
     Float m_max_density;

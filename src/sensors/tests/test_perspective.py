@@ -61,7 +61,7 @@ def test02_sample_ray(variants_vec_spectral, origin, direction):
 
     time = 0.5
     wav_sample = [0.5, 0.33, 0.1]
-    pos_sample = [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2]]
+    pos_sample = [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2], [0.0]*3]
     aperture_sample = 0 # Not being used
 
     ray, spec_weight = camera.sample_ray(time, wav_sample, pos_sample, aperture_sample)
@@ -79,7 +79,7 @@ def test02_sample_ray(variants_vec_spectral, origin, direction):
 
     # Check that a [0.5, 0.5] position_sample generates a ray
     # that points in the camera direction
-    ray, _ = camera.sample_ray(0, 0, [0.5, 0.5], 0)
+    ray, _ = camera.sample_ray(0, 0, [0.5, 0.5, 0.0], 0)
     assert dr.allclose(ray.d, direction, atol=1e-7)
 
 
@@ -93,7 +93,7 @@ def test03_sample_ray_differential(variants_vec_spectral, origin, direction):
 
     time = 0.5
     wav_sample = [0.5, 0.33, 0.1]
-    pos_sample = [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2]]
+    pos_sample = [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2], [0.0]*3]
 
     ray, spec_weight = camera.sample_ray_differential(time, wav_sample, pos_sample, 0)
 
@@ -114,7 +114,7 @@ def test03_sample_ray_differential(variants_vec_spectral, origin, direction):
 
     # Check that a [0.5, 0.5] position_sample generates a ray
     # that points in the camera direction
-    ray_center, _ = camera.sample_ray_differential(0, 0, [0.5, 0.5], 0)
+    ray_center, _ = camera.sample_ray_differential(0, 0, [0.5, 0.5, 0.0], 0)
     assert dr.allclose(ray_center.d, direction, atol=1e-7)
 
     # Check correctness of the ray derivatives
@@ -124,8 +124,8 @@ def test03_sample_ray_differential(variants_vec_spectral, origin, direction):
     dy = 1.0 / camera.film().crop_size().y
 
     # Sample the rays by offsetting the position_sample with the deltas
-    ray_dx, _ = camera.sample_ray_differential(0, 0, [0.5 + dx, 0.5], 0)
-    ray_dy, _ = camera.sample_ray_differential(0, 0, [0.5, 0.5 + dy], 0)
+    ray_dx, _ = camera.sample_ray_differential(0, 0, [0.5 + dx, 0.5, 0.0], 0)
+    ray_dy, _ = camera.sample_ray_differential(0, 0, [0.5, 0.5 + dy, 0.0], 0)
 
     assert dr.allclose(ray_dx.d, ray_center.d_x)
     assert dr.allclose(ray_dy.d, ray_center.d_y)
@@ -148,18 +148,18 @@ def test04_fov_axis(variants_vec_spectral, origin, direction, fov):
     # In the configuration, aspect==1.5, so 'larger' should give the 'x'-axis
     for fov_axis in ['x', 'larger']:
         camera = create_camera(origin, direction, fov=fov, fov_axis=fov_axis)
-        for sample in [[0.0, 0.5], [1.0, 0.5]]:
+        for sample in [[0.0, 0.5, 0.0], [1.0, 0.5, 0.0]]:
             check_fov(camera, sample)
 
     # In the configuration, aspect==1.5, so 'smaller' should give the 'y'-axis
     for fov_axis in ['y', 'smaller']:
         camera = create_camera(origin, direction, fov=fov, fov_axis=fov_axis)
-        for sample in [[0.5, 0.0], [0.5, 1.0]]:
+        for sample in [[0.5, 0.0, 0.0], [0.5, 1.0, 0.0]]:
                 check_fov(camera, sample)
 
     # Check the 4 corners for the `diagonal` case
     camera = create_camera(origin, direction, fov=fov, fov_axis='diagonal')
-    for sample in [[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]]:
+    for sample in [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 0.0]]:
             check_fov(camera, sample)
 
 

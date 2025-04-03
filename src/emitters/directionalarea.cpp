@@ -85,7 +85,7 @@ public:
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
-                                          const Point2f &sample2,
+                                          const Point3f &sample2,
                                           const Point2f & /*sample3*/,
                                           Mask active) const override {
         if constexpr (drjit::is_jit_v<Float>) {
@@ -98,7 +98,7 @@ public:
         }
 
         // 1. Sample spatial component
-        PositionSample3f ps = m_shape->sample_position(time, sample2);
+        auto [ps, ps_weight] = sample_position(time, sample2, active);
 
         // 2. Directional component is the normal vector at that position.
         const Vector3f d = ps.n;
@@ -123,7 +123,7 @@ public:
      *       flat surface.
      */
     std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f & /*it*/, const Point2f & /*sample*/,
+    sample_direction(const Interaction3f & /*it*/, const Point3f & /*sample*/,
                      Mask /*active*/) const override {
         return { dr::zeros<DirectionSample3f>(), dr::zeros<Spectrum>() };
     }
@@ -135,7 +135,7 @@ public:
     }
 
     std::pair<PositionSample3f, Float>
-    sample_position(Float time, const Point2f &sample,
+    sample_position(Float time, const Point3f &sample,
                     Mask active) const override {
         if constexpr (drjit::is_jit_v<Float>) {
             if (!m_shape)
@@ -145,7 +145,8 @@ public:
                             "without an associated Shape.");
         }
 
-        PositionSample3f ps = m_shape->sample_position(time, sample, active);
+        PositionSample3f ps = m_shape->sample_position_surface(
+            time, Point2f(sample.x(), sample.y()), active);
         Float weight        = dr::select(ps.pdf > 0.f, dr::rcp(ps.pdf), 0.f);
         return { ps, weight };
     }

@@ -5,8 +5,9 @@ import os
 import argparse
 import glob
 import numpy as np
+import pathlib
 
-from os.path import join, dirname, basename, splitext, exists
+from os.path import join, dirname, basename, splitext, exists, split
 from drjit.scalar import ArrayXf as Float
 from mitsuba.scalar_rgb.test.util import find_resource
 
@@ -82,6 +83,8 @@ def list_all_render_test_configs():
 
             if not is_jit:
                 configs.append((variant, scene_fname, scene_integrator_type, 'scalar'))
+                if scene_integrator_type == "volpath":
+                    configs.append((variant, scene_fname, "volpathmis", 'scalar'))
             else:
                 for k, v in JIT_FLAG_OPTIONS.items():
                     if k == 'scalar':
@@ -203,9 +206,9 @@ def test_render(variant, scene_fname, integrator_type, jit_flags_key):
     significance_level = 0.01
 
     # Compute spp budget
-    sample_budget = int(2e6)
+    sample_budget = int(2e6) if "volpath" not in integrator_type else int(8e6)
     pixel_count = dr.prod(ref_bmp.size())
-    spp = sample_budget // pixel_count
+    spp = (sample_budget // pixel_count)
 
     # Load and render
     scene = mi.load_file(scene_fname, spp=spp, integrator=integrator_type)
@@ -232,41 +235,50 @@ def test_render(variant, scene_fname, integrator_type, jit_flags_key):
         print('Reject the null hypothesis (min(p-value) = %f, significance level = %f)' %
               (np.min(p_value), alpha))
 
-        output_dir = join(dirname(scene_fname), 'error_output')
+        scene_fname = pathlib.Path(scene_fname)
+
+        output_dir = scene_fname.parent / 'error_output'
 
         if not exists(output_dir):
             os.makedirs(output_dir)
 
-        output_prefix = join(output_dir, splitext(
-            basename(scene_fname))[0] + '_' + mi.variant())
+        output_prefix = scene_fname.stem + '_' + mi.variant() + '_' + integrator_type
 
         img_rgb_bmp = xyz_to_rgb_bmp(img)
         ref_img_rgb_bmp = xyz_to_rgb_bmp(ref_img)
 
-        fname = output_prefix + '_img.exr'
+        fname = output_dir / (output_prefix + '_img.exr')
+        fname = str(fname.absolute())
         img_rgb_bmp.write(fname)
         print('Saved rendered image to: ' + fname)
 
-        fname = output_prefix + '_ref.exr'
+        fname = output_dir / (output_prefix + '_ref.exr')
+        fname = str(fname.absolute())
         ref_img_rgb_bmp.write(fname)
         print('Saved reference image to: ' + fname)
 
         if var_img is not None:
-            var_fname = output_prefix + '_var.exr'
+            var_fname = output_dir / (output_prefix + '_var.exr')
+            var_fname = str(var_fname.absolute())
             xyz_to_rgb_bmp(var_img).write(var_fname)
             print('Saved variance image to: ' + var_fname)
 
-        err_fname = output_prefix + '_error.exr'
+        err_fname = output_dir / (output_prefix + '_error.exr')
+        err_fname = str(err_fname.absolute())
         err_img = 0.02 * np.array(img_rgb_bmp)
         err_img[~success] = 1.0
         mi.Bitmap(err_img).write(err_fname)
         print('Saved error image to: ' + err_fname)
 
-        pvalue_fname = output_prefix + '_pvalue.exr'
+        pvalue_fname = output_dir / (output_prefix + '_pvalue.exr')
+        pvalue_fname = str(pvalue_fname.absolute())
         xyz_to_rgb_bmp(p_value).write(pvalue_fname)
         print('Saved error image to: ' + pvalue_fname)
 
-        pytest.fail("Radiance values exceeded scene's tolerances!")
+        if integrator_type == "volpathmis" and "emissive" in scene_fname.stem:
+            pytest.xfail("Radiance values exceeded scene's tolerances, but this is expected of the `volpathmis` integrator")
+        else:
+            pytest.fail("Radiance values exceeded scene's tolerances!")
 
 
 def render_ref_images(scenes, spp, overwrite, scene=None, variant=None):

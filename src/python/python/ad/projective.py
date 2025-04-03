@@ -170,7 +170,7 @@ class ProjectiveDetail():
             # Is the boundary point within the view frustum ?
             it = dr.zeros(mi.Interaction3f)
             it.p = ss.p
-            ds, _ = sensor.sample_direction(it, mi.Point2f(0), active)
+            ds, _ = sensor.sample_direction(it, mi.Point3f(0), active)
             visible &= ds.pdf != 0
 
             # Estimate the radiance difference along that path

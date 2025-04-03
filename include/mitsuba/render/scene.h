@@ -337,7 +337,7 @@ public:
      *    </ul>
      */
     std::tuple<Ray3f, Spectrum, const EmitterPtr>
-    sample_emitter_ray(Float time, Float sample1, const Point2f &sample2,
+    sample_emitter_ray(Float time, Float sample1, const Point3f &sample2,
                        const Point2f &sample3, Mask active = true) const;
 
     /**
@@ -381,7 +381,7 @@ public:
      */
     std::pair<DirectionSample3f, Spectrum>
     sample_emitter_direction(const Interaction3f &ref,
-                             const Point2f &sample,
+                             const Point3f &sample,
                              bool test_visibility = true,
                              Mask active = true) const;
 
@@ -647,11 +647,26 @@ typename SurfaceInteraction<Float, Spectrum>::EmitterPtr
 SurfaceInteraction<Float, Spectrum>::emitter(const Scene *scene, Mask active) const {
     if constexpr (!dr::is_jit_v<Float>) {
         DRJIT_MARK_USED(active);
-        return is_valid() ? shape->emitter() : scene->environment();
+        EmitterPtr emitter = is_valid() ? shape->emitter() : scene->environment();
+        return (emitter != nullptr) && has_flag(emitter->flags(), EmitterFlags::Medium) ? nullptr : emitter;
     } else {
         EmitterPtr emitter = shape->emitter(active);
+        emitter = dr::select(active & !has_flag(emitter->flags(), EmitterFlags::Medium), emitter, nullptr);
         if (scene && scene->environment())
             emitter = dr::select(is_valid(), emitter, scene->environment() & active);
+        return emitter;
+    }
+}
+
+// See interaction.h
+template <typename Float, typename Spectrum>
+typename MediumInteraction<Float, Spectrum>::EmitterPtr
+MediumInteraction<Float, Spectrum>::emitter(Mask active) const {
+    if constexpr (!dr::is_jit_v<Float>) {
+        DRJIT_MARK_USED(active);
+        return medium != nullptr ? medium->emitter() : nullptr;
+    } else {
+        EmitterPtr emitter = medium->emitter(active && medium != nullptr);
         return emitter;
     }
 }

@@ -2581,6 +2581,8 @@ static const char *__doc_mitsuba_EmitterFlags_SpatiallyVarying = R"doc(The emiss
 
 static const char *__doc_mitsuba_EmitterFlags_Surface = R"doc(The emitter is attached to a surface (e.g. area emitters))doc";
 
+static const char *__doc_mitsuba_EmitterFlags_Medium = R"doc(The emitter is attached to a medium (e.g. medium emitters))doc";
+
 static const char *__doc_mitsuba_Emitter_Emitter = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_class = R"doc()doc";
@@ -2723,6 +2725,8 @@ static const char *__doc_mitsuba_Endpoint_m_needs_sample_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_m_needs_sample_3 = R"doc()doc";
 
+static const char *__doc_mitsuba_Endpoint_m_needs_sample_2_3d = R"doc()doc";
+
 static const char *__doc_mitsuba_Endpoint_m_shape = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_m_to_world = R"doc()doc";
@@ -2735,6 +2739,10 @@ version))doc";
 
 static const char *__doc_mitsuba_Endpoint_needs_sample_2 =
 R"doc(Does the method sample_ray() require a uniformly distributed 2D sample
+for the ``sample2`` parameter?)doc";
+
+static const char *__doc_mitsuba_Endpoint_needs_sample_2_3d =
+R"doc(Does the method sample_ray() require a uniformly distributed 3D sample
 for the ``sample2`` parameter?)doc";
 
 static const char *__doc_mitsuba_Endpoint_needs_sample_3 =
@@ -4439,9 +4447,13 @@ static const char *__doc_mitsuba_MediumInteraction_sigma_s = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumInteraction_sigma_t = R"doc()doc";
 
+static const char *__doc_mitsuba_MediumInteraction_radiance = R"doc()doc";
+
 static const char *__doc_mitsuba_MediumInteraction_to_local =
 R"doc(Convert a world-space vector into local shading coordinates (defined
 by ``wi``))doc";
+static const char *__doc_mitsuba_MediumInteraction_emitter =
+    R"doc(Return the emitter associated with the intersection (if any))doc";
 
 static const char *__doc_mitsuba_MediumInteraction_to_world =
 R"doc(Convert a local shading-space (defined by ``wi``) vector into world
@@ -4465,6 +4477,24 @@ static const char *__doc_mitsuba_Medium_get_scattering_coefficients =
 R"doc(Returns the medium coefficients Sigma_s, Sigma_n and Sigma_t evaluated
 at a given MediumInteraction mi)doc";
 
+static const char *__doc_mitsuba_Medium_get_interaction_probabilities =
+    R"doc(Returns the real scatter event probability, and the
+weights of a real and null scattering event at a given MediumInteraction mi)doc";
+
+static const char *__doc_mitsuba_Medium_medium_probabilities_analog =
+    R"doc(Computes the probabilities of interacting with a medium based on the point-wise
+density of each event)doc";
+
+static const char *__doc_mitsuba_Medium_medium_probabilities_max =
+    R"doc(Computes the probabilities of interacting with a medium based on the maximum
+density of each event multiplied by the throughput)doc";
+
+static const char *__doc_mitsuba_Medium_medium_probabilities_mean =
+    R"doc(Computes the probabilities of interacting with a medium based on the mean
+density of each event multiplied by the throughput)doc";
+
+static const char *__doc_mitsuba_Medium_get_radiance = R"doc(Returns the medium's radiance used for emissive media)doc";
+
 static const char *__doc_mitsuba_Medium_has_spectral_extinction = R"doc(Returns whether this medium has a spectrally varying extinction)doc";
 
 static const char *__doc_mitsuba_Medium_id = R"doc(Return a string identifier)doc";
@@ -4472,6 +4502,8 @@ static const char *__doc_mitsuba_Medium_id = R"doc(Return a string identifier)do
 static const char *__doc_mitsuba_Medium_intersect_aabb = R"doc(Intersects a ray with the medium's bounding box)doc";
 
 static const char *__doc_mitsuba_Medium_is_homogeneous = R"doc(Returns whether this medium is homogeneous)doc";
+
+static const char *__doc_mitsuba_Medium_is_emitter = R"doc(Returns whether this medium is an emitter)doc";
 
 static const char *__doc_mitsuba_Medium_m_has_spectral_extinction = R"doc()doc";
 
@@ -4483,7 +4515,19 @@ static const char *__doc_mitsuba_Medium_m_phase_function = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_m_sample_emitters = R"doc()doc";
 
+static const char *__doc_mitsuba_Medium_m_medium_sampling_mode =
+R"doc(Determine how free-flight distances are sampled in the medium
+
+Takes on one of three values --- Analogue, Maximum and Mean --- which
+consider the probability of interacting with the medium based on the
+point-wise densities of each event, the maximum density of each event
+convolved with the throughput of the path, and the mean density of
+each event convolved with the throughput of the path.
+)doc";
+
 static const char *__doc_mitsuba_Medium_phase_function = R"doc(Return the phase function of this medium)doc";
+
+static const char *__doc_mitsuba_Medium_emitter = R"doc(Return the emitter associated with this medium)doc";
 
 static const char *__doc_mitsuba_Medium_sample_interaction =
 R"doc(Sample a free-flight distance in the medium.
@@ -4530,6 +4574,22 @@ Returns:
 static const char *__doc_mitsuba_Medium_traverse = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_use_emitter_sampling = R"doc(Returns whether this specific medium instance uses emitter sampling)doc";
+
+static const char *__doc_mitsuba_MediumEventSamplingMode =
+    R"doc(This flag is used to determine how medium interaction events
+should be sampled)doc";
+
+static const char *__doc_mitsuba_MediumEventSamplingMode_Analogue =
+    R"doc(Uses conventional analogue probabilities that only take into account
+the local transmittance coefficient, null scattering coefficient and radiance.)doc";
+
+static const char *__doc_mitsuba_MediumEventSamplingMode_Maximum =
+    R"doc(Uses the maximum throughput achievable in both real and null
+scattering events to determine the interaction probabilities.)doc";
+
+static const char *__doc_mitsuba_MediumEventSamplingMode_Mean =
+    R"doc(Uses the mean throughput in both real and null
+scattering events to determine the interaction probabilities.)doc";
 
 static const char *__doc_mitsuba_MemoryMappedFile =
 R"doc(Basic cross-platform abstraction for memory mapped files
@@ -4887,7 +4947,9 @@ static const char *__doc_mitsuba_Mesh_parameters_changed = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_parameters_grad_enabled = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_pdf_position = R"doc()doc";
+static const char *__doc_mitsuba_Mesh_pdf_position_surface = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_pdf_position_volume = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_precompute_silhouette = R"doc()doc";
 
@@ -4935,7 +4997,9 @@ Affects both mesh and texture attributes.
 
 Throws an exception if the attribute was not previously registered.)doc";
 
-static const char *__doc_mitsuba_Mesh_sample_position = R"doc()doc";
+static const char *__doc_mitsuba_Mesh_sample_position_surface = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_sample_position_volume = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_sample_precomputed_silhouette = R"doc()doc";
 
@@ -6749,6 +6813,8 @@ static const char *__doc_mitsuba_Sampler_next_1d = R"doc(Retrieve the next compo
 
 static const char *__doc_mitsuba_Sampler_next_2d = R"doc(Retrieve the next two component values from the current sample)doc";
 
+static const char *__doc_mitsuba_Sampler_next_3d = R"doc(Retrieve the next three component values from the current sample)doc";
+
 static const char *__doc_mitsuba_Sampler_sample_count = R"doc(Return the number of samples per pixel)doc";
 
 static const char *__doc_mitsuba_Sampler_schedule_state = R"doc(dr::schedule() variables that represent the internal sampler state)doc";
@@ -8041,8 +8107,8 @@ static const char *__doc_mitsuba_Shape_parameters_grad_enabled =
 R"doc(Return whether any shape's parameters that introduce visibility
 discontinuities require gradients (default return false))doc";
 
-static const char *__doc_mitsuba_Shape_pdf_direction =
-R"doc(Query the probability density of sample_direction()
+static const char *__doc_mitsuba_Shape_pdf_direction_surface =
+    R"doc(Query the probability density of sample_direction_surface()
 
 Parameter ``it``:
     A reference position somewhere within the scene.
@@ -8053,8 +8119,20 @@ Parameter ``ps``:
 Returns:
     The probability density per unit solid angle)doc";
 
-static const char *__doc_mitsuba_Shape_pdf_position =
-R"doc(Query the probability density of sample_position() for a particular
+static const char *__doc_mitsuba_Shape_pdf_direction_volume =
+    R"doc(Query the probability density of sample_direction_volume()
+
+Parameter ``it``:
+    A reference position somewhere within the scene.
+
+Parameter ``ps``:
+    A position record describing the sample in question
+
+Returns:
+    The probability density per unit solid angle)doc";
+
+static const char *__doc_mitsuba_Shape_pdf_position_surface =
+R"doc(Query the probability density of sample_position_surface() for a particular
 point on the surface.
 
 Parameter ``ps``:
@@ -8062,6 +8140,16 @@ Parameter ``ps``:
 
 Returns:
     The probability density per unit area)doc";
+
+static const char *__doc_mitsuba_Shape_pdf_position_volume =
+R"doc(Query the probability density of sample_position_surface() for a particular
+point in the volume.
+
+Parameter ``ps``:
+    A position record describing the sample in question
+
+Returns:
+    The probability density per unit volume)doc";
 
 static const char *__doc_mitsuba_Shape_precompute_silhouette =
 R"doc(Precompute the visible silhouette of this shape for a given viewpoint.
@@ -8214,8 +8302,8 @@ R"doc(Remove a texture texture with the given ``name``.
 
 Throws an exception if the attribute was not registered.)doc";
 
-static const char *__doc_mitsuba_Shape_sample_direction =
-R"doc(Sample a direction towards this shape with respect to solid angles
+static const char *__doc_mitsuba_Shape_sample_direction_surface =
+    R"doc(Sample a direction towards this shape with respect to solid angles
 measured at a reference position within the scene
 
 An ideal implementation of this interface would achieve a uniform
@@ -8228,7 +8316,7 @@ per unit solid angle associated with the sample.
 
 When the Shape subclass does not supply a custom implementation of
 this function, the Shape class reverts to a fallback approach that
-piggybacks on sample_position(). This will generally lead to a
+piggybacks on sample_position_surface(). This will generally lead to a
 suboptimal sample placement and higher variance in Monte Carlo
 estimators using the samples.
 
@@ -8241,7 +8329,34 @@ Parameter ``sample``:
 Returns:
     A DirectionSample instance describing the generated sample)doc";
 
-static const char *__doc_mitsuba_Shape_sample_position =
+static const char *__doc_mitsuba_Shape_sample_direction_volume =
+    R"doc(Sample a direction towards this shape with respect to solid angles
+measured at a reference position within the scene
+
+An ideal implementation of this interface would achieve a uniform
+solid angle density within the volume region that is visible from the
+reference position ``it.p`` (though such an ideal implementation is
+usually neither feasible nor advisable due to poor efficiency).
+
+The function returns the sampled position and the inverse probability
+per unit solid angle associated with the sample.
+
+When the Shape subclass does not supply a custom implementation of
+this function, the Shape class reverts to a fallback approach that
+piggybacks on sample_position_volume(). This will generally lead to a
+suboptimal sample placement and higher variance in Monte Carlo
+estimators using the samples.
+
+Parameter ``it``:
+    A reference position somewhere within the scene.
+
+Parameter ``sample``:
+    A uniformly distributed 3D point on the domain ``[0,1]^3``
+
+Returns:
+    A DirectionSample instance describing the generated sample)doc";
+
+static const char *__doc_mitsuba_Shape_sample_position_surface =
 R"doc(Sample a point on the surface of this shape
 
 The sampling strategy is ideally uniform over the surface, though
@@ -8254,6 +8369,23 @@ Parameter ``time``:
 
 Parameter ``sample``:
     A uniformly distributed 2D point on the domain ``[0,1]^2``
+
+Returns:
+    A PositionSample instance describing the generated sample)doc";
+
+static const char *__doc_mitsuba_Shape_sample_position_volume =
+R"doc(Sample a point in the volume of this shape
+
+The sampling strategy is ideally uniform over the volume, though
+implementations are allowed to deviate from a perfectly uniform
+distribution as long as this is reflected in the returned probability
+density.
+
+Parameter ``time``:
+    The scene time associated with the position sample
+
+Parameter ``sample``:
+    A uniformly distributed 3D point on the domain ``[0,1]^3``
 
 Returns:
     A PositionSample instance describing the generated sample)doc";
@@ -8315,6 +8447,14 @@ static const char *__doc_mitsuba_Shape_silhouette_sampling_weight = R"doc(Return
 
 static const char *__doc_mitsuba_Shape_surface_area =
 R"doc(Return the shape's surface area.
+
+The function assumes that the object is not undergoing some kind of
+time-dependent scaling.
+
+The default implementation throws an exception.)doc";
+
+static const char *__doc_mitsuba_Shape_volume =
+R"doc(Return the shape's volume.
 
 The function assumes that the object is not undergoing some kind of
 time-dependent scaling.
@@ -9685,7 +9825,7 @@ default implementation throws an exception.
 Even if the operation is provided, it may only return an
 approximation.)doc";
 
-static const char *__doc_mitsuba_Texture_pdf_position = R"doc(Returns the probability per unit area of sample_position())doc";
+static const char *__doc_mitsuba_Texture_pdf_position = R"doc(Returns the probability per unit area of sample_position_surface())doc";
 
 static const char *__doc_mitsuba_Texture_pdf_spectrum =
 R"doc(Evaluate the density function of the sample_spectrum() method as a
@@ -12815,6 +12955,12 @@ angles)doc";
 
 static const char *__doc_mitsuba_warp_square_to_uniform_sphere_pdf = R"doc(Density of square_to_uniform_sphere() with respect to solid angles)doc";
 
+static const char *__doc_mitsuba_warp_cube_to_uniform_sphere =
+R"doc(Uniformly sample a vector in the unit sphere with respect to solid
+angles and radius)doc";
+
+static const char *__doc_mitsuba_warp_cube_to_uniform_sphere_pdf = R"doc(Density of cube_to_uniform_sphere() with respect to solid angles and radius)doc";
+
 static const char *__doc_mitsuba_warp_square_to_uniform_spherical_lune =
 R"doc(Uniformly sample a direction in the two spherical lunes defined by the
 valid boundary directions of two touching faces defined by their
@@ -12853,6 +12999,8 @@ static const char *__doc_mitsuba_warp_uniform_disk_to_square_concentric = R"doc(
 static const char *__doc_mitsuba_warp_uniform_hemisphere_to_square = R"doc(Inverse of the mapping square_to_uniform_hemisphere)doc";
 
 static const char *__doc_mitsuba_warp_uniform_sphere_to_square = R"doc(Inverse of the mapping square_to_uniform_sphere)doc";
+
+static const char *__doc_mitsuba_warp_uniform_sphere_to_cube = R"doc(Inverse of the mapping cube_to_uniform_sphere)doc";
 
 static const char *__doc_mitsuba_warp_uniform_spherical_lune_to_square = R"doc(Inverse of the mapping square_to_uniform_spherical_lune)doc";
 

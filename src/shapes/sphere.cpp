@@ -166,8 +166,9 @@ public:
         m_to_object = m_to_world.value().inverse();
 
         m_inv_surface_area = dr::rcp(surface_area());
+        m_inv_volume = 3*dr::InvFourPi<Float>*dr::rcp(dr::square(m_radius.value())*m_radius.value());
 
-        dr::make_opaque(m_radius, m_center, m_inv_surface_area);
+        dr::make_opaque(m_radius, m_center, m_inv_surface_area, m_inv_volume);
         mark_dirty();
     }
 
@@ -214,11 +215,15 @@ public:
         return 4.f * dr::Pi<ScalarFloat> * dr::square(m_radius.value());
     }
 
+    Float volume() const override {
+        return 4.f * dr::Pi<ScalarFloat> * dr::square(m_radius.value()) * m_radius.value() / 3.f;
+    }
+
     // =============================================================
     //! @{ \name Sampling routines
     // =============================================================
 
-    PositionSample3f sample_position(Float time, const Point2f &sample,
+    PositionSample3f sample_position_surface(Float time, const Point2f &sample,
                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
@@ -239,12 +244,38 @@ public:
         return ps;
     }
 
-    Float pdf_position(const PositionSample3f & /*ps*/, Mask active) const override {
+    Float pdf_position_surface(const PositionSample3f & /*ps*/, Mask active) const override {
         MI_MASK_ARGUMENT(active);
         return m_inv_surface_area;
     }
 
-    DirectionSample3f sample_direction(const Interaction3f &it, const Point2f &sample,
+    PositionSample3f sample_position_volume(Float time, const Point3f &sample,
+                                            Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        Point3f local = warp::cube_to_uniform_sphere(sample);
+
+        PositionSample3f ps = dr::zeros<PositionSample3f>();
+        ps.p = dr::fmadd(local, m_radius.value(), m_center.value());
+        ps.n = local;
+
+        if (m_flip_normals)
+            ps.n = -ps.n;
+
+        ps.time = time;
+        ps.delta = m_radius.value() == 0.f;
+        ps.pdf = dr::select(ps.delta, 1.0f, m_inv_volume);
+        ps.uv = Point2f(sample.x(), sample.y());
+
+        return ps;
+    }
+
+    Float pdf_position_volume(const PositionSample3f &ps, Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+        return dr::select(active && (dr::norm(m_center.value() - ps.p) <= m_radius.value()), m_inv_volume, 0.0f);
+    }
+
+    DirectionSample3f sample_direction_surface(const Interaction3f &it, const Point2f &sample,
                                        Mask active) const override {
         MI_MASK_ARGUMENT(active);
         DirectionSample3f result = dr::zeros<DirectionSample3f>();
@@ -321,7 +352,7 @@ public:
         return result;
     }
 
-    Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
+    Float pdf_direction_surface(const Interaction3f &it, const DirectionSample3f &ds,
                         Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
@@ -334,6 +365,92 @@ public:
             warp::square_to_uniform_cone_pdf(dr::zeros<Vector3f>(), cos_alpha),
             m_inv_surface_area * dr::square(ds.dist) / dr::abs_dot(ds.d, ds.n)
         );
+    }
+
+    std::pair<Float, Float> get_intersection_extents(const Interaction3f &it,
+                                                     const DirectionSample3f &ds,
+                                                     Mask active) const {
+        auto ray = Ray3f(
+            it.p,
+            ds.d,
+            dr::Largest<Float>,
+            it.time,
+            it.wavelengths
+        );
+
+        Float radius = m_radius.value();
+        Vector3f center = m_center.value();
+
+        // We define a plane which is perpendicular to the ray direction and
+        // contains the sphere center and intersect it. We then solve the
+        // ray-sphere intersection as if the ray origin was this new
+        // intersection point. This additional step makes the whole intersection
+        // routine numerically more robust.
+
+        Vector3f l = ray.o - center;
+        Vector3f d(ray.d);
+        Float plane_t = dot(-l, d) / norm(d);
+
+        // Ray is perpendicular to plane
+        dr::mask_t<Float> no_hit = (plane_t == 0) && dr::all((ray.o != center));
+
+        Vector3f plane_p = ray(plane_t);
+
+        // Intersection with plane outside the sphere
+        no_hit &= (norm(plane_p - center) > radius);
+
+        Vector3f o = plane_p - center;
+
+        Float A = dr::squared_norm(d);
+        Float B = 2.0f * dr::dot(o, d);
+        Float C = dr::squared_norm(o) - dr::square(radius);
+
+        auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
+
+        near_t += plane_t;
+        far_t += plane_t;
+
+        // Sphere doesn't intersect with the segment on the ray
+        dr::mask_t<Float> out_bounds = !(near_t <= ray.maxt && far_t >= 0.0f); // NaN-aware conditionals
+
+        active &= solution_found && !no_hit && !out_bounds;
+
+        near_t = dr::clip(near_t, 0.0f, dr::Infinity<Float>);
+        far_t  = dr::clip(far_t, 0.0f, dr::Infinity<Float>);
+
+        dr::masked(near_t, !active) = 0.0f;
+        dr::masked(far_t, !active) = 0.0f;
+
+        return std::make_pair(near_t, far_t);
+    }
+
+    DirectionSample3f sample_direction_volume(const Interaction3f &it,
+                                              const Point3f &sample,
+                                              Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        auto ps = sample_position_volume(it.time, sample, active);
+        auto ds = DirectionSample3f(ps.p, ps.n, ps.uv, ps.time, ps.pdf, ps.delta, dr::normalize(ps.p - it.p), dr::norm(ps.p - it.p), nullptr);
+
+        auto [near_t, far_t] = get_intersection_extents(it, ds, active);
+        auto line_integral_pdf = ps.pdf * (dr::square(far_t) * far_t - dr::square(near_t) * near_t) / 3.0f;
+        ds.dist = far_t;
+        ds.p = it.p + ds.dist * ds.d;
+        ds.pdf = dr::select(ds.delta, dr::squared_norm(ds.p - it.p), line_integral_pdf);
+
+        return ds;
+    }
+
+    Float pdf_direction_volume(const Interaction3f &it, const DirectionSample3f &ds,
+                                Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        auto [near_t, far_t] = get_intersection_extents(it, ds, active);
+        auto line_integral_pdf = m_inv_volume * (dr::square(far_t) * far_t - dr::square(near_t) * near_t) / 3.0f;
+
+        auto pdf = dr::select(active && (m_radius.value() > 0.f), line_integral_pdf, 0.0f);
+
+        return pdf;
     }
 
     SurfaceInteraction3f eval_parameterization(const Point2f &uv,
@@ -374,7 +491,7 @@ public:
 
         /// Sample a point on the shape surface
         SilhouetteSample3f ss(
-            sample_position(0.f, dr::tail<2>(sample), active));
+            sample_position_surface(0.f, dr::tail<2>(sample), active));
 
         /// Sample a tangential direction at the point
         ss.d = warp::interval_to_tangent_direction(ss.n, sample.x());
@@ -776,7 +893,7 @@ private:
     /// Radius in world-space
     field<Float> m_radius;
 
-    Float m_inv_surface_area;
+    Float m_inv_surface_area, m_inv_volume;
 
     bool m_flip_normals;
 };

@@ -553,6 +553,8 @@ def EmitterAdapter(emitter_type, extra):
         n = dr.width(sample)
         plugin = instantiate(args)
         si = dr.zeros(mi.Interaction3f)
+        if len(sample) == 2:
+            sample = mi.Point3f(sample[0], sample[1], 0.0)
         ds, w = plugin.sample_direction(si, sample)
         return ds.d
 

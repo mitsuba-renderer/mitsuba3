@@ -32,6 +32,7 @@ def test01_create_mesh(variant_scalar_rgb):
     params.update()
 
     m.surface_area()  # Ensure surface area computed
+    m.volume()  # Ensure volume computed
 
     assert str(m) == """Mesh[
   name = "MyMesh",
@@ -44,6 +45,7 @@ def test01_create_mesh(variant_scalar_rgb):
   face_count = 2,
   faces = [24 B of face data],
   surface_area = 0.96,
+  volume = 0,
   face_normals = 0
 ]"""
 
@@ -146,6 +148,7 @@ def test05_load_simple_mesh(variant_scalar_rgb):
         assert dr.width(faces) == 36
         assert dr.allclose(dr.gather(Faces, faces, dr.arange(Index, 6, 9)), [4, 5, 6])
         assert dr.allclose(dr.gather(Float, positions, dr.arange(Index, 5)), [130, 165, 65, 82, 165])
+        assert dr.allclose(shape.volume(), 4559445.0)
 
 
 @pytest.mark.parametrize('mesh_format', ['obj', 'ply', 'serialized'])
@@ -289,7 +292,7 @@ def test09_eval_parameterization(variants_all_rgb):
         it = dr.zeros(mi.Interaction3f, N)
         it.p = [0, 0, -3]
         it.t = 0
-        ds, _ = emitters.sample_direction(it, [0.5, 0.5], mask)
+        ds, _ = emitters.sample_direction(it, [0.5, 0.5, 0.0], mask)
         assert dr.allclose(ds.uv, dr.select(mask, mi.Point2f(0.5), mi.Point2f(0.0)))
 
 
@@ -1370,3 +1373,108 @@ def test35_mesh_vcalls(variants_vec_rgb):
                       == sh.face_normal(idx_i))
         assert dr.all(dr.gather(type(opposite), opposite, i)
                       == sh.opposite_dedge(idx_i))
+
+
+@fresolver_append_path
+def test36_correct_volume(variants_all_rgb):
+    # Test that the correct volume is computed for both simple and complex meshes
+    objects_to_test = ["tests/obj/cbox_smallbox.obj", "common/meshes/bunny_watertight.ply"]
+    object_volumes = [4559445.0373, 1.6012674570083618]
+    for mesh_path, mesh_volume in zip(objects_to_test, object_volumes):
+        shape = mi.load_dict({
+            "type": "obj" if mesh_path.endswith("obj") else "ply",
+            "filename": f"resources/data/{mesh_path}",
+        })
+        assert dr.allclose(shape.volume(), mesh_volume)
+
+
+@pytest.mark.slow
+@fresolver_append_path
+def test37_volume_position_sampling_normalisation(variants_vec_rgb):
+    shape = mi.load_dict({
+        "type": "obj",
+        "filename": f"resources/data/tests/obj/cbox_smallbox.obj",
+    })
+
+    iter_count = 32
+
+    sampler = mi.load_dict({
+        "type": "multijitter",
+        "sample_count": iter_count * 2
+    })
+
+    sampler.seed(0, 131072)
+    active = mi.Mask(True)
+
+    resulting_vol_pdfs = 0.0
+
+    for iter_num in range(iter_count):
+        ps = shape.sample_position_volume(mi.Float(0.0), sampler.next_3d(), active)
+        resulting_vol_pdfs = resulting_vol_pdfs + dr.select(ps.pdf != 0.0, shape.bbox().volume(), 0.0)
+
+    sum_pdf = dr.mean(resulting_vol_pdfs/iter_count, axis=None, mode="evaluated")
+
+    assert(dr.allclose(sum_pdf, shape.volume(), atol=32/(32*131072)**0.5))
+
+
+@pytest.mark.slow
+@fresolver_append_path
+def test38_volume_direction_sampling_normalisation(variants_vec_rgb):
+    # Test that the directional pdf is normalised
+    shape = mi.load_dict({
+        "type": "ply",
+        "filename": f"resources/data/common/meshes/bunny_watertight.ply",
+    })
+
+    iter_count = 32
+
+    for iter_index in range(33):
+        sampler = mi.load_dict({
+            "type": "multijitter",
+            "sample_count": iter_count * 2
+        })
+
+        sampler_offset = mi.load_dict({
+            "type": "multijitter",
+            "sample_count": 36
+        })
+
+        sampler.seed(iter_index, 131072)
+        sampler_offset.seed(iter_index + 64, 1)
+        active = mi.Mask(True)
+
+        bsphere = shape.bbox().bounding_sphere()
+
+        resulting_line_pdfs = 0.0
+
+        # We select a set of random points both inside and outside the bounding sphere
+        # and then sample the entire sphere of directions. A normalised directional pdf
+        # will integrate to 1 over the entire sphere centered at any arbitrary point.
+        if iter_index == 0:
+            ray_offset = mi.Vector3f(0.0, 0.0, 0.0)
+        else:
+            ray_offset = 4 * mi.warp.cube_to_uniform_sphere(sampler_offset.next_3d()) * bsphere.radius
+        for iter_num in range(iter_count):
+            ray = mi.Ray3f()
+            ray.o = bsphere.center + ray_offset
+            ray.d = mi.warp.square_to_uniform_sphere(sampler.next_2d())
+            pdf = mi.warp.square_to_uniform_sphere_pdf(ray.d)
+
+            test_si = dr.zeros(mi.SurfaceInteraction3f)
+            test_si.p = ray.o
+            test_si.time = 0.0
+
+
+            if "scalar" in variants_vec_rgb:
+                test_ds = mi.DirectionSample3f()
+            else:
+                test_ds = dr.zeros(mi.DirectionSample3f)
+            test_ds.p = ray.o + bsphere.radius * 2 * ray.d
+            test_ds.time = 0.0
+            test_ds.d = ray.d
+
+            underlying_pdf = shape.pdf_direction_volume(test_si, test_ds, active)
+            resulting_line_pdfs = resulting_line_pdfs + underlying_pdf * dr.select(pdf != 0.0, dr.rcp(pdf), 0.0)
+
+        sum_pdf = dr.mean(resulting_line_pdfs / iter_count, axis=None, mode="evaluated")
+        assert(dr.allclose(sum_pdf, 1.0, atol=32/(32*131072)**0.5))
