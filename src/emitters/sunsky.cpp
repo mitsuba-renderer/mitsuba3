@@ -171,6 +171,8 @@ public:
         Vector3f local_sun_dir = m_to_world.value().inverse().transform_affine(m_sun_dir);
 
         m_sun_angles = dir_to_sph(local_sun_dir);
+        m_sun_angles = { m_sun_angles.y(), m_sun_angles.x() }; // flip convention
+
         m_local_sun_frame = Frame3f(local_sun_dir);
 
         Float sun_eta = 0.5f * dr::Pi<Float> - m_sun_angles.y();
@@ -275,7 +277,10 @@ public:
         } else {
             local_sun_dir = m_to_world.value().inverse().transform_affine(m_sun_dir);
         }
+
         m_sun_angles = dir_to_sph(local_sun_dir);
+        m_sun_angles = { m_sun_angles.y(), m_sun_angles.x() }; // flip convention
+
         m_local_sun_frame = Frame3f(local_sun_dir);
 
         Float eta = 0.5f * dr::Pi<Float> - m_sun_angles.y();
@@ -815,7 +820,9 @@ private:
         Float sin_theta = Frame3f::sin_theta(local_dir);
         active &= (Frame3f::cos_theta(local_dir) >= 0.f) && (sin_theta != 0.f);
         sin_theta = dr::maximum(sin_theta, dr::Epsilon<Float>);
-        Float sky_pdf = tgmm_pdf(dir_to_sph(local_dir), active) / sin_theta;
+        Point2f angles = dir_to_sph(local_dir);
+        angles = { angles.y(), angles.x() }; // flip convention
+        Float sky_pdf = tgmm_pdf(angles, active) / sin_theta;
 
         Float cosine_cutoff = dr::cos(m_sun_half_aperture);
         Float sun_pdf = warp::square_to_uniform_cone_pdf(
