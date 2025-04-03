@@ -53,7 +53,7 @@ enum class RayFlags : uint32_t {
     /// Derivatives of the SurfaceInteraction fields ignore shape's motion
     DetachShape = 0x100,
 
-    /// Enable backface culling
+    /// Enable backface culling (currently only supported on EllipsoidsMesh shapes)
     BackfaceCulling = 0x200,
 
     // =============================================================

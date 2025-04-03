@@ -245,6 +245,8 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
         OptixProgramGroupOptions program_group_options = {};
         OptixProgramGroupDesc pgd[MAX_PROGRAM_GROUP_COUNT] {};
 
+        size_t pgd_index = 0;
+
         // Meshes program group
         if (has_meshes) {
             pgd_index++;
@@ -316,7 +318,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
         check_log(optixProgramGroupCreate(
             config.context,
             pgd,
-            program_group_count,
+            (uint32_t) program_group_count,
             &program_group_options,
             optix_log,
             &optix_log_size,
@@ -331,7 +333,7 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
             &config.pipeline_compile_options,
             config.main_module,
             config.program_groups,
-            program_group_count
+            (uint32_t) program_group_count
         );
         jit_set_scope(JitBackend::CUDA, scope);
     }
@@ -663,11 +665,10 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
         UInt32 ray_mask(255), ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT),
                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
-        // TODO currently the logic doesn't work for a single IAS, hence the check below
-        if (!config.has_only_meshes) {
-            if (has_flag(ray_flags_, RayFlags::BackfaceCulling))
-                ray_flags |= OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES;
-        }
+        // Enforce backface culling, which is only enabled on the MeshEllipsoids IAS.
+        // In the case of a single IAS for meshes, don't enable backface culling.
+        if (!config.has_only_meshes && has_flag(ray_flags_, RayFlags::BackfaceCulling))
+            ray_flags |= OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES;
 
         UInt32 payload_t(0),
                payload_prim_u(0),
@@ -761,9 +762,8 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
 
         UInt32 payload_hit(1);
 
-        // Enforce backface culling, which is only enabled on the MeshEllipsoids IAS
-        // TODO this could be enabled/disabled using a flag argument to this method.
-        // TODO currently the logic doesn't work for a single IAS, hence the check below
+        // Enforce backface culling, which is only enabled on the MeshEllipsoids IAS.
+        // In the case of a single IAS for meshes, don't enable backface culling.
         if (!config.has_only_meshes)
             ray_flags |= OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES;
 

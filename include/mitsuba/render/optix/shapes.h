@@ -311,7 +311,7 @@ void prepare_ias(const OptixDeviceContext &context,
 
     auto build_optix_instance = [&](const OptixAccelData::HandleData &handle,
                                     bool disable_face_culling = true) {
-        // TODO: Here we are forcing backface culling to be disabled for meshes other
+        // Here we are forcing backface culling to be disabled for meshes other
         // than EllipsoidsMeshes. In case we want to enable backface culling on a
         // per-mesh basis in the future, we will need to create another IAS specifically
         // for meshes that request backface culling (e.g. could add Shape->enable_backface_culling())
