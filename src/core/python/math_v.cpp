@@ -4,6 +4,7 @@
 #include <drjit/morton.h>
 #include <bitset>
 #include <mitsuba/python/python.h>
+#include <mitsuba/core/spectrum.h>
 #include <nanobind/stl/tuple.h>
 #include <nanobind/stl/pair.h>
 
@@ -40,11 +41,35 @@ MI_PY_EXPORT(math) {
           D(math, round_to_power_of_two));
 
     m.def("linear_to_srgb",
+          [](ScalarFloat &c) { return dr::linear_to_srgb(c); },
+          "Applies the sRGB gamma curve to the given argument.");
+
+    m.def("linear_to_srgb",
+          [](ScalarColor3f &c) { return dr::linear_to_srgb(c); },
+          "Applies the sRGB gamma curve to the given argument.");
+
+    m.def("linear_to_srgb",
           [](Float &c) { return dr::linear_to_srgb(c); },
           "Applies the sRGB gamma curve to the given argument.");
 
+    m.def("linear_to_srgb",
+          [](Color3f &c) { return dr::linear_to_srgb(c); },
+          "Applies the sRGB gamma curve to the given argument.");
+
+    m.def("srgb_to_linear",
+          [](ScalarFloat &c) { return dr::srgb_to_linear(c); },
+          "Applies the inverse sRGB gamma curve to the given argument.");
+
+    m.def("srgb_to_linear",
+          [](ScalarColor3f &c) { return dr::srgb_to_linear(c); },
+          "Applies the inverse sRGB gamma curve to the given argument.");
+
     m.def("srgb_to_linear",
           [](Float &c) { return dr::srgb_to_linear(c); },
+          "Applies the inverse sRGB gamma curve to the given argument.");
+
+    m.def("srgb_to_linear",
+          [](Color3f &c) { return dr::srgb_to_linear(c); },
           "Applies the inverse sRGB gamma curve to the given argument.");
 
     m.def(
@@ -72,6 +97,10 @@ MI_PY_EXPORT(math) {
     m.def("solve_quadratic",
           &math::solve_quadratic<Float>,
           "a"_a, "b"_a, "c"_a, D(math, solve_quadratic));
+
+    m.def("improved_solve_quadratic",
+          &math::improved_solve_quadratic<Float>,
+          "a"_a, "b"_a, "c"_a, "discr"_a, D(math, improved_solve_quadratic));
 
     m.def("morton_decode2", &dr::morton_decode<dr::Array<UInt32, 2>>, "m"_a);
     m.def("morton_decode3", &dr::morton_decode<dr::Array<UInt32, 3>>, "m"_a);

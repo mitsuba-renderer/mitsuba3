@@ -169,6 +169,12 @@ template <typename Value_, size_t Size_> struct Array {
             printf((i < Size - 1 ? "%f, " : "%f"), v[i]);
         printf("]\n");
     }
+
+    DEVICE static Array load(const void *mem) {
+        Array result;
+        memcpy(result.v, mem, sizeof(Value) * StorageSize);
+        return result;
+    }
 #endif
 
     alignas(16) Value v[StorageSize];

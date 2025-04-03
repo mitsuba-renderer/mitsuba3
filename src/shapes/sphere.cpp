@@ -725,6 +725,7 @@ public:
             si.dn_dv = si.dp_dv * inv_radius;
         }
 
+        si.prim_index = pi.prim_index;
         si.shape    = this;
         si.instance = nullptr;
 
