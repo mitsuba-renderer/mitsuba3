@@ -277,9 +277,9 @@ public:
         callback->put_parameter("diffuse_reflectance_sampling_rate", m_diff_refl_srate, +ParamFlags::NonDifferentiable);
 
         if (m_eta_specular) //Only one of them traversed! (based on xml file)
-            callback->put_parameter("eta",      m_eta,      ParamFlags::Differentiable | ParamFlags::Discontinuous);
+            callback->put_parameter("eta",      m_eta.get(),      ParamFlags::Differentiable | ParamFlags::Discontinuous);
         else
-            callback->put_parameter("specular", m_specular, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+            callback->put_parameter("specular", m_specular.get(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
 
         callback->put_object("roughness",       m_roughness.get(),   ParamFlags::Differentiable | ParamFlags::Discontinuous);
         callback->put_object("base_color",      m_base_color.get(),  +ParamFlags::Differentiable);
