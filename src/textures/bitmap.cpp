@@ -408,7 +408,7 @@ public:
                       " it must be at least 2x2 pixels in size!",
                       to_string());
 
-            m_texture.set_tensor(m_texture.tensor());
+            m_texture.inplace_update();
             rebuild_internals(m_texture.tensor(), true, m_distr2d != nullptr);
         }
     }
