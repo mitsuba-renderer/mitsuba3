@@ -250,7 +250,7 @@ public:
                 m_to_world = m_to_world.value();
             }
 
-            m_grid_texture.set_tensor(m_grid_texture.tensor());
+            m_grid_texture.inplace_update();
 
             update();
         }
