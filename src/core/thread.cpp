@@ -103,17 +103,20 @@ std::atomic<uint32_t> WorkerThread::m_counter{0};
 struct ThreadNotifier {
     ThreadNotifier() {
         // Do not register the main thread
-        if (m_counter > 0)
-            Thread::register_external_thread("wrk");
+        if (m_counter > 0 && !self)
+            registered_external = Thread::register_external_thread("wrk");
+        else
+            registered_external = false;
         m_counter++;
     }
     ~ThreadNotifier() {
-        if (self)
+        if (registered_external)
             Thread::unregister_external_thread();
         m_counter--;
     }
     void ensure_initialized() {}
     static std::atomic<uint32_t> m_counter;
+    bool registered_external;
 };
 
 std::atomic<uint32_t> ThreadNotifier::m_counter{0};
@@ -127,7 +130,7 @@ struct Thread::ThreadPrivate {
     bool external_thread = false;
     bool critical = false;
     int core_affinity = -1;
-    Thread::EPriority priority;
+    Thread::EPriority priority = Thread::ENormalPriority;
     ref<Logger> logger;
     ref<Thread> parent;
     ref<FileResolver> fresolver;
@@ -413,14 +416,27 @@ void Thread::start() {
 void Thread::dispatch() {
     d->native_handle = d->thread.native_handle();
 
-    uint32_t id = thread_ctr++;
-    #if defined(__linux__) || defined(__APPLE__)
-        pthread_setspecific(this_thread_id, reinterpret_cast<void *>(id));
-    #elif defined(_WIN32)
-        this_thread_id = id;
-    #endif
-
+    struct WorkerSelf {
+        ref<Thread> self_ = self;
+        ~WorkerSelf() {
+            // Avoid replaced Thread identity crashing with warning on destruction
+            if (self_)
+                self_->d->running = false;
+        }
+    } worker_identity;
     self = this;
+    if (worker_identity.self_) {
+        worker_identity.self_->dec_ref();
+        notifier.registered_external = false;
+    }
+    else {
+        uint32_t id = thread_ctr++;
+        #if defined(__linux__) || defined(__APPLE__)
+            pthread_setspecific(this_thread_id, reinterpret_cast<void *>(id));
+        #elif defined(_WIN32)
+            this_thread_id = id;
+        #endif
+    }
 
     if (d->priority != ENormalPriority)
         set_priority(d->priority);
@@ -512,6 +528,7 @@ bool Thread::register_external_thread(const std::string &prefix) {
         set_thread_name_(thread_name.c_str());
     #endif
 
+    self->inc_ref();
     return true;
 }
 
@@ -519,6 +536,9 @@ bool Thread::unregister_external_thread() {
     if (!self || !self->d->external_thread)
         return false;
     self->d->running = false;
+    Thread* worker = self;
+    self = nullptr;
+    worker->dec_ref();
     return true;
 }
 
