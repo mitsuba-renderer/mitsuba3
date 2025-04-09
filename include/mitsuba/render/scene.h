@@ -260,6 +260,7 @@ public:
      *    should be queried to check if an intersection was actually found.
      */
     PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
+                                                        uint32_t ray_flags,
                                                         Mask coherent = false,
                                                         Mask active = true) const;
 
@@ -461,7 +462,7 @@ public:
      *      The boundary space sample (a point in the unit cube).
      *
      * \param flags
-     *      Flags to select the type of silhouettes to sample from (see 
+     *      Flags to select the type of silhouettes to sample from (see
      *      \ref DiscontinuityFlags). Multiple types of discontinuities can be
      *      sampled in a single call.
      *      If a single type of silhouette is specified, shapes that do not have
@@ -587,7 +588,7 @@ protected:
     MI_INLINE PreliminaryIntersection3f ray_intersect_preliminary_cpu(
         const Ray3f &ray, Mask coherent, Mask active) const;
     MI_INLINE PreliminaryIntersection3f ray_intersect_preliminary_gpu(
-        const Ray3f &ray, Mask active) const;
+        const Ray3f &ray, uint32_t ray_flags, Mask active) const;
 
     /// Trace a ray
     MI_INLINE SurfaceInteraction3f ray_intersect_cpu(const Ray3f &ray, uint32_t ray_flags, Mask coherent, Mask active) const;

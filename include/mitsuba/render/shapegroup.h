@@ -51,6 +51,9 @@ public:
     /// Return whether this shapegroup contains triangle mesh shapes
     bool has_meshes() const { return m_has_meshes; }
 
+    /// Return whether this shapegroup contains triangle ellipsoids mesh shapes
+    bool has_ellipsoids_meshes() const { return m_has_ellipsoids_meshes; }
+
     /// Return whether this shapegroup contains B-spline curve shapes
     bool has_bspline_curves() const { return m_has_bspline_curves; }
 
@@ -105,7 +108,8 @@ private:
     uint32_t m_sbt_offset;
 #endif
 
-    bool m_has_meshes, m_has_bspline_curves, m_has_linear_curves, m_has_others;
+    bool m_has_meshes, m_has_ellipsoids_meshes, m_has_bspline_curves,
+         m_has_linear_curves, m_has_others;
 };
 
 MI_EXTERN_CLASS(ShapeGroup)

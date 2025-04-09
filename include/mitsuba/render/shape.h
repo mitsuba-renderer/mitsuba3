@@ -35,8 +35,10 @@ enum class ShapeType : uint32_t {
     Sphere = 7u,
     /// Instance (`instance`)
     Instance = 8u,
+    /// Ellipsoids (`ellipsoids`)
+    Ellipsoids = 9u,
     /// Other shapes
-    Other = 9u
+    Other = 10u
 };
 MI_DECLARE_ENUM_OPERATORS(ShapeType)
 
@@ -787,6 +789,21 @@ public:
     virtual Color3f eval_attribute_3(const std::string &name,
                                      const SurfaceInteraction3f &si,
                                      Mask active = true) const;
+/**
+     * \brief Evaluate a dynamically sized shape attribute at the given surface interaction.
+     *
+     * \param name
+     *     Name of the attribute to evaluate
+     *
+     * \param si
+     *     Surface interaction associated with the query
+     *
+     * \return
+     *     An dynamic array of attribute values
+     */
+    virtual dr::DynamicArray<Float> eval_attribute_x(const std::string &name,
+                                                     const SurfaceInteraction3f &si,
+                                                     Mask active = true) const;
 
     /**
      * \brief Parameterize the mesh using UV values
@@ -814,7 +831,7 @@ public:
     void set_id(const std::string& id) override { m_id = id; };
 
     /// Is this shape a triangle mesh?
-    bool is_mesh() const { return (shape_type() == +ShapeType::Mesh); };
+    virtual bool is_mesh(Mask /*unused*/ = true) const { return false; };
 
     /// Returns the shape type \ref ShapeType of this shape
     uint32_t shape_type() const { return (uint32_t) m_shape_type; }
@@ -1130,6 +1147,7 @@ MI_CALL_TEMPLATE_BEGIN(Shape)
     DRJIT_CALL_METHOD(eval_attribute)
     DRJIT_CALL_METHOD(eval_attribute_1)
     DRJIT_CALL_METHOD(eval_attribute_3)
+    DRJIT_CALL_METHOD(eval_attribute_x)
     DRJIT_CALL_METHOD(eval_parameterization)
     DRJIT_CALL_METHOD(ray_intersect_preliminary)
     DRJIT_CALL_METHOD(ray_intersect)
@@ -1149,12 +1167,12 @@ MI_CALL_TEMPLATE_BEGIN(Shape)
     DRJIT_CALL_GETTER(bsdf)
     DRJIT_CALL_GETTER(interior_medium)
     DRJIT_CALL_GETTER(exterior_medium)
+    DRJIT_CALL_GETTER(is_mesh)
     DRJIT_CALL_GETTER(silhouette_discontinuity_types)
     DRJIT_CALL_GETTER(silhouette_sampling_weight)
     DRJIT_CALL_GETTER(shape_type)
     auto is_emitter() const { return emitter() != nullptr; }
     auto is_sensor() const { return sensor() != nullptr; }
-    auto is_mesh() const { return shape_type() == (uint32_t) mitsuba::ShapeType::Mesh; }
     auto is_medium_transition() const { return interior_medium() != nullptr ||
                                                exterior_medium() != nullptr; }
 MI_CALL_TEMPLATE_END(Shape)

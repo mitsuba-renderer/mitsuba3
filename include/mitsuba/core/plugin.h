@@ -32,6 +32,8 @@ public:
     const Class *get_plugin_class(const std::string &name,
                                   const std::string &variant);
 
+    std::string get_plugin_type(const std::string &plugin_name);
+
     /// Return the list of loaded plugins
     std::vector<std::string> loaded_plugins() const;
 

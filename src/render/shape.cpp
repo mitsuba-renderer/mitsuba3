@@ -330,7 +330,13 @@ void Shape<Float, Spectrum>::optix_fill_hitgroup_records(
         jit_registry_id(this), m_optix_data_ptr
     };
 
-    size_t shape_index = (is_mesh() ? 1 : 2 + get_shape_descr_idx(this));
+    size_t shape_index;
+    if (is_mesh() && m_shape_type != ShapeType::Ellipsoids)
+        shape_index = 1;
+    else if (is_mesh() && m_shape_type == ShapeType::Ellipsoids)
+        shape_index = 2;
+    else
+        shape_index = 3 + get_shape_descr_idx(this);
     size_t program_group_idx = program_index_mapping.at(shape_index);
 
     // Setup the hitgroup record and copy it to the hitgroup records array
@@ -588,6 +594,16 @@ Shape<Float, Spectrum>::eval_attribute_3(const std::string& name,
     return texture->eval_3(si, active);
 }
 
+MI_VARIANT typename dr::DynamicArray<Float>
+Shape<Float, Spectrum>::eval_attribute_x(const std::string& /*name*/,
+                                         const SurfaceInteraction3f & /*si*/,
+                                         Mask /*active*/) const {
+    if constexpr (dr::is_jit_v<Float>)
+        return 0.f;
+    else
+        NotImplementedError("eval_attribute_x");
+}
+
 MI_VARIANT Float Shape<Float, Spectrum>::surface_area() const {
     NotImplementedError("surface_area");
 }
@@ -631,6 +647,9 @@ MI_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
         callback->put_object("exterior_medium", m_exterior_medium.get(), +ParamFlags::Differentiable);
 
     callback->put_parameter("silhouette_sampling_weight", m_silhouette_sampling_weight, +ParamFlags::NonDifferentiable);
+
+    for (auto& [name, texture]: m_texture_attributes)
+        callback->put_object(name, texture.get(), +ParamFlags::Differentiable);
 }
 
 MI_VARIANT
