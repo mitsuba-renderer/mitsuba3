@@ -330,7 +330,7 @@ void Shape<Float, Spectrum>::optix_fill_hitgroup_records(
         jit_registry_id(this), m_optix_data_ptr
     };
 
-    size_t shape_index = (is_mesh() ? 1 : 2 + get_shape_descr_idx(this));
+    size_t shape_index = get_shape_descr_idx(this);
     size_t program_group_idx = program_index_mapping.at(shape_index);
 
     // Setup the hitgroup record and copy it to the hitgroup records array

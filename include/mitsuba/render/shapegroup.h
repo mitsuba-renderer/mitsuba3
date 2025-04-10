@@ -79,7 +79,7 @@ public:
 
     void optix_prepare_geometry() override;
 
-    /// Build OptiX geometry acceleration structures
+    /// Build OptiX geometry acceleration structures for this group's shapes
     void optix_build_gas(const OptixDeviceContext& context);
 #endif
 
@@ -100,7 +100,7 @@ private:
 #endif
 
 #if defined(MI_ENABLE_CUDA)
-    OptixAccelData m_accel;
+    MiOptixAccelData m_accel;
     /// OptiX hitgroup sbt offset
     uint32_t m_sbt_offset;
 #endif
