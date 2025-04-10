@@ -56,6 +56,7 @@ MI_VARIANT void Film<Float, Spectrum>::traverse(TraversalCallback *callback) {
     callback->put_parameter("size", m_size, +ParamFlags::NonDifferentiable);
     callback->put_parameter("crop_size", m_crop_size, +ParamFlags::NonDifferentiable);
     callback->put_parameter("crop_offset", m_crop_offset, +ParamFlags::NonDifferentiable);
+    callback->put_object("rfilter", m_filter, +ParamFlags::NonDifferentiable);
 }
 
 MI_VARIANT void Film<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
