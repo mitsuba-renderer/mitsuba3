@@ -343,6 +343,8 @@ protected:
 
     /// Identifier (if available)
     std::string m_id;
+
+    MI_TRAVERSE_CB(Object)
 };
 
 /** \brief Abstract integrator that performs Monte Carlo sampling starting from
@@ -460,6 +462,8 @@ protected:
      * If set to (uint32_t) -1, all the work is done in a single pass (default).
      */
     uint32_t m_samples_per_pass;
+
+    MI_TRAVERSE_CB(Base)
 };
 
 /** \brief Abstract integrator that performs *recursive* Monte Carlo sampling
@@ -487,6 +491,8 @@ protected:
 protected:
     uint32_t m_max_depth;
     uint32_t m_rr_depth;
+
+    MI_TRAVERSE_CB(Base)
 };
 
 /** \brief Abstract adjoint integrator that performs Monte Carlo sampling
@@ -574,6 +580,8 @@ protected:
 
     /// Depth to begin using russian roulette
     int m_rr_depth;
+
+    MI_TRAVERSE_CB(Base)
 };
 
 
