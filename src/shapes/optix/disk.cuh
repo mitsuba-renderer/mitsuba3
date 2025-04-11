@@ -21,7 +21,7 @@ extern "C" __global__ void __intersection__disk() {
     float t = -ray.o.z() / ray.d.z();
     Vector3f local = ray(t);
 
-    if (local.x() * local.x() + local.y() * local.y() <= 1.f)
+    if (local.x() * local.x() + local.y() * local.y() <= 1.f && t > ray.mint && t < ray.maxt)
         optixReportIntersection(t, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE,
                                 __float_as_uint(local.x()),
                                 __float_as_uint(local.y()));

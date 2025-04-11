@@ -16,7 +16,6 @@ struct OptixSDFGridData {
 };
 
 #ifdef __CUDACC__
-
 __device__ unsigned int vec_to_index(const Vector3u &vec,
                                      const OptixSDFGridData &sdf) {
     return vec[2] * sdf.res_y * sdf.res_x + vec[1] * sdf.res_x + vec[0];
