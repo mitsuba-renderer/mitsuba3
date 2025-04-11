@@ -236,7 +236,8 @@ size_t init_optix_config(bool has_meshes, bool has_others, bool has_instances,
         // =====================================================
 
         OptixProgramGroupOptions program_group_options = {};
-        OptixProgramGroupDesc pgd[MAX_PROGRAM_GROUP_COUNT] {};
+        OptixProgramGroupDesc pgd[MAX_PROGRAM_GROUP_COUNT];
+        memset(pgd, 0, sizeof(pgd)); // Use memset due to union member.
 
         size_t pgd_index = 0;
         pgd[pgd_index].kind = OPTIX_PROGRAM_GROUP_KIND_MISS;
@@ -524,7 +525,8 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
                 s.ias_data = {};
                 s.ias_data.inputs = jit_malloc_migrate(d_ias, AllocType::Device, 1);
 
-                OptixBuildInput build_input{};
+                OptixBuildInput build_input;
+                memset(&build_input, 0, sizeof(OptixBuildInput)); // Use memset due to union member.
                 build_input.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
                 build_input.instanceArray.instances = (CUdeviceptr)s.ias_data.inputs;
                 build_input.instanceArray.numInstances = (unsigned int) ias.size();
