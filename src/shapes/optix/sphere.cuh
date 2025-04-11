@@ -55,7 +55,7 @@ extern "C" __global__ void __intersection__sphere() {
     bool out_bounds = !(near_t <= ray.maxt && far_t >= 0.f); // NaN-aware conditionals
 
     // Sphere fully contains the segment of the ray
-    bool in_bounds = near_t < 0.f && far_t > ray.maxt;
+    bool in_bounds = near_t < ray.mint && far_t > ray.maxt;
 
     float t = (near_t < 0.f ? far_t: near_t);
 
