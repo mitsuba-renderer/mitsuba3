@@ -182,7 +182,7 @@ extern "C" __global__ void __intersection__sdfgrid() {
         return;
     }
 
-    t_bbox_beg = max(t_bbox_beg, 0.f);
+    t_bbox_beg = max(t_bbox_beg, ray.mint);
     if (t_bbox_end < t_bbox_beg) {
         return;
     }
