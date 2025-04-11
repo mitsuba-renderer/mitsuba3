@@ -55,17 +55,11 @@ extern "C" __global__ void __intersection__sphere() {
     bool out_bounds = !(near_t <= ray.maxt && far_t >= 0.f); // NaN-aware conditionals
 
     // Sphere fully contains the segment of the ray
-    bool in_bounds = near_t < 0.f && far_t > ray.maxt;
+    bool in_bounds = near_t < ray.mint && far_t > ray.maxt;
 
     float t = (near_t < 0.f ? far_t: near_t);
 
     if (solution_found && !out_bounds && !in_bounds)
         optixReportIntersection(t, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
-}
-
-extern "C" __global__ void __closesthit__sphere() {
-    const OptixHitGroupData *sbt_data = (OptixHitGroupData *) optixGetSbtDataPointer();
-    set_preliminary_intersection_to_payload(
-        optixGetRayTmax(), Vector2f(), 0, sbt_data->shape_registry_id);
 }
 #endif
