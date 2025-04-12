@@ -236,7 +236,8 @@ size_t init_optix_config(uint32_t optix_config_shapes) {
     // program groups will have a closest hit program.
 
     OptixProgramGroupOptions program_group_options = {};
-    OptixProgramGroupDesc pgd[MAX_PROGRAM_GROUP_COUNT] {};
+    OptixProgramGroupDesc pgd[MAX_PROGRAM_GROUP_COUNT];
+    memset(pgd, 0, sizeof(pgd)); // Use memset due to union member.
 
     size_t pg_count = 0;
     for (size_t i = 0; i < MI_OPTIX_SHAPE_TYPE_COUNT; i++) {
@@ -282,13 +283,10 @@ size_t init_optix_config(uint32_t optix_config_shapes) {
         config.program_index_mapping[i] = pg_count - 1;
 
         pgd[pg_count - 1].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-        pgd[pg_count - 1].hitgroup.moduleCH = nullptr;
-        pgd[pg_count - 1].hitgroup.entryFunctionNameCH = nullptr;
         pgd[pg_count - 1].hitgroup.entryFunctionNameIS = config.intersection_pg_name[i];
 
         switch(shape_type) {
             case MiOptixShapeType::Mesh:
-                pgd[pg_count - 1].hitgroup.moduleIS = nullptr;
                 break;
             case MiOptixShapeType::BSplineCurve:
                 pgd[pg_count - 1].hitgroup.moduleIS = config.bspline_curve_module;
@@ -305,10 +303,6 @@ size_t init_optix_config(uint32_t optix_config_shapes) {
         // Create a dummy program so that we can still build a valid pipeline
         pg_count = 1;
         pgd[0].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-        pgd[0].hitgroup.moduleCH = nullptr;
-        pgd[0].hitgroup.entryFunctionNameCH = nullptr;
-        pgd[0].hitgroup.entryFunctionNameIS = nullptr;
-        pgd[0].hitgroup.moduleIS = nullptr;
     }
 
     optix_log_size = sizeof(optix_log);
@@ -530,7 +524,8 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
             s.ias_data = {};
             s.ias_data.inputs = jit_malloc_migrate(d_ias, AllocType::Device, 1);
 
-            OptixBuildInput build_input{};
+            OptixBuildInput build_input;
+            memset(&build_input, 0, sizeof(OptixBuildInput)); // Use memset due to union member.
             build_input.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
             build_input.instanceArray.instances = (CUdeviceptr) s.ias_data.inputs;
             build_input.instanceArray.numInstances = (unsigned int) ias.size();
