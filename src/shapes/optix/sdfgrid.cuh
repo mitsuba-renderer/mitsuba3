@@ -16,7 +16,6 @@ struct OptixSDFGridData {
 };
 
 #ifdef __CUDACC__
-
 __device__ unsigned int vec_to_index(const Vector3u &vec,
                                      const OptixSDFGridData &sdf) {
     return vec[2] * sdf.res_y * sdf.res_x + vec[1] * sdf.res_x + vec[0];
@@ -183,7 +182,7 @@ extern "C" __global__ void __intersection__sdfgrid() {
         return;
     }
 
-    t_bbox_beg = max(t_bbox_beg, 0.f);
+    t_bbox_beg = max(t_bbox_beg, ray.mint);
     if (t_bbox_end < t_bbox_beg) {
         return;
     }
