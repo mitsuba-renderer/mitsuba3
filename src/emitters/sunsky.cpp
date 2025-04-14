@@ -620,7 +620,7 @@ private:
 
         Spec c1 = 1 + coefs[0] * dr::exp(coefs[1] / (cos_theta + 0.01f));
         Spec chi = (1 + cos_gamma_sqr) /
-                   dr::pow(1 + dr::square(coefs[8]) - 2 * coefs[8] * cos_gamma, 1.5);
+                   dr::pow(1 + dr::square(coefs[8]) - 2 * coefs[8] * cos_gamma, 1.5f);
         Spec c2 = coefs[2] + coefs[3] * dr::exp(coefs[4] * gamma) +
                   coefs[5] * cos_gamma_sqr + coefs[6] * chi +
                   coefs[7] * dr::safe_sqrt(cos_theta);

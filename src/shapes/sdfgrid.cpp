@@ -15,11 +15,11 @@
 #include <drjit/texture.h>
 
 #if defined(MI_ENABLE_EMBREE)
-#include <embree3/rtcore.h>
+#  include <embree3/rtcore.h>
 #endif
 
 #if defined(MI_ENABLE_CUDA)
-#include "optix/sdfgrid.cuh"
+#  include "optix/sdfgrid.cuh"
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
@@ -164,8 +164,9 @@ public:
             if (tensor->shape(3) != 1)
                 Throw("SDF grid shape at index 3 is %lu, expected 1",
                       tensor->shape(3));
-            m_grid_texture = InputTexture3f(*tensor, true, true,
-                dr::FilterMode::Linear, dr::WrapMode::Clamp);
+            m_grid_texture = InputTexture3f(
+                (const typename InputTexture3f::TensorXf &) *tensor,
+                true, true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
         } else {
             Throw("The SDF values must be specified with either the "
                   "\"filename\" or \"grid\" parameter!");

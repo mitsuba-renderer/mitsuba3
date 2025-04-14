@@ -322,7 +322,7 @@ protected:
             m_wrap_mode,
             m_raw,
             m_accel,
-            tensor);
+            std::move(tensor));
     }
 
 private:
@@ -367,26 +367,29 @@ public:
     using StoredTensorXf         = dr::replace_scalar_t<TensorXf, StoredScalar>;
     using StoredTexture2f        = dr::Texture<StoredType, 2>;
 
+    template <typename Tensor>
     BitmapTextureImpl(const Properties &props,
-            const std::string& name,
-            const ScalarTransform3f& transform,
-            dr::FilterMode filter_mode,
-            dr::WrapMode wrap_mode,
-            bool raw,
-            bool accel,
-            StoredTensorXf& tensor) :
+                      const std::string& name,
+                      const ScalarTransform3f& transform,
+                      dr::FilterMode filter_mode,
+                      dr::WrapMode wrap_mode,
+                      bool raw,
+                      bool accel,
+                      Tensor&& tensor) :
         Texture(props),
         m_name(name),
         m_transform(transform),
         m_accel(accel),
-        m_raw(raw),
-        m_texture(tensor, accel, accel, filter_mode, wrap_mode) {
+        m_raw(raw) {
 
         /* Compute mean without migrating texture data
            i.e. Avoid call to m_texture.tensor() that triggers migration.
            For CUDA-variants, ideally want to solely keep data as CUDA texture
         */
         rebuild_internals(tensor, true, false);
+
+        m_texture = StoredTexture2f(std::forward<Tensor>(tensor), accel, accel,
+                                    filter_mode, wrap_mode);
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -394,8 +397,7 @@ public:
         callback->put_parameter("to_uv", m_transform,        +ParamFlags::NonDifferentiable);
     }
 
-    void
-    parameters_changed(const std::vector<std::string> &keys = {}) override {
+    void parameters_changed(const std::vector<std::string> &keys = {}) override {
         if (keys.empty() || string::contains(keys, "data")) {
             const size_t channels = m_texture.shape()[2];
             if (channels != 1 && channels != 3)
@@ -801,13 +803,14 @@ protected:
         if (m_transform != ScalarTransform3f())
             dr::make_opaque(m_transform);
 
-        size_t pixel_count = (size_t) dr::prod(resolution());
-        const size_t channels = m_texture.shape()[2];
-        bool range_issue = false;
+        const dr::vector<size_t> &shape = tensor.shape();
+        size_t pixel_count = shape[0] * shape[1],
+               channels    = shape[2];
 
+        bool range_issue = false;
         using FloatStorage = DynamicBuffer<Float>;
         using StoredTypeArray= DynamicBuffer<StoredType>;
-        FloatStorage values = dr::empty<FloatStorage>(pixel_count);
+        FloatStorage values;
 
         if (channels == 3) {
             if constexpr (dr::is_jit_v<Float>) {
@@ -824,7 +827,11 @@ protected:
                     values = luminance(colors_fl);
             } else {
                 StoredScalar* ptr = (StoredScalar*) tensor.data();
-                ScalarFloat *out = values.data(), mean = 0;
+                ScalarFloat *out = nullptr, mean = 0;
+                if (init_distr) {
+                    values = dr::empty<FloatStorage>(pixel_count);
+                    out = values.data();
+                }
 
                 for (size_t i = 0; i < pixel_count; ++i) {
                     Color3f col(ptr[0], ptr[1], ptr[2]);
@@ -836,7 +843,8 @@ protected:
                     else
                         lum = luminance(col);
 
-                    *out++ = lum;
+                    if (init_distr)
+                        *out++ = lum;
                     mean += lum;
                     range_issue |= lum < 0 || lum > 1;
                 }
@@ -848,11 +856,16 @@ protected:
                 values = tensor.array();
             } else {
                 StoredScalar* ptr = (StoredScalar*) tensor.data();
-                ScalarFloat *out = values.data(), mean = 0;
+                ScalarFloat *out = nullptr, mean = 0;
+                if (init_distr) {
+                    values = dr::empty<FloatStorage>(pixel_count);
+                    out = values.data();
+                }
                 for (size_t i = 0; i < pixel_count; ++i) {
                     ScalarFloat value = ptr[i];
-                    *out++ = value;
-                    m_mean += value;
+                    if (init_distr)
+                        *out++ = value;
+                    mean += value;
                     range_issue |= value < 0 || value > 1;
                 }
                 m_mean = mean / pixel_count;
