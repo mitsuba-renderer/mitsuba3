@@ -89,6 +89,7 @@ MI_PY_EXPORT(Scene) {
         .def("invert_silhouette_sample", &Scene::invert_silhouette_sample,
              "ss"_a, "active"_a = true,
              D(Scene, invert_silhouette_sample))
+        .def("shape_types", &Scene::shape_types, D(Scene, shape_types))
         // Accessors
         .def_method(Scene, bbox)
         .def("sensors",

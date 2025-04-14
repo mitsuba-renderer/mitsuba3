@@ -824,26 +824,41 @@ class ProjectiveDetail():
             shape's projection algorithm.
             """
             #TODO pass discontinuity flags as an option
-            def noop(*args,**kwargs):
+            def noop(*args, **kwargs):
                 return dr.zeros(mi.SilhouetteSample3f)
 
-            max_idx = mi.ShapeType.Other.value
-            projection_funcs = [noop] * max_idx
+            scene_shape_types = scene.shape_types()
+            funcs = []
 
-            projection_funcs[mi.ShapeType.Mesh.value] = self.project_mesh
-            projection_funcs[mi.ShapeType.BSplineCurve.value] = self.project_curve
-            projection_funcs[mi.ShapeType.Cylinder.value] = self.project_cylinder
-            projection_funcs[mi.ShapeType.Disk.value] = self.project_disk
-            projection_funcs[mi.ShapeType.Rectangle.value] = self.project_rectangle
-            projection_funcs[mi.ShapeType.SDFGrid.value] = self.project_sdf
-            projection_funcs[mi.ShapeType.Sphere.value] = self.project_sphere
+            # Map ShapeType values (which are bit flags) to contiguous indices
+            def compute_index(shape_type):
+                # Some shapes (e.g. rectangle) have multiple bits set. Use
+                # lzcnt to detect the most significant one
+                return 31 - dr.lzcnt(shape_type)
+
+            # Register a shape type
+            def put(shape_type, cb):
+                index = compute_index(shape_type)
+                while index >= len(funcs):
+                    funcs.append(noop)
+                # Ignore shapes that aren't present in the scene
+                if scene_shape_types & shape_type == shape_type:
+                    funcs[index] = cb
+
+            put(mi.ShapeType.Mesh, self.project_mesh)
+            put(mi.ShapeType.Rectangle, self.project_rectangle)
+            put(mi.ShapeType.BSplineCurve, self.project_curve)
+            put(mi.ShapeType.Cylinder, self.project_cylinder)
+            put(mi.ShapeType.Disk, self.project_disk)
+            put(mi.ShapeType.SDFGrid, self.project_sdf)
+            put(mi.ShapeType.Sphere, self.project_sphere)
 
             shape_types = si_guide.shape.shape_type()
             state = mi.UInt64(sampler.next_1d() * mi.UInt64(0xFFFFFFFFFFFFFFFF))
 
             ss = dr.switch(
-                shape_types,
-                projection_funcs,
+                compute_index(shape_types),
+                funcs,
                 scene, ray_guide, si_guide, state, active
             )
             active &= ss.is_valid()

@@ -13,7 +13,7 @@ def mixed_shapes_scene():
             "filename" : "resources/data/tests/ply/rectangle_uv.ply",
         },
         "shape2": {
-            "type" : "rectangle",
+            "type" : "sphere",
         },
         "shape3": {
             "type" : "ply",
@@ -1250,7 +1250,7 @@ def test31_primitive_silhouette_projection(variants_vec_rgb):
 
     mesh_ptr = mi.ShapePtr(mesh)
     assert dr.all((dr.reinterpret_array(mi.UInt32, ss.shape) ==
-                    dr.reinterpret_array(mi.UInt32, mesh_ptr)))
+                   dr.reinterpret_array(mi.UInt32, mesh_ptr)))
 
 
 @fresolver_append_path

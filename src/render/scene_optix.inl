@@ -1,6 +1,7 @@
 #include <iomanip>
 #include <cstring>
 #include <cstdio>
+#include <mutex>
 
 #include <drjit-core/optix.h>
 
@@ -9,25 +10,15 @@
 #include <mitsuba/render/optix/common.h>
 #include <mitsuba/render/optix/shapes.h>
 #include <mitsuba/render/optix_api.h>
+#include <tsl/robin_map.h>
 
 #include "librender_ptx.h"
 
 NAMESPACE_BEGIN(mitsuba)
 
 #if !defined(NDEBUG) || defined(MI_ENABLE_OPTIX_DEBUG_VALIDATION)
-#define MI_ENABLE_OPTIX_DEBUG_VALIDATION_ON
+#  define MI_ENABLE_OPTIX_DEBUG_VALIDATION_ON
 #endif
-
-#ifdef _MSC_VER
-#  define strdup(x) _strdup(x)
-#endif
-
-// In this file:
-// * In order to disamiguate Mitsuba data structures that are only used for
-//   OptiX from data structures defined in the OptiX API, the former are
-//   prefixed by "Mi", i.e "MiOptixDataStructure" vs "OptixDataStructure".
-
-static constexpr size_t MAX_PROGRAM_GROUP_COUNT = 1 + MI_OPTIX_SHAPE_TYPE_COUNT;
 
 // Per scene OptiX state data structure
 struct MiOptixSceneState {
@@ -38,9 +29,17 @@ struct MiOptixSceneState {
         void* buffer = nullptr;  // Device-visible storage for IAS
         void* inputs = nullptr;  // Device-visible storage for OptixInstance array
     } ias_data;
-    size_t config_index;
     uint32_t sbt_jit_index;
+
+    /// Redudant copies of fields from MiOptixConfig (to avoid a hash table lookup + mutex lock)
+    uint32_t config_key;
+    OptixDeviceContext context;
+    uint32_t pipeline_jit_index;
 };
+
+/// Maximum number of OptiX program groups that can be instantiated by any kernel
+#define MI_MAX_PROGRAM_GROUPS  7
+
 
 /**
  * \brief Optix configuration data structure
@@ -58,45 +57,36 @@ struct MiOptixConfig {
     OptixModule main_module;
     OptixModule bspline_curve_module; /// Built-in module for B-spline curves
     OptixModule linear_curve_module; /// Built-in module for linear curves
-    OptixProgramGroup program_groups[MAX_PROGRAM_GROUP_COUNT];
-    char *intersection_pg_name[MI_OPTIX_SHAPE_TYPE_COUNT]; /// Intersection program names
-    std::unordered_map<size_t, size_t> program_index_mapping;
+    OptixProgramGroup pg[MI_MAX_PROGRAM_GROUPS];
+    OptixProgramGroupMapping pg_mapping;
     uint32_t pipeline_jit_index;
+    uint32_t key;
 };
-
-enum class MiOptixConfigShapes : uint32_t {
-    HasCustom        = 1 << 0,
-    HasMeshes        = 1 << 1,
-    HasInstances     = 1 << 2,
-    HasLinearCurves  = 1 << 3,
-    HasBSplineCurves = 1 << 4,
-    Count            = 1 << 5
-};
-MI_DECLARE_ENUM_OPERATORS(MiOptixConfigShapes)
 
 // Array storing previously initialized optix configurations
-static constexpr uint32_t MI_OPTIX_CONFIG_COUNT = (uint32_t) MiOptixConfigShapes::Count;
-static MiOptixConfig optix_configs[MI_OPTIX_CONFIG_COUNT] = {};
+static tsl::robin_map<uint32_t, MiOptixConfig> optix_configs;
+static std::mutex optix_configs_lock;
 
-size_t init_optix_config(uint32_t optix_config_shapes) {
-    if (optix_config_shapes >= MI_OPTIX_CONFIG_COUNT)
-        Throw("Optix configuration initialization failed! Unknown set of requested shapes.");
-
-    // Use flags as config index in optix_configs
-    size_t config_index = optix_config_shapes;
-    MiOptixConfig &config = optix_configs[config_index];
-
-    // Optix config already initialized
-    if (config.main_module) {
-        return config_index;
+const MiOptixConfig &init_optix_config(uint32_t shape_types) {
+    uint32_t key = shape_types;
+    if ((key & +ShapeType::Rectangle) == +ShapeType::Rectangle) {
+        key &= ~ShapeType::Rectangle; // Rectangles are actually meshes
+        key |= +ShapeType::Mesh;
     }
 
-    Log(Debug, "Initialize Optix configuration (index=%zu)..", config_index);
+    // Use flags as config index in optix_configs
+    auto [it, success] = optix_configs.try_emplace(key);
+    if (!success)
+        return it->second;
 
+    Log(Debug, "Initialize Optix configuration (key=0x%x)..", key);
+
+    MiOptixConfig &config = it.value();
     config.context = jit_optix_context();
+    config.key = key;
 
     // =====================================================
-    // Setup OptiX pipeline
+    // Setup OptiX module + pipeline compilation options
     // =====================================================
 
     OptixModuleCompileOptions module_compile_options { };
@@ -117,7 +107,8 @@ size_t init_optix_config(uint32_t optix_config_shapes) {
         OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
 
 #if !defined(MI_ENABLE_OPTIX_DEBUG_VALIDATION_ON)
-    config.pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
+    config.pipeline_compile_options.exceptionFlags =
+            OPTIX_EXCEPTION_FLAG_NONE;
 #else
     config.pipeline_compile_options.exceptionFlags =
             OPTIX_EXCEPTION_FLAG_DEBUG |
@@ -125,15 +116,26 @@ size_t init_optix_config(uint32_t optix_config_shapes) {
             OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW;
 #endif
 
-    unsigned int prim_flags = 0;
-    if (optix_config_shapes & MiOptixConfigShapes::HasMeshes)
+    // Compute flags informing OptiX of the present shape types
+    unsigned int prim_flags = 0, st = shape_types;
+    if (st & ShapeType::Mesh) {
         prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
-    if (optix_config_shapes & MiOptixConfigShapes::HasCustom)
-        prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
-    if (optix_config_shapes & MiOptixConfigShapes::HasBSplineCurves)
+        st &= ~(ShapeType::Mesh | ShapeType::Rectangle);
+    }
+
+    if (st & ShapeType::BSplineCurve) {
         prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_CUBIC_BSPLINE;
-    if (optix_config_shapes & MiOptixConfigShapes::HasLinearCurves)
+        st &= ~ShapeType::BSplineCurve;
+    }
+
+    if (st & ShapeType::LinearCurve) {
         prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_LINEAR;
+        st &= ~ShapeType::LinearCurve;
+
+    }
+
+    if (st)
+        prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
 
     config.pipeline_compile_options.usesPrimitiveTypeFlags = prim_flags;
 
@@ -152,56 +154,10 @@ size_t init_optix_config(uint32_t optix_config_shapes) {
     };
 
     // =====================================================
-    // Create Optix module from supplemental PTX code
+    // Load additional Optix modules as needed
     // =====================================================
 
-    OptixTask task;
-    check_log(optixModuleCreateWithTasks(
-        config.context,
-        &module_compile_options,
-        &config.pipeline_compile_options,
-        (const char *)optix_rt_ptx,
-        optix_rt_ptx_size,
-        optix_log,
-        &optix_log_size,
-        &config.main_module,
-        &task
-    ));
-
-    std::function<void(OptixTask)> execute_task = [&](OptixTask task) {
-        unsigned int max_new_tasks = std::max(pool_size(), 1u);
-
-        std::unique_ptr<OptixTask[]> new_tasks =
-            std::make_unique<OptixTask[]>(max_new_tasks);
-        unsigned int new_task_count = 0;
-        optixTaskExecute(task, new_tasks.get(), max_new_tasks,
-                         &new_task_count);
-
-        parallel_for(
-            drjit::blocked_range<size_t>(0, new_task_count, 1),
-            [&](const drjit::blocked_range<size_t> &range) {
-                for (auto i = range.begin(); i != range.end(); ++i) {
-                    OptixTask new_task = new_tasks[i];
-                    execute_task(new_task);
-                }
-            }
-        );
-    };
-    execute_task(task);
-
-    int compilation_state = 0;
-    check_log(
-        optixModuleGetCompilationState(config.main_module, &compilation_state));
-    if (compilation_state != OPTIX_MODULE_COMPILE_STATE_COMPLETED)
-        Throw("Optix configuration initialization failed! The OptiX module "
-              "compilation did not complete successfully. The module's "
-              "compilation state is: %#06x", compilation_state);
-
-    // =====================================================
-    // Load built-in Optix modules for curves
-    // =====================================================
-
-    if (optix_config_shapes & MiOptixConfigShapes::HasBSplineCurves) {
+    if (prim_flags & OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_CUBIC_BSPLINE) {
         OptixBuiltinISOptions options = {};
         options.builtinISModuleType   = OPTIX_PRIMITIVE_TYPE_ROUND_CUBIC_BSPLINE;
         options.usesMotionBlur        = false;
@@ -214,7 +170,8 @@ size_t init_optix_config(uint32_t optix_config_shapes) {
                                     &config.pipeline_compile_options,
                                     &options, &config.bspline_curve_module));
     }
-    if (optix_config_shapes & MiOptixConfigShapes::HasLinearCurves) {
+
+    if (prim_flags & OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_LINEAR) {
         OptixBuiltinISOptions options = {};
         options.builtinISModuleType = OPTIX_PRIMITIVE_TYPE_ROUND_LINEAR;
         options.usesMotionBlur      = false;
@@ -228,82 +185,106 @@ size_t init_optix_config(uint32_t optix_config_shapes) {
                                     &options, &config.linear_curve_module));
     }
 
-    // =====================================================
-    // Create program groups (raygen provided by Dr.Jit..)
-    // =====================================================
+    if (prim_flags & OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM) {
+        OptixTask task;
+        check_log(optixModuleCreateWithTasks(
+            config.context,
+            &module_compile_options,
+            &config.pipeline_compile_options,
+            (const char *)optix_rt_ptx,
+            optix_rt_ptx_size,
+            optix_log,
+            &optix_log_size,
+            &config.main_module,
+            &task
+        ));
 
-    // Every shape type defines its own program group. Note that none of the
-    // program groups will have a closest hit program.
+        std::function<void(OptixTask)> execute_task = [&](OptixTask task) {
+            unsigned int max_new_tasks = std::max(pool_size(), 1u);
+
+            std::unique_ptr<OptixTask[]> new_tasks =
+                std::make_unique<OptixTask[]>(max_new_tasks);
+            unsigned int new_task_count = 0;
+            optixTaskExecute(task, new_tasks.get(), max_new_tasks,
+                             &new_task_count);
+
+            parallel_for(
+                drjit::blocked_range<size_t>(0, new_task_count, 1),
+                [&](const drjit::blocked_range<size_t> &range) {
+                    for (auto i = range.begin(); i != range.end(); ++i) {
+                        OptixTask new_task = new_tasks[i];
+                        execute_task(new_task);
+                    }
+                }
+            );
+        };
+        execute_task(task);
+
+        int compilation_state = 0;
+        check_log(
+            optixModuleGetCompilationState(config.main_module, &compilation_state));
+        if (compilation_state != OPTIX_MODULE_COMPILE_STATE_COMPLETED)
+            Throw("Optix configuration initialization failed! The OptiX module "
+                  "compilation did not complete successfully. The module's "
+                  "compilation state is: %#06x", compilation_state);
+    }
+
+    // =====================================================
+    // Generate program groups
+    // =====================================================
 
     OptixProgramGroupOptions program_group_options = {};
-    OptixProgramGroupDesc pgd[MAX_PROGRAM_GROUP_COUNT];
+    OptixProgramGroupDesc pgd[MI_MAX_PROGRAM_GROUPS];
     memset(pgd, 0, sizeof(pgd)); // Use memset due to union member.
+    uint32_t pg_count = 0;
 
-    size_t pg_count = 0;
-    for (size_t i = 0; i < MI_OPTIX_SHAPE_TYPE_COUNT; i++) {
-        bool need_pg = false;
-        MiOptixShapeType shape_type = MI_OPTIX_SHAPE_ORDER[i];
-        switch (shape_type) {
-            case MiOptixShapeType::Mesh:
-                if (optix_config_shapes & MiOptixConfigShapes::HasMeshes) {
-                    pg_count++;
-                    need_pg = true;
-                }
-                break;
-            case MiOptixShapeType::BSplineCurve:
-                if (optix_config_shapes & MiOptixConfigShapes::HasBSplineCurves) {
-                    pg_count++;
-                    need_pg = true;
-                }
-                break;
-            case MiOptixShapeType::LinearCurve:
-                if (optix_config_shapes & MiOptixConfigShapes::HasLinearCurves) {
-                    pg_count++;
-                    need_pg = true;
-                }
-                break;
-            default: // Custom shapes
-                if (optix_config_shapes & MiOptixConfigShapes::HasCustom) {
-                    pg_count++;
-                    need_pg = true;
-                }
-        }
+    // First hitgroup is for triangle meshes. We always create it, as
+    // empty pipelines cause linker errors.
+    pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+    config.pg_mapping[ShapeType::Mesh] = pg_count++;
 
-        // Shape type is not part of the current config, skip it
-        if (!need_pg)
-            continue;
-
-        MiOptixShape& optix_shape = MI_OPTIX_SHAPES.at(shape_type);
-
-        char* is_name = nullptr;
-        if (!optix_shape.is_builtin)
-            is_name = strdup(optix_shape.is_name().c_str());
-
-        config.intersection_pg_name[i] = is_name;
-        config.program_index_mapping[i] = pg_count - 1;
-
-        pgd[pg_count - 1].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-        pgd[pg_count - 1].hitgroup.entryFunctionNameIS = config.intersection_pg_name[i];
-
-        switch(shape_type) {
-            case MiOptixShapeType::Mesh:
-                break;
-            case MiOptixShapeType::BSplineCurve:
-                pgd[pg_count - 1].hitgroup.moduleIS = config.bspline_curve_module;
-                break;
-            case MiOptixShapeType::LinearCurve:
-                pgd[pg_count - 1].hitgroup.moduleIS = config.linear_curve_module;
-                break;
-            default: // Custom shapes
-                pgd[pg_count - 1].hitgroup.moduleIS = config.main_module;
-        }
+    if (shape_types & (uint32_t) ShapeType::BSplineCurve) {
+        pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+        pgd[pg_count].hitgroup.moduleIS = config.bspline_curve_module;
+        config.pg_mapping[ShapeType::BSplineCurve] = pg_count++;
     }
 
-    if (pg_count == 0){
-        // Create a dummy program so that we can still build a valid pipeline
-        pg_count = 1;
-        pgd[0].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+    if (shape_types & (uint32_t) ShapeType::LinearCurve) {
+        pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+        pgd[pg_count].hitgroup.moduleIS = config.linear_curve_module;
+        config.pg_mapping[ShapeType::LinearCurve] = pg_count++;
     }
+
+    if (shape_types & (uint32_t) ShapeType::Sphere) {
+        pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+        pgd[pg_count].hitgroup.entryFunctionNameIS = "__intersection__sphere";
+        pgd[pg_count].hitgroup.moduleIS = config.main_module;
+        config.pg_mapping[ShapeType::Sphere] = pg_count++;
+    }
+
+    if (shape_types & (uint32_t) ShapeType::Disk) {
+        pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+        pgd[pg_count].hitgroup.entryFunctionNameIS = "__intersection__disk";
+        pgd[pg_count].hitgroup.moduleIS = config.main_module;
+        config.pg_mapping[ShapeType::Disk] = pg_count++;
+    }
+
+    if (shape_types & (uint32_t) ShapeType::Cylinder) {
+        pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+        pgd[pg_count].hitgroup.entryFunctionNameIS = "__intersection__cylinder";
+        pgd[pg_count].hitgroup.moduleIS = config.main_module;
+        config.pg_mapping[ShapeType::Cylinder] = pg_count++;
+    }
+
+    if (shape_types & (uint32_t) ShapeType::SDFGrid) {
+        pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+        pgd[pg_count].hitgroup.entryFunctionNameIS = "__intersection__sdfgrid";
+        pgd[pg_count].hitgroup.moduleIS = config.main_module;
+        config.pg_mapping[ShapeType::SDFGrid] = pg_count++;
+    }
+
+    // Note: adding further hit groups will likely require bumping
+    // MI_MAX_PROGRAM_GROUPS
 
     optix_log_size = sizeof(optix_log);
     check_log(optixProgramGroupCreate(
@@ -313,7 +294,7 @@ size_t init_optix_config(uint32_t optix_config_shapes) {
         &program_group_options,
         optix_log,
         &optix_log_size,
-        config.program_groups
+        config.pg
     ));
 
     // Create this variable in the JIT scope 0 to ensure a consistent
@@ -323,19 +304,18 @@ size_t init_optix_config(uint32_t optix_config_shapes) {
     config.pipeline_jit_index = jit_optix_configure_pipeline(
         &config.pipeline_compile_options,
         config.main_module,
-        config.program_groups,
+        config.pg,
         pg_count
     );
     jit_set_scope(JitBackend::CUDA, scope);
 
-    return config_index;
+    return config;
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) {
     DRJIT_MARK_USED(props);
-    if constexpr (!dr::is_cuda_v<Float>) {
+    if constexpr (!dr::is_cuda_v<Float>)
         return;
-    }
 
     ScopedPhase phase(ProfilerPhase::InitAccel);
     Log(Info, "Building scene in OptiX ..");
@@ -357,11 +337,15 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
        the same configuration, pipeline and update the shader binding table
        rather than constructing a new one from scratch. This is necessary for
        two scenes to be ray traced within the same megakernel. */
+
+    // The following manipulates global state placed within a critical section
+    std::lock_guard<std::mutex> guard(optix_configs_lock);
+
     if (other_scene) {
         Log(Debug, "Re-use OptiX config, pipeline and update SBT ..");
         MiOptixSceneState &s2 = *(MiOptixSceneState *) other_scene->m_accel;
 
-        const MiOptixConfig &config = optix_configs[s2.config_index];
+        const MiOptixConfig &config = optix_configs[s2.config_key];
 
         HitGroupSbtRecord* prev_data
             = (HitGroupSbtRecord*) jit_malloc_migrate(s2.sbt.hitgroupRecordBase, AllocType::Host, 1);
@@ -374,14 +358,15 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
         fill_hitgroup_records(
                 m_shapes,
                 hg_sbts,
-                config.program_groups,
-                config.program_index_mapping
+                config.pg,
+                config.pg_mapping
         );
-        for (auto &shapegroup : m_shapegroups) {
+
+        for (ShapeGroup *shapegroup : m_shapegroups) {
             shapegroup->optix_fill_hitgroup_records(
                 hg_sbts,
-                config.program_groups,
-                config.program_index_mapping
+                config.pg,
+                config.pg_mapping
             );
         }
 
@@ -404,41 +389,15 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
         s.sbt_jit_index = s2.sbt_jit_index;
         jit_var_inc_ref(s.sbt_jit_index);
 
-        s.config_index = s2.config_index;
+        s.config_key = s2.config_key;
+        s.context = s2.context;
+        s.pipeline_jit_index = s2.pipeline_jit_index;
     } else {
         // =====================================================
         //  Initialize OptiX configuration
         // =====================================================
 
-        uint32_t optix_config_shapes = 0;
-        for (auto& shape : m_shapes) {
-            uint32_t type = shape->shape_type();
-
-            if (type == +ShapeType::Mesh)
-                optix_config_shapes |= (uint32_t) MiOptixConfigShapes::HasMeshes;
-            else if (type == +ShapeType::Instance)
-                optix_config_shapes |= (uint32_t) MiOptixConfigShapes::HasInstances;
-            else if (type == +ShapeType::BSplineCurve)
-                optix_config_shapes |= (uint32_t) MiOptixConfigShapes::HasBSplineCurves;
-            else if (type == +ShapeType::LinearCurve)
-                optix_config_shapes |= (uint32_t) MiOptixConfigShapes::HasLinearCurves;
-            else
-                optix_config_shapes |= (uint32_t) MiOptixConfigShapes::HasCustom;
-
-            for (auto &shape : m_shapegroups) {
-                if (shape->has_meshes())
-                    optix_config_shapes |= (uint32_t) MiOptixConfigShapes::HasMeshes;
-                if (shape->has_bspline_curves())
-                    optix_config_shapes |= (uint32_t) MiOptixConfigShapes::HasBSplineCurves;
-                if (shape->has_linear_curves())
-                    optix_config_shapes |= (uint32_t) MiOptixConfigShapes::HasLinearCurves;
-                if (shape->has_others())
-                    optix_config_shapes |= (uint32_t) MiOptixConfigShapes::HasCustom;
-            }
-        }
-
-        s.config_index = init_optix_config(optix_config_shapes);
-        const MiOptixConfig &config = optix_configs[s.config_index];
+        const MiOptixConfig &config = init_optix_config(shape_types());
 
         // =====================================================
         //  Shader Binding Table generation
@@ -449,18 +408,14 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
         s.sbt.missRecordStrideInBytes = sizeof(MissSbtRecord);
         s.sbt.missRecordCount = 1;
 
-        jit_optix_check(optixSbtRecordPackHeader(config.program_groups[0],
+        jit_optix_check(optixSbtRecordPackHeader(config.pg[0],
                                                  s.sbt.missRecordBase));
 
         std::vector<HitGroupSbtRecord> hg_sbts;
-        fill_hitgroup_records(m_shapes, hg_sbts, config.program_groups,
-                              config.program_index_mapping);
-        for (auto &shapegroup : m_shapegroups) {
-            shapegroup->optix_fill_hitgroup_records(
-                    hg_sbts,
-                    config.program_groups,
-                    config.program_index_mapping
-            );
+        fill_hitgroup_records(m_shapes, hg_sbts, config.pg, config.pg_mapping);
+        for (ShapeGroup *shapegroup : m_shapegroups) {
+            shapegroup->optix_fill_hitgroup_records(hg_sbts, config.pg,
+                                                    config.pg_mapping);
         }
 
         size_t shapes_count = hg_sbts.size();
@@ -479,6 +434,9 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
             jit_malloc_migrate(s.sbt.hitgroupRecordBase, AllocType::Device, 1);
 
         s.sbt_jit_index = jit_optix_configure_sbt(&s.sbt, config.pipeline_jit_index);
+        s.config_key = config.key;
+        s.context = config.context;
+        s.pipeline_jit_index = config.pipeline_jit_index;
     }
 
     // =====================================================
@@ -494,19 +452,18 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
     if constexpr (dr::is_cuda_v<Float>) {
         dr::sync_thread();
         MiOptixSceneState &s = *(MiOptixSceneState *) m_accel;
-        const MiOptixConfig &config = optix_configs[s.config_index];
 
         if (!m_shapes.empty()) {
             scoped_optix_context guard;
 
             // Build geometry acceleration structures for all the shapes
-            build_gas(config.context, m_shapes, s.accel);
+            build_gas(s.context, m_shapes, s.accel);
             for (auto& shapegroup: m_shapegroups)
-                shapegroup->optix_build_gas(config.context);
+                shapegroup->optix_build_gas(s.context);
 
             // Gather information about the instance acceleration structure to be built
             std::vector<OptixInstance> ias;
-            prepare_ias(config.context, m_shapes, 0, s.accel, 0u, ScalarTransform4f(), ias);
+            prepare_ias(s.context, m_shapes, 0, s.accel, 0u, ScalarTransform4f(), ias);
 
             // Build a "master" IAS that contains all the GAS of the scene (meshes,
             // custom shapes, curves, ...)
@@ -532,7 +489,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
 
             OptixAccelBufferSizes buffer_sizes{};
             jit_optix_check(optixAccelComputeMemoryUsage(
-                config.context,
+                s.context,
                 &accel_options,
                 &build_input,
                 1,
@@ -545,7 +502,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
                 = jit_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes);
 
             jit_optix_check(optixAccelBuild(
-                config.context,
+                s.context,
                 (CUstream) jit_cuda_stream(),
                 &accel_options,
                 &build_input,
@@ -619,20 +576,14 @@ MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_gpu() { }
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
     if constexpr (dr::is_cuda_v<Float>) {
         Log(Debug, "Scene static GPU acceleration shutdown ..");
-        for (size_t j = 0; j < MI_OPTIX_CONFIG_COUNT; j++) {
-            MiOptixConfig &config = optix_configs[j];
-            if (config.pipeline_jit_index) {
-                /* Decrease the reference count of the pipeline JIT variable.
-                   This will trigger the release of the OptiX pipeline data
-                   structure if no ray tracing calls are pending. */
-                (void) UInt32::steal(config.pipeline_jit_index);
-
-                for (size_t i = 0; i < MI_OPTIX_SHAPE_TYPE_COUNT; i++)
-                    free(config.intersection_pg_name[i]);
-
-                config.pipeline_jit_index = 0;
-            }
+        for (auto &kv : optix_configs) {
+            /* Decrease the reference count of the pipeline JIT variable.
+               This will trigger the release of the OptiX pipeline data
+               structure if no ray tracing calls are pending. */
+            jit_var_dec_ref(kv.second.pipeline_jit_index);
         }
+        tsl::robin_map<uint32_t, MiOptixConfig> empty_map;
+        optix_configs.swap(empty_map);
     }
 }
 
@@ -641,7 +592,6 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
                                                       Mask active) const {
     if constexpr (dr::is_cuda_v<Float>) {
         MiOptixSceneState &s = *(MiOptixSceneState *) m_accel;
-        const MiOptixConfig &config = optix_configs[s.config_index];
 
         UInt32 ray_mask(255),
                ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT |
@@ -680,7 +630,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
 
         jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
                             has_instances ? 7 : 6, fields, hitobject_out, false,
-                            active.index(), config.pipeline_jit_index,
+                            active.index(), s.pipeline_jit_index,
                             s.sbt_jit_index);
 
         Mask hitobject_is_hit = UInt32::steal(hitobject_out[0]) != 0;
@@ -736,7 +686,6 @@ MI_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
     if constexpr (dr::is_cuda_v<Float>) {
         MiOptixSceneState &s = *(MiOptixSceneState *) m_accel;
-        const MiOptixConfig &config = optix_configs[s.config_index];
 
         UInt32 ray_mask(255),
                ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT |
@@ -768,7 +717,7 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
         jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
                                 1, &field, &hitobject_out,
                                 false, active.index(),
-                                config.pipeline_jit_index, s.sbt_jit_index);
+                                s.pipeline_jit_index, s.sbt_jit_index);
 
         UInt32 hitobject_is_hit = UInt32::steal(hitobject_out);
 

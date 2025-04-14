@@ -41,6 +41,8 @@ def test01_empty(variants_vec_backends_once_rgb):
     bs_ref.pdf[dr.all(weight_ref == 0)] = 0
     bs_test.pdf[dr.all(weight_test == 0)] = 0
 
+    print(bs_ref.wo)
+    print(bs_test.wo)
     assert dr.allclose(bs_ref.wo, bs_test.wo)
     assert dr.allclose(bs_ref.pdf, bs_test.pdf)
     assert dr.allclose(weight_ref, weight_test)

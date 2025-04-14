@@ -296,13 +296,8 @@ public:
 
     virtual void optix_fill_hitgroup_records(
         std::vector<HitGroupSbtRecord> &, const OptixProgramGroup *,
-        const std::unordered_map<size_t, size_t> &) override {
-        /* no op */
-    }
-
-    virtual void optix_prepare_geometry() override {
-        /* no op */
-    }
+        const OptixProgramGroupMapping &) override { /* no op */ }
+    virtual void optix_prepare_geometry() override { /* no op */ }
 #endif
 
     bool parameters_grad_enabled() const override {

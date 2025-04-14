@@ -5,12 +5,9 @@
 // Those header files are located in '/mitsuba/src/shapes/optix/'
 #include "cylinder.cuh"
 #include "disk.cuh"
-#include "rectangle.cuh"
 #include "sdfgrid.cuh"
 #include "sphere.cuh"
 #else
-
-#include <unordered_map>
 
 #include <drjit-core/optix.h>
 
@@ -19,93 +16,6 @@
 #include <mitsuba/render/shape.h>
 
 NAMESPACE_BEGIN(mitsuba)
-
-// In this file:
-// * In order to disamiguate Mitsuba data structures that are only used for
-//   OptiX from data structures defined in the OptiX API, the former are
-//   prefixed by "Mi", i.e "MiOptixDataStructure" vs "OptixDataStructure".
-
-/// Mitsuba shapes types supported by OptiX (meshes not included)
-enum class MiOptixShapeType : uint32_t {
-    Mesh,
-    BSplineCurve,
-    LinearCurve,
-    Disk,
-    Rectangle,
-    Sphere,
-    Cylinder,
-    SDFGrid,
-    NumOptixShapeTypes
-};
-static std::string MI_OPTIX_SHAPE_TYPE_NAMES[(uint32_t) MiOptixShapeType::NumOptixShapeTypes] = {
-    "Mesh",
-    "BSplineCurve",
-    "LinearCurve",
-    "Disk",
-    "Rectangle",
-    "Sphere",
-    "Cylinder",
-    "SDFGrid"
-};
-static std::unordered_map<std::string, size_t> MI_OPTIX_SHAPE_TYPE_INDEX = [](){
-    std::unordered_map<std::string, size_t> out;
-    size_t count = 0;
-    for (std::string &name : MI_OPTIX_SHAPE_TYPE_NAMES)
-        out[name] = count++;
-    return out;
-}();
-
-/// Defines the ordering of the shapes for OptiX (hitgroups, SBT)
-static MiOptixShapeType MI_OPTIX_SHAPE_ORDER[] = {
-    MiOptixShapeType::Mesh,
-    MiOptixShapeType::BSplineCurve,
-    MiOptixShapeType::LinearCurve,
-    MiOptixShapeType::Disk,
-    MiOptixShapeType::Rectangle,
-    MiOptixShapeType::Sphere,
-    MiOptixShapeType::Cylinder,
-    MiOptixShapeType::SDFGrid
-};
-
-static constexpr size_t MI_OPTIX_SHAPE_TYPE_COUNT = std::size(MI_OPTIX_SHAPE_ORDER);
-
-static_assert(MI_OPTIX_SHAPE_TYPE_COUNT == (size_t) MiOptixShapeType::NumOptixShapeTypes);
-
-struct MiOptixShape {
-    std::string name;        /// Lowercase version of OPTIX_SHAPE_TYPE_NAMES
-    bool is_builtin = false; /// Whether or not this is a built-in OptiX shape type
-
-    std::string is_name() const { return "__intersection__" + name; }
-};
-
-static std::unordered_map<MiOptixShapeType, MiOptixShape> MI_OPTIX_SHAPES = []() {
-    std::unordered_map<MiOptixShapeType, MiOptixShape> result;
-    for (MiOptixShapeType type : MI_OPTIX_SHAPE_ORDER) {
-        switch (type) {
-            case MiOptixShapeType::Mesh:
-            case MiOptixShapeType::BSplineCurve:
-            case MiOptixShapeType::LinearCurve:
-                result[type] = { string::to_lower( MI_OPTIX_SHAPE_TYPE_NAMES[(uint32_t) type]), true };
-                break;
-            default:
-                result[type] = { string::to_lower( MI_OPTIX_SHAPE_TYPE_NAMES[(uint32_t) type]), false };
-                break;
-        }
-    }
-
-    return result;
-}();
-
-/// Retrieve index of shape descriptor
-template <typename Shape>
-size_t get_shape_descr_idx(Shape *shape) {
-    std::string name = shape->is_mesh() ? "Mesh" : shape->class_()->name();
-    if (MI_OPTIX_SHAPE_TYPE_INDEX.find(name) != MI_OPTIX_SHAPE_TYPE_INDEX.end())
-        return MI_OPTIX_SHAPE_TYPE_INDEX[name];
-
-    Throw("Unexpected shape: %s. Couldn't be found in the "
-          "'OPTIX_SHAPE_TYPE_NAMES' table.", name);
-}
 
 /// Stores multiple OptiXTraversables: one for the each type
 struct MiOptixAccelData {
@@ -127,23 +37,54 @@ struct MiOptixAccelData {
     }
 };
 
+/// Highest bit that may be set in a ShapeType flag vector
+#define MI_SHAPE_TYPE_HIGHEST_BIT 7
+
+// Map ShapeType to an OptiX program group
+struct OptixProgramGroupMapping {
+    uint32_t mapping[MI_SHAPE_TYPE_HIGHEST_BIT];
+
+    OptixProgramGroupMapping() {
+        for (uint32_t i = 0; i < MI_SHAPE_TYPE_HIGHEST_BIT; ++i)
+            mapping[i] = (uint32_t) -1;
+    }
+
+    uint32_t index(ShapeType type) const {
+        uint32_t index = dr::tzcnt((uint32_t) type);
+        if (index >= MI_SHAPE_TYPE_HIGHEST_BIT)
+            throw std::runtime_error("OptixParamGroupMapping: invalid shape type!");
+        return index;
+    }
+
+    const uint32_t &operator[](ShapeType type) const { return mapping[index(type)]; }
+    uint32_t &operator[](ShapeType type) { return mapping[index(type)]; }
+
+    uint32_t at(ShapeType type) const {
+        uint32_t value = operator[](type);
+        if (value == (uint32_t) -1)
+            throw std::runtime_error("OptixParamGroupMapping: shape type not mapped!");
+        return value;
+    }
+};
+
+
 /// Creates and appends the HitGroupSbtRecord for a given list of shapes
 template <typename Shape>
 void fill_hitgroup_records(
     std::vector<ref<Shape>> &shapes,
     std::vector<HitGroupSbtRecord> &out_hitgroup_records,
-    const OptixProgramGroup *program_groups,
-    const std::unordered_map<size_t, size_t>& program_index_mapping) {
+    const OptixProgramGroup *pg,
+    const OptixProgramGroupMapping& pg_mapping) {
 
     // Fill records in this order: meshes, b-spline curves, linear curves, other
     struct {
         size_t idx(const ref<Shape>& shape) const {
-            uint32_t type = shape->shape_type();
-            if (type == +ShapeType::Mesh)
+            uint32_t type = (uint32_t) shape->shape_type();
+            if (type & ShapeType::Mesh)
                 return 0;
-            if (type == +ShapeType::BSplineCurve)
+            if (type & ShapeType::BSplineCurve)
                 return 1;
-            if (type == +ShapeType::LinearCurve)
+            if (type & ShapeType::LinearCurve)
                 return 2;
             return 3;
         };
@@ -158,11 +99,8 @@ void fill_hitgroup_records(
     std::stable_sort(shapes_sorted.begin(), shapes_sorted.end(), ShapeSorter);
 
     for (ref<Shape> &shape : shapes_sorted) {
-        shape->optix_fill_hitgroup_records(
-            out_hitgroup_records,
-            program_groups,
-            program_index_mapping
-        );
+        shape->optix_fill_hitgroup_records(out_hitgroup_records, pg,
+                                           pg_mapping);
     }
 }
 
@@ -181,12 +119,12 @@ void build_gas(const OptixDeviceContext &context,
     std::vector<ref<Shape>> meshes, bspline_curves,
         linear_curves, custom_shapes;
     for (auto shape : shapes) {
-        uint32_t type = shape->shape_type();
-        if (type == +ShapeType::Mesh)
+        uint32_t type = (uint32_t) shape->shape_type();
+        if (type & ShapeType::Mesh)
             meshes.push_back(shape);
-        else if (type == +ShapeType::BSplineCurve)
+        else if (type & ShapeType::BSplineCurve)
             bspline_curves.push_back(shape);
-        else if (type == +ShapeType::LinearCurve)
+        else if (type & ShapeType::LinearCurve)
             linear_curves.push_back(shape);
         else if (!shape->is_instance())
             custom_shapes.push_back(shape);

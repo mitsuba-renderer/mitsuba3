@@ -7,11 +7,7 @@
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/interaction.h>
-#include <mitsuba/render/shape.h>
-
-#if defined(MI_ENABLE_CUDA)
-    #include "optix/rectangle.cuh"
-#endif
+#include <mitsuba/render/mesh.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -86,15 +82,21 @@ The following XML snippet showcases a simple example of a textured rectangle:
  */
 
 template <typename Float, typename Spectrum>
-class Rectangle final : public Shape<Float, Spectrum> {
+class Rectangle final : public Mesh<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance,
-                   m_discontinuity_types, m_shape_type, initialize, mark_dirty,
-                   get_children_string, parameters_grad_enabled)
+    MI_IMPORT_BASE(Mesh, m_to_world, m_to_object, m_is_instance,
+                   m_discontinuity_types, m_shape_type, initialize,
+                   m_vertex_count, m_face_count, m_faces, m_vertex_positions,
+                   m_vertex_normals, m_vertex_texcoords, get_children_string)
+    using typename Base::FloatStorage;
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
+    using typename Base::InputPoint3f;
+    using typename Base::InputFloat;
+    using typename Base::InputVector2f;
+    using typename Base::InputNormal3f;
 
     Rectangle(const Properties &props) : Base(props) {
         if (props.get<bool>("flip_normals", false))
@@ -102,25 +104,110 @@ public:
                 m_to_world.scalar() *
                 ScalarTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
 
-        m_discontinuity_types = (uint32_t) DiscontinuityFlags::PerimeterType;
-
+        m_vertex_count = 4;
+        m_face_count = 2;
         m_shape_type = ShapeType::Rectangle;
 
-        update();
         initialize();
     }
 
-    void update() {
-        m_to_object = m_to_world.value().inverse();
+    void initialize() override {
+        // Compute shading frame
+        Normal3f n     = dr::normalize(m_to_world.value() * Normal3f(0.f, 0.f, 1.f)),
+                 dp_du = m_to_world.value() * Vector3f(2.f, 0.f, 0.f),
+                 dp_dv = m_to_world.value() * Vector3f(0.f, 2.f, 0.f);
 
-        Vector3f dp_du = m_to_world.value() * Vector3f(2.f, 0.f, 0.f);
-        Vector3f dp_dv = m_to_world.value() * Vector3f(0.f, 2.f, 0.f);
-        Normal3f normal = dr::normalize(m_to_world.value() * Normal3f(0.f, 0.f, 1.f));
-        m_frame = Frame3f(dp_du, dp_dv, normal);
+        m_frame = Frame3f(dp_du, dp_dv, n);
         m_inv_surface_area = dr::rcp(surface_area());
-
+        m_to_object = m_to_world.value().inverse();
         dr::make_opaque(m_frame, m_inv_surface_area);
-        mark_dirty();
+
+        // Initialize vertices
+        static const ScalarIndex faces[6] {
+            1, 2, 0,
+            1, 3, 2
+        };
+
+        m_faces = dr::load<DynamicBuffer<UInt32>>(faces, 6);
+
+        if constexpr (dr::is_diff_v<Float>) {
+            // Differentiable case: launch kernels to generate coordinates
+            if (dr::grad_enabled(m_to_world.value())) {
+                UInt32 index = dr::arange<UInt32>(4);
+                Float xf = Float(index & 1),
+                      yf = Float((index & 2) >> 1);
+
+                Point3f p =
+                    m_to_world.value() * Point3f(dr::fmadd(xf, 2.f, -1.f),
+                                                 dr::fmadd(yf, 2.f, -1.f), 0.f);
+
+                using Point3fi = dr::replace_scalar_t<Point3f, InputFloat>;
+                using Vector2fi = dr::replace_scalar_t<Vector2f, InputFloat>;
+                using Normal3fi = dr::replace_scalar_t<Normal3f, InputFloat>;
+
+                m_vertex_positions = dr::empty<FloatStorage>(4*3);
+                m_vertex_texcoords = dr::empty<FloatStorage>(4*2);
+                m_vertex_normals = dr::empty<FloatStorage>(4*3);
+
+                scatter(m_vertex_positions, Point3fi(p), index, true, ReduceMode::Permute);
+                scatter(m_vertex_texcoords, Vector2fi(xf, yf), index, true, ReduceMode::Permute);
+                scatter(m_vertex_normals, Normal3fi(n), index, true, ReduceMode::Permute);
+                Base::initialize();
+                return;
+            }
+        }
+
+        // Non-differentiable/scalar case: compute coordinates on CPU, then upload
+        InputFloat vertex_positions[4*3], vertex_normals[4*3], vertex_texcoords[4*2];
+        for (uint32_t index = 0; index < 4; ++index) {
+            ScalarFloat xf = ScalarFloat(index & 1),
+                        yf = ScalarFloat((index & 2) >> 1);
+
+            ScalarPoint3f p = m_to_world.scalar() *
+                              ScalarPoint3f(dr::fmadd(xf, 2.f, -1.f),
+                                            dr::fmadd(yf, 2.f, -1.f), 0.f);
+            ScalarPoint3f ns =
+                normalize(m_to_world.scalar() * ScalarNormal3f(0.f, 0.f, 1.f));
+
+            dr::store(vertex_positions + index * 3, Point<InputFloat, 3>(p));
+            dr::store(vertex_normals   + index * 3, Normal<InputFloat, 3>(ns));
+            dr::store(vertex_texcoords + index * 2, Vector<InputFloat, 2>(xf, yf));
+        }
+
+        m_vertex_positions = dr::load<FloatStorage>(vertex_positions, 4*3);
+        m_vertex_normals   = dr::load<FloatStorage>(vertex_normals, 4*3);
+        m_vertex_texcoords = dr::load<FloatStorage>(vertex_texcoords, 4*2);
+        Base::initialize();
+    }
+
+    // =============================================================
+    //! @{ \name Sampling routines
+    // =============================================================
+
+    PositionSample3f sample_position(Float time, const Point2f &sample,
+                                     Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        PositionSample3f ps = dr::zeros<PositionSample3f>();
+        ps.p = m_to_world.value().transform_affine(
+            Point3f(dr::fmadd(sample.x(), 2.f, -1.f),
+                    dr::fmadd(sample.y(), 2.f, -1.f), 0.f));
+        ps.n    = m_frame.n;
+        ps.pdf  = m_inv_surface_area;
+        ps.uv   = sample;
+        ps.time = time;
+        ps.delta = false;
+
+        return ps;
+    }
+
+    Float pdf_position(const PositionSample3f & /*ps*/, Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+        return m_inv_surface_area;
+    }
+
+    Float surface_area() const override {
+        return dr::norm(dr::cross(m_frame.s, m_frame.t));
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -136,9 +223,8 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
+        Shape<Float, Spectrum>::traverse(callback); // mesh attributes not exposed
         callback->put_parameter("to_world", *m_to_world.ptr(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_parameter("to_object", *m_to_object.ptr(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -162,59 +248,39 @@ public:
                 m_to_world = m_to_world.value();
             }
 
-            update();
+            initialize();
         }
         Base::parameters_changed();
     }
 
-    Float surface_area() const override {
-        return dr::norm(dr::cross(m_frame.s, m_frame.t));
-    }
+    SurfaceInteraction3f eval_parameterization(const Point2f &uv, uint32_t, Mask active) const override {
+        SurfaceInteraction3f si{};
+        si.p = m_to_world.value().transform_affine(
+            Point3f(dr::fmadd(uv.x(), 2.f, - 1.f),
+                    dr::fmadd(uv.y(), 2.f, - 1.f), 0.f));
+        si.sh_frame  = m_frame;
+        si.n         = m_frame.n;
+        si.dp_du     = m_frame.s;
+        si.dp_dv     = m_frame.t;
+        si.uv        = uv;
+        si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
+        si.shape    = this;
+        si.instance = nullptr;
+        si.t        = dr::select(active, 0, dr::Infinity<Float>);
 
-    // =============================================================
-    //! @{ \name Sampling routines
-    // =============================================================
-
-    PositionSample3f sample_position(Float time, const Point2f &sample,
-                                     Mask active) const override {
-        MI_MASK_ARGUMENT(active);
-
-        PositionSample3f ps = dr::zeros<PositionSample3f>();
-        ps.p = m_to_world.value().transform_affine(
-            Point3f(sample.x() * 2.f - 1.f, sample.y() * 2.f - 1.f, 0.f));
-        ps.n    = m_frame.n;
-        ps.pdf  = m_inv_surface_area;
-        ps.uv   = sample;
-        ps.time = time;
-        ps.delta = false;
-
-        return ps;
-    }
-
-    Float pdf_position(const PositionSample3f & /*ps*/, Mask active) const override {
-        MI_MASK_ARGUMENT(active);
-        return m_inv_surface_area;
-    }
-
-    SurfaceInteraction3f eval_parameterization(const Point2f &uv,
-                                               uint32_t ray_flags,
-                                               Mask active) const override {
-        Point3f p = m_to_world.value().transform_affine(
-            Point3f(uv.x() * 2.f - 1.f, uv.y() * 2.f - 1.f, 0.f));
-
-        Ray3f ray(p + m_frame.n, -m_frame.n, 0, Wavelength(0));
-
-        PreliminaryIntersection3f pi = ray_intersect_preliminary(ray, 0, active);
-        active &= pi.is_valid();
-
-        if (dr::none_or<false>(active))
-            return dr::zeros<SurfaceInteraction3f>();
-
-        SurfaceInteraction3f si =
-            compute_surface_interaction(ray, pi, ray_flags, 0, active);
-        si.finalize_surface_interaction(pi, ray, ray_flags, active);
+        /// Zero-initialize remaining fields
+        si.time        = 0.f;
+        si.wavelengths = Wavelength(0.f);
+        si.dn_du = si.dn_dv = si.wi = Vector3f(0);
+        si.duv_dx = si.duv_dy = 0;
+        si.prim_index = 0;
 
         return si;
+    }
+
+    bool parameters_grad_enabled() const override {
+        return dr::grad_enabled(m_frame) ||
+               dr::grad_enabled(m_to_world.value());
     }
 
     //! @}
@@ -451,153 +517,6 @@ public:
     //! @}
     // =============================================================
 
-    // =============================================================
-    //! @{ \name Ray tracing routines
-    // =============================================================
-
-    template <typename FloatP, typename Ray3fP>
-    std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
-               dr::uint32_array_t<FloatP>>
-    ray_intersect_preliminary_impl(const Ray3fP &ray_,
-                                   ScalarIndex /*prim_index*/,
-                                   dr::mask_t<FloatP> active) const {
-        Transform<Point<FloatP, 4>> to_object;
-        if constexpr (!dr::is_jit_v<FloatP>)
-            to_object = m_to_object.scalar();
-        else
-            to_object = m_to_object.value();
-
-        Ray3fP ray = to_object.transform_affine(ray_);
-        FloatP t   = -ray.o.z() / ray.d.z();
-        Point<FloatP, 3> local = ray(t);
-
-        // Is intersection within ray segment and rectangle?
-        active = active && t >= 0.f
-                        && t <= ray.maxt
-                        && dr::abs(local.x()) <= 1.f
-                        && dr::abs(local.y()) <= 1.f;
-
-        return { dr::select(active, t, dr::Infinity<FloatP>),
-                 Point<FloatP, 2>(local.x(), local.y()), ((uint32_t) -1), 0 };
-    }
-
-    template <typename FloatP, typename Ray3fP>
-    dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray_,
-                                     ScalarIndex /*prim_index*/,
-                                     dr::mask_t<FloatP> active) const {
-        MI_MASK_ARGUMENT(active);
-
-        Transform<Point<FloatP, 4>> to_object;
-        if constexpr (!dr::is_jit_v<FloatP>)
-            to_object = m_to_object.scalar();
-        else
-            to_object = m_to_object.value();
-
-        Ray3fP ray     = to_object.transform_affine(ray_);
-        FloatP t       = -ray.o.z() / ray.d.z();
-        Point<FloatP, 3> local = ray(t);
-
-        // Is intersection within ray segment and rectangle?
-        return active && t >= 0.f
-                      && t <= ray.maxt
-                      && dr::abs(local.x()) <= 1.f
-                      && dr::abs(local.y()) <= 1.f;
-    }
-
-    MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
-
-    SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
-                                                     const PreliminaryIntersection3f &pi,
-                                                     uint32_t ray_flags,
-                                                     uint32_t recursion_depth,
-                                                     Mask active) const override {
-        MI_MASK_ARGUMENT(active);
-        constexpr bool IsDiff = dr::is_diff_v<Float>;
-
-        // Early exit when tracing isn't necessary
-        if (!m_is_instance && recursion_depth > 0)
-            return dr::zeros<SurfaceInteraction3f>();
-
-        bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
-        bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
-
-        Transform4f to_world = m_to_world.value();
-        Transform4f to_object = m_to_object.value();
-
-        dr::suspend_grad<Float> scope(detach_shape, to_world, to_object, m_frame);
-
-        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
-        Point2f prim_uv = pi.prim_uv;
-
-        if constexpr (IsDiff) {
-            if (follow_shape) {
-                /* FollowShape glues the interaction point with the shape.
-                   Therefore, to also account for a possible differential motion
-                   of the shape, we first compute a detached intersection point
-                   in local space and transform it back in world space to get a
-                   point rigidly attached to the shape's motion, including
-                   translation, scaling and rotation. */
-                Point3f local = to_object.transform_affine(ray(pi.t));
-                /* With FollowShape the local position should always be static as
-                   the intersection point follows any motion of the sphere. */
-                local = dr::detach(local);
-                si.p = to_world.transform_affine(local);
-                si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) / dr::squared_norm(ray.d));
-                prim_uv = dr::head<2>(local);
-            } else {
-                /* To ensure that the differential interaction point stays along
-                   the traced ray, we first recompute the intersection distance
-                   in a differentiable way (w.r.t. to the rectangle parameters)
-                   and then compute the corresponding point along the ray. */
-                PreliminaryIntersection3f pi_d = ray_intersect_preliminary(ray, 0, active);
-                si.t = dr::replace_grad(pi.t, pi_d.t);
-                si.p = ray(si.t);
-                prim_uv = dr::replace_grad(pi.prim_uv, pi_d.prim_uv);
-            }
-        } else {
-            si.t = pi.t;
-            // Re-project onto the rectangle to improve accuracy
-            Point3f p = ray(pi.t);
-            Float dist = dr::dot(to_world.translation() - p, m_frame.n);
-            si.p = p + dist * m_frame.n;
-        }
-
-        si.t = dr::select(active, si.t, dr::Infinity<Float>);
-
-        si.n          = m_frame.n;
-        si.sh_frame.n = m_frame.n;
-        si.dp_du      = m_frame.s;
-        si.dp_dv      = m_frame.t;
-        si.uv         = Point2f(dr::fmadd(prim_uv.x(), 0.5f, 0.5f),
-                                dr::fmadd(prim_uv.y(), 0.5f, 0.5f));
-
-        si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
-        si.shape    = this;
-        si.instance = nullptr;
-
-        return si;
-    }
-
-    bool parameters_grad_enabled() const override {
-        return dr::grad_enabled(m_frame) ||
-               dr::grad_enabled(m_to_world.value());
-    }
-
-#if defined(MI_ENABLE_CUDA)
-    using Base::m_optix_data_ptr;
-
-    void optix_prepare_geometry() override {
-        if constexpr (dr::is_cuda_v<Float>) {
-            if (!m_optix_data_ptr)
-                m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixRectangleData));
-
-            OptixRectangleData data = { bbox(), m_to_object.scalar() };
-
-            jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data,
-                       sizeof(OptixRectangleData));
-        }
-    }
-#endif
 
     std::string to_string() const override {
         std::ostringstream oss;

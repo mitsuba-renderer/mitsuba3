@@ -7,6 +7,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 struct BSDFContext;
+struct OptixProgramGroupMapping;
 template <typename Float, typename Spectrum> class BSDF;
 template <typename Float, typename Spectrum> class OptixDenoiser;
 template <typename Float, typename Spectrum> class Emitter;

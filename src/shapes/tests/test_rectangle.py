@@ -8,7 +8,7 @@ from drjit.scalar import ArrayXf as Float
 def test01_create(variant_scalar_rgb):
     s = mi.load_dict({"type" : "rectangle"})
     assert s is not None
-    assert s.primitive_count() == 1
+    assert s.primitive_count() == 2
     assert dr.allclose(s.surface_area(), 4.0)
 
 
@@ -114,67 +114,69 @@ def test05_surface_area(variant_scalar_rgb):
 
 
 def test06_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
-    shape = mi.load_dict({'type' : 'rectangle'})
+    scene = mi.load_dict({
+        'type' : 'scene',
+        'shape' : { 'type': 'rectangle' }
+    })
 
     ray = mi.Ray3f(mi.Vector3f(-0.3, -0.3, -10.0), mi.Vector3f(0.0, 0.0, 1.0))
-    pi = shape.ray_intersect_preliminary(ray)
-
     dr.enable_grad(ray.o)
     dr.enable_grad(ray.d)
 
+    si = scene.ray_intersect(ray)
+
     # If the ray origin is shifted along the x-axis, so does si.p
-    si = pi.compute_surface_interaction(ray)
-    si.p *= 1.0
     dr.forward(ray.o.x)
     assert dr.allclose(dr.grad(si.p), [1, 0, 0])
 
     # If the ray origin is shifted along the y-axis, so does si.p
-    si = pi.compute_surface_interaction(ray)
-    si.p *= 1.0
+    si = scene.ray_intersect(ray)
     dr.forward(ray.o.y)
     assert dr.allclose(dr.grad(si.p), [0, 1, 0])
 
     # If the ray origin is shifted along the x-axis, so does si.uv
-    si = pi.compute_surface_interaction(ray)
-    si.uv *= 1.0
+    si = scene.ray_intersect(ray)
     dr.forward(ray.o.x)
     assert dr.allclose(dr.grad(si.uv), [0.5, 0])
 
     # If the ray origin is shifted along the z-axis, so does si.t
-    si = pi.compute_surface_interaction(ray)
-    si.t *= 1.0
+    si = scene.ray_intersect(ray)
     dr.forward(ray.o.z)
     assert dr.allclose(dr.grad(si.t), -1)
 
     # If the ray direction is shifted along the x-axis, so does si.p
-    si = pi.compute_surface_interaction(ray)
-    si.p *= 1.0
+    si = scene.ray_intersect(ray)
     dr.forward(ray.d.x)
     assert dr.allclose(dr.grad(si.p), [10, 0, 0])
 
 
 def test07_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
-    shape = mi.load_dict({'type' : 'rectangle'})
+    scene = mi.load_dict({
+        'type' : 'scene',
+        'shape' : { 'type': 'rectangle' }
+    })
 
     ray = mi.Ray3f(mi.Vector3f(-0.3, -0.3, -10.0), mi.Vector3f(0.0, 0.0, 1.0))
-    pi = shape.ray_intersect_preliminary(ray)
-
     dr.enable_grad(ray.o)
+    si = scene.ray_intersect(ray)
 
     # If si.p is shifted along the x-axis, so does the ray origin
-    si = pi.compute_surface_interaction(ray)
     dr.backward(si.p.x)
     assert dr.allclose(dr.grad(ray.o), [1, 0, 0])
 
     # If si.t is changed, so does the ray origin along the z-axis
     dr.set_grad(ray.o, 0.0)
-    si = pi.compute_surface_interaction(ray)
+    si = scene.ray_intersect(ray)
     dr.backward(si.t)
     assert dr.allclose(dr.grad(ray.o), [0, 0, -1])
 
 
 def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_all_ad_rgb):
-    shape = mi.load_dict({'type' : 'rectangle'})
+    scene = mi.load_dict({
+        'type' : 'scene',
+        'shape' : { 'type': 'rectangle' }
+    })
+    shape = scene.shapes()[0]
     params = mi.traverse(shape)
 
     # Test 00: With DetachShape and no moving rays, the output shouldn't produce
@@ -186,7 +188,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().scale(1 + theta)
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.DetachShape)
+    si = scene.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.DetachShape, False)
 
     dr.forward(theta)
 
@@ -204,7 +206,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().scale([1 + theta, 1 + 2 * theta, 1])
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All)
+    si = scene.ray_intersect(ray, mi.RayFlags.All, False)
 
     dr.forward(theta)
 
@@ -225,7 +227,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().translate([theta, 0.0, 0.0])
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
+    si = scene.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape, False)
 
     dr.forward(theta, dr.ADFlag.ClearNone)
 
@@ -243,7 +245,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().rotate([0, 0, 1], 90 * theta)
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
+    si = scene.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape, False)
 
     dr.forward(theta)
 
@@ -260,7 +262,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().rotate([0, 0, 1], 90 * theta)
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All)
+    si = scene.ray_intersect(ray, mi.RayFlags.All, False)
 
     dr.forward(theta)
 
@@ -421,29 +423,25 @@ def test17_sample_precomputed_silhouette(variants_vec_rgb):
             dr.reinterpret_array(mi.UInt32, rectangle_ptr))
 
 
-def test18_shape_type(variant_scalar_rgb):
-    rectangle = mi.load_dict({ 'type': 'rectangle' })
-    assert rectangle.shape_type() == int(mi.ShapeType.Rectangle)
-
-
-def test19_(variants_all_ad_rgb):
+def test18_inv_transpose(variants_all_ad_rgb):
     # `ray_intersect` only relies on `to_world.inverse_transpose`. We want to make
-    # sure that gradients can flow back from the inversetranspose to the
+    # sure that gradients can flow back from the inverse transpose to the
     # original matrix transform.
     #
     # This is a regression test for #1545
-    rect = mi.load_dict({
-        'type': 'rectangle'
+    scene = mi.load_dict({
+        'type' : 'scene',
+        'shape' : { 'type': 'rectangle' }
     })
 
-    params = mi.traverse(rect)
-    dr.enable_grad(params['to_world'])
+    params = mi.traverse(scene)
+    dr.enable_grad(params['shape.to_world'])
     params.update()
 
-    si = rect.ray_intersect(mi.Ray3f([0, 0, 2], [0, 0, -1]), mi.RayFlags.All)
+    si = scene.ray_intersect(mi.Ray3f([0, 0, 2], [0, 0, -1]), mi.RayFlags.All, False)
     dr.backward(si.t)
     assert dr.allclose(
-        dr.grad(params['to_world']).matrix,
+        dr.grad(params['shape.to_world']).matrix,
         mi.Matrix4f([[0, 0, 0, 0],
                      [0, 0, 0, 0],
                      [0, 0, 0, -1],

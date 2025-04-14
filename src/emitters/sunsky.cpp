@@ -1004,6 +1004,7 @@ private:
 
                 return { res, ContinuousDistribution<Wavelength>(range, spectrum) };
             } else {
+                (void) range;
                 return { res, ContinuousDistribution<Wavelength>() };
             }
         }

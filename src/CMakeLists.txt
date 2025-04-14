@@ -2,6 +2,10 @@
 #  Mitsuba library
 # ----------------------------------------------------------
 
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}/../ext/nanobind/ext/robin_map/include
+)
+
 add_subdirectory(core)
 add_subdirectory(render)
 
