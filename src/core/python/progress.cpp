@@ -119,9 +119,16 @@ private:
 MI_PY_EXPORT(ProgressReporter) {
     /* Install a custom appender for log + progress messages if Mitsuba is
      * running within Jupyter notebook */
-    nb::dict modules = nb::module_::import_("sys").attr("modules");
-    if (!modules.contains("ipykernel"))
+    try {
+        nb::object ipython = nb::getattr(nb::builtins(), "get_ipython", nb::none());
+        if (ipython.is(nb::none()))
+            return;
+        nb::object name = ipython().attr("__class__").attr("__name__");
+        if (!name.equal(nb::str("ZMQInteractiveShell")))
+            return;
+    } catch (...) {
         return;
+    }
 
     Logger *logger = Thread::thread()->logger();
     logger->clear_appenders();
