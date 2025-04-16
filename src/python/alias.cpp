@@ -99,7 +99,7 @@ static void set_variant(nb::args args) {
     for (const auto &arg : args) {
         if (PyDict_Contains(variant_modules, arg.ptr()) == 1) {
             // Variant is at least compiled, we can attempt to use it.
-            valid_variants.append(nb::borrow(arg));
+            valid_variants.append(arg);
         }
     }
 
@@ -135,11 +135,12 @@ static void set_variant(nb::args args) {
             // CUDA driver is installed, but there is no GPU available.
             // We only allow such failures as long as we have more variants to try.
             if (!is_last && e.matches(PyExc_ImportError)) {
-                // nb::str var_str = requested_variant;
-                // jit_log(LogLevel::Debug,
-                //         "The requested variant \"{}\" could not be loaded, "
-                //         "attempting the next one. The exception was: {}",
-                //         var_str.c_str(), e.what());
+                const auto mi = nb::module_::import_("mitsuba");
+                mi.attr("Log")(
+                    mi.attr("LogLevel").attr("Debug"),
+                    nb::str("The requested variant \"{}\" could not be loaded, "
+                            "attempting the next one. The exception was:\n{}\n")
+                        .format(requested_variant, e.what()));
                 continue;
             } else {
                 throw e;
