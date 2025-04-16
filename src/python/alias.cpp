@@ -262,20 +262,22 @@ NB_MODULE(mitsuba_alias, m) {
     mi_dict = m.attr("__dict__").ptr();
     nb::object mi_ext = import_with_deepbind_if_necessary("mitsuba.mitsuba_ext");
     nb::dict mitsuba_ext_dict = mi_ext.attr("__dict__");
-    for (const auto &k : mitsuba_ext_dict.keys())
+    for (const auto &k : mitsuba_ext_dict.keys()) {
         if (!nb::bool_(k.attr("startswith")("__")) &&
             !nb::bool_(k.attr("endswith")("__"))) {
             Safe_PyDict_SetItem(mi_dict, k.ptr(), mitsuba_ext_dict[k].ptr());
         }
+    }
 
     // Import contents of `mitsuba.python` into top-level `mitsuba` module
     nb::object mi_python = nb::module_::import_("mitsuba.python");
     nb::dict mitsuba_python_dict = mi_python.attr("__dict__");
-    for (const auto &k : mitsuba_python_dict.keys())
+    for (const auto &k : mitsuba_python_dict.keys()) {
         if (!nb::bool_(k.attr("startswith")("__")) &&
             !nb::bool_(k.attr("endswith")("__"))) {
             Safe_PyDict_SetItem(mi_dict, k.ptr(), mitsuba_python_dict[k].ptr());
         }
+    }
 
     /// Cleanup static variables, this is called when the interpreter is exiting
     auto atexit = nb::module_::import_("atexit");
