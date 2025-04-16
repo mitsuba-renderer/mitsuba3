@@ -5496,8 +5496,6 @@ static const char *__doc_mitsuba_OptixShapeType_LinearCurve = R"doc()doc";
 
 static const char *__doc_mitsuba_OptixShapeType_NumOptixShapeTypes = R"doc()doc";
 
-static const char *__doc_mitsuba_OptixShapeType_Rectangle = R"doc()doc";
-
 static const char *__doc_mitsuba_OptixShapeType_SDFGrid = R"doc()doc";
 
 static const char *__doc_mitsuba_OptixShapeType_Sphere = R"doc()doc";
@@ -6916,6 +6914,9 @@ static const char *__doc_mitsuba_Scene_emitters_dr = R"doc(Return the list of em
 
 static const char *__doc_mitsuba_Scene_environment = R"doc(Return the environment emitter (if any))doc";
 
+static const char *__doc_mitsuba_Scene_shape_types =
+    R"doc(Returns a union of ShapeType flags denoting what is present in the ShapeGroup)doc";
+
 static const char *__doc_mitsuba_Scene_eval_emitter_direction =
 R"doc(Re-evaluate the incident direct radiance of the
 sample_emitter_direction() method.
@@ -7700,9 +7701,9 @@ static const char *__doc_mitsuba_ShapeType_LinearCurve = R"doc(Linear curves (`l
 
 static const char *__doc_mitsuba_ShapeType_Mesh = R"doc(Meshes (`ply`, `obj`, `serialized`))doc";
 
-static const char *__doc_mitsuba_ShapeType_Other = R"doc(Other shapes)doc";
+static const char *__doc_mitsuba_ShapeType_Rectangle = R"doc(Rectangles, a subtype of meshes.)doc";
 
-static const char *__doc_mitsuba_ShapeType_Rectangle = R"doc(Rectangles (`rectangle`))doc";
+static const char *__doc_mitsuba_ShapeType_Invalid = R"doc(Invalid shape)doc";
 
 static const char *__doc_mitsuba_ShapeType_SDFGrid = R"doc(SDF Grids (`sdfgrid`))doc";
 

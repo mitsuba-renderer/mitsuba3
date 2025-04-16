@@ -21,6 +21,7 @@ template <typename T>
 struct alignas(OPTIX_SBT_RECORD_ALIGNMENT) SbtRecord {
     char header[OPTIX_SBT_RECORD_HEADER_SIZE];
     T data;
+    SbtRecord(const T &data) : data(data) { }
 };
 
 struct alignas(OPTIX_SBT_RECORD_ALIGNMENT) EmptySbtRecord {

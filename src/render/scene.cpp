@@ -347,6 +347,16 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
     return { ds, spec };
 }
 
+
+MI_VARIANT uint32_t Scene<Float, Spectrum>::shape_types() const {
+    uint32_t result = 0;
+    for (const Shape *shape : m_shapes)
+        result |= (uint32_t) shape->shape_type();
+    for (const ShapeGroup *group : m_shapegroups)
+        result |= group->shape_types();
+    return result;
+}
+
 MI_VARIANT Float
 Scene<Float, Spectrum>::pdf_emitter_direction(const Interaction3f &ref,
                                               const DirectionSample3f &ds,

@@ -321,21 +321,18 @@ MI_VARIANT
 void Shape<Float, Spectrum>::optix_fill_hitgroup_records(
     std::vector<HitGroupSbtRecord> &hitgroup_records,
     const OptixProgramGroup *program_groups,
-    const std::unordered_map<size_t, size_t> &program_index_mapping) {
+    const OptixProgramGroupMapping &pg_mapping) {
 
     optix_prepare_geometry();
-    // Set hitgroup record data
-    hitgroup_records.push_back(HitGroupSbtRecord());
-    hitgroup_records.back().data = {
-        jit_registry_id(this), m_optix_data_ptr
-    };
 
-    size_t shape_index = get_shape_descr_idx(this);
-    size_t program_group_idx = program_index_mapping.at(shape_index);
+    HitGroupSbtRecord rec{ { jit_registry_id(this), m_optix_data_ptr } };
+    uint32_t pg_index = pg_mapping.at((ShapeType) shape_type());
 
     // Setup the hitgroup record and copy it to the hitgroup records array
-    jit_optix_check(optixSbtRecordPackHeader(program_groups[program_group_idx],
-                                             &hitgroup_records.back()));
+    jit_optix_check(optixSbtRecordPackHeader(program_groups[pg_index], &rec));
+
+    // Set hitgroup record data
+    hitgroup_records.push_back(rec);
 }
 
 MI_VARIANT void Shape<Float, Spectrum>::optix_prepare_ias(const OptixDeviceContext& /*context*/,
@@ -637,14 +634,16 @@ MI_VARIANT
 void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
     if (dirty()) {
         if constexpr (dr::is_jit_v<Float>) {
-            bool is_bspline_curve = (shape_type() == +ShapeType::BSplineCurve);
-            bool is_linear_curve = (shape_type() == +ShapeType::LinearCurve);
+            bool is_bspline_curve = shape_type() == +ShapeType::BSplineCurve,
+                 is_linear_curve  = shape_type() == +ShapeType::LinearCurve;
+
             if (!is_mesh() && !is_bspline_curve && !is_linear_curve) // to_world/to_object is used
                 dr::make_opaque(m_to_world, m_to_object);
         }
 
         if (m_emitter)
             m_emitter->parameters_changed({"parent"});
+
         if (m_sensor)
             m_sensor->parameters_changed({"parent"});
 
@@ -661,8 +660,9 @@ MI_VARIANT bool Shape<Float, Spectrum>::parameters_grad_enabled() const {
 
 MI_VARIANT void Shape<Float, Spectrum>::initialize() {
     if constexpr (dr::is_jit_v<Float>) {
-        bool is_bspline_curve = (shape_type() == +ShapeType::BSplineCurve);
-        bool is_linear_curve = (shape_type() == +ShapeType::LinearCurve);
+        bool is_bspline_curve = shape_type() == +ShapeType::BSplineCurve,
+             is_linear_curve  = shape_type() == +ShapeType::LinearCurve;
+
         if (!is_mesh() && !is_bspline_curve && !is_linear_curve) // to_world/to_object is not used
             dr::make_opaque(m_to_world, m_to_object);
     }
@@ -670,6 +670,7 @@ MI_VARIANT void Shape<Float, Spectrum>::initialize() {
     // Explicitly register this shape as the parent of the provided sub-objects
     if (m_emitter)
         m_emitter->set_shape(this);
+
     if (m_sensor)
         m_sensor->set_shape(this);
 

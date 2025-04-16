@@ -46,19 +46,10 @@ public:
 
     Float surface_area() const override { return 0.f; }
 
-    MI_INLINE ScalarSize effective_primitive_count() const override { return 0; }
+    ScalarSize effective_primitive_count() const override { return 0; }
 
-    /// Return whether this shapegroup contains triangle mesh shapes
-    bool has_meshes() const { return m_has_meshes; }
-
-    /// Return whether this shapegroup contains B-spline curve shapes
-    bool has_bspline_curves() const { return m_has_bspline_curves; }
-
-    /// Return whether this shapegroup contains linear curve shapes
-    bool has_linear_curves() const { return m_has_linear_curves; }
-
-    /// Return whether this shapegroup contains other type of shapes
-    bool has_others() const { return m_has_others; }
+    /// Returns a union of ShapeType flags denoting what is present in the ShapeGroup
+    uint32_t shape_types() const { return m_shape_types; }
 
     void traverse(TraversalCallback *callback) override;
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override;
@@ -74,8 +65,8 @@ public:
 
     void optix_fill_hitgroup_records(
         std::vector<HitGroupSbtRecord> &hitgroup_records,
-        const OptixProgramGroup *program_groups,
-        const std::unordered_map<size_t, size_t> &program_index_mapping) override;
+        const OptixProgramGroup *pg,
+        const OptixProgramGroupMapping &pg_mapping) override;
 
     void optix_prepare_geometry() override;
 
@@ -105,7 +96,7 @@ private:
     uint32_t m_sbt_offset;
 #endif
 
-    bool m_has_meshes, m_has_bspline_curves, m_has_linear_curves, m_has_others;
+    uint32_t m_shape_types;
 };
 
 MI_EXTERN_CLASS(ShapeGroup)

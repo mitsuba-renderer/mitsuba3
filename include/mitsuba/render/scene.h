@@ -551,6 +551,9 @@ public:
      */
     bool shapes_grad_enabled() const { return m_shapes_grad_enabled; };
 
+    /// Returns a union of ShapeType flags denoting what is present in the ShapeGroup
+    uint32_t shape_types() const;
+
     /// Return a human-readable string representation of the scene contents.
     virtual std::string to_string() const override;
 
