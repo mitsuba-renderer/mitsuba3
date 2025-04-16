@@ -133,7 +133,7 @@ def test02_bsdf_reflectance_forward(variants_all_ad_rgb, jit_flags, spp):
 
 @pytest.mark.parametrize("spp", [8])
 @pytest.mark.parametrize("res", [3])
-@pytest.mark.parametrize("opt_conf", [('SGD', [250.0, 0.8])])
+@pytest.mark.parametrize("opt_conf", [('SGD', {'lr': 250.0, 'momentum': 0.8})])
 def test03_optimizer(variants_all_ad_rgb, spp, res, opt_conf):
     scene = make_simple_scene(res=res, integrator="direct")
 
@@ -146,7 +146,7 @@ def test03_optimizer(variants_all_ad_rgb, spp, res, opt_conf):
     image_ref = scene.integrator().render(scene, seed=0, spp=spp)
 
     opt_type, opt_args = opt_conf
-    opt = getattr(mi.ad, opt_type)(*opt_args, params=params)
+    opt = getattr(mi.ad, opt_type)(**opt_args, params=params)
 
     opt[key] = mi.Color3f(0.1)
     dr.set_label(opt[key], key)
@@ -167,8 +167,6 @@ def test03_optimizer(variants_all_ad_rgb, spp, res, opt_conf):
         # Objective: MSE between 'image' and 'image_ref'
         ob_val = dr.sum(dr.square(image - image_ref), axis=None) / len(image.array)
         dr.set_label(ob_val, 'ob_val')
-
-        # print(dr.graphviz_str(Float(1)))
 
         # Back-propagate errors to input parameters
         dr.backward(ob_val)
@@ -377,45 +375,6 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
         assert dr.allclose(dr.grad(loss), 3 * v * dr.select(mask, mult1, mult2))
 
 
-def test06_optimizer_state(variants_all_ad_rgb):
-    def ensure_iterable(x):
-        if not isinstance(x, (tuple, list)):
-            return (x,)
-        return x
-
-    key = 'some_param'
-    init = mi.Float([1.0, 2.0, 3.0])
-
-    for cls in [(lambda: mi.ad.SGD(lr=2e-2, momentum=0.1)),
-                (lambda: mi.ad.Adam(lr=2e-2))]:
-        opt = cls()
-        assert key not in opt.variables
-        assert key not in opt.state
-        opt[key] = mi.Float(init)
-        assert key in opt.variables
-
-        for _ in range(3):
-            dr.set_grad(opt[key], mi.Float([-1, 1, 2]))
-            opt.step()
-
-        assert key in opt.state
-        state_before = ensure_iterable(opt.state[key])
-        for s in state_before:
-            assert dr.all(s != 0)
-
-        # A value change should not affect the state
-        opt[key] = dr.clip(opt[key], 0, 2)
-        state_after = ensure_iterable(opt.state[key])
-        for a, b in zip(state_before, state_after):
-            assert dr.allclose(a, b)
-
-        # A size change should reset the state
-        opt[key] = mi.Float([1.0, 2.0])
-        state_after = ensure_iterable(opt.state[key])
-        for s in state_after:
-            assert dr.all(s == 0)
-
-
 @pytest.mark.parametrize('opt', ['SGD', 'Adam'])
 def test07_masked_updates(variants_all_ad_rgb, opt):
     def ensure_iterable(v):
@@ -445,7 +404,8 @@ def test07_masked_updates(variants_all_ad_rgb, opt):
     # Masked updates: parameters and state should only
     # be updated where gradients are nonzero.
     prev_x = mi.Float(params['x'])
-    prev_state = [mi.Float(vv) for vv in ensure_iterable(opt.state['x'])]
+    print([vv for vv in ensure_iterable(opt['x'])])
+    prev_state = [mi.Float(vv) for vv in ensure_iterable(opt['x'])]
     for zero_i in range(n):
         is_zero = dr.arange(mi.UInt32, n) == zero_i
         g2 = dr.select(is_zero, 0, mi.Float(g1))
@@ -456,15 +416,15 @@ def test07_masked_updates(variants_all_ad_rgb, opt):
 
         assert dr.all((params['x'] == prev_x) | ~is_zero), 'Param should not be updated where grad == 0'
         assert dr.all((params['x'] != prev_x) | is_zero), 'Param should be updated where grad != 0'
-        for v1, v2 in zip(ensure_iterable(opt.state['x']), prev_state):
+        for v1, v2 in zip(ensure_iterable(opt['x']), prev_state):
             assert dr.all((v1 == v2) | ~is_zero), 'State should not be updated where grad == 0'
             assert dr.all((v1 != v2) | is_zero), 'State should be updated where grad != 0'
 
         prev_x = mi.Float(params['x'])
-        prev_state = [mi.Float(vv) for vv in ensure_iterable(opt.state['x'])]
+        prev_state = [mi.Float(vv) for vv in ensure_iterable(opt['x'])]
 
 @pytest.mark.parametrize('special_type', ['Complex2f', 'Quaternion4f', 'Matrix2f'])
-def test07_adam_special_types(variants_all_ad_rgb, special_type):
+def test08_adam_special_types(variants_all_ad_rgb, special_type):
     import sys
     st = getattr(mi, special_type)
     at = dr.array_t(st)

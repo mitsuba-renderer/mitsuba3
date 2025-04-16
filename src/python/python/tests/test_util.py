@@ -220,9 +220,9 @@ def test02_traverse_update(variants_all_ad_rgb):
     ), "Updates should be triggered when enabling gradients!"
     reset_update_keys()
 
-    def inplace_update(value: mi.Point3f):
+    def update_inplace(value: mi.Point3f):
         value += 0.2
-    inplace_update(params["bsdf_tex_diff.tex_param_diff"])
+    update_inplace(params["bsdf_tex_diff.tex_param_diff"])
     params.update()
     assert (
         MyTexture.update_keys == ['tex_param_diff'] and

@@ -2,13 +2,10 @@ from __future__ import annotations as __annotations__ # Delayed parsing of type 
 
 import contextlib
 from collections.abc import Mapping
+from typing import Any, Optional, Union
 
 import drjit as dr
 import mitsuba as mi
-
-import typing
-if typing.TYPE_CHECKING:
-    from typing import Any, Optional, Union
 
 class SceneParameters(Mapping):
     """
@@ -183,7 +180,7 @@ class SceneParameters(Mapping):
 
         return self.properties[key]
 
-    def update(self, values: dict = None) -> list[tuple[Any, set]]:
+    def update(self, values: Optional[Mapping] = None) -> list[tuple[Any, set]]:
         """
         This function should be called at the end of a sequence of writes
         to the dictionary. It automatically notifies all modified Mitsuba
