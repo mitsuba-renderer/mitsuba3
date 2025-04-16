@@ -251,7 +251,7 @@ public:
                 m_to_world = m_to_world.value();
             }
 
-            m_grid_texture.inplace_update();
+            m_grid_texture.update_inplace();
 
             update();
         }
