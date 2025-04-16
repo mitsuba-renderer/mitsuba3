@@ -40,6 +40,14 @@ def test02_type_is_preserved(variant_scalar_rgb):
     assert type(p['prop_5']) is Array3f64
     assert type(p['prop_6']) is mi.ScalarColor3d
 
+    assert p.type('prop_1') == mi.Properties.Type.Long
+    assert p.type('prop_2') == mi.Properties.Type.String
+    assert p.type('prop_3') == mi.Properties.Type.Bool
+    assert p.type('prop_4') == mi.Properties.Type.Float
+    assert p.type('prop_5') == mi.Properties.Type.Array3f
+    assert p.type('prop_6') == mi.Properties.Type.Color
+    assert p.type('prop_7') == mi.Properties.Type.Object
+
     assert p['prop_1'] == 1
     assert p['prop_2'] == '1'
     assert p['prop_3'] == False
