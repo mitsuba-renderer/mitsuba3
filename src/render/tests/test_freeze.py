@@ -182,7 +182,7 @@ def test02_pose_estimation(variants_vec_rgb, integrator, auto_opaque):
 
         params["bunny.vertex_positions"] = dr.ravel(trafo @ initial_vertex_positions)
 
-    def optimize(scene, ref, initial_vertex_positions, other):
+    def compute_grad(scene, ref):
         params = mi.traverse(scene)
 
         image = mi.render(scene, params, spp=1, seed=1, seed_grad=2)
@@ -195,7 +195,7 @@ def test02_pose_estimation(variants_vec_rgb, integrator, auto_opaque):
 
         return image, loss
 
-    frozen = dr.freeze(optimize, auto_opaque = auto_opaque)
+    frozen = dr.freeze(compute_grad, auto_opaque = auto_opaque)
 
     def load_scene():
         from mitsuba.scalar_rgb import Transform4f as T
@@ -230,7 +230,9 @@ def test02_pose_estimation(variants_vec_rgb, integrator, auto_opaque):
         scene = mi.load_dict(scene, parallel=True)
         return scene
 
-    def run(scene: mi.Scene, optimize, n) -> Tuple[mi.TensorXf, mi.Point3f, mi.Float]:
+    def run(
+        scene: mi.Scene, compute_grad, n
+    ) -> Tuple[mi.TensorXf, mi.Point3f, mi.Float]:
         params = mi.traverse(scene)
 
         params.keep("bunny.vertex_positions")
@@ -251,14 +253,7 @@ def test02_pose_estimation(variants_vec_rgb, integrator, auto_opaque):
             apply_transformation(initial_vertex_positions, opt, params)
 
             with dr.profile_range("optimize"):
-                image, loss = optimize(
-                    scene,
-                    image_ref,
-                    initial_vertex_positions,
-                    [
-                        params["bunny.vertex_positions"],
-                    ],
-                )
+                image, loss = compute_grad(scene, image_ref)
 
             opt.step()
 
@@ -276,7 +271,7 @@ def test02_pose_estimation(variants_vec_rgb, integrator, auto_opaque):
     params = mi.traverse(scene)
     initial_vertex_positions = mi.Float(params["bunny.vertex_positions"])
 
-    img_ref, trans_ref, angle_ref = run(scene, optimize, n)
+    img_ref, trans_ref, angle_ref = run(scene, compute_grad, n)
 
     # Reset parameters:
     params["bunny.vertex_positions"] = initial_vertex_positions
@@ -978,7 +973,10 @@ def test11_optimizer(variants_vec_rgb, optimizer, auto_opaque):
     image_frozen, param_frozen = run(n, frozen)
 
     if auto_opaque:
-        assert frozen.n_recordings == 3
+        if optimizer == "sgd":
+            assert frozen.n_recordings == 2
+        else:
+            assert frozen.n_recordings == 3
     else:
         assert frozen.n_recordings == 2
 
