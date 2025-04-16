@@ -120,6 +120,16 @@ using Caster = nb::object(*)(mitsuba::Object *);
 Caster cast_object = nullptr;
 
 NB_MODULE(MI_VARIANT_NAME, m) {
+    /* scoped */ {
+        // Before loading everything in and creating a lot of references to
+        // various objects, we ensure that this backend can be initialized
+        // without issues by creating a simple variable.
+        // If initialization fails, an exception will be raised, which the user
+        // can catch and handle if desired.
+        // Leaving initialization to fail later would lead to reference leaks.
+        MI_VARIANT_FLOAT(0);
+    }
+
     m.attr("__name__") = "mitsuba";
 
     // Create sub-modules
