@@ -4,6 +4,7 @@
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/math.h>
 #include <drjit/dynamic.h>
+#include <iostream>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -218,8 +219,10 @@ private:
     void compute_cdf() {
         if (m_pmf.empty())
             Throw("DiscreteDistribution: empty distribution!");
-        if (!dr::all(m_pmf >= 0.f))
+        if (!dr::all(m_pmf >= 0.f)) {
+            std::cout << "pmf=" << m_pmf << std::endl;
             Throw("DiscreteDistribution: entries must be non-negative!");
+        }
         if (!dr::any(m_pmf > 0.f))
             Throw("DiscreteDistribution: no probability mass found!");
 

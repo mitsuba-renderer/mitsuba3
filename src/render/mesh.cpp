@@ -479,7 +479,15 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
 
         Float face_surface_area = .5f * dr::norm(dr::cross(p1 - p0, p2 - p0));
 
-        m_area_pmf = DiscreteDistribution<Float>(dr::detach(face_surface_area));
+        try {
+            m_area_pmf = DiscreteDistribution<Float>(dr::detach(face_surface_area));
+        } catch (...) {
+            std::cout << "v_idx = " << v_idx << std::endl;
+            std::cout << "p0 = " << p0 << std::endl;
+            std::cout << "p1 = " << p1 << std::endl;
+            std::cout << "p2 = " << p2 << std::endl;
+            throw;
+        }
     }
 }
 
