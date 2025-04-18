@@ -447,17 +447,8 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
         Throw("Cannot create sampling table for an empty mesh: %s", to_string());
 
     if constexpr (!dr::is_jit_v<Float>) {
-        if (!m_area_pmf.empty())
-            return; // already built!
-
-        auto &&vertex_positions =
-            dr::migrate(m_vertex_positions, AllocType::Host);
-        auto &&faces = dr::migrate(m_faces, AllocType::Host);
-        if constexpr (dr::is_jit_v<Float>)
-            dr::sync_thread();
-
-        const InputFloat *pos_p  = vertex_positions.data();
-        const ScalarIndex *idx_p = faces.data();
+        const InputFloat *pos_p  = m_vertex_positions.data();
+        const ScalarIndex *idx_p = m_faces.data();
 
         std::vector<ScalarFloat> table(m_face_count);
         for (ScalarIndex i = 0; i < m_face_count; i++) {
@@ -475,7 +466,8 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
         dr::scoped_disable_symbolic<Float> guard{};
 
         Vector3u v_idx = face_indices(dr::arange<UInt32>(m_face_count));
-        Point3f p0 = vertex_position(v_idx[0]), p1 = vertex_position(v_idx[1]),
+        Point3f p0 = vertex_position(v_idx[0]),
+                p1 = vertex_position(v_idx[1]),
                 p2 = vertex_position(v_idx[2]);
 
         Float face_surface_area = .5f * dr::norm(dr::cross(p1 - p0, p2 - p0));

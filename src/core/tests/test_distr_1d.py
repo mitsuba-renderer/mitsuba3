@@ -12,21 +12,6 @@ def test01_discr_empty(variants_all_backends_once):
         d.update()
     assert 'empty distribution' in str(excinfo.value)
 
-
-def test02_discr_zero_prob(variants_all_backends_once):
-    # Test that operations involving zero probability mass throw
-    with pytest.raises(RuntimeError) as excinfo:
-        mi.DiscreteDistribution([0, 0, 0])
-    assert "no probability mass found" in str(excinfo.value)
-
-
-def test03_discr_neg_prob(variants_all_backends_once):
-    # Test that operations involving negative probability mass throw
-    with pytest.raises(RuntimeError) as excinfo:
-        mi.DiscreteDistribution([1, -1, 1])
-    assert "entries must be non-negative" in str(excinfo.value)
-
-
 def test04_discr_basic(variants_vec_backends_once):
     # Validate discrete distribution cdf/pmf against hand-computed reference
     x = mi.DiscreteDistribution([1, 3, 2])

@@ -98,6 +98,12 @@ public:
     using typename Base::InputVector2f;
     using typename Base::InputNormal3f;
 
+    // Initialize vertices
+    inline static const ScalarIndex s_faces[6] {
+        1, 2, 0,
+        1, 3, 2
+    };
+
     Rectangle(const Properties &props) : Base(props) {
         if (props.get<bool>("flip_normals", false))
             m_to_world =
@@ -122,13 +128,7 @@ public:
         m_to_object = m_to_world.value().inverse();
         dr::make_opaque(m_frame, m_inv_surface_area);
 
-        // Initialize vertices
-        static const ScalarIndex faces[6] {
-            1, 2, 0,
-            1, 3, 2
-        };
-
-        m_faces = dr::load<DynamicBuffer<UInt32>>(faces, 6);
+        m_faces = dr::load<DynamicBuffer<UInt32>>(s_faces, 6);
 
         if constexpr (dr::is_diff_v<Float>) {
             // Differentiable case: launch kernels to generate coordinates

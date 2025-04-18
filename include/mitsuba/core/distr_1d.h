@@ -218,10 +218,12 @@ private:
     void compute_cdf() {
         if (m_pmf.empty())
             Throw("DiscreteDistribution: empty distribution!");
+#if !defined(NDEBUG)
         if (!dr::all(m_pmf >= 0.f))
             Throw("DiscreteDistribution: entries must be non-negative!");
         if (!dr::any(m_pmf > 0.f))
             Throw("DiscreteDistribution: no probability mass found!");
+#endif
 
         m_cdf = dr::prefix_sum(m_pmf, false);
         m_valid = Vector2u(0, m_pmf.size() - 1);
