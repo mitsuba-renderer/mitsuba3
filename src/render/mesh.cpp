@@ -442,7 +442,6 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() {
 
 MI_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
     std::lock_guard<std::mutex> lock(m_mutex);
-    dr::scoped_symbolic_independence<Float> guard{};
 
     if (m_face_count == 0)
         Throw("Cannot create sampling table for an empty mesh: %s", to_string());
@@ -473,6 +472,8 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
 
         m_area_pmf = DiscreteDistribution<Float>(table.data(), m_face_count);
     } else {
+        dr::scoped_disable_symbolic<Float> guard{};
+
         Vector3u v_idx = face_indices(dr::arange<UInt32>(m_face_count));
         Point3f p0 = vertex_position(v_idx[0]), p1 = vertex_position(v_idx[1]),
                 p2 = vertex_position(v_idx[2]);
