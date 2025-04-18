@@ -84,6 +84,8 @@ public:
     using Emitter::m_flags;
     using Emitter::m_needs_sample_2;
     using Emitter::m_needs_sample_3;
+
+    DR_TRAMPOLINE_TRAVERSE_CB(Emitter);
 };
 
 template <typename Ptr, typename Cls> void bind_emitter_generic(Cls &cls) {
@@ -163,6 +165,8 @@ MI_PY_EXPORT(Emitter) {
         .def_field(PyEmitter, m_needs_sample_2, D(Endpoint, m_needs_sample_2))
         .def_field(PyEmitter, m_needs_sample_3, D(Endpoint, m_needs_sample_3))
         .def_field(PyEmitter, m_flags, D(Emitter, m_flags));
+
+    drjit::bind_traverse(emitter);
 
     if constexpr (dr::is_array_v<EmitterPtr>) {
         dr::ArrayBinding b;
