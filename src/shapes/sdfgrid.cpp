@@ -573,7 +573,6 @@ public:
                                        static_cast<uint32_t>(shape[1]),
                                        static_cast<uint32_t>(shape[0]) };
 
-            dr::eval(m_grid_texture.value()); // Make sure the SDF data is evaluated
             OptixSDFGridData data = { (uint32_t *) m_voxel_indices_ptr,
                                       resolution[0],
                                       resolution[1],
@@ -583,13 +582,13 @@ public:
                                       m_voxel_size.scalar()[2],
                                       m_grid_texture.tensor().array().data(),
                                       m_to_object.scalar() };
-            jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data,
-                       sizeof(OptixSDFGridData));
+            jit_memcpy_async(JitBackend::CUDA, m_optix_data_ptr, &data,
+                             sizeof(OptixSDFGridData));
         }
     }
 
     void optix_build_input(OptixBuildInput &build_input) const override {
-        build_input.type = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
+        build_input.type                               = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
         build_input.customPrimitiveArray.aabbBuffers   = &m_bboxes_ptr;
         build_input.customPrimitiveArray.numPrimitives = m_filled_voxel_count;
         build_input.customPrimitiveArray.strideInBytes = 6 * sizeof(float);
