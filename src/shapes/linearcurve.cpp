@@ -388,7 +388,6 @@ public:
 
 #if defined(MI_ENABLE_EMBREE)
     RTCGeometry embree_geometry(RTCDevice device) override {
-        dr::eval(m_control_points); // Make sure the buffer is evaluated
         RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE);
 
         rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4,
@@ -407,13 +406,11 @@ public:
     void optix_prepare_geometry() override { }
 
     void optix_build_input(OptixBuildInput &build_input) const override {
-        dr::eval(m_control_points); // Make sure the buffer is evaluated
         m_vertex_buffer_ptr = (CUdeviceptr*) m_control_points.data();
         m_radius_buffer_ptr = (CUdeviceptr*) (m_control_points.data() + 3);
-        m_index_buffer_ptr  = (CUdeviceptr*) m_indices.data();
 
-        build_input.type = OPTIX_BUILD_INPUT_TYPE_CURVES;
-        build_input.curveArray.curveType = OPTIX_PRIMITIVE_TYPE_ROUND_LINEAR;
+        build_input.type                            = OPTIX_BUILD_INPUT_TYPE_CURVES;
+        build_input.curveArray.curveType            = OPTIX_PRIMITIVE_TYPE_ROUND_LINEAR;
         build_input.curveArray.numPrimitives        = (unsigned int) dr::width(m_indices);
 
         build_input.curveArray.vertexBuffers        = (CUdeviceptr*) &m_vertex_buffer_ptr;
@@ -423,7 +420,7 @@ public:
         build_input.curveArray.widthBuffers         = (CUdeviceptr*) &m_radius_buffer_ptr;
         build_input.curveArray.widthStrideInBytes   = sizeof( InputFloat ) * 4;
 
-        build_input.curveArray.indexBuffer          = (CUdeviceptr) m_index_buffer_ptr;
+        build_input.curveArray.indexBuffer          = (CUdeviceptr) m_indices.data();
         build_input.curveArray.indexStrideInBytes   = sizeof( ScalarIndex );
 
         build_input.curveArray.normalBuffers        = 0;
@@ -515,7 +512,6 @@ private:
     // For OptiX build input
     mutable void* m_vertex_buffer_ptr = nullptr;
     mutable void* m_radius_buffer_ptr = nullptr;
-    mutable void* m_index_buffer_ptr = nullptr;
 #endif
 };
 
