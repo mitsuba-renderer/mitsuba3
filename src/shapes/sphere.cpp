@@ -775,8 +775,8 @@ public:
                                      (Vector<float, 3>) m_center.scalar(),
                                      (float) m_radius.scalar() };
 
-            jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data,
-                       sizeof(OptixSphereData));
+            jit_memcpy_async(JitBackend::CUDA, m_optix_data_ptr, &data,
+                             sizeof(OptixSphereData));
         }
     }
 #endif

@@ -544,7 +544,8 @@ public:
 
             OptixDiskData data = { bbox(), m_to_object.scalar() };
 
-            jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data, sizeof(OptixDiskData));
+            jit_memcpy_async(JitBackend::CUDA, m_optix_data_ptr, &data,
+                             sizeof(OptixDiskData));
         }
     }
 #endif

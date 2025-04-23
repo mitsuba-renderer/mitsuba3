@@ -133,13 +133,16 @@ void build_gas(const OptixDeviceContext &context,
     // Build a GAS given a subset of shape pointers
     auto build_single_gas = [&context](const std::vector<ref<Shape>> &shape_subset,
                                        MiOptixAccelData::HandleData &handle) {
+        size_t shapes_count = shape_subset.size();
+        if (shapes_count == 0)
+            return;
 
         OptixAccelBuildOptions accel_options = {};
         accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION |
                                    OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
-
         accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
         accel_options.motionOptions.numKeys = 0;
+
         if (handle.buffer) {
             jit_free(handle.buffer);
             handle.handle = 0ull;
@@ -147,16 +150,9 @@ void build_gas(const OptixDeviceContext &context,
             handle.count = 0;
         }
 
-        size_t shapes_count = shape_subset.size();
-        if (shapes_count == 0)
-            return;
-
         std::vector<OptixBuildInput> build_inputs(shapes_count);
         for (size_t i = 0; i < shapes_count; i++)
             shape_subset[i]->optix_build_input(build_inputs[i]);
-
-        // Ensure shape data pointers are fully evaluated before building the BVH
-        dr::sync_thread();
 
         OptixAccelBufferSizes buffer_sizes;
         jit_optix_check(optixAccelComputeMemoryUsage(
@@ -196,7 +192,7 @@ void build_gas(const OptixDeviceContext &context,
         size_t compact_size;
         jit_memcpy(JitBackend::CUDA,
                    &compact_size,
-                   (void*)emit_property.result,
+                   (void*) emit_property.result,
                    sizeof(size_t));
         jit_free(emit_property.result);
 
@@ -222,11 +218,10 @@ void build_gas(const OptixDeviceContext &context,
 
     scoped_optix_context guard;
 
-    // Order: meshes, b-spline curves, linear curves, other
-    build_single_gas(custom_shapes, out_accel.custom_shapes);
     build_single_gas(meshes, out_accel.meshes);
     build_single_gas(bspline_curves, out_accel.bspline_curves);
     build_single_gas(linear_curves, out_accel.linear_curves);
+    build_single_gas(custom_shapes, out_accel.custom_shapes);
 }
 
 /// Prepares and fills the \ref OptixInstance array associated with a given list of shapes.
