@@ -447,3 +447,22 @@ def test18_inv_transpose(variants_all_ad_rgb):
                      [0, 0, 0, -1],
                      [0, 0, 0, 0]])
     )
+
+def test19_area_emitter_update(variants_vec_rgb):
+    emitter = mi.load_dict({
+        'type': 'rectangle',
+        'emitter': {
+            'type': 'area',
+        },
+        'to_world': mi.ScalarTransform4f()
+    })
+
+    params = mi.traverse(emitter)
+    params['to_world'] = mi.Transform4f().scale(mi.Vector3f(2, 2, 1))
+    params.update()
+
+    assert dr.allclose(params['to_world'].matrix, [[2, 0, 0, 0],
+                                                   [0, 2, 0, 0],
+                                                   [0, 0, 1, 0],
+                                                   [0, 0, 0, 1]])
+    assert emitter.surface_area() == 16
