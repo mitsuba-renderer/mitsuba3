@@ -450,7 +450,6 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
     if constexpr (dr::is_cuda_v<Float>) {
-        dr::sync_thread();
         MiOptixSceneState &s = *(MiOptixSceneState *) m_accel;
 
         if (!m_shapes.empty()) {

@@ -779,7 +779,8 @@ public:
                                        (float) 1.f,
                                        (float) 1.f };
 
-            jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data, sizeof(OptixCylinderData));
+            jit_memcpy_async(JitBackend::CUDA, m_optix_data_ptr, &data,
+                             sizeof(OptixCylinderData));
         }
     }
 #endif
