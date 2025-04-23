@@ -668,11 +668,13 @@ MI_VARIANT void Shape<Float, Spectrum>::initialize() {
     }
 
     // Explicitly register this shape as the parent of the provided sub-objects
-    if (m_emitter)
-        m_emitter->set_shape(this);
+    if (!m_initialized) {
+        if (m_emitter)
+            m_emitter->set_shape(this);
 
-    if (m_sensor)
-        m_sensor->set_shape(this);
+        if (m_sensor)
+            m_sensor->set_shape(this);
+    }
 
     m_initialized = true;
 }
