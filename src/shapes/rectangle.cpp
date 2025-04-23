@@ -518,6 +518,95 @@ public:
     // =============================================================
 
 
+    // =============================================================
+    //! @{ \name Ray tracing routines
+    // =============================================================
+
+    template <typename FloatP, typename Ray3fP>
+    std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
+               dr::uint32_array_t<FloatP>>
+    ray_intersect_preliminary_impl(const Ray3fP &ray_,
+                                   ScalarIndex /*prim_index*/,
+                                   dr::mask_t<FloatP> active) const {
+        // Note: the outputs from this function will be post-processed into a
+        // SurfaceInteraction3f by `Mesh::compute_surface_interaction()`.
+
+        Transform<Point<FloatP, 4>> to_object;
+        if constexpr (!dr::is_jit_v<FloatP>)
+            to_object = m_to_object.scalar();
+        else
+            to_object = m_to_object.value();
+
+        Ray3fP ray = to_object.transform_affine(ray_);
+        FloatP t   = -ray.o.z() / ray.d.z();
+        Point<FloatP, 3> local = ray(t);
+
+        // Is intersection within ray segment and rectangle?
+        active = active && t >= 0.f
+                        && t <= ray.maxt
+                        && dr::abs(local.x()) <= 1.f
+                        && dr::abs(local.y()) <= 1.f;
+
+        // Which of the two triangles did we hit?
+        const auto local_xy = local.x() + local.y();
+        dr::uint32_array_t<FloatP> prim_index = dr::select(local_xy <= 0.f, 0, 1);
+
+        // Compute barycentric coordinates inside of the hit triangle (w.r.t. vertices 1 and 2).
+        // The final intersection position will be recomputed as:
+        //     si.p = p0 * (1 - b1 - b2) + p1 * b1 + p2 * b2;
+        // Expression of the barycentric coordinates:
+        //     b1 = ((local - p0) x (p2 - p0)) / ((p1 - p0) x (p2 - p0))
+        //     b2 = ((local - p0) x (p0 - p1)) / ((p1 - p0) x (p2 - p0))
+        // where `x` denotes the cross product.
+        // Given the hardcoded vertices for this rectangle, it simplifies to:
+        //     Triangle 0:
+        //         b1 = (local.y + 1) / 2
+        //         b2 = -(local.x + local.y) / 2
+        //     Triangle 1:
+        //         b1 = (local.x + local.y) / 2
+        //         b2 = (1 - local.x) / 2
+        Point<FloatP, 2> prim_uv = 0.5f * dr::select(
+            prim_index == 0,
+            Point<FloatP, 2>(local.y() + 1.f, -local_xy),
+            Point<FloatP, 2>(local_xy, 1.f - local.x())
+        );
+
+        // We don't technically need to mask the inactive lanes, but we do it
+        // nevertheless to match the behavior of `Scene::ray_intersect()`.
+        // Return: pi.t, pi.prim_uv, pi.shape_index, pi.prim_index
+        return { dr::select(active, t, dr::Infinity<FloatP>),
+                 prim_uv & active, ((uint32_t) -1), prim_index & active };
+    }
+
+    template <typename FloatP, typename Ray3fP>
+    dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray_,
+                                     ScalarIndex /*prim_index*/,
+                                     dr::mask_t<FloatP> active) const {
+        MI_MASK_ARGUMENT(active);
+
+        Transform<Point<FloatP, 4>> to_object;
+        if constexpr (!dr::is_jit_v<FloatP>)
+            to_object = m_to_object.scalar();
+        else
+            to_object = m_to_object.value();
+
+        Ray3fP ray     = to_object.transform_affine(ray_);
+        FloatP t       = -ray.o.z() / ray.d.z();
+        Point<FloatP, 3> local = ray(t);
+
+        // Is intersection within ray segment and rectangle?
+        return active && t >= 0.f
+                      && t <= ray.maxt
+                      && dr::abs(local.x()) <= 1.f
+                      && dr::abs(local.y()) <= 1.f;
+    }
+
+    MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
+
+    //! @}
+    // =============================================================
+
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Rectangle[" << std::endl
