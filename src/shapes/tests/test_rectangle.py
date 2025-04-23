@@ -31,6 +31,48 @@ def test02_bbox(variant_scalar_rgb):
             assert dr.allclose(b.max, translate + [sx, sy, 0.0])
 
 
+def check_direct_ray_intersect(rectangle, ray, its_found, si):
+    # Calling `ray_intersect()` and `ray_test()`on the rectangle
+    # directly should yield the same result.
+    si_rect = rectangle.ray_intersect(ray)
+    assert dr.all(rectangle.ray_test(ray) == its_found)
+
+    for k in si.DRJIT_STRUCT.keys():
+        expected = getattr(si, k)
+        actual = getattr(si_rect, k)
+
+        if dr.width(expected) == 0:
+            assert dr.width(actual) == 0
+            continue
+        if expected is None:
+            assert actual is None
+            continue
+        # NaN and Inf checks only on depth-1 values for simplicity
+        # if dr.depth_v(expected) <= 1 and not dr.is_struct_v(expected):
+        if dr.is_struct_v(expected):
+            for kk in expected.DRJIT_STRUCT.keys():
+                assert dr.allclose(getattr(expected, kk), getattr(actual, kk)), \
+                        f"Surface interaction mismatch for field \"{k}.{kk}\"."
+        elif k in ('shape', 'instance'):
+            assert dr.all(expected == actual), \
+                    f"Surface interaction mismatch for field \"{k}\"."
+        elif k == 'prim_index':
+            # For invalid surface interactions, the value of prim_index is
+            # not always predictable when using `Scene.ray_intersect()`, so
+            # we don't check it.
+            if dr.is_jit_v(expected):
+                cond = ~its_found | (expected == actual)
+            else:
+                cond = its_found or (expected == actual)
+            assert dr.all(cond), \
+                    f"Surface interaction mismatch for field \"{k}\"."
+        else:
+            both_nan = dr.all(dr.isnan(expected) & dr.isnan(actual), axis=None)
+            both_inf = dr.all(dr.isinf(expected) & (expected == actual), axis=None)
+            assert both_nan or both_inf or dr.allclose(expected, actual), \
+                    f"Surface interaction mismatch for field \"{k}\"."
+
+
 def test03_ray_intersect(variant_scalar_rgb):
     # Scalar
     scene = mi.load_dict({
@@ -40,6 +82,7 @@ def test03_ray_intersect(variant_scalar_rgb):
             "to_world" : mi.Transform4f().scale((2.0, 0.5, 1.0))
         }
     })
+    rectangle = scene.shapes()[0]
 
     n = 15
     coords = dr.linspace(Float, -1, 1, n)
@@ -53,6 +96,8 @@ def test03_ray_intersect(variant_scalar_rgb):
 
         assert its_found == (abs(coords[i]) <= 0.5)
         assert si.is_valid() == its_found
+        check_direct_ray_intersect(rectangle, rays[i], its_found, si)
+
         si_scalar.append(si)
         valid_count += its_found
 
@@ -70,13 +115,17 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
                 "to_world" : mi.ScalarTransform4f().scale((2.0, 0.5, 1.0))
             }
         })
-
+        rectangle = scene.shapes()[0]
         o = 2.0 * o - 1.0
         o.z = 5.0
 
-        t = scene.ray_intersect(mi.Ray3f(o, [0, 0, -1])).t
-        dr.eval(t)
-        return t
+        ray = mi.Ray3f(o, [0, 0, -1])
+        its_found = scene.ray_test(ray)
+        si = scene.ray_intersect(ray)
+        dr.eval(ray, its_found, si)
+
+        check_direct_ray_intersect(rectangle, ray, its_found, si)
+        return si.t
 
     check_vectorization(kernel, arg_dims = [3], atol=1e-5)
 
