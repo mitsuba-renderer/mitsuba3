@@ -49,7 +49,7 @@ class BasicVolumetricPrimitiveRadianceFieldIntegrator(RBIntegrator):
         Evaluate the transmission model on intersected volumetric primitives
         """
         def gather_ellipsoids_props(self, prim_index, active):
-            if self is not None and self.shape_type() == +mi.ShapeType.Ellipsoids:
+            if self is not None and self.is_ellipsoids():
                 si = dr.zeros(mi.SurfaceInteraction3f)
                 si.prim_index = prim_index
                 data = self.eval_attribute_x("ellipsoid", si, active)
@@ -83,7 +83,7 @@ class BasicVolumetricPrimitiveRadianceFieldIntegrator(RBIntegrator):
         Evaluate the SH directionally emission on intersected volumetric primitives
         """
         def eval(shape, si, ray, active):
-            if shape is not None and shape.shape_type() == +mi.ShapeType.Ellipsoids:
+            if shape is not None and shape.is_ellipsoids():
                 sh_coeffs = shape.eval_attribute_x("sh_coeffs", si, active)
                 sh_degree = int(dr.sqrt((sh_coeffs.shape[0] // 3) - 1))
                 sh_dir_coef = dr.sh_eval(ray.d, sh_degree)
@@ -127,7 +127,7 @@ class BasicVolumetricPrimitiveRadianceFieldIntegrator(RBIntegrator):
                 active=active,
             )
 
-            active &= si.is_valid() & (si.shape.shape_type() == +mi.ShapeType.Ellipsoids)
+            active &= si.is_valid() & si.shape.is_ellipsoids()
 
             # ----------------- Primitive emission evaluation ------------------
 
