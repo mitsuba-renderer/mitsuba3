@@ -915,7 +915,8 @@ def test10_shape_sample_position(variants_vec_rgb, shape, auto_opaque):
         assert dr.all(res.delta == ref.delta)
 
 
-@pytest.mark.parametrize("optimizer", ["sgd", "adam"])
+# TODO: add rmsprop
+@pytest.mark.parametrize("optimizer", ["sgd", "rmsprop", "adam"])
 @pytest.mark.parametrize("auto_opaque", [False, True])
 def test11_optimizer(variants_vec_rgb, optimizer, auto_opaque):
     """
@@ -959,6 +960,8 @@ def test11_optimizer(variants_vec_rgb, optimizer, auto_opaque):
 
         if optimizer == "adam":
             opt = mi.ad.Adam(lr=0.05)
+        elif optimizer == "rmsprop":
+            opt = dr.opt.RMSProp(lr = 0.001)
         elif optimizer == "sgd":
             opt = mi.ad.SGD(lr=0.005, momentum=0.1)
         opt[k] = mi.Color3f(0.01, 0.2, 0.9)
@@ -973,10 +976,10 @@ def test11_optimizer(variants_vec_rgb, optimizer, auto_opaque):
     image_frozen, param_frozen = run(n, frozen)
 
     if auto_opaque:
-        if optimizer == "sgd":
-            assert frozen.n_recordings == 2
-        else:
+        if optimizer == "adam":
             assert frozen.n_recordings == 3
+        else:
+            assert frozen.n_recordings == 2
     else:
         assert frozen.n_recordings == 2
 
