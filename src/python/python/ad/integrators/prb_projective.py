@@ -382,7 +382,7 @@ class PathProjectiveIntegrator(PSIntegrator):
         )
 
 
-    def sample_radiance_difference(self, scene, ss, curr_depth, sampler, active):
+    def sample_radiance_difference(self, scene, ss, curr_depth, sampler, wavelengths, active):
         """
         See ``PSIntegrator.sample_radiance_difference()`` for a description of
         this interface and the role of the various parameters and return values.
@@ -391,6 +391,7 @@ class PathProjectiveIntegrator(PSIntegrator):
         # ----------- Estimate the radiance of the background -----------
 
         ray_bg = ss.spawn_ray()
+        ray_bg.wavelengths = wavelengths
         radiance_bg, _, _, _ = self.sample(
             dr.ADMode.Primal, scene, sampler, ray_bg, curr_depth, None, None, active, False, None)
 
@@ -406,6 +407,7 @@ class PathProjectiveIntegrator(PSIntegrator):
         # Create a dummy ray that we never perform ray-intersection with to
         # compute other fields in ``si``
         dummy_ray = mi.Ray3f(ss.p - ss.d, ss.d)
+        ray_bg.wavelengths = wavelengths
 
         # The ray origin is wrong, but this is fine if we only need the primal
         # radiance
@@ -440,7 +442,8 @@ class PathProjectiveIntegrator(PSIntegrator):
 
 
     @dr.syntax
-    def sample_importance(self, scene, sensor, ss, max_depth, sampler, preprocess, active):
+    def sample_importance(self, scene, sensor, ss, max_depth, sampler,
+                          wavelengths, preprocess, active):
         """
         See ``PSIntegrator.sample_importance()`` for a description of this
         interface and the role of the various parameters and return values.
@@ -450,6 +453,7 @@ class PathProjectiveIntegrator(PSIntegrator):
         ss_importance = mi.SilhouetteSample3f(ss)
         ss_importance.d = -ss_importance.d
         ray_boundary = ss_importance.spawn_ray()
+        ray_boundary.wavelengths = wavelengths
         if dr.hint(preprocess, mode='scalar'):
             si_boundary = scene.ray_intersect(ray_boundary, active=active)
         else:

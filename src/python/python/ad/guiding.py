@@ -421,7 +421,7 @@ class OcSpaceDistr(BaseGuidingDistr):
         query_point.y = dr.lerp(aabb_min_rep.y, aabb_max_rep.y, sampler_extra.next_1d())
         query_point.z = dr.lerp(aabb_min_rep.z, aabb_max_rep.z, sampler_extra.next_1d())
 
-        value, _ = self.eval_indirect_integrand_handle(query_point, sampler_extra)
+        value, _, _ = self.eval_indirect_integrand_handle(query_point, sampler_extra)
 
         mass = dr.zeros(mi.Float, leaf_count)
         scatter_idx = dr.arange(mi.UInt32, leaf_count)

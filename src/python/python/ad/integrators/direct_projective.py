@@ -260,12 +260,13 @@ class DirectProjectiveIntegrator(PSIntegrator):
         return L, active, [], guide_seed if project else None
 
 
-    def sample_radiance_difference(self, scene, ss, curr_depth, sampler, active):
+    def sample_radiance_difference(self, scene, ss, curr_depth, sampler, wavelengths, active):
         if curr_depth == 1:
 
             # ----------- Estimate the radiance of the background -----------
 
             ray_bg = ss.spawn_ray()
+            ray_bg.wavelengths = wavelengths
             si_bg = scene.ray_intersect(ray_bg, active=active)
             radiance_bg = si_bg.emitter(scene).eval(si_bg, active)
 
@@ -286,6 +287,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
 
             # ----------- Estimate the radiance of the background -----------
             ray_bg = ss.spawn_ray()
+            ray_bg.wavelengths = wavelengths
             radiance_bg, _, _, _ = self.sample(
                 dr.ADMode.Primal, scene, sampler, ray_bg, curr_depth, None, None, active, False, None)
 
@@ -300,6 +302,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
             # Create a dummy ray that we never perform ray-intersection with to
             # compute other fields in ``si``
             dummy_ray = mi.Ray3f(ss.p - ss.d, ss.d)
+            dummy_ray.wavelengths = wavelengths
 
             # The ray origin is wrong, but this is fine if we only need the primal
             # radiance
@@ -344,13 +347,14 @@ class DirectProjectiveIntegrator(PSIntegrator):
         return radiance_diff, active_diff
 
 
-    def sample_importance(self, scene, sensor, ss, max_depth, sampler, preprocess, active):
+    def sample_importance(self, scene, sensor, ss, max_depth, sampler, wavelengths, preprocess, active):
         del max_depth  # Unused
 
         # Trace a ray to the camera ray intersection
         ss_importance = mi.SilhouetteSample3f(ss)
         ss_importance.d = -ss_importance.d
         ray_boundary = ss_importance.spawn_ray()
+        ray_boundary.wavelengths = wavelengths
         if preprocess:
             si_boundary = scene.ray_intersect(ray_boundary, active=active)
         else:

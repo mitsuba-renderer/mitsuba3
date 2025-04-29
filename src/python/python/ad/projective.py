@@ -173,11 +173,18 @@ class ProjectiveDetail():
             ds, _ = sensor.sample_direction(it, mi.Point2f(0), active)
             visible &= ds.pdf != 0
 
+            # Sample wavelengths
+            wavelength_sample = 0
+            if mi.is_spectral:
+                wavelength_sample = sampler.next_1d()
+            wavelengths, weight = sensor.sample_wavelengths(
+                dr.zeros(mi.SurfaceInteraction3f),  wavelength_sample, active)
+
             # Estimate the radiance difference along that path
             radiance_diff, _ = self.parent.sample_radiance_difference(
-                scene, ss, 0, sampler, visible)
+                scene, ss, 0, sampler, wavelengths, visible)
 
-        return radiance_diff
+        return radiance_diff * weight, wavelengths
 
     #####################################################################
     ##               Indirect discontinuous derivatives                ##
@@ -301,7 +308,7 @@ class ProjectiveDetail():
             # GridGuiding - Sample uniform points in [0, 1]^3
             sample_3 = self.guiding_distr.random_cell_sample(sampler)
             # GridGuiding - Evaluate point contribution
-            value, _ = self.eval_indirect_integrand(
+            value, _, _ = self.eval_indirect_integrand(
                 scene, sensor, sample_3, sampler, preprocess=True)
             value = dr.max(value)  # dr.max over channels
             res += value
@@ -349,7 +356,7 @@ class ProjectiveDetail():
             idx = self.guiding_distr.sample_to_cell_idx(sample_3, active_seed)
 
             # GridGuiding - Evaluate point contribution
-            value, _ = self.eval_indirect_integrand(
+            value, _, _ = self.eval_indirect_integrand(
                 scene, sensor, sample_3, sampler, preprocess=True, active=active_seed)
             value = dr.max(value)  # dr.max over channels
 
@@ -448,9 +455,9 @@ class ProjectiveDetail():
             active_guide = mi.Mask(True)
 
         # OctreeGuiding - Evaluate point contribution
-        value, _ = self.eval_indirect_integrand(
+        value, _, _ = self.eval_indirect_integrand(
             scene, sensor, sample_3, sampler, preprocess=True, active=active_guide)
-        value[dr.isinf(value)] = 0
+        value = dr.select(dr.isinf(value), mi.Spectrum(0), value)
         value = dr.max(value)
 
         # Estimate mass threshold for the current scene once
@@ -537,6 +544,10 @@ class ProjectiveDetail():
         Output ``result`` (``mi.Spectrum``):
             The integrand of the indirect discontinuous derivatives.
 
+        Output ``wavelengths`` (``mi.Wavelength``):
+            Set of wavelength used by this sample. (Only relevant in spectral
+            variants)
+
         Output ``sensor_uv`` (``mi.Point2f``):
             The UV coordinates on the sensor film to splat the result to. If
             ``preprocess`` is false, this coordinate is not used.
@@ -555,24 +566,31 @@ class ProjectiveDetail():
             ss = scene.sample_silhouette(sample, self.discontinuity_flags, active)
             active &= ss.is_valid()
 
+            # Sample wavelengths
+            wavelength_sample = 0
+            if mi.is_spectral:
+                wavelength_sample = sampler.next_1d()
+            wavelengths, weight = sensor.sample_wavelengths(
+                dr.zeros(mi.SurfaceInteraction3f),  wavelength_sample, active)
+
             # Estimate the importance
             fS, sensor_uv, sensor_depth, shading_p, active_i = parent.sample_importance(
-                scene, sensor, ss, parent.max_depth, sampler, preprocess, active)
+                scene, sensor, ss, parent.max_depth, sampler, wavelengths, preprocess, active)
             active &= active_i
 
             # Estimate the radiance difference
             fE, active_e = parent.sample_radiance_difference(
-                scene, ss, sensor_depth - 1, sampler, active)
+                scene, ss, sensor_depth - 1, sampler, wavelengths, active)
             active &= active_e
 
             # Local boundary term without the local speed term
             fB = ss.foreshortening
 
-            result = dr.select(active, fS * fB * fE * dr.rcp(ss.pdf), 0)
+            result = dr.select(active, weight * fS * fB * fE * dr.rcp(ss.pdf), 0)
 
         # Compute the motion of the boundary segment if this is not a preprocess
         if preprocess: # TODO cleanup
-            return dr.abs(result), mi.Point2f(0)
+            return dr.abs(result), wavelengths, mi.Point2f(0)
         else:
             si = dr.zeros(mi.SurfaceInteraction3f)
             si.p = ss.p
@@ -582,7 +600,7 @@ class ProjectiveDetail():
 
             motion = dr.dot(dr.detach(ss.n), (x_b_follow - shading_p))
             result = dr.select(active, result * motion, 0)
-            return result, sensor_uv
+            return result, wavelengths, sensor_uv
 
 
     #####################################################################
