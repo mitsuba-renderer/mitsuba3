@@ -209,10 +209,10 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
      * an intersection point at its origin due to numerical instabilities in
      * the intersection routines.
      */
-    Ray3f spawn_ray() const {
+    Ray3f spawn_ray(Wavelength wavelengths = dr::zeros<Wavelength>()) const {
         Vector3f o_offset = (1 + dr::max(dr::abs(p))) *
                             (d * offset + n * math::ShapeEpsilon<Float>);
-        return Ray3f(p + o_offset, d);
+        return Ray3f(p + o_offset, d, 0.f, wavelengths);
     }
 
     //! @}
