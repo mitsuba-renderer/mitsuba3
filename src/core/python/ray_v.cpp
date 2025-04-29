@@ -19,7 +19,7 @@ void bind_ray(nb::module_ &m, const char *name) {
             .def(nb::init<const Ray &>(), "Copy constructor", "other"_a)
             .def(nb::init<Point, Vector, RayFloat, const RayWavelength &>(),
                  D(Ray, Ray, 2),
-                 "o"_a, "d"_a, "time"_a=(RayScalarFloat) 0.0, "wavelengths"_a=RayWavelength())
+                 "o"_a, "d"_a, "time"_a=(RayScalarFloat) 0.0, "wavelengths"_a=dr::zeros<RayWavelength>())
             .def(nb::init<Point, Vector, RayFloat, RayFloat, const RayWavelength &>(),
                  D(Ray, Ray, 3),
                  "o"_a, "d"_a, "maxt"_a, "time"_a, "wavelengths"_a)
