@@ -390,8 +390,7 @@ class PathProjectiveIntegrator(PSIntegrator):
 
         # ----------- Estimate the radiance of the background -----------
 
-        ray_bg = ss.spawn_ray()
-        ray_bg.wavelengths = wavelengths
+        ray_bg = ss.spawn_ray(wavelengths)
         radiance_bg, _, _, _ = self.sample(
             dr.ADMode.Primal, scene, sampler, ray_bg, curr_depth, None, None, active, False, None)
 
@@ -452,8 +451,7 @@ class PathProjectiveIntegrator(PSIntegrator):
         # Trace a ray to the sensor end of the boundary segment
         ss_importance = mi.SilhouetteSample3f(ss)
         ss_importance.d = -ss_importance.d
-        ray_boundary = ss_importance.spawn_ray()
-        ray_boundary.wavelengths = wavelengths
+        ray_boundary = ss_importance.spawn_ray(wavelengths)
         if dr.hint(preprocess, mode='scalar'):
             si_boundary = scene.ray_intersect(ray_boundary, active=active)
         else:

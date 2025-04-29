@@ -265,8 +265,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
 
             # ----------- Estimate the radiance of the background -----------
 
-            ray_bg = ss.spawn_ray()
-            ray_bg.wavelengths = wavelengths
+            ray_bg = ss.spawn_ray(wavelengths)
             si_bg = scene.ray_intersect(ray_bg, active=active)
             radiance_bg = si_bg.emitter(scene).eval(si_bg, active)
 
@@ -286,8 +285,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
         elif curr_depth == 0:
 
             # ----------- Estimate the radiance of the background -----------
-            ray_bg = ss.spawn_ray()
-            ray_bg.wavelengths = wavelengths
+            ray_bg = ss.spawn_ray(wavelengths)
             radiance_bg, _, _, _ = self.sample(
                 dr.ADMode.Primal, scene, sampler, ray_bg, curr_depth, None, None, active, False, None)
 
@@ -353,8 +351,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
         # Trace a ray to the camera ray intersection
         ss_importance = mi.SilhouetteSample3f(ss)
         ss_importance.d = -ss_importance.d
-        ray_boundary = ss_importance.spawn_ray()
-        ray_boundary.wavelengths = wavelengths
+        ray_boundary = ss_importance.spawn_ray(wavelengths)
         if preprocess:
             si_boundary = scene.ray_intersect(ray_boundary, active=active)
         else:

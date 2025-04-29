@@ -36,7 +36,8 @@ MI_PY_EXPORT(SilhouetteSample) {
         .def_rw("offset",             &SilhouetteSample3f::offset,             D(SilhouetteSample, offset))
         // Methods
         .def("is_valid",  &SilhouetteSample3f::is_valid,  D(SilhouetteSample, is_valid))
-        .def("spawn_ray", &SilhouetteSample3f::spawn_ray, D(SilhouetteSample, spawn_ray))
+        .def("spawn_ray", &SilhouetteSample3f::spawn_ray,
+             "wavelengths"_a = dr::zeros<Wavelength>(), D(SilhouetteSample, spawn_ray))
         .def_repr(SilhouetteSample3f);
 
     MI_PY_DRJIT_STRUCT(ss, SilhouetteSample3f, p, discontinuity_type, n, uv,
