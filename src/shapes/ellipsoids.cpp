@@ -91,7 +91,7 @@ culling, so Mitsuba defaults to this shape when using :monosp:`ellipsoidsmesh`
 shapes with Embree.
 
 It is designed for use with volumetric primitive integrators, as detailed in
-this [paper](https://arxiv.org/abs/2405.15425).
+:cite:`Condor2024Gaussians`.
 
 .. tabs::
     .. code-tab:: xml
