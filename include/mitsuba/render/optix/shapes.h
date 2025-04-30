@@ -242,17 +242,12 @@ void prepare_ias(const OptixDeviceContext &context,
                     (float) transf.matrix(2, 0), (float) transf.matrix(2, 1),
                     (float) transf.matrix(2, 2), (float) transf.matrix(2, 3) };
 
-    // Check whether transformation should be disabled on the IAS
-    uint32_t flags = (transf == Transform4f())
-                         ? OPTIX_INSTANCE_FLAG_DISABLE_TRANSFORM
-                         : OPTIX_INSTANCE_FLAG_NONE;
-
     auto build_optix_instance = [&](const MiOptixAccelData::HandleData &handle) {
         if (handle.handle) {
             OptixInstance instance = {
                 { T[0], T[1], T[2], T[3], T[4], T[5], T[6], T[7], T[8], T[9], T[10], T[11] },
                 instance_id, sbt_offset, /* visibilityMask = */ 255,
-                flags, handle.handle, /* pads = */ { 0, 0 }
+                OPTIX_INSTANCE_FLAG_NONE, handle.handle, /* pads = */ { 0, 0 }
             };
             out_instances.push_back(instance);
             sbt_offset += (unsigned int) handle.count;
