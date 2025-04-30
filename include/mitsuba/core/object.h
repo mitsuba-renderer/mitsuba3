@@ -133,7 +133,7 @@ enum class ParamFlags : uint32_t {
     /// Tracking gradients w.r.t. this parameter will introduce discontinuities
     Discontinuous = 0x2,
 
-    /// This parameter is read-only!
+    /// This parameter is read-only
     ReadOnly = 0x4,
 };
 

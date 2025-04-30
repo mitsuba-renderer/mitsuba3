@@ -386,7 +386,6 @@ public:
                 m_optix_data_ptr =
                     jit_malloc(AllocType::Device, sizeof(OptixEllipsoidsData));
 
-            dr::eval(m_ellipsoids.data()); // Make sure the data is evaluated
             OptixEllipsoidsData data = {
                 m_bbox,
                 m_ellipsoids.extents_data().data(),
