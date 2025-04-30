@@ -848,6 +848,13 @@ public:
     /// Is this shape a triangle mesh?
     bool is_mesh() const { return shape_type() & ShapeType::Mesh; }
 
+    /// Is this shape a \ref ShapeType::Ellipsoids or \ref ShapeType::EllipsoidsMesh
+    bool is_ellipsoids() const {
+        uint32_t st = shape_type();
+        st &= ~ShapeType::Mesh;
+        return (st & ShapeType::Ellipsoids) | (st & ShapeType::EllipsoidsMesh);
+    }
+
     /// Returns the shape type \ref ShapeType of this shape
     uint32_t shape_type() const { return (uint32_t) m_shape_type; }
 
@@ -1188,6 +1195,12 @@ MI_CALL_TEMPLATE_BEGIN(Shape)
     auto is_emitter() const { return emitter() != nullptr; }
     auto is_sensor() const { return sensor() != nullptr; }
     auto is_mesh() const { return (shape_type() & +mitsuba::ShapeType::Mesh) != 0; }
+    auto is_ellipsoids() const { 
+        auto st = shape_type();
+        st &= ~mitsuba::ShapeType::Mesh;
+        return ((st & (uint32_t) mitsuba::ShapeType::Ellipsoids) |
+                (st & (uint32_t) mitsuba::ShapeType::EllipsoidsMesh)) != 0;
+    }
     auto is_medium_transition() const { return interior_medium() != nullptr ||
                                                exterior_medium() != nullptr; }
 MI_CALL_TEMPLATE_END(Shape)

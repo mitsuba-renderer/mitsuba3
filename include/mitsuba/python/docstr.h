@@ -7931,6 +7931,8 @@ Parameter ``ss``:
 Returns:
     The corresponding boundary sample space point)doc";
 
+static const char *__doc_mitsuba_Shape_is_ellipsoids = R"doc(Is this shape a ShapeType::Ellipsoids or ShapeType::EllipsoidsMesh)doc";
+
 static const char *__doc_mitsuba_Shape_is_emitter = R"doc(Is this shape also an area emitter?)doc";
 
 static const char *__doc_mitsuba_Shape_is_instance = R"doc(Is this shape an instance?)doc";
