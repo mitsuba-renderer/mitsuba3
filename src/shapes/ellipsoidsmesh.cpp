@@ -89,8 +89,8 @@ ellipsoid representations.
 It supports various shell types, including box, ico_sphere, and uv_sphere, as
 well as custom mesh shells.
 
-This shape is designed for use with volumetric primitive integrators, as detailed in
-this [paper](https://arxiv.org/abs/2405.15425).
+This shape is designed for use with volumetric primitive integrators, as
+detailed in :cite:`Condor2024Gaussians`.
 
 .. tabs::
     .. code-tab:: xml
