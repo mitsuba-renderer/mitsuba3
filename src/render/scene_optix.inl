@@ -604,6 +604,10 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
                          OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
+        // Enforce backface culling, which is only enabled on EllipsoidsMesh
+        // instances.
+        ray_flags |= OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES;
+
         bool has_instances = !m_shapegroups.empty();
 
         using Single = dr::float32_array_t<Float>;

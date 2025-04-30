@@ -123,7 +123,7 @@ class BasicVolumetricPrimitiveRadianceFieldIntegrator(RBIntegrator):
             si = scene.ray_intersect(
                 ray,
                 coherent=(depth == 0),
-                ray_flags=mi.RayFlags.All | mi.RayFlags.BackfaceCulling,
+                ray_flags=mi.RayFlags.All,
                 active=active,
             )
 
