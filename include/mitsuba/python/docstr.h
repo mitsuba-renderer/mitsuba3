@@ -5741,6 +5741,8 @@ static const char *__doc_mitsuba_PluginManager_ensure_plugin_loaded = R"doc(Ensu
 
 static const char *__doc_mitsuba_PluginManager_get_plugin_class = R"doc(Return the class corresponding to a plugin for a specific variant)doc";
 
+static const char *__doc_mitsuba_PluginManager_get_plugin_type = R"doc()doc";
+
 static const char *__doc_mitsuba_PluginManager_instance = R"doc(Return the global plugin manager)doc";
 
 static const char *__doc_mitsuba_PluginManager_loaded_plugins = R"doc(Return the list of loaded plugins)doc";
@@ -6412,7 +6414,9 @@ static const char *__doc_mitsuba_RayFlags_All = R"doc(//! Compound compute flags
 
 static const char *__doc_mitsuba_RayFlags_AllNonDifferentiable = R"doc(Compute all fields of the surface interaction ignoring shape's motion)doc";
 
-static const char *__doc_mitsuba_RayFlags_BackfaceCulling = R"doc(Enable backface culling)doc";
+static const char *__doc_mitsuba_RayFlags_BackfaceCulling =
+R"doc(Enable backface culling (currently only supported on EllipsoidsMesh
+shapes))doc";
 
 static const char *__doc_mitsuba_RayFlags_DetachShape = R"doc(Derivatives of the SurfaceInteraction fields ignore shape's motion)doc";
 
@@ -7882,7 +7886,8 @@ Returns:
     An trichromatic intensity or reflectance value)doc";
 
 static const char *__doc_mitsuba_Shape_eval_attribute_x =
-R"doc(Evaluate a dynamic shape attribute at the given surface interaction.
+R"doc(Evaluate a dynamically sized shape attribute at the given surface
+interaction.
 
 Parameter ``name``:
     Name of the attribute to evaluate
