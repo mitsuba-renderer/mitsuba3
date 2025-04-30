@@ -103,7 +103,7 @@ template <typename Value_, size_t Size_> struct Matrix {
         return result;
     }
 
-    DEVICE Vector3f prod_inv(const Vector3f &v) const {
+    DEVICE Vector3f transposed_prod(const Vector3f &v) const {
         Vector3f result = m[0];
         result *= v.x();
         for (size_t i = 1; i < 3; ++i)
