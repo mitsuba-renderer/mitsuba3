@@ -42,25 +42,4 @@ DEVICE bool solve_quadratic(float a, float b, float c, float& x0, float&x1) {
 
     return true;
 }
-
-DEVICE bool improved_solve_quadratic(float a, float b, float c, float discr, float& x0, float&x1) {
-    /*
-    Taken from "Precision Improvements for Ray/Sphere Intersection", Ray Tracing Gems 2
-    */
-    // Check if the quadratic eq is solvable
-    if (discr < 0.f)
-        return false;
-
-    float new_discr = sqrt(a * discr);
-    float q = b + copysign(new_discr, b);
-
-    float x0p = c / q,
-          x1p = q / a;
-
-    // Order the results so that x0 < x1
-    x0 = min(x0p, x1p);
-    x1 = max(x0p, x1p);
-
-    return true;
-}
 #endif

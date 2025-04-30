@@ -271,18 +271,10 @@ public:
         o *= dr::rcp(ellipsoid.scale);
         d *= dr::rcp(ellipsoid.scale);
 
-#if 0
         Value A = dr::squared_norm(d);
         Value B = dr::scalar_t<Value>(2.0) * dr::dot(o, d);
         Value C = dr::squared_norm(o) - Value(1.0);
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
-#else
-        Value A = dr::squared_norm(d);
-        Value B = - dr::dot(o, d);
-        Value C = dr::squared_norm(o) - Value(1.0);
-        Value discr = Value(1.0) - dr::squared_norm(o + B * dr::rcp(A) * d);
-        auto [solution_found, near_t, far_t] = math::improved_solve_quadratic(A, B, C, discr);
-#endif
 
         // Ellipsoid doesn't intersect with the segment on the ray
         dr::mask_t<FloatP> out_bounds = !(near_t <= maxt && far_t >= Value(0.0)); // NaN-aware conditionals
