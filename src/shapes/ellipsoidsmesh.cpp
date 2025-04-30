@@ -299,11 +299,6 @@ public:
                                                      Mask active) const override {
         auto si = Base::compute_surface_interaction(ray, pi, ray_flags, recursion_depth, active);
 
-        // Apply backface culling if requested
-        if (has_flag(ray_flags, RayFlags::BackfaceCulling)) {
-            si.t = dr::select(dr::dot(si.n, ray.d) < 0.f, si.t, dr::Infinity<Float>);
-        }
-
         // Divide by the number of faces per Gaussians
         si.prim_index /= (uint32_t) m_shell_faces.size();
 
