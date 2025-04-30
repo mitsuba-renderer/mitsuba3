@@ -54,19 +54,10 @@ extern "C" __global__ void __intersection__ellipsoids() {
 
     float near_t, far_t;
 
-#if 0
     float A = squared_norm(d);
     float B = 2.f * dot(o, d);
     float C = squared_norm(o) - 1.f;
     bool solution_found = solve_quadratic(A, B, C, near_t, far_t);
-#else
-    // Taken from Ray Tracing Gems 2
-    float A = squared_norm(d);
-    float B = -dot(o, d);
-    float C = squared_norm(o) - 1.f;
-    float discr = 1.f - squared_norm(o + (B / A) * d);
-    bool solution_found = improved_solve_quadratic(A, B, C, discr, near_t, far_t);
-#endif
 
     // Ellipsoid doesn't intersect with the segment on the ray
     bool out_bounds = !(near_t <= ray.maxt && far_t >= 0.f); // NaN-aware conditionals

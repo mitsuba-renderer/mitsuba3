@@ -98,10 +98,6 @@ MI_PY_EXPORT(math) {
           &math::solve_quadratic<Float>,
           "a"_a, "b"_a, "c"_a, D(math, solve_quadratic));
 
-    m.def("improved_solve_quadratic",
-          &math::improved_solve_quadratic<Float>,
-          "a"_a, "b"_a, "c"_a, "discr"_a, D(math, improved_solve_quadratic));
-
     m.def("morton_decode2", &dr::morton_decode<dr::Array<UInt32, 2>>, "m"_a);
     m.def("morton_decode3", &dr::morton_decode<dr::Array<UInt32, 3>>, "m"_a);
     m.def("morton_encode2", &dr::morton_encode<dr::Array<UInt32, 2>>, "v"_a);

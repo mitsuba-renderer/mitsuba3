@@ -401,34 +401,6 @@ solve_quadratic(const Value &a, const Value &b, const Value &c) {
     return { valid_linear || valid_quadratic, x0, x1 };
 }
 
-/**
- * \brief Solve a quadratic equation of the form a*x^2 + b*x + c = 0.
- * Taken from "Precision Improvements for Ray/Sphere Intersection", Ray Tracing Gems 2
- * \return \c true if a solution could be found
- */
-template <typename Value>
-MI_INLINE std::tuple<dr::mask_t<Value>, Value, Value>
-improved_solve_quadratic(const Value &a, const Value &b, const Value &c, const Value &discr) {
-    using Scalar = dr::scalar_t<Value>;
-    using Mask = dr::mask_t<Value>;
-    // Check if the quadratic eq is solvable
-    Mask valid_quadratic = (discr >= Scalar(0));
-    Value x0, x1;
-    if (likely(dr::any_or<true>(valid_quadratic))){
-        Value new_discr = dr::sqrt(a * discr);
-        Value q = b + dr::copysign(new_discr, b);
-
-        Value x0p = c * dr::rcp(q),
-              x1p = q * dr::rcp(a);
-
-        // Order the results so that x0 < x1
-        x0 = dr::minimum(x0p, x1p);
-        x1 = dr::maximum(x0p, x1p);
-    }
-
-    return { valid_quadratic, x0, x1 };
-}
-
 //! @}
 // -----------------------------------------------------------------------
 

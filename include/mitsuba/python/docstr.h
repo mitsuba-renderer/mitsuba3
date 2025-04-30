@@ -11156,14 +11156,6 @@ UInt32 index = find_interval(
 );
 ```)doc";
 
-static const char *__doc_mitsuba_math_improved_solve_quadratic =
-R"doc(Solve a quadratic equation of the form a*x^2 + b*x + c = 0. Taken from
-"Precision Improvements for Ray/Sphere Intersection", Ray Tracing Gems
-2
-
-Returns:
-    ``True`` if a solution could be found)doc";
-
 static const char *__doc_mitsuba_math_is_power_of_two = R"doc(Check whether the provided integer is a power of two)doc";
 
 static const char *__doc_mitsuba_math_legendre_p = R"doc(Evaluate the l-th Legendre polynomial using recurrence)doc";
