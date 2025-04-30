@@ -129,7 +129,7 @@ public:
 #endif
 
     EllipsoidsMesh(const Properties &props) : Base(props) {
-        m_shape_type = ShapeType::Ellipsoids;
+        m_shape_type = ShapeType::EllipsoidsMesh;
 
         Timer timer;
 

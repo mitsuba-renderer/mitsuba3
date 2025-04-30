@@ -130,7 +130,7 @@ void build_gas(const OptixDeviceContext &context,
         linear_curves, custom_shapes;
     for (auto shape : shapes) {
         uint32_t type = (uint32_t) shape->shape_type();
-        if (type & ShapeType::Mesh && type != +ShapeType::Ellipsoids)
+        if (type & ShapeType::Mesh && type != +ShapeType::EllipsoidsMesh)
             meshes.push_back(shape);
         else if (type & ShapeType::EllipsoidsMesh)
             ellipsoids_meshes.push_back(shape);
