@@ -47,8 +47,8 @@ extern "C" __global__ void __intersection__ellipsoids() {
 
     // Ray in instance-space
     Ray3f ray = get_ray();
-    Vector3f o = rotation.prod_inv(ray.o - center);
-    Vector3f d = rotation.prod_inv(ray.d);
+    Vector3f o = rotation.transposed_prod(ray.o - center);
+    Vector3f d = rotation.transposed_prod(ray.d);
     o /= scale;
     d /= scale;
 
