@@ -184,9 +184,6 @@ public:
                 }
 
                 count++;
-
-                // if (count > 100)
-                //     break;
             }
 
             m_data = dr::load<FloatStorage>(ellipsoid_data.get(), count * EllipsoidStructSize);
