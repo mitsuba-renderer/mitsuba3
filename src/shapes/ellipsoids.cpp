@@ -260,21 +260,40 @@ public:
         using Value = std::conditional_t<dr::is_cuda_v<FloatP> || dr::is_diff_v<Float>,
                                          dr::float32_array_t<FloatP>,
                                          dr::float64_array_t<FloatP>>;
+        using Value3 = Vector<Value, 3>;
 
         auto rot = dr::quat_to_matrix<dr::Matrix<Value, 3>>(ellipsoid.quat);
 
         Value maxt = Value(ray.maxt);
 
-        Vector<Value, 3> o = transpose(rot) * (ray.o - ellipsoid.center);
-        Vector<Value, 3> d = transpose(rot) * ray.d;
+        // Transform space such that the ellipsoid is now a unit sphere centered
+        // at the origin
+        Value3 o = transpose(rot) * (ray.o - ellipsoid.center);
+        Value3 d = transpose(rot) * ray.d;
 
-        o *= dr::rcp(ellipsoid.scale);
-        d *= dr::rcp(ellipsoid.scale);
+        Value3 scale_rcp = dr::rcp(ellipsoid.scale);
+        o *= scale_rcp;
+        d *= scale_rcp;
+
+        Ray3fP ray_relative(o, d);
+
+        // We define a plane which is perpendicular to the ray direction and
+        // contains the ellipsoid center and intersect it. We then solve the
+        // ray-sphere intersection as if the ray origin was this new
+        // intersection point. This additional step makes the whole intersection
+        // routine numerically more robust.
+
+        Value plane_t = dot(-o, d) / norm(d);
+        Value3 plane_p = ray_relative(FloatP(plane_t));
 
         Value A = dr::squared_norm(d);
-        Value B = dr::scalar_t<Value>(2.0) * dr::dot(o, d);
-        Value C = dr::squared_norm(o) - Value(1.0);
+        Value B = dr::scalar_t<Value>(2.0) * dr::dot(plane_p, d);
+        Value C = dr::squared_norm(plane_p) - Value(1.0);
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
+
+        // Adjust distances for plane intersection
+        near_t += plane_t;
+        far_t += plane_t;
 
         // Ellipsoid doesn't intersect with the segment on the ray
         dr::mask_t<FloatP> out_bounds = !(near_t <= maxt && far_t >= Value(0.0)); // NaN-aware conditionals
@@ -288,7 +307,6 @@ public:
         active &= solution_found && !out_bounds && !in_bounds && !backfacing;
 
         FloatP t = dr::select(near_t < Value(0.0), FloatP(far_t), FloatP(near_t));
-
         t =  dr::select(active, t, dr::Infinity<FloatP>);
 
         return { t, active };
