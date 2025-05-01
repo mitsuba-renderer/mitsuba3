@@ -559,24 +559,18 @@ public:
         Value3 l = ray.o - center;
         Value3 d(ray.d);
         Value plane_t = dot(-l, d) / norm(d);
-
-        // Ray is perpendicular to plane
-        dr::mask_t<FloatP> no_hit =
-            plane_t == Value(0) && dr::all(ray.o != center);
-
         Value3 plane_p = ray(FloatP(plane_t));
 
-        // Intersection with plane outside of the sphere
-        no_hit &= (norm(plane_p - center) > radius);
-
+        // New origin for ray-sphere intersection
         Value3 o = plane_p - center;
 
+        // Solve ray-sphere intersection with new ray origin
         Value A = dr::squared_norm(d);
         Value B = dr::scalar_t<Value>(2.f) * dr::dot(o, d);
         Value C = dr::squared_norm(o) - dr::square(radius);
-
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
+        // Adjust distances for plane intersection
         near_t += plane_t;
         far_t += plane_t;
 
@@ -586,11 +580,10 @@ public:
         // Sphere fully contains the segment of the ray
         dr::mask_t<FloatP> in_bounds = near_t < Value(0.0) && far_t > maxt;
 
-        active &= solution_found && !no_hit && !out_bounds && !in_bounds;
+        active &= solution_found && !out_bounds && !in_bounds;
 
-        FloatP t = dr::select(
-            active, dr::select(near_t < Value(0.0), FloatP(far_t), FloatP(near_t)),
-            dr::Infinity<FloatP>);
+        FloatP t = dr::select(near_t < Value(0.0), FloatP(far_t), FloatP(near_t));
+        t =  dr::select(active, t, dr::Infinity<FloatP>);
 
         return { t, dr::zeros<Point<FloatP, 2>>(), ((uint32_t) -1), 0 };
     }

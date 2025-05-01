@@ -51,13 +51,32 @@ extern "C" __global__ void __intersection__ellipsoids() {
     Vector3f d = rotation.transposed_prod(ray.d);
     o /= scale;
     d /= scale;
+    Ray3f ray_relative(o, d, ray.maxt, ray.time);
 
-    float near_t, far_t;
+    // We define a plane which is perpendicular to the ray direction and
+    // contains the ellipsoid center and intersect it. We then solve the
+    // ray-ellipsoid intersection as if the ray origin was this new
+    // intersection point. This additional step makes the whole intersection
+    // routine numerically more robust.
+
+    float plane_t = dot(-o, d) / norm(d);
+    Vector3f plane_p = ray_relative(plane_t);
+
+    // Ray is perpendicular to the origin-center segment,
+    // and intersection with plane is outside of the sphere
+    if (plane_t == 0.f && norm(plane_p) > 1.f)
+        return;
 
     float A = squared_norm(d);
-    float B = 2.f * dot(o, d);
-    float C = squared_norm(o) - 1.f;
+    float B = 2.f * dot(plane_p, d);
+    float C = squared_norm(plane_p) - 1.f;
+
+    float near_t, far_t;
     bool solution_found = solve_quadratic(A, B, C, near_t, far_t);
+
+    // Adjust distances for plane intersection
+    near_t += plane_t;
+    far_t += plane_t;
 
     // Ellipsoid doesn't intersect with the segment on the ray
     bool out_bounds = !(near_t <= ray.maxt && far_t >= 0.f); // NaN-aware conditionals
