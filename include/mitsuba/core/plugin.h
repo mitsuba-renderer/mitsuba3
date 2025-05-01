@@ -32,6 +32,7 @@ public:
     const Class *get_plugin_class(const std::string &name,
                                   const std::string &variant);
 
+    /// Return the plugin's shorthand from its class name (i.e "diffuse" from "SmoothDiffuse")
     std::string get_plugin_type(const std::string &plugin_name);
 
     /// Return the list of loaded plugins
