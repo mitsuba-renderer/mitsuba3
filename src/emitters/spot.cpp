@@ -300,8 +300,11 @@ private:
     ref<Texture> m_texture;
     Float m_beam_width, m_cutoff_angle, m_uv_factor;
     Float m_cos_beam_width, m_cos_cutoff_angle, m_inv_transition_width;
-};
 
+    MI_TRAVERSE_CB(Base, m_intensity, m_texture, m_beam_width, m_cutoff_angle,
+                   m_uv_factor, m_cos_beam_width, m_cos_cutoff_angle,
+                   m_inv_transition_width)
+};
 
 MI_IMPLEMENT_CLASS_VARIANT(SpotLight, Emitter)
 MI_EXPORT_PLUGIN(SpotLight, "Spot emitter")
