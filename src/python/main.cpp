@@ -22,6 +22,7 @@ MI_PY_DECLARE(Struct);
 MI_PY_DECLARE(Appender);
 MI_PY_DECLARE(ArgParser);
 MI_PY_DECLARE(Bitmap);
+MI_PY_DECLARE(blender);
 MI_PY_DECLARE(Formatter);
 MI_PY_DECLARE(FileResolver);
 MI_PY_DECLARE(Logger);
@@ -52,6 +53,9 @@ MI_PY_DECLARE(DiscontinuityFlags);
 NB_MODULE(mitsuba_ext, m) {
     // Temporarily change the module name (for pydoc)
     m.attr("__name__") = "mitsuba";
+
+    nb::module_ blender = create_submodule(m, "blender");
+    blender.doc() = "Helper routines for the Mitsuba Blender add-on.";
 
     // Expose some constants in the main `mitsuba` module
     m.attr("__version__")      = MI_VERSION;
@@ -149,6 +153,7 @@ NB_MODULE(mitsuba_ext, m) {
     MI_PY_IMPORT(rfilter);
     MI_PY_IMPORT(Stream);
     MI_PY_IMPORT(Bitmap);
+    MI_PY_IMPORT_SUBMODULE(blender);
     MI_PY_IMPORT(Formatter);
     MI_PY_IMPORT(FileResolver);
     MI_PY_IMPORT(Logger);
