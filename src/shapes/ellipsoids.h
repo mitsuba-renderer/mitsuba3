@@ -1,4 +1,10 @@
+#pragma once
+
+#include <mitsuba/render/fwd.h>
 #include <mitsuba/core/fwd.h>
+#include <mitsuba/core/properties.h>
+#include <mitsuba/core/fresolver.h>
+#include <mitsuba/core/profiler.h>
 #include <drjit/tensor.h>
 #include <drjit/quaternion.h>
 
@@ -10,11 +16,17 @@ template <typename T>
 struct Ellipsoid {
     Point<T, 3> center;     // Center values
     Vector<T, 3> scale;     // Scale values
-    dr::Quaternion<T> quat; // To world rotation quaternion values (TODO store to_object?)
+    dr::Quaternion<T> quat; // To world rotation quaternion values
 };
 
 constexpr uint32_t EllipsoidStructSize = 10u;
 
+/**
+ * \brief Generic container class for ellipsoids.
+ *
+ * This is a convenience data structure meant to hold ellipsoids shape
+ * data (centers, scales, rotation) and its extra attributes.
+ */
 template <typename Float, typename Spectrum>
 class EllipsoidsData {
 public:
@@ -27,6 +39,8 @@ public:
 
     EllipsoidsData() { }
 
+
+    /// Constructor from a single PLY file or multiple separate tensors
     EllipsoidsData(const Properties &props) {
         if (props.has_property("filename")) {
             if (props.has_property("data"))
@@ -427,42 +441,37 @@ public:
             ellipsoid.scale  = Vector<Float_, 3>((Float_) tmp[3], (Float_) tmp[4], (Float_) tmp[5]);
             ellipsoid.quat   = dr::Quaternion<Float_>((Float_) tmp[6], (Float_) tmp[7], (Float_) tmp[8], (Float_) tmp[9]);
         } else {
-#if 1
             auto tmp = Float_::template gather_packet_<EllipsoidStructSize>(m_data, index, active, ReduceMode::Auto);
             ellipsoid.center = Point<Float_, 3>(tmp[0], tmp[1], tmp[2]);
             ellipsoid.scale  = Vector<Float_, 3>(tmp[3], tmp[4], tmp[5]);
             ellipsoid.quat   = dr::Quaternion<Float_>(tmp[6], tmp[7], tmp[8], tmp[9]);
-#else
-            for (int i = 0; i < 3; ++i)
-                ellipsoid.center[i] = dr::gather<Float_>(m_data, idx + i, active);
-            for (int i = 0; i < 3; ++i)
-                ellipsoid.scale[i] = dr::gather<Float_>(m_data, idx + 3 + i, active);
-            for (int i = 0; i < 4; ++i)
-                ellipsoid.quat[i] = dr::gather<Float_>(m_data, idx + 6 + i, active);
-#endif
         }
         return ellipsoid;
     }
 
-    /// Various getters
     template <typename Float_, typename Index_, typename Mask_ = dr::mask_t<Index_>>
     Float_ extents(Index_ index, Mask_ active = true) const {
-        if constexpr (!dr::is_jit_v<Index_>) {
-            DRJIT_MARK_USED(active);
+        DRJIT_MARK_USED(active);
+        if constexpr (!dr::is_jit_v<Index_>)
             return (Float_) m_extents_pointer[index];
-        } else {
+        else
             return dr::gather<Float_>(m_extents, index, active);
-        }
     }
+
     FloatStorage& extents_data() { return m_extents; }
+
     const FloatStorage& extents_data() const { return m_extents; }
+
     FloatStorage& data() { return m_data; }
+
     const FloatStorage& data() const { return m_data; }
+
     AttributesMap& attributes() { return m_attributes; }
+
     const AttributesMap& attributes() const { return m_attributes; }
 
 private:
-    /// The buffer for the ellipsoid data
+    /// The buffer for the ellipsoid data: centers, scales, and quaternions.
     FloatStorage m_data;
 
     /// The pointer to the ellipsoid data above (used in Embree's kernel)

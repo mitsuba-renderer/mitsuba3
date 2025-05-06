@@ -21,7 +21,7 @@ extern std::vector<dr::Array<uint32_t, 3>> box_faces,    uv_sphere_72_faces,    
 
 .. _shape-EllipsoidsMesh:
 
-Mesh ellipsoids (:monosp:`EllipsoidsMesh`)
+Mesh ellipsoids (:monosp:`ellipsoidsmesh`)
 -----------------------------------------
 
 .. pluginparameters::
@@ -57,20 +57,24 @@ Mesh ellipsoids (:monosp:`EllipsoidsMesh`)
 
  * - extent
    - |float|
-   - Specifies the extent of the ellipsoid shells. (Default: 3.0)
+   - Specifies the extent of the ellipsoid. This effectively acts as an
+     extra scaling factor on the ellipsoid, without having to alter the scale
+     parameters. (Default: 3.0)
+   - |readonly|
 
  * - extent_adaptive_clamping
    - |float|
    - If True, use adaptive extent values based on the `opacities` attribute of the volumetric primitives. (Default: False)
+   - |readonly|
 
  * - shell
    - |string| or |mesh|
    - Specifies the shell type. Could be one of :monosp:`box`, :monosp:`ico_sphere`,
-     or :monosp:`uv_sphere`, as well child mesh object.
+     or :monosp:`uv_sphere`, as well as a custom child mesh object. (Default: ``ico_sphere``)
 
  * - to_world
    - |transform|
-   -  Specifies an optional linear object-to-world transformation.
+   - Specifies an optional linear object-to-world transformation to apply to all ellipsoids.
    - |exposed|, |differentiable|, |discontinuous|
 
  * - (Nested plugin)
@@ -86,8 +90,13 @@ backface culling. This plugin is designed to leverage hardware acceleration for
 ray-triangle intersections, providing a performance advantage over analytical
 ellipsoid representations.
 
-It supports various shell types, including box, ico_sphere, and uv_sphere, as
-well as custom mesh shells.
+This shape also exposes an `extent` parameter, it acts as an extra scaling
+factor for the ellipsoids' scales. Typically, this is used to define the support
+of a kernel function defined within the ellipsoid. For example, the
+`scale` parmaters of the ellipsoid will define the variances of a gaussian and
+the `extent` will multiple those value to define the effictive radius of the
+ellipsoid. When `extent_adaptive_clamping` is enabled, the extent is
+additionally multiplied by an opacity-dependent factor::math:`\sqrt{2 * \log(opacity / 0.01)} / 3`
 
 This shape is designed for use with volumetric primitive integrators, as
 detailed in :cite:`Condor2024Gaussians`.
@@ -250,7 +259,7 @@ public:
         }
 
         // Don't call Mesh::parameters_changed() as it will initialize
-        // data-structure that are not needed for this plugin!
+        // data-structures that are not needed for this plugin!
     }
 
     Mask has_attribute(const std::string& name, Mask active) const override {
