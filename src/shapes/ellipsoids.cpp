@@ -61,15 +61,21 @@ Ellipsoids (:monosp:`ellipsoids`)
 
  * - extent
    - |float|
-   - Specifies the extent of the ellipsoid shells. (Default: 3.0)
+   - Specifies the extent of the ellipsoid. This effectively acts as an
+     extra scaling factor on the ellipsoid, without having to alter the scale
+     parameters. (Default: 3.0)
+   - |readonly|
 
  * - extent_adaptive_clamping
    - |float|
-   - If True, use adaptive extent values based on the `opacities` attribute of the volumetric primitives. (Default: False)
+   - If True, use adaptive extent values based on the `opacities` attribute of
+     the volumetric primitives. (Default: False)
+   - |readonly|
 
  * - to_world
    - |transform|
-   - Specifies an optional linear object-to-world transformation.
+   - Specifies an optional linear object-to-world transformation to apply to
+     all ellipsoids.
    - |exposed|, |differentiable|, |discontinuous|
 
  * - (Nested plugin)
@@ -86,9 +92,13 @@ ray-intersection formula with backface culling. Although it is slower than the
 ray-triangle intersection hardware acceleration, it offers greater flexibility
 in computing intersections.
 
-Additionally, the Embree ray-tracing backend does not support per-shape backface
-culling, so Mitsuba defaults to this shape when using :monosp:`ellipsoidsmesh`
-shapes with Embree.
+This shape also exposes an `extent` parameter, it acts as an extra scaling
+factor for the ellipsoids' scales. Typically, this is used to define the support
+of a kernel function defined within the ellipsoid. For example, the
+`scale` parmaters of the ellipsoid will define the variances of a gaussian and
+the `extent` will multiple those value to define the effictive radius of the
+ellipsoid. When `extent_adaptive_clamping` is enabled, the extent is
+additionally multiplied by an opacity-dependent factor::math:`\sqrt{2 * \log(opacity / 0.01)} / 3`
 
 It is designed for use with volumetric primitive integrators, as detailed in
 :cite:`Condor2024Gaussians`.
@@ -172,6 +182,7 @@ public:
     ScalarSize primitive_count() const override { return (ScalarSize) m_ellipsoids.count(); }
 
     ScalarBoundingBox3f bbox() const override { return m_bbox; }
+
     ScalarBoundingBox3f bbox(ScalarIndex index) const override {
         if constexpr (dr::is_cuda_v<Float>)
             Throw("bbox(ScalarIndex) is not available in CUDA mode!");
@@ -184,8 +195,6 @@ public:
         );
     }
 
-    bool parameters_grad_enabled() const override { return dr::grad_enabled(m_ellipsoids.data()); }
-
     //! @}
     // =============================================================
 
@@ -194,9 +203,13 @@ public:
     // =============================================================
 
     PositionSample3f sample_position(Float, const Point2f &, Mask) const override { return dr::zeros<PositionSample3f>(); }
+
     Float pdf_position(const PositionSample3f &, Mask) const override { return 0; }
+
     DirectionSample3f sample_direction(const Interaction3f &, const Point2f &, Mask) const override { return dr::zeros<DirectionSample3f>(); }
+
     Float pdf_direction(const Interaction3f &, const DirectionSample3f &, Mask) const override { return 0; }
+
     SurfaceInteraction3f eval_parameterization(const Point2f &, uint32_t, Mask) const override { return dr::zeros<SurfaceInteraction3f>(); }
 
     //! @}
@@ -209,6 +222,7 @@ public:
     Mask has_attribute(const std::string& name, Mask active) const override {
         if (m_ellipsoids.has_attribute(name))
             return true;
+
         return Base::has_attribute(name, active);
     }
 
@@ -244,13 +258,13 @@ public:
             return Base::eval_attribute_x(name, si, active);
         }
     }
+
     //! @}
     // =============================================================
 
     // =============================================================
     //! @{ \name Ray tracing routines
     // =============================================================
-
 
     template <typename FloatP, typename Ray3fP, typename Ellipsoid>
     std::pair<FloatP, dr::mask_t<FloatP>>
@@ -489,8 +503,10 @@ private:
 
         if constexpr (dr::is_cuda_v<Float>) {
             jit_free(m_device_bboxes);
-            void *device_aabbs = jit_malloc(AllocType::Device, sizeof(BoundingBoxType) * ellipsoid_count);
-            jit_memcpy_async(JitBackend::CUDA, device_aabbs, host_aabbs, sizeof(BoundingBoxType) * ellipsoid_count);
+            void *device_aabbs = jit_malloc(
+                AllocType::Device, sizeof(BoundingBoxType) * ellipsoid_count);
+            jit_memcpy_async(JitBackend::CUDA, device_aabbs, host_aabbs,
+                             sizeof(BoundingBoxType) * ellipsoid_count);
             m_device_bboxes = device_aabbs;
         }
 
