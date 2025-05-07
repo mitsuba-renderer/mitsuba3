@@ -271,9 +271,7 @@ public:
     ray_ellipsoid_intersection(const Ray3fP &ray,
                                Ellipsoid ellipsoid,
                                dr::mask_t<FloatP> active) const {
-        using Value = std::conditional_t<dr::is_cuda_v<FloatP> || dr::is_diff_v<Float>,
-                                         dr::float32_array_t<FloatP>,
-                                         dr::float64_array_t<FloatP>>;
+        using Value = dr::float32_array_t<FloatP>;
         using Value3 = Vector<Value, 3>;
 
         auto rot = dr::quat_to_matrix<dr::Matrix<Value, 3>>(ellipsoid.quat);
@@ -333,10 +331,8 @@ public:
                                    ScalarIndex prim_index,
                                    dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
-        using Value = std::conditional_t<dr::is_cuda_v<FloatP> || dr::is_diff_v<Float>,
-                                         dr::float32_array_t<FloatP>,
-                                         dr::float64_array_t<FloatP>>;
-        using ScalarValue  = dr::scalar_t<Value>;
+        using Value = dr::float32_array_t<FloatP>;
+        using ScalarValue = dr::scalar_t<Value>;
         auto ellipsoid = m_ellipsoids.template get_ellipsoid<ScalarValue>(prim_index, active);
         ellipsoid.scale *= m_ellipsoids.template extents<ScalarValue>(prim_index);
         auto [t, valid] = ray_ellipsoid_intersection<FloatP, Ray3fP>(ray, ellipsoid, active);
@@ -348,10 +344,8 @@ public:
                                      ScalarIndex prim_index,
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
-        using Value = std::conditional_t<dr::is_cuda_v<FloatP> || dr::is_diff_v<Float>,
-                                         dr::float32_array_t<FloatP>,
-                                         dr::float64_array_t<FloatP>>;
-        using ScalarValue  = dr::scalar_t<Value>;
+        using Value = dr::float32_array_t<FloatP>;
+        using ScalarValue = dr::scalar_t<Value>;
         auto ellipsoid = m_ellipsoids.template get_ellipsoid<ScalarValue>(prim_index, active);
         ellipsoid.scale *= m_ellipsoids.template extents<ScalarValue>(prim_index);
         auto [t, valid] = ray_ellipsoid_intersection<FloatP>(ray, ellipsoid, active);

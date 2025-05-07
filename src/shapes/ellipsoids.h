@@ -228,9 +228,9 @@ public:
 
             m_data = data->array();
         } else if (props.has_property("centers")) {
-            TensorXf *centers = props.tensor<TensorXf>("centers");
-            TensorXf *scales  = props.tensor<TensorXf>("scales");
-            TensorXf *quats   = props.tensor<TensorXf>("quaternions");
+            TensorXf32 *centers = props.tensor<TensorXf32>("centers");
+            TensorXf32 *scales  = props.tensor<TensorXf32>("scales");
+            TensorXf32 *quats   = props.tensor<TensorXf32>("quaternions");
 
             if (props.has_property("to_world"))
                 Throw("\"to_world\" is only supported when loading PLY file!");
@@ -247,13 +247,13 @@ public:
                 Throw("TensorXf centers, quaternions and scales must have the same number of rows!");
 
             m_data = dr::zeros<FloatStorage>(centers->shape(0) * EllipsoidStructSize);
-            UInt32 idx = dr::arange<UInt32>(centers->shape(0));
+            UInt32Storage idx = dr::arange<UInt32Storage>(centers->shape(0));
             for (int i = 0; i < 3; i++)
-                dr::scatter(m_data, dr::gather<Float>(centers->array(), idx * 3 + i), idx * EllipsoidStructSize + i);
+                dr::scatter(m_data, dr::gather<FloatStorage>(centers->array(), idx * 3 + i), idx * EllipsoidStructSize + i);
             for (int i = 0; i < 3; i++)
-                dr::scatter(m_data, dr::gather<Float>(scales->array(), idx * 3 + i), idx * EllipsoidStructSize + 3 + i);
+                dr::scatter(m_data, dr::gather<FloatStorage>(scales->array(), idx * 3 + i), idx * EllipsoidStructSize + 3 + i);
             for (int i = 0; i < 4; i++)
-                dr::scatter(m_data, dr::gather<Float>(quats->array(), idx * 4 + i), idx * EllipsoidStructSize + 6 + i);
+                dr::scatter(m_data, dr::gather<FloatStorage>(quats->array(), idx * 4 + i), idx * EllipsoidStructSize + 6 + i);
             dr::eval(m_data);
         } else {
             Throw("Must specify either \"data\" or \"filename\" or \"centers\".");
@@ -310,8 +310,8 @@ public:
 
     void compute_extents() {
         if (m_extent_adaptive_clamping) {
-            auto indices = dr::arange<UInt32>(count());
-            Float opacities = dr::gather<Float>(m_attributes["opacities"], indices);
+            auto indices = dr::arange<UInt32Storage>(count());
+            FloatStorage opacities = dr::gather<FloatStorage>(m_attributes["opacities"], indices);
             float alpha = 0.01f; // minimum response of the Gaussian
             m_extents = dr::sqrt(2.f * dr::log(opacities / alpha)) * m_extent_multiplier / 3.f;
         } else {

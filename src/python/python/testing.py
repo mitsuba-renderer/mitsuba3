@@ -122,11 +122,11 @@ class RenderingRegressionTest:
 
         if (dr.count(success.array) / 3.0) >= (self.pixel_success_rate * pixel_count):
             print('Accepted the null hypothesis (min(p-value) = %f, significance level = %f)' %
-                  (dr.min(p_value.array)[0], alpha))
+                  (dr.slice(dr.min(p_value.array)), alpha))
             return True
         else:
             print('Reject the null hypothesis (min(p-value) = %f, significance level = %f)' %
-                  (dr.min(p_value.array)[0], alpha))
+                  (dr.slice(dr.min(p_value.array)), alpha))
 
             print(f'=> Successful pixel count {dr.count(success.array) / 3.0} vs {self.pixel_success_rate * pixel_count} (expected)')
 

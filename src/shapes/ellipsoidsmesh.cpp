@@ -383,6 +383,54 @@ private:
             if (initialized)
                 recompute_bbox();
             mark_dirty();
+        } else {
+            size_t nb_vertices = m_shell_vertices.size();
+            size_t nb_faces    = m_shell_faces.size();
+
+            uint32_t vertex_count = (uint32_t) (m_ellipsoids.count() * nb_vertices);
+            uint32_t face_count   = (uint32_t) (m_ellipsoids.count() * nb_faces);
+
+            bool initialized = (vertex_count != m_vertex_count) || (face_count != m_face_count);
+
+            m_vertex_count = vertex_count;
+            m_face_count   = face_count;
+
+            m_vertex_positions = dr::empty<FloatStorage>(3 * m_vertex_count);
+            m_faces            = dr::empty<IndexStorage>(3 * m_face_count);
+
+            for (size_t i = 0; i < m_ellipsoids.count(); ++i) {
+                auto ellipsoid = m_ellipsoids.template get_ellipsoid<Float>(i);
+                auto rot = dr::quat_to_matrix<Matrix3f>(ellipsoid.quat);
+
+                const ScalarTransform4f &to_world =
+                    ScalarTransform4f::translate(ellipsoid.center) *
+                    ScalarTransform4f(rot) *
+                    ScalarTransform4f::scale(ellipsoid.scale) *
+                    ScalarTransform4f::scale(m_ellipsoids.template extents<Float>(i));
+
+                for (size_t j = 0; j < nb_vertices; ++j) {
+                    Point3f v = to_world.transform_affine(Point3f(m_shell_vertices[j]));
+                    for (size_t k = 0; k < 3; ++k)
+                        m_vertex_positions[i * nb_vertices * 3 + j * 3 + k] = float(v[k]);
+                }
+
+                UInt32 offset = i * uint32_t(nb_vertices);
+                for (size_t j = 0; j < nb_faces; ++j) {
+                    Vector3u face = m_shell_faces[j];
+                    for (size_t k = 0; k < 3; ++k)
+                        m_faces[i * nb_faces * 3 + j * 3 + k] = face[k] + offset;
+                }
+
+                // Don't call Mesh::initialize() as it will initialize data-structure
+                // that are not needed for this plugin!
+#if defined(MI_ENABLE_LLVM) && !defined(MI_ENABLE_EMBREE)
+                m_vertex_positions_ptr = m_vertex_positions.data();
+                m_faces_ptr = m_faces.data();
+#endif
+                if (initialized)
+                    recompute_bbox();
+                mark_dirty();
+            }
         }
     }
 
