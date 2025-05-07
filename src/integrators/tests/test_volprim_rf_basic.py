@@ -38,6 +38,7 @@ class EllipsoidsFactory:
         albedos = mi.TensorXf(np.array(self.albedos))
         return centers, scales, quats, sigmats, albedos
 
+
 @pytest.mark.parametrize("shape_type", ['ellipsoids', 'ellipsoidsmesh'])
 def test01_render_span(variants_all_ad_rgb, regression_test_options, shape_type):
     factory = EllipsoidsFactory()
@@ -95,6 +96,7 @@ def test01_render_span(variants_all_ad_rgb, regression_test_options, shape_type)
     )
 
     assert test.run()
+
 
 @pytest.mark.parametrize("srgb_primitives", [True, False])
 def test02_render_stack(variants_all_ad_rgb, regression_test_options, srgb_primitives):
@@ -157,8 +159,9 @@ def test02_render_stack(variants_all_ad_rgb, regression_test_options, srgb_primi
 
     assert test.run()
 
+
 @pytest.mark.parametrize("shape_type", ['ellipsoids', 'ellipsoidsmesh'])
-def test03_render_depth(variants_all_ad_rgb, regression_test_options, shape_type):
+def test03_render_depth(variants_all_rgb, regression_test_options, shape_type):
     factory = EllipsoidsFactory()
     N = 12
     for i in range(N):
@@ -190,6 +193,9 @@ def test03_render_depth(variants_all_ad_rgb, regression_test_options, shape_type
                     target=[0, 0, 0],
                     up=[0, 1, 0]),
                 'fov': 61.9275,
+                'sampler': {
+                    'type': 'stratified'
+                },
                 'myfilm': {
                     'type': 'hdrfilm',
                     'rfilter': { 'type': 'box' },
@@ -206,9 +212,9 @@ def test03_render_depth(variants_all_ad_rgb, regression_test_options, shape_type
                 'sh_coeffs': albedos,
             }
         }),
-        test_spp=16,
-        ref_spp=16,
-        pixel_success_rate=0.95,
+        test_spp=128,
+        ref_spp=128,
+        pixel_success_rate=0.94,
         references_folder=os.path.join(os.path.dirname(__file__), '../../../resources/data/tests/scenes/volprim_rf_basic/refs'),
         **regression_test_options
     )
