@@ -184,6 +184,7 @@ file(WRITE
   "[pytest]\n"
   "minversion = 3.0\n"
   "testpaths = \"${MI_TEST_BASE}\"\n"
+  "norecursedirs = \"${MI_TEST_BASE}/python\"\n"
 )
 
 if (MSVC)

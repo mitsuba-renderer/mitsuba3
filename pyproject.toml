@@ -71,8 +71,8 @@ before-all = "yum install -y libatomic"
 repair-wheel-command = "pip install wheel>=0.40; new_whl_name=$(python -m wheel tags --platform-tag manylinux_2_17_x86_64.manylinux2014_x86_64 {wheel} | tail -1 | cat); cp $(dirname {wheel})/$new_whl_name {dest_dir}"
 
 [tool.pytest.ini_options]
-norecursedirs = [ "ext" ]
-
+testpaths = [ "src" ]
+norecursedirs = [ "src/python" ]
 
 [tool.scikit-build.metadata.version]
 # Fetch version number from header file
