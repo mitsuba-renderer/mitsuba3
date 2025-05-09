@@ -148,7 +148,7 @@ public:
     }
 
     template <typename FloatP, typename Ray3fP>
-    dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray, 
+    dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray,
                                      ScalarIndex /*prim_index*/,
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
@@ -252,6 +252,7 @@ public:
             si.dn_dv -= tn * dr::dot(tn, si.dn_dv);
         }
 
+        si.prim_index = pi.prim_index;
         si.instance = this;
 
         return si;

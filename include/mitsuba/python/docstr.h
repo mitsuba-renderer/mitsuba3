@@ -407,6 +407,8 @@ static const char *__doc_OptixPayloadType_payloadSemantics = R"doc()doc";
 
 static const char *__doc_OptixPipelineCompileOptions = R"doc()doc";
 
+static const char *__doc_OptixPipelineCompileOptions_allowClusteredGeometry = R"doc()doc";
+
 static const char *__doc_OptixPipelineCompileOptions_allowOpacityMicromaps = R"doc()doc";
 
 static const char *__doc_OptixPipelineCompileOptions_exceptionFlags = R"doc()doc";
@@ -507,6 +509,8 @@ static const char *__doc_OptixShaderBindingTable_raygenRecord = R"doc()doc";
 
 static const char *__doc_SbtRecord = R"doc()doc";
 
+static const char *__doc_SbtRecord_SbtRecord = R"doc()doc";
+
 static const char *__doc_SbtRecord_data = R"doc()doc";
 
 static const char *__doc_SbtRecord_header = R"doc()doc";
@@ -536,6 +540,8 @@ static const char *__doc_mitsuba_AdjointIntegrator_4 = R"doc()doc";
 static const char *__doc_mitsuba_AdjointIntegrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_AdjointIntegrator_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator_AdjointIntegrator = R"doc(Create an integrator)doc";
 
@@ -763,6 +769,8 @@ static const char *__doc_mitsuba_BSDF_4 = R"doc()doc";
 static const char *__doc_mitsuba_BSDF_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_BSDF_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFContext =
 R"doc(Context data structure for BSDF evaluation and sampling
@@ -1162,6 +1170,17 @@ cosine foreshortening factor when a non-delta component is sampled). A
 zero spectrum indicates that sampling failed.)doc";
 
 static const char *__doc_mitsuba_BSDF_set_id = R"doc(Set a string identifier)doc";
+
+static const char *__doc_mitsuba_BSDF_sh_frame =
+R"doc(Returns the shading frame accounting for any pertubations that may
+performed by the BSDF during evaluation.
+
+Parameter ``si``:
+    Surface interaction associated with the query
+
+Returns:
+    The perturbed shading frame. By default simply returns the surface
+    interaction shading frame.)doc";
 
 static const char *__doc_mitsuba_BSDF_to_string = R"doc(Return a human-readable representation of the BSDF)doc";
 
@@ -2563,6 +2582,8 @@ static const char *__doc_mitsuba_Emitter_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Emitter_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_EmitterFlags =
 R"doc(This list of flags is used to classify the different types of
 emitters.)doc";
@@ -2659,6 +2680,8 @@ static const char *__doc_mitsuba_Endpoint_4 = R"doc()doc";
 static const char *__doc_mitsuba_Endpoint_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_Endpoint = R"doc()doc";
 
@@ -3061,6 +3084,8 @@ static const char *__doc_mitsuba_Film_4 = R"doc()doc";
 static const char *__doc_mitsuba_Film_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Film_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_FilmFlags = R"doc(This list of flags is used to classify the different types of films.)doc";
 
@@ -3509,6 +3534,8 @@ static const char *__doc_mitsuba_ImageBlock_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_ImageBlock_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_ImageBlock_ImageBlock =
 R"doc(Construct a zero-initialized image block with the desired shape and
 channel count
@@ -3764,6 +3791,8 @@ static const char *__doc_mitsuba_Integrator_4 = R"doc()doc";
 static const char *__doc_mitsuba_Integrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Integrator_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_Integrator = R"doc(Create an integrator)doc";
 
@@ -4405,6 +4434,8 @@ static const char *__doc_mitsuba_Medium_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Medium_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_MediumInteraction = R"doc(Stores information related to a medium scattering interaction)doc";
 
 static const char *__doc_mitsuba_MediumInteraction_MediumInteraction = R"doc(//! @})doc";
@@ -4681,6 +4712,8 @@ static const char *__doc_mitsuba_Mesh_4 = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_Mesh =
 R"doc(Creates a zero-initialized mesh with the given vertex and face counts
@@ -4985,6 +5018,26 @@ R"doc(Write the mesh encoded in binary PLY format to a stream
 Parameter ``stream``:
     Target stream that will receive the encoded output)doc";
 
+static const char *__doc_mitsuba_MiOptixAccelData = R"doc(Stores multiple OptiXTraversables: one for the each type)doc";
+
+static const char *__doc_mitsuba_MiOptixAccelData_HandleData = R"doc()doc";
+
+static const char *__doc_mitsuba_MiOptixAccelData_HandleData_buffer = R"doc()doc";
+
+static const char *__doc_mitsuba_MiOptixAccelData_HandleData_count = R"doc()doc";
+
+static const char *__doc_mitsuba_MiOptixAccelData_HandleData_handle = R"doc()doc";
+
+static const char *__doc_mitsuba_MiOptixAccelData_bspline_curves = R"doc()doc";
+
+static const char *__doc_mitsuba_MiOptixAccelData_custom_shapes = R"doc()doc";
+
+static const char *__doc_mitsuba_MiOptixAccelData_ellipsoids_meshes = R"doc()doc";
+
+static const char *__doc_mitsuba_MiOptixAccelData_linear_curves = R"doc()doc";
+
+static const char *__doc_mitsuba_MiOptixAccelData_meshes = R"doc()doc";
+
 static const char *__doc_mitsuba_MicrofacetDistribution =
 R"doc(Implementation of the Beckman and GGX / Trowbridge-Reitz microfacet
 distributions and various useful sampling routines
@@ -5170,6 +5223,8 @@ static const char *__doc_mitsuba_MonteCarloIntegrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_MonteCarloIntegrator_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_MonteCarloIntegrator_MonteCarloIntegrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_class = R"doc()doc";
@@ -5295,24 +5350,6 @@ Remark:
 See also:
     TraversalCallback)doc";
 
-static const char *__doc_mitsuba_OptixAccelData = R"doc(Stores multiple OptiXTraversables: one for the each type)doc";
-
-static const char *__doc_mitsuba_OptixAccelData_HandleData = R"doc()doc";
-
-static const char *__doc_mitsuba_OptixAccelData_HandleData_buffer = R"doc()doc";
-
-static const char *__doc_mitsuba_OptixAccelData_HandleData_count = R"doc()doc";
-
-static const char *__doc_mitsuba_OptixAccelData_HandleData_handle = R"doc()doc";
-
-static const char *__doc_mitsuba_OptixAccelData_bspline_curves = R"doc()doc";
-
-static const char *__doc_mitsuba_OptixAccelData_custom_shapes = R"doc()doc";
-
-static const char *__doc_mitsuba_OptixAccelData_linear_curves = R"doc()doc";
-
-static const char *__doc_mitsuba_OptixAccelData_meshes = R"doc()doc";
-
 static const char *__doc_mitsuba_OptixDenoiser =
 R"doc(Wrapper for the OptiX AI denoiser
 
@@ -5333,6 +5370,8 @@ static const char *__doc_mitsuba_OptixDenoiser_4 = R"doc()doc";
 static const char *__doc_mitsuba_OptixDenoiser_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_OptixDenoiser_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_OptixDenoiser_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_OptixDenoiser_OptixDenoiser =
 R"doc(Constructs an OptiX denoiser
@@ -5482,31 +5521,19 @@ static const char *__doc_mitsuba_OptixDenoiser_to_string = R"doc()doc";
 
 static const char *__doc_mitsuba_OptixDenoiser_validate_input = R"doc(Helper function to validate tensor sizes)doc";
 
-static const char *__doc_mitsuba_OptixShape = R"doc()doc";
+static const char *__doc_mitsuba_OptixProgramGroupMapping = R"doc()doc";
 
-static const char *__doc_mitsuba_OptixShapeType = R"doc(Mitsuba shapes types supported by OptiX (meshes not included))doc";
+static const char *__doc_mitsuba_OptixProgramGroupMapping_OptixProgramGroupMapping = R"doc()doc";
 
-static const char *__doc_mitsuba_OptixShapeType_BSplineCurve = R"doc()doc";
+static const char *__doc_mitsuba_OptixProgramGroupMapping_at = R"doc()doc";
 
-static const char *__doc_mitsuba_OptixShapeType_Cylinder = R"doc()doc";
+static const char *__doc_mitsuba_OptixProgramGroupMapping_index = R"doc()doc";
 
-static const char *__doc_mitsuba_OptixShapeType_Disk = R"doc()doc";
+static const char *__doc_mitsuba_OptixProgramGroupMapping_mapping = R"doc()doc";
 
-static const char *__doc_mitsuba_OptixShapeType_LinearCurve = R"doc()doc";
+static const char *__doc_mitsuba_OptixProgramGroupMapping_operator_array = R"doc()doc";
 
-static const char *__doc_mitsuba_OptixShapeType_NumOptixShapeTypes = R"doc()doc";
-
-static const char *__doc_mitsuba_OptixShapeType_SDFGrid = R"doc()doc";
-
-static const char *__doc_mitsuba_OptixShapeType_Sphere = R"doc()doc";
-
-static const char *__doc_mitsuba_OptixShape_ch_name = R"doc(Whether or not this is a built-in OptiX shape type)doc";
-
-static const char *__doc_mitsuba_OptixShape_is_builtin = R"doc(Lowercase version of OPTIX_SHAPE_TYPE_NAMES)doc";
-
-static const char *__doc_mitsuba_OptixShape_is_name = R"doc()doc";
-
-static const char *__doc_mitsuba_OptixShape_name = R"doc()doc";
+static const char *__doc_mitsuba_OptixProgramGroupMapping_operator_array_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler =
 R"doc(Interface for sampler plugins based on the PCG32 random number
@@ -5521,6 +5548,8 @@ static const char *__doc_mitsuba_PCG32Sampler_4 = R"doc()doc";
 static const char *__doc_mitsuba_PCG32Sampler_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_PCG32Sampler_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_PCG32Sampler = R"doc()doc";
 
@@ -5554,6 +5583,8 @@ discontinuities)doc";
 
 static const char *__doc_mitsuba_ParamFlags_NonDifferentiable = R"doc(Tracking gradients w.r.t. this parameter is not allowed)doc";
 
+static const char *__doc_mitsuba_ParamFlags_ReadOnly = R"doc(This parameter is read-only)doc";
+
 static const char *__doc_mitsuba_PhaseFunction = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunction_2 = R"doc()doc";
@@ -5565,6 +5596,8 @@ static const char *__doc_mitsuba_PhaseFunction_4 = R"doc()doc";
 static const char *__doc_mitsuba_PhaseFunction_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunction_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunction_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunctionContext = R"doc()doc";
 
@@ -5733,6 +5766,10 @@ static const char *__doc_mitsuba_PluginManager_d = R"doc()doc";
 static const char *__doc_mitsuba_PluginManager_ensure_plugin_loaded = R"doc(Ensure that a plugin is loaded and ready)doc";
 
 static const char *__doc_mitsuba_PluginManager_get_plugin_class = R"doc(Return the class corresponding to a plugin for a specific variant)doc";
+
+static const char *__doc_mitsuba_PluginManager_get_plugin_type =
+R"doc(Return the plugin's shorthand from its class name (i.e "diffuse" from
+"SmoothDiffuse"))doc";
 
 static const char *__doc_mitsuba_PluginManager_instance = R"doc(Return the global plugin manager)doc";
 
@@ -6014,6 +6051,8 @@ static const char *__doc_mitsuba_ProjectiveCamera_4 = R"doc()doc";
 static const char *__doc_mitsuba_ProjectiveCamera_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_ProjectiveCamera = R"doc()doc";
 
@@ -6485,6 +6524,8 @@ static const char *__doc_mitsuba_ReconstructionFilter_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_ReconstructionFilter_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_ReconstructionFilter_ReconstructionFilter = R"doc(Create a new reconstruction filter)doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_border_size = R"doc(Return the block border size required when rendering with this filter)doc";
@@ -6694,6 +6735,8 @@ static const char *__doc_mitsuba_Sampler_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Sampler_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_Sampler_Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_Sampler_2 = R"doc(Copy state to a new sampler object)doc";
@@ -6793,6 +6836,8 @@ static const char *__doc_mitsuba_SamplingIntegrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_SamplingIntegrator_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_SamplingIntegrator_SamplingIntegrator = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_class = R"doc()doc";
@@ -6886,6 +6931,8 @@ static const char *__doc_mitsuba_Scene_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Scene_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_Scene_Scene = R"doc(Instantiate a scene from a Properties object)doc";
 
 static const char *__doc_mitsuba_Scene_accel_init_cpu = R"doc(Create the ray-intersection acceleration data structure)doc";
@@ -6913,9 +6960,6 @@ static const char *__doc_mitsuba_Scene_emitters_2 = R"doc(Return the list of emi
 static const char *__doc_mitsuba_Scene_emitters_dr = R"doc(Return the list of emitters as a Dr.Jit array)doc";
 
 static const char *__doc_mitsuba_Scene_environment = R"doc(Return the environment emitter (if any))doc";
-
-static const char *__doc_mitsuba_Scene_shape_types =
-    R"doc(Returns a union of ShapeType flags denoting what is present in the ShapeGroup)doc";
 
 static const char *__doc_mitsuba_Scene_eval_emitter_direction =
 R"doc(Re-evaluate the incident direct radiance of the
@@ -7365,6 +7409,10 @@ static const char *__doc_mitsuba_Scene_sensors_2 = R"doc(Return the list of sens
 
 static const char *__doc_mitsuba_Scene_sensors_dr = R"doc(Return the list of sensors as a Dr.Jit array)doc";
 
+static const char *__doc_mitsuba_Scene_shape_types =
+R"doc(Returns a union of ShapeType flags denoting what is present in the
+ShapeGroup)doc";
+
 static const char *__doc_mitsuba_Scene_shapes = R"doc(Return the list of shapes)doc";
 
 static const char *__doc_mitsuba_Scene_shapes_2 = R"doc(Return the list of shapes)doc";
@@ -7430,6 +7478,8 @@ static const char *__doc_mitsuba_Sensor_4 = R"doc()doc";
 static const char *__doc_mitsuba_Sensor_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_Sensor = R"doc()doc";
 
@@ -7552,6 +7602,8 @@ static const char *__doc_mitsuba_Shape_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_7 = R"doc()doc";
 
+static const char *__doc_mitsuba_Shape_8 = R"doc()doc";
+
 static const char *__doc_mitsuba_ShapeGroup = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_2 = R"doc()doc";
@@ -7563,6 +7615,8 @@ static const char *__doc_mitsuba_ShapeGroup_4 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeGroup_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeGroup_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_ShapeGroup = R"doc()doc";
 
@@ -7576,14 +7630,6 @@ static const char *__doc_mitsuba_ShapeGroup_effective_primitive_count = R"doc()d
 
 static const char *__doc_mitsuba_ShapeGroup_embree_geometry = R"doc()doc";
 
-static const char *__doc_mitsuba_ShapeGroup_has_bspline_curves = R"doc(Return whether this shapegroup contains B-spline curve shapes)doc";
-
-static const char *__doc_mitsuba_ShapeGroup_has_linear_curves = R"doc(Return whether this shapegroup contains linear curve shapes)doc";
-
-static const char *__doc_mitsuba_ShapeGroup_has_meshes = R"doc(Return whether this shapegroup contains triangle mesh shapes)doc";
-
-static const char *__doc_mitsuba_ShapeGroup_has_others = R"doc(Return whether this shapegroup contains other type of shapes)doc";
-
 static const char *__doc_mitsuba_ShapeGroup_m_accel = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_m_bbox = R"doc()doc";
@@ -7592,21 +7638,15 @@ static const char *__doc_mitsuba_ShapeGroup_m_embree_geometries = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_m_embree_scene = R"doc()doc";
 
-static const char *__doc_mitsuba_ShapeGroup_m_has_bspline_curves = R"doc()doc";
-
-static const char *__doc_mitsuba_ShapeGroup_m_has_linear_curves = R"doc()doc";
-
-static const char *__doc_mitsuba_ShapeGroup_m_has_meshes = R"doc()doc";
-
-static const char *__doc_mitsuba_ShapeGroup_m_has_others = R"doc()doc";
-
 static const char *__doc_mitsuba_ShapeGroup_m_sbt_offset = R"doc(OptiX hitgroup sbt offset)doc";
+
+static const char *__doc_mitsuba_ShapeGroup_m_shape_types = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_m_shapes = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_m_shapes_registry_ids = R"doc()doc";
 
-static const char *__doc_mitsuba_ShapeGroup_optix_build_gas = R"doc(Build OptiX geometry acceleration structures)doc";
+static const char *__doc_mitsuba_ShapeGroup_optix_build_gas = R"doc(Build OptiX geometry acceleration structures for this group's shapes)doc";
 
 static const char *__doc_mitsuba_ShapeGroup_optix_fill_hitgroup_records = R"doc()doc";
 
@@ -7619,6 +7659,10 @@ static const char *__doc_mitsuba_ShapeGroup_parameters_changed = R"doc()doc";
 static const char *__doc_mitsuba_ShapeGroup_parameters_grad_enabled = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_primitive_count = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeGroup_shape_types =
+R"doc(Returns a union of ShapeType flags denoting what is present in the
+ShapeGroup)doc";
 
 static const char *__doc_mitsuba_ShapeGroup_surface_area = R"doc()doc";
 
@@ -7637,6 +7681,8 @@ static const char *__doc_mitsuba_ShapeKDTree_4 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeKDTree_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeKDTree_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_ShapeKDTree =
 R"doc(Create an empty kd-tree and take build-related parameters from
@@ -7695,15 +7741,19 @@ static const char *__doc_mitsuba_ShapeType_Cylinder = R"doc(Cylinders (`cylinder
 
 static const char *__doc_mitsuba_ShapeType_Disk = R"doc(Disks (`disk`))doc";
 
+static const char *__doc_mitsuba_ShapeType_Ellipsoids = R"doc(Ellipsoids (`ellipsoids`))doc";
+
+static const char *__doc_mitsuba_ShapeType_EllipsoidsMesh = R"doc(Ellipsoids (`ellipsoidsmesh`))doc";
+
 static const char *__doc_mitsuba_ShapeType_Instance = R"doc(Instance (`instance`))doc";
+
+static const char *__doc_mitsuba_ShapeType_Invalid = R"doc(Invalid for default initialization)doc";
 
 static const char *__doc_mitsuba_ShapeType_LinearCurve = R"doc(Linear curves (`linearcurve`))doc";
 
 static const char *__doc_mitsuba_ShapeType_Mesh = R"doc(Meshes (`ply`, `obj`, `serialized`))doc";
 
-static const char *__doc_mitsuba_ShapeType_Rectangle = R"doc(Rectangles, a subtype of meshes.)doc";
-
-static const char *__doc_mitsuba_ShapeType_Invalid = R"doc(Invalid shape)doc";
+static const char *__doc_mitsuba_ShapeType_Rectangle = R"doc(Rectangle: a particular type of mesh)doc";
 
 static const char *__doc_mitsuba_ShapeType_SDFGrid = R"doc(SDF Grids (`sdfgrid`))doc";
 
@@ -7877,6 +7927,19 @@ Parameter ``si``:
 Returns:
     An trichromatic intensity or reflectance value)doc";
 
+static const char *__doc_mitsuba_Shape_eval_attribute_x =
+R"doc(Evaluate a dynamically sized shape attribute at the given surface
+interaction.
+
+Parameter ``name``:
+    Name of the attribute to evaluate
+
+Parameter ``si``:
+    Surface interaction associated with the query
+
+Returns:
+    An dynamic array of attribute values)doc";
+
 static const char *__doc_mitsuba_Shape_eval_parameterization =
 R"doc(Parameterize the mesh using UV values
 
@@ -7914,6 +7977,8 @@ Parameter ``ss``:
 
 Returns:
     The corresponding boundary sample space point)doc";
+
+static const char *__doc_mitsuba_Shape_is_ellipsoids = R"doc(Is this shape a ShapeType::Ellipsoids or ShapeType::EllipsoidsMesh)doc";
 
 static const char *__doc_mitsuba_Shape_is_emitter = R"doc(Is this shape also an area emitter?)doc";
 
@@ -7989,7 +8054,7 @@ Parameter ``hitgroup_records``:
     The array of hitgroup records where the new HitGroupRecords should
     be appended.
 
-Parameter ``program_groups``:
+Parameter ``pg``:
     The array of available program groups (used to pack the OptiX
     header at the beginning of the record).
 
@@ -7997,7 +8062,7 @@ The default implementation creates a new HitGroupSbtRecord and fills
 its data field with m_optix_data_ptr. It then calls
 optixSbtRecordPackHeader with one of the OptixProgramGroup of the
 program_groups array (the actual program group index is inferred by
-the type of the Shape, see get_shape_descr_idx()).)doc";
+the type of the Shape, see OptixProgramGroupMapping).)doc";
 
 static const char *__doc_mitsuba_Shape_optix_prepare_geometry =
 R"doc(Populates the GPU data buffer, used in the OptiX Hitgroup sbt records.
@@ -9601,6 +9666,8 @@ static const char *__doc_mitsuba_Texture_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Texture_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_Texture_D65 = R"doc(Convenience function returning the standard D65 illuminant)doc";
 
 static const char *__doc_mitsuba_Texture_D65_2 =
@@ -10130,6 +10197,8 @@ static const char *__doc_mitsuba_Volume_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Volume_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Volume_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_VolumeGrid = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_2 = R"doc()doc";
@@ -10141,6 +10210,8 @@ static const char *__doc_mitsuba_VolumeGrid_4 = R"doc()doc";
 static const char *__doc_mitsuba_VolumeGrid_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeGrid_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_VolumeGrid =
 R"doc(Load a VolumeGrid from a given filename
@@ -10682,7 +10753,7 @@ Parameter ``v``:
     Vector to convert
 
 Returns:
-    The azimuthal and polar angles respectively.)doc";
+    The polar and azimuthal angles respectively.)doc";
 
 static const char *__doc_mitsuba_emitter =
 R"doc(Return the emitter associated with the intersection (if any) \note
@@ -11009,8 +11080,6 @@ Parameter ``custom_half_aperture``:
 
 Returns:
     The ratio of the sun's area to the custom aperture's area)doc";
-
-static const char *__doc_mitsuba_get_shape_descr_idx = R"doc(Retrieve index of shape descriptor)doc";
 
 static const char *__doc_mitsuba_has_flag = R"doc()doc";
 

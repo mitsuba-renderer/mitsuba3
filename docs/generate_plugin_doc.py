@@ -12,17 +12,18 @@ SHAPE_ORDERING = [
     'obj',
     'ply',
     'serialized',
-    'cube'
+    'cube',
     'sphere',
+    'rectangle',
     'disk',
     'cylinder',
     'bsplinecurve',
     'linearcurve',
-    'rectangle',
-    'cube',
     'sdfgrid',
     'shapegroup',
-    'instance'
+    'instance',
+    'ellipsoids',
+    'ellipsoidsmesh'
 ]
 
 BSDF_ORDERING = [

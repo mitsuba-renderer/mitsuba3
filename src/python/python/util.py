@@ -55,7 +55,10 @@ class SceneParameters(Mapping):
         return value
 
     def __setitem__(self, key: str, value):
-        cur, value_type, node, _ = self.properties[key]
+        cur, value_type, node, flags = self.properties[key]
+
+        if (flags & mi.ParamFlags.ReadOnly) != 0:
+            raise Exception(f'{key} is a Read-Only parameter!')
 
         cur_value = cur
         if value_type is not None:
@@ -107,8 +110,10 @@ class SceneParameters(Mapping):
                 value = self.get_property(value, value_type, node)
 
             flags_str = ''
-            if (flags & mi.ParamFlags.NonDifferentiable) == 0:
+            if (flags & mi.ParamFlags.NonDifferentiable) == 0 and (flags & mi.ParamFlags.ReadOnly) == 0:
                 flags_str += '∂'
+            if (flags & mi.ParamFlags.ReadOnly) != 0:
+                flags_str += 'R'
             if (flags & mi.ParamFlags.Discontinuous) != 0:
                 flags_str += ', D'
 

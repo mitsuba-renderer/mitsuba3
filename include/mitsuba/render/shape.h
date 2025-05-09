@@ -21,30 +21,34 @@ enum class ShapeType : uint32_t {
     Mesh = 1u << 0,
 
     /// Rectangle: a particular type of mesh
-    Rectangle = Mesh | (1u << 8), // Tagged with an extra bit
+    Rectangle = Mesh | (1u << 1), // Tagged with an extra bit
 
     /// B-Spline curves (`bsplinecurve`)
-    BSplineCurve = 1u << 1,
+    BSplineCurve = 1u << 2,
 
     /// Linear curves (`linearcurve`)
-    LinearCurve = 1u << 2,
+    LinearCurve = 1u << 3,
 
     /// Cylinders (`cylinder`)
-    Cylinder = 1u << 3,
+    Cylinder = 1u << 4,
 
     /// Disks (`disk`)
-    Disk = 1u << 4,
+    Disk = 1u << 5,
 
     /// SDF Grids (`sdfgrid`)
-    SDFGrid = 1u << 5,
+    SDFGrid = 1u << 6,
 
     /// Spheres (`sphere`)
-    Sphere = 1u << 6,
+    Sphere = 1u << 7,
+
+    /// Ellipsoids (`ellipsoids`)
+    Ellipsoids = 1u << 8,
+
+    /// Ellipsoids (`ellipsoidsmesh`)
+    EllipsoidsMesh = Mesh | (1u << 9), // Tagged with an extra bit
 
     /// Instance (`instance`)
-    Instance = 1u << 7,
-
-    // Note: 1u << 8 is taken by Rectangle, continue with 1 << 9
+    Instance = 1u << 10,
 
     /// Invalid for default initialization
     Invalid = 0
@@ -801,6 +805,22 @@ public:
                                      Mask active = true) const;
 
     /**
+     * \brief Evaluate a dynamically sized shape attribute at the given surface interaction.
+     *
+     * \param name
+     *     Name of the attribute to evaluate
+     *
+     * \param si
+     *     Surface interaction associated with the query
+     *
+     * \return
+     *     An dynamic array of attribute values
+     */
+    virtual dr::DynamicArray<Float> eval_attribute_x(const std::string &name,
+                                                     const SurfaceInteraction3f &si,
+                                                     Mask active = true) const;
+
+    /**
      * \brief Parameterize the mesh using UV values
      *
      * This function maps a 2D UV value to a surface interaction data
@@ -827,6 +847,13 @@ public:
 
     /// Is this shape a triangle mesh?
     bool is_mesh() const { return shape_type() & ShapeType::Mesh; }
+
+    /// Is this shape a \ref ShapeType::Ellipsoids or \ref ShapeType::EllipsoidsMesh
+    bool is_ellipsoids() const {
+        uint32_t st = shape_type();
+        st &= ~ShapeType::Mesh;
+        return (st & ShapeType::Ellipsoids) | (st & ShapeType::EllipsoidsMesh);
+    }
 
     /// Returns the shape type \ref ShapeType of this shape
     uint32_t shape_type() const { return (uint32_t) m_shape_type; }
@@ -1142,6 +1169,7 @@ MI_CALL_TEMPLATE_BEGIN(Shape)
     DRJIT_CALL_METHOD(eval_attribute)
     DRJIT_CALL_METHOD(eval_attribute_1)
     DRJIT_CALL_METHOD(eval_attribute_3)
+    DRJIT_CALL_METHOD(eval_attribute_x)
     DRJIT_CALL_METHOD(eval_parameterization)
     DRJIT_CALL_METHOD(ray_intersect_preliminary)
     DRJIT_CALL_METHOD(ray_intersect)
@@ -1167,6 +1195,12 @@ MI_CALL_TEMPLATE_BEGIN(Shape)
     auto is_emitter() const { return emitter() != nullptr; }
     auto is_sensor() const { return sensor() != nullptr; }
     auto is_mesh() const { return (shape_type() & +mitsuba::ShapeType::Mesh) != 0; }
+    auto is_ellipsoids() const { 
+        auto st = shape_type();
+        st &= ~mitsuba::ShapeType::Mesh;
+        return ((st & (uint32_t) mitsuba::ShapeType::Ellipsoids) |
+                (st & (uint32_t) mitsuba::ShapeType::EllipsoidsMesh)) != 0;
+    }
     auto is_medium_transition() const { return interior_medium() != nullptr ||
                                                exterior_medium() != nullptr; }
 MI_CALL_TEMPLATE_END(Shape)

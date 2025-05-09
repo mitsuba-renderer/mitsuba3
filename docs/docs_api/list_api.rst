@@ -550,21 +550,17 @@
 
 .. autoclass:: mitsuba.ZStream
 
-.. autoclass:: mitsuba.ad.Adam
-
 .. autoclass:: mitsuba.ad.BaseGuidingDistr
 
 .. autoclass:: mitsuba.ad.GridDistr
 
 .. autoclass:: mitsuba.ad.LargeSteps
 
+.. autofunction:: mitsuba.ad.Mapping
+
 .. autoclass:: mitsuba.ad.OcSpaceDistr
 
-.. autoclass:: mitsuba.ad.Optimizer
-
 .. autoclass:: mitsuba.ad.ProjectiveDetail
-
-.. autoclass:: mitsuba.ad.SGD
 
 .. autoclass:: mitsuba.ad.UniformDistr
 
@@ -575,6 +571,8 @@
 .. autoclass:: mitsuba.ad.integrators.common.RBIntegrator
 
 .. autofunction:: mitsuba.ad.integrators.common.mis_weight
+
+.. autoclass:: mitsuba.ad.integrators.volprim_rf_basic.BasicVolumetricPrimitiveRadianceFieldIntegrator
 
 .. autoclass:: mitsuba.ad.largesteps.SolveCholesky
 
@@ -868,9 +866,19 @@
 
 .. autofunction:: mitsuba.srgb_to_xyz
 
+.. autoclass:: mitsuba.testing.RenderingRegressionTest
+
+.. autofunction:: mitsuba.testing.annotations
+
 .. autofunction:: mitsuba.traverse
 
 .. autofunction:: mitsuba.unpolarized_spectrum
+
+.. autofunction:: mitsuba.util.Any
+
+.. autofunction:: mitsuba.util.Optional
+
+.. autofunction:: mitsuba.util.Union
 
 .. autofunction:: mitsuba.util.convert_to_bitmap
 

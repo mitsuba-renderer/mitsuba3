@@ -77,6 +77,8 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             D(Shape, is_sensor))
        .def("is_mesh", [](Ptr shape) { return shape->is_mesh(); },
             D(Shape, is_mesh))
+       .def("is_ellipsoids", [](Ptr shape) { return shape->is_ellipsoids(); },
+            D(Shape, is_ellipsoids))
        .def("is_medium_transition",
             [](Ptr shape) { return shape->is_medium_transition(); },
             D(Shape, is_medium_transition))
@@ -126,6 +128,12 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
                 return shape->eval_attribute_3(name, si, active);
             },
             "name"_a, "si"_a, "active"_a = true, D(Shape, eval_attribute_3))
+       .def("eval_attribute_x",
+            [](Ptr shape, const std::string &name,
+               const SurfaceInteraction3f &si, const Mask &active) {
+                return shape->eval_attribute_x(name, si, active);
+            },
+            "name"_a, "si"_a, "active"_a = true, D(Shape, eval_attribute_x))
        .def("ray_intersect_preliminary",
             [](Ptr shape, const Ray3f &ray, uint32_t prim_index, const Mask &active) {
                 return shape->ray_intersect_preliminary(ray, prim_index, active);

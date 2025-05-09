@@ -45,8 +45,8 @@ using OptixOpacityMicromapArrayIndexingMode       = int;
 #define OPTIX_BUILD_INPUT_TYPE_CURVES            0x2145
 #define OPTIX_BUILD_OPERATION_BUILD              0x2161
 
-#define OPTIX_GEOMETRY_FLAG_NONE           0
-#define OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT 1
+#define OPTIX_GEOMETRY_FLAG_NONE                          0
+#define OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT                (1 << 0)
 
 #define OPTIX_INDICES_FORMAT_UNSIGNED_INT3 0x2103
 #define OPTIX_VERTEX_FORMAT_FLOAT3         0x2121
@@ -90,12 +90,14 @@ using OptixOpacityMicromapArrayIndexingMode       = int;
 #define OPTIX_PROGRAM_GROUP_KIND_MISS      0x2422
 #define OPTIX_PROGRAM_GROUP_KIND_HITGROUP  0x2424
 
-#define OPTIX_INSTANCE_FLAG_NONE              0
+#define OPTIX_INSTANCE_FLAG_NONE                           0
+#define OPTIX_INSTANCE_FLAG_DISABLE_TRIANGLE_FACE_CULLING  (1u << 0)
 
-#define OPTIX_RAY_FLAG_NONE                   0
-#define OPTIX_RAY_FLAG_DISABLE_ANYHIT         (1u << 0)
-#define OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT (1u << 2)
-#define OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT     (1u << 3)
+#define OPTIX_RAY_FLAG_NONE                       0
+#define OPTIX_RAY_FLAG_DISABLE_ANYHIT             (1u << 0)
+#define OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT     (1u << 2)
+#define OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT         (1u << 3)
+#define OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES (1u << 4)
 
 #define OPTIX_MODULE_COMPILE_STATE_COMPLETED 0x2364
 

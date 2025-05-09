@@ -153,7 +153,7 @@ public:
 
             update();
         }
-        Base::parameters_changed();
+        Base::parameters_changed(keys);
     }
 
 
@@ -524,6 +524,8 @@ public:
         si.sh_frame.n = m_frame.n;
 
         si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
+
+        si.prim_index = pi.prim_index;
         si.shape    = this;
         si.instance = nullptr;
 

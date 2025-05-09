@@ -462,6 +462,7 @@ public:
         si.dp_dv = Vector3f(0.f);
         si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
 
+        si.prim_index = pi.prim_index;
         si.shape    = this;
         si.instance = nullptr;
 

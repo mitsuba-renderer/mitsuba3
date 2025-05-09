@@ -238,11 +238,11 @@ MI_INLINE Index find_interval(dr::scalar_t<Index> size,
 
 /**
  * \brief This function computes a suitable middle point for use in the \ref bisect() function
- * 
+ *
  * To mitigate the issue of varying density of floating point numbers on the
  * number line, the floats are reinterpreted as unsigned integers. As long as
  * sign of both numbers is the same, this maps the floats to the evenly spaced
- * set of integers. The middle of these integers ensures that the space of 
+ * set of integers. The middle of these integers ensures that the space of
  * numbers is halved on each iteration of the bisection.
  *
  * Note that this strategy does not work if the numbers have different sign.
