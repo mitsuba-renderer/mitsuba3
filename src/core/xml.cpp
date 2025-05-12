@@ -1064,11 +1064,13 @@ static Task *instantiate_node(XMLParseContext &ctx,
             if (children.empty()) {
                 props.set_object(kv.first, obj, false);
             } else if (children.size() == 1) {
-                props.set_object(kv.first, children[0], false);
+                if (children[0])
+                    props.set_object(kv.first, children[0], false);
             } else {
                 int ctr = 0;
                 for (auto c : children)
-                    props.set_object(kv.first + "_" + std::to_string(ctr++), c, false);
+                    if (c)
+                        props.set_object(kv.first + "_" + std::to_string(ctr++), c, false);
             }
         }
 
@@ -1273,8 +1275,8 @@ std::vector<ref<Object>> expand_node(const ref<Object> &node) {
     return { node };
 }
 
-std::vector<std::pair<std::string, Properties>> xml_to_properties(const fs::path &filename,
-                                                                  const std::string &variant) {
+std::map<std::string, std::pair<std::string, Properties>> xml_to_properties(const fs::path &filename,
+                                                                            const std::string &variant) {
     if (!fs::exists(filename))
         Throw("\"%s\": file does not exist!", filename);
 
@@ -1282,39 +1284,27 @@ std::vector<std::pair<std::string, Properties>> xml_to_properties(const fs::path
     Log(Info, "Loading XML file \"%s\" with variant \"%s\"..", filename,
         variant);
 
-    // Make a backup copy of the FileResolver, which will be restored after
-    // parsing
-    ref<FileResolver> fs_backup = Thread::thread()->file_resolver();
-    ref<FileResolver> fs        = new FileResolver(*fs_backup);
-    fs->append(filename.parent_path());
-    Thread::thread()->set_file_resolver(fs.get());
+    Thread::thread()->file_resolver()->append(filename.parent_path());
 
-    try {
-        ParameterList param;
-        detail::XMLParseContext ctx(variant, false);
-        (void) detail::init_xml_parse_context_from_file(ctx, filename, param, false);
+    ParameterList param;
+    detail::XMLParseContext ctx(variant, false);
+    (void) detail::init_xml_parse_context_from_file(ctx, filename, param, false);
 
-        Thread::thread()->set_file_resolver(fs_backup.get());
+    Log(Info, "Done loading XML file \"%s\" (took %s).", filename,
+        util::time_string((float) timer.value(), true));
 
-        Log(Info, "Done loading XML file \"%s\" (took %s).", filename,
-            util::time_string((float) timer.value(), true));
-
-        // Copy all properties inside of a vector. The object hierarchy is handled
-        // using named reference properties.
-        std::vector<std::pair<std::string, Properties>> props;
-        for (auto &[id, object] : ctx.instances) {
-            if (!object.class_) {
-                Log(Warn, "Cannot find class for property with id \"%s\".", id);
-                continue;
-            }
-            props.emplace_back(object.class_->name(), std::move(object.props));
+    // Copy all properties inside of a vector. The object hierarchy is handled
+    // using named reference properties.
+    std::map<std::string, std::pair<std::string, Properties>> result;
+    for (auto &[id, object] : ctx.instances) {
+        if (!object.class_) {
+            Log(Warn, "Cannot find class for property with id \"%s\".", id);
+            continue;
         }
-
-        return props;
-    } catch (...) {
-        Thread::thread()->set_file_resolver(fs_backup.get());
-        throw;
+        result[object.props.id()] = { object.class_->name(), std::move(object.props) };
     }
+
+    return result;
 }
 
 NAMESPACE_END(detail)

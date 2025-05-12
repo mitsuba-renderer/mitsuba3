@@ -3,6 +3,7 @@
 #include <mitsuba/mitsuba.h>
 #include <mitsuba/core/properties.h>
 #include <string>
+#include <map>
 
 /// Max level of nested <include> directives
 #define MI_XML_INCLUDE_MAX_RECURSION 15
@@ -94,9 +95,8 @@ extern MI_EXPORT_LIB std::vector<ref<Object>> expand_node(
 
 /// Read a Mitsuba XML file and return a list of pairs containing the
 /// name of the plugin and the corresponding populated Properties object
-extern MI_EXPORT_LIB std::vector<std::pair<std::string, Properties>> xml_to_properties(
-                                        const fs::path &path,
-                                        const std::string &variant);
+extern MI_EXPORT_LIB std::map<std::string, std::pair<std::string, Properties>>
+xml_to_properties(const fs::path &path, const std::string &variant);
 
 NAMESPACE_END(detail)
 

@@ -14,14 +14,15 @@
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/vector.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/map.h>
 
 using Caster = nb::object(*)(mitsuba::Object *);
 extern Caster cast_object;
 
 struct DictInstance {
     Properties props;
+    const Class *class_ = nullptr;
     ref<Object> object = nullptr;
-    std::vector<std::pair<std::string, std::string>> dependencies;
 };
 
 struct DictParseContext {
@@ -147,14 +148,37 @@ Parameter ``parallel``:
 )doc");
 
     m.def(
+        "dict_to_props",
+        [](const nb::dict dict) {
+            DictParseContext ctx;
+            ctx.parallel = false;
+            ctx.env = ThreadEnvironment();
+
+            parse_dictionary<Float, Spectrum>(ctx, "__root__", dict);
+
+            std::map<std::string, std::pair<std::string, PropertiesV<Float>>> res;
+            for (auto &[id, instance] : ctx.instances) {
+                const Class* class_ = instance.class_;
+                while ((class_->name() == class_->alias()) && class_->parent())
+                    class_ = class_->parent();
+                res[id] = { class_->name(), PropertiesV<Float>(std::move(instance.props)) };
+            }
+
+            return res;
+        },
+        "dict"_a,
+        R"doc(Get the names and properties of the objects described in a Python dictionary)doc");
+
+    m.def(
         "xml_to_props",
         [](const std::string &path) {
             nb::gil_scoped_release release;
 
-            auto result = std::vector<std::pair<std::string, PropertiesV<Float>>>();
-            for (const auto& [k,v] : xml::detail::xml_to_properties(path, GET_VARIANT()))
-                result.emplace_back(k, PropertiesV<Float>(v));
+            auto props = xml::detail::xml_to_properties(path, GET_VARIANT());
 
+            auto result = std::map<std::string, std::pair<std::string, PropertiesV<Float>>>();
+            for (const auto& [k, v] : props)
+                result[k] = { v.first, PropertiesV<Float>(v.second) };
             return result;
         },
         "path"_a,
@@ -180,13 +204,15 @@ std::string get_type(const nb::dict &dict) {
 void expand_and_set_object(Properties &props, const std::string &name, const ref<Object> &obj) {
     std::vector<ref<Object>> children = obj->expand();
     if (children.empty()) {
-        props.set_object(name, obj);
+        props.set_object(name, obj, false);
     } else if (children.size() == 1) {
-        props.set_object(name, children[0]);
+        if (children[0].get())
+            props.set_object(name, children[0], false);
     } else {
         int ctr = 0;
         for (auto c : children)
-            props.set_object(name + "_" + std::to_string(ctr++), c);
+            if (c)
+                props.set_object(name + "_" + std::to_string(ctr++), c, false);
     }
 }
 
@@ -280,13 +306,13 @@ void parse_dictionary(DictParseContext &ctx,
         return;
     }
 
-    const Class *class_;
-    if (is_scene)
-        class_ = Class::for_name("Scene", GET_VARIANT());
-    else
-        class_ = PluginManager::instance()->get_plugin_class(type, GET_VARIANT())->parent();
-
-    bool within_emitter = (!is_scene && class_->alias() == "emitter");
+    bool within_emitter = false;
+    if (is_scene) {
+        inst.class_ = Class::for_name("Scene", GET_VARIANT());
+    } else {
+        inst.class_ = PluginManager::instance()->get_plugin_class(type, GET_VARIANT());
+        within_emitter = inst.class_->parent()->alias() == "emitter";
+    }
 
     Properties &props = inst.props;
     props.set_plugin_name(type);
@@ -381,15 +407,15 @@ void parse_dictionary(DictParseContext &ctx,
                             path2 = id2;
                         if (ctx.instances.count(path2) != 1)
                             Throw("Referenced id \"%s\" not found: %s", path2, path);
-                        inst.dependencies.push_back({key, path2});
+                        props.set_named_reference(key, path2);
                     } else if (key2 != "type") {
                         Throw("Unexpected key in ref dictionary: %s", key2);
                     }
                 }
             } else {
                 std::string path2 = is_root ? key : path + "." + key;
-                inst.dependencies.push_back({key, path2});
                 parse_dictionary<Float, Spectrum>(ctx, path2, dict2);
+                props.set_named_reference(key, path2);
             }
             continue;
         }
@@ -419,12 +445,7 @@ void parse_dictionary(DictParseContext &ctx,
         } catch (const nb::cast_error &) { }
 
         // Didn't match any of the other types above
-        Throw("Unsupported value type for parameter \"%s.%s\": %s! One of the "
-              "following types is expected: "
-              "bool, int, float, str, mitsuba.ScalarColor3f, "
-              "mitsuba.ScalarArray3f, mitsuba.ScalarTransform3f, "
-              "mitsuba.ScalarTransform4f, mitsuba.TensorXf, mitsuba.Object",
-              path, key, nb::str(value.type()).c_str());
+        Throw("Unsupported value type: %s!\n", nb::str(value.type()).c_str());
     }
 
     // Set object id based on path in dictionary if no id is provided
@@ -453,7 +474,7 @@ Task *instantiate_node(DictParseContext &ctx,
         return nullptr;
 
     std::vector<Task *> deps;
-    for (auto &[key2, path2] : inst.dependencies) {
+    for (auto &[key2, path2] : inst.props.named_references()) {
         if (task_map.find(path2) == task_map.end()) {
             Task *task = instantiate_node<Float, Spectrum>(ctx, path2, task_map);
             task_map.insert({path2, task});
@@ -483,15 +504,15 @@ Task *instantiate_node(DictParseContext &ctx,
         else
             class_ = PluginManager::instance()->get_plugin_class(type, GET_VARIANT())->parent();
 
-        for (auto &[key2, path2] : inst.dependencies) {
+        for (auto &[key2, path2] : props.named_references()) {
             if (ctx.instances.count(path2) == 1) {
                 ref<Object> obj2 = ctx.instances[path2].object;
                 if (obj2)
                     expand_and_set_object(props, key2, obj2);
                 else
-                    Throw("Dependence hasn't been instantiated yet: %s, %s -> %s", path, path2, key2);
+                    Throw("Dependence hasn't been instantiated yet: %s, %s -> %s", path, (std::string) path2, key2);
             } else {
-                Throw("Dependence path \"%s\" not found: %s", path2, path);
+                Throw("Dependence path \"%s\" not found: %s", (std::string) path2, path);
             }
         }
 

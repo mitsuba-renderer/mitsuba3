@@ -119,6 +119,8 @@ public:
         size_t vertex_count = props.get<int>("vert_count");
         size_t loop_tri_count = props.get<int>("loop_tri_count");
 
+        Log(Debug, "Loading Blender mesh %s.", m_name);
+
         // Before Blender 3.6, this points to an array of MLoop, after it is just an array of ints
         const int *loops = reinterpret_cast<const int *>(props.get<int64_t>("loops"));
         const blender::MLoop *loops_old = (const blender::MLoop *) loops;
@@ -242,6 +244,8 @@ public:
         // Hash Map to avoid adding duplicate vertices
         std::vector<VertexBinding> vertex_map(vertex_count);
 
+        size_t degenerated_normals = 0;
+        size_t degenerated_tex_coords = 0;
         size_t duplicates_ctr = 0;
         for (size_t tri_loop_id = 0; tri_loop_id < loop_tri_count; tri_loop_id++) {
             int face_id;
@@ -333,7 +337,7 @@ public:
                     fail("reference to invalid vertex %i!", vert_index);
 
                 Key vert_key;
-                if (smooth_face || m_face_normals) {
+                if (smooth_face && !m_face_normals) {
                     if (version <= Version(3, 0, 0)) {
                         // Blender 2.xx - 3.0
                         const short *no = verts_old_2[vert_index].no;
@@ -345,10 +349,12 @@ public:
                         normal = m_to_world.scalar().transform_affine(InputNormal3f(no[0], no[1], no[2]));
                     }
 
-                    if(unlikely(dr::all(normal == 0.f)))
-                        fail("invalid normals!");
-                    else
+                    if(unlikely(dr::all(normal == 0.f))) {
+                        degenerated_normals++;
+                        continue;
+                    } else {
                         normal = dr::normalize(normal);
+                    }
                     vert_key.smooth = true;
                 } else {
                     // vert_key.smooth = false (default), flat shading
@@ -370,6 +376,11 @@ public:
                         const float (*uvs)[2] = (const float (*)[2]) uv_ptr;
                         const InputVector2f uv(uvs[loop_index][0], 1.0f - uvs[loop_index][1]);
                         vert_key.uv = uv;
+                    }
+
+                    if (unlikely(dr::any(dr::abs(vert_key.uv) > 1e3f))) {
+                        vert_key.uv = InputVector2f(0.f);
+                        degenerated_tex_coords++;
                     }
                 }
 
@@ -410,17 +421,25 @@ public:
                     triangle[i] = vert_id;
                 }
             }
+
             tmp_triangles.push_back(triangle);
         }
+
+        if (degenerated_normals > 0)
+            Log(Warn, "Mesh %s has %zu invalid vertex normals! The corresponding triangles were removed.", m_name, degenerated_normals);
+
+        if (degenerated_tex_coords > 0)
+            Log(Warn, "Mesh %s has %zu invalid vertex coordinates! Replaced those values with 0.0.", m_name, degenerated_tex_coords);
+
         Log(Info, "%s: Removed %i duplicates", m_name, duplicates_ctr);
 
-        if (vertex_ctr == 0)
+        m_vertex_count = vertex_ctr;
+        if (m_vertex_count == 0)
             return;
 
         m_face_count = (ScalarSize) tmp_triangles.size();
         m_faces = dr::load<DynamicBuffer<UInt32>>(tmp_triangles.data(), m_face_count * 3);
 
-        m_vertex_count = vertex_ctr;
         m_vertex_positions = dr::load<FloatStorage>(tmp_vertices.data(), m_vertex_count * 3);
         if (!m_face_normals)
             m_vertex_normals = dr::load<FloatStorage>(tmp_normals.data(), m_vertex_count * 3);
@@ -434,6 +453,12 @@ public:
         }
 
         initialize();
+    }
+
+    std::vector<ref<Object>> expand() const override {
+        if (m_vertex_count == 0)
+            return { (Object *) nullptr };
+        return {};
     }
 
     MI_DECLARE_CLASS()

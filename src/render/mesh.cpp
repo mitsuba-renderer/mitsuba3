@@ -32,6 +32,9 @@ MI_VARIANT Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
     m_discontinuity_types = (uint32_t) DiscontinuityFlags::PerimeterType;
 
     m_shape_type = ShapeType::Mesh;
+
+    if (props.has_property("displacement"))
+        m_displacement_map = props.texture<Texture>("displacement");
 }
 
 MI_VARIANT
@@ -53,6 +56,8 @@ Mesh<Float, Spectrum>::Mesh(const std::string &name, ScalarSize vertex_count,
 
 MI_VARIANT
 void Mesh<Float, Spectrum>::initialize() {
+  apply_displacement_map();
+
 #if defined(MI_ENABLE_LLVM) && !defined(MI_ENABLE_EMBREE)
     m_vertex_positions_ptr = m_vertex_positions.data();
     m_faces_ptr = m_faces.data();
@@ -625,6 +630,28 @@ Mesh<Float, Spectrum>::build_indirect_silhouette_distribution() {
     dr::masked(weight, valid || boundary) = dr::detach(dr::norm(p1 - p0));
 
     m_sil_dedge_pmf = DiscreteDistribution<Float>(weight);
+}
+
+MI_VARIANT
+void Mesh<Float, Spectrum>::apply_displacement_map() {
+    if (!m_displacement_map)
+        return;
+
+    if (!has_vertex_texcoords())
+        Throw("Mesh::apply_displacement_map(): the mesh %s doesn't have vertex texture coordinates!", m_name);
+
+    if (!has_vertex_normals())
+        Throw("Mesh::apply_displacement_map(): displacement mapping is only supported on smooth objects!", m_name);
+
+    UInt32 idx = dr::arange<UInt32>(m_vertex_count);
+    SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+    si.uv = vertex_texcoord(idx);
+    Float disp = m_displacement_map->eval_1(si);
+
+    m_vertex_positions = dr::ravel(vertex_position(idx) + disp * vertex_normal(idx));
+
+    recompute_bbox();
+    recompute_vertex_normals();
 }
 
 MI_VARIANT
