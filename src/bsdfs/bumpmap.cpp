@@ -29,6 +29,11 @@ Bump map BSDF adapter (:monosp:`bumpmap`)
    - Bump map gradient multiplier. (Default: 1.0)
    - |exposed|
 
+ * - strength
+   - |float|
+   - Interpolation factor relative to original normal. (Default: 1.0)
+   - |exposed|
+
 Bump mapping is a simple technique for cheaply adding surface detail to a rendering. This is done
 by perturbing the shading coordinate frame based on a displacement height field provided as a
 texture. This method can lend objects a highly realistic and detailed appearance (e.g. wrinkled
@@ -107,6 +112,11 @@ public:
 
         m_scale = props.get<ScalarFloat>("scale", 1.f);
 
+        m_strength = props.get<ScalarFloat>("strength", 1.f);
+
+        if (m_strength < 0.f || m_strength > 1.f)
+            Throw("Strength must be between [0,1]!");
+
         // Add all nested components
         m_components.clear();
         for (size_t i = 0; i < m_nested_bsdf->component_count(); ++i)
@@ -118,6 +128,7 @@ public:
         callback->put_object("nested_bsdf",     m_nested_bsdf.get(),    ParamFlags::Differentiable | ParamFlags::Discontinuous);
         callback->put_object("nested_texture",  m_nested_texture.get(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
         callback->put_parameter("scale",        m_scale,                +ParamFlags::NonDifferentiable);
+        callback->put_parameter("strength",     m_scale,                +ParamFlags::NonDifferentiable);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -205,7 +216,7 @@ public:
 
         // Bump-mapped shading normal
         Frame3f result;
-        result.n = dr::normalize(dr::cross(dp_du, dp_dv));
+        result.n = dr::lerp(si.sh_frame.n, dr::normalize(dr::cross(dp_du, dp_dv)), m_strength);
 
         // Flip if not aligned with geometric normal
         result.n[dr::dot(si.n, result.n) < .0f] *= -1.f;
@@ -231,13 +242,14 @@ public:
             << "  nested_bsdf = " << string::indent(m_nested_bsdf) << std::endl
             << "  nested_texture = " << string::indent(m_nested_texture) << "," << std::endl
             << "  scale = " << string::indent(m_scale) << "," << std::endl
+            << "  strength = " << string::indent(m_strength) << "," << std::endl
             << "]";
         return oss.str();
     }
 
     MI_DECLARE_CLASS()
 protected:
-    ScalarFloat m_scale;
+    ScalarFloat m_scale, m_strength;
     ref<Texture> m_nested_texture;
     ref<Base> m_nested_bsdf;
 };
