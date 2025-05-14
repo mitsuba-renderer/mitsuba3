@@ -733,10 +733,7 @@ public:
                 local = to_object.transform_affine(si.p);
             }
         } else {
-            /* Mitigate roundoff error issues by a normal shift of the computed
-               intersection point */
             local = to_object.transform_affine(si.p);
-            si.p += si.n * (1.f - dr::norm(dr::head<2>(local)));
         }
 
         si.t = dr::select(active, si.t, dr::Infinity<Float>);
@@ -751,6 +748,12 @@ public:
         si.dp_du = to_world.transform_affine(dp_du);
         si.dp_dv = to_world.transform_affine(dp_dv);
         si.n = Normal3f(dr::normalize(dr::cross(si.dp_du, si.dp_dv)));
+
+        if constexpr (!IsDiff) {
+            /* Mitigate roundoff error issues by a normal shift of the computed
+               intersection point */
+            si.p += si.n * (1.f - dr::norm(dr::head<2>(local)));
+        }
 
         if (m_flip_normals)
             si.n = -si.n;
