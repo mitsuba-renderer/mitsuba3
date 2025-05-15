@@ -624,6 +624,8 @@ protected:
 
     /// Identifier (if available)
     std::string m_id;
+
+    MI_TRAVERSE_CB(Object);
 };
 
 // -----------------------------------------------------------------------

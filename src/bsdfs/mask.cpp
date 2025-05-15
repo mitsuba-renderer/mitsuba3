@@ -246,6 +246,8 @@ public:
 private:
     ref<Texture> m_opacity;
     ref<Base> m_nested_bsdf;
+
+    MI_TRAVERSE_CB(Base, m_opacity, m_nested_bsdf);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(MaskBSDF, BSDF)

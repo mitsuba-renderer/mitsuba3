@@ -61,6 +61,8 @@ public:
     std::string to_string() const override {
         NB_OVERRIDE(to_string);
     }
+
+    DR_TRAMPOLINE_TRAVERSE_CB(Mesh)
 };
 
 template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
@@ -319,6 +321,8 @@ MI_PY_EXPORT(Shape) {
         .def_method(Shape, effective_primitive_count)
         .def_method(Shape, precompute_silhouette, "viewpoint"_a);
 
+    drjit::bind_traverse(shape);
+
     bind_shape_generic<Shape *>(shape);
 
     if constexpr (dr::is_array_v<ShapePtr>) {
@@ -371,6 +375,8 @@ MI_PY_EXPORT(Shape) {
         auto mesh_ptr = dr::bind_array_t<MeshPtr>(b, m, "MeshPtr");
         bind_mesh_generic<MeshPtr>(mesh_ptr);
     }
+
+    drjit::bind_traverse(mesh_cls);
 
     MI_PY_REGISTER_OBJECT("register_mesh", Mesh)
 }
