@@ -315,12 +315,37 @@ protected:
     /// Create an integrator
     Integrator(const Properties & props);
 
+    /**
+     * \brief Traces a ray in the scene and returns the first intersection that
+     * is not an area emitter.
+     *
+     * This is a helper method for when the `hide_emitters` flag is set.
+     *
+     * \param scene
+     *    The scene that the ray will intersect.
+     *
+     * \param ray
+     *    The ray that determines the direction in which to trace new rays
+     *
+     * \param active
+     *    A mask that indicates which SIMD lanes are active. Typically, this
+     *    should be set to ``True`` for any lane where the current depth is 0
+     *    (for ``hide_emitters``).
+     *
+     * \return
+     *    The first intersection that is not an area emitter anlong the ``ray``.
+     */
+    SurfaceInteraction3f skip_area_emitters(const Scene *scene,
+                                            const Ray3f &ray,
+                                            Mask active) const;
+
 protected:
     /// Integrators should stop all work when this flag is set to true.
     bool m_stop;
 
     /**
-     * \brief Maximum amount of time to spend rendering (excluding scene parsing).
+     * \brief Maximum amount of time to spend rendering (excluding scene
+parsing).
      *
      * Specified in seconds. A negative values indicates no timeout.
      */
