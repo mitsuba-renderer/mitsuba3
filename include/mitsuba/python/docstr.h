@@ -541,8 +541,6 @@ static const char *__doc_mitsuba_AdjointIntegrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_AdjointIntegrator_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_AdjointIntegrator_AdjointIntegrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator_class_name = R"doc()doc";
@@ -804,8 +802,6 @@ static const char *__doc_mitsuba_BSDF_4 = R"doc()doc";
 static const char *__doc_mitsuba_BSDF_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDF_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFContext =
 R"doc(Context data structure for BSDF evaluation and sampling
@@ -1220,6 +1216,401 @@ static const char *__doc_mitsuba_BSDF_traverse_1_cb_rw = R"doc()doc";
 static const char *__doc_mitsuba_BSDF_type = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_variant_name = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_BaseSunskyEmitter = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_bbox =
+R"doc(This emitter does not occupy any particular region of space, return an
+invalid bounding box)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_bilinear_interp =
+R"doc(Interpolates the given tensor on turbidity then albedo
+
+Parameter ``dataset``:
+    The original dataset from file
+
+Parameter ``albedo``:
+    The albedo values for each channels
+
+Parameter ``turbidity``:
+    The turbidity value
+
+Returns:
+    The collapsed dataset interpolated linearly)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_compute_pdfs =
+R"doc(Computes the PDFs of the sky and sun for the given local direction
+
+Parameter ``local_dir``:
+    Local direction in the sky
+
+Parameter ``sun_angles``:
+    Azimuth and elevation angles of the sun
+
+Parameter ``hit_sun``:
+    Indicates if the sun's intersection should be tested
+
+Parameter ``active``:
+    Mask for the active lanes
+
+Returns:
+    The sky and sun PDFs)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_compute_sun_ld =
+R"doc(Computes the limb darkening of the sun for a given gamma.
+
+Only works for spectral mode since limb darkening is baked into the
+RGB model
+
+Template parameter ``Spec``:
+    Spectral type to render (adapts the number of channels)
+
+Parameter ``channel_idx_low``:
+    Indices of the lower wavelengths
+
+Parameter ``channel_idx_high``:
+    Indices of the upper wavelengths
+
+Parameter ``lerp_f``:
+    Linear interpolation factor for wavelength
+
+Parameter ``gamma``:
+    Angle between the sun's center and the viewing ray
+
+Parameter ``active``:
+    Indicates if the channel indices are valid and that the sun was
+    hit
+
+Returns:
+    The spectral values of limb darkening to apply to the sun's
+    radiance by multiplication)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_eval = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_eval_2 =
+R"doc(This method should be used when the decision of hitting the sun was
+already made. This avoids transforming coordinates to world space and
+making that decision a second time since numerical precision can cause
+discrepencies between the two decisions.
+
+Parameter ``local_wo``:
+    Shading direction in local space
+
+Parameter ``wavelengths``:
+    Wavelengths to evaluate
+
+Parameter ``sun_angles``:
+    Sun azimuth and elevation angles
+
+Parameter ``hit_sun``:
+    Indicates if the sun was hit
+
+Parameter ``active``:
+    Indicates active lanes
+
+Returns:
+    The radiance for the given conditions)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_eval_direction = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_eval_sky =
+R"doc(Evaluate the sky model for the given channel indices and angles
+
+Based on the Hosek-Wilkie skylight model https://cgg.mff.cuni.cz/proje
+cts/SkylightModelling/HosekWilkie_SkylightModel_SIGGRAPH2012_Preprint_
+lowres.pdf
+
+Template parameter ``Spec``:
+    Spectral type to render (adapts the number of channels)
+
+Parameter ``cos_theta``:
+    Cosine of the angle between the z-axis (up) and the viewing
+    direction
+
+Parameter ``gamma``:
+    Angle between the sun and the viewing direction
+
+Parameter ``sky_params``:
+    Sky parameters for the model
+
+Parameter ``sky_radiance``:
+    Sky radiance for the model
+
+Returns:
+    Indirect sun illumination)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_eval_sun =
+R"doc(Evaluates the sun model for the given channel indices and angles
+
+The template parameter is used to render the full 11 wavelengths at
+once in pre-computations
+
+Based on the Hosek-Wilkie sun model
+https://cgg.mff.cuni.cz/publications/adding-a-solar-radiance-function-
+to-the-hosek-wilkie-skylight-model/
+
+Template parameter ``Spec``:
+    Spectral type to render (adapts the number of channels)
+
+Parameter ``channel_idx``:
+    Indices of the channels to render
+
+Parameter ``cos_theta``:
+    Cosine of the angle between the z-axis (up) and the viewing
+    direction
+
+Parameter ``gamma``:
+    Angle between the sun and the viewing direction
+
+Parameter ``active``:
+    Mask for the active lanes and channel indices
+
+Returns:
+    Direct sun illumination)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_extract_albedo =
+R"doc(Extract the albedo values for the required wavelengths/channels
+
+Parameter ``albedo_tex``:
+    Texture to extract the albedo from
+
+Returns:
+    The buffer with the extracted albedo values for the needed
+    wavelengths/channels)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_gaussian_cdf =
+R"doc(Computes the gaussian cdf for the given parameters
+
+Parameter ``mu``:
+    Gaussian average
+
+Parameter ``sigma``:
+    Gaussian standard deviation
+
+Parameter ``x``:
+    Point to evaluate the CDF at
+
+Returns:
+    The cdf value of the given point)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_get_area_ratio =
+R"doc(Scaling factor to keep sun irradiance constant across aperture angles
+
+Parameter ``custom_half_aperture``:
+    Half aperture angle used
+
+Returns:
+    The appropriate scaling factor)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_get_sky_datasets =
+R"doc(Getter sky radiance datasets for the given wavelengths and sun angles
+
+Parameter ``sun_angles``:
+    Sun angles in local (emitter) space
+
+Parameter ``channel_idx``:
+    Indices of the queried channels
+
+Parameter ``active``:
+    Indicates which channels are valid indices
+
+Returns:
+    The sky mean radiance dataset and the sky parameters for the
+    Wilkie-Hosek 2012 sky model)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_get_sky_sampling_weight =
+R"doc(Getter fot the probability of sampling the sky for a given sun
+position
+
+Parameter ``sun_angles``:
+    The sun azimuth and elevation angles
+
+Parameter ``active``:
+    Indicates active lanes
+
+Returns:
+    The probability of sampling the sky over the sun)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_get_sun_angles =
+R"doc(Getter for the sun angles at the given time
+
+Parameter ``time``:
+    Time value in [0, 1]
+
+Returns:
+    The sun azimuth and elevation angle)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_get_tgmm_data =
+R"doc(Getter for the 4 interpolation points on turbidity and elevation of
+the Truncated Gaussian Mixtures
+
+Parameter ``sun_angles``:
+    Azimuth and elevation angles of the sun
+
+Returns:
+    The 4 interpolation weights and the 4 indices corresponding to the
+    start of the TGMMs in memory)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_hit_sun = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_hit_sun_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_load_field =
+R"doc(Loads a tensor from the given tensor file
+
+Template parameter ``FileTensor``:
+    Tensor and type stored in the file
+
+Parameter ``tensor_file``:
+    File wrapper
+
+Parameter ``tensor_name``:
+    Name of the tensor to extract
+
+Returns:
+    The queried tensor)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_m_albedo = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_m_albedo_tex = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_m_bsphere = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_m_sky_params_dataset = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_m_sky_rad_dataset = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_m_sky_scale = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_m_sun_half_aperture = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_m_sun_ld = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_m_sun_rad_dataset = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_m_sun_radiance = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_m_sun_scale = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_m_tgmm_tables = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_m_turbidity = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_parameters_changed = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_pdf_direction = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_sample_direction = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_sample_position = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_sample_ray = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_sample_reuse_tgmm =
+R"doc(Samples a gaussian from the Truncated Gaussian mixture
+
+Parameter ``sample``:
+    Sample in [0, 1]
+
+Parameter ``sun_angles``:
+    Sun azimuth and elevation angles
+
+Parameter ``active``:
+    Indicates active lanes
+
+Returns:
+    The index of the chosen gaussian and the sample to be reused)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_sample_sky =
+R"doc(Samples the sky from the truncated gaussian mixture with the given
+sample.
+
+Based on the Truncated Gaussian Mixture Model (TGMM) for sky dome by
+N. Vitsas and K. Vardis
+https://diglib.eg.org/items/b3f1efca-1d13-44d0-ad60-741c4abe3d21
+
+Parameter ``sample``:
+    Sample uniformly distributed in [0, 1]^2
+
+Parameter ``sun_angles``:
+    Azimuth and elevation angles of the sun
+
+Parameter ``active``:
+    Mask for the active lanes
+
+Returns:
+    The sampled direction in the sky)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_sample_sun =
+R"doc(Samples the sun from a uniform cone with the given sample
+
+Parameter ``sample``:
+    Sample to generate the sun ray
+
+Parameter ``sun_angles``:
+    Azimuth and elevation angles of the sun
+
+Returns:
+    The sampled sun direction)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_sample_wavelengths = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_sample_wlgth =
+R"doc(Samples wavelengths and evaluates the associated weights
+
+Parameter ``sample``:
+    Floating point value in [0, 1] to sample the wavelengths
+
+Parameter ``active``:
+    Indicates active lanes
+
+Returns:
+    The chosen wavelengths and their inverse pdf)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_set_scene = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_sun_coordinates =
+R"doc(Compute the elevation and azimuth of the sun as seen by an observer at
+``location`` at the date and time specified in ``dateTime``.
+
+Returns:
+    The pair containing the polar angle and the azimuth
+
+Based on "Computing the Solar Vector" by Manuel Blanco-Muriel, Diego
+C. Alarcon-Padilla, Teodoro Lopez-Moratalla, and Martin Lara-Coira, in
+"Solar energy", vol 27, number 5, 2001 by Pergamon Press.)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_sun_cos_psi =
+R"doc(Computes the cosine of the angle made between the sun's radius and the
+viewing direction
+
+Parameter ``gamma``:
+    Angle between the sun's center and the viewing direction
+
+Returns:
+    The cosine of the angle between the sun's radius and the viewing
+    direction)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_tgmm_pdf =
+R"doc(Computes the PDF from the TGMM for the given viewing angles
+
+Parameter ``angles``:
+    Angles of the view direction in local coordinates (phi, theta)
+
+Parameter ``sun_angles``:
+    Azimuth and elevation angles of the sun
+
+Parameter ``active``:
+    Mask for the active lanes and valid rays
+
+Returns:
+    The PDF of the sky for the given angles with no sin(theta) factor)doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_to_string = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_traverse = R"doc()doc";
 
 static const char *__doc_mitsuba_Bitmap =
 R"doc(General-purpose bitmap class with read and write support for several
@@ -2074,29 +2465,51 @@ static const char *__doc_mitsuba_ContinuousDistribution_traverse_1_cb_rw = R"doc
 
 static const char *__doc_mitsuba_ContinuousDistribution_update = R"doc(Update the internal state. Must be invoked when changing the pdf.)doc";
 
-static const char *__doc_mitsuba_Dataset = R"doc()doc";
-
-static const char *__doc_mitsuba_Dataset_SkyParams = R"doc()doc";
-
-static const char *__doc_mitsuba_Dataset_SkyRadiance = R"doc()doc";
-
-static const char *__doc_mitsuba_Dataset_SunLimbDarkening = R"doc()doc";
-
-static const char *__doc_mitsuba_Dataset_SunRadiance = R"doc()doc";
-
-static const char *__doc_mitsuba_Dataset_TGMMTables = R"doc()doc";
-
 static const char *__doc_mitsuba_DateTimeRecord = R"doc()doc";
+
+static const char *__doc_mitsuba_DateTimeRecord_DateTimeRecord = R"doc()doc";
+
+static const char *__doc_mitsuba_DateTimeRecord_DateTimeRecord_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_DateTimeRecord_DateTimeRecord_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_DateTimeRecord_DateTimeRecord_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_DateTimeRecord_day = R"doc()doc";
 
+static const char *__doc_mitsuba_DateTimeRecord_fields = R"doc()doc";
+
+static const char *__doc_mitsuba_DateTimeRecord_fields_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_DateTimeRecord_get_days_between = R"doc()doc";
+
 static const char *__doc_mitsuba_DateTimeRecord_hour = R"doc()doc";
+
+static const char *__doc_mitsuba_DateTimeRecord_labels = R"doc()doc";
 
 static const char *__doc_mitsuba_DateTimeRecord_minute = R"doc()doc";
 
 static const char *__doc_mitsuba_DateTimeRecord_month = R"doc()doc";
 
+static const char *__doc_mitsuba_DateTimeRecord_name = R"doc()doc";
+
+static const char *__doc_mitsuba_DateTimeRecord_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_DateTimeRecord_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_DateTimeRecord_operator_assign_3 = R"doc()doc";
+
 static const char *__doc_mitsuba_DateTimeRecord_second = R"doc()doc";
+
+static const char *__doc_mitsuba_DateTimeRecord_to_elapsed_julian_date =
+R"doc(Calculate difference in days between the current Julian Day and JD
+2451545.0, which is noon 1 January 2000 Universal Time
+
+Parameter ``timezone``:
+    (Float) Timezone to use for conversion
+
+Returns:
+    The elapsed time in julian days since New Year of 2000.)doc";
 
 static const char *__doc_mitsuba_DateTimeRecord_to_string = R"doc()doc";
 
@@ -2539,8 +2952,6 @@ static const char *__doc_mitsuba_Emitter_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_Emitter_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_EmitterFlags =
 R"doc(This list of flags is used to classify the different types of
 emitters.)doc";
@@ -2645,8 +3056,6 @@ static const char *__doc_mitsuba_Endpoint_4 = R"doc()doc";
 static const char *__doc_mitsuba_Endpoint_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Endpoint_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_Endpoint = R"doc()doc";
 
@@ -3053,8 +3462,6 @@ static const char *__doc_mitsuba_Film_4 = R"doc()doc";
 static const char *__doc_mitsuba_Film_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Film_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_FilmFlags = R"doc(This list of flags is used to classify the different types of films.)doc";
 
@@ -3532,8 +3939,6 @@ static const char *__doc_mitsuba_ImageBlock_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_ImageBlock_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_ImageBlock_ImageBlock =
 R"doc(Construct a zero-initialized image block with the desired shape and
 channel count
@@ -3794,8 +4199,6 @@ static const char *__doc_mitsuba_Integrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_Integrator_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_Integrator_Integrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_Integrator_aov_names =
@@ -4010,6 +4413,27 @@ enforced accurately.
 Note that accurate timeouts rely on m_render_timer, which needs to be
 reset at the beginning of the rendering phase.)doc";
 
+static const char *__doc_mitsuba_Integrator_skip_area_emitters =
+R"doc(Traces a ray in the scene and returns the first intersection that is
+not an area emitter.
+
+This is a helper method for when the `hide_emitters` flag is set.
+
+Parameter ``scene``:
+    The scene that the ray will intersect.
+
+Parameter ``ray``:
+    The ray that determines the direction in which to trace new rays
+
+Parameter ``active``:
+    A mask that indicates which SIMD lanes are active. Typically, this
+    should be set to ``True`` for any lane where the current depth is
+    0 (for ``hide_emitters``).
+
+Returns:
+    The first intersection that is not an area emitter anlong the
+    ``ray``.)doc";
+
 static const char *__doc_mitsuba_Integrator_traverse_1_cb_ro = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_traverse_1_cb_rw = R"doc()doc";
@@ -4204,8 +4628,9 @@ of the derived class.
 
 The derived class must provide: - `static constexpr const char
 *Variant`: variant name string - `static constexpr ObjectType Type`:
-object type enumeration value - `using UInt32 = ...`: type that
-indicates whether this is a JIT variant
+object type enumeration value - `static constexpr const char *Domain`:
+string that represents the plugin category - `using UInt32 = ...`:
+type that indicates whether this is a JIT variant
 
 The `MI_DECLARE_PLUGIN_BASE_CLASS()` macro ensures that these
 attributes are present.)doc";
@@ -4243,9 +4668,31 @@ static const char *__doc_mitsuba_Jit_static_shutdown = R"doc(Release all memory 
 
 static const char *__doc_mitsuba_LocationRecord = R"doc()doc";
 
+static const char *__doc_mitsuba_LocationRecord_LocationRecord = R"doc()doc";
+
+static const char *__doc_mitsuba_LocationRecord_LocationRecord_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_LocationRecord_LocationRecord_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_LocationRecord_LocationRecord_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_LocationRecord_fields = R"doc()doc";
+
+static const char *__doc_mitsuba_LocationRecord_fields_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_LocationRecord_labels = R"doc()doc";
+
 static const char *__doc_mitsuba_LocationRecord_latitude = R"doc()doc";
 
 static const char *__doc_mitsuba_LocationRecord_longitude = R"doc()doc";
+
+static const char *__doc_mitsuba_LocationRecord_name = R"doc()doc";
+
+static const char *__doc_mitsuba_LocationRecord_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_LocationRecord_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_LocationRecord_operator_assign_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_LocationRecord_timezone = R"doc()doc";
 
@@ -4474,8 +4921,6 @@ static const char *__doc_mitsuba_Medium_4 = R"doc()doc";
 static const char *__doc_mitsuba_Medium_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Medium_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumInteraction = R"doc(Stores information related to a medium scattering interaction)doc";
 
@@ -4759,8 +5204,6 @@ static const char *__doc_mitsuba_Mesh_4 = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_Mesh =
 R"doc(Creates a zero-initialized mesh with the given vertex and face counts
@@ -5296,8 +5739,6 @@ static const char *__doc_mitsuba_MonteCarloIntegrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_MonteCarloIntegrator_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_MonteCarloIntegrator_MonteCarloIntegrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_class_name = R"doc()doc";
@@ -5476,8 +5917,6 @@ static const char *__doc_mitsuba_OptixDenoiser_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_OptixDenoiser_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_OptixDenoiser_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_OptixDenoiser_OptixDenoiser =
 R"doc(Constructs an OptiX denoiser
 
@@ -5654,8 +6093,6 @@ static const char *__doc_mitsuba_PCG32Sampler_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_PCG32Sampler_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_PCG32Sampler_PCG32Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_PCG32Sampler_2 = R"doc(Copy state to a new PCG32Sampler object)doc";
@@ -5706,8 +6143,6 @@ static const char *__doc_mitsuba_PhaseFunction_4 = R"doc()doc";
 static const char *__doc_mitsuba_PhaseFunction_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunction_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_PhaseFunction_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunctionContext = R"doc()doc";
 
@@ -6195,8 +6630,6 @@ static const char *__doc_mitsuba_ProjectiveCamera_4 = R"doc()doc";
 static const char *__doc_mitsuba_ProjectiveCamera_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_ProjectiveCamera_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_ProjectiveCamera = R"doc()doc";
 
@@ -6995,8 +7428,6 @@ static const char *__doc_mitsuba_ReconstructionFilter_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_ReconstructionFilter_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_ReconstructionFilter_ReconstructionFilter = R"doc(Create a new reconstruction filter)doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_border_size = R"doc(Return the block border size required when rendering with this filter)doc";
@@ -7210,8 +7641,6 @@ static const char *__doc_mitsuba_Sampler_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_Sampler_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_Sampler_Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_Sampler_2 = R"doc(Copy state to a new sampler object)doc";
@@ -7315,8 +7744,6 @@ static const char *__doc_mitsuba_SamplingIntegrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_SamplingIntegrator_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_SamplingIntegrator_SamplingIntegrator = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_class_name = R"doc()doc";
@@ -7413,8 +7840,6 @@ static const char *__doc_mitsuba_Scene_4 = R"doc()doc";
 static const char *__doc_mitsuba_Scene_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Scene_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_Scene = R"doc(Instantiate a scene from a Properties object)doc";
 
@@ -8149,8 +8574,6 @@ static const char *__doc_mitsuba_Sensor_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_Sensor_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_Sensor_Sensor = R"doc(This is both a class and the base of various Mitsuba plugins)doc";
 
 static const char *__doc_mitsuba_Sensor_class_name = R"doc()doc";
@@ -8280,8 +8703,6 @@ static const char *__doc_mitsuba_Shape_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_7 = R"doc()doc";
 
-static const char *__doc_mitsuba_Shape_8 = R"doc()doc";
-
 static const char *__doc_mitsuba_ShapeGroup = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_2 = R"doc()doc";
@@ -8293,8 +8714,6 @@ static const char *__doc_mitsuba_ShapeGroup_4 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeGroup_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_ShapeGroup_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_ShapeGroup = R"doc()doc";
 
@@ -8369,8 +8788,6 @@ static const char *__doc_mitsuba_ShapeKDTree_4 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeKDTree_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_ShapeKDTree_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_ShapeKDTree =
 R"doc(Create an empty kd-tree and take build-related parameters from
@@ -9963,8 +10380,6 @@ static const char *__doc_mitsuba_TShapeKDTree_BuildContext_bad_refines = R"doc()
 
 static const char *__doc_mitsuba_TShapeKDTree_BuildContext_derived = R"doc()doc";
 
-static const char *__doc_mitsuba_TShapeKDTree_BuildContext_env = R"doc()doc";
-
 static const char *__doc_mitsuba_TShapeKDTree_BuildContext_exp_leaves_visited = R"doc()doc";
 
 static const char *__doc_mitsuba_TShapeKDTree_BuildContext_exp_primitives_queried = R"doc()doc";
@@ -10376,8 +10791,6 @@ static const char *__doc_mitsuba_Texture_4 = R"doc()doc";
 static const char *__doc_mitsuba_Texture_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_D65 = R"doc(Convenience function returning the standard D65 illuminant)doc";
 
@@ -10811,8 +11224,6 @@ static const char *__doc_mitsuba_Volume_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Volume_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_Volume_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_VolumeGrid =
 R"doc(Class to read and write 3D volume grids
 
@@ -10829,8 +11240,6 @@ static const char *__doc_mitsuba_VolumeGrid_4 = R"doc()doc";
 static const char *__doc_mitsuba_VolumeGrid_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_VolumeGrid_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_VolumeGrid =
 R"doc(Load a VolumeGrid from a given filename
@@ -11066,27 +11475,6 @@ static const char *__doc_mitsuba_any_cast_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_begin = R"doc()doc";
 
-static const char *__doc_mitsuba_bezier_interpolate =
-R"doc(Interpolates the dataset along a quintic bezier curve
-
-Parameter ``dataset``:
-    Dataset to interpolate using a degree 5 bezier curve
-
-Parameter ``out_size``:
-    Size of the data to interpolate
-
-Parameter ``offset``:
-    Offset to apply to the indices
-
-Parameter ``x``:
-    Interpolation factor
-
-Parameter ``active``:
-    Indicates if the offsets are valid
-
-Returns:
-    Interpolated data)doc";
-
 static const char *__doc_mitsuba_bsdf =
 R"doc(Returns the BSDF of the intersected shape.
 
@@ -11104,27 +11492,6 @@ Two different GAS will be created for the meshes and the custom
 shapes. Optix handles to those GAS will be stored in an
 OptixAccelData.)doc";
 
-static const char *__doc_mitsuba_build_tgmm_distribution =
-R"doc(Extracts the Gaussian Mixture Model parameters from the TGMM dataset
-The 4 * (5 gaussians) cannot be interpolated directly, so we need to
-combine them and adjust the weights based on the elevation and
-turbidity linear interpolation parameters.
-
-Template parameter ``dataset_size``:
-    Size of the TGMM dataset
-
-Parameter ``tgmm_tables``:
-    Dataset for the Gaussian Mixture Models
-
-Parameter ``turbidity``:
-    Turbidity used for the skylight model
-
-Parameter ``eta``:
-    Elevation of the sun
-
-Returns:
-    The new distribution parameters and the mixture weights)doc";
-
 static const char *__doc_mitsuba_cie1931_xyz =
 R"doc(Evaluate the CIE 1931 XYZ color matching functions given a wavelength
 in nanometers)doc";
@@ -11137,8 +11504,6 @@ static const char *__doc_mitsuba_cie_d65 =
 R"doc(Evaluate the CIE D65 illuminant spectrum given a wavelength in
 nanometers, normalized to ensures that it integrates to a luminance of
 1.0.)doc";
-
-static const char *__doc_mitsuba_class = R"doc()doc";
 
 static const char *__doc_mitsuba_color_management_static_initialization = R"doc(Allocate arrays for the color space tables)doc";
 
@@ -11392,8 +11757,6 @@ static const char *__doc_mitsuba_detail_variant_4 = R"doc()doc";
 static const char *__doc_mitsuba_detail_variant_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_variant_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_detail_variant_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_dir_to_sph =
 R"doc(Converts a unit vector to its spherical coordinates parameterization
@@ -11718,39 +12081,11 @@ of travel. In the real-valued case, this also happens to be equal to
 the scale factor that must be applied to the X and Y component of the
 refracted direction.)doc";
 
-static const char *__doc_mitsuba_gaussian_cdf =
-R"doc(Computes the Gaussian CDF for the given mean and standard deviation
-
-Template parameter ``Value``:
-    Type to compute on
-
-Parameter ``mu``:
-    Mean of the gaussian
-
-Parameter ``sigma``:
-    Standard deviation of the gaussian
-
-Parameter ``x``:
-    Point to evaluate
-
-Returns:
-    The Gaussian cumulative distribution function at x)doc";
-
 static const char *__doc_mitsuba_get =
 R"doc(Retrieve a scalar parameter by index
 
 This is the primary implementation. All type conversions and error
 checking is done here. The name-based get() is a thin wrapper.)doc";
-
-static const char *__doc_mitsuba_get_area_ratio =
-R"doc(Provides the ratio of the sun's original area to that of a custom
-aperture angle
-
-Parameter ``custom_half_aperture``:
-    Angle of the sun's half aperture
-
-Returns:
-    The ratio of the sun's area to the custom aperture's area)doc";
 
 static const char *__doc_mitsuba_get_volume =
 R"doc(Retrieve a volume parameter
@@ -12760,18 +13095,6 @@ Parameter ``add_section_headers``:
 Returns:
     XML representation of the scene)doc";
 
-static const char *__doc_mitsuba_path_to_dataset =
-R"doc(Extracts the relative path to the given dataset
-
-Template parameter ``IsRGB``:
-    Indicates if the dataset is RGB or spectral
-
-Parameter ``dataset``:
-    Dataset to retrieve the path for
-
-Returns:
-    The path to the dataset)doc";
-
 static const char *__doc_mitsuba_pdf_rgb_spectrum =
 R"doc(PDF for the sample_rgb_spectrum strategy. It is valid to call this
 function for a single wavelength (Float), a set of wavelengths
@@ -13124,27 +13447,6 @@ Returns:
     normals)doc";
 
 static const char *__doc_mitsuba_sggx_sample_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_sky_radiance_params =
-R"doc(Pre-computes the sky dataset using turbidity, albedo and sun elevation
-
-Template parameter ``dataset_size``:
-    Size of the dataset
-
-Parameter ``dataset``:
-    Dataset to interpolate
-
-Parameter ``albedo``:
-    Albedo values corresponding to each channel
-
-Parameter ``turbidity``:
-    Turbidity used for the skylight model
-
-Parameter ``eta``:
-    Sun elevation angle
-
-Returns:
-    The interpolated dataset)doc";
 
 static const char *__doc_mitsuba_sobol_2 = R"doc(Sobol' radical inverse in base 2)doc";
 
@@ -13733,62 +14035,6 @@ R"doc(Chop up the string given a set of delimiters (warning: not unicode
 compliant))doc";
 
 static const char *__doc_mitsuba_string_trim = R"doc(Remove leading and trailing characters)doc";
-
-static const char *__doc_mitsuba_sun_coordinates =
-R"doc(Compute the elevation and azimuth of the sun as seen by an observer at
-``location`` at the date and time specified in ``dateTime``.
-
-Based on "Computing the Solar Vector" by Manuel Blanco-Muriel, Diego
-C. Alarcon-Padilla, Teodoro Lopez-Moratalla, and Martin Lara-Coira, in
-"Solar energy", vol 27, number 5, 2001 by Pergamon Press.)doc";
-
-static const char *__doc_mitsuba_sun_cos_psi =
-R"doc(Computes the cosine of the angle made between the sun's radius and the
-viewing direction
-
-Template parameter ``Value``:
-    Type to compute on
-
-Parameter ``gamma``:
-    Angle between the sun's center and the viewing direction
-
-Parameter ``sun_half_aperture``:
-    Half aperture angle of the sun
-
-Returns:
-    The cosine of the angle between the sun's radius and the viewing
-    direction)doc";
-
-static const char *__doc_mitsuba_sun_params =
-R"doc(Collects and linearly interpolates the sun radiance dataset along
-turbidity
-
-Template parameter ``dataset_size``:
-    Size of the dataset
-
-Parameter ``sun_radiance_dataset``:
-    Dataset to interpolate
-
-Parameter ``turbidity``:
-    Turbidity used for the skylight model
-
-Returns:
-    The interpolated dataset)doc";
-
-static const char *__doc_mitsuba_sunsky_array_from_file =
-R"doc(Extracts an array from a compatible file
-
-Template parameter ``FileType``:
-    Type of the data stored in the file
-
-Template parameter ``OutType``:
-    The type of the data to return
-
-Parameter ``path``:
-    Path of the data file
-
-Returns:
-    The extracted array)doc";
 
 static const char *__doc_mitsuba_tuple_hasher = R"doc()doc";
 

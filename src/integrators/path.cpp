@@ -177,7 +177,6 @@ public:
             SurfaceInteraction3f si =
                 ls.pi.compute_surface_interaction(ls.ray, +RayFlags::All);
 
-
             // ---------------------- Hide area emitters ----------------------
 
             /* dr::any_or() checks for active entries in the provided boolean
