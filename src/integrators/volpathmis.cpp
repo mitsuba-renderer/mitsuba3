@@ -352,7 +352,6 @@ public:
                 }
             }
 
-
             // --------------------- Surface Interactions ---------------------
             active_surface |= escaped_medium;
             Mask intersect = active_surface && needs_intersection;
@@ -361,11 +360,29 @@ public:
 
 
             if (dr::any_or<true>(active_surface)) {
+                // ---------------------- Hide area emitters ----------------------
+                if (m_hide_emitters && dr::any_or<true>(ls.depth == 0u)) {
+                    // Are we on the first segment and did we hit an area emitter?
+                    // If so, skip all area emitters along this ray
+                    Mask skip_emitters = si.is_valid() &&
+                                         (si.shape->emitter() != nullptr) &&
+                                         (ls.depth == 0) &&
+                                         active_surface;
+
+                    if (dr::any_or<true>(skip_emitters)) {
+                        Ray3f ray = si.spawn_ray(ls.ray.d);
+                        SurfaceInteraction3f next_si =
+                            Base::skip_area_emitters(scene, ray, skip_emitters);
+                        dr::masked(si, skip_emitters) = next_si;
+                    }
+                }
+
                 // ---------------- Intersection with emitters ----------------
                 Mask ray_from_camera = active_surface && (depth == 0u);
                 Mask count_direct = ray_from_camera || specular_chain;
                 EmitterPtr emitter = si.emitter(scene);
-                Mask active_e = active_surface && (emitter != nullptr) && !((depth == 0u) && m_hide_emitters);
+                Mask active_e = active_surface && (emitter != nullptr) &&
+                                !((depth == 0u) && m_hide_emitters);
                 if (dr::any_or<true>(active_e)) {
                     if (dr::any_or<true>(active_e && !count_direct)) {
                         // Get the PDF of sampling this emitter using next event estimation

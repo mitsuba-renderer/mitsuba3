@@ -613,8 +613,8 @@ def cornell_box():
         },
         # -------------------- Light --------------------
         'light': {
-            'type': 'rectangle',
-            'to_world': T().translate([0.0, 0.99, 0.01]).rotate([1, 0, 0], 90).scale([0.23, 0.19, 0.19]),
+            'type': 'sphere',
+            'to_world': T().translate([0.0, 0.59, 0.01]).rotate([1, 0, 0], 90).scale(0.1),
             'bsdf': {
                 'type': 'ref',
                 'id': 'white'

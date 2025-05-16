@@ -28,6 +28,10 @@ class PRBIntegrator(RBIntegrator):
          1, then path generation many randomly cease after encountering directly
          visible surfaces. (Default: 5)
 
+     * - hide_emitters
+       - |bool|
+       - Hide directly visible emitters. (Default: no, i.e. |false|)
+
     This plugin implements a basic Path Replay Backpropagation (PRB) integrator
     with the following properties:
 
@@ -113,6 +117,22 @@ class PRBIntegrator(RBIntegrator):
 
             # Get the BSDF, potentially computes texture-space differentials
             bsdf = si.bsdf(ray)
+
+            # ---------------------- Hide area emitters ----------------------
+
+            if dr.hint(self.hide_emitters, mode='scalar'):
+                # Are we on the first segment and did we hit an area emitter?
+                # If so, skip all area emitters along this ray
+                skip_emitters = (
+                    si.is_valid() &
+                    (si.shape.emitter() != None) &
+                    (depth == 0) &
+                    active
+                )
+
+                ray_skip = si.spawn_ray(ray.d)
+                next_si = self.skip_area_emitters(scene, ray_skip, skip_emitters)
+                si[skip_emitters] = next_si
 
             # ---------------------- Direct emission ----------------------
 
