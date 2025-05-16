@@ -21,6 +21,10 @@ class BasicPRBIntegrator(RBIntegrator):
          visible light sources. 2 will lead to single-bounce (direct-only)
          illumination, and so on. (Default: 6)
 
+     * - hide_emitters
+       - |bool|
+       - Hide directly visible emitters. (Default: no, i.e. |false|)
+
     Basic Path Replay Backpropagation-style integrator *without* next event
     estimation, multiple importance sampling, Russian Roulette, and
     projective sampling. The lack of all of these features means that gradients
@@ -105,6 +109,23 @@ class BasicPRBIntegrator(RBIntegrator):
                     wi_global = dr.normalize(si_prev.p - si_detach.p)
                     si_wi_diff = si_detach.to_local(wi_global)
                     si.wi = dr.replace_grad(si.wi, si_wi_diff)
+
+            # ---------------------- Direct emission ----------------------
+
+            # ---------------------- Hide area emitters ----------------------
+
+            if dr.hint(self.hide_emitters, mode='scalar'):
+                # Are we on the first segment and did we hit an area emitter?
+                # If so, skip all area emitters along this ray
+                skip_emitters = (
+                    si.is_valid() &
+                    (si.shape.emitter() != None) &
+                    (depth == 0) & active
+                )
+
+                ray_skip = si.spawn_ray(ray.d)
+                next_si = self.skip_area_emitters(scene, ray_skip, skip_emitters)
+                si[skip_emitters] = next_si
 
             # ---------------------- Direct emission ----------------------
 
