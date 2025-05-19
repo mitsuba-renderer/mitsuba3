@@ -43,7 +43,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
         PreliminaryIntersection3f pi = scene->ray_intersect_preliminary(
-            ray, /* coherent = */ true, active);
+            ray, /* coherent = */ true, false, 0, 0, active);
 
         return {
             dr::select(pi.is_valid(), pi.t, 0.f),
