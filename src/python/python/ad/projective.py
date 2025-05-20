@@ -32,6 +32,12 @@ class ProjectiveDetail():
         Precompute the silhouette of the scene as seen from the sensor and store
         the result in this python class.
         """
+
+        if dr.flag(dr.JitFlag.FreezingScope):
+            raise RuntimeError(
+                "Projective Integrators are not yet supported inside of frozen functions."
+            )
+
         self.primary_indices = []
         self.primary_distributions = []
 
