@@ -127,6 +127,7 @@ public:
         */
         struct LoopState {
             Ray3f ray;
+            SurfaceInteraction3f si;
             Spectrum throughput;
             Spectrum result;
             Float eta;
@@ -138,11 +139,12 @@ public:
             Bool active;
             Sampler* sampler;
 
-            DRJIT_STRUCT(LoopState, ray, throughput, result, eta, depth, \
+            DRJIT_STRUCT(LoopState, ray, si, throughput, result, eta, depth, \
                 valid_ray, prev_si, prev_bsdf_pdf, prev_bsdf_delta,
                 active, sampler)
         } ls = {
             ray,
+            dr::zeros<SurfaceInteraction3f>(),
             throughput,
             result,
             eta,
@@ -155,6 +157,8 @@ public:
             sampler
         };
 
+        ls.si = scene->ray_intersect(Ray3f(ray_), /* ray_flags = */ +RayFlags::All, true);
+
         dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),
             [](const LoopState& ls) { return ls.active; },
             [this, scene, bsdf_ctx](LoopState& ls) {
@@ -162,10 +166,8 @@ public:
             /* dr::while_loop implicitly masks all code in the loop using the
                'active' flag, so there is no need to pass it to every function */
 
-            SurfaceInteraction3f si =
-                scene->ray_intersect(ls.ray,
-                                     /* ray_flags = */ +RayFlags::All,
-                                     /* coherent = */ ls.depth == 0u);
+
+            //ls.si = scene->ray_intersect(ls.ray, /* ray_flags = */ +RayFlags::All, true);
 
             // ---------------------- Direct emission ----------------------
 
@@ -174,8 +176,8 @@ public:
                each Monte Carlo sample runs independently. In this case,
                dr::any_or<..>() returns the template argument (true) which means
                that the 'if' statement is always conservatively taken. */
-            if (dr::any_or<true>(si.emitter(scene) != nullptr)) {
-                DirectionSample3f ds(scene, si, ls.prev_si);
+            if (dr::any_or<true>(ls.si.emitter(scene) != nullptr)) {
+                DirectionSample3f ds(scene, ls.si, ls.prev_si);
                 Float em_pdf = 0.f;
 
                 if (dr::any_or<true>(!ls.prev_bsdf_delta))
@@ -188,20 +190,20 @@ public:
                 // Accumulate, being careful with polarization (see spec_fma)
                 ls.result = spec_fma(
                     ls.throughput,
-                    ds.emitter->eval(si, ls.prev_bsdf_pdf > 0.f) * mis_bsdf,
+                    ds.emitter->eval(ls.si, ls.prev_bsdf_pdf > 0.f) * mis_bsdf,
                     ls.result);
             }
 
             // Continue tracing the path at this point?
-            Bool active_next = (ls.depth + 1 < m_max_depth) && si.is_valid();
+            Bool active_next = (ls.depth + 1 < m_max_depth) && ls.si.is_valid();
 
             if (dr::none_or<false>(active_next)) {
                 ls.active = active_next;
-                ls.valid_ray |= (si.emitter(scene) != nullptr) && !m_hide_emitters;
+                ls.valid_ray |= (ls.si.emitter(scene) != nullptr) && !m_hide_emitters;
                 return; // early exit for scalar mode
             }
 
-            BSDFPtr bsdf = si.bsdf(ls.ray);
+            BSDFPtr bsdf = ls.si.bsdf(ls.ray);
 
             // ---------------------- Emitter sampling ----------------------
 
@@ -215,18 +217,18 @@ public:
             if (dr::any_or<true>(active_em)) {
                 // Sample the emitter
                 std::tie(ds, em_weight) = scene->sample_emitter_direction(
-                    si, ls.sampler->next_2d(), true, active_em);
+                    ls.si, ls.sampler->next_2d(), true, active_em);
                 active_em &= (ds.pdf != 0.f);
 
                 /* Given the detached emitter sample, recompute its contribution
                    with AD to enable light source optimization. */
-                if (dr::grad_enabled(si.p)) {
-                    ds.d = dr::normalize(ds.p - si.p);
-                    Spectrum em_val = scene->eval_emitter_direction(si, ds, active_em);
-                    em_weight = dr::select(ds.pdf != 0, em_val / ds.pdf, 0);
-                }
+                //if (dr::grad_enabled(ls.si.p)) {
+                //    ds.d = dr::normalize(ds.p - ls.si.p);
+                //    Spectrum em_val = scene->eval_emitter_direction(ls.si, ds, active_em);
+                //    em_weight = dr::select(ds.pdf != 0, em_val / ds.pdf, 0);
+                //}
 
-                wo = si.to_local(ds.d);
+                wo = ls.si.to_local(ds.d);
             }
 
             // ------ Evaluate BSDF * cos(theta) and sample direction -------
@@ -235,16 +237,17 @@ public:
             Point2f sample_2 = ls.sampler->next_2d();
 
             auto [bsdf_val, bsdf_pdf, bsdf_sample, bsdf_weight]
-                = bsdf->eval_pdf_sample(bsdf_ctx, si, wo, sample_1, sample_2);
+                = bsdf->eval_pdf_sample(bsdf_ctx, ls.si, wo, sample_1, sample_2);
 
             // --------------- Emitter sampling contribution ----------------
 
             if (dr::any_or<true>(active_em)) {
-                bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
+                bsdf_val = ls.si.to_world_mueller(bsdf_val, -wo, ls.si.wi);
 
                 // Compute the MIS weight
-                Float mis_em =
-                    dr::select(ds.delta, 1.f, mis_weight(ds.pdf, bsdf_pdf));
+                //Float mis_em =
+                //    dr::select(ds.delta, 1.f, mis_weight(ds.pdf, bsdf_pdf));
+                Float mis_em = mis_weight(ds.pdf, bsdf_pdf);
 
                 // Accumulate, being careful with polarization (see spec_fma)
                 ls.result[active_em] = spec_fma(
@@ -253,9 +256,9 @@ public:
 
             // ---------------------- BSDF sampling ----------------------
 
-            bsdf_weight = si.to_world_mueller(bsdf_weight, -bsdf_sample.wo, si.wi);
+            bsdf_weight = ls.si.to_world_mueller(bsdf_weight, -bsdf_sample.wo, ls.si.wi);
 
-            ls.ray = si.spawn_ray(si.to_world(bsdf_sample.wo));
+            ls.ray = ls.si.spawn_ray(ls.si.to_world(bsdf_sample.wo));
 
             /* When the path tracer is differentiated, we must be careful that
                the generated Monte Carlo samples are detached (i.e. don't track
@@ -266,8 +269,8 @@ public:
                 ls.ray = dr::detach<true>(ls.ray);
 
                 // Recompute 'wo' to propagate derivatives to cosine term
-                Vector3f wo_2 = si.to_local(ls.ray.d);
-                auto [bsdf_val_2, bsdf_pdf_2] = bsdf->eval_pdf(bsdf_ctx, si, wo_2, ls.active);
+                Vector3f wo_2 = ls.si.to_local(ls.ray.d);
+                auto [bsdf_val_2, bsdf_pdf_2] = bsdf->eval_pdf(bsdf_ctx, ls.si, wo_2, ls.active);
                 bsdf_weight[bsdf_pdf_2 > 0.f] = bsdf_val_2 / dr::detach(bsdf_pdf_2);
             }
 
@@ -275,17 +278,19 @@ public:
 
             ls.throughput *= bsdf_weight;
             ls.eta *= bsdf_sample.eta;
-            ls.valid_ray |= ls.active && si.is_valid() &&
+            ls.valid_ray |= ls.active && ls.si.is_valid() &&
                          !has_flag(bsdf_sample.sampled_type, BSDFFlags::Null);
 
             // Information about the current vertex needed by the next iteration
-            ls.prev_si = si;
+            ls.prev_si = Interaction3f(ls.si);
+            //cdr::set_label(ls.prev_si, "Prev Si inside");
+            //ls.prev_si.p += 0.001;
             ls.prev_bsdf_pdf = bsdf_sample.pdf;
             ls.prev_bsdf_delta = has_flag(bsdf_sample.sampled_type, BSDFFlags::Delta);
 
             // -------------------- Stopping criterion ---------------------
 
-            dr::masked(ls.depth, si.is_valid()) += 1;
+            dr::masked(ls.depth, ls.si.is_valid()) += 1;
 
             Float throughput_max = dr::max(unpolarized_spectrum(ls.throughput));
 
@@ -300,7 +305,17 @@ public:
 
             ls.active = active_next && (!rr_active || rr_continue) &&
                      (throughput_max != 0.f);
+
+            ls.si = scene->ray_intersect(ls.ray,
+                                         /* ray_flags = */ +RayFlags::All,
+                                         /* coherent = */ ls.depth == 0u,
+                                         ls.active);
+
+            //ls.result = em_weight;
         });
+
+        std::cout << "path prev_si: " << ls.prev_si.p << std::endl;
+        std::cout << "path result: " << ls.result << std::endl;
 
         return {
             /* spec  = */ dr::select(ls.valid_ray, ls.result, 0.f),

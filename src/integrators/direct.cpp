@@ -204,6 +204,9 @@ public:
             }
         }
 
+        std::cout << "direct si: " << si.p << std::endl;
+        std::cout << "direct result: " << result << std::endl;
+
         return { result, valid_ray };
     }
 

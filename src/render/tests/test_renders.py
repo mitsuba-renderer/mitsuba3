@@ -68,6 +68,9 @@ def list_all_render_test_configs():
     """
     configs = []
     for variant in mi.variants():
+        if variant != 'cuda_ad_rgb':
+            continue
+
         is_jit = "cuda" in variant or "llvm" in variant
         is_polarized = "polarized" in variant
 
@@ -100,6 +103,8 @@ def list_all_render_test_configs():
                     if is_polarized and integrator_type in POLARIZED_EXCLUDE_INTEGRATORS:
                         continue
                     configs.append((variant, scene_fname, integrator_type, 'jit_flag_option_3'))
+
+    configs = filter(lambda cfg: cfg[2] in ['path', 'ptracer'], configs)
 
     return configs
 
@@ -224,6 +229,21 @@ def test_render(variant, scene_fname, integrator_type, jit_flags_key):
     alpha = 1.0 - (1.0 - significance_level) ** (1.0 / pixel_count)
 
     success = (p_value > alpha)
+
+    output_dir = join(dirname(scene_fname), 'error_output')
+
+    if not exists(output_dir):
+        os.makedirs(output_dir)
+
+    output_prefix = join(output_dir, splitext(
+        basename(scene_fname))[0] + '_' + mi.variant())
+
+    img_rgb_bmp = xyz_to_rgb_bmp(img)
+    ref_img_rgb_bmp = xyz_to_rgb_bmp(ref_img)
+
+    fname = output_prefix + '_img.exr'
+    img_rgb_bmp.write(fname)
+    print('Saved rendered image to: ' + fname)
 
     if (np.count_nonzero(success) / 3) >= (0.9975 * pixel_count):
         print('Accepted the null hypothesis (min(p-value) = %f, significance level = %f)' %

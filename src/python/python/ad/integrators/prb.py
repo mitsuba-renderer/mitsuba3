@@ -60,7 +60,7 @@ class PRBIntegrator(RBIntegrator):
             'max_depth': 8
     """
 
-    @dr.syntax
+    @dr.syntax(print_code=False)
     def sample(self,
                mode: dr.ADMode,
                scene: mi.Scene,
@@ -98,18 +98,19 @@ class PRBIntegrator(RBIntegrator):
         prev_bsdf_pdf   = mi.Float(1.0)
         prev_bsdf_delta = mi.Bool(True)
 
+
+        # Compute a surface interaction that tracks derivatives arising
+        # from differentiable shape parameters (position, normals, etc.)
+        # In primal mode, this is just an ordinary ray tracing operation.
+        with dr.resume_grad(when=not primal):
+            si = scene.ray_intersect(ray,
+                                     ray_flags=mi.RayFlags.All,
+                                     coherent=True)
+
         while dr.hint(active,
                       max_iterations=self.max_depth,
                       label="Path Replay Backpropagation (%s)" % mode.name):
             active_next = mi.Bool(active)
-
-            # Compute a surface interaction that tracks derivatives arising
-            # from differentiable shape parameters (position, normals, etc.)
-            # In primal mode, this is just an ordinary ray tracing operation.
-            with dr.resume_grad(when=not primal):
-                si = scene.ray_intersect(ray,
-                                         ray_flags=mi.RayFlags.All,
-                                         coherent=(depth == 0))
 
             # Get the BSDF, potentially computes texture-space differentials
             bsdf = si.bsdf(ray)
@@ -249,6 +250,11 @@ class PRBIntegrator(RBIntegrator):
 
             depth[si.is_valid()] += 1
             active = active_next
+
+            with dr.resume_grad(when=not primal):
+                si = scene.ray_intersect(ray,
+                                         ray_flags=mi.RayFlags.All,
+                                         coherent=False)
 
         return (
             L if primal else δL, # Radiance/differential radiance

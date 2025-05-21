@@ -283,14 +283,9 @@ public:
             if (dr::none_or<false>(ls.active))
                 return;
 
-            // Intersect the BSDF ray against scene geometry (next vertex).
-            ls.ray = ls.si.spawn_ray(ls.si.to_world(bs.wo));
-            ls.si = scene->ray_intersect(ls.ray, ls.active);
-
             ls.depth++;
             if (m_max_depth >= 0)
                 ls.active &= ls.depth < m_max_depth;
-            ls.active &= ls.si.is_valid();
 
             // Russian Roulette
             Mask use_rr = ls.depth > m_rr_depth;
@@ -302,6 +297,14 @@ public:
                 dr::masked(ls.active, use_rr) &= ls.sampler->next_1d(ls.active) < q;
                 dr::masked(ls.throughput, use_rr) *= dr::rcp(q);
             }
+
+            // Intersect the BSDF ray against scene geometry (next vertex).
+            ls.ray = ls.si.spawn_ray(ls.si.to_world(bs.wo));
+            UInt32 reorder_hint = dr::select(ls.active, 1, 0);
+            ls.si = scene->ray_intersect(ls.ray, +RayFlags::All, false, true,
+                                         reorder_hint, 1, ls.active);
+
+            ls.active &= ls.si.is_valid();
         },
         "Particle Tracer Integrator");
 
