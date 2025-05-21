@@ -37,6 +37,10 @@ public:
         Interaction3f prev_si         = dr::zeros<Interaction3f>();
         BSDFContext   bsdf_ctx;
 
+        if constexpr (dr::is_jit_v<Float>) {
+            std::cout << "before loop state: " << prev_si.p[0].index() << std::endl;
+        }
+
         /* Set up a Dr.Jit loop. This optimizes away to a normal loop in scalar
            mode, and it generates either a a megakernel (default) or
            wavefront-style renderer in JIT variants. This can be controlled by
@@ -48,6 +52,7 @@ public:
             SurfaceInteraction3f si;
             UInt32 depth;
             Interaction3f prev_si;
+            Float tmp;
             Bool active;
             Sampler* sampler;
 
@@ -57,9 +62,15 @@ public:
             dr::zeros<SurfaceInteraction3f>(),
             depth,
             prev_si,
+            0.f,
             active,
             sampler
         };
+
+
+        if constexpr (dr::is_jit_v<Float>) {
+            std::cout << "before loop: " << prev_si.p[0].index() << std::endl;
+        }
 
         ls.si = scene->ray_intersect(Ray3f(ray_), /* ray_flags = */ +RayFlags::All, true);
 
@@ -67,8 +78,22 @@ public:
             dr::make_tuple(ls), [](const LoopState &ls) { return ls.active; },
             [this, scene, bsdf_ctx](LoopState &ls) {
 
+                if constexpr (dr::is_jit_v<Float>) {
+                    std::cout << "inside loop beginning: " << ls.prev_si.p[0].index() << std::endl;
+                }
+
+
                 ls.prev_si = Interaction3f(ls.si);
-                dr::set_label(ls.prev_si, "Prev Si inside");
+                //dr::set_label(ls.prev_si, "Prev Si inside");
+
+                ls.tmp = ls.si.p.x();
+                //p
+
+                if constexpr (dr::is_jit_v<Float>) {
+                    std::cout << "inside loop after update: " << ls.prev_si.p[0].index() << std::endl;
+                }
+
+
 
                 Float sample_1 = ls.sampler->next_1d();
                 Point2f sample_2 = ls.sampler->next_2d();
@@ -86,10 +111,22 @@ public:
                                              /* ray_flags = */ +RayFlags::All,
                                              /* coherent = */ ls.depth == 0u,
                                              ls.active);
+
+
+                if constexpr (dr::is_jit_v<Float>) {
+                    std::cout << "inside loop after end: " << ls.prev_si.p[0].index() << std::endl;
+                }
         });
 
+
+        if constexpr (dr::is_jit_v<Float>) {
+            std::cout << "after loop: " << ls.prev_si.p[0].index() << std::endl;
+        }
+
         std::cout << "tmp prev_si: " << ls.prev_si.p << std::endl;
-        std::cout << "tmp si: " << ls.si.p << std::endl;
+
+        jit_set_flag(JitFlag::PrintIR, false);
+        //std::cout << "tmp si: " << ls.si.p << std::endl;
 
         if constexpr (is_rgb_v<Spectrum>)
             return {
