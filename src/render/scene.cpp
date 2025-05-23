@@ -608,11 +608,6 @@ MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_gpu() { }
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() { }
 #endif
 
-#define MI_SCENE_FIELDS                                                        \
-    m_accel_handle, m_emitters, m_emitters_dr, m_shapes, m_shapes_dr,          \
-        m_shapegroups, m_sensors, m_sensors_dr, m_children, m_integrator,      \
-        m_environment, m_emitter_pmf, m_emitter_distr, m_silhouette_shapes
-
 Class *__kdtree_class = new Class("TShapeKDTree", "Object", "", nullptr, nullptr);
 MI_VARIANT
 void Scene<Float, Spectrum>::traverse_1_cb_ro(
@@ -655,8 +650,6 @@ void Scene<Float, Spectrum>::traverse_1_cb_rw(
         traverse_1_cb_rw_cpu(payload, fn);
     }
 }
-
-#undef MI_SCENE_FIELDS
 
 MI_IMPLEMENT_CLASS_VARIANT(Scene, Object, "scene")
 MI_INSTANTIATE_CLASS(Scene)
