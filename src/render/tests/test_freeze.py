@@ -1072,3 +1072,42 @@ def test13_sampler(variants_vec_rgb, tmp_path, sampler, auto_opaque):
     scene = load_scene()
     # spp of 4 to suppress warning
     assert_render(scene, n, tmp_path=tmp_path, spp = 4, auto_opaque = auto_opaque)
+
+@pytest.mark.parametrize(
+    "integrator",
+    [
+        # Projective integrators are not yet supported
+        "direct_projective",
+        "prb_projective",
+    ],
+)
+@pytest.mark.parametrize("auto_opaque", [False, True])
+def test14_unsupported_integrators(variants_vec_rgb, integrator, auto_opaque):
+    """
+    Tests that using projective integrators in backward mode triggers an exception.
+    """
+
+    @dr.freeze
+    def frozen(scene, integrator):
+        params = mi.traverse(scene)
+
+        img = mi.render(scene, integrator=integrator, params=params)
+
+        loss = dr.mean(dr.square(img))
+
+        dr.backward(loss)
+
+    scene = mi.cornell_box()
+    scene = mi.load_dict(scene)
+
+    integrator = mi.load_dict({
+        "type": integrator
+    })
+
+    params = mi.traverse(scene)
+    dr.enable_grad(params["red.reflectance.value"])
+    params.update()
+
+    with pytest.raises(RuntimeError):
+        frozen(scene, integrator)
+
