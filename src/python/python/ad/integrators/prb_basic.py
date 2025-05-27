@@ -79,18 +79,22 @@ class BasicPRBIntegrator(RBIntegrator):
         β = mi.Spectrum(1)                            # Path throughput weight
         active = mi.Bool(active)                      # Active SIMD lanes
 
+        # Compute a surface interaction that tracks derivatives arising
+        # from differentiable shape parameters (position, normals, etc.)
+        # In primal mode, this is just an ordinary ray tracing operation.
+        with dr.resume_grad(when=not primal):
+            si = scene.ray_intersect(ray,
+                                     ray_flags=mi.RayFlags.All,
+                                     coherent=True,
+                                     reorder=False,
+                                     active=active)
+
         while dr.hint(active,
                       max_iterations=self.max_depth,
                       label="Path Replay Backpropagation (%s)" % mode.name):
             active_next = mi.Bool(active)
 
             # ---------------------- Direct emission ----------------------
-
-            # Compute a surface interaction that tracks derivatives arising
-            # from differentiable shape parameters (position, normals, etc.)
-            # In primal mode, this is just an ordinary ray tracing operation.
-            with dr.resume_grad(when=not primal):
-                si = scene.ray_intersect(ray)
 
             # Hide the environment emitter if necessary
             if self.hide_emitters:
@@ -159,6 +163,17 @@ class BasicPRBIntegrator(RBIntegrator):
 
             depth[si.is_valid()] += 1
             active = active_next
+
+            # Compute a surface interaction that tracks derivatives arising
+            # from differentiable shape parameters (position, normals, etc.)
+            # In primal mode, this is just an ordinary ray tracing operation.
+            reorder_hint = dr.select(active, mi.UInt32(1), mi.UInt32(0))
+            with dr.resume_grad(when=not primal):
+                si = scene.ray_intersect(ray,
+                                         ray_flags=mi.RayFlags.All,
+                                         coherent=False,
+                                         reorder=True,
+                                         active=active)
 
         return (
             L if primal else δL, # Radiance/differential radiance
