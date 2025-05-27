@@ -78,19 +78,23 @@ class BasicPRBIntegrator(RBIntegrator):
         δL = mi.Spectrum(δL if δL is not None else 0) # Differential/adjoint radiance
         β = mi.Spectrum(1)                            # Path throughput weight
         active = mi.Bool(active)                      # Active SIMD lanes
+        pi = scene.ray_intersect_preliminary(ray,
+                                             coherent=True,
+                                             reorder=False,
+                                             active=active)
 
         while dr.hint(active,
                       max_iterations=self.max_depth,
                       label="Path Replay Backpropagation (%s)" % mode.name):
             active_next = mi.Bool(active)
 
-            # ---------------------- Direct emission ----------------------
-
             # Compute a surface interaction that tracks derivatives arising
             # from differentiable shape parameters (position, normals, etc.)
             # In primal mode, this is just an ordinary ray tracing operation.
             with dr.resume_grad(when=not primal):
-                si = scene.ray_intersect(ray)
+                si = pi.compute_surface_interaction(ray, ray_flags=mi.RayFlags.All)
+
+            # ---------------------- Direct emission ----------------------
 
             # Hide the environment emitter if necessary
             if self.hide_emitters:
@@ -159,6 +163,11 @@ class BasicPRBIntegrator(RBIntegrator):
 
             depth[si.is_valid()] += 1
             active = active_next
+
+            pi = scene.ray_intersect_preliminary(ray,
+                                                 coherent=False,
+                                                 reorder=True,
+                                                 active=active)
 
         return (
             L if primal else δL, # Radiance/differential radiance
