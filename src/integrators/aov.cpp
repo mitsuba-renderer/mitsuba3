@@ -207,8 +207,9 @@ public:
 
         std::pair<Spectrum, Mask> result { 0.f, false };
 
+        // Don't reorder threads - let the inner integrator do it
         SurfaceInteraction3f si =
-            scene->ray_intersect(ray, (uint32_t) RayFlags::All, true, active);
+            scene->ray_intersect(ray, (uint32_t) RayFlags::All, true, false, 0, 0, active);
         dr::masked(si, !si.is_valid()) = dr::zeros<SurfaceInteraction3f>();
 
         auto spectrum_to_color3f = [](const Spectrum& spec, const Ray3f& ray, Mask active) {
