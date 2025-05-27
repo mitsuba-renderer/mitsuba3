@@ -213,9 +213,9 @@ public:
 
         /* ---------------------- Path construction ------------------------- */
         // First intersection from the emitter to the scene
-        SurfaceInteraction3f si = scene->ray_intersect(ray, active);
+        PreliminaryIntersection3f pi = scene->ray_intersect_preliminary(ray, active);
 
-        active &= si.is_valid();
+        active &= pi.is_valid();
         if (m_max_depth >= 0)
             active &= depth < m_max_depth;
 
@@ -227,18 +227,18 @@ public:
             Int32 depth;
             Ray3f ray;
             Spectrum throughput;
-            SurfaceInteraction3f si;
+            PreliminaryIntersection3f pi;
             Float eta;
             Sampler* sampler;
 
-            DRJIT_STRUCT(LoopState, active, depth, ray, throughput, si, eta,
+            DRJIT_STRUCT(LoopState, active, depth, ray, throughput, pi, eta,
                          sampler)
         } ls = {
             active,
             depth,
             ray,
             throughput,
-            si,
+            pi,
             eta,
             sampler
         };
@@ -248,13 +248,15 @@ public:
             [](const LoopState& ls) { return ls.active; },
             [this, scene, sensor, block, sample_scale](LoopState& ls) {
 
-            BSDFPtr bsdf = ls.si.bsdf(ls.ray);
+            SurfaceInteraction3f si = ls.pi.compute_surface_interaction(ls.ray, +RayFlags::All);
+
+            BSDFPtr bsdf = si.bsdf(ls.ray);
 
             /* Connect to sensor and splat if successful. Sample a direction
                from the sensor to the current surface point. */
             auto [sensor_ds, sensor_weight] =
-                sensor->sample_direction(ls.si, ls.sampler->next_2d(), ls.active);
-            connect_sensor(scene, ls.si, sensor_ds, bsdf,
+                sensor->sample_direction(si, ls.sampler->next_2d(), ls.active);
+            connect_sensor(scene, si, sensor_ds, bsdf,
                            ls.throughput * sensor_weight, block, sample_scale,
                            ls.active);
 
@@ -262,19 +264,19 @@ public:
             // Sample BSDF * cos(theta).
             BSDFContext ctx(TransportMode::Importance);
             auto [bs, bsdf_val] =
-                bsdf->sample(ctx, ls.si, ls.sampler->next_1d(ls.active),
+                bsdf->sample(ctx, si, ls.sampler->next_1d(ls.active),
                              ls.sampler->next_2d(ls.active), ls.active);
 
             // Using geometric normals (wo points to the camera)
-            Float wi_dot_geo_n = dr::dot(ls.si.n, -ls.ray.d),
-                  wo_dot_geo_n = dr::dot(ls.si.n, ls.si.to_world(bs.wo));
+            Float wi_dot_geo_n = dr::dot(si.n, -ls.ray.d),
+                  wo_dot_geo_n = dr::dot(si.n, si.to_world(bs.wo));
 
             // Prevent light leaks due to shading normals
-            ls.active &= (wi_dot_geo_n * Frame3f::cos_theta(ls.si.wi) > 0.f) &&
+            ls.active &= (wi_dot_geo_n * Frame3f::cos_theta(si.wi) > 0.f) &&
                          (wo_dot_geo_n * Frame3f::cos_theta(bs.wo) > 0.f);
 
             // Adjoint BSDF for shading normals -- [Veach, p. 155]
-            Float correction = dr::abs((Frame3f::cos_theta(ls.si.wi) * wo_dot_geo_n) /
+            Float correction = dr::abs((Frame3f::cos_theta(si.wi) * wo_dot_geo_n) /
                                        (Frame3f::cos_theta(bs.wo) * wi_dot_geo_n));
             ls.throughput *= bsdf_val * correction;
             ls.eta *= bs.eta;
@@ -283,14 +285,9 @@ public:
             if (dr::none_or<false>(ls.active))
                 return;
 
-            // Intersect the BSDF ray against scene geometry (next vertex).
-            ls.ray = ls.si.spawn_ray(ls.si.to_world(bs.wo));
-            ls.si = scene->ray_intersect(ls.ray, ls.active);
-
             ls.depth++;
             if (m_max_depth >= 0)
                 ls.active &= ls.depth < m_max_depth;
-            ls.active &= ls.si.is_valid();
 
             // Russian Roulette
             Mask use_rr = ls.depth > m_rr_depth;
@@ -302,6 +299,18 @@ public:
                 dr::masked(ls.active, use_rr) &= ls.sampler->next_1d(ls.active) < q;
                 dr::masked(ls.throughput, use_rr) *= dr::rcp(q);
             }
+
+            // Intersect the BSDF ray against scene geometry (next vertex).
+            ls.ray = si.spawn_ray(si.to_world(bs.wo));
+            // Reorder threads based on the shape they hit
+            ls.pi = scene->ray_intersect_preliminary(ls.ray,
+                                                     /* coherent = */ false,
+                                                     /* reorder = */ jit_flag(JitFlag::LoopRecord),
+                                                     /* reorder_hint = */ 0,
+                                                     /* reorder_hint_bits = */ 0,
+                                                     ls.active);
+
+            ls.active &= ls.pi.is_valid();
         },
         "Particle Tracer Integrator");
 
