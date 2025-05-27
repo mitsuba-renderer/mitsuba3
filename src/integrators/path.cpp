@@ -108,6 +108,7 @@ public:
         Spectrum throughput           = 1.f;
         Spectrum result               = 0.f;
         Float eta                     = 1.f;
+        PreliminaryIntersection3f pi  = dr::zeros<PreliminaryIntersection3f>();
         UInt32 depth                  = 0;
 
         // If m_hide_emitters == false, the environment emitter will be visible
@@ -127,6 +128,7 @@ public:
         */
         struct LoopState {
             Ray3f ray;
+            PreliminaryIntersection3f pi;
             Spectrum throughput;
             Spectrum result;
             Float eta;
@@ -138,11 +140,12 @@ public:
             Bool active;
             Sampler* sampler;
 
-            DRJIT_STRUCT(LoopState, ray, throughput, result, eta, depth, \
+            DRJIT_STRUCT(LoopState, ray, pi, throughput, result, eta, depth, \
                 valid_ray, prev_si, prev_bsdf_pdf, prev_bsdf_delta,
                 active, sampler)
         } ls = {
             ray,
+            pi,
             throughput,
             result,
             eta,
@@ -155,6 +158,14 @@ public:
             sampler
         };
 
+        // First bounce is usually coherent - don't reorder threads
+        ls.pi = scene->ray_intersect_preliminary(ls.ray,
+                                                 /* coherent = */ true,
+                                                 /* reorder = */ false,
+                                                 /* reorder_hint = */ 0,
+                                                 /* reorder_hint_bits = */ 0,
+                                                 ls.active);
+
         dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),
             [](const LoopState& ls) { return ls.active; },
             [this, scene, bsdf_ctx](LoopState& ls) {
@@ -162,10 +173,9 @@ public:
             /* dr::while_loop implicitly masks all code in the loop using the
                'active' flag, so there is no need to pass it to every function */
 
+            // Fill out all information of the interaction
             SurfaceInteraction3f si =
-                scene->ray_intersect(ls.ray,
-                                     /* ray_flags = */ +RayFlags::All,
-                                     /* coherent = */ ls.depth == 0u);
+                ls.pi.compute_surface_interaction(ls.ray, +RayFlags::All);
 
             // ---------------------- Direct emission ----------------------
 
@@ -279,7 +289,7 @@ public:
                          !has_flag(bsdf_sample.sampled_type, BSDFFlags::Null);
 
             // Information about the current vertex needed by the next iteration
-            ls.prev_si = si;
+            ls.prev_si = Interaction3f(si);
             ls.prev_bsdf_pdf = bsdf_sample.pdf;
             ls.prev_bsdf_delta = has_flag(bsdf_sample.sampled_type, BSDFFlags::Delta);
 
@@ -299,7 +309,15 @@ public:
             ls.throughput[rr_active] *= dr::rcp(dr::detach(rr_prob));
 
             ls.active = active_next && (!rr_active || rr_continue) &&
-                     (throughput_max != 0.f);
+                        (throughput_max != 0.f);
+
+            // Reorder threads based on the shape they hit
+            ls.pi = scene->ray_intersect_preliminary(ls.ray,
+                                                     /* coherent = */ false,
+                                                     /* reorder = */ true,
+                                                     /* reorder_hint = */ 0,
+                                                     /* reorder_hint_bits = */ 0,
+                                                     ls.active);
         });
 
         return {
