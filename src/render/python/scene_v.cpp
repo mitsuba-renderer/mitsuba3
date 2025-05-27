@@ -52,12 +52,20 @@ MI_PY_EXPORT(Scene) {
         .def("ray_intersect_preliminary",
              nb::overload_cast<const Ray3f &, Mask, Mask>(&Scene::ray_intersect_preliminary, nb::const_),
              "ray"_a, "coherent"_a = false, "active"_a = true, D(Scene, ray_intersect_preliminary))
+        .def("ray_intersect_preliminary",
+             nb::overload_cast<const Ray3f &, Mask, bool, UInt32, uint32_t, Mask>(&Scene::ray_intersect_preliminary, nb::const_),
+             "ray"_a, "coherent"_a, "reorder"_a = false,
+             "reorder_hint"_a = 0, "reorder_hint_bits"_a = 0, "active"_a = true, D(Scene, ray_intersect_preliminary))
         .def("ray_intersect",
              nb::overload_cast<const Ray3f &, Mask>(&Scene::ray_intersect, nb::const_),
              "ray"_a, "active"_a = true, D(Scene, ray_intersect))
         .def("ray_intersect",
              nb::overload_cast<const Ray3f &, uint32_t, Mask, Mask>(&Scene::ray_intersect, nb::const_),
              "ray"_a, "ray_flags"_a, "coherent"_a, "active"_a = true, D(Scene, ray_intersect, 2))
+        .def("ray_intersect",
+             nb::overload_cast<const Ray3f &, uint32_t, Mask, bool, UInt32, uint32_t, Mask>(&Scene::ray_intersect, nb::const_),
+             "ray"_a, "ray_flags"_a, "coherent"_a, "reorder"_a = false,
+             "reorder_hint"_a = 0, "reorder_hint_bits"_a = 0, "active"_a = true, D(Scene, ray_intersect, 2))
         .def("ray_test",
              nb::overload_cast<const Ray3f &, Mask>(&Scene::ray_test, nb::const_),
              "ray"_a, "active"_a = true, D(Scene, ray_test))
