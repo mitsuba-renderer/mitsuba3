@@ -20,7 +20,7 @@ Serialized mesh loader (:monosp:`serialized`)
 
  * - filename
    - |string|
-   - Filename of the OBJ file that should be loaded
+   - Filename of the serialized file that should be loaded
 
  * - shape_index
    - |int|
