@@ -16,10 +16,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-#if !defined(NDEBUG) || defined(MI_ENABLE_OPTIX_DEBUG_VALIDATION)
-#  define MI_ENABLE_OPTIX_DEBUG_VALIDATION_ON
-#endif
-
 // Per scene OptiX state data structure
 struct MiOptixSceneState {
     OptixShaderBindingTable sbt = {};
@@ -91,13 +87,14 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types) {
 
     OptixModuleCompileOptions module_compile_options { };
     module_compile_options.maxRegisterCount = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
-#if !defined(MI_ENABLE_OPTIX_DEBUG_VALIDATION_ON)
-    module_compile_options.optLevel         = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
-    module_compile_options.debugLevel       = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
-#else
-    module_compile_options.optLevel         = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
-    module_compile_options.debugLevel       = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
-#endif
+
+    if (jit_flag(JitFlag::Debug)) {
+        module_compile_options.optLevel   = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
+        module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
+    } else {
+        module_compile_options.optLevel   = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
+        module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
+    }
 
     config.pipeline_compile_options.usesMotionBlur     = false;
     config.pipeline_compile_options.numPayloadValues   = 0;
@@ -106,15 +103,13 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types) {
     config.pipeline_compile_options.traversableGraphFlags =
         OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
 
-#if !defined(MI_ENABLE_OPTIX_DEBUG_VALIDATION_ON)
-    config.pipeline_compile_options.exceptionFlags =
-            OPTIX_EXCEPTION_FLAG_NONE;
-#else
-    config.pipeline_compile_options.exceptionFlags =
-            OPTIX_EXCEPTION_FLAG_DEBUG |
+    if (jit_flag(JitFlag::Debug))
+        config.pipeline_compile_options.exceptionFlags =
             OPTIX_EXCEPTION_FLAG_TRACE_DEPTH |
             OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW;
-#endif
+    else
+        config.pipeline_compile_options.exceptionFlags =
+            OPTIX_EXCEPTION_FLAG_NONE;
 
     // Compute flags informing OptiX of the present shape types
     unsigned int prim_flags = 0, st = shape_types;
