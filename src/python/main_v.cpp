@@ -132,7 +132,6 @@ NB_MODULE(MI_VARIANT_NAME, m) {
         // For stub generation, we **always** want the module to load
         // successfully.
         if (!is_stub_gen) {
-            std::cout << "DIDN'T FIND ENVVAR" << std::endl;
             MI_VARIANT_FLOAT(0);
         }
     }
