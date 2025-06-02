@@ -1,5 +1,6 @@
 import mitsuba as mi
 import sys
+import os
 
 def stub_variant() -> str:
     tokens = ['rgb', 'spectral', 'polarized', 'ad', 'llvm', 'cuda']
@@ -43,12 +44,13 @@ if v not in mi.variants():
 # Mitsuba variant has static initialization that requires JIT to initialize
 # For generating stubs we don't actually care if JIT init is successful
 # e.g. if LLVM/CUDA wasn't installed
-# The sequence below allows the module to load regardless
+# We set an envvar to signal to the module that it's only being loaded for stub
+# generation and can therefore skip any static initializations.
+os.environ["MI_STUB_GENERATION"] = "True"
 try:
     mi.set_variant(v)
-except:
-    mi.set_variant('scalar_rgb')
-    mi.set_variant(v)
+finally:
+    del os.environ["MI_STUB_GENERATION"]
 
 sys.modules[__name__] = sys.modules['mitsuba']
 sys.modules[__name__ +'.math']       = mi.math

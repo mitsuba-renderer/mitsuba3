@@ -1,6 +1,7 @@
 #include <mitsuba/core/ray.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/optional.h>
 
 template<typename Ray>
 void bind_ray(nb::module_ &m, const char *name) {
@@ -17,9 +18,17 @@ void bind_ray(nb::module_ &m, const char *name) {
         auto ray = nb::class_<Ray>(m, name, D(Ray))
             .def(nb::init<>(), "Create an uninitialized ray")
             .def(nb::init<const Ray &>(), "Copy constructor", "other"_a)
-            .def(nb::init<Point, Vector, RayFloat, const RayWavelength &>(),
-                 D(Ray, Ray, 2),
-                 "o"_a, "d"_a, "time"_a=(RayScalarFloat) 0.0, "wavelengths"_a=dr::zeros<RayWavelength>())
+            .def("__init__",
+                [](Ray *ray, const Point& o, const Vector& d, RayFloat time,
+                   const std::optional<RayWavelength> wavelengths_) {
+                    RayWavelength wavelengths = wavelengths_.has_value() ?
+                                                wavelengths_.value() :
+                                                dr::zeros<RayWavelength>();
+                    new (ray) Ray(o, d, time, wavelengths);
+                },
+                D(Ray, Ray, 2),
+                "o"_a, "d"_a, "time"_a=(RayScalarFloat) 0.0, "wavelengths"_a=nb::none()
+            )
             .def(nb::init<Point, Vector, RayFloat, RayFloat, const RayWavelength &>(),
                  D(Ray, Ray, 3),
                  "o"_a, "d"_a, "maxt"_a, "time"_a, "wavelengths"_a)
