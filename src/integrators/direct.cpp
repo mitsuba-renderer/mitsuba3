@@ -121,17 +121,29 @@ public:
 
         SurfaceInteraction3f si = scene->ray_intersect(
             ray, +RayFlags::All, /* coherent = */ true, active);
-        Mask valid_ray = active && si.is_valid();
 
         Spectrum result(0.f);
 
         // ----------------------- Visible emitters -----------------------
 
-        if (!m_hide_emitters) {
+        if (m_hide_emitters) {
+            // Skip all area emitters along this ray
+            Mask skip_emitters =
+                si.is_valid() && (si.shape->emitter() != nullptr) && active;
+
+            if (dr::any_or<true>(skip_emitters)) {
+                Ray3f ray_skip = si.spawn_ray(ray.d);
+                SurfaceInteraction3f next_si =
+                    Base::skip_area_emitters(scene, ray_skip, skip_emitters);
+                dr::masked(si, skip_emitters) = next_si;
+            }
+        } else {
             EmitterPtr emitter_vis = si.emitter(scene, active);
             if (dr::any_or<true>(emitter_vis != nullptr))
                 result += emitter_vis->eval(si, active);
         }
+
+        Mask valid_ray = active && si.is_valid();
 
         active &= si.is_valid();
         if (dr::none_or<false>(active))

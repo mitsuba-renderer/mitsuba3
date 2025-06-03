@@ -34,9 +34,20 @@ def test02_path_directly_visible(variants_all_rgb):
     scene_description['sensor']['film']['crop_height'] = 1
     scene = mi.load_dict(scene_description)
 
+    # Should only see the emitter contribution
     integrator = mi.load_dict({
         'type': 'path',
         'max_depth': 1,
+        'hide_emitters': False,
     })
     img = mi.render(scene, integrator=integrator)
     assert dr.allclose(img.array, [18.387, 13.9873, 6.75357])
+
+    # Should be compeltely black (we ignore the emitter)
+    integrator = mi.load_dict({
+        'type': 'path',
+        'max_depth': 1,
+        'hide_emitters': True,
+    })
+    img = mi.render(scene, integrator=integrator)
+    assert dr.allclose(img.array, 0)

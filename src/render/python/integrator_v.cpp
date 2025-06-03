@@ -303,7 +303,8 @@ MI_PY_EXPORT(Integrator) {
             "seed"_a = 0, "spp"_a = 0, "develop"_a = true, "evaluate"_a = true)
         .def_method(Integrator, cancel)
         .def_method(Integrator, should_stop)
-        .def_method(Integrator, aov_names);
+        .def_method(Integrator, aov_names)
+        .def_method(Integrator, skip_area_emitters);
 
     MI_PY_TRAMPOLINE_CLASS(PySamplingIntegrator, SamplingIntegrator, Integrator)
         .def(nb::init<const Properties &>())
