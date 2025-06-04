@@ -660,7 +660,8 @@ protected:
     MI_DECLARE_TRAVERSE_CB(m_accel_handle, m_emitters, m_emitters_dr, m_shapes,
                            m_shapes_dr, m_shapegroups, m_sensors, m_sensors_dr,
                            m_children, m_integrator, m_environment,
-                           m_emitter_pmf, m_emitter_distr, m_silhouette_shapes)
+                           m_emitter_pmf, m_emitter_distr, m_silhouette_shapes,
+                           m_silhouette_shapes_dr, m_silhouette_distr)
 };
 
 /// Dummy function which can be called to ensure that the librender shared library is loaded
