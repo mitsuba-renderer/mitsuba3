@@ -49,7 +49,7 @@ geometry that uses basic (e.g. diffuse) materials.
 template <typename Float, typename Spectrum>
 class ConstantBackgroundEmitter final : public Emitter<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Emitter, m_flags)
+    MI_IMPORT_BASE(Emitter, m_flags, m_sampling_weight)
     MI_IMPORT_TYPES(Scene, Shape, Texture)
 
     ConstantBackgroundEmitter(const Properties &props) : Base(props) {
@@ -60,10 +60,17 @@ public:
 
         m_radiance = props.texture_d65<Texture>("radiance", 1.f);
 
+        // By default NEE is disabled with Constant emitter as BSDF sampling will always perform better
+        m_enable_nee = props.get<bool>("enable_nee", false);
+
         if (m_radiance->is_spatially_varying())
             Throw("Expected a non-spatially varying radiance spectra!");
 
         m_flags = +EmitterFlags::Infinite;
+
+        // Disable NEE with constant emitters
+        if (!m_enable_nee)
+            m_sampling_weight = 0.f;
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -123,6 +130,9 @@ public:
                                                             Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
+        if (!m_enable_nee)
+            return { dr::zeros<DirectionSample3f>(), 0.f }; // Disable NEE with constant emitters
+
         Vector3f d = warp::square_to_uniform_sphere(sample);
 
         // Automatically enlarge the bounding sphere when it does not contain the reference point
@@ -152,6 +162,9 @@ public:
     Float pdf_direction(const Interaction3f &, const DirectionSample3f &ds,
                         Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+
+        if (!m_enable_nee)
+            return 0.f; // Disable NEE with constant emitters
 
         return warp::square_to_uniform_sphere_pdf(ds.d);
     }
@@ -204,6 +217,8 @@ protected:
 
     /// Surface area of the bounding sphere
     Float m_surface_area;
+
+    bool m_enable_nee;
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(ConstantBackgroundEmitter, Emitter)
