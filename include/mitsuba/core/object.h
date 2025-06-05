@@ -3,6 +3,7 @@
 #include <atomic>
 #include <stdexcept>
 #include <mitsuba/core/class.h>
+#include <drjit/traversable_base.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -29,8 +30,10 @@ NAMESPACE_BEGIN(mitsuba)
  * Python, this counter is shared with Python such that the ownerhsip and
  * lifetime of any ``Object`` instance across C++ and Python is managed by it.
  */
-class MI_EXPORT_LIB Object : public nanobind::intrusive_base {
+class MI_EXPORT_LIB Object : public drjit::TraversableBase {
 public:
+    MI_TRAVERSE_CB(drjit::TraversableBase)
+
     /// Default constructor
     Object() { }
 
