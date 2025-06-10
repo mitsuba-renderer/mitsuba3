@@ -150,7 +150,7 @@ public:
            Enabled by default, for consistency with the Mitsuba 1 behavior. */
         bool flip_tex_coords = props.get<bool>("flip_tex_coords", true);
 
-        auto fr = Thread::thread()->file_resolver();
+        auto fr = mitsuba::file_resolver();
         fs::path file_path = fr->resolve(props.string("filename"));
         m_name = file_path.filename().string();
 

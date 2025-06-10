@@ -2,7 +2,6 @@
 
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/object.h>
-#include <iosfwd>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -73,5 +72,11 @@ public:
 private:
     std::vector<fs::path> m_paths;
 };
+
+/// Return the global file resolver instance (this is a process-wide setting)
+extern MI_EXPORT_LIB FileResolver *file_resolver();
+
+/// Set the global file resolver instance (this is a process-wide setting)
+extern MI_EXPORT_LIB void set_file_resolver(FileResolver *file_resolver);
 
 NAMESPACE_END(mitsuba)

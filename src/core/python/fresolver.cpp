@@ -31,4 +31,7 @@ MI_PY_EXPORT(FileResolver) {
         .def_method(FileResolver, clear)
         .def_method(FileResolver, prepend)
         .def_method(FileResolver, append);
+
+    m.def("set_file_resolver", &mitsuba::set_file_resolver);
+    m.def("file_resolver", &mitsuba::file_resolver);
 }

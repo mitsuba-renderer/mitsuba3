@@ -141,7 +141,7 @@ public:
                   normals_mode_str);
 
         if (props.has_property("filename")) {
-            FileResolver *fs   = Thread::thread()->file_resolver();
+            FileResolver *fs   = mitsuba::file_resolver();
             fs::path file_path = fs->resolve(props.string("filename"));
             if (!fs::exists(file_path))
                 Log(Error, "\"%s\": file does not exist!", file_path);

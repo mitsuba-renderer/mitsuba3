@@ -123,7 +123,7 @@ def test12_missing_attribute(variant_scalar_rgb):
 
 
 def test13_duplicate_parameter(variant_scalar_rgb):
-    logger = mi.Thread.thread().logger()
+    logger = mi.logger()
     l = logger.error_level()
     try:
         logger.set_error_level(mi.LogLevel.Warn)
@@ -266,13 +266,13 @@ def test21_path_at_root_only(variant_scalar_rgb):
 
 
 def test22_fileresolver_unchanged(variant_scalar_rgb):
-    fs_backup = mi.Thread.thread().file_resolver()
+    fs_backup = mi.file_resolver()
 
     mi.load_string("""<scene version="3.0.0">
                             <path value="../"/>
                         </scene>""")
 
-    assert fs_backup == mi.Thread.thread().file_resolver()
+    assert fs_backup == mi.file_resolver()
 
 
 def test23_unreferenced_object(variant_scalar_rgb):

@@ -37,7 +37,6 @@ class MemoryStream;
 class Mutex;
 class PluginManager;
 class Properties;
-class ScopedThreadEnvironment;
 class Stream;
 class StreamAppender;
 class Struct;

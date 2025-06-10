@@ -48,7 +48,7 @@ public:
             if (props.has_property("centers"))
                 Throw("Cannot specify both \"centers\" and \"filename\".");
 
-            FileResolver* fs = Thread::thread()->file_resolver();
+            FileResolver* fs = mitsuba::file_resolver();
             fs::path file_path = fs->resolve(props.string("filename"));
             std::string name = file_path.filename().string();
 

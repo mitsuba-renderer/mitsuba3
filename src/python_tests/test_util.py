@@ -232,7 +232,7 @@ def test02_traverse_update(variants_all_ad_rgb):
 
 
     # Gradients on non-diff params warning
-    logger = mi.Thread.thread().logger()
+    logger = mi.logger()
     l = logger.error_level()
     try:
         logger.set_error_level(mi.LogLevel.Warn)

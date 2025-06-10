@@ -156,7 +156,7 @@ public:
         /* Causes all texture coordinates to be vertically flipped. */
         bool flip_tex_coords = props.get<bool>("flip_tex_coords", false);
 
-        auto fs = Thread::thread()->file_resolver();
+        auto fs = mitsuba::file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
         m_name = file_path.filename().string();
 

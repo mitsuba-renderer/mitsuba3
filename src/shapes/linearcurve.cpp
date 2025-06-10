@@ -138,7 +138,7 @@ public:
                   "variants!");
 #endif
 
-        auto fs = Thread::thread()->file_resolver();
+        auto fs = mitsuba::file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
         std::string m_name = file_path.filename().string();
 

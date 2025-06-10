@@ -110,7 +110,7 @@ struct PluginManager::PluginManagerPrivate {
             filename.replace_extension(".so");
         #endif
 
-        const FileResolver *resolver = Thread::thread()->file_resolver();
+        const FileResolver *resolver = mitsuba::file_resolver();
         fs::path resolved = resolver->resolve(filename);
 
         if (fs::exists(resolved)) {

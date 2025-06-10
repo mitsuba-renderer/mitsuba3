@@ -6,10 +6,8 @@
 
 /// Submit a log message to the Mitusba logging system and tag it with the Python caller
 static void PyLog(mitsuba::LogLevel level, const std::string &msg) {
-
-    // Do not log if no logger is available. This is consistent with the
-    // C++-side "Log" function in logger.h.
-    if (!Thread::thread()->logger())
+    Logger *logger = mitsuba::logger();
+    if (!logger)
         return;
 
 #if PY_VERSION_HEX >= 0x03090000
@@ -35,7 +33,7 @@ static void PyLog(mitsuba::LogLevel level, const std::string &msg) {
     if (!name.empty() && name[0] != '<')
         fmt.insert(2, "()");
 
-    Thread::thread()->logger()->log(
+    logger->log(
         level, nullptr /* class_ */,
         filename.c_str(), lineno,
         tfm::format(fmt.c_str(), name.c_str(), msg.c_str()));
@@ -60,4 +58,6 @@ MI_PY_EXPORT(Logger) {
         .def_method(Logger, read_log);
 
     m.def("Log", &PyLog, "level"_a, "msg"_a);
+    m.def("set_logger", &mitsuba::set_logger, "logger"_a);
+    m.def("logger", &mitsuba::logger);
 }
