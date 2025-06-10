@@ -120,7 +120,7 @@ public:
         if (!is_spectral_v<Spectrum> && m_wavelength == -1.f)
             Throw("In non-spectral modes, the measured polarized plugin can only render a specific wavelength specified by the `wavelength` parameter.");
 
-        auto fs = Thread::thread()->file_resolver();
+        auto fs = mitsuba::file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
         m_name = file_path.filename().string();
 

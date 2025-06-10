@@ -16,13 +16,12 @@ public:
      * \brief Turn a log message into a human-readable format
      * \param level     The importance of the debug message
      * \param class_    Originating class or \c nullptr
-     * \param thread    Thread, which is responsible for creating the message
      * \param file      File, which is responsible for creating the message
      * \param line      Associated line within the source file
      * \param msg       Text content associated with the log message
      */
     virtual std::string format(LogLevel level, const Class *class_,
-                               const Thread *thread, const char *file, int line,
+                               const char *file, int line,
                                const std::string &msg) = 0;
 
     MI_DECLARE_CLASS()
@@ -38,7 +37,7 @@ public:
     DefaultFormatter();
 
     std::string format(LogLevel level, const Class *class_,
-                       const Thread *thread, const char *file, int line,
+                       const char *file, int line,
                        const std::string &msg) override;
 
     /// Should date information be included? The default is yes.

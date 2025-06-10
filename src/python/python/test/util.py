@@ -56,8 +56,7 @@ def fresolver_append_path(func):
     @wraps(func)
     def f(*args, **kwargs):
         # New file resolver
-        thread = mi.Thread.thread()
-        fres_old = thread.file_resolver()
+        fres_old = mi.file_resolver()
         fres = mi.FileResolver(fres_old)
 
         # Append current test directory and project root to the
@@ -65,13 +64,13 @@ def fresolver_append_path(func):
         fres.append(caller_path)
         fres.append(root_path)
 
-        thread.set_file_resolver(fres)
+        mi.set_file_resolver(fres)
 
         # Run actual function
         res = func(*args, **kwargs)
 
         # Restore previous file resolver
-        thread.set_file_resolver(fres_old)
+        mi.set_file_resolver(fres_old)
 
         return res
 

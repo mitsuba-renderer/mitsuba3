@@ -239,7 +239,7 @@ public:
             Throw("Error while loading serialized file \"%s\": %s!", m_name, descr);
         };
 
-        auto fs = Thread::thread()->file_resolver();
+        auto fs = mitsuba::file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
         m_name = file_path.filename().string();
 

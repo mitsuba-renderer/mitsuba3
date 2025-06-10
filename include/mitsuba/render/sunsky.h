@@ -544,7 +544,7 @@ build_tgmm_distribution(const DynamicBuffer<Float> &tgmm_tables,
  */
 template <typename FileType, typename OutType>
 DynamicBuffer<OutType> sunsky_array_from_file(const std::string &path) {
-    auto fs = Thread::thread()->file_resolver();
+    auto fs = mitsuba::file_resolver();
     fs::path file_path = fs->resolve(path);
     if (!fs::exists(file_path))
         Log(Error, "\"%s\": file does not exist!", file_path);

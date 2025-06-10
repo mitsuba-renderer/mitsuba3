@@ -25,7 +25,6 @@ struct DictInstance {
 };
 
 struct DictParseContext {
-    ThreadEnvironment env;
     std::map<std::string, DictInstance> instances;
     std::map<std::string, std::string> aliases;
     bool parallel = false;
@@ -116,22 +115,21 @@ MI_PY_EXPORT(xml) {
         "load_dict",
         [](const nb::dict dict, bool parallel) {
             // Make a backup copy of the FileResolver, which will be restored after parsing
-            ref<FileResolver> fs_backup = Thread::thread()->file_resolver();
-            Thread::thread()->set_file_resolver(new FileResolver(*fs_backup));
+            ref<FileResolver> fs_backup = mitsuba::file_resolver();
+            mitsuba::set_file_resolver(new FileResolver(*fs_backup));
 
             DictParseContext ctx;
             ctx.parallel = parallel;
-            ctx.env = ThreadEnvironment();
 
             try {
                 parse_dictionary<Float, Spectrum>(ctx, "__root__", dict);
                 std::unordered_map<std::string, Task*> task_map;
                 instantiate_node<Float, Spectrum>(ctx, "__root__", task_map);
                 auto objects = mitsuba::xml::detail::expand_node(ctx.instances["__root__"].object);
-                Thread::thread()->set_file_resolver(fs_backup.get());
+                mitsuba::set_file_resolver(fs_backup.get());
                 return single_object_or_list(objects);
             } catch(...) {
-                Thread::thread()->set_file_resolver(fs_backup.get());
+                mitsuba::set_file_resolver(fs_backup.get());
                 throw;
             }
         },
@@ -345,7 +343,7 @@ void parse_dictionary(DictParseContext &ctx,
             }
 
             if (type2 == "resources") {
-                ref<FileResolver> fs = Thread::thread()->file_resolver();
+                ref<FileResolver> fs = mitsuba::file_resolver();
                 std::string path_ = nb::cast<std::string>(dict2["path"]);
                 fs::path resource_path(path_);
                 if (!resource_path.is_absolute()) {
@@ -470,7 +468,6 @@ Task *instantiate_node(DictParseContext &ctx,
     }
 
     auto instantiate = [&ctx, path, scope, backend]() {
-        ScopedSetThreadEnvironment set_env(ctx.env);
         mitsuba::xml::ScopedSetJITScope set_scope(ctx.parallel ? backend : 0u, scope);
 
         auto &inst = ctx.instances[path];

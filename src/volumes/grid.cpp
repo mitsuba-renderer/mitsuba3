@@ -218,7 +218,7 @@ public:
                     Throw("Tensor shape at index 3 is %lu invalid. Only volumes with 1, 3 or 6 "
                           "channels are supported!", to_string(), channel_count);
             } else {
-                FileResolver *fs = Thread::thread()->file_resolver();
+                FileResolver *fs = mitsuba::file_resolver();
                 fs::path file_path = fs->resolve(props.string("filename"));
                 if (!fs::exists(file_path))
                     Log(Error, "\"%s\": file does not exist!", file_path);
