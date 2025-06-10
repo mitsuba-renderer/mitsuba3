@@ -248,7 +248,7 @@ using PluginEntryFn = void (*)(std::string_view name, PluginRegisterFn);
 #define MI_EXPORT_PLUGIN(Name)                                                 \
     extern "C" MI_EXPORT void init_plugin(std::string_view name,               \
                                           PluginRegisterFn fn) {               \
-        MTS_REGISTER_PLUGIN(cb, name, Name);                                   \
+        MI_REGISTER_PLUGIN(fn, name, Name);                                    \
     }
 
 // -----------------------------------------------------------------------------

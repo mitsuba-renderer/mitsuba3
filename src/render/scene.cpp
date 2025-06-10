@@ -36,7 +36,7 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
                 m_emitters.push_back(shape->emitter());
             if (shape->is_sensor())
                 m_sensors.push_back(shape->sensor());
-            if (shape->is_shapegroup()) {
+            if (shape->is_shape_group()) {
                 m_shapegroups.push_back((ShapeGroup*)shape);
             } else {
                 m_bbox.expand(shape->bbox());
@@ -484,9 +484,14 @@ Scene<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f &ss,
 
 MI_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *callback) {
     for (auto& child : m_children) {
-        std::string id = child->id();
-        if (id.empty() || string::starts_with(id, "_unnamed_"))
-            id = child->class_()->name();
+        std::string id;
+        if (auto *variant_obj = dynamic_cast<VariantObject<Float, Spectrum>*>(child.get())) {
+            id = std::string(variant_obj->id());
+        }
+        if (id.empty() || string::starts_with(id, "_unnamed_")) {
+            // Use a generic identifier based on object type
+            id = "object_" + std::to_string(reinterpret_cast<uintptr_t>(child.get()));
+        }
         callback->put_object(id, child.get(), +ParamFlags::Differentiable);
     }
 }

@@ -200,7 +200,7 @@ Mesh<Float, Spectrum>::set_bsdf(typename Mesh<Float, Spectrum>::BSDF *bsdf) {
 
 MI_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) const {
     ref<FileStream> stream =
-        new FileStream(filename, FileStream::ETruncReadWrite);
+        new FileStream(fs::path(filename), FileStream::ETruncReadWrite);
 
     Timer timer;
     Log(Info, "Writing mesh to \"%s\" ..", filename);
@@ -652,7 +652,7 @@ Mesh<Float, Spectrum>::merge(const Mesh *other) const {
         props.set("sensor", (Object *) m_sensor.get());
     if (m_emitter)
         props.set("emitter", (Object *) m_emitter.get());
-    props.set_bool("face_normals", m_face_normals);
+    props.set<bool>("face_normals", m_face_normals);
 
     ref<Mesh> result = new Mesh(
         m_name + " + " + other->m_name, m_vertex_count + other->vertex_count(),
@@ -1789,7 +1789,7 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index, const ScalarBoundingBox3f &clip) 
 
 MI_VARIANT std::string Mesh<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
-    oss << class_()->name() << "[" << std::endl
+    oss << "Mesh[" << std::endl
         << "  name = \"" << m_name << "\"," << std::endl
         << "  bbox = " << string::indent(m_bbox) << "," << std::endl
         << "  vertex_count = " << m_vertex_count << "," << std::endl

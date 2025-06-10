@@ -81,7 +81,7 @@ inline float lookup_ior(const Properties &props, const std::string &param_name,
     if (props.has_property(param_name) && props.type(param_name) == Properties::Type::Float)
         return props.get<float>(param_name);
     else
-        return lookup_ior(props.string(param_name, default_value));
+        return lookup_ior(props.get<std::string>(param_name, default_value));
 }
 
 inline float lookup_ior(const Properties &props, const std::string &param_name,
@@ -90,7 +90,7 @@ inline float lookup_ior(const Properties &props, const std::string &param_name,
         if (props.type(param_name) == Properties::Type::Float)
             return props.get<float>(param_name);
         else
-            return lookup_ior(props.string(param_name));
+            return lookup_ior(props.get<std::string>(param_name));
     }
     else {
         return default_value;
@@ -101,7 +101,7 @@ template <typename Spectrum, typename Texture>
 ref<Texture> ior_from_file(const std::string &filename) {
     using Float = Properties::Float;
     std::vector<Float> wavelengths, values;
-    spectrum_from_file(filename, wavelengths, values);
+    spectrum_from_file(fs::path(filename), wavelengths, values);
 
     Float unit_conversion = is_spectral_v<Spectrum> ? 1 : Float(MI_CIE_Y_NORMALIZATION);
     for (size_t k = 0; k < wavelengths.size(); ++k)
@@ -109,9 +109,9 @@ ref<Texture> ior_from_file(const std::string &filename) {
 
     Properties props;
     props.set_plugin_name("irregular");
-    props.set_long("size", wavelengths.size());
-    props.set_pointer("wavelengths", wavelengths.data());
-    props.set_pointer("values", values.data());
+    props.set<int64_t>("size", wavelengths.size());
+    props.set<const void*>("wavelengths", wavelengths.data());
+    props.set<const void*>("values", values.data());
 
     ref<Texture> tex = PluginManager::instance()->create_object<Texture>(props);
 
@@ -122,11 +122,11 @@ ref<Texture> ior_from_file(const std::string &filename) {
         Properties props2;
         if (is_monochromatic_v<Spectrum>) {
             props2 = Properties("uniform");
-            props2.set_float("value", Float(luminance(color)));
+            props2.set<Float>("value", Float(luminance(color)));
         } else {
             props2 = Properties("srgb");
-            props2.set_color("color", color);
-            props2.set_bool("unbounded", true);
+            props2.set<Color<Float, 3>>("color", color);
+            props2.set<bool>("unbounded", true);
         }
 
         tex = PluginManager::instance()->create_object<Texture>(props2);

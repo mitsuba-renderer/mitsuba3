@@ -64,8 +64,8 @@ template <typename Point_> struct Transform {
 
     template <typename T,  dr::enable_if_t<!std::is_same_v<T, Point_>> = 0>
     Transform(const Transform<T> &transform)
-        : matrix(transform.matrix),
-          inverse_transpose(transform.inverse_transpose) { }
+        : matrix(dr::Matrix<dr::scalar_t<T>, Size>(transform.matrix)),
+          inverse_transpose(dr::Matrix<dr::scalar_t<T>, Size>(transform.inverse_transpose)) { }
 
     /// Concatenate transformations
     MI_INLINE Transform operator*(const Transform &other) const {

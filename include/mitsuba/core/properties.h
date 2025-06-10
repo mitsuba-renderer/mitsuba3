@@ -164,6 +164,42 @@ public:
     template <typename T> T get(std::string_view name, const T &def_val) const;
 
     /**
+     * \brief Retrieve a texture parameter (dummy implementation)
+     *
+     * TODO: This is a placeholder that will be implemented later.
+     * For now, it just returns nullptr to allow compilation.
+     */
+    template <typename TextureType> 
+    ref<TextureType> texture(std::string_view name) const;
+
+    /**
+     * \brief Retrieve a texture parameter with default (dummy implementation)
+     *
+     * TODO: This is a placeholder that will be implemented later.
+     * For now, it just returns the default value to allow compilation.
+     */
+    template <typename TextureType>
+    ref<TextureType> texture(std::string_view name, const ref<TextureType> &def_val) const;
+
+    /**
+     * \brief Retrieve a D65 texture parameter (dummy implementation)
+     *
+     * TODO: This is a placeholder that will be implemented later.
+     * For now, it just returns nullptr to allow compilation.
+     */
+    template <typename TextureType>
+    ref<TextureType> texture_d65(std::string_view name) const;
+
+    /**
+     * \brief Retrieve a D65 texture parameter with default (dummy implementation)
+     *
+     * TODO: This is a placeholder that will be implemented later.
+     * For now, it just returns the default value to allow compilation.
+     */
+    template <typename TextureType>
+    ref<TextureType> texture_d65(std::string_view name, const ref<TextureType> &def_val) const;
+
+    /**
      * \brief Set a parameter value
      *
      * When a parameter with a matching names is already present, the method

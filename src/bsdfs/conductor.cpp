@@ -227,14 +227,14 @@ public:
 
         m_specular_reflectance = props.texture<Texture>("specular_reflectance", 1.f);
 
-        std::string material = props.string("material", "none");
+        std::string material = props.get<std::string>("material", "none");
         if (props.has_property("eta") || material == "none") {
             m_eta = props.texture<Texture>("eta", 0.f);
             m_k   = props.texture<Texture>("k",   1.f);
             if (material != "none")
                 Throw("Should specify either (eta, k) or material, not both.");
         } else {
-            std::tie(m_eta, m_k) = complex_ior_from_file<Spectrum, Texture>(props.string("material", "Cu"));
+            std::tie(m_eta, m_k) = complex_ior_from_file<Spectrum, Texture>(props.get<std::string>("material", "Cu"));
         }
     }
 
