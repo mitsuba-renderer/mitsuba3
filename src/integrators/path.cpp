@@ -314,7 +314,7 @@ public:
             // Reorder threads based on the shape they hit
             ls.pi = scene->ray_intersect_preliminary(ls.ray,
                                                      /* coherent = */ false,
-                                                     /* reorder = */ true,
+                                                     /* reorder = */ jit_flag(JitFlag::LoopRecord),
                                                      /* reorder_hint = */ 0,
                                                      /* reorder_hint_bits = */ 0,
                                                      ls.active);
