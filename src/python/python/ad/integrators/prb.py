@@ -254,7 +254,7 @@ class PRBIntegrator(RBIntegrator):
 
             pi = scene.ray_intersect_preliminary(ray,
                                                  coherent=False,
-                                                 reorder=True,
+                                                 reorder=dr.flag(dr.JitFlag.LoopRecord),
                                                  active=active)
 
         return (

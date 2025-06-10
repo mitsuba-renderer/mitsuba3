@@ -383,7 +383,7 @@ class PathProjectiveIntegrator(PSIntegrator):
 
             pi = scene.ray_intersect_preliminary(ray,
                                                  coherent=False,
-                                                 reorder=True,
+                                                 reorder=dr.flag(dr.JitFlag.LoopRecord),
                                                  active=active)
 
         return (
@@ -469,7 +469,8 @@ class PathProjectiveIntegrator(PSIntegrator):
             si_boundary = scene.ray_intersect(ray_boundary,
                                               ray_flags=mi.RayFlags.All,
                                               coherent=False,
-                                              reorder=True, active=active)
+                                              reorder=True,
+                                              active=active)
         else:
             with dr.resume_grad():
                 si_boundary = scene.ray_intersect(
@@ -541,7 +542,7 @@ class PathProjectiveIntegrator(PSIntegrator):
             si_loop[active_loop] = scene.ray_intersect(ray_next,
                                                        ray_flags=mi.RayFlags.All,
                                                        coherent=False,
-                                                       reorder=True,
+                                                       reorder=dr.flag(dr.JitFlag.LoopRecord),
                                                        active=active_loop)
 
             # Update the active lanes
