@@ -163,6 +163,15 @@ class PathProjectiveIntegrator(PSIntegrator):
         η = mi.Float(1)                               # Index of refraction
         active = mi.Bool(active)                      # Active SIMD lanes
         depth_init = mi.UInt32(depth)                 # Initial depth
+        pi = dr.zeros(mi.PreliminaryIntersection3f)
+
+        if dr.hint(ignore_ray, mode='scalar'):
+            si = si_shade
+        else:
+            pi = scene.ray_intersect_preliminary(ray,
+                                                 coherent=True,
+                                                 reorder=False,
+                                                 active=active)
 
         # Variables caching information
         prev_si         = dr.zeros(mi.SurfaceInteraction3f)
@@ -180,14 +189,13 @@ class PathProjectiveIntegrator(PSIntegrator):
             active_next = mi.Bool(active)
 
             # Compute a surface interaction that tracks derivatives arising
-            # from differentiable shape parameters (position, normals, etc).
+            # from differentiable shape parameters (position, normals, etc.)
             # In primal mode, this is just an ordinary ray tracing operation.
             use_si_shade = ignore_ray & (depth == depth_init)
             with dr.resume_grad(when=not primal):
-                si = scene.ray_intersect(ray,
-                                         ray_flags=mi.RayFlags.All,
-                                         coherent=(depth == 0),
-                                         active=active_next & ~use_si_shade)
+                si = pi.compute_surface_interaction(ray,
+                                                    ray_flags=mi.RayFlags.All,
+                                                    active=active_next & ~use_si_shade)
             if dr.hint(ignore_ray, mode='scalar'):
                 si[use_si_shade] = si_shade
 
@@ -373,6 +381,11 @@ class PathProjectiveIntegrator(PSIntegrator):
             depth[si.is_valid()] += 1
             active = active_next
 
+            pi = scene.ray_intersect_preliminary(ray,
+                                                 coherent=False,
+                                                 reorder=True,
+                                                 active=active)
+
         return (
             L if primal else δL, # Radiance/differential radiance
             depth != 0,          # Ray validity flag for alpha blending
@@ -453,13 +466,17 @@ class PathProjectiveIntegrator(PSIntegrator):
         ss_importance.d = -ss_importance.d
         ray_boundary = ss_importance.spawn_ray(wavelengths)
         if dr.hint(preprocess, mode='scalar'):
-            si_boundary = scene.ray_intersect(ray_boundary, active=active)
+            si_boundary = scene.ray_intersect(ray_boundary,
+                                              ray_flags=mi.RayFlags.All,
+                                              coherent=False,
+                                              reorder=True, active=active)
         else:
             with dr.resume_grad():
                 si_boundary = scene.ray_intersect(
                     ray_boundary,
                     ray_flags=mi.RayFlags.All | mi.RayFlags.FollowShape,
                     coherent=False,
+                    reorder=True,
                     active=active)
         active = active & si_boundary.is_valid()
 
@@ -521,7 +538,11 @@ class PathProjectiveIntegrator(PSIntegrator):
 
             # Get the next surface interaction
             ray_next = si_loop.spawn_ray(wo_bsdf_world)
-            si_loop[active_loop] = scene.ray_intersect(ray_next, active_loop)
+            si_loop[active_loop] = scene.ray_intersect(ray_next,
+                                                       ray_flags=mi.RayFlags.All,
+                                                       coherent=False,
+                                                       reorder=True,
+                                                       active=active_loop)
 
             # Update the active lanes
             active_loop &= si_loop.is_valid()
