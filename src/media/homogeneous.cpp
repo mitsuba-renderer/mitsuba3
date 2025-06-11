@@ -194,6 +194,8 @@ public:
 private:
     ref<Volume> m_sigmat, m_albedo;
     ScalarFloat m_scale;
+
+    MI_TRAVERSE_CB(Base, m_sigmat, m_albedo, m_scale);
 };
 
 MI_IMPLEMENT_CLASS_VARIANT(HomogeneousMedium, Medium)
