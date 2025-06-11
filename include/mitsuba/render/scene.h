@@ -222,8 +222,9 @@ public:
      *
      * \param reorder
      *    Setting this flag to \c true will trigger a reordering of the threads
-     *    using the GPU's Shader Execution Reordering (SER) functionality. This
-     *    flag has no effec in scalar or LLVM variants.
+     *    using the GPU's Shader Execution Reordering (SER) functionality if the
+     *    scene's \c allow_thread_reordering flag was also set. This flag has no
+    *     effect in scalar or LLVM variants.
      *
      * \param reorder_hint
      *    The reordering will always shuffle the threads based on the shape
@@ -425,8 +426,9 @@ public:
      *
      * \param reorder
      *    Setting this flag to \c true will trigger a reordering of the threads
-     *    using the GPU's Shader Execution Reordering (SER) functionality. This
-     *    flag has no effec in scalar or LLVM variants.
+     *    using the GPU's Shader Execution Reordering (SER) functionality if the
+     *    scene's \c allow_thread_reordering flag was also set. This flag has
+     *    no effect in scalar or LLVM variants.
      *
      * \param reorder_hint
      *    The reordering will always shuffle the threads based on the shape
@@ -831,6 +833,7 @@ protected:
     std::unique_ptr<DiscreteDistribution<Float>> m_silhouette_distr = nullptr;
 
     bool m_shapes_grad_enabled;
+    bool m_thread_reordering;
 };
 
 /// Dummy function which can be called to ensure that the librender shared library is loaded

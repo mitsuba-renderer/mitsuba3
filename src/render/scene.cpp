@@ -20,6 +20,8 @@
 NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
+    m_thread_reordering = props.get<bool>("allow_thread_reordering", true);
+
     for (auto &[k, v] : props.objects()) {
         Scene *scene           = dynamic_cast<Scene *>(v.get());
         Shape *shape           = dynamic_cast<Shape *>(v.get());
@@ -66,6 +68,19 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
     // Create sensors' shapes (environment sensors)
     for (Sensor *sensor: m_sensors)
         sensor->set_scene(this);
+
+    // Mark backend-specific properties as queried
+    props.mark_queried("embree_use_robust_intersections");
+    props.mark_queried("embree_use_robust_intersections");
+    props.mark_queried("kd_intersection_cost");
+    props.mark_queried("kd_traversal_cost");
+    props.mark_queried("kd_empty_space_bonus");
+    props.mark_queried("kd_stop_prims");
+    props.mark_queried("kd_max_depth");
+    props.mark_queried("kd_min_max_bins");
+    props.mark_queried("kd_clip");
+    props.mark_queried("kd_retract_bad_splits");
+    props.mark_queried("kd_exact_primitive_threshold");
 
     if constexpr (dr::is_cuda_v<Float>)
         accel_init_gpu(props);
@@ -491,6 +506,7 @@ Scene<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f &ss,
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *callback) {
+    callback->put_parameter("thread_reordering", m_thread_reordering, +ParamFlags::NonDifferentiable);
     for (auto& child : m_children) {
         std::string id = child->id();
         if (id.empty() || string::starts_with(id, "_unnamed_"))
