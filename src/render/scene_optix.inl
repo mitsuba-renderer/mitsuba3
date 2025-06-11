@@ -636,6 +636,9 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
         };
         uint32_t hitobject_out[7];
 
+        // Scene property takes precedence
+        reorder &= m_thread_reordering;
+
         jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
                             has_instances ? 7 : 6, fields, hitobject_out,
                             reorder, reorder_hint.index(), reorder_hint_bits,

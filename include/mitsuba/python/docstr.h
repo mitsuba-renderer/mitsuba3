@@ -7045,6 +7045,8 @@ static const char *__doc_mitsuba_Scene_m_silhouette_shapes = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_silhouette_shapes_dr = R"doc()doc";
 
+static const char *__doc_mitsuba_Scene_m_thread_reordering = R"doc()doc";
+
 static const char *__doc_mitsuba_Scene_parameters_changed = R"doc(Update internal state following a parameter update)doc";
 
 static const char *__doc_mitsuba_Scene_pdf_emitter =
@@ -7233,7 +7235,8 @@ Parameter ``coherent``:
 Parameter ``reorder``:
     Setting this flag to ``True`` will trigger a reordering of the
     threads using the GPU's Shader Execution Reordering (SER)
-    functionality. This flag has no effec in scalar or LLVM variants.
+    functionality if the scene's ``allow_thread_reordering`` flag was
+    also set. This flag has no effect in scalar or LLVM variants.
 
 Parameter ``reorder_hint``:
     The reordering will always shuffle the threads based on the shape
@@ -7377,7 +7380,8 @@ Parameter ``coherent``:
 Parameter ``reorder``:
     Setting this flag to ``True`` will trigger a reordering of the
     threads using the GPU's Shader Execution Reordering (SER)
-    functionality. This flag has no effec in scalar or LLVM variants.
+    functionality if the scene's ``allow_thread_reordering`` flag was
+    also set. This flag has no effect in scalar or LLVM variants.
 
 Parameter ``reorder_hint``:
     The reordering will always shuffle the threads based on the shape
