@@ -822,7 +822,7 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
 
     PreliminaryIntersection3f pi =
         m_parameterization->ray_intersect_preliminary(
-            ray, /* coherent = */ true, active);
+            ray, /* coherent = */ true, false, 0, 0, active);
     active &= pi.is_valid();
 
     if (dr::none_or<false>(active))

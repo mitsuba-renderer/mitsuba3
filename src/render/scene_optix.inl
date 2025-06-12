@@ -590,6 +590,9 @@ MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
 
 MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
+                                                      bool reorder,
+                                                      UInt32 reorder_hint,
+                                                      uint32_t reorder_hint_bits,
                                                       Mask active) const {
     if constexpr (dr::is_cuda_v<Float>) {
         MiOptixSceneState &s = *(MiOptixSceneState *) m_accel;
@@ -633,10 +636,14 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
         };
         uint32_t hitobject_out[7];
 
+        // Scene property takes precedence
+        reorder &= m_thread_reordering;
+
         jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
-                            has_instances ? 7 : 6, fields, hitobject_out, false,
-                            active.index(), s.pipeline_jit_index,
-                            s.sbt_jit_index);
+                            has_instances ? 7 : 6, fields, hitobject_out,
+                            reorder, reorder_hint.index(), reorder_hint_bits,
+                            false, active.index(),
+                            s.pipeline_jit_index, s.sbt_jit_index);
 
         Mask hitobject_is_hit = UInt32::steal(hitobject_out[0]) != 0;
         active &= hitobject_is_hit;
@@ -657,13 +664,13 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
         // This field is only used by embree, but we still need to initialize it for vcalls
         pi.shape_index = dr::zeros<UInt32>();
 
-        // jit_optix_ray_trace leaves payload data uninitialized for inactive lanes
+        // jit_optix_ray_trace leaves data uninitialized for inactive lanes
         pi.t[!active] = dr::Infinity<Float>;
-
-        // Ensure pointers are initialized to nullptr for inactive lanes
         active &= pi.is_valid();
         pi.shape[!active]    = nullptr;
         pi.instance[!active] = nullptr;
+        pi.prim_uv[!active] = dr::zeros<Point2f>();
+        pi.prim_index[!active] = 0;
 
         return pi;
     } else {
@@ -675,9 +682,12 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
 
 MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
+                                          bool reorder, UInt32 reorder_hint,
+                                          uint32_t reorder_hint_bits,
                                           Mask active) const {
     if constexpr (dr::is_cuda_v<Float>) {
-        PreliminaryIntersection3f pi = ray_intersect_preliminary_gpu(ray, active);
+        PreliminaryIntersection3f pi = ray_intersect_preliminary_gpu(
+            ray, reorder, reorder_hint, reorder_hint_bits, active);
         return pi.compute_surface_interaction(ray, ray_flags, active);
     } else {
         DRJIT_MARK_USED(ray);
@@ -724,9 +734,9 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
         uint32_t hitobject_out;
 
         jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
-                                1, &field, &hitobject_out,
-                                false, active.index(),
-                                s.pipeline_jit_index, s.sbt_jit_index);
+                            1, &field, &hitobject_out,
+                            false, 0, 0, false, active.index(),
+                            s.pipeline_jit_index, s.sbt_jit_index);
 
         UInt32 hitobject_is_hit = UInt32::steal(hitobject_out);
 

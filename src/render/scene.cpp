@@ -20,6 +20,8 @@
 NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
+    m_thread_reordering = props.get<bool>("allow_thread_reordering", true);
+
     for (auto &[k, v] : props.objects()) {
         Scene *scene           = dynamic_cast<Scene *>(v.get());
         Shape *shape           = dynamic_cast<Shape *>(v.get());
@@ -66,6 +68,19 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
     // Create sensors' shapes (environment sensors)
     for (Sensor *sensor: m_sensors)
         sensor->set_scene(this);
+
+    // Mark backend-specific properties as queried
+    props.mark_queried("embree_use_robust_intersections");
+    props.mark_queried("embree_use_robust_intersections");
+    props.mark_queried("kd_intersection_cost");
+    props.mark_queried("kd_traversal_cost");
+    props.mark_queried("kd_empty_space_bonus");
+    props.mark_queried("kd_stop_prims");
+    props.mark_queried("kd_max_depth");
+    props.mark_queried("kd_min_max_bins");
+    props.mark_queried("kd_clip");
+    props.mark_queried("kd_retract_bad_splits");
+    props.mark_queried("kd_exact_primitive_threshold");
 
     if constexpr (dr::is_cuda_v<Float>)
         accel_init_gpu(props);
@@ -174,21 +189,29 @@ MI_VARIANT Scene<Float, Spectrum>::~Scene() {
 // -----------------------------------------------------------------------
 
 MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
-Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask coherent, Mask active) const {
+Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags,
+                                      Mask coherent, bool reorder,
+                                      UInt32 reorder_hint,
+                                      uint32_t reorder_hint_bits,
+                                      Mask active) const {
     MI_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
     DRJIT_MARK_USED(coherent);
 
     if constexpr (dr::is_cuda_v<Float>)
-        return ray_intersect_gpu(ray, ray_flags, active);
+        return ray_intersect_gpu(ray, ray_flags, reorder, reorder_hint, reorder_hint_bits, active);
     else
         return ray_intersect_cpu(ray, ray_flags, coherent, active);
 }
 
 MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
-Scene<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray, Mask coherent, Mask active) const {
+Scene<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray,
+                                                  Mask coherent, bool reorder,
+                                                  UInt32 reorder_hint,
+                                                  uint32_t reorder_hint_bits,
+                                                  Mask active) const {
     DRJIT_MARK_USED(coherent);
     if constexpr (dr::is_cuda_v<Float>)
-        return ray_intersect_preliminary_gpu(ray, active);
+        return ray_intersect_preliminary_gpu(ray, reorder, reorder_hint, reorder_hint_bits, active);
     else
         return ray_intersect_preliminary_cpu(ray, coherent, active);
 }
@@ -483,6 +506,7 @@ Scene<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f &ss,
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *callback) {
+    callback->put_parameter("thread_reordering", m_thread_reordering, +ParamFlags::NonDifferentiable);
     for (auto& child : m_children) {
         std::string id = child->id();
         if (id.empty() || string::starts_with(id, "_unnamed_"))
@@ -593,11 +617,14 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
     NotImplementedError("accel_release_gpu");
 }
 MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
-Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &, Mask) const {
+Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &, bool, UInt32, uint32_t, Mask) const {
     NotImplementedError("ray_intersect_preliminary_gpu");
 }
 MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
-Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &, uint32_t, Mask) const {
+Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
+                                          bool reorder, UInt32 reorder_hint,
+                                          uint32_t reorder_hint_bits,
+                                          Mask active) const {
     NotImplementedError("ray_intersect_naive_gpu");
 }
 MI_VARIANT typename Scene<Float, Spectrum>::Mask
