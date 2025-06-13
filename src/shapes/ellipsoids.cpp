@@ -520,6 +520,5 @@ private:
     void *m_device_bboxes = nullptr;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Ellipsoids, Shape)
-MI_EXPORT_PLUGIN(Ellipsoids, "Ellipsoids");
+MI_EXPORT_PLUGIN(Ellipsoids)
 NAMESPACE_END(mitsuba)

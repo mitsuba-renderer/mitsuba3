@@ -1,59 +1,42 @@
 #include <iostream>
 #include <variant>
+#include <any>
 #include <tsl/robin_map.h>
 #include <drjit/tensor.h>
 
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/core/plugin.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
-using Float         = typename Properties::Float;
+using Float         = double;
 using Array3f       = dr::Array<Float, 3>;
-using Color3f       = typename Properties::Color3f;
-using Transform4f   = typename Properties::Transform4f;
+using Color3f       = Color<Float, 3>;
+using Transform4f   = Transform<Point<double, 4>>;
 
-using Variant = std::variant<bool, int64_t, Float, Array3f, std::string,
-                             Transform4f, Color3f, Properties::NamedReference,
-                             ref<Object>, const void *>;
+using Variant = std::variant<bool, int64_t, Float, std::string,
+                             Array3f, Color3f, Transform4f,
+                             Properties::Reference, ref<Object>,
+                             std::any>;
 
 static const char *variant_name(const Variant &v) {
     struct Visitor {
         const char *operator()(const bool&) { return "bool"; }
         const char *operator()(const int64_t&) { return "int"; }
         const char *operator()(const Float&) { return "float"; }
-        const char *operator()(const Array3f&) { return "vector"; }
         const char *operator()(const std::string&) { return "string"; }
+        const char *operator()(const Array3f&) { return "vector"; }
+        const char *operator()(const Color3f&) { return "color"; }
         const char *operator()(const Transform4f&) { return "transform"; }
+        const char *operator()(const Properties::Reference&) { return "reference"; }
         const char *operator()(const ref<Object>&) { return "object"; }
-        const char *operator()(const void *) { return "void *"; }
+        const char *operator()(const std::any&) { return "any"; }
     };
 
     return std::visit(Visitor(), v);
 }
-
-// Template to map input types to storage types in the Variant
-template <typename T, typename = void> struct prop_type { using type = T; };
-
-// Arithmetic types (except double/bool) map to their double precision equivalent
-template <typename T>
-struct prop_type<T, std::enable_if_t<std::is_arithmetic_v<T> && !std::is_same_v<T, double> && !std::is_same_v<T, bool>>> {
-    using type = std::conditional_t<std::is_floating_point_v<T>, Float, int64_t>;
-};
-
-// Vector/Point/Array types map to Array3f
-template <typename T> struct prop_type<Vector<T, 3>> { using type = Array3f; };
-template <typename T> struct prop_type<Point<T, 3>> { using type = Array3f; };
-template <typename T> struct prop_type<dr::Array<T, 3>> { using type = Array3f; };
-
-// Color types map to Color3f
-template <typename T> struct prop_type<Color<T, 3>> { using type = Color3f; };
-
-// Transform types map to Transform4f
-template <typename T, size_t N> struct prop_type<Transform<Point<T, N>>> { using type = Transform4f; };
-
-template <typename T> using prop_type_t = typename prop_type<T>::type;
 
 struct Entry {
     Variant value;
@@ -62,7 +45,7 @@ struct Entry {
     Entry() = default;
 
     template <typename T>
-    Entry(const T &v) : value(prop_type_t<T>(v)) { }
+    Entry(const T &v) : value(v) { }
 
     /// Convert the attribute or fail
     template <typename T> T get(std::string_view name) const {
@@ -76,13 +59,6 @@ struct Entry {
                 return *storage_result;
             } else {
                 // Handle integer bounds checking
-                if constexpr (std::is_integral_v<BaseType>) {
-                    int64_t val = *storage_result;
-                    if (val < (int64_t) std::numeric_limits<BaseType>::min() || val > (int64_t) std::numeric_limits<BaseType>::max()) {
-                        Throw("Property \"%s\": value %lld is out of bounds",
-                              name, val);
-                    }
-                    return static_cast<BaseType>(val);
                 } else {
                     return BaseType(*storage_result);
                 }
@@ -148,13 +124,13 @@ Properties::Type Properties::type(std::string_view name) const {
         Type operator()(const int64_t &) { return Type::Long; }
         Type operator()(const Float &) { return Type::Float; }
         Type operator()(const Array3f &) { return Type::Array3f; }
-        Type operator()(std::string_view ) { return Type::String; }
+        Type operator()(const std::string&) { return Type::String; }
         Type operator()(const Transform3f &) { return Type::Transform3f; }
         Type operator()(const Transform4f &) { return Type::Transform4f; }
         Type operator()(const Color3f &) { return Type::Color; }
-        Type operator()(const NamedReference &) { return Type::NamedReference; }
+        Type operator()(const Reference &) { return Type::Reference; }
         Type operator()(const ref<Object> &) { return Type::Object; }
-        Type operator()(const void *&) { return Type::Pointer; }
+        Type operator()(const std::any &) { return Type::Any; }
     };
 
     return std::visit(Visitor(), it->second.value);
@@ -207,12 +183,12 @@ std::vector<std::string> Properties::property_names() const {
     return result;
 }
 
-std::vector<std::pair<std::string, Properties::NamedReference>>
-Properties::named_references(bool mark_queried) const {
-    std::vector<std::pair<std::string, NamedReference>> result;
+std::vector<std::pair<std::string, Properties::Reference>>
+Properties::references(bool mark_queried) const {
+    std::vector<std::pair<std::string, Reference>> result;
     result.reserve(d->entries.size());
     for (const auto &e : d->entries) {
-        const NamedReference *nr = std::get_if<NamedReference>(&e.second.value);
+        const Reference *nr = std::get_if<Reference>(&e.second.value);
         if (!nr)
             continue;
         result.emplace_back(e.first, *nr);
@@ -260,13 +236,9 @@ bool Properties::operator==(const Properties &p) const {
         if (it == p.d->entries.end())
             return false;
 
-        std::visit([&](const auto &value) {
-            using T = std::decay_t<decltype(value)>;
-            const T *p = std::get_if<T>(&e.second.value);
-            if (!p)
-                return false;
-            return dr::all(value == *p);
-        }, it->second.value);
+        // CLAUDE: compare the typeids of the two Entry variants and return false if they don't match.
+        // If they do match, call a visitor that casts both to the same type and calls operator==.
+        // It should always return false when the type is std::any, since those cannot easily be compared.
     }
 
     return true;
@@ -281,12 +253,12 @@ namespace {
         void operator()(const int64_t &i) { os << i; }
         void operator()(const Float &f) { os << f; }
         void operator()(const Array3f &t) { os << t; }
-        void operator()(std::string_view s) { os << "\"" << s << "\""; }
+        void operator()(const std::string &s) { os << "\"" << s << "\""; }
         void operator()(const Transform4f &t) { os << t; }
         void operator()(const Color3f &t) { os << t; }
-        void operator()(const Properties::NamedReference &nr) { os << "\"" << (const std::string &) nr << "\""; }
+        void operator()(const Properties::Reference &nr) { os << "\"" << (const std::string &) nr << "\""; }
         void operator()(const ref<Object> &o) { os << o->to_string(); }
-        void operator()(const void *&p) { os << p; }
+        void operator()(const std::any &) { os << "[any]"; }
     };
 }
 
@@ -333,67 +305,71 @@ std::ostream &operator<<(std::ostream &os, const Properties &p) {
 }
 
 template <typename T>
-void Properties::set(std::string_view name, const T &value, bool error_duplicates) {
-    auto [it, success] = d->entries.insert_or_assign(std::string(name), value);
-    if (!success && error_duplicates)
+void Properties::set_impl(std::string_view name, T &&value, bool raise_if_exists) {
+    auto [it, success] = d->entries.insert_or_assign(std::string(name), std::forward<T>(value));
+    if (!success && raise_if_exists)
         Throw("Property \"%s\" was specified multiple times!", name);
 }
 
-template <typename T> T Properties::get(std::string_view name) const {
-    EntryMap::iterator it = d->entries.find(name);
-    if (it == d->entries.end())
-        Throw("Property \"%s\" has not been specified!", name);
-    T result = it->second.get<T>(name);
-    it->second.queried = true;
-    return result;
-}
-
 template <typename T>
-T Properties::get(std::string_view name, const T &def_val) const {
+T* Properties::get_impl(std::string_view name, bool raise_if_missing) const {
     EntryMap::iterator it = d->entries.find(name);
-    if (it == d->entries.end())
-        return def_val;
-    T result = it->second.get<T>(name);
+    if (it == d->entries.end()) {
+        if (raise_if_missing)
+            Throw("Property \"%s\" has not been specified!", name);
+        else
+            return nullptr;
+    }
+
+    T *value = std::get_if<T>(it->value);
+    if (!value)
+        Throw("The property \"%s\" has the wrong type", name);
+
     it->second.queried = true;
-    return result;
+    return value;
 }
 
 template <typename TextureType>
 ref<TextureType> Properties::texture(std::string_view name) const {
-    // TODO: This is a placeholder implementation.
-    // For now, just return nullptr to allow compilation.
+    // CLAUDE: construct a texture here using the plugin manager, see on how this was done in prior commits
     mark_queried(name);
     return nullptr;
 }
 
 template <typename TextureType>
-ref<TextureType> Properties::texture(std::string_view name, const ref<TextureType> &def_val) const {
-    // TODO: This is a placeholder implementation.
-    // For now, just return the default value to allow compilation.
+ref<TextureType> Properties::texture(std::string_view name, Float def_val) const {
     EntryMap::iterator it = d->entries.find(name);
-    if (it == d->entries.end())
-        return def_val;
-    mark_queried(name);
-    return def_val;
+    if (it == d->entries.end()) {
+        // Create a uniform texture with the default value
+        Log(Warn, "Properties::texture() with float default not fully implemented yet. "
+                  "Returning nullptr for parameter \"%s\" with default %f", name, def_val);
+        mark_queried(name);
+        return nullptr;
+    }
+
+    // Get the actual texture from properties
+    ref<TextureType> result = it->second.get<ref<TextureType>>(name);
+    it->second.queried = true;
+    // CLAUDE: construct a texture here using the plugin manager, see on how this was done in prior commits. Make a default texture if none was found
+    return result;
 }
 
 template <typename TextureType>
-ref<TextureType> Properties::texture_d65(std::string_view name) const {
-    // TODO: This is a placeholder implementation.
-    // For now, just return nullptr to allow compilation.
-    mark_queried(name);
-    return nullptr;
-}
-
-template <typename TextureType>
-ref<TextureType> Properties::texture_d65(std::string_view name, const ref<TextureType> &def_val) const {
-    // TODO: This is a placeholder implementation.
-    // For now, just return the default value to allow compilation.
+ref<TextureType> Properties::texture_d65(std::string_view name, Float def_val) const {
     EntryMap::iterator it = d->entries.find(name);
-    if (it == d->entries.end())
-        return def_val;
-    mark_queried(name);
-    return def_val;
+    if (it == d->entries.end()) {
+        // Create a uniform D65 texture with the default value
+        Log(Warn, "Properties::texture_d65() with float default not fully implemented yet. "
+                  "Returning nullptr for parameter \"%s\" with default %f", name, def_val);
+        mark_queried(name);
+        return nullptr;
+    }
+
+    // Get the actual texture from properties
+    ref<TextureType> result = it->second.get<ref<TextureType>>(name);
+    it->second.queried = true;
+    // CLAUDE construct a texture here using the plugin manager, see on how this was done in prior commits. Make a default texture with D65 whitepoint if none was found
+    return result;
 }
 
 MI_EXPORT_PROP_ALL()

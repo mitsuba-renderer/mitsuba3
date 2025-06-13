@@ -240,7 +240,7 @@ public:
         };
 
         auto fs = Thread::thread()->file_resolver();
-        fs::path file_path = fs->resolve(props.string("filename"));
+        fs::path file_path = fs->resolve(props.get<std::string>("filename"));
         m_name = file_path.filename().string();
 
         Log(Debug, "Loading mesh from \"%s\" ..", m_name);

@@ -168,7 +168,7 @@ public:
             Log(Error, "At least one SRF should be defined");
 
         std::string component_format = string::to_lower(
-            props.string("component_format", "float16"));
+            props.get<std::string>("component_format", "float16"));
 
         // The resulting bitmap is always OpenEXR MultiChannel
         m_file_format = Bitmap::FileFormat::OpenEXR;
@@ -241,10 +241,10 @@ public:
 
         // Create new spectrum with the sampling information
         auto props = Properties("regular");
-        props.set_pointer("values", storage.data());
-        props.set_long("size", n_points);
-        props.set_float("wavelength_min", (double) m_range.x());
-        props.set_float("wavelength_max", (double) m_range.y());
+        props.set("values", (void*)storage.data());
+        props.set("size", (int64_t)n_points);
+        props.set("wavelength_min", (double) m_range.x());
+        props.set("wavelength_max", (double) m_range.y());
         m_srf = PluginManager::instance()->create_object<Texture>(props);
     }
 

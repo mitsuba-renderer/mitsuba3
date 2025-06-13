@@ -678,14 +678,5 @@ constexpr const char * volpath_class_name() {
 }
 NAMESPACE_END(detail)
 
-template <typename Float, typename Spectrum, bool SpectralMis>
-Class *VolpathMisIntegratorImpl<Float, Spectrum, SpectralMis>::m_class
-    = new Class(detail::volpath_class_name<SpectralMis>(), "MonteCarloIntegrator",
-                ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
-
-template <typename Float, typename Spectrum, bool SpectralMis>
-const Class* VolpathMisIntegratorImpl<Float, Spectrum, SpectralMis>::class_() const {
-    return m_class;
-}
 
 NAMESPACE_END(mitsuba)

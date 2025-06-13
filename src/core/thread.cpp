@@ -10,6 +10,7 @@
 #include <chrono>
 #include <cstring>
 #include <unordered_map>
+#include <atomic>
 
 // Required for native thread functions
 #if defined(__linux__)

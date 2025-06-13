@@ -44,7 +44,7 @@ public:
     TabulatedPhaseFunction(const Properties &props) : Base(props) {
         if (props.type("values") == Properties::Type::String) {
             std::vector<std::string> values_str =
-                string::tokenize(props.string("values"), " ,");
+                string::tokenize(props.get<std::string>("values"), " ,");
             std::vector<ScalarFloat> data;
             data.reserve(values_str.size());
 

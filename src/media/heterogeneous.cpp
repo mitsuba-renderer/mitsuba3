@@ -154,8 +154,8 @@ public:
 
     HeterogeneousMedium(const Properties &props) : Base(props) {
         m_is_homogeneous = false;
-        m_albedo = props.volume<Volume>("albedo", 0.75f);
-        m_sigmat = props.volume<Volume>("sigma_t", 1.f);
+        m_albedo = props.get<ref<Volume>>("albedo", nullptr);
+        m_sigmat = props.get<ref<Volume>>("sigma_t", nullptr);
 
         m_scale = props.get<ScalarFloat>("scale", 1.0f);
         m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);

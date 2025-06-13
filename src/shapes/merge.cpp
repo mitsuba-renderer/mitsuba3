@@ -44,15 +44,11 @@ public:
         }
 
         for (auto &kv : tbl) {
-            if (tbl.size() == 1)
-                kv.second->set_id(props.id());
             m_objects.push_back((ref<Object>) kv.second);
         }
 
         Log(Info, "Collapsed %zu into %zu meshes. (took %s, %zu objects ignored)",
             visited, tbl.size(), util::time_string((float) timer.value()), ignored);
-
-        MI_REGISTER_OBJECT("Shape", this);
     }
 
     std::vector<ref<Object>> expand() const override {

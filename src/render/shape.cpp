@@ -65,7 +65,7 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.i
     if (!m_bsdf) {
         Properties props2("diffuse");
         if (m_emitter)
-            props2.set_float("reflectance", 0);
+            props2.set("reflectance", 0.f);
         m_bsdf = PluginManager::instance()->create_object<BSDF>(props2);
     }
 
@@ -79,9 +79,6 @@ MI_VARIANT Shape<Float, Spectrum>::~Shape() {
 #endif
 }
 
-MI_VARIANT ObjectType Shape<Float, Spectrum>::type() const {
-    return ObjectType::Shape;
-}
 
 MI_VARIANT typename Shape<Float, Spectrum>::PositionSample3f
 Shape<Float, Spectrum>::sample_position(Float /*time*/, const Point2f & /*sample*/,

@@ -52,9 +52,9 @@ public:
     IrregularSpectrum(const Properties &props) : Texture(props) {
         if (props.type("values") == Properties::Type::String) {
             std::vector<std::string> wavelengths_str =
-                string::tokenize(props.string("wavelengths"), " ,");
+                string::tokenize(props.get<std::string>("wavelengths"), " ,");
             std::vector<std::string> entry_str, values_str =
-                string::tokenize(props.string("values"), " ,");
+                string::tokenize(props.get<std::string>("values"), " ,");
 
             if (values_str.size() != wavelengths_str.size())
                 Throw("IrregularSpectrum: 'wavelengths' and 'values' parameters must have the same size!");
@@ -80,22 +80,10 @@ public:
                 wavelengths.data(), values.data(), values.size()
             );
         } else {
-            // Scene/property parsing is in double precision, cast to single precision depending on variant.
-            size_t size = props.get<size_t>("size");
-            const double *whl = static_cast<const double*>(props.pointer("wavelengths"));
-            const double *ptr = static_cast<const double*>(props.pointer("values"));
-
-            if constexpr (std::is_same_v<ScalarFloat, double>) {
-                m_distr = IrregularContinuousDistribution<Wavelength>(whl, ptr, size);
-            } else {
-                std::vector<ScalarFloat> values(size), wavelengths(size);
-                for (size_t i=0; i < size; ++i) {
-                    values[i] = (ScalarFloat) ptr[i];
-                    wavelengths[i] = (ScalarFloat) whl[i];
-                }
-                m_distr = IrregularContinuousDistribution<Wavelength>(
-                    wavelengths.data(), values.data(), size);
-            }
+            // TODO: This branch handles internal property parsing that requires
+            // the old pointer() and size() API methods that were removed.
+            // For now, throw an error to indicate this path is not supported.
+            Throw("IrregularSpectrum: Internal property parsing with pointer/size API is not yet supported after Properties refactoring");
         }
     }
 

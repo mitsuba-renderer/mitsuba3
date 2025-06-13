@@ -17,7 +17,7 @@ StreamAppender::StreamAppender(std::ostream *stream)
 StreamAppender::StreamAppender(std::string_view filename)
  : m_fname(filename), m_is_file(true) {
     std::fstream *stream = new std::fstream();
-    stream->open(filename,
+    stream->open(filename.data(),
                  std::fstream::in | std::fstream::out | std::fstream::trunc);
     m_stream = stream;
     m_last_message_was_progress = false;

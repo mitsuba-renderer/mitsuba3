@@ -119,14 +119,14 @@ public:
             if (props.has_property("filename"))
                 Throw("Cannot specify both \"bitmap\" and \"filename\".");
             // Note: ref-counted, so we don't have to worry about lifetime
-            ref<Object> other = props.object("bitmap");
+            ref<Object> other = props.get<ref<Object>>("bitmap");
             Bitmap *b = dynamic_cast<Bitmap *>(other.get());
             if (!b)
                 Throw("Property \"bitmap\" must be a Bitmap instance.");
             bitmap = b;
         } else {
             FileResolver *fs = Thread::thread()->file_resolver();
-            fs::path file_path = fs->resolve(props.string("filename"));
+            fs::path file_path = fs->resolve(props.get<std::string>("filename"));
             m_filename = file_path.filename().string();
             bitmap = new Bitmap(file_path);
         }

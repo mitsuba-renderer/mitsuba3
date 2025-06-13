@@ -3,8 +3,8 @@
 #include <set>
 #include <unordered_map>
 #include <mutex>
+#include <functional>
 
-#include <mitsuba/core/class.h>
 #include <mitsuba/core/config.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/fresolver.h>
@@ -44,6 +44,23 @@ NAMESPACE_BEGIN(detail)
 
 using Float = Properties::Float;
 MI_IMPORT_CORE_TYPES()
+
+static ObjectType node_name_to_object_type(std::string_view node_name) {
+    if (node_name == "scene") return ObjectType::Scene;
+    if (node_name == "sensor") return ObjectType::Sensor;
+    if (node_name == "film") return ObjectType::Film;
+    if (node_name == "emitter") return ObjectType::Emitter;
+    if (node_name == "sampler") return ObjectType::Sampler;
+    if (node_name == "shape") return ObjectType::Shape;
+    if (node_name == "texture") return ObjectType::Texture;
+    if (node_name == "volume") return ObjectType::Volume;
+    if (node_name == "medium") return ObjectType::Medium;
+    if (node_name == "bsdf") return ObjectType::BSDF;
+    if (node_name == "integrator") return ObjectType::Integrator;
+    if (node_name == "phase") return ObjectType::PhaseFunction;
+    if (node_name == "rfilter") return ObjectType::ReconstructionFilter;
+    return ObjectType::Unknown;
+}
 
 static int64_t stoll(const std::string &s) {
     size_t offset = 0;
@@ -157,6 +174,7 @@ struct XMLObject {
     Properties props;
     std::string src_id;
     std::string alias;
+    std::string node_name;  // Store XML node name for object type determination
     std::function<std::string(ptrdiff_t)> offset;
     size_t location = 0;
     ref<Object> object;
@@ -496,11 +514,6 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         src.throw_error(node, "\"%s\" has duplicate id \"%s\" (previous was at %s)",
                             node_name, id, src.offset(it_inst->second.location));
 
-                    auto it2 = tag_class->find(class_key(node_name, ctx.variant));
-                    if (it2 == tag_class->end())
-                        src.throw_error(node, "could not retrieve class object for "
-                                       "tag \"%s\" and variant \"%s\"", node_name, ctx.variant);
-
                     size_t arg_counter_nested = 0;
                     for (pugi::xml_node &ch: node.children()) {
                         auto [arg_name, nested_id] =
@@ -512,12 +525,12 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                             src.throw_error(node, "cannot reference parent id \"%s\" in nested object",
                                             nested_id);
                         if (!nested_id.empty())
-                            props_nested.set_named_reference(arg_name, nested_id);
+                            props_nested.set(arg_name, Properties::NamedReference(nested_id));
                     }
 
                     auto &inst = ctx.instances[id];
                     inst.props = props_nested;
-                    inst.class_ = it2->second;
+                    inst.node_name = node_name;  // Store XML node name
                     inst.offset = src.offset;
                     inst.src_id = src.id;
                     inst.location = node.offset_debug();
@@ -1051,12 +1064,14 @@ static Task *instantiate_node(XMLParseContext &ctx,
         }
 
         try {
-            inst.object = PluginManager::instance()->create_object(props, inst.class_);
+            // Determine object type from the XML node name
+            ObjectType object_type = node_name_to_object_type(inst.node_name);
+            inst.object = PluginManager::instance()->create_object(props, ctx.variant, object_type);
         } catch (const std::exception &e) {
             Throw("Error while loading \"%s\" (near %s): could not instantiate "
                   "%s plugin of type \"%s\": %s",
                   inst.src_id, inst.offset(inst.location),
-                  string::to_lower(inst.class_->name()), props.plugin_name(),
+                  inst.node_name, props.plugin_name(),
                   e.what());
         }
 
@@ -1064,11 +1079,11 @@ static Task *instantiate_node(XMLParseContext &ctx,
         if (!unqueried.empty()) {
             for (auto &v : unqueried) {
                 if (props.type(v) == Properties::Type::Object) {
-                    const auto &obj = props.object(v);
+                    const auto &obj = props.get<ref<Object>>(v);
                     Throw("Error while loading \"%s\" (near %s): unreferenced "
                           "object %s (within %s of type \"%s\")",
                           inst.src_id, inst.offset(inst.location),
-                          obj, string::to_lower(inst.class_->name()),
+                          obj, inst.node_name,
                           inst.props.plugin_name());
                 } else {
                     v = "\"" + v + "\"";
@@ -1078,7 +1093,7 @@ static Task *instantiate_node(XMLParseContext &ctx,
                   "\"%s\" in %s plugin of type \"%s\"",
                   inst.src_id, inst.offset(inst.location),
                   unqueried.size() > 1 ? "properties" : "property", unqueried,
-                  string::to_lower(inst.class_->name()), props.plugin_name());
+                  inst.node_name, props.plugin_name());
         }
     };
 
@@ -1126,13 +1141,13 @@ ref<Object> create_texture_from_rgb(const std::string &name,
                                     const std::string &variant,
                                     bool within_emitter) {
     Properties props(within_emitter ? "d65" : "srgb");
-    props.set_color("color", color);
+    props.set("color", color);
 
     if (!within_emitter && is_unbounded_spectrum(name))
-        props.set_bool("unbounded", true);
+        props.set("unbounded", true);
 
     ref<Object> texture = PluginManager::instance()->create_object(
-        props, Class::for_name("Texture", variant));
+        props, variant, ObjectType::Texture);
     std::vector<ref<Object>> children = texture->expand();
     if (!children.empty())
         return (Object *) children[0].get();
@@ -1147,7 +1162,6 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
                                          bool within_emitter,
                                          bool is_spectral_mode,
                                          bool is_monochromatic_mode) {
-    const Class *class_ = Class::for_name("Texture", variant);
 
     bool is_unbounded = is_unbounded_spectrum(name);
     if (wavelengths.empty()) {
@@ -1159,13 +1173,13 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
                and spectral variants of Mitsuba. */
             Color3f color = const_value * xyz_to_srgb(Color3f(1.0));
             Properties props("srgb");
-            props.set_color("color", color);
-            props.set_bool("unbounded", true);
-            return PluginManager::instance()->create_object(props, class_);
+            props.set("color", color);
+            props.set("unbounded", true);
+            return PluginManager::instance()->create_object(props, variant, ObjectType::Texture);
         } else {
             Properties props("uniform");
-            props.set_float("value", const_value);
-            return PluginManager::instance()->create_object(props, class_);
+            props.set("value", const_value);
+            return PluginManager::instance()->create_object(props, variant, ObjectType::Texture);
         }
     } else {
         /* Detect whether wavelengths are regularly sampled and potentially
@@ -1203,18 +1217,18 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
 
             if (is_regular) {
                 props.set_plugin_name("regular");
-                props.set_long("size", wavelengths.size());
-                props.set_float("wavelength_min", wavelengths.front());
-                props.set_float("wavelength_max", wavelengths.back());
-                props.set_pointer("values", values.data());
+                props.set("size", (int64_t)wavelengths.size());
+                props.set("wavelength_min", wavelengths.front());
+                props.set("wavelength_max", wavelengths.back());
+                props.set("values", (void*)values.data());
             } else {
                 props.set_plugin_name("irregular");
-                props.set_long("size", wavelengths.size());
-                props.set_pointer("wavelengths", wavelengths.data());
-                props.set_pointer("values", values.data());
+                props.set("size", (int64_t)wavelengths.size());
+                props.set("wavelengths", (void*)wavelengths.data());
+                props.set("values", (void*)values.data());
             }
 
-            return PluginManager::instance()->create_object(props, class_);
+            return PluginManager::instance()->create_object(props, variant, ObjectType::Texture);
         } else {
             /* Pre-integrate against the CIE matching curves. In order to match
                the behavior of spectral modes, this function should instead
@@ -1229,16 +1243,16 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
             Properties props;
             if (is_monochromatic_mode) {
                 props = Properties("uniform");
-                props.set_float("value", luminance(color));
+                props.set("value", luminance(color));
             } else {
                 props = Properties("srgb");
-                props.set_color("color", color);
+                props.set("color", color);
 
                 if (within_emitter || is_unbounded)
-                    props.set_bool("unbounded", true);
+                    props.set("unbounded", true);
             }
 
-            return PluginManager::instance()->create_object(props, class_);
+            return PluginManager::instance()->create_object(props, variant, ObjectType::Texture);
         }
     }
 }
@@ -1281,11 +1295,7 @@ std::vector<std::pair<std::string, Properties>> xml_to_properties(const fs::path
         // using named reference properties.
         std::vector<std::pair<std::string, Properties>> props;
         for (auto &[id, object] : ctx.instances) {
-            if (!object.class_) {
-                Log(Warn, "Cannot find class for property with id \"%s\".", id);
-                continue;
-            }
-            props.emplace_back(object.class_->name(), std::move(object.props));
+            props.emplace_back(object.node_name, std::move(object.props));
         }
 
         return props;

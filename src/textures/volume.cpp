@@ -52,7 +52,7 @@ public:
     MI_IMPORT_TYPES(Texture, Volume)
 
     VolumeAdapter(const Properties &props) : Texture(props) {
-        m_volume = props.volume<Volume>("volume", 0.75f);
+        m_volume = props.get<ref<Volume>>("volume", nullptr);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &it,

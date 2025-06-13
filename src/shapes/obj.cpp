@@ -151,7 +151,7 @@ public:
         bool flip_tex_coords = props.get<bool>("flip_tex_coords", true);
 
         auto fr = Thread::thread()->file_resolver();
-        fs::path file_path = fr->resolve(props.string("filename"));
+        fs::path file_path = fr->resolve(props.get<std::string>("filename"));
         m_name = file_path.filename().string();
 
 

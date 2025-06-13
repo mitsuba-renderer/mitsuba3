@@ -171,10 +171,7 @@ protected:
 
     CppADIntegrator(const Properties &props) : Base(props) {}
 
-    MI_DECLARE_CLASS()
 };
-
-MI_IMPLEMENT_CLASS_VARIANT(CppADIntegrator, SamplingIntegrator)
 
 template class CppADIntegrator<MI_VARIANT_FLOAT, MI_VARIANT_SPECTRUM>;
 
@@ -275,7 +272,7 @@ MI_PY_EXPORT(Integrator) {
     using PyAdjointIntegrator = PyAdjointIntegrator<Float, Spectrum>;
     using CppADIntegrator = CppADIntegrator<Float, Spectrum>;
     using PyADIntegrator = PyADIntegrator<Float, Spectrum>;
-    using Properties = PropertiesV<Float>;
+    using Properties = mitsuba::Properties;
 
     MI_PY_CLASS(Integrator, Object)
         .def(
@@ -364,7 +361,6 @@ MI_PY_EXPORT(Integrator) {
             "spp"_a = 0)
         .def_rw("hide_emitters", &PySamplingIntegrator::m_hide_emitters);
 
-    MI_PY_REGISTER_OBJECT("register_integrator", Integrator)
 
     MI_PY_CLASS(MonteCarloIntegrator, SamplingIntegrator);
 

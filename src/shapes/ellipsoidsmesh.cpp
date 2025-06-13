@@ -533,8 +533,7 @@ private:
     Properties m_props;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(EllipsoidsMesh, Mesh)
-MI_EXPORT_PLUGIN(EllipsoidsMesh, "OBJ Mesh")
+MI_EXPORT_PLUGIN(EllipsoidsMesh)
 
 // =============================================================
 // Hardcoded mesh shell template data

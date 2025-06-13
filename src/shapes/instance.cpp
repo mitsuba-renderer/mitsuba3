@@ -64,10 +64,11 @@ public:
     Instance(const Properties &props) : Base(props) {
         for (auto &kv : props.objects()) {
             Base *shape = dynamic_cast<Base *>(kv.second.get());
-            if (shape && shape->is_shapegroup()) {
+            ShapeGroup_ *shapegroup = dynamic_cast<ShapeGroup_ *>(shape);
+            if (shape && shapegroup) {
                 if (m_shapegroup)
                     Throw("Only a single shapegroup can be specified per instance.");
-                m_shapegroup = (ShapeGroup_*) shape;
+                m_shapegroup = shapegroup;
             } else {
                 Throw("Only a shapegroup can be specified in an instance.");
             }

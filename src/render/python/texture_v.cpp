@@ -85,7 +85,7 @@ public:
 MI_PY_EXPORT(Texture) {
     MI_PY_IMPORT_TYPES(Texture)
     using PyTexture = PyTexture<Float, Spectrum>;
-    using Properties = PropertiesV<Float>;
+    using Properties = mitsuba::Properties;
 
     MI_PY_TRAMPOLINE_CLASS(PyTexture, Texture, Object)
         .def(nb::init<const Properties &>(), "props"_a)
@@ -106,5 +106,4 @@ MI_PY_EXPORT(Texture) {
         .def_method(Texture, spectral_resolution)
         .def_method(Texture, wavelength_range);
 
-    MI_PY_REGISTER_OBJECT("register_texture", Texture)
 }

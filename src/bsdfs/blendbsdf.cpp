@@ -89,7 +89,7 @@ public:
             }
         }
 
-        m_weight = props.get<Texture>("weight");
+        m_weight = props.get<ref<Texture>>("weight");
         if (bsdf_index != 2)
             Throw("BlendBSDF: Two child BSDFs must be specified!");
 

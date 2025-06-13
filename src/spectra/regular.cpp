@@ -85,6 +85,7 @@ public:
             );
         } else {
             // Scene/property parsing is in double precision, cast to single precision depending on variant.
+            // CLAUDE: The props.pointer method was removed. This should now be passed as a DynamicBuffer<double> via set_any/get_any()
             size_t size = props.get<size_t>("size");
             const double *ptr = static_cast<const double*>(props.pointer("values"));
 

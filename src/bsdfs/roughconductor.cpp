@@ -161,18 +161,18 @@ public:
     MI_IMPORT_TYPES(Texture, MicrofacetDistribution)
 
     RoughConductor(const Properties &props) : Base(props) {
-        std::string material = props.string("material", "none");
+        std::string material = props.get<std::string>("material", "none");
         if (props.has_property("eta") || material == "none") {
             m_eta = props.texture<Texture>("eta", 0.f);
             m_k   = props.texture<Texture>("k",   1.f);
             if (material != "none")
                 Throw("Should specify either (eta, k) or material, not both.");
         } else {
-            std::tie(m_eta, m_k) = complex_ior_from_file<Spectrum, Texture>(props.string("material", "Cu"));
+            std::tie(m_eta, m_k) = complex_ior_from_file<Spectrum, Texture>(props.get<std::string>("material", "Cu"));
         }
 
         if (props.has_property("distribution")) {
-            std::string distr = string::to_lower(props.string("distribution"));
+            std::string distr = string::to_lower(props.get<std::string>("distribution"));
             if (distr == "beckmann")
                 m_type = MicrofacetType::Beckmann;
             else if (distr == "ggx")

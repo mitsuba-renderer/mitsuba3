@@ -77,21 +77,14 @@ Texture<Float, Spectrum>::D65(ref<Texture> texture) {
     if constexpr (!is_spectral_v<Spectrum>) {
         return texture;
     } else {
-        const std::string_view plugins[] = {
-            "SRGBReflectanceSpectrum", "BitmapTextureImpl", "checkerboard", "MeshAttribute"
-        };
-        for (auto name : plugins) {
-            if (texture->class_name() == name)
-                continue;
-            Properties props("d65");
-            props.set("nested", ref<Object>(texture));
-            ref<Texture> texture2 = PluginManager::instance()->create_object<Texture>(props);
-            std::vector<ref<Object>> children = texture2->expand();
-            if (!children.empty())
-                return (Texture *) children[0].get();
-            return texture2;
-        }
-        return texture;
+        // Apply D65 conversion to texture
+        Properties props("d65");
+        props.set("nested", ref<Object>(texture));
+        ref<Texture> texture2 = PluginManager::instance()->create_object<Texture>(props);
+        std::vector<ref<Object>> children = texture2->expand();
+        if (!children.empty())
+            return (Texture *) children[0].get();
+        return texture2;
     }
 }
 

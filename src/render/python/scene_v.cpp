@@ -126,18 +126,12 @@ MI_PY_EXPORT(Scene) {
         .def_method(Scene, shapes_grad_enabled)
         .def("__repr__", &Scene::to_string);
 
-    m.def("register_plugin,
+    // TODO: register_plugin was removed with Class system refactoring
+    // This functionality needs to be reimplemented for the new plugin system
+    /*
+    m.def("register_plugin",
           [](const char *name, nb::function func) {
-              PluginInfo plugin_info{
-                  name, ::mitsuba::detail::get_variant<Float, Spectrum>(),
-                  func.inc_ref().ptr(),
-                  [](const Properties &props, void *p) -> ref<Object> {
-                      nb::gil_scoped_acquire gil;
-                      return nb::cast<Object *>(
-                          handle((PyObject *) p)(PropertiesV(props)));
-                  },
-                  [](void *p) { handle((PyObject *) p).dec_ref() }
-              };
-              PluginManager::register_plugin(plugin_info);
+              // Register plugin functionality removed during Class system refactoring
           });
+    */
 }

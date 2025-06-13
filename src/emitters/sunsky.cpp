@@ -1164,6 +1164,5 @@ private:
     FloatStorage m_tgmm_tables;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SunskyEmitter, Emitter)
-MI_EXPORT_PLUGIN(SunskyEmitter, "Sun and Sky dome background emitter")
+MI_EXPORT_PLUGIN(SunskyEmitter)
 NAMESPACE_END(mitsuba)

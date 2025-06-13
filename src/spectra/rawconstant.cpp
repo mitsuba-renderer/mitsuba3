@@ -167,8 +167,7 @@ protected:
     Properties m_props;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(RawConstantTexture, Texture)
-MI_EXPORT_PLUGIN(RawConstantTexture, "Raw constant value texture")
+MI_EXPORT_PLUGIN(RawConstantTexture)
 
 NAMESPACE_BEGIN(detail)
 template <size_t Channels>
@@ -182,14 +181,5 @@ constexpr const char * plugin_class_name() {
 }
 NAMESPACE_END(detail)
 
-template <typename Float, typename Spectrum, size_t Channels>
-Class *RawConstantTextureImpl<Float, Spectrum, Channels>::m_class
-    = new Class(detail::plugin_class_name<Channels>(), "MonteCarloIntegrator",
-                ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
-
-template <typename Float, typename Spectrum, size_t Channels>
-const Class *RawConstantTextureImpl<Float, Spectrum, Channels>::class_() const {
-    return m_class;
-}
 
 NAMESPACE_END(mitsuba)

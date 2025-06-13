@@ -147,7 +147,7 @@ public:
 
         // Filter mode
         {
-            std::string filter_mode_str = props.string("filter_type", "bilinear");
+            std::string filter_mode_str = props.get<std::string>("filter_type", "bilinear");
             if (filter_mode_str == "nearest")
                 m_filter_mode = dr::FilterMode::Nearest;
             else if (filter_mode_str == "bilinear")
@@ -159,7 +159,7 @@ public:
 
         // Wrap mode
         {
-            std::string wrap_mode_str = props.string("wrap_mode", "repeat");
+            std::string wrap_mode_str = props.get<std::string>("wrap_mode", "repeat");
             if (wrap_mode_str == "repeat")
                 m_wrap_mode = dr::WrapMode::Repeat;
             else if (wrap_mode_str == "mirror")
@@ -173,7 +173,7 @@ public:
 
         // Format
         {
-            std::string format_str = props.string("format", "auto");
+            std::string format_str = props.get<std::string>("format", "auto");
             if (format_str == "auto")
                 m_format = Format::Auto;
             else if (format_str == "variant")
@@ -193,7 +193,7 @@ public:
                     Throw("Cannot specify both \"bitmap\" and \"filename\".");
                 Log(Debug, "Loading bitmap texture from memory...");
                 // Note: ref-counted, so we don't have to worry about lifetime
-                ref<Object> other = props.object("bitmap");
+                ref<Object> other = props.get<ref<Object>>("bitmap");
                 Bitmap *b = dynamic_cast<Bitmap *>(other.get());
                 if (!b)
                     Throw("Property \"bitmap\" must be a Bitmap instance.");
@@ -201,12 +201,12 @@ public:
             } else if (props.has_property("filename")) {
                 // Creates a Bitmap texture by loading an image from the filesystem
                 FileResolver* fs = Thread::thread()->file_resolver();
-                fs::path file_path = fs->resolve(props.string("filename"));
+                fs::path file_path = fs->resolve(props.get<std::string>("filename"));
                 m_name = file_path.filename().string();
                 Log(Debug, "Loading bitmap texture from \"%s\" ..", m_name);
                 m_bitmap = new Bitmap(file_path);
             } else if (props.has_property("data")) {
-                m_tensor = props.tensor<TensorXf>("data");
+                m_tensor = &props.get_any<TensorXf>("data");
                 if (m_tensor->ndim() != 3)
                     Throw("Bitmap raw tensor has dimension %lu, expected 3",
                         m_tensor->ndim());
@@ -919,8 +919,7 @@ protected:
     std::unique_ptr<DiscreteDistribution2D<Float>> m_distr2d;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(BitmapTexture, Texture)
-MI_EXPORT_PLUGIN(BitmapTexture, "Bitmap texture")
+MI_EXPORT_PLUGIN(BitmapTexture)
 
 /* This class has a name that depends on extra template parameters, so
    the standard MI_IMPLEMENT_CLASS_VARIANT macro cannot be used */
@@ -935,14 +934,5 @@ constexpr const char * bitmap_class_name() {
 }
 NAMESPACE_END(detail)
 
-template <typename Float, typename Spectrum, typename StoredType>
-Class *BitmapTextureImpl<Float, Spectrum, StoredType>::m_class
-    = new Class(detail::bitmap_class_name<StoredType>(), "Texture",
-                ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
-
-template <typename Float, typename Spectrum, typename StoredType>
-const Class* BitmapTextureImpl<Float, Spectrum, StoredType>::class_() const {
-    return m_class;
-}
 
 NAMESPACE_END(mitsuba)

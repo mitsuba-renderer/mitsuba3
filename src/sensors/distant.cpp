@@ -171,7 +171,7 @@ public:
         if constexpr (TargetType == RayTargetType::Point) {
             m_target_point = props.get<ScalarPoint3f>("target");
         } else if constexpr (TargetType == RayTargetType::Shape) {
-            auto obj       = props.object("target");
+            auto obj       = props.get<ref<Object>>("target");
             m_target_shape = dynamic_cast<Shape *>(obj.get());
 
             if (!m_target_shape)
@@ -296,14 +296,5 @@ constexpr const char *distant_sensor_class_name() {
 }
 NAMESPACE_END(detail)
 
-template <typename Float, typename Spectrum, RayTargetType TargetType>
-Class *DistantSensorImpl<Float, Spectrum, TargetType>::m_class = new Class(
-    detail::distant_sensor_class_name<TargetType>(), "Sensor",
-    ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
-
-template <typename Float, typename Spectrum, RayTargetType TargetType>
-const Class *DistantSensorImpl<Float, Spectrum, TargetType>::class_() const {
-    return m_class;
-}
 
 NAMESPACE_END(mitsuba)

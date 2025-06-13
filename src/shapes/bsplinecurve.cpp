@@ -145,7 +145,7 @@ public:
 #endif
 
         auto fs = Thread::thread()->file_resolver();
-        fs::path file_path = fs->resolve(props.string("filename"));
+        fs::path file_path = fs->resolve(props.get<std::string>("filename"));
         std::string m_name = file_path.filename().string();
 
         // used for throwing an error later

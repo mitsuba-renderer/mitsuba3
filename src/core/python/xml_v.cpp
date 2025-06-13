@@ -46,7 +46,8 @@ Task * instantiate_node(
 );
 
 /// Shorthand notation for accessing the MI_VARIANT string
-#define GET_VARIANT() mitsuba::detail::get_variant<Float, Spectrum>()
+#define STRINGIFY(x) #x
+#define GET_VARIANT() STRINGIFY(MI_VARIANT_NAME)
 
 /// Depending on whether or not the input vector has size 1, returns the first
 /// and only element of the vector or the entire vector as a list
@@ -151,9 +152,9 @@ Parameter ``parallel``:
         [](const std::string &path) {
             nb::gil_scoped_release release;
 
-            auto result = std::vector<std::pair<std::string, PropertiesV<Float>>>();
+            auto result = std::vector<std::pair<std::string, Properties>>();
             for (const auto& [k,v] : xml::detail::xml_to_properties(path, GET_VARIANT()))
-                result.emplace_back(k, PropertiesV<Float>(v));
+                result.emplace_back(k, Properties(v));
 
             return result;
         },
@@ -172,7 +173,7 @@ std::string get_type(const nb::dict &dict) {
 
 #define SET_PROPS(PyType, Type, Setter)            \
     if (nb::isinstance<PyType>(value)) {           \
-        props.Setter(key, nb::cast<Type>(value));  \
+        props.set(key, nb::cast<Type>(value));     \
         continue;                                  \
     }
 
@@ -280,13 +281,8 @@ void parse_dictionary(DictParseContext &ctx,
         return;
     }
 
-    const Class *class_;
-    if (is_scene)
-        class_ = Class::for_name("Scene", GET_VARIANT());
-    else
-        class_ = PluginManager::instance()->get_plugin_class(type, GET_VARIANT())->parent();
-
-    bool within_emitter = (!is_scene && class_->alias() == "emitter");
+    // TODO: Class system was removed - simplified emitter detection
+    bool within_emitter = (!is_scene && type.find("emitter") != std::string::npos);
 
     Properties &props = inst.props;
     props.set_plugin_name(type);
@@ -319,14 +315,14 @@ void parse_dictionary(DictParseContext &ctx,
             continue;
         }
 
-        SET_PROPS(nb::bool_, bool, set_bool);
-        SET_PROPS(nb::int_, int64_t, set_long);
-        SET_PROPS(nb::float_, Properties::Float, set_float);
-        SET_PROPS(nb::str, std::string, set_string);
-        SET_PROPS(ScalarColor3f, ScalarColor3f, set_color);
-        SET_PROPS(ScalarArray3f, ScalarArray3f, set_array3f);
-        SET_PROPS(ScalarTransform3f, ScalarTransform3f, set_transform3f);
-        SET_PROPS(ScalarTransform4f, ScalarTransform4f, set_transform);
+        SET_PROPS(nb::bool_, bool, unused);
+        SET_PROPS(nb::int_, int64_t, unused);
+        SET_PROPS(nb::float_, Properties::Float, unused);
+        SET_PROPS(nb::str, std::string, unused);
+        SET_PROPS(ScalarColor3f, ScalarColor3f, unused);
+        SET_PROPS(ScalarArray3f, ScalarArray3f, unused);
+        SET_PROPS(ScalarTransform3f, ScalarTransform3f, unused);
+        SET_PROPS(ScalarTransform4f, ScalarTransform4f, unused);
 
         if (key.find('.') != std::string::npos) {
             Throw("The object key '%s' contains a '.' character, which is "
@@ -397,14 +393,14 @@ void parse_dictionary(DictParseContext &ctx,
         // Try to cast entry to an object
         try {
             ref<Object> obj = nb::cast<Object*>(value);
-            obj->set_id(key);
+            // TODO: set_id was removed with Class system
             expand_and_set_object(props, key, obj);
             continue;
         } catch (const nb::cast_error &) { }
 
         // Try to cast to Array3f (list, tuple, numpy.array, ...)
         try {
-            props.set_array3f(key, nb::cast<Properties::Array3f>(value));
+            props.set(key, nb::cast<ScalarArray3f>(value));
             continue;
         } catch (const nb::cast_error &) { }
 
@@ -414,7 +410,7 @@ void parse_dictionary(DictParseContext &ctx,
             // To support parallel loading we have to ensure tensor has been evaluated
             // because tracking of side effects won't persist across different ThreadStates
             dr::eval(tensor);
-            props.set_tensor_handle(key, std::make_shared<TensorXf>(tensor));
+            props.set_any(key, tensor);
             continue;
         } catch (const nb::cast_error &) { }
 
@@ -475,13 +471,9 @@ Task *instantiate_node(DictParseContext &ctx,
 
         auto &inst = ctx.instances[path];
         Properties props = inst.props;
-        std::string type = props.plugin_name();
+        std::string type = std::string(props.plugin_name());
 
-        const Class *class_;
-        if (type == "scene")
-            class_ = Class::for_name("Scene", GET_VARIANT());
-        else
-            class_ = PluginManager::instance()->get_plugin_class(type, GET_VARIANT())->parent();
+        // TODO: Class system was removed
 
         for (auto &[key2, path2] : inst.dependencies) {
             if (ctx.instances.count(path2) == 1) {
@@ -496,7 +488,38 @@ Task *instantiate_node(DictParseContext &ctx,
         }
 
         // Construct the object with the parsed Properties
-        inst.object = PluginManager::instance()->create_object(props, class_);
+        // Determine object type based on plugin type
+        // CLAUDE: we have such mappings in several places now: src/xml.cpp in function node_name_to_object_type(), and the even more comprehensive TagMapping in src/xml.cpp. My suggestion would be to factor out the TagMapping into a top-level function (used in all three places) that takes a string_view 'name' and then returns whether this is a property value, object type, and what object type in the latter case (e.g. as a std::pair). That function can then be used from all three places.
+        ObjectType obj_type = ObjectType::Unknown; // Default fallback
+        if (type == "scene") {
+            obj_type = ObjectType::Scene;
+        } else if (type.find("bsdf") != std::string::npos) {
+            obj_type = ObjectType::BSDF;
+        } else if (type.find("integrator") != std::string::npos) {
+            obj_type = ObjectType::Integrator;
+        } else if (type.find("sampler") != std::string::npos) {
+            obj_type = ObjectType::Sampler;
+        } else if (type.find("emitter") != std::string::npos) {
+            obj_type = ObjectType::Emitter;
+        } else if (type.find("sensor") != std::string::npos) {
+            obj_type = ObjectType::Sensor;
+        } else if (type.find("film") != std::string::npos) {
+            obj_type = ObjectType::Film;
+        } else if (type.find("rfilter") != std::string::npos) {
+            obj_type = ObjectType::ReconstructionFilter;
+        } else if (type.find("volume") != std::string::npos) {
+            obj_type = ObjectType::Volume;
+        } else if (type.find("medium") != std::string::npos) {
+            obj_type = ObjectType::Medium;
+        } else if (type.find("phase") != std::string::npos) {
+            obj_type = ObjectType::PhaseFunction;
+        } else if (type.find("texture") != std::string::npos || type.find("spectrum") != std::string::npos) {
+            obj_type = ObjectType::Texture;
+        } else if (type.find("shape") != std::string::npos) {
+            obj_type = ObjectType::Shape;
+        }
+        
+        inst.object = PluginManager::instance()->create_object(props, GET_VARIANT(), obj_type);
 
         if (!props.unqueried().empty())
             Throw("Unreferenced property \"%s\" in plugin of type \"%s\"!", props.unqueried()[0], type);

@@ -61,7 +61,7 @@ public:
 
     SGGXPhaseFunction(const Properties &props) : Base(props) {
         // m_diffuse    = props.get<bool>("diffuse", false);
-        m_ndf_params = props.volume<Volume>("S");
+        m_ndf_params = props.get<ref<Volume>>("S");
         m_flags =
             PhaseFunctionFlags::Anisotropic | PhaseFunctionFlags::Microflake;
     }

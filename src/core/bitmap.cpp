@@ -8,6 +8,7 @@
 #include <mitsuba/core/fstream.h>
 #include <mitsuba/core/profiler.h>
 #include <unordered_map>
+#include <atomic>
 #include <thread>
 
 #include <nanothread/nanothread.h>

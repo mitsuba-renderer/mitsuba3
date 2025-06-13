@@ -63,6 +63,7 @@ public:
      * On Windows, the path can use both '/' or '\\' as a delimiter.
      */
     path(string_view_type string) { set(string); }
+    path(const string_type &string) { set(string); }
 
     /** \brief Construct a path from a string with native type.
      * On Windows, the path can use both '/' or '\\' as a delimiter.

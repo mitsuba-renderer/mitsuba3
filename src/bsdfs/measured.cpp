@@ -83,7 +83,7 @@ public:
         m_flags = m_components[0];
 
         auto fs            = Thread::thread()->file_resolver();
-        fs::path file_path = fs->resolve(props.string("filename"));
+        fs::path file_path = fs->resolve(props.get<std::string>("filename"));
         m_name             = file_path.filename().string();
 
         ref<TensorFile> tf = new TensorFile(file_path);

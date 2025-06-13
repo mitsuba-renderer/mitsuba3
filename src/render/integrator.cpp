@@ -1,4 +1,5 @@
 #include <mutex>
+#include <atomic>
 
 #include <drjit/morton.h>
 #include <mitsuba/core/fwd.h>
@@ -20,7 +21,7 @@ NAMESPACE_BEGIN(mitsuba)
 // -----------------------------------------------------------------------------
 
 MI_VARIANT Integrator<Float, Spectrum>::Integrator(const Properties &props)
-    : VariantObject<Float, Spectrum>(props), m_stop(false), {
+    : VariantObject<Float, Spectrum>(props), m_stop(false) {
     m_timeout = props.get<ScalarFloat>("timeout", -1.f);
 
     // Disable direct visibility of emitters if needed

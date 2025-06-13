@@ -18,22 +18,21 @@ extern Caster cast_object;
 #endif
 
 #define SET_ITEM_BINDING(Name, Type, ...)                              \
-    def("__setitem__", [](PropertiesV & p,                             \
+    def("__setitem__", [](Properties & p,                              \
                           const std::string &key, const Type &value) { \
-        p.set_##Name(key, value, false);                               \
-    }, D(Properties, set_##Name), ##__VA_ARGS__)
+        p.set(key, value, false);                                       \
+    }, D(Properties, set), ##__VA_ARGS__)
 
 #define GET_ITEM_DEFAULT_BINDING(Name, DName, Type)         \
-    def(#Name, [](PropertiesV& p, const std::string &key,   \
+    def(#Name, [](Properties& p, const std::string &key,    \
                   const Type &def_val) {                    \
-        return nb::cast(p.Name(key, def_val));              \
+        return nb::cast(p.get<Type>(key, def_val));         \
     }, D(Properties, DName, 2))
 
 
 template <typename Float>
-nb::object properties_get(const PropertiesV<Float>& p, const std::string &key) {
+nb::object properties_get(const Properties& p, const std::string &key) {
     using PFloat = Properties::Float;
-    using TensorHandle = typename Properties::TensorHandle;
     using TensorXf = dr::Tensor<mitsuba::DynamicBuffer<Float>>;
 
     // We need to ask for type information to return the right cast
@@ -45,9 +44,9 @@ nb::object properties_get(const PropertiesV<Float>& p, const std::string &key) {
     else if (type == Properties::Type::Float)
         return nb::cast(p.template get<PFloat>(key));
     else if (type == Properties::Type::String)
-        return nb::cast(p.string(key));
+        return nb::cast(p.template get<std::string>(key));
     else if (type == Properties::Type::NamedReference)
-        return nb::cast((std::string) p.named_reference(key));
+        return nb::cast((std::string) p.template get<Properties::NamedReference>(key));
     else if (type == Properties::Type::Color)
         return nb::cast(p. template get<Color<PFloat, 3>>(key));
     else if (type == Properties::Type::Array3f)
@@ -58,12 +57,11 @@ nb::object properties_get(const PropertiesV<Float>& p, const std::string &key) {
         return nb::cast(p.template get<Transform<Point<PFloat, 4>>>(key));
     // else if (type == Properties::Type::AnimatedTransform)
         // return nb::cast(p.animated_transform(key));
-    else if (type == Properties::Type::Tensor)
-        return nb::cast(*(p.template tensor<TensorXf>(key)));
+    else if (type == Properties::Type::Any)
+        return nb::cast(p.template get_any<TensorXf>(key));
     else if (type == Properties::Type::Object)
-        return cast_object((ref<Object>)p.object(key));
-    else if (type == Properties::Type::Pointer)
-        return nb::cast(const_cast<void*>(p.pointer(key)));
+        return cast_object((ref<Object>)p.template get<ref<Object>>(key));
+    // Pointer type was removed in Properties refactoring
     else
         throw std::runtime_error("Unsupported property type");
 }
@@ -76,16 +74,14 @@ MI_PY_EXPORT(Properties) {
     using Float = MI_VARIANT_FLOAT;
     using Color3f = Color<float, 3>;
     using Color3d = Color<double, 3>;
-    using TensorHandle = typename Properties::TensorHandle;
     using TensorXf = dr::Tensor<mitsuba::DynamicBuffer<Float>>;
-    using PropertiesV = PropertiesV<Float>;
 
-    MI_PY_CHECK_ALIAS(PropertiesV, "Properties") {
-        auto p = nb::class_<PropertiesV, Properties>(m, "Properties")
+    MI_PY_CHECK_ALIAS(Properties, "Properties") {
+        auto p = nb::class_<Properties>(m, "Properties")
             // Constructors
             .def(nb::init<>(), D(Properties, Properties))
             .def(nb::init<const std::string &>(), D(Properties, Properties, 2))
-            .def(nb::init<const PropertiesV &>(), D(Properties, Properties, 3))
+            .def(nb::init<const Properties &>(), D(Properties, Properties, 3))
             // Methods
             .def_method(Properties, has_property)
             .def_method(Properties, remove_property)
@@ -95,12 +91,11 @@ MI_PY_EXPORT(Properties) {
             .def_method(Properties, set_plugin_name)
             .def_method(Properties, id)
             .def_method(Properties, set_id)
-            .def_method(Properties, copy_attribute)
             .def_method(Properties, property_names)
             .def_method(Properties, unqueried)
             .def_method(Properties, merge)
             .def_method(Properties, type)
-            .def("named_references", [](const PropertiesV& p){
+            .def("named_references", [](const Properties& p){
                 std::vector<std::pair<std::string, std::string>> res;
                 for(auto [name, ref]: p.named_references())
                     res.push_back({name, (std::string) ref});
@@ -110,27 +105,27 @@ MI_PY_EXPORT(Properties) {
             .def("__setitem__", [](Properties& p,
                                    const std::string &key,
                                    const nb::float_ &value) {
-                p.set_float(key, (double) value, false);
-            }, D(Properties, set_float))
+                p.set(key, (double) value, false);
+            }, D(Properties, set))
             .SET_ITEM_BINDING(bool, bool)
             .SET_ITEM_BINDING(long, int64_t)
             .SET_ITEM_BINDING(string, std::string)
             .SET_ITEM_BINDING(color, Color3f, nb::arg(), nb::arg().noconvert())
             .SET_ITEM_BINDING(color, Color3d, nb::arg(), nb::arg().noconvert())
-            .SET_ITEM_BINDING(array3f, typename Properties::Array3f)
-            .SET_ITEM_BINDING(transform3f, typename Properties::Transform3f)
-            .SET_ITEM_BINDING(transform, typename Properties::Transform4f)
+            .SET_ITEM_BINDING(array3f, ScalarArray3f)
+            .SET_ITEM_BINDING(transform3f, ScalarTransform3f)
+            .SET_ITEM_BINDING(transform, ScalarTransform4f)
             // .SET_ITEM_BINDING(animated_transform, ref<AnimatedTransform>)
             .SET_ITEM_BINDING(object, ref<Object>)
             .GET_ITEM_DEFAULT_BINDING(string, string, std::string)
             // .GET_ITEM_DEFAULT_BINDING(animated_transform, animated_transform, ref<AnimatedTransform>)
-            .def("__setitem__",[](PropertiesV& p, const std::string &key, const TensorXf &value) {
-                p.set_tensor_handle(key, TensorHandle(std::make_shared<TensorXf>(value)), false);
+            .def("__setitem__",[](Properties& p, const std::string &key, const TensorXf &value) {
+                p.set_any(key, value, false);
             })
-            .def("__getitem__", [](const PropertiesV& p, const std::string &key) {
+            .def("__getitem__", [](const Properties& p, const std::string &key) {
                 return properties_get(p, key);
             }, "key"_a, "Retrieve an existing property given its name")
-            .def("get", [](const PropertiesV& p, const std::string &key,
+            .def("get", [](const Properties& p, const std::string &key,
                            const nb::object &def_val) {
                 if (p.has_property(key))
                     return properties_get(p, key);
@@ -139,10 +134,10 @@ MI_PY_EXPORT(Properties) {
             },
             "key"_a, "def_value"_a = nb::none(),
             "Return the value for the specified key it exists, otherwise return default value")
-            .def("__contains__", [](const PropertiesV& p, const std::string &key) {
+            .def("__contains__", [](const Properties& p, const std::string &key) {
                 return p.has_property(key);
             })
-            .def("__delitem__", [](PropertiesV& p, const std::string &key) {
+            .def("__delitem__", [](Properties& p, const std::string &key) {
                 return p.remove_property(key);
             })
             .def("as_string",
@@ -150,7 +145,7 @@ MI_PY_EXPORT(Properties) {
                 D(Properties, as_string))
             // Operators
             .def(nb::self == nb::self, D(Properties, operator_eq))
-            .def(nb::self != nb::self, D(Properties, operator_ne))
-            .def_repr(PropertiesV);
+            .def(nb::self != nb::self)
+            .def_repr(Properties);
     }
 }

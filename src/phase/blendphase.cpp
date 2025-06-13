@@ -81,7 +81,7 @@ public:
             }
         }
 
-        m_weight = props.volume<Volume>("weight");
+        m_weight = props.get<ref<Volume>>("weight");
         if (phase_index != 2)
             Throw("BlendPhase: Two child phase functions must be specified!");
 

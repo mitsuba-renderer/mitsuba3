@@ -121,7 +121,7 @@ public:
             Throw("In non-spectral modes, the measured polarized plugin can only render a specific wavelength specified by the `wavelength` parameter.");
 
         auto fs = Thread::thread()->file_resolver();
-        fs::path file_path = fs->resolve(props.string("filename"));
+        fs::path file_path = fs->resolve(props.get<std::string>("filename"));
         m_name = file_path.filename().string();
 
         ref<TensorFile> tf = new TensorFile(file_path);

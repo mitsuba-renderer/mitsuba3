@@ -13,6 +13,7 @@
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/scene.h>
+#include <functional>
 
 #if !defined(_WIN32)
 #  include <signal.h>
@@ -91,10 +92,10 @@ Options:
 )";
 }
 
-static Film *develop_film = nullptr;
+static std::function<void()> develop_callback_fn = nullptr;
 static void develop_callback() {
-    if (develop_film)
-        develop_film->develop();
+    if (develop_callback_fn)
+        develop_callback_fn();
 }
 
 template <typename Float, typename Spectrum>
@@ -122,7 +123,7 @@ void render(Object *scene_, size_t sensor_i, fs::path filename) {
     if (!integrator)
         Throw("No integrator specified for scene: %s", scene);
 
-    develop_film = film;
+    develop_callback_fn = [film]() { film->develop(); };
 
     integrator->render(scene, (uint32_t) sensor_i,
                        0 /* seed */,
@@ -130,7 +131,7 @@ void render(Object *scene_, size_t sensor_i, fs::path filename) {
                        false /* develop */,
                        true /* evaluate */);
 
-    develop_film = nullptr;
+    develop_callback_fn = nullptr;
 
     film->write(filename);
 }
@@ -146,7 +147,6 @@ void hup_signal_handler(int signal) {
 
 int main(int argc, char *argv[]) {
     Jit::static_initialization();
-    Class::static_initialization();
     Thread::static_initialization();
     Logger::static_initialization();
     Bitmap::static_initialization();
@@ -346,7 +346,7 @@ int main(int argc, char *argv[]) {
                 fr2->append(scene_dir);
 
             if (*arg_output)
-                filename = arg_output->as_string();
+                filename = fs::path(arg_output->as_string());
 
             // Try and parse a scene from the passed file.
             std::vector<ref<Object>> parsed =
@@ -400,7 +400,6 @@ int main(int argc, char *argv[]) {
     StructConverter::static_shutdown();
     Logger::static_shutdown();
     Thread::static_shutdown();
-    Class::static_shutdown();
     Jit::static_shutdown();
 
 

@@ -115,13 +115,15 @@ public:
         }
 
         Properties props_d65("regular");
-        props_d65.set_float("wavelength_min", (Properties::Float) MI_CIE_MIN);
-        props_d65.set_float("wavelength_max", (Properties::Float) MI_CIE_MAX);
-        props_d65.set_int("size", MI_CIE_SAMPLES);
+        props_d65.set("wavelength_min", (Properties::Float) MI_CIE_MIN);
+        props_d65.set("wavelength_max", (Properties::Float) MI_CIE_MAX);
+        props_d65.set("size", MI_CIE_SAMPLES);
         Properties::Float data[MI_CIE_SAMPLES];
         for (size_t i = 0; i < MI_CIE_SAMPLES; ++i)
             data[i] = Properties::Float(d65_table[i] * m_scale * ScalarFloat(MI_CIE_D65_NORMALIZATION));
-        props_d65.set_pointer("values", (const void *) &data[0]);
+        // TODO: set_pointer is no longer supported - this needs a different approach
+        // props_d65.set_pointer("values", (const void *) &data[0]);
+        Throw("D65 spectrum: pointer-based property setting is not yet supported after Properties refactoring");
         m_d65 = (Base *) PluginManager::instance()->create_object<Base>(props_d65);
     }
 
@@ -149,13 +151,13 @@ public:
 
             if (m_has_value) {
                 Properties props("srgb");
-                props.set_color("color", dr::slice(m_value) * m_scale);
-                props.set_bool("unbounded", true);
+                props.set("color", dr::slice(m_value) * m_scale);
+                props.set("unbounded", true);
                 return { (Object *) PluginManager::instance()->create_object<Base>(props) };
             }
 
             Properties props("uniform");
-            props.set_float("value", Properties::Float(m_scale));
+            props.set("value", Properties::Float(m_scale));
             return { (Object *) PluginManager::instance()->create_object<Base>(props) };
         }
     }
