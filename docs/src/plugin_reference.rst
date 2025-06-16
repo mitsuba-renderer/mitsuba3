@@ -141,6 +141,7 @@ has no effect in scalar or LLVM variants.
    - :paramtype:`bool`
    - Whether or not to reorder threads into coherent groups after a ray
      intersection if requested (Default: |true|).
+   - |exposed|
 
 When creating a scene, the scene-wide attributes can be specified as follows:
 
@@ -156,5 +157,5 @@ When creating a scene, the scene-wide attributes can be specified as follows:
         {
             'type': 'scene',
             'embree_use_robust_intersection': True,
-            'thread_reordering': True,
+            'allow_thread_reordering': True,
         }

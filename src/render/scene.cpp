@@ -71,7 +71,6 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
 
     // Mark backend-specific properties as queried
     props.mark_queried("embree_use_robust_intersections");
-    props.mark_queried("embree_use_robust_intersections");
     props.mark_queried("kd_intersection_cost");
     props.mark_queried("kd_traversal_cost");
     props.mark_queried("kd_empty_space_bonus");
@@ -506,7 +505,7 @@ Scene<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f &ss,
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *callback) {
-    callback->put_parameter("thread_reordering", m_thread_reordering, +ParamFlags::NonDifferentiable);
+    callback->put_parameter("allow_thread_reordering", m_thread_reordering, +ParamFlags::NonDifferentiable);
     for (auto& child : m_children) {
         std::string id = child->id();
         if (id.empty() || string::starts_with(id, "_unnamed_"))
