@@ -52,7 +52,7 @@ void ProgressReporter::update(float progress) {
         memcpy((char *) m_line.data() + eta_pos, eta.data(), eta.length());
     }
 
-    mitsuba::logger()->log_progress(progress, m_label, m_line, eta, m_payload);
+    logger()->log_progress(progress, m_label, m_line, eta, m_payload);
     m_last_update = elapsed;
 }
 

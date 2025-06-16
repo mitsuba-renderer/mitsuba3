@@ -315,7 +315,7 @@ int main(int argc, char *argv[]) {
 
         // Append the mitsuba directory to the FileResolver search path list
         ref<Thread> thread = Thread::thread();
-        ref<FileResolver> fr = mitsuba::file_resolver();
+        ref<FileResolver> fr = file_resolver();
         fs::path base_path = util::library_path().parent_path();
         if (!fr->contains(base_path))
             fr->append(base_path);
@@ -344,7 +344,7 @@ int main(int argc, char *argv[]) {
         while (arg_extra && *arg_extra) {
             fs::path filename(arg_extra->as_string());
             ref<FileResolver> fr2 = new FileResolver(*fr);
-            mitsuba::set_file_resolver(fr2);
+            set_file_resolver(fr2);
 
             // Add the scene file's directory to the search path.
             fs::path scene_dir = filename.parent_path();

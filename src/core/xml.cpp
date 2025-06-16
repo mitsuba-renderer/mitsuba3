@@ -602,7 +602,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                     check_attributes(src, node, { "value" });
                     if (depth != 1)
                         src.throw_error(node, "<path>: path can only be child of root");
-                    ref<FileResolver> fs = mitsuba::file_resolver();
+                    ref<FileResolver> fs = file_resolver();
                     fs::path resource_path(node.attribute("value").value());
                     if (!resource_path.is_absolute()) {
                         // First try to resolve it starting in the XML file directory
@@ -620,7 +620,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
 
             case Tag::Include: {
                     check_attributes(src, node, { "filename" });
-                    ref<FileResolver> fs = mitsuba::file_resolver();
+                    ref<FileResolver> fs = file_resolver();
                     fs::path filename = fs->resolve(node.attribute("filename").value());
                     if (!fs::exists(filename))
                         src.throw_error(node, "included file \"%s\" not found", filename);
@@ -1281,17 +1281,17 @@ std::vector<std::pair<std::string, Properties>> xml_to_properties(const fs::path
 
     // Make a backup copy of the FileResolver, which will be restored after
     // parsing
-    ref<FileResolver> fs_backup = mitsuba::file_resolver();
+    ref<FileResolver> fs_backup = file_resolver();
     ref<FileResolver> fs        = new FileResolver(*fs_backup);
     fs->append(filename.parent_path());
-    mitsuba::set_file_resolver(fs.get());
+    set_file_resolver(fs.get());
 
     try {
         ParameterList param;
         detail::XMLParseContext ctx(variant, false);
         (void) detail::init_xml_parse_context_from_file(ctx, filename, param, false);
 
-        mitsuba::set_file_resolver(fs_backup.get());
+        set_file_resolver(fs_backup.get());
 
         Log(Info, "Done loading XML file \"%s\" (took %s).", filename,
             util::time_string((float) timer.value(), true));
@@ -1309,7 +1309,7 @@ std::vector<std::pair<std::string, Properties>> xml_to_properties(const fs::path
 
         return props;
     } catch (...) {
-        mitsuba::set_file_resolver(fs_backup.get());
+        set_file_resolver(fs_backup.get());
         throw;
     }
 }
@@ -1335,8 +1335,8 @@ std::vector<ref<Object>> load_string(const std::string &string,
               src.offset(result.offset), result.description());
 
     // Make a backup copy of the FileResolver, which will be restored after parsing
-    ref<FileResolver> fs_backup = mitsuba::file_resolver();
-    mitsuba::set_file_resolver(new FileResolver(*fs_backup));
+    ref<FileResolver> fs_backup = file_resolver();
+    set_file_resolver(new FileResolver(*fs_backup));
 
     try {
         pugi::xml_node root = doc.document_element();
@@ -1354,10 +1354,10 @@ std::vector<ref<Object>> load_string(const std::string &string,
         ref<Object> top_node = detail::instantiate_top_node(ctx, scene_id);
         std::vector<ref<Object>> objects = detail::expand_node(top_node);
 
-        mitsuba::set_file_resolver(fs_backup.get());
+        set_file_resolver(fs_backup.get());
         return objects;
     } catch(...) {
-        mitsuba::set_file_resolver(fs_backup.get());
+        set_file_resolver(fs_backup.get());
         throw;
     }
 }
@@ -1376,10 +1376,10 @@ std::vector<ref<Object>> load_file(const fs::path &filename,
     Log(Info, "Loading XML file \"%s\" with variant \"%s\"..", filename, variant);
 
     // Make a backup copy of the FileResolver, which will be restored after parsing
-    ref<FileResolver> fs_backup = mitsuba::file_resolver();
+    ref<FileResolver> fs_backup = file_resolver();
     ref<FileResolver> fs = new FileResolver(*fs_backup);
     fs->append(filename.parent_path());
-    mitsuba::set_file_resolver(fs.get());
+    set_file_resolver(fs.get());
 
     try {
         detail::XMLParseContext ctx(variant, parallel);
@@ -1388,14 +1388,14 @@ std::vector<ref<Object>> load_file(const fs::path &filename,
         ref<Object> top_node = detail::instantiate_top_node(ctx, scene_id);
         std::vector<ref<Object>> objects = detail::expand_node(top_node);
 
-        mitsuba::set_file_resolver(fs_backup.get());
+        set_file_resolver(fs_backup.get());
 
         Log(Info, "Done loading XML file \"%s\" (took %s).",
             filename, util::time_string((float) timer.value(), true));
 
         return objects;
     } catch (...) {
-        mitsuba::set_file_resolver(fs_backup.get());
+        set_file_resolver(fs_backup.get());
         throw;
     }
 }
