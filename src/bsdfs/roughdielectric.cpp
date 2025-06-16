@@ -113,6 +113,9 @@ meaningful and mutually compatible index of refraction changes---see the
 section about :ref:`correctness considerations <bsdf-correctness>` for a
 description of what this entails.
 
+.. warning::
+    This BSDF does not have support for polarized variants.
+
 The following XML snippet describes a material definition for rough glass:
 
 .. tabs::

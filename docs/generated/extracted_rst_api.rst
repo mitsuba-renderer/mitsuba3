@@ -8363,7 +8363,7 @@
 
         1. ``next_float64_normal(self) -> drjit.llvm.ad.Float64``
 
-        Generate a (standard) normally distributed single precision floating point number.
+        Generate a (standard) normally distributed double precision floating point number.
 
         Two overloads of this function exist: the masked variant does not advance
         the PRNG state of entries ``i`` where ``mask[i] == False``.
@@ -8456,6 +8456,185 @@
 
         Parameter ``mask`` (drjit.llvm.ad.Bool):
             *no description available*
+
+        Returns → drjit.llvm.ad.UInt64:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.prev_float(self, dtype, mask=True)
+
+        Generate the previous uniformly distributed precision floating point number
+        on the interval :math:`[0, 1)` by stepping the PCG32 state backwards.
+
+        The function analyzes the provided target ``dtype`` and either invokes
+        :py:func:`prev_float16`, :py:func:`prev_float32` or :py:func:`prev_float64`
+        depending on the
+        requested precision.
+
+        A mask can be optionally provided. Masked entries do not regress the PRNG state.
+
+        Parameter ``dtype`` (type):
+            *no description available*
+
+        Parameter ``mask`` (object):
+            *no description available*
+
+        Returns → object:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.prev_float16()
+
+        Overloaded function.
+
+        1. ``prev_float16(self) -> drjit.llvm.ad.Float16``
+
+        Generate the previous uniformly distributed half precision floating point number
+        on the interval :math:`[0, 1)` by stepping the PCG32 state backwards.
+
+        Two overloads of this function exist: the masked variant does not regress
+        the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``prev_float16(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float16``
+
+        Returns → drjit.llvm.ad.Float16:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.prev_float16_normal()
+
+        Overloaded function.
+
+        1. ``prev_float16_normal(self) -> drjit.llvm.ad.Float16``
+
+        Generate the previous (standard) normally distributed half precision floating
+        point number by stepping the PCG32 state backwards.
+
+        Two overloads of this function exist: the masked variant does not regress
+        the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``prev_float16_normal(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float16``
+
+        Returns → drjit.llvm.ad.Float16:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.prev_float32()
+
+        Overloaded function.
+
+        1. ``prev_float32(self) -> drjit.llvm.ad.Float``
+
+        Generate the previous uniformly distributed single precision floating point number
+        on the interval :math:`[0, 1)` by stepping the PCG32 state backwards.
+
+        Two overloads of this function exist: the masked variant does not regress
+        the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``prev_float32(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float``
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.prev_float32_normal()
+
+        Overloaded function.
+
+        1. ``prev_float32_normal(self) -> drjit.llvm.ad.Float``
+
+        Generate the previous (standard) normally distributed single precision floating
+        point number by stepping the PCG32 state backwards.
+
+        Two overloads of this function exist: the masked variant does not regress
+        the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``prev_float32_normal(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float``
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.prev_float64()
+
+        Overloaded function.
+
+        1. ``prev_float64(self) -> drjit.llvm.ad.Float64``
+
+        Generate the previous uniformly distributed double precision floating point number
+        on the interval :math:`[0, 1)` by stepping the PCG32 state backwards.
+
+        Two overloads of this function exist: the masked variant does not regress
+        the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``prev_float64(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float64``
+
+        Returns → drjit.llvm.ad.Float64:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.prev_float64_normal()
+
+        Overloaded function.
+
+        1. ``prev_float64_normal(self) -> drjit.llvm.ad.Float64``
+
+        Generate the previous (standard) normally distributed double precision floating
+        point number by stepping the PCG32 state backwards.
+
+        Two overloads of this function exist: the masked variant does not regress
+        the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``prev_float64_normal(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.Float64``
+
+        Returns → drjit.llvm.ad.Float64:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.prev_float_normal(self, dtype, mask=True)
+
+        Generate the previous (standard) normally distributed precision floating point number
+        by stepping the PCG32 state backwards.
+
+        The function analyzes the provided target ``dtype`` and either invokes
+        :py:func:`prev_float16_normal`, :py:func:`prev_float32_normal` or
+        :py:func:`prev_float64_normal` depending on the requested precision.
+
+        A mask can be optionally provided. Masked entries do not regress the PRNG state.
+
+        Parameter ``dtype`` (type):
+            *no description available*
+
+        Parameter ``mask`` (object):
+            *no description available*
+
+        Returns → object:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.prev_uint32()
+
+        Overloaded function.
+
+        1. ``prev_uint32(self) -> drjit.llvm.ad.UInt``
+
+        Generate the previous uniformly distributed unsigned 32-bit random number
+        by stepping the PCG32 state backwards.
+
+        Two overloads of this function exist: the masked variant does not
+        regress the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``prev_uint32(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.UInt``
+
+        Returns → drjit.llvm.ad.UInt:
+            *no description available*
+
+    .. py:method:: mitsuba.PCG32.prev_uint64()
+
+        Overloaded function.
+
+        1. ``prev_uint64(self) -> drjit.llvm.ad.UInt64``
+
+        Generate the previous uniformly distributed unsigned 64-bit random number
+        by stepping the PCG32 state backwards.
+
+        Internally, the function calls :py:func:`prev_uint32` twice.
+
+        Two overloads of this function exist: the masked variant does not regress
+        the PRNG state of entries ``i`` where ``mask[i] == False``.
+
+        2. ``prev_uint64(self, arg: drjit.llvm.ad.Bool, /) -> drjit.llvm.ad.UInt64``
 
         Returns → drjit.llvm.ad.UInt64:
             *no description available*

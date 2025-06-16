@@ -93,6 +93,9 @@ which describe a borosilicate glass (BK7) ↔ air interface.
         'type': 'thindielectric',
         'int_ior': 'bk7',
         'ext_ior': 'air'
+
+.. warning::
+    This BSDF does not have support for polarized variants.
  */
 
 template <typename Float, typename Spectrum>
