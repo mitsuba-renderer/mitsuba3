@@ -132,7 +132,7 @@ NB_MODULE(MI_VARIANT_NAME, m) {
         // For stub generation, we **always** want the module to load
         // successfully.
         if (!is_stub_gen) {
-            MI_VARIANT_FLOAT(0);
+            DRJIT_MARK_USED(MI_VARIANT_FLOAT(0));
         }
     }
 
