@@ -1312,6 +1312,17 @@ def test34_mesh_ptr(variants_vec_rgb):
     is_nnz = dr.reinterpret_array(mi.UInt32, meshes) != 0
     assert dr.all(is_nnz == (True, False, True))
 
+    # It should be possible to construct an empty MeshPtr.
+    assert dr.width(mi.ShapePtr()) == 0
+    assert dr.width(mi.MeshPtr()) == 0
+    assert dr.width(dr.zeros(mi.MeshPtr, 0)) == 0
+    assert dr.width(dr.empty(mi.MeshPtr, 0)) == 0
+
+    # It should be possible to reshape down to zero elements.
+    a = dr.zeros(mi.MeshPtr, 4)
+    b = dr.reshape(mi.MeshPtr, a, 0, shrink=True)
+    assert dr.width(b) == 0
+
 
 @fresolver_append_path
 def test35_mesh_vcalls(variants_vec_rgb):
