@@ -130,7 +130,7 @@ MI_PY_EXPORT(ProgressReporter) {
         return;
     }
 
-    Logger *logger = Thread::thread()->logger();
+    Logger *logger = mitsuba::logger();
     logger->clear_appenders();
 
     try {

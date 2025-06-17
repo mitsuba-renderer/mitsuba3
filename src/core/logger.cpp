@@ -65,7 +65,7 @@ void Logger::log(LogLevel level, const Class *class_, const char *file,
     }
 
     std::string text = d->formatter->format(level, class_,
-        Thread::thread(), file, line, msg);
+        file, line, msg);
 
     std::lock_guard<std::mutex> guard(d->mutex);
     for (auto entry : d->appenders)
@@ -114,7 +114,7 @@ void Logger::static_initialization() {
     ref<Formatter> formatter = new DefaultFormatter();
     logger->add_appender(appender);
     logger->set_formatter(formatter);
-    Thread::thread()->set_logger(logger);
+    mitsuba::set_logger(logger);
 #if defined(NDEBUG)
     logger->set_log_level(Info);
 #else
@@ -123,7 +123,9 @@ void Logger::static_initialization() {
 }
 
 // Removal of logger from main thread is handled in thread.cpp.
-void Logger::static_shutdown() { }
+void Logger::static_shutdown() {
+    set_logger(nullptr);
+}
 
 size_t Logger::appender_count() const {
     return d->appenders.size();
@@ -161,11 +163,16 @@ void Throw(LogLevel level, const Class *class_, const char *file,
         msg = msg.substr(0, it) + "\n  " + msg.substr(it + 3);
 
     std::string text =
-        formatter.format(level, class_, Thread::thread(), file, line, msg);
+        formatter.format(level, class_, file, line, msg);
     throw std::runtime_error(zerowidth_space + text);
 }
 
 NAMESPACE_END(detail)
+
+static ref<Logger> __static_logger;
+
+void set_logger(Logger *logger) { __static_logger = logger; }
+Logger *logger() { return __static_logger.get(); }
 
 MI_IMPLEMENT_CLASS(Logger, Object)
 

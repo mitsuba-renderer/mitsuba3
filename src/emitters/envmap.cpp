@@ -125,7 +125,7 @@ public:
                 Throw("Property \"bitmap\" must be a Bitmap instance.");
             bitmap = b;
         } else {
-            FileResolver *fs = Thread::thread()->file_resolver();
+            FileResolver *fs = mitsuba::file_resolver();
             fs::path file_path = fs->resolve(props.string("filename"));
             m_filename = file_path.filename().string();
             bitmap = new Bitmap(file_path);

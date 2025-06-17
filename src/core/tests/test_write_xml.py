@@ -337,7 +337,7 @@ def test10_xml_rgb(variants_all_scalar, tmp_path):
 @fresolver_append_path
 def test11_xml_spectrum(variants_all_scalar, tmp_path):
     from re import escape
-    fr = mi.Thread.thread().file_resolver()
+    fr = mi.file_resolver()
     mts_root = str(fr[len(fr)-1])
 
     filepath = str(tmp_path / 'test_write_xml-test11_output.xml')
@@ -423,7 +423,7 @@ def test11_xml_spectrum(variants_all_scalar, tmp_path):
 
 @fresolver_append_path
 def test12_xml_duplicate_files(variants_all_scalar, tmp_path):
-    fr = mi.Thread.thread().file_resolver()
+    fr = mi.file_resolver()
     mts_root = str(fr[len(fr)-1])
 
     filepath = str(tmp_path / 'test_write_xml-test12_output.xml')

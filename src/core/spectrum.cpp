@@ -10,7 +10,7 @@ template <typename Scalar>
 void spectrum_from_file(const fs::path &path, std::vector<Scalar> &wavelengths,
                         std::vector<Scalar> &values) {
 
-    auto fs = Thread::thread()->file_resolver();
+    auto fs = mitsuba::file_resolver();
     fs::path file_path = fs->resolve(path);
     if (!fs::exists(file_path))
         Log(Error, "\"%s\": file does not exist!", file_path);
@@ -57,7 +57,7 @@ template <typename Scalar>
 void spectrum_to_file(const fs::path &path, const std::vector<Scalar> &wavelengths,
                       const std::vector<Scalar> &values) {
 
-    auto fs = Thread::thread()->file_resolver();
+    auto fs = mitsuba::file_resolver();
     fs::path file_path = fs->resolve(path);
 
     if (wavelengths.size() != values.size())

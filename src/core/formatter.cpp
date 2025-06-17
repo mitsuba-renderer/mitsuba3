@@ -11,7 +11,7 @@ DefaultFormatter::DefaultFormatter()
       m_has_class(true) { }
 
 std::string DefaultFormatter::format(mitsuba::LogLevel level, const Class *class_,
-                                     const Thread *thread, const char *file, int line,
+                                     const char *file, int line,
                                      const std::string &msg) {
     std::ostringstream oss;
     std::istringstream iss(msg);
@@ -39,14 +39,6 @@ std::string DefaultFormatter::format(mitsuba::LogLevel level, const Class *class
                 case Error: oss << "ERROR "; break;
                 default:     oss << "CUSTM "; break;
             }
-        }
-
-        /* Thread */
-        if (thread && m_has_thread) {
-            oss << thread->name();
-
-            for (int i=0; i<(6 - (int) thread->name().size()); i++)
-                oss << ' ';
         }
 
         /* Class */

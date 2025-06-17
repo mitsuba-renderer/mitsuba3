@@ -10,6 +10,7 @@
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/xml.h>
+#include <nanothread/nanothread.h>
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/scene.h>
@@ -229,7 +230,7 @@ int main(int argc, char *argv[]) {
 #endif
 
         // Initialize nanothread with the requested number of threads
-        size_t thread_count = Thread::thread_count();
+        uint32_t thread_count = pool_size() + 1;
         if (*arg_threads) {
             thread_count = arg_threads->as_int();
             if (thread_count < 1) {
@@ -238,7 +239,7 @@ int main(int argc, char *argv[]) {
                 thread_count = 1;
             }
         }
-        Thread::set_thread_count(thread_count);
+        pool_set_size(nullptr, thread_count - 1);
 
         while (arg_define && *arg_define) {
             std::string value = arg_define->as_string();
@@ -314,7 +315,7 @@ int main(int argc, char *argv[]) {
 
         // Append the mitsuba directory to the FileResolver search path list
         ref<Thread> thread = Thread::thread();
-        ref<FileResolver> fr = thread->file_resolver();
+        ref<FileResolver> fr = file_resolver();
         fs::path base_path = util::library_path().parent_path();
         if (!fr->contains(base_path))
             fr->append(base_path);
@@ -329,9 +330,9 @@ int main(int argc, char *argv[]) {
         }
 
         if (!*arg_extra || *arg_help) {
-            help((int) Thread::thread_count());
+            help(pool_size() + 1);
         } else {
-            Log(Info, "%s", util::info_build((int) Thread::thread_count()));
+            Log(Info, "%s", util::info_build(pool_size() + 1));
             Log(Info, "%s", util::info_copyright());
             Log(Info, "%s", util::info_features());
 
@@ -343,7 +344,7 @@ int main(int argc, char *argv[]) {
         while (arg_extra && *arg_extra) {
             fs::path filename(arg_extra->as_string());
             ref<FileResolver> fr2 = new FileResolver(*fr);
-            thread->set_file_resolver(fr2);
+            set_file_resolver(fr2);
 
             // Add the scene file's directory to the search path.
             fs::path scene_dir = filename.parent_path();

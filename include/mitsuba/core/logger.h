@@ -1,8 +1,10 @@
 #pragma once
 
 #include <mitsuba/core/string.h>
+#include <mitsuba/core/object.h>
 #include <mitsuba/core/thread.h>
 #include <tinyformat.h>
+#include <memory>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -127,6 +129,12 @@ private:
     std::unique_ptr<LoggerPrivate> d;
 };
 
+/// Return the logger instance (this is a process-wide setting)
+extern MI_EXPORT_LIB Logger *logger();
+
+/// Set the logger instance (this is a process-wide setting)
+extern MI_EXPORT_LIB void set_logger(Logger *logger);
+
 NAMESPACE_BEGIN(detail)
 
 [[noreturn]] extern MI_EXPORT_LIB
@@ -136,7 +144,7 @@ void Throw(LogLevel level, const Class *class_, const char *file,
 template <typename... Args> MI_INLINE
 static void Log(LogLevel level, const Class *class_,
                 const char *filename, int line, Args &&... args) {
-    auto logger = mitsuba::Thread::thread()->logger();
+    Logger *logger = mitsuba::logger();
     if (logger && level >= logger->log_level())
         logger->log(level, class_, filename, line, tfm::format(std::forward<Args>(args)...));
 }

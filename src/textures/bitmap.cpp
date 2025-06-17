@@ -200,7 +200,7 @@ public:
                 m_bitmap = b;
             } else if (props.has_property("filename")) {
                 // Creates a Bitmap texture by loading an image from the filesystem
-                FileResolver* fs = Thread::thread()->file_resolver();
+                FileResolver* fs = mitsuba::file_resolver();
                 fs::path file_path = fs->resolve(props.string("filename"));
                 m_name = file_path.filename().string();
                 Log(Debug, "Loading bitmap texture from \"%s\" ..", m_name);
