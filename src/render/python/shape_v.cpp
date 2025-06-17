@@ -288,8 +288,11 @@ template <typename Ptr, typename Cls> void bind_mesh_generic(Cls &cls) {
     if constexpr (dr::is_array_v<Ptr> && dr::is_jit_v<Ptr>) {
         // Custom constructor to automatically zero-out non-Mesh pointer entries.
         // using ShapePtr = dr::replace_scalar_t<Ptr, Shape *>;
-        cls
-            .def("__init__", [](Ptr *dst, const ShapePtr &ptr) {
+        cls.def("__init__", [](Ptr *dst) {
+               // Zero-sized pointer array.
+               new (dst) Ptr();
+           })
+           .def("__init__", [](Ptr *dst, const ShapePtr &ptr) {
                 ShapePtr filtered = dr::select(ptr->is_mesh(), ptr, dr::zeros<ShapePtr>());
                 Ptr mesh = dr::reinterpret_array<Ptr>(filtered);
                 // Placement new.
