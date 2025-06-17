@@ -177,7 +177,7 @@ class PRBVolpathIntegrator(RBIntegrator):
 
                 # Handle null and real scatter events
                 if dr.hint(self.handle_null_scattering, mode='scalar'):
-                    scatter_prob = index_spectrum(mei.sigma_t, channel) / index_spectrum(mei.combined_extinction, channel)
+                    scatter_prob = dr.mean(mei.sigma_t / mei.combined_extinction)
                     act_null_scatter = (sampler.next_1d(active_medium) >= scatter_prob) & active_medium
                     act_medium_scatter = ~act_null_scatter & active_medium
                     weight[act_null_scatter] *= mei.sigma_n / dr.detach(1 - scatter_prob)
