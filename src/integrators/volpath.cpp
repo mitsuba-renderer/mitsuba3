@@ -1,4 +1,3 @@
-#include <random>
 #include <mitsuba/core/ray.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/bsdf.h>
@@ -236,15 +235,15 @@ public:
                 active_medium &= mei.is_valid();
 
                 // Handle null and real scatter events
-                Mask null_scatter = sampler->next_1d(active_medium) >= index_spectrum(mei.sigma_t, channel) / index_spectrum(mei.combined_extinction, channel);
+                Float null_scatter_prob = dr::mean(mei.sigma_n / mei.combined_extinction);
+                Mask null_scatter = sampler->next_1d(active_medium) < null_scatter_prob;
 
                 act_null_scatter |= null_scatter && active_medium;
                 act_medium_scatter |= !act_null_scatter && active_medium;
 
                 if (dr::any_or<true>(is_spectral && act_null_scatter))
                     dr::masked(throughput, is_spectral && act_null_scatter) *=
-                        mei.sigma_n * index_spectrum(mei.combined_extinction, channel) /
-                        index_spectrum(mei.sigma_n, channel);
+                        mei.sigma_n / null_scatter_prob;
 
                 dr::masked(depth, act_medium_scatter) += 1;
                 dr::masked(last_scatter_event, act_medium_scatter) = mei;
@@ -262,7 +261,7 @@ public:
             if (dr::any_or<true>(act_medium_scatter)) {
                 if (dr::any_or<true>(is_spectral))
                     dr::masked(throughput, is_spectral && act_medium_scatter) *=
-                        mei.sigma_s * index_spectrum(mei.combined_extinction, channel) / index_spectrum(mei.sigma_t, channel);
+                        mei.sigma_s / dr::mean(mei.sigma_t / mei.combined_extinction);
                 if (dr::any_or<true>(not_spectral))
                     dr::masked(throughput, not_spectral && act_medium_scatter) *= mei.sigma_s / mei.sigma_t;
 
