@@ -19,7 +19,7 @@ High dynamic range film (:monosp:`hdrfilm`)
 -------------------------------------------
 
 .. pluginparameters::
- :extra-rows: 7
+ :extra-rows: 8
 
  * - width, height
    - |int|
