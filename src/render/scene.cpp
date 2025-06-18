@@ -289,18 +289,13 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
                                            Mask active) const {
     MI_MASKED_FUNCTION(ProfilerPhase::SampleEmitterRay, active);
 
-
     Ray3f ray;
     Spectrum weight;
     EmitterPtr emitter{};
 
-    // Potentially disable inlining of emitter sampling (if there is just a single emitter)
-    bool vcall_inline = true;
-    if constexpr (dr::is_jit_v<Float>)
-         vcall_inline = false;
-
+    // Don't inline emitter sampling in JIT variants(if there is just a single emitter)
     size_t emitter_count = m_emitters.size();
-    if (emitter_count > 1 || (emitter_count == 1 && !vcall_inline)) {
+    if (emitter_count > 1 || (emitter_count == 1 && drjit::is_jit_v<Float>)) {
         auto [index, emitter_weight, sample_1_re] = sample_emitter(sample1, active);
         emitter = dr::gather<EmitterPtr>(m_emitters_dr, index, active);
 
@@ -329,13 +324,9 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
     DirectionSample3f ds;
     Spectrum spec;
 
-    // Potentially disable inlining of emitter sampling (if there is just a single emitter)
-    bool vcall_inline = true;
-    if constexpr (dr::is_jit_v<Float>)
-         vcall_inline = false;
-
+    // Don't inline emitter sampling in JIT variants(if there is just a single emitter)
     size_t emitter_count = m_emitters.size();
-    if (emitter_count > 1 || (emitter_count == 1 && !vcall_inline)) {
+    if (emitter_count > 1 || (emitter_count == 1 && drjit::is_jit_v<Float>)) {
         // Randomly pick an emitter
         auto [index, emitter_weight, sample_x_re] = sample_emitter(sample.x(), active);
         sample.x() = sample_x_re;
