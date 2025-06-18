@@ -282,7 +282,8 @@ public:
             }
 
             if (dr::any_or<true>(active_medium)) {
-                Mask null_scatter = sampler->next_1d(active_medium) >= index_spectrum(mei.sigma_t, channel) / index_spectrum(mei.combined_extinction, channel);
+                Float null_scatter_prob = dr::mean(mei.sigma_n / mei.combined_extinction);
+                Mask null_scatter = sampler->next_1d(active_medium) < null_scatter_prob;
                 act_null_scatter |= null_scatter && active_medium;
                 act_medium_scatter |= !act_null_scatter && active_medium;
                 last_event_was_null = act_null_scatter;
@@ -299,12 +300,12 @@ public:
 
                 if (dr::any_or<true>(act_null_scatter)) {
                     if (dr::any_or<true>(is_spectral)) {
-                        update_weights(p_over_f, mei.sigma_n / mei.combined_extinction, mei.sigma_n, channel, is_spectral && act_null_scatter);
+                        update_weights(p_over_f, null_scatter_prob, mei.sigma_n, channel, is_spectral && act_null_scatter);
                         update_weights(p_over_f_nee, 1.0f, mei.sigma_n, channel, is_spectral && act_null_scatter);
                     }
                     if (dr::any_or<true>(not_spectral)) {
                        update_weights(p_over_f, mei.sigma_n, mei.sigma_n, channel, not_spectral && act_null_scatter);
-                       update_weights(p_over_f_nee, 1.0f, mei.sigma_n / mei.combined_extinction, channel, not_spectral && act_null_scatter);
+                       update_weights(p_over_f_nee, 1.0f, null_scatter_prob, channel, not_spectral && act_null_scatter);
                     }
 
                     dr::masked(ray.o, act_null_scatter) = mei.p;
@@ -313,7 +314,7 @@ public:
 
                 if (dr::any_or<true>(act_medium_scatter)) {
                     if (dr::any_or<true>(is_spectral))
-                        update_weights(p_over_f, mei.sigma_t / mei.combined_extinction, mei.sigma_s, channel, is_spectral && act_medium_scatter);
+                        update_weights(p_over_f, 1.0f - null_scatter_prob, mei.sigma_s, channel, is_spectral && act_medium_scatter);
                     if (dr::any_or<true>(not_spectral))
                         update_weights(p_over_f, mei.sigma_t, mei.sigma_s, channel, not_spectral && act_medium_scatter);
 
@@ -549,7 +550,7 @@ public:
                     dr::masked(si.t, active_medium) = si.t - mei.t;
                     if (dr::any_or<true>(is_spectral)) {
                         update_weights(p_over_f_nee, 1.f, mei.sigma_n, channel, is_spectral);
-                        update_weights(p_over_f_uni, mei.sigma_n / mei.combined_extinction, mei.sigma_n, channel, is_spectral);
+                        update_weights(p_over_f_uni, dr::mean(mei.sigma_n / mei.combined_extinction), mei.sigma_n, channel, is_spectral);
                     }
                     if (dr::any_or<true>(not_spectral)) {
                         update_weights(p_over_f_nee, 1.f, mei.sigma_n / mei.combined_extinction, channel, not_spectral);
