@@ -171,9 +171,9 @@ public:
         mark_dirty();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_parameter("to_world", *m_to_world.ptr(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("to_world", m_to_world, ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -792,7 +792,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Sphere)
 private:
     /// Center in world-space
     field<Point3f> m_center;
@@ -806,6 +806,5 @@ private:
     MI_TRAVERSE_CB(Base, m_center, m_radius, m_inv_surface_area)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Sphere, Shape)
-MI_EXPORT_PLUGIN(Sphere, "Sphere intersection primitive");
+MI_EXPORT_PLUGIN(Sphere)
 NAMESPACE_END(mitsuba)

@@ -2,6 +2,7 @@
 
 #include <drjit/array.h>
 #include <mitsuba/core/object.h>
+#include <string>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -279,7 +280,7 @@ public:
     /// Return the representable range of the given type
     static std::pair<double, double> range(Type type);
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Struct)
 protected:
     std::vector<Field> m_fields;
     bool m_pack;
@@ -410,7 +411,7 @@ public:
     /// Free static resources
     static void static_shutdown();
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Struct)
 protected:
 
 #if MI_STRUCTCONVERTER_USE_JIT == 0

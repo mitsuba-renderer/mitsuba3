@@ -124,7 +124,7 @@ public:
     //! @}
     // =========================================================================
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(ZStream)
 
 private:
     ref<Stream> m_child_stream;

@@ -5,6 +5,7 @@
 #include <mitsuba/python/python.h>
 
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/string_view.h>
 
 /// Escape strings to make them HTML-safe
 std::string escape_html(const std::string& data) {
@@ -43,11 +44,11 @@ public:
     }
 
     /// Append a line of text with the given log level
-    virtual void append(mitsuba::LogLevel level, const std::string &text) override {
+    virtual void append(mitsuba::LogLevel level, std::string_view text) override {
         std::string html_string;
 
         if (level == Info) {
-            html_string = "<span style=\"font-family: monospace\">" + escape_html(text) + "</span>";
+            html_string = "<span style=\"font-family: monospace\">" + escape_html(std::string(text)) + "</span>";
         } else {
             std::string col = "#000";
             if (level == Debug)
@@ -56,7 +57,7 @@ public:
                 col = "#f55";
 
             html_string = "<span style=\"font-family: monospace; color: " + col +
-                          "\">" + escape_html(text) + "</span>";
+                          "\">" + escape_html(std::string(text)) + "</span>";
         }
 
         nb::gil_scoped_acquire gil;
@@ -64,8 +65,8 @@ public:
         m_flush();
     }
 
-    virtual void log_progress(float progress, const std::string &name,
-        const std::string & /* formatted */, const std::string &eta,
+    virtual void log_progress(float progress, std::string_view name,
+        std::string_view /* formatted */, std::string_view eta,
         const void * /* ptr */) override {
         nb::gil_scoped_acquire gil;
 
@@ -75,7 +76,7 @@ public:
         make_and_display_progress_bar(progress == 0.f);
 
         m_bar.attr("value") = progress;
-        m_label.attr("value") = escape_html(name) + " " + eta;
+        m_label.attr("value") = escape_html(std::string(name)) + " " + std::string(eta);
         if (progress == 1.f) {
             m_bar.attr("bar_style") = "success";
             m_label = m_bar = nb::none();

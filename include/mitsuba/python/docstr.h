@@ -699,39 +699,6 @@ static const char *__doc_mitsuba_ArgParser_parse = R"doc(Parse the given set of 
 
 static const char *__doc_mitsuba_ArgParser_parse_2 = R"doc(Parse the given set of command line arguments)doc";
 
-static const char *__doc_mitsuba_AtomicFloat =
-R"doc(Atomic floating point data type
-
-The class implements an an atomic floating point data type (which is
-not possible with the existing overloads provided by ``std::atomic``).
-It internally casts floating point values to an integer storage format
-and uses atomic integer compare and exchange operations to perform
-changes.)doc";
-
-static const char *__doc_mitsuba_AtomicFloat_AtomicFloat = R"doc(Initialize the AtomicFloat with a given floating point value)doc";
-
-static const char *__doc_mitsuba_AtomicFloat_do_atomic =
-R"doc(Apply a FP operation atomically (verified that this will be nicely
-inlined in the above operators))doc";
-
-static const char *__doc_mitsuba_AtomicFloat_m_bits = R"doc()doc";
-
-static const char *__doc_mitsuba_AtomicFloat_max = R"doc(Atomically compute the maximum)doc";
-
-static const char *__doc_mitsuba_AtomicFloat_min = R"doc(Atomically compute the minimum)doc";
-
-static const char *__doc_mitsuba_AtomicFloat_operator_T0 = R"doc(Convert the AtomicFloat into a normal floating point value)doc";
-
-static const char *__doc_mitsuba_AtomicFloat_operator_assign = R"doc(Overwrite the AtomicFloat with a floating point value)doc";
-
-static const char *__doc_mitsuba_AtomicFloat_operator_iadd = R"doc(Atomically add a floating point value)doc";
-
-static const char *__doc_mitsuba_AtomicFloat_operator_idiv = R"doc(Atomically divide by a floating point value)doc";
-
-static const char *__doc_mitsuba_AtomicFloat_operator_imul = R"doc(Atomically multiply by a floating point value)doc";
-
-static const char *__doc_mitsuba_AtomicFloat_operator_isub = R"doc(Atomically subtract a floating point value)doc";
-
 static const char *__doc_mitsuba_BSDF =
 R"doc(Bidirectional Scattering Distribution Function (BSDF) interface
 
@@ -1955,7 +1922,7 @@ static const char *__doc_mitsuba_Class_m_parent_name = R"doc()doc";
 
 static const char *__doc_mitsuba_Class_m_unserialize = R"doc()doc";
 
-static const char *__doc_mitsuba_Class_m_variant = R"doc()doc";
+static const char *__doc_mitsuba_Class_m_variant_name = R"doc()doc";
 
 static const char *__doc_mitsuba_Class_name = R"doc(Return the name of the class)doc";
 
@@ -5303,7 +5270,12 @@ combined sun & sky emitter instantiated via XML, which recursively
 expands into a separate sun & sky instance. This functionality is
 supported by any Mitsuba object, hence it is located this level.)doc";
 
+static const char *__doc_mitsuba_Object_variant_name = R"doc(Return the instance variant (or NULL, if this is not a variant object))doc";
+
+
 static const char *__doc_mitsuba_Object_id = R"doc(Return an identifier of the current instance (if available))doc";
+
+static const char *__doc_mitsuba_Object_class_name = R"doc(Return the C++ class name of this object (e.g. "Scene", "Integrator"))doc";
 
 static const char *__doc_mitsuba_Object_parameters_changed =
 R"doc(Update internal state after applying changes to parameters
@@ -5731,6 +5703,36 @@ static const char *__doc_mitsuba_PhaseFunction_set_id = R"doc(Set a string ident
 
 static const char *__doc_mitsuba_PhaseFunction_to_string = R"doc(Return a human-readable representation of the phase function)doc";
 
+static const char *__doc_mitsuba_ObjectType = R"doc(Enumeration of plugin object types)doc";
+
+static const char *__doc_mitsuba_ObjectType_Unknown = R"doc(Unknown plugin type)doc";
+
+static const char *__doc_mitsuba_ObjectType_Scene = R"doc(Scene object)doc";
+
+static const char *__doc_mitsuba_ObjectType_Sensor = R"doc(Sensor object)doc";
+
+static const char *__doc_mitsuba_ObjectType_Film = R"doc(Film object)doc";
+
+static const char *__doc_mitsuba_ObjectType_Emitter = R"doc(Emitter object)doc";
+
+static const char *__doc_mitsuba_ObjectType_Sampler = R"doc(Sampler object)doc";
+
+static const char *__doc_mitsuba_ObjectType_Shape = R"doc(Shape object)doc";
+
+static const char *__doc_mitsuba_ObjectType_Texture = R"doc(Texture object)doc";
+
+static const char *__doc_mitsuba_ObjectType_Volume = R"doc(Volume object)doc";
+
+static const char *__doc_mitsuba_ObjectType_Medium = R"doc(Medium object)doc";
+
+static const char *__doc_mitsuba_ObjectType_BSDF = R"doc(BSDF object)doc";
+
+static const char *__doc_mitsuba_ObjectType_Integrator = R"doc(Integrator object)doc";
+
+static const char *__doc_mitsuba_ObjectType_PhaseFunction = R"doc(Phase function object)doc";
+
+static const char *__doc_mitsuba_ObjectType_ReconstructionFilter = R"doc(Reconstruction filter object)doc";
+
 static const char *__doc_mitsuba_PluginManager =
 R"doc(The object factory is responsible for loading plugin modules and
 instantiating object instances.
@@ -5770,6 +5772,8 @@ static const char *__doc_mitsuba_PluginManager_get_plugin_class = R"doc(Return t
 static const char *__doc_mitsuba_PluginManager_get_plugin_type =
 R"doc(Return the plugin's shorthand from its class name (i.e "diffuse" from
 "SmoothDiffuse"))doc";
+
+static const char *__doc_mitsuba_PluginManager_plugin_type = R"doc(Get the ObjectType of a plugin by name)doc";
 
 static const char *__doc_mitsuba_PluginManager_instance = R"doc(Return the global plugin manager)doc";
 
@@ -6181,7 +6185,7 @@ static const char *__doc_mitsuba_Properties_named_reference_2 =
 R"doc(Retrieve a named reference value (use default value if no entry
 exists))doc";
 
-static const char *__doc_mitsuba_Properties_named_references = R"doc(Return an array containing all named references and their destinations)doc";
+static const char *__doc_mitsuba_Properties_references = R"doc(Return an array containing all named references and their destinations)doc";
 
 static const char *__doc_mitsuba_Properties_object = R"doc(Retrieve an arbitrary object)doc";
 
@@ -10351,9 +10355,9 @@ static const char *__doc_mitsuba_TraversalCallback_put_object =
 R"doc(Inform the traversal callback that the instance references another
 Mitsuba object)doc";
 
-static const char *__doc_mitsuba_TraversalCallback_put_parameter = R"doc(Inform the traversal callback about an attribute of an instance)doc";
+static const char *__doc_mitsuba_TraversalCallback_put_value = R"doc(Inform the traversal callback about an attribute of an instance)doc";
 
-static const char *__doc_mitsuba_TraversalCallback_put_parameter_impl = R"doc(Actual implementation of put_parameter(). [To be provided by subclass])doc";
+static const char *__doc_mitsuba_TraversalCallback_put_value_impl = R"doc(Actual implementation of put_value(). [To be provided by subclass])doc";
 
 static const char *__doc_mitsuba_Vector = R"doc(//! @{ \name Elementary vector, point, and normal data types)doc";
 

@@ -327,7 +327,7 @@ public:
 
     std::string to_string() const override;
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(ImageBlock)
 
 protected:
     // Implementation detail to atomically accumulate a value into the image block

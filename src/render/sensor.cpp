@@ -11,7 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
 // Sensor interface
 // =============================================================================
 
-MI_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props) {
+MI_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props, ObjectType::Sensor) {
     m_shutter_open      = props.get<ScalarFloat>("shutter_open", 0.f);
     m_shutter_open_time = props.get<ScalarFloat>("shutter_close", 0.f) - m_shutter_open;
 
@@ -46,7 +46,7 @@ MI_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props
     if (!m_sampler) {
         // Instantiate an independent filter with 4 samples/pixel if none was specified
         Properties props_sampler("independent");
-        props_sampler.set_int("sample_count", 4);
+        props_sampler.set("sample_count", 4);
         m_sampler = static_cast<Sampler *>(pmgr->create_object<Sampler>(props_sampler));
     }
 
@@ -56,7 +56,7 @@ MI_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props
     m_srf = nullptr;
     if (props.has_property("srf")) {
         if constexpr (is_spectral_v<Spectrum>) {
-            m_srf = props.texture<Texture>("srf");
+            m_srf = props.get_texture<Texture>("srf");
         } else {
             Throw("Sensor(): Spectral Response Function should be used in combination with a"
                   "spectral variant");
@@ -71,13 +71,6 @@ MI_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props
             m_srf = m_film->sensor_response_function();
         }
     }
-
-    MI_REGISTRY_PUT("Sensor", this);
-}
-
-MI_VARIANT Sensor<Float, Spectrum>::~Sensor() {
-    if constexpr (dr::is_jit_v<Float>)
-        jit_registry_remove(this);
 }
 
 MI_VARIANT std::pair<typename Sensor<Float, Spectrum>::RayDifferential3f, Spectrum>
@@ -162,14 +155,14 @@ double parse_fov(const Properties &props, double aspect) {
     if (props.has_property("fov")) {
         fov = props.get<double>("fov");
 
-        fov_axis = string::to_lower(props.string("fov_axis", "x"));
+        fov_axis = string::to_lower(props.get<std::string_view>("fov_axis", "x"));
 
         if (fov_axis == "smaller")
             fov_axis = aspect > 1 ? "y" : "x";
         else if (fov_axis == "larger")
             fov_axis = aspect > 1 ? "x" : "y";
     } else {
-        std::string f = props.string("focal_length", "50mm");
+        std::string f = props.get<std::string>("focal_length", "50mm");
         if (string::ends_with(f, "mm"))
             f = f.substr(0, f.length() - 2);
 
@@ -206,9 +199,6 @@ double parse_fov(const Properties &props, double aspect) {
 
     return result;
 }
-
-MI_IMPLEMENT_CLASS_VARIANT(Sensor, Endpoint, "sensor")
-MI_IMPLEMENT_CLASS_VARIANT(ProjectiveCamera, Sensor)
 
 MI_INSTANTIATE_CLASS(Sensor)
 MI_INSTANTIATE_CLASS(ProjectiveCamera)

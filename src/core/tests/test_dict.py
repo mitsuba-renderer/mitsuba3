@@ -256,6 +256,7 @@ def test07_dict_spectrum(variants_all_scalar):
 def test07_dict_scene(variant_scalar_rgb):
     s1 = mi.load_dict({
         "type" : "scene",
+        "myemitter" : {"type" : "constant"},
         "myintegrator" : {
             "type" : "path",
         },
@@ -264,8 +265,8 @@ def test07_dict_scene(variant_scalar_rgb):
             "near_clip": 1.0,
             "far_clip": 1000.0,
             "to_world" : mi.ScalarTransform4f().look_at(origin=[1, 1, 1],
-                                                      target=[0, 0, 0],
-                                                      up=[0, 0, 1]),
+                                                        target=[0, 0, 0],
+                                                        up=[0, 0, 1]),
             "myfilm" : {
                 "type" : "hdrfilm",
                 "rfilter" : { "type" : "box"},
@@ -277,7 +278,6 @@ def test07_dict_scene(variant_scalar_rgb):
                 "sample_count" : 4,
             },
         },
-        "myemitter" : {"type" : "constant"},
         "myshape" : {"type" : "sphere"}
     })
 
@@ -459,7 +459,7 @@ def test10_dict_expand_nested_object(variant_scalar_spectral):
             "type" : "d65",
     })
     assert len(spectrum.expand()) == 0
-    assert spectrum.class_().name() == "RegularSpectrum"
+    assert spectrum.class_name() == "RegularSpectrum"
 
     # Object should be expanded when used through a reference
     scene = mi.load_dict({

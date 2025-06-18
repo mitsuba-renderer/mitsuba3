@@ -119,7 +119,7 @@ public:
     //! @}
     // =========================================================================
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(MemoryStream)
 
 protected:
     void resize(size_t newSize);

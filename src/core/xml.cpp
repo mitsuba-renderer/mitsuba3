@@ -3,9 +3,8 @@
 #include <set>
 #include <unordered_map>
 #include <mutex>
-#include <map>
+#include <functional>
 
-#include <mitsuba/core/class.h>
 #include <mitsuba/core/config.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/fresolver.h>
@@ -23,22 +22,13 @@
 #include <pugixml.hpp>
 #include <nanothread/nanothread.h>
 
-/// Linux <sys/sysmacros.h> defines these as macros .. :(
-#if defined(major)
-#  undef major
-#endif
-
-#if defined(minor)
-#  undef minor
-#endif
-
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(xml)
 
 using Version = util::Version;
 
 // Set of supported XML tags
-enum class Tag {
+enum class TagType {
     Boolean, Integer, Float, String, Point, Vector, Spectrum, RGB,
     Transform, Translate, Matrix, Rotate, Scale, LookAt, Object,
     NamedReference, Include, Alias, Default, Resource, Invalid
@@ -50,9 +40,70 @@ bool is_unbounded_spectrum(const std::string &name) {
     return name == "eta" || name == "k" || name == "int_ior" || name == "ext_ior";
 }
 
+struct TagInfo {
+    std::string_view name;
+    TagType tag;
+    ObjectType object_type;
+};
+
+static constexpr TagInfo tag_info_table[] = {
+    // Property value tags
+    { "boolean", TagType::Boolean, ObjectType::Unknown },
+    { "integer", TagType::Integer, ObjectType::Unknown },
+    { "float", TagType::Float, ObjectType::Unknown },
+    { "string", TagType::String, ObjectType::Unknown },
+    { "point", TagType::Point, ObjectType::Unknown },
+    { "vector", TagType::Vector, ObjectType::Unknown },
+    { "transform", TagType::Transform, ObjectType::Unknown },
+    { "translate", TagType::Translate, ObjectType::Unknown },
+    { "matrix", TagType::Matrix, ObjectType::Unknown },
+    { "rotate", TagType::Rotate, ObjectType::Unknown },
+    { "scale", TagType::Scale, ObjectType::Unknown },
+    { "lookat", TagType::LookAt, ObjectType::Unknown },
+    { "ref", TagType::NamedReference, ObjectType::Unknown },
+    { "spectrum", TagType::Spectrum, ObjectType::Unknown },
+    { "rgb", TagType::RGB, ObjectType::Unknown },
+    { "include", TagType::Include, ObjectType::Unknown },
+    { "alias", TagType::Alias, ObjectType::Unknown },
+    { "default", TagType::Default, ObjectType::Unknown },
+    { "path", TagType::Resource, ObjectType::Unknown },
+
+    // Object tags
+    { "scene", TagType::Object, ObjectType::Scene },
+    { "sensor", TagType::Object, ObjectType::Sensor },
+    { "film", TagType::Object, ObjectType::Film },
+    { "emitter", TagType::Object, ObjectType::Emitter },
+    { "sampler", TagType::Object, ObjectType::Sampler },
+    { "shape", TagType::Object, ObjectType::Shape },
+    { "texture", TagType::Object, ObjectType::Texture },
+    { "volume", TagType::Object, ObjectType::Volume },
+    { "medium", TagType::Object, ObjectType::Medium },
+    { "bsdf", TagType::Object, ObjectType::BSDF },
+    { "integrator", TagType::Object, ObjectType::Integrator },
+    { "phase", TagType::Object, ObjectType::PhaseFunction },
+    { "rfilter", TagType::Object, ObjectType::ReconstructionFilter },
+};
+
+static TagType tag_to_tag_type(std::string_view name) {
+    for (auto& info : tag_info_table) {
+        if (info.name == name)
+            return info.tag;
+    }
+    return TagType::Invalid;
+}
+
+ObjectType tag_to_object_type(std::string_view name) {
+    for (const auto& info : xml::tag_info_table) {
+        if (info.name == name)
+            return info.object_type;
+    }
+    return ObjectType::Unknown;
+}
+
+
 NAMESPACE_BEGIN(detail)
 
-using Float = Properties::Float;
+using Float = double;
 MI_IMPORT_CORE_TYPES()
 
 static int64_t stoll(const std::string &s) {
@@ -67,63 +118,6 @@ static int64_t stoll(const std::string &s) {
     return result;
 }
 
-
-static std::unordered_map<std::string, Tag> *tags = nullptr;
-static std::unordered_map<std::string, // e.g. bsdf.scalar_rgb
-                          const Class *> *tag_class = nullptr;
-
-inline std::string class_key(const std::string &name, const std::string &variant) {
-    return name + "." + variant;
-}
-
-// Called by Class::Class()
-void register_class(const Class *class_) {
-    Assert(class_ != nullptr);
-
-    if (!tags) {
-        tags = new std::unordered_map<std::string, Tag>();
-        tag_class = new std::unordered_map<std::string, const Class *>();
-
-        // Create an initial mapping of tag names to IDs
-        (*tags)["boolean"]       = Tag::Boolean;
-        (*tags)["integer"]       = Tag::Integer;
-        (*tags)["float"]         = Tag::Float;
-        (*tags)["string"]        = Tag::String;
-        (*tags)["point"]         = Tag::Point;
-        (*tags)["vector"]        = Tag::Vector;
-        (*tags)["transform"]     = Tag::Transform;
-        (*tags)["translate"]     = Tag::Translate;
-        (*tags)["matrix"]        = Tag::Matrix;
-        (*tags)["rotate"]        = Tag::Rotate;
-        (*tags)["scale"]         = Tag::Scale;
-        (*tags)["lookat"]        = Tag::LookAt;
-        (*tags)["ref"]           = Tag::NamedReference;
-        (*tags)["spectrum"]      = Tag::Spectrum;
-        (*tags)["rgb"]           = Tag::RGB;
-        (*tags)["include"]       = Tag::Include;
-        (*tags)["alias"]         = Tag::Alias;
-        (*tags)["default"]       = Tag::Default;
-        (*tags)["path"]          = Tag::Resource;
-    }
-
-    // Register the new class as an object tag
-    const std::string &alias = class_->alias();
-
-    if (tags->find(alias) == tags->end())
-        (*tags)[alias] = Tag::Object;
-    (*tag_class)[class_key(alias, class_->variant())] = class_;
-
-    if (alias == "texture")
-        (*tag_class)[class_key("spectrum", class_->variant())] = class_;
-}
-
-// Called by Class::static_shutdown()
-void cleanup() {
-    delete tags;
-    delete tag_class;
-    tags = nullptr;
-    tag_class = nullptr;
-}
 
 /// Helper function: map a position offset in bytes to a more readable line/column value
 static std::string string_offset(const std::string &string, ptrdiff_t pos) {
@@ -182,9 +176,9 @@ struct XMLSource {
 
 struct XMLObject {
     Properties props;
-    const Class *class_ = nullptr;
     std::string src_id;
     std::string alias;
+    std::string node_name;  // Store XML node name for object type determination
     std::function<std::string(ptrdiff_t)> offset;
     size_t location = 0;
     ref<Object> object;
@@ -392,7 +386,7 @@ void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) 
 }
 
 static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseContext &ctx,
-                                                     pugi::xml_node &node, Tag parent_tag,
+                                                     pugi::xml_node &node, TagType parent_tag,
                                                      Properties &props, ParameterList &param,
                                                      size_t &arg_counter, int depth,
                                                      bool within_emitter = false,
@@ -425,25 +419,25 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
         if (node.type() != pugi::node_element)
             src.throw_error(node, "unexpected content");
 
+        std::string_view node_name(node.name());
+
         // Look up the name of the current element
-        auto it = tags->find(node.name());
-        if (it == tags->end())
-            src.throw_error(node, "unexpected tag \"%s\"", node.name());
+        TagType tag = tag_to_tag_type(node_name);
 
-        Tag tag = it->second;
+        if (tag == TagType::Invalid)
+            src.throw_error(node, "unexpected tag \"%s\"", node_name);
 
-        if (node.attribute("type") && tag != Tag::Object
-            && tag_class->find(class_key(node.name(), ctx.variant)) != tag_class->end())
-            tag = Tag::Object;
+        if (node.attribute("type"))
+            tag = TagType::Object;
 
         // Perform some safety checks to make sure that the XML tree really makes sense
-        bool has_parent              = parent_tag != Tag::Invalid;
-        bool parent_is_object        = has_parent && parent_tag == Tag::Object;
-        bool current_is_object       = tag == Tag::Object;
-        bool parent_is_transform     = parent_tag == Tag::Transform;
-        bool current_is_transform_op = tag == Tag::Translate || tag == Tag::Rotate ||
-                                       tag == Tag::Scale || tag == Tag::LookAt ||
-                                       tag == Tag::Matrix;
+        bool has_parent              = parent_tag != TagType::Invalid;
+        bool parent_is_object        = has_parent && parent_tag == TagType::Object;
+        bool current_is_object       = tag == TagType::Object;
+        bool parent_is_transform     = parent_tag == TagType::Transform;
+        bool current_is_transform_op = tag == TagType::Translate || tag == TagType::Rotate ||
+                                       tag == TagType::Scale || tag == TagType::LookAt ||
+                                       tag == TagType::Matrix;
 
         if (!has_parent && !current_is_object)
             src.throw_error(node, "root element \"%s\" must be an object", node.name());
@@ -476,7 +470,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
 
         if (std::string(node.name()) == "scene") {
             node.append_attribute("type") = "scene";
-        } else if (tag == Tag::Transform) {
+        } else if (tag == TagType::Transform) {
             ctx.transform = Transform4f();
         }
 
@@ -487,7 +481,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                     node, "invalid parameter name \"%s\" in element \"%s\": leading "
                           "underscores are reserved for internal identifiers.",
                     name, node.name());
-        } else if (current_is_object || tag == Tag::NamedReference) {
+        } else if (current_is_object || tag == TagType::NamedReference) {
             node.append_attribute("name") = tfm::format("_arg_%i", arg_counter++).c_str();
         }
 
@@ -503,7 +497,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
         }
 
         switch (tag) {
-            case Tag::Object: {
+            case TagType::Object: {
                     check_attributes(src, node, { "type", "id", "name" });
                     std::string id        = node.attribute("id").value(),
                                 name      = node.attribute("name").value(),
@@ -518,11 +512,6 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         src.throw_error(node, "\"%s\" has duplicate id \"%s\" (previous was at %s)",
                             node_name, id, src.offset(it_inst->second.location));
 
-                    auto it2 = tag_class->find(class_key(node_name, ctx.variant));
-                    if (it2 == tag_class->end())
-                        src.throw_error(node, "could not retrieve class object for "
-                                       "tag \"%s\" and variant \"%s\"", node_name, ctx.variant);
-
                     size_t arg_counter_nested = 0;
                     for (pugi::xml_node &ch: node.children()) {
                         auto [arg_name, nested_id] =
@@ -534,12 +523,12 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                             src.throw_error(node, "cannot reference parent id \"%s\" in nested object",
                                             nested_id);
                         if (!nested_id.empty())
-                            props_nested.set_named_reference(arg_name, nested_id);
+                            props_nested.set(arg_name, Properties::Reference(nested_id));
                     }
 
                     auto &inst = ctx.instances[id];
                     inst.props = props_nested;
-                    inst.class_ = it2->second;
+                    inst.node_name = node_name;  // Store XML node name
                     inst.offset = src.offset;
                     inst.src_id = src.id;
                     inst.location = node.offset_debug();
@@ -547,7 +536,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                 }
                 break;
 
-            case Tag::NamedReference: {
+            case TagType::NamedReference: {
                     check_attributes(src, node, { "name", "id" });
                     auto id = node.attribute("id").value();
                     auto name = node.attribute("name").value();
@@ -555,7 +544,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                 }
                 break;
 
-            case Tag::Alias: {
+            case TagType::Alias: {
                     check_attributes(src, node, { "id", "as" });
                     auto alias_src = node.attribute("id").value();
                     auto alias_dst = node.attribute("as").value();
@@ -577,7 +566,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                 }
                 break;
 
-            case Tag::Default: {
+            case TagType::Default: {
                     check_attributes(src, node, { "name", "value" });
                     std::string name = node.attribute("name").value();
                     std::string value = node.attribute("value").value();
@@ -598,7 +587,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                 }
                 break;
 
-            case Tag::Resource: {
+            case TagType::Resource: {
                     check_attributes(src, node, { "value" });
                     if (depth != 1)
                         src.throw_error(node, "<path>: path can only be child of root");
@@ -618,7 +607,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                 }
                 break;
 
-            case Tag::Include: {
+            case TagType::Include: {
                     check_attributes(src, node, { "filename" });
                     ref<FileResolver> fs = file_resolver();
                     fs::path filename = fs->resolve(node.attribute("filename").value());
@@ -663,7 +652,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                                 auto [arg_name, nested_id] = parse_xml(nested_src, ctx, ch, parent_tag,
                                           props, param, arg_counter, 1);
                                 if (!nested_id.empty())
-                                    props.set_named_reference(arg_name, nested_id);
+                                    props.set(arg_name, Properties::Reference(nested_id));
                             }
                         } else {
                             return parse_xml(nested_src, ctx, *doc.begin(), parent_tag,
@@ -675,13 +664,13 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                 }
                 break;
 
-            case Tag::String: {
+            case TagType::String: {
                     check_attributes(src, node, { "name", "value" });
-                    props.set_string(node.attribute("name").value(), node.attribute("value").value());
+                    props.set(node.attribute("name").value(), node.attribute("value").value());
                 }
                 break;
 
-            case Tag::Float: {
+            case TagType::Float: {
                     check_attributes(src, node, { "name", "value" });
                     std::string value = node.attribute("value").value();
                     Float value_float;
@@ -690,11 +679,11 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                     } catch (...) {
                         src.throw_error(node, "could not parse floating point value \"%s\"", value);
                     }
-                    props.set_float(node.attribute("name").value(), value_float);
+                    props.set(node.attribute("name").value(), value_float);
                 }
                 break;
 
-            case Tag::Integer: {
+            case TagType::Integer: {
                     check_attributes(src, node, { "name", "value" });
                     std::string value = node.attribute("value").value();
                     int64_t value_long;
@@ -703,11 +692,11 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                     } catch (...) {
                         src.throw_error(node, "could not parse integer value \"%s\"", value);
                     }
-                    props.set_long(node.attribute("name").value(), value_long);
+                    props.set(node.attribute("name").value(), value_long);
                 }
                 break;
 
-            case Tag::Boolean: {
+            case TagType::Boolean: {
                     check_attributes(src, node, { "name", "value" });
                     std::string value = string::to_lower(node.attribute("value").value());
                     bool result = false;
@@ -719,27 +708,27 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         src.throw_error(node, "could not parse boolean value "
                                              "\"%s\" -- must be \"true\" or "
                                              "\"false\"", value);
-                    props.set_bool(node.attribute("name").value(), result);
+                    props.set(node.attribute("name").value(), result);
                 }
                 break;
 
-            case Tag::Vector: {
+            case TagType::Vector: {
                     detail::expand_value_to_xyz(src, node);
                     check_attributes(src, node, { "name", "x", "y", "z" });
-                    props.set_array3f(node.attribute("name").value(),
-                                       detail::parse_vector(src, node));
+                    props.set(node.attribute("name").value(),
+                              detail::parse_vector(src, node));
                 }
                 break;
 
-            case Tag::Point: {
+            case TagType::Point: {
                     detail::expand_value_to_xyz(src, node);
                     check_attributes(src, node, { "name", "x", "y", "z" });
-                    props.set_array3f(node.attribute("name").value(),
-                                      detail::parse_vector(src, node));
+                    props.set(node.attribute("name").value(),
+                              detail::parse_vector(src, node));
                 }
                 break;
 
-            case Tag::RGB : {
+            case TagType::RGB : {
                     check_attributes(src, node, { "name", "value" });
                     std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
 
@@ -764,14 +753,14 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         std::string name = node.attribute("name").value();
                         ref<Object> obj = detail::create_texture_from_rgb(
                             name, color, ctx.variant, within_emitter);
-                        props.set_object(name, obj);
+                        props.set(name, obj);
                     } else {
-                        props.set_color("color", color);
+                        props.set("color", color);
                     }
                 }
                 break;
 
-            case Tag::Spectrum: {
+            case TagType::Spectrum: {
                     check_attributes(src, node, { "name", "value", "filename" }, false);
                     std::string name = node.attribute("name").value();
 
@@ -825,17 +814,17 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         ctx.color_mode == ColorMode::Spectral,
                         ctx.color_mode == ColorMode::Monochromatic);
 
-                    props.set_object(name, obj);
+                    props.set(name, obj);
                 }
                 break;
 
-            case Tag::Transform: {
+            case TagType::Transform: {
                     check_attributes(src, node, { "name" });
                     ctx.transform = Transform4f();
                 }
                 break;
 
-            case Tag::Rotate: {
+            case TagType::Rotate: {
                     detail::expand_value_to_xyz(src, node);
                     check_attributes(src, node, { "angle", "x", "y", "z" }, false);
                     Vector3f vec = detail::parse_vector(src, node);
@@ -850,7 +839,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                 }
                 break;
 
-            case Tag::Translate: {
+            case TagType::Translate: {
                     detail::expand_value_to_xyz(src, node);
                     check_attributes(src, node, { "x", "y", "z" }, false);
                     Vector3f vec = detail::parse_vector(src, node);
@@ -858,7 +847,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                 }
                 break;
 
-            case Tag::Scale: {
+            case TagType::Scale: {
                     detail::expand_value_to_xyz(src, node);
                     check_attributes(src, node, { "x", "y", "z" }, false);
                     Vector3f vec = detail::parse_vector(src, node, 1);
@@ -866,7 +855,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                 }
                 break;
 
-            case Tag::LookAt: {
+            case TagType::LookAt: {
                     if (!node.attribute("up"))
                         node.append_attribute("up") = "0,0,0";
 
@@ -887,7 +876,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                 }
                 break;
 
-            case Tag::Matrix: {
+            case TagType::Matrix: {
                     check_attributes(src, node, { "value" });
                     std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
                     if (tokens.size() != 16 && tokens.size() != 9)
@@ -929,8 +918,8 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
         for (pugi::xml_node &ch: node.children())
             parse_xml(src, ctx, ch, tag, props, param, arg_counter, depth + 1);
 
-        if (tag == Tag::Transform)
-            props.set_transform(node.attribute("name").value(), ctx.transform);
+        if (tag == TagType::Transform)
+            props.set(node.attribute("name").value(), ctx.transform);
     } catch (const std::exception &e) {
         if (strstr(e.what(), "Error while loading") == nullptr)
             src.throw_error(node, "%s", e.what());
@@ -964,7 +953,7 @@ static std::string init_xml_parse_context_from_file(XMLParseContext &ctx,
     pugi::xml_node root = doc.document_element();
     Properties props;
     size_t arg_counter = 0; // Unused
-    auto scene_id = parse_xml(src, ctx, root, Tag::Invalid, props,
+    auto scene_id = parse_xml(src, ctx, root, TagType::Invalid, props,
                               param, arg_counter, 0).second;
 
     for (const auto& p : param) {
@@ -1016,10 +1005,10 @@ static Task *instantiate_node(XMLParseContext &ctx,
         return instantiate_node(ctx, inst.alias, task_map, top_node);
 
     Properties &props = inst.props;
-    const auto &named_references = props.named_references();
+    const auto &references = props.references();
     // Recursive graph traversal to gather dependency tasks
     std::vector<Task *> deps;
-    for (auto &kv : named_references) {
+    for (auto &kv : references) {
         const std::string& child_id = kv.second;
         if (task_map.find(child_id) == task_map.end()) {
             Task *task = instantiate_node(ctx, child_id, task_map, false);
@@ -1046,10 +1035,10 @@ static Task *instantiate_node(XMLParseContext &ctx,
 
         auto &inst = it->second;
         Properties &props = inst.props;
-        const auto &named_references = props.named_references();
+        const auto &references = props.references();
 
         // Populate props with the already instantiated child objects
-        for (auto &kv : named_references) {
+        for (auto &kv : references) {
             const std::string& child_id = kv.second;
             auto it2 = ctx.instances.find(child_id);
             if (it2 == ctx.instances.end())
@@ -1060,23 +1049,25 @@ static Task *instantiate_node(XMLParseContext &ctx,
             // Give the object a chance to recursively expand into sub-objects
             std::vector<ref<Object>> children = obj->expand();
             if (children.empty()) {
-                props.set_object(kv.first, obj, false);
+                props.set(kv.first, obj, false);
             } else if (children.size() == 1) {
-                props.set_object(kv.first, children[0], false);
+                props.set(kv.first, children[0], false);
             } else {
                 int ctr = 0;
                 for (auto c : children)
-                    props.set_object(kv.first + "_" + std::to_string(ctr++), c, false);
+                    props.set(kv.first + "_" + std::to_string(ctr++), c, false);
             }
         }
 
         try {
-            inst.object = PluginManager::instance()->create_object(props, inst.class_);
+            // Determine object type from the XML node name
+            ObjectType object_type = tag_to_object_type(inst.node_name);
+            inst.object = PluginManager::instance()->create_object(props, ctx.variant, object_type);
         } catch (const std::exception &e) {
             Throw("Error while loading \"%s\" (near %s): could not instantiate "
                   "%s plugin of type \"%s\": %s",
                   inst.src_id, inst.offset(inst.location),
-                  string::to_lower(inst.class_->name()), props.plugin_name(),
+                  inst.node_name, props.plugin_name(),
                   e.what());
         }
 
@@ -1084,11 +1075,11 @@ static Task *instantiate_node(XMLParseContext &ctx,
         if (!unqueried.empty()) {
             for (auto &v : unqueried) {
                 if (props.type(v) == Properties::Type::Object) {
-                    const auto &obj = props.object(v);
+                    const auto &obj = props.get<ref<Object>>(v);
                     Throw("Error while loading \"%s\" (near %s): unreferenced "
                           "object %s (within %s of type \"%s\")",
                           inst.src_id, inst.offset(inst.location),
-                          obj, string::to_lower(inst.class_->name()),
+                          obj, inst.node_name,
                           inst.props.plugin_name());
                 } else {
                     v = "\"" + v + "\"";
@@ -1098,7 +1089,7 @@ static Task *instantiate_node(XMLParseContext &ctx,
                   "\"%s\" in %s plugin of type \"%s\"",
                   inst.src_id, inst.offset(inst.location),
                   unqueried.size() > 1 ? "properties" : "property", unqueried,
-                  string::to_lower(inst.class_->name()), props.plugin_name());
+                  inst.node_name, props.plugin_name());
         }
     };
 
@@ -1145,13 +1136,13 @@ ref<Object> create_texture_from_rgb(const std::string &name,
                                     const std::string &variant,
                                     bool within_emitter) {
     Properties props(within_emitter ? "d65" : "srgb");
-    props.set_color("color", color);
+    props.set("color", color);
 
     if (!within_emitter && is_unbounded_spectrum(name))
-        props.set_bool("unbounded", true);
+        props.set("unbounded", true);
 
     ref<Object> texture = PluginManager::instance()->create_object(
-        props, Class::for_name("Texture", variant));
+        props, variant, ObjectType::Texture);
     std::vector<ref<Object>> children = texture->expand();
     if (!children.empty())
         return (Object *) children[0].get();
@@ -1166,7 +1157,6 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
                                          bool within_emitter,
                                          bool is_spectral_mode,
                                          bool is_monochromatic_mode) {
-    const Class *class_ = Class::for_name("Texture", variant);
 
     bool is_unbounded = is_unbounded_spectrum(name);
     if (wavelengths.empty()) {
@@ -1178,13 +1168,13 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
                and spectral variants of Mitsuba. */
             Color3f color = const_value * xyz_to_srgb(Color3f(1.0));
             Properties props("srgb");
-            props.set_color("color", color);
-            props.set_bool("unbounded", true);
-            return PluginManager::instance()->create_object(props, class_);
+            props.set("color", color);
+            props.set("unbounded", true);
+            return PluginManager::instance()->create_object(props, variant, ObjectType::Texture);
         } else {
             Properties props("uniform");
-            props.set_float("value", const_value);
-            return PluginManager::instance()->create_object(props, class_);
+            props.set("value", const_value);
+            return PluginManager::instance()->create_object(props, variant, ObjectType::Texture);
         }
     } else {
         /* Detect whether wavelengths are regularly sampled and potentially
@@ -1222,18 +1212,18 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
 
             if (is_regular) {
                 props.set_plugin_name("regular");
-                props.set_long("size", wavelengths.size());
-                props.set_float("wavelength_min", wavelengths.front());
-                props.set_float("wavelength_max", wavelengths.back());
-                props.set_pointer("values", values.data());
+                props.set("size", (int64_t)wavelengths.size());
+                props.set("wavelength_min", wavelengths.front());
+                props.set("wavelength_max", wavelengths.back());
+                props.set_any("values", std::move(values));
             } else {
                 props.set_plugin_name("irregular");
-                props.set_long("size", wavelengths.size());
-                props.set_pointer("wavelengths", wavelengths.data());
-                props.set_pointer("values", values.data());
+                props.set("size", (int64_t)wavelengths.size());
+                props.set_any("wavelengths", std::move(wavelengths));
+                props.set_any("values", std::move(values));
             }
 
-            return PluginManager::instance()->create_object(props, class_);
+            return PluginManager::instance()->create_object(props, variant, ObjectType::Texture);
         } else {
             /* Pre-integrate against the CIE matching curves. In order to match
                the behavior of spectral modes, this function should instead
@@ -1248,16 +1238,16 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
             Properties props;
             if (is_monochromatic_mode) {
                 props = Properties("uniform");
-                props.set_float("value", luminance(color));
+                props.set("value", luminance(color));
             } else {
                 props = Properties("srgb");
-                props.set_color("color", color);
+                props.set("color", color);
 
                 if (within_emitter || is_unbounded)
-                    props.set_bool("unbounded", true);
+                    props.set("unbounded", true);
             }
 
-            return PluginManager::instance()->create_object(props, class_);
+            return PluginManager::instance()->create_object(props, variant, ObjectType::Texture);
         }
     }
 }
@@ -1300,11 +1290,12 @@ std::vector<std::pair<std::string, Properties>> xml_to_properties(const fs::path
         // using named reference properties.
         std::vector<std::pair<std::string, Properties>> props;
         for (auto &[id, object] : ctx.instances) {
-            if (!object.class_) {
-                Log(Warn, "Cannot find class for property with id \"%s\".", id);
-                continue;
-            }
-            props.emplace_back(object.class_->name(), std::move(object.props));
+
+            // Map an XML tag name (e.g. "scene") to the corresponding C++ class name (e.g. "Scene").
+            ObjectType object_type = tag_to_object_type(object.node_name);
+            std::string_view class_name = object_type_name(object_type);
+
+            props.emplace_back(class_name, std::move(object.props));
         }
 
         return props;
@@ -1343,7 +1334,7 @@ std::vector<ref<Object>> load_string(const std::string &string,
         detail::XMLParseContext ctx(variant, parallel);
         Properties props;
         size_t arg_counter = 0; // Unused
-        auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, props,
+        auto scene_id = detail::parse_xml(src, ctx, root, TagType::Invalid, props,
                                           param, arg_counter, 0).second;
 
         for (const auto& p : param) {

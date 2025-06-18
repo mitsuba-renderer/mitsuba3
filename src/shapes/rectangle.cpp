@@ -220,9 +220,9 @@ public:
         return bbox;
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Shape<Float, Spectrum>::traverse(callback); // mesh attributes not exposed
-        callback->put_parameter("to_world", *m_to_world.ptr(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    void traverse(TraversalCallback *cb) override {
+        Shape<Float, Spectrum>::traverse(cb); // mesh attributes not exposed
+        cb->put("to_world", m_to_world, ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -615,7 +615,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Rectangle)
 private:
     Frame3f m_frame;
     Float m_inv_surface_area;
@@ -623,6 +623,5 @@ private:
     MI_TRAVERSE_CB(Base, m_frame, m_inv_surface_area);
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Rectangle, Shape)
-MI_EXPORT_PLUGIN(Rectangle, "Rectangle intersection primitive");
+MI_EXPORT_PLUGIN(Rectangle)
 NAMESPACE_END(mitsuba)

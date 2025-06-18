@@ -18,9 +18,10 @@ def test01_custom(variant_scalar_rgb):
 
     try:
         class MyFormatter(mi.Formatter):
-            def format(self, level, theClass, filename, line, msg):
+            def format(self, level, cname, filename, line, msg):
                 return "%i: class=%s, text=%s, filename=%s, ' \
-                    'line=%i" % (level, str(theClass), msg, filename, line)
+                    'line=%i" % (level, str(cname) if cname else "None", msg,
+                                 filename, line)
 
         class MyAppender(mi.Appender):
             def append(self, level, text):

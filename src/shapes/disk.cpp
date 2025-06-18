@@ -125,9 +125,9 @@ public:
         mark_dirty();
    }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_parameter("to_world", *m_to_world.ptr(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("to_world", m_to_world, ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -563,7 +563,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Disk)
 private:
     Frame3f m_frame;
     Float m_du, m_dv;
@@ -572,6 +572,5 @@ private:
     MI_TRAVERSE_CB(Base, m_frame, m_du, m_dv, m_inv_surface_area)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Disk, Shape)
-MI_EXPORT_PLUGIN(Disk, "Disk intersection primitive");
+MI_EXPORT_PLUGIN(Disk)
 NAMESPACE_END(mitsuba)

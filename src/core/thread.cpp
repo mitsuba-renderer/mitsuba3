@@ -49,7 +49,7 @@ void Thread::wait_for_tasks() {
 void Thread::static_initialization() {
     dummy_thread = new Thread();
     // Initialize global file resolver
-    mitsuba::set_file_resolver(new FileResolver());
+    set_file_resolver(new FileResolver());
 }
 
 void Thread::static_shutdown() {
@@ -60,9 +60,7 @@ void Thread::static_shutdown() {
 
     dummy_thread = nullptr;
     // Clear global file resolver
-    mitsuba::set_file_resolver(nullptr);
+    set_file_resolver(nullptr);
 }
-
-MI_IMPLEMENT_CLASS(Thread, Object)
 
 NAMESPACE_END(mitsuba)

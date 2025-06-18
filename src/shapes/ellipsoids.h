@@ -49,7 +49,7 @@ public:
                 Throw("Cannot specify both \"centers\" and \"filename\".");
 
             FileResolver* fs = mitsuba::file_resolver();
-            fs::path file_path = fs->resolve(props.string("filename"));
+            fs::path file_path = fs->resolve(props.get<std::string_view>("filename"));
             std::string name = file_path.filename().string();
 
             auto fail = [&](const char *descr) {
@@ -219,41 +219,41 @@ public:
             if (props.has_property("to_world"))
                 Throw("\"to_world\" is only supported when loading PLY file!");
 
-            TensorXf *data = props.tensor<TensorXf>("data");
-            if (data->ndim() > 1 && data->shape(1) != EllipsoidStructSize)
+            const TensorXf &data = props.get_any<TensorXf>("data");
+            if (data.ndim() > 1 && data.shape(1) != EllipsoidStructSize)
                 Throw("TensorXf data must have shape (N, EllipsoidStructSize) or (N * EllipsoidStructSize)!");
 
-            if (data->ndim() == 1 && data->shape(0) % EllipsoidStructSize != 0)
+            if (data.ndim() == 1 && data.shape(0) % EllipsoidStructSize != 0)
                 Throw("Flat TensorXf data width must be a multiple of EllipsoidStructSize!");
 
-            m_data = data->array();
+            m_data = data.array();
         } else if (props.has_property("centers")) {
-            TensorXf32 *centers = props.tensor<TensorXf32>("centers");
-            TensorXf32 *scales  = props.tensor<TensorXf32>("scales");
-            TensorXf32 *quats   = props.tensor<TensorXf32>("quaternions");
+            const TensorXf32 &centers = props.get_any<TensorXf32>("centers");
+            const TensorXf32 &scales  = props.get_any<TensorXf32>("scales");
+            const TensorXf32 &quats   = props.get_any<TensorXf32>("quaternions");
 
             if (props.has_property("to_world"))
                 Throw("\"to_world\" is only supported when loading PLY file!");
-            if (centers->shape(1) != 3)
+            if (centers.shape(1) != 3)
                 Throw("TensorXf centers must have shape (N, 3)!");
-            if (quats->shape(1) != 4)
+            if (quats.shape(1) != 4)
                 Throw("TensorXf quats must have shape (N, 4)!");
-            if (scales->shape(1) != 3)
+            if (scales.shape(1) != 3)
                 Throw("TensorXf scales must have shape (N, 3)!");
             if (props.has_property("scale_factor"))
                 Throw("\"scale_factor\" parameter is only supported with PLY files!");
 
-            if (centers->shape(0) != quats->shape(0) || centers->shape(0) != scales->shape(0))
+            if (centers.shape(0) != quats.shape(0) || centers.shape(0) != scales.shape(0))
                 Throw("TensorXf centers, quaternions and scales must have the same number of rows!");
 
-            m_data = dr::zeros<FloatStorage>(centers->shape(0) * EllipsoidStructSize);
-            UInt32Storage idx = dr::arange<UInt32Storage>(centers->shape(0));
+            m_data = dr::zeros<FloatStorage>(centers.shape(0) * EllipsoidStructSize);
+            UInt32Storage idx = dr::arange<UInt32Storage>(centers.shape(0));
             for (int i = 0; i < 3; i++)
-                dr::scatter(m_data, dr::gather<FloatStorage>(centers->array(), idx * 3 + i), idx * EllipsoidStructSize + i);
+                dr::scatter(m_data, dr::gather<FloatStorage>(centers.array(), idx * 3 + i), idx * EllipsoidStructSize + i);
             for (int i = 0; i < 3; i++)
-                dr::scatter(m_data, dr::gather<FloatStorage>(scales->array(), idx * 3 + i), idx * EllipsoidStructSize + 3 + i);
+                dr::scatter(m_data, dr::gather<FloatStorage>(scales.array(), idx * 3 + i), idx * EllipsoidStructSize + 3 + i);
             for (int i = 0; i < 4; i++)
-                dr::scatter(m_data, dr::gather<FloatStorage>(quats->array(), idx * 4 + i), idx * EllipsoidStructSize + 6 + i);
+                dr::scatter(m_data, dr::gather<FloatStorage>(quats.array(), idx * 4 + i), idx * EllipsoidStructSize + 6 + i);
             dr::eval(m_data);
         } else {
             Throw("Must specify either \"data\" or \"filename\" or \"centers\".");
@@ -270,13 +270,13 @@ public:
             for (auto &key : unqueried) {
                 if (key == "shell")
                     continue;
-                TensorXf *tensor = props.tensor<TensorXf>(key);
-                if (tensor->ndim() != 2)
+                const TensorXf &tensor = props.get_any<TensorXf>(key);
+                if (tensor.ndim() != 2)
                     Throw("Ellipsoids attribute \"%s\" must be a 2 dimensional tensor!", key);
-                if (tensor->shape(0) != count())
-                    Throw("Ellipsoids attribute \"%s\" must have the same number of entries as ellipsoids (%u vs %u)", key, tensor->shape(0), count());
+                if (tensor.shape(0) != count())
+                    Throw("Ellipsoids attribute \"%s\" must have the same number of entries as ellipsoids (%u vs %u)", key, tensor.shape(0), count());
 
-                m_attributes.insert({ key , tensor->array() });
+                m_attributes.insert({ key , tensor.array() });
             }
         }
 
@@ -288,12 +288,13 @@ public:
         compute_extents();
     }
 
-    void traverse(TraversalCallback *callback) {
-        callback->put_parameter("data", m_data, +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) {
+        cb->put("data", m_data, ParamFlags::Differentiable);
         for (auto& [name, attr]: m_attributes)
-            callback->put_parameter(name, attr, +ParamFlags::Differentiable);
-        callback->put_parameter("extent", m_extent_multiplier, +ParamFlags::ReadOnly);
-        callback->put_parameter("extent_adaptive_clamping", m_extent_adaptive_clamping, +ParamFlags::ReadOnly);
+            cb->put(name, attr, ParamFlags::Differentiable);
+
+        cb->put("extent",                   m_extent_multiplier,        ParamFlags::ReadOnly);
+        cb->put("extent_adaptive_clamping", m_extent_adaptive_clamping, ParamFlags::ReadOnly);
     }
 
     void parameters_changed() {

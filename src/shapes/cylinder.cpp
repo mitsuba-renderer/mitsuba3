@@ -155,9 +155,9 @@ public:
         mark_dirty();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_parameter("to_world", *m_to_world.ptr(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("to_world", m_to_world, ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -811,7 +811,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Cylinder)
 private:
     field<Float> m_radius, m_length;
     Float m_inv_surface_area;
@@ -821,6 +821,5 @@ private:
     MI_TRAVERSE_CB(Base, m_radius, m_length, m_inv_surface_area);
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Cylinder, Shape)
-MI_EXPORT_PLUGIN(Cylinder, "Cylinder intersection primitive");
+MI_EXPORT_PLUGIN(Cylinder)
 NAMESPACE_END(mitsuba)

@@ -35,7 +35,7 @@ class BasicVolumetricPrimitiveRadianceFieldIntegrator(RBIntegrator):
     """
 
     def __init__(self, props):
-        super().__init__(mi.Properties())
+        super().__init__(props)
 
         max_depth = int(props.get("max_depth", 64))
         if max_depth < 0 and max_depth != -1:

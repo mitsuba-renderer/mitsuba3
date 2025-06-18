@@ -3,10 +3,10 @@
 #include <mitsuba/core/appender.h>
 #include <mitsuba/core/formatter.h>
 
-#include <thread>
 #include <iostream>
 #include <algorithm>
 #include <mutex>
+#include <string_view>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -51,29 +51,29 @@ LogLevel Logger::error_level() const {
 
 #undef Throw
 
-void Logger::log(LogLevel level, const Class *class_, const char *file,
-                 int line, const std::string &msg) {
+void Logger::log(LogLevel level, const char *cname, const char *fname,
+                 int line, std::string_view msg) {
 
     if (level < m_log_level)
         return;
     else if (level >= d->error_level)
-        detail::Throw(level, class_, file, line, msg);
+        detail::Throw(level, cname, fname, line, msg);
 
     if (!d->formatter) {
         std::cerr << "PANIC: Logging has not been properly initialized!" << std::endl;
         abort();
     }
 
-    std::string text = d->formatter->format(level, class_,
-        file, line, msg);
+    std::string text = d->formatter->format(level, cname,
+        fname, line, msg);
 
     std::lock_guard<std::mutex> guard(d->mutex);
     for (auto entry : d->appenders)
         entry->append(level, text);
 }
 
-void Logger::log_progress(float progress, const std::string &name,
-    const std::string &formatted, const std::string &eta, const void *ptr) {
+void Logger::log_progress(float progress, std::string_view name,
+    std::string_view formatted, std::string_view eta, const void *ptr) {
     std::lock_guard<std::mutex> guard(d->mutex);
     for (auto entry : d->appenders)
         entry->log_progress(progress, name, formatted, eta, ptr);
@@ -92,12 +92,10 @@ void Logger::remove_appender(Appender *appender) {
 
 std::string Logger::read_log() {
     std::lock_guard<std::mutex> guard(d->mutex);
-    for (auto appender: d->appenders) {
-        if (appender->class_()->derives_from(MI_CLASS(StreamAppender))) {
-            auto sa = static_cast<StreamAppender *>(appender.get());
-            if (sa->logs_to_file())
-                return sa->read_log();
-        }
+    for (Appender *appender: d->appenders) {
+        StreamAppender *sa = dynamic_cast<StreamAppender*>(appender);
+        if (sa && sa->logs_to_file())
+            return sa->read_log();
     }
     Log(Error, "No stream appender with a file attachment could be found");
     return std::string(); /* Don't warn */
@@ -114,7 +112,7 @@ void Logger::static_initialization() {
     ref<Formatter> formatter = new DefaultFormatter();
     logger->add_appender(appender);
     logger->set_formatter(formatter);
-    mitsuba::set_logger(logger);
+    set_logger(logger);
 #if defined(NDEBUG)
     logger->set_log_level(Info);
 #else
@@ -141,8 +139,8 @@ const Appender *Logger::appender(size_t index) const {
 
 NAMESPACE_BEGIN(detail)
 
-void Throw(LogLevel level, const Class *class_, const char *file,
-           int line, const std::string &msg_) {
+void Throw(LogLevel level, const char *cname, const char *fname,
+           int line, std::string_view msg_) {
     // Trap if we're running in a debugger to facilitate debugging.
     #if defined(MI_THROW_TRAPS_DEBUGGER)
     util::trap_debugger();
@@ -157,13 +155,17 @@ void Throw(LogLevel level, const Class *class_, const char *file,
     const std::string zerowidth_space = "\xe2\x80\x8b";
 
     /* Separate nested exceptions by a newline */
-    std::string msg = msg_;
-    auto it = msg.find(zerowidth_space);
+    std::string msg;
+
+    auto it = msg_.find(zerowidth_space);
     if (it != std::string::npos)
-        msg = msg.substr(0, it) + "\n  " + msg.substr(it + 3);
+        msg = std::string(msg_.substr(0, it)) + "\n  " + std::string(msg_.substr(it + 3));
+    else
+        msg = msg_;
 
     std::string text =
-        formatter.format(level, class_, file, line, msg);
+        formatter.format(level, cname, fname, line, msg);
+
     throw std::runtime_error(zerowidth_space + text);
 }
 
@@ -173,7 +175,5 @@ static ref<Logger> __static_logger;
 
 void set_logger(Logger *logger) { __static_logger = logger; }
 Logger *logger() { return __static_logger.get(); }
-
-MI_IMPLEMENT_CLASS(Logger, Object)
 
 NAMESPACE_END(mitsuba)

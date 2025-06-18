@@ -156,7 +156,7 @@ private:
     /// Invert one of the permutations
     void invert_permutation(uint32_t i);
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(RadicalInverse)
 
 private:
 #if defined(_MSC_VER)

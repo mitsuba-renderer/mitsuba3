@@ -45,7 +45,7 @@ Task * instantiate_node(
 );
 
 /// Shorthand notation for accessing the MI_VARIANT string
-#define GET_VARIANT() mitsuba::detail::get_variant<Float, Spectrum>()
+#define GET_VARIANT() detail::variant<Float, Spectrum>::name
 
 /// Depending on whether or not the input vector has size 1, returns the first
 /// and only element of the vector or the entire vector as a list
@@ -149,9 +149,9 @@ Parameter ``parallel``:
         [](const std::string &path) {
             nb::gil_scoped_release release;
 
-            auto result = std::vector<std::pair<std::string, PropertiesV<Float>>>();
+            auto result = std::vector<std::pair<std::string, Properties>>();
             for (const auto& [k,v] : xml::detail::xml_to_properties(path, GET_VARIANT()))
-                result.emplace_back(k, PropertiesV<Float>(v));
+                result.emplace_back(k, Properties(v));
 
             return result;
         },
@@ -170,7 +170,7 @@ std::string get_type(const nb::dict &dict) {
 
 #define SET_PROPS(PyType, Type, Setter)            \
     if (nb::isinstance<PyType>(value)) {           \
-        props.Setter(key, nb::cast<Type>(value));  \
+        props.set(key, nb::cast<Type>(value));     \
         continue;                                  \
     }
 
@@ -178,13 +178,13 @@ std::string get_type(const nb::dict &dict) {
 void expand_and_set_object(Properties &props, const std::string &name, const ref<Object> &obj) {
     std::vector<ref<Object>> children = obj->expand();
     if (children.empty()) {
-        props.set_object(name, obj);
+        props.set(name, obj);
     } else if (children.size() == 1) {
-        props.set_object(name, children[0]);
+        props.set(name, children[0]);
     } else {
         int ctr = 0;
         for (auto c : children)
-            props.set_object(name + "_" + std::to_string(ctr++), c);
+            props.set(name + "_" + std::to_string(ctr++), c);
     }
 }
 
@@ -199,10 +199,10 @@ ref<Object> create_texture_from(const nb::dict &dict, bool within_emitter) {
                   "('type' and 'value'), got %u.", dict.size());
         }
         // Read info from the dictionary
-        Properties::Color3f color(0.f);
+        Color<double, 3> color(0.f);
         for (const auto& [k2, value2] : dict) {
             std::string key2 = nb::cast<std::string>(k2);
-            using Color3f = Properties::Color3f;
+            using Color3f = Color<double, 3>;
             if (key2 == "value") {
                 try {
                     color = nb::cast<Color3f>(value2);
@@ -222,9 +222,9 @@ ref<Object> create_texture_from(const nb::dict &dict, bool within_emitter) {
                   "entries ('type' and 'value'), got %u.", dict.size());
         }
         // Read info from the dictionary
-        Properties::Float const_value(1);
-        std::vector<Properties::Float> wavelengths;
-        std::vector<Properties::Float> values;
+        double const_value(1);
+        std::vector<double> wavelengths;
+        std::vector<double> values;
         for (const auto& [k2, value2] : dict) {
             std::string key2 = nb::cast<std::string>(k2);
             if (key2 == "filename") {
@@ -232,15 +232,15 @@ ref<Object> create_texture_from(const nb::dict &dict, bool within_emitter) {
             } else if (key2 == "value") {
                 if (nb::isinstance<nb::float_>(value2) ||
                     nb::isinstance<nb::int_>(value2)) {
-                    const_value = nb::cast<Properties::Float>(value2);
+                    const_value = nb::cast<double>(value2);
                 } else if (nb::isinstance<nb::list>(value2)) {
                     nb::list list = nb::cast<nb::list>(value2);
                     wavelengths.resize(list.size());
                     values.resize(list.size());
                     for (size_t i = 0; i < list.size(); ++i) {
                         auto pair = nb::cast<nb::tuple>(list[i]);
-                        wavelengths[i] = nb::cast<Properties::Float>(pair[0]);
-                        values[i]      = nb::cast<Properties::Float>(pair[1]);
+                        wavelengths[i] = nb::cast<double>(pair[0]);
+                        values[i]      = nb::cast<double>(pair[1]);
                     }
                 } else {
                     Throw("Unexpected value type in 'spectrum' dictionary: %s",
@@ -278,13 +278,9 @@ void parse_dictionary(DictParseContext &ctx,
         return;
     }
 
-    const Class *class_;
-    if (is_scene)
-        class_ = Class::for_name("Scene", GET_VARIANT());
-    else
-        class_ = PluginManager::instance()->get_plugin_class(type, GET_VARIANT())->parent();
-
-    bool within_emitter = (!is_scene && class_->alias() == "emitter");
+    // Determine if we're within an emitter object
+    bool within_emitter = !is_scene &&
+        PluginManager::instance()->plugin_type(type) == ObjectType::Emitter;
 
     Properties &props = inst.props;
     props.set_plugin_name(type);
@@ -317,14 +313,13 @@ void parse_dictionary(DictParseContext &ctx,
             continue;
         }
 
-        SET_PROPS(nb::bool_, bool, set_bool);
-        SET_PROPS(nb::int_, int64_t, set_long);
-        SET_PROPS(nb::float_, Properties::Float, set_float);
-        SET_PROPS(nb::str, std::string, set_string);
-        SET_PROPS(ScalarColor3f, ScalarColor3f, set_color);
-        SET_PROPS(ScalarArray3f, ScalarArray3f, set_array3f);
-        SET_PROPS(ScalarTransform3f, ScalarTransform3f, set_transform3f);
-        SET_PROPS(ScalarTransform4f, ScalarTransform4f, set_transform);
+        SET_PROPS(nb::bool_, bool, unused);
+        SET_PROPS(nb::int_, int64_t, unused);
+        SET_PROPS(nb::float_, double, unused);
+        SET_PROPS(nb::str, std::string, unused);
+        SET_PROPS(ScalarColor3f, ScalarColor3f, unused);
+        SET_PROPS(ScalarArray3f, ScalarArray3f, unused);
+        SET_PROPS(ScalarTransform4f, ScalarTransform4f, unused);
 
         if (key.find('.') != std::string::npos) {
             Throw("The object key '%s' contains a '.' character, which is "
@@ -338,7 +333,7 @@ void parse_dictionary(DictParseContext &ctx,
             std::string type2 = get_type(dict2);
 
             if (type2 == "spectrum" || type2 == "rgb") {
-                props.set_object(key, create_texture_from<Float, Spectrum>(dict2, within_emitter));
+                props.set(key, create_texture_from<Float, Spectrum>(dict2, within_emitter));
                 continue;
             }
 
@@ -393,34 +388,34 @@ void parse_dictionary(DictParseContext &ctx,
         }
 
         // Try to cast entry to an object
-        try {
-            ref<Object> obj = nb::cast<Object*>(value);
-            obj->set_id(key);
-            expand_and_set_object(props, key, obj);
+        Object* obj_ptr;
+        if (nb::try_cast<Object*>(value, obj_ptr)) {
+            expand_and_set_object(props, key, ref<Object>(obj_ptr));
             continue;
-        } catch (const nb::cast_error &) { }
+        }
 
         // Try to cast to Array3f (list, tuple, numpy.array, ...)
-        try {
-            props.set_array3f(key, nb::cast<Properties::Array3f>(value));
+        ScalarArray3f array_value;
+        if (nb::try_cast<ScalarArray3f>(value, array_value)) {
+            props.set(key, array_value);
             continue;
-        } catch (const nb::cast_error &) { }
+        }
 
         // Try to cast to TensorXf
-        try {
-            TensorXf tensor = nb::cast<TensorXf>(value);
+        TensorXf tensor_value;
+        if (nb::try_cast<TensorXf>(value, tensor_value)) {
             // To support parallel loading we have to ensure tensor has been evaluated
             // because tracking of side effects won't persist across different ThreadStates
-            dr::eval(tensor);
-            props.set_tensor_handle(key, std::make_shared<TensorXf>(tensor));
+            dr::eval(tensor_value);
+            props.set_any(key, std::move(tensor_value));
             continue;
-        } catch (const nb::cast_error &) { }
+        }
 
         // Didn't match any of the other types above
         Throw("Unsupported value type for parameter \"%s.%s\": %s! One of the "
               "following types is expected: "
               "bool, int, float, str, mitsuba.ScalarColor3f, "
-              "mitsuba.ScalarArray3f, mitsuba.ScalarTransform3f, "
+              "mitsuba.ScalarArray3f, "
               "mitsuba.ScalarTransform4f, mitsuba.TensorXf, mitsuba.Object",
               path, key, nb::str(value.type()).c_str());
     }
@@ -471,14 +466,7 @@ Task *instantiate_node(DictParseContext &ctx,
         mitsuba::xml::ScopedSetJITScope set_scope(ctx.parallel ? backend : 0u, scope);
 
         auto &inst = ctx.instances[path];
-        Properties props = inst.props;
-        std::string type = props.plugin_name();
-
-        const Class *class_;
-        if (type == "scene")
-            class_ = Class::for_name("Scene", GET_VARIANT());
-        else
-            class_ = PluginManager::instance()->get_plugin_class(type, GET_VARIANT())->parent();
+        Properties &props = inst.props;
 
         for (auto &[key2, path2] : inst.dependencies) {
             if (ctx.instances.count(path2) == 1) {
@@ -486,17 +474,19 @@ Task *instantiate_node(DictParseContext &ctx,
                 if (obj2)
                     expand_and_set_object(props, key2, obj2);
                 else
-                    Throw("Dependence hasn't been instantiated yet: %s, %s -> %s", path, path2, key2);
+                    Throw("Dependence hasn't been instantiated yet: %s, %s -> %s",
+                          path, path2, key2);
             } else {
                 Throw("Dependence path \"%s\" not found: %s", path2, path);
             }
         }
 
-        // Construct the object with the parsed Properties
-        inst.object = PluginManager::instance()->create_object(props, class_);
+        inst.object = PluginManager::instance()->create_object(
+            props, GET_VARIANT(), ObjectType::Unknown);
 
         if (!props.unqueried().empty())
-            Throw("Unreferenced property \"%s\" in plugin of type \"%s\"!", props.unqueried()[0], type);
+            Throw("Unreferenced property \"%s\" in plugin of type \"%s\"!",
+                  props.unqueried()[0], props.plugin_name());
     };
 
     // Top node always instantiated on the main thread

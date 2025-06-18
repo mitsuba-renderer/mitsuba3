@@ -56,8 +56,8 @@ public:
                                  props.get<ScalarFloat>("wavelength_max", MI_CIE_MAX));
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("value", m_value, +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("value", m_value, ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
@@ -119,7 +119,7 @@ public:
         return tfm::format("UniformSpectrum[value=%f]", m_value);
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(UniformSpectrum)
 private:
     Float m_value;
     ScalarVector2f m_range;
@@ -127,6 +127,5 @@ private:
     MI_TRAVERSE_CB(Texture, m_value);
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(UniformSpectrum, Texture)
-MI_EXPORT_PLUGIN(UniformSpectrum, "Uniform spectrum")
+MI_EXPORT_PLUGIN(UniformSpectrum)
 NAMESPACE_END(mitsuba)

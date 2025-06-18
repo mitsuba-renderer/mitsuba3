@@ -18,7 +18,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.id()) {
+MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props)
+    : JitObject<Shape>(props.id()) {
     m_to_world =
         (ScalarTransform4f) props.get<ScalarTransform4f>("to_world", ScalarTransform4f());
     m_to_object = m_to_world.scalar().inverse();
@@ -65,13 +66,11 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.i
     if (!m_bsdf) {
         Properties props2("diffuse");
         if (m_emitter)
-            props2.set_float("reflectance", 0);
+            props2.set("reflectance", 0.f);
         m_bsdf = PluginManager::instance()->create_object<BSDF>(props2);
     }
 
     m_silhouette_sampling_weight = props.get<ScalarFloat>("silhouette_sampling_weight", 1.0f);
-
-    MI_REGISTRY_PUT("Shape", this);
 }
 
 MI_VARIANT Shape<Float, Spectrum>::~Shape() {
@@ -79,10 +78,8 @@ MI_VARIANT Shape<Float, Spectrum>::~Shape() {
     if constexpr (dr::is_cuda_v<Float>)
         jit_free(m_optix_data_ptr);
 #endif
-
-    if constexpr (dr::is_jit_v<Float>)
-        jit_registry_remove(this);
 }
+
 
 MI_VARIANT typename Shape<Float, Spectrum>::PositionSample3f
 Shape<Float, Spectrum>::sample_position(Float /*time*/, const Point2f & /*sample*/,
@@ -630,21 +627,21 @@ MI_VARIANT bool Shape<Float, Spectrum>::has_flipped_normals() const {
     return false;
 }
 
-MI_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
-    callback->put_object("bsdf", m_bsdf.get(), +ParamFlags::Differentiable);
+MI_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *cb) {
+    cb->put("bsdf", m_bsdf, ParamFlags::Differentiable);
     if (m_emitter)
-        callback->put_object("emitter",         m_emitter.get(),         +ParamFlags::Differentiable);
+        cb->put("emitter",         m_emitter,         ParamFlags::Differentiable);
     if (m_sensor)
-        callback->put_object("sensor",          m_sensor.get(),          +ParamFlags::Differentiable);
+        cb->put("sensor",          m_sensor,          ParamFlags::Differentiable);
     if (m_interior_medium)
-        callback->put_object("interior_medium", m_interior_medium.get(), +ParamFlags::Differentiable);
+        cb->put("interior_medium", m_interior_medium, ParamFlags::Differentiable);
     if (m_exterior_medium)
-        callback->put_object("exterior_medium", m_exterior_medium.get(), +ParamFlags::Differentiable);
+        cb->put("exterior_medium", m_exterior_medium, ParamFlags::Differentiable);
 
-    callback->put_parameter("silhouette_sampling_weight", m_silhouette_sampling_weight, +ParamFlags::NonDifferentiable);
+    cb->put("silhouette_sampling_weight", m_silhouette_sampling_weight, ParamFlags::NonDifferentiable);
 
     for (auto& [name, texture]: m_texture_attributes)
-        callback->put_object(name, texture.get(), +ParamFlags::Differentiable);
+        cb->put(name, texture, ParamFlags::Differentiable);
 }
 
 MI_VARIANT
@@ -719,7 +716,5 @@ MI_VARIANT std::string Shape<Float, Spectrum>::get_children_string() const {
 }
 
 MI_IMPLEMENT_TRAVERSE_CB(Shape, Object);
-
-MI_IMPLEMENT_CLASS_VARIANT(Shape, Object, "shape")
 MI_INSTANTIATE_CLASS(Shape)
 NAMESPACE_END(mitsuba)

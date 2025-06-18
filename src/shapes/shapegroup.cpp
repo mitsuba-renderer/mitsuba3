@@ -105,10 +105,8 @@ public:
 
     ShapeGroupPlugin(const Properties &props) : Base(props) { }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(ShapeGroupPlugin)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(ShapeGroupPlugin, ShapeGroup)
-MI_EXPORT_PLUGIN(ShapeGroupPlugin, "Shape group plugin")
-
+MI_EXPORT_PLUGIN(ShapeGroupPlugin)
 NAMESPACE_END(mitsuba)

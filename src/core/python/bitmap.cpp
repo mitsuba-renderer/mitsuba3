@@ -187,10 +187,9 @@ MI_PY_EXPORT(Bitmap) {
         .def_method(Bitmap, premultiplied_alpha)
         .def_method(Bitmap, set_premultiplied_alpha)
         .def_method(Bitmap, clear)
-        .def("metadata", [](const Bitmap& b) {
-                return PropertiesV<Float>(b.metadata());
-            }, D(Bitmap, metadata), 
-            nb::sig("def metadata(self) -> mitsuba.scalar_rgb.Properties"))
+        .def("metadata", [](Bitmap& b) -> Properties& { return b.metadata(); }, D(Bitmap, metadata),
+            nb::sig("def metadata(self) -> mitsuba.scalar_rgb.Properties"),
+            nb::rv_policy::reference_internal)
         .def("resample", nb::overload_cast<Bitmap *, const ReconstructionFilter *,
             const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &,
             const std::pair<ScalarFloat, ScalarFloat> &, Bitmap *>(&Bitmap::resample, nb::const_),

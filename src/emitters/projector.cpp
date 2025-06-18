@@ -123,7 +123,7 @@ public:
     Projector(const Properties &props) : Base(props) {
         m_intensity_scale = dr::opaque<Float>(props.get<ScalarFloat>("scale", 1.f));
 
-        m_irradiance = props.texture_d65<Texture>("irradiance", 1.f);
+        m_irradiance = props.get_texture_d65<Texture>("irradiance", 1.f);
 
         ScalarVector2i size = m_irradiance->resolution();
         m_x_fov = ScalarFloat(parse_fov(props, size.x() / (double) size.y()));
@@ -133,11 +133,11 @@ public:
         m_flags = +EmitterFlags::DeltaPosition;
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_parameter("scale",     m_intensity_scale,  +ParamFlags::Differentiable);
-        callback->put_object("irradiance",   m_irradiance.get(), +ParamFlags::Differentiable);
-        callback->put_parameter("to_world", *m_to_world.ptr(),   +ParamFlags::NonDifferentiable);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("scale",      m_intensity_scale, ParamFlags::Differentiable);
+        cb->put("irradiance", m_irradiance,      ParamFlags::Differentiable);
+        cb->put("to_world",   m_to_world,        ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
@@ -310,7 +310,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Projector)
 
 protected:
     ref<Texture> m_irradiance;
@@ -324,6 +324,5 @@ protected:
                    m_sample_to_camera, m_x_fov, m_sensor_area)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Projector, Emitter)
-MI_EXPORT_PLUGIN(Projector, "Projection emitter")
+MI_EXPORT_PLUGIN(Projector)
 NAMESPACE_END(mitsuba)

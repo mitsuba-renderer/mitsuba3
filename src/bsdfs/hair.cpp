@@ -1,6 +1,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/warp.h>
+#include <mitsuba/core/xml.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/fresnel.h>
 #include <mitsuba/render/texture.h>
@@ -171,8 +172,8 @@ public:
         // Absorption
         m_eumelanin = props.get<ScalarFloat>("eumelanin", 1.3f);
         m_pheomelanin = props.get<ScalarFloat>("pheomelanin", 0.2f);
-        if (props.has_property("sigma_a")){
-            m_sigma_a = props.texture<Texture>("sigma_a");
+        if (props.has_property("sigma_a")) {
+            m_sigma_a = props.get_texture<Texture>("sigma_a");
             m_use_pigmentation = false;
         }
         m_scale = props.get<ScalarFloat>("scale", 1.f);
@@ -201,16 +202,16 @@ public:
         update();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("longitudinal_roughness", m_longitudinal_roughness, ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_parameter("azimuthal_roughness",    m_azimuthal_roughness,    ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_parameter("scale_tilt",             m_alpha,                  ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_parameter("eta",                    m_eta,                    ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_parameter("eumelanin",              m_eumelanin,              ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_parameter("pheomelanin",            m_pheomelanin,            ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_parameter("use_pigmentation",       m_use_pigmentation,      +ParamFlags::NonDifferentiable);
-        callback->put_object("sigma_a",                   m_sigma_a,               +ParamFlags::Differentiable);
-        callback->put_parameter("scale",                  m_scale,                 +ParamFlags::NonDifferentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("longitudinal_roughness", m_longitudinal_roughness, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("azimuthal_roughness",    m_azimuthal_roughness,    ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("scale_tilt",             m_alpha,                  ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("eta",                    m_eta,                    ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("eumelanin",              m_eumelanin,              ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("pheomelanin",            m_pheomelanin,            ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("use_pigmentation",       m_use_pigmentation,       ParamFlags::NonDifferentiable);
+        cb->put("sigma_a",                m_sigma_a,                ParamFlags::Differentiable);
+        cb->put("scale",                  m_scale,                  ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
@@ -766,7 +767,7 @@ private:
         }
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Hair)
 
 private:
     /// Roughness
@@ -794,6 +795,5 @@ private:
     static_assert(P_MAX == 3, "Please update the DR_TRAVERSE_CB() macro when changing P_MAX.");
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Hair, BSDF)
-MI_EXPORT_PLUGIN(Hair, "Hair material")
+MI_EXPORT_PLUGIN(Hair)
 NAMESPACE_END(mitsuba)

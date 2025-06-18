@@ -200,14 +200,25 @@ static void clear_variant_callbacks() {
     nb::borrow<nb::set>(variant_change_callbacks).clear();
 }
 
-
 /// Fallback for when we're attempting to fetch variant-specific attribute
 static nb::object get_attr(nb::handle key) {
     if (PyDict_Contains(variant_modules, key.ptr()) == 1)
         return variant_module(key);
 
-    throw nb::attribute_error(
-        nb::str("module 'mitsuba' has no attribute '{}'").format(key).c_str());
+    // If no variant is set, inform the user
+    if (curr_variant.is_none() && PyUnicode_Check(key.ptr())) {
+        const char* attr_name = PyUnicode_AsUTF8(key.ptr());
+        if (attr_name) {
+            return nb::steal(PyErr_Format(PyExc_AttributeError,
+                "Cannot access '%s' before setting a variant. "
+                "Please call `mitsuba.set_variant('variant_name')` first. "
+                "For example: mitsuba.set_variant('scalar_rgb') or mitsuba.set_variant('cuda_ad_rgb'). "
+                "Use mitsuba.variants() to see all available variants.",
+                attr_name));
+        }
+    }
+
+    return nb::steal(PyErr_Format(PyExc_AttributeError, "Module 'mitsuba' has no attribute %R", key.ptr()));
 }
 
 NB_MODULE(mitsuba_alias, m) {

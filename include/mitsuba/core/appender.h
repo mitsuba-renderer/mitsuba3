@@ -2,6 +2,7 @@
 
 #include <mitsuba/core/object.h>
 #include <iosfwd>
+#include <string>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -14,23 +15,34 @@ public:
     ~Appender() = default;
 
     /// Append a line of text with the given log level
-    virtual void append(LogLevel level, const std::string &text) = 0;
+    virtual void append(LogLevel level, std::string_view text) = 0;
 
     /**
      * \brief Process a progress message
-     * \param progress Percentage value in [0, 100]
-     * \param name Title of the progress message
-     * \param formatted Formatted string representation of the message
-     * \param eta Estimated time until 100% is reached.
-     * \param ptr Custom pointer payload. This is used to express the
-     *    context of a progress message. When rendering a scene, it
-     *    will usually contain a pointer to the associated \c RenderJob.
+     *
+     * \param progress
+     *     Percentage value in [0, 100]
+     *
+     * \param name
+     *     Title of the progress message
+     *
+     * \param formatted
+     *     Formatted string representation of the message
+     *
+     * \param eta
+     *     Estimated time until 100% is reached.
+     *
+     * \param ptr
+     *     Custom pointer payload. This is used to express the
+     *     context of a progress message.
      */
-    virtual void log_progress(float progress, const std::string &name,
-        const std::string &formatted, const std::string &eta,
-        const void *ptr = nullptr) = 0;
+    virtual void log_progress(float progress,
+                              std::string_view name,
+                              std::string_view formatted,
+                              std::string_view eta,
+                              const void *ptr = nullptr) = 0;
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Appender)
 };
 
 /** \brief %Appender implementation, which writes to an
@@ -45,18 +57,18 @@ public:
     StreamAppender(std::ostream *stream);
 
     /// Create a new stream appender logging to a file
-    StreamAppender(const std::string &filename);
+    StreamAppender(std::string_view filename);
 
     /// Destructor
     ~StreamAppender();
 
     /// Append a line of text
-    void append(LogLevel level, const std::string &text) override;
+    void append(LogLevel level, std::string_view text) override;
 
     /// Process a progress message
-    void log_progress(float progress, const std::string &name,
-        const std::string &formatted, const std::string &eta,
-        const void *ptr) override;
+    void log_progress(float progress, std::string_view name,
+                      std::string_view formatted, std::string_view eta,
+                      const void *ptr) override;
 
     /// Does this appender log to a file
     bool logs_to_file() const { return m_is_file; }
@@ -67,10 +79,10 @@ public:
     /// Return a string representation
     std::string to_string() const override;
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(StreamAppender)
 private:
     std::ostream *m_stream;
-    std::string m_fileName;
+    std::string m_fname;
     bool m_is_file;
     bool m_last_message_was_progress;
 };

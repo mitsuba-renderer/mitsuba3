@@ -8,7 +8,6 @@
 
 
 // core
-MI_PY_DECLARE(atomic);
 MI_PY_DECLARE(filesystem);
 MI_PY_DECLARE(Object);
 MI_PY_DECLARE(Cast);
@@ -29,6 +28,7 @@ MI_PY_DECLARE(ProgressReporter);
 MI_PY_DECLARE(rfilter);
 MI_PY_DECLARE(Thread);
 MI_PY_DECLARE(Timer);
+MI_PY_DECLARE(Properties);
 MI_PY_DECLARE(misc);
 
 // render
@@ -110,7 +110,6 @@ NB_MODULE(mitsuba_ext, m) {
     }, "Returns the current log level.");
 
     Jit::static_initialization();
-    Class::static_initialization();
     Thread::static_initialization();
     Logger::static_initialization();
     Bitmap::static_initialization();
@@ -128,7 +127,6 @@ NB_MODULE(mitsuba_ext, m) {
         fr->append(base_path);
 
     // Register python modules
-    MI_PY_IMPORT(atomic);
     MI_PY_IMPORT(filesystem);
     MI_PY_IMPORT(Object);
     MI_PY_IMPORT(Cast);
@@ -149,6 +147,7 @@ NB_MODULE(mitsuba_ext, m) {
     MI_PY_IMPORT(ProgressReporter);
     MI_PY_IMPORT(Thread);
     MI_PY_IMPORT(Timer);
+    MI_PY_IMPORT(Properties);
     MI_PY_IMPORT(misc);
 
     MI_PY_IMPORT(BSDFContext);
@@ -169,13 +168,15 @@ NB_MODULE(mitsuba_ext, m) {
             nb::gil_scoped_release g;
             Thread::wait_for_tasks();
         }
-        Class::static_remove_functors();
+
+        // Release all loaded plugins
+        PluginManager::instance()->release_all();
+
         StructConverter::static_shutdown();
         Profiler::static_shutdown();
         Bitmap::static_shutdown();
         Logger::static_shutdown();
         Thread::static_shutdown();
-        Class::static_shutdown();
         Jit::static_shutdown();
     }));
 

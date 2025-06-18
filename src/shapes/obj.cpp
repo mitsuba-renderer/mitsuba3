@@ -150,8 +150,8 @@ public:
            Enabled by default, for consistency with the Mitsuba 1 behavior. */
         bool flip_tex_coords = props.get<bool>("flip_tex_coords", true);
 
-        auto fr = mitsuba::file_resolver();
-        fs::path file_path = fr->resolve(props.string("filename"));
+        auto fr = file_resolver();
+        fs::path file_path = fr->resolve(props.get<std::string_view>("filename"));
         m_name = file_path.filename().string();
 
 
@@ -408,11 +408,10 @@ public:
         initialize();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(OBJMesh)
 
     MI_TRAVERSE_CB(Base);
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(OBJMesh, Mesh)
-MI_EXPORT_PLUGIN(OBJMesh, "OBJ Mesh")
+MI_EXPORT_PLUGIN(OBJMesh)
 NAMESPACE_END(mitsuba)

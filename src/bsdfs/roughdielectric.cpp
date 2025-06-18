@@ -164,10 +164,10 @@ public:
 
     RoughDielectric(const Properties &props) : Base(props) {
         if (props.has_property("specular_reflectance"))
-            m_specular_reflectance   = props.texture<Texture>("specular_reflectance", 1.f);
+            m_specular_reflectance   = props.get_texture<Texture>("specular_reflectance", 1.f);
 
         if (props.has_property("specular_transmittance"))
-            m_specular_transmittance = props.texture<Texture>("specular_transmittance", 1.f);
+            m_specular_transmittance = props.get_texture<Texture>("specular_transmittance", 1.f);
 
         // Specifies the internal index of refraction at the interface
         ScalarFloat int_ior = lookup_ior(props, "int_ior", "bk7");
@@ -183,7 +183,7 @@ public:
         m_inv_eta = ext_ior / int_ior;
 
         if (props.has_property("distribution")) {
-            std::string distr = string::to_lower(props.string("distribution"));
+            std::string distr = string::to_lower(props.get<std::string_view>("distribution"));
             if (distr == "beckmann")
                 m_type = MicrofacetType::Beckmann;
             else if (distr == "ggx")
@@ -203,10 +203,10 @@ public:
             if (props.has_property("alpha"))
                 Throw("Microfacet model: please specify"
                       "either 'alpha' or 'alpha_u'/'alpha_v'.");
-            m_alpha_u = props.texture<Texture>("alpha_u");
-            m_alpha_v = props.texture<Texture>("alpha_v");
+            m_alpha_u = props.get_texture<Texture>("alpha_u");
+            m_alpha_v = props.get_texture<Texture>("alpha_v");
         } else {
-            m_alpha_u = m_alpha_v = props.texture<Texture>("alpha", 0.1f);
+            m_alpha_u = m_alpha_v = props.get_texture<Texture>("alpha", 0.1f);
         }
 
         BSDFFlags extra = (m_alpha_u != m_alpha_v) ? BSDFFlags::Anisotropic : BSDFFlags(0);
@@ -219,19 +219,19 @@ public:
         parameters_changed();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("eta", m_eta, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("eta", m_eta, ParamFlags::Differentiable | ParamFlags::Discontinuous);
 
         if (!has_flag(m_flags, BSDFFlags::Anisotropic))
-            callback->put_object("alpha",                  m_alpha_u.get(),                ParamFlags::Differentiable | ParamFlags::Discontinuous);
+            cb->put("alpha", m_alpha_u, ParamFlags::Differentiable | ParamFlags::Discontinuous);
         else {
-            callback->put_object("alpha_u",                m_alpha_u.get(),                ParamFlags::Differentiable | ParamFlags::Discontinuous);
-            callback->put_object("alpha_v",                m_alpha_v.get(),                ParamFlags::Differentiable | ParamFlags::Discontinuous);
+            cb->put("alpha_u", m_alpha_u, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+            cb->put("alpha_v", m_alpha_v, ParamFlags::Differentiable | ParamFlags::Discontinuous);
         }
         if (m_specular_reflectance)
-            callback->put_object("specular_reflectance",   m_specular_reflectance.get(),   +ParamFlags::Differentiable);
+            cb->put("specular_reflectance", m_specular_reflectance, ParamFlags::Differentiable);
         if (m_specular_transmittance)
-            callback->put_object("specular_transmittance", m_specular_transmittance.get(), +ParamFlags::Differentiable);
+            cb->put("specular_transmittance", m_specular_transmittance, ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
@@ -631,7 +631,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(RoughDielectric)
 private:
     ref<Texture> m_specular_reflectance;
     ref<Texture> m_specular_transmittance;
@@ -644,6 +644,5 @@ private:
                    m_alpha_u, m_alpha_v, m_eta, m_inv_eta);
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(RoughDielectric, BSDF)
-MI_EXPORT_PLUGIN(RoughDielectric, "Rough dielectric")
+MI_EXPORT_PLUGIN(RoughDielectric)
 NAMESPACE_END(mitsuba)

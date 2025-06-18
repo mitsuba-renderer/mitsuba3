@@ -89,8 +89,8 @@ public:
         parameters_changed();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("temperature", m_temperature, +ParamFlags::NonDifferentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("temperature", m_temperature, ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
@@ -268,7 +268,7 @@ public:
     }
 
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(BlackBodySpectrum)
 private:
     ScalarFloat m_temperature;
     ScalarFloat m_integral_min;
@@ -276,6 +276,5 @@ private:
     ScalarVector2f m_wavelength_range;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(BlackBodySpectrum, Texture)
-MI_EXPORT_PLUGIN(BlackBodySpectrum, "Black body spectrum")
+MI_EXPORT_PLUGIN(BlackBodySpectrum)
 NAMESPACE_END(mitsuba)

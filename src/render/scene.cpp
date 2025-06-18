@@ -19,7 +19,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
+MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
+    : JitObject<Scene>(props.id()) {
     m_thread_reordering = props.get<bool>("allow_thread_reordering", true);
 
     for (auto &[k, v] : props.objects()) {
@@ -38,7 +39,7 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
                 m_emitters.push_back(shape->emitter());
             if (shape->is_sensor())
                 m_sensors.push_back(shape->sensor());
-            if (shape->is_shapegroup()) {
+            if (shape->is_shape_group()) {
                 m_shapegroups.push_back((ShapeGroup*)shape);
             } else {
                 m_bbox.expand(shape->bbox());
@@ -502,13 +503,17 @@ Scene<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f &ss,
     return sample;
 }
 
-MI_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *callback) {
-    callback->put_parameter("allow_thread_reordering", m_thread_reordering, +ParamFlags::NonDifferentiable);
+MI_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *cb) {
+    cb->put("allow_thread_reordering", m_thread_reordering, ParamFlags::NonDifferentiable);
     for (auto& child : m_children) {
-        std::string id = child->id();
-        if (id.empty() || string::starts_with(id, "_unnamed_"))
-            id = child->class_()->name();
-        callback->put_object(id, child.get(), +ParamFlags::Differentiable);
+        std::string_view id = child->id();
+        if (id.empty() || string::starts_with(id, "_unnamed_")) {
+            // Use a generic identifier based on object type
+            std::string generic_id = "object_" + std::to_string(reinterpret_cast<uintptr_t>(child.get()));
+            cb->put(generic_id, child, ParamFlags::Differentiable);
+        } else {
+            cb->put(id, child, ParamFlags::Differentiable);
+        }
     }
 }
 
@@ -629,7 +634,6 @@ MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_gpu() { }
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() { }
 #endif
 
-Class *__kdtree_class = new Class("TShapeKDTree", "Object", "", nullptr, nullptr);
 MI_VARIANT
 void Scene<Float, Spectrum>::traverse_1_cb_ro(
     void *payload, drjit::detail::traverse_callback_ro fn) const {
@@ -671,7 +675,5 @@ void Scene<Float, Spectrum>::traverse_1_cb_rw(
         traverse_1_cb_rw_cpu(payload, fn);
     }
 }
-
-MI_IMPLEMENT_CLASS_VARIANT(Scene, Object, "scene")
 MI_INSTANTIATE_CLASS(Scene)
 NAMESPACE_END(mitsuba)

@@ -152,7 +152,7 @@ template <typename Ptr, typename Cls> void bind_emitter_generic(Cls &cls) {
 MI_PY_EXPORT(Emitter) {
     MI_PY_IMPORT_TYPES(Emitter, EmitterPtr)
     using PyEmitter = PyEmitter<Float, Spectrum>;
-    using Properties = PropertiesV<Float>;
+    using Properties = mitsuba::Properties;
 
     m.def("has_flag", [](uint32_t flags, EmitterFlags f) {return has_flag(flags, f);});
     m.def("has_flag", [](UInt32   flags, EmitterFlags f) {return has_flag(flags, f);});
@@ -174,5 +174,4 @@ MI_PY_EXPORT(Emitter) {
         bind_emitter_generic<EmitterPtr>(emitter_ptr);
     }
 
-    MI_PY_REGISTER_OBJECT("register_emitter", Emitter)
 }

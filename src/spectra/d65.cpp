@@ -115,22 +115,23 @@ public:
         }
 
         Properties props_d65("regular");
-        props_d65.set_float("wavelength_min", (Properties::Float) MI_CIE_MIN);
-        props_d65.set_float("wavelength_max", (Properties::Float) MI_CIE_MAX);
-        props_d65.set_int("size", MI_CIE_SAMPLES);
-        Properties::Float data[MI_CIE_SAMPLES];
+        props_d65.set("wavelength_min", MI_CIE_MIN);
+        props_d65.set("wavelength_max", MI_CIE_MAX);
+        props_d65.set("size", MI_CIE_SAMPLES);
+        std::vector<double> data;
+        data.reserve(MI_CIE_SAMPLES);
         for (size_t i = 0; i < MI_CIE_SAMPLES; ++i)
-            data[i] = Properties::Float(d65_table[i] * m_scale * ScalarFloat(MI_CIE_D65_NORMALIZATION));
-        props_d65.set_pointer("values", (const void *) &data[0]);
+            data.push_back((double) d65_table[i] * (double) m_scale * (double) MI_CIE_D65_NORMALIZATION);
+        props_d65.set_any("values", std::move(data));
         m_d65 = (Base *) PluginManager::instance()->create_object<Base>(props_d65);
     }
 
-    void traverse(TraversalCallback *callback) override {
+    void traverse(TraversalCallback *cb) override {
         if (m_nested_texture)
-            callback->put_object("nested_texture", m_nested_texture.get(), +ParamFlags::Differentiable);
+            cb->put("nested_texture", m_nested_texture, ParamFlags::Differentiable);
         if (m_has_value)
-            callback->put_parameter("value", m_value, +ParamFlags::Differentiable);
-        callback->put_object("d65", m_d65, +ParamFlags::Differentiable);
+            cb->put("value", m_value, ParamFlags::Differentiable);
+        cb->put("d65", m_d65, ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
@@ -149,13 +150,13 @@ public:
 
             if (m_has_value) {
                 Properties props("srgb");
-                props.set_color("color", dr::slice(m_value) * m_scale);
-                props.set_bool("unbounded", true);
+                props.set("color", dr::slice(m_value) * m_scale);
+                props.set("unbounded", true);
                 return { (Object *) PluginManager::instance()->create_object<Base>(props) };
             }
 
             Properties props("uniform");
-            props.set_float("value", Properties::Float(m_scale));
+            props.set("value", m_scale);
             return { (Object *) PluginManager::instance()->create_object<Base>(props) };
         }
     }
@@ -304,7 +305,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(D65Spectrum)
 private:
     Color<Float, 3> m_value;
     ref<Base> m_nested_texture;
@@ -317,6 +318,5 @@ private:
     MI_TRAVERSE_CB(Base, m_value, m_nested_texture, m_d65);
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(D65Spectrum, Texture)
-MI_EXPORT_PLUGIN(D65Spectrum, "CIE D65 Spectrum")
+MI_EXPORT_PLUGIN(D65Spectrum)
 NAMESPACE_END(mitsuba)

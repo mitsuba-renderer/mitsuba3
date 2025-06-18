@@ -12,7 +12,7 @@ def test01_trampoline(variants_vec_backends_once_rgb):
         def to_string(self):
             return f"DummyPhaseFunction ({self.m_flags})"
 
-    mi.register_phasefunction('dummy_phase', DummyPhaseFunction)
+    mi.register_phase('dummy_phase', DummyPhaseFunction)
     phase = mi.load_dict({
         'type': 'dummy_phase'
     })

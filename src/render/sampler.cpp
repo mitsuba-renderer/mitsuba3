@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
 // =======================================================================
 
 MI_VARIANT Sampler<Float, Spectrum>::Sampler(const Properties &props)
-    : Object() {
+    : JitObject<Sampler>(props.id()) {
     m_sample_count = props.get<uint32_t>("sample_count", 4);
     m_base_seed = props.get<uint32_t>("seed", 0);
 
@@ -21,7 +21,7 @@ MI_VARIANT Sampler<Float, Spectrum>::Sampler(const Properties &props)
 }
 
 MI_VARIANT Sampler<Float, Spectrum>::Sampler(const Sampler &sampler)
-    : Object() {
+    : JitObject<Sampler>(sampler) {
     m_sample_count          = sampler.m_sample_count;
     m_base_seed             = sampler.m_base_seed;
     m_wavefront_size        = sampler.m_wavefront_size;
@@ -31,6 +31,22 @@ MI_VARIANT Sampler<Float, Spectrum>::Sampler(const Sampler &sampler)
 }
 
 MI_VARIANT Sampler<Float, Spectrum>::~Sampler() { }
+
+MI_VARIANT void Sampler<Float, Spectrum>::traverse_1_cb_ro(void *payload, drjit::detail::traverse_callback_ro fn) const {
+    Object::traverse_1_cb_ro(payload, fn);
+    if (jit_flag(JitFlag::EnableObjectTraversal)) {
+        drjit::traverse_1_fn_ro(m_dimension_index, payload, fn);
+        drjit::traverse_1_fn_ro(m_sample_index, payload, fn);
+    }
+}
+
+MI_VARIANT void Sampler<Float, Spectrum>::traverse_1_cb_rw(void *payload, drjit::detail::traverse_callback_rw fn) {
+    Object::traverse_1_cb_rw(payload, fn);
+    if (jit_flag(JitFlag::EnableObjectTraversal)) {
+        drjit::traverse_1_fn_rw(m_dimension_index, payload, fn);
+        drjit::traverse_1_fn_rw(m_sample_index, payload, fn);
+    }
+}
 
 MI_VARIANT void Sampler<Float, Spectrum>::seed(UInt32 /* seed */,
                                                uint32_t wavefront_size) {
@@ -142,11 +158,18 @@ PCG32Sampler<Float, Spectrum>::PCG32Sampler(const PCG32Sampler &sampler)
     m_rng = sampler.m_rng;
 }
 
+MI_VARIANT void PCG32Sampler<Float, Spectrum>::traverse_1_cb_ro(void *payload, drjit::detail::traverse_callback_ro fn) const {
+    Base::traverse_1_cb_ro(payload, fn);
+    drjit::traverse_1_fn_ro(m_rng, payload, fn);
+}
+
+MI_VARIANT void PCG32Sampler<Float, Spectrum>::traverse_1_cb_rw(void *payload, drjit::detail::traverse_callback_rw fn) {
+    Base::traverse_1_cb_rw(payload, fn);
+    drjit::traverse_1_fn_rw(m_rng, payload, fn);
+}
+
 //! @}
 // =======================================================================
-
-MI_IMPLEMENT_CLASS_VARIANT(Sampler, Object, "sampler")
-MI_IMPLEMENT_CLASS_VARIANT(PCG32Sampler, Sampler, "PCG32 sampler")
 
 MI_INSTANTIATE_CLASS(Sampler)
 MI_INSTANTIATE_CLASS(PCG32Sampler)

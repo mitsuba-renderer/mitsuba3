@@ -813,6 +813,5 @@ MI_VARIANT std::string ImageBlock<Float, Spectrum>::to_string() const {
     return oss.str();
 }
 
-MI_IMPLEMENT_CLASS_VARIANT(ImageBlock, Object)
 MI_INSTANTIATE_CLASS(ImageBlock)
 NAMESPACE_END(mitsuba)

@@ -181,7 +181,7 @@ template <typename Ptr, typename Cls> void bind_bsdf_generic(Cls &cls) {
 MI_PY_EXPORT(BSDF) {
     MI_PY_IMPORT_TYPES(BSDF, BSDFPtr)
     using PyBSDF = PyBSDF<Float, Spectrum>;
-    using Properties = PropertiesV<Float>;
+    using Properties = mitsuba::Properties;
 
     auto bsdf = MI_PY_TRAMPOLINE_CLASS(PyBSDF, BSDF, Object)
         .def(nb::init<const Properties&>(), "props"_a)
@@ -203,5 +203,4 @@ MI_PY_EXPORT(BSDF) {
         bind_bsdf_generic<BSDFPtr>(bsdf_ptr);
     }
 
-    MI_PY_REGISTER_OBJECT("register_bsdf", BSDF)
 }

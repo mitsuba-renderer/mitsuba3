@@ -144,12 +144,12 @@ public:
 
         m_ellipsoids = EllipsoidsData<Float, Spectrum>(props);
 
-        std::string shell_type = "default";
+        std::string_view shell_type = "default";
         if (props.has_property("shell")) {
             if (props.type("shell") == Properties::Type::String) {
-                shell_type = props.get<std::string>("shell");
+                shell_type = props.get<std::string_view>("shell");
                 if (shell_type != "box" && shell_type != "default" && shell_type != "ico_sphere" && shell_type != "uv_sphere")
-                    Throw("Shell type '%s' is not supported. Should be one of: [\"default\", \"box\", \"ico_sphere\", \"uv_sphere\"]", shell_type.c_str());
+                    Throw("Shell type '%s' is not supported. Should be one of: [\"default\", \"box\", \"ico_sphere\", \"uv_sphere\"]", shell_type);
             } else {
                 shell_type = "mesh";
             }
@@ -172,13 +172,12 @@ public:
             ref<Base> mesh(dynamic_cast<Base *>(props.get<ref<Object>>("shell").get()));
 
             struct MeshDataRetriever : public TraversalCallback {
-                void put_object(const std::string &, Object *, uint32_t) override {}
-                void put_parameter_impl(const std::string &name, void *val, uint32_t, const std::type_info &) override {
-                    if (name == "vertex_positions") {
+                void put_object(std::string_view, Object *, uint32_t) override {}
+                void put_value(std::string_view name, void *val, uint32_t, const std::type_info &) override {
+                    if (name == "vertex_positions")
                         vertex_positions = *((FloatStorage *) val);
-                    } else if (name == "faces") {
+                    else if (name == "faces")
                         faces = *((IndexStorage *) val);
-                    }
                 };
                 FloatStorage vertex_positions;
                 IndexStorage faces;
@@ -247,8 +246,8 @@ public:
             util::time_string((float) timer.value()));
     }
 
-    void traverse(TraversalCallback *callback) override {
-        m_ellipsoids.traverse(callback);
+    void traverse(TraversalCallback *cb) override {
+        m_ellipsoids.traverse(cb);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -332,7 +331,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(EllipsoidsMesh)
 
 private:
     void recompute_mesh() {
@@ -533,8 +532,7 @@ private:
     Properties m_props;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(EllipsoidsMesh, Mesh)
-MI_EXPORT_PLUGIN(EllipsoidsMesh, "OBJ Mesh")
+MI_EXPORT_PLUGIN(EllipsoidsMesh)
 
 // =============================================================
 // Hardcoded mesh shell template data

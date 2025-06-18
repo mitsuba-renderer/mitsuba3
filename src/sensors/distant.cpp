@@ -79,7 +79,7 @@ public:
 
         // Get target
         if (props.has_property("target")) {
-            if (props.type("target") == Properties::Type::Array3f) {
+            if (props.type("target") == Properties::Type::Vector) {
                 props.get<ScalarPoint3f>("target");
                 m_target_type = RayTargetType::Point;
             } else if (props.type("target") == Properties::Type::Object) {
@@ -126,7 +126,7 @@ public:
         return { result };
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(DistantSensor)
 
 protected:
     Properties m_props;
@@ -171,7 +171,7 @@ public:
         if constexpr (TargetType == RayTargetType::Point) {
             m_target_point = props.get<ScalarPoint3f>("target");
         } else if constexpr (TargetType == RayTargetType::Shape) {
-            auto obj       = props.object("target");
+            auto obj       = props.get<ref<Object>>("target");
             m_target_shape = dynamic_cast<Shape *>(obj.get());
 
             if (!m_target_shape)
@@ -273,7 +273,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(DistantSensorImpl)
 
 protected:
     ScalarBoundingSphere3f m_bsphere;
@@ -281,8 +281,7 @@ protected:
     Point3f m_target_point;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(DistantSensor, Sensor)
-MI_EXPORT_PLUGIN(DistantSensor, "DistantSensor")
+MI_EXPORT_PLUGIN(DistantSensor)
 
 NAMESPACE_BEGIN(detail)
 template <RayTargetType TargetType>
@@ -297,14 +296,5 @@ constexpr const char *distant_sensor_class_name() {
 }
 NAMESPACE_END(detail)
 
-template <typename Float, typename Spectrum, RayTargetType TargetType>
-Class *DistantSensorImpl<Float, Spectrum, TargetType>::m_class = new Class(
-    detail::distant_sensor_class_name<TargetType>(), "Sensor",
-    ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
-
-template <typename Float, typename Spectrum, RayTargetType TargetType>
-const Class *DistantSensorImpl<Float, Spectrum, TargetType>::class_() const {
-    return m_class;
-}
 
 NAMESPACE_END(mitsuba)

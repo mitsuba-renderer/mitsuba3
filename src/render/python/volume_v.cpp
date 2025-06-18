@@ -62,7 +62,7 @@ public:
 MI_PY_EXPORT(Volume) {
     MI_PY_IMPORT_TYPES(Volume)
     using PyVolume = PyVolume<Float, Spectrum>;
-    using Properties = PropertiesV<Float>;
+    using Properties = mitsuba::Properties;
 
     auto volume = MI_PY_TRAMPOLINE_CLASS(PyVolume, Volume, Object)
         .def(nb::init<const Properties &>(), "props"_a)
@@ -100,6 +100,4 @@ MI_PY_EXPORT(Volume) {
             D(Volume, eval_n));
 
     drjit::bind_traverse(volume);
-
-    MI_PY_REGISTER_OBJECT("register_volume", Volume)
 }

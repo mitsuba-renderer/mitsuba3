@@ -17,7 +17,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB ShapeGroup : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_id, m_dirty)
+    MI_IMPORT_BASE(Shape, m_dirty)
     MI_IMPORT_TYPES(ShapeKDTree, ShapePtr)
 
     using typename Base::ScalarSize;
@@ -74,7 +74,7 @@ public:
     void optix_build_gas(const OptixDeviceContext& context);
 #endif
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(ShapeGroup)
 private:
     ScalarBoundingBox3f m_bbox;
     std::vector<ref<Base>> m_shapes;

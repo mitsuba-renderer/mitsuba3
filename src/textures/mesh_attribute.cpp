@@ -78,15 +78,15 @@ public:
 
     MeshAttribute(const Properties &props)
     : Texture(props) {
-        m_name = props.string("name");
+        m_name = props.get<std::string>("name");
         if (m_name.find("vertex_") == std::string::npos && m_name.find("face_") == std::string::npos)
             Throw("Invalid mesh attribute name: must be start with either \"vertex_\" or \"face_\" but was \"%s\".", m_name.c_str());
 
         m_scale = props.get<ScalarFloat>("scale", 1.f);
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("scale", m_scale, +ParamFlags::NonDifferentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("scale", m_scale, ParamFlags::NonDifferentiable);
     }
 
     const std::string& name() const { return m_name; }
@@ -115,13 +115,11 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(MeshAttribute)
 protected:
     std::string m_name;
     float m_scale;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(MeshAttribute, Texture)
-MI_EXPORT_PLUGIN(MeshAttribute, "Mesh attribute")
-
+MI_EXPORT_PLUGIN(MeshAttribute)
 NAMESPACE_END(mitsuba)
