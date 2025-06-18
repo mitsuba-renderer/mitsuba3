@@ -103,6 +103,4 @@ def test02_sample_ray(variants_vec_spectral, s_open, s_time):
     direction = dr.zeros(mi.Vector3f, 3)
     dr.scatter(direction, mi.Vector3f(directions[0]), mi.UInt32([0, 1]))
     dr.scatter(direction, mi.Vector3f(directions[1]), mi.UInt32([2]))
-    print(f"{ray.d=}")
-    print(f"{direction=}")
     assert dr.allclose(ray.d, direction, atol=1e-7)
