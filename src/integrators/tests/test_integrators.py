@@ -8,8 +8,8 @@ def test01_trampoline_id(variants_vec_backends_once_rgb):
             mi.SamplingIntegrator.__init__(self, props)
             self.depth = props['depth']
 
-        def traverse(self, callback):
-            callback.put_parameter('depth', self.depth, mi.ParamFlags.NonDifferentiable)
+        def traverse(self, cb):
+            cb.put('depth', self.depth, mi.ParamFlags.NonDifferentiable)
 
     mi.register_integrator('dummy_integrator', DummyIntegrator)
 

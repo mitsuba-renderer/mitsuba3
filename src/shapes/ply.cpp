@@ -156,8 +156,8 @@ public:
         /* Causes all texture coordinates to be vertically flipped. */
         bool flip_tex_coords = props.get<bool>("flip_tex_coords", false);
 
-        auto fs = mitsuba::file_resolver();
-        fs::path file_path = fs->resolve(props.string("filename"));
+        auto fs = file_resolver();
+        fs::path file_path = fs->resolve(props.get<std::string_view>("filename"));
         m_name = file_path.filename().string();
 
         auto fail = [&](const char *descr) {
@@ -436,9 +436,8 @@ public:
     }
 
 private:
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(PLYMesh)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(PLYMesh, Mesh)
-MI_EXPORT_PLUGIN(PLYMesh, "PLY Mesh")
+MI_EXPORT_PLUGIN(PLYMesh)
 NAMESPACE_END(mitsuba)

@@ -21,7 +21,7 @@ def test01_create_and_eval(variants_vec_rgb):
         def to_string(self):
             return "MyIsotropicPhaseFunction[]"
 
-    mi.register_phasefunction("myisotropic", lambda props: MyIsotropicPhaseFunction(props))
+    mi.register_phase("myisotropic", lambda props: MyIsotropicPhaseFunction(props))
 
     p = mi.load_dict({'type': 'myisotropic'})
     assert p is not None

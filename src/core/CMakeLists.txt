@@ -11,7 +11,6 @@ set(INC_DIR "../../include/mitsuba/core")
 
 add_library(mitsuba-core OBJECT
   ${INC_DIR}/../mitsuba.h
-  ${INC_DIR}/atomic.h
   ${INC_DIR}/frame.h
   ${INC_DIR}/fwd.h
   ${INC_DIR}/hash.h
@@ -19,7 +18,6 @@ add_library(mitsuba-core OBJECT
   ${INC_DIR}/jit.h
   ${INC_DIR}/simd.h
   ${INC_DIR}/platform.h
-  ${INC_DIR}/variant.h
 
   string.cpp        ${INC_DIR}/string.h
   appender.cpp      ${INC_DIR}/appender.h
@@ -27,7 +25,6 @@ add_library(mitsuba-core OBJECT
                     ${INC_DIR}/bbox.h
   bitmap.cpp        ${INC_DIR}/bitmap.h
                     ${INC_DIR}/bsphere.h
-  class.cpp         ${INC_DIR}/class.h
                     ${INC_DIR}/distr_1d.h
                     ${INC_DIR}/distr_2d.h
   dstream.cpp       ${INC_DIR}/dstream.h

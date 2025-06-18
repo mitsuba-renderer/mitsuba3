@@ -103,7 +103,7 @@ def test03_shape_set_bsdf(variants_all_backends_once):
             super().set_bsdf(bsdf)
             self.called = True
 
-    mi.register_mesh("mymesh", MyMesh)
+    mi.register_shape("mymesh", MyMesh)
 
     custom_shape = mi.load_dict({
         "type": "mymesh"

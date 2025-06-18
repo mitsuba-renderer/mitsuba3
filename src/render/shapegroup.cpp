@@ -4,27 +4,28 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
-    m_id = props.id();
+MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props)
+    : Shape<Float, Spectrum>(props) {
+    // ID is now stored in base class JitObject
 
 #if !defined(MI_ENABLE_EMBREE)
     if constexpr (!dr::is_cuda_v<Float>)
         m_kdtree = new ShapeKDTree(props);
 #endif
     m_shape_types = 0;
+    Base::m_shape_type = ShapeType::ShapeGroup;
 
     // Add children to the underlying data structure
     for (auto &kv : props.objects()) {
-        const Class *c_class = kv.second->class_();
-        if (c_class->name() == "Instance") {
-            Throw("Nested instancing is not permitted");
-        } else if (c_class->derives_from(MI_CLASS(Base))) {
-            Base *shape = static_cast<Base *>(kv.second.get());
-            ShapeGroup *shapegroup = dynamic_cast<ShapeGroup *>(kv.second.get());
-            if (shapegroup)
+        Object *o = kv.second;
+
+        if (Base *shape = dynamic_cast<Base *>(o); shape) {
+            if (shape->is_shape_group())
                 Throw("Nested ShapeGroup is not permitted");
             if (shape->is_emitter())
                 Throw("Instancing of emitters is not supported");
+            if (shape->is_instance())
+                Throw("Nested instancing is not permitted");
             if (shape->is_sensor())
                 Throw("Instancing of sensors is not supported");
             else {
@@ -39,7 +40,8 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
                 if constexpr (!dr::is_cuda_v<Float>)
                     m_kdtree->add_shape(shape);
 #endif
-                m_shape_types |= (uint32_t) shape->shape_type();
+                uint32_t type = shape->shape_type();
+                m_shape_types |= type;
             }
         } else {
             Throw("Tried to add an unsupported object of type \"%s\"", kv.second);
@@ -64,8 +66,6 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
             dr::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
     }
 #endif
-
-    MI_REGISTRY_PUT("ShapeGroup", this);
 }
 
 MI_VARIANT ShapeGroup<Float, Spectrum>::~ShapeGroup() {
@@ -80,16 +80,17 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::~ShapeGroup() {
 #endif
 }
 
-MI_VARIANT void ShapeGroup<Float, Spectrum>::traverse(TraversalCallback *callback) {
+MI_VARIANT void ShapeGroup<Float, Spectrum>::traverse(TraversalCallback *cb) {
     for (auto s : m_shapes) {
-        std::string id = s->id();
+        std::string_view id = s->id();
         if (id.empty() || string::starts_with(id, "_unnamed_"))
-            id = s->class_()->name();
-        callback->put_object(id, s.get(), +ParamFlags::Differentiable);
+            cb->put("shape", s, ParamFlags::Differentiable);
+        else
+            cb->put(std::string(id), s, ParamFlags::Differentiable);
     }
 }
 
-MI_VARIANT void ShapeGroup<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
+MI_VARIANT void ShapeGroup<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
     for (auto &s : m_shapes) {
         if (s->dirty()) {
             m_dirty = true;
@@ -97,7 +98,7 @@ MI_VARIANT void ShapeGroup<Float, Spectrum>::parameters_changed(const std::vecto
         }
     }
 
-    Base::parameters_changed(keys);
+    Base::parameters_changed();
 }
 
 
@@ -144,17 +145,16 @@ ShapeGroup<Float, Spectrum>::primitive_count() const {
 
 #if defined(MI_ENABLE_CUDA)
 MI_VARIANT void ShapeGroup<Float, Spectrum>::optix_prepare_ias(
-    const OptixDeviceContext &context, std::vector<OptixInstance> &out_instances,
+    const OptixDeviceContext &context, std::vector<OptixInstance> &instances,
     uint32_t instance_id, const ScalarTransform4f &transf) {
-    prepare_ias(context, m_shapes, m_sbt_offset, m_accel, instance_id, transf, out_instances);
+    prepare_ias(context, m_shapes, m_sbt_offset, m_accel, instance_id, transf, instances);
 }
 
-MI_VARIANT void ShapeGroup<Float, Spectrum>::optix_fill_hitgroup_records(
-    std::vector<HitGroupSbtRecord> &hitgroup_records,
-    const OptixProgramGroup *program_groups,
-    const OptixProgramGroupMapping &pg_mapping) {
+MI_VARIANT void ShapeGroup<Float, Spectrum>::optix_fill_hitgroup_records(std::vector<HitGroupSbtRecord> &hitgroup_records,
+                                                                         const OptixProgramGroup *pg,
+                                                                         const OptixProgramGroupMapping &pg_mapping) {
     m_sbt_offset = (uint32_t) hitgroup_records.size();
-    fill_hitgroup_records(m_shapes, hitgroup_records, program_groups, pg_mapping);
+    fill_hitgroup_records(m_shapes, hitgroup_records, pg, pg_mapping);
 }
 
 MI_VARIANT void ShapeGroup<Float, Spectrum>::optix_prepare_geometry() { }
@@ -242,13 +242,12 @@ MI_VARIANT bool ShapeGroup<Float, Spectrum>::parameters_grad_enabled() const {
 MI_VARIANT std::string ShapeGroup<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
         oss << "ShapeGroup[" << std::endl
-            << "  name = \"" << m_id << "\"," << std::endl
+            << "  name = \"" << this->id() << "\"," << std::endl
             << "  prim_count = " << primitive_count() << std::endl
             << "]";
     return oss.str();
 }
 
 MI_IMPLEMENT_TRAVERSE_CB(ShapeGroup, Base)
-MI_IMPLEMENT_CLASS_VARIANT(ShapeGroup, Shape)
 MI_INSTANTIATE_CLASS(ShapeGroup)
 NAMESPACE_END(mitsuba)

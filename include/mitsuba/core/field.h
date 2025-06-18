@@ -43,6 +43,7 @@ struct field<DeviceType, HostType,
     field(const DeviceType &v) : m_scalar(v) { }
     field(DeviceType &&v) : m_scalar(v) { }
     const DeviceType& value()  const { return m_scalar; }
+    DeviceType& value() { return m_scalar; }
     const DeviceType& scalar() const { return m_scalar; }
     DeviceType* ptr() { return &m_scalar; }
     field& operator=(const field& f) {
@@ -78,6 +79,7 @@ struct field<DeviceType, HostType,
     field(const HostType &v) : m_value(v), m_scalar(v) { }
     field(HostType &&v) : m_value(v), m_scalar(v) { }
     const DeviceType& value()  const { return m_value; }
+    DeviceType& value()  { return m_value; }
     const HostType& scalar() const { return m_scalar; }
     DeviceType* ptr() { return &m_value; }
     field& operator=(const field& f) {
@@ -130,6 +132,19 @@ std::ostream &operator<<(std::ostream &os,
                          const field<DeviceType, HostType> &f) {
     os << f.scalar();
     return os;
+}
+
+/// Implementation of TraversalCallback::put() for field<> objects
+/// This is defined here to avoid circular dependencies
+template <typename DeviceType, typename HostType, typename SFINAE,
+          typename Flags>
+void TraversalCallback::put(
+    std::string_view name,
+    mitsuba::field<DeviceType, HostType, SFINAE> &value,
+    Flags flags) {
+
+    // Use the device version
+    put(name, value.value(), flags);
 }
 
 NAMESPACE_END(mitsuba)

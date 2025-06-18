@@ -60,7 +60,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB Sampler : public Object {
+class MI_EXPORT_LIB Sampler : public JitObject<Sampler<Float, Spectrum>> {
 public:
     MI_IMPORT_TYPES()
 
@@ -130,7 +130,7 @@ public:
     /// dr::schedule() variables that represent the internal sampler state
     virtual void schedule_state();
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_PLUGIN_BASE_CLASS(Sampler)
 
 protected:
     Sampler(const Properties &props);
@@ -157,23 +157,8 @@ protected:
     UInt32 m_sample_index;
 
 public:
-    void
-    traverse_1_cb_ro(void *payload,
-                     drjit ::detail ::traverse_callback_ro fn) const override {
-        Object ::traverse_1_cb_ro(payload, fn);
-        if (jit_flag(JitFlag::EnableObjectTraversal)) {
-            drjit::traverse_1_fn_ro(m_dimension_index, payload, fn);
-            drjit::traverse_1_fn_ro(m_sample_index, payload, fn);
-        }
-    }
-    void traverse_1_cb_rw(void *payload,
-                          drjit ::detail ::traverse_callback_rw fn) override {
-        Object ::traverse_1_cb_rw(payload, fn);
-        if (jit_flag(JitFlag::EnableObjectTraversal)) {
-            drjit::traverse_1_fn_rw(m_dimension_index, payload, fn);
-            drjit::traverse_1_fn_rw(m_sample_index, payload, fn);
-        }
-    }
+    virtual void traverse_1_cb_ro(void *payload, drjit::detail::traverse_callback_ro fn) const override;
+    virtual void traverse_1_cb_rw(void *payload, drjit::detail::traverse_callback_rw fn) override;
 };
 
 /// Interface for sampler plugins based on the PCG32 random number generator
@@ -187,7 +172,7 @@ public:
     void seed(UInt32 seed, uint32_t wavefront_size = (uint32_t) -1) override;
     void schedule_state() override;
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(PCG32Sampler)
 protected:
     PCG32Sampler(const Properties &props);
 
@@ -196,20 +181,9 @@ protected:
 protected:
     PCG32 m_rng;
 
-    // DR_TRAVERSE_CB(Base, m_rng);
-
 public:
-    void
-    traverse_1_cb_ro(void *payload,
-                     drjit ::detail ::traverse_callback_ro fn) const override {
-        Base::traverse_1_cb_ro(payload, fn);
-        drjit::traverse_1_fn_ro(m_rng, payload, fn);
-    }
-    void traverse_1_cb_rw(void *payload,
-                          drjit ::detail ::traverse_callback_rw fn) override {
-        Base::traverse_1_cb_rw(payload, fn);
-        drjit::traverse_1_fn_rw(m_rng, payload, fn);
-    }
+    virtual void traverse_1_cb_ro(void *payload, drjit::detail::traverse_callback_ro fn) const override;
+    virtual void traverse_1_cb_rw(void *payload, drjit::detail::traverse_callback_rw fn) override;
 };
 
 MI_EXTERN_CLASS(Sampler)

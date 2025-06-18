@@ -88,7 +88,7 @@ public:
             result = (Object *) new Impl<false>(m_props);
         return { result };
     }
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(VolumetricMisPathIntegrator)
 
 protected:
     Properties m_props;
@@ -663,11 +663,10 @@ public:
                            m_max_depth, m_rr_depth);
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(VolpathMisIntegratorImpl)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(VolumetricMisPathIntegrator, MonteCarloIntegrator);
-MI_EXPORT_PLUGIN(VolumetricMisPathIntegrator, "Volumetric Path Tracer integrator");
+MI_EXPORT_PLUGIN(VolumetricMisPathIntegrator)
 
 NAMESPACE_BEGIN(detail)
 template <bool SpectralMis>
@@ -680,14 +679,5 @@ constexpr const char * volpath_class_name() {
 }
 NAMESPACE_END(detail)
 
-template <typename Float, typename Spectrum, bool SpectralMis>
-Class *VolpathMisIntegratorImpl<Float, Spectrum, SpectralMis>::m_class
-    = new Class(detail::volpath_class_name<SpectralMis>(), "MonteCarloIntegrator",
-                ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
-
-template <typename Float, typename Spectrum, bool SpectralMis>
-const Class* VolpathMisIntegratorImpl<Float, Spectrum, SpectralMis>::class_() const {
-    return m_class;
-}
 
 NAMESPACE_END(mitsuba)

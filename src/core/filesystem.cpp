@@ -34,26 +34,26 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(filesystem)
 
-inline string_type to_native(const std::string &str) {
+inline string_type to_native(std::string_view str) {
 #if defined(_WIN32)
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
     return converter.from_bytes(str);
 #else
-    return str;
+    return string_type(str);
 #endif
 }
 
-inline std::string from_native(const string_type &str) {
+inline std::string from_native(string_view_type str) {
 #if defined(_WIN32)
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
     return converter.to_bytes(str);
 #else
-    return str;
+    return std::string(str);
 #endif
 }
 
 #if defined(_WIN32)
-path::path(const std::string &string) { set(to_native(string)); }
+path::path(std::string_view string) { set(to_native(string)); }
 #endif
 
 path current_path() {
@@ -211,11 +211,11 @@ fs::path path::extension() const {
     if (empty() || m_path.back() == NSTR(".") || m_path.back() == NSTR(".."))
         return NSTR("");
 
-    const string_type &name = filename();
+    string_type name = filename();
     size_t pos = name.find_last_of(NSTR("."));
     if (pos == string_type::npos)
         return "";
-    return name.substr(pos);  // Including the . character!
+    return fs::path(name.substr(pos));  // Including the . character!
 }
 
 path& path::replace_extension(const fs::path &replacement_) {
@@ -297,7 +297,7 @@ path & path::operator=(path &&path) {
 }
 
 #if defined(_WIN32)
-path & path::operator=(const std::string &str) {
+path & path::operator=(std::string_view str) {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
     set(converter.from_bytes(str));
     return *this;
@@ -321,7 +321,7 @@ string_type path::str() const {
     return oss.str();
 }
 
-void path::set(const string_type &str) {
+void path::set(string_view_type str) {
     if (str.empty()) {
         clear();
         return;
@@ -336,15 +336,15 @@ void path::set(const string_type &str) {
 #endif
 }
 
-std::vector<string_type> path::tokenize(const string_type &string,
-                                        const string_type &delim) {
+std::vector<string_type> path::tokenize(string_view_type string,
+                                        string_view_type delim) {
     string_type::size_type last_pos = 0,
                            pos = string.find_first_of(delim, last_pos);
     std::vector<string_type> tokens;
 
     while (last_pos != string_type::npos) {
         if (pos != last_pos)
-            tokens.push_back(string.substr(last_pos, pos - last_pos));
+            tokens.push_back(std::string(string.substr(last_pos, pos - last_pos)));
         last_pos = pos;
         if (last_pos == string_type::npos || last_pos + 1 == string.length())
             break;

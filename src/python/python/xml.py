@@ -32,6 +32,22 @@ class WriteXML:
         'height': 'resy'
     }
 
+    TAG_MAPPING = {
+        mi.ObjectType.Scene: 'scene',
+        mi.ObjectType.Sensor: 'sensor',
+        mi.ObjectType.Film: 'film',
+        mi.ObjectType.Emitter: 'emitter',
+        mi.ObjectType.Sampler: 'sampler',
+        mi.ObjectType.Shape: 'shape',
+        mi.ObjectType.Texture: 'texture',
+        mi.ObjectType.Volume: 'volume',
+        mi.ObjectType.Medium: 'medium',
+        mi.ObjectType.BSDF: 'bsdf',
+        mi.ObjectType.Integrator: 'integrator',
+        mi.ObjectType.PhaseFunction: 'phase',
+        mi.ObjectType.ReconstructionFilter: 'rfilter'
+    }
+
     def __init__(self, path, subfolders=None, split_files=False):
         self.pmgr = mi.PluginManager.instance()
         self.split_files = split_files
@@ -308,21 +324,25 @@ class WriteXML:
 
         self.wf(self.current_file, '/>\n')
 
-    def get_plugin_tag(self, plugin_type):
+    def get_plugin_object_type(self, plugin_type):
         '''
-        Get the corresponding tag of a given plugin (e.g. 'bsdf' for 'diffuse')
-        If the given type (e.g. 'transform') is not a plugin, returns None.
+        Get the ObjectType enum for a given plugin type.
+        If the given type is not a plugin, returns None.
 
         Parameter ``plugin_type``:
             Name of the type (e.g. 'diffuse', 'ply'...)
         '''
-        class_ =  self.pmgr.get_plugin_class(plugin_type, mi.variant())
-        if not class_: # If get_plugin_class returns None, there is not corresponding plugin
-            return None
-        class_ = class_.parent()
-        while class_.alias() == class_.name():
-            class_ = class_.parent()
-        return class_.alias()
+        object_type = self.pmgr.plugin_type(plugin_type)
+        return object_type if object_type != mi.ObjectType.Unknown else None
+
+    def object_type_to_xml_tag(self, object_type):
+        '''
+        Convert ObjectType enum to XML tag string - only used for XML output.
+
+        Parameter ``object_type``:
+            The ObjectType enum value
+        '''
+        return WriteXML.TAG_MAPPING.get(object_type, None)
 
     def current_tag(self):
         '''
@@ -399,18 +419,18 @@ class WriteXML:
             if isinstance(value, dict):# Should always be the case
                 item_type = value['type']
 
-                tag = self.get_plugin_tag(item_type)
-                if tag:
-                    if tag == 'emitter':
+                object_type = self.get_plugin_object_type(item_type)
+                if object_type:
+                    if object_type == mi.ObjectType.Emitter:
                         self.data_add(key, value, Files.EMIT)
-                    elif tag == 'shape':
+                    elif object_type == mi.ObjectType.Shape:
                         if 'emitter' in value.keys(): # Emitter nested in a shape (area light)
                             self.data_add(key, value, Files.EMIT)
                         elif 'medium' in value.keys(): # Volume nested in a shape
                             self.data_add(key, value, Files.VOLS)
                         else:
                             self.data_add(key ,value, Files.GEOM)
-                    elif tag == 'bsdf':
+                    elif object_type == mi.ObjectType.BSDF:
                         self.data_add(key, value, Files.MATS)
                     else: # The rest is sensor, integrator and other render stuff
                         self.data_add(key, value, Files.CAMS)
@@ -556,16 +576,18 @@ class WriteXML:
                     value_type = value.pop('type')
                 except KeyError:
                     raise ValueError("Missing key 'type'!")
-                tag = self.get_plugin_tag(value_type)
+                object_type = self.get_plugin_object_type(value_type)
                 if value_type in {'rgb', 'spectrum'}:
                     value['name'] = key
                     name, args = self.format_spectrum(value, value_type)
                     self.element(name, args)
                 elif value_type == 'comment':
                     self.write_comment(value['value'])
-                elif tag: # Plugin
+                elif object_type: # Plugin
+                    # Convert ObjectType to XML tag string for output
+                    tag = self.object_type_to_xml_tag(object_type)
                     args = {'type': value_type}
-                    if tag == 'texture' and self.current_tag() != 'scene':
+                    if object_type == mi.ObjectType.Texture and self.current_tag() != 'scene':
                         args['name'] = key
                     if 'id' in value:
                         args['id'] = value.pop('id')

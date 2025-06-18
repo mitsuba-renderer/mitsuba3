@@ -102,9 +102,9 @@ public:
             Throw("Only materials without a transmission component can be nested!");
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("brdf_0", m_brdf[0].get(), +ParamFlags::Differentiable);
-        callback->put_object("brdf_1", m_brdf[1].get(), +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("brdf_0", m_brdf[0], ParamFlags::Differentiable);
+        cb->put("brdf_1", m_brdf[1], ParamFlags::Differentiable);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx_,
@@ -373,13 +373,12 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(TwoSidedBRDF)
 protected:
     ref<Base> m_brdf[2];
 
     MI_TRAVERSE_CB(Base, m_brdf[0], m_brdf[1]);
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(TwoSidedBRDF, BSDF)
-MI_EXPORT_PLUGIN(TwoSidedBRDF, "Two-sided material adapter")
+MI_EXPORT_PLUGIN(TwoSidedBRDF)
 NAMESPACE_END(mitsuba)

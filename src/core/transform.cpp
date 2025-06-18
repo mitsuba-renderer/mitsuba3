@@ -81,7 +81,6 @@ std::ostream &operator<<(std::ostream &os, const AnimatedTransform &t) {
     return os;
 }
 
-MI_IMPLEMENT_CLASS(AnimatedTransform, Object)
 #endif
 
 NAMESPACE_END(mitsuba)

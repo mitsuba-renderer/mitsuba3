@@ -15,7 +15,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * The OptiX AI denoiser is wrapped in this object such that it can work
  * directly with Mitsuba types and its conventions.
- * 
+ *
  * The denoiser works best when applied to noisy renderings that were produced
  * with a \ref Film which used the `box` \ref ReconstructionFilter. With a
  * filter that spans multiple pixels, the denoiser might identify some local
@@ -180,7 +180,7 @@ public:
 
     virtual std::string to_string() const override;
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(OptixDenoiser)
 
 private:
     /// Helper function to validate tensor sizes

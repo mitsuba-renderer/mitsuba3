@@ -7,9 +7,9 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props) : m_id(props.id()) {
-    m_to_world = (ScalarTransform4f) props.get<ScalarTransform4f>(
-        "to_world", ScalarTransform4f());
+MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props)
+    : JitObject<Endpoint>(props.id(), ObjectType::Unknown) {
+    m_to_world = props.get<ScalarTransform4f>("to_world", ScalarTransform4f());
     dr::make_opaque(m_to_world);
 
     for (auto &[name, obj] : props.objects(false)) {
@@ -18,7 +18,23 @@ MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props) : m_id(p
             if (m_medium)
                 Throw("Only a single medium can be specified per endpoint (e.g. per emitter or sensor)");
             set_medium(medium);
-            props.mark_queried(name);
+            props.mark_queried(name.c_str());
+        }
+    }
+}
+
+MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props, ObjectType type)
+    : JitObject<Endpoint>(props.id(), type) {
+    m_to_world = props.get<ScalarTransform4f>("to_world", ScalarTransform4f());
+    dr::make_opaque(m_to_world);
+
+    for (auto &[name, obj] : props.objects(false)) {
+        Medium *medium = dynamic_cast<Medium *>(obj.get());
+        if (medium) {
+            if (m_medium)
+                Throw("Only a single medium can be specified per endpoint (e.g. per emitter or sensor)");
+            set_medium(medium);
+            props.mark_queried(name.c_str());
         }
     }
 }
@@ -99,14 +115,14 @@ MI_VARIANT Spectrum Endpoint<Float, Spectrum>::pdf_wavelengths(
     NotImplementedError("pdf_wavelengths");
 }
 
-MI_VARIANT Spectrum Endpoint<Float, Spectrum>::eval(const SurfaceInteraction3f & /*si*/,
-                                                     Mask /*active*/) const {
+MI_VARIANT Spectrum Endpoint<Float, Spectrum>::eval(
+    const SurfaceInteraction3f & /*si*/, Mask /*active*/) const {
     NotImplementedError("eval");
 }
 
-MI_VARIANT void Endpoint<Float, Spectrum>::traverse(TraversalCallback *callback) {
+MI_VARIANT void Endpoint<Float, Spectrum>::traverse(TraversalCallback *cb) {
     if (m_medium)
-        callback->put_object("medium", m_medium.get(), +ParamFlags::Differentiable);
+        cb->put("medium", m_medium, ParamFlags::Differentiable);
 }
 
 MI_VARIANT void Endpoint<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
@@ -119,6 +135,5 @@ MI_VARIANT void Endpoint<Float, Spectrum>::parameters_changed(const std::vector<
 }
 
 MI_IMPLEMENT_TRAVERSE_CB(Endpoint, Object)
-MI_IMPLEMENT_CLASS_VARIANT(Endpoint, Object)
 MI_INSTANTIATE_CLASS(Endpoint)
 NAMESPACE_END(mitsuba)

@@ -117,7 +117,7 @@ class SceneParameters(Mapping):
             if (flags & mi.ParamFlags.Discontinuous) != 0:
                 flags_str += ', D'
 
-            param_list += f'  {k:{name_length}}  {flags_str:7}  {type(value).__name__:{type_length}} {node.class_().name()}\n'
+            param_list += f'  {k:{name_length}}  {flags_str:7}  {type(value).__name__:{type_length}} {node.class_name()}\n'
         return f'SceneParameters[{param_list}]'
 
     def __iter__(self):
@@ -298,7 +298,15 @@ def traverse(node: mi.Object) -> SceneParameters:
             self.hierarchy[node] = (parent, depth)
             self.flags = flags
 
-        def put_parameter(self, name, ptr, flags, cpptype=None):
+        def put(self, name, value, flags, cpptype=None):
+            """Unified method to register both objects and values with the traversal callback."""
+            # Import Object locally to avoid circular import
+            if isinstance(value, mi.Object):
+                self.put_object(name, value, flags)
+            else:
+                self.put_value(name, value, flags, cpptype)
+
+        def put_value(self, name, ptr, flags, cpptype):
             name = name if self.name is None else self.name + '.' + name
 
             flags = self.flags | flags
@@ -308,11 +316,11 @@ def traverse(node: mi.Object) -> SceneParameters:
 
             self.properties[name] = (ptr, cpptype, self.node, self.flags | flags)
 
-        def put_object(self, name, node, flags):
-            if node is None or node in self.hierarchy:
+        def put_object(self, name, obj, flags):
+            if obj is None or obj in self.hierarchy:
                 return
             cb = SceneTraversal(
-                node=node,
+                node=obj,
                 parent=self.node,
                 properties=self.properties,
                 hierarchy=self.hierarchy,
@@ -321,7 +329,7 @@ def traverse(node: mi.Object) -> SceneParameters:
                 depth=self.depth + 1,
                 flags=self.flags | flags
             )
-            node.traverse(cb)
+            obj.traverse(cb)
 
     cb = SceneTraversal(node)
     node.traverse(cb)

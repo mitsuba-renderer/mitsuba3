@@ -79,7 +79,7 @@ public:
             dr::make_opaque(m_to_world);
         }
 
-        m_irradiance = props.texture_d65<Texture>("irradiance", 1.f);
+        m_irradiance = props.get_texture_d65<Texture>("irradiance", 1.f);
 
         if (m_irradiance->is_spatially_varying())
             Throw("Expected a non-spatially varying irradiance spectra!");
@@ -89,10 +89,10 @@ public:
         m_flags      = EmitterFlags::Infinite | EmitterFlags::DeltaDirection;
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_object("irradiance",   m_irradiance.get(), +ParamFlags::Differentiable);
-        callback->put_parameter("to_world", *m_to_world.ptr(),   +ParamFlags::NonDifferentiable);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("irradiance",  m_irradiance,  ParamFlags::Differentiable);
+        cb->put("to_world",    m_to_world,    ParamFlags::NonDifferentiable);
     }
 
     void set_scene(const Scene *scene) override {
@@ -226,7 +226,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(DirectionalEmitter)
 
 protected:
     ref<Texture> m_irradiance;
@@ -235,6 +235,5 @@ protected:
     MI_TRAVERSE_CB(Base, m_irradiance);
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(DirectionalEmitter, Emitter)
-MI_EXPORT_PLUGIN(DirectionalEmitter, "Distant directional emitter")
+MI_EXPORT_PLUGIN(DirectionalEmitter)
 NAMESPACE_END(mitsuba)

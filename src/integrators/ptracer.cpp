@@ -414,9 +414,8 @@ public:
                            m_max_depth, m_rr_depth);
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(ParticleTracerIntegrator)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(ParticleTracerIntegrator, AdjointIntegrator);
-MI_EXPORT_PLUGIN(ParticleTracerIntegrator, "Particle Tracer integrator");
+MI_EXPORT_PLUGIN(ParticleTracerIntegrator)
 NAMESPACE_END(mitsuba)

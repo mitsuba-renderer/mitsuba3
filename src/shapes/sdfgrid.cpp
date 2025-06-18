@@ -130,7 +130,7 @@ public:
                   "Embree!");
 #endif
 
-        std::string normals_mode_str = props.string("normals", "smooth");
+        std::string_view normals_mode_str = props.get<std::string_view>("normals", "smooth");
         if (normals_mode_str == "analytic")
             m_normal_method = Analytic;
         else if (normals_mode_str == "smooth")
@@ -141,8 +141,8 @@ public:
                   normals_mode_str);
 
         if (props.has_property("filename")) {
-            FileResolver *fs   = mitsuba::file_resolver();
-            fs::path file_path = fs->resolve(props.string("filename"));
+            FileResolver *fs   = file_resolver();
+            fs::path file_path = fs->resolve(props.get<std::string_view>("filename"));
             if (!fs::exists(file_path))
                 Log(Error, "\"%s\": file does not exist!", file_path);
             VolumeGrid<float, Color<float, 3>> vol_grid(file_path);
@@ -157,15 +157,15 @@ public:
                 InputTensorXf(vol_grid.data(), 4, shape), true, true,
                 dr::FilterMode::Linear, dr::WrapMode::Clamp);
         } else if (props.has_property("grid")) {
-            TensorXf* tensor = props.tensor<TensorXf>("grid");
-            if (tensor->ndim() != 4)
+            const TensorXf& tensor = props.get_any<TensorXf>("grid");
+            if (tensor.ndim() != 4)
                 Throw("SDF grid tensor has dimension %lu, expected 4",
-                      tensor->ndim());
-            if (tensor->shape(3) != 1)
+                      tensor.ndim());
+            if (tensor.shape(3) != 1)
                 Throw("SDF grid shape at index 3 is %lu, expected 1",
-                      tensor->shape(3));
+                      tensor.shape(3));
             m_grid_texture = InputTexture3f(
-                (const typename InputTexture3f::TensorXf &) *tensor,
+                (const typename InputTexture3f::TensorXf &) tensor,
                 true, true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
         } else {
             Throw("The SDF values must be specified with either the "
@@ -223,10 +223,10 @@ public:
         mark_dirty();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_parameter("to_world",     *m_to_world.ptr(),          +ParamFlags::NonDifferentiable);
-        callback->put_parameter("grid",         m_grid_texture.tensor(),    +ParamFlags::NonDifferentiable);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("to_world", m_to_world,              ParamFlags::NonDifferentiable);
+        cb->put("grid",     m_grid_texture.tensor(), ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -608,7 +608,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(SDFGrid)
 private:
     /// Shared implementation for ray_intersect_preliminary_impl and
     /// ray_test_impl
@@ -1157,6 +1157,5 @@ private:
                    m_jit_bboxes, m_jit_voxel_indices)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SDFGrid, Shape)
-MI_EXPORT_PLUGIN(SDFGrid, "SDFGrid intersection primitive");
+MI_EXPORT_PLUGIN(SDFGrid)
 NAMESPACE_END(mitsuba)

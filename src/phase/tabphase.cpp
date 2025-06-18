@@ -44,7 +44,7 @@ public:
     TabulatedPhaseFunction(const Properties &props) : Base(props) {
         if (props.type("values") == Properties::Type::String) {
             std::vector<std::string> values_str =
-                string::tokenize(props.string("values"), " ,");
+                string::tokenize(props.get<std::string_view>("values"), " ,");
             std::vector<ScalarFloat> data;
             data.reserve(values_str.size());
 
@@ -66,8 +66,8 @@ public:
         m_components.push_back(m_flags);
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("values", m_distr.pdf(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("values", m_distr.pdf(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     void parameters_changed(const std::vector<std::string> & /*keys*/) override {
@@ -125,11 +125,10 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(TabulatedPhaseFunction)
 private:
     ContinuousDistribution<Float> m_distr;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(TabulatedPhaseFunction, PhaseFunction)
-MI_EXPORT_PLUGIN(TabulatedPhaseFunction, "Tabulated phase function")
+MI_EXPORT_PLUGIN(TabulatedPhaseFunction)
 NAMESPACE_END(mitsuba)

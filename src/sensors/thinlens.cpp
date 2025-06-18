@@ -168,12 +168,12 @@ public:
         m_needs_sample_3 = true;
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_parameter("aperture_radius", m_aperture_radius, +ParamFlags::NonDifferentiable);
-        callback->put_parameter("focus_distance",  m_focus_distance,  +ParamFlags::NonDifferentiable);
-        callback->put_parameter("x_fov",           m_x_fov,           +ParamFlags::NonDifferentiable);
-        callback->put_parameter("to_world",       *m_to_world.ptr(),  +ParamFlags::NonDifferentiable);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("aperture_radius", m_aperture_radius, ParamFlags::NonDifferentiable);
+        cb->put("focus_distance",  m_focus_distance,  ParamFlags::NonDifferentiable);
+        cb->put("x_fov",           m_x_fov,           ParamFlags::NonDifferentiable);
+        cb->put("to_world",        m_to_world,        ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -374,7 +374,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(ThinLensCamera)
 private:
     Transform4f m_camera_to_sample;
     Transform4f m_sample_to_camera;
@@ -385,6 +385,5 @@ private:
     Vector3f m_dx, m_dy;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(ThinLensCamera, ProjectiveCamera)
-MI_EXPORT_PLUGIN(ThinLensCamera, "Thin Lens Camera");
+MI_EXPORT_PLUGIN(ThinLensCamera)
 NAMESPACE_END(mitsuba)
