@@ -114,10 +114,10 @@ public:
         m_flags = m_nested_bsdf->flags();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("nested_bsdf",     m_nested_bsdf.get(),    ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_object("nested_texture",  m_nested_texture.get(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_parameter("scale",        m_scale,                +ParamFlags::NonDifferentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("nested_bsdf",    m_nested_bsdf,    ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("nested_texture", m_nested_texture, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("scale",          m_scale,          ParamFlags::NonDifferentiable);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -239,7 +239,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(BumpMap)
 protected:
     ScalarFloat m_scale;
     ref<Texture> m_nested_texture;
@@ -248,6 +248,5 @@ protected:
     MI_TRAVERSE_CB(Base, m_nested_texture, m_nested_bsdf);
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(BumpMap, BSDF)
-MI_EXPORT_PLUGIN(BumpMap, "Bump map material adapter")
+MI_EXPORT_PLUGIN(BumpMap)
 NAMESPACE_END(mitsuba)

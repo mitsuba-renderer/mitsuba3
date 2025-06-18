@@ -10,6 +10,12 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(xml)
 
+/**
+ * \brief Analyze an XML tag name (e.g. "shape") and map it to a known \ref
+ * ObjectType enumeration value or \ref ObjectType::Unknown.
+ */
+extern MI_EXPORT_LIB ObjectType tag_to_object_type(std::string_view name);
+
 struct ScopedSetJITScope {
     ScopedSetJITScope(uint32_t backend, uint32_t scope) : backend(backend), backup(0) {
 #if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
@@ -80,9 +86,9 @@ extern MI_EXPORT_LIB ref<Object> create_texture_from_rgb(
 /// Create a Texture object from a constant value or spectral values if available
 extern MI_EXPORT_LIB ref<Object> create_texture_from_spectrum(
                                         const std::string &name,
-                                        Properties::Float const_value,
-                                        std::vector<Properties::Float> &wavelengths,
-                                        std::vector<Properties::Float> &values,
+                                        double const_value,
+                                        std::vector<double> &wavelengths,
+                                        std::vector<double> &values,
                                         const std::string &variant,
                                         bool within_emitter,
                                         bool is_spectral_mode,

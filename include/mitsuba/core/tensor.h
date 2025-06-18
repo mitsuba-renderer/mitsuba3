@@ -45,7 +45,7 @@ public:
     /// Return a human-readable summary
     std::string to_string() const override;
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(TensorFile)
 
 private:
     std::unordered_map<std::string, Field> m_fields;

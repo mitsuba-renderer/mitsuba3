@@ -2,6 +2,7 @@
 #include <cstring>
 #include <cstdio>
 #include <mutex>
+#include <functional>
 
 #include <drjit-core/optix.h>
 

@@ -239,8 +239,8 @@ public:
             Throw("Error while loading serialized file \"%s\": %s!", m_name, descr);
         };
 
-        auto fs = mitsuba::file_resolver();
-        fs::path file_path = fs->resolve(props.string("filename"));
+        auto fs = file_resolver();
+        fs::path file_path = fs->resolve(props.get<std::string_view>("filename"));
         m_name = file_path.filename().string();
 
         Log(Debug, "Loading mesh from \"%s\" ..", m_name);
@@ -431,9 +431,8 @@ public:
         }
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(SerializedMesh)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SerializedMesh, Mesh)
-MI_EXPORT_PLUGIN(SerializedMesh, "Serialized mesh file")
+MI_EXPORT_PLUGIN(SerializedMesh)
 NAMESPACE_END(mitsuba)

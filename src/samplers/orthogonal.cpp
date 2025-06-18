@@ -166,7 +166,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(OrthogonalSampler)
 
 private:
     /// Compute the digits of decimal value \ref i expressed in base \ref m_strength
@@ -299,6 +299,5 @@ public:
     }
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(OrthogonalSampler, Sampler)
-MI_EXPORT_PLUGIN(OrthogonalSampler, "Orthogonal Array Sampler");
+MI_EXPORT_PLUGIN(OrthogonalSampler)
 NAMESPACE_END(mitsuba)

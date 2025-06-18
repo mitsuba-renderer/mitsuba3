@@ -159,7 +159,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(LowDiscrepancySampler)
 
 private:
     LowDiscrepancySampler(const LowDiscrepancySampler &sampler) : Base(sampler) {
@@ -203,6 +203,5 @@ public:
     }
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(LowDiscrepancySampler , Sampler)
-MI_EXPORT_PLUGIN(LowDiscrepancySampler , "Low Discrepancy Sampler");
+MI_EXPORT_PLUGIN(LowDiscrepancySampler)
 NAMESPACE_END(mitsuba)

@@ -17966,26 +17966,9 @@
     .. py:method:: __init__()
 
 
-    .. py:method:: mitsuba.TraversalCallback.put_object(self, name, obj, flags)
+    .. py:method:: mitsuba.TraversalCallback.put(self, name, value, flags)
 
-        Inform the traversal callback that the instance references another
-        Mitsuba object
-
-        Parameter ``name`` (str):
-            *no description available*
-
-        Parameter ``obj`` (:py:obj:`mitsuba.Object`):
-            *no description available*
-
-        Parameter ``flags`` (int):
-            *no description available*
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.TraversalCallback.put_parameter(self, name, value, flags)
-
-        Inform the traversal callback about an attribute of an instance
+        Inform the traversal callback about an attribute or sub-object of an instance
 
         Parameter ``name`` (str):
             *no description available*

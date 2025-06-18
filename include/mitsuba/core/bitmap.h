@@ -593,7 +593,7 @@ public:
     /// Free the resources used by static_initialization()
     static void static_shutdown();
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Bitmap)
  protected:
      /// Rebuild the 'm_struct' field based on the pixel format etc.
      void rebuild_struct(size_t channel_count = 0, const std::vector<std::string> &channel_names = {});

@@ -1,6 +1,7 @@
 from __future__ import annotations # Delayed parsing of type annotations
 import sys, os, inspect
 from os.path import abspath, dirname, join, exists
+from typing import Union
 
 import drjit as dr
 import mitsuba as mi
@@ -64,7 +65,7 @@ class RenderingRegressionTest:
         print("=> Render reference images")
 
         # Load the scene
-        if self.scene.integrator().class_().name() != "MomentIntegrator":
+        if self.scene.integrator().class_name() != "MomentIntegrator":
             raise Exception('RenderingRegressionTest expects the scene to use the `moment` integrator!')
 
         # Render reference image
@@ -97,7 +98,7 @@ class RenderingRegressionTest:
         ref_var = mi.TensorXf(mi.Bitmap(self._filename('var')))
 
         # Load the scene
-        if self.scene.integrator().class_().name() != "MomentIntegrator":
+        if self.scene.integrator().class_name() != "MomentIntegrator":
             raise Exception('RenderingRegressionTest: expects the scene to use the `moment` integrator!')
 
         # Render image

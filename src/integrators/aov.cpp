@@ -90,7 +90,7 @@ public:
     MI_IMPORT_BASE(SamplingIntegrator)
     MI_IMPORT_TYPES(Scene, Shape, Sensor, Sampler, Medium, BSDFPtr, ShapePtr)
 
-    enum class Type {
+    enum class AOVType {
         Albedo,
         Depth,
         Position,
@@ -108,7 +108,7 @@ public:
 
     AOVIntegrator(const Properties &props) : Base(props),
         m_integrator_aovs_count(0) {
-        std::vector<std::string> tokens = string::tokenize(props.string("aovs"));
+        std::vector<std::string> tokens = string::tokenize(props.get<std::string_view>("aovs"));
 
         for (auto &kv : props.objects()) {
             Base *integrator = dynamic_cast<Base *>(kv.second.get());
@@ -116,7 +116,7 @@ public:
                 Throw("Child objects must be of type 'SamplingIntegrator'!");
 
             m_integrators.push_back(integrator);
-            m_aov_types.push_back(Type::IntegratorRGBA);
+            m_aov_types.push_back(AOVType::IntegratorRGBA);
             m_aov_names.push_back(kv.first + ".R");
             m_aov_names.push_back(kv.first + ".G");
             m_aov_names.push_back(kv.first + ".B");
@@ -138,55 +138,55 @@ public:
                 Log(Warn, "Invalid AOV specification: require <name>:<type> pair");
 
             if (item[1] == "albedo") {
-                m_aov_types.push_back(Type::Albedo);
+                m_aov_types.push_back(AOVType::Albedo);
                 m_aov_names.push_back(item[0] + ".R");
                 m_aov_names.push_back(item[0] + ".G");
                 m_aov_names.push_back(item[0] + ".B");
             } else if (item[1] == "depth") {
-                m_aov_types.push_back(Type::Depth);
+                m_aov_types.push_back(AOVType::Depth);
                 m_aov_names.push_back(item[0] + ".T");
             } else if (item[1] == "position") {
-                m_aov_types.push_back(Type::Position);
+                m_aov_types.push_back(AOVType::Position);
                 m_aov_names.push_back(item[0] + ".X");
                 m_aov_names.push_back(item[0] + ".Y");
                 m_aov_names.push_back(item[0] + ".Z");
             } else if (item[1] == "uv") {
-                m_aov_types.push_back(Type::UV);
+                m_aov_types.push_back(AOVType::UV);
                 m_aov_names.push_back(item[0] + ".U");
                 m_aov_names.push_back(item[0] + ".V");
             } else if (item[1] == "geo_normal") {
-                m_aov_types.push_back(Type::GeometricNormal);
+                m_aov_types.push_back(AOVType::GeometricNormal);
                 m_aov_names.push_back(item[0] + ".X");
                 m_aov_names.push_back(item[0] + ".Y");
                 m_aov_names.push_back(item[0] + ".Z");
             } else if (item[1] == "sh_normal") {
-                m_aov_types.push_back(Type::ShadingNormal);
+                m_aov_types.push_back(AOVType::ShadingNormal);
                 m_aov_names.push_back(item[0] + ".X");
                 m_aov_names.push_back(item[0] + ".Y");
                 m_aov_names.push_back(item[0] + ".Z");
             } else if (item[1] == "dp_du") {
-                m_aov_types.push_back(Type::dPdU);
+                m_aov_types.push_back(AOVType::dPdU);
                 m_aov_names.push_back(item[0] + ".X");
                 m_aov_names.push_back(item[0] + ".Y");
                 m_aov_names.push_back(item[0] + ".Z");
             } else if (item[1] == "dp_dv") {
-                m_aov_types.push_back(Type::dPdV);
+                m_aov_types.push_back(AOVType::dPdV);
                 m_aov_names.push_back(item[0] + ".X");
                 m_aov_names.push_back(item[0] + ".Y");
                 m_aov_names.push_back(item[0] + ".Z");
             } else if (item[1] == "duv_dx") {
-                m_aov_types.push_back(Type::dUVdx);
+                m_aov_types.push_back(AOVType::dUVdx);
                 m_aov_names.push_back(item[0] + ".U");
                 m_aov_names.push_back(item[0] + ".V");
             } else if (item[1] == "duv_dy") {
-                m_aov_types.push_back(Type::dUVdy);
+                m_aov_types.push_back(AOVType::dUVdy);
                 m_aov_names.push_back(item[0] + ".U");
                 m_aov_names.push_back(item[0] + ".V");
             } else if (item[1] == "prim_index") {
-                m_aov_types.push_back(Type::PrimIndex);
+                m_aov_types.push_back(AOVType::PrimIndex);
                 m_aov_names.push_back(item[0] + ".I");
             } else if (item[1] == "shape_index") {
-                m_aov_types.push_back(Type::ShapeIndex);
+                m_aov_types.push_back(AOVType::ShapeIndex);
                 m_aov_names.push_back(item[0] + ".I");
             } else {
                 Throw("Invalid AOV type \"%s\"!", item[1]);
@@ -243,7 +243,7 @@ public:
         size_t inner_idx = 0;
         for (size_t i = 0; i < m_aov_types.size(); ++i) {
             switch (m_aov_types[i]) {
-                case Type::Albedo: {
+                case AOVType::Albedo: {
                         Color3f rgb(0.f);
                         if (dr::any_or<true>(si.is_valid()))
                         {
@@ -261,28 +261,28 @@ public:
                         *aovs++ = rgb.b();
                     }
                     break;
-                case Type::Depth:
+                case AOVType::Depth:
                     *aovs++ = dr::select(si.is_valid(), si.t, 0.f);
                     break;
 
-                case Type::Position:
+                case AOVType::Position:
                     *aovs++ = si.p.x();
                     *aovs++ = si.p.y();
                     *aovs++ = si.p.z();
                     break;
 
-                case Type::UV:
+                case AOVType::UV:
                     *aovs++ = si.uv.x();
                     *aovs++ = si.uv.y();
                     break;
 
-                case Type::GeometricNormal:
+                case AOVType::GeometricNormal:
                     *aovs++ = si.n.x();
                     *aovs++ = si.n.y();
                     *aovs++ = si.n.z();
                     break;
 
-                case Type::ShadingNormal: {
+                case AOVType::ShadingNormal: {
                         Frame3f sh_frame = dr::zeros<Frame3f>();
                         if (dr::any_or<true>(si.is_valid()))
                         {
@@ -296,34 +296,34 @@ public:
                     }
                     break;
 
-                case Type::dPdU:
+                case AOVType::dPdU:
                     *aovs++ = si.dp_du.x();
                     *aovs++ = si.dp_du.y();
                     *aovs++ = si.dp_du.z();
                     break;
 
-                case Type::dPdV:
+                case AOVType::dPdV:
                     *aovs++ = si.dp_dv.x();
                     *aovs++ = si.dp_dv.y();
                     *aovs++ = si.dp_dv.z();
                     break;
 
-                case Type::dUVdx:
+                case AOVType::dUVdx:
                     si.compute_uv_partials(ray);
                     *aovs++ = si.duv_dx.x();
                     *aovs++ = si.duv_dx.y();
                     break;
 
-                case Type::dUVdy:
+                case AOVType::dUVdy:
                     *aovs++ = si.duv_dy.x();
                     *aovs++ = si.duv_dy.y();
                     break;
 
-                case Type::PrimIndex:
+                case AOVType::PrimIndex:
                     *aovs++ = Float(si.prim_index);
                     break;
 
-                case Type::ShapeIndex:
+                case AOVType::ShapeIndex:
                     if constexpr (!dr::is_jit_v<Float>) {
                         ShapePtr target = si.instance;
                         if (!target)
@@ -339,7 +339,7 @@ public:
                     }
                     break;
 
-                case Type::IntegratorRGBA: {
+                case AOVType::IntegratorRGBA: {
                     auto [inner_spec, inner_mask] 
                         = m_integrators[inner_idx]->sample(scene, sampler, ray, medium, aovs, active);
                     dr::disable_grad(inner_spec);
@@ -456,11 +456,11 @@ public:
         return m_aov_names;
     }
 
-    void traverse(TraversalCallback *callback) override {
+    void traverse(TraversalCallback *cb) override {
         for (size_t i = 0; i < m_integrators.size(); ++i)
-            callback->put_object("integrator_" + std::to_string(i),
+            cb->put("integrator_" + std::to_string(i),
                                  m_integrators[i],
-                                 +ParamFlags::Differentiable);
+                                 ParamFlags::Differentiable);
     }
 
     std::string to_string() const override {
@@ -479,7 +479,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(AOVIntegrator)
 protected:
 
     TensorXf get_channels_slice(const TensorXf& src, size_t channel_offset, size_t num_channels) const {
@@ -568,13 +568,12 @@ protected:
 
 private:
     size_t m_integrator_aovs_count;
-    std::vector<Type> m_aov_types;
+    std::vector<AOVType> m_aov_types;
     std::vector<std::string> m_aov_names;
     std::vector<ref<Base>> m_integrators;
 
     MI_TRAVERSE_CB(Base, m_integrators);
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(AOVIntegrator, SamplingIntegrator)
-MI_EXPORT_PLUGIN(AOVIntegrator, "AOV integrator");
+MI_EXPORT_PLUGIN(AOVIntegrator)
 NAMESPACE_END(mitsuba)

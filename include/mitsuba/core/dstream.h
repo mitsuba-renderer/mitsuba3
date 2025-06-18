@@ -44,7 +44,7 @@ public:
     //! @}
     // =========================================================================
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(DummyStream)
 private:
     /// Size of all data written to the stream
     size_t m_size;

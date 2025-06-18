@@ -30,17 +30,12 @@ Consider the following hypothetical plugin ``MyPlugin``:
             // ...
         }
 
-        /// Declare RTTI data structures
-        MI_DECLARE_CLASS()
-    protected:
-        /// Important: declare a protected virtual destructor
-        virtual ~MyPlugin();
-
+        /// Indicate the name of this class (for logging)
+        MI_DECLARE_CLASS(MyPlugin)
     };
 
     /// Implement RTTI data structures
-    MI_IMPLEMENT_CLASS_VARIANT(MyPlugin, PluginInterface)
-    MI_EXPORT_PLUGIN(MyPlugin, "Description of my plugin")
+    MI_EXPORT_PLUGIN(MyPlugin)
     NAMESPACE_END(mitsuba)
 
 Macros
@@ -189,44 +184,24 @@ aliases will be created:
     using MyType2 = MyType2<Float, Spectrum>;
 
 
-:monosp:`MI_DECLARE_CLASS()`
-****************************
+:monosp:`MI_DECLARE_CLASS(Name)`
+********************************
 
-This macro should be invoked in the :monosp:`class` declaration of the plugin.
-It will declare RTTI (run-time type information) data structures useful for
-doing things like:
+This macro should be invoked within the :monosp:`class` declaration of the plugin.
+The provided ``Name`` parameter is picked up by log messages, warnings, or
+errors that are triggered by the plugin.
 
-- Checking if an object derives from a certain :monosp:`class`
-- Determining the parent of a :monosp:`class` at runtime
-- Instantiating a :monosp:`class` by name
-- Unserializing a :monosp:`class` from a binary data stream
-
-
-:monosp:`MI_IMPLEMENT_CLASS_VARIANT(Name, Parent)`
-**************************************************
-
-This macro should be invoked at the bottom of ``.cpp`` files that implement new
-plugin classes. Its role is to initialize the RTTI data structures for this
-plugin that were previously declared using ``MI_DECLARE_CLASS()``.
-
-- The ``Name`` argument should be the name of the plugin :monosp:`class`.
-- The ``Parent`` argument should take the name of the plugin interface :monosp:`class`.
-
-
-:monosp:`MI_EXPORT_PLUGIN(Name, Descr)`
-***************************************
+:monosp:`MI_EXPORT_PLUGIN(Name)`
+********************************
 
 This macro will explicitly instantiate all enabled variants of a plugin:
 
 .. code-block:: cpp
 
-    MI_EXPORT_PLUGIN(Name, "My fancy plugin")
+    MI_EXPORT_PLUGIN(Name)
 
     // expands to:
 
     template class MI_EXPORT Name<float, Color<float, 1>>    // scalar_mono
     template class MI_EXPORT Name<float, Spectrum<float, 4>> // scalar_spectral
     // ...
-
-It also associates a human-readable description ``Descr`` with the plugin that
-Mitsuba's graphical user interface may use in the future.

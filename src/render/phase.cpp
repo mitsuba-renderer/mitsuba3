@@ -4,17 +4,9 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MI_VARIANT
-PhaseFunction<Float, Spectrum>::PhaseFunction(const Properties &props)
-    : m_flags(+PhaseFunctionFlags::Empty), m_id(props.id()) {
-    MI_REGISTRY_PUT("PhaseFunction", this);
+MI_VARIANT PhaseFunction<Float, Spectrum>::PhaseFunction(const Properties &props)
+    : JitObject<PhaseFunction>(props.id()), m_flags(+PhaseFunctionFlags::Empty) {
 }
 
-MI_VARIANT PhaseFunction<Float, Spectrum>::~PhaseFunction() {
-    if constexpr (dr::is_jit_v<Float>)
-        jit_registry_remove(this);
-}
-
-MI_IMPLEMENT_CLASS_VARIANT(PhaseFunction, Object, "phase")
 MI_INSTANTIATE_CLASS(PhaseFunction)
 NAMESPACE_END(mitsuba)

@@ -70,9 +70,8 @@ public:
         return tfm::format("LanczosSincFilter[lobes=%f]", m_radius);
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(LanczosSincFilter)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(LanczosSincFilter, ReconstructionFilter)
-MI_EXPORT_PLUGIN(LanczosSincFilter, "Lanczos Sinc filter")
+MI_EXPORT_PLUGIN(LanczosSincFilter)
 NAMESPACE_END(mitsuba)

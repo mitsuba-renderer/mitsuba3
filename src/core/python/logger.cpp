@@ -3,6 +3,7 @@
 #include <mitsuba/core/formatter.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/string_view.h>
 
 /// Submit a log message to the Mitusba logging system and tag it with the Python caller
 static void PyLog(mitsuba::LogLevel level, const std::string &msg) {
@@ -34,7 +35,7 @@ static void PyLog(mitsuba::LogLevel level, const std::string &msg) {
         fmt.insert(2, "()");
 
     logger->log(
-        level, nullptr /* class_ */,
+        level, nullptr /* class_ - nullptr so formatter uses file:line */,
         filename.c_str(), lineno,
         tfm::format(fmt.c_str(), name.c_str(), msg.c_str()));
 }

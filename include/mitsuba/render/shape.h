@@ -51,6 +51,9 @@ enum class ShapeType : uint32_t {
     /// Instance (`instance`)
     Instance = 1u << 10,
 
+    /// ShapeGroup (`shapegroup`)
+    ShapeGroup = 1u << 11,
+
     /// Invalid for default initialization
     Invalid = 0
 };
@@ -248,7 +251,7 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
  * methods.
  */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB Shape : public Object {
+class MI_EXPORT_LIB Shape : public JitObject<Shape<Float, Spectrum>> {
 public:
     MI_IMPORT_TYPES(BSDF, Medium, Emitter, Sensor, MeshAttribute, Texture)
 
@@ -840,12 +843,6 @@ public:
     //! @{ \name Miscellaneous
     // =============================================================
 
-    /// Return a string identifier
-    std::string id() const override { return m_id; }
-
-    /// Set a string identifier
-    void set_id(const std::string& id) override { m_id = id; };
-
     /// Is this shape a triangle mesh?
     bool is_mesh() const { return shape_type() & ShapeType::Mesh; }
 
@@ -859,8 +856,8 @@ public:
     /// Returns the shape type \ref ShapeType of this shape
     uint32_t shape_type() const { return (uint32_t) m_shape_type; }
 
-    /// Is this shape a shapegroup?
-    bool is_shapegroup() const { return class_()->name() == "ShapeGroupPlugin"; };
+    /// Is this shape a shape group?
+    bool is_shape_group() const { return (shape_type() == +ShapeType::ShapeGroup); };
 
     /// Is this shape an instance?
     bool is_instance() const { return shape_type() == +ShapeType::Instance; };
@@ -1036,11 +1033,11 @@ public:
     //! @}
     // =============================================================
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_PLUGIN_BASE_CLASS(Shape)
 
 protected:
     Shape(const Properties &props);
-    inline Shape() { }
+    inline Shape() : JitObject<Shape>("") { }
 
 protected:
     virtual void initialize();
@@ -1051,7 +1048,6 @@ protected:
     ref<Sensor> m_sensor;
     ref<Medium> m_interior_medium;
     ref<Medium> m_exterior_medium;
-    std::string m_id;
     ShapeType m_shape_type = ShapeType::Invalid;
 
     uint32_t m_discontinuity_types = (uint32_t) DiscontinuityFlags::Empty;
@@ -1168,10 +1164,10 @@ NAMESPACE_END(mitsuba)
     MI_IMPLEMENT_RAY_INTERSECT_PACKET(16)
 
 // -----------------------------------------------------------------------
-//! @{ \name Dr.Jit support for vectorized function calls
+//! @{ \name Enables vectorized method calls on Dr.Jit arrays of shapes
 // -----------------------------------------------------------------------
 
-MI_CALL_TEMPLATE_BEGIN(Shape)
+DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Shape)
     DRJIT_CALL_METHOD(compute_surface_interaction)
     DRJIT_CALL_METHOD(has_attribute)
     DRJIT_CALL_METHOD(eval_attribute)
@@ -1204,6 +1200,7 @@ MI_CALL_TEMPLATE_BEGIN(Shape)
     auto is_emitter() const { return emitter() != nullptr; }
     auto is_sensor() const { return sensor() != nullptr; }
     auto is_mesh() const { return (shape_type() & +mitsuba::ShapeType::Mesh) != 0; }
+    auto is_shape_group() const { return shape_type() == +mitsuba::ShapeType::ShapeGroup; }
     auto is_ellipsoids() const {
         auto st = shape_type();
         st &= ~mitsuba::ShapeType::Mesh;
@@ -1212,7 +1209,7 @@ MI_CALL_TEMPLATE_BEGIN(Shape)
     }
     auto is_medium_transition() const { return interior_medium() != nullptr ||
                                                exterior_medium() != nullptr; }
-MI_CALL_TEMPLATE_END(Shape)
+DRJIT_CALL_END()
 
 //! @}
 // -----------------------------------------------------------------------

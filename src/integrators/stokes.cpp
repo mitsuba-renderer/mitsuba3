@@ -137,17 +137,16 @@ public:
         return result;
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("integrator", m_integrator.get(), +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("integrator", m_integrator, ParamFlags::Differentiable);
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(StokesIntegrator)
 private:
     ref<Base> m_integrator;
 
     MI_TRAVERSE_CB(Base, m_integrator);
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(StokesIntegrator, SamplingIntegrator)
-MI_EXPORT_PLUGIN(StokesIntegrator, "Stokes integrator");
+MI_EXPORT_PLUGIN(StokesIntegrator)
 NAMESPACE_END(mitsuba)

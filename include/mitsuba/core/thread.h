@@ -49,7 +49,7 @@ public:
     /// Shut down the threading system
     static void static_shutdown();
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Thread)
 };
 
 

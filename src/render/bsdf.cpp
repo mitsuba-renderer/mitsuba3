@@ -3,17 +3,12 @@
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/core/properties.h>
+#include <functional>
 
 NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT BSDF<Float, Spectrum>::BSDF(const Properties &props)
-    : m_flags(+BSDFFlags::Empty), m_id(props.id()) {
-    MI_REGISTRY_PUT("BSDF", this);
-}
-
-MI_VARIANT BSDF<Float, Spectrum>::~BSDF() {
-    if constexpr (dr::is_jit_v<Float>)
-        jit_registry_remove(this);
+    : JitObject<BSDF>(props.id()), m_flags(+BSDFFlags::Empty) {
 }
 
 MI_VARIANT std::pair<Spectrum, Float>
@@ -55,7 +50,7 @@ struct AttributeCallback : public TraversalCallback {
     AttributeCallback(std::string name, F1 func_object):
         name(name), found(false), result(0.f), func_object(func_object) { }
 
-    void put_object(const std::string &name, Object *obj, uint32_t) override {
+    void put_object(std::string_view name, Object *obj, uint32_t) override {
         if (this->name == name) {
             Texture *texture = dynamic_cast<Texture *>(obj);
             if (texture) {
@@ -65,7 +60,7 @@ struct AttributeCallback : public TraversalCallback {
         }
     };
 
-    void put_parameter_impl(const std::string &name, void *val, uint32_t, const std::type_info &type) override {
+    void put_value(std::string_view name, void *val, uint32_t, const std::type_info &type) override {
         if (this->name == name) {
             if (strcmp(type.name(), typeid(Type).name()) == 0)
                 result = *((Type *) val);
@@ -96,10 +91,9 @@ BSDF<Float, Spectrum>::eval_attribute(const std::string &name,
     );
     const_cast<BSDF<Float, Spectrum>*>(this)->traverse((TraversalCallback *) &cb);
 
-    if (!cb.found) {
+    if (!cb.found)
         if constexpr (!dr::is_jit_v<Float>)
             Throw("Invalid attribute requested %s.", name.c_str());
-    }
 
     return cb.result;
 }
@@ -114,10 +108,9 @@ BSDF<Float, Spectrum>::eval_attribute_1(const std::string& name,
     );
     const_cast<BSDF<Float, Spectrum>*>(this)->traverse((TraversalCallback *) &cb);
 
-    if (!cb.found) {
+    if (!cb.found)
         if constexpr (!dr::is_jit_v<Float>)
             Throw("Invalid attribute requested %s.", name.c_str());
-    }
 
     return cb.result;
 }
@@ -132,10 +125,9 @@ BSDF<Float, Spectrum>::eval_attribute_3(const std::string& name,
     );
     const_cast<BSDF<Float, Spectrum>*>(this)->traverse((TraversalCallback *) &cb);
 
-    if (!cb.found) {
+    if (!cb.found)
         if constexpr (!dr::is_jit_v<Float>)
             Throw("Invalid attribute requested %s.", name.c_str());
-    }
 
     return cb.result;
 }
@@ -299,6 +291,5 @@ std::ostream &operator<<(std::ostream &os, const TransportMode &mode) {
     return os;
 }
 
-MI_IMPLEMENT_CLASS_VARIANT(BSDF, Object, "bsdf")
 MI_INSTANTIATE_CLASS(BSDF)
 NAMESPACE_END(mitsuba)

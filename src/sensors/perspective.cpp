@@ -152,12 +152,12 @@ public:
         update_camera_transforms();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_parameter("x_fov",                    m_x_fov,                      +ParamFlags::NonDifferentiable);
-        callback->put_parameter("principal_point_offset_x", m_principal_point_offset.x(), +ParamFlags::NonDifferentiable);
-        callback->put_parameter("principal_point_offset_y", m_principal_point_offset.y(), +ParamFlags::NonDifferentiable);
-        callback->put_parameter("to_world",                *m_to_world.ptr(),             +ParamFlags::NonDifferentiable);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("x_fov",                    m_x_fov,                        ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("principal_point_offset_x", m_principal_point_offset.x(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("principal_point_offset_y", m_principal_point_offset.y(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("to_world",                 m_to_world,                   ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -403,7 +403,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(PerspectiveCamera)
 private:
     Transform4f m_camera_to_sample;
     Transform4f m_sample_to_camera;
@@ -418,6 +418,5 @@ private:
                    m_principal_point_offset);
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(PerspectiveCamera, ProjectiveCamera)
-MI_EXPORT_PLUGIN(PerspectiveCamera, "Perspective Camera");
+MI_EXPORT_PLUGIN(PerspectiveCamera)
 NAMESPACE_END(mitsuba)

@@ -108,8 +108,8 @@ public:
         return dr::max_nested(m_value);
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("value", m_value, +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("value", m_value, ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
@@ -124,7 +124,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(RawConstantTexture)
 protected:
     Value m_value;
 };
@@ -144,7 +144,7 @@ public:
 
     std::vector<ref<Object>> expand() const override {
         switch (m_props.type("value")) {
-            case Properties::Type::Array3f: {
+            case Properties::Type::Vector: {
                 Vector3f value = m_props.get<ScalarVector3f>("value");
                 return { ref<Object>(
                     new RawConstantTextureImpl<Float, Spectrum, 3>(m_props, value)) };
@@ -157,39 +157,14 @@ public:
 
             default:
                 Throw("RawConstantTexture: parameter \"value\" has incorrect "
-                      "type,"
-                      " expected `float` or 3D `vector`.");
+                      "type, expected `float` or 3D `vector`.");
         }
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(RawConstantTextureImpl)
 protected:
     Properties m_props;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(RawConstantTexture, Texture)
-MI_EXPORT_PLUGIN(RawConstantTexture, "Raw constant value texture")
-
-NAMESPACE_BEGIN(detail)
-template <size_t Channels>
-constexpr const char * plugin_class_name() {
-    if constexpr (Channels == 1) {
-        return "RawConstantTexture1f";
-    } else {
-        static_assert(Channels == 3, "Invalid number of channels");
-        return "RawConstantTexture3f";
-    }
-}
-NAMESPACE_END(detail)
-
-template <typename Float, typename Spectrum, size_t Channels>
-Class *RawConstantTextureImpl<Float, Spectrum, Channels>::m_class
-    = new Class(detail::plugin_class_name<Channels>(), "MonteCarloIntegrator",
-                ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
-
-template <typename Float, typename Spectrum, size_t Channels>
-const Class *RawConstantTextureImpl<Float, Spectrum, Channels>::class_() const {
-    return m_class;
-}
-
+MI_EXPORT_PLUGIN(RawConstantTexture)
 NAMESPACE_END(mitsuba)

@@ -81,7 +81,7 @@ def test06_register_ad_integrators():
             continue
         mi.set_variant(variant)
         integrator = mi.load_dict({'type': 'prb'})
-        assert integrator.class_().variant() == variant
+        assert integrator.variant_name() == variant
 
 def test07_reload():
     from importlib import reload

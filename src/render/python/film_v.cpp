@@ -84,7 +84,7 @@ public:
 MI_PY_EXPORT(Film) {
     MI_PY_IMPORT_TYPES(Film)
     using PyFilm = PyFilm<Float, Spectrum>;
-    using Properties = PropertiesV<Float>;
+    using Properties = mitsuba::Properties;
 
     m.def("has_flag", [](uint32_t flags, FilmFlags f) {return has_flag(flags, f);});
     m.def("has_flag", [](UInt32   flags, FilmFlags f) {return has_flag(flags, f);});
@@ -131,6 +131,4 @@ MI_PY_EXPORT(Film) {
         .def_field(PyFilm, m_flags, D(Film, m_flags));
 
     drjit::bind_traverse(film);
-
-    MI_PY_REGISTER_OBJECT("register_film", Film)
 }

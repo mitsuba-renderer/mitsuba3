@@ -53,7 +53,7 @@ details on how to create instances, refer to the :ref:`shape-shapegroup` plugin.
 template <typename Float, typename Spectrum>
 class Instance final: public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_id, m_to_world, m_to_object, m_shape_type,
+    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_shape_type,
                    mark_dirty)
     MI_IMPORT_TYPES(BSDF)
 
@@ -64,10 +64,11 @@ public:
     Instance(const Properties &props) : Base(props) {
         for (auto &kv : props.objects()) {
             Base *shape = dynamic_cast<Base *>(kv.second.get());
-            if (shape && shape->is_shapegroup()) {
+            ShapeGroup_ *shapegroup = dynamic_cast<ShapeGroup_ *>(shape);
+            if (shape && shapegroup) {
                 if (m_shapegroup)
                     Throw("Only a single shapegroup can be specified per instance.");
-                m_shapegroup = (ShapeGroup_*) shape;
+                m_shapegroup = shapegroup;
             } else {
                 Throw("Only a shapegroup can be specified in an instance.");
             }
@@ -81,8 +82,8 @@ public:
         dr::make_opaque(m_to_world, m_to_object);
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("to_world", m_to_world, ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -305,13 +306,12 @@ public:
         return dr::grad_enabled(m_to_world) || m_shapegroup->parameters_grad_enabled();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Instance)
 private:
    ref<ShapeGroup_> m_shapegroup;
 
    MI_TRAVERSE_CB(Base, m_shapegroup)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Instance, Shape)
-MI_EXPORT_PLUGIN(Instance, "Instanced geometry")
+MI_EXPORT_PLUGIN(Instance)
 NAMESPACE_END(mitsuba)

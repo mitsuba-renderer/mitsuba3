@@ -73,17 +73,17 @@ void Mesh<Float, Spectrum>::initialize() {
 
 MI_VARIANT Mesh<Float, Spectrum>::~Mesh() {}
 
-MI_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
-    Base::traverse(callback);
+MI_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *cb) {
+    Base::traverse(cb);
 
-    callback->put_parameter("faces",            m_faces,            +ParamFlags::NonDifferentiable);
-    callback->put_parameter("vertex_positions", m_vertex_positions, ParamFlags::Differentiable | ParamFlags::Discontinuous);
-    callback->put_parameter("vertex_normals",   m_vertex_normals,   ParamFlags::Differentiable | ParamFlags::Discontinuous);
-    callback->put_parameter("vertex_texcoords", m_vertex_texcoords, +ParamFlags::Differentiable);
+    cb->put("faces",            m_faces,            ParamFlags::NonDifferentiable);
+    cb->put("vertex_positions", m_vertex_positions, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    cb->put("vertex_normals",   m_vertex_normals,   ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    cb->put("vertex_texcoords", m_vertex_texcoords, ParamFlags::Differentiable);
 
     // We arbitrarily chose to show all attributes as being differentiable here.
     for (auto &[name, attribute]: m_mesh_attributes)
-        callback->put_parameter(name, attribute.buf, +ParamFlags::Differentiable);
+        cb->put(name, attribute.buf, ParamFlags::Differentiable);
 }
 
 MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
@@ -200,7 +200,7 @@ Mesh<Float, Spectrum>::set_bsdf(typename Mesh<Float, Spectrum>::BSDF *bsdf) {
 
 MI_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) const {
     ref<FileStream> stream =
-        new FileStream(filename, FileStream::ETruncReadWrite);
+        new FileStream(fs::path(filename), FileStream::ETruncReadWrite);
 
     Timer timer;
     Log(Info, "Writing mesh to \"%s\" ..", filename);
@@ -644,17 +644,17 @@ Mesh<Float, Spectrum>::merge(const Mesh *other) const {
 
     Properties props;
     if (m_bsdf)
-        props.set_object("bsdf", (Object *) m_bsdf.get());
+        props.set("bsdf", (Object *) m_bsdf.get());
     if (m_interior_medium)
-        props.set_object("interior", (Object *) m_interior_medium.get());
+        props.set("interior", (Object *) m_interior_medium.get());
     if (m_exterior_medium)
-        props.set_object("exterior", (Object *) m_exterior_medium.get());
+        props.set("exterior", (Object *) m_exterior_medium.get());
     if (m_sensor)
-        props.set_object("sensor", (Object *) m_sensor.get());
+        props.set("sensor", (Object *) m_sensor.get());
     if (m_emitter)
-        props.set_object("emitter", (Object *) m_emitter.get());
-    props.set_bool("face_normals", m_face_normals);
-    props.set_bool("flip_normals", m_flip_normals);
+        props.set("emitter", (Object *) m_emitter.get());
+    props.set("face_normals", m_face_normals);
+    props.set("flip_normals", m_flip_normals);
 
     ref<Mesh> result = new Mesh(
         m_name + " + " + other->m_name, m_vertex_count + other->vertex_count(),
@@ -733,10 +733,10 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
     mesh->m_bbox = bbox;
     mesh->initialize();
 
-    props.set_object("mesh", mesh.get());
+    props.set("mesh", mesh.get());
 
     if (m_scene)
-        props.set_object("parent_scene", m_scene);
+        props.set("parent_scene", m_scene);
 
     m_parameterization = new Scene<Float, Spectrum>(props);
 }
@@ -1791,7 +1791,7 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index, const ScalarBoundingBox3f &clip) 
 
 MI_VARIANT std::string Mesh<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
-    oss << class_()->name() << "[" << std::endl
+    oss << class_name() << "[" << std::endl
         << "  name = \"" << m_name << "\"," << std::endl
         << "  bbox = " << string::indent(m_bbox) << "," << std::endl
         << "  vertex_count = " << m_vertex_count << "," << std::endl
@@ -1886,6 +1886,5 @@ MI_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
 }
 
 MI_IMPLEMENT_TRAVERSE_CB(Mesh, Base)
-MI_IMPLEMENT_CLASS_VARIANT(Mesh, Shape)
 MI_INSTANTIATE_CLASS(Mesh)
 NAMESPACE_END(mitsuba)
