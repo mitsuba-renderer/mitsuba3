@@ -226,7 +226,7 @@ private:
 #endif
 
         m_cdf = dr::prefix_sum(m_pmf, false);
-        m_valid = Vector2u(0, m_pmf.size() - 1);
+        m_valid = Vector2u(0, (uint32_t) m_pmf.size() - 1);
         m_sum = dr::gather<Float>(m_cdf, m_valid.y());
         m_normalization = dr::rcp(m_sum);
         dr::make_opaque(m_valid, m_sum, m_normalization);

@@ -585,7 +585,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_directed_edges() {
  */
 template <typename Index>
 MI_INLINE auto pick_vertex(const dr::Array<dr::uint32_array_t<Index>, 3> &vec, const Index &offset) {
-    Index dim_mod = dr::imod(offset, 3u);
+    Index dim_mod = dr::imod(offset, 3);
     Index res = dr::select(dim_mod == 1u, vec[1], vec[0]);
     res = dr::select(dim_mod == 2u, vec[2], res);
     return res;

@@ -153,8 +153,8 @@ MI_PY_EXPORT(Properties) {
             .def(nb::self != nb::self, D(Properties, operator_ne))
             .def_repr(PropertiesV);
 
-        if (auto h = nb::type<Properties::Type>(); h)
-            p.attr("Type") = h;
+        if (auto type_handle = nb::type<Properties::Type>(); type_handle)
+            p.attr("Type") = type_handle;
         else {
             nb::enum_<Properties::Type>(p, "Type")
                 .value("Bool",              Properties::Type::Bool,              D(Properties, Type, Bool))

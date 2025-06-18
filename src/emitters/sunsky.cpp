@@ -1025,7 +1025,7 @@ private:
         m_turbidity = turb;
         dr::make_opaque(m_turbidity);
 
-        m_sun_half_aperture = dr::deg_to_rad(0.5f * props.get<ScalarFloat>("sun_aperture", 0.5358));
+        m_sun_half_aperture = dr::deg_to_rad(0.5f * (float) props.get<ScalarFloat>("sun_aperture", 0.5358));
         if (m_sun_half_aperture <= 0.f || 0.5f * dr::Pi<Float> <= m_sun_half_aperture)
             Log(Error, "Invalid sun aperture angle: %f, must be in ]0, 90[ degrees!", dr::rad_to_deg(2 * m_sun_half_aperture));
 
