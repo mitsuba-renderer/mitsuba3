@@ -29,7 +29,7 @@ classifiers = [
 Homepage = "https://github.com/mitsuba-renderer/mitsuba3"
 
 [project.scripts]
-mitsuba  = "mitsuba.cli:_main"
+mitsuba = "mitsuba.cli:_main"
 
 
 [tool.scikit-build]
