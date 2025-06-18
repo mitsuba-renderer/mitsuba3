@@ -195,6 +195,9 @@ Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags,
                                       Mask active) const {
     MI_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
     DRJIT_MARK_USED(coherent);
+    DRJIT_MARK_USED(reorder);
+    DRJIT_MARK_USED(reorder_hint);
+    DRJIT_MARK_USED(reorder_hint_bits);
 
     if constexpr (dr::is_cuda_v<Float>)
         return ray_intersect_gpu(ray, ray_flags, reorder, reorder_hint, reorder_hint_bits, active);
@@ -209,6 +212,10 @@ Scene<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray,
                                                   uint32_t reorder_hint_bits,
                                                   Mask active) const {
     DRJIT_MARK_USED(coherent);
+    DRJIT_MARK_USED(reorder);
+    DRJIT_MARK_USED(reorder_hint);
+    DRJIT_MARK_USED(reorder_hint_bits);
+
     if constexpr (dr::is_cuda_v<Float>)
         return ray_intersect_preliminary_gpu(ray, reorder, reorder_hint, reorder_hint_bits, active);
     else
@@ -620,10 +627,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &, bool, UInt3
     NotImplementedError("ray_intersect_preliminary_gpu");
 }
 MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
-Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
-                                          bool reorder, UInt32 reorder_hint,
-                                          uint32_t reorder_hint_bits,
-                                          Mask active) const {
+Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &, uint32_t, bool, UInt32, uint32_t, Mask) const {
     NotImplementedError("ray_intersect_naive_gpu");
 }
 MI_VARIANT typename Scene<Float, Spectrum>::Mask

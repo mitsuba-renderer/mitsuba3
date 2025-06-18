@@ -675,6 +675,9 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
         return pi;
     } else {
         DRJIT_MARK_USED(ray);
+        DRJIT_MARK_USED(reorder);
+        DRJIT_MARK_USED(reorder_hint);
+        DRJIT_MARK_USED(reorder_hint_bits);
         DRJIT_MARK_USED(active);
         Throw("ray_intersect_gpu() should only be called in GPU mode.");
     }
@@ -692,6 +695,9 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
     } else {
         DRJIT_MARK_USED(ray);
         DRJIT_MARK_USED(ray_flags);
+        DRJIT_MARK_USED(reorder);
+        DRJIT_MARK_USED(reorder_hint);
+        DRJIT_MARK_USED(reorder_hint_bits);
         DRJIT_MARK_USED(active);
         Throw("ray_intersect_gpu() should only be called in GPU mode.");
     }
