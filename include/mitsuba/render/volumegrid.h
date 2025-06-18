@@ -17,7 +17,7 @@ NAMESPACE_BEGIN(mitsuba)
  * Please see the documentation of gridvolume (grid3d.cpp) for the file format
  * specification.
  */
-MI_VARIANT
+template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB VolumeGrid : public Object {
 public:
     MI_IMPORT_CORE_TYPES()
@@ -107,7 +107,7 @@ public:
     /// Return a human-readable summary of this volume grid
     virtual std::string to_string() const override;
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(VolumeGrid)
 
 protected:
     void read(Stream *stream);

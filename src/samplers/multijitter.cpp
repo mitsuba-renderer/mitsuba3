@@ -179,7 +179,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(MultijitterSampler)
 
 private:
     MultijitterSampler(const MultijitterSampler &sampler) : Base(sampler) {
@@ -240,6 +240,5 @@ public:
     }
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(MultijitterSampler, Sampler)
-MI_EXPORT_PLUGIN(MultijitterSampler, "Correlated Multi-Jittered Sampler");
+MI_EXPORT_PLUGIN(MultijitterSampler);
 NAMESPACE_END(mitsuba)

@@ -224,7 +224,7 @@ public:
     /// @}
     // =========================================================================
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Stream)
 protected:
     /// Copying is disallowed.
     Stream(const Stream&) = delete;

@@ -165,7 +165,7 @@ template <typename Ptr, typename Cls> void bind_sensor_generic(Cls &cls) {
 MI_PY_EXPORT(Sensor) {
     MI_PY_IMPORT_TYPES(Sensor, ProjectiveCamera, Endpoint)
     using PySensor = PySensor<Float, Spectrum>;
-    using Properties = PropertiesV<Float>;
+    using Properties = mitsuba::Properties;
 
     auto sensor = MI_PY_TRAMPOLINE_CLASS(PySensor, Sensor, Endpoint)
         .def(nb::init<const Properties&>())
@@ -188,7 +188,6 @@ MI_PY_EXPORT(Sensor) {
         bind_sensor_generic<SensorPtr>(sensor_ptr);
     }
 
-    MI_PY_REGISTER_OBJECT("register_sensor", Sensor)
 
     MI_PY_CLASS(ProjectiveCamera, Sensor)
         .def_method(ProjectiveCamera, near_clip)

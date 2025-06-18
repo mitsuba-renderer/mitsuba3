@@ -44,9 +44,8 @@ public:
 
     std::string to_string() const override { return "BoxFilter[]"; }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(BoxFilter)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(BoxFilter, ReconstructionFilter)
-MI_EXPORT_PLUGIN(BoxFilter, "Box filter");
+MI_EXPORT_PLUGIN(BoxFilter)
 NAMESPACE_END(mitsuba)

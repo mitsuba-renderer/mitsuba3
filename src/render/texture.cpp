@@ -7,13 +7,11 @@
 NAMESPACE_BEGIN(mitsuba)
 
 // =======================================================================
-//! @{ \name Texture implementations
+//! Texture base implementation
 // =======================================================================
 
 MI_VARIANT Texture<Float, Spectrum>::Texture(const Properties &props)
-    : m_id(props.id()) { }
-
-MI_VARIANT Texture<Float, Spectrum>::~Texture() { }
+    : JitObject<Texture>(props.id()) { }
 
 MI_VARIANT typename Texture<Float, Spectrum>::UnpolarizedSpectrum
 Texture<Float, Spectrum>::eval(const SurfaceInteraction3f &, Mask) const {
@@ -21,7 +19,7 @@ Texture<Float, Spectrum>::eval(const SurfaceInteraction3f &, Mask) const {
 }
 
 MI_VARIANT std::pair<typename Texture<Float, Spectrum>::Wavelength,
-                      typename Texture<Float, Spectrum>::UnpolarizedSpectrum>
+                     typename Texture<Float, Spectrum>::UnpolarizedSpectrum>
 Texture<Float, Spectrum>::sample_spectrum(const SurfaceInteraction3f &,
                                           const Wavelength &, Mask) const {
     NotImplementedError("sample_spectrum");
@@ -66,7 +64,7 @@ Float Texture<Float, Spectrum>::pdf_position(const Point2f &, Mask) const {
 MI_VARIANT ref<Texture<Float, Spectrum>>
 Texture<Float, Spectrum>::D65(ScalarFloat scale) {
     Properties props("d65");
-    props.set_float("scale", Properties::Float(scale));
+    props.set("scale", scale);
     ref<Texture> texture = PluginManager::instance()->create_object<Texture>(props);
     std::vector<ref<Object>> children = texture->expand();
     if (!children.empty())
@@ -79,19 +77,14 @@ Texture<Float, Spectrum>::D65(ref<Texture> texture) {
     if constexpr (!is_spectral_v<Spectrum>) {
         return texture;
     } else {
-        std::vector<std::string> plugins = {
-            "srgb", "bitmap", "checkerboard", "mesh_attribute"
-        };
-        if (string::contains(plugins, texture->class_()->name())) {
-            Properties props("d65");
-            props.set_object("nested", ref<Object>(texture));
-            ref<Texture> texture2 = PluginManager::instance()->create_object<Texture>(props);
-            std::vector<ref<Object>> children = texture2->expand();
-            if (!children.empty())
-                return (Texture *) children[0].get();
-            return texture2;
-        }
-        return texture;
+        // Apply D65 conversion to texture
+        Properties props("d65");
+        props.set("nested", ref<Object>(texture));
+        ref<Texture> texture2 = PluginManager::instance()->create_object<Texture>(props);
+        std::vector<ref<Object>> children = texture2->expand();
+        if (!children.empty())
+            return (Texture *) children[0].get();
+        return texture2;
     }
 }
 
@@ -114,11 +107,6 @@ MI_VARIANT typename Texture<Float, Spectrum>::ScalarFloat
 Texture<Float, Spectrum>::max() const {
     NotImplementedError("max");
 }
-
-//! @}
-// =======================================================================
-
-MI_IMPLEMENT_CLASS_VARIANT(Texture, Object, "texture")
 
 MI_INSTANTIATE_CLASS(Texture)
 NAMESPACE_END(mitsuba)

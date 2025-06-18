@@ -96,7 +96,7 @@ public:
             Throw("Exactly one BSDF child object must be specified.");
 
         // TODO: How to assert this is actually a RGBDataTexture?
-        m_normalmap = props.texture<Texture>("normalmap");
+        m_normalmap = props.get_texture<Texture>("normalmap");
 
         // Add all nested components
         m_flags = (uint32_t) 0;
@@ -106,9 +106,9 @@ public:
         }
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("nested_bsdf", m_nested_bsdf.get(), +ParamFlags::Differentiable);
-        callback->put_object("normalmap",   m_normalmap.get(),   ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("nested_bsdf", m_nested_bsdf, ParamFlags::Differentiable);
+        cb->put("normalmap",   m_normalmap,   ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -228,7 +228,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(NormalMap)
 protected:
     ref<Base> m_nested_bsdf;
     ref<Texture> m_normalmap;
@@ -236,6 +236,5 @@ protected:
     MI_TRAVERSE_CB(Base, m_nested_bsdf, m_normalmap);
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(NormalMap, BSDF)
-MI_EXPORT_PLUGIN(NormalMap, "Normal map material adapter");
+MI_EXPORT_PLUGIN(NormalMap);
 NAMESPACE_END(mitsuba)

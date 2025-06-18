@@ -3,19 +3,21 @@
 #include <mitsuba/python/python.h>
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/string_view.h>
+#include <string_view>
 
 // Trampoline for derived types implemented in Python
 class PyAppender : public Appender {
 public:
     NB_TRAMPOLINE(Appender, 2);
 
-    void append(mitsuba::LogLevel level, const std::string &text) override {
+    void append(mitsuba::LogLevel level, std::string_view text) override {
         NB_OVERRIDE_PURE(append, level, text);
     }
 
-    void log_progress(float progress, const std::string &name,
-                              const std::string &formatted,
-                              const std::string &eta, const void *ptr) override {
+    void log_progress(float progress, std::string_view name,
+                      std::string_view formatted,
+                      std::string_view eta, const void *ptr) override {
         NB_OVERRIDE_PURE(log_progress, progress, name, formatted, eta, (void*)ptr);
     }
 };

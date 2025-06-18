@@ -51,8 +51,8 @@ def test03_bsdf_attributes(variants_vec_backends_once_rgb):
             mi.BSDF.__init__(self, props)
             self.tint = props['tint']
 
-        def traverse(self, callback):
-            callback.put_object('tint', self.tint, mi.ParamFlags.Differentiable)
+        def traverse(self, cb):
+            cb.put('tint', self.tint, mi.ParamFlags.Differentiable)
 
     mi.register_bsdf('dummy', DummyBSDF)
 

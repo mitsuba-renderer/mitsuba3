@@ -68,16 +68,16 @@ public:
                   "The area light inherits this transformation from its parent "
                   "shape.");
 
-        m_radiance = props.texture_d65<Texture>("radiance", 1.f);
+        m_radiance = props.get_texture_d65<Texture>("radiance", 1.f);
 
         m_flags = +EmitterFlags::Surface;
         if (m_radiance->is_spatially_varying())
             m_flags |= +EmitterFlags::SpatiallyVarying;
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_object("radiance", m_radiance.get(), +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("radiance", m_radiance, ParamFlags::Differentiable);
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
@@ -267,13 +267,12 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(AreaLight)
 private:
     ref<Texture> m_radiance;
 
     MI_TRAVERSE_CB(Base, m_radiance);
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(AreaLight, Emitter)
-MI_EXPORT_PLUGIN(AreaLight, "Area emitter")
+MI_EXPORT_PLUGIN(AreaLight)
 NAMESPACE_END(mitsuba)

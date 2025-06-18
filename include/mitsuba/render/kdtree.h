@@ -474,7 +474,7 @@ public:
     const Derived& derived() const { return (Derived&) *this; }
     Derived& derived() { return (Derived&) *this; }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(TShapeKDTree)
 protected:
     /* ==================================================================== */
     /*                  Essential internal data structures                  */
@@ -2471,7 +2471,7 @@ public:
     /// Return a human-readable string representation of the scene contents.
     virtual std::string to_string() const override;
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(ShapeKDTree)
 protected:
     /**
      * \brief Map an abstract \ref TShapeKDTree primitive index to a specific

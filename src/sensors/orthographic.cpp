@@ -89,9 +89,9 @@ public:
         m_needs_sample_3 = false;
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("to_world", m_to_world, ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -192,7 +192,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(OrthographicCamera)
 private:
     Transform4f m_camera_to_sample;
     Transform4f m_sample_to_camera;
@@ -201,6 +201,5 @@ private:
     Vector3f m_dx, m_dy;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(OrthographicCamera, ProjectiveCamera)
-MI_EXPORT_PLUGIN(OrthographicCamera, "Orthographic Camera");
+MI_EXPORT_PLUGIN(OrthographicCamera)
 NAMESPACE_END(mitsuba)

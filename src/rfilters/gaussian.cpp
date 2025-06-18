@@ -107,13 +107,12 @@ public:
                            m_stddev, m_radius);
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(GaussianFilter)
 
 protected:
     ScalarFloat m_stddev;
     Float m_coeff[10];
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(GaussianFilter, ReconstructionFilter)
-MI_EXPORT_PLUGIN(GaussianFilter, "Gaussian reconstruction filter");
+MI_EXPORT_PLUGIN(GaussianFilter)
 NAMESPACE_END(mitsuba)

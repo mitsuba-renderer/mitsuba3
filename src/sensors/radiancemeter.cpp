@@ -160,9 +160,8 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(RadianceMeter)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(RadianceMeter, Sensor)
-MI_EXPORT_PLUGIN(RadianceMeter, "RadianceMeter");
+MI_EXPORT_PLUGIN(RadianceMeter)
 NAMESPACE_END(mitsuba)

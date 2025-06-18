@@ -117,9 +117,9 @@ public:
         m_eta = int_ior / ext_ior;
 
         if (props.has_property("specular_reflectance"))
-            m_specular_reflectance   = props.texture<Texture>("specular_reflectance", 1.f);
+            m_specular_reflectance   = props.get_texture<Texture>("specular_reflectance", 1.f);
         if (props.has_property("specular_transmittance"))
-            m_specular_transmittance = props.texture<Texture>("specular_transmittance", 1.f);
+            m_specular_transmittance = props.get_texture<Texture>("specular_transmittance", 1.f);
 
         m_components.push_back(BSDFFlags::DeltaReflection | BSDFFlags::FrontSide |
                                BSDFFlags::BackSide);
@@ -127,12 +127,12 @@ public:
         m_flags = m_components[0] | m_components[1];
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("eta", m_eta, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("eta", m_eta, ParamFlags::Differentiable | ParamFlags::Discontinuous);
         if (m_specular_transmittance)
-            callback->put_object("specular_transmittance", m_specular_transmittance.get(), +ParamFlags::Differentiable);
+            cb->put("specular_transmittance", m_specular_transmittance, ParamFlags::Differentiable);
         if (m_specular_reflectance)
-            callback->put_object("specular_reflectance",   m_specular_reflectance.get(),   +ParamFlags::Differentiable);
+            cb->put("specular_reflectance", m_specular_reflectance, ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
@@ -228,7 +228,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(ThinDielectric)
 private:
     Float m_eta;
     ref<Texture> m_specular_transmittance;
@@ -238,6 +238,5 @@ private:
                    m_specular_transmittance);
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(ThinDielectric, BSDF)
-MI_EXPORT_PLUGIN(ThinDielectric, "Thin dielectric")
+MI_EXPORT_PLUGIN(ThinDielectric)
 NAMESPACE_END(mitsuba)

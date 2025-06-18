@@ -89,8 +89,8 @@ public:
 
     SpotLight(const Properties &props) : Base(props) {
         m_flags = +EmitterFlags::DeltaPosition;
-        m_intensity = props.texture_d65<Texture>("intensity", 1.f);
-        m_texture = props.texture_d65<Texture>("texture", 1.f);
+        m_intensity = props.get_texture_d65<Texture>("intensity", 1.f);
+        m_texture = props.get_texture_d65<Texture>("texture", 1.f);
 
         if (m_intensity->is_spatially_varying())
             Throw("The parameter 'intensity' cannot be spatially varying (e.g. bitmap type)!");
@@ -116,11 +116,11 @@ public:
                         m_inv_transition_width);
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_object("intensity",    m_intensity.get(), +ParamFlags::Differentiable);
-        callback->put_object("texture",      m_texture.get(),   +ParamFlags::Differentiable);
-        callback->put_parameter("to_world", *m_to_world.ptr(),  +ParamFlags::NonDifferentiable);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("intensity", m_intensity,  ParamFlags::Differentiable);
+        cb->put("texture",   m_texture,    ParamFlags::Differentiable);
+        cb->put("to_world",  m_to_world,   ParamFlags::NonDifferentiable);
     }
 
     /**
@@ -294,7 +294,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(SpotLight)
 private:
     ref<Texture> m_intensity;
     ref<Texture> m_texture;
@@ -306,6 +306,5 @@ private:
                    m_inv_transition_width)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SpotLight, Emitter)
-MI_EXPORT_PLUGIN(SpotLight, "Spot emitter")
+MI_EXPORT_PLUGIN(SpotLight)
 NAMESPACE_END(mitsuba)

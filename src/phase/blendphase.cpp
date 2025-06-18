@@ -81,7 +81,7 @@ public:
             }
         }
 
-        m_weight = props.volume<Volume>("weight");
+        m_weight = props.get_volume<Volume>("weight");
         if (phase_index != 2)
             Throw("BlendPhase: Two child phase functions must be specified!");
 
@@ -93,10 +93,10 @@ public:
         m_flags = m_nested_phase[0]->flags() | m_nested_phase[1]->flags();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("weight",  m_weight.get(),          +ParamFlags::Differentiable);
-        callback->put_object("phase_0", m_nested_phase[0].get(), +ParamFlags::Differentiable);
-        callback->put_object("phase_1", m_nested_phase[1].get(), +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("weight", m_weight, ParamFlags::Differentiable);
+        cb->put("phase_0", m_nested_phase[0], ParamFlags::Differentiable);
+        cb->put("phase_1", m_nested_phase[1], ParamFlags::Differentiable);
     }
 
     std::tuple<Vector3f, Spectrum, Float> sample(const PhaseFunctionContext &ctx,
@@ -195,12 +195,11 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(BlendPhaseFunction)
 protected:
     ref<Volume> m_weight;
     ref<Base> m_nested_phase[2];
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(BlendPhaseFunction, PhaseFunction)
-MI_EXPORT_PLUGIN(BlendPhaseFunction, "Blended phase function")
+MI_EXPORT_PLUGIN(BlendPhaseFunction)
 NAMESPACE_END(mitsuba)

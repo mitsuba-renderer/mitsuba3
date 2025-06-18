@@ -263,12 +263,9 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
  * \sa mitsuba.BSDFSample3f
  */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB BSDF : public Object {
+class MI_EXPORT_LIB BSDF : public JitObject<BSDF<Float, Spectrum>> {
 public:
     MI_IMPORT_TYPES(Texture)
-
-    /// Destructor
-    ~BSDF();
 
     /**
      * \brief Importance sample the BSDF model
@@ -566,12 +563,6 @@ public:
         return m_components.size();
     }
 
-    /// Return a string identifier
-    std::string id() const override { return m_id; }
-
-    /// Set a string identifier
-    void set_id(const std::string& id) override { m_id = id; };
-
     /**
      * \brief Evaluate the diffuse reflectance
      *
@@ -610,7 +601,7 @@ public:
     //! @}
     // -----------------------------------------------------------------------
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_PLUGIN_BASE_CLASS(BSDF)
 
 protected:
     BSDF(const Properties &props);
@@ -621,9 +612,6 @@ protected:
 
     /// Flags for each component of this BSDF.
     std::vector<uint32_t> m_components;
-
-    /// Identifier (if available)
-    std::string m_id;
 
     MI_TRAVERSE_CB(Object);
 };
@@ -668,10 +656,10 @@ MI_EXTERN_CLASS(BSDF)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Dr.Jit support for vectorized function calls
+//! @{ \name Enables vectorized method calls on Dr.Jit arrays of BSDFs
 // -----------------------------------------------------------------------
 
-MI_CALL_TEMPLATE_BEGIN(BSDF)
+DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::BSDF)
     DRJIT_CALL_METHOD(sample)
     DRJIT_CALL_METHOD(eval)
     DRJIT_CALL_METHOD(eval_null_transmission)
@@ -685,10 +673,8 @@ MI_CALL_TEMPLATE_BEGIN(BSDF)
     DRJIT_CALL_METHOD(eval_attribute_3)
     DRJIT_CALL_METHOD(sh_frame)
     DRJIT_CALL_GETTER(flags)
-    auto needs_differentials() const {
-        return has_flag(flags(), mitsuba::BSDFFlags::NeedsDifferentials);
-    }
-MI_CALL_TEMPLATE_END(BSDF)
+    auto needs_differentials() const { return has_flag(flags(), mitsuba::BSDFFlags::NeedsDifferentials); }
+DRJIT_CALL_END()
 
 //! @}
 // -----------------------------------------------------------------------
