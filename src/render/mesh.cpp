@@ -637,6 +637,7 @@ Mesh<Float, Spectrum>::merge(const Mesh *other) const {
         other->has_vertex_normals() != has_vertex_normals() ||
         other->has_vertex_texcoords() != has_vertex_texcoords() ||
         other->has_face_normals() != has_face_normals() ||
+        other->has_flipped_normals() != has_flipped_normals() ||
         other->has_mesh_attributes() || has_mesh_attributes())
         Throw("Mesh::merge(): the two meshes are incompatible (%s and %s)!",
               to_string(), other->to_string());
@@ -653,6 +654,7 @@ Mesh<Float, Spectrum>::merge(const Mesh *other) const {
     if (m_emitter)
         props.set_object("emitter", (Object *) m_emitter.get());
     props.set_bool("face_normals", m_face_normals);
+    props.set_bool("flip_normals", m_flip_normals);
 
     ref<Mesh> result = new Mesh(
         m_name + " + " + other->m_name, m_vertex_count + other->vertex_count(),
