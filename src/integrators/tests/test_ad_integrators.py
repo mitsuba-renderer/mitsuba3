@@ -162,7 +162,7 @@ class ConfigBase:
             'to_world': mi.ScalarTransform4f.look_at(origin=[0, 0, 4], target=[0, 0, 0], up=[0, 1, 0]),
             'film': {
                 'type': 'hdrfilm',
-                'rfilter': { 'type': 'gaussian', 'stddev': 0.5 },
+                'rfilter': { 'type': 'box' },
                 'width': self.res,
                 'height': self.res,
                 'sample_border': True,
@@ -524,6 +524,7 @@ class ScaleSphereEmitterOnBlackConfig(ScaleShapeConfigBase):
                 },
             }
         }
+        self.res = 64
         self.ref_fd_epsilon = 1e-3
         self.error_mean_threshold = 0.08
         self.error_max_threshold = 0.5
