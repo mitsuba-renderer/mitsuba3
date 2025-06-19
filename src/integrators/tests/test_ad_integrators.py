@@ -228,6 +228,11 @@ class DiffuseAlbedoConfig(ConfigBase):
             },
             'light': { 'type': 'constant' }
         }
+        self.error_mean_threshold = 0.006
+        self.error_max_threshold = 0.15
+        self.error_mean_threshold_bwd = 0.0005
+        self.ref_fd_epsilon = 1e-3
+
 
 # BSDF albedo of a off camera plane blending onto a directly visible gray plane
 class DiffuseAlbedoGIConfig(ConfigBase):
@@ -259,6 +264,11 @@ class DiffuseAlbedoGIConfig(ConfigBase):
         self.integrator_dict = {
             'max_depth': 3,
         }
+        self.error_mean_threshold = 0.04
+        self.error_max_threshold = 0.4
+        self.error_mean_threshold_bwd = 0.0005
+        self.ref_fd_epsilon = 1e-3
+
 
 # Off camera area light illuminating a gray plane
 class AreaLightRadianceConfig(ConfigBase):
@@ -287,6 +297,11 @@ class AreaLightRadianceConfig(ConfigBase):
                 }
             }
         }
+        self.error_mean_threshold = 0.02
+        self.error_max_threshold = 0.4
+        self.error_mean_threshold_bwd = 0.0005
+        self.ref_fd_epsilon = 1e-3
+
 
 # Directly visible area light illuminating a gray plane
 class DirectlyVisibleAreaLightRadianceConfig(ConfigBase):
@@ -304,6 +319,11 @@ class DirectlyVisibleAreaLightRadianceConfig(ConfigBase):
                 }
             }
         }
+        self.error_mean_threshold = 0.02
+        self.error_max_threshold = 0.2
+        self.error_mean_threshold_bwd = 0.02
+        self.ref_fd_epsilon = 1e-3
+
 
 # Off camera point light illuminating a gray plane
 class PointLightIntensityConfig(ConfigBase):
@@ -329,6 +349,11 @@ class PointLightIntensityConfig(ConfigBase):
                 'intensity': {'type': 'rgb', 'value': [5.0, 5.0, 5.0]}
             },
         }
+        self.error_mean_threshold = 0.02
+        self.error_max_threshold = 0.2
+        self.error_mean_threshold_bwd = 0.002
+        self.ref_fd_epsilon = 1e-3
+
 
 # Instensity of a constant emitter illuminating a gray rectangle
 class ConstantEmitterRadianceConfig(ConfigBase):
@@ -347,6 +372,11 @@ class ConstantEmitterRadianceConfig(ConfigBase):
             },
             'light': { 'type': 'constant' }
         }
+        self.error_mean_threshold = 0.02
+        self.error_max_threshold = 0.1
+        self.error_mean_threshold_bwd = 0.02
+        self.ref_fd_epsilon = 1e-3
+
 
 # Test crop offset and crop window on the film
 class CropWindowConfig(ConfigBase):
@@ -377,6 +407,53 @@ class CropWindowConfig(ConfigBase):
                 "crop_offset_y" : 20,
             }
         }
+        self.error_mean_threshold = 0.01
+        self.error_max_threshold = 0.2
+        self.error_mean_threshold_bwd = 0.002
+        self.ref_fd_epsilon = 1e-3
+
+
+# Rotate plane's shading normals (no discontinuities)
+class RotateShadingNormalsPlaneConfig(ConfigBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.key = 'plane.vertex_normals'
+        self.scene_dict = {
+            'type': 'scene',
+            'plane': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
+                'bsdf': { 'type': 'diffuse' },
+            },
+            'light': {
+                'type': 'rectangle',
+                'to_world': T().translate([1.25, 0.0, 1.0]) @ T().rotate([0, 1, 0], -90),
+                'emitter': {
+                    'type': 'area',
+                    'radiance': {'type': 'rgb', 'value': [3.0, 3.0, 3.0]}
+                }
+            }
+        }
+        self.integrator_dict = {
+            'max_depth': 2,
+        }
+        self.error_mean_threshold = 0.02
+        self.error_max_threshold = 0.3
+        self.error_mean_threshold_bwd = 0.00002
+
+    def initialize(self):
+        super().initialize()
+        self.params.keep([self.key])
+        self.initial_state = mi.Float(self.params[self.key])
+
+    def update(self, theta):
+        self.params[self.key] = dr.ravel(
+            mi.Transform4f().rotate(angle=theta, axis=[0.0, 1.0, 0.0]) @
+            dr.unravel(mi.Normal3f, self.initial_state)
+        )
+        self.params.update()
+        dr.eval()
+
 
 # -------------------------------------------------------------------
 #            Test configs with discontinuities
@@ -413,6 +490,37 @@ class ScaleShapeConfigBase(ConfigBase):
         self.params[self.key] = dr.ravel(self.initial_state * (1.0 + theta))
         self.params.update()
         dr.eval()
+
+
+# Translate textured plane (this is actually a continuous problem)
+class TranslateTexturedPlaneConfig(TranslateShapeConfigBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.key = 'plane.vertex_positions'
+        self.scene_dict = {
+            'type': 'scene',
+            'plane': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
+                'face_normals': True,
+                'bsdf': {
+                    'type': 'diffuse',
+                    'reflectance' : {
+                        'type': 'bitmap',
+                        # 'filename' : 'resources/data/common/textures/flower.bmp'
+                        'filename' : 'resources/data/common/textures/museum.exr',
+                        'format' : 'variant'
+                    }
+                },
+                'to_world': T().scale(2.0),
+            },
+            'light': { 'type': 'constant' }
+        }
+        self.res = 64
+        self.ref_fd_epsilon = 1e-3
+        self.error_mean_threshold = 0.1
+        self.error_max_threshold = 56.0
+
 
 # Translate diffuse sphere under constant illumination
 class TranslateDiffuseSphereConstantConfig(TranslateShapeConfigBase):
@@ -607,36 +715,6 @@ class TranslateShadowReceiverAreaLightConfig(TranslateShapeConfigBase):
         }
 
 
-# Translate textured plane
-class TranslateTexturedPlaneConfig(TranslateShapeConfigBase):
-    def __init__(self) -> None:
-        super().__init__()
-        self.key = 'plane.vertex_positions'
-        self.scene_dict = {
-            'type': 'scene',
-            'plane': {
-                'type': 'obj',
-                'filename': 'resources/data/common/meshes/rectangle.obj',
-                'face_normals': True,
-                'bsdf': {
-                    'type': 'diffuse',
-                    'reflectance' : {
-                        'type': 'bitmap',
-                        # 'filename' : 'resources/data/common/textures/flower.bmp'
-                        'filename' : 'resources/data/common/textures/museum.exr',
-                        'format' : 'variant'
-                    }
-                },
-                'to_world': mi.ScalarTransform4f.scale(2.0),
-            },
-            'light': { 'type': 'constant' }
-        }
-        self.res = 64
-        self.ref_fd_epsilon = 1e-3
-        self.error_mean_threshold = 0.23
-        self.error_max_threshold = 142.0
-
-
 # Translate occluder casting shadow on itself
 class TranslateSelfShadowAreaLightConfig(ConfigBase):
     def __init__(self) -> None:
@@ -751,47 +829,6 @@ class TranslateCameraConfig(ConfigBase):
         dr.eval()
 
 
-# Rotate plane's shading normals (no discontinuities)
-class RotateShadingNormalsPlaneConfig(ConfigBase):
-    def __init__(self) -> None:
-        super().__init__()
-        self.key = 'plane.vertex_normals'
-        self.scene_dict = {
-            'type': 'scene',
-            'plane': {
-                'type': 'obj',
-                'filename': 'resources/data/common/meshes/rectangle.obj',
-                'bsdf': { 'type': 'diffuse' },
-            },
-            'light': {
-                'type': 'rectangle',
-                'to_world': mi.ScalarTransform4f.translate([1.25, 0.0, 1.0]) @ mi.ScalarTransform4f.rotate([0, 1, 0], -90),
-                'emitter': {
-                    'type': 'area',
-                    'radiance': {'type': 'rgb', 'value': [3.0, 3.0, 3.0]}
-                }
-            }
-        }
-        self.integrator_dict = {
-            'max_depth': 2,
-        }
-        self.error_mean_threshold = 0.02
-        self.error_max_threshold = 0.38
-
-    def initialize(self):
-        super().initialize()
-        self.params.keep([self.key])
-        self.initial_state = mi.Float(self.params[self.key])
-
-    def update(self, theta):
-        self.params[self.key] = dr.ravel(
-            mi.Transform4f().rotate(angle=theta, axis=[0.0, 1.0, 0.0]) @
-            dr.unravel(mi.Normal3f, mi.Float(self.initial_state))
-        )
-        self.params.update()
-        dr.eval()
-
-
 # -------------------------------------------------------------------
 #                           List configs
 # -------------------------------------------------------------------
@@ -801,13 +838,11 @@ BASIC_CONFIGS_LIST = [
     DiffuseAlbedoGIConfig,
     AreaLightRadianceConfig,
     DirectlyVisibleAreaLightRadianceConfig,
-    TranslateTexturedPlaneConfig,
+    PointLightIntensityConfig,
+    ConstantEmitterRadianceConfig,
     CropWindowConfig,
     RotateShadingNormalsPlaneConfig,
-
-    # The next two configs have issues with Nvidia driver v545
-    # PointLightIntensityConfig,
-    # ConstantEmitterRadianceConfig,
+    TranslateTexturedPlaneConfig,
 ]
 
 DISCONTINUOUS_CONFIGS_LIST = [
