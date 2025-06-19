@@ -1,8 +1,13 @@
-import pytest
-import drjit as dr
-import mitsuba as mi
+import os
+import tempfile
 
+import pytest
+
+import drjit as dr
 from drjit.scalar import ArrayXf as Float
+import mitsuba as mi
+from mitsuba.test.util import fresolver_append_path
+
 
 
 def test01_create(variant_scalar_rgb):
@@ -515,3 +520,97 @@ def test19_area_emitter_update(variants_vec_rgb):
                                                    [0, 0, 1, 0],
                                                    [0, 0, 0, 1]])
     assert emitter.surface_area() == 16
+
+
+@fresolver_append_path
+def test20_flip_normals(variant_scalar_rgb):
+    ref_extras = {
+        "filename": "resources/data/common/meshes/rectangle.obj",
+    }
+
+    for flipped in (False, True):
+        for is_ref in (True, False):
+            fname = f"rect_{'ref' if is_ref else 'test'}_{'flipped' if flipped else 'normal'}"
+
+            scene = mi.load_dict({
+                "type": "scene",
+                "shape": {
+                    "type": "obj" if is_ref else "rectangle",
+                    "flip_normals": flipped,
+                    "emitter": {
+                        "type": "area",
+                    },
+                    **(ref_extras if is_ref else {})
+                }
+            })
+
+            rect = scene.shapes()[0]
+            assert rect.has_flipped_normals() == flipped
+
+            if False:
+                # For visual debugging
+                integrator = mi.load_dict({
+                    "type": "direct",
+                })
+                sensor = mi.load_dict({
+                    "type": "perspective",
+                    "film": {
+                        "type": "hdrfilm",
+                        "width": 256,
+                        "height": 256,
+                    },
+                    "to_world": mi.ScalarTransform4f().look_at(
+                        target=mi.ScalarPoint3f(0, 0, 0),
+                        origin=mi.ScalarPoint3f(0, 0, 10),
+                        up=mi.ScalarVector3f(0, 1, 0),
+                    ),
+                })
+                image = mi.render(scene, integrator=integrator, sensor=sensor)
+                mi.Bitmap(image).write(fname + ".exr")
+
+            ray = mi.Ray3f(mi.Vector3f(0.1, 0.1, 2), mi.Vector3f(0, 0, -1))
+
+            # Scene intersection through the scene
+            si = scene.ray_intersect(ray)
+            assert dr.all(si.is_valid())
+            assert dr.allclose(si.n, mi.Vector3f(0, 0, -1 if flipped else 1))
+            # Note: `si.wi` is in local coordinates, so it changes depending on the normal.
+            assert dr.allclose(si.wi, mi.Vector3f(0, 0, -1 if flipped else 1))
+
+            # Area emitter evaluation
+            emitter = si.emitter(scene)
+            emitted = emitter.eval(si)
+            assert dr.allclose(emitted, 0.0 if flipped else 1.0), f"{flipped=}, {emitted=}"
+
+            # Area emitter direction sampling
+            ref = mi.SurfaceInteraction3f(si)
+            ref.p = si.p + mi.Vector3f(0, 0, 1)
+            ds, weight = emitter.sample_direction(ref, mi.Point2f(0.5, 0.5))
+            assert dr.allclose(ds.n, si.n)
+            assert dr.allclose(weight, 0.0) if flipped else dr.all(weight > 0.0), f"{flipped=}, {weight=}"
+
+            # Direct ray intersection through the rectangle
+            if not is_ref:
+                # This is not supported for plain meshes
+                si2 = rect.ray_intersect(ray)
+                assert dr.allclose(si2.n, si.n)
+
+            # Position sampling
+            ps = rect.sample_position(time=0.0, sample=mi.Point2f(0.5, 0.5))
+            assert dr.allclose(ps.n, si.n)
+
+            # PLY save & reload: flipped normals should _not_ be baked,
+            # since it is always applied on-the-fly.
+            with tempfile.TemporaryDirectory() as tempdir:
+                fname = os.path.join(tempdir, fname + ".ply")
+                rect.write_ply(fname)
+
+                reloaded = mi.load_dict({
+                    "type": "ply",
+                    "filename": fname,
+                })
+                assert not reloaded.has_flipped_normals()
+                assert not reloaded.has_face_normals()
+                assert reloaded.primitive_count() == 2
+                assert dr.allclose(reloaded.face_normal(0), mi.Vector3f(0, 0, 1))
+                assert dr.allclose(reloaded.face_normal(1), mi.Vector3f(0, 0, 1))
