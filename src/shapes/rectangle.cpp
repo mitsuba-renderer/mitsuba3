@@ -85,7 +85,7 @@ template <typename Float, typename Spectrum>
 class Rectangle final : public Mesh<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Mesh, m_to_world, m_to_object, m_is_instance,
-                   m_discontinuity_types, m_shape_type, initialize,
+                   m_discontinuity_types, m_shape_type, m_flip_normals, initialize,
                    m_vertex_count, m_face_count, m_faces, m_vertex_positions,
                    m_vertex_normals, m_vertex_texcoords, get_children_string)
     using typename Base::FloatStorage;
@@ -105,11 +105,6 @@ public:
     };
 
     Rectangle(const Properties &props) : Base(props) {
-        if (props.get<bool>("flip_normals", false))
-            m_to_world =
-                m_to_world.scalar() *
-                ScalarTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
-
         m_vertex_count = 4;
         m_face_count = 2;
         m_shape_type = ShapeType::Rectangle;
@@ -197,6 +192,9 @@ public:
         ps.uv   = sample;
         ps.time = time;
         ps.delta = false;
+
+        if (m_flip_normals)
+            ps.n = -ps.n;
 
         return ps;
     }
