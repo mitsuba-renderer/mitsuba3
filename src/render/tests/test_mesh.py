@@ -18,6 +18,7 @@ def mixed_shapes_scene():
         "shape3": {
             "type" : "ply",
             "filename" : "resources/data/tests/ply/rectangle_uv.ply",
+            "flip_normals": True,
         },
     }, parallel=False)
 
@@ -1348,6 +1349,7 @@ def test35_mesh_vcalls(variants_vec_rgb):
     assert dr.all(meshes.has_vertex_texcoords() == active)
     assert not dr.any(meshes.has_mesh_attributes())
     assert not dr.any(meshes.has_face_normals())
+    assert dr.all(meshes.has_flipped_normals() == [False, False, True])
 
     idx = mi.UInt32([0, 99, 1])
     face_idx = meshes.face_indices(idx, active=active)

@@ -214,6 +214,11 @@ public:
         return 4.f * dr::Pi<ScalarFloat> * dr::square(m_radius.value());
     }
 
+    /// Does this sphere have flipped normals?
+    bool has_flipped_normals() const override {
+        return m_flip_normals;
+    }
+
     // =============================================================
     //! @{ \name Sampling routines
     // =============================================================

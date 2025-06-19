@@ -626,6 +626,10 @@ Shape<Float, Spectrum>::effective_primitive_count() const {
     return primitive_count();
 }
 
+MI_VARIANT bool Shape<Float, Spectrum>::has_flipped_normals() const {
+    return false;
+}
+
 MI_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
     callback->put_object("bsdf", m_bsdf.get(), +ParamFlags::Differentiable);
     if (m_emitter)

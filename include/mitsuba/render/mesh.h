@@ -184,6 +184,9 @@ public:
     /// Does this mesh use face normals?
     bool has_face_normals() const { return m_face_normals; }
 
+    /// Does this shape have flipped normals?
+    bool has_flipped_normals() const override { return m_flip_normals; }
+
     /// @}
     // =========================================================================
 
