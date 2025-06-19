@@ -177,6 +177,19 @@ class DirectProjectiveIntegrator(PSIntegrator):
             # phase
             if not primal:
                 # Re-compute attached `emitter_val` to enable emitter optimization
+                active_diff_em = (
+                    active_em &
+                    mi.has_flag(ds_em.emitter.flags(), mi.EmitterFlags.SpatiallyVarying) &
+                    mi.has_flag(ds_em.emitter.flags(), mi.EmitterFlags.Surface)
+                )
+                ray_em = si.spawn_ray_to(ds_em.p)
+                ray_em.maxt = dr.largest(ray_em.maxt)
+                si_em = scene.ray_intersect(ray_em, active_diff_em)
+
+                ds_diff = mi.DirectionSample3f(scene, si_em, si)
+                ds_diff = dr.select(active_diff_em, ds_diff, dr.zeros(mi.DirectionSample3f))
+                ds_em = dr.replace_grad(ds_em, ds_diff)
+
                 ds_em.d = dr.normalize(ds_em.p - si.p)
                 spec_em = scene.eval_emitter_direction(si, ds_em, active_em)
                 emitter_val = spec_em / ds_em.pdf
@@ -271,17 +284,26 @@ class DirectProjectiveIntegrator(PSIntegrator):
 
             # ----------- Estimate the radiance of the foreground -----------
 
+            pi_fg = dr.zeros(mi.PreliminaryIntersection3f)
+            pi_fg.t = 1
+            pi_fg.prim_index = ss.prim_index
+            pi_fg.prim_uv = ss.uv
+            pi_fg.shape = ss.shape
+
+            # Create a dummy ray that we never perform ray-intersection with to
+            # compute other fields in ``si``. The ray origin is wrong, but this
+            # is fine if we only need the primal # radiance
+            dummy_ray = mi.Ray3f(ss.p - ss.d, ss.d)
+
+            si_fg = pi_fg.compute_surface_interaction(
+                dummy_ray, mi.RayFlags.All, active)
+
             # For direct illumination integrators, only an area emitter can
             # contribute here. It is possible to call ``sample()`` to estimate
             # this contribution. But to avoid the overhead we simply query the
             # emitter here to obtain the radiance.
-            si_fg = dr.zeros(mi.SurfaceInteraction3f)
-
-            # We know the incident direction is valid since this is the
-            # foreground interaction. Overwrite the incident direction to avoid
-            # potential issues introduced by smooth normals.
-            si_fg.wi = mi.Vector3f(0, 0, 1)
             radiance_fg = ss.shape.emitter().eval(si_fg, active)
+
         elif curr_depth == 0:
 
             # ----------- Estimate the radiance of the background -----------

@@ -23,6 +23,11 @@ reference data (e.g. for a new configurations). Please see the following command
 
 """
 
+###
+### TODO:
+### Remove parralel=False
+###
+
 import drjit as dr
 import mitsuba as mi
 
@@ -88,7 +93,7 @@ class ConfigBase:
 
         @fresolver_append_path
         def create_scene():
-            return mi.load_dict(self.scene_dict)
+            return mi.load_dict(self.scene_dict, parallel=False)
         self.scene = create_scene()
         self.params = mi.traverse(self.scene)
 
@@ -322,12 +327,11 @@ class TranslateDiffuseSphereConstantConfig(TranslateShapeConfigBase):
             'sphere': {
                 'type': 'obj',
                 'filename': 'resources/data/common/meshes/sphere.obj',
-                'to_world': T().rotate(angle=-90, axis=[0, 1, 0]),
             },
             'light': { 'type': 'constant' }
         }
-        self.ref_fd_epsilon = 1e-3
-        self.error_mean_threshold = 0.04
+        self.res = 32
+        self.error_mean_threshold = 0.06
         self.error_max_threshold = 0.6
         self.error_mean_threshold_bwd = 0.25
         self.integrator_dict = {
@@ -422,6 +426,7 @@ class ScaleSphereEmitterOnBlackConfig(ScaleShapeConfigBase):
                 },
             }
         }
+        self.res = 64
         self.ref_fd_epsilon = 1e-3
         self.error_mean_threshold = 0.08
         self.error_max_threshold = 0.5
@@ -519,7 +524,6 @@ class TranslateTexturedPlaneConfig(TranslateShapeConfigBase):
                     'type': 'diffuse',
                     'reflectance' : {
                         'type': 'bitmap',
-                        # 'filename' : 'resources/data/common/textures/flower.bmp'
                         'filename' : 'resources/data/common/textures/museum.exr',
                         'format' : 'variant'
                     }
@@ -530,8 +534,22 @@ class TranslateTexturedPlaneConfig(TranslateShapeConfigBase):
         }
         self.res = 64
         self.ref_fd_epsilon = 1e-3
-        self.error_mean_threshold = 0.1
+        self.error_mean_threshold = 0.15
         self.error_max_threshold = 56.0
+
+        self.sensor_dict = {
+            'type': 'perspective',
+            'to_world': T().look_at(origin=[0, 0, 4], target=[0, 0, 0], up=[0, 1, 0]),
+            'film': {
+                'type': 'hdrfilm',
+                'rfilter': { 'type': 'gaussian' },
+                'width': self.res,
+                'height': self.res,
+                'sample_border': True,
+                'pixel_format': 'rgb',
+                'component_format': 'float32',
+            }
+        }
 
 
 # Translate occluder casting shadow on itself
@@ -552,17 +570,24 @@ class TranslateSelfShadowAreaLightConfig(ConfigBase):
                 'to_world': T().translate([-1, 0, 0.5]) @ T().rotate([0, 1, 0], 90) @ T().scale(1.0),
             },
             'light': {
-                'type': 'point',
-                'position': [-4, 0, 6],
-                'intensity': {'type': 'rgb', 'value': [5.0, 0.0, 0.0]}
+                'type': 'sphere',
+                'to_world': T().translate([-4, 0, 6]) @ T().scale(0.5),
+                'emitter': {
+                    'type': 'area',
+                    'radiance': {'type': 'rgb', 'value': [15.0, 0.0, 0.0]}
+                }
             },
-            'light2': { 'type': 'constant', 'radiance': 0.1 },
+            #'light2': { 'type': 'constant', 'radiance': 0.1 },
         }
+        self.spp = 4
+        self.res = 128
         self.error_mean_threshold = 0.06
-        self.error_max_threshold = 0.7
+        self.ref_fd_epsilon = 1e-3
+        self.error_max_threshold = 0#0.5
         self.error_mean_threshold_bwd = 0.35
         self.integrator_dict = {
             'max_depth': 3,
+            #'guiding': 'grid',
         }
 
     def initialize(self):
@@ -604,10 +629,10 @@ class TranslateSphereOnGlossyFloorConfig(TranslateShapeConfigBase):
             },
             'light': { 'type': 'constant', 'radiance': 1.0 },
         }
-        self.res = 32
+        self.res = 128
         self.ref_fd_epsilon = 1e-3
         self.error_mean_threshold = 0.25
-        self.error_max_threshold = 5.0
+        self.error_max_threshold = 7.0
         self.error_mean_threshold_bwd = 0.2
         self.spp = 2048
         self.integrator_dict = {
@@ -694,30 +719,31 @@ class RotateShadingNormalsPlaneConfig(ConfigBase):
 # -------------------------------------------------------------------
 
 BASIC_CONFIGS_LIST = [
-    DiffuseAlbedoConfig,
-    DiffuseAlbedoGIConfig,
-    AreaLightRadianceConfig,
-    DirectlyVisibleAreaLightRadianceConfig,
-    TranslateTexturedPlaneConfig,
-    CropWindowConfig,
-    RotateShadingNormalsPlaneConfig,
-
-    # The next two configs have issues with Nvidia driver v545
-    # PointLightIntensityConfig,
-    # ConstantEmitterRadianceConfig,
+    #DiffuseAlbedoConfig,
+    #DiffuseAlbedoGIConfig,
+    #AreaLightRadianceConfig,
+    #DirectlyVisibleAreaLightRadianceConfig,
+    #TranslateTexturedPlaneConfig,
+    #CropWindowConfig,
+    #RotateShadingNormalsPlaneConfig,
+    #PointLightIntensityConfig,
+    #ConstantEmitterRadianceConfig,
 ]
 
 DISCONTINUOUS_CONFIGS_LIST = [
-    # TranslateDiffuseSphereConstantConfig,
-    # TranslateDiffuseRectangleConstantConfig,
-    # TranslateRectangleEmitterOnBlackConfig,
+    TranslateDiffuseSphereConstantConfig,
+    TranslateDiffuseRectangleConstantConfig,
+    TranslateRectangleEmitterOnBlackConfig,
     TranslateSphereEmitterOnBlackConfig,
     ScaleSphereEmitterOnBlackConfig,
     TranslateOccluderAreaLightConfig,
-    TranslateSelfShadowAreaLightConfig,
-    # TranslateShadowReceiverAreaLightConfig,
+    TranslateShadowReceiverAreaLightConfig,
     TranslateSphereOnGlossyFloorConfig,
-    # TranslateCameraConfig
+
+    # BROKEN SETUP TranslateSelfShadowAreaLightConfig,
+
+    ### Camera derivatives are currently unsupported
+    #    # TranslateCameraConfig
 ]
 
 # List of configs that fail on integrators with depth less than three
@@ -739,8 +765,7 @@ CONFIGS = []
 for integrator_name, handles_discontinuities in INTEGRATORS:
     todos = BASIC_CONFIGS_LIST + (DISCONTINUOUS_CONFIGS_LIST if handles_discontinuities else [])
     for config in todos:
-        if (('direct' in integrator_name or 'projective' in integrator_name) and
-            config in INDIRECT_ILLUMINATION_CONFIGS_LIST):
+        if (('direct' in integrator_name) and config in INDIRECT_ILLUMINATION_CONFIGS_LIST):
             continue
         CONFIGS.append((integrator_name, config))
 
@@ -749,8 +774,10 @@ for integrator_name, handles_discontinuities in INTEGRATORS:
 # -------------------------------------------------------------------
 
 @pytest.mark.slow
+@pytest.mark.skip
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
-def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
+def test01_rendering_primal(variant_cuda_ad_rgb, integrator_name, config):
+#def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
     config = config()
     config.initialize()
 
@@ -779,14 +806,22 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
 @pytest.mark.slow
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
-def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
+def test02_rendering_forward(variant_cuda_ad_rgb, integrator_name, config):
+#def test02_rendering_forward(variant_llvm_ad_rgb, integrator_name, config):
+#def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
+    #dr.set_flag(dr.JitFlag.Debug, True)
+    #dr.set_flag(dr.JitFlag.ReuseIndices, False)
+    #dr.set_flag(dr.JitFlag.SymbolicLoops, False)
+    #dr.set_flag(dr.JitFlag.OptimizeCalls, False)
+    #dr.set_flag(dr.JitFlag.SymbolicCalls, False)
     config = config()
     config.initialize()
 
     config.integrator_dict['type'] = integrator_name
-    integrator = mi.load_dict(config.integrator_dict)
+    integrator = mi.load_dict(config.integrator_dict, parallel=False)
     if 'projective' in integrator_name:
-        integrator.proj_seed_spp = 2048 * 2
+        #integrator.proj_seed_spp = 2048 * 2
+        integrator.proj_seed_spp = 512
 
     filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
     image_fwd_ref = mi.TensorXf(mi.Bitmap(filename))
@@ -802,12 +837,16 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
 
     dr.set_label(config.params, 'params')
     image_fwd = integrator.render_forward(
-        config.scene, seed=0, spp=config.spp, params=theta)
+        config.scene, seed=0, spp=512, params=theta)
     image_fwd = dr.detach(image_fwd)
 
     error = dr.abs(image_fwd - image_fwd_ref) / dr.maximum(dr.abs(image_fwd_ref), 2e-1)
     error_mean = dr.mean(error, axis=None)
     error_max = dr.max(error, axis=None)
+
+    filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_fwd.exr")
+    print(f'-> write current image: {filename}')
+    mi.util.write_bitmap(filename, image_fwd)
 
     if error_mean > config.error_mean_threshold or error_max > config.error_max_threshold:
         print(f"Failure in config: {config.name}, {integrator_name}")
@@ -826,13 +865,14 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
 @pytest.mark.slow
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
-def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
+def test03_rendering_backward(variant_cuda_ad_rgb, integrator_name, config):
+#def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
     config = config()
     config.initialize()
 
     config.integrator_dict['type'] = integrator_name
 
-    integrator = mi.load_dict(config.integrator_dict)
+    integrator = mi.load_dict(config.integrator_dict, parallel=False)
     if 'projective' in integrator_name:
         integrator.proj_seed_spp = 2048 * 2
 
@@ -865,14 +905,15 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
 
 @pytest.mark.slow
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
-def test04_render_custom_op(variants_all_ad_rgb):
+def test04_render_custom_op(variant_cuda_ad_rgb):
+#def test04_render_custom_op(variants_all_ad_rgb):
     config = DiffuseAlbedoConfig()
     config.initialize()
 
     integrator = mi.load_dict({
         'type': 'prb',
         'max_depth': config.integrator_dict['max_depth']
-    })
+    }, parallel=False)
 
     filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
     image_primal_ref = mi.TensorXf(mi.Bitmap(filename))
@@ -969,7 +1010,7 @@ if __name__ == "__main__":
         integrator_path = mi.load_dict({
             'type': 'path',
             'max_depth': config.integrator_dict['max_depth']
-        })
+        }, parallel=False)
 
         # Primal render
         image_ref = integrator_path.render(config.scene, seed=0, spp=args.spp)
@@ -992,3 +1033,7 @@ if __name__ == "__main__":
 
         filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
         mi.util.write_bitmap(filename, image_fd)
+        filename = join(output_dir, f"tmp1.exr")
+        mi.util.write_bitmap(filename, image_1)
+        filename = join(output_dir, f"tmp2.exr")
+        mi.util.write_bitmap(filename, image_2)

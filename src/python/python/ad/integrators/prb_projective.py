@@ -233,9 +233,24 @@ class PathProjectiveIntegrator(PSIntegrator):
             active_em &= (ds.pdf != 0.0)
 
             with dr.resume_grad(when=not primal):
+                # Given the detached emitter sample, *recompute* its
+                # contribution with AD to enable light source optimization
                 if dr.hint(not primal, mode='scalar'):
-                    # Given the detached emitter sample, *recompute* its
-                    # contribution with AD to enable light source optimization
+                    # For textured area lights, we need to a differentiable
+                    # ray intersection to track the UV change
+                    active_diff_em = (
+                        active_em &
+                        mi.has_flag(ds.emitter.flags(), mi.EmitterFlags.SpatiallyVarying) &
+                        mi.has_flag(ds.emitter.flags(), mi.EmitterFlags.Surface)
+                    )
+                    ray_em = si.spawn_ray_to(ds.p)
+                    ray_em.maxt = dr.largest(ray_em.maxt)
+                    si_em = scene.ray_intersect(ray_em, active_diff_em)
+                    ds_diff = mi.DirectionSample3f(scene, si_em, si)
+                    ds_diff = dr.select(active_diff_em, ds_diff, dr.zeros(mi.DirectionSample3f))
+                    ds = dr.replace_grad(ds, ds_diff)
+
+
                     ds.d = dr.replace_grad(ds.d, dr.normalize(ds.p - si.p))
                     em_val = scene.eval_emitter_direction(si, ds, active_em)
                     em_weight = dr.replace_grad(em_weight, dr.select((ds.pdf != 0), em_val / ds.pdf, 0))
