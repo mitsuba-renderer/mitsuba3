@@ -266,6 +266,11 @@ public:
         return dr::TwoPi<ScalarFloat> * m_radius.value() * m_length.value();
     }
 
+    /// Does this cylinder have flipped normals?
+    bool has_flipped_normals() const override {
+        return m_flip_normals;
+    }
+
     PositionSample3f sample_position(Float time, const Point2f &sample,
                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);

@@ -8050,6 +8050,9 @@ the scene by this shape
 Includes instanced geometry. The default implementation simply returns
 the same value as primitive_count().)doc";
 
+static const char *__doc_mitsuba_Shape_has_flipped_normals =
+R"doc(Does this shape have flipped normals?)doc";
+
 static const char *__doc_mitsuba_Shape_embree_geometry = R"doc(Return the Embree version of this shape)doc";
 
 static const char *__doc_mitsuba_Shape_emitter = R"doc(Return the area emitter associated with this shape (if any))doc";
@@ -13162,4 +13165,3 @@ static const char *__doc_operator_lshift = R"doc(Turns a vector of elements into
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif
-

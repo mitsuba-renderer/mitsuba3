@@ -918,6 +918,9 @@ public:
      */
     virtual ScalarSize effective_primitive_count() const;
 
+    /// Does this shape have flipped normals?
+    virtual bool has_flipped_normals() const;
+
 
 #if defined(MI_ENABLE_EMBREE)
     /// Return the Embree version of this shape
@@ -1196,11 +1199,12 @@ MI_CALL_TEMPLATE_BEGIN(Shape)
     DRJIT_CALL_GETTER(exterior_medium)
     DRJIT_CALL_GETTER(silhouette_discontinuity_types)
     DRJIT_CALL_GETTER(silhouette_sampling_weight)
+    DRJIT_CALL_GETTER(has_flipped_normals)
     DRJIT_CALL_GETTER(shape_type)
     auto is_emitter() const { return emitter() != nullptr; }
     auto is_sensor() const { return sensor() != nullptr; }
     auto is_mesh() const { return (shape_type() & +mitsuba::ShapeType::Mesh) != 0; }
-    auto is_ellipsoids() const { 
+    auto is_ellipsoids() const {
         auto st = shape_type();
         st &= ~mitsuba::ShapeType::Mesh;
         return ((st & (uint32_t) mitsuba::ShapeType::Ellipsoids) |
