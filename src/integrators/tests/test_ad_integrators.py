@@ -841,8 +841,7 @@ CONFIGS = []
 for integrator_name, handles_discontinuities in INTEGRATORS:
     todos = BASIC_CONFIGS_LIST + (DISCONTINUOUS_CONFIGS_LIST if handles_discontinuities else [])
     for config in todos:
-        if (('direct' in integrator_name or 'projective' in integrator_name) and
-            config in INDIRECT_ILLUMINATION_CONFIGS_LIST):
+        if (('direct' in integrator_name) and config in INDIRECT_ILLUMINATION_CONFIGS_LIST):
             continue
         CONFIGS.append((integrator_name, config))
 
