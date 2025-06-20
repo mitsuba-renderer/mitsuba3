@@ -50,56 +50,35 @@ public:
 
 public:
     IrregularSpectrum(const Properties &props) : Texture(props) {
-        if (props.type("values") == Properties::Type::String) {
-            std::vector<std::string> wavelengths_str =
-                string::tokenize(props.get<std::string_view>("wavelengths"), " ,");
-            std::vector<std::string> entry_str, values_str =
-                string::tokenize(props.get<std::string_view>("values"), " ,");
+        if (props.has_property("value")) {
+            const Properties::Spectrum *spec = props.try_get<Properties::Spectrum>("value");
+            if (!spec)
+                Throw("Failed to retrieve 'value' property as Properties::Spectrum");
 
-            if (values_str.size() != wavelengths_str.size())
-                Throw("IrregularSpectrum: 'wavelengths' and 'values' parameters must have the same size!");
-
-            std::vector<ScalarFloat> values, wavelengths;
-            values.reserve(values_str.size());
-            wavelengths.reserve(values_str.size());
-
-            for (size_t i = 0; i < values_str.size(); ++i) {
-                try {
-                    wavelengths.push_back(string::stof<ScalarFloat>(wavelengths_str[i]));
-                } catch (...) {
-                    Throw("Could not parse floating point value '%s'", wavelengths_str[i]);
-                }
-                try {
-                    values.push_back(string::stof<ScalarFloat>(values_str[i]));
-                } catch (...) {
-                    Throw("Could not parse floating point value '%s'", values_str[i]);
-                }
-            }
-
-            m_distr = IrregularContinuousDistribution<Wavelength>(
-                wavelengths.data(), values.data(), values.size()
-            );
+            init(*spec);
         } else {
-            // Extract data from std::vector<double> provided by another plugin.
-            // May need to cast to single precision depending on the variant.
-            const std::vector<double>& wavelengths_vec = props.get_any<std::vector<double>>("wavelengths");
-            const std::vector<double>& values_vec = props.get_any<std::vector<double>>("values");
+            // Construct spectrum from separate wavelength and value strings
+            Properties::Spectrum spec(
+                props.get<std::string_view>("wavelengths"),
+                props.get<std::string_view>("values")
+            );
+            init(spec);
+        }
+    }
 
-            if (values_vec.size() != wavelengths_vec.size())
-                Throw("IrregularSpectrum: 'wavelengths' and 'values' parameters must have the same size!");
-
-            if constexpr (std::is_same_v<ScalarFloat, double>) {
-                m_distr = IrregularContinuousDistribution<Wavelength>(
-                    wavelengths_vec.data(), values_vec.data(), values_vec.size());
-            } else {
-                std::vector<ScalarFloat> values(values_vec.size()), wavelengths(wavelengths_vec.size());
-                for (size_t i = 0; i < values_vec.size(); ++i) {
-                    values[i] = (ScalarFloat) values_vec[i];
-                    wavelengths[i] = (ScalarFloat) wavelengths_vec[i];
-                }
-                m_distr = IrregularContinuousDistribution<Wavelength>(
-                    wavelengths.data(), values.data(), values.size());
+    void init(const Properties::Spectrum &spec) {
+        if constexpr (std::is_same_v<ScalarFloat, double>) {
+            m_distr = IrregularContinuousDistribution<Wavelength>(
+                spec.wavelengths.data(), spec.values.data(), spec.values.size());
+        } else {
+            std::vector<ScalarFloat> values(spec.values.size()),
+                                     wavelengths(spec.wavelengths.size());
+            for (size_t i = 0; i < spec.values.size(); ++i) {
+                values[i] = (ScalarFloat) spec.values[i];
+                wavelengths[i] = (ScalarFloat) spec.wavelengths[i];
             }
+            m_distr = IrregularContinuousDistribution<Wavelength>(
+                wavelengths.data(), values.data(), values.size());
         }
     }
 

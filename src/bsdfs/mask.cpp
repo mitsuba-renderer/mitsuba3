@@ -92,15 +92,13 @@ public:
 
     MaskBSDF(const Properties &props) : Base(props) {
         // Scalar-typed opacity texture
-        m_opacity = props.get_texture<Texture>("opacity", 0.5f);
+        m_opacity = props.get_texture<Texture>("opacity", .5f);
 
-        for (auto &[name, obj] : props.objects(false)) {
-            auto *bsdf = dynamic_cast<Base *>(obj.get());
-            if (bsdf) {
+        for (auto &prop : props.objects()) {
+            if (Base *bsdf = prop.try_get<Base>()) {
                 if (m_nested_bsdf)
                     Throw("Cannot specify more than one child BSDF");
                 m_nested_bsdf = bsdf;
-                props.mark_queried(name);
             }
         }
         if (!m_nested_bsdf)

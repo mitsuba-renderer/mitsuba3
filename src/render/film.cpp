@@ -33,14 +33,12 @@ MI_VARIANT Film<Float, Spectrum>::Film(const Properties &props)
     m_sample_border = props.get<bool>("sample_border", false);
 
     // Use the provided reconstruction filter, if any.
-    for (auto &[name, obj] : props.objects(false)) {
-        auto *rfilter = dynamic_cast<ReconstructionFilter *>(obj.get());
-        if (rfilter) {
+    for (auto &prop : props.objects()) {
+        if (ReconstructionFilter *rfilter = prop.try_get<ReconstructionFilter>()) {
             if (m_filter)
                 Throw("A film can only have one reconstruction filter.");
 
             m_filter = rfilter;
-            props.mark_queried(name.c_str());
         }
     }
 

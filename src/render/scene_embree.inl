@@ -105,8 +105,8 @@ Scene<Float, Spectrum>::accel_init_cpu(const Properties &props) {
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
 
     // Check if another scene was passed to the constructor
-    for (auto &[k, v] : props.objects()) {
-        if (dynamic_cast<Scene *>(v.get())) {
+    for (auto &prop : props.objects()) {
+        if (Scene *scene = prop.try_get<Scene>()) {
             s.is_nested_scene = true;
             break;
         }

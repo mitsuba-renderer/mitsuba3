@@ -1567,19 +1567,19 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 // =============================================================
 
 MI_VARIANT typename Mesh<Float, Spectrum>::FloatStorage &
-Mesh<Float, Spectrum>::attribute_buffer(const std::string &name) {
+Mesh<Float, Spectrum>::attribute_buffer(std::string_view name) {
     auto attribute = m_mesh_attributes.find(name);
     if (attribute == m_mesh_attributes.end())
-        Throw("attribute_buffer(): attribute %s doesn't exist.", name.c_str());
+        Throw("attribute_buffer(): attribute %s doesn't exist.", name);
     return attribute->second.buf;
 }
 
-MI_VARIANT void Mesh<Float, Spectrum>::add_attribute(const std::string& name,
+MI_VARIANT void Mesh<Float, Spectrum>::add_attribute(std::string_view name,
                                                      size_t dim,
                                                      const std::vector<InputFloat>& data) {
     auto attribute = m_mesh_attributes.find(name);
     if (attribute != m_mesh_attributes.end())
-        Throw("add_attribute(): attribute %s already exists.", name.c_str());
+        Throw("add_attribute(): attribute %s already exists.", name);
 
     bool is_vertex_attr = name.find("vertex_") == 0;
     bool is_face_attr   = name.find("face_") == 0;
@@ -1601,11 +1601,11 @@ MI_VARIANT void Mesh<Float, Spectrum>::add_attribute(const std::string& name,
     }
 
     FloatStorage buffer = dr::load<FloatStorage>(data.data(), count * dim);
-    m_mesh_attributes.insert({ name, { dim, type, buffer } });
+    m_mesh_attributes.insert({ std::string(name), { dim, type, buffer } });
 }
 
 MI_VARIANT void
-Mesh<Float, Spectrum>::remove_attribute(const std::string &name) {
+Mesh<Float, Spectrum>::remove_attribute(std::string_view name) {
     const auto& it = m_mesh_attributes.find(name);
     if (it == m_mesh_attributes.end()) {
         // Maybe it exists as a texture attribute, try that.
@@ -1615,7 +1615,7 @@ Mesh<Float, Spectrum>::remove_attribute(const std::string &name) {
 }
 
 MI_VARIANT typename Mesh<Float, Spectrum>::Mask
-Mesh<Float, Spectrum>::has_attribute(const std::string& name, Mask active) const {
+Mesh<Float, Spectrum>::has_attribute(std::string_view name, Mask active) const {
     const auto& it = m_mesh_attributes.find(name);
     if (it == m_mesh_attributes.end())
         return Base::has_attribute(name, active);
@@ -1623,7 +1623,7 @@ Mesh<Float, Spectrum>::has_attribute(const std::string& name, Mask active) const
 }
 
 MI_VARIANT typename Mesh<Float, Spectrum>::UnpolarizedSpectrum
-Mesh<Float, Spectrum>::eval_attribute(const std::string& name,
+Mesh<Float, Spectrum>::eval_attribute(std::string_view name,
                                       const SurfaceInteraction3f &si,
                                       Mask active) const {
     const auto& it = m_mesh_attributes.find(name);
@@ -1648,7 +1648,7 @@ Mesh<Float, Spectrum>::eval_attribute(const std::string& name,
 }
 
 MI_VARIANT Float
-Mesh<Float, Spectrum>::eval_attribute_1(const std::string& name,
+Mesh<Float, Spectrum>::eval_attribute_1(std::string_view name,
                                         const SurfaceInteraction3f &si,
                                         Mask active) const {
     const auto& it = m_mesh_attributes.find(name);
@@ -1667,7 +1667,7 @@ Mesh<Float, Spectrum>::eval_attribute_1(const std::string& name,
 }
 
 MI_VARIANT typename Mesh<Float, Spectrum>::Color3f
-Mesh<Float, Spectrum>::eval_attribute_3(const std::string& name,
+Mesh<Float, Spectrum>::eval_attribute_3(std::string_view name,
                                         const SurfaceInteraction3f &si,
                                         Mask active) const {
     const auto& it = m_mesh_attributes.find(name);

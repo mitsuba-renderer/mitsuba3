@@ -16,6 +16,12 @@
 #else
 #  include <unistd.h>
 #  include <sys/stat.h>
+#  include <fcntl.h>
+#  if defined(__linux__)
+#    include <sys/sendfile.h>
+#  elif defined(__APPLE__)
+#    include <sys/socket.h>
+#  endif
 #endif
 
 #if defined(__linux__)
@@ -198,6 +204,70 @@ bool rename(const path& src, const path &dst) {
     return std::rename(src.native().c_str(), dst.native().c_str()) == 0;
 #else
     return MoveFileW(src.native().c_str(), dst.native().c_str()) != 0;
+#endif
+}
+
+bool copy_file(const path& src, const path &dst) {
+    // Create parent directory if it doesn't exist
+    path parent = dst.parent_path();
+    if (!parent.empty() && !exists(parent)) {
+        if (!create_directory(parent))
+            return false;
+    }
+
+#if !defined(_WIN32)
+    // Unix-like systems - use sendfile
+    int src_fd = open(src.native().c_str(), O_RDONLY);
+    if (src_fd == -1) return false;
+
+    int dst_fd = open(dst.native().c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (dst_fd == -1) {
+        close(src_fd);
+        return false;
+    }
+
+    struct stat stat_buf;
+    if (fstat(src_fd, &stat_buf) == -1) {
+        close(src_fd);
+        close(dst_fd);
+        return false;
+    }
+
+    #if defined(__linux__)
+        // Linux sendfile: sendfile(out_fd, in_fd, offset, count)
+        ssize_t bytes_copied = sendfile(dst_fd, src_fd, nullptr, stat_buf.st_size);
+        bool success = bytes_copied == stat_buf.st_size;
+    #else
+        char buffer[8192];
+        ssize_t total_copied = 0;
+        bool success = true;
+
+        while (total_copied < stat_buf.st_size) {
+            ssize_t bytes_read = read(src_fd, buffer, sizeof(buffer));
+            if (bytes_read <= 0) {
+                success = false;
+                break;
+            }
+
+            ssize_t bytes_written = write(dst_fd, buffer, bytes_read);
+            if (bytes_written != bytes_read) {
+                success = false;
+                break;
+            }
+
+            total_copied += bytes_written;
+        }
+
+        success = success && (total_copied == stat_buf.st_size);
+    #endif
+
+    close(src_fd);
+    close(dst_fd);
+
+    return success;
+#else
+    // Windows implementation
+    return CopyFileW(src.native().c_str(), dst.native().c_str(), FALSE) != 0;
 #endif
 }
 

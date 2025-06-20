@@ -6263,11 +6263,15 @@ static const char *__doc_mitsuba_Properties_Type_Object = R"doc(An arbitrary Mit
 
 static const char *__doc_mitsuba_Properties_Type_Reference = R"doc(Indirect dependence to another object (referenced by name))doc";
 
+static const char *__doc_mitsuba_Properties_Type_ResolvedReference = R"doc(Reference that has been resolved to a concrete ID))doc";
+
 static const char *__doc_mitsuba_Properties_Type_String = R"doc(String)doc";
 
 static const char *__doc_mitsuba_Properties_Type_Transform = R"doc(3x3 or 4x4 homogeneous coordinate transform)doc";
 
 static const char *__doc_mitsuba_Properties_Type_Vector = R"doc(3D array)doc";
+
+static const char *__doc_mitsuba_Properties_Type_Spectrum = R"doc(A Spectral curve)doc";
 
 static const char *__doc_mitsuba_Properties_as_string = R"doc(Return one of the parameters (converting it to a string if necessary))doc";
 

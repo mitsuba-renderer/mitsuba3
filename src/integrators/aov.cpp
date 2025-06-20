@@ -110,25 +110,28 @@ public:
         m_integrator_aovs_count(0) {
         std::vector<std::string> tokens = string::tokenize(props.get<std::string_view>("aovs"));
 
-        for (auto &kv : props.objects()) {
-            Base *integrator = dynamic_cast<Base *>(kv.second.get());
+        // First pass: collect integrators and their RGBA channels
+        std::vector<std::pair<std::string, Base*>> integrators_with_names;
+        for (auto &prop : props.objects()) {
+            Base *integrator = prop.try_get<Base>();
             if (!integrator)
                 Throw("Child objects must be of type 'SamplingIntegrator'!");
-
+            std::string name(prop.name());
+            integrators_with_names.push_back({name, integrator});
             m_integrators.push_back(integrator);
             m_aov_types.push_back(AOVType::IntegratorRGBA);
-            m_aov_names.push_back(kv.first + ".R");
-            m_aov_names.push_back(kv.first + ".G");
-            m_aov_names.push_back(kv.first + ".B");
-            m_aov_names.push_back(kv.first + ".A");
-            m_integrator_aovs_count+= 4;
+            m_aov_names.push_back(name + ".R");
+            m_aov_names.push_back(name + ".G");
+            m_aov_names.push_back(name + ".B");
+            m_aov_names.push_back(name + ".A");
+            m_integrator_aovs_count += 4;
         }
 
-        for (auto &kv : props.objects()) {
-            Base *integrator = dynamic_cast<Base *>(kv.second.get());
+        // Second pass: collect AOVs from integrators
+        for (auto &[name, integrator] : integrators_with_names) {
             std::vector<std::string> aovs = integrator->aov_names();
-            for (auto name: aovs)
-                m_aov_names.push_back(kv.first + "." + name);
+            for (auto aov_name: aovs)
+                m_aov_names.push_back(name + "." + aov_name);
         }
 
         for (const std::string &token: tokens) {

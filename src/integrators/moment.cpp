@@ -45,18 +45,19 @@ public:
 
     MomentIntegrator(const Properties &props) : Base(props) {
         // Get the nested integrators and their AOVs
-        for (auto &kv : props.objects()) {
-            Base *integrator = dynamic_cast<Base *>(kv.second.get());
+        for (auto &prop : props.objects()) {
+            Base *integrator = prop.try_get<Base>();
             if (!integrator)
                 Throw("Child objects must be of type 'SamplingIntegrator'!");
+            std::string name(prop.name());
             std::vector<std::string> aovs = integrator->aov_names();
-            for (auto name: aovs)
-                m_aov_names.push_back(kv.first + "." + name);
+            for (auto aov_name: aovs)
+                m_aov_names.push_back(name + "." + aov_name);
             m_integrators.push_back({ integrator, aovs.size() });
 
-            m_aov_names.push_back(kv.first + ".X");
-            m_aov_names.push_back(kv.first + ".Y");
-            m_aov_names.push_back(kv.first + ".Z");
+            m_aov_names.push_back(name + ".X");
+            m_aov_names.push_back(name + ".Y");
+            m_aov_names.push_back(name + ".Z");
         }
 
         // For every AOV, add a corresponding "m2_" AOV

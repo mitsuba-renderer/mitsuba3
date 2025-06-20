@@ -68,7 +68,7 @@ public:
                   "The area light inherits this transformation from its parent "
                   "shape.");
 
-        m_radiance = props.get_texture_d65<Texture>("radiance", 1.f);
+        m_radiance = props.get_emissive_texture<Texture>("radiance", 1.f);
 
         m_flags = +EmitterFlags::Surface;
         if (m_radiance->is_spatially_varying())

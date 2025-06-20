@@ -61,43 +61,40 @@ public:
 
 public:
     RegularSpectrum(const Properties &props) : Texture(props) {
-        ScalarVector2f wavelength_range(
-            props.get<ScalarFloat>("wavelength_min"),
-            props.get<ScalarFloat>("wavelength_max")
+        if (props.has_property("value")) {
+            const Properties::Spectrum *spec = props.try_get<Properties::Spectrum>("value");
+            if (!spec)
+                Throw("Failed to retrieve 'value' property as Properties::Spectrum");
+
+            if (!spec->is_regular())
+                Throw("RegularSpectrum requires regularly spaced wavelengths");
+
+            init(*spec);
+        } else {
+            Properties::Spectrum spec(
+                props.get<std::string_view>("values"),
+                props.get<double>("wavelength_min"),
+                props.get<double>("wavelength_max")
+            );
+            init(spec);
+        }
+    }
+
+    void init(const Properties::Spectrum &spec) {
+        ScalarVector2d range(
+            spec.wavelengths.front(),
+            spec.wavelengths.back()
         );
 
-        if (props.type("values") == Properties::Type::String) {
-            std::vector<std::string> values_str =
-                string::tokenize(props.get<std::string_view>("values"), " ,");
-            std::vector<ScalarFloat> data;
-            data.reserve(values_str.size());
-
-            for (const auto &s : values_str) {
-                try {
-                    data.push_back(string::stof<ScalarFloat>(s));
-                } catch (...) {
-                    Throw("Could not parse floating point value '%s'", s);
-                }
-            }
-
+        if constexpr (std::is_same_v<ScalarFloat, double>) {
             m_distr = ContinuousDistribution<Wavelength>(
-                wavelength_range, data.data(), data.size()
-            );
+                range, spec.values.data(), spec.values.size());
         } else {
-            // Extract data from a std::vector<double> provided by another plugin.
-            // May need to cast to single precision depending on the variant.
-            const std::vector<double>& values_vec = props.get_any<std::vector<double>>("values");
-
-            if constexpr (std::is_same_v<ScalarFloat, double>) {
-                m_distr = ContinuousDistribution<Wavelength>(
-                    wavelength_range, values_vec.data(), values_vec.size());
-            } else {
-                std::vector<ScalarFloat> values(values_vec.size());
-                for (size_t i=0; i < values_vec.size(); ++i)
-                    values[i] = (ScalarFloat) values_vec[i];
-                m_distr = ContinuousDistribution<Wavelength>(
-                    wavelength_range, values.data(), values.size());
-            }
+            std::vector<ScalarFloat> values(spec.values.size());
+            for (size_t i = 0; i < spec.values.size(); ++i)
+                values[i] = (ScalarFloat) spec.values[i];
+            m_distr = ContinuousDistribution<Wavelength>(
+                ScalarVector2f(range), values.data(), values.size());
         }
     }
 

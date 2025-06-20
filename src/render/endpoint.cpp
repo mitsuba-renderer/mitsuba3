@@ -12,13 +12,11 @@ MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props)
     m_to_world = props.get<ScalarTransform4f>("to_world", ScalarTransform4f());
     dr::make_opaque(m_to_world);
 
-    for (auto &[name, obj] : props.objects(false)) {
-        Medium *medium = dynamic_cast<Medium *>(obj.get());
-        if (medium) {
+    for (auto &prop : props.objects()) {
+        if (Medium *medium = prop.try_get<Medium>()) {
             if (m_medium)
                 Throw("Only a single medium can be specified per endpoint (e.g. per emitter or sensor)");
             set_medium(medium);
-            props.mark_queried(name.c_str());
         }
     }
 }
@@ -28,13 +26,11 @@ MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props, ObjectTy
     m_to_world = props.get<ScalarTransform4f>("to_world", ScalarTransform4f());
     dr::make_opaque(m_to_world);
 
-    for (auto &[name, obj] : props.objects(false)) {
-        Medium *medium = dynamic_cast<Medium *>(obj.get());
-        if (medium) {
+    for (auto &prop : props.objects()) {
+        if (Medium *medium = prop.try_get<Medium>()) {
             if (m_medium)
                 Throw("Only a single medium can be specified per endpoint (e.g. per emitter or sensor)");
             set_medium(medium);
-            props.mark_queried(name.c_str());
         }
     }
 }

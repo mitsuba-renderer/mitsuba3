@@ -123,7 +123,7 @@ public:
     Projector(const Properties &props) : Base(props) {
         m_intensity_scale = dr::opaque<Float>(props.get<ScalarFloat>("scale", 1.f));
 
-        m_irradiance = props.get_texture_d65<Texture>("irradiance", 1.f);
+        m_irradiance = props.get_emissive_texture<Texture>("irradiance", 1.f);
 
         ScalarVector2i size = m_irradiance->resolution();
         m_x_fov = ScalarFloat(parse_fov(props, size.x() / (double) size.y()));

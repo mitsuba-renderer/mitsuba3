@@ -11,7 +11,7 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(string)
 
-template <typename T> T parse_float(const char *s, const char *end, char **endptr) {
+template <typename T> T parse_float(const char *s, const char *end, char **endptr) noexcept {
     const char *p = s;
 
     // Skip leading space
@@ -27,26 +27,19 @@ template <typename T> T parse_float(const char *s, const char *end, char **endpt
     if (*p == '+')
         ++p;
 
-    T result;
+    T result = 0;
     fast_float::from_chars_result status =
         fast_float::from_chars(p, end, result);
 
-    bool success = status.ec == std::errc();
-
-    if (likely(success)) {
-        if (endptr)
-            *endptr = (char *) status.ptr;
-        p = status.ptr;
-    } else {
-        Throw("Floating point number \"%.*s\" could not be parsed!", (int)(end - s), s);
-    }
+    *endptr = (char *) (status.ec == std::errc() ? status.ptr : s);
 
     return result;
 }
 
 template <typename T> T stof(std::string_view s) {
-    const char *start = s.data();
-    const char *end = start + s.length();
+    const char *start = s.data(),
+               *end   = start + s.length();
+
     char *p = nullptr;
     T result = parse_float<T>(start, end, &p);
     bool success = false;
@@ -66,15 +59,15 @@ template <typename T> T stof(std::string_view s) {
         success = true;
 
     if (unlikely(!success))
-        Throw("Floating point number \"%.*s\" could not be parsed!", (int) s.length(), s.data());
+        Throw("Floating point number \"%s\" could not be parsed!", s);
 
     return result;
 }
 
 template MI_EXPORT_LIB float  stof<float>(std::string_view);
 template MI_EXPORT_LIB double stof<double>(std::string_view);
-template MI_EXPORT_LIB float  parse_float<float>(const char *, const char *, char **);
-template MI_EXPORT_LIB double parse_float<double>(const char *, const char *, char **);
+template MI_EXPORT_LIB float  parse_float<float>(const char *, const char *, char **) noexcept;
+template MI_EXPORT_LIB double parse_float<double>(const char *, const char *, char **) noexcept;
 
 std::vector<std::string> tokenize(std::string_view string,
                                   std::string_view delim,

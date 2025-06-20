@@ -79,7 +79,7 @@ public:
             dr::make_opaque(m_to_world);
         }
 
-        m_irradiance = props.get_texture_d65<Texture>("irradiance", 1.f);
+        m_irradiance = props.get_emissive_texture<Texture>("irradiance", 1.f);
 
         if (m_irradiance->is_spatially_varying())
             Throw("Expected a non-spatially varying irradiance spectra!");
