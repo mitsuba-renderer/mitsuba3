@@ -9,7 +9,7 @@
 #include <mitsuba/core/thread.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/vector.h>
-#include <mitsuba/core/xml.h>
+#include <mitsuba/core/parser.h>
 #include <nanothread/nanothread.h>
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/records.h>
@@ -56,10 +56,6 @@ Options:
     -s <index>, --sensor <index>
         Index of the sensor to render with (following the declaration order
         in the scene file). Default value: 0.
-
-    -u, --update
-        When specified, Mitsuba will update the scene's XML description
-        to the latest version.
 
     -a <path1>;<path2>;.., --append <path1>;<path2>
         Add one or more entries to the resource search path.
@@ -162,7 +158,6 @@ int main(int argc, char *argv[]) {
     auto arg_define    = parser.add(StringVec{ "-D", "--define" }, true);
     auto arg_sensor_i  = parser.add(StringVec{ "-s", "--sensor" }, true);
     auto arg_output    = parser.add(StringVec{ "-o", "--output" }, true);
-    auto arg_update    = parser.add(StringVec{ "-u", "--update" }, false);
     auto arg_help      = parser.add(StringVec{ "-h", "--help" });
     auto arg_mode      = parser.add(StringVec{ "-m", "--mode" }, true);
     auto arg_paths     = parser.add(StringVec{ "-a" }, true);
@@ -174,7 +169,7 @@ int main(int argc, char *argv[]) {
     auto arg_source    = parser.add(StringVec{ "-S" });
     auto arg_vec_width = parser.add(StringVec{ "-V" }, true);
 
-    xml::ParameterList params;
+    parser::ParameterList params;
     std::string error_msg, mode;
 
 #if !defined(_WIN32)
@@ -241,7 +236,7 @@ int main(int argc, char *argv[]) {
             auto sep = value.find('=');
             if (sep == std::string::npos)
                 Throw("-D/--define: expect key=value pair!");
-            params.emplace_back(value.substr(0, sep), value.substr(sep+1), false);
+            params.emplace_back(value.substr(0, sep), value.substr(sep+1));
             arg_define = arg_define->next();
         }
         mode = (*arg_mode ? arg_mode->as_string() : MI_DEFAULT_VARIANT);
@@ -336,6 +331,8 @@ int main(int argc, char *argv[]) {
 #endif
         }
 
+        parser::ParserConfig config(mode);
+
         while (arg_extra && *arg_extra) {
             fs::path filename(arg_extra->as_string());
             ref<FileResolver> fr2 = new FileResolver(*fr);
@@ -349,16 +346,22 @@ int main(int argc, char *argv[]) {
             if (*arg_output)
                 filename = fs::path(arg_output->as_string());
 
-            // Try and parse a scene from the passed file.
-            std::vector<ref<Object>> parsed =
-                xml::load_file(arg_extra->as_string(), mode, params,
-                               *arg_update, true);
+            // Parse the XML file
+            parser::ParserState state = parser::parse_file(
+                config, arg_extra->as_string(), params);
 
-            if (parsed.size() != 1)
+            // Resolve references an optimize the scene representation
+            parser::transform_all(config, state);
+
+            // Instantiate scene objects in parallel
+            std::vector<ref<Object>> objects =
+                parser::instantiate(config, state);
+
+            if (objects.size() != 1)
                 Throw("Root element of the input file is expanded into "
                       "multiple objects, only a single object is expected!");
 
-            MI_INVOKE_VARIANT(mode, render, parsed[0].get(), sensor_i, filename);
+            MI_INVOKE_VARIANT(mode, render, objects[0].get(), sensor_i, filename);
             arg_extra = arg_extra->next();
         }
     } catch (const std::exception &e) {

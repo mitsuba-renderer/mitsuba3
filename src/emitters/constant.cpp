@@ -58,7 +58,7 @@ public:
         m_bsphere = BoundingSphere3f(ScalarPoint3f(0.f), 1.f);
         m_surface_area = 4.f * dr::Pi<ScalarFloat>;
 
-        m_radiance = props.get_texture_d65<Texture>("radiance", 1.f);
+        m_radiance = props.get_emissive_texture<Texture>("radiance", 1.f);
 
         if (m_radiance->is_spatially_varying())
             Throw("Expected a non-spatially varying radiance spectra!");

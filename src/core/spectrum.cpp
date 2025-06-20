@@ -120,7 +120,8 @@ Color<Scalar, 3> spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
     }
 
     // Last specified value repeats implicitly
-    xyz *= ((Scalar) MI_CIE_MAX - (Scalar) MI_CIE_MIN) / (Scalar) steps;
+    xyz *= ((Scalar) MI_CIE_MAX - (Scalar) MI_CIE_MIN) *
+           (Scalar) MI_CIE_Y_NORMALIZATION / (Scalar) steps;
     Color<Scalar, 3> rgb = xyz_to_srgb(xyz);
 
     if (bounded && dr::any(rgb < (Scalar) 0.f || rgb > (Scalar) 1.f)) {

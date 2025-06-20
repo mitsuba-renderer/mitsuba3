@@ -12,8 +12,7 @@ class SceneParameters(Mapping):
     Dictionary-like object that references various parameters used in a Mitsuba
     scene graph. Parameters can be read and written using standard syntax
     (``parameter_map[key]``). The class exposes several non-standard functions,
-    specifically :py:meth:`~mitsuba.SceneParameters.torch()`,
-    :py:meth:`~mitsuba.SceneParameters.update()`, and
+    specifically :py:meth:`~mitsuba.SceneParameters.update()`, and
     :py:meth:`~mitsuba.SceneParameters.keep()`.
     """
 

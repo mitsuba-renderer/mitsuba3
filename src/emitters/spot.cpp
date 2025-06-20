@@ -89,8 +89,8 @@ public:
 
     SpotLight(const Properties &props) : Base(props) {
         m_flags = +EmitterFlags::DeltaPosition;
-        m_intensity = props.get_texture_d65<Texture>("intensity", 1.f);
-        m_texture = props.get_texture_d65<Texture>("texture", 1.f);
+        m_intensity = props.get_emissive_texture<Texture>("intensity", 1.f);
+        m_texture = props.get_texture<Texture>("texture", 1.f);
 
         if (m_intensity->is_spatially_varying())
             Throw("The parameter 'intensity' cannot be spatially varying (e.g. bitmap type)!");

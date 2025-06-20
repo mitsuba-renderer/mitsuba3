@@ -16,35 +16,32 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props)
     Base::m_shape_type = ShapeType::ShapeGroup;
 
     // Add children to the underlying data structure
-    for (auto &kv : props.objects()) {
-        Object *o = kv.second;
-
-        if (Base *shape = dynamic_cast<Base *>(o); shape) {
-            if (shape->is_shape_group())
-                Throw("Nested ShapeGroup is not permitted");
-            if (shape->is_emitter())
-                Throw("Instancing of emitters is not supported");
-            if (shape->is_instance())
-                Throw("Nested instancing is not permitted");
-            if (shape->is_sensor())
-                Throw("Instancing of sensors is not supported");
-            else {
-                m_shapes.push_back(shape);
-                shape->mark_as_instance();
+    for (auto &prop : props.objects()) {
+        Base *shape = prop.try_get<Base>();
+        if (!shape)
+            Throw("Tried to add an unsupported object of type \"%s\"", prop.get<ref<Object>>().get());
+        if (shape->is_shape_group())
+            Throw("Nested ShapeGroup is not permitted");
+        if (shape->is_emitter())
+            Throw("Instancing of emitters is not supported");
+        if (shape->is_instance())
+            Throw("Nested instancing is not permitted");
+        if (shape->is_sensor())
+            Throw("Instancing of sensors is not supported");
+        else {
+            m_shapes.push_back(shape);
+            shape->mark_as_instance();
 
 #if defined(MI_ENABLE_EMBREE) || defined(MI_ENABLE_CUDA)
-                m_bbox.expand(shape->bbox());
+            m_bbox.expand(shape->bbox());
 #endif
 
 #if !defined(MI_ENABLE_EMBREE)
-                if constexpr (!dr::is_cuda_v<Float>)
-                    m_kdtree->add_shape(shape);
+            if constexpr (!dr::is_cuda_v<Float>)
+                m_kdtree->add_shape(shape);
 #endif
-                uint32_t type = shape->shape_type();
-                m_shape_types |= type;
-            }
-        } else {
-            Throw("Tried to add an unsupported object of type \"%s\"", kv.second);
+            uint32_t type = shape->shape_type();
+            m_shape_types |= type;
         }
     }
 #if !defined(MI_ENABLE_EMBREE)

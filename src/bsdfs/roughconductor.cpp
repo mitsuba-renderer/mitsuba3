@@ -163,8 +163,8 @@ public:
     RoughConductor(const Properties &props) : Base(props) {
         std::string_view material = props.get<std::string_view>("material", "none");
         if (props.has_property("eta") || material == "none") {
-            m_eta = props.get_texture<Texture>("eta", 0.f);
-            m_k   = props.get_texture<Texture>("k",   1.f);
+            m_eta = props.get_unbounded_texture<Texture>("eta", 0.f);
+            m_k   = props.get_unbounded_texture<Texture>("k",   1.f);
             if (material != "none")
                 Throw("Should specify either (eta, k) or material, not both.");
         } else {
@@ -192,10 +192,10 @@ public:
             if (props.has_property("alpha"))
                 Throw("Microfacet model: please specify"
                       "either 'alpha' or 'alpha_u'/'alpha_v'.");
-            m_alpha_u = props.get_texture<Texture>("alpha_u");
-            m_alpha_v = props.get_texture<Texture>("alpha_v");
+            m_alpha_u = props.get_unbounded_texture<Texture>("alpha_u");
+            m_alpha_v = props.get_unbounded_texture<Texture>("alpha_v");
         } else {
-            m_alpha_u = m_alpha_v = props.get_texture<Texture>("alpha", 0.1f);
+            m_alpha_u = m_alpha_v = props.get_unbounded_texture<Texture>("alpha", 0.1f);
         }
 
         if (props.has_property("specular_reflectance"))

@@ -52,12 +52,13 @@ add_library(mitsuba-core OBJECT
   struct.cpp        ${INC_DIR}/struct.h
   thread.cpp        ${INC_DIR}/thread.h
                     ${INC_DIR}/timer.h
-  transform.cpp     ${INC_DIR}/transform.h
+                    ${INC_DIR}/transform.h
                     ${INC_DIR}/traits.h
   util.cpp          ${INC_DIR}/util.h
                     ${INC_DIR}/vector.h
                     ${INC_DIR}/warp.h
   xml.cpp           ${INC_DIR}/xml.h
+  parser.cpp        ${INC_DIR}/parser.h
   zstream.cpp       ${INC_DIR}/zstream.h
                     ${INC_DIR}/quad.h
 

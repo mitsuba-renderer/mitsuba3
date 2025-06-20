@@ -252,5 +252,11 @@ extern MI_EXPORT_LIB bool remove(const path& p);
  */
 extern MI_EXPORT_LIB bool rename(const path& src, const path &dst);
 
+/** \brief Copies a file from source to destination. Returns true if copying was
+ * successful, false if there was an error (e.g. the source file did not exist).
+ * Creates intermediate directories if necessary.
+ */
+extern MI_EXPORT_LIB bool copy_file(const path& src, const path &dst);
+
 NAMESPACE_END(filesystem)
 NAMESPACE_END(mitsuba)

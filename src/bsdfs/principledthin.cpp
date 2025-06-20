@@ -175,7 +175,7 @@ public:
         m_flatness = props.get_texture<Texture>("flatness", 0.0f);
         m_has_spec_tint = get_flag("spec_tint", props);
         m_spec_tint = props.get_texture<Texture>("spec_tint", 0.0f);
-        m_eta_thin = props.get_texture<Texture>("eta", 1.5f);
+        m_eta_thin = props.get_unbounded_texture<Texture>("eta", 1.5f);
         m_has_diff_trans = get_flag("diff_trans", props);
         m_diff_trans = props.get_texture<Texture>("diff_trans", 0.0f);
         m_spec_refl_srate =

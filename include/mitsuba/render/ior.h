@@ -103,19 +103,12 @@ ref<Texture> ior_from_file(std::string_view filename) {
     std::vector<Float> wavelengths, values;
     spectrum_from_file(fs::path(filename), wavelengths, values);
 
-    Float unit_conversion = is_spectral_v<Spectrum> ? 1 : Float(MI_CIE_Y_NORMALIZATION);
-    for (size_t k = 0; k < wavelengths.size(); ++k)
-        values[k] *= unit_conversion;
-
-
     ref<Texture> tex;
     Properties props;
 
     if (is_spectral_v<Spectrum>) {
         props.set_plugin_name("irregular");
-        props.set("size", wavelengths.size());
-        props.set_any("wavelengths", std::move(wavelengths));
-        props.set_any("values", std::move(values));
+        props.set("value", Properties::Spectrum(std::move(wavelengths), std::move(values)));
     } else {
         Color<Float, 3> color =
             spectrum_list_to_srgb(wavelengths, values, false, false);

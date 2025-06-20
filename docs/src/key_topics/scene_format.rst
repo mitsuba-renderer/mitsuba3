@@ -462,26 +462,23 @@ using the ``-a <path1>;<path2>;..`` command line argument).
 
     <path value="../../my_resources"/>
 
-Scene Python ``dict`` format
-============================
+Dictionary-based scene format
+=============================
 
-A more convenient way of constructing Mitsuba objects in Python is to use
-:py:func:`mitsuba.load_dict` which takes as argument a Python dictionary. The
-structure of this python dictionary should be similar to the XML structure used
-for the Mitsuba scene description.
+The function :py:func:`mitsuba.load_dict` provides a convenient alternative way
+of constructing Mitsuba objects using Python dictionaries. They express the
+same high-level structure while using native Python data types.
 
-The dictionary should always contain an entry ``"type"`` to specify the name of
-the plugin to be instantiated. Keys of the dictionary must be strings and will
-represent the name of the properties. The type of the property will be deduced
-from the Python type for simple types (e.g. ``bool``, ``float``, ``int``,
-``string``, ...). It is possible to provide another dictionary as the value of
-an entry, which will be used to create nested objects, as in the XML scene
-description.
+A dictionary must always contain an entry ``"type"`` to specify the name of the
+plugin to be instantiated. Dictionary keys must be strings and represent the
+name of the properties passed to the plugin. The property type is automatically
+deduced from the underlying Python type (e.g. ``bool``, ``float``, ``int``,
+``str``, ...). Using a dictionary as value creates a nested object.
 
 The following snippets illustrate the similarity between the XML code and the
 Python dictionary structure. Also note that similarly, the :ref:`plugin
 documentation <sec-plugins>` section provides both XML snippets and the
-corresponding python ``dict`` code examples for every referenced plugins.
+corresponding python ``dict`` code examples for all referenced plugins.
 
 .. tabs::
     .. code-tab:: xml
@@ -504,7 +501,7 @@ corresponding python ``dict`` code examples for every referenced plugins.
             }
         }
 
-Here is a more concrete example on how to use the function:
+Here is a concrete example on how to use :py:func:`mitsuba.load_dict`:
 
 .. code-block:: python
 
@@ -518,8 +515,8 @@ Here is a more concrete example on how to use the function:
         }
     })
 
-It is also possible to provide another Mitsuba object within the Python
-dictionary instead of using nested dictionaries:
+It is also possible to call this function several times and pass previously
+constructed objects instead of nesting dictionaries:
 
 .. code-block:: python
 
@@ -534,6 +531,9 @@ dictionary instead of using nested dictionaries:
         "type": "sphere",
         "something": my_bsdf
     })
+
+Color/spectra
+*************
 
 For convenience, a nested dictionary can be provided with a ``"type"`` entry
 equal to ``"rgb"`` or ``"spectrum"``. Similarly to the XML parser, the
@@ -551,7 +551,7 @@ dictionary:
         "value": 0.44
     }
 
-    # Passing tri-stimulus values
+    # Passing tristimulus values
     "color_property": {
         "type": "rgb",
         "value": [0.7, 0.1, 0.5]
@@ -569,7 +569,7 @@ dictionary:
         "value": [(400.0, 0.5), (500.0, 0.8), (600.0, 0.2)]
     }
 
-The following example constructs a Mitsuba scene using
+The following example constructs a Mitsuba complete scene using
 :py:func:`mitsuba.load_dict`:
 
 .. code-block:: python
@@ -613,51 +613,72 @@ The following example constructs a Mitsuba scene using
         }
     })
 
-As in the XML scene description, it is possible to reference other objects in
-the `dict`, as long as those a declared before the reference takes place in the
-dictionary. For this purpose, you can specify a nested dictionary with
-``"type":"ref"`` and an ``"id"`` entry. Objects can be referenced using their
-``key`` in the dictionary. It is also possible to reference an object using it's
-``id`` if one was defined.
+References
+**********
+
+Like in the XML parser, it is possible to declare scene objects once and then
+reference them elsewhere.
 
 .. code-block:: python
 
     {
-        "type": "scene", # this BSDF can be referenced using its key "bsdf_id_0"
-        "bsdf_key_0": {
-            "type": "roughconductor"
-        },
+        "type": "scene",
 
-        "shape_0": {
-            "type": "sphere",
-            "mybsdf": {
-                "type": "ref",
-                "id": "bsdf_key_0"
+        "shape_1": {
+            "type": "obj",
+            "filename": "shape_1.obj",
+            "bsdf": {
+                "type": "diffuse",
+                "id": "my_material"
             }
-        }
-
-        # this BSDF can be referenced using its key "bsdf_key_1" or its id "bsdf_id_1"
-        "bsdf_key_1": {
-            "type": "roughconductor",
-            "id": "bsdf_id_1"
         },
 
         "shape_2": {
             "type": "sphere",
-            "mybsdf": {
-                "type": "ref",
-                "id": "bsdf_id_1"
-            }
-        },
+            "filename": "shape_2.obj",
 
-        "shape_3": {
-            "type": "sphere",
-            "mybsdf": {
+            # Reuse the material from shape 1
+            "bsdf": {
                 "type": "ref",
-                "id": "bsdf_key_1"
+                "id": "my_material"  # Explicit ID reference
             }
         }
     }
+
+A feature that is specific to the dictionary parser is that every object in
+the dictionary automatically receives an implicit ID based on the path within
+the dictionary (i.e., the sequence of dictionary keys needed to reach the object).
+
+For example, in the snippet below, the objects receive the following implicit IDs:
+- The shape: ``my_shape``
+- The material: ``my_shape.my_material``
+- The texture: ``my_shape.my_material.reflectance`
+
+.. code-block:: python
+
+    {
+        "type": "scene",
+        "my_shape": {
+            "type": "sphere",
+            "my_material": {
+                "type": "diffuse",
+                "reflectance": {
+                    "type": "bitmap",
+                    "filename": "texture.jpg"
+                }
+            }
+        }
+    }
+
+**Important Notes**:
+
+- Dictionary keys cannot contain dots (``.``) as they are reserved for path
+  delimiters. Use underscores instead.
+- Objects can be referenced before or after their declaration---forward
+  references are fully supported.
+
+Search paths
+************
 
 As in the XML scene description, it is possible to add a path to the list of
 search paths. In the following example, the texture file can be found in the

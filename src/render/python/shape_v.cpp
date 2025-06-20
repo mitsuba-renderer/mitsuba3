@@ -329,7 +329,7 @@ MI_PY_EXPORT(Shape) {
         .def("bbox", nb::overload_cast<ScalarUInt32, const ScalarBoundingBox3f &>(
             &Shape::bbox, nb::const_), D(Shape, bbox, 3), "index"_a, "clip"_a)
         .def_method(Shape, add_texture_attribute, "name"_a, "texture"_a)
-        .def("texture_attribute", nb::overload_cast<const std::string &>(
+        .def("texture_attribute", nb::overload_cast<std::string_view>(
             &Shape::texture_attribute), D(Shape, texture_attribute), "name"_a)
         .def_method(Shape, remove_attribute, "name"_a)
         .def_method(Shape, is_mesh)

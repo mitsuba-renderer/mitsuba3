@@ -219,14 +219,14 @@ public:
     //! @{ \name Attribute routines
     // =============================================================
 
-    Mask has_attribute(const std::string& name, Mask active) const override {
+    Mask has_attribute(std::string_view name, Mask active) const override {
         if (m_ellipsoids.has_attribute(name))
             return true;
 
         return Base::has_attribute(name, active);
     }
 
-    Float eval_attribute_1(const std::string& name,
+    Float eval_attribute_1(std::string_view name,
                            const SurfaceInteraction3f &si,
                            Mask active) const override {
         MI_MASK_ARGUMENT(active);
@@ -237,7 +237,7 @@ public:
         }
     }
 
-    Color3f eval_attribute_3(const std::string& name,
+    Color3f eval_attribute_3(std::string_view name,
                              const SurfaceInteraction3f &si,
                              Mask active) const override {
         MI_MASK_ARGUMENT(active);
@@ -248,7 +248,7 @@ public:
         }
     }
 
-    ArrayXf eval_attribute_x(const std::string& name,
+    ArrayXf eval_attribute_x(std::string_view name,
                              const SurfaceInteraction3f &si,
                              Mask active) const override {
         MI_MASK_ARGUMENT(active);

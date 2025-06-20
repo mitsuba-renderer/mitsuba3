@@ -91,23 +91,20 @@ public:
     MI_IMPORT_TYPES(Shape, SensorPtr)
 
     BatchSensor(const Properties &props) : Base(props) {
-        for (auto [unused, o] : props.objects()) {
-            ref<Base> sensor(dynamic_cast<Base *>(o.get()));
-            ref<Shape> shape(dynamic_cast<Shape *>(o.get()));
-
-            if (sensor) {
+        for (auto &prop : props.objects()) {
+            if (Base *sensor = prop.try_get<Base>()) {
                 m_sensors.push_back(sensor);
-            } else if (shape) {
+            } else if (Shape *shape = prop.try_get<Shape>()) {
                 if (shape->is_sensor()) {
                     /* Inner sensors only have a weak ref to any parent shape
                      * so make sure lifetime of shapes are at least that of 
                      * batch sensor */
                     m_shapes.push_back(shape);
                     m_sensors.push_back(shape->sensor());
-                }
-                else
+                } else {
                     Throw("BatchSensor: shapes can only be specified as "
                           "children if a sensor is associated with them!");
+                }
             }
         }
 

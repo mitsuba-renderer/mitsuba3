@@ -29,6 +29,7 @@ MI_PY_DECLARE(rfilter);
 MI_PY_DECLARE(Thread);
 MI_PY_DECLARE(Timer);
 MI_PY_DECLARE(Properties);
+MI_PY_DECLARE(parser);
 MI_PY_DECLARE(misc);
 
 // render
@@ -148,6 +149,7 @@ NB_MODULE(mitsuba_ext, m) {
     MI_PY_IMPORT(Thread);
     MI_PY_IMPORT(Timer);
     MI_PY_IMPORT(Properties);
+    MI_PY_IMPORT(parser);
     MI_PY_IMPORT(misc);
 
     MI_PY_IMPORT(BSDFContext);

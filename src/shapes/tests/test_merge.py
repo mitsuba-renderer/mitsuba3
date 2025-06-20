@@ -20,7 +20,7 @@ def test01_merge_single_shape(variants_all_backends_once):
         "child1": example_mesh(),
     })
     assert isinstance(m, mi.Mesh)
-    assert m.id() == "__root__"
+    assert m.id() == "child1"
 
     # One shape in a scene, no BSDF
     m = mi.load_dict({
