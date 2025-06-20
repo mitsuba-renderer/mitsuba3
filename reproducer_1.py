@@ -5,7 +5,7 @@ from mitsuba.scalar_rgb import ScalarTransform4f as T
 mi.set_variant('cuda_ad_rgb')
 mi.set_log_level(mi.LogLevel.Info)
 
-generate_ref = False
+generate_ref = True
 generate_path = True
 generate_prb = True
 generate_prb_basic = True
@@ -17,17 +17,7 @@ scene_description = {
         'type': 'obj',
         'filename': '/home/nicolas/rgl/mitsuba3/resources/data/common/meshes/rectangle.obj',
         'face_normals': True,
-        'to_world':  T().rotate([1, 0, 0], 45) @ T().scale(1.0)
-    },
-    'integrator': {
-        'type': 'path',
-        'max_depth': 2,
-    },
-    'light': {
-        'type': 'obj',
-        'filename': '/home/nicolas/rgl/mitsuba3/resources/data/common/meshes/rectangle.obj',
-        'face_normals': True,
-        'to_world': T().translate([0, -1.5, 0]) @ T().rotate([0, 1, 0], -90) @ T().rotate([1, 0, 0], -90) @ T().scale(4.0),
+        'to_world':  T().rotate([1, 0, 0], 45) @ T().rotate([0, 0, 1], -90) @ T().scale(1.0),
         'emitter': {
             'type': 'area',
             'radiance': {
@@ -37,13 +27,17 @@ scene_description = {
             }
         }
     },
+    'integrator': {
+        'type': 'path',
+        'max_depth': 2,
+    },
     'sensor': {
         'type': 'perspective',
         'to_world': T().look_at(origin=[0, 0.2, 4], target=[0, 0.2, 0], up=[0, 1, 0]),
         'fov': 40,
         'film': {
             'type': 'hdrfilm',
-            'rfilter': { 'type': 'box' },
+            'rfilter': { 'type': 'gaussian' },
             'width': res,
             'height': res,
             'sample_border': True,
@@ -117,7 +111,7 @@ if generate_path:
     update(theta)
     dr.forward(theta, flags=dr.ADFlag.ClearEdges)
 
-    path_fwd = path_integrator.render_forward(scene, params=params, spp=1024)
+    path_fwd = path_integrator.render_forward(scene, params=params, spp=256)
     mi.Bitmap(path_fwd).write('path_fwd.exr')
 
 if generate_prb :
