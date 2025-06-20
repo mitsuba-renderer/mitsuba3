@@ -40,5 +40,6 @@ set(CORE_PY_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/thread.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/timer.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/properties.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/parser.cpp
   PARENT_SCOPE
 )

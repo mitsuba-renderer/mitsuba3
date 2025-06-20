@@ -421,6 +421,8 @@ void parse_dictionary(DictParseContext &ctx,
     }
 
     // Set object id based on path in dictionary if no id is provided
+    // NOTE: The new parser in parser.cpp does NOT auto-generate IDs from paths,
+    // only sets IDs when explicitly provided. This is an intentional behavior change.
     props.set_id(id.empty() ? string::tokenize(path, ".").back() : id);
 
     if (!id.empty()) {

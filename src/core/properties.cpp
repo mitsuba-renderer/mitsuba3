@@ -21,12 +21,12 @@ NAMESPACE_BEGIN(mitsuba)
 // Map property types to human-readable type names
 std::string_view property_type_name(Properties::Type type) {
     switch (type) {
-        case Properties::Type::Bool:      return "bool";
+        case Properties::Type::Bool:      return "boolean";
         case Properties::Type::Integer:   return "integer";
         case Properties::Type::Float:     return "float";
         case Properties::Type::Vector:    return "vector";
         case Properties::Type::Transform: return "transform";
-        case Properties::Type::Color:     return "color";
+        case Properties::Type::Color:     return "rgb";
         case Properties::Type::String:    return "string";
         case Properties::Type::Reference: return "reference";
         case Properties::Type::Object:    return "object";

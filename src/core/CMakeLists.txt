@@ -58,6 +58,7 @@ add_library(mitsuba-core OBJECT
                     ${INC_DIR}/vector.h
                     ${INC_DIR}/warp.h
   xml.cpp           ${INC_DIR}/xml.h
+  parser.cpp        ${INC_DIR}/parser.h
   zstream.cpp       ${INC_DIR}/zstream.h
                     ${INC_DIR}/quad.h
 

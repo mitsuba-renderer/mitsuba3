@@ -4,6 +4,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/python/python.h>
+#include "properties.h"
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/string_view.h>
 #include <nanobind/stl/vector.h>
@@ -15,7 +16,9 @@
             p.set(key, value, false);                                          \
         }, ##__VA_ARGS__)
 
-// Python-specific storage helper for Any objects
+namespace mitsuba {
+
+/// Storage helper for arbitrary Python objects in Properties
 class PythonObjectStorage : public Any::Base {
     nb::handle m_obj;
     const std::type_info *m_cpp_type_info;
@@ -42,6 +45,17 @@ public:
         return m_cpp_ptr;
     }
 };
+
+/// Create an Any object that stores a Python object
+Any any_wrap(nb::handle obj) {
+    if (!nb::inst_check(obj))
+        Throw("Only nanobind-bound C++ objects are supported for generic storage");
+
+    Any::Base *storage = new PythonObjectStorage(obj);
+    return Any(storage);
+}
+
+} // namespace mitsuba
 
 static nb::object get_property(const Properties& p, std::string_view key) {
     using namespace mitsuba;
@@ -94,19 +108,19 @@ MI_PY_EXPORT(Properties) {
         // Methods
         .def("has_property", [](const Properties& p, std::string_view key) {
             // Issue deprecation warning
-            PyErr_WarnEx(PyExc_DeprecationWarning, 
+            PyErr_WarnEx(PyExc_DeprecationWarning,
                         "has_property() is deprecated, use 'key in props' instead", 1);
             return p.has_property(key);
         }, "key"_a, "Deprecated: use 'key in props' instead")
         .def("remove_property", [](Properties& p, std::string_view key) {
             // Issue deprecation warning
-            PyErr_WarnEx(PyExc_DeprecationWarning, 
+            PyErr_WarnEx(PyExc_DeprecationWarning,
                         "remove_property() is deprecated, use 'del props[key]' instead", 1);
             return p.remove_property(key);
         }, "key"_a, "Deprecated: use 'del props[key]' instead")
         .def("property_names", [](const Properties& p) {
             // Issue deprecation warning
-            PyErr_WarnEx(PyExc_DeprecationWarning, 
+            PyErr_WarnEx(PyExc_DeprecationWarning,
                         "property_names() is deprecated, use 'props.keys()' instead", 1);
             return p.property_names();
         }, "Deprecated: use 'props.keys()' instead")
@@ -149,14 +163,7 @@ MI_PY_EXPORT(Properties) {
             })
         .def("__setitem__",
             [](Properties &p, std::string_view key, nb::fallback value) {
-                if (nb::inst_check(value)) {
-                    // Create PythonObjectStorage and explicitly cast to Any::Base*
-                    // to ensure the correct Any constructor is used
-                    Any::Base *storage = new PythonObjectStorage(value);
-                    p.set(key, Any(storage), false);
-                } else {
-                    Throw("Only nanobind-bound C++ objects are supported for generic storage");
-                }
+                p.set(key, any_wrap(value), false);
             })
         .def("__getitem__", [](const Properties& p, const std::string &key) {
             return get_property(p, key);
