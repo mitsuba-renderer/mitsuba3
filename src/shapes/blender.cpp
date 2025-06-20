@@ -147,7 +147,8 @@ public:
 
         bool has_cols = false;
         std::vector<std::pair<std::string, const blender::MLoopCol *>> cols;
-        for (std::string &s : props.property_names()){
+        for (auto &key : props){
+            std::string s(key.name());
             if (s.rfind("vertex_", 0) == 0){
                 cols.push_back({s, reinterpret_cast<const blender::MLoopCol *>(props.get<int64_t>(s))});
                 has_cols = true;

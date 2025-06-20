@@ -17,8 +17,9 @@ public:
         size_t visited = 0, ignored = 0;
         Timer timer;
 
-        for (auto [unused, shape] : props.objects()) {
-            ref<Mesh> mesh(dynamic_cast<Mesh *>(shape.get()));
+        for (auto &prop : props.objects()) {
+            ref<Object> shape = prop.get<ref<Object>>();
+            Mesh *mesh = prop.try_get<Mesh>();
 
             if (!mesh || mesh->has_mesh_attributes()) {
                 m_objects.push_back(shape);
@@ -44,8 +45,9 @@ public:
         }
 
         for (auto &kv : tbl) {
-            if (tbl.size() == 1)
+            if (tbl.size() == 1 && !props.id().empty())
                 kv.second->set_id(props.id());
+
             m_objects.push_back((ref<Object>) kv.second);
         }
 

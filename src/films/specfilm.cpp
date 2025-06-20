@@ -155,12 +155,13 @@ public:
                        "perform a spectral simulation.");
 
         // Load all SRF and store both name and data
-        for (auto &[name, obj] : props.objects(false)) {
-            Texture *srf = dynamic_cast<Texture *>(obj.get());
-            if (srf != nullptr) {
+        for (auto &prop : props) {
+            if (prop.type() == Properties::Type::Spectrum) {
+                m_srfs.push_back(props.get_texture<Texture>(prop.name()));
+                m_names.push_back(std::string(prop.name()));
+            } else if (Texture *srf = prop.try_get<Texture>()) {
                 m_srfs.push_back(srf);
-                m_names.push_back(name);
-                props.mark_queried(name);
+                m_names.push_back(std::string(prop.name()));
             }
         }
 
@@ -239,17 +240,16 @@ public:
         if constexpr (dr::is_jit_v<Float>)
             dr::sync_thread();
 
-        // Pass spectrum data using std::vector<double>
+        // Pass spectrum data using Properties::Spectrum
         std::vector<double> storage_vec(storage.size());
         for (size_t i = 0; i < storage.size(); ++i)
             storage_vec[i] = storage[i];
 
-        // Create new spectrum with the sampling information
-        auto props = Properties("regular");
-        props.set_any("values", std::move(storage_vec));
-        props.set("size", (int64_t)n_points);
-        props.set("wavelength_min", (double) m_range.x());
-        props.set("wavelength_max", (double) m_range.y());
+        Properties props("regular");
+        props.set("value", Properties::Spectrum(std::move(storage_vec),
+                                                (double) m_range.x(),
+                                                (double) m_range.y()));
+
         m_srf = PluginManager::instance()->create_object<Texture>(props);
     }
 

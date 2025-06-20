@@ -203,10 +203,10 @@ public:
             if (props.has_property("alpha"))
                 Throw("Microfacet model: please specify"
                       "either 'alpha' or 'alpha_u'/'alpha_v'.");
-            m_alpha_u = props.get_texture<Texture>("alpha_u");
-            m_alpha_v = props.get_texture<Texture>("alpha_v");
+            m_alpha_u = props.get_unbounded_texture<Texture>("alpha_u");
+            m_alpha_v = props.get_unbounded_texture<Texture>("alpha_v");
         } else {
-            m_alpha_u = m_alpha_v = props.get_texture<Texture>("alpha", 0.1f);
+            m_alpha_u = m_alpha_v = props.get_unbounded_texture<Texture>("alpha", 0.1f);
         }
 
         BSDFFlags extra = (m_alpha_u != m_alpha_v) ? BSDFFlags::Anisotropic : BSDFFlags(0);

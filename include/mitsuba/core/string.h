@@ -39,11 +39,11 @@ NAMESPACE_BEGIN(string)
  * Throws an exception if the conversion is unsuccessful.
  */
 template <typename T>
-T parse_float(const char *start, const char *end, char **endptr);
+T parse_float(const char *start, const char *end, char **endptr) noexcept;
 extern template MI_EXPORT_LIB float parse_float<float>(
-    const char *start, const char *end, char **endptr);
+    const char *start, const char *end, char **endptr) noexcept;
 extern template MI_EXPORT_LIB double parse_float<double>(
-    const char *start, const char *end, char **endptr);
+    const char *start, const char *end, char **endptr) noexcept;
 
 
 /**
@@ -98,6 +98,17 @@ inline std::string to_upper(std::string_view s) {
     for (size_t i = 0; i < s.length(); ++i)
         result[i] = (char) std::toupper(s[i]);
     return result;
+}
+
+/// Case-insensitive comparison of two string_views (warning: not unicode compliant)
+inline bool iequals(std::string_view a, std::string_view b) {
+    if (a.size() != b.size())
+        return false;
+    for (size_t i = 0; i < a.size(); ++i) {
+        if (std::tolower(a[i]) != std::tolower(b[i]))
+            return false;
+    }
+    return true;
 }
 
 /// Chop up the string given a set of delimiters (warning: not unicode compliant)

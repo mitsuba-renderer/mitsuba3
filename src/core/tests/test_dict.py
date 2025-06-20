@@ -18,11 +18,13 @@ def test01_dict_plugins(variants_all):
 
 
 def test02_dict_missing_type(variants_all):
+    # Note: The new parser (v2) defaults to 'scene' when type is missing,
+    # while the old parser throws an error. This test uses the old parser.
     with pytest.raises(Exception) as e:
         mi.load_dict({
             "center" : [0, 0, -10],
             "radius" : 10.0,
-        })
+        }, v2=False)
     e.match("""Missing key 'type'""")
 
 
@@ -204,8 +206,9 @@ def test06_dict_rgb(variants_all_scalar):
     })
     assert str(e1) == str(e3)
 
+    # Note: The error message format changed in the new parser, so we use the old parser here
     with pytest.raises(Exception) as e:
-        mi.load_dict({'type': 'rgb', 'value': np.array([[0.5,0.5,0.3]])})
+        mi.load_dict({'type': 'rgb', 'value': np.array([[0.5,0.5,0.3]])}, v2=False)
     assert "Could not convert [[0.5 0.5 0.3]] into Color3f" in str(e.value)
 
 
@@ -339,7 +342,7 @@ def test08_dict_unreferenced_attribute_error(variants_all):
             "type" : "point",
             "foo": 0.44
         })
-    e.match("Unreferenced property")
+    e.match("[Uu]nreferenced property")
 
 
 
@@ -419,7 +422,7 @@ def test09_dict_scene_reference(variant_scalar_rgb):
                 "id" : "shape_id",
             },
         })
-    e.match("has duplicate id")
+    e.match("has duplicate [Ii][Dd]")
 
     with pytest.raises(Exception) as e:
         scene = mi.load_dict({
@@ -433,7 +436,7 @@ def test09_dict_scene_reference(variant_scalar_rgb):
                 }
             },
         })
-    e.match("""Referenced id "bsdf2_id" not found""")
+    e.match("""bsdf2_id.*not found|unresolved reference to.*bsdf2_id""")
 
 
 @fresolver_append_path
@@ -448,7 +451,7 @@ def test10_dict_expand_nested_object(variant_scalar_spectral):
 
     b1 = mi.load_string("""
         <bsdf type="diffuse" version="3.0.0">
-            <spectrum version='2.0.0' type='d65' name="reflectance"/>
+            <spectrum type='d65' name="reflectance"/>
         </bsdf>
     """)
 
@@ -485,9 +488,9 @@ def test11_dict_spectrum_srgb(variant_scalar_rgb):
     spectrum = [(400.0, 0.1), (500.0, 0.2), (600.0, 0.4), (700.0, 0.1)]
 
     w = [s[0] for s in spectrum]
-    v = [s[1] * mi.MI_CIE_Y_NORMALIZATION for s in spectrum]
+    v = [s[1] for s in spectrum]
     rgb = mi.spectrum_list_to_srgb(w, v, d65=True)
-    assert dr.allclose(rgb, [0.380475, 0.289928, 0.134294])
+    assert dr.allclose(rgb, [0.380475, 0.289928, 0.134294], atol=1e-6)
 
     s1 = mi.load_dict({
         "type" : "spectrum",

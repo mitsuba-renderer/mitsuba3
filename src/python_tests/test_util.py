@@ -62,7 +62,7 @@ def test01_traverse_flags(variants_vec_backends_once_rgb):
         "type": "mybsdf",
         "texture1": {"type": "mytexture"},
         "texture2": {"type": "mytexture"},
-    })
+    }, optimize=False)
 
     params = mi.traverse(bsdf)
 

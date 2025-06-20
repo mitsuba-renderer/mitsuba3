@@ -73,9 +73,9 @@ public:
     MI_IMPORT_TYPES(Texture)
 
     LinearRetarder(const Properties &props) : Base(props) {
-        m_theta = props.get_texture<Texture>("theta", 0.f);
+        m_theta = props.get_unbounded_texture<Texture>("theta", 0.f);
         // As default, instantiate as a quarter-wave plate
-        m_delta = props.get_texture<Texture>("delta", 90.f);
+        m_delta = props.get_unbounded_texture<Texture>("delta", 90.f);
         m_transmittance = props.get_texture<Texture>("transmittance", 1.f);
 
         m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null;

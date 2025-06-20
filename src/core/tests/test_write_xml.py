@@ -601,3 +601,102 @@ def test16_xml_volume_with_args(variants_all_rgb, tmp_path):
         print(s2)
 
         assert str(s1) == str(s2)
+
+
+def test17_xml_section_headers(variant_scalar_rgb):
+    """Test that section headers are correctly added to XML output"""
+
+    # Create a scene with elements in mixed order (not grouped by type)
+    scene_dict = {
+        'type': 'scene',
+        'shape1': {'type': 'sphere', 'bsdf': {'type': 'ref', 'id': 'bsdf1'}},
+        'texture1': {'type': 'bitmap', 'filename': 'checkerboard.png'},
+        'emitter1': {'type': 'constant'},
+        'bsdf1': {'type': 'diffuse'},
+        'volume1': {'type': 'constvolume'},
+        'integrator': {'type': 'path'},
+        'shape2': {'type': 'cube', 'bsdf': {'type': 'ref', 'id': 'bsdf2'}},
+        'bsdf2': {'type': 'conductor'},
+        'sensor': {'type': 'perspective', 'film': {'type': 'hdrfilm', 'width': 256, 'height': 256}},
+        'medium1': {'type': 'homogeneous'},
+        'emitter2': {'type': 'point'},
+        'bsdf3': {'type': 'plastic'},
+        'shape3': {'type': 'rectangle', 'bsdf': {'type': 'ref', 'id': 'bsdf3'}}
+    }
+
+    config = mi.parser.ParserConfig('scalar_rgb')
+    state = mi.parser.parse_dict(config, scene_dict)
+
+    # Apply reordering transformation to group elements by type
+    mi.parser.transform_reorder(config, state)
+
+    # Test XML generation without section headers
+    xml_without_headers = mi.parser.write_string(state, add_section_headers=False)
+    assert "<!-- Camera and Rendering Parameters -->" not in xml_without_headers
+    assert "<!-- Materials -->" not in xml_without_headers
+    assert "<!-- Emitters -->" not in xml_without_headers
+    assert "<!-- Shapes -->" not in xml_without_headers
+    assert "<!-- Volumes -->" not in xml_without_headers
+
+    # Test XML generation with section headers
+    xml_with_headers = mi.parser.write_string(state, add_section_headers=True)
+    assert "<!-- Camera and Rendering Parameters -->" in xml_with_headers
+    assert "<!-- Materials -->" in xml_with_headers
+    assert "<!-- Emitters -->" in xml_with_headers
+    assert "<!-- Shapes -->" in xml_with_headers
+    assert "<!-- Volumes -->" in xml_with_headers
+
+    # Verify the order of sections and that each appears only once
+    header_positions = []
+    for header in ["<!-- Camera and Rendering Parameters -->", "<!-- Materials -->",
+                   "<!-- Emitters -->", "<!-- Shapes -->", "<!-- Volumes -->"]:
+        pos = xml_with_headers.find(header)
+        assert pos != -1, f"Header '{header}' not found"
+        header_positions.append((pos, header))
+        # Check that the header appears only once
+        assert xml_with_headers.count(header) == 1, f"Header '{header}' appears multiple times"
+
+    # Verify headers are in the correct order
+    header_positions.sort()
+    expected_order = ["<!-- Camera and Rendering Parameters -->", "<!-- Materials -->",
+                      "<!-- Emitters -->", "<!-- Shapes -->", "<!-- Volumes -->"]
+    actual_order = [header for _, header in header_positions]
+    assert actual_order == expected_order, f"Headers not in expected order: {actual_order}"
+
+    # Verify that elements appear after their respective headers and in grouped order
+    integrator_pos = xml_with_headers.find('<integrator type="path"')
+    sensor_pos = xml_with_headers.find('<sensor type="perspective"')
+    bsdf_pos = xml_with_headers.find('<bsdf type="diffuse"')
+    texture_pos = xml_with_headers.find('<texture type="bitmap"')
+    emitter_pos = xml_with_headers.find('<emitter type="constant"')
+    shape_pos = xml_with_headers.find('<shape type="sphere"')
+    volume_pos = xml_with_headers.find('<volume type="constvolume"')
+    medium_pos = xml_with_headers.find('<medium type="homogeneous"')
+
+    camera_header_pos = xml_with_headers.find("<!-- Camera and Rendering Parameters -->")
+    materials_header_pos = xml_with_headers.find("<!-- Materials -->")
+    emitters_header_pos = xml_with_headers.find("<!-- Emitters -->")
+    shapes_header_pos = xml_with_headers.find("<!-- Shapes -->")
+    volumes_header_pos = xml_with_headers.find("<!-- Volumes -->")
+
+    # Elements should appear after their respective section headers
+    assert integrator_pos > camera_header_pos
+    assert sensor_pos > camera_header_pos
+    assert bsdf_pos > materials_header_pos
+    assert texture_pos > materials_header_pos
+    assert emitter_pos > emitters_header_pos
+    assert shape_pos > shapes_header_pos
+    assert volume_pos > volumes_header_pos
+    assert medium_pos > volumes_header_pos
+
+    # Verify that elements are grouped together properly after reordering
+    # Camera elements should come before Materials
+    assert integrator_pos < materials_header_pos
+    assert sensor_pos < materials_header_pos
+    # Materials should come before Emitters
+    assert bsdf_pos < emitters_header_pos
+    assert texture_pos < emitters_header_pos
+    # Emitters should come before Shapes
+    assert emitter_pos < shapes_header_pos
+    # Shapes should come before Volumes
+    assert shape_pos < volumes_header_pos

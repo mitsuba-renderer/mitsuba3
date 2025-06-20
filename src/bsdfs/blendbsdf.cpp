@@ -79,13 +79,11 @@ public:
 
     BlendBSDF(const Properties &props) : Base(props) {
         int bsdf_index = 0;
-        for (auto &[name, obj] : props.objects(false)) {
-            auto *bsdf = dynamic_cast<Base *>(obj.get());
-            if (bsdf) {
+        for (auto &prop : props.objects()) {
+            if (Base *bsdf = prop.try_get<Base>()) {
                 if (bsdf_index == 2)
                     Throw("BlendBSDF: Cannot specify more than two child BSDFs");
                 m_nested_bsdf[bsdf_index++] = bsdf;
-                props.mark_queried(name);
             }
         }
 

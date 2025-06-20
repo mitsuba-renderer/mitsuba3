@@ -78,18 +78,18 @@ extern MI_EXPORT_LIB std::vector<ref<Object>> load_string(
 NAMESPACE_BEGIN(detail)
 /// Create a Texture object from RGB values
 extern MI_EXPORT_LIB ref<Object> create_texture_from_rgb(
-                                        const std::string &name,
+                                        std::string_view name,
                                         Color<float, 3> color,
-                                        const std::string &variant,
+                                        std::string_view variant,
                                         bool within_emitter);
 
 /// Create a Texture object from a constant value or spectral values if available
 extern MI_EXPORT_LIB ref<Object> create_texture_from_spectrum(
-                                        const std::string &name,
+                                        std::string_view name,
                                         double const_value,
                                         std::vector<double> &wavelengths,
                                         std::vector<double> &values,
-                                        const std::string &variant,
+                                        std::string_view variant,
                                         bool within_emitter,
                                         bool is_spectral_mode,
                                         bool is_monochromatic_mode);

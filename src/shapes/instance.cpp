@@ -62,16 +62,13 @@ public:
     using ShapeGroup_ = ShapeGroup<Float, Spectrum>;
 
     Instance(const Properties &props) : Base(props) {
-        for (auto &kv : props.objects()) {
-            Base *shape = dynamic_cast<Base *>(kv.second.get());
-            ShapeGroup_ *shapegroup = dynamic_cast<ShapeGroup_ *>(shape);
-            if (shape && shapegroup) {
-                if (m_shapegroup)
-                    Throw("Only a single shapegroup can be specified per instance.");
-                m_shapegroup = shapegroup;
-            } else {
+        for (auto &prop : props.objects()) {
+            ShapeGroup_ *shapegroup = prop.try_get<ShapeGroup_>();
+            if (!shapegroup)
                 Throw("Only a shapegroup can be specified in an instance.");
-            }
+            if (m_shapegroup)
+                Throw("Only a single shapegroup can be specified per instance.");
+            m_shapegroup = shapegroup;
         }
 
         if (!m_shapegroup)

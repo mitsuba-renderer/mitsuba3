@@ -843,19 +843,19 @@ std::string Bitmap::to_string() const {
         << "  srgb_gamma = " << m_srgb_gamma << "," << std::endl
         << "  struct = " << string::indent(m_struct) << "," << std::endl;
 
-    std::vector<std::string> keys = m_metadata.property_names();
-    if (!keys.empty()) {
+    if (!m_metadata.empty()) {
         oss << "  metadata = {" << std::endl;
-        for (auto it = keys.begin(); it != keys.end(); ) {
-            std::string value = m_metadata.as_string(it->c_str());
+        size_t i = 0;
+        for (auto &kv : m_metadata) {
+            std::string value = m_metadata.as_string(kv.name());
             if (value.length() > 50) {
                 value = value.substr(0, 50);
                 if (value[0] == '\"')
                     value += '\"';
                 value += ".. [truncated]";
             }
-            oss << "    " << *it << " => " << value;
-            if (++it != keys.end())
+            oss << "    " << kv.name() << " => " << value;
+            if (++i < m_metadata.size())
                 oss << ",";
             oss << std::endl;
         }
@@ -1339,8 +1339,6 @@ void Bitmap::write_exr(Stream *stream, int quality) const {
     if (!metadata.has_property("generatedBy"))
         metadata.set("generatedBy", "Mitsuba version " MI_VERSION);
 
-    std::vector<std::string> keys = metadata.property_names();
-
     Imf::Header header(
         (int) m_size.x(),  // width
         (int) m_size.y(),  // height,
@@ -1354,35 +1352,35 @@ void Bitmap::write_exr(Stream *stream, int quality) const {
     if (quality > 0)
         Imf::addDwaCompressionLevel(header, float(quality));
 
-    for (auto it = keys.begin(); it != keys.end(); ++it) {
+    for (auto &prop : metadata) {
         using Type = Properties::Type;
 
-        Type type = metadata.type(it->c_str());
-        if (*it == "pixelAspectRatio" || *it == "screenWindowWidth" ||
-            *it == "screenWindowCenter")
+        if (prop.name() == "pixelAspectRatio" ||
+            prop.name() == "screenWindowWidth" ||
+            prop.name() == "screenWindowCenter")
             continue;
 
-        const char *name = it->c_str();
+        const char *name = prop.name().data();
 
-        switch (type) {
+        switch (prop.type()) {
             case Type::String:
-                header.insert(it->c_str(), Imf::StringAttribute(metadata.get<std::string>(name)));
+                header.insert(name, Imf::StringAttribute(std::string(prop.get<std::string_view>())));
                 break;
             case Type::Integer:
-                header.insert(it->c_str(), Imf::IntAttribute(metadata.get<int>(name)));
+                header.insert(name, Imf::IntAttribute(prop.get<int>()));
                 break;
             case Type::Float:
-                header.insert(it->c_str(), Imf::DoubleAttribute(metadata.get<double>(name)));
+                header.insert(name, Imf::DoubleAttribute(prop.get<double>()));
                 break;
             case Type::Vector: {
-                    Vector3f val = metadata.get<Vector3f>(name);
-                    header.insert(it->c_str(), Imf::V3fAttribute(
+                    Vector3f val = prop.get<Vector3f>();
+                    header.insert(name, Imf::V3fAttribute(
                         Imath::V3f((float) val.x(), (float) val.y(), (float) val.z())));
                 }
                 break;
             case Type::Transform: {
-                    Matrix4f val = metadata.get<ScalarTransform4f>(name).matrix;
-                    header.insert(it->c_str(), Imf::M44fAttribute(Imath::M44f(
+                    Matrix4f val = prop.get<ScalarTransform4f>().matrix;
+                    header.insert(name, Imf::M44fAttribute(Imath::M44f(
                         (float) val(0, 0), (float) val(0, 1),
                         (float) val(0, 2), (float) val(0, 3),
                         (float) val(1, 0), (float) val(1, 1),
@@ -1394,7 +1392,7 @@ void Bitmap::write_exr(Stream *stream, int quality) const {
                 }
                 break;
             default:
-                header.insert(it->c_str(), Imf::StringAttribute(metadata.as_string(name)));
+                header.insert(name, Imf::StringAttribute(metadata.as_string(prop.name())));
                 break;
         }
     }
@@ -1830,20 +1828,26 @@ void Bitmap::write_png(Stream *stream, int compression) const {
     if (!metadata.has_property("generated_by"))
         metadata.set("generated_by", "Mitsuba version " MI_VERSION);
 
-    std::vector<std::string> keys = metadata.property_names();
-    std::vector<std::string> values(keys.size());
+    size_t metadata_count = metadata.size();
+    std::vector<std::string> keys, values;
+    keys.reserve(metadata_count);
+    values.reserve(metadata_count);
 
-    text = new png_text[keys.size()];
-    memset(text, 0, sizeof(png_text) * keys.size());
+    for (auto &kv : metadata) {
+        keys.emplace_back(kv.name());
+        values.push_back(metadata.as_string(kv.name()));
+    }
 
-    for (size_t i = 0; i<keys.size(); ++i) {
-        values[i] = metadata.as_string(keys[i]);
+    text = new png_text[metadata_count];
+    memset(text, 0, sizeof(png_text) * metadata_count);
+
+    for (size_t i = 0; i < metadata_count; ++i) {
         text[i].key = const_cast<char *>(keys[i].c_str());
         text[i].text = const_cast<char *>(values[i].c_str());
         text[i].compression = PNG_TEXT_COMPRESSION_NONE;
     }
 
-    png_set_text(png_ptr, info_ptr, text, (int) keys.size());
+    png_set_text(png_ptr, info_ptr, text, (int) metadata_count);
 
     if (m_srgb_gamma)
         png_set_sRGB_gAMA_and_cHRM(png_ptr, info_ptr, PNG_sRGB_INTENT_ABSOLUTE);
@@ -2155,10 +2159,9 @@ void Bitmap::write_rgbe(Stream *stream) const {
 
     stream->write_line("#?RGBE");
 
-    std::vector<std::string> keys = m_metadata.property_names();
-    for (auto key : keys) {
-        stream->write_line(tfm::format("# Metadata [%s]:", key));
-        std::istringstream iss(m_metadata.as_string(key));
+    for (auto &kv : m_metadata) {
+        stream->write_line(tfm::format("# Metadata [%s]:", kv.name()));
+        std::istringstream iss(m_metadata.as_string(kv.name()));
         std::string buf;
         while (std::getline(iss, buf))
             stream->write_line(tfm::format("#   %s", buf));
