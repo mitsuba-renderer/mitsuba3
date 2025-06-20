@@ -164,8 +164,8 @@ public:
         jit_free(m_host_bboxes);
     }
 
-    void traverse(TraversalCallback *callback) override {
-        m_ellipsoids.traverse(callback);
+    void traverse(TraversalCallback *cb) override {
+        m_ellipsoids.traverse(cb);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -447,7 +447,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Ellipsoids)
 
 private:
 
@@ -520,6 +520,5 @@ private:
     void *m_device_bboxes = nullptr;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Ellipsoids, Shape)
-MI_EXPORT_PLUGIN(Ellipsoids, "Ellipsoids");
+MI_EXPORT_PLUGIN(Ellipsoids)
 NAMESPACE_END(mitsuba)

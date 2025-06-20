@@ -138,8 +138,8 @@ public:
                   "variants!");
 #endif
 
-        auto fs = mitsuba::file_resolver();
-        fs::path file_path = fs->resolve(props.string("filename"));
+        auto fs = file_resolver();
+        fs::path file_path = fs->resolve(props.get<std::string_view>("filename"));
         std::string m_name = file_path.filename().string();
 
         // used for throwing an error later
@@ -368,11 +368,11 @@ public:
         return si;
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_parameter("control_point_count", m_control_point_count, +ParamFlags::NonDifferentiable);
-        callback->put_parameter("segment_indices",     m_indices,             +ParamFlags::NonDifferentiable);
-        callback->put_parameter("control_points",      m_control_points,      +ParamFlags::NonDifferentiable);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("control_point_count", m_control_point_count, ParamFlags::NonDifferentiable);
+        cb->put("segment_indices",     m_indices,             ParamFlags::NonDifferentiable);
+        cb->put("control_points",      m_control_points,      ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -446,7 +446,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(LinearCurve)
 
 private:
     template <bool Negate, ScalarSize N>
@@ -518,6 +518,5 @@ private:
     MI_TRAVERSE_CB(Base, m_indices, m_control_points)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(LinearCurve, Shape)
-MI_EXPORT_PLUGIN(LinearCurve, "Linear curve intersection primitive");
+MI_EXPORT_PLUGIN(LinearCurve)
 NAMESPACE_END(mitsuba)

@@ -7,8 +7,8 @@ def test01_empty(variants_vec_backends_once_rgb):
     raw_bsdf : mi.BSDF = mi.load_dict({
         'type': 'roughconductor',
         'distribution': 'ggx',
-        'alpha_u': 0.2,
-        'alpha_v': 0.05,
+        'alpha_u': 0.4,
+        'alpha_v': 0.1,
         'material': 'Al'
     })
     normalmap_bsdf : mi.BSDF = mi.load_dict(
@@ -36,14 +36,17 @@ def test01_empty(variants_vec_backends_once_rgb):
     bs_test, weight_test = normalmap_bsdf.sample(mi.BSDFContext(), si, sample1, sample2)
 
     # ignore quantities for zero-weight samples!
-    bs_ref.wo[dr.all(weight_ref == 0)] = 0
-    bs_test.wo[dr.all(weight_test == 0)] = 0
-    bs_ref.pdf[dr.all(weight_ref == 0)] = 0
-    bs_test.pdf[dr.all(weight_test == 0)] = 0
+    mask = dr.all(weight_ref == 0)
+    bs_ref.wo[mask] = 0
+    bs_test.wo[mask] = 0
+    bs_ref.pdf[mask] = 0
+    bs_test.pdf[mask] = 0
 
-    assert dr.allclose(bs_ref.wo, bs_test.wo)
-    assert dr.allclose(bs_ref.pdf, bs_test.pdf)
-    assert dr.allclose(weight_ref, weight_test)
+    # This bounds of this test are somewhat lax. Tiny errors of ~1 ULP in the
+    # incident direction (thanks to rsqrt()) are greatly magnified by the GGX sampling
+    assert dr.allclose(bs_ref.wo, bs_test.wo, atol=1e-3)
+    assert dr.allclose(bs_ref.pdf, bs_test.pdf, atol=1e-4)
+    assert dr.allclose(weight_ref, weight_test, atol=1e-2)
 
 
 def test02_tilted(variants_vec_backends_once_rgb):

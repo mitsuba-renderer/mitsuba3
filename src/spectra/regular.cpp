@@ -68,7 +68,7 @@ public:
 
         if (props.type("values") == Properties::Type::String) {
             std::vector<std::string> values_str =
-                string::tokenize(props.string("values"), " ,");
+                string::tokenize(props.get<std::string_view>("values"), " ,");
             std::vector<ScalarFloat> data;
             data.reserve(values_str.size());
 
@@ -84,25 +84,26 @@ public:
                 wavelength_range, data.data(), data.size()
             );
         } else {
-            // Scene/property parsing is in double precision, cast to single precision depending on variant.
-            size_t size = props.get<size_t>("size");
-            const double *ptr = static_cast<const double*>(props.pointer("values"));
+            // Extract data from a std::vector<double> provided by another plugin.
+            // May need to cast to single precision depending on the variant.
+            const std::vector<double>& values_vec = props.get_any<std::vector<double>>("values");
 
             if constexpr (std::is_same_v<ScalarFloat, double>) {
-                m_distr = ContinuousDistribution<Wavelength>(wavelength_range, ptr, size);
-            } else {
-                std::vector<ScalarFloat> values(size);
-                for (size_t i=0; i < size; ++i)
-                    values[i] = (ScalarFloat) ptr[i];
                 m_distr = ContinuousDistribution<Wavelength>(
-                    wavelength_range, values.data(), size);
+                    wavelength_range, values_vec.data(), values_vec.size());
+            } else {
+                std::vector<ScalarFloat> values(values_vec.size());
+                for (size_t i=0; i < values_vec.size(); ++i)
+                    values[i] = (ScalarFloat) values_vec[i];
+                m_distr = ContinuousDistribution<Wavelength>(
+                    wavelength_range, values.data(), values.size());
             }
         }
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("range",  m_distr.range(), +ParamFlags::NonDifferentiable);
-        callback->put_parameter("values", m_distr.pdf(),   +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("range", m_distr.range(), ParamFlags::NonDifferentiable);
+        cb->put("values", m_distr.pdf(), ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/) override {
@@ -165,13 +166,12 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(RegularSpectrum)
 private:
     ContinuousDistribution<Wavelength> m_distr;
 
     MI_TRAVERSE_CB(Texture, m_distr);
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(RegularSpectrum, Texture)
-MI_EXPORT_PLUGIN(RegularSpectrum, "Regular interpolated spectrum")
+MI_EXPORT_PLUGIN(RegularSpectrum)
 NAMESPACE_END(mitsuba)

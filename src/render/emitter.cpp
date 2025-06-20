@@ -5,29 +5,18 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MI_VARIANT Emitter<Float, Spectrum>::Emitter(const Properties &props)
-    : Base(props) {
-        m_sampling_weight = props.get<ScalarFloat>("sampling_weight", 1.0f);
-
-        MI_REGISTRY_PUT("Emitter", this);
-    }
-
-MI_VARIANT Emitter<Float, Spectrum>::~Emitter() {
-    if constexpr (dr::is_jit_v<Float>)
-        jit_registry_remove(this);
+MI_VARIANT Emitter<Float, Spectrum>::Emitter(const Properties &props) : Base(props, ObjectType::Emitter) {
+    m_sampling_weight = props.get<ScalarFloat>("sampling_weight", 1.f);
 }
 
-MI_VARIANT
-void Emitter<Float, Spectrum>::traverse(TraversalCallback *callback) {
-    callback->put_parameter("sampling_weight", m_sampling_weight, +ParamFlags::NonDifferentiable);
+MI_VARIANT void Emitter<Float, Spectrum>::traverse(TraversalCallback *cb) {
+    cb->put("sampling_weight", m_sampling_weight, ParamFlags::NonDifferentiable);
 }
 
-MI_VARIANT
-void Emitter<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
+MI_VARIANT void Emitter<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
     set_dirty(true);
     Base::parameters_changed(keys);
 }
 
-MI_IMPLEMENT_CLASS_VARIANT(Emitter, Endpoint, "emitter")
 MI_INSTANTIATE_CLASS(Emitter)
 NAMESPACE_END(mitsuba)

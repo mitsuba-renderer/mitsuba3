@@ -56,15 +56,15 @@ public:
     MI_IMPORT_TYPES(Texture)
 
     Checkerboard(const Properties &props) : Texture(props) {
-        m_color0 = props.texture<Texture>("color0", .4f);
-        m_color1 = props.texture<Texture>("color1", .2f);
+        m_color0 = props.get_texture<Texture>("color0", .4f);
+        m_color1 = props.get_texture<Texture>("color1", .2f);
         m_transform = props.get<ScalarTransform3f>("to_uv", ScalarTransform3f());
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("to_uv", m_transform,    +ParamFlags::NonDifferentiable);
-        callback->put_object("color0",   m_color0.get(), +ParamFlags::Differentiable);
-        callback->put_object("color1",   m_color1.get(), +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("to_uv",  m_transform, ParamFlags::NonDifferentiable);
+        cb->put("color0", m_color0,    ParamFlags::Differentiable);
+        cb->put("color1", m_color1,    ParamFlags::Differentiable);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &it, Mask active) const override {
@@ -125,7 +125,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Checkerboard)
 protected:
     ref<Texture> m_color0;
     ref<Texture> m_color1;
@@ -134,6 +134,5 @@ protected:
     MI_TRAVERSE_CB(Texture, m_color0, m_color1)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Checkerboard, Texture)
-MI_EXPORT_PLUGIN(Checkerboard, "Checkerboard texture")
+MI_EXPORT_PLUGIN(Checkerboard)
 NAMESPACE_END(mitsuba)

@@ -44,15 +44,11 @@ public:
         }
 
         for (auto &kv : tbl) {
-            if (tbl.size() == 1)
-                kv.second->set_id(props.id());
             m_objects.push_back((ref<Object>) kv.second);
         }
 
         Log(Info, "Collapsed %zu into %zu meshes. (took %s, %zu objects ignored)",
             visited, tbl.size(), util::time_string((float) timer.value()), ignored);
-
-        MI_REGISTRY_PUT("Shape", this);
     }
 
     std::vector<ref<Object>> expand() const override {
@@ -61,7 +57,7 @@ public:
 
     ScalarBoundingBox3f bbox() const override { return ScalarBoundingBox3f(); }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(MergeShape)
 
 private:
     struct Key {
@@ -107,6 +103,5 @@ private:
     std::vector<ref<Object>> m_objects;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(MergeShape, Shape)
-MI_EXPORT_PLUGIN(MergeShape, "MergeShape intersection primitive");
+MI_EXPORT_PLUGIN(MergeShape)
 NAMESPACE_END(mitsuba)

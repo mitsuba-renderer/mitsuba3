@@ -34,7 +34,7 @@ static void PyLog(mitsuba::LogLevel level, const std::string &msg) {
         fmt.insert(2, "()");
 
     logger->log(
-        level, nullptr /* class_ */,
+        level, nullptr /* class_ - nullptr so formatter uses file:line */,
         filename.c_str(), lineno,
         tfm::format(fmt.c_str(), name.c_str(), msg.c_str()));
 }

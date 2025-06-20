@@ -52,9 +52,9 @@ public:
     IrregularSpectrum(const Properties &props) : Texture(props) {
         if (props.type("values") == Properties::Type::String) {
             std::vector<std::string> wavelengths_str =
-                string::tokenize(props.string("wavelengths"), " ,");
+                string::tokenize(props.get<std::string_view>("wavelengths"), " ,");
             std::vector<std::string> entry_str, values_str =
-                string::tokenize(props.string("values"), " ,");
+                string::tokenize(props.get<std::string_view>("values"), " ,");
 
             if (values_str.size() != wavelengths_str.size())
                 Throw("IrregularSpectrum: 'wavelengths' and 'values' parameters must have the same size!");
@@ -80,28 +80,32 @@ public:
                 wavelengths.data(), values.data(), values.size()
             );
         } else {
-            // Scene/property parsing is in double precision, cast to single precision depending on variant.
-            size_t size = props.get<size_t>("size");
-            const double *whl = static_cast<const double*>(props.pointer("wavelengths"));
-            const double *ptr = static_cast<const double*>(props.pointer("values"));
+            // Extract data from std::vector<double> provided by another plugin.
+            // May need to cast to single precision depending on the variant.
+            const std::vector<double>& wavelengths_vec = props.get_any<std::vector<double>>("wavelengths");
+            const std::vector<double>& values_vec = props.get_any<std::vector<double>>("values");
+
+            if (values_vec.size() != wavelengths_vec.size())
+                Throw("IrregularSpectrum: 'wavelengths' and 'values' parameters must have the same size!");
 
             if constexpr (std::is_same_v<ScalarFloat, double>) {
-                m_distr = IrregularContinuousDistribution<Wavelength>(whl, ptr, size);
+                m_distr = IrregularContinuousDistribution<Wavelength>(
+                    wavelengths_vec.data(), values_vec.data(), values_vec.size());
             } else {
-                std::vector<ScalarFloat> values(size), wavelengths(size);
-                for (size_t i=0; i < size; ++i) {
-                    values[i] = (ScalarFloat) ptr[i];
-                    wavelengths[i] = (ScalarFloat) whl[i];
+                std::vector<ScalarFloat> values(values_vec.size()), wavelengths(wavelengths_vec.size());
+                for (size_t i = 0; i < values_vec.size(); ++i) {
+                    values[i] = (ScalarFloat) values_vec[i];
+                    wavelengths[i] = (ScalarFloat) wavelengths_vec[i];
                 }
                 m_distr = IrregularContinuousDistribution<Wavelength>(
-                    wavelengths.data(), values.data(), size);
+                    wavelengths.data(), values.data(), values.size());
             }
         }
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("wavelengths", m_distr.nodes(), +ParamFlags::Differentiable);
-        callback->put_parameter("values",      m_distr.pdf(),   +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("wavelengths", m_distr.nodes(), ParamFlags::Differentiable);
+        cb->put("values",      m_distr.pdf(),   ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/) override {
@@ -168,13 +172,12 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(IrregularSpectrum)
 private:
     IrregularContinuousDistribution<Wavelength> m_distr;
 
     MI_TRAVERSE_CB(Texture, m_distr);
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(IrregularSpectrum, Texture)
-MI_EXPORT_PLUGIN(IrregularSpectrum, "Irregular interpolated spectrum")
+MI_EXPORT_PLUGIN(IrregularSpectrum)
 NAMESPACE_END(mitsuba)

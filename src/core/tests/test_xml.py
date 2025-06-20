@@ -152,7 +152,7 @@ def test15_incorrect_parameter_type(variant_scalar_rgb):
                       <float name="filename" value="1.0"/>
                    </shape></scene>""")
     e.match('The property "filename" has the wrong type'
-            ' \\(expected <string>\\).')
+            ' \\(expected string, got float\\)')
 
 
 def test16_invalid_integer(variant_scalar_rgb):
@@ -330,11 +330,11 @@ def test26_xml_to_props_empty_scene(variant_scalar_rgb, tmp_path):
     class_name, properties = props[0]
     assert class_name == 'Scene'
     assert properties.plugin_name() == 'scene'
-    assert len(properties.property_names()) == 0
+    assert len(properties.keys()) == 0
 
 
 @fresolver_append_path
-def test27_xml_to_props_named_references(variant_scalar_rgb, tmp_path):
+def test27_xml_to_props_references(variant_scalar_rgb, tmp_path):
     filepath = str(tmp_path / 'test_xml-test27_output.xml')
     print(f"Output temporary file: {filepath}")
 
@@ -353,8 +353,8 @@ def test27_xml_to_props_named_references(variant_scalar_rgb, tmp_path):
     for cls, prop in props:
         if cls == 'Scene':
             has_scene = True
-            assert len(prop.named_references()) == 1
-            _, ref_id = prop.named_references()[0]
+            assert len(prop.references()) == 1
+            _, ref_id = prop.references()[0]
             has_ref_id = False
             for cls, prop in props:
                 if prop.id() == ref_id:

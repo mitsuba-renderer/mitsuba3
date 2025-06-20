@@ -8,7 +8,6 @@ set(CORE_PY_V_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/math_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/object_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/qmc_v.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/properties_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/random_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ray_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/rfilter_v.cpp
@@ -23,7 +22,6 @@ set(CORE_PY_V_SRC
 )
 
 set(CORE_PY_SRC
-  ${CMAKE_CURRENT_SOURCE_DIR}/atomic.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/appender.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/argparser.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/bitmap.cpp
@@ -41,5 +39,6 @@ set(CORE_PY_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/struct.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/thread.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/timer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/properties.cpp
   PARENT_SCOPE
 )

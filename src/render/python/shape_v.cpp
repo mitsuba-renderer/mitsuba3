@@ -10,6 +10,7 @@
 #include <mitsuba/python/python.h>
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/string_view.h>
 #include <nanobind/stl/vector.h>
 #include <nanobind/stl/tuple.h>
 #include <nanobind/stl/optional.h>
@@ -343,7 +344,6 @@ MI_PY_EXPORT(Shape) {
 
     using PyMesh = PyMesh<Float, Spectrum>;
     using ScalarSize = typename Mesh::ScalarSize;
-    using Properties = PropertiesV<Float>;
     auto mesh_cls = MI_PY_TRAMPOLINE_CLASS(PyMesh, Mesh, Shape)
         .def(nb::init<const Properties&>(), "props"_a)
         .def(nb::init<const std::string &, ScalarSize, ScalarSize,
@@ -387,6 +387,4 @@ MI_PY_EXPORT(Shape) {
     }
 
     drjit::bind_traverse(mesh_cls);
-
-    MI_PY_REGISTER_OBJECT("register_mesh", Mesh)
 }

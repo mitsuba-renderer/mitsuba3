@@ -84,9 +84,8 @@ public:
 
     std::string to_string() const override { return "RayleighPhaseFunction[]"; }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(RayleighPhaseFunction)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(RayleighPhaseFunction, PhaseFunction)
-MI_EXPORT_PLUGIN(RayleighPhaseFunction, "Rayleigh phase function")
+MI_EXPORT_PLUGIN(RayleighPhaseFunction)
 NAMESPACE_END(mitsuba)

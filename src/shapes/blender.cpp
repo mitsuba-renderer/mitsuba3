@@ -112,9 +112,9 @@ public:
         }
 
         // Get Blender version, this is used to determine the right data layout
-        Version version(props.string("version").c_str());
+        Version version(props.get<std::string>("version").c_str());
 
-        m_name = props.string("name");
+        m_name = props.get<std::string>("name");
         short mat_nr = (short) props.get<int>("mat_nr");
         size_t vertex_count = props.get<int>("vert_count");
         size_t loop_tri_count = props.get<int>("loop_tri_count");
@@ -436,9 +436,8 @@ public:
         initialize();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(BlenderMesh)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(BlenderMesh, Mesh)
-MI_EXPORT_PLUGIN(BlenderMesh, "Blender Mesh")
+MI_EXPORT_PLUGIN(BlenderMesh)
 NAMESPACE_END(mitsuba)
