@@ -379,7 +379,7 @@ extern "C" {
  * inherits. The other arguments should list all members of that class, which
  * are supposed to be read only traversable.
  */
-#define MI_TRAVERSE_CB_RO(Base, ...)                                           \
+#define MI_TRAVERSE_CB_RO(Base, ...)                                       \
         void traverse_1_cb_ro(void *payload,                                   \
                               drjit::detail::traverse_callback_ro fn)          \
             const override {                                                   \
@@ -387,9 +387,10 @@ extern "C" {
                           drjit::TraversableBase,                              \
                           std::remove_pointer_t<decltype(this)>>::value);      \
             /*                                                                 \
-             * Only traverse the objects for frozen functions, since           \
+             * Only traverse the scene for frozen functions, since             \
              * accidentally traversing the scene in loops or vcalls can cause  \
-             * issues.                                                         \
+             * errors with variable size mismatches, and backpropagation of    \
+             * gradients.                                                      \
              */                                                                \
             if (!jit_flag(JitFlag::EnableObjectTraversal))                     \
                 return;                                                        \
@@ -413,9 +414,10 @@ extern "C" {
                           drjit::TraversableBase,                              \
                           std::remove_pointer_t<decltype(this)>>::value);      \
             /*                                                                 \
-             * Only traverse the objects for frozen functions, since           \
+             * Only traverse the scene for frozen functions, since             \
              * accidentally traversing the scene in loops or vcalls can cause  \
-             * issues.                                                         \
+             * errors with variable size mismatches, and backpropagation of    \
+             * gradients.                                                      \
              */                                                                \
             if (!jit_flag(JitFlag::EnableObjectTraversal))                     \
                 return;                                                        \
@@ -479,9 +481,10 @@ public:                                                                        \
             void *payload, drjit::detail::traverse_callback_ro fn) const {     \
                                                                                \
             /*                                                                 \
-             * Only traverse the objects for frozen functions, since           \
+             * Only traverse the scene for frozen functions, since             \
              * accidentally traversing the scene in loops or vcalls can cause  \
-             * issues.                                                         \
+             * errors with variable size mismatches, and backpropagation of    \
+             * gradients.                                                      \
              */                                                                \
             if (!jit_flag(JitFlag::EnableObjectTraversal))                     \
                 return;                                                        \
@@ -500,8 +503,9 @@ public:                                                                        \
                                                                                \
             /*                                                                 \
              * Only traverse the scene for frozen functions, since             \
-             * accidentally traversing the objects in loops or vcalls can      \
-             * cause issues.                                                   \
+             * accidentally traversing the scene in loops or vcalls can cause  \
+             * errors with variable size mismatches, and backpropagation of    \
+             * gradients.                                                      \
              */                                                                \
             if (!jit_flag(JitFlag::EnableObjectTraversal))                     \
                 return;                                                        \
