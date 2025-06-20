@@ -5,6 +5,7 @@
 #include <mitsuba/python/python.h>
 
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/string_view.h>
 
 /// Escape strings to make them HTML-safe
 std::string escape_html(const std::string& data) {
