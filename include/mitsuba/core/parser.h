@@ -186,9 +186,8 @@ extern MI_EXPORT_LIB ParserState parse_string(
  * This transformation updates older scene formats to be compatible
  * with the current version of Mitsuba. Current transformations include:
  *
- * - Converting property names from camelCase to underscore_case (version < 3.0)
- * - Updating deprecated plugin names to their modern equivalents
- * - Migrating old parameter structures to new formats
+ * - Converting property names from camelCase to underscore_case (version < 2.0)
+ * - Updating deprecated plugin names/parameters to newer equivalents
  *
  * \param ctx Parser state to modify in-place
  */

@@ -1,5 +1,6 @@
 #include <mitsuba/core/parser.h>
 #include <mitsuba/core/object.h>
+#include <mitsuba/core/vector.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/stl/string_view.h>
 #include <nanobind/stl/string.h>
@@ -15,6 +16,12 @@ static std::string get_dict_type(nb::dict d) {
 
 // Implementation of parse_dict
 namespace mitsuba::parser {
+    // Import core types
+    using Vector3f = Vector<float, 3>;
+    
+    // Forward declaration
+    static void parse_dict_recursive(ParserState &state, nb::dict d, uint32_t parent_idx);
+    
     ParserState parse_dict(nb::dict d) {
         Log(Debug, "parse_dict called with dictionary");
 
@@ -34,8 +41,14 @@ namespace mitsuba::parser {
         root.props.set_id("root");
         state.nodes.push_back(root);
 
-        // TODO: Parse nested objects
-        // For now, just iterate through the dictionary
+        // Parse dictionary entries recursively
+        parse_dict_recursive(state, d, 0);
+        
+        return state;
+    }
+    
+    // Helper function to parse dictionary entries recursively
+    static void parse_dict_recursive(ParserState &state, nb::dict d, uint32_t parent_idx) {
         for (auto [key, value] : d) {
             std::string key_str = nb::str(key).c_str();
 
@@ -52,12 +65,58 @@ namespace mitsuba::parser {
                     Throw("Child object '%s' is missing 'type' attribute", key_str.c_str());
                 }
 
-                // TODO: Create child node and add to parent
+                // Create child node
+                SceneNode child;
+                child.props.set_plugin_name(child_type);
+                child.property_name = key_str;
+                
+                // Add as child of parent
+                uint32_t child_idx = (uint32_t)state.nodes.size();
+                state.nodes.push_back(child);
+                if (parent_idx < state.nodes.size()) {
+                    state.nodes[parent_idx].children.push_back(child_idx);
+                }
+                
+                // Recursively parse the child's properties
+                parse_dict_recursive(state, child_dict, child_idx);
             }
-            // TODO: Handle other property types
+            // Handle float values
+            else if (nb::isinstance<nb::float_>(value)) {
+                float float_val = nb::cast<float>(value);
+                if (parent_idx < state.nodes.size()) {
+                    state.nodes[parent_idx].props.set(key_str, float_val);
+                }
+            }
+            // Handle int values
+            else if (nb::isinstance<nb::int_>(value)) {
+                int64_t int_val = nb::cast<int64_t>(value);
+                if (parent_idx < state.nodes.size()) {
+                    state.nodes[parent_idx].props.set(key_str, int_val);
+                }
+            }
+            // Handle string values
+            else if (nb::isinstance<nb::str>(value)) {
+                std::string str_val = nb::cast<std::string>(value);
+                if (parent_idx < state.nodes.size()) {
+                    state.nodes[parent_idx].props.set(key_str, str_val);
+                }
+            }
+            // Handle list values (for vectors/points/colors)
+            else if (nb::isinstance<nb::list>(value)) {
+                nb::list list = nb::cast<nb::list>(value);
+                if (list.size() == 3) {
+                    // Assume it's a vector/point/color
+                    Vector3f vec(nb::cast<float>(list[0]),
+                                nb::cast<float>(list[1]),
+                                nb::cast<float>(list[2]));
+                    if (parent_idx < state.nodes.size()) {
+                        state.nodes[parent_idx].props.set(key_str, vec);
+                    }
+                } else {
+                    Log(Warn, "Unsupported list size %zu for property '%s'", list.size(), key_str.c_str());
+                }
+            }
         }
-
-        return state;
     }
 }
 
@@ -78,14 +137,17 @@ static mitsuba::parser::ParameterList convert_param_list(const nb::kwargs &kwarg
 MI_PY_EXPORT(parser) {
     using namespace mitsuba::parser;
 
+    // Create parser submodule
+    auto parser = m.def_submodule("parser", "Scene parsing infrastructure");
+
     // Export enums
-    nb::enum_<ColorMode>(m, "ColorMode")
+    nb::enum_<ColorMode>(parser, "ColorMode")
         .value("Monochromatic", ColorMode::Monochromatic, "Convert all colors to grayscale")
         .value("RGB", ColorMode::RGB, "Keep colors as RGB triplets")
         .value("Spectral", ColorMode::Spectral, "Use full spectral representation");
 
     // Export SceneNode
-    nb::class_<SceneNode>(m, "SceneNode")
+    nb::class_<SceneNode>(parser, "SceneNode")
         .def(nb::init<>())
         .def_rw("type", &SceneNode::type, "Object type")
         .def_rw("file_index", &SceneNode::file_index, "File index in ParserState::files")
@@ -95,7 +157,7 @@ MI_PY_EXPORT(parser) {
         .def_rw("property_name", &SceneNode::property_name, "Property name for parent attachment");
 
     // Export ParserState
-    nb::class_<ParserState>(m, "ParserState")
+    nb::class_<ParserState>(parser, "ParserState")
         .def(nb::init<>())
         .def_rw("nodes", &ParserState::nodes, "List of all scene nodes")
         .def_rw("files", &ParserState::files, "List of parsed files")
@@ -117,37 +179,37 @@ MI_PY_EXPORT(parser) {
             "Number of nodes");
 
     // Export functions
-    m.def("parse_file",
+    parser.def("parse_file",
           [](std::string_view filename, nb::kwargs kwargs) {
               return parse_file(fs::path(filename), convert_param_list(kwargs));
           },
           "filename"_a, "kwargs"_a,
           "Parse a scene from an XML file");
 
-    m.def("parse_string",
+    parser.def("parse_string",
           [](std::string_view string, nb::kwargs kwargs) {
               return parse_string(string, convert_param_list(kwargs));
           },
           "string"_a, "kwargs"_a,
           "Parse a scene from an XML string");
 
-    m.def("parse_dict", &parse_dict,
+    parser.def("parse_dict", &parse_dict,
           "d"_a,
           "Parse a scene from a Python dictionary");
 
-    m.def("transform_upgrade", &transform_upgrade,
+    parser.def("transform_upgrade", &transform_upgrade,
           "ctx"_a,
           "Upgrade scene data to the latest version");
 
-    m.def("transform_colors", &transform_colors,
+    parser.def("transform_colors", &transform_colors,
           "ctx"_a,
           "Apply color-related transformations");
 
-    m.def("file_location", &file_location,
+    parser.def("file_location", &file_location,
           "ctx"_a, "node"_a,
           "Get human-readable file location for a node");
 
-    m.def("instantiate", &instantiate,
+    parser.def("instantiate", &instantiate,
           "ctx"_a, "parallel"_a = true,
           "Instantiate the scene graph", nb::rv_policy::move);
 }
