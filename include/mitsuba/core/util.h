@@ -58,7 +58,7 @@ struct Version {
     Version(int major, int minor, int patch)
         : major_version(major), minor_version(minor), patch_version(patch) { }
 
-    Version(const char *value) {
+    Version(std::string_view value) {
         auto list = string::tokenize(value, " .");
         if (list.size() != 3)
             Throw("Version number must consist of three period-separated parts!");

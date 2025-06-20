@@ -460,7 +460,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
         if (version_attr) {
             Version version;
             try {
-                version = version_attr.value();
+                version = std::string_view(version_attr.value());
             } catch (const std::exception &) {
                 src.throw_error(node, "could not parse version number \"%s\"", version_attr.value());
             }
@@ -640,7 +640,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                             if (version_attr_incl) {
                                 Version version;
                                 try {
-                                    version = version_attr_incl.value();
+                                    version = std::string_view(version_attr_incl.value());
                                 } catch (const std::exception &) {
                                     nested_src.throw_error(*doc.begin(), "could not parse version number \"%s\"", version_attr_incl.value());
                                 }
