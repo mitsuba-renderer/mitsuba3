@@ -118,8 +118,8 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Checkerboard[" << std::endl
-            << "  color0 = " << string::indent(m_color0) << std::endl
-            << "  color1 = " << string::indent(m_color1) << std::endl
+            << "  color0 = " << string::indent(m_color0) << "," << std::endl
+            << "  color1 = " << string::indent(m_color1) << "," << std::endl
             << "  transform = " << string::indent(m_transform) << std::endl
             << "]";
         return oss.str();

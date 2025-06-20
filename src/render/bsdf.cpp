@@ -8,8 +8,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT BSDF<Float, Spectrum>::BSDF(const Properties &props)
-    : JitObject<BSDF>(props.id()), m_flags(+BSDFFlags::Empty) {
-}
+    : JitObject<BSDF>(props.id()), m_flags(+BSDFFlags::Empty) { }
 
 MI_VARIANT std::pair<Spectrum, Float>
 BSDF<Float, Spectrum>::eval_pdf(const BSDFContext &ctx,

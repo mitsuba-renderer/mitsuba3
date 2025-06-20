@@ -173,7 +173,7 @@ public:
         m_eumelanin = props.get<ScalarFloat>("eumelanin", 1.3f);
         m_pheomelanin = props.get<ScalarFloat>("pheomelanin", 0.2f);
         if (props.has_property("sigma_a")) {
-            m_sigma_a = props.get_texture<Texture>("sigma_a");
+            m_sigma_a = props.get_unbounded_texture<Texture>("sigma_a");
             m_use_pigmentation = false;
         }
         m_scale = props.get<ScalarFloat>("scale", 1.f);

@@ -5,6 +5,7 @@
 #include <mitsuba/python/python.h>
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/string_view.h>
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/tuple.h>
 #include <drjit/python.h>
@@ -101,7 +102,6 @@ MI_PY_EXPORT(Medium) {
 
     auto medium = MI_PY_TRAMPOLINE_CLASS(PyMedium, Medium, Object)
         .def(nb::init<const Properties &>(), "props"_a)
-        .def_method(Medium, id)
         .def_field(PyMedium, m_sample_emitters, D(Medium, m_sample_emitters))
         .def_field(PyMedium, m_is_homogeneous, D(Medium, m_is_homogeneous))
         .def_field(PyMedium, m_has_spectral_extinction, D(Medium, m_has_spectral_extinction))

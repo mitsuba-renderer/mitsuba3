@@ -59,7 +59,7 @@ public:
     MI_IMPORT_TYPES(Texture)
 
     ConstVolume(const Properties &props) : Base(props) {
-        m_value = props.get_texture<Texture>("value", 1.f);
+        m_value = props.get_unbounded_texture<Texture>("value", 1.f);
     }
 
     void traverse(TraversalCallback *cb) override {

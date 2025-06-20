@@ -72,13 +72,14 @@ public:
     MI_IMPORT_TYPES()
 
     TwoSidedBRDF(const Properties &props) : Base(props) {
-        auto bsdfs = props.objects();
-        if (bsdfs.size() > 0)
-            m_brdf[0] = dynamic_cast<Base *>(bsdfs[0].second.get());
-        if (bsdfs.size() == 2)
-            m_brdf[1] = dynamic_cast<Base *>(bsdfs[1].second.get());
-        else if (bsdfs.size() > 2)
-            Throw("At most two nested BSDFs can be specified!");
+        size_t bsdf_count = 0;
+        for (auto &prop : props.objects()) {
+            if (Base *bsdf = prop.try_get<Base>()) {
+                if (bsdf_count >= 2)
+                    Throw("At most two nested BSDFs can be specified!");
+                m_brdf[bsdf_count++] = bsdf;
+            }
+        }
 
         if (!m_brdf[0])
             Throw("A nested one-sided material is required!");

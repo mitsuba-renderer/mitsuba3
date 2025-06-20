@@ -4,6 +4,7 @@
 #include <mitsuba/python/python.h>
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/string_view.h>
 #include <nanobind/stl/tuple.h>
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/list.h>
@@ -111,7 +112,6 @@ MI_PY_EXPORT(PhaseFunction) {
             .def(nb::init<const Properties &>())
             .def("flags", nb::overload_cast<size_t, Mask>(&PhaseFunction::flags, nb::const_),
                  "index"_a, "active"_a = true, D(PhaseFunction, flags, 2))
-            .def_method(PhaseFunction, id)
             .def_field(PyPhaseFunction, m_flags, D(PhaseFunction, m_flags))
             .def("__repr__", &PhaseFunction::to_string);
 

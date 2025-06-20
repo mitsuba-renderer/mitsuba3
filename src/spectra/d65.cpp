@@ -79,13 +79,13 @@ public:
     D65Spectrum(const Properties &props) : Base(props) {
         m_scale = props.get<ScalarFloat>("scale", 1.f);
 
-        auto objects = props.objects(true);
-        if (objects.size() > 1)
-            Throw("Only a single texture child object can be specified.");
-        if (objects.size() == 1) {
-            m_nested_texture = dynamic_cast<Base *>(objects[0].second.get());
-            if (!m_nested_texture)
+        for (auto &prop : props.objects()) {
+            Base *texture = prop.try_get<Base>();
+            if (!texture)
                 Throw("Child object should be a texture object.");
+            if (m_nested_texture)
+                Throw("Only a single texture child object can be specified.");
+            m_nested_texture = texture;
         }
 
         if (props.has_property("color")) {
@@ -114,15 +114,17 @@ public:
             m_has_value = true;
         }
 
-        Properties props_d65("regular");
-        props_d65.set("wavelength_min", MI_CIE_MIN);
-        props_d65.set("wavelength_max", MI_CIE_MAX);
-        props_d65.set("size", MI_CIE_SAMPLES);
         std::vector<double> data;
         data.reserve(MI_CIE_SAMPLES);
         for (size_t i = 0; i < MI_CIE_SAMPLES; ++i)
-            data.push_back((double) d65_table[i] * (double) m_scale * (double) MI_CIE_D65_NORMALIZATION);
-        props_d65.set_any("values", std::move(data));
+            data.push_back((double) d65_table[i] * (double) m_scale *
+                           (double) MI_CIE_D65_NORMALIZATION);
+
+        Properties props_d65("regular");
+        props_d65.set("value",
+                      Properties::Spectrum(std::move(data), (double) MI_CIE_MIN,
+                                           (double) MI_CIE_MAX));
+
         m_d65 = (Base *) PluginManager::instance()->create_object<Base>(props_d65);
     }
 
@@ -148,15 +150,16 @@ public:
             if (m_nested_texture)
                  return { (Object *) m_nested_texture.get() };
 
+            Properties props;
             if (m_has_value) {
-                Properties props("srgb");
+                props.set_plugin_name("srgb");
                 props.set("color", dr::slice(m_value) * m_scale);
                 props.set("unbounded", true);
-                return { (Object *) PluginManager::instance()->create_object<Base>(props) };
+            } else {
+                props.set_plugin_name("uniform");
+                props.set("value", m_scale);
             }
 
-            Properties props("uniform");
-            props.set("value", m_scale);
             return { (Object *) PluginManager::instance()->create_object<Base>(props) };
         }
     }

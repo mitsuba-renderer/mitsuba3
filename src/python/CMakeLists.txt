@@ -118,7 +118,7 @@ set_target_properties(mitsuba_alias
 
 target_include_directories(mitsuba_alias
   PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/include 
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/include
   ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/ext/drjit-core/include)
 
 install(TARGETS mitsuba_alias
@@ -236,7 +236,7 @@ set(STUB_ARGS
 if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
 
   set(MI_STUB_SUBMODULES "math" "quad" "spline" "mueller" "warp" "misc" "detail" "filesystem"
-                         "python.ad" "python.chi2" "python.math_py" "python.util" "python.xml")
+                         "python.ad" "python.chi2" "python.math_py" "python.util" "python.xml" "parser")
 
   nanobind_add_stub(
     mitsuba-stub

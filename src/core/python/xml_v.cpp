@@ -2,6 +2,7 @@
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/xml.h>
+#include <mitsuba/core/parser.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
@@ -14,6 +15,7 @@
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/vector.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/string_view.h>
 
 using Caster = nb::object(*)(mitsuba::Object *);
 extern Caster cast_object;
@@ -65,75 +67,119 @@ MI_PY_EXPORT(xml) {
 
     m.def(
         "load_file",
-        [](const std::string &name, bool update_scene, bool parallel, nb::kwargs kwargs) {
-            xml::ParameterList param;
-            if (kwargs) {
-                for (auto [k, v] : kwargs)
-                    param.emplace_back(
-                        nb::str(k).c_str(),
-                        nb::str(v).c_str(),
-                        false
-                    );
-            }
-
+        [](const std::string &name, bool update_scene, bool parallel, bool v2, nb::kwargs kwargs) {
             std::vector<ref<Object>> objects;
-            {
+
+            if (v2) {
+                // Use new parser
+                parser::ParameterList params;
+                for (auto [k, v] : kwargs)
+                    params.emplace_back(nb::cast<std::string>(k),
+                                        nb::cast<std::string>(v));
+
+                parser::ParserConfig config(GET_VARIANT());
+                config.parallel = parallel;
+
+                nb::gil_scoped_release release;
+                parser::ParserState state = parser::parse_file(config, name, params);
+                parser::transform_all(config, state);
+                objects = parser::instantiate(config, state);
+            } else {
+                // Use old parser
+                xml::ParameterList param;
+                if (kwargs) {
+                    for (auto [k, v] : kwargs)
+                        param.emplace_back(nb::cast<std::string>(k),
+                                           nb::cast<std::string>(v), false);
+                }
+
                 nb::gil_scoped_release release;
                 objects = xml::load_file(name, GET_VARIANT(), param, update_scene, parallel);
             }
 
             return single_object_or_list(objects);
         },
-        "path"_a, "update_scene"_a = false, "parallel"_a = true, "kwargs"_a,
+        "path"_a, "update_scene"_a = false, "parallel"_a = true, "v2"_a = true, "kwargs"_a,
         D(xml, load_file));
 
     m.def(
         "load_string",
-        [](const std::string &name, bool parallel, nb::kwargs kwargs) {
-            xml::ParameterList param;
-            if (kwargs) {
-                for (auto [k, v] : kwargs)
-                    param.emplace_back(
-                        nb::str(k).c_str(),
-                        nb::str(v).c_str(),
-                        false
-                    );
-            }
-
+        [](const std::string &value, bool parallel, bool v2, nb::kwargs kwargs) {
             std::vector<ref<Object>> objects;
-            {
+
+            if (v2) {
+                // Use new parser
+                parser::ParameterList params;
+                for (auto [k, v] : kwargs)
+                    params.emplace_back(nb::cast<std::string>(k),
+                                        nb::cast<std::string>(v));
+
+                parser::ParserConfig config(GET_VARIANT());
+                config.parallel = parallel;
+
                 nb::gil_scoped_release release;
-                objects = xml::load_string(name, GET_VARIANT(), param, parallel);
+                parser::ParserState state = parser::parse_string(config, value, params);
+                parser::transform_all(config, state);
+                objects = parser::instantiate(config, state);
+            } else {
+                // Use old parser
+                xml::ParameterList param;
+                for (auto [k, v] : kwargs)
+                    param.emplace_back(nb::cast<std::string>(k),
+                                       nb::cast<std::string>(v),
+                                       false);
+
+                nb::gil_scoped_release release;
+                objects = xml::load_string(value, GET_VARIANT(), param, parallel);
             }
 
             return single_object_or_list(objects);
         },
-        "string"_a, "parallel"_a = true, "kwargs"_a,
+        "value"_a, "parallel"_a = true, "v2"_a = true, "kwargs"_a,
         D(xml, load_string));
 
     m.def(
         "load_dict",
-        [](const nb::dict dict, bool parallel) {
-            // Make a backup copy of the FileResolver, which will be restored after parsing
-            ref<FileResolver> fs_backup = mitsuba::file_resolver();
-            mitsuba::set_file_resolver(new FileResolver(*fs_backup));
+        [](const nb::dict dict, bool parallel, bool v2) {
+            std::vector<ref<Object>> objects;
 
-            DictParseContext ctx;
-            ctx.parallel = parallel;
+            if (v2) {
+                parser::ParserConfig config(GET_VARIANT());
+                config.parallel = parallel;
 
-            try {
-                parse_dictionary<Float, Spectrum>(ctx, "__root__", dict);
-                std::unordered_map<std::string, Task*> task_map;
-                instantiate_node<Float, Spectrum>(ctx, "__root__", task_map);
-                auto objects = mitsuba::xml::detail::expand_node(ctx.instances["__root__"].object);
-                mitsuba::set_file_resolver(fs_backup.get());
-                return single_object_or_list(objects);
-            } catch(...) {
-                mitsuba::set_file_resolver(fs_backup.get());
-                throw;
+                // Use new parser through Python module
+                nb::module_ parser = nb::module_::import_("mitsuba.parser");
+
+                // Parse, transform, and instantiate
+                nb::object state_o = parser.attr("parse_dict")(config, dict);
+                parser::ParserState &state = nb::cast<parser::ParserState&>(state_o);
+                nb::gil_scoped_release release;
+                parser::transform_all(config, state);
+                objects = parser::instantiate(config, state);
+            } else {
+                // Use old parser
+                // Make a backup copy of the FileResolver, which will be restored after parsing
+                ref<FileResolver> fs_backup = mitsuba::file_resolver();
+                mitsuba::set_file_resolver(new FileResolver(*fs_backup));
+
+                DictParseContext ctx;
+                ctx.parallel = parallel;
+
+                try {
+                    parse_dictionary<Float, Spectrum>(ctx, "__root__", dict);
+                    std::unordered_map<std::string, Task*> task_map;
+                    instantiate_node<Float, Spectrum>(ctx, "__root__", task_map);
+                    objects = mitsuba::xml::detail::expand_node(ctx.instances["__root__"].object);
+                    mitsuba::set_file_resolver(fs_backup.get());
+                } catch(...) {
+                    mitsuba::set_file_resolver(fs_backup.get());
+                    throw;
+                }
             }
+
+            return single_object_or_list(objects);
         },
-        "dict"_a, "parallel"_a=true,
+        "dict"_a, "parallel"_a=true, "v2"_a=true,
         R"doc(Load a Mitsuba scene or object from an Python dictionary
 
 Parameter ``dict``:
@@ -141,6 +187,9 @@ Parameter ``dict``:
 
 Parameter ``parallel``:
     Whether the loading should be executed on multiple threads in parallel
+
+Parameter ``v2``:
+    Whether to use the new parser implementation (default: True)
 
 )doc");
 
@@ -389,7 +438,7 @@ void parse_dictionary(DictParseContext &ctx,
 
         // Try to cast entry to an object
         Object* obj_ptr;
-        if (nb::try_cast<Object*>(value, obj_ptr)) {
+        if (nb::try_cast<Object*>(value, obj_ptr, false)) {
             expand_and_set_object(props, key, ref<Object>(obj_ptr));
             continue;
         }
