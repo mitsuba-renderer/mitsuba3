@@ -208,7 +208,7 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
     /**
      * \brief Spawn a ray on the silhouette point in the direction of \ref d
      *
-     * The ray origin is offset in the direction of the segment (\ref d) aswell
+     * The ray origin is offset in the direction of the segment (\ref d) as well
      * as in the in the direction of the silhouette normal (\ref n). Without this
      * offsetting, during a ray intersection, the ray could potentially find
      * an intersection point at its origin due to numerical instabilities in
@@ -501,7 +501,7 @@ public:
     precompute_silhouette(const ScalarPoint3f &viewpoint) const;
 
     /**
-     * \brief Samples a boundary segement on the shape's silhouette using
+     * \brief Samples a boundary segment on the shape's silhouette using
      * precomputed information computed in \ref precompute_silhouette.
      *
      * This method is meant to be used for silhouettes that are shared between
@@ -799,7 +799,7 @@ public:
      *     Surface interaction associated with the query
      *
      * \return
-     *     An trichromatic intensity or reflectance value
+     *     A trichromatic intensity or reflectance value
      */
     virtual Color3f eval_attribute_3(const std::string &name,
                                      const SurfaceInteraction3f &si,
@@ -815,7 +815,7 @@ public:
      *     Surface interaction associated with the query
      *
      * \return
-     *     An dynamic array of attribute values
+     *     A dynamic array of attribute values
      */
     virtual dr::DynamicArray<Float> eval_attribute_x(const std::string &name,
                                                      const SurfaceInteraction3f &si,

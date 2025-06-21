@@ -27,7 +27,7 @@ NAMESPACE_BEGIN(mitsuba)
  * In contrast, the ``Object`` class allows for a highly efficient
  * implementation that only adds 64 bits to the base object (for the counter)
  * and has no overhead for references. In addition, when using Mitsuba in
- * Python, this counter is shared with Python such that the ownerhsip and
+ * Python, this counter is shared with Python such that the ownership and
  * lifetime of any ``Object`` instance across C++ and Python is managed by it.
  */
 class MI_EXPORT_LIB Object : public drjit::TraversableBase {
