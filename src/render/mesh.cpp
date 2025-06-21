@@ -568,7 +568,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_directed_edges() {
     if (non_manifold_count > 0)
         Log(Warn,
             "Mesh::build_directed_edges(): there are %d non-manifold vertices in the "
-            "follwing mesh: %s",
+            "following mesh: %s",
             non_manifold_count, to_string());
 
     m_E2E = dr::load<DynamicBuffer<UInt32>>(E2E.data(), m_face_count * 3);
@@ -956,7 +956,7 @@ Mesh<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f &ss,
     if (m_E2E_outdated)
         return dr::zeros<Point3f>();
 
-    // Safley ignore invalid boundary segments
+    // Safely ignore invalid boundary segments
     Mask active =
         active_ && (ss.discontinuity_type ==
                            (uint32_t) DiscontinuityFlags::PerimeterType);

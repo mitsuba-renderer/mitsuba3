@@ -787,7 +787,7 @@ protected:
          * \brief Convert from 2D pixel coordinates to an index indicating how the
          * data is laid out in memory.
          *
-         * The implementation stores 2x2 patches contigously in memory to
+         * The implementation stores 2x2 patches contiguously in memory to
          * improve cache locality during hierarchical traversals
          */
         template <typename Point2u>
