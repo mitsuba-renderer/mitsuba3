@@ -2,11 +2,9 @@ from typing import Callable, Optional, Tuple
 import pytest
 import drjit as dr
 import mitsuba as mi
-from os.path import join, realpath, dirname
 
 from mitsuba.scalar_rgb.test.util import find_resource
 
-TUTORIALS_DIR = realpath(join(dirname(__file__), "../../../tutorials"))
 EMITTERS = [
     "area",
     "point",
@@ -210,7 +208,7 @@ def test02_pose_estimation(variants_vec_rgb, integrator, auto_opaque):
         del scene["ceiling"]
         scene["bunny"] = {
             "type": "ply",
-            "filename": f"{TUTORIALS_DIR}/scenes/meshes/bunny.ply",
+            "filename": find_resource("resources/data/common/meshes/bunny.ply"),
             "to_world": T().scale(6.5),
             "bsdf": {
                 "type": "diffuse",
@@ -1029,7 +1027,7 @@ def test12_medium(variants_vec_rgb, tmp_path, medium, auto_opaque):
                 "sigma_t": {
                     "type": "gridvolume",
                     "filename": find_resource(
-                        "resources/data/docs/scenes/textures/albedo.vol"
+                        "resources/data/tests/scenes/participating_media/textures/albedo.vol"
                     ),
                 },
             }
