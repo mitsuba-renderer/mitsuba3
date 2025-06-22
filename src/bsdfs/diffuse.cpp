@@ -195,7 +195,7 @@ public:
 private:
     ref<Texture> m_reflectance;
 
-    MI_TRAVERSE_CB(Base, m_reflectance);
+    MI_TRAVERSE_CB(Base, m_reflectance)
 };
 
 MI_EXPORT_PLUGIN(SmoothDiffuse)

@@ -379,7 +379,7 @@ extern "C" {
  * inherits. The other arguments should list all members of that class, which
  * are supposed to be read only traversable.
  */
-#define MI_TRAVERSE_CB_RO(Base, ...)                                       \
+#define MI_TRAVERSE_CB_RO(Base, ...)                                           \
         void traverse_1_cb_ro(void *payload,                                   \
                               drjit::detail::traverse_callback_ro fn)          \
             const override {                                                   \

@@ -410,7 +410,7 @@ public:
 
     MI_DECLARE_CLASS(OBJMesh)
 
-    MI_TRAVERSE_CB(Base);
+    MI_TRAVERSE_CB(Base)
 };
 
 MI_EXPORT_PLUGIN(OBJMesh)

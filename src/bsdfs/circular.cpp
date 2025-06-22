@@ -167,7 +167,7 @@ private:
     ref<Texture> m_transmittance;
     bool m_left_handed;
 
-    MI_TRAVERSE_CB(Base, m_transmittance);
+    MI_TRAVERSE_CB(Base, m_transmittance)
 };
 
 MI_EXPORT_PLUGIN(CircularPolarizer)
