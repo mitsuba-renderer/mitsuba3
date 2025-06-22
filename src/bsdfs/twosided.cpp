@@ -377,7 +377,7 @@ public:
 protected:
     ref<Base> m_brdf[2];
 
-    MI_TRAVERSE_CB(Base, m_brdf[0], m_brdf[1]);
+    MI_TRAVERSE_CB(Base, m_brdf[0], m_brdf[1])
 };
 
 MI_EXPORT_PLUGIN(TwoSidedBRDF)

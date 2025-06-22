@@ -142,7 +142,7 @@ private:
     std::vector<std::string> m_aov_names;
     std::vector<std::pair<ref<Base>, size_t>> m_integrators;
 
-    MI_TRAVERSE_CB(Base, m_integrators);
+    MI_TRAVERSE_CB(Base, m_integrators)
 };
 
 MI_EXPORT_PLUGIN(MomentIntegrator)

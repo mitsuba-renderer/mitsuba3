@@ -96,7 +96,7 @@ public:
 protected:
     ref<Texture> m_value;
 
-    MI_TRAVERSE_CB(Base, m_value);
+    MI_TRAVERSE_CB(Base, m_value)
 };
 
 MI_EXPORT_PLUGIN(ConstVolume)

@@ -75,7 +75,7 @@ template <typename Point_> struct BoundingSphere: drjit::TraversableBase {
         );
     }
 
-    MI_TRAVERSE_CB(drjit::TraversableBase, center, radius);
+    MI_TRAVERSE_CB(drjit::TraversableBase, center, radius)
 };
 
 /// Print a string representation of the bounding sphere

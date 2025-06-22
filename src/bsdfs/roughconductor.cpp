@@ -548,7 +548,7 @@ private:
     ref<Texture> m_specular_reflectance;
 
     MI_TRAVERSE_CB(Base, m_alpha_u, m_alpha_v, m_eta, m_k,
-                   m_specular_reflectance);
+                   m_specular_reflectance)
 };
 
 MI_EXPORT_PLUGIN(RoughConductor)

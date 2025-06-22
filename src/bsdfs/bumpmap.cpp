@@ -245,7 +245,7 @@ protected:
     ref<Texture> m_nested_texture;
     ref<Base> m_nested_bsdf;
 
-    MI_TRAVERSE_CB(Base, m_nested_texture, m_nested_bsdf);
+    MI_TRAVERSE_CB(Base, m_nested_texture, m_nested_bsdf)
 };
 
 MI_EXPORT_PLUGIN(BumpMap)

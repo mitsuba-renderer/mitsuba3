@@ -164,7 +164,7 @@ public:
 
     MI_DECLARE_CLASS(Cube)
 
-    MI_TRAVERSE_CB(Base);
+    MI_TRAVERSE_CB(Base)
 };
 
 MI_EXPORT_PLUGIN(Cube)

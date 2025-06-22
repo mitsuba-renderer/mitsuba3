@@ -415,7 +415,7 @@ private:
 
     MI_TRAVERSE_CB(Base, m_camera_to_sample, m_sample_to_camera, m_image_rect,
                    m_normalization, m_x_fov, m_dx, m_dy,
-                   m_principal_point_offset);
+                   m_principal_point_offset)
 };
 
 MI_EXPORT_PLUGIN(PerspectiveCamera)

@@ -219,7 +219,7 @@ private:
     ref<Texture> m_theta;
     ref<Texture> m_transmittance;
 
-    MI_TRAVERSE_CB(Base, m_theta, m_transmittance);
+    MI_TRAVERSE_CB(Base, m_theta, m_transmittance)
 };
 
 MI_EXPORT_PLUGIN(LinearPolarizer)
