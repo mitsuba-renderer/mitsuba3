@@ -756,7 +756,7 @@ private:
 
     MI_TRAVERSE_CB(Base, m_base_color, m_roughness, m_anisotropic, m_sheen,
                    m_sheen_tint, m_spec_trans, m_flatness, m_spec_tint,
-                   m_diff_trans, m_eta_thin);
+                   m_diff_trans, m_eta_thin)
 };
 
 MI_EXPORT_PLUGIN(PrincipledThin)

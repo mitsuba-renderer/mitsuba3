@@ -92,7 +92,7 @@ public:
 protected:
     ref<Volume> m_volume;
 
-    MI_TRAVERSE_CB(Texture, m_volume);
+    MI_TRAVERSE_CB(Texture, m_volume)
 };
 
 MI_EXPORT_PLUGIN(VolumeAdapter)

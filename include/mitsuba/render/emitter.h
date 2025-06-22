@@ -93,7 +93,7 @@ protected:
     /// True if the emitters's parameters have changed
     bool m_dirty = false;
 
-    MI_TRAVERSE_CB(Base);
+    MI_TRAVERSE_CB(Base)
 };
 
 MI_EXTERN_CLASS(Emitter)

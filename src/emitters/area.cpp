@@ -271,7 +271,7 @@ public:
 private:
     ref<Texture> m_radiance;
 
-    MI_TRAVERSE_CB(Base, m_radiance);
+    MI_TRAVERSE_CB(Base, m_radiance)
 };
 
 MI_EXPORT_PLUGIN(AreaLight)

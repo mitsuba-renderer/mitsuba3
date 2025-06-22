@@ -613,7 +613,7 @@ protected:
     /// Flags for each component of this BSDF.
     std::vector<uint32_t> m_components;
 
-    MI_TRAVERSE_CB(Object);
+    MI_TRAVERSE_CB(Object)
 };
 
 // -----------------------------------------------------------------------

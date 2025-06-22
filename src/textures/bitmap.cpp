@@ -355,7 +355,7 @@ private:
     mutable ref<Bitmap> m_bitmap;
     TensorXf m_tensor;
 
-    MI_TRAVERSE_CB(Texture, m_bitmap, m_tensor);
+    MI_TRAVERSE_CB(Texture, m_bitmap, m_tensor)
 };
 
 template <typename Float, typename Spectrum, typename StoredType>
@@ -919,7 +919,7 @@ protected:
     mutable std::mutex m_mutex;
     std::unique_ptr<DiscreteDistribution2D<Float>> m_distr2d;
 
-    MI_TRAVERSE_CB(Texture, m_mean, m_texture, m_distr2d);
+    MI_TRAVERSE_CB(Texture, m_mean, m_texture, m_distr2d)
 };
 
 MI_EXPORT_PLUGIN(BitmapTexture)

@@ -614,7 +614,7 @@ protected:
     mutable std::mutex m_mutex;
     std::vector<std::string> m_channels;
 
-    MI_TRAVERSE_CB(Base, m_storage);
+    MI_TRAVERSE_CB(Base, m_storage)
 };
 
 MI_EXPORT_PLUGIN(HDRFilm)

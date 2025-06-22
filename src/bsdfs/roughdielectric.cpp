@@ -641,7 +641,7 @@ private:
     bool m_sample_visible;
 
     MI_TRAVERSE_CB(Base, m_specular_reflectance, m_specular_transmittance,
-                   m_alpha_u, m_alpha_v, m_eta, m_inv_eta);
+                   m_alpha_u, m_alpha_v, m_eta, m_inv_eta)
 };
 
 MI_EXPORT_PLUGIN(RoughDielectric)

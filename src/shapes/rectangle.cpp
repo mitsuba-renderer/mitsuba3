@@ -620,7 +620,7 @@ private:
     Frame3f m_frame;
     Float m_inv_surface_area;
 
-    MI_TRAVERSE_CB(Base, m_frame, m_inv_surface_area);
+    MI_TRAVERSE_CB(Base, m_frame, m_inv_surface_area)
 };
 
 MI_EXPORT_PLUGIN(Rectangle)

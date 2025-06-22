@@ -274,7 +274,7 @@ private:
     Vector2u m_valid;
 
     MI_TRAVERSE_CB(drjit::TraversableBase, m_pmf, m_cdf, m_sum, m_normalization,
-                   m_valid);
+                   m_valid)
 };
 
 /**
@@ -610,7 +610,7 @@ private:
 
     MI_TRAVERSE_CB(drjit::TraversableBase, m_pdf, m_cdf, m_integral,
                    m_normalization, m_interval_size, m_inv_interval_size,
-                   m_valid);
+                   m_valid)
 };
 
 /**
@@ -985,7 +985,7 @@ private:
     ScalarFloat m_max = 0.f;
 
     MI_TRAVERSE_CB(drjit::TraversableBase, m_nodes, m_pdf, m_cdf, m_integral,
-                   m_normalization, m_valid);
+                   m_normalization, m_valid)
 };
 
 template <typename Value>

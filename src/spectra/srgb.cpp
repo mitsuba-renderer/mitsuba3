@@ -146,7 +146,7 @@ protected:
 
     Color<Float, ChannelCount> m_value;
 
-    MI_TRAVERSE_CB(Texture, m_value);
+    MI_TRAVERSE_CB(Texture, m_value)
 };
 
 MI_EXPORT_PLUGIN(SRGBReflectanceSpectrum)

@@ -170,7 +170,7 @@ public:
 private:
     ContinuousDistribution<Wavelength> m_distr;
 
-    MI_TRAVERSE_CB(Texture, m_distr);
+    MI_TRAVERSE_CB(Texture, m_distr)
 };
 
 MI_EXPORT_PLUGIN(RegularSpectrum)
