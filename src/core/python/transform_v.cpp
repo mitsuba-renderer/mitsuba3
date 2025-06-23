@@ -86,6 +86,9 @@ void bind_transform3(nb::module_ &m, const char *name) {
     if constexpr (dr::is_dynamic_v<Float>)
         trans3.def(nb::init<const ScalarTransform3f &>(), "Broadcast constructor");
 
+    // Patch methods to be callable as Transform3f().f() and Transform3f.f()
+    nb::module_::import_("mitsuba.detail").attr("patch_transform")(trans3);
+
     MI_PY_DRJIT_STRUCT(trans3, Transform3f, matrix, inverse_transpose)
 }
 
@@ -189,6 +192,9 @@ void bind_transform4(nb::module_ &m, const char *name) {
 
     if constexpr (dr::is_dynamic_v<Float>)
         trans4.def(nb::init<const ScalarTransform4f &>(), "Broadcast constructor");
+
+    // Patch methods to be callable as Transform4f().f() and Transform4f.f()
+    nb::module_::import_("mitsuba.detail").attr("patch_transform")(trans4);
 
     MI_PY_DRJIT_STRUCT(trans4, Transform4f, matrix, inverse_transpose)
 }
