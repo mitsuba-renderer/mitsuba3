@@ -4012,6 +4012,27 @@ enforced accurately.
 Note that accurate timeouts rely on m_render_timer, which needs to be
 reset at the beginning of the rendering phase.)doc";
 
+static const char *__doc_mitsuba_Integrator_skip_area_emitters =
+R"doc(Traces a ray in the scene and returns the first intersection that is
+not an area emitter.
+
+This is a helper method for when the `hide_emitters` flag is set.
+
+Parameter ``scene``:
+    The scene that the ray will intersect.
+
+Parameter ``ray``:
+    The ray that determines the direction in which to trace new rays
+
+Parameter ``active``:
+    A mask that indicates which SIMD lanes are active. Typically, this
+    should be set to ``True`` for any lane where the current depth is
+    0 (for ``hide_emitters``).
+
+Returns:
+    The first intersection that is not an area emitter anlong the
+    ``ray``.)doc";
+
 static const char *__doc_mitsuba_Interaction = R"doc(Generic surface interaction data structure)doc";
 
 static const char *__doc_mitsuba_Interaction_Interaction = R"doc(Constructor)doc";
