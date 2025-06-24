@@ -9,12 +9,6 @@ eps = 1e-4
 SIN_OFFSET = 0.00775
 SUN_HALF_APERTURE_ANGLE = dr.deg2rad(0.5388/2.0)
 
-SPECIAL_ALBEDO = {
-    'type': 'irregular',
-    'wavelengths': '320, 360, 400, 440, 480, 520, 560, 600, 640, 680, 720',
-    'values': '0.56, 0.21, 0.58, 0.24, 0.92, 0.42, 0.53, 0.75, 0.54, 0.20, 0.46'
-}
-
 sunsky_ref_folder = "resources/data/tests/sunsky"
 
 
@@ -62,31 +56,14 @@ def eval_full_spec(plugin, si, wavelengths, render_res = (512, 1024)):
 
     return mi.TensorXf(output_image, (*render_res, nb_channels))
 
-
-def generate_and_compare(render_params, ref_path, rtol):
+def render_and_compare(plugin, ref_path, rtol):
     """
-    Generates the sky radiance with the given parameters and compares it to the reference image
-    :param render_params: (elevation, turbidity, albedo) (elevation in radians)
+    Renders the sky radiance with the given parameters and compares it to the reference image
+    :param plugin: sunsky emitter to evaluate
     :param ref_path: Path to the reference image
     :param rtol: Relative error tolerance
     """
     render_res = (64//2, 64)
-
-    if mi.is_rgb:
-        hour, turb, albedo = render_params
-        plugin = make_emitter_hour(turb=turb,
-                                   hour=hour,
-                                   albedo=albedo,
-                                   sun_scale=0.0,
-                                   sky_scale=1.0)
-    else:
-        sun_eta, turb, albedo = render_params
-        plugin = make_emitter_angles(turb=turb,
-                                     sun_phi=0,
-                                     sun_theta=dr.pi/2 - sun_eta,
-                                     albedo=albedo,
-                                     sun_scale=0.0,
-                                     sky_scale=1.0)
 
     # Generate the wavelengths
     start, end = 360, 830
@@ -125,7 +102,14 @@ def test01_sky_radiance_rgb(variants_vec_rgb, render_params):
         pytest.skip('Test must be adapted to polarized rendering.')
 
     ref_path = f"{sunsky_ref_folder}/renders/sky_rgb_hour{hour:.2f}_t{turb:.3f}_a{albedo:.3f}.exr"
-    generate_and_compare(render_params, ref_path, 0.017)
+
+    plugin = make_emitter_hour(turb=turb,
+                               hour=hour,
+                               albedo=albedo,
+                               sun_scale=0.0,
+                               sky_scale=1.0)
+
+    render_and_compare(plugin, ref_path, 0.017)
 
 
 @pytest.mark.parametrize("render_params", [
@@ -140,15 +124,36 @@ def test02_sky_radiance_spectral(variants_vec_spectral, render_params):
 
 
     ref_path = f"{sunsky_ref_folder}/renders/sky_spec_eta{sun_eta:.3f}_t{turb:.3f}_a{albedo:.3f}.exr"
-    generate_and_compare(render_params, ref_path, 0.037)
+
+    plugin = make_emitter_angles(turb=turb,
+                                 sun_phi=0,
+                                 sun_theta=dr.pi/2 - sun_eta,
+                                 albedo=albedo,
+                                 sun_scale=0.0,
+                                 sky_scale=1.0)
+
+    render_and_compare(plugin, ref_path, 0.037)
 
 
 def test03_sky_radiance_spectral_albedo(variants_vec_spectral):
     if mi.is_polarized:
         pytest.skip('Test must be adapted to polarized rendering.')
 
-    generate_and_compare((dr.deg2rad(60), 4.2, SPECIAL_ALBEDO),
-                         f"{sunsky_ref_folder}/renders/sky_spectrum_special.exr", 0.03)
+    special_albedo = {
+        'type': 'irregular',
+        'wavelengths': '320, 360, 400, 440, 480, 520, 560, 600, 640, 680, 720',
+        'values': '0.56, 0.21, 0.58, 0.24, 0.92, 0.42, 0.53, 0.75, 0.54, 0.20, 0.46'
+    }
+
+    sun_eta, turb, albedo = dr.deg2rad(60), 4.2, special_albedo
+    plugin = make_emitter_angles(turb=turb,
+                                 sun_phi=0,
+                                 sun_theta=dr.pi/2 - sun_eta,
+                                 albedo=albedo,
+                                 sun_scale=0.0,
+                                 sky_scale=1.0)
+
+    render_and_compare(plugin, f"{sunsky_ref_folder}/renders/sky_spectrum_special.exr", 0.03)
 
 
 def extract_spectrum(turb, eta, gamma):
@@ -298,3 +303,30 @@ def test07_sun_and_sky_sampling(variants_vec_backends_once, turb, sun_theta):
     )
 
     assert test.run(), "Chi2 test failed"
+
+def test08_update_params(variants_vec_rgb):
+    rtol = 0.017
+
+    hour, turb, albedo = 9.5, 2, 0.2
+    ref_path = f"{sunsky_ref_folder}/renders/sky_rgb_hour{hour:.2f}_t{turb:.3f}_a{albedo:.3f}.exr"
+
+    plugin = make_emitter_hour(turb=turb,
+                               hour=hour,
+                               albedo=albedo,
+                               sun_scale=0.0,
+                               sky_scale=1.0)
+
+    render_and_compare(plugin, ref_path, rtol)
+
+
+    hour, turb, albedo = 12.25, 5.2, 0.0
+    ref_path = f"{sunsky_ref_folder}/renders/sky_rgb_hour{hour:.2f}_t{turb:.3f}_a{albedo:.3f}.exr"
+
+    params = mi.traverse(plugin)
+    params["hour"] = hour
+    params["turbidity"] = turb
+    params["albedo.value"] = albedo
+
+    params.update()
+
+    render_and_compare(plugin, ref_path, rtol)
