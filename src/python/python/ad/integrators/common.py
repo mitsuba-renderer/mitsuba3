@@ -613,11 +613,6 @@ class RBIntegrator(ADIntegrator):
 
             # Perform the weight division and return an image tensor
             film.put_block(block)
-
-            # Explicitly delete any remaining unused variables
-            del sampler, ray, weight, pos, L, valid, aovs, δL, δaovs, \
-                valid_2, params, state_out, state_out_2, block
-
             result_grad = film.develop()
 
         return result_grad
@@ -773,11 +768,6 @@ class RBIntegrator(ADIntegrator):
                 state_in=state_out,
                 active=mi.Bool(True)
             )
-
-            # We don't need any of the outputs here
-            del L_2, valid_2, aovs_2, state_out, state_out_2, \
-                δL, δaovs, ray, weight, pos, sampler
-
 
             # Run kernel representing side effects of the above
             dr.eval()
