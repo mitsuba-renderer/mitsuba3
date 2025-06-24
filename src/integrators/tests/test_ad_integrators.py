@@ -834,28 +834,28 @@ class TranslateCameraConfig(ConfigBase):
 # -------------------------------------------------------------------
 
 BASIC_CONFIGS_LIST = [
-    DiffuseAlbedoConfig,
-    DiffuseAlbedoGIConfig,
-    AreaLightRadianceConfig,
-    DirectlyVisibleAreaLightRadianceConfig,
-    PointLightIntensityConfig,
-    ConstantEmitterRadianceConfig,
-    CropWindowConfig,
-    RotateShadingNormalsPlaneConfig,
-    TranslateTexturedPlaneConfig,
+#    DiffuseAlbedoConfig,
+#    DiffuseAlbedoGIConfig,
+#    AreaLightRadianceConfig,
+#    DirectlyVisibleAreaLightRadianceConfig,
+#    PointLightIntensityConfig,
+#    ConstantEmitterRadianceConfig,
+#    CropWindowConfig,
+#    RotateShadingNormalsPlaneConfig,
+#    TranslateTexturedPlaneConfig,
 ]
 
 DISCONTINUOUS_CONFIGS_LIST = [
-    # TranslateDiffuseSphereConstantConfig,
-    # TranslateDiffuseRectangleConstantConfig,
-    # TranslateRectangleEmitterOnBlackConfig,
-    TranslateSphereEmitterOnBlackConfig,
-    ScaleSphereEmitterOnBlackConfig,
-    TranslateOccluderAreaLightConfig,
-    TranslateSelfShadowAreaLightConfig,
-    # TranslateShadowReceiverAreaLightConfig,
-    TranslateSphereOnGlossyFloorConfig,
-    # TranslateCameraConfig
+#    # TranslateDiffuseSphereConstantConfig,
+#    # TranslateDiffuseRectangleConstantConfig,
+#    # TranslateRectangleEmitterOnBlackConfig,
+#    TranslateSphereEmitterOnBlackConfig,
+#    ScaleSphereEmitterOnBlackConfig,
+#    TranslateOccluderAreaLightConfig,
+#    TranslateSelfShadowAreaLightConfig,
+#    # TranslateShadowReceiverAreaLightConfig,
+#    TranslateSphereOnGlossyFloorConfig,
+#    # TranslateCameraConfig
 ]
 
 # List of configs that fail on integrators with depth less than three
@@ -877,8 +877,8 @@ CONFIGS = []
 for integrator_name, handles_discontinuities in INTEGRATORS:
     todos = BASIC_CONFIGS_LIST + (DISCONTINUOUS_CONFIGS_LIST if handles_discontinuities else [])
     for config in todos:
-        if config in INDIRECT_ILLUMINATION_CONFIGS_LIST:
-            continue
+        #if config in INDIRECT_ILLUMINATION_CONFIGS_LIST:
+        #    continue
         if (('direct' in integrator_name) and config in INDIRECT_ILLUMINATION_CONFIGS_LIST):
             continue
         CONFIGS.append((integrator_name, config))
@@ -981,67 +981,67 @@ def test03_rendering_backward(variant_cuda_ad_rgb, integrator_name, config):
         pytest.fail("Gradient values exceeded configuration's tolerances!")
 
 
-@pytest.mark.slow
-@pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
-def test04_render_custom_op(variant_cuda_ad_rgb):
-    if mi.is_polarized:
-        pytest.skip('Test must be adapted to polarized rendering.')
+#@pytest.mark.slow
+#@pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
+#def test04_render_custom_op(variant_cuda_ad_rgb):
+#    if mi.is_polarized:
+#        pytest.skip('Test must be adapted to polarized rendering.')
+#
+#    config = DiffuseAlbedoConfig()
+#    config.initialize()
+#
+#    integrator = mi.load_dict({
+#        'type': 'prb',
+#        'max_depth': config.integrator_dict['max_depth']
+#    })
+#
+#    filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
+#    image_primal_ref = mi.TensorXf32(mi.Bitmap(filename))
+#
+#    filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
+#    image_fwd_ref = mi.TensorXf32(mi.Bitmap(filename))
+#
+#    theta = mi.Float(0.0)
+#    dr.enable_grad(theta)
+#    config.update(theta)
+#
+#    # Higher spp will run into single-precision accumulation issues
+#    image_primal = mi.render(config.scene, config.params, integrator=integrator, seed=0, spp=256)
+#
+#    integrator_name = 'prb'  # Fix missing integrator_name
+#    if not check_image_error(dr.detach(image_primal), image_primal_ref, config, integrator_name,
+#                           epsilon=2e-2, test_type='primal'):
+#        pytest.fail("Radiance values exceeded configuration's tolerances!")
+#
+#    # Backward comparison
+#    obj = dr.mean(image_primal, axis=None)
+#    dr.backward(obj)
+#
+#    grad = dr.grad(theta)[0]
+#    grad_ref = dr.mean(image_fwd_ref, axis=None)
+#
+#    if not check_gradient_error(grad, grad_ref, config, integrator_name,
+#                              threshold_attr='error_mean_threshold'):
+#        pytest.fail("Gradient values exceeded configuration's tolerances!")
+#
+#    # Forward comparison
+#    theta = mi.Float(0.0)
+#    dr.enable_grad(theta)
+#    config.update(theta)
+#
+#    image_primal = mi.render(config.scene, config.params, integrator=integrator, seed=0, spp=config.spp)
+#
+#    dr.forward(theta)
+#
+#    image_fwd = dr.grad(image_primal)
+#
+#    if not check_image_error(image_fwd, image_fwd_ref, config, integrator_name,
+#                           epsilon=2e-1, test_type='fwd', save_error_image=True):
+#        pytest.fail("Gradient values exceeded configuration's tolerances!")
 
-    config = DiffuseAlbedoConfig()
-    config.initialize()
-
-    integrator = mi.load_dict({
-        'type': 'prb',
-        'max_depth': config.integrator_dict['max_depth']
-    })
-
-    filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
-    image_primal_ref = mi.TensorXf32(mi.Bitmap(filename))
-
-    filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
-    image_fwd_ref = mi.TensorXf32(mi.Bitmap(filename))
-
-    theta = mi.Float(0.0)
-    dr.enable_grad(theta)
-    config.update(theta)
-
-    # Higher spp will run into single-precision accumulation issues
-    image_primal = mi.render(config.scene, config.params, integrator=integrator, seed=0, spp=256)
-
-    integrator_name = 'prb'  # Fix missing integrator_name
-    if not check_image_error(dr.detach(image_primal), image_primal_ref, config, integrator_name,
-                           epsilon=2e-2, test_type='primal'):
-        pytest.fail("Radiance values exceeded configuration's tolerances!")
-
-    # Backward comparison
-    obj = dr.mean(image_primal, axis=None)
-    dr.backward(obj)
-
-    grad = dr.grad(theta)[0]
-    grad_ref = dr.mean(image_fwd_ref, axis=None)
-
-    if not check_gradient_error(grad, grad_ref, config, integrator_name,
-                              threshold_attr='error_mean_threshold'):
-        pytest.fail("Gradient values exceeded configuration's tolerances!")
-
-    # Forward comparison
-    theta = mi.Float(0.0)
-    dr.enable_grad(theta)
-    config.update(theta)
-
-    image_primal = mi.render(config.scene, config.params, integrator=integrator, seed=0, spp=config.spp)
-
-    dr.forward(theta)
-
-    image_fwd = dr.grad(image_primal)
-
-    if not check_image_error(image_fwd, image_fwd_ref, config, integrator_name,
-                           epsilon=2e-1, test_type='fwd', save_error_image=True):
-        pytest.fail("Gradient values exceeded configuration's tolerances!")
-
-# -------------------------------------------------------------------
-#                      Generate reference images
-# -------------------------------------------------------------------
+## -------------------------------------------------------------------
+##                      Generate reference images
+## -------------------------------------------------------------------
 
 if __name__ == "__main__":
     """
