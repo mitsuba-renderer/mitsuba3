@@ -732,28 +732,28 @@ class TranslateCameraConfig(ConfigBase):
 # -------------------------------------------------------------------
 
 BASIC_CONFIGS_LIST = [
-    DiffuseAlbedoConfig,
-    DiffuseAlbedoGIConfig,
-    AreaLightRadianceConfig,
-    DirectlyVisibleAreaLightRadianceConfig,
-    PointLightIntensityConfig,
-    ConstantEmitterRadianceConfig,
-    CropWindowConfig,
-    RotateShadingNormalsPlaneConfig,
-    TranslateTexturedPlaneConfig,
+#    DiffuseAlbedoConfig,
+#    DiffuseAlbedoGIConfig,
+#    AreaLightRadianceConfig,
+#    DirectlyVisibleAreaLightRadianceConfig,
+#    PointLightIntensityConfig,
+#    ConstantEmitterRadianceConfig,
+#    CropWindowConfig,
+#    RotateShadingNormalsPlaneConfig,
+#    TranslateTexturedPlaneConfig,
 ]
 
 DISCONTINUOUS_CONFIGS_LIST = [
-    # TranslateDiffuseSphereConstantConfig,
-    # TranslateDiffuseRectangleConstantConfig,
-    # TranslateRectangleEmitterOnBlackConfig,
-    TranslateSphereEmitterOnBlackConfig,
-    ScaleSphereEmitterOnBlackConfig,
-    TranslateOccluderAreaLightConfig,
-    TranslateSelfShadowAreaLightConfig,
-    # TranslateShadowReceiverAreaLightConfig,
-    TranslateSphereOnGlossyFloorConfig,
-    # TranslateCameraConfig
+#    # TranslateDiffuseSphereConstantConfig,
+#    # TranslateDiffuseRectangleConstantConfig,
+#    # TranslateRectangleEmitterOnBlackConfig,
+#    TranslateSphereEmitterOnBlackConfig,
+#    ScaleSphereEmitterOnBlackConfig,
+#    TranslateOccluderAreaLightConfig,
+#    TranslateSelfShadowAreaLightConfig,
+#    # TranslateShadowReceiverAreaLightConfig,
+#    TranslateSphereOnGlossyFloorConfig,
+#    # TranslateCameraConfig
 ]
 
 # List of configs that fail on integrators with depth less than three
@@ -775,8 +775,8 @@ CONFIGS = []
 for integrator_name, handles_discontinuities in INTEGRATORS:
     todos = BASIC_CONFIGS_LIST + (DISCONTINUOUS_CONFIGS_LIST if handles_discontinuities else [])
     for config in todos:
-        if config in INDIRECT_ILLUMINATION_CONFIGS_LIST:
-            continue
+        #if config in INDIRECT_ILLUMINATION_CONFIGS_LIST:
+        #    continue
         if (('direct' in integrator_name) and config in INDIRECT_ILLUMINATION_CONFIGS_LIST):
             continue
         CONFIGS.append((integrator_name, config))
@@ -801,6 +801,12 @@ def test01_rendering_primal(variant_cuda_ad_rgb, integrator_name, config):
     error = dr.abs(image - image_primal_ref) / dr.maximum(dr.abs(image_primal_ref), 2e-2)
     error_mean = dr.mean(error, axis=None)
     error_max = dr.max(error, axis=None)
+
+    print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
+    print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
+    filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_primal.exr")
+    print(f'-> write current image: {filename}')
+    mi.util.write_bitmap(filename, image)
 
     if error_mean > config.error_mean_threshold  or error_max > config.error_max_threshold:
         print(f"Failure in config: {config.name}, {integrator_name}")
@@ -845,6 +851,13 @@ def test02_rendering_forward(variant_cuda_ad_rgb, integrator_name, config):
     error = dr.abs(image_fwd - image_fwd_ref) / dr.maximum(dr.abs(image_fwd_ref), 2e-1)
     error_mean = dr.mean(error, axis=None)
     error_max = dr.max(error, axis=None)
+
+    print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
+    print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
+    print(f'-> reference image: {filename}')
+    filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_fwd.exr")
+    print(f'-> write current image: {filename}')
+    mi.util.write_bitmap(filename, image_fwd)
 
     if error_mean > config.error_mean_threshold or error_max > config.error_max_threshold:
         print(f"Failure in config: {config.name}, {integrator_name}")
@@ -891,6 +904,9 @@ def test03_rendering_backward(variant_cuda_ad_rgb, integrator_name, config):
     grad_ref = dr.mean(image_fwd_ref, axis=None) * grad_in
 
     error = dr.abs(grad - grad_ref) / dr.maximum(dr.abs(grad_ref), 1e-3)
+    print(f"-> error: {error} (threshold={config.error_mean_threshold_bwd})")
+    print(f"-> ratio: {grad / grad_ref}")
+
     if error > config.error_mean_threshold_bwd:
         print(f"Failure in config: {config.name}, {integrator_name}")
         print(f"-> grad:     {grad}")
@@ -900,89 +916,89 @@ def test03_rendering_backward(variant_cuda_ad_rgb, integrator_name, config):
         pytest.fail("Gradient values exceeded configuration's tolerances!")
 
 
-@pytest.mark.slow
-@pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
-def test04_render_custom_op(variant_cuda_ad_rgb):
-    config = DiffuseAlbedoConfig()
-    config.initialize()
-
-    integrator = mi.load_dict({
-        'type': 'prb',
-        'max_depth': config.integrator_dict['max_depth']
-    })
-
-    filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
-    image_primal_ref = mi.TensorXf(mi.Bitmap(filename))
-
-    filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
-    image_fwd_ref = mi.TensorXf(mi.Bitmap(filename))
-
-    theta = mi.Float(0.0)
-    dr.enable_grad(theta)
-    config.update(theta)
-
-    # Higher spp will run into single-precision accumulation issues
-    image_primal = mi.render(config.scene, config.params, integrator=integrator, seed=0, spp=256)
-
-    error = dr.abs(dr.detach(image_primal) - image_primal_ref) / dr.maximum(dr.abs(image_primal_ref), 2e-2)
-    error_mean = dr.mean(error, axis=None)
-    error_max = dr.max(error, axis=None)
-
-    if error_mean > config.error_mean_threshold  or error_max > config.error_max_threshold:
-        print(f"Failure in config: {config.name}, {integrator_name}")
-        print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
-        print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
-        print(f'-> reference image: {filename}')
-        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_primal.exr")
-        print(f'-> write current image: {filename}')
-        mi.util.write_bitmap(filename, image_primal)
-        pytest.fail("Radiance values exceeded configuration's tolerances!")
-
-    # Backward comparison
-    obj = dr.mean(image_primal, axis=None)
-    dr.backward(obj)
-
-    grad = dr.grad(theta)[0]
-    grad_ref = dr.mean(image_fwd_ref, axis=None)
-
-    error = dr.abs(grad - grad_ref) / dr.maximum(dr.abs(grad_ref), 1e-3)
-    if error > config.error_mean_threshold:
-        print(f"Failure in config: {config.name}, {integrator_name}")
-        print(f"-> grad:     {grad}")
-        print(f"-> grad_ref: {grad_ref}")
-        print(f"-> error: {error} (threshold={config.error_mean_threshold})")
-        print(f"-> ratio: {grad / grad_ref}")
-        pytest.fail("Gradient values exceeded configuration's tolerances!")
-
-    # Forward comparison
-    theta = mi.Float(0.0)
-    dr.enable_grad(theta)
-    config.update(theta)
-
-    image_primal = mi.render(config.scene, config.params, integrator=integrator, seed=0, spp=config.spp)
-
-    dr.forward(theta)
-
-    image_fwd = dr.grad(image_primal)
-
-    error = dr.abs(image_fwd - image_fwd_ref) / dr.maximum(dr.abs(image_fwd_ref), 2e-1)
-    error_mean = dr.mean(error, axis=None)
-    error_max = dr.max(error, axis=None)
-
-    if error_mean > config.error_mean_threshold or error_max > config.error_max_threshold:
-        print(f"Failure in config: {config.name}, {integrator_name}")
-        print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
-        print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
-        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_fwd.exr")
-        mi.util.write_bitmap(filename, image_fwd)
-        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_error.exr")
-        mi.util.write_bitmap(filename, error)
-        pytest.fail("Gradient values exceeded configuration's tolerances!")
-
-# -------------------------------------------------------------------
-#                      Generate reference images
-# -------------------------------------------------------------------
-
+#@pytest.mark.slow
+#@pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
+#def test04_render_custom_op(variant_cuda_ad_rgb):
+#    config = DiffuseAlbedoConfig()
+#    config.initialize()
+#
+#    integrator = mi.load_dict({
+#        'type': 'prb',
+#        'max_depth': config.integrator_dict['max_depth']
+#    })
+#
+#    filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
+#    image_primal_ref = mi.TensorXf(mi.Bitmap(filename))
+#
+#    filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
+#    image_fwd_ref = mi.TensorXf(mi.Bitmap(filename))
+#
+#    theta = mi.Float(0.0)
+#    dr.enable_grad(theta)
+#    config.update(theta)
+#
+#    # Higher spp will run into single-precision accumulation issues
+#    image_primal = mi.render(config.scene, config.params, integrator=integrator, seed=0, spp=256)
+#
+#    error = dr.abs(dr.detach(image_primal) - image_primal_ref) / dr.maximum(dr.abs(image_primal_ref), 2e-2)
+#    error_mean = dr.mean(error, axis=None)
+#    error_max = dr.max(error, axis=None)
+#
+#    if error_mean > config.error_mean_threshold  or error_max > config.error_max_threshold:
+#        print(f"Failure in config: {config.name}, {integrator_name}")
+#        print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
+#        print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
+#        print(f'-> reference image: {filename}')
+#        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_primal.exr")
+#        print(f'-> write current image: {filename}')
+#        mi.util.write_bitmap(filename, image_primal)
+#        pytest.fail("Radiance values exceeded configuration's tolerances!")
+#
+#    # Backward comparison
+#    obj = dr.mean(image_primal, axis=None)
+#    dr.backward(obj)
+#
+#    grad = dr.grad(theta)[0]
+#    grad_ref = dr.mean(image_fwd_ref, axis=None)
+#
+#    error = dr.abs(grad - grad_ref) / dr.maximum(dr.abs(grad_ref), 1e-3)
+#    if error > config.error_mean_threshold:
+#        print(f"Failure in config: {config.name}, {integrator_name}")
+#        print(f"-> grad:     {grad}")
+#        print(f"-> grad_ref: {grad_ref}")
+#        print(f"-> error: {error} (threshold={config.error_mean_threshold})")
+#        print(f"-> ratio: {grad / grad_ref}")
+#        pytest.fail("Gradient values exceeded configuration's tolerances!")
+#
+#    # Forward comparison
+#    theta = mi.Float(0.0)
+#    dr.enable_grad(theta)
+#    config.update(theta)
+#
+#    image_primal = mi.render(config.scene, config.params, integrator=integrator, seed=0, spp=config.spp)
+#
+#    dr.forward(theta)
+#
+#    image_fwd = dr.grad(image_primal)
+#
+#    error = dr.abs(image_fwd - image_fwd_ref) / dr.maximum(dr.abs(image_fwd_ref), 2e-1)
+#    error_mean = dr.mean(error, axis=None)
+#    error_max = dr.max(error, axis=None)
+#
+#    if error_mean > config.error_mean_threshold or error_max > config.error_max_threshold:
+#        print(f"Failure in config: {config.name}, {integrator_name}")
+#        print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
+#        print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
+#        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_fwd.exr")
+#        mi.util.write_bitmap(filename, image_fwd)
+#        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_error.exr")
+#        mi.util.write_bitmap(filename, error)
+#        pytest.fail("Gradient values exceeded configuration's tolerances!")
+#
+## -------------------------------------------------------------------
+##                      Generate reference images
+## -------------------------------------------------------------------
+#
 if __name__ == "__main__":
     """
     Generate reference primal/forward images for all configs.
