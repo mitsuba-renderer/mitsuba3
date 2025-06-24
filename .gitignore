@@ -12,6 +12,7 @@
 # Python
 __pycache__
 *.pyc
+\.venv
 /wheelhouse
 
 # macOS
