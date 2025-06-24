@@ -611,13 +611,8 @@ class RBIntegrator(ADIntegrator):
 
             # Perform the weight division and return an image tensor
             film.put_block(block)
-
-            # Explicitly delete any remaining unused variables
-            del sampler, ray, weight, pos, L, valid, aovs, δL, δaovs, \
-                valid_2, params, state_out, state_out_2, block
-
             result_grad = film.develop()
-
+            
         return result_grad
 
     def render_backward(self: mi.SamplingIntegrator,

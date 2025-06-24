@@ -5,7 +5,7 @@ import mitsuba as mi
 
 from .common import RBIntegrator
 
-class BasicPRBIntegrator(RBIntegrator):
+class BasicPRB2Integrator(RBIntegrator):
     r"""
     .. _integrator-prb_basic:
 
@@ -78,13 +78,10 @@ class BasicPRBIntegrator(RBIntegrator):
         δL = mi.Spectrum(δL if δL is not None else 0) # Differential/adjoint radiance
         β = mi.Spectrum(1)                            # Path throughput weight
         active = mi.Bool(active)                      # Active SIMD lanes
-        ray_prev = dr.zeros(mi.Ray3f)
-        pi_prev = dr.zeros(mi.PreliminaryIntersection3f)
         pi = scene.ray_intersect_preliminary(ray,
                                              coherent=True,
                                              reorder=False,
                                              active=active)
-        pi_first = pi
 
         while dr.hint(active,
                       max_iterations=self.max_depth,
@@ -95,33 +92,13 @@ class BasicPRBIntegrator(RBIntegrator):
             # from differentiable shape parameters (position, normals, etc.)
             # In primal mode, this is just an ordinary ray tracing operation.
             with dr.resume_grad(when=not primal):
-                flags = mi.RayFlags.All | mi.RayFlags.FollowShape
-                si_prev = pi_prev.compute_surface_interaction(ray_prev,
-                                                              ray_flags=flags,
-                                                              active=(depth != 0))
-                si = pi.compute_surface_interaction(ray, ray_flags=flags)
-
-                # Re-attach si.wi with motion of prev_si.p
-                p_prev = dr.select(depth == 0, ray.o, si_prev.p)
-                si_wi_diff = si.to_local(dr.normalize(p_prev - si.p))
-                si.wi = dr.replace_grad(si.wi, dr.select(si.is_valid(), si_wi_diff, si.wi))
-
-            with dr.resume_grad(when=not primal):
-                d = si.p - si_prev.p
-                d_squared = dr.squared_norm(d)
-                cos_theta = dr.abs_dot(si.n, -dr.normalize(d))
-                J_diff = dr.select(active & si.is_valid() & (d_squared > 0), 
-                                   dr.norm(dr.cross(si.dp_du, si.dp_dv)) * dr.abs(cos_theta) / d_squared,
-                                   1)
-                J = dr.select(J_diff != 0, dr.replace_grad(1, J_diff/dr.detach(J_diff)), 0)
-                D = dr.select(depth != 0, L * J, 0)
+                si = pi.compute_surface_interaction(ray, ray_flags=mi.RayFlags.All)
 
             # ---------------------- Direct emission ----------------------
 
             # Hide the environment emitter if necessary
             if dr.hint(self.hide_emitters, mode='scalar'):
                 active_next &= ~((depth == 0) & ~si.is_valid())
-
 
             # Differentiable evaluation of intersected emitter / envmap
             with dr.resume_grad(when=not primal):
@@ -143,36 +120,42 @@ class BasicPRBIntegrator(RBIntegrator):
             # ---- Update loop variables based on current interaction -----
 
             L = L + Le if primal else L - Le
+            ray = si.spawn_ray(si.to_world(bsdf_sample.wo))
             β *= bsdf_weight
 
             # Don't run another iteration if the throughput has reached zero
             active_next &= dr.any(β != 0)
 
-            ray_prev = ray
-            ray = si.spawn_ray(si.to_world(bsdf_sample.wo))
-
-            pi_prev = pi
             pi = scene.ray_intersect_preliminary(ray,
                                                  coherent=False,
                                                  reorder=dr.flag(dr.JitFlag.LoopRecord),
                                                  active=active_next)
 
+            ray = si.spawn_ray(si.to_world(bsdf_sample.wo))
 
             # ------------------ Differential phase only ------------------
 
-            if not primal:
+            if dr.hint(not primal, mode='scalar'):
                 with dr.resume_grad():
                     # 'L' stores the reflected radiance at the current vertex
                     # but does not track parameter derivatives. The following
                     # addresses this by canceling the detached BSDF value and
                     # replacing it with an equivalent term that has derivative
                     # tracking enabled.
+
                     si_next = pi.compute_surface_interaction(ray,
-                                                             ray_flags=mi.RayFlags.All | mi.RayFlags.FollowShape,
+                                                             ray_flags=mi.RayFlags.All,
                                                              active=active_next)
+                    d = dr.detach(si_next.p) - si.p
+                    d_squared = dr.squared_norm(d)
+                    d_normalized = dr.normalize(d)
+
+                    cos_theta = dr.abs_dot(si_next.n, d_normalized)
+                    G = cos_theta / d_squared
+                    G = dr.select(active_next & si_next.is_valid(), G, 1) #FIXME Think about envmaps later
 
                     # Recompute 'wo' to propagate derivatives to cosine term
-                    wo = si.to_local(dr.normalize(si_next.p - si.p))
+                    wo = si.to_local(d_normalized)
 
                     # Re-evaluate BSDF * cos(theta) differentiably
                     bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active_next)
@@ -185,13 +168,13 @@ class BasicPRBIntegrator(RBIntegrator):
                     # Differentiable version of the reflected radiance. Minor
                     # optional tweak: indicate that the primal value of the
                     # second term is 1.
-                    Lr = L * dr.replace_grad(1, inv_bsdf_val_detach * bsdf_val)
+                    Lr = L * dr.replace_grad(1, inv_bsdf_val_detach * bsdf_val * G / dr.detach(G))
 
                     # Differentiable Monte Carlo estimate of all contributions
-                    Lo = Le + Lr + D
+                    Lo = Le + Lr
 
                     # Propagate derivatives from/to 'Lo' based on 'mode'
-                    if mode == dr.ADMode.Backward:
+                    if dr.hint(mode == dr.ADMode.Backward, mode='scalar'):
                         dr.backward_from(δL * Lo)
                     else:
                         δL += dr.forward_to(Lo)
@@ -203,9 +186,9 @@ class BasicPRBIntegrator(RBIntegrator):
             L if primal else δL, # Radiance/differential radiance
             depth != 0,          # Ray validity flag for alpha blending
             [],                  # Empty typle of AOVs
-            (L, pi_first)        # State the for differential phase
+            L                    # State the for differential phase
         )
 
-mi.register_integrator("prb_basic", lambda props: BasicPRBIntegrator(props))
+mi.register_integrator("prb_basic_2", lambda props: BasicPRB2Integrator(props))
 
 del RBIntegrator

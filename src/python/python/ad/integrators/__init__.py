@@ -12,6 +12,9 @@ if mi.variant() is not None and not mi.variant().startswith('scalar'):
     from . import prb
     importlib.reload(prb)
 
+    from . import prb_2
+    importlib.reload(prb_2)
+
     from . import prbvolpath
     importlib.reload(prbvolpath)
 
@@ -23,5 +26,8 @@ if mi.variant() is not None and not mi.variant().startswith('scalar'):
 
     from . import volprim_rf_basic
     importlib.reload(volprim_rf_basic)
+
+    from . import prb_basic_2
+    importlib.reload(prb_basic_2)
 
 del importlib, mi
