@@ -7,7 +7,9 @@ if mi.variant() is not None and not mi.variant().startswith('scalar'):
     submodules = [
         'common',
         'prb_basic',
+        'prb_basic_2',
         'prb',
+        'prb_2',
         'prbvolpath',
         'direct_projective',
         'prb_projective',

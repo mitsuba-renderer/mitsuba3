@@ -134,6 +134,7 @@ file(GLOB_RECURSE MI_PYTHON_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.py)
 set(MI_COPY_FILES "")
 foreach(file ${MI_PYTHON_FILES})
   get_filename_component(IN_FILE_DIR ${file} DIRECTORY)
+
   set(IN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${file})
   ro_copy(${IN_FILE} python/mitsuba/${file})
   install(FILES ${IN_FILE} DESTINATION mitsuba/${IN_FILE_DIR})
