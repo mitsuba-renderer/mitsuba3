@@ -634,7 +634,7 @@ DRJIT_CALL_TEMPLATE_INHERITED_BEGIN(mitsuba::Mesh, mitsuba::Shape)
     DRJIT_CALL_GETTER(has_vertex_texcoords)
     DRJIT_CALL_GETTER(has_mesh_attributes)
     DRJIT_CALL_GETTER(has_face_normals)
-DRJIT_CALL_END()
+DRJIT_CALL_INHERITED_END()
 
 //! @}
 // -----------------------------------------------------------------------
