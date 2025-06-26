@@ -175,41 +175,17 @@ def test08_transform_chain(variants_all_rgb):
     assert T.to_frame(mi.Frame3f([1, 0, 0])).scale(4.0) == T.to_frame(mi.Frame3f([1, 0, 0])) @ T.scale(4.0)
 
 
-# def test08_atransform_construct(variant_scalar_rgb):
-#     t = mi.Transform4f.rotate([1, 0, 0], 30)
-#     a = AnimatedTransform(t)
+def test06_dual_callable(variant_scalar_rgb):
+    """Test dual callable functionality - calling Transform methods as class methods"""
+    # Dual callable is automatically enabled when Transform classes are created
 
-#     t0 = a.eval(0)
-#     assert t0 == t
-#     assert not t0.has_scale()
-#     # Animation is constant over time
-#     for v in [10, 200, 1e5]:
-#         assert np.all(t0 == a.eval(v))
+    # Test that class methods create identity transform first
+    T = mi.Transform4f
+    assert dr.allclose(T.translate([1, 2, 3]).matrix, T().translate([1, 2, 3]).matrix)
+    assert dr.allclose(T.scale([2, 2, 2]).matrix, T().scale([2, 2, 2]).matrix)
+    assert dr.allclose(T.rotate([0, 1, 0], 45).matrix, T().rotate([0, 1, 0], 45).matrix)
 
-
-# def test10_atransform_interpolate_rotation(variant_scalar_rgb):
-#     a = AnimatedTransform()
-#     axis = np.array([1.0, 2.0, 3.0])
-#     axis /= la.norm(axis)
-
-#     trafo0 = mi.Transform4f.rotate(axis, 0)
-#     trafo1 = mi.Transform4f.rotate(axis, 30)
-#     trafo_mid = mi.Transform4f.rotate(axis, 15)
-#     a.append(2, trafo0)
-#     a.append(3, trafo1)
-
-#     assert dr.allclose(a.eval(-10).matrix, trafo0.matrix)
-#     assert dr.allclose(a.eval(2.5).matrix, trafo_mid.matrix)
-#     assert dr.allclose(a.eval( 10).matrix, trafo1.matrix)
-
-
-# def test11_atransform_interpolate_scale(variant_scalar_rgb):
-#     a = AnimatedTransform()
-#     trafo0 = mi.Transform4f.scale([1,2,3])
-#     trafo1 = mi.Transform4f.scale([4,5,6])
-#     trafo_mid = mi.Transform4f.scale([2.5, 3.5, 4.5])
-#     a.append(2, trafo0)
-#     a.append(3, trafo1)
-#     assert dr.allclose(a.eval(-10).matrix, trafo0.matrix)
-#     assert dr.allclose(a.eval(2.5).matrix, trafo_mid.matrix)
-#     assert dr.allclose(a.eval( 10).matrix, trafo1.matrix)
+    # Test chaining works correctly
+    t1 = T.translate([1, 0, 0]).rotate([0, 1, 0], 45).scale([2, 2, 2])
+    t2 = T().translate([1, 0, 0]).rotate([0, 1, 0], 45).scale([2, 2, 2])
+    assert dr.allclose(t1.matrix, t2.matrix)

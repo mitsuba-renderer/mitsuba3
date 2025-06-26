@@ -228,17 +228,16 @@ NB_MODULE(mitsuba_alias, m) {
     curr_variant = nb::none();
     variant_change_callbacks = nb::set();
 
-    if (!variant_modules) {
+    if (!variant_modules)
         variant_modules = PyDict_New();
-    }
 
     // Need to populate `__path__` we do it by using the `__file__` attribute
     // of a Python file which is located in the same directory as this module
-    nb::module_ os = nb::module_::import_("os");
+    nb::module_ path = nb::module_::import_("os").attr("path");
     nb::module_ cfg = nb::module_::import_("mitsuba.config");
-    nb::object cfg_path = os.attr("path").attr("realpath")(cfg.attr("__file__"));
-    nb::object mi_dir = os.attr("path").attr("dirname")(cfg_path);
-    nb::object mi_py_dir = os.attr("path").attr("join")(mi_dir, "python");
+    nb::object cfg_path = path.attr("realpath")(cfg.attr("__file__"));
+    nb::object mi_dir = path.attr("dirname")(cfg_path);
+    nb::object mi_py_dir = path.attr("join")(mi_dir, "python");
     nb::list paths{};
     paths.append(nb::str(mi_dir));
     paths.append(nb::str(mi_py_dir));
@@ -263,11 +262,12 @@ NB_MODULE(mitsuba_alias, m) {
     /// Only used for variant-specific attributes e.g. mi.scalar_rgb.T
     m.def("__getattr__", [](nb::handle key) { return get_attr(key); });
 
-    // `mitsuba.detail` submodule
-    nb::module_ mi_detail = m.def_submodule("detail");
+    // Create the detail submodule
+    nb::module_ mi_detail = nb::module_::import_("mitsuba.detail");
     mi_detail.def("add_variant_callback", add_variant_callback);
     mi_detail.def("remove_variant_callback", remove_variant_callback);
     mi_detail.def("clear_variant_callbacks", clear_variant_callbacks);
+    m.attr("detail") = mi_detail;
 
     /// Fill `__dict__` with all objects in `mitsuba_ext` and `mitsuba.python`
     mi_dict = m.attr("__dict__").ptr();

@@ -137,45 +137,6 @@ longer needed.
   expensive, branch-specific computations when the condition for evaluating a 
   particular branch is relatively rare.
 
-
-Removal of static ``mi.Transform*`` functions
----------------------------------------------
-
-In prior releases of Mitsuba 3, the collection of ``mi.Transform*`` types could be
-instatiated via an initial static function call and then subsequent chained
-instance calls, such as
-
-.. code-block:: python
-
-  x = mi.Transform4f.translate([1,2,3]).scale(3.0).rotate([1, 0, 0], 0.5)
-
-However, a common pitfall was that subsequently calling
-
-.. code-block:: python
-
-  y = x.scale(3.0)
-
-would in fact call the static function implementation and hence the value of
-``y.matrix`` would unexpectedly be
-
-.. code-block:: python
-
-  [[[3, 0, 0, 0],
-  [0, 3, 0, 0],
-  [0, 0, 3, 0],
-  [0, 0, 0, 1]]]
-
-rather than applied to the existing transform ``x``.
-
-From Mitsuba 3.6.0 onwards, all ``mi.Transform*`` static function have been 
-removed and instead a user can default construct the identity transform before
-chaining any subsequent transforms
-
-.. code-block:: python
-
-  # mi.Transform4f() is the identity transform
-  x = mi.Transform4f().translate([1,2,3]).scale(3.0).rotate([1, 0, 0], 0.5)
-
 ..
 
   Bitmap textures: Half-precision storage by default where possible
