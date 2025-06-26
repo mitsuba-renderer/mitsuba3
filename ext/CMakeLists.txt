@@ -258,7 +258,7 @@ if (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
 set(PNG_ARM_NEON "on" CACHE STRING " " FORCE)
 endif()
 add_subdirectory(libpng)
-set_property(TARGET png genfiles PROPERTY FOLDER "dependencies")
+set_property(TARGET png png_genfiles PROPERTY FOLDER "dependencies")
 set_property(TARGET png PROPERTY OUTPUT_NAME "png-mitsuba")
 
 set(PNG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libpng;${CMAKE_CURRENT_BINARY_DIR}/libpng" PARENT_SCOPE)
