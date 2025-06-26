@@ -179,7 +179,6 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
         if (m_accel_handle.index())
             jit_var_set_callback(m_accel_handle.index(), nullptr, nullptr);
         m_accel_handle = UInt64::map_(s.accel, 1, false);
-        // m_accel_handle = dr::opaque<UInt64>(s.accel);
         jit_var_set_callback(
             m_accel_handle.index(),
             [](uint32_t /* index */, int free, void *payload) {

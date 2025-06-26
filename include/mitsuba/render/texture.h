@@ -225,7 +225,7 @@ public:
 protected:
     Texture(const Properties &);
 
-    MI_TRAVERSE_CB(Object);
+    MI_TRAVERSE_CB(Object)
 };
 
 MI_EXTERN_CLASS(Texture)

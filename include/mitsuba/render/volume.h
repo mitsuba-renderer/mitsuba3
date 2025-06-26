@@ -117,7 +117,7 @@ protected:
     /// Number of channels stored in the volume
     uint32_t m_channel_count;
 
-    MI_TRAVERSE_CB(Object);
+    MI_TRAVERSE_CB(Object)
 };
 
 MI_EXTERN_CLASS(Volume)

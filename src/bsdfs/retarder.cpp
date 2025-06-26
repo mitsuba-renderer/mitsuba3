@@ -207,7 +207,7 @@ private:
     ref<Texture> m_delta;
     ref<Texture> m_transmittance;
 
-    MI_TRAVERSE_CB(Base, m_theta, m_delta, m_transmittance);
+    MI_TRAVERSE_CB(Base, m_theta, m_delta, m_transmittance)
 };
 
 MI_EXPORT_PLUGIN(LinearRetarder)

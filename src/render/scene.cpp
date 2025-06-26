@@ -639,9 +639,10 @@ void Scene<Float, Spectrum>::traverse_1_cb_ro(
     void *payload, drjit::detail::traverse_callback_ro fn) const {
 
     // Only traverse the scene for frozen functions, since accidentally
-    // traversing the scene in loops or vcalls can cause issues.
+    // traversing the scene in loops or vcalls can cause errors with variable
+    // size mismatches, and backpropagation of gradients.
     if (!jit_flag(JitFlag::EnableObjectTraversal))
-        return;
+    return;
 
     if constexpr (!std::is_same_v<Object, drjit::TraversableBase>)
         Object::traverse_1_cb_ro(payload, fn);
@@ -660,7 +661,8 @@ void Scene<Float, Spectrum>::traverse_1_cb_rw(
     void *payload, drjit::detail::traverse_callback_rw fn) {
 
     // Only traverse the scene for frozen functions, since accidentally
-    // traversing the scene in loops or vcalls can cause issues.
+    // traversing the scene in loops or vcalls can cause errors with variable
+    // size mismatches, and backpropagation of gradients.
     if (!jit_flag(JitFlag::EnableObjectTraversal))
         return;
 

@@ -818,7 +818,7 @@ private:
     bool m_flip_normals;
     static constexpr float silhouette_offset = 1e-3f;
 
-    MI_TRAVERSE_CB(Base, m_radius, m_length, m_inv_surface_area);
+    MI_TRAVERSE_CB(Base, m_radius, m_length, m_inv_surface_area)
 };
 
 MI_EXPORT_PLUGIN(Cylinder)
