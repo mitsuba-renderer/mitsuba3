@@ -86,6 +86,7 @@ class PRB2Integrator(RBIntegrator):
 
         # Copy input arguments to avoid mutating the caller's state
         ray = mi.Ray3f(dr.detach(ray))
+        ray_prev = mi.Ray3f(ray)
         depth = mi.UInt32(0)                          # Depth of current vertex
         L = mi.Spectrum(0 if primal else state_in)    # Radiance accumulator
         δL = mi.Spectrum(δL if δL is not None else 0) # Differential/adjoint radiance
@@ -96,6 +97,7 @@ class PRB2Integrator(RBIntegrator):
                                              coherent=True,
                                              reorder=False,
                                              active=active)
+        pi_prev = dr.zeros(mi.PreliminaryIntersection3f)
 
         # Variables caching information from the previous bounce
         prev_si         = dr.zeros(mi.SurfaceInteraction3f)
@@ -113,6 +115,15 @@ class PRB2Integrator(RBIntegrator):
             with dr.resume_grad(when=not primal):
                 si = pi.compute_surface_interaction(ray, ray_flags=mi.RayFlags.All)
 
+                if depth >= 1:
+                    # Recompute an attached si.wi
+                    si_prev = pi_prev.compute_surface_interaction(
+                        ray_prev, ray_flags=mi.RayFlags.All)
+                    si_detached = dr.detach(si)
+                    si.wi = dr.replace_grad(si.wi,
+                        si_detached.to_local(dr.normalize(si_prev.p - dr.detach(si.p)))
+                    )
+
             # Get the BSDF, potentially computes texture-space differentials
             bsdf = si.bsdf(ray)
 
@@ -125,43 +136,53 @@ class PRB2Integrator(RBIntegrator):
             # Compute MIS weight for emitter sample from previous bounce
             ds = mi.DirectionSample3f(scene, si=si, ref=prev_si)
 
-            #mis = mis_weight(
-            #    prev_bsdf_pdf,
-            #    scene.pdf_emitter_direction(prev_si, ds, ~prev_bsdf_delta)
-            #)
+            mis = mis_weight(
+               prev_bsdf_pdf,
+               scene.pdf_emitter_direction(prev_si, ds, ~prev_bsdf_delta)
+            )
 
             with dr.resume_grad(when=not primal):
-                #Le = β * mis * ds.emitter.eval(si, active_next)
-                Le = β * ds.emitter.eval(si, active_next)
+                Le = β * mis * ds.emitter.eval(si, active_next)
 
             # ---------------------- Emitter sampling ----------------------
 
             # Should we continue tracing to reach one more vertex?
             active_next &= (depth + 1 < self.max_depth) & si.is_valid()
 
-            ## Is emitter sampling even possible on the current vertex?
-            #active_em = False #active_next & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth)
+            # Is emitter sampling even possible on the current vertex?
+            active_em = active_next & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth)
 
-            ## If so, randomly sample an emitter without derivative tracking.
-            #ds, em_weight = scene.sample_emitter_direction(
-            #    si, sampler.next_2d(), True, active_em)
-            #active_em &= (ds.pdf != 0.0)
+            # If so, randomly sample an emitter without derivative tracking.
+            ds, em_weight = scene.sample_emitter_direction(
+               si, sampler.next_2d(), True, active_em)
+            active_em &= (ds.pdf != 0.0)
 
-            #with dr.resume_grad(when=not primal):
-            #    # Given the detached emitter sample, *recompute* its
-            #    # contribution with AD to enable light source optimization
-            #    if dr.hint(not primal, mode='scalar'):
-            #        em_val = scene.eval_emitter_direction(si, ds, active_em)
-            #        em_weight = dr.replace_grad(em_weight, dr.select((ds.pdf != 0), em_val / ds.pdf, 0))
-            #        dr.disable_grad(ds.d)
+            with dr.resume_grad(when=not primal):
+                # Given the detached emitter sample, *recompute* its
+                # contribution with AD to enable light source optimization
+                if dr.hint(not primal, mode='scalar'):
+                    d = ds.p - si.p
+                    d_squared = dr.squared_norm(d)
+                    d_normalized = dr.normalize(d)
+                    cos_theta = dr.abs_dot(ds.n, d_normalized)
+                    G2 = cos_theta / d_squared
+                    G2 = dr.select(active_em, G2, 1)
 
-            #    # Evaluate BSDF * cos(theta) differentiably
-            #    wo = si.to_local(ds.d)
+                    em_val = scene.eval_emitter_direction(si, ds, active_em)
+                    em_weight = dr.replace_grad(em_weight, dr.select(
+                        (ds.pdf != 0),
+                        em_val / ds.pdf *
+                        G2 / dr.detach(G2),
+                        0
+                    ))
+                    ds.d = dr.replace_grad(ds.d, d_normalized)
 
-            #    bsdf_value_em, bsdf_pdf_em = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
-            #    mis_em = dr.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf_em))
-            #    Lr_dir = β * mis_em * bsdf_value_em * em_weight
-            Lr_dir = 0
+                # Evaluate BSDF * cos(theta) differentiably
+                wo = si.to_local(ds.d)
+
+                bsdf_value_em, bsdf_pdf_em = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
+                mis_em = dr.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf_em))
+                Lr_dir = β * mis_em * bsdf_value_em * em_weight
 
             # ------------------ Detached BSDF sampling -------------------
 
@@ -173,6 +194,7 @@ class PRB2Integrator(RBIntegrator):
             # ---- Update loop variables based on current interaction -----
 
             L = (L + Le + Lr_dir) if primal else (L - Le - Lr_dir)
+            ray_prev = ray
             ray = si.spawn_ray(si.to_world(bsdf_sample.wo))
             η *= bsdf_sample.eta
             β *= bsdf_weight
@@ -181,7 +203,7 @@ class PRB2Integrator(RBIntegrator):
 
             prev_si = dr.detach(si, True)
             prev_bsdf_pdf = bsdf_sample.pdf
-            prev_bsdf_delta = True #mi.has_flag(bsdf_sample.sampled_type, mi.BSDFFlags.Delta)
+            prev_bsdf_delta = mi.has_flag(bsdf_sample.sampled_type, mi.BSDFFlags.Delta)
 
             # -------------------- Stopping criterion ---------------------
 
@@ -199,12 +221,17 @@ class PRB2Integrator(RBIntegrator):
             rr_continue = sampler.next_1d() < rr_prob
             active_next &= ~rr_active | rr_continue
 
+            pi_prev = pi
             pi = scene.ray_intersect_preliminary(ray,
                                                  coherent=False,
                                                  reorder=dr.flag(dr.JitFlag.LoopRecord),
                                                  active=active_next)
 
             # ------------------ Differential phase only ------------------
+
+            si_next = pi.compute_surface_interaction(ray,
+                                                    ray_flags=mi.RayFlags.All,
+                                                    active=active_next)
 
             if dr.hint(not primal, mode='scalar'):
                 with dr.resume_grad():
@@ -217,16 +244,13 @@ class PRB2Integrator(RBIntegrator):
                     # since there may be a direct component that is weighted
                     # via multiple importance sampling)
 
-                    si_next = pi.compute_surface_interaction(ray,
-                                                             ray_flags=mi.RayFlags.All,
-                                                             active=active_next)
-                    d = dr.detach(si_next.p) - si.p
+                    d = si_next.p - si.p
                     d_squared = dr.squared_norm(d)
                     d_normalized = dr.normalize(d)
 
                     cos_theta = dr.abs_dot(si_next.n, d_normalized)
-                    G = cos_theta / d_squared
-                    G = dr.select(active_next & si_next.is_valid(), G, 1) #FIXME Think about envmaps later
+                    G2 = cos_theta / d_squared
+                    G2 = dr.select(active_next & si_next.is_valid(), G2, 1) #FIXME Think about envmaps later
 
                     # Recompute 'wo' to propagate derivatives to cosine term
                     wo = si.to_local(d_normalized)
@@ -243,8 +267,11 @@ class PRB2Integrator(RBIntegrator):
                     # Differentiable version of the reflected indirect
                     # radiance. Minor optional tweak: indicate that the primal
                     # value of the second term is always 1.
-                    Lr_ind = L * dr.replace_grad(1, inv_bsdf_val_det * bsdf_val * G / dr.detach(G))
-
+                    Lr_ind = L * dr.replace_grad(
+                        1,
+                        inv_bsdf_val_det * bsdf_val *
+                        G2 / dr.detach(G2)
+                    )
 
                     # Differentiable Monte Carlo estimate of all contributions
                     Lo = Le + Lr_dir + Lr_ind
