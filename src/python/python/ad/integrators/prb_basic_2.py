@@ -82,6 +82,8 @@ class BasicPRB2Integrator(RBIntegrator):
                                              coherent=True,
                                              reorder=False,
                                              active=active)
+        pi_prev_p = mi.Point3f(ray.o)
+
 
         while dr.hint(active,
                       max_iterations=self.max_depth,
@@ -126,6 +128,7 @@ class BasicPRB2Integrator(RBIntegrator):
             # Don't run another iteration if the throughput has reached zero
             active_next &= dr.any(β != 0)
 
+            pi_tmp_p = si.p
             pi = scene.ray_intersect_preliminary(ray,
                                                  coherent=False,
                                                  reorder=dr.flag(dr.JitFlag.LoopRecord),
@@ -146,13 +149,17 @@ class BasicPRB2Integrator(RBIntegrator):
                     si_next = pi.compute_surface_interaction(ray,
                                                              ray_flags=mi.RayFlags.All,
                                                              active=active_next)
-                    d = dr.detach(si_next.p) - si.p
+                    si_next = dr.detach(si_next)
+
+                    G1 = dr.detach(1. / dr.squared_norm(si.p - pi_prev_p))
+
+                    d = si_next.p - si.p
                     d_squared = dr.squared_norm(d)
                     d_normalized = dr.normalize(d)
 
                     cos_theta = dr.abs_dot(si_next.n, d_normalized)
-                    G = cos_theta / d_squared
-                    G = dr.select(active_next & si_next.is_valid(), G, 1) #FIXME Think about envmaps later
+                    G2 = cos_theta / d_squared
+                    G2 = dr.select(active_next & si_next.is_valid(), G2, 1) #FIXME Think about envmaps later
 
                     # Recompute 'wo' to propagate derivatives to cosine term
                     wo = si.to_local(d_normalized)
@@ -168,7 +175,11 @@ class BasicPRB2Integrator(RBIntegrator):
                     # Differentiable version of the reflected radiance. Minor
                     # optional tweak: indicate that the primal value of the
                     # second term is 1.
-                    Lr = L * dr.replace_grad(1, inv_bsdf_val_detach * bsdf_val * G / dr.detach(G))
+                    Lr = L * dr.replace_grad(1,
+                            inv_bsdf_val_detach * bsdf_val *
+                            (G2 / dr.detach(G2)) *
+                            (G1 / dr.detach(G1))
+                    )
 
                     # Differentiable Monte Carlo estimate of all contributions
                     Lo = Le + Lr
@@ -179,6 +190,7 @@ class BasicPRB2Integrator(RBIntegrator):
                     else:
                         δL += dr.forward_to(Lo)
 
+            pi_prev_p = pi_tmp_p
             depth[si.is_valid()] += 1
             active = active_next
 

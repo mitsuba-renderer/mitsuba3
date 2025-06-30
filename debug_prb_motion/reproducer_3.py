@@ -11,6 +11,7 @@ generate_prb = False
 generate_prb_2 = False
 generate_prb_basic = False
 generate_prb_basic2 = True
+generate_prb_projective = True
 with_disc = False
 
 res = 128
@@ -137,6 +138,10 @@ prb_basic2_integrator = mi.load_dict({
     'max_depth': max_depth
 })
 
+prb_projective_integrator = mi.load_dict({
+    'type': 'prb_projective',
+    'max_depth': max_depth
+})
 
 direct_projective_integrator = mi.load_dict({
     'type': 'direct_projective',
@@ -212,3 +217,15 @@ if generate_prb_2:
     if with_disc:
         prb_2_fwd += disc_fwd 
     mi.Bitmap(prb_2_fwd).write('prb_2.exr')
+
+if generate_prb_projective:
+    update(0)
+    theta = mi.Float(0)
+    dr.enable_grad(theta)
+    update(theta)
+    dr.forward(theta, flags=dr.ADFlag.ClearEdges)
+
+    prb_projective_fwd = prb_projective_integrator.render_forward(scene, params=params, spp=2 ** 16)
+    if with_disc:
+        prb_projective_fwd += disc_fwd 
+    mi.Bitmap(prb_projective_fwd).write('prb_projective.exr')

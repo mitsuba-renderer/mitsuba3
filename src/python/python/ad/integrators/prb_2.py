@@ -125,43 +125,40 @@ class PRB2Integrator(RBIntegrator):
             # Compute MIS weight for emitter sample from previous bounce
             ds = mi.DirectionSample3f(scene, si=si, ref=prev_si)
 
-            #mis = mis_weight(
-            #    prev_bsdf_pdf,
-            #    scene.pdf_emitter_direction(prev_si, ds, ~prev_bsdf_delta)
-            #)
+            mis = mis_weight(
+                prev_bsdf_pdf,
+                scene.pdf_emitter_direction(prev_si, ds, ~prev_bsdf_delta)
+            )
 
             with dr.resume_grad(when=not primal):
-                #Le = β * mis * ds.emitter.eval(si, active_next)
-                Le = β * ds.emitter.eval(si, active_next)
+                Le = β * mis * ds.emitter.eval(si, active_next)
 
             # ---------------------- Emitter sampling ----------------------
 
             # Should we continue tracing to reach one more vertex?
             active_next &= (depth + 1 < self.max_depth) & si.is_valid()
 
-            ## Is emitter sampling even possible on the current vertex?
-            #active_em = False #active_next & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth)
+            # Is emitter sampling even possible on the current vertex?
+            active_em = active_next & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth)
 
-            ## If so, randomly sample an emitter without derivative tracking.
-            #ds, em_weight = scene.sample_emitter_direction(
-            #    si, sampler.next_2d(), True, active_em)
-            #active_em &= (ds.pdf != 0.0)
+            with dr.resume_grad(when=not primal):
+                ds, em_weight = scene.sample_emitter_direction(
+                    si, sampler.next_2d(), True, active_em)
+                active_em &= (ds.pdf != 0.0)
 
-            #with dr.resume_grad(when=not primal):
-            #    # Given the detached emitter sample, *recompute* its
-            #    # contribution with AD to enable light source optimization
-            #    if dr.hint(not primal, mode='scalar'):
-            #        em_val = scene.eval_emitter_direction(si, ds, active_em)
-            #        em_weight = dr.replace_grad(em_weight, dr.select((ds.pdf != 0), em_val / ds.pdf, 0))
-            #        dr.disable_grad(ds.d)
+                # Given the detached emitter sample, *recompute* its
+                # contribution with AD to enable light source optimization
+                if dr.hint(not primal, mode='scalar'):
+                    em_val = scene.eval_emitter_direction(si, ds, active_em)
+                    em_weight = dr.replace_grad(em_weight, dr.select((ds.pdf != 0), em_val / ds.pdf, 0))
+                    #dr.disable_grad(ds.d)
 
-            #    # Evaluate BSDF * cos(theta) differentiably
-            #    wo = si.to_local(ds.d)
+                # Evaluate BSDF * cos(theta) differentiably
+                wo = si.to_local(ds.d)
 
-            #    bsdf_value_em, bsdf_pdf_em = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
-            #    mis_em = dr.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf_em))
-            #    Lr_dir = β * mis_em * bsdf_value_em * em_weight
-            Lr_dir = 0
+                bsdf_value_em, bsdf_pdf_em = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
+                mis_em = dr.select(ds.delta, 1, mis_weight(dr.detach(ds.pdf), bsdf_pdf_em))
+                Lr_dir = β * mis_em * bsdf_value_em * em_weight
 
             # ------------------ Detached BSDF sampling -------------------
 
@@ -181,7 +178,7 @@ class PRB2Integrator(RBIntegrator):
 
             prev_si = dr.detach(si, True)
             prev_bsdf_pdf = bsdf_sample.pdf
-            prev_bsdf_delta = True #mi.has_flag(bsdf_sample.sampled_type, mi.BSDFFlags.Delta)
+            prev_bsdf_delta = mi.has_flag(bsdf_sample.sampled_type, mi.BSDFFlags.Delta)
 
             # -------------------- Stopping criterion ---------------------
 
@@ -220,7 +217,8 @@ class PRB2Integrator(RBIntegrator):
                     si_next = pi.compute_surface_interaction(ray,
                                                              ray_flags=mi.RayFlags.All,
                                                              active=active_next)
-                    d = dr.detach(si_next.p) - si.p
+                    si_next = dr.detach(si_next)
+                    d = si_next.p - si.p
                     d_squared = dr.squared_norm(d)
                     d_normalized = dr.normalize(d)
 

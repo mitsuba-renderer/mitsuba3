@@ -2,15 +2,21 @@ import mitsuba as mi
 import drjit as dr
 from mitsuba.scalar_rgb import ScalarTransform4f as T
 
+
 mi.set_variant('cuda_ad_rgb')
 mi.set_log_level(mi.LogLevel.Info)
 
-generate_ref = True 
-generate_path = False
-generate_prb = False
+from mimt import *
+
+generate_ref = True
+generate_path = True
+generate_prb = True
 generate_prb_2 = False
 generate_prb_basic = False
 generate_prb_basic2 = True
+generate_prb_projective = True
+generate_ad = True
+generate_prb_threepoint = True
 with_disc = False
 
 res = 128
@@ -33,6 +39,7 @@ scene_description = {
         'filename': '../resources/data/common/meshes/rectangle.obj',
         'face_normals': True,
         'to_world': T().translate([0, -1.5, 0]) @ T().rotate([0, 1, 0], -90) @ T().rotate([1, 0, 0], -90) @ T().scale(4.0),
+        'silhouette_sampling_weight': 1,
         'emitter': {
             'type': 'area',
             'radiance': {
@@ -124,11 +131,25 @@ prb_basic2_integrator = mi.load_dict({
     'max_depth': max_depth
 })
 
+ad_integrator = mi.load_dict({
+    'type': 'ad',
+    'max_depth': max_depth
+})
+
+prb_threepoint_integrator = mi.load_dict({
+    'type': 'prb_threepoint',
+    'max_depth': max_depth
+})
+
+prb_projective_integrator = mi.load_dict({
+    'type': 'prb_projective',
+    'max_depth': max_depth
+})
 
 direct_projective_integrator = mi.load_dict({
     'type': 'direct_projective',
-    'sppi': 2048,
     'sppc': 0,
+    'sppi': 2048,
     'sppp': 512,
 })
 
@@ -149,7 +170,7 @@ if generate_path:
     update(theta)
     dr.forward(theta, flags=dr.ADFlag.ClearEdges)
 
-    path_fwd = path_integrator.render_forward(scene, params=params, spp=2048)
+    path_fwd = path_integrator.render_forward(scene, params=params, spp=1024)
     if with_disc:
         path_fwd += disc_fwd 
     mi.Bitmap(path_fwd).write('path_fwd.exr')
@@ -199,3 +220,39 @@ if generate_prb_2:
     if with_disc:
         prb_2_fwd += disc_fwd 
     mi.Bitmap(prb_2_fwd).write('prb_2.exr')
+
+if generate_ad:
+    update(0)
+    theta = mi.Float(0)
+    dr.enable_grad(theta)
+    update(theta)
+    dr.forward(theta, flags=dr.ADFlag.ClearEdges)
+
+    ad_fwd = ad_integrator.render_forward(scene, params=params, spp=2 ** 16)
+    if with_disc:
+        ad_fwd += disc_fwd 
+    mi.Bitmap(ad_fwd).write('ad.exr')
+
+if generate_prb_threepoint:
+    update(0)
+    theta = mi.Float(0)
+    dr.enable_grad(theta)
+    update(theta)
+    dr.forward(theta, flags=dr.ADFlag.ClearEdges)
+
+    prb_threepoint_fwd = prb_threepoint_integrator.render_forward(scene, params=params, spp=2 ** 16)
+    if with_disc:
+        prb_threepoint_fwd += disc_fwd 
+    mi.Bitmap(prb_threepoint_fwd).write('prb_threepoint.exr')
+
+if generate_prb_projective:
+    update(0)
+    theta = mi.Float(0)
+    dr.enable_grad(theta)
+    update(theta)
+    dr.forward(theta, flags=dr.ADFlag.ClearEdges)
+
+    prb_projective_fwd = prb_projective_integrator.render_forward(scene, params=params, spp=2 ** 16)
+    if with_disc:
+        prb_projective_fwd += disc_fwd 
+    mi.Bitmap(prb_projective_fwd).write('prb_projective.exr')
