@@ -9,6 +9,7 @@
 #include <mitsuba/python/python.h>
 
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/string_view.h>
 
 #define DECLARE_RW(Type, ReadableName)                                         \
     def("read_" ReadableName,                                                  \

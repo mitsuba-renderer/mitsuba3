@@ -2,6 +2,7 @@
 #include <mitsuba/python/python.h>
 
 #include <nanobind/stl/tuple.h>
+#include <nanobind/stl/string_view.h>
 
 MI_PY_EXPORT(Spiral) {
     using Vector2u = typename Spiral::Vector2u;

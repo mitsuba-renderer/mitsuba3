@@ -3,6 +3,7 @@
 #include <mitsuba/python/python.h>
 
 #include <nanobind/make_iterator.h>
+#include <nanobind/stl/string_view.h>
 
 MI_PY_EXPORT(FileResolver) {
     MI_PY_CLASS(FileResolver, Object)

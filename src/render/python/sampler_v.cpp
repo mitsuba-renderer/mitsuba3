@@ -4,6 +4,7 @@
 #include <mitsuba/core/properties.h>
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/string_view.h>
 #include <drjit/python.h>
 
 /// Trampoline for derived types implemented in Python

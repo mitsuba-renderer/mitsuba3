@@ -4,6 +4,8 @@
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/python/python.h>
 
+#include <nanobind/stl/string_view.h>
+
 MI_PY_EXPORT(Thread) {
     auto thr = nb::class_<Thread, Object>(m, "Thread", D(Thread));
 

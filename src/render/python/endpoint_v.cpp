@@ -8,6 +8,7 @@
 #include <mitsuba/render/shape.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/stl/pair.h>
+#include <nanobind/stl/string_view.h>
 #include <drjit/python.h>
 
 MI_PY_EXPORT(Endpoint) {

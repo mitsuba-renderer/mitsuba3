@@ -5,6 +5,7 @@
 #include <mitsuba/python/python.h>
 
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/string_view.h>
 
 MI_PY_EXPORT(OptixDenoiser) {
     MI_PY_IMPORT_TYPES(OptixDenoiser)

@@ -2,6 +2,7 @@
 #include <mitsuba/render/imageblock.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/stl/vector.h>
+#include <nanobind/stl/string_view.h>
 #include <drjit/python.h>
 
 MI_PY_EXPORT(ImageBlock) {

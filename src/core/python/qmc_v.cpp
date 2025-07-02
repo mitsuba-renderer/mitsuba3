@@ -2,6 +2,7 @@
 #include <mitsuba/python/python.h>
 
 #include <nanobind/ndarray.h>
+#include <nanobind/stl/string_view.h>
 
 MI_PY_EXPORT(qmc) {
     MI_PY_IMPORT_TYPES()

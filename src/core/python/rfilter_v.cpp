@@ -2,6 +2,8 @@
 #include <mitsuba/core/rfilter.h>
 #include <mitsuba/python/python.h>
 
+#include <nanobind/stl/string_view.h>
+
 template <typename ReconstructionFilter>
 void bind_rfilter(nb::module_ &m, const char *name) {
     MI_PY_CHECK_ALIAS(ReconstructionFilter, name) {
