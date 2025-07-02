@@ -3,7 +3,7 @@
     url = https://github.com/mitsuba-renderer/zlib
 [submodule "ext/libpng"]
     path = ext/libpng
-    url = https://github.com/mitsuba-renderer/libpng.git
+    url = https://github.com/njroussel/libpng-fork.git
 [submodule "ext/libjpeg"]
     path = ext/libjpeg
     url = https://github.com/mitsuba-renderer/libjpeg
