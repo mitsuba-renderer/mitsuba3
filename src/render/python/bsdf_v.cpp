@@ -188,7 +188,6 @@ MI_PY_EXPORT(BSDF) {
         .def("flags", nb::overload_cast<size_t, Mask>(&BSDF::flags, nb::const_),
             "index"_a, "active"_a = true, D(BSDF, flags, 2))
         .def_method(BSDF, component_count, "active"_a = true)
-        .def_method(BSDF, id)
         .def_field(PyBSDF, m_flags, D(BSDF, m_flags))
         .def_field(PyBSDF, m_components, D(BSDF, m_components))
         .def("__repr__", &BSDF::to_string, D(BSDF, to_string));

@@ -332,7 +332,6 @@ MI_PY_EXPORT(Shape) {
         .def("texture_attribute", nb::overload_cast<const std::string &>(
             &Shape::texture_attribute), D(Shape, texture_attribute), "name"_a)
         .def_method(Shape, remove_attribute, "name"_a)
-        .def_method(Shape, id)
         .def_method(Shape, is_mesh)
         .def_method(Shape, parameters_grad_enabled)
         .def_method(Shape, set_bsdf, "bsdf"_a)

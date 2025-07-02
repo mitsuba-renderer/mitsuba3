@@ -8,6 +8,7 @@ def test01_create(variant_scalar_rgb):
     assert b.component_count() == 1
     assert b.flags(0) == mi.BSDFFlags.DiffuseReflection | mi.BSDFFlags.FrontSide
     assert b.flags() == b.flags(0)
+    assert b.class_name() == "SmoothDiffuse"
 
 
 def test02_eval_pdf(variant_scalar_rgb):
