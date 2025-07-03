@@ -262,19 +262,24 @@ public:
         if (m_albedo->is_spatially_varying())
             Log(Error, "Expected a non-spatially varying radiance spectra!");
 
-        #define CHANGED(word) string::contains(keys, "albedo")
+        #define CHANGED(word) string::contains(keys, word)
+
+        bool changed_atmosphere = CHANGED("albedo") || CHANGED("turbidity");
+        bool changed_time_record = !keys.empty() && m_active_record && (
+                CHANGED("timezone") || CHANGED("year") ||
+                CHANGED("day") || CHANGED("month") || CHANGED("hour") ||
+                CHANGED("minute") || CHANGED("second") || CHANGED("latitude") ||
+                CHANGED("longitude")
+            );
+        bool changed_sun_dir = (!m_active_record && CHANGED("sun_direction")) || changed_time_record;
+
 
         // Update sun angles
         Vector3f local_sun_dir;
-        if (m_active_record &&
-            (keys.empty() || CHANGED("timezone") || CHANGED("year") ||
-             CHANGED("day") || CHANGED("month") || CHANGED("hour") ||
-             CHANGED("minute") || CHANGED("second") || CHANGED("latitude") ||
-             CHANGED("longitude")))
-        {
+        if (changed_time_record) {
             local_sun_dir = sun_coordinates(m_time, m_location);
             m_sun_dir = m_to_world.value().transform_affine(local_sun_dir);
-        } else {
+        } else if (changed_sun_dir) {
             local_sun_dir = m_to_world.value().inverse().transform_affine(m_sun_dir);
         }
 
@@ -286,12 +291,7 @@ public:
         Float eta = 0.5f * dr::Pi<Float> - m_sun_angles.y();
 
         // Update sky
-        if (keys.empty() ||
-            CHANGED("albedo") || CHANGED("turbidity") ||
-            CHANGED("timezone") || CHANGED("year") || CHANGED("day") ||
-            CHANGED("month") || CHANGED("hour") || CHANGED("minute") || CHANGED("second") ||
-            CHANGED("latitude") || CHANGED("longitude")
-        ) {
+        if (changed_sun_dir || changed_atmosphere) {
             FloatStorage albedo = extract_albedo(m_albedo);
             m_sky_params = sky_radiance_params<SKY_DATASET_SIZE>(
                 m_sky_params_dataset, albedo, m_turbidity, eta);
@@ -300,18 +300,13 @@ public:
         }
 
         // Update sun
-        if (keys.empty() || CHANGED("albedo") || CHANGED("turbidity")) {
+        if (changed_atmosphere) {
             m_sun_radiance =
                 sun_params<SUN_DATASET_SIZE>(m_sun_rad_dataset, m_turbidity);
         }
 
-        // Update TGMM
-        if (keys.empty() ||
-            CHANGED("albedo") || CHANGED("turbidity") ||
-            CHANGED("timezone") || CHANGED("year") || CHANGED("day") ||
-            CHANGED("month") || CHANGED("hour") || CHANGED("minute") || CHANGED("second") ||
-            CHANGED("latitude") || CHANGED("longitude")
-        ) {
+        // Update TGMM (no dependance on albedo)
+        if (changed_sun_dir || CHANGED("turbidity")) {
             FloatStorage gaussian_params, mis_weights;
             std::tie(gaussian_params, mis_weights) =
                 build_tgmm_distribution<TGMM_DATA_SIZE>(m_tgmm_tables, m_turbidity, eta);
