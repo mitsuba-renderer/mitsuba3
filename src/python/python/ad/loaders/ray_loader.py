@@ -1,286 +1,290 @@
-from __future__ import annotations
+from __future__ import annotations as __annotations__ # Delayed parsing of type annotations
+
 from typing import Callable, Tuple
 
 import mitsuba as mi
 import drjit as dr
 
-class custom_sensor(mi.Sensor):
+class flat_sensor(mi.Sensor):
     def __init__(self, props):
         mi.Sensor.__init__(self, props)
 
-        self.rays = dr.zeros(mi.Ray3f)
-        self.weight = mi.Float(0)
-        self.dummy_film = None
+        # To be updated by RayLoader
+        self.pixel_idx = dr.zeros(mi.UInt32, 1)
+        self.num_sensors = 0
+        self.width = 0
+        self.height = 0
 
-    def sample_ray_differential(self,
-                                time,   # mi.Float
-                                sample1,  # wavelength_sample,  # mi.Float
-                                sample2,  # position_sample,
-                                sample3,  # aperture_sample,
-                                mask: mi.Bool = True):
-        return mi.RayDifferential3f(self.rays), self.weight
-
-    def sample_ray(self,
-                   time,   # mi.Float
-                   wavelength_sample,  # mi.Float
-                   position_sample,
-                   aperture_sample,
-                   mask: mi.Bool = True):
-
-        return self.rays, self.weight
-
-    def film(self):
-        return self.dummy_film
-
-    def to_string(self):
-        return ('Custom_sensor[\n'
-                '    ray=%s,\n'
-                '    weight=%s,\n'
-                ']' % (self.rays, self.weight))
-
-mi.register_sensor("custom_sensor",
-                   lambda props: custom_sensor(props))
-
-class Rayloader():
-    def __init__(self, scene, sensors, image_refs, batch_size, spp):
-        self.scene = scene
-        self.scene_params = mi.traverse(scene)
-        self.dummysensor = mi.load_dict({
-            'type': 'custom_sensor'
-        })
-        self.sensors = sensors
-        self.iteration = 0
-        self.batch_size = batch_size
-        self.permute_seed = 2
+    def initialize(self, sensors: list[mi.Sensor]) -> None:
+        """
+        """
         self.num_sensors = len(sensors)
-        self.image_refs = image_refs
-        if type(image_refs) != list:
-            self.image_refs = [image_refs]
 
-        self.channel_size = self.image_refs[0].shape[2]
-
-        # TODO film_size here for different sensors
-        self.film_size = self.sensors[0].film().size()
-        self.spp = spp
+        # Assert that they have the same film size
+        film_size = sensors[0].film().size()
+        self.width = film_size[0]
+        self.height = film_size[1]
+        for i in range(self.num_sensors):
+            film_size = sensors[i].film().size()
+            if (film_size[0] != self.width or film_size[1] != self.height):
+                raise ValueError(
+                    f"Sensor {i} has different film size: "
+                    f"{film_size[0]}x{film_size[1]} "
+                    f"vs {self.width}x{self.height}"
+                )
 
         # Build vectorized pointer type of sensors
         self.sensors_unique_ptr = dr.zeros(mi.SensorPtr, self.num_sensors)
-        # Use recorded loop if many sensors
         for i in range(self.num_sensors):
             dr.scatter(self.sensors_unique_ptr,
-                      mi.SensorPtr(self.sensors[i]), i)
+                      mi.SensorPtr(sensors[i]), i)
 
-        self.dummy_film = mi.load_dict({
-            'type': 'hdrfilm',
-            'width': self.batch_size,
-            'height': 1,
-            'filter': {'type': 'box'}
-        })
-        self.dummysensor.dummy_film = self.dummy_film
+    def sample_ray_differential(
+        self,
+        time: mi.Float,
+        sample1: mi.Float,
+        sample2: mi.Point2f,
+        sample3: mi.Point2f,
+        active: mi.Bool = True,
+    ) -> Tuple[mi.RayDifferential3f, mi.Spectrum]:
 
-        # num_pixel_arr: # pixels per sensor
-        # accumulate_num_pixel: for sensor i, # pixels accumulated for
-        # sensors 0 to i
-        num_pixel_arr = []
-        self.accumulate_num_pixel = []
-        for i in range(self.num_sensors):
-            sensor_pixels = (self.sensors[i].film().size()[0] *
-                           self.sensors[i].film().size()[1])
-            num_pixel_arr.append(sensor_pixels)
-            self.accumulate_num_pixel.append(dr.sum(num_pixel_arr[0:i+1]))
+        spp = dr.width(sample2) // dr.width(self.pixel_idx)
+        if spp == 0:
+            spp = 1
+        pixel_idx = dr.repeat(self.pixel_idx, spp)
+        sensor_idx = pixel_idx // (self.width * self.height)
 
-        # total # pixels of all sensors
-        self.total_num_pixel = dr.sum(num_pixel_arr)
+        # Convert flat pixel index to 2D coordinates within the target sensor
+        pixel_idx_in_sensor = pixel_idx % (self.width * self.height)
+        target_pixel_y = mi.Float(pixel_idx_in_sensor // self.width)
+        target_pixel_x = mi.Float(pixel_idx_in_sensor % self.width)
 
-        # flatten the reference image into 1 N*1 array
-        total_pixels = self.total_num_pixel * self.channel_size
-        self.image_ref_flat = dr.zeros(mi.Float, total_pixels)
-        start_pixel_idx = 0
-        for i in range(self.num_sensors):
-            start_idx = start_pixel_idx * self.channel_size
-            end_idx = self.accumulate_num_pixel[i] * self.channel_size
-            self.image_ref_flat[start_idx:end_idx] = dr.ravel(
-                self.image_refs[i])
-            start_pixel_idx = self.accumulate_num_pixel[i]
+        # `sample2` is the normalized, jittered sample for the flat_sensor's film.
+        # `sample2.x` = (pixel_in_batch + rand.x) / pixels_per_batch
+        # `sample2.y` = (0 + rand.y) / 1 = rand.y
+        # We only need the random jitter part, which is sample2.y for the y-axis.
+        # For the x-axis, the integer pixel location is encoded, so we can't
+        # simply extract the jitter.
+        #
+        # However, the simplest correct approach is to realize that `sample2`
+        # already contains the sub-pixel jitter we need to preserve.
+        # The `sampler.next_2d()` call in `sample_rays` provides the jitter.
+        # We just need to map it to the correct pixel block in the target sensor.
 
-        # start_accumulate_num_pixel: on i-th position is the # pixels
-        # before the i-th sensor
-        self.start_accumulate_num_pixel = mi.UInt32(
-            [0] + self.accumulate_num_pixel)
-        self.accumulate_num_pixel = mi.UInt32(self.accumulate_num_pixel)
-
-
-    def next(self):
-        # generate seed for permutation in each iteration
-        total_batch_pixels = self.iteration * self.batch_size + self.batch_size
-        if total_batch_pixels > self.total_num_pixel:
-            self.iteration = 0
-            self.permute_seed += 3
-
-        # permuted pixel index of size self.batch_size
-        start = self.iteration * self.batch_size
-        pixel_range = dr.arange(mi.UInt32, self.batch_size) + start
-        pixel_index = mi.permute_kensler(pixel_range, self.total_num_pixel,
-                                        self.permute_seed)
-
-        # TODO pixel indexes for different film sizes of each
-        film_pixels = self.film_size[0] * self.film_size[1]
-        sensor_index = pixel_index // film_pixels
-
-        num_pixel_base = dr.gather(mi.UInt32,
-                                  self.start_accumulate_num_pixel,
-                                  sensor_index)
-
-        # pixel index within each sensor
-        pixel_index_individual = pixel_index - sensor_index * film_pixels
-        ray_index = dr.repeat(sensor_index, self.spp)
-
-        sensor_gather = dr.gather(mi.SensorPtr, self.sensors_unique_ptr,
-                                 ray_index)
-        self.iteration += 1
-
-        sampler, _ = self.prepare(
-            sensor=self.dummysensor,
-            seed=7,
-            spp=self.spp,
-            aovs=[]
+        # The random jitter from the sampler is contained in `sample2`.
+        # `sample2.x` contains jitter for the x-axis.
+        # `sample2.y` contains jitter for the y-axis.
+        # We add the integer coordinates of the target pixel and re-normalize.
+        sample2_override = mi.Point2f(
+            (target_pixel_x + sample2.x) / mi.Float(self.width),
+            (target_pixel_y + sample2.y) / mi.Float(self.height)
         )
 
-        ray, weight, _ = self.sample_rays(
-            pixel_index_individual, self.scene, sensor_gather, sampler,
-            self.dummy_film)
+        sensors_ptr = dr.gather(
+            mi.SensorPtr, self.sensors_unique_ptr, sensor_idx
+        )
 
-        self.dummysensor.rays = ray
-        self.dummysensor.weight = weight
-
-        # pixel_index_ref: positions of selected pixels in reference image
-        # pixel_index_color: channel positions of selected pixels in
-        # reference image
-        pixel_index_ref = num_pixel_base + pixel_index_individual
-        rgb_index_mask = dr.tile(dr.arange(mi.UInt32, self.channel_size),
-                                self.batch_size)
-        pixel_color_base = dr.repeat(pixel_index_ref * self.channel_size,
-                                    self.channel_size)
-        pixel_index_color = pixel_color_base + rgb_index_mask
-
-        # reference tensor for the selected pixels
-        ref_tensor = dr.gather(mi.Float, self.image_ref_flat,
-                              pixel_index_color)
-        ref_tensor = mi.TensorXf(ref_tensor,
-                                shape=(1, self.batch_size, self.channel_size))
-
-        return_dict = {
-            'scene': self.scene,
-            'sensor': self.dummysensor,
-            'params': self.scene_params,
-            'spp': self.spp
-        }
-        return ref_tensor, return_dict
-
-    def prepare(self,
-                sensor: mi.Sensor,
-                seed: int = 0,
-                spp: int = 0,
-                aovs: list = []):
-
-        film = sensor.film()
-        sampler = sensor.sampler().clone()
-
-        if spp != 0:
-            sampler.set_sample_count(spp)
-
-        spp = sampler.sample_count()
-        sampler.set_samples_per_wavefront(spp)
-
-        film_size = film.crop_size()
-
-        if film.sample_border():
-            film_size += 2 * film.rfilter().border_size()
-
-        wavefront_size = dr.prod(film_size) * spp
-
-        if wavefront_size > 2**32:
-            raise Exception(
-                "The total number of Monte Carlo samples required by this "
-                "rendering task (%i) exceeds 2^32 = 4294967296. Please use "
-                "fewer samples per pixel or render using multiple passes."
-                % wavefront_size)
-
-        sampler.seed(seed, wavefront_size)
-        film.prepare(aovs)
-
-        return sampler, spp
-
-    def sample_rays(
-        self,
-        pixel_index,
-        scene: mi.Scene,
-        sensor: mi.Sensor,
-        sampler: mi.Sampler,
-        dummy_film,
-        reparam: Callable[[mi.Ray3f, mi.UInt32, mi.Bool],
-                          Tuple[mi.Vector3f, mi.Float]] = None
-    ) -> Tuple[mi.RayDifferential3f, mi.Spectrum, mi.Vector2f, mi.Float]:
-        """
-        Sample a 2D grid of primary rays for a given sensor
-
-        Returns a tuple containing
-
-        - the set of sampled rays
-        - a ray weight (usually 1 if the sensor's response function is
-          sampled perfectly)
-        - the continuous 2D image-space positions associated with each ray
-
-        When a reparameterization function is provided via the 'reparam'
-        argument, it will be applied to the returned image-space position
-        (i.e. the sample positions will be moving). The other two return
-        values remain detached.
-        """
-
-        dummy_film_size = dummy_film.crop_size()  # [self.batch_size, 1]
-        rfilter = dummy_film.rfilter()
-
-
-        spp = sampler.sample_count()
-
-        idx = dr.repeat(pixel_index, spp)
-
-        # positions of pixels in each sensor
-        # TODO: for sensors of different film sizes
-        pos = mi.Vector2i()
-        pos.y = idx // self.film_size[0]
-        pos.x = dr.fma(mi.Int32(-self.film_size[0]), pos.y, idx)
-
-        # Cast to floating point and add random offset
-        pos_f = mi.Vector2f(pos) + sampler.next_2d()
-
-        # Re-scale the position to [0, 1]^2
-        # TODO: for sensors of different film sizes
-        crop_size = self.sensors[0].film().crop_size()
-        scale = dr.rcp(mi.ScalarVector2f(crop_size))
-        crop_offset = self.sensors[0].film().crop_offset()
-        offset = -mi.ScalarVector2f(crop_offset) * scale
-        pos_adjusted = dr.fma(pos_f, scale, offset)
-
-        aperture_sample = mi.Vector2f(0.0)
-
-        wavelength_sample = 0
-        if mi.is_spectral:
-            wavelength_sample = sampler.next_1d()
-
-        # with dr.resume_grad():
+        # This is a VCall
         with dr.scoped_set_flag(dr.JitFlag.SymbolicCalls, False):
-            ray, weight = sensor.sample_ray_differential(
-                mi.Float(0),
-                wavelength_sample,
-                pos_adjusted,
-                aperture_sample,
-                mi.Bool(True)
+            rays, weights = sensors_ptr.sample_ray_differential(
+                time=time,
+                sample1=sample1,
+                sample2=sample2_override,
+                sample3=sample3,
+                active=active,
             )
 
-        # With box filter, ignore random offset to prevent numerical
-        # instabilities
-        splatting_pos = (mi.Vector2f(pos) if rfilter.is_box_filter()
-                        else pos_f)
+        return rays, weights
 
-        return ray, weight, splatting_pos
+    def sample_ray(
+        self,
+        time: mi.Float,
+        sample1: mi.Float,
+        sample2: mi.Point2f,
+        sample3: mi.Point2f,
+        active: mi.Bool = True,
+    ) -> Tuple[mi.RayDifferential3f, mi.Spectrum]:
+        return self.sample_ray_differential(time, sample1, sample2, sample3, active)
+
+    def to_string(self):
+        return ('Flat sensor[\n'
+                '    num_sensors=%d,\n'
+                '    width=%d,\n'
+                '    height=%d,\n'
+                ']' % (self.num_sensors, self.width, self.height))
+
+mi.register_sensor("flat_sensor",
+                   lambda props: flat_sensor(props))
+
+
+class Rayloader():
+    def __init__(
+        self,
+        scene: mi.Scene,
+        sensors: list[mi.Sensor] | mi.Sensor,
+        target_images: list[mi.TensorXf] | mi.TensorXf,
+        pixels_per_batch: int = 8192,
+        seed: int = 0,
+        regular_reshuffle: bool = False,
+    ) -> None:
+        """
+        TODO
+        """
+
+        if type(target_images) != list:
+            target_images = [target_images]
+        if type(sensors) != list:
+            sensors = [sensors]
+
+        self.channel_size = target_images[0].shape[-1]
+
+        # Determine pixel format and component format
+        reference_film = sensors[0].film()
+        # Map channels to pixel format
+        if self.channel_size == 1:
+            pixel_format = 'luminance'
+        elif self.channel_size == 3:
+            pixel_format = 'rgb'
+        elif self.channel_size == 4:
+            pixel_format = 'rgba'
+        else:
+            raise ValueError(
+                f"Unsupported channel size: {self.channel_size}. "
+                "Only 1, 3, or 4 channels are supported."
+            )
+        # Determine component format
+        component_format = 'float32'  # TODO: float16?
+
+        self.flat_sensor = mi.load_dict({
+            'type': 'flat_sensor',
+            'flat_film': {
+                'type': 'hdrfilm',
+                'width': pixels_per_batch,
+                'height': 1,
+                'pixel_format': pixel_format,
+                'component_format': component_format,
+                'sample_border': False,
+                'filter': {'type': 'box'},
+            },
+            'sampler': {
+                'type': 'independent',
+                'sample_count': 1,
+            },
+        })
+        self.flat_sensor.initialize(sensors)
+
+        # Initialize pixel_idx with the correct size
+        self.flat_sensor.pixel_idx = dr.zeros(mi.UInt32, pixels_per_batch)
+
+        self.scene = scene
+        self.num_sensors = len(sensors)
+        self.target_images = target_images
+        self.pixels_per_batch = pixels_per_batch
+        self.seed = seed
+
+        # Calculate total pixels from the actual sensor dimensions, not flat_sensor
+        self.width = sensors[0].film().size()[0]
+        self.height = sensors[0].film().size()[1]
+        self.ttl_pixels = self.num_sensors * self.width * self.height
+
+        if regular_reshuffle:
+            # Calculate how many iterations to do a full shuffle cycle
+            effective_ttl_pixels = ((self.ttl_pixels + self.pixels_per_batch - 1) //
+                                   self.pixels_per_batch) * self.pixels_per_batch
+            self.iter_shuffle = effective_ttl_pixels // self.pixels_per_batch
+        else:
+            self.iter_shuffle = mi.UInt32(-1)
+        self.counter = 0
+
+    def shuffle_pixel_index(self, seed: int):
+        # Handle the case where total pixels is not divisible by pixels_per_batch
+        # by padding with random indices (some pixels may appear twice)
+        effective_ttl_pixels = ((self.ttl_pixels + self.pixels_per_batch - 1) //
+                               self.pixels_per_batch) * self.pixels_per_batch
+
+        # Shuffle the pixel index buffer once using mi.permute_kensler
+        if effective_ttl_pixels > self.ttl_pixels:
+            # Pad with random indices from the valid range
+            padding_size = effective_ttl_pixels - self.ttl_pixels
+            base_indices = dr.arange(mi.UInt32, self.ttl_pixels)
+            # Use random indices for padding (with replacement)
+            random_indices = (dr.arange(mi.UInt32, padding_size) %
+                              mi.UInt32(self.ttl_pixels))
+            all_indices = dr.concat(base_indices, random_indices)
+        else:
+            all_indices = dr.arange(mi.UInt32, effective_ttl_pixels)
+
+        self.perm_pixel_index_buffer = mi.permute_kensler(
+            all_indices,
+            effective_ttl_pixels,
+            seed,
+        )
+
+        # Create the corresponding image reference tensor
+        # Flatten target images in sensor-major order
+        target_image_flat = dr.empty(mi.Float, self.ttl_pixels * self.channel_size)
+
+        offset = 0
+        for i in range(self.num_sensors):
+            # Ravel each target image tensor and fill into flat buffer
+            image_data = dr.ravel(self.target_images[i])
+            pixels_per_image = self.width * self.height
+
+            # Copy image data to the flat buffer using direct array copy
+            start_idx = offset * self.channel_size
+            end_idx = start_idx + pixels_per_image * self.channel_size
+            target_indices = dr.arange(mi.UInt32, pixels_per_image * self.channel_size) + start_idx
+            source_indices = dr.arange(mi.UInt32, pixels_per_image * self.channel_size)
+
+            data_chunk = dr.gather(mi.Float, image_data, source_indices)
+            dr.scatter(target_image_flat, data_chunk, target_indices)
+
+            offset += pixels_per_image
+
+        print(f'target_image_flat = {target_image_flat}')
+
+        # Create permuted target image buffer using efficient gather with shape
+        # Clamp indices to valid range to handle padding
+        valid_mask = self.perm_pixel_index_buffer < mi.UInt32(self.ttl_pixels)
+        clamped_indices = dr.select(valid_mask, self.perm_pixel_index_buffer, mi.UInt32(0))
+
+        self.perm_target_image_buffer = dr.ravel(dr.gather(
+            mi.ArrayXf, target_image_flat, clamped_indices,
+            shape=(self.channel_size, effective_ttl_pixels)
+        ))
+
+        print(f'perm_target_image_buffer = {self.perm_target_image_buffer}')
+
+        # Make sure both buffers are in memory
+        dr.eval(self.perm_pixel_index_buffer, self.perm_target_image_buffer)
+
+    def next(self):
+        # Potentially reshuffle the pixel index buffer
+        if self.counter % self.iter_shuffle == 0:
+            self.shuffle_pixel_index(self.seed + self.counter)
+
+        # Calculate the start index for this batch
+        batch_start = (self.counter % self.iter_shuffle) * self.pixels_per_batch
+        batch_indices = dr.arange(mi.UInt32, self.pixels_per_batch) + batch_start
+
+        # Get pixel indices for this batch
+        current_pixel_indices = dr.gather(mi.UInt32, self.perm_pixel_index_buffer, batch_indices)
+
+        # Put this round's pixel index to flat_sensor
+        dr.scatter(self.flat_sensor.pixel_idx, current_pixel_indices,
+                  dr.arange(mi.UInt32, self.pixels_per_batch))
+
+        # Gather reference tensor for the selected pixels using efficient gather
+        # Use dr.gather with shape parameter for multi-channel data
+        target_data = dr.ravel(dr.gather(
+            mi.ArrayXf, self.perm_target_image_buffer, batch_indices,
+            shape=(self.channel_size, self.pixels_per_batch)
+        ))
+        target_tensor = mi.TensorXf(
+            target_data,
+            shape=(1, self.pixels_per_batch, self.channel_size)
+        )
+        # print(f'dr.ravel(target_tensor) = {dr.ravel(target_tensor)}')
+
+        self.counter += 1
+        return target_tensor, self.flat_sensor
