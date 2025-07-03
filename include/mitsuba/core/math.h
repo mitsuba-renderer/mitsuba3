@@ -376,7 +376,7 @@ solve_quadratic(const Value &a, const Value &b, const Value &c) {
     Mask valid_quadratic = !linear_case && (discrim >= Scalar(0));
 
     if (likely(dr::any_or<true>(valid_quadratic))) {
-        Value sqrt_discrim = dr::sqrt(discrim);
+        Value sqrt_discrim = dr::safe_sqrt(discrim);
 
         /* Numerically stable version of (-b (+/-) sqrt_discrim) / (2 * a)
          *

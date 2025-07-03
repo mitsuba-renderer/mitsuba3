@@ -76,6 +76,9 @@ class PRBIntegrator(RBIntegrator):
         the role of the various parameters and return values.
         """
 
+        params = mi.traverse(scene)
+        idx = mi.UInt32(61599)
+
         # Rendering a primal image? (vs performing forward/reverse-mode AD)
         primal = mode == dr.ADMode.Primal
 
@@ -112,6 +115,9 @@ class PRBIntegrator(RBIntegrator):
             # In primal mode, this is just an ordinary ray tracing operation.
             with dr.resume_grad(when=not primal):
                 si = pi.compute_surface_interaction(ray, ray_flags=mi.RayFlags.All)
+                print(f"NEW: {dr.max(dr.abs(si.p[0].grad), axis=None)=}")
+                print(f"NEW: {dr.max(dr.abs(si.p[1].grad), axis=None)=}")
+                print(f"NEW: {dr.max(dr.abs(si.p[2].grad), axis=None)=}")
 
             # Get the BSDF, potentially computes texture-space differentials
             bsdf = si.bsdf(ray)
@@ -156,10 +162,14 @@ class PRBIntegrator(RBIntegrator):
                     dr.disable_grad(ds.d)
 
                 # Evaluate BSDF * cos(theta) differentiably
-                wo = si.to_local(ds.d)
-                bsdf_value_em, bsdf_pdf_em = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
+                wo_orig = si.to_local(ds.d)
+                bsdf_value_em, bsdf_pdf_em = bsdf.eval_pdf(bsdf_ctx, si, wo_orig, active_em)
                 mis_em = dr.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf_em))
                 Lr_dir = β * mis_em * bsdf_value_em * em_weight
+
+                #if dr.hint(not primal, mode='scalar'):
+                #    print(dr.max(wo, axis=None))
+                #    print(dr.min(wo, axis=None))
 
             # ------------------ Detached BSDF sampling -------------------
 
@@ -171,6 +181,11 @@ class PRBIntegrator(RBIntegrator):
             # ---- Update loop variables based on current interaction -----
 
             L = (L + Le + Lr_dir) if primal else (L - Le - Lr_dir)
+            #if not primal:
+            #    print(f"{dr.gather(mi.Vector3f, ray.d, idx)=}")
+            #    print(f"{dr.gather(mi.Vector3f, si.wi, idx)=}")
+            #    print(f"{dr.norm(dr.gather(mi.Vector3f, ray.d, idx))=}")
+            #    print(f"{dr.norm(dr.gather(mi.Vector3f, si.wi, idx))=}")
             ray = si.spawn_ray(si.to_world(bsdf_sample.wo))
             η *= bsdf_sample.eta
             β *= bsdf_weight
@@ -245,7 +260,52 @@ class PRBIntegrator(RBIntegrator):
                     if dr.hint(mode == dr.ADMode.Backward, mode='scalar'):
                         dr.backward_from(δL * Lo)
                     else:
-                        δL += dr.forward_to(Lo)
+                        dr.forward_to((Lo, si.p), flags=dr.ADFlag.ClearNone)
+                        δL += Lo.grad 
+
+                    max_sh_n_grad = dr.max(dr.abs(si.sh_frame.n.grad), axis=None)
+                    print(dr.any(dr.abs(si.sh_frame.n.grad) == max_sh_n_grad, axis=None))
+                    idx = dr.compress(dr.any(dr.abs(si.sh_frame.n.grad) == max_sh_n_grad))
+                    print(f"{idx=}")
+
+                    print(f"{type(si.dp_du)=}")
+                    tmp_n = dr.gather(mi.Normal3f, si.sh_frame.n, idx)
+                    tmp_s = dr.gather(mi.Vector3f, si.sh_frame.s, idx)
+                    tmp_t = dr.gather(mi.Vector3f, si.sh_frame.t, idx)
+                    print(f"{dr.dot(tmp_n, tmp_s)=}")
+                    print(f"{dr.dot(tmp_n, tmp_t)=}")
+                    print(f"{dr.dot(tmp_t, tmp_s)=}")
+                    print(f"{dr.norm(tmp_n)=}")
+                    print(f"{dr.norm(tmp_s)=}")
+                    print(f"{dr.norm(tmp_t)=}")
+                    print(f"{dr.gather(mi.Vector3f, si.dp_du, idx)=}")
+                    print(f"{dr.gather(mi.Vector3f, si.dp_dv, idx)=}")
+                    print(f"{dr.gather(mi.Vector3f, si.dp_du.grad, idx)=}")
+                    print(f"{dr.gather(mi.Vector3f, si.dp_dv.grad, idx)=}")
+                    print(f"{dr.gather(mi.Point3f, si.p.grad, idx)=}")
+                    print(f"{dr.gather(mi.Normal3f, si.sh_frame.n.grad, idx)=}")
+                    print(f"{dr.gather(mi.Float, si.t.grad, idx)=}")
+                    print(f"{dr.gather(mi.Vector3f, si.wi, idx)=}")
+                    print(f"{dr.norm(dr.gather(mi.Vector3f, si.wi, idx))=}")
+                    print(f"{dr.gather(mi.Bool, active, idx)=}")
+                    print(f"{dr.gather(mi.ShapePtr, si.shape, idx)=}")
+                    print(f"{params['shape.center'].grad=}")
+
+                    
+                    print(f"{dr.max(dr.abs(si.p.grad), axis=None)=}")
+                    print(f"{dr.max(dr.abs(si.sh_frame.n.grad), axis=None)=}")
+                    print(f"{dr.max(dr.abs(si.n.grad), axis=None)=}")
+                    print(f"{dr.max(dr.abs(ds.d.grad), axis=None)=}")
+                    print(f"{dr.max(dr.abs(wo_orig.grad), axis=None)=}")
+                    print(f"{dr.max(dr.abs(β.grad), axis=None)=}")
+                    print(f"{dr.max(dr.abs(mis_em.grad), axis=None)=}")
+                    print(f"{dr.max(dr.abs(bsdf_value_em.grad), axis=None)=}")
+                    print(f"{dr.max(dr.abs(em_weight.grad), axis=None)=}")
+                    print(f"{dr.max(dr.abs(Le.grad), axis=None)=}")
+                    print(f"{dr.max(dr.abs(Lr_dir.grad), axis=None)=}")
+                    print(f"{dr.max(dr.abs(Lr_ind.grad), axis=None)=}")
+                    print(f"{dr.max(dr.abs(δL), axis=None)=}")
+                    print(f"-----------")
 
             depth[si.is_valid()] += 1
             active = active_next

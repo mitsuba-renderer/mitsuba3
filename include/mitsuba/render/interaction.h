@@ -6,6 +6,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/mueller.h>
+#include <drjit/autodiff.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -510,7 +511,11 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
             initialize_sh_frame();
 
         // Incident direction in local coordinates
+        //std::cout << "ray.d: " << dr::gather<Vector3f>(ray.d, UInt32(61599)) << std::endl;
+        //std::cout << "ray.d norm: " << dr::norm(dr::gather<Vector3f>(ray.d, UInt32(61599))) << std::endl;
         wi = dr::select(active, to_local(-ray.d), -ray.d);
+        //std::cout << "si.wi: " << dr::gather<Vector3f>(wi, UInt32(61599)) << std::endl;
+        //std::cout << "si.wi norm: " << dr::norm(dr::gather<Vector3f>(wi, UInt32(61599))) << std::endl;
 
         duv_dx = duv_dy = dr::zeros<Point2f>();
     }
@@ -731,7 +736,9 @@ struct PreliminaryIntersection {
             ShapePtr target = dr::select(instance == nullptr, shape, instance);
             SurfaceInteraction3f si =
                 target->compute_surface_interaction(ray, *this, ray_flags, 0u, active);
+
             si.finalize_surface_interaction(*this, ray, ray_flags, active);
+
 
             return si;
         }

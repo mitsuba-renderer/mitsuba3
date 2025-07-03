@@ -174,6 +174,7 @@ public:
     void traverse(TraversalCallback *cb) override {
         Base::traverse(cb);
         cb->put("to_world", m_to_world, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("center", m_center, ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -718,7 +719,7 @@ public:
                 si.dp_du = Vector3f(-local.y(), local.x(), 0.f);
 
                 Float rd_2    = dr::square(local.x()) + dr::square(local.y()),
-                      rd      = dr::sqrt(rd_2),
+                      rd      = dr::safe_sqrt(rd_2),
                       inv_rd  = dr::rcp(rd),
                       cos_phi = local.x() * inv_rd,
                       sin_phi = local.y() * inv_rd;
@@ -731,7 +732,7 @@ public:
                 if (unlikely(dr::any_or<true>(singularity_mask)))
                     si.dp_dv[singularity_mask] = Vector3f(1.f, 0.f, 0.f);
 
-                si.dp_du = to_world * si.dp_du * (2.f * dr::Pi<Float>);
+                si.dp_du = to_world * si.dp_du * dr::TwoPi<Float>;
                 si.dp_dv = to_world * si.dp_dv * dr::Pi<Float>;
             }
         }
