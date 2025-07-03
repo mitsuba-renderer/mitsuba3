@@ -160,7 +160,7 @@ protected:
     ref<const Texture> m_srf;
     bool m_alpha;
 
-    MI_TRAVERSE_CB(Base, m_film, m_sampler, m_srf);
+    MI_TRAVERSE_CB(Base, m_film, m_sampler, m_srf)
 };
 
 //! @}
@@ -215,7 +215,7 @@ protected:
     ScalarFloat m_far_clip;
     Float m_focus_distance;
 
-    MI_TRAVERSE_CB(Base, m_focus_distance);
+    MI_TRAVERSE_CB(Base, m_focus_distance)
 };
 
 // ========================================================================

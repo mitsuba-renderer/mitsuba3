@@ -233,7 +233,7 @@ protected:
     ref<Base> m_nested_bsdf;
     ref<Texture> m_normalmap;
 
-    MI_TRAVERSE_CB(Base, m_nested_bsdf, m_normalmap);
+    MI_TRAVERSE_CB(Base, m_nested_bsdf, m_normalmap)
 };
 
 MI_EXPORT_PLUGIN(NormalMap);

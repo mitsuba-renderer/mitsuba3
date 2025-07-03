@@ -235,7 +235,7 @@ private:
     ref<Texture> m_specular_reflectance;
 
     MI_TRAVERSE_CB(Base, m_eta, m_specular_reflectance,
-                   m_specular_transmittance);
+                   m_specular_transmittance)
 };
 
 MI_EXPORT_PLUGIN(ThinDielectric)
