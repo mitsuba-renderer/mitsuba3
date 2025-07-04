@@ -73,7 +73,7 @@ image_init = mi.render(scene, spp=32)
 mi.Bitmap(image_init).write('test_texture_init.exr')
 
 # Create ray loader for batch optimization
-pixels_per_batch = 1024  # Process 1024 pixels at a time
+pixels_per_batch = 8192  # Process 1024 pixels at a time
 ray_loader = mi.ad.loaders.Rayloader(
     scene=scene,
     sensors=[sensor],
@@ -101,7 +101,7 @@ for iteration in range(50):  # 50 iterations total
     target_batch, flat_sensor = ray_loader.next()
 
     # Render the batch
-    batch_image = mi.render(scene, params, sensor=flat_sensor, spp=1, seed=iteration)
+    batch_image = mi.render(scene, params, sensor=flat_sensor, spp=4, seed=iteration)
 
     # Compute loss for this batch
     batch_loss = dr.mean(dr.square(batch_image - target_batch))
