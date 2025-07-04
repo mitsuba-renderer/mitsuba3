@@ -1,3 +1,4 @@
+# Not a real test yet
 import mitsuba as mi
 import drjit as dr
 
@@ -66,7 +67,6 @@ def test_ray_loader():
     pixels_per_batch = 4
 
     ray_loader = mi.ad.loaders.Rayloader(
-        scene=scene,
         sensors=sensors,
         target_images=target_images,
         pixels_per_batch=pixels_per_batch,
@@ -82,8 +82,8 @@ def test_ray_loader():
 
     # Note: flat_sensor.width/height gets overridden by initialize() to match original sensor dims
     # The actual flat sensor film is pixels_per_batch x 1, but these fields track original sensor dims
-    assert ray_loader.flat_sensor.width == 2, f"Flat sensor width incorrect: {ray_loader.flat_sensor.width}"
-    assert ray_loader.flat_sensor.height == 3, f"Flat sensor height incorrect: {ray_loader.flat_sensor.height}"
+    assert ray_loader.flat_sensor.source_film_width == 2, f"Flat sensor width incorrect: {ray_loader.flat_sensor.width}"
+    assert ray_loader.flat_sensor.source_film_height == 3, f"Flat sensor height incorrect: {ray_loader.flat_sensor.height}"
 
     # Expected pixel to value mapping
     expected_values = {}
@@ -123,8 +123,6 @@ def test_ray_loader():
                 assert abs(actual_value - expected_value) < 1e-6, \
                     f"Iteration {iteration}, pixel {i} (idx {pixel_idx}), channel {c}: " \
                     f"expected {expected_value}, got {actual_value}"
-
-    print("All tests passed!")
 
 if __name__ == "__main__":
     test_ray_loader()
