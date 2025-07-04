@@ -20,10 +20,7 @@ class flat_sensor(mi.Sensor):
         sensors: list[mi.Sensor],
         pixels_per_batch: int,
     ) -> None:
-        """
-        Initialize the flat sensor with multiple sensors and a target pixels
-        per batch.
-        """
+        """Initialize the flat sensor with multiple sensors."""
         self.num_sensors = len(sensors)
         film_size = sensors[0].film().size()
         self.source_film_width = film_size[0]
@@ -51,10 +48,13 @@ class flat_sensor(mi.Sensor):
 
         # Compute the corresponding sensor index
         pixel_idx = dr.repeat(self.pixel_idx, spp)
-        sensor_idx = pixel_idx // (self.source_film_width * self.source_film_height)
+        sensor_idx = pixel_idx // (self.source_film_width *
+                                  self.source_film_height)
 
         # Convert flat pixel index to 2D coordinates within the target sensor
-        pixel_idx_in_sensor = pixel_idx % (self.source_film_width * self.source_film_height)
+        pixel_idx_in_sensor = (
+            pixel_idx % (self.source_film_width * self.source_film_height)
+        )
         target_pixel_y = mi.Float(pixel_idx_in_sensor // self.source_film_width)
         target_pixel_x = mi.Float(pixel_idx_in_sensor % self.source_film_width)
 
@@ -90,7 +90,8 @@ class flat_sensor(mi.Sensor):
         sample3: mi.Point2f,
         active: mi.Bool = True,
     ) -> Tuple[mi.RayDifferential3f, mi.Spectrum]:
-        return self.sample_ray_differential(time, sample1, sample2, sample3, active)
+        return self.sample_ray_differential(
+            time, sample1, sample2, sample3, active)
 
     def to_string(self):
         return ('Flat sensor[\n'
@@ -112,9 +113,7 @@ class Rayloader():
         seed: int = 0,
         regular_reshuffle: bool = False,
     ) -> None:
-        """
-        Rayloader for efficient batch rendering with multiple sensors and target images.
-        """
+        """Rayloader for efficient batch rendering with multiple sensors."""
 
         if type(target_images) != list:
             target_images = [target_images]
@@ -128,11 +127,12 @@ class Rayloader():
         self.channel_size = target_images[0].shape[-1]
         self.ttl_pixels = self.num_sensors * self.width * self.height
 
-        # Assert that pixels_per_batch is smaller than ttl_pixels
+        # Assert that pixels_per_batch is valid
         if pixels_per_batch <= 0 or pixels_per_batch > self.ttl_pixels:
             raise ValueError(
                 f"pixels_per_batch ({pixels_per_batch}) must be "
-                f"greater than 0 and less than or equal to ttl_pixels ({self.ttl_pixels})"
+                f"greater than 0 and less than or equal to "
+                f"ttl_pixels ({self.ttl_pixels})"
             )
         # Assert that all sensors and target_images have the same size
         if len(sensors) != len(target_images):
@@ -177,7 +177,7 @@ class Rayloader():
                 "Only 1, 3, or 4 channels are supported."
             )
         # Determine component format
-        component_format = 'float32'  # TODO: float16 not supported
+        component_format = 'float32'
 
         self.flat_sensor = mi.load_dict({
             'type': 'flat_sensor',
@@ -197,7 +197,7 @@ class Rayloader():
         })
         self.flat_sensor.initialize(sensors, pixels_per_batch)
 
-        # Dummy initialization of pixel_idx, to be updated by `next()`
+        # Dummy initialization of pixel_idx, updated by `next()`
         self.flat_sensor.pixel_idx = None
         self.perm_target_image_flat = None
 
@@ -207,7 +207,7 @@ class Rayloader():
         self.regular_reshuffle = regular_reshuffle
         self.counter = 0
 
-        # Handle the case where total pixels is not divisible by pixels_per_batch
+        # Handle case where total pixels is not divisible by pixels_per_batch
         # by padding with random indices (some pixels may appear twice)
         self.effective_ttl_pixels = (
             ((self.ttl_pixels + self.pixels_per_batch - 1) //
@@ -223,10 +223,7 @@ class Rayloader():
         self.pixel_batch_multiplier = float(self.ttl_pixels / pixels_per_batch)
 
     def shuffle_pixel_index(self, seed: mi.UInt32):
-        """
-        Shuffle the pixel index buffer to randomize the order of pixels
-        for the next batch of rendering.
-        """
+        """Shuffle pixel index buffer to randomize order of pixels."""
         # Shuffle the pixel index buffer
         self.perm_pixel_index_buffer = mi.permute_kensler(
             dr.arange(mi.UInt32, self.effective_ttl_pixels) % self.ttl_pixels,
@@ -258,9 +255,10 @@ class Rayloader():
         dr.eval(self.perm_pixel_index_buffer, self.perm_target_image_flat)
 
     def next(self):
-        """
-        Get the next batch of pixel indices and corresponding target tensor.
-        This method reshuffles the pixel index buffer every `iter_shuffle` iterations.
+        """Get the next batch of pixel indices and corresponding target tensor.
+
+        This method reshuffles the pixel index buffer every `iter_shuffle`
+        iterations.
         """
         counter = dr.opaque(mi.UInt32, self.counter)
 

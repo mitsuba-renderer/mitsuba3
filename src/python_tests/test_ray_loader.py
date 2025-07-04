@@ -47,7 +47,7 @@ def test_ray_loader():
     # Create target images filled with arange values
     # Sensor 1: values 0-23 (2*3*4 = 24 values)
     target1_data = dr.arange(mi.Float, 24)
-    target1 = mi.TensorXf(target1_data, shape=(3, 2, 4))  # height, width, channels
+    target1 = mi.TensorXf(target1_data, shape=(3, 2, 4))
 
     # Sensor 2: values 100-123 (offset by 100)
     target2_data = dr.arange(mi.Float, 24) + 100
@@ -75,15 +75,20 @@ def test_ray_loader():
     )
 
     # Test RayLoader initialization
-    assert ray_loader.ttl_pixels == 12, f"Total pixels incorrect: {ray_loader.ttl_pixels}"
-    assert ray_loader.channel_size == 4, f"Channel size incorrect: {ray_loader.channel_size}"
-    assert ray_loader.pixels_per_batch == 4, f"Pixels per batch incorrect: {ray_loader.pixels_per_batch}"
-    assert ray_loader.iter_shuffle == 3, f"Iterations per shuffle incorrect: {ray_loader.iter_shuffle}"
+    assert ray_loader.ttl_pixels == 12, \
+        f"Total pixels incorrect: {ray_loader.ttl_pixels}"
+    assert ray_loader.channel_size == 4, \
+        f"Channel size incorrect: {ray_loader.channel_size}"
+    assert ray_loader.pixels_per_batch == 4, \
+        f"Pixels per batch incorrect: {ray_loader.pixels_per_batch}"
+    assert ray_loader.iter_shuffle == 3, \
+        f"Iterations per shuffle incorrect: {ray_loader.iter_shuffle}"
 
-    # Note: flat_sensor.width/height gets overridden by initialize() to match original sensor dims
-    # The actual flat sensor film is pixels_per_batch x 1, but these fields track original sensor dims
-    assert ray_loader.flat_sensor.source_film_width == 2, f"Flat sensor width incorrect: {ray_loader.flat_sensor.width}"
-    assert ray_loader.flat_sensor.source_film_height == 3, f"Flat sensor height incorrect: {ray_loader.flat_sensor.height}"
+    # Verify flat sensor dimensions match original sensors
+    assert ray_loader.flat_sensor.source_film_width == 2, \
+        f"Flat sensor width incorrect: {ray_loader.flat_sensor.width}"
+    assert ray_loader.flat_sensor.source_film_height == 3, \
+        f"Flat sensor height incorrect: {ray_loader.flat_sensor.height}"
 
     # Expected pixel to value mapping
     expected_values = {}
@@ -98,11 +103,13 @@ def test_ray_loader():
         ref_tensor, flat_sensor = ray_loader.next()
 
         # Test tensor shape
-        assert ref_tensor.shape == (1, 4, 4), f"Reference tensor shape incorrect: {ref_tensor.shape}"
+        assert ref_tensor.shape == (1, 4, 4), \
+            f"Reference tensor shape incorrect: {ref_tensor.shape}"
 
         # Get pixel indices and verify they're valid
         pixel_indices = dr.ravel(flat_sensor.pixel_idx)
-        assert len(pixel_indices) == pixels_per_batch, f"Wrong number of pixel indices: {len(pixel_indices)}"
+        assert len(pixel_indices) == pixels_per_batch, \
+            f"Wrong number of pixel indices: {len(pixel_indices)}"
 
         min_idx = dr.min(pixel_indices)
         max_idx = dr.max(pixel_indices)
@@ -116,13 +123,13 @@ def test_ray_loader():
             expected_pixel_values = expected_values[pixel_idx]
 
             for c in range(4):  # 4 channels
-                # Correct indexing for INTERLEAVED memory layout: [RGBA RGBA ...]
-                # The value for channel 'c' of pixel 'i' is at this index.
+                # Interleaved memory layout: [RGBA RGBA ...]
                 actual_value = float(ref_array[i * 4 + c])
                 expected_value = expected_pixel_values[c]
                 assert abs(actual_value - expected_value) < 1e-6, \
-                    f"Iteration {iteration}, pixel {i} (idx {pixel_idx}), channel {c}: " \
-                    f"expected {expected_value}, got {actual_value}"
+                    f"Iteration {iteration}, pixel {i} (idx {pixel_idx}), " \
+                    f"channel {c}: expected {expected_value}, " \
+                    f"got {actual_value}"
 
 if __name__ == "__main__":
     test_ray_loader()
