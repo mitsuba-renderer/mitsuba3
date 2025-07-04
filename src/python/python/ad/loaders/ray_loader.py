@@ -11,27 +11,21 @@ class flat_sensor(mi.Sensor):
 
         # To be updated by RayLoader
         self.pixel_idx = dr.zeros(mi.UInt32, 1)
-        self.num_sensors = 0
-        self.width = 0
-        self.height = 0
 
-    def initialize(self, sensors: list[mi.Sensor]) -> None:
+    def initialize(
+        self,
+        sensors: list[mi.Sensor],
+        pixels_per_batch: int,
+    ) -> None:
         """
+        Initialize the flat sensor with multiple sensors and a target pixels
+        per batch.
         """
         self.num_sensors = len(sensors)
-
-        # Assert that they have the same film size
         film_size = sensors[0].film().size()
-        self.width = film_size[0]
-        self.height = film_size[1]
-        for i in range(self.num_sensors):
-            film_size = sensors[i].film().size()
-            if (film_size[0] != self.width or film_size[1] != self.height):
-                raise ValueError(
-                    f"Sensor {i} has different film size: "
-                    f"{film_size[0]}x{film_size[1]} "
-                    f"vs {self.width}x{self.height}"
-                )
+        self.real_film_width = film_size[0]
+        self.real_film_height = film_size[1]
+        self.pixels_per_batch = pixels_per_batch
 
         # Build vectorized pointer type of sensors
         self.sensors_unique_ptr = dr.zeros(mi.SensorPtr, self.num_sensors)
@@ -52,32 +46,29 @@ class flat_sensor(mi.Sensor):
         if spp == 0:
             spp = 1
         pixel_idx = dr.repeat(self.pixel_idx, spp)
-        sensor_idx = pixel_idx // (self.width * self.height)
+        sensor_idx = pixel_idx // (self.real_film_width * self.real_film_height)
 
         # Convert flat pixel index to 2D coordinates within the target sensor
-        pixel_idx_in_sensor = pixel_idx % (self.width * self.height)
-        target_pixel_y = mi.Float(pixel_idx_in_sensor // self.width)
-        target_pixel_x = mi.Float(pixel_idx_in_sensor % self.width)
+        pixel_idx_in_sensor = pixel_idx % (self.real_film_width * self.real_film_height)
+        target_pixel_y = mi.Float(pixel_idx_in_sensor // self.real_film_width)
+        target_pixel_x = mi.Float(pixel_idx_in_sensor % self.real_film_width)
 
-        # `sample2` is the normalized, jittered sample for the flat_sensor's film.
-        # `sample2.x` = (pixel_in_batch + rand.x) / pixels_per_batch
-        # `sample2.y` = (0 + rand.y) / 1 = rand.y
-        # We only need the random jitter part, which is sample2.y for the y-axis.
-        # For the x-axis, the integer pixel location is encoded, so we can't
-        # simply extract the jitter.
-        #
-        # However, the simplest correct approach is to realize that `sample2`
-        # already contains the sub-pixel jitter we need to preserve.
-        # The `sampler.next_2d()` call in `sample_rays` provides the jitter.
-        # We just need to map it to the correct pixel block in the target sensor.
+        # The flat sensor has film size (pixels_per_batch, 1)
+        # sample2.x is normalized to [0, 1] for the flat sensor's width
+        # sample2.y is normalized to [0, 1] for the flat sensor's height (which is 1)
 
-        # The random jitter from the sampler is contained in `sample2`.
-        # `sample2.x` contains jitter for the x-axis.
-        # `sample2.y` contains jitter for the y-axis.
-        # We add the integer coordinates of the target pixel and re-normalize.
+        # Extract the batch position and jitter from sample2.x
+        # sample2.x contains: (batch_pixel_position + jitter_x) / pixels_per_batch
+        batch_pixel_pos = dr.floor(sample2.x * mi.Float(self.pixels_per_batch))
+        jitter_x = sample2.x * mi.Float(self.pixels_per_batch) - batch_pixel_pos
+
+        # sample2.y is already the jitter for the y dimension (since flat sensor height is 1)
+        jitter_y = sample2.y
+
+        # Create the remapped sample coordinates for the target sensor
         sample2_override = mi.Point2f(
-            (target_pixel_x + sample2.x) / mi.Float(self.width),
-            (target_pixel_y + sample2.y) / mi.Float(self.height)
+            (target_pixel_x + jitter_x) / mi.Float(self.real_film_width),
+            (target_pixel_y + jitter_y) / mi.Float(self.real_film_height)
         )
 
         sensors_ptr = dr.gather(
@@ -128,7 +119,7 @@ class Rayloader():
         regular_reshuffle: bool = False,
     ) -> None:
         """
-        TODO
+        Rayloader for efficient batch rendering with multiple sensors and target images.
         """
 
         if type(target_images) != list:
@@ -136,11 +127,37 @@ class Rayloader():
         if type(sensors) != list:
             sensors = [sensors]
 
+        reference_film = sensors[0].film()
+        self.num_sensors = len(sensors)
+        self.width = reference_film.size()[0]
+        self.height = reference_film.size()[1]
         self.channel_size = target_images[0].shape[-1]
 
+        # Assert that all sensors and target_images have the same size
+        if len(sensors) != len(target_images):
+            raise ValueError(
+                f"Number of sensors ({len(sensors)}) does not match "
+                f"number of target images ({len(target_images)})"
+            )
+        for i in range(self.num_sensors):
+            film_size = sensors[i].film().size()
+            if (film_size[0] != self.width or film_size[1] != self.height):
+                raise ValueError(
+                    f"Sensor {i} has different film size: "
+                    f"{film_size[0]}x{film_size[1]} "
+                    f"vs {self.width}x{self.height}"
+                )
+            tensor_shape = target_images[i].shape
+            if (tensor_shape[0] != self.height or
+                tensor_shape[1] != self.width or
+                tensor_shape[2] != sensors[i].film().base_channels_count()):
+                raise ValueError(
+                    f"Target image {i} has different shape: "
+                    f"{tensor_shape[0]}x{tensor_shape[1]}x{tensor_shape[2]} "
+                    f"vs {self.height}x{self.width}x{self.channel_size}"
+                )
+
         # Determine pixel format and component format
-        reference_film = sensors[0].film()
-        # Map channels to pixel format
         if self.channel_size == 1:
             pixel_format = 'luminance'
         elif self.channel_size == 3:
@@ -153,7 +170,7 @@ class Rayloader():
                 "Only 1, 3, or 4 channels are supported."
             )
         # Determine component format
-        component_format = 'float32'  # TODO: float16?
+        component_format = 'float32'  # TODO: float16 not supported
 
         self.flat_sensor = mi.load_dict({
             'type': 'flat_sensor',
@@ -171,94 +188,77 @@ class Rayloader():
                 'sample_count': 1,
             },
         })
-        self.flat_sensor.initialize(sensors)
+        self.flat_sensor.initialize(sensors, pixels_per_batch)
 
-        # Initialize pixel_idx with the correct size
-        self.flat_sensor.pixel_idx = dr.zeros(mi.UInt32, pixels_per_batch)
+        # Dummy initialization of pixel_idx, to be updated by `next()`
+        self.flat_sensor.pixel_idx = None
+        self.perm_target_image_flat = None
 
         self.scene = scene
-        self.num_sensors = len(sensors)
         self.target_images = target_images
         self.pixels_per_batch = pixels_per_batch
         self.seed = seed
-
-        # Calculate total pixels from the actual sensor dimensions, not flat_sensor
-        self.width = sensors[0].film().size()[0]
-        self.height = sensors[0].film().size()[1]
         self.ttl_pixels = self.num_sensors * self.width * self.height
+        self.counter = 0
+
+        # Handle the case where total pixels is not divisible by pixels_per_batch
+        # by padding with random indices (some pixels may appear twice)
+        self.effective_ttl_pixels = (
+            ((self.ttl_pixels + self.pixels_per_batch - 1) //
+            self.pixels_per_batch) * self.pixels_per_batch
+        )
 
         if regular_reshuffle:
             # Calculate how many iterations to do a full shuffle cycle
-            effective_ttl_pixels = ((self.ttl_pixels + self.pixels_per_batch - 1) //
-                                   self.pixels_per_batch) * self.pixels_per_batch
-            self.iter_shuffle = effective_ttl_pixels // self.pixels_per_batch
+            self.iter_shuffle = (
+                self.effective_ttl_pixels // self.pixels_per_batch
+            )
         else:
             self.iter_shuffle = mi.UInt32(-1)
-        self.counter = 0
 
     def shuffle_pixel_index(self, seed: int):
-        # Handle the case where total pixels is not divisible by pixels_per_batch
-        # by padding with random indices (some pixels may appear twice)
-        effective_ttl_pixels = ((self.ttl_pixels + self.pixels_per_batch - 1) //
-                               self.pixels_per_batch) * self.pixels_per_batch
-
-        # Shuffle the pixel index buffer once using mi.permute_kensler
-        if effective_ttl_pixels > self.ttl_pixels:
-            # Pad with random indices from the valid range
-            padding_size = effective_ttl_pixels - self.ttl_pixels
-            base_indices = dr.arange(mi.UInt32, self.ttl_pixels)
-            # Use random indices for padding (with replacement)
-            random_indices = (dr.arange(mi.UInt32, padding_size) %
-                              mi.UInt32(self.ttl_pixels))
-            all_indices = dr.concat(base_indices, random_indices)
-        else:
-            all_indices = dr.arange(mi.UInt32, effective_ttl_pixels)
-
+        """
+        Shuffle the pixel index buffer to randomize the order of pixels
+        for the next batch of rendering.
+        """
+        # Shuffle the pixel index buffer
         self.perm_pixel_index_buffer = mi.permute_kensler(
-            all_indices,
-            effective_ttl_pixels,
+            dr.arange(mi.UInt32, self.effective_ttl_pixels) % self.ttl_pixels,
+            self.effective_ttl_pixels,
             seed,
         )
+        # print(f"self.perm_pixel_index_buffer: {self.perm_pixel_index_buffer}")
 
         # Create the corresponding image reference tensor
-        # Flatten target images in sensor-major order
-        target_image_flat = dr.empty(mi.Float, self.ttl_pixels * self.channel_size)
-
-        offset = 0
+        ttl_size = self.ttl_pixels * self.channel_size
+        # Unpermuted target image buffer
+        target_image_flat = dr.empty(mi.Float, ttl_size)
+        chunk_size = self.width * self.height * self.channel_size
         for i in range(self.num_sensors):
-            # Ravel each target image tensor and fill into flat buffer
-            image_data = dr.ravel(self.target_images[i])
-            pixels_per_image = self.width * self.height
-
-            # Copy image data to the flat buffer using direct array copy
-            start_idx = offset * self.channel_size
-            end_idx = start_idx + pixels_per_image * self.channel_size
-            target_indices = dr.arange(mi.UInt32, pixels_per_image * self.channel_size) + start_idx
-            source_indices = dr.arange(mi.UInt32, pixels_per_image * self.channel_size)
-
-            data_chunk = dr.gather(mi.Float, image_data, source_indices)
-            dr.scatter(target_image_flat, data_chunk, target_indices)
-
-            offset += pixels_per_image
-
-        print(f'target_image_flat = {target_image_flat}')
-
-        # Create permuted target image buffer using efficient gather with shape
-        # Clamp indices to valid range to handle padding
-        valid_mask = self.perm_pixel_index_buffer < mi.UInt32(self.ttl_pixels)
-        clamped_indices = dr.select(valid_mask, self.perm_pixel_index_buffer, mi.UInt32(0))
-
-        self.perm_target_image_buffer = dr.ravel(dr.gather(
-            mi.ArrayXf, target_image_flat, clamped_indices,
-            shape=(self.channel_size, effective_ttl_pixels)
+            dr.scatter(
+                target_image_flat,
+                dr.ravel(self.target_images[i]),
+                mi.UInt32(dr.arange(mi.UInt32, chunk_size) + i * chunk_size),
+            )
+        # print(f"target_image_flat: {target_image_flat}")
+        # Permuted target image buffer
+        self.perm_target_image_flat = dr.ravel(dr.gather(
+            mi.ArrayXf,
+            target_image_flat,
+            self.perm_pixel_index_buffer,
+            shape=(self.channel_size, self.effective_ttl_pixels)
         ))
+        # print(f"self.perm_target_image_flat: {self.perm_target_image_flat}")
 
-        print(f'perm_target_image_buffer = {self.perm_target_image_buffer}')
-
-        # Make sure both buffers are in memory
-        dr.eval(self.perm_pixel_index_buffer, self.perm_target_image_buffer)
+        # Make sure the buffer is in memory
+        del target_image_flat
+        dr.eval(self.perm_pixel_index_buffer, self.perm_target_image_flat)
 
     def next(self):
+        """
+        Get the next batch of pixel indices and corresponding target tensor.
+        This method reshuffles the pixel index buffer every `iter_shuffle` iterations.
+        """
         # Potentially reshuffle the pixel index buffer
         if self.counter % self.iter_shuffle == 0:
             self.shuffle_pixel_index(self.seed + self.counter)
@@ -268,23 +268,21 @@ class Rayloader():
         batch_indices = dr.arange(mi.UInt32, self.pixels_per_batch) + batch_start
 
         # Get pixel indices for this batch
-        current_pixel_indices = dr.gather(mi.UInt32, self.perm_pixel_index_buffer, batch_indices)
+        current_pixel_indices = dr.gather(
+            mi.UInt32, self.perm_pixel_index_buffer, batch_indices)
 
         # Put this round's pixel index to flat_sensor
-        dr.scatter(self.flat_sensor.pixel_idx, current_pixel_indices,
-                  dr.arange(mi.UInt32, self.pixels_per_batch))
+        self.flat_sensor.pixel_idx = current_pixel_indices
 
         # Gather reference tensor for the selected pixels using efficient gather
-        # Use dr.gather with shape parameter for multi-channel data
         target_data = dr.ravel(dr.gather(
-            mi.ArrayXf, self.perm_target_image_buffer, batch_indices,
+            mi.ArrayXf, self.perm_target_image_flat, batch_indices,
             shape=(self.channel_size, self.pixels_per_batch)
         ))
         target_tensor = mi.TensorXf(
             target_data,
             shape=(1, self.pixels_per_batch, self.channel_size)
         )
-        # print(f'dr.ravel(target_tensor) = {dr.ravel(target_tensor)}')
 
         self.counter += 1
         return target_tensor, self.flat_sensor

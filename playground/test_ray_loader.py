@@ -116,9 +116,9 @@ def test_ray_loader():
             expected_pixel_values = expected_values[pixel_idx]
 
             for c in range(4):  # 4 channels
-                # Correct indexing for PLANAR memory layout: [RRRR GGGG BBBB AAAA]
+                # Correct indexing for INTERLEAVED memory layout: [RGBA RGBA ...]
                 # The value for channel 'c' of pixel 'i' is at this index.
-                actual_value = float(ref_array[c * pixels_per_batch + i])
+                actual_value = float(ref_array[i * 4 + c])
                 expected_value = expected_pixel_values[c]
                 assert abs(actual_value - expected_value) < 1e-6, \
                     f"Iteration {iteration}, pixel {i} (idx {pixel_idx}), channel {c}: " \
