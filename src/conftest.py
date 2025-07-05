@@ -49,9 +49,6 @@ def clean_up():
     periodically frees the malloc cache to prevent the testcases from hogging
     all system memory.
     '''
-    gc.collect()
-    gc.collect()
-
     dr.kernel_history_clear()
     dr.flush_malloc_cache()
     dr.flush_kernel_cache()
