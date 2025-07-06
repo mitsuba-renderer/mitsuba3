@@ -14,10 +14,9 @@ spectrum_dicts = {
 }
 
 lookat_transforms = [
-    mi.scalar_rgb.ScalarTransform4f().look_at([0, 1, 0], [0, 0, 0], [1, 0, 0]),
-    mi.scalar_rgb.ScalarTransform4f().look_at([0, 0, 1], [0, 0, 0], [0, -1, 0])
+    [[0, 1, 0, 0], [0, 0, -1, 1], [-1, 0, 0, 0], [0, 0, 0, 1]], # look_at([0, 1, 0], [0, 0, 0], [1, 0, 0])
+    [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 1], [0, 0, 0, 1]], # look_at([0, 0, 1], [0, 0, 0], [0, -1, 0])
 ]
-
 
 def create_emitter_and_spectrum(lookat, cutoff_angle, s_key='d65'):
     spectrum = mi.load_dict(spectrum_dicts[s_key])
@@ -43,6 +42,7 @@ def create_emitter_and_spectrum(lookat, cutoff_angle, s_key='d65'):
 def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelength_sample, cutoff_angle, lookat):
     """ Check the correctness of the sample_direction() method """
 
+    lookat = mi.ScalarTransform4f(lookat)
     cutoff_angle_rad = cutoff_angle / 180 * dr.pi
     beam_width_rad = cutoff_angle_rad * 0.75
     inv_transition_width = 1 / (cutoff_angle_rad - beam_width_rad)
@@ -96,6 +96,7 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelen
 def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_sample, cutoff_angle, lookat):
     # Check the correctness of the sample_ray() method
 
+    lookat = mi.ScalarTransform4f(lookat)
     cutoff_angle_rad = cutoff_angle / 180 * dr.pi
     cos_cutoff_angle_rad = dr.cos(cutoff_angle_rad)
     beam_width_rad = cutoff_angle_rad * 0.75
@@ -143,6 +144,7 @@ def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_
 def test_eval_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelength_sample, cutoff_angle, lookat):
     """ Check the correctness of the sample_direction() method """
 
+    lookat = mi.ScalarTransform4f(lookat)
     cutoff_angle_rad = cutoff_angle / 180 * dr.pi
     beam_width_rad = cutoff_angle_rad * 0.75
     inv_transition_width = 1 / (cutoff_angle_rad - beam_width_rad)
@@ -170,6 +172,7 @@ def test_eval_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelengt
 def test_eval(variants_vec_spectral, spectrum_key, lookat, cutoff_angle):
     # Check the correctness of the eval() method
 
+    lookat = mi.ScalarTransform4f(lookat)
     emitter, spectrum = create_emitter_and_spectrum(
         lookat, cutoff_angle, spectrum_key)
 
