@@ -363,7 +363,7 @@ def bsdf_dict(bsdf: str):
 
                 # Read 'eta' and 'tint' properties from `props`
                 self.eta = 1.33
-                if props.has_property("eta"):
+                if 'eta' in props:
                     self.eta = props["eta"]
 
                 self.tint = props["tint"]
