@@ -184,7 +184,7 @@ class PRBIntegrator(RBIntegrator):
             # -------------------- Stopping criterion ---------------------
 
             # Don't run another iteration if the throughput has reached zero
-            β_max = dr.max(β)
+            β_max = dr.max(mi.unpolarized_spectrum(β))
             active_next &= (β_max != 0)
 
             # Russian roulette stopping probability (must cancel out ior^2

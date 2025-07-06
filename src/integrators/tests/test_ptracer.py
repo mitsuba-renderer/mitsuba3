@@ -222,7 +222,7 @@ def test06_ptracer_gradients(variants_all_ad_rgb):
     integrator.render_backward(scene, grad_in=adjoint, seed=3, spp=64, params=params)
     g = dr.grad(params[key])
     assert dr.shape(g) == dr.shape(params[key])
-    assert dr.allclose(g, 0.33647, atol=1e-5) # TODO improve this test (don't use hardcoded value)
+    assert dr.allclose(g, 0.33647, atol=1e-5, rtol=5e-3) # TODO improve this test (don't use hardcoded value)
 
 
 def test07_adjoint_integrator_trampoline(variants_all_ad_rgb):

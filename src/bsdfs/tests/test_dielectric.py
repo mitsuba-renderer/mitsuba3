@@ -174,5 +174,5 @@ def test06_attached_sampling(variants_all_ad_rgb):
     assert dr.grad_enabled(weight)
     
     dr.forward(angle)
-    assert dr.allclose(dr.grad(weight), 0.008912204764783382)
+    assert dr.allclose(mi.unpolarized_spectrum(dr.grad(weight)), 0.008912204764783382)
     

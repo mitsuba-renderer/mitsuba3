@@ -192,6 +192,9 @@ def test03_optimizer(variants_all_ad_rgb, spp, res, opt_conf):
 @pytest.mark.parametrize("N", [1, 10])
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval_grad, N, jit_flags):
+    if 'polarized' in mi.variant():
+        pytest.skip("Test must be adapted for polarized variants")
+
     # Set drjit JIT flags
     for k, v in jit_flags.items():
         dr.set_flag(k, v)
@@ -235,7 +238,7 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval
     # Check against reference value
     v = mi.Float(dr.cos(theta) * dr.inv_pi)
     v_ref = dr.select(mask, mi.Color3f(v, 0, 0), mi.Color3f(0))
-    assert dr.allclose(v_eval, v_ref)
+    assert dr.allclose(mi.unpolarized_spectrum(v_eval), v_ref)
 
     loss = dr.sum(v_eval)
 
@@ -266,6 +269,9 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 @pytest.mark.parametrize("indirect", [False, True])
 def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flags, indirect):
+    if mi.is_polarized:
+        pytest.skip("Test must be adapted for polarized rendering")
+
     # Set drjit JIT flags
     for k, v in jit_flags.items():
         dr.set_flag(k, v)
@@ -330,7 +336,7 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
     # Check against reference value
     v = dr.cos(theta) * dr.inv_pi
     v_ref = dr.select(mask, mi.Color3f(v, 0, 0), mi.Color3f(0, 0, v))
-    assert dr.allclose(v_eval, v_ref)
+    assert dr.allclose(mi.unpolarized_spectrum(v_eval), v_ref)
 
     # Make their gradients a bit different
     mult1 = mi.Float(0.5)

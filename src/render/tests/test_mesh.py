@@ -511,7 +511,7 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
     params = mi.traverse(scene)
     shape_param_key = 'rect.vertex_positions'
     positions_buf = params[shape_param_key]
-    positions_initial = dr.unravel(mi.Point3f, positions_buf)
+    positions_initial = dr.unravel(mi.Point3f, mi.Float(positions_buf))
 
     # Create differential parameter to be optimized
     diff_vector = mi.Vector3f(0.0)
@@ -727,7 +727,7 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
     params = mi.traverse(scene)
     shape_param_key = 'rect.vertex_positions'
     positions_buf = params[shape_param_key]
-    positions_initial = dr.unravel(mi.Point3f, positions_buf)
+    positions_initial = dr.unravel(mi.Point3f, mi.Float(positions_buf))
 
     # Create differential parameter to be optimized
     diff_vector = mi.Vector3f(0.0)
@@ -819,7 +819,7 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, res, wall, jit_flags):
     dr.set_label(theta, 'theta')
 
     # Attach object vertices to differential parameter
-    positions_initial = dr.unravel(mi.Point3f, params[key])
+    positions_initial = dr.unravel(mi.Point3f, mi.Float(params[key]))
     transform = mi.Transform4f().translate(mi.Vector3f(0.0, theta, 0.0))
     positions_new = transform @ positions_initial
     positions_new = dr.ravel(positions_new)
@@ -870,7 +870,7 @@ def test19_update_geometry(variants_vec_rgb):
 
     params = mi.traverse(scene)
 
-    init_vertex_pos = dr.unravel(mi.Point3f, params['rect.vertex_positions'])
+    init_vertex_pos = dr.unravel(mi.Point3f, mi.Float(params['rect.vertex_positions']))
 
     def translate(v):
         transform = mi.Transform4f().translate(mi.Vector3f(v))
@@ -1205,7 +1205,7 @@ def test30_differential_motion(variants_vec_rgb):
     theta = mi.Point3f(0.0)
     dr.enable_grad(theta)
     key = 'vertex_positions'
-    positions = dr.unravel(mi.Point3f, params[key])
+    positions = dr.unravel(mi.Point3f, mi.Float(params[key]))
     translation = mi.Transform4f().translate([theta.x, 2 * theta.y, 3 * theta.z])
     positions = translation @ positions
     params[key] = dr.ravel(positions)
@@ -1281,7 +1281,7 @@ def test33_rebuild_area_pmf(variants_vec_rgb):
     params = mi.traverse(mesh)
     key = 'vertex_positions'
 
-    vertices = dr.unravel(mi.Point3f, params[key])
+    vertices = dr.unravel(mi.Point3f, mi.Float(params[key]))
     new_vertices = mi.Transform4f().scale(2) @ vertices
     params[key] = dr.ravel(new_vertices)
     params.update()

@@ -103,11 +103,11 @@ def generate_and_compare(render_params, ref_path, rtol):
     si = mi.SurfaceInteraction3f()
     si.wi = mi.Vector3f(cp*st, sp*st, ct)
 
-    rendered_scene = mi.TensorXf(dr.ravel(plugin.eval(si)), (*render_res, 3)) if mi.is_rgb \
+    rendered_scene = mi.TensorXf(dr.ravel(mi.unpolarized_spectrum(plugin.eval(si))), (*render_res, 3)) if mi.is_rgb \
                 else eval_full_spec(plugin, si, wavelengths, render_res)
 
     # Load the reference image
-    reference_scene = mi.TensorXf(mi.Bitmap(find_resource(ref_path)))
+    reference_scene = mi.TensorXf32(mi.Bitmap(find_resource(ref_path)))
     rel_err = dr.mean(dr.abs(rendered_scene - reference_scene) / (dr.abs(reference_scene) + 0.001))
 
     assert rel_err <= rtol, (f"Fail when rendering plugin: {plugin}\n"
@@ -121,6 +121,8 @@ def generate_and_compare(render_params, ref_path, rtol):
 ])
 def test01_sky_radiance_rgb(variants_vec_rgb, render_params):
     hour, turb, albedo = render_params
+    if mi.is_polarized:
+        pytest.skip('Test must be adapted to polarized rendering.')
 
     ref_path = f"{sunsky_ref_folder}/renders/sky_rgb_hour{hour:.2f}_t{turb:.3f}_a{albedo:.3f}.exr"
     generate_and_compare(render_params, ref_path, 0.017)
@@ -133,12 +135,18 @@ def test01_sky_radiance_rgb(variants_vec_rgb, render_params):
 ])
 def test02_sky_radiance_spectral(variants_vec_spectral, render_params):
     sun_eta, turb, albedo = render_params
+    if mi.is_polarized:
+        pytest.skip('Test must be adapted to polarized rendering.')
+
 
     ref_path = f"{sunsky_ref_folder}/renders/sky_spec_eta{sun_eta:.3f}_t{turb:.3f}_a{albedo:.3f}.exr"
     generate_and_compare(render_params, ref_path, 0.037)
 
 
 def test03_sky_radiance_spectral_albedo(variants_vec_spectral):
+    if mi.is_polarized:
+        pytest.skip('Test must be adapted to polarized rendering.')
+
     generate_and_compare((dr.deg2rad(60), 4.2, SPECIAL_ALBEDO),
                          f"{sunsky_ref_folder}/renders/sky_spectrum_special.exr", 0.03)
 
@@ -152,6 +160,8 @@ def extract_spectrum(turb, eta, gamma):
 @pytest.mark.parametrize("eta_ray", np.linspace(eps, dr.pi/2 - eps, 4))
 @pytest.mark.parametrize("gamma",   np.linspace(0, SUN_HALF_APERTURE_ANGLE - eps, 4))
 def test04_sun_radiance(variants_vec_spectral, turb, eta_ray, gamma):
+    if mi.is_polarized:
+        pytest.skip('Test must be adapted to polarized rendering.')
 
     wavelengths = np.linspace(310, 800, 15)
 

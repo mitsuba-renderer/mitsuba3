@@ -9,6 +9,25 @@ import os
 
 from os.path import join, realpath, dirname, basename, splitext, exists
 
+# Helper functions for skip conditions
+def has_no_cuda():
+    return not dr.has_backend(dr.JitBackend.CUDA)
+
+def variant_not_available(variant_name):
+    return lambda: variant_name not in mi.variants()
+
+# Skip conditions: list of (condition_function, test_pattern) tuples
+# The condition function should return True if the test should be skipped
+SKIP_CONDITIONS = [
+    # Potentially skip tests that are very slow or unsupported on LLVM backend
+    #(has_no_cuda, 'image_io_and_manipulation'),
+    (has_no_cuda, 'projective_sampling_integrators'),
+    (has_no_cuda, 'shape_optimization'),
+
+    # Potentially skip tests that require specific variants
+    (variant_not_available('llvm_ad_rgb_polarized'), 'polarizer_optimization'),
+]
+
 
 def run_notebook(notebook_path, tmp_dir=None):
     """
@@ -17,6 +36,10 @@ def run_notebook(notebook_path, tmp_dir=None):
     import nbformat
     from nbconvert.preprocessors import ExecutePreprocessor
 
+    for condition, pattern in SKIP_CONDITIONS:
+        if pattern in notebook_path and condition():
+            pytest.skip(f'Skipped: {pattern}')
+
     nb_name, _ = splitext(basename(notebook_path))
     if tmp_dir is None:
         tmp_dir = dirname(notebook_path)
@@ -24,12 +47,6 @@ def run_notebook(notebook_path, tmp_dir=None):
     with open(notebook_path, encoding='utf-8') as f:
         nb = nbformat.read(f, as_version=4)
 
-    # Check the variants required in this notebook are enabled, otherwise skip
-    regex = re.compile(r'[a-zA-Z_]+.set_variant\(\'([a-zA-Z_]+)\'\)', re.MULTILINE)
-    for c in filter(lambda c: c['cell_type'] == 'code', nb['cells']):
-        for v in re.findall(regex, c['source']):
-            if v not in mi.variants():
-                pytest.skip(f'variant {v} is not enabled')
 
     proc = ExecutePreprocessor(timeout=900, kernel_name='python3')
     proc.allow_errors = True

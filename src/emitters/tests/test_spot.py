@@ -129,7 +129,7 @@ def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_
     spec = dr.select(angle <= cutoff_angle_rad, spec, 0)
 
     assert dr.allclose(
-        res, spec / mi.warp.square_to_uniform_cone_pdf(trafo.inverse() @ ray.d, cos_cutoff_angle_rad))
+        mi.unpolarized_spectrum(res), spec / mi.warp.square_to_uniform_cone_pdf(trafo.inverse() @ ray.d, cos_cutoff_angle_rad))
     assert dr.allclose(ray.time, eval_t)
     assert dr.all(local_dir.z >= cos_cutoff_angle_rad)
     assert dr.allclose(ray.wavelengths, wav)

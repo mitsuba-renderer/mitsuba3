@@ -135,7 +135,7 @@ class LargeSteps():
             Differential form of v.
         """
         # Manual matrix-vector multiplication
-        v_unique = dr.gather(mi.Point3f, dr.unravel(mi.Point3f, v), self.index)
+        v_unique = dr.gather(mi.Point3f, dr.unravel(mi.Point3f, mi.Float(v)), self.index)
         row_prod = dr.gather(mi.Point3f, v_unique, self.cols.array) * self.data.array
         u = dr.zeros(mi.Point3f, dr.width(v_unique))
         dr.scatter_reduce(dr.ReduceOp.Add, u, row_prod, self.rows.array)
