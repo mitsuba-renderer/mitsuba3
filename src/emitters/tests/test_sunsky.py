@@ -103,11 +103,11 @@ def generate_and_compare(render_params, ref_path, rtol):
     si = mi.SurfaceInteraction3f()
     si.wi = mi.Vector3f(cp*st, sp*st, ct)
 
-    rendered_scene = mi.TensorXf(dr.ravel(plugin.eval(si)), (*render_res, 3)) if mi.is_rgb \
+    rendered_scene = mi.TensorXf(dr.ravel(mi.unpolarized_spectrum(plugin.eval(si))), (*render_res, 3)) if mi.is_rgb \
                 else eval_full_spec(plugin, si, wavelengths, render_res)
 
     # Load the reference image
-    reference_scene = mi.TensorXf(mi.Bitmap(find_resource(ref_path)))
+    reference_scene = mi.TensorXf32(mi.Bitmap(find_resource(ref_path)))
     rel_err = dr.mean(dr.abs(rendered_scene - reference_scene) / (dr.abs(reference_scene) + 0.001))
 
     assert rel_err <= rtol, (f"Fail when rendering plugin: {plugin}\n"

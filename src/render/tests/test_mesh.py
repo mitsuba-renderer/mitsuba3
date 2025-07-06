@@ -511,7 +511,7 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
     params = mi.traverse(scene)
     shape_param_key = 'rect.vertex_positions'
     positions_buf = params[shape_param_key]
-    positions_initial = dr.unravel(mi.Point3f, positions_buf)
+    positions_initial = dr.unravel(mi.Point3f, mi.Float(positions_buf))
 
     # Create differential parameter to be optimized
     diff_vector = mi.Vector3f(0.0)
@@ -727,7 +727,7 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
     params = mi.traverse(scene)
     shape_param_key = 'rect.vertex_positions'
     positions_buf = params[shape_param_key]
-    positions_initial = dr.unravel(mi.Point3f, positions_buf)
+    positions_initial = dr.unravel(mi.Point3f, mi.Float(positions_buf))
 
     # Create differential parameter to be optimized
     diff_vector = mi.Vector3f(0.0)

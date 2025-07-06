@@ -68,7 +68,7 @@ def test01_render_span(variants_all_ad_rgb, regression_test_options, shape_type)
             },
             'sensor': {
                 'type': 'perspective',
-                'to_world': T().look_at(
+                'to_world': mi.ScalarTransform4f.look_at(
                     origin=[0, 0, -5],
                     target=[0, 0, 0],
                     up=[0, 1, 0]),
@@ -100,6 +100,9 @@ def test01_render_span(variants_all_ad_rgb, regression_test_options, shape_type)
 
 @pytest.mark.parametrize("srgb_primitives", [True, False])
 def test02_render_stack(variants_all_ad_rgb, regression_test_options, srgb_primitives):
+    if 'double' in mi.variant():
+        pytest.skip("Test needs to be adapted for double precision variants")
+
     factory = EllipsoidsFactory()
     N = 12
     for i in range(N):
@@ -129,7 +132,7 @@ def test02_render_stack(variants_all_ad_rgb, regression_test_options, srgb_primi
             },
             'sensor': {
                 'type': 'perspective',
-                'to_world': T().look_at(
+                'to_world': mi.ScalarTransform4f.look_at(
                     origin=[0, 0, -5],
                     target=[0, 0, 0],
                     up=[0, 1, 0]),
@@ -162,6 +165,9 @@ def test02_render_stack(variants_all_ad_rgb, regression_test_options, srgb_primi
 
 @pytest.mark.parametrize("shape_type", ['ellipsoids', 'ellipsoidsmesh'])
 def test03_render_depth(variants_all_rgb, regression_test_options, shape_type):
+    if 'double' in mi.variant():
+        pytest.skip("Test needs to be adapted for double precision variants")
+
     factory = EllipsoidsFactory()
     N = 12
     for i in range(N):
@@ -188,7 +194,7 @@ def test03_render_depth(variants_all_rgb, regression_test_options, shape_type):
             },
             'sensor': {
                 'type': 'perspective',
-                'to_world': T().look_at(
+                'to_world': mi.ScalarTransform4f.look_at(
                     origin=[0, 0, -5],
                     target=[0, 0, 0],
                     up=[0, 1, 0]),

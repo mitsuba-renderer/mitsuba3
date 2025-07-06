@@ -165,7 +165,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variant_l
     theta = mi.Float(0)
     dr.enable_grad(theta)
     params[key] = dr.ravel(
-            dr.unravel(mi.Point4f, params[key]) + mi.Vector4f([theta, 0, 0, 0])
+            dr.unravel(mi.Point4f, mi.Float(params[key])) + mi.Vector4f([theta, 0, 0, 0])
     )
     params.update()
     pi = scene.ray_intersect_preliminary(ray)
@@ -411,7 +411,7 @@ def test16_differential_motion(variants_vec_rgb):
     theta = mi.Point3f(0.0)
     dr.enable_grad(theta)
     key = 'control_points'
-    control_points = dr.unravel(mi.Point4f, params[key])
+    control_points = dr.unravel(mi.Point4f, mi.Float(params[key]))
     positions = mi.Point3f(control_points.x, control_points.y, control_points.z)
     translation = mi.Transform4f().translate([theta.x, 2 * theta.y, 3 * theta.z])
     positions = translation @ positions

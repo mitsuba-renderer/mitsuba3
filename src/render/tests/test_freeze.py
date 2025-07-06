@@ -197,8 +197,6 @@ def test02_pose_estimation(variants_vec_rgb, integrator, auto_opaque):
     frozen = dr.freeze(compute_grad, auto_opaque = auto_opaque)
 
     def load_scene():
-        from mitsuba.scalar_rgb import Transform4f as T
-
         scene = mi.cornell_box()
         del scene["large-box"]
         del scene["small-box"]
@@ -209,7 +207,7 @@ def test02_pose_estimation(variants_vec_rgb, integrator, auto_opaque):
         scene["bunny"] = {
             "type": "ply",
             "filename": find_resource("resources/data/common/meshes/bunny.ply"),
-            "to_world": T().scale(6.5),
+            "to_world": mi.ScalarTransform4f().scale(6.5),
             "bsdf": {
                 "type": "diffuse",
                 "reflectance": {"type": "rgb", "value": (0.3, 0.3, 0.75)},
@@ -236,7 +234,7 @@ def test02_pose_estimation(variants_vec_rgb, integrator, auto_opaque):
 
         params.keep("bunny.vertex_positions")
         initial_vertex_positions = dr.unravel(
-            mi.Point3f, params["bunny.vertex_positions"]
+            mi.Point3f, mi.Float(params["bunny.vertex_positions"])
         )
 
         image_ref = mi.render(scene, spp=4)
@@ -789,11 +787,10 @@ def test08_integrators(variants_vec_rgb, tmp_path, integrator, auto_opaque):
 
 def shape_dict(shape: str):
     if shape == "mesh":
-        from mitsuba.scalar_rgb import Transform4f as T
         return {
             "type": "ply",
             "filename": find_resource("resources/data/common/meshes/teapot.ply"),
-            "to_world": T().scale(0.1),
+            "to_world": mi.ScalarTransform4f().scale(0.1),
         }
     elif shape == "disk":
         return {
