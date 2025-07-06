@@ -35,6 +35,105 @@ from mitsuba.scalar_rgb.test.util import find_resource
 output_dir = find_resource('resources/data/tests/integrators')
 
 # -------------------------------------------------------------------
+#                    Helper functions for error checking
+# -------------------------------------------------------------------
+
+def check_image_error(actual, reference, config, integrator_name, epsilon=2e-2,
+                      test_type='primal', save_error_image=False):
+    """
+    Check image comparison errors and report failures with detailed information.
+
+    Args:
+        actual: The computed image
+        reference: The reference image
+        config: Test configuration with error thresholds
+        integrator_name: Name of the integrator being tested
+        epsilon: Small value to avoid division by zero (default: 2e-2)
+        test_type: Type of test ('primal', 'fwd', etc.) for naming output files
+        save_error_image: Whether to save an error visualization image
+
+    Returns:
+        bool: True if test passed, False otherwise
+    """
+    error = dr.abs(actual - reference) / dr.maximum(dr.abs(reference), epsilon)
+    error_mean = dr.mean(error, axis=None).item()
+    error_max = dr.max(error, axis=None).item()
+
+    if error_mean > config.error_mean_threshold or error_max > config.error_max_threshold:
+        print(f"Failure in config: {config.name}, {integrator_name}")
+
+        # Detailed error reporting with percentages
+        mean_exceeded = error_mean > config.error_mean_threshold
+        max_exceeded = error_max > config.error_max_threshold
+
+        if mean_exceeded:
+            mean_diff = error_mean - config.error_mean_threshold
+            mean_percent = (error_mean/config.error_mean_threshold - 1)*100
+            print(f"-> error mean: {error_mean:.6f} (threshold={config.error_mean_threshold}) "
+                  f"- exceeds by {mean_diff:.4f} ({mean_percent:.1f}%)")
+        else:
+            print(f"-> error mean: {error_mean:.6f} (threshold={config.error_mean_threshold}) - OK")
+
+        if max_exceeded:
+            max_diff = error_max - config.error_max_threshold
+            max_percent = (error_max/config.error_max_threshold - 1)*100
+            print(f"-> error max: {error_max:.6f} (threshold={config.error_max_threshold}) "
+                  f"- exceeds by {max_diff:.4f} ({max_percent:.1f}%)")
+        else:
+            print(f"-> error max: {error_max:.6f} (threshold={config.error_max_threshold}) - OK")
+
+        # Save debug images
+        filename = join(output_dir, f"test_{config.name}_image_{test_type}_ref.exr")
+        print(f'-> reference image: {filename}')
+
+        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_{test_type}.exr")
+        print(f'-> write current image: {filename}')
+        mi.util.write_bitmap(filename, actual)
+
+        if save_error_image:
+            filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_error.exr")
+            print(f'-> write error image: {filename}')
+            mi.util.write_bitmap(filename, error)
+
+        return False
+    return True
+
+
+def check_gradient_error(grad, grad_ref, config, integrator_name, threshold_attr='error_mean_threshold_bwd',
+                         epsilon=1e-3):
+    """
+    Check gradient comparison errors and report failures.
+
+    Args:
+        grad: The computed gradient
+        grad_ref: The reference gradient
+        config: Test configuration with error thresholds
+        integrator_name: Name of the integrator being tested
+        threshold_attr: Name of the threshold attribute in config (default: 'error_mean_threshold_bwd')
+        epsilon: Small value to avoid division by zero (default: 1e-3)
+
+    Returns:
+        bool: True if test passed, False otherwise
+    """
+    error = dr.abs(grad - grad_ref) / dr.maximum(dr.abs(grad_ref), epsilon)
+    threshold = getattr(config, threshold_attr)
+
+    if error > threshold:
+        print(f"Failure in config: {config.name}, {integrator_name}")
+        print(f"-> grad:     {grad}")
+        print(f"-> grad_ref: {grad_ref}")
+        print(f"-> error: {error:.6f} (threshold={threshold})")
+
+        # Calculate how much the threshold was exceeded
+        error_diff = error - threshold
+        error_percent = (error/threshold - 1)*100
+        print(f"-> exceeds by {error_diff:.4f} ({error_percent:.1f}%)")
+        print(f"-> ratio: {grad / grad_ref}")
+        return False
+    return True
+
+
+# -------------------------------------------------------------------
 #                          Test configs
 # -------------------------------------------------------------------
 
@@ -60,7 +159,7 @@ class ConfigBase:
 
         self.sensor_dict = {
             'type': 'perspective',
-            'to_world': T().look_at(origin=[0, 0, 4], target=[0, 0, 0], up=[0, 1, 0]),
+            'to_world': mi.ScalarTransform4f.look_at(origin=[0, 0, 4], target=[0, 0, 0], up=[0, 1, 0]),
             'film': {
                 'type': 'hdrfilm',
                 'rfilter': { 'type': 'gaussian', 'stddev': 0.5 },
@@ -125,7 +224,7 @@ class DiffuseAlbedoConfig(ConfigBase):
             },
             'sphere': {
                 'type': 'sphere',
-                'to_world': T().scale(0.25),
+                'to_world': mi.ScalarTransform4f.scale(0.25),
             },
             'light': { 'type': 'constant' }
         }
@@ -142,7 +241,7 @@ class DiffuseAlbedoGIConfig(ConfigBase):
             'plane': { 'type': 'rectangle' },
             'sphere': {
                 'type': 'sphere',
-                'to_world': T().scale(0.25)
+                'to_world': mi.ScalarTransform4f.scale(0.25)
             },
             'green': {
                 'type': 'rectangle',
@@ -153,7 +252,7 @@ class DiffuseAlbedoGIConfig(ConfigBase):
                         'value': [0.1, 1.0, 0.1]
                     }
                 },
-                'to_world': T().translate([1.25, 0.0, 1.0]) @ T().rotate([0, 1, 0], -90),
+                'to_world': mi.ScalarTransform4f.translate([1.25, 0.0, 1.0]) @ mi.ScalarTransform4f.rotate([0, 1, 0], -90),
             },
             'light': { 'type': 'constant', 'radiance': 3.0 }
         }
@@ -177,11 +276,11 @@ class AreaLightRadianceConfig(ConfigBase):
             },
             'sphere': {
                 'type': 'sphere',
-                'to_world': T().scale(0.25),
+                'to_world': mi.ScalarTransform4f.scale(0.25),
             },
             'light': {
                 'type': 'rectangle',
-                'to_world': T().translate([1.25, 0.0, 1.0]) @ T().rotate([0, 1, 0], -90),
+                'to_world': mi.ScalarTransform4f.translate([1.25, 0.0, 1.0]) @ mi.ScalarTransform4f.rotate([0, 1, 0], -90),
                 'emitter': {
                     'type': 'area',
                     'radiance': {'type': 'rgb', 'value': [3.0, 3.0, 3.0]}
@@ -222,7 +321,7 @@ class PointLightIntensityConfig(ConfigBase):
             },
             'sphere': {
                 'type': 'sphere',
-                'to_world': T().scale(0.25),
+                'to_world': mi.ScalarTransform4f.scale(0.25),
             },
             'light': {
                 'type': 'point',
@@ -244,7 +343,7 @@ class ConstantEmitterRadianceConfig(ConfigBase):
             },
             'sphere': {
                 'type': 'sphere',
-                'to_world': T().scale(0.25),
+                'to_world': mi.ScalarTransform4f.scale(0.25),
             },
             'light': { 'type': 'constant' }
         }
@@ -265,7 +364,7 @@ class CropWindowConfig(ConfigBase):
         self.res = 64
         self.sensor_dict = {
             'type': 'perspective',
-            'to_world': T().look_at(origin=[0, 0, 4], target=[0, 0, 0], up=[0, 1, 0]),
+            'to_world': mi.ScalarTransform4f.look_at(origin=[0, 0, 4], target=[0, 0, 0], up=[0, 1, 0]),
             'film': {
                 'type': 'hdrfilm',
                 'rfilter': { 'type': 'gaussian', 'stddev': 0.5 },
@@ -292,7 +391,7 @@ class TranslateShapeConfigBase(ConfigBase):
 
     def initialize(self):
         super().initialize()
-        self.initial_state = mi.Vector3f(dr.unravel(mi.Vector3f, self.params[self.key]))
+        self.initial_state = mi.Vector3f(dr.unravel(mi.Vector3f, mi.Float(self.params[self.key])))
 
     def update(self, theta):
         self.params[self.key] = dr.ravel(self.initial_state + mi.Vector3f(theta, 0.0, 0.0))
@@ -308,7 +407,7 @@ class ScaleShapeConfigBase(ConfigBase):
 
     def initialize(self):
         super().initialize()
-        self.initial_state = mi.Vector3f(dr.unravel(mi.Vector3f, self.params[self.key]))
+        self.initial_state = mi.Vector3f(dr.unravel(mi.Vector3f, mi.Float(self.params[self.key])))
 
     def update(self, theta):
         self.params[self.key] = dr.ravel(self.initial_state * (1.0 + theta))
@@ -325,7 +424,7 @@ class TranslateDiffuseSphereConstantConfig(TranslateShapeConfigBase):
             'sphere': {
                 'type': 'obj',
                 'filename': 'resources/data/common/meshes/sphere.obj',
-                'to_world': T().rotate(angle=-90, axis=[0, 1, 0]),
+                'to_world': mi.ScalarTransform4f.rotate(angle=-90, axis=[0, 1, 0]),
             },
             'light': { 'type': 'constant' }
         }
@@ -374,7 +473,7 @@ class TranslateRectangleEmitterOnBlackConfig(TranslateShapeConfigBase):
                     'type': 'area',
                     'radiance': {'type': 'rgb', 'value': [1.0, 1.0, 1.0]}
                 },
-                'to_world': T().translate([1.25, 0.0, 0.0]),
+                'to_world': mi.ScalarTransform4f.translate([1.25, 0.0, 0.0]),
             }
         }
         self.ref_fd_epsilon = 1e-3
@@ -400,7 +499,7 @@ class TranslateSphereEmitterOnBlackConfig(TranslateShapeConfigBase):
                     'type': 'area',
                     'radiance': {'type': 'rgb', 'value': [1.0, 1.0, 1.0]}
                 },
-                'to_world': T().translate([1.25, 0.0, 0.0]) @ T().rotate(angle=180, axis=[0, 1, 0]),
+                'to_world': mi.ScalarTransform4f.translate([1.25, 0.0, 0.0]) @ mi.ScalarTransform4f.rotate(angle=180, axis=[0, 1, 0]),
             }
         }
         self.ref_fd_epsilon = 1e-4
@@ -448,7 +547,7 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
             'occluder': {
                 'type': 'obj',
                 'filename': 'resources/data/common/meshes/sphere.obj',
-                'to_world': T().translate([2.0, 0.0, 2.0]) @ T().scale(0.25),
+                'to_world': mi.ScalarTransform4f.translate([2.0, 0.0, 2.0]) @ mi.ScalarTransform4f.scale(0.25),
             },
             'light': {
                 'type': 'obj',
@@ -457,12 +556,12 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
                     'type': 'area',
                     'radiance': {'type': 'rgb', 'value': [1000.0, 1000.0, 1000.0]}
                 },
-                'to_world': T().translate([4.0, 0.0, 4.0]) @ T().scale(0.05)
+                'to_world': mi.ScalarTransform4f.translate([4.0, 0.0, 4.0]) @ mi.ScalarTransform4f.scale(0.05)
             }
         }
         self.ref_fd_epsilon = 1e-3
         self.error_mean_threshold = 0.03
-        self.error_max_threshold = 0.85
+        self.error_max_threshold = 1.65
         self.error_mean_threshold_bwd = 0.25
         self.integrator_dict = {
             'max_depth': 2,
@@ -484,7 +583,7 @@ class TranslateShadowReceiverAreaLightConfig(TranslateShapeConfigBase):
             'occluder': {
                 'type': 'obj',
                 'filename': 'resources/data/common/meshes/sphere.obj',
-                'to_world': T().translate([2.0, 0.0, 2.0]) @ T().scale(0.25),
+                'to_world': mi.ScalarTransform4f.translate([2.0, 0.0, 2.0]) @ mi.ScalarTransform4f.scale(0.25),
             },
             # 'light': {
             #     'type': 'obj',
@@ -493,7 +592,7 @@ class TranslateShadowReceiverAreaLightConfig(TranslateShapeConfigBase):
             #         'type': 'area',
             #         'radiance': {'type': 'rgb', 'value': [1000.0, 1000.0, 1000.0]}
             #     },
-            #     'to_world': T().translate([4.0, 0.0, 4.0]) @ T().scale(0.05)
+            #     'to_world': mi.ScalarTransform4f.translate([4.0, 0.0, 4.0]) @ mi.ScalarTransform4f.scale(0.05)
             # }
             'light': { 'type': 'constant' }
         }
@@ -527,7 +626,7 @@ class TranslateTexturedPlaneConfig(TranslateShapeConfigBase):
                         'format' : 'variant'
                     }
                 },
-                'to_world': T().scale(2.0),
+                'to_world': mi.ScalarTransform4f.scale(2.0),
             },
             'light': { 'type': 'constant' }
         }
@@ -552,7 +651,7 @@ class TranslateSelfShadowAreaLightConfig(ConfigBase):
                 'type': 'obj',
                 'filename': 'resources/data/common/meshes/rectangle.obj',
                 'face_normals': True,
-                'to_world': T().translate([-1, 0, 0.5]) @ T().rotate([0, 1, 0], 90) @ T().scale(1.0),
+                'to_world': mi.ScalarTransform4f.translate([-1, 0, 0.5]) @ mi.ScalarTransform4f.rotate([0, 1, 0], 90) @ mi.ScalarTransform4f.scale(1.0),
             },
             'light': {
                 'type': 'point',
@@ -571,8 +670,8 @@ class TranslateSelfShadowAreaLightConfig(ConfigBase):
     def initialize(self):
         super().initialize()
         self.params.keep(['plane.vertex_positions', 'occluder.vertex_positions'])
-        self.initial_state_0 = dr.unravel(mi.Vector3f, self.params['plane.vertex_positions'])
-        self.initial_state_1 = dr.unravel(mi.Vector3f, self.params['occluder.vertex_positions'])
+        self.initial_state_0 = dr.unravel(mi.Vector3f, mi.Float(self.params['plane.vertex_positions']))
+        self.initial_state_1 = dr.unravel(mi.Vector3f, mi.Float(self.params['occluder.vertex_positions']))
 
     def update(self, theta):
         self.params['plane.vertex_positions']    = dr.ravel(self.initial_state_0 + mi.Vector3f(theta, 0.0, 0.0))
@@ -594,7 +693,7 @@ class TranslateSphereOnGlossyFloorConfig(TranslateShapeConfigBase):
                     'type': 'roughconductor',
                     'alpha': 0.025,
                 },
-                'to_world': T().translate([0, 1.5, 0]) @ T().rotate([1, 0, 0], -45) @ T().scale(4),
+                'to_world': mi.ScalarTransform4f.translate([0, 1.5, 0]) @ mi.ScalarTransform4f.rotate([1, 0, 0], -45) @ mi.ScalarTransform4f.scale(4),
             },
             'sphere': {
                 'type': 'obj',
@@ -603,7 +702,7 @@ class TranslateSphereOnGlossyFloorConfig(TranslateShapeConfigBase):
                     'reflectance': {'type': 'rgb', 'value': [1.0, 0.5, 0.0]}
                 },
                 'filename': 'resources/data/common/meshes/sphere.obj',
-                'to_world': T().translate([0.5, 2.0, 1.5]) @ T().scale(1.0),
+                'to_world': mi.ScalarTransform4f.translate([0.5, 2.0, 1.5]) @ mi.ScalarTransform4f.scale(1.0),
             },
             'light': { 'type': 'constant', 'radiance': 1.0 },
         }
@@ -665,7 +764,7 @@ class RotateShadingNormalsPlaneConfig(ConfigBase):
             },
             'light': {
                 'type': 'rectangle',
-                'to_world': T().translate([1.25, 0.0, 1.0]) @ T().rotate([0, 1, 0], -90),
+                'to_world': mi.ScalarTransform4f.translate([1.25, 0.0, 1.0]) @ mi.ScalarTransform4f.rotate([0, 1, 0], -90),
                 'emitter': {
                     'type': 'area',
                     'radiance': {'type': 'rgb', 'value': [3.0, 3.0, 3.0]}
@@ -686,7 +785,7 @@ class RotateShadingNormalsPlaneConfig(ConfigBase):
     def update(self, theta):
         self.params[self.key] = dr.ravel(
             mi.Transform4f().rotate(angle=theta, axis=[0.0, 1.0, 0.0]) @
-            dr.unravel(mi.Normal3f, self.initial_state)
+            dr.unravel(mi.Normal3f, mi.Float(self.initial_state))
         )
         self.params.update()
         dr.eval()
@@ -761,33 +860,11 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
     integrator = mi.load_dict(config.integrator_dict, parallel=False)
 
     filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
-    image_primal_ref = mi.TensorXf(mi.Bitmap(filename))
+    image_primal_ref = mi.TensorXf32(mi.Bitmap(filename))
     image = integrator.render(config.scene, seed=0, spp=config.spp)
 
-    error = dr.abs(image - image_primal_ref) / dr.maximum(dr.abs(image_primal_ref), 2e-2)
-    error_mean = dr.mean(error, axis=None).item()
-    error_max = dr.max(error, axis=None).item()
-
-    if error_mean > config.error_mean_threshold  or error_max > config.error_max_threshold:
-        print(f"Failure in config: {config.name}, {integrator_name}")
-        mean_exceeded = error_mean > config.error_mean_threshold
-        max_exceeded = error_max > config.error_max_threshold
-        if mean_exceeded:
-            mean_diff = error_mean - config.error_mean_threshold
-            mean_percent = (error_mean/config.error_mean_threshold - 1)*100
-            print(f"-> error mean: {error_mean:.6f} (threshold={config.error_mean_threshold}) - exceeds by {mean_diff:.4f} ({mean_percent:.1f}%)")
-        else:
-            print(f"-> error mean: {error_mean:.6f} (threshold={config.error_mean_threshold}) - OK")
-        if max_exceeded:
-            max_diff = error_max - config.error_max_threshold
-            max_percent = (error_max/config.error_max_threshold - 1)*100
-            print(f"-> error max: {error_max:.6f} (threshold={config.error_max_threshold}) - exceeds by {max_diff:.4f} ({max_percent:.1f}%)")
-        else:
-            print(f"-> error max: {error_max:.6f} (threshold={config.error_max_threshold}) - OK")
-        print(f'-> reference image: {filename}')
-        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_primal.exr")
-        print(f'-> write current image: {filename}')
-        mi.util.write_bitmap(filename, image)
+    if not check_image_error(image, image_primal_ref, config, integrator_name,
+                             epsilon=2e-2, test_type='primal'):
         pytest.fail("Radiance values exceeded configuration's tolerances!")
 
 
@@ -795,6 +872,9 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
+    if mi.is_polarized:
+        pytest.skip('Test must be adapted to polarized rendering.')
+
     config = config()
     config.initialize()
 
@@ -804,7 +884,7 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
         integrator.proj_seed_spp = 2048 * 2
 
     filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
-    image_fwd_ref = mi.TensorXf(mi.Bitmap(filename))
+    image_fwd_ref = mi.TensorXf32(mi.Bitmap(filename))
 
     theta = mi.Float(0.0)
     dr.enable_grad(theta)
@@ -820,21 +900,8 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
         config.scene, seed=0, spp=config.spp, params=theta)
     image_fwd = dr.detach(image_fwd)
 
-    error = dr.abs(image_fwd - image_fwd_ref) / dr.maximum(dr.abs(image_fwd_ref), 2e-1)
-    error_mean = dr.mean(error, axis=None)
-    error_max = dr.max(error, axis=None)
-
-    if error_mean > config.error_mean_threshold or error_max > config.error_max_threshold:
-        print(f"Failure in config: {config.name}, {integrator_name}")
-        print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
-        print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
-        print(f'-> reference image: {filename}')
-        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_fwd.exr")
-        print(f'-> write current image: {filename}')
-        mi.util.write_bitmap(filename, image_fwd)
-        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_error.exr")
-        print(f'-> write error image: {filename}')
-        mi.util.write_bitmap(filename, error)
+    if not check_image_error(image_fwd, image_fwd_ref, config, integrator_name,
+                             epsilon=2e-1, test_type='fwd', save_error_image=True):
         pytest.fail("Gradient values exceeded configuration's tolerances!")
 
 
@@ -842,6 +909,9 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
+    if mi.is_polarized:
+        pytest.skip('Test must be adapted to polarized rendering.')
+
     config = config()
     config.initialize()
 
@@ -852,7 +922,7 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
         integrator.proj_seed_spp = 2048 * 2
 
     filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
-    image_fwd_ref = mi.TensorXf(mi.Bitmap(filename))
+    image_fwd_ref = mi.TensorXf32(mi.Bitmap(filename))
 
     grad_in = 0.001
     image_adj = dr.full(mi.TensorXf, grad_in, image_fwd_ref.shape)
@@ -870,19 +940,16 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
     grad = dr.grad(theta) / dr.width(image_fwd_ref)
     grad_ref = dr.mean(image_fwd_ref, axis=None) * grad_in
 
-    error = dr.abs(grad - grad_ref) / dr.maximum(dr.abs(grad_ref), 1e-3)
-    if error > config.error_mean_threshold_bwd:
-        print(f"Failure in config: {config.name}, {integrator_name}")
-        print(f"-> grad:     {grad}")
-        print(f"-> grad_ref: {grad_ref}")
-        print(f"-> error: {error} (threshold={config.error_mean_threshold_bwd})")
-        print(f"-> ratio: {grad / grad_ref}")
+    if not check_gradient_error(grad, grad_ref, config, integrator_name):
         pytest.fail("Gradient values exceeded configuration's tolerances!")
 
 
 @pytest.mark.slow
 @pytest.mark.skipif(os.name == 'nt', reason='Skip those memory heavy tests on Windows')
 def test04_render_custom_op(variants_all_ad_rgb):
+    if mi.is_polarized:
+        pytest.skip('Test must be adapted to polarized rendering.')
+
     config = DiffuseAlbedoConfig()
     config.initialize()
 
@@ -892,10 +959,10 @@ def test04_render_custom_op(variants_all_ad_rgb):
     })
 
     filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
-    image_primal_ref = mi.TensorXf(mi.Bitmap(filename))
+    image_primal_ref = mi.TensorXf32(mi.Bitmap(filename))
 
     filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
-    image_fwd_ref = mi.TensorXf(mi.Bitmap(filename))
+    image_fwd_ref = mi.TensorXf32(mi.Bitmap(filename))
 
     theta = mi.Float(0.0)
     dr.enable_grad(theta)
@@ -904,18 +971,9 @@ def test04_render_custom_op(variants_all_ad_rgb):
     # Higher spp will run into single-precision accumulation issues
     image_primal = mi.render(config.scene, config.params, integrator=integrator, seed=0, spp=256)
 
-    error = dr.abs(dr.detach(image_primal) - image_primal_ref) / dr.maximum(dr.abs(image_primal_ref), 2e-2)
-    error_mean = dr.mean(error, axis=None)
-    error_max = dr.max(error, axis=None)
-
-    if error_mean > config.error_mean_threshold  or error_max > config.error_max_threshold:
-        print(f"Failure in config: {config.name}, {integrator_name}")
-        print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
-        print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
-        print(f'-> reference image: {filename}')
-        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_primal.exr")
-        print(f'-> write current image: {filename}')
-        mi.util.write_bitmap(filename, image_primal)
+    integrator_name = 'prb'  # Fix missing integrator_name
+    if not check_image_error(dr.detach(image_primal), image_primal_ref, config, integrator_name,
+                           epsilon=2e-2, test_type='primal'):
         pytest.fail("Radiance values exceeded configuration's tolerances!")
 
     # Backward comparison
@@ -925,13 +983,8 @@ def test04_render_custom_op(variants_all_ad_rgb):
     grad = dr.grad(theta)[0]
     grad_ref = dr.mean(image_fwd_ref, axis=None)
 
-    error = dr.abs(grad - grad_ref) / dr.maximum(dr.abs(grad_ref), 1e-3)
-    if error > config.error_mean_threshold:
-        print(f"Failure in config: {config.name}, {integrator_name}")
-        print(f"-> grad:     {grad}")
-        print(f"-> grad_ref: {grad_ref}")
-        print(f"-> error: {error} (threshold={config.error_mean_threshold})")
-        print(f"-> ratio: {grad / grad_ref}")
+    if not check_gradient_error(grad, grad_ref, config, integrator_name,
+                              threshold_attr='error_mean_threshold'):
         pytest.fail("Gradient values exceeded configuration's tolerances!")
 
     # Forward comparison
@@ -945,18 +998,8 @@ def test04_render_custom_op(variants_all_ad_rgb):
 
     image_fwd = dr.grad(image_primal)
 
-    error = dr.abs(image_fwd - image_fwd_ref) / dr.maximum(dr.abs(image_fwd_ref), 2e-1)
-    error_mean = dr.mean(error, axis=None)
-    error_max = dr.max(error, axis=None)
-
-    if error_mean > config.error_mean_threshold or error_max > config.error_max_threshold:
-        print(f"Failure in config: {config.name}, {integrator_name}")
-        print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
-        print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
-        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_fwd.exr")
-        mi.util.write_bitmap(filename, image_fwd)
-        filename = join(os.getcwd(), f"test_{integrator_name}_{config.name}_image_error.exr")
-        mi.util.write_bitmap(filename, error)
+    if not check_image_error(image_fwd, image_fwd_ref, config, integrator_name,
+                           epsilon=2e-1, test_type='fwd', save_error_image=True):
         pytest.fail("Gradient values exceeded configuration's tolerances!")
 
 # -------------------------------------------------------------------

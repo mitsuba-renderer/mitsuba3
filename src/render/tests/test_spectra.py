@@ -127,15 +127,15 @@ def test06_rgb2spec_fetch_eval_mean(variant_scalar_spectral):
 
 def test07_cie1931_srgb_roundtrip(variants_vec_spectral):
     n = 50
-    wavelengths = mi.Spectrum(
+    wavelengths = mi.UnpolarizedSpectrum(
         dr.linspace(mi.Float, 100, 1000, n),
         dr.linspace(mi.Float, 400, 500, n),
         dr.linspace(mi.Float, 100, 500, n),
         dr.linspace(mi.Float, 500, 1000, n)
     )
 
-    srgb = mi.spectrum_to_srgb(mi.Spectrum(1.0), wavelengths)
-    xyz = mi.spectrum_to_xyz(mi.Spectrum(1.0), wavelengths)
+    srgb = mi.spectrum_to_srgb(mi.UnpolarizedSpectrum(1.0), wavelengths)
+    xyz = mi.spectrum_to_xyz(mi.UnpolarizedSpectrum(1.0), wavelengths)
 
     assert dr.allclose(mi.xyz_to_srgb(xyz), srgb)
     assert dr.allclose(mi.srgb_to_xyz(srgb), xyz, atol=1e-6)

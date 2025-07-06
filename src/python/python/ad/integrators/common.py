@@ -368,13 +368,13 @@ class ADIntegrator(mi.CppADIntegrator):
         return sampler, spp
 
     def _splat_to_block(block: mi.ImageBlock,
-                       film: mi.Film,
-                       pos: mi.Point2f,
-                       value: mi.Spectrum,
-                       weight: mi.Float,
-                       alpha: mi.Float,
-                       aovs: Sequence[mi.Float],
-                       wavelengths: mi.Spectrum):
+                        film: mi.Film,
+                        pos: mi.Point2f,
+                        value: mi.Spectrum,
+                        weight: mi.Float,
+                        alpha: mi.Float,
+                        aovs: Sequence[mi.Float],
+                        wavelengths: mi.Spectrum):
         '''Helper function to splat values to a imageblock'''
         if (dr.all(mi.has_flag(film.flags(), mi.FilmFlags.Special))):
             aovs = film.prepare_sample(value, wavelengths,
@@ -384,6 +384,8 @@ class ADIntegrator(mi.CppADIntegrator):
             block.put(pos, aovs)
             del aovs
         else:
+            if mi.is_polarized:
+                value = mi.unpolarized_spectrum(value)
             if mi.is_spectral:
                 rgb = mi.spectrum_to_srgb(value, wavelengths)
             elif mi.is_monochromatic:

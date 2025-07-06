@@ -573,7 +573,7 @@ public:
         // nevertheless to match the behavior of `Scene::ray_intersect()`.
         // Return: pi.t, pi.prim_uv, pi.shape_index, pi.prim_index
         return { dr::select(active, t, dr::Infinity<FloatP>),
-                 prim_uv & active, ((uint32_t) -1), prim_index & active };
+                 prim_uv & active, ((uint32_t) -1), dr::select(active, prim_index, 0) };
     }
 
     template <typename FloatP, typename Ray3fP>

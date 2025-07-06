@@ -28,30 +28,30 @@ static constexpr Float WAVELENGTHS[WAVELENGTH_COUNT] = {
 };
 
 /// Number of control points for interpolation in the skylight model
-static const constexpr size_t SKY_CTRL_PTS = 6;
+static const constexpr uint32_t SKY_CTRL_PTS = 6;
 /// Number of parameters for the skylight model equation
-static const constexpr size_t SKY_PARAMS = 9;
+static const constexpr uint32_t SKY_PARAMS = 9;
 
 /// Number of control points for interpolation in the sun model
-static const constexpr size_t SUN_CTRL_PTS = 4;
+static const constexpr uint32_t SUN_CTRL_PTS = 4;
 /// Number of segments for the piecewise polynomial in the sun model
-static const constexpr size_t SUN_SEGMENTS = 45;
+static const constexpr uint32_t SUN_SEGMENTS = 45;
 /// Number of coefficients for the sun's limb darkening
-static const constexpr size_t SUN_LD_PARAMS = 6;
+static const constexpr uint32_t SUN_LD_PARAMS = 6;
 
 /// Number of elevation control points for the tgmm sampling tables
-static const constexpr size_t ELEVATION_CTRL_PTS = 30;
+static const constexpr uint32_t ELEVATION_CTRL_PTS = 30;
 /// Number of gaussian components in the tgmm
-static const constexpr size_t TGMM_COMPONENTS = 5;
+static const constexpr uint32_t TGMM_COMPONENTS = 5;
 /// Number of parameters for each gaussian component
-static const constexpr size_t TGMM_GAUSSIAN_PARAMS = 5;
+static const constexpr uint32_t TGMM_GAUSSIAN_PARAMS = 5;
 
 /// Sun half aperture angle in radians
 #define SUN_HALF_APERTURE (dr::deg_to_rad(0.5358/2.0))
 /// Mean radius of the Earth
 static const constexpr double EARTH_MEAN_RADIUS = 6371.01;   // In km
 /// Astronomical unit
-static const constexpr size_t ASTRONOMICAL_UNIT = 149597890; // In km
+static const constexpr double ASTRONOMICAL_UNIT = 149597890; // In km
 
 /// Conversion constant to convert spectral solar luminosity to RGB
 static const constexpr float SPEC_TO_RGB_SUN_CONV = 467.069280386f;
@@ -215,7 +215,7 @@ DynamicBuffer<Float> sky_radiance_params(
     const uint32_t t_block_size = dataset_size / TURBITDITY_LVLS,
                    a_block_size = t_block_size / ALBEDO_LVLS,
                    result_size  = a_block_size / SKY_CTRL_PTS,
-                   nb_params    = result_size / albedo.size();
+                   nb_params    = result_size / (uint32_t) albedo.size();
                                              // albedo.size() <==> NB_CHANNELS
 
     // Interpolate on elevation

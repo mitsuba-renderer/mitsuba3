@@ -413,7 +413,7 @@ private:
                         m_vertex_positions[i * nb_vertices * 3 + j * 3 + k] = float(v[k]);
                 }
 
-                UInt32 offset = i * uint32_t(nb_vertices);
+                UInt32 offset = (uint32_t) i * uint32_t(nb_vertices);
                 for (size_t j = 0; j < nb_faces; ++j) {
                     Vector3u face = m_shell_faces[j];
                     for (size_t k = 0; k < 3; ++k)

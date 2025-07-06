@@ -192,7 +192,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
         # Perform detached BSDF sampling
         sample_bsdf, weight_bsdf = bsdf.sample(bsdf_ctx, si, sampler.next_1d(active_next),
                                                sampler.next_2d(active_next), active_next)
-        active_bsdf = active_next & dr.any(weight_bsdf != 0.0)
+        active_bsdf = active_next & dr.any(weight_bsdf != 0.0, axis=None)
         delta_bsdf = mi.has_flag(sample_bsdf.sampled_type, mi.BSDFFlags.Delta)
 
         # Construct the BSDF sampled ray
