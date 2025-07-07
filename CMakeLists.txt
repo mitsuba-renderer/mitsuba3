@@ -524,7 +524,6 @@ if (MSVC AND MI_ENABLE_PYTHON)
       TARGET copy-targets POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:${target}> ${COPY_TARGET_DESTINATION}
-      DEPENDS ${target}
     )
   endforeach(target)
 
@@ -590,14 +589,14 @@ add_custom_target(copy-resources ALL DEPENDS ${MI_COPY_FILES})
 # IOR data
 file(GLOB IOR_FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/ior/*spd")
 add_custom_command(
-  TARGET copy-resources DEPENDS IOR_FILES
+  TARGET copy-resources POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
   "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/ior"
   "${MI_BINARY_DIR}/data/ior"
 )
 if (MSVC AND MI_ENABLE_PYTHON)
   add_custom_command(
-    TARGET copy-resources DEPENDS IOR_FILES
+    TARGET copy-resources POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/ior"
     "${MI_BINARY_DIR}/python/mitsuba/data/ior"
@@ -611,14 +610,14 @@ install(
 # Sunsky data
 file(GLOB SUNSKY_FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/sunsky/output/*.bin")
 add_custom_command(
-  TARGET copy-resources DEPENDS SUNSKY_FILES
+  TARGET copy-resources POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
   "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/sunsky/output"
   "${MI_BINARY_DIR}/data/sunsky"
 )
 if (MSVC AND MI_ENABLE_PYTHON)
   add_custom_command(
-    TARGET copy-resources DEPENDS SUNSKY_FILES
+    TARGET copy-resources POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/sunsky/output"
     "${MI_BINARY_DIR}/python/mitsuba/data/sunsky"
