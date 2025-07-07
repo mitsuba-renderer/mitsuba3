@@ -173,6 +173,14 @@ if (WIN32)
       ${CMAKE_CURRENT_BINARY_DIR}/zlib
       CACHE BOOL " " FORCE)
 
+  # libpng expects zlib to be a modern CMake package, let's make an alias for it
+  add_library(ZLIB::ZLIB ALIAS zlib)
+  target_include_directories(zlib PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/zlib>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/zlib>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/zlib>
+  )
+
   mark_as_advanced(ZLIB_BUILD_AMD64 ZLIB_BUILD_ASM686 ZLIB_BUILD_EXAMPLES
     ZLIB_BUILD_SHARED_LIBS ZLIB_BUILD_STATIC_LIBS)
 endif()
