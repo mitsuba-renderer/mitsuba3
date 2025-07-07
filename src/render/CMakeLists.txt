@@ -23,7 +23,7 @@ if (MI_ENABLE_CUDA)
     COMMAND ${CMAKE_COMMAND} ARGS ${bin2c_cmdline}
     DEPENDS ${resources}
     COMMENT "Running bin2c"
-    PRE_BUILD VERBATIM)
+    VERBATIM)
 
   set(LIBRENDER_EXTRA_SRC librender_ptx.cpp librender_ptx.h)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
