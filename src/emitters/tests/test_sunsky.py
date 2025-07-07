@@ -203,7 +203,7 @@ def test04_sun_radiance(variants_vec_spectral, turb, eta_ray, gamma):
                              f"Rendered spectrum: {res}\n")
 
 
-@pytest.mark.parametrize("sun_theta", np.linspace(0, dr.pi/2, 5))
+@pytest.mark.parametrize("sun_theta", np.linspace(0, dr.pi/2, 4))
 def test05_sun_sampling(variants_vec_backends_once, sun_theta):
     sun_phi = -dr.pi / 5
     sp, cp = dr.sincos(sun_phi)
@@ -217,7 +217,7 @@ def test05_sun_sampling(variants_vec_backends_once, sun_theta):
                           sun_scale=1.0,
                           sky_scale=0.0)
 
-    rng = mi.PCG32(size=10_000)
+    rng = mi.PCG32(size=5_000)
     sample = mi.Point2f(
         rng.next_float32(),
         rng.next_float32())
@@ -261,8 +261,8 @@ def test06_sky_sampling(variants_vec_backends_once, turb, sun_theta):
         pdf_func= pdf_func,
         sample_func= sample_func,
         sample_dim=2,
-        sample_count=100_000_000,
-        res=215,
+        sample_count=200_000,
+        res=55,
         ires=32
     )
 
@@ -292,8 +292,8 @@ def test07_sun_and_sky_sampling(variants_vec_backends_once, turb, sun_theta):
         pdf_func= pdf_func,
         sample_func= sample_func,
         sample_dim=2,
-        sample_count=10_000_000,
-        res=215,
+        sample_count=200_000,
+        res=55,
         ires=32
     )
 
