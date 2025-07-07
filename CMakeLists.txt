@@ -489,7 +489,7 @@ endif()
 list(APPEND MI_DEPEND png jpeg)
 
 if (WIN32)
-list(APPEND MI_DEPEND zlib)
+  list(APPEND MI_DEPEND zlib)
 endif()
 
 if (MI_ENABLE_EMBREE)
