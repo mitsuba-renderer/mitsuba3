@@ -2,41 +2,34 @@ import mitsuba as mi
 import sys
 import os
 
+# Assign scores to different features to pick a variant that will produce the
+# most useful stubs (which are generate once and shared between all variants).
+# Variants impact the API, especially when using fancy color representations
+# (polarization, spectral rendering), hence those are scored higher.
+FEATURE_SCORES = {
+    'scalar': 1,
+    'llvm': 2,
+    'cuda': 3,
+    'mono': 10,
+    'rgb': 20,
+    'spectral': 30,
+    'polarized': 100
+}
+
 def stub_variant() -> str:
-    tokens = ['rgb', 'spectral', 'polarized', 'ad', 'llvm', 'cuda']
-    d = {}
+    def score(variant_name):
+        r = 0
+        for feature, value in FEATURE_SCORES.items():
+            if feature in variant_name:
+                r += value
+        return r
 
-    variants = mi.variants()
-    for t in tokens:
-        d[t] = any(t in v for v in variants)
-
-    variant = ''
-    if d['llvm']:
-        variant += 'llvm_'
-    elif d['cuda']:
-        variant += 'cuda_'
-    else:
-        variant += 'scalar_'
-
-    if d['ad']:
-        variant += 'ad_'
-
-    if d['spectral']:
-        variant += 'spectral'
-    elif d['rgb']:
-        variant += 'rgb'
-    else:
-        variant += 'mono'
-
-    if d['polarized']:
-        variant += '_polarized'
-
-    return variant
+    return max(mi.variants(), key=score)
 
 v = stub_variant()
 
 if v not in mi.variants():
-    raise ImportError(f'Based on chosen set of Mitsuba variants, variant {v} ' 
+    raise ImportError(f'Based on chosen set of Mitsuba variants, variant {v} '
                        'is required for stub generation. Please modify your '
                        'mitsuba.conf file to include this variant and recompile '
                        'Mitsuba.')
