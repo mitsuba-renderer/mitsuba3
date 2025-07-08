@@ -16,9 +16,7 @@ public:
 
     ref<Sampler> fork() override { NB_OVERRIDE_PURE(fork); }
 
-    ref<Sampler> clone() override {
-        NB_OVERRIDE_PURE(fork);
-    }
+    ref<Sampler> clone() override { NB_OVERRIDE_PURE(clone); }
 
     void seed(UInt32 seed, uint32_t wavefront_size = (uint32_t) -1) override {
         NB_OVERRIDE(seed, seed, wavefront_size);
@@ -69,5 +67,4 @@ MI_PY_EXPORT(Sampler) {
         .def_method(Sampler, next_2d, "active"_a = true);
 
     dr::bind_traverse(sampler);
-
 }
