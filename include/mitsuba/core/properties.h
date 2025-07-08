@@ -181,12 +181,25 @@ public:
 
         // Perform a range check just in case
         if constexpr (std::is_integral_v<T2> && !std::is_same_v<T2, bool>) {
-            constexpr T2 min = (T2) std::numeric_limits<T>::min(),
-                         max = (T2) std::numeric_limits<T>::max();
+            constexpr T min_t = std::numeric_limits<T>::min(),
+                        max_t = std::numeric_limits<T>::max();
 
-            if (value < min || value > max)
-                Throw("Property \"%s\": value %lld is out of bounds, must be "
-                      "in the range [%lld, %lld]", name, value, min, max);
+            if constexpr (std::is_unsigned_v<T>) {
+                bool out_of_bounds = false;
+                if constexpr (max_t <= (T) std::numeric_limits<T2>::max())
+                    out_of_bounds = value > (T2) max_t;
+                if (value < 0)
+                    out_of_bounds = true;
+                if (out_of_bounds)
+                    Throw("Property \"%s\": value %lld is out of bounds, must be "
+                          "in the range [%llu, %llu]", name, value,
+                          (unsigned long long) min_t, (unsigned long long) max_t);
+            } else {
+                if (value < (T2) min_t || value > (T2) max_t)
+                    Throw("Property \"%s\": value %lld is out of bounds, must be "
+                          "in the range [%lld, %lld]", name, value,
+                          (long long) min_t, (long long) max_t);
+            }
         }
 
         if constexpr (std::is_same_v<T2, ref<Object>>) {
@@ -243,12 +256,25 @@ public:
 
         // Perform a range check just in case
         if constexpr (std::is_integral_v<T2> && !std::is_same_v<T2, bool>) {
-            constexpr T2 min = (T2) std::numeric_limits<T>::min(),
-                         max = (T2) std::numeric_limits<T>::max();
+            constexpr T min_t = std::numeric_limits<T>::min();
+            constexpr T max_t = std::numeric_limits<T>::max();
 
-            if (value < min || value > max)
-                Throw("Property \"%s\": value %lld is out of bounds, must be "
-                      "in the range [%lld, %lld]", name, value, min, max);
+            if constexpr (std::is_unsigned_v<T>) {
+                bool out_of_bounds = false;
+                if constexpr (max_t <= (T) std::numeric_limits<T2>::max())
+                    out_of_bounds = value > (T2) max_t;
+                if (value < 0)
+                    out_of_bounds = true;
+                if (out_of_bounds)
+                    Throw("Property \"%s\": value %lld is out of bounds, must be "
+                          "in the range [%llu, %llu]", name, value,
+                          (unsigned long long) min_t, (unsigned long long) max_t);
+            } else {
+                if (value < (T2) min_t || value > (T2) max_t)
+                    Throw("Property \"%s\": value %lld is out of bounds, must be "
+                          "in the range [%lld, %lld]", name, value,
+                          (long long) min_t, (long long) max_t);
+            }
         }
 
         if constexpr (std::is_same_v<T2, ref<Object>>) {

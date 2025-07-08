@@ -355,3 +355,7 @@ def test17_dictionary_like_interface(variant_scalar_rgb):
         assert 'remove_property() is deprecated' in str(w[2].message)
 
 
+def test18_range(variant_scalar_rgb):
+    with pytest.raises(RuntimeError, match=r'Property "bsdf_samples": value -3 is out of bounds, must be in the range \[0, 18446744073709551615\]'):
+        mi.load_dict({'type': 'direct', 'bsdf_samples': -3})
+    mi.load_dict({'type': 'direct', 'bsdf_samples': 10})
