@@ -51,6 +51,7 @@ MI_PY_EXPORT(Object) {
         .def(nb::init<>(), D(Object, Object))
         .def(nb::init<const Object &>(), D(Object, Object, 2))
         .def_method(Object, id)
+        .def_method(Object, set_id, "id"_a)
         .def_method(Object, class_name)
         .def("variant_name", &Object::variant_name, D(Object, variant_name))
         .def("expand", [=](const Object &o) -> nb::list {
