@@ -319,15 +319,19 @@ NAMESPACE_END(filesystem)
 
 namespace fs = filesystem;
 
-NAMESPACE_END(mitsuba)
-
-extern "C" {
 #if defined(MI_ENABLE_EMBREE)
-    // Forward declarations for Embree
+extern "C" {
+    // Forward declarations for Embree (we import Embree into mitsuba's namespace
+    // to avoid name clashes with other libraries).
     typedef struct RTCDeviceTy* RTCDevice;
     typedef struct RTCSceneTy* RTCScene;
     typedef struct RTCGeometryTy* RTCGeometry;
+}
 #endif
+
+NAMESPACE_END(mitsuba)
+
+extern "C" {
 
 // =============================================================
 //! @{ \name Helper macros
