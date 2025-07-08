@@ -390,6 +390,7 @@ void parse_dictionary(DictParseContext &ctx,
         // Try to cast entry to an object
         Object* obj_ptr;
         if (nb::try_cast<Object*>(value, obj_ptr)) {
+            obj_ptr->set_id(key);
             expand_and_set_object(props, key, ref<Object>(obj_ptr));
             continue;
         }

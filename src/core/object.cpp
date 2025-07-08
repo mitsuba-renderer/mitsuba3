@@ -34,6 +34,10 @@ std::string_view Object::id() const {
     return "";
 }
 
+void Object::set_id(std::string_view /*id*/) {
+    // The base Object class does not hold a unique ID - do nothing.
+}
+
 std::string_view Object::class_name() const {
     return "Object";
 }

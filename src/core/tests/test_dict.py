@@ -518,3 +518,17 @@ def test12_dict_spectrum(variant_scalar_spectral):
     """)
 
     assert str(s1) == str(s2)
+
+
+def test13_dict_load_sets_object_id(variant_scalar_rgb):
+    scene = mi.load_dict({
+        "type": "scene",
+        "my_sphere": {"type": "sphere"}
+    })
+    assert scene.shapes()[0].id() == "my_sphere"
+
+    scene = mi.load_dict({
+        "type": "scene",
+        "my_other_sphere": mi.load_dict({"type": "sphere"})
+    })
+    assert scene.shapes()[0].id() == "my_other_sphere"
