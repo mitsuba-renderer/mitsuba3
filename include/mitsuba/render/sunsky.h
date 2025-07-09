@@ -288,7 +288,7 @@ struct LocationRecord {
  * in "Solar energy", vol 27, number 5, 2001 by Pergamon Press.
  */
 template <typename Float>
-Vector<Float, 3> sun_coordinates(const DateTimeRecord<Float> &date_time,
+std::pair<Float, Float> sun_coordinates(const DateTimeRecord<Float> &date_time,
                                  const LocationRecord<Float> &location) {
     using Int32 = dr::int32_array_t<Float>;
 
@@ -378,7 +378,7 @@ Vector<Float, 3> sun_coordinates(const DateTimeRecord<Float> &date_time,
         elevation += Float(EARTH_MEAN_RADIUS / ASTRONOMICAL_UNIT) * dr::sin(elevation);
     }
 
-    return sph_to_dir(elevation, azimuth - dr::Pi<Float>);
+    return std::make_pair(elevation, azimuth - dr::Pi<Float>);
 }
 
 /**

@@ -279,7 +279,9 @@ public:
         // Update sun angles
         Vector3f local_sun_dir;
         if (changed_time_record) {
-            local_sun_dir = sun_coordinates(m_time, m_location);
+            const auto [elevation, azimuth] = sun_coordinates(m_time, m_location);
+            local_sun_dir = sph_to_dir(elevation, azimuth);
+
             m_sun_dir = m_to_world.value().transform_affine(local_sun_dir);
         } else if (changed_sun_dir) {
             local_sun_dir = m_to_world.value().inverse().transform_affine(m_sun_dir);
@@ -906,7 +908,8 @@ private:
             dr::make_opaque(m_location.latitude, m_location.longitude, m_location.timezone,
                             m_time.year, m_time.day, m_time.month, m_time.hour, m_time.minute, m_time.second);
 
-            m_sun_dir = sun_coordinates(m_time, m_location);
+            const auto [elevation, azimuth] = sun_coordinates(m_time, m_location);
+            m_sun_dir = sph_to_dir(elevation, azimuth);
             if (dr::all(m_sun_dir.z() < 0))
                 Log(Warn, "The sun is below the horizon at the specified time and location!");
 
