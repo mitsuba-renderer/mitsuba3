@@ -5,7 +5,7 @@
 import drjit as dr
 import mitsuba as mi
 
-mi.set_variant('llvm_ad_rgb')
+mi.set_variant('cuda_ad_rgb')
 
 from mitsuba import ScalarTransform4f as T
 
@@ -33,7 +33,7 @@ scene_dict = {
             'type': 'diffuse',
             'reflectance': {
                 'type': 'bitmap',
-                'filename': '../../tutorials/scenes/textures/'
+                'filename': 'tutorials/scenes/textures/'
                            'flower_photo_downscale.jpeg',
                 'format': 'variant',
                 'to_uv': T().scale([1, -1, 1]),
