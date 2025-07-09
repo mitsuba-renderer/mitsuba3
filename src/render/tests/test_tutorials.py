@@ -9,23 +9,21 @@ import os
 
 from os.path import join, realpath, dirname, basename, splitext, exists
 
-# Helper functions for skip conditions
-def has_no_cuda():
-    return not dr.has_backend(dr.JitBackend.CUDA)
+has_no_cuda = not dr.has_backend(dr.JitBackend.CUDA)
 
 def variant_not_available(variant_name):
-    return lambda: variant_name not in mi.variants()
+    return variant_name not in mi.variants()
 
 # Skip conditions: list of (condition_function, test_pattern) tuples
 # The condition function should return True if the test should be skipped
-SKIP_CONDITIONS = [
-    # Potentially skip tests that are very slow or unsupported on LLVM backend
-    #(has_no_cuda, 'image_io_and_manipulation'),
+SKIPPED_TESTS = [
+    # Skip tests that are very slow on the LLVM backend
     (has_no_cuda, 'projective_sampling_integrators'),
     (has_no_cuda, 'shape_optimization'),
 
-    # Potentially skip tests that require specific variants
+    # Skip tests that require specific variants
     (variant_not_available('llvm_ad_rgb_polarized'), 'polarizer_optimization'),
+    (variant_not_available('llvm_ad_specral_polarized'), 'polarized_rendering'),
 ]
 
 
@@ -36,8 +34,8 @@ def run_notebook(notebook_path, tmp_dir=None):
     import nbformat
     from nbconvert.preprocessors import ExecutePreprocessor
 
-    for condition, pattern in SKIP_CONDITIONS:
-        if pattern in notebook_path and condition():
+    for skip_condition, pattern in SKIPPED_TESTS:
+        if pattern in notebook_path and skip_condition:
             pytest.skip(f'Skipped: {pattern}')
 
     nb_name, _ = splitext(basename(notebook_path))
@@ -46,7 +44,6 @@ def run_notebook(notebook_path, tmp_dir=None):
 
     with open(notebook_path, encoding='utf-8') as f:
         nb = nbformat.read(f, as_version=4)
-
 
     proc = ExecutePreprocessor(timeout=900, kernel_name='python3')
     proc.allow_errors = True
