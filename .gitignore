@@ -2,6 +2,9 @@
 *.sublime-project
 *.sublime-workspace
 
+# JetBrains
+/\.idea
+
 # VS & VSCode
 /\.vscode
 /\.vs
