@@ -110,7 +110,7 @@ class Rayloader():
         pixels_per_batch: int,
         seed: int = 0,
         regular_reshuffle: bool = False,
-        tile_size: int = 1,
+        tile_size: int = 2,
     ) -> None:
         """Rayloader for efficient batch rendering with multiple sensors."""
 
