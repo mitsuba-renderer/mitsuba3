@@ -9,14 +9,16 @@ mi.set_variant('cuda_ad_rgb')
 from mimt.integrators import prb_threepoint, prb_projective_fix
 
 
-# EXP_NAME = 'lens'
-# SHAPE = 'plane'
-EXP_NAME = 'cbox'
-SHAPE = 'cube'
+EXP_NAME = 'lens'
+SHAPE = 'plane'
+# EXP_NAME = 'cbox'
+# SHAPE = 'cube'
 assert EXP_NAME in ['lens', 'cbox'], "Invalid experiment name."
 
 if EXP_NAME == 'lens':
     assert SHAPE in ['sphere', 'plane'], "Invalid shape name."
+    MATE = ""
+
     generate_ref = True
     generate_path = False
     generate_prb = False
@@ -32,6 +34,10 @@ if EXP_NAME == 'lens':
     max_depth = 4
 elif EXP_NAME == 'cbox':
     assert SHAPE in ['sphere', 'cube'], "Invalid shape name."
+
+    MATE = 'principled'
+    assert MATE in ['diffuse', 'principled'], "Invalid material type."
+
     generate_ref = True
     generate_path = False
     generate_prb = False
@@ -42,12 +48,14 @@ elif EXP_NAME == 'cbox':
     generate_prb_projective_fix = True
     with_disc = True
 
-    folder_out = f'output/{EXP_NAME}_{SHAPE}'
+    folder_out = f'output/{EXP_NAME}_{SHAPE}_{MATE}'
     is_mesh = True
     max_depth = 3
 
 if not os.path.exists(folder_out):
     os.makedirs(folder_out)
+
+print(f"Experiment: {EXP_NAME}, Shape: {SHAPE}, Material: {MATE}")
 
 res = 128
 spp_grad = 2 ** 16
@@ -81,7 +89,7 @@ if EXP_NAME == 'cbox':
                 'width' : res,
                 'height': res,
                 'rfilter': {
-                    'type': 'gaussian',
+                    'type': 'box',
                 },
                 'pixel_format': 'rgb',
                 'component_format': 'float32',
@@ -188,6 +196,34 @@ if EXP_NAME == 'cbox':
                 'id': 'shape_bsdf',
             },
             'to_world': T().rotate([0.5, 0.5, 0.5], 50).scale([0.4, 0.4, 0.4]),
+        }
+    if MATE == 'principled':
+        scene_description['white'] = {
+            'type': 'principled',
+            'base_color': {
+                'type': 'rgb',
+                'value': [0.885809, 0.698859, 0.666422],
+            },
+            'metallic': 0.7,
+            'roughness': 0.1,
+        }
+        scene_description['green'] = {
+            'type': 'principled',
+            'base_color': {
+                'type': 'rgb',
+                'value': [0.105421, 0.37798, 0.076425],
+            },
+            'metallic': 0.7,
+            'roughness': 0.1,
+        }
+        scene_description['red'] = {
+            'type': 'principled',
+            'base_color': {
+                'type': 'rgb',
+                'value': [0.570068, 0.0430135, 0.0443706],
+            },
+            'metallic': 0.7,
+            'roughness': 0.1,
         }
 elif EXP_NAME == 'lens':
     scene_description = {
@@ -297,7 +333,7 @@ class kernel_timer:
 
 scene = mi.load_dict(scene_description)
 
-primal = mi.render(scene, spp=1024)
+primal = mi.render(scene, spp=2 ** 16)
 mi.Bitmap(primal).write(f'{folder_out}/primal.exr')
 
 params = mi.traverse(scene)
@@ -322,7 +358,7 @@ image_2 = dr.zeros(mi.TensorXf, (res[1], res[0], 3))
 
 if generate_ref:
     epsilon = 1e-3
-    N = 1
+    N = 1 if EXP_NAME == 'lens' else 8
     for it in range(N):
         theta = mi.Float(-0.5 * epsilon)
         update(theta)
