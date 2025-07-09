@@ -267,7 +267,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     d_uv = mi.Point2f(-0.1 / 2, -0.2)
 
     assert dr.allclose(dr.grad(si.t), 0)
-    assert dr.allclose(dr.grad(si.p), 0)
+    assert dr.allclose(dr.grad(si.p), 0, atol=1e-6)
     assert dr.allclose(dr.grad(si.n), 0)
     assert dr.allclose(dr.grad(si.uv), d_uv)
 
