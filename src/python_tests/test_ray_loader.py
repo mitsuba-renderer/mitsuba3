@@ -2,7 +2,7 @@
 import mitsuba as mi
 import drjit as dr
 
-mi.set_variant('llvm_ad_rgb')
+mi.set_variant('cuda_ad_rgb')
 T = mi.ScalarTransform4f
 
 def test_ray_loader():

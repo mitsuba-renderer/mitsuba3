@@ -5,9 +5,6 @@ from typing import Tuple
 import mitsuba as mi
 import drjit as dr
 
-# TODO: Support ptracer & projective
-# TODO: fp16
-
 class flat_sensor(mi.Sensor):
     def __init__(self, props):
         mi.Sensor.__init__(self, props)
@@ -44,6 +41,7 @@ class flat_sensor(mi.Sensor):
 
         spp = dr.width(sample2) // dr.width(self.pixel_idx)
         if spp == 0:
+            # This should not be traced as a virtual function
             return dr.zeros(mi.RayDifferential3f), dr.zeros(mi.Spectrum)
 
         # Compute the corresponding sensor index
