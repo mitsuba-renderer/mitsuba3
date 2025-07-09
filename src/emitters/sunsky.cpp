@@ -156,6 +156,8 @@ public:
         unpolarized_spectrum_t<mitsuba::Spectrum<Float, WAVELENGTH_COUNT>>,
         unpolarized_spectrum_t<Spectrum>>;
 
+    // TODO possibly make a macro to call the eval implementations
+
     SunskyEmitter(const Properties &props) : Base(props) {
         if constexpr (!(is_rgb_v<Spectrum> || is_spectral_v<Spectrum>))
             Throw("Unsupported spectrum type, can only render in Spectral or RGB modes!");
@@ -365,9 +367,9 @@ public:
                 idx = SpecUInt32(0);
 
             res = m_sky_scale *
-                  eval_sky<Spectrum>(idx, cos_theta, gamma, active);
+                  eval_sky<Spectrum, Float, FloatStorage>(idx, cos_theta, gamma, m_sky_params, m_sky_radiance, active);
             res += m_sun_scale *
-                   eval_sun<Spectrum>(idx, cos_theta, gamma, hit_sun) *
+                   eval_sun<Spectrum, Float, FloatStorage>(idx, cos_theta, gamma, m_sun_radiance, m_sun_half_aperture, hit_sun) *
                    get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
 
             res *= MI_CIE_Y_NORMALIZATION;
@@ -384,19 +386,19 @@ public:
 
             // Linearly interpolate the sky's irradiance across the spectrum
             res = m_sky_scale * dr::lerp(
-                eval_sky<Spectrum>(query_idx_low, cos_theta, gamma, active & valid_idx),
-                eval_sky<Spectrum>(query_idx_high, cos_theta, gamma, active & valid_idx),
+                eval_sky<Spectrum, Float, FloatStorage>(query_idx_low, cos_theta, gamma, m_sky_params, m_sky_radiance, active & valid_idx),
+                eval_sky<Spectrum, Float, FloatStorage>(query_idx_high, cos_theta, gamma, m_sky_params, m_sky_radiance, active & valid_idx),
                 lerp_factor);
 
             // Linearly interpolate the sun's irradiance across the spectrum
-            Spectrum sun_rad_low = eval_sun<Spectrum>(
-                         query_idx_low, cos_theta, gamma, hit_sun & valid_idx);
-            Spectrum sun_rad_high = eval_sun<Spectrum>(
-                         query_idx_high, cos_theta, gamma, hit_sun & valid_idx);
+            Spectrum sun_rad_low = eval_sun<Spectrum, Float, FloatStorage>(
+                         query_idx_low, cos_theta, gamma, m_sun_radiance, m_sun_half_aperture, hit_sun & valid_idx);
+            Spectrum sun_rad_high = eval_sun<Spectrum, Float, FloatStorage>(
+                         query_idx_high, cos_theta, gamma, m_sun_radiance, m_sun_half_aperture, hit_sun & valid_idx);
             Spectrum sun_rad = dr::lerp(sun_rad_low, sun_rad_high, lerp_factor);
 
-            Spectrum sun_ld = compute_sun_ld<Spectrum>(
-                query_idx_low, query_idx_high, lerp_factor, gamma,
+            Spectrum sun_ld = compute_sun_ld<Spectrum, Float, FloatStorage>(
+                query_idx_low, query_idx_high, lerp_factor, gamma, m_sun_ld, m_sun_half_aperture,
                 hit_sun & valid_idx
             );
 
@@ -583,158 +585,6 @@ public:
     MI_DECLARE_CLASS(SunskyEmitter)
 
 private:
-    /**
-     * \brief Evaluate the sky model for the given channel indices and angles
-     *
-     * Based on the Hosek-Wilkie skylight model
-     * https://cgg.mff.cuni.cz/projects/SkylightModelling/HosekWilkie_SkylightModel_SIGGRAPH2012_Preprint_lowres.pdf
-     * \tparam Spec
-     *      Spectral type to render (adapts the number of channels)
-     * \param channel_idx
-     *      Indices of the channels to render
-     * \param cos_theta
-     *      Cosine of the angle between the z-axis (up) and the viewing direction
-     * \param gamma
-     *      Angle between the sun and the viewing direction
-     * \param active
-     *      Mask for the active lanes and channel indices
-     * \return
-     *      Sky radiance
-     */
-    template <typename Spec_, typename Spec = unpolarized_spectrum_t<Spec_>>
-    Spec_ eval_sky(const dr::uint32_array_t<Spec> &channel_idx,
-                   const Float &cos_theta, const Float &gamma,
-                   const dr::mask_t<Spec> &active) const {
-
-        // Gather coefficients for the skylight equation
-        using SpecSkyParams = dr::Array<Spec, SKY_PARAMS>;
-        SpecSkyParams coefs = dr::gather<SpecSkyParams>(m_sky_params, channel_idx, active);
-
-        Float cos_gamma = dr::cos(gamma),
-              cos_gamma_sqr = dr::square(cos_gamma);
-
-        Spec c1 = 1 + coefs[0] * dr::exp(coefs[1] / (cos_theta + 0.01f));
-        Spec chi = (1 + cos_gamma_sqr) /
-                   dr::pow(1 + dr::square(coefs[8]) - 2 * coefs[8] * cos_gamma, 1.5f);
-        Spec c2 = coefs[2] + coefs[3] * dr::exp(coefs[4] * gamma) +
-                  coefs[5] * cos_gamma_sqr + coefs[6] * chi +
-                  coefs[7] * dr::safe_sqrt(cos_theta);
-
-        return c1 * c2 * dr::gather<Spec>(m_sky_radiance, channel_idx, active);
-    }
-
-   /**
-    * \brief Evaluates the sun model for the given channel indices and angles
-    *
-    * The template parameter is used to render the full 11 wavelengths at once
-    * in pre-computations
-    *
-    * Based on the Hosek-Wilkie sun model
-    * https://cgg.mff.cuni.cz/publications/adding-a-solar-radiance-function-to-the-hosek-wilkie-skylight-model/
-    *
-    * \tparam Spec
-    *       Spectral type to render (adapts the number of channels)
-    * \param channel_idx
-    *       Indices of the channels to render
-    * \param cos_theta
-    *       Cosine of the angle between the z-axis (up) and the viewing direction
-    * \param gamma
-    *       Angle between the sun and the viewing direction
-    * \param active
-    *       Mask for the active lanes and channel indices
-    * \return
-    *       Sun radiance
-    */
-    template <typename Spec_, typename Spec = unpolarized_spectrum_t<Spec_>>
-    Spec_ eval_sun(const dr::uint32_array_t<Spec> &channel_idx,
-                   const Float &cos_theta, const Float &gamma,
-                   const dr::mask_t<Spec> &active) const {
-        using SpecUInt32 = dr::uint32_array_t<Spec>;
-
-        // Angles computation
-        Float elevation = 0.5f * dr::Pi<Float> - dr::acos(cos_theta);
-
-        // Find the segment of the piecewise function we are in
-        UInt32 pos = dr::floor2int<UInt32>(
-            dr::cbrt(2 * elevation * dr::InvPi<Float>) * SUN_SEGMENTS);
-        pos = dr::minimum(pos, SUN_SEGMENTS - 1);
-
-        Float break_x =
-            0.5f * dr::Pi<Float> * dr::pow((Float) pos / SUN_SEGMENTS, 3.f);
-        Float x = elevation - break_x;
-
-        Spec solar_radiance = 0.f;
-        if constexpr (is_spectral_v<Spec>) {
-            DRJIT_MARK_USED(gamma);
-            // Compute sun radiance
-            SpecUInt32 global_idx = pos * WAVELENGTH_COUNT * SUN_CTRL_PTS +
-                                    channel_idx * SUN_CTRL_PTS;
-            for (uint8_t k = 0; k < SUN_CTRL_PTS; ++k)
-                solar_radiance +=
-                    dr::pow(x, k) *
-                    dr::gather<Spec>(m_sun_radiance, global_idx + k, active);
-        } else {
-            // Reproduces the spectral computation for RGB, however, in this case,
-            // limb darkening is baked into the dataset, hence the two for-loops
-            Float cos_psi = sun_cos_psi<Float>(gamma, m_sun_half_aperture);
-            SpecUInt32 global_idx = pos * (3 * SUN_CTRL_PTS * SUN_LD_PARAMS) +
-                                    channel_idx * (SUN_CTRL_PTS * SUN_LD_PARAMS);
-
-            for (uint8_t k = 0; k < SUN_CTRL_PTS; ++k) {
-                for (uint8_t j = 0; j < SUN_LD_PARAMS; ++j) {
-                    SpecUInt32 idx = global_idx + k * SUN_LD_PARAMS + j;
-                    solar_radiance +=
-                        dr::pow(x, k) *
-                        dr::pow(cos_psi, j) *
-                        dr::gather<Spec>(m_sun_radiance, idx, active);
-                }
-            }
-        }
-
-        return solar_radiance & active;
-    }
-
-    /**
-     * \brief Computes the limb darkening of the sun for a given gamma.
-     *
-     * Only works for spectral mode since limb darkening is baked into the RGB
-     * model
-     *
-     * \tparam Spec
-     *      Spectral type to render (adapts the number of channels)
-     * \param channel_idx_low
-     *      Indices of the lower wavelengths
-     * \param channel_idx_high
-     *      Indices of the upper wavelengths
-     * \param lerp_f
-     *      Linear interpolation factor for wavelength
-     * \param gamma
-     *      Angle between the sun's center and the viewing ray
-     * \param active
-     *      Indicates if the channel indices are valid and that the sun was hit
-     * \return
-     *      The spectral values of limb darkening to apply to the sun's
-     *      radiance by multiplication
-     */
-    template <typename Spec_, typename Spec = unpolarized_spectrum_t<Spec_>>
-    Spec_ compute_sun_ld(const dr::uint32_array_t<Spec> &channel_idx_low,
-                         const dr::uint32_array_t<Spec> &channel_idx_high,
-                         const wavelength_t<Spec> &lerp_f, const Float &gamma,
-                         const dr::mask_t<Spec> &active) const {
-        using SpecLdArray = dr::Array<Spec, SUN_LD_PARAMS>;
-
-        SpecLdArray sun_ld_low  = dr::gather<SpecLdArray>(m_sun_ld, channel_idx_low, active),
-                    sun_ld_high = dr::gather<SpecLdArray>(m_sun_ld, channel_idx_high, active),
-                    sun_ld_coefs = dr::lerp(sun_ld_low, sun_ld_high, lerp_f);
-
-        Float cos_psi = sun_cos_psi<Float>(gamma, m_sun_half_aperture);
-
-        Spec sun_ld = 0.f;
-        for (uint8_t j = 0; j < SUN_LD_PARAMS; ++j)
-            sun_ld += dr::pow(cos_psi, j) * sun_ld_coefs[j];
-
-        return sun_ld & active;
-    }
 
     /**
      * \brief Samples the sky from the truncated gaussian mixture with the given sample.
@@ -923,7 +773,7 @@ private:
                 Float gamma = dr::unit_angle(Vector3f(m_local_sun_frame.n), sky_wo);
 
                 FullSpectrum ray_radiance =
-                    eval_sky<FullSpectrum>(channel_idx, cos_theta, gamma, true) * w_phi * w_cos_theta;
+                    eval_sky<FullSpectrum, Float, FloatStorage>(channel_idx, cos_theta, gamma, m_sky_params, m_sky_radiance, true) * w_phi * w_cos_theta;
                 sky_radiance = dr::sum_inner(ray_radiance) * J;
             }
 
@@ -953,13 +803,13 @@ private:
 
                 Mask active = cos_theta >= 0;
                 FullSpectrum ray_radiance =
-                    eval_sun<FullSpectrum>(channel_idx, cos_theta, gamma, active) *
+                    eval_sun<FullSpectrum, Float, FloatStorage>(channel_idx, cos_theta, gamma, m_sun_radiance, m_sun_half_aperture, active) *
                     w_phi * w_cos_theta;
 
                 // Apply sun limb darkening if not already
                 if constexpr (is_spectral_v<Spectrum>)
-                    ray_radiance *= compute_sun_ld<FullSpectrum>(
-                        channel_idx, channel_idx, 0.f, gamma, active);
+                    ray_radiance *= compute_sun_ld<FullSpectrum, Float, FloatStorage>(
+                        channel_idx, channel_idx, 0.f, gamma, m_sun_ld, m_sun_half_aperture, active);
 
                 sun_radiance = dr::sum_inner(ray_radiance) * J;
             }
