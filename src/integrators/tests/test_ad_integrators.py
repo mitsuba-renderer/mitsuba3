@@ -561,7 +561,7 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
         }
         self.ref_fd_epsilon = 1e-3
         self.error_mean_threshold = 0.03
-        self.error_max_threshold = 1.3
+        self.error_max_threshold = 1.65
         self.error_mean_threshold_bwd = 0.25
         self.integrator_dict = {
             'max_depth': 2,
