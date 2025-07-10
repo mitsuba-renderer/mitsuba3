@@ -47,14 +47,6 @@ Detailed build steps
 
 4. **Main documentation** (``ninja mkdoc``): Builds the complete documentation website in ``build/html/`` by running plugin extraction, processing notebooks, and combining all sources.
 
-Output locations
-----------------
-
-- **Main documentation**: ``build/html/index.html``
-- **API documentation**: ``build/html_api/``
-- **Generated docstrings**: ``include/mitsuba/python/docstr.h``
-- **Plugin documentation**: ``docs/generated/plugins_*.rst`` (gitignored!)
-
 Notebook tutorials
 ------------------
 
