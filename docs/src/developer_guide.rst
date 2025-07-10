@@ -8,7 +8,7 @@ Developer's Guide
 Overview
 --------
 
-This section is addressed to the users interesting in modifying the core of the
+This section is addressed to the users interested in modifying the core of the
 system or even contributing to the codebase.
 
 New developers will want to begin by thoroughly reading the documentation of
@@ -26,7 +26,7 @@ The Mitsuba codebase is split into 3 basic support folders:
   cross-platform file and bitmap I/O, data structures, scheduling, as well as
   logging and plugin management.
 
-* The rendering folder (in `src/render``) contains abstractions needed to
+* The rendering folder (in `src/render`) contains abstractions needed to
   load and represent scenes containing light sources, shapes, materials, and
   participating media.
 

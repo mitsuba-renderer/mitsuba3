@@ -61,7 +61,7 @@ public:
      * This method is a convenience wrapper of the generalized version of
      * \c ray_intersect() below. It assumes that incoherent rays are being traced,
      * that the user desires access to all fields of the
-     * \ref SurfaceInteraction, and that no thread reodering is requested. In
+     * \ref SurfaceInteraction, and that no thread reordering is requested. In
      * other words, it simply invokes the general \c ray_intersect() overload
      * with <tt>coherent=false</tt>, \c ray_flags equal to \ref RayFlags::All,
      * and <tt>reorder=false</tt>.
@@ -200,7 +200,7 @@ public:
      * of space). This flag is currently only used by the combination of
      * <tt>llvm_*</tt> variants and the Embree ray tracing backend.
      *
-     * The \c reoder flag is a trigger for the Shader Execution Reordering (SER)
+     * The \c reorder flag is a trigger for the Shader Execution Reordering (SER)
      * feature on NVIDIA GPUs. It can improve performance in highly divergent
      * workloads by shuffling threads into coherent warps. This shuffling
      * operation uses the result of the intersection (the shape ID) as a sorting
@@ -235,7 +235,7 @@ public:
      *
      * \param reorder_hint_bits
      *    Number of bits from the \c reorder_hint to use (starting from the
-     *    least signifcant bit). It is recommended to use as few as possible.
+     *    least significant bit). It is recommended to use as few as possible.
      *    At most, 16 bits can be used. This flag has no effect in scalar or
      *    LLVM variants, or if the \c reorder parameter is \c false.
      *
@@ -247,7 +247,7 @@ public:
                                        uint32_t ray_flags,
                                        Mask coherent,
                                        bool reorder,
-                                       UInt32 reoder_hint,
+                                       UInt32 reorder_hint,
                                        uint32_t reorder_hint_bits,
                                        Mask active = true) const;
 
@@ -408,7 +408,7 @@ public:
      * by the combination of <tt>llvm_*</tt> variants and the Embree ray
      * intersector.
      *
-     * The \c reoder flag is a trigger for the Shader Execution Reordering (SER)
+     * The \c reorder flag is a trigger for the Shader Execution Reordering (SER)
      * feature on NVIDIA GPUs. It can improve performance in highly divergent
      * workloads by shuffling threads into coherent warps. This shuffling
      * operation uses the result of the intersection (the shape ID) as a sorting
@@ -439,7 +439,7 @@ public:
      *
      * \param reorder_hint_bits
      *    Number of bits from the \c reorder_hint to use (starting from the
-     *    least signifcant bit). It is recommended to use as few as possible.
+     *    least significant bit). It is recommended to use as few as possible.
      *    At most, 16 bits can be used. This flag has no effect in scalar or
      *    LLVM variants, or if the \c reorder parameter is \c false.
      *
@@ -564,7 +564,6 @@ public:
      *          structure, which provides further detail about the sampled
      *          emitter position (e.g. its surface normal, solid angle density,
      *          whether Dirac delta distributions were involved, etc.)</li>
-     *      <li>
      *      <li>\c spec is a Monte Carlo sampling weight specifying the ratio
      *          of the radiance incident from the emitter and the sample
      *          probability per unit solid angle.</li>

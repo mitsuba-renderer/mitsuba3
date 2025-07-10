@@ -118,7 +118,7 @@ public:
      * parameters, or the function will just return a zero-valued gradient image.
      * This is typically done by invoking ``dr.enable_grad()`` and
      * ``dr.set_grad()`` on elements of the ``SceneParameters`` data structure
-     * that can be obtained obtained via a call to ``mi.traverse()``.
+     * that can be obtained via a call to ``mi.traverse()``.
      *
      * Note the default implementation of this functionality relies on naive
      * automatic differentiation (AD), which records a computation graph of the
@@ -196,7 +196,7 @@ public:
      *
      * Reverse-mode differentiation transforms image-space gradients into scene
      * parameter gradients, enabling simultaneous optimization of scenes with
-     * millions of free parameters. The function is invoked with an input
+     * millions of differentiable parameters. The function is invoked with an input
      * *gradient image* (``grad_in``) and transforms and accumulates these into
      * the gradient arrays of scene parameters that previously had gradient
      * tracking enabled.
@@ -204,7 +204,7 @@ public:
      * Before calling this function, you must first enable gradient tracking for
      * one or more scene parameters, or the function will not do anything. This is
      * typically done by invoking ``dr.enable_grad()`` on elements of the
-     * ``SceneParameters`` data structure that can be obtained obtained via a call
+     * ``SceneParameters`` data structure that can be obtained via a call
      * to ``mi.traverse()``. Use ``dr.grad()`` to query the resulting gradients of
      * these parameters once ``render_backward()`` returns.
      *
@@ -386,7 +386,7 @@ public:
      * \return
      *    A pair containing a spectrum and a mask specifying whether a surface
      *    or medium interaction was sampled. False mask entries indicate that
-     *    the ray "escaped" the scene, in which case the the returned spectrum
+     *    the ray "escaped" the scene, in which case the returned spectrum
      *    contains the contribution of environment maps, if present. The mask
      *    can be used to estimate a suitable alpha channel of a rendered image.
      *

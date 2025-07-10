@@ -46,7 +46,7 @@ normal map with a value of :math:`(0,0,1)` everywhere causes no changes to the s
 3D normal directions into (nonnegative) color values suitable for this plugin, the mapping
 :math:`x \mapsto (x+1)/2` must be applied to each component.
 
-The following XML snippet describes a smooth mirror material affected by a normal map. Note the we set the
+The following XML snippet describes a smooth mirror material affected by a normal map. Note that we set the
 ``raw`` properties of the normal map ``bitmap`` object to ``true`` in order to disable the
 transformation from sRGB to linear encoding:
 

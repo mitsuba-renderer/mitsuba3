@@ -321,7 +321,7 @@ public:
             }
 
             if (has_diffuse) {
-                /* Diffuse scattering is modeled a a sequence of events:
+                /* Diffuse scattering is modeled as a sequence of events:
                    1) Specular refraction inside
                    2) Subsurface scattering
                    3) Specular refraction outside again
@@ -385,7 +385,7 @@ public:
 
             if (has_diffuse) {
                 UnpolarizedSpectrum diff = m_diffuse_reflectance->eval(si, active);
-                /* Diffuse scattering is modeled a a sequence of events:
+                /* Diffuse scattering is modeled as a sequence of events:
                    1) Specular refraction inside
                    2) Subsurface scattering
                    3) Specular refraction outside again

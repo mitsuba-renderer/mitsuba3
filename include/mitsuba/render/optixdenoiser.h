@@ -93,7 +93,7 @@ public:
      *      With temporal denoising, this parameter is the optical flow between
      *      the previous frame and the current one. It should capture the 2D
      *      motion of each individual pixel.
-     *      When this parameter is unknown, it can been set to a
+     *      When this parameter is unknown, it can be set to a
      *      zero-initialized TensorXf of the correct size and still produce
      *      convincing results.
      *      This parameter is optional unless the OptixDenoiser was built with
@@ -150,7 +150,7 @@ public:
      *      the \c noisy parameter which contains the optical flow between
      *      the previous frame and the current one. It should capture the 2D
      *      motion of each individual pixel.
-     *      When this parameter is unknown, it can been set to a
+     *      When this parameter is unknown, it can be set to a
      *      zero-initialized TensorXf of the correct size and still produce
      *      convincing results.
      *      This parameter is optional unless the OptixDenoiser was built with

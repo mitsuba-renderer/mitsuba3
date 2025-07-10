@@ -70,7 +70,7 @@ This snippet describes a simple air-to-water interface
                 <string name="int_ior" value="water"/>
                 <string name="ext_ior" value="air"/>
             </bsdf>
-        <shape>
+        </shape>
 
     .. code-tab:: python
 
@@ -103,7 +103,7 @@ An example of how one might describe a slightly absorbing piece of glass is show
                 <rgb name="sigma_t" value="1, 1, 0.5"/>
                 <rgb name="albedo" value="0.0, 0.0, 0.0"/>
             </medium>
-        <shape>
+        </shape>
 
     .. code-tab:: python
 

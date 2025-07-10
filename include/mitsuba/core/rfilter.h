@@ -108,7 +108,7 @@ template <typename Scalar_> struct Resampler {
      *
      * This constructor precomputes all information needed to efficiently perform the
      * desired resampling operation. For that reason, it is most efficient if it can
-     * be used over and over again (e.g. to resample the equal-sized rows of a bitmap)
+     * be used repeatedly (e.g. to resample the equal-sized rows of a bitmap)
      *
      * \param source_res
      *      Source resolution

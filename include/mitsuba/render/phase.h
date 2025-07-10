@@ -85,8 +85,8 @@ struct MI_EXPORT_LIB PhaseFunctionContext {
     void reverse() { mode = (TransportMode)(1 - (int) mode); }
 
     /**
-     * Checks whether a given phase function component type and phase function
-     * component index are enabled in this context.
+     * Checks whether a given phase function component type and index are
+     * enabled in this context.
      */
     bool is_enabled(PhaseFunctionFlags type_, uint32_t component_ = 0) const {
         uint32_t type = (uint32_t) type_;

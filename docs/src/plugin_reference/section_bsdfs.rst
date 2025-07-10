@@ -42,7 +42,7 @@ The following fragment shows an example of both kinds of usages:
 .. tabs::
     .. code-tab:: xml
 
-        <scene version=3.0.0>
+        <scene version="3.0.0">
             <!-- Creating a named BSDF for later use -->
             <bsdf type=".. BSDF type .." id="my_named_material">
                 <!-- BSDF parameters go here -->
@@ -71,7 +71,7 @@ The following fragment shows an example of both kinds of usages:
         },
 
         'shape_id_0': {
-            # Example of instantiating a named material
+            # Example of referencing a named material
             'bsdf' : {
                 'type' : 'ref',
                 'id' : 'my_named_material'
@@ -124,7 +124,7 @@ away from the glass.
     :caption: Some of the scattering models in Mitsuba need to know the indices of refraction on the exterior and
               interior-facing side of a surface. It is therefore important to decompose the mesh into meaningful
               separate surfaces corresponding to each index of refraction change. The example here shows such a
-              decomposition for a water-filled Glass.
+              decomposition for a water-filled glass.
     :alt: Glass interfaces explanation
 
     .. figure:: ../../resources/data/docs/images/bsdf/glass_explanation.svg

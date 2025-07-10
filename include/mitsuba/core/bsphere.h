@@ -39,7 +39,7 @@ template <typename Point_> struct BoundingSphere: drjit::TraversableBase {
         return radius <= 0.f;
     }
 
-    /// Expand the bounding sphere radius to contain another point.
+    /// Expand the bounding sphere radius to contain another point
     void expand(const Point &p) {
         radius = dr::maximum(radius, dr::norm(p - center));
     }

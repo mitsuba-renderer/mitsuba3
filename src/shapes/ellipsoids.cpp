@@ -85,7 +85,7 @@ Ellipsoids (:monosp:`ellipsoids`)
      an opacity value for each ellipsoids, or a set of spherical harmonic coefficients
      as used in the :monosp:`volprim_rf_basic` integrator.
 
-This shape plugin defines a a point cloud of anisotropic ellipsoid primitives
+This shape plugin defines a point cloud of anisotropic ellipsoid primitives
 using specified centers, scales, and quaternions. It employs a closed-form
 ray-intersection formula with backface culling. Although it is slower than the
 :monosp:`ellipsoidsmesh` shape plugin, which uses tessellated ellipsoids for

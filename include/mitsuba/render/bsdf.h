@@ -124,7 +124,7 @@ MI_DECLARE_ENUM_OPERATORS(BSDFFlags)
  * BSDF models in Mitsuba can be queried and sampled using a variety of
  * different modes -- for instance, a rendering algorithm can indicate whether
  * radiance or importance is being transported, and it can also restrict
- * evaluation and sampling to a subset of lobes in a a multi-lobe BSDF model.
+ * evaluation and sampling to a subset of lobes in a multi-lobe BSDF model.
  *
  * The \ref BSDFContext data structure encodes these preferences and is
  * supplied to most \ref BSDF methods.
@@ -165,7 +165,7 @@ struct MI_EXPORT_LIB BSDFContext {
     }
 
     /**
-     * Checks whether a given BSDF component type and BSDF component index are
+     * Checks whether a given BSDF component type and index are
      * enabled in this context.
      */
     bool is_enabled(BSDFFlags type_, uint32_t component_ = 0) const {
@@ -324,7 +324,7 @@ public:
      *
      * Based on the information in the supplied query context \c ctx, this
      * method will either evaluate the entire BSDF or query individual
-     * components (e.g. the diffuse lobe). Only smooth (i.e. non Dirac-delta)
+     * components (e.g. the diffuse lobe). Only smooth (i.e. non-Dirac-delta)
      * components are supported: calling ``eval()`` on a perfectly specular
      * material will return zero.
      *
@@ -386,7 +386,7 @@ public:
      *
      * Based on the information in the supplied query context \c ctx, this
      * method will either evaluate the entire BSDF or query individual
-     * components (e.g. the diffuse lobe). Only smooth (i.e. non Dirac-delta)
+     * components (e.g. the diffuse lobe). Only smooth (i.e. non-Dirac-delta)
      * components are supported: calling ``eval()`` on a perfectly specular
      * material will return zero.
      *
@@ -423,7 +423,7 @@ public:
      * the BSDF model.
      *
      * This is simply a wrapper around two separate function calls to eval_pdf()
-     * and sample(). The function exists to perform a smaller number of virtual
+     * and sample(). This function exists to reduce the number of virtual
      * function calls, which has some performance benefits on highly vectorized
      * JIT variants of the renderer. (A ~20% performance improvement for the
      * basic path tracer on CUDA)

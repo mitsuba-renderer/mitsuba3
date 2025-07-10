@@ -110,7 +110,7 @@ It uses the Hosek-Wilkie sun :cite:`HosekSun2013` and sky model
 the cost of path tracing the atmosphere.
 
 Internally, this emitter does not compute a bitmap of the sky-dome like an
-environment map, but evaluates the irradiance whenever it is needed.
+environment map, but evaluates the spectral radiance whenever it is needed.
 Consequently, sampling is done through a Truncated Gaussian Mixture Model
 pre-fitted to the given parameters :cite:`vitsas2021tgmm`.
 
@@ -123,7 +123,7 @@ losing information.
 
 Note that attaching a ``sunsky`` emitter to the scene introduces physical units
 into the rendering process of Mitsuba 3, which is ordinarily a unitless system.
-Specifically, the evaluated irradiance has units of power (:math:`W`) per
+Specifically, the evaluated spectral radiance has units of power (:math:`W`) per
 unit area (:math:`m^{-2}`) per steradian (:math:`sr^{-1}`) per unit wavelength
 (:math:`nm^{-1}`). As a consequence, your scene should be modeled in meters for
 this plugin to work properly.

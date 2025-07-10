@@ -32,7 +32,7 @@ public:
      * wavelength, surface position, and direction. This function takes a given
      * time value and five uniformly distributed samples on the interval [0, 1]
      * and warps them so that the returned ray the profile. Any
-     * discrepancies between ideal and actual sampled profile are absorbed into
+     * discrepancies between ideal and actual sampled profiles are absorbed into
      * a spectral importance weight that is returned along with the ray.
      *
      * In contrast to \ref Endpoint::sample_ray(), this function returns

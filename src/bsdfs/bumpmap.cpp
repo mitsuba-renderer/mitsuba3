@@ -50,7 +50,7 @@ Note that the magnitude of the height field variations influences the scale of t
 
 
 The following XML snippet describes a rough plastic material affected by a bump
-map. Note the we set the ``raw`` properties of the bump map ``bitmap`` object to
+map. Note that we set the ``raw`` properties of the bump map ``bitmap`` object to
 ``true`` in order to disable the transformation from sRGB to linear encoding:
 
 .. tabs::

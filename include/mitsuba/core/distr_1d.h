@@ -105,7 +105,7 @@ public:
     }
 
     /**
-     * \brief %Transform a uniformly distributed sample to the stored
+     * \brief Transform a uniformly distributed sample to the stored
      * distribution
      *
      * \param sample
@@ -135,7 +135,7 @@ public:
     }
 
     /**
-     * \brief %Transform a uniformly distributed sample to the stored
+     * \brief Transform a uniformly distributed sample to the stored
      * distribution
      *
      * \param value
@@ -155,7 +155,7 @@ public:
     }
 
     /**
-     * \brief %Transform a uniformly distributed sample to the stored
+     * \brief Transform a uniformly distributed sample to the stored
      * distribution
      *
      * The original sample is value adjusted so that it can be reused as a
@@ -183,7 +183,7 @@ public:
     }
 
     /**
-     * \brief %Transform a uniformly distributed sample to the stored
+     * \brief Transform a uniformly distributed sample to the stored
      * distribution.
      *
      * The original sample is value adjusted so that it can be reused as a
@@ -417,7 +417,7 @@ public:
     }
 
     /**
-     * \brief %Transform a uniformly distributed sample to the stored
+     * \brief Transform a uniformly distributed sample to the stored
      * distribution
      *
      * \param sample
@@ -459,7 +459,7 @@ public:
     }
 
     /**
-     * \brief %Transform a uniformly distributed sample to the stored
+     * \brief Transform a uniformly distributed sample to the stored
      * distribution
      *
      * \param sample 
@@ -777,7 +777,7 @@ public:
     }
 
     /**
-     * \brief %Transform a uniformly distributed sample to the stored
+     * \brief Transform a uniformly distributed sample to the stored
      * distribution
      *
      * \param sample
@@ -822,7 +822,7 @@ public:
     }
 
     /**
-     * \brief %Transform a uniformly distributed sample to the stored
+     * \brief Transform a uniformly distributed sample to the stored
      * distribution
      *
      * \param sample
