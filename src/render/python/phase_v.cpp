@@ -7,6 +7,7 @@
 #include <nanobind/stl/tuple.h>
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/list.h>
+#include <nanobind/stl/vector.h>
 #include <drjit/python.h>
 
 /// Trampoline for derived types implemented in Python
