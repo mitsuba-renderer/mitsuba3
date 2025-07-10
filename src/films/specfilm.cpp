@@ -25,11 +25,11 @@ Spectral film (:monosp:`specfilm`)
 
  * - width, height
    - |int|
-   - Width and height of the camera sensor in pixels Default: 768, 576)
+   - Width and height of the camera sensor in pixels. (Default: 768, 576)
 
  * - component_format
    - |string|
-   - Specifies the desired floating  point component format of output images. The options are
+   - Specifies the desired floating point component format of output images. The options are
      :monosp:`float16`, :monosp:`float32`, or :monosp:`uint32`. (Default: :monosp:`float16`)
 
  * - crop_offset_x, crop_offset_y, crop_width, crop_height
