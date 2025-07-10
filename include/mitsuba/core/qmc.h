@@ -51,7 +51,7 @@ public:
     int scramble() const { return m_scramble; }
 
     /**
-     * \brief Calculate the radical inverse function
+     * \brief Calculate the value of the radical inverse function
      *
      * This function is used as a building block to construct Halton and Hammersley
      * sequences. Roughly, it computes a b-ary representation of the input value

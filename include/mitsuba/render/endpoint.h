@@ -342,10 +342,10 @@ public:
     //! @{ \name Miscellaneous
     // =============================================================
 
-    /// Return the shape, to which the emitter is currently attached
+    /// Return the shape to which the emitter is currently attached
     Shape *shape() { return m_shape; }
 
-    /// Return the shape, to which the emitter is currently attached (const version)
+    /// Return the shape to which the emitter is currently attached (const version)
     const Shape *shape() const { return m_shape; }
 
     /// Return a pointer to the medium that surrounds the emitter

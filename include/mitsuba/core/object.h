@@ -42,7 +42,7 @@ enum class ObjectType : uint32_t {
     /// Emits radiance, subclasses \ref Emitter
     Emitter,
 
-    /// Sensor,
+    /// Generates sample positions and directions, subclasses \ref Sampler
     Sampler,
 
     /// Denotes an arbitrary shape (including meshes)

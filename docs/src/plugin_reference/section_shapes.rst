@@ -16,7 +16,7 @@ Shapes are usually declared along with a surface scattering model named *BSDF* (
 .. tabs::
     .. code-tab:: xml
 
-        <scene version=3.0.0>
+        <scene version="3.0.0">
             <!-- .. scene contents .. -->
 
             <shape type=".. shape type ..">
@@ -48,10 +48,10 @@ Shapes are usually declared along with a surface scattering model named *BSDF* (
             }
 
             # Alternatively, reference a named BSDF that had been declared previously
-            'bsdf_id' : {
-                'type' : 'ref',
-                'id' : 'some_bsdf_id'
-            }
+            # 'bsdf_id' : {
+            #     'type' : 'ref',
+            #     'id' : 'some_bsdf_id'
+            # }
         }
 
 The following subsections discuss the available shape types in greater detail.

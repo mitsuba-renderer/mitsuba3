@@ -203,7 +203,7 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
           d(0), silhouette_d(0), prim_index(0), scene_index(0), flags(0),
           projection_index(0), shape(nullptr), foreshortening(0), offset(0) {}
 
-    /// Is the current boundary segment valid=
+    /// Is the current boundary segment valid?
     Mask is_valid() const {
         return discontinuity_type != (uint32_t) DiscontinuityFlags::Empty;
     }
@@ -212,7 +212,7 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
      * \brief Spawn a ray on the silhouette point in the direction of \ref d
      *
      * The ray origin is offset in the direction of the segment (\ref d) as well
-     * as in the in the direction of the silhouette normal (\ref n). Without this
+     * as in the direction of the silhouette normal (\ref n). Without this
      * offsetting, during a ray intersection, the ray could potentially find
      * an intersection point at its origin due to numerical instabilities in
      * the intersection routines.

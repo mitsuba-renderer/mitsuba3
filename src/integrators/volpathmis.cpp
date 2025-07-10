@@ -232,7 +232,7 @@ public:
 
             // Russian roulette: try to keep path weights equal to one, while accounting for the
             // solid angle compression at refractive index boundaries. Stop with at least some
-            // probability to avoid  getting stuck (e.g. due to total internal reflection)
+            // probability to avoid getting stuck (e.g. due to total internal reflection)
             Spectrum mis_throughput = mis_weight(p_over_f);
             Float q = dr::minimum(dr::max(unpolarized_spectrum(mis_throughput)) * dr::square(eta), .95f);
             Mask perform_rr = active && !last_event_was_null && (depth > (uint32_t) m_rr_depth);

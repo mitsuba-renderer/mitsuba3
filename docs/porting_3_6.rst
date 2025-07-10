@@ -137,10 +137,8 @@ longer needed.
   expensive, branch-specific computations when the condition for evaluating a 
   particular branch is relatively rare.
 
-..
-
-  Bitmap textures: Half-precision storage by default where possible
-  -----------------------------------------------------------------
+Bitmap textures: Half-precision storage by default where possible
+------------------------------------------------------------------
 
   .. _dr_texture: https://drjit.readthedocs.io/en/latest/textures.html
   .. _spec_up: https://rgl.epfl.ch/publications/Jakob2019Spectral

@@ -17,7 +17,7 @@ declaring it at the top level within the scene, e.g.
 .. tabs::
     .. code-tab:: xml
 
-        <scene version=3.0.0>
+        <scene version="3.0.0">
             <!-- Instantiate a unidirectional path tracer,
                 which renders paths up to a depth of 5 -->
             <integrator type="path">
@@ -56,7 +56,7 @@ a chain of scattering events that starts at the light source and ends at the
 camera. It is often useful to limit the path depth when rendering scenes for
 preview purposes, since this reduces the amount of computation that is necessary
 per pixel. Furthermore, such renderings usually converge faster and therefore
-need fewer samples per pixel. Then reference-quality is desired, one should always
+need fewer samples per pixel. When reference-quality is desired, one should always
 leave the path depth unlimited.
 
 The Cornell box renderings below demonstrate the visual effect of a maximum path
@@ -79,7 +79,7 @@ time, the computation time increases.
 
 Mitsuba counts depths starting at 1, which corresponds to visible light sources
 (i.e. a path that starts at the light source and ends at the camera without any
-scattering interaction in between.) A depth-2 path (also known as "direct
+scattering interaction in between). A depth-2 path (also known as "direct
 illumination") includes a single scattering event like shown here:
 
 .. image:: ../../resources/data/docs/images/integrator/path_explanation.jpg

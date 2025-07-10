@@ -20,7 +20,7 @@ Projection light source (:monosp:`projector`)
    - 2D texture specifying irradiance on the emitter's virtual image plane,
      which lies at a distance of :math:`z=1` from the pinhole. Note that this
      does not directly correspond to emitted radiance due to the presence of an
-     additional directionally varying scale factor equal to to the inverse
+     additional directionally varying scale factor equal to the inverse
      sensitivity profile (a.k.a. importance) of a perspective camera. This
      ensures that a projection of a constant texture onto a plane is truly
      constant.

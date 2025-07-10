@@ -8,9 +8,9 @@ How-to Guides
 Overview
 --------
 
-The following guides explain important features of the library in details and
-are dedicated to users with some experience. Unlike the :ref:`sec-api <reference
-API>`, they are by step-by-step guide that explore what it is possible to do
+The following guides explain important features of the library in detail and
+are dedicated to users with some experience. Unlike the :ref:`API reference <sec-api>`, 
+they are step-by-step guides that explore what it is possible to do
 with specific abstractions of Mitsuba.
 
 Guides
@@ -21,6 +21,5 @@ Guides
     :glob:
 
     how_to_guides/transformation_toolbox
-    how_to_guides/image_io_and_manipulation
     how_to_guides/mesh_io_and_manipulation
     how_to_guides/use_optimizers

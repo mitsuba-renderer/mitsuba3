@@ -9,7 +9,7 @@ instance replace the representation of color to support monochromatic, RGB,
 spectral, or even polarized illumination. Similarly, the numerical
 representation underlying the simulation can be exchanged to perform renderings
 using a higher amount of precision, process many light paths at once on the GPU,
-or it can be mathematically differentiated to to solve inverse problems. All
+or it can be mathematically differentiated to solve inverse problems. All
 variants are automatically created from a single generic codebase. Each variant
 is associated with an identifying name that is composed of several parts:
 

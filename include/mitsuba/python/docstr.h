@@ -745,7 +745,7 @@ R"doc(Context data structure for BSDF evaluation and sampling
 BSDF models in Mitsuba can be queried and sampled using a variety of
 different modes -- for instance, a rendering algorithm can indicate
 whether radiance or importance is being transported, and it can also
-restrict evaluation and sampling to a subset of lobes in a a multi-
+restrict evaluation and sampling to a subset of lobes in a multi-
 lobe BSDF model.
 
 The BSDFContext data structure encodes these preferences and is
@@ -1902,7 +1902,7 @@ Remark:
 
 static const char *__doc_mitsuba_Class_derives_from = R"doc(Check whether this class derives from *class_*)doc";
 
-static const char *__doc_mitsuba_Class_for_name = R"doc(Look up a class by its name)doc";
+static const char *__doc_mitsuba_Class_for_name = R"doc(Look up a class by name)doc";
 
 static const char *__doc_mitsuba_Class_initialize_once = R"doc(Initialize a class - called by static_initialization())doc";
 
@@ -1939,7 +1939,7 @@ classes)doc";
 static const char *__doc_mitsuba_Class_static_remove_functors =
 R"doc(\brif Remove all constructors and unserializers of all classes
 
-This sets the the construction and unserialization functions of all
+This sets the construction and unserialization functions of all
 classes to nullptr. This should only be necessary if these functions
 capture variables that need to be deallocated before calling the
 static_shutdown method.)doc";
@@ -3841,7 +3841,7 @@ Before calling this function, you must first enable gradient tracking
 for one or more scene parameters, or the function will not do
 anything. This is typically done by invoking ``dr.enable_grad()`` on
 elements of the ``SceneParameters`` data structure that can be
-obtained obtained via a call to ``mi.traverse()``. Use ``dr.grad()``
+obtained via a call to ``mi.traverse()``. Use ``dr.grad()``
 to query the resulting gradients of these parameters once
 ``render_backward()`` returns.
 
@@ -5247,7 +5247,7 @@ In contrast, the ``Object`` class allows for a highly efficient
 implementation that only adds 64 bits to the base object (for the
 counter) and has no overhead for references. In addition, when using
 Mitsuba in Python, this counter is shared with Python such that the
-ownerhsip and lifetime of any ``Object`` instance across C++ and
+ownership and lifetime of any ``Object`` instance across C++ and
 Python is managed by it.)doc";
 
 static const char *__doc_mitsuba_Object_Object = R"doc(Default constructor)doc";
@@ -6127,7 +6127,7 @@ static const char *__doc_mitsuba_Properties_Type_NamedReference = R"doc(Named re
 
 static const char *__doc_mitsuba_Properties_Type_Object = R"doc(Arbitrary object)doc";
 
-static const char *__doc_mitsuba_Properties_Type_Pointer = R"doc(const void* pointer (for internal communication between plugins))doc";
+static const char *__doc_mitsuba_Properties_Type_Pointer = R"doc(const void\* pointer (for internal communication between plugins))doc";
 
 static const char *__doc_mitsuba_Properties_Type_String = R"doc(String)doc";
 
@@ -6890,7 +6890,7 @@ Parameter ``active``:
 Returns:
     A pair containing a spectrum and a mask specifying whether a
     surface or medium interaction was sampled. False mask entries
-    indicate that the ray "escaped" the scene, in which case the the
+    indicate that the ray "escaped" the scene, in which case the
     returned spectrum contains the contribution of environment maps,
     if present. The mask can be used to estimate a suitable alpha
     channel of a rendered image.

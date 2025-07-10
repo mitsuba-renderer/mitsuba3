@@ -27,7 +27,7 @@ Path tracer (:monosp:`path`)
    - |int|
    - Specifies the path depth, at which the implementation will begin to use
      the *russian roulette* path termination criterion. For example, if set to
-     1, then path generation many randomly cease after encountering directly
+     1, then path generation may randomly cease after encountering directly
      visible surfaces. (Default: 5)
 
  * - hide_emitters
@@ -121,7 +121,7 @@ public:
         BSDFContext   bsdf_ctx;
 
         /* Set up a Dr.Jit loop. This optimizes away to a normal loop in scalar
-           mode, and it generates either a a megakernel (default) or
+           mode, and it generates either a megakernel (default) or
            wavefront-style renderer in JIT variants. This can be controlled by
            passing the '-W' command line flag to the mitsuba binary or
            enabling/disabling the JitFlag.LoopRecord bit in Dr.Jit.
@@ -303,7 +303,7 @@ public:
             Mask rr_active = ls.depth >= m_rr_depth,
                  rr_continue = ls.sampler->next_1d() < rr_prob;
 
-            /* Differentiable variants of the renderer require the the russian
+            /* Differentiable variants of the renderer require the russian
                roulette sampling weight to be detached to avoid bias. This is a
                no-op in non-differentiable variants. */
             ls.throughput[rr_active] *= dr::rcp(dr::detach(rr_prob));

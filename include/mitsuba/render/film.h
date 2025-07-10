@@ -54,12 +54,12 @@ public:
     ~Film();
 
     /**
-     * Configure the film for rendering a specified set of extra channels (AOVS).
+     * Configure the film for rendering a specified set of extra channels (AOVs).
      * Returns the total number of channels that the film will store
      */
     virtual size_t prepare(const std::vector<std::string> &aovs) = 0;
 
-    /// Return the number of channels for the developed image (excluding AOVS)
+    /// Return the number of channels for the developed image (excluding AOVs)
     virtual size_t base_channels_count() const = 0;
 
     /// Merge an image block into the film. This methods should be thread-safe.

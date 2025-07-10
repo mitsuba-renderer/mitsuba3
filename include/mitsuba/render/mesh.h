@@ -216,7 +216,7 @@ public:
     void recompute_bbox();
 
     /**
-     * /brief Build directed edge data structure to efficiently access adjacent
+     * \brief Build directed edge data structure to efficiently access adjacent
      * edges.
      *
      * This is an implementation of the technique described in:
@@ -419,7 +419,7 @@ protected:
     void build_pmf();
 
     /**
-     * /brief Precompute the set of edges that could contribute to the indirect
+     * \brief Precompute the set of edges that could contribute to the indirect
      * discontinuous integral.
      *
      * This method filters out any concave edges or flat surfaces.
