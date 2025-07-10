@@ -12,7 +12,7 @@ as follows:
 .. tabs::
     .. code-tab:: xml
 
-        <scene version=3.0.0>
+        <scene version="3.0.0">
             <!-- .. scene contents -->
 
             <sensor type=".. sensor type ..">
@@ -37,7 +37,7 @@ as follows:
         # .. scene contents ..
 
         'sensor_id': {
-            'type': '<sensor_type>'
+            'type': '<sensor_type>',
 
             # Write to a high dynamic range EXR image
             'film_id': {
@@ -50,7 +50,7 @@ as follows:
             }
         }
 
-The ``<film>`` plugin should be instantiated nested inside a ``<sensor>``
+The ``<film>`` plugin should be instantiated inside a ``<sensor>``
 declaration. Note how the output filename is never specified---it is automatically
 inferred from the scene filename and can be manually overridden by passing the
 configuration parameter ``-o`` to the ``mitsuba`` executable when rendering

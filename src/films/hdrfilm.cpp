@@ -23,7 +23,7 @@ High dynamic range film (:monosp:`hdrfilm`)
 
  * - width, height
    - |int|
-   - Width and height of the camera sensor in pixels. Default: 768, 576)
+   - Width and height of the camera sensor in pixels. (Default: 768, 576)
 
  * - file_format
    - |string|
@@ -39,7 +39,7 @@ High dynamic range film (:monosp:`hdrfilm`)
 
  * - component_format
    - |string|
-   - Specifies the desired floating  point component format of output images (when saving to disk).
+   - Specifies the desired floating point component format of output images (when saving to disk).
      The options are :monosp:`float16`, :monosp:`float32`, or :monosp:`uint32`.
      (Default: :monosp:`float16`)
 
