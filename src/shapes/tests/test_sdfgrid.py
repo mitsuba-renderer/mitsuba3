@@ -342,7 +342,7 @@ def test08_load_tensor(variants_all_ad_rgb):
             "sdf": {
                 "type" : "sdfgrid",
                 "to_world" : mi.ScalarTransform4f().translate(translate),
-                "grid" : sdf_grid
+                "grid" : mi.TensorXf(sdf_grid)
             }
         })
 

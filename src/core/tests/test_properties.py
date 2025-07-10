@@ -237,7 +237,7 @@ def test12_nanobind_object_storage(variant_scalar_rgb):
     assert np.array_equal(np.array(retrieved_tensor), np.array([[1, 2], [3, 4]]))
 
     # Test that non-nanobind objects are rejected
-    with pytest.raises(RuntimeError, match="Only nanobind-bound C\\+\\+ objects are supported"):
+    with pytest.raises(RuntimeError, match="could not assign an object of type 'dict' to key 'invalid', as the value was not convertible any of the supported property types"):
         props['invalid'] = {'key': 'value'}  # Python dict
 
 

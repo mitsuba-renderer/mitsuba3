@@ -8,6 +8,7 @@
 #include <nanobind/stl/string_view.h>
 #include <nanobind/stl/vector.h>
 #include <nanobind/stl/pair.h>
+#include "any.h"
 
 #define SET_ITEM_BINDING(Type, ...)                                            \
     def("__setitem__",                                                         \
@@ -15,33 +16,6 @@
             p.set(key, value, false);                                          \
         }, ##__VA_ARGS__)
 
-// Python-specific storage helper for Any objects
-class PythonObjectStorage : public Any::Base {
-    nb::handle m_obj;
-    const std::type_info *m_cpp_type_info;
-    void *m_cpp_ptr;
-
-public:
-    PythonObjectStorage(nb::handle obj)
-        : m_obj(obj),
-          m_cpp_type_info(&nb::type_info(obj.type())),
-          m_cpp_ptr(nb::inst_ptr<void>(obj)) {
-        m_obj.inc_ref();
-    }
-
-    ~PythonObjectStorage() {
-        nb::gil_scoped_acquire gil;
-        m_obj.dec_ref();
-    }
-
-    const std::type_info &type() const override {
-        return *m_cpp_type_info;
-    }
-
-    void *ptr() override {
-        return m_cpp_ptr;
-    }
-};
 
 extern nb::object cast_object(Object *o);
 
@@ -152,13 +126,18 @@ MI_PY_EXPORT(Properties) {
             })
         .def("__setitem__",
             [](Properties &p, std::string_view key, nb::fallback value) {
-                if (nb::inst_check(value)) {
-                    // Create PythonObjectStorage and explicitly cast to Any::Base*
-                    // to ensure the correct Any constructor is used
-                    Any::Base *storage = new PythonObjectStorage(value);
-                    p.set(key, Any(storage), false);
-                } else {
-                    Throw("Only nanobind-bound C++ objects are supported for generic storage");
+                try {
+                    p.set(key, any_wrap(value), false);
+                } catch (...) {
+                    Throw("Properties.__setitem__(): could not assign an "
+                          "object of type '%s' to key '%s', as the value was "
+                          "not convertible any of the supported property types "
+                          "(e.g. int/float/color/vector/...). It also could be "
+                          "stored as an property of type 'any', as the "
+                          "underlying type was not exposed using the nanobind "
+                          "library. Did you mean to cast this value into a "
+                          "Dr.Jit array before assigning it?",
+                          nb::inst_name(value).c_str(), key);
                 }
             })
         .def("__getitem__", [](const Properties& p, const std::string &key) {

@@ -10,6 +10,7 @@
 #include <nanothread/nanothread.h>
 #include <map>
 #include <unordered_map>
+#include "any.h"
 
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/vector.h>
@@ -408,7 +409,7 @@ void parse_dictionary(DictParseContext &ctx,
             // To support parallel loading we have to ensure tensor has been evaluated
             // because tracking of side effects won't persist across different ThreadStates
             dr::eval(tensor_value);
-            props.set_any(key, std::move(tensor_value));
+            props.set_any(key, any_wrap(value));
             continue;
         }
 
