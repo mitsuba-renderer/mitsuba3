@@ -548,7 +548,7 @@ public:
      *
      * If the intersection is deemed relevant (e.g. the closest to the ray
      * origin), detailed intersection information can later be obtained via the
-     * \ref create_surface_interaction() method.
+     * \ref compute_surface_interaction() method.
      *
      * \param ray
      *     The ray to be tested for an intersection

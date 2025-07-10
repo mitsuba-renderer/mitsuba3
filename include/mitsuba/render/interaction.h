@@ -624,7 +624,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
  * given ray, and cache preliminary information about the intersection if that is the case.
  *
  * If the intersection is deemed relevant, detailed intersection information can later be
- * obtained via the  \ref create_surface_interaction() method.
+ * obtained via the  \ref compute_surface_interaction() method.
  */
 template <typename Float_, typename Shape_>
 struct PreliminaryIntersection {

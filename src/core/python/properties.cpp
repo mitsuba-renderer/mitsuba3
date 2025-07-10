@@ -68,6 +68,7 @@ static nb::object get_property(const Properties& p, std::string_view key) {
 
             if (!py_obj.is_valid())
                 Throw("Property \"%s\" is not a known Python object.", key);
+
             return nb::steal(py_obj);
         }
 

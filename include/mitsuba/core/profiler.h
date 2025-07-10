@@ -30,7 +30,7 @@ enum class ProfilerPhase : int {
     SampleEmitterDirection,     /* Scene::sample_emitter_direction() */
     RayTest,                    /* Scene::ray_test() */
     RayIntersect,               /* Scene::ray_intersect() */
-    CreateSurfaceInteraction,   /* KDTree::create_surface_interaction() */
+    CreateSurfaceInteraction,   /* KDTree::compute_surface_interaction() */
     ImageBlockPut,              /* ImageBlock::put() */
     BSDFEvaluate,               /* BSDF::eval() and BSDF::pdf() */
     BSDFSample,                 /* BSDF::sample() */
@@ -62,7 +62,7 @@ constexpr const char
         "Scene::sample_emitter_direction()",
         "Scene::ray_test()",
         "Scene::ray_intersect()",
-        "KDTree::create_surface_interaction()",
+        "KDTree::compute_surface_interaction()",
         "ImageBlock::put()",
         "BSDF::eval(), pdf()",
         "BSDF::sample()",

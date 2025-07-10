@@ -1236,7 +1236,6 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
                 /* bounded */ !(within_emitter || is_unbounded),
                 /* d65 */ !(within_emitter && !is_unbounded));
 
-
             Properties props;
             if (is_monochromatic_mode) {
                 props = Properties("uniform");

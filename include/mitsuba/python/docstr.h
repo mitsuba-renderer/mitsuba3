@@ -5860,7 +5860,7 @@ It stores whether the shape is intersected by a given ray, and cache
 preliminary information about the intersection if that is the case.
 
 If the intersection is deemed relevant, detailed intersection
-information can later be obtained via the create_surface_interaction()
+information can later be obtained via the compute_surface_interaction()
 method.)doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_2 =
@@ -5872,7 +5872,7 @@ It stores whether the shape is intersected by a given ray, and cache
 preliminary information about the intersection if that is the case.
 
 If the intersection is deemed relevant, detailed intersection
-information can later be obtained via the create_surface_interaction()
+information can later be obtained via the compute_surface_interaction()
 method.)doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_PreliminaryIntersection = R"doc(//! @})doc";
@@ -8405,7 +8405,7 @@ the case.
 
 If the intersection is deemed relevant (e.g. the closest to the ray
 origin), detailed intersection information can later be obtained via
-the create_surface_interaction() method.
+the compute_surface_interaction() method.
 
 Parameter ``ray``:
     The ray to be tested for an intersection
