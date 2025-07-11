@@ -125,7 +125,10 @@ MI_PY_EXPORT(xml) {
             try {
                 parse_dictionary<Float, Spectrum>(ctx, "__root__", dict);
                 std::unordered_map<std::string, Task*> task_map;
-                instantiate_node<Float, Spectrum>(ctx, "__root__", task_map);
+                {
+                    nb::gil_scoped_release gil_release{};
+                    instantiate_node<Float, Spectrum>(ctx, "__root__", task_map);
+                }
                 auto objects = mitsuba::xml::detail::expand_node(ctx.instances["__root__"].object);
                 mitsuba::set_file_resolver(fs_backup.get());
                 return single_object_or_list(objects);
@@ -496,7 +499,6 @@ Task *instantiate_node(DictParseContext &ctx,
         std::exception_ptr eptr;
         for (auto& task : deps) {
             try {
-                nb::gil_scoped_release gil_release{};
                 task_wait(task);
             } catch (...) {
                 if (!eptr)
