@@ -22,11 +22,11 @@ if EXP_NAME == 'lens':
 
     generate_ref = True
     generate_path = False
-    generate_prb = False
+    generate_prb = True
     generate_prb_2 = True
     generate_prb_basic = False
-    generate_prb_basic2 = True
-    generate_prb_threepoint = True
+    generate_prb_basic2 = False
+    generate_prb_threepoint = False
     generate_prb_projective_fix = False
     with_disc = False
 
