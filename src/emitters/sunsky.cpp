@@ -264,13 +264,13 @@ public:
 
         #define CHANGED(word) string::contains(keys, word)
 
-        bool changed_atmosphere = CHANGED("albedo") || CHANGED("turbidity");
-        bool changed_time_record = !keys.empty() && m_active_record && (
+        bool changed_atmosphere = keys.empty() || CHANGED("albedo") || CHANGED("turbidity");
+        bool changed_time_record = keys.empty() || (m_active_record && (
                 CHANGED("timezone") || CHANGED("year") ||
                 CHANGED("day") || CHANGED("month") || CHANGED("hour") ||
                 CHANGED("minute") || CHANGED("second") || CHANGED("latitude") ||
                 CHANGED("longitude")
-            );
+            ));
         bool changed_sun_dir = (!m_active_record && CHANGED("sun_direction")) || changed_time_record;
 
 
