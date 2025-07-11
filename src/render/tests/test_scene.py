@@ -264,7 +264,7 @@ def test10_test_scene_bbox_update(variant_scalar_rgb):
     assert expected == scene.bbox()
 
 
-def test11_sample_silhouette_bijective(variants_vec_rgb):
+def test11_sample_silhouette_bijective(variants_all_ad_rgb):
     scene = mi.load_dict({
         'type': 'scene',
         'sphere' : {
