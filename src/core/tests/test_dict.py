@@ -532,3 +532,26 @@ def test13_dict_load_sets_object_id(variant_scalar_rgb):
         "my_other_sphere": mi.load_dict({"type": "sphere"})
     })
     assert scene.shapes()[0].id() == "my_other_sphere"
+
+def test14_logger_deadlock():
+    """Test that logging does not cause a deadlock when loading a scene in parallel"""
+    log_level = dr.log_level()
+    dr.set_log_level(dr.LogLevel.Debug)
+    scene = mi.load_dict(mi.cornell_box(), parallel=True)
+    dr.set_log_level(log_level)
+
+def test15_tensorxf_lookup():
+    """Test that TensorXf values can be correctly passed to plugins"""
+    class DummyEmitter(mi.Emitter):
+        def __init__(self, props) -> None:
+            super().__init__(props)
+            self.foo = props.get('foo')
+            assert type(self.foo) is mi.TensorXf
+            print(self.foo)
+
+    mi.register_emitter('dummy_emitter', lambda props: DummyEmitter(props))
+
+    obj1 = mi.load_dict({
+        'type': 'dummy_emitter',
+        'foo': dr.zeros(mi.TensorXf, shape=(4, 4, 4))
+    })
