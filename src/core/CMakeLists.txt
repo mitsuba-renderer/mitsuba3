@@ -80,8 +80,7 @@ set_target_properties(mitsuba-core PROPERTIES
   POSITION_INDEPENDENT_CODE ON)
 
 target_link_libraries(mitsuba-core PRIVATE
-  # Link to libpng and zlib (either the system version or a version built via cmake)
-  ${PNG_LIBRARIES}
+  # Link to zlib (either the system version or a version built via cmake)
   ${ZLIB_LIBRARY}
   nanothread
   # Link pugixml parser
