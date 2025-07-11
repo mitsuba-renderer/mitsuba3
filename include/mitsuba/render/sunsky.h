@@ -245,23 +245,26 @@ DynamicBuffer<Float> sky_radiance_params(
 template<typename Float>
 struct DateTimeRecord {
     using Int32 = dr::int32_array_t<Float>;
-    Int32 year;
-    Int32 month;
-    Int32 day;
-    Float hour;
-    Float minute;
-    Float second;
+    Int32 year = 2010;
+    Int32 month = 7;
+    Int32 day = 10;
+    Float hour = 15.f;
+    Float minute = 0.f;
+    Float second = 0.f;
 
     std::string to_string() const {
         std::ostringstream oss;
-        oss << "DateTimeRecord[year = " << year
-            << ", month= " << month
-            << ", day = " << day
-            << ", hour = " << hour
-            << ", minute = " << minute
-            << ", second = " << second << "]";
+        oss << "DateTimeRecord[\n"
+            << "year = " << year
+            << ",\n month= " << month
+            << ",\n day = " << day
+            << ",\n hour = " << hour
+            << ",\n minute = " << minute
+            << ",\n second = " << second << "]";
         return oss.str();
     }
+
+    DRJIT_STRUCT(DateTimeRecord, year, month, day, hour, minute, second)
 };
 
 template<typename Float>
