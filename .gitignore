@@ -1,3 +1,5 @@
+debug_prb_motion/output/
+
 # SublimeText
 *.sublime-project
 *.sublime-workspace
@@ -31,3 +33,4 @@ __pycache__
 /docs/src/quickstart
 /docs/src/generated
 /docs/resources
+
