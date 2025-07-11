@@ -283,6 +283,8 @@ struct LocationRecord {
  * \brief Compute the elevation and azimuth of the sun as seen by an observer
  * at \c location at the date and time specified in \c dateTime.
  *
+ * \returns The pair containing the polar angle and the azimuth
+ *
  * Based on "Computing the Solar Vector" by Manuel Blanco-Muriel,
  * Diego C. Alarcon-Padilla, Teodoro Lopez-Moratalla, and Martin Lara-Coira,
  * in "Solar energy", vol 27, number 5, 2001 by Pergamon Press.
@@ -462,7 +464,7 @@ template <typename Spec_, typename Float, typename Dataset, typename Spec = unpo
 Spec_ eval_sky(const dr::uint32_array_t<Spec> &channel_idx,
                 const Float &cos_theta, const Float &gamma,
                 const Dataset &sky_params, const Dataset &sky_radiance,
-                const dr::mask_t<Spec> &active) {
+                const dr::mask_t<Spec> &active = true) {
 
     // Gather coefficients for the skylight equation
     using SpecSkyParams = dr::Array<Spec, SKY_PARAMS>;
@@ -512,7 +514,7 @@ template <typename Spec_, typename Float, typename Dataset, typename Spec = unpo
 Spec_ eval_sun(const dr::uint32_array_t<Spec> &channel_idx,
                const Float &cos_theta, const Float &gamma,
                const Dataset &sun_radiance, const Float &sun_half_aperture,
-               const dr::mask_t<Spec> &active) {
+               const dr::mask_t<Spec> &active = true) {
     using SpecUInt32 = dr::uint32_array_t<Spec>;
     using UInt32 = dr::uint32_array_t<Float>;
 
