@@ -14,6 +14,7 @@ public:
     MI_IMPORT_TYPES(Scene, Shape, Texture)
 
     using EnvEmitter = Emitter<Float, Spectrum>;
+    using FloatStorage = DynamicBuffer<Float>;
     using ScalarFloatStorage = DynamicBuffer<ScalarFloat>;
     using FullSpectrum = std::conditional_t<
         is_spectral_v<Spectrum>,
@@ -76,17 +77,10 @@ public:
         cb->put("sky_scale", m_sky_scale, ParamFlags::NonDifferentiable);
         cb->put("sun_scale", m_sun_scale, ParamFlags::NonDifferentiable);
         cb->put("albedo",    m_albedo,    ParamFlags::NonDifferentiable);
-        if (m_active_record) {
-            cb->put("latitude",  m_location.latitude,  ParamFlags::NonDifferentiable);
-            cb->put("longitude", m_location.longitude, ParamFlags::NonDifferentiable);
-            cb->put("timezone",  m_location.timezone,  ParamFlags::NonDifferentiable);
-            cb->put("year",      m_time.year,          ParamFlags::NonDifferentiable);
-            cb->put("day",       m_time.day,           ParamFlags::NonDifferentiable);
-            cb->put("month",     m_time.month,         ParamFlags::NonDifferentiable);
-            cb->put("hour",      m_time.hour,          ParamFlags::NonDifferentiable);
-            cb->put("minute",    m_time.minute,        ParamFlags::NonDifferentiable);
-            cb->put("second",    m_time.second,        ParamFlags::NonDifferentiable);
-        }
+        cb->put("latitude",  m_location.latitude,  ParamFlags::NonDifferentiable);
+        cb->put("longitude", m_location.longitude, ParamFlags::NonDifferentiable);
+        cb->put("timezone",  m_location.timezone,  ParamFlags::NonDifferentiable);
+
         cb->put("to_world", m_to_world, ParamFlags::NonDifferentiable);
     }
 
@@ -179,12 +173,9 @@ public:
             << "  sky_scale = " << string::indent(m_sky_scale) << std::endl
             << "  sun_scale = " << string::indent(m_sun_scale) << std::endl
             << "  albedo = " << string::indent(m_albedo) << std::endl
-            << "  sun aperture (°) = " << string::indent(dr::rad_to_deg(2 * m_sun_half_aperture)) << std::endl;
-        if (m_active_record) {
-            oss << "  location = " << m_location.to_string() << std::endl
-                << "  date_time = " << m_time.to_string() << std::endl;
-        }
-        oss << "]";
+            << "  sun aperture (°) = " << string::indent(dr::rad_to_deg(2 * m_sun_half_aperture))
+            << "  location = " << m_location.to_string()
+            << "]" << std::endl;
         return oss.str();
     }
 
@@ -192,20 +183,49 @@ public:
 
 private:
 
+    DateTimeRecord<FloatStorage> compute_times(
+        ScalarFloat start_time, ScalarFloat end_time,
+        ScalarUInt32 year, ScalarUInt32 day_resolution) const {
+        using UInt32Storage = DynamicBuffer<UInt32>;
+
+        ScalarFloat delta_hour = (end_time - start_time) / static_cast<ScalarFloat>(day_resolution);
+
+        bool is_leap_year = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+        ScalarUInt32 nb_samples = day_resolution * (is_leap_year ? 366 : 365);
+        UInt32Storage index = dr::arange<UInt32Storage>(nb_samples);
+
+        UInt32Storage days = index / day_resolution;
+        FloatStorage  hours = start_time + delta_hour * (index % day_resolution);
+        DateTimeRecord<FloatStorage> times = dr::zeros<DateTimeRecord<FloatStorage>>(nb_samples);
+
+        times.year = year;
+        times.day = days;
+        times.hour = hours;
+
+        return times;
+    }
+
 
     ref<Object> compute_avg(const ScalarPoint2i& resolution) {
         ScalarFloatStorage albedo = extract_albedo(m_albedo);
         m_bitmap_data = new float[resolution.x() * resolution.y() * 3];
         memset(m_bitmap_data, 0, resolution.x() * resolution.y() * 3 * sizeof(float));
 
+        //DateTimeRecord<FloatStorage> times = compute_times(8, 17, 2025, 2);
+        //                             times = dr::migrate(times, AllocType::Host);
+        //if constexpr (dr::is_jit_v<Float>)
+        //    dr::sync_thread();
+
         const uint32_t nb_samples = 300;
         const float start_hour = 8, end_hour = 17;
         const float dt = (end_hour - start_hour) / nb_samples;
 
-        for (uint32_t i = 0; i < nb_samples; ++i) {
-            m_time.hour = start_hour + i * dt;
 
-            const auto [sun_elevation, sun_azimuth] = sun_coordinates(m_time, m_location);
+        DateTimeRecord<ScalarFloat> time;
+        for (uint32_t i = 0; i < nb_samples; ++i) {
+            time.hour = start_hour + i * dt;
+
+            const auto [sun_elevation, sun_azimuth] = sun_coordinates(time, m_location);
             const ScalarFloat sun_eta = 0.5f * dr::Pi<ScalarFloat> - sun_elevation;
             const ScalarVector3f sun_dir = sph_to_dir(sun_elevation, sun_azimuth);
 
@@ -214,7 +234,7 @@ private:
             ScalarFloatStorage sky_radiance = sky_radiance_params<SKY_DATASET_RAD_SIZE>(m_sky_rad_dataset, albedo, m_turbidity, sun_eta);
 
             // Iterate over top half of the image
-            for (uint64_t pixel_idx = 0; pixel_idx < resolution.x() * resolution.y() / 2; ++pixel_idx) {
+            for (int32_t pixel_idx = 0; pixel_idx < resolution.x() * resolution.y() / 2; ++pixel_idx) {
                 ScalarFloat pixel_u = static_cast<ScalarFloat>(pixel_idx % resolution.x()) / static_cast<ScalarFloat>(resolution.x());
                 ScalarFloat pixel_v = static_cast<ScalarFloat>(pixel_idx / resolution.x()) / static_cast<ScalarFloat>(resolution.y());
 
@@ -228,7 +248,7 @@ private:
                 res += eval_sky<ScalarColor3f>({0, 1, 2}, ray_dir.z(), gamma, sky_params, sky_radiance);
                 res += (gamma < m_sun_half_aperture ? 1.f : 0.f) * SPEC_TO_RGB_SUN_CONV *
                     eval_sun<ScalarColor3f>({0, 1, 2}, ray_dir.z(), gamma, sun_radiance, m_sun_half_aperture) * get_area_ratio(m_sun_half_aperture);
-                res *= MI_CIE_Y_NORMALIZATION / static_cast<ScalarFloat>(nb_samples);
+                res *= static_cast<ScalarFloat>(MI_CIE_Y_NORMALIZATION) / static_cast<ScalarFloat>(nb_samples);
 
                 m_bitmap_data[3 * pixel_idx + 0] += res.r();
                 m_bitmap_data[3 * pixel_idx + 1] += res.g();
@@ -265,32 +285,11 @@ private:
         if (m_albedo->is_spatially_varying())
             Log(Error, "Expected a non-spatially varying radiance spectra!");
 
-        if (props.has_property("sun_direction")) {
-            if (props.has_property("latitude") || props.has_property("longitude")
-                || props.has_property("timezone") || props.has_property("year")
-                || props.has_property("month") || props.has_property("day")
-                || props.has_property("hour") || props.has_property("minute")
-                || props.has_property("second")) {
-                Log(Error, "Both the 'sun_direction' and parameters for time/location "
-                           "were provided, both information cannot be given at the same time!");
-            }
+        m_location.latitude  = props.get<ScalarFloat>("latitude", 35.6894f);
+        m_location.longitude = props.get<ScalarFloat>("longitude", 139.6917f);
+        m_location.timezone  = props.get<ScalarFloat>("timezone", 9);
 
-            m_active_record = false;
-        } else {
-            m_location.latitude  = props.get<ScalarFloat>("latitude", 35.6894f);
-            m_location.longitude = props.get<ScalarFloat>("longitude", 139.6917f);
-            m_location.timezone  = props.get<ScalarFloat>("timezone", 9);
-            m_time.year          = props.get<ScalarInt32>("year", 2010);
-            m_time.month         = props.get<ScalarUInt32>("month", 7);
-            m_time.day           = props.get<ScalarUInt32>("day", 10);
-            m_time.hour          = props.get<ScalarFloat>("hour", 15.0f);
-            m_time.minute        = props.get<ScalarFloat>("minute", 0.0f);
-            m_time.second        = props.get<ScalarFloat>("second", 0.0f);
-
-            m_active_record = true;
-            dr::make_opaque(m_location.latitude, m_location.longitude, m_location.timezone,
-                            m_time.year, m_time.day, m_time.month, m_time.hour, m_time.minute, m_time.second);
-        }
+        dr::make_opaque(m_location.latitude, m_location.longitude, m_location.timezone);
     }
 
     /**
@@ -362,9 +361,7 @@ private:
 
     ScalarFloat m_sun_half_aperture;
     /// Indicates if the plugin was initialized with a location/time record
-    bool m_active_record;
     LocationRecord<ScalarFloat> m_location;
-    DateTimeRecord<ScalarFloat> m_time;
 
     // Permanent datasets loaded from files/memory
     ScalarFloatStorage m_sky_rad_dataset;
