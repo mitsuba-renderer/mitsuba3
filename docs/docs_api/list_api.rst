@@ -10,15 +10,21 @@
 
 .. autoclass:: mitsuba.ArrayXf
 
+.. autoclass:: mitsuba.ArrayXf32
+
+.. autoclass:: mitsuba.ArrayXf64
+
 .. autoclass:: mitsuba.ArrayXi
+
+.. autoclass:: mitsuba.ArrayXi32
 
 .. autoclass:: mitsuba.ArrayXi64
 
 .. autoclass:: mitsuba.ArrayXu
 
-.. autoclass:: mitsuba.ArrayXu64
+.. autoclass:: mitsuba.ArrayXu32
 
-.. autoclass:: mitsuba.AtomicFloat
+.. autoclass:: mitsuba.ArrayXu64
 
 .. autoclass:: mitsuba.BSDF
 
@@ -42,8 +48,6 @@
 
 .. autoclass:: mitsuba.BoundingSphere3f
 
-.. autoclass:: mitsuba.Class
-
 .. autoclass:: mitsuba.Color0d
 
 .. autoclass:: mitsuba.Color0f
@@ -59,6 +63,10 @@
 .. autoclass:: mitsuba.Complex2d
 
 .. autoclass:: mitsuba.Complex2f
+
+.. autoclass:: mitsuba.Complex2f32
+
+.. autoclass:: mitsuba.Complex2f64
 
 .. autoclass:: mitsuba.ContinuousDistribution
 
@@ -182,13 +190,25 @@
 
 .. autoclass:: mitsuba.Matrix2f
 
+.. autoclass:: mitsuba.Matrix2f32
+
+.. autoclass:: mitsuba.Matrix2f64
+
 .. autoclass:: mitsuba.Matrix3d
 
 .. autoclass:: mitsuba.Matrix3f
 
+.. autoclass:: mitsuba.Matrix3f32
+
+.. autoclass:: mitsuba.Matrix3f64
+
 .. autoclass:: mitsuba.Matrix4d
 
 .. autoclass:: mitsuba.Matrix4f
+
+.. autoclass:: mitsuba.Matrix4f32
+
+.. autoclass:: mitsuba.Matrix4f64
 
 .. autoclass:: mitsuba.Medium
 
@@ -216,7 +236,7 @@
 
 .. autoclass:: mitsuba.Object
 
-.. autoclass:: mitsuba.ObjectPtr
+.. autoclass:: mitsuba.ObjectType
 
 .. autoclass:: mitsuba.OptixDenoiser
 
@@ -285,6 +305,10 @@
 .. autoclass:: mitsuba.Quaternion4d
 
 .. autoclass:: mitsuba.Quaternion4f
+
+.. autoclass:: mitsuba.Quaternion4f32
+
+.. autoclass:: mitsuba.Quaternion4f64
 
 .. autoclass:: mitsuba.RadicalInverse
 
@@ -422,8 +446,6 @@
 
 .. autoclass:: mitsuba.SceneParameters
 
-.. autoclass:: mitsuba.ScopedSetThreadEnvironment
-
 .. autoclass:: mitsuba.Sensor
 
 .. autoclass:: mitsuba.SensorPtr
@@ -456,11 +478,19 @@
 
 .. autoclass:: mitsuba.TensorXf
 
+.. autoclass:: mitsuba.TensorXf32
+
+.. autoclass:: mitsuba.TensorXf64
+
 .. autoclass:: mitsuba.TensorXi
+
+.. autoclass:: mitsuba.TensorXi32
 
 .. autoclass:: mitsuba.TensorXi64
 
 .. autoclass:: mitsuba.TensorXu
+
+.. autoclass:: mitsuba.TensorXu32
 
 .. autoclass:: mitsuba.TensorXu64
 
@@ -470,17 +500,27 @@
 
 .. autoclass:: mitsuba.Texture1f
 
+.. autoclass:: mitsuba.Texture1f32
+
+.. autoclass:: mitsuba.Texture1f64
+
 .. autoclass:: mitsuba.Texture2d
 
 .. autoclass:: mitsuba.Texture2f
+
+.. autoclass:: mitsuba.Texture2f32
+
+.. autoclass:: mitsuba.Texture2f64
 
 .. autoclass:: mitsuba.Texture3d
 
 .. autoclass:: mitsuba.Texture3f
 
-.. autoclass:: mitsuba.Thread
+.. autoclass:: mitsuba.Texture3f32
 
-.. autoclass:: mitsuba.ThreadEnvironment
+.. autoclass:: mitsuba.Texture3f64
+
+.. autoclass:: mitsuba.Thread
 
 .. autoclass:: mitsuba.Timer
 
@@ -608,15 +648,21 @@
 
 .. autofunction:: mitsuba.depolarizer
 
+.. autoclass:: mitsuba.detail.TransformWrapper
+
 .. autofunction:: mitsuba.detail.add_variant_callback
 
 .. autofunction:: mitsuba.detail.clear_variant_callbacks
+
+.. autofunction:: mitsuba.detail.patch_transform
 
 .. autofunction:: mitsuba.detail.remove_variant_callback
 
 .. autofunction:: mitsuba.dir_to_sph
 
 .. autofunction:: mitsuba.eval_reflectance
+
+.. autofunction:: mitsuba.file_resolver
 
 .. autofunction:: mitsuba.filesystem.absolute
 
@@ -669,6 +715,8 @@
 .. autofunction:: mitsuba.load_string
 
 .. autofunction:: mitsuba.log_level
+
+.. autofunction:: mitsuba.logger
 
 .. autofunction:: mitsuba.lookup_ior
 
@@ -792,17 +840,17 @@
 
 .. autofunction:: mitsuba.register_medium
 
-.. autofunction:: mitsuba.register_mesh
+.. autofunction:: mitsuba.register_phase
 
-.. autofunction:: mitsuba.register_phasefunction
+.. autofunction:: mitsuba.register_rfilter
 
 .. autofunction:: mitsuba.register_sampler
 
 .. autofunction:: mitsuba.register_sensor
 
-.. autofunction:: mitsuba.register_texture
+.. autofunction:: mitsuba.register_shape
 
-.. autofunction:: mitsuba.register_volume
+.. autofunction:: mitsuba.register_texture
 
 .. autofunction:: mitsuba.render
 
@@ -820,7 +868,11 @@
 
 .. autofunction:: mitsuba.scoped_set_variant
 
+.. autofunction:: mitsuba.set_file_resolver
+
 .. autofunction:: mitsuba.set_log_level
+
+.. autofunction:: mitsuba.set_logger
 
 .. autofunction:: mitsuba.set_variant
 
