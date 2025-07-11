@@ -110,7 +110,7 @@ class Rayloader():
         pixels_per_batch: int,
         seed: int = 0,
         regular_reshuffle: bool = False,
-        tile_size: int = 2,
+        tile_size: int = 4,
     ) -> None:
         """Rayloader for efficient batch rendering with multiple sensors."""
 
@@ -185,7 +185,7 @@ class Rayloader():
                 f"Unsupported channel size: {self.channel_size}. "
                 "Only 1, 3, or 4 channels are supported."
             )
-        # Determine component format
+        # float16 is not supported
         component_format = 'float32'
 
         self.flat_sensor = mi.load_dict({
