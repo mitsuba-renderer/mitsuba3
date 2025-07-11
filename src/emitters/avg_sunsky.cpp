@@ -46,14 +46,28 @@ public:
             m_sun_ld = sunsky_array_from_file<Float64, Float>(
                 path_to_dataset<IS_RGB>(Dataset::SunLimbDarkening));
 
-        // ================= GENERAL PARAMETERS =================
-        ref<Object> average_sky = compute_avg({512, 1024});
+        // =============== ENVMAP INSTANTIATION ===============
+        // Permute axis for envmap's convention
+        ScalarMatrix4f permute_axis {
+            ScalarVector4f{0, 0, -1, 0},
+            ScalarVector4f{1, 0,  0, 0},
+            ScalarVector4f{0, 1,  0, 0},
+            ScalarVector4f{0, 0,  0, 1}
+        };
+        ScalarTransform4f envmap_transform { permute_axis };
+        ref<Object> average_sky = compute_avg({256, 512});
 
         Properties envmap_props = Properties("envmap");
         envmap_props.set("bitmap", average_sky);
+        envmap_props.set("to_world", envmap_transform);
         m_envmap = PluginManager::instance()->create_object<EnvEmitter>(envmap_props);
 
         m_flags = +EmitterFlags::Infinite | +EmitterFlags::SpatiallyVarying;
+    }
+
+    ~AvgSunskyEmitter() override {
+        m_envmap.reset();
+        delete m_bitmap_data;
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -180,33 +194,51 @@ private:
 
 
     ref<Object> compute_avg(const ScalarPoint2i& resolution) {
-        using SpecturmStorage = DynamicBuffer<Spectrum>;
-        SpecturmStorage result = dr::zeros<SpecturmStorage>(resolution.x() * resolution.y());
-
         ScalarFloatStorage albedo = extract_albedo(m_albedo);
+        m_bitmap_data = new float[resolution.x() * resolution.y() * 3];
+        memset(m_bitmap_data, 0, resolution.x() * resolution.y() * 3 * sizeof(float));
 
-        const uint32_t nb_samples = 50;
+        const uint32_t nb_samples = 300;
         const float start_hour = 8, end_hour = 17;
         const float dt = (end_hour - start_hour) / nb_samples;
 
         for (uint32_t i = 0; i < nb_samples; ++i) {
             m_time.hour = start_hour + i * dt;
 
-            const auto [elevation, _] = sun_coordinates(m_time, m_location);
+            const auto [sun_elevation, sun_azimuth] = sun_coordinates(m_time, m_location);
+            const ScalarFloat sun_eta = 0.5f * dr::Pi<ScalarFloat> - sun_elevation;
+            const ScalarVector3f sun_dir = sph_to_dir(sun_elevation, sun_azimuth);
 
-            ScalarFloatStorage sky_radiance = sky_radiance_params<SKY_DATASET_RAD_SIZE>(m_sky_rad_dataset, albedo, m_turbidity, elevation);
+            ScalarFloatStorage sun_radiance = sun_params<SUN_DATASET_SIZE>(m_sun_rad_dataset, m_turbidity);
+            ScalarFloatStorage sky_params = sky_radiance_params<SKY_DATASET_SIZE>(m_sky_params_dataset, albedo, m_turbidity, sun_eta);
+            ScalarFloatStorage sky_radiance = sky_radiance_params<SKY_DATASET_RAD_SIZE>(m_sky_rad_dataset, albedo, m_turbidity, sun_eta);
 
+            // Iterate over top half of the image
+            for (uint64_t pixel_idx = 0; pixel_idx < resolution.x() * resolution.y() / 2; ++pixel_idx) {
+                ScalarFloat pixel_u = static_cast<ScalarFloat>(pixel_idx % resolution.x()) / static_cast<ScalarFloat>(resolution.x());
+                ScalarFloat pixel_v = static_cast<ScalarFloat>(pixel_idx / resolution.x()) / static_cast<ScalarFloat>(resolution.y());
+
+                ScalarVector3f ray_dir = sph_to_dir(
+                    dr::Pi<ScalarFloat> * pixel_v,
+                    dr::TwoPi<ScalarFloat> * pixel_u
+                );
+                ScalarFloat gamma = dr::unit_angle(ray_dir, sun_dir);
+
+                ScalarColor3f res = 0.;
+                res += eval_sky<ScalarColor3f>({0, 1, 2}, ray_dir.z(), gamma, sky_params, sky_radiance);
+                res += (gamma < m_sun_half_aperture ? 1.f : 0.f) * SPEC_TO_RGB_SUN_CONV *
+                    eval_sun<ScalarColor3f>({0, 1, 2}, ray_dir.z(), gamma, sun_radiance, m_sun_half_aperture) * get_area_ratio(m_sun_half_aperture);
+                res *= MI_CIE_Y_NORMALIZATION / static_cast<ScalarFloat>(nb_samples);
+
+                m_bitmap_data[3 * pixel_idx + 0] += res.r();
+                m_bitmap_data[3 * pixel_idx + 1] += res.g();
+                m_bitmap_data[3 * pixel_idx + 2] += res.b();
+
+            }
 
         }
 
-
-        //auto && storage = dr::migrate(result, AllocType::Host);
-        //if constexpr (dr::is_jit_v<Float>)
-        //    dr::sync_thread();
-
-        uint8_t* bitmap_data = new uint8_t[resolution.x() * resolution.y() * 4 * 3];
-
-        return new Bitmap(Bitmap::PixelFormat::RGB, Struct::Type::Float32, resolution, 3, {}, bitmap_data);
+        return new Bitmap(Bitmap::PixelFormat::RGB, Struct::Type::Float32, resolution, 3, {}, reinterpret_cast<uint8_t *>(m_bitmap_data));
     } 
 
 
@@ -318,6 +350,7 @@ private:
         TGMM_GAUSSIAN_PARAMS;
 
     ref<EnvEmitter> m_envmap;
+    float* m_bitmap_data;
 
     // ========= Common parameters =========
     ScalarFloat m_turbidity;
