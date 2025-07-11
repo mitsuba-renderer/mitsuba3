@@ -1336,3 +1336,35 @@ def mis_weight(pdf_a, pdf_b):
     b2 = dr.square(pdf_b)
     w = a2 / (a2 + b2)
     return dr.detach(dr.select(dr.isfinite(w), w, 0))
+
+
+def solid_angle_to_area_jacobian(o: mi.Point3f,
+                                 p: mi.Point3f,
+                                 n: mi.Normal3f,
+                                 active: mi.Bool = True):
+    """
+    Computes the Jacobian determinant of the change of variables from solid
+    angle (dω) to surface area (dA) when reparameterizing the integration over
+    a surface.
+
+    Parameter ``p`` (``mi.Point3f``)
+        Origin point (e.g., shading point).
+
+    Parameter ``ps`` (``mi.Point3f``)
+        Sampled point on the surface.
+
+    Parameter ``n_ps`` (``mi.Normal3f``)
+        Normal at the sampled point.
+
+    Output:
+        The Jacobian determinant |∂A/∂ω| = (|dot(n_ps, wi)| / ||ps - p||^2)
+    """
+    d = p - o
+    d_squared = dr.squared_norm(d)
+    wo = dr.normalize(d)
+
+    cos_theta = dr.abs_dot(n, wo)
+    J = cos_theta / d_squared
+    J = dr.select(active, J, 1)
+
+    return J
