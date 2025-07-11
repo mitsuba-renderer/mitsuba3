@@ -179,14 +179,14 @@ MI_PY_EXPORT(Properties) {
 
     // Add Type enum as a nested attribute of Properties
     properties_class.attr("Type") = nb::enum_<Properties::Type>(properties_class, "Type")
-        .value("Bool", Properties::Type::Bool)
-        .value("Integer", Properties::Type::Integer)
-        .value("Float", Properties::Type::Float)
-        .value("Vector", Properties::Type::Vector)
-        .value("Transform", Properties::Type::Transform)
-        .value("Color", Properties::Type::Color)
-        .value("String", Properties::Type::String)
-        .value("Reference", Properties::Type::Reference)
-        .value("Object", Properties::Type::Object)
-        .value("Any", Properties::Type::Any);
+        .value("Bool", Properties::Type::Bool, D(Properties, Type, Bool))
+        .value("Integer", Properties::Type::Integer, D(Properties, Type, Integer))
+        .value("Float", Properties::Type::Float, D(Properties, Type, Float))
+        .value("Vector", Properties::Type::Vector, D(Properties, Type, Vector))
+        .value("Transform", Properties::Type::Transform, D(Properties, Type, Transform))
+        .value("Color", Properties::Type::Color, D(Properties, Type, Color))
+        .value("String", Properties::Type::String, D(Properties, Type, String))
+        .value("Reference", Properties::Type::Reference, D(Properties, Type, Reference))
+        .value("Object", Properties::Type::Object, D(Properties, Type, Object))
+        .value("Any", Properties::Type::Any, D(Properties, Type, Any));
 }
