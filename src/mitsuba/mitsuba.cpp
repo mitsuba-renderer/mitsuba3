@@ -371,16 +371,6 @@ int main(int argc, char *argv[]) {
     }
 
     if (!error_msg.empty()) {
-        /* Strip zero-width spaces from the message (Mitsuba uses these
-           to properly format chains of multiple exceptions) */
-        const std::string zerowidth_space = "\xe2\x80\x8b";
-        while (true) {
-            auto it = error_msg.find(zerowidth_space);
-            if (it == std::string::npos)
-                break;
-            error_msg = error_msg.substr(0, it) + error_msg.substr(it + 3);
-        }
-
 #if defined(_WIN32)
         HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
         CONSOLE_SCREEN_BUFFER_INFO console_info;

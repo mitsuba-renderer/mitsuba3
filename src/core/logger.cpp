@@ -140,7 +140,7 @@ const Appender *Logger::appender(size_t index) const {
 NAMESPACE_BEGIN(detail)
 
 void Throw(LogLevel level, const char *cname, const char *fname,
-           int line, std::string_view msg_) {
+           int line, std::string_view msg) {
     // Trap if we're running in a debugger to facilitate debugging.
     #if defined(MI_THROW_TRAPS_DEBUGGER)
     util::trap_debugger();
@@ -151,22 +151,7 @@ void Throw(LogLevel level, const char *cname, const char *fname,
     formatter.set_has_log_level(false);
     formatter.set_has_thread(false);
 
-    /* Tag beginning of exception text with UTF8 zero width space */
-    const std::string zerowidth_space = "\xe2\x80\x8b";
-
-    /* Separate nested exceptions by a newline */
-    std::string msg;
-
-    auto it = msg_.find(zerowidth_space);
-    if (it != std::string::npos)
-        msg = std::string(msg_.substr(0, it)) + "\n  " + std::string(msg_.substr(it + 3));
-    else
-        msg = msg_;
-
-    std::string text =
-        formatter.format(level, cname, fname, line, msg);
-
-    throw std::runtime_error(zerowidth_space + text);
+    throw std::runtime_error(formatter.format(level, cname, fname, line, msg));
 }
 
 NAMESPACE_END(detail)
