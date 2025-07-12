@@ -10,11 +10,10 @@ def xml_escape(path):
     return str(path).replace('$', '\\$')
 
 def error_string(msg):
-    """Clean error messages by removing unstable parts like [*.cpp:XXX] prefixes and zero-width spaces"""
+    """Clean error messages by removing unstable parts like [file.cpp:line] prefixes"""
     if isinstance(msg, Exception):
         msg = str(msg)
-    msg = msg.replace('\u200b', '')  # Remove zero-width spaces
-    msg = re.sub(r'\[\w+\.cpp:\d+\]\s*', '', msg)  # Remove [*.cpp:XXX]
+    msg = re.sub(r'\[\w+\.cpp:\d+\]\s*', '', msg)  # Remove [file.cpp:line]
     return msg
 
 
@@ -626,7 +625,7 @@ def test28_parameter_substitution_warnings(variant_scalar_rgb):
         mi.parser.parse_string(config, xml, param1="value1", param2="value2", param3="value3")
 
     # Check exact error message format
-    expected = "Found unused parameters:\n- $param1=value1\n- $param2=value2\n- $param3=value3"
+    expected = "Found unused parameters:\n  - $param1=value1\n  - $param2=value2\n  - $param3=value3"
     assert error_string(excinfo.value) == expected
 
     # With config.unused_parameters=Debug, the operation should succeed
@@ -986,12 +985,9 @@ def test37_xml_include_error_chain(variant_scalar_rgb, tmp_path):
 
     # The expected error message with full include chain
     expected = (
-        "Error while loading main.xml (line 2, col 10): "
-        "while processing <include>:\n"
-        "Error while loading middle.xml (line 2, col 10): "
-        "while processing <include>:\n"
-        "Error while loading error.xml (line 3, col 14): "
-        "undefined parameter: $undefined_param"
+        "Error while loading main.xml (line 2, col 10): while processing <include>:\n"
+        "Error while loading middle.xml (line 2, col 10): while processing <include>:\n"
+        "Error while loading error.xml (line 3, col 14): undefined parameter: $undefined_param"
     )
 
     assert error_msg == expected
@@ -1586,15 +1582,15 @@ def test52_unqueried_properties_error_formatting(variant_scalar_rgb):
         mi.parser.instantiate(config, state)
 
     expected = '''While loading string (line 2, col 10): Found 6 unreferenced properties in shape plugin of type "sphere":
-- string "unused_string": "hello"
-- integer "unused_int": 42
-- boolean "unused_bool": true
-- vector "unused_vector": [1, 2, 3]
-- rgb "unused_color": [0.5, 0.7, 0.9]
-- transform "unused_transform": [[1, 0, 0, 1],
-[0, 1, 0, 0],
-[0, 0, 1, 0],
-[0, 0, 0, 1]]'''
+  - string "unused_string": "hello"
+  - integer "unused_int": 42
+  - boolean "unused_bool": true
+  - vector "unused_vector": [1, 2, 3]
+  - rgb "unused_color": [0.5, 0.7, 0.9]
+  - transform "unused_transform": [[1, 0, 0, 1],
+ [0, 1, 0, 0],
+ [0, 0, 1, 0],
+ [0, 0, 0, 1]]'''
 
     assert error_string(excinfo.value) == expected
 
@@ -1618,7 +1614,7 @@ def test53_instantiation_failure_location_xml(variant_scalar_rgb):
     with pytest.raises(RuntimeError) as excinfo:
         mi.parser.instantiate(config, state)
 
-    expected = 'At string (line 2, col 10): failed to instantiate shape plugin of type "sphere": \nThe property "radius" has the wrong type (expected float, got string)'
+    expected = 'At string (line 2, col 10): failed to instantiate shape plugin of type "sphere": The property "radius" has the wrong type (expected float, got string)'
     assert error_string(excinfo.value) == expected
 
 
@@ -1643,7 +1639,7 @@ def test54_instantiation_failure_location_dict(variant_scalar_rgb):
     error_msg = error_string(excinfo.value)
 
     # For dictionary parsing, we should get the hierarchical path with periods
-    expected = 'At dictionary node "myshape": failed to instantiate shape plugin of type "sphere": \nThe property "radius" has the wrong type (expected float, got string)'
+    expected = 'At dictionary node "myshape": failed to instantiate shape plugin of type "sphere": The property "radius" has the wrong type (expected float, got string)'
     assert error_msg == expected
 
 
