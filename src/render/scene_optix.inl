@@ -316,7 +316,6 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types) {
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) {
-    DRJIT_MARK_USED(props);
     if constexpr (!dr::is_cuda_v<Float>)
         return;
 
@@ -330,8 +329,8 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
 
     // Check if another scene was passed to the constructor
     Scene *other_scene = nullptr;
-    for (auto &[k, v] : props.objects()) {
-        other_scene = dynamic_cast<Scene *>(v.get());
+    for (auto &prop : props.objects()) {
+        other_scene = prop.try_get<Scene>();
         if (other_scene)
             break;
     }

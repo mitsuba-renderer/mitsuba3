@@ -91,10 +91,10 @@ public:
     const DynamicBuffer<UInt32>& faces_buffer() const { return m_faces; }
 
     /// Return the mesh attribute associated with \c name
-    FloatStorage& attribute_buffer(const std::string& name);
+    FloatStorage& attribute_buffer(std::string_view name);
 
     /// Add an attribute buffer with the given \c name and \c dim
-    void add_attribute(const std::string &name, size_t dim,
+    void add_attribute(std::string_view name, size_t dim,
                        const std::vector<InputFloat> &buf);
 
     /**
@@ -104,7 +104,7 @@ public:
      *
      * Throws an exception if the attribute was not previously registered.
      */
-    void remove_attribute(const std::string &name) override;
+    void remove_attribute(std::string_view name) override;
 
     /// Returns the vertex indices associated with triangle \c index
     template <typename Index>
@@ -254,17 +254,17 @@ public:
                                                      uint32_t recursion_depth = 0,
                                                      Mask active = true) const override;
 
-    Mask has_attribute(const std::string &name, Mask active = true) const override;
+    Mask has_attribute(std::string_view name, Mask active = true) const override;
 
-    UnpolarizedSpectrum eval_attribute(const std::string &name,
+    UnpolarizedSpectrum eval_attribute(std::string_view name,
                                        const SurfaceInteraction3f &si,
                                        Mask active = true) const override;
 
-    Float eval_attribute_1(const std::string &name,
+    Float eval_attribute_1(std::string_view name,
                            const SurfaceInteraction3f &si,
                            Mask active = true) const override;
 
-    Color3f eval_attribute_3(const std::string &name,
+    Color3f eval_attribute_3(std::string_view name,
                              const SurfaceInteraction3f &si,
                              Mask active = true) const override;
 
@@ -584,7 +584,8 @@ protected:
     uint32_t* m_faces_ptr;
 #endif
 
-    std::unordered_map<std::string, MeshAttribute> m_mesh_attributes;
+    tsl::robin_map<std::string, MeshAttribute, std::hash<std::string_view>,
+                   std::equal_to<>> m_mesh_attributes;
 
 #if defined(MI_ENABLE_CUDA)
     mutable void* m_vertex_buffer_ptr = nullptr;

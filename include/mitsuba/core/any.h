@@ -57,6 +57,8 @@ public:
 
     template <typename T> friend T *any_cast(Any *);
     template <typename T> friend const T *any_cast(const Any *);
+    bool operator==(const Any &other) const { return data() == other.data(); }
+    bool operator!=(const Any &other) const { return data() != other.data(); }
 
     // Constructor that accepts a Base pointer. For relatively advanced use cases that repurpose the Any class
     Any(Base *base) : p(base) { }

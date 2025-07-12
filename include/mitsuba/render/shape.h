@@ -8,7 +8,7 @@
 #include <mitsuba/core/bbox.h>
 #include <mitsuba/core/field.h>
 #include <drjit/packet.h>
-#include <unordered_map>
+#include <tsl/robin_map.h>
 
 #if defined(MI_ENABLE_CUDA)
 #  include <mitsuba/render/optix/common.h>
@@ -725,20 +725,20 @@ public:
      *     Texture to store. The dimensionality of the attribute
      *     is simply the channel count of the texture.
      */
-    virtual void add_texture_attribute(const std::string &name, Texture *texture);
+    virtual void add_texture_attribute(std::string_view name, Texture *texture);
 
     /// Return the texture attribute associated with \c name.
-    Texture *texture_attribute(const std::string &name);
+    Texture *texture_attribute(std::string_view name);
 
     /// Return the texture attribute associated with \c name.
-    const Texture *texture_attribute(const std::string &name) const;
+    const Texture *texture_attribute(std::string_view name) const;
 
     /**
      * \brief Remove a texture texture with the given \c name.
      *
      * Throws an exception if the attribute was not registered.
      */
-    virtual void remove_attribute(const std::string &name);
+    virtual void remove_attribute(std::string_view name);
 
     /**
      * \brief Returns whether this shape contains the specified attribute.
@@ -746,7 +746,7 @@ public:
      * \param name
      *     Name of the attribute
      */
-    virtual Mask has_attribute(const std::string &name, Mask active = true) const;
+    virtual Mask has_attribute(std::string_view name, Mask active = true) const;
 
     /**
      * \brief Evaluate a specific shape attribute at the given surface interaction.
@@ -764,7 +764,7 @@ public:
      * \return
      *     An unpolarized spectral power distribution or reflectance value
      */
-    virtual UnpolarizedSpectrum eval_attribute(const std::string &name,
+    virtual UnpolarizedSpectrum eval_attribute(std::string_view name,
                                                const SurfaceInteraction3f &si,
                                                Mask active = true) const;
 
@@ -784,7 +784,7 @@ public:
      * \return
      *     An scalar intensity or reflectance value
      */
-    virtual Float eval_attribute_1(const std::string &name,
+    virtual Float eval_attribute_1(std::string_view name,
                                    const SurfaceInteraction3f &si,
                                    Mask active = true) const;
 
@@ -804,7 +804,7 @@ public:
      * \return
      *     A trichromatic intensity or reflectance value
      */
-    virtual Color3f eval_attribute_3(const std::string &name,
+    virtual Color3f eval_attribute_3(std::string_view name,
                                      const SurfaceInteraction3f &si,
                                      Mask active = true) const;
 
@@ -820,7 +820,7 @@ public:
      * \return
      *     A dynamic array of attribute values
      */
-    virtual dr::DynamicArray<Float> eval_attribute_x(const std::string &name,
+    virtual dr::DynamicArray<Float> eval_attribute_x(std::string_view name,
                                                      const SurfaceInteraction3f &si,
                                                      Mask active = true) const;
 
@@ -1054,7 +1054,8 @@ protected:
     /// Sampling weight (proportional to scene)
     float m_silhouette_sampling_weight;
 
-    std::unordered_map<std::string, ref<Texture>> m_texture_attributes;
+    tsl::robin_map<std::string, ref<Texture>, std::hash<std::string_view>,
+                   std::equal_to<>> m_texture_attributes;
 
     field<Transform4f, ScalarTransform4f> m_to_world;
     field<Transform4f, ScalarTransform4f> m_to_object;

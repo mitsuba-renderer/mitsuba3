@@ -70,14 +70,12 @@ public:
     BlendPhaseFunction(const Properties &props) : Base(props) {
         int phase_index = 0;
 
-        for (auto &[name, obj] : props.objects(false)) {
-            auto *phase = dynamic_cast<Base *>(obj.get());
-            if (phase) {
+        for (auto &prop : props.objects()) {
+            if (Base *phase = prop.try_get<Base>()) {
                 if (phase_index == 2)
                     Throw("BlendPhase: Cannot specify more than two child "
                           "phase functions");
                 m_nested_phase[phase_index++] = phase;
-                props.mark_queried(name);
             }
         }
 

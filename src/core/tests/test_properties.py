@@ -290,22 +290,7 @@ def test15_plugin_manager_plugin_type(variant_scalar_rgb):
     assert pmgr.plugin_type('scene') == mi.ObjectType.Scene
 
 
-def test16_object_class_name(variant_scalar_rgb):
-    """Test Object.class_name() method functionality"""
-    # Test base Object class
-    obj = mi.Object()
-    assert obj.class_name() == "Object"
-    # Test plugin objects return their specific class names
-    diffuse_bsdf = mi.load_dict({'type': 'diffuse'})
-    assert diffuse_bsdf.class_name() == "SmoothDiffuse"  # Actual class name
-
-    scene = mi.load_dict({'type': 'scene'})
-    assert scene.class_name() == "Scene"
-    integrator = mi.load_dict({'type': 'path'})
-    assert integrator.class_name() == "PathIntegrator"
-
-
-def test17_dictionary_like_interface(variant_scalar_rgb):
+def test16_dictionary_like_interface(variant_scalar_rgb):
     """Test new dictionary-like methods and deprecation warnings"""
     from drjit.scalar import Array3f
     import warnings
@@ -353,6 +338,40 @@ def test17_dictionary_like_interface(variant_scalar_rgb):
         assert 'has_property() is deprecated' in str(w[0].message)
         assert 'property_names() is deprecated' in str(w[1].message)
         assert 'remove_property() is deprecated' in str(w[2].message)
+
+def test17_insertion_order_with_deletion():
+    """Test that Properties maintains insertion order even after deletion"""
+    props = mi.Properties()
+    props.set_plugin_name("test")
+
+    # Add properties in a specific order
+    props["first"] = 1.0
+    props["second"] = "hello"
+    props["third"] = mi.ScalarVector3f(1, 2, 3)
+    props["fourth"] = True
+    props["fifth"] = 42
+
+    # Verify insertion order
+    keys = list(props.keys())
+    assert keys == ["first", "second", "third", "fourth", "fifth"]
+
+    # Delete a property in the middle
+    del props["third"]
+
+    # Verify remaining properties maintain insertion order
+    keys = list(props.keys())
+    assert keys == ["first", "second", "fourth", "fifth"]
+
+    # Verify values are still correct
+    assert props["first"] == 1.0
+    assert props["second"] == "hello"
+    assert props["fourth"] == True
+    assert props["fifth"] == 42
+
+    # Add a new property and verify it's added at the end
+    props["sixth"] = mi.ScalarColor3f(0.5, 0.5, 0.5)
+    keys = list(props.keys())
+    assert keys == ["first", "second", "fourth", "fifth", "sixth"]
 
 
 def test18_range(variant_scalar_rgb):

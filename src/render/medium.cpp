@@ -15,13 +15,11 @@ MI_VARIANT Medium<Float, Spectrum>::Medium()
 
 MI_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props)
     : JitObject<Medium>(props.id()) {
-    for (auto &[name, obj] : props.objects(false)) {
-        auto *phase = dynamic_cast<PhaseFunction *>(obj.get());
-        if (phase) {
+    for (auto &prop : props.objects()) {
+        if (PhaseFunction *phase = prop.try_get<PhaseFunction>()) {
             if (m_phase_function)
                 Throw("Only a single phase function can be specified per medium");
             m_phase_function = phase;
-            props.mark_queried(name);
         }
     }
     if (!m_phase_function) {

@@ -311,6 +311,7 @@ set_property(TARGET pugixml PROPERTY
 set_property(TARGET pugixml PROPERTY FOLDER "dependencies")
 set(PUGIXML_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/pugixml/src PARENT_SCOPE)
 target_compile_options(pugixml PRIVATE -DPUGIXML_BUILD_DLL)
+target_compile_features(pugixml PUBLIC cxx_std_17)
 
 # tinyformat include path
 set(TINYFORMAT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tinyformat PARENT_SCOPE)

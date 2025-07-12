@@ -57,4 +57,5 @@ sys.modules[__name__ +'.python']     = mi.python
 if hasattr(mi, 'detail'):
     sys.modules[__name__ +'.detail']     = mi.detail
 sys.modules[__name__ +'.filesystem'] = mi.filesystem
+sys.modules[__name__ +'.parser']     = mi.parser
 

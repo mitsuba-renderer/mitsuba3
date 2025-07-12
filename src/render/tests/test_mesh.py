@@ -20,7 +20,7 @@ def mixed_shapes_scene():
             "filename" : "resources/data/tests/ply/rectangle_uv.ply",
             "flip_normals": True,
         },
-    }, parallel=False)
+    }, parallel=False, optimize=False)
 
 
 

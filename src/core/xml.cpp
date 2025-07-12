@@ -36,7 +36,7 @@ enum class TagType {
 
 // Check if the name corresponds to an unbounded spectrum property which require
 // special handling
-bool is_unbounded_spectrum(const std::string &name) {
+bool is_unbounded_spectrum(std::string_view name) {
     return name == "eta" || name == "k" ||
            name == "int_ior" || name == "ext_ior" ||
            name == "sigma_t";
@@ -462,7 +462,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
         if (version_attr) {
             Version version;
             try {
-                version = version_attr.value();
+                version = std::string_view(version_attr.value());
             } catch (const std::exception &) {
                 src.throw_error(node, "could not parse version number \"%s\"", version_attr.value());
             }
@@ -642,7 +642,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                             if (version_attr_incl) {
                                 Version version;
                                 try {
-                                    version = version_attr_incl.value();
+                                    version = std::string_view(version_attr_incl.value());
                                 } catch (const std::exception &) {
                                     nested_src.throw_error(*doc.begin(), "could not parse version number \"%s\"", version_attr_incl.value());
                                 }
@@ -1007,16 +1007,18 @@ static Task *instantiate_node(XMLParseContext &ctx,
         return instantiate_node(ctx, inst.alias, task_map, top_node);
 
     Properties &props = inst.props;
-    const auto &references = props.references();
     // Recursive graph traversal to gather dependency tasks
     std::vector<Task *> deps;
-    for (auto &kv : references) {
-        const std::string& child_id = kv.second;
-        if (task_map.find(child_id) == task_map.end()) {
-            Task *task = instantiate_node(ctx, child_id, task_map, false);
-            task_map.insert({child_id, task});
+    for (auto &key : props) {
+        if (key.type() == Properties::Type::Reference) {
+            Properties::Reference ref = key.get<Properties::Reference>();
+            std::string child_id = std::string(ref.id());
+            if (task_map.find(child_id) == task_map.end()) {
+                Task *task = instantiate_node(ctx, child_id, task_map, false);
+                task_map.insert({child_id, task});
+            }
+            deps.push_back(task_map.find(child_id)->second);
         }
-        deps.push_back(task_map.find(child_id)->second);
     }
 
     uint32_t scope = 0;
@@ -1037,27 +1039,29 @@ static Task *instantiate_node(XMLParseContext &ctx,
 
         auto &inst = it->second;
         Properties &props = inst.props;
-        const auto &references = props.references();
 
         // Populate props with the already instantiated child objects
-        for (auto &kv : references) {
-            const std::string& child_id = kv.second;
-            auto it2 = ctx.instances.find(child_id);
-            if (it2 == ctx.instances.end())
-                Throw("reference to unknown object \"%s\"!", child_id);
-            ref<Object> obj = it2->second.object;
-            Assert(obj);
+        for (auto &key : props) {
+            if (key.type() == Properties::Type::Reference) {
+                Properties::Reference reference = key.get<Properties::Reference>();
+                std::string child_id = std::string(reference.id());
+                auto it2 = ctx.instances.find(child_id);
+                if (it2 == ctx.instances.end())
+                    Throw("reference to unknown object \"%s\"!", child_id);
+                ref<Object> obj = it2->second.object;
+                Assert(obj);
 
-            // Give the object a chance to recursively expand into sub-objects
-            std::vector<ref<Object>> children = obj->expand();
-            if (children.empty()) {
-                props.set(kv.first, obj, false);
-            } else if (children.size() == 1) {
-                props.set(kv.first, children[0], false);
-            } else {
-                int ctr = 0;
-                for (auto c : children)
-                    props.set(kv.first + "_" + std::to_string(ctr++), c, false);
+                // Give the object a chance to recursively expand into sub-objects
+                std::vector<ref<Object>> children = obj->expand();
+                if (children.empty()) {
+                    props.set(key.name(), obj, false);
+                } else if (children.size() == 1) {
+                    props.set(key.name(), children[0], false);
+                } else {
+                    int ctr = 0;
+                    for (auto c : children)
+                        props.set(std::string(key.name()) + "_" + std::to_string(ctr++), c, false);
+                }
             }
         }
 
@@ -1133,9 +1137,9 @@ static ref<Object> instantiate_top_node(XMLParseContext &ctx, const std::string 
     return ctx.instances.find(id)->second.object;
 }
 
-ref<Object> create_texture_from_rgb(const std::string &name,
+ref<Object> create_texture_from_rgb(std::string_view name,
                                     Color<float, 3> color,
-                                    const std::string &variant,
+                                    std::string_view variant,
                                     bool within_emitter) {
     Properties props(within_emitter ? "d65" : "srgb");
     props.set("color", color);
@@ -1151,32 +1155,31 @@ ref<Object> create_texture_from_rgb(const std::string &name,
     return texture;
 }
 
-ref<Object> create_texture_from_spectrum(const std::string &name,
+ref<Object> create_texture_from_spectrum(std::string_view name,
                                          Float const_value,
                                          std::vector<Float> &wavelengths,
                                          std::vector<Float> &values,
-                                         const std::string &variant,
+                                         std::string_view variant,
                                          bool within_emitter,
                                          bool is_spectral_mode,
                                          bool is_monochromatic_mode) {
+    Properties props;
 
     bool is_unbounded = is_unbounded_spectrum(name);
     if (wavelengths.empty()) {
         if (!is_spectral_mode && within_emitter && !is_unbounded) {
-            /* A uniform spectrum does not produce a uniform RGB response in the
+            /* A uniform spectrum does not produce a uniform RGB response in
                sRGB (which has a D65 white point). The call to 'xyz_to_srgb'
                computes this purple-ish color and uses it to initialize the
                'srgb' plugin. This is needed mainly for consistency between RGB
                and spectral variants of Mitsuba. */
             Color3f color = const_value * xyz_to_srgb(Color3f(1.0));
-            Properties props("srgb");
+            props.set_plugin_name("srgb");
             props.set("color", color);
             props.set("unbounded", true);
-            return PluginManager::instance()->create_object(props, variant, ObjectType::Texture);
         } else {
-            Properties props("uniform");
+            props.set_plugin_name("uniform");
             props.set("value", const_value);
-            return PluginManager::instance()->create_object(props, variant, ObjectType::Texture);
         }
     } else {
         /* Detect whether wavelengths are regularly sampled and potentially
@@ -1184,15 +1187,7 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
         Float min_interval = std::numeric_limits<Float>::infinity(),
               max_interval = 0.0;
 
-        /* Values should be scaled so that integrating the spectrum against the
-           CIE curves and converting to sRGB yields (1, 1, 1) for D65 in
-           non-spectral modes. */
-        Float unit_conversion =
-            !is_spectral_mode ? Float(MI_CIE_Y_NORMALIZATION) : Float(1.f);
-
         for (size_t n = 0; n < wavelengths.size(); ++n) {
-            values[n] *= unit_conversion;
-
             if (n <= 0)
                 continue;
 
@@ -1205,8 +1200,6 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
         }
 
         if (is_spectral_mode) {
-            Properties props;
-
             /* The regular spectrum class is more efficient, so tolerate a small
                amount of imprecision in the parsed interval positions.. */
             bool is_regular =
@@ -1214,18 +1207,14 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
 
             if (is_regular) {
                 props.set_plugin_name("regular");
-                props.set("size", (int64_t)wavelengths.size());
-                props.set("wavelength_min", wavelengths.front());
-                props.set("wavelength_max", wavelengths.back());
-                props.set_any("values", std::move(values));
+                props.set("value", Properties::Spectrum(std::move(values),
+                                                        wavelengths.front(),
+                                                        wavelengths.back()));
             } else {
                 props.set_plugin_name("irregular");
-                props.set("size", (int64_t)wavelengths.size());
-                props.set_any("wavelengths", std::move(wavelengths));
-                props.set_any("values", std::move(values));
+                props.set("value", Properties::Spectrum(std::move(wavelengths),
+                                                        std::move(values)));
             }
-
-            return PluginManager::instance()->create_object(props, variant, ObjectType::Texture);
         } else {
             /* Pre-integrate against the CIE matching curves. In order to match
                the behavior of spectral modes, this function should instead
@@ -1236,21 +1225,20 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
                 /* bounded */ !(within_emitter || is_unbounded),
                 /* d65 */ !(within_emitter && !is_unbounded));
 
-            Properties props;
             if (is_monochromatic_mode) {
-                props = Properties("uniform");
+                props.set_plugin_name("uniform");
                 props.set("value", luminance(color));
             } else {
-                props = Properties("srgb");
+                props.set_plugin_name("srgb");
                 props.set("color", color);
 
                 if (within_emitter || is_unbounded)
                     props.set("unbounded", true);
             }
 
-            return PluginManager::instance()->create_object(props, variant, ObjectType::Texture);
         }
     }
+    return PluginManager::instance()->create_object(props, variant, ObjectType::Texture);
 }
 
 std::vector<ref<Object>> expand_node(const ref<Object> &node) {

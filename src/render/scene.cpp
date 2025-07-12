@@ -23,18 +23,21 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
     : JitObject<Scene>(props.id()) {
     m_thread_reordering = props.get<bool>("allow_thread_reordering", true);
 
-    for (auto &[k, v] : props.objects()) {
-        Scene *scene           = dynamic_cast<Scene *>(v.get());
-        Shape *shape           = dynamic_cast<Shape *>(v.get());
+    for (auto &prop : props.objects()) {
+        ref<Object> v = prop.get<ref<Object>>();
+
         Mesh *mesh             = dynamic_cast<Mesh *>(v.get());
         Emitter *emitter       = dynamic_cast<Emitter *>(v.get());
         Sensor *sensor         = dynamic_cast<Sensor *>(v.get());
         Integrator *integrator = dynamic_cast<Integrator *>(v.get());
 
-        if (!scene)
+        if (Scene *scene = dynamic_cast<Scene *>(v.get())) {
+            // Skip nested scenes in children list
+        } else {
             m_children.push_back(v.get());
+        }
 
-        if (shape) {
+        if (Shape *shape = dynamic_cast<Shape *>(v.get())) {
             if (shape->is_emitter())
                 m_emitters.push_back(shape->emitter());
             if (shape->is_sensor())

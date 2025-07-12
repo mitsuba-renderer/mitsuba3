@@ -3,6 +3,10 @@ import drjit as dr
 import mitsuba as mi
 import os
 
+def xml_escape(path):
+    """Escape dollar signs in paths for XML parameter substitution"""
+    return str(path).replace('$', '\\$')
+
 
 def test01_create(variant_scalar_rgb, tmpdir):
     tmp_file = os.path.join(str(tmpdir), "sggx.vol")
@@ -11,7 +15,7 @@ def test01_create(variant_scalar_rgb, tmpdir):
 
     p = mi.load_string(f"""<phase version='2.0.0' type='sggx'>
                             <volume type="gridvolume" name="S">
-                                <string name="filename" value="{tmp_file}"/>
+                                <string name="filename" value="{xml_escape(tmp_file)}"/>
                             </volume>
                         </phase>""")
 
@@ -27,7 +31,7 @@ def test02_chi2_simple(variants_vec_backends_once_rgb, tmpdir):
 
     sample_func, pdf_func = mi.chi2.PhaseFunctionAdapter("sggx",
          f"""<volume type="gridvolume" name="S">
-                <string name="filename" value="{tmp_file}"/>
+                <string name="filename" value="{xml_escape(tmp_file)}"/>
             </volume>
          """)
 
@@ -49,7 +53,7 @@ def test03_chi2_skewed(variants_vec_backends_once_rgb, tmpdir):
 
     sample_func, pdf_func = mi.chi2.PhaseFunctionAdapter("sggx",
          f"""<volume type="gridvolume" name="S">
-                 <string name="filename" value="{tmp_file}"/>
+                 <string name="filename" value="{xml_escape(tmp_file)}"/>
              </volume>
          """)
 

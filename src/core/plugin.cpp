@@ -230,6 +230,7 @@ std::string_view plugin_type_name(ObjectType ot) {
         case ObjectType::PhaseFunction: return "phase";
         case ObjectType::ReconstructionFilter: return "rfilter";
     }
+    return "invalid"; // (to avoid a compiler warning; this should never happen)
 }
 
 namespace {
@@ -286,9 +287,8 @@ ObjectType PluginManager::plugin_type(std::string_view name) {
     // Try to find an already loaded variant using direct hash table lookup
     std::pair<std::string, std::string> key(name, MI_DEFAULT_VARIANT);
     auto it = d->plugins.find(key);
-    if (it != d->plugins.end()) {
+    if (it != d->plugins.end())
         return it->second.type;
-    }
 
     // If not found with default variant, try to load it
     try {

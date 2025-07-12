@@ -72,8 +72,8 @@ public:
     StokesIntegrator(const Properties &props) : Base(props) {
         if constexpr (!is_polarized_v<Spectrum>)
             Throw("This integrator should only be used in polarized mode!");
-        for (auto &kv : props.objects()) {
-            Base *integrator = dynamic_cast<Base *>(kv.second.get());
+        for (auto &prop : props.objects()) {
+            Base *integrator = prop.try_get<Base>();
             if (!integrator)
                 Throw("Child objects must be of type 'SamplingIntegrator'!");
             if (m_integrator)

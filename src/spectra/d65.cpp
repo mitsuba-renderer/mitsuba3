@@ -79,13 +79,13 @@ public:
     D65Spectrum(const Properties &props) : Base(props) {
         m_scale = props.get<ScalarFloat>("scale", 1.f);
 
-        auto objects = props.objects(true);
-        if (objects.size() > 1)
-            Throw("Only a single texture child object can be specified.");
-        if (objects.size() == 1) {
-            m_nested_texture = dynamic_cast<Base *>(objects[0].second.get());
-            if (!m_nested_texture)
+        for (auto &prop : props.objects()) {
+            Base *texture = prop.try_get<Base>();
+            if (!texture)
                 Throw("Child object should be a texture object.");
+            if (m_nested_texture)
+                Throw("Only a single texture child object can be specified.");
+            m_nested_texture = texture;
         }
 
         if (props.has_property("color")) {
@@ -114,15 +114,17 @@ public:
             m_has_value = true;
         }
 
-        Properties props_d65("regular");
-        props_d65.set("wavelength_min", MI_CIE_MIN);
-        props_d65.set("wavelength_max", MI_CIE_MAX);
-        props_d65.set("size", MI_CIE_SAMPLES);
         std::vector<double> data;
         data.reserve(MI_CIE_SAMPLES);
         for (size_t i = 0; i < MI_CIE_SAMPLES; ++i)
-            data.push_back((double) d65_table[i] * (double) m_scale * (double) MI_CIE_D65_NORMALIZATION);
-        props_d65.set_any("values", std::move(data));
+            data.push_back((double) d65_table[i] * (double) m_scale *
+                           (double) MI_CIE_D65_NORMALIZATION);
+
+        Properties props_d65("regular");
+        props_d65.set("value",
+                      Properties::Spectrum(std::move(data), (double) MI_CIE_MIN,
+                                           (double) MI_CIE_MAX));
+
         m_d65 = (Base *) PluginManager::instance()->create_object<Base>(props_d65);
     }
 
@@ -148,15 +150,16 @@ public:
             if (m_nested_texture)
                  return { (Object *) m_nested_texture.get() };
 
+            Properties props;
             if (m_has_value) {
-                Properties props("srgb");
+                props.set_plugin_name("srgb");
                 props.set("color", dr::slice(m_value) * m_scale);
                 props.set("unbounded", true);
-                return { (Object *) PluginManager::instance()->create_object<Base>(props) };
+            } else {
+                props.set_plugin_name("uniform");
+                props.set("value", m_scale);
             }
 
-            Properties props("uniform");
-            props.set("value", m_scale);
             return { (Object *) PluginManager::instance()->create_object<Base>(props) };
         }
     }
@@ -166,10 +169,11 @@ public:
 
         if constexpr (is_spectral_v<Spectrum>) {
             UnpolarizedSpectrum d65_val = m_d65->eval(si, active);
-            if (m_has_value)
-                return d65_val * srgb_model_eval<UnpolarizedSpectrum>(m_value, si.wavelengths);
-            else
-                return d65_val * m_nested_texture->eval(si, active);
+            if (m_nested_texture)
+                d65_val *= m_nested_texture->eval(si, active);
+            else if (m_has_value)
+                d65_val *= srgb_model_eval<UnpolarizedSpectrum>(m_value, si.wavelengths);
+            return d65_val;
         } else {
             DRJIT_MARK_USED(si);
             NotImplementedError("eval");
@@ -182,16 +186,16 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::TextureSample, active);
 
         if constexpr (is_spectral_v<Spectrum>) {
-            if (m_has_value) {
-                // TODO: better sampling strategy
-                SurfaceInteraction3f si2(si);
-                si2.wavelengths = MI_CIE_MIN + (MI_CIE_MAX - MI_CIE_MIN) * sample;
-                return { si2.wavelengths, eval(si2, active) * (MI_CIE_MAX - MI_CIE_MIN) };
-            } else {
+            if (m_nested_texture) {
                 auto [wav, weight] = m_nested_texture->sample_spectrum(si, sample, active);
                 SurfaceInteraction3f si2(si);
                 si2.wavelengths = wav;
                 return { wav, weight * m_d65->eval(si2, active) };
+            } else {
+                // TODO: better sampling strategy
+                SurfaceInteraction3f si2(si);
+                si2.wavelengths = MI_CIE_MIN + (MI_CIE_MAX - MI_CIE_MIN) * sample;
+                return { si2.wavelengths, eval(si2, active) * (MI_CIE_MAX - MI_CIE_MIN) };
             }
         } else {
             DRJIT_MARK_USED(si);
@@ -279,8 +283,10 @@ public:
         if constexpr (is_spectral_v<Spectrum>) {
             if (m_nested_texture)
                 return m_nested_texture->max();
-            else
+            else if (m_has_value)
                 return dr::max_nested(srgb_model_mean(m_value));
+            else
+                return 1.f;
         } else {
             NotImplementedError("max");
         }
