@@ -1,9 +1,11 @@
-#include <mitsuba/core/bsphere.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sunsky.h>
+
+#include <mutex>
+#include <nanothread/nanothread.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -16,10 +18,8 @@ public:
     using EnvEmitter = Emitter<Float, Spectrum>;
     using FloatStorage = DynamicBuffer<Float>;
     using ScalarFloatStorage = DynamicBuffer<ScalarFloat>;
-    using FullSpectrum = std::conditional_t<
-        is_spectral_v<Spectrum>,
-        unpolarized_spectrum_t<mitsuba::Spectrum<Float, WAVELENGTH_COUNT>>,
-        unpolarized_spectrum_t<Spectrum>>;
+
+    // TODO cut bitmap in half
 
     AvgSunskyEmitter(const Properties &props) : Base(props) {
         if constexpr (!(is_rgb_v<Spectrum> || is_spectral_v<Spectrum>))
@@ -28,9 +28,6 @@ public:
         constexpr bool IS_RGB = is_rgb_v<Spectrum>;
 
         init_from_props(props);
-
-        // Extract albedo from texture
-        ScalarFloatStorage albedo = extract_albedo(m_albedo);
 
         // ================= GET SKY RADIANCE =================
         m_sky_params_dataset = sunsky_array_from_file<Float64, Float>(
@@ -48,6 +45,34 @@ public:
                 path_to_dataset<IS_RGB>(Dataset::SunLimbDarkening));
 
         // =============== ENVMAP INSTANTIATION ===============
+        m_bitmap_resolution = {256, 512};
+        m_bitmap = new Bitmap(Bitmap::PixelFormat::RGB, Struct::Type::Float32, m_bitmap_resolution, 3);
+        memset(m_bitmap->data(), 0, m_bitmap->buffer_size());
+
+        ThreadPayload payload = {
+            .year = (ScalarInt32) m_year,
+            .start_time = m_start_time,
+            .end_time = m_end_time,
+
+            // Checks for leap years
+            .nb_days = (m_year % 4 == 0 && (m_year % 100 != 0 || m_year % 400 == 0)) ? 366u : 365u,
+            .day_resolution = m_day_resolution,
+            .bitmap_resolution = m_bitmap_resolution,
+
+            .turbidity = m_turbidity,
+            .sun_half_aperture = m_sun_half_aperture,
+
+            .bitmap = m_bitmap,
+            .location = m_location,
+            .albedo = extract_albedo(m_albedo),
+
+            .sky_params = m_sky_params_dataset,
+            .sky_radiance = m_sky_rad_dataset,
+            .sun_radiance_params = sun_params<SUN_DATASET_SIZE>(m_sun_rad_dataset, m_turbidity),
+        };
+
+        task_submit_and_wait(nullptr, payload.nb_days, compute_average, &payload);
+
         // Permute axis for envmap's convention
         ScalarMatrix4f permute_axis {
             ScalarVector4f{0, 0, -1, 0},
@@ -56,19 +81,13 @@ public:
             ScalarVector4f{0, 0,  0, 1}
         };
         ScalarTransform4f envmap_transform { permute_axis };
-        ref<Object> average_sky = compute_avg({256, 512});
 
         Properties envmap_props = Properties("envmap");
-        envmap_props.set("bitmap", average_sky);
+        envmap_props.set("bitmap", static_cast<ref<Object>>(m_bitmap));
         envmap_props.set("to_world", envmap_transform);
         m_envmap = PluginManager::instance()->create_object<EnvEmitter>(envmap_props);
 
         m_flags = +EmitterFlags::Infinite | +EmitterFlags::SpatiallyVarying;
-    }
-
-    ~AvgSunskyEmitter() override {
-        m_envmap.reset();
-        delete m_bitmap_data;
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -183,60 +202,59 @@ public:
 
 private:
 
-    DateTimeRecord<FloatStorage> compute_times(
-        ScalarFloat start_time, ScalarFloat end_time,
-        ScalarUInt32 year, ScalarUInt32 day_resolution) const {
-        using UInt32Storage = DynamicBuffer<UInt32>;
+    struct ThreadPayload {
+        ScalarInt32 year;
+        ScalarFloat start_time;
+        ScalarFloat end_time;
 
-        ScalarFloat delta_hour = (end_time - start_time) / static_cast<ScalarFloat>(day_resolution);
+        ScalarUInt32 nb_days;
+        ScalarUInt32 day_resolution;
+        ScalarVector2u bitmap_resolution;
 
-        bool is_leap_year = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
-        ScalarUInt32 nb_samples = day_resolution * (is_leap_year ? 366 : 365);
-        UInt32Storage index = dr::arange<UInt32Storage>(nb_samples);
+        ScalarFloat turbidity;
+        ScalarFloat sun_half_aperture;
 
-        UInt32Storage days = index / day_resolution;
-        FloatStorage  hours = start_time + delta_hour * (index % day_resolution);
-        DateTimeRecord<FloatStorage> times = dr::zeros<DateTimeRecord<FloatStorage>>(nb_samples);
+        ref<Bitmap> bitmap;
 
-        times.year = year;
-        times.day = days;
-        times.hour = hours;
+        LocationRecord<ScalarFloat> location;
 
-        return times;
-    }
+        ScalarFloatStorage albedo;
+        ScalarFloatStorage sky_params;
+        ScalarFloatStorage sky_radiance;
+        ScalarFloatStorage sun_radiance_params;
+    };
 
+    static void compute_average(uint32_t thread_id /* <==> day */, void* payload_) {
+        ThreadPayload* payload = static_cast<ThreadPayload*>(payload_);
+        ScalarUInt32 day_resolution = payload->day_resolution;
+        ScalarVector2u bitmap_resolution = payload->bitmap_resolution;
 
-    ref<Object> compute_avg(const ScalarPoint2i& resolution) {
-        ScalarFloatStorage albedo = extract_albedo(m_albedo);
-        m_bitmap_data = new float[resolution.x() * resolution.y() * 3];
-        memset(m_bitmap_data, 0, resolution.x() * resolution.y() * 3 * sizeof(float));
-
-        //DateTimeRecord<FloatStorage> times = compute_times(8, 17, 2025, 2);
-        //                             times = dr::migrate(times, AllocType::Host);
-        //if constexpr (dr::is_jit_v<Float>)
-        //    dr::sync_thread();
-
-        const uint32_t nb_samples = 300;
-        const float start_hour = 8, end_hour = 17;
-        const float dt = (end_hour - start_hour) / nb_samples;
+        ref<Bitmap> result = new Bitmap(Bitmap::PixelFormat::RGB, Struct::Type::Float32, bitmap_resolution, 3);
+        memset(result->data(), 0, result->buffer_size());
+        ScalarFloat* bitmap_data = static_cast<ScalarFloat*>(result->data());
 
 
-        DateTimeRecord<ScalarFloat> time;
-        for (uint32_t i = 0; i < nb_samples; ++i) {
-            time.hour = start_hour + i * dt;
+        ScalarFloat dt = (payload->end_time - payload->start_time) / static_cast<ScalarFloat>(day_resolution);
+        DateTimeRecord<ScalarFloat> time = {
+            .year = payload->year,
+            .day = (ScalarInt32) thread_id,
+        };
 
-            const auto [sun_elevation, sun_azimuth] = sun_coordinates(time, m_location);
+        for (uint32_t i = 0; i < day_resolution; ++i) {
+            time.hour = payload->start_time + i * dt;
+
+            const auto [sun_elevation, sun_azimuth] = sun_coordinates(time, payload->location);
             const ScalarFloat sun_eta = 0.5f * dr::Pi<ScalarFloat> - sun_elevation;
+            if (sun_eta < 0.f) continue;
             const ScalarVector3f sun_dir = sph_to_dir(sun_elevation, sun_azimuth);
 
-            ScalarFloatStorage sun_radiance = sun_params<SUN_DATASET_SIZE>(m_sun_rad_dataset, m_turbidity);
-            ScalarFloatStorage sky_params = sky_radiance_params<SKY_DATASET_SIZE>(m_sky_params_dataset, albedo, m_turbidity, sun_eta);
-            ScalarFloatStorage sky_radiance = sky_radiance_params<SKY_DATASET_RAD_SIZE>(m_sky_rad_dataset, albedo, m_turbidity, sun_eta);
+            ScalarFloatStorage sky_params = sky_radiance_params<SKY_DATASET_SIZE>(payload->sky_params, payload->albedo, payload->turbidity, sun_eta);
+            ScalarFloatStorage sky_radiance = sky_radiance_params<SKY_DATASET_RAD_SIZE>(payload->sky_radiance, payload->albedo, payload->turbidity, sun_eta);
 
             // Iterate over top half of the image
-            for (int32_t pixel_idx = 0; pixel_idx < resolution.x() * resolution.y() / 2; ++pixel_idx) {
-                ScalarFloat pixel_u = static_cast<ScalarFloat>(pixel_idx % resolution.x()) / static_cast<ScalarFloat>(resolution.x());
-                ScalarFloat pixel_v = static_cast<ScalarFloat>(pixel_idx / resolution.x()) / static_cast<ScalarFloat>(resolution.y());
+            for (uint32_t pixel_idx = 0; pixel_idx < bitmap_resolution.x() * bitmap_resolution.y() / 2; ++pixel_idx) {
+                ScalarFloat pixel_u = static_cast<ScalarFloat>(pixel_idx % bitmap_resolution.x()) / static_cast<ScalarFloat>(bitmap_resolution.x());
+                ScalarFloat pixel_v = static_cast<ScalarFloat>(pixel_idx / bitmap_resolution.x()) / static_cast<ScalarFloat>(bitmap_resolution.y());
 
                 ScalarVector3f ray_dir = sph_to_dir(
                     dr::Pi<ScalarFloat> * pixel_v,
@@ -246,20 +264,22 @@ private:
 
                 ScalarColor3f res = 0.;
                 res += eval_sky<ScalarColor3f>({0, 1, 2}, ray_dir.z(), gamma, sky_params, sky_radiance);
-                res += (gamma < m_sun_half_aperture ? 1.f : 0.f) * SPEC_TO_RGB_SUN_CONV *
-                    eval_sun<ScalarColor3f>({0, 1, 2}, ray_dir.z(), gamma, sun_radiance, m_sun_half_aperture) * get_area_ratio(m_sun_half_aperture);
-                res *= static_cast<ScalarFloat>(MI_CIE_Y_NORMALIZATION) / static_cast<ScalarFloat>(nb_samples);
+                res += (gamma < payload->sun_half_aperture ? 1.f : 0.f) * SPEC_TO_RGB_SUN_CONV *
+                    eval_sun<ScalarColor3f>({0, 1, 2}, ray_dir.z(), gamma, payload->sun_radiance_params, payload->sun_half_aperture) * get_area_ratio(payload->sun_half_aperture);
+                res *= static_cast<ScalarFloat>(MI_CIE_Y_NORMALIZATION) / static_cast<ScalarFloat>(payload->nb_days * day_resolution);
 
-                m_bitmap_data[3 * pixel_idx + 0] += res.r();
-                m_bitmap_data[3 * pixel_idx + 1] += res.g();
-                m_bitmap_data[3 * pixel_idx + 2] += res.b();
+                bitmap_data[3 * pixel_idx + 0] += res.r();
+                bitmap_data[3 * pixel_idx + 1] += res.g();
+                bitmap_data[3 * pixel_idx + 2] += res.b();
 
             }
 
         }
 
-        return new Bitmap(Bitmap::PixelFormat::RGB, Struct::Type::Float32, resolution, 3, {}, reinterpret_cast<uint8_t *>(m_bitmap_data));
-    } 
+        std::lock_guard guard(s_bitmap_mutex);
+        payload->bitmap->accumulate(result);
+
+    }
 
 
     void init_from_props(const Properties& props) {
@@ -271,19 +291,23 @@ private:
         if (m_sky_scale < 0.f)
             Log(Error, "Invalid sky scale: %f, must be positive!", m_sky_scale);
 
-        ScalarFloat turb = props.get<ScalarFloat>("turbidity", 3.f);
-        if (turb < 1.f || 10.f < turb)
-            Log(Error, "Turbidity value %f is out of range [1, 10]", turb);
-        m_turbidity = turb;
-        dr::make_opaque(m_turbidity);
+        m_turbidity = props.get<ScalarFloat>("turbidity", 3.f);
+        if (m_turbidity < 1.f || 10.f < m_turbidity)
+            Log(Error, "Turbidity value %f is out of range [1, 10]", m_turbidity);
 
-        m_sun_half_aperture = dr::deg_to_rad(0.5f * (float) props.get<ScalarFloat>("sun_aperture", 0.5358));
+        m_sun_half_aperture = dr::deg_to_rad(0.5f * props.get<ScalarFloat>("sun_aperture", 0.5358f));
         if (m_sun_half_aperture <= 0.f || 0.5f * dr::Pi<Float> <= m_sun_half_aperture)
-            Log(Error, "Invalid sun aperture angle: %f, must be in ]0, 90[ degrees!", dr::rad_to_deg(2 * m_sun_half_aperture));
+            Log(Error, "Invalid sun aperture angle: %f, must be in ]0, 90[ degrees!", dr::rad_to_deg(2.f * m_sun_half_aperture));
 
         m_albedo = props.get_texture<Texture>("albedo", 0.3f);
         if (m_albedo->is_spatially_varying())
             Log(Error, "Expected a non-spatially varying radiance spectra!");
+
+        m_year = props.get<ScalarUInt32>("year", 2025);
+        m_start_time = props.get<ScalarFloat>("start_time", 7.f);
+        m_end_time = props.get<ScalarFloat>("end_time", 19.f);
+        m_day_resolution = props.get<ScalarUInt32>("day_resolution", 5);
+
 
         m_location.latitude  = props.get<ScalarFloat>("latitude", 35.6894f);
         m_location.longitude = props.get<ScalarFloat>("longitude", 139.6917f);
@@ -300,8 +324,7 @@ private:
      * \return
      *      The buffer with the extracted albedo values for the needed wavelengths/channels
      */
-    ScalarFloatStorage extract_albedo(const ref<Texture>& albedo_tex) const {
-        using FloatStorage = DynamicBuffer<Float>;
+    FloatStorage extract_albedo(const ref<Texture>& albedo_tex) const {
         FloatStorage albedo = dr::zeros<FloatStorage>(CHANNEL_COUNT);
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
@@ -348,20 +371,30 @@ private:
         (TURBITDITY_LVLS - 1) * ELEVATION_CTRL_PTS * TGMM_COMPONENTS *
         TGMM_GAUSSIAN_PARAMS;
 
-    ref<EnvEmitter> m_envmap;
-    float* m_bitmap_data;
 
     // ========= Common parameters =========
-    ScalarFloat m_turbidity;
-    ScalarFloat m_sky_scale;
-    ScalarFloat m_sun_scale;
+    ScalarUInt32 m_day_resolution = 100;
+    ScalarFloat m_turbidity = 7.f;
+    ScalarFloat m_sky_scale = 1.f;
+    ScalarFloat m_sun_scale = 1.f;
     ref<Texture> m_albedo;
 
-    // ========= Sun parameters =========
-
-    ScalarFloat m_sun_half_aperture;
-    /// Indicates if the plugin was initialized with a location/time record
     LocationRecord<ScalarFloat> m_location;
+    ScalarUInt32 m_year = 2025;
+    ScalarFloat m_start_time = 7.f;
+    ScalarFloat m_end_time = 19.f;
+
+    // ========= Sun parameter =========
+    // TODO find why macro does not work
+    ScalarFloat m_sun_half_aperture = dr::deg_to_rad(0.5358/2.0);
+
+    // ========= Envmap parameters =========
+    ref<Bitmap> m_bitmap;
+    ref<EnvEmitter> m_envmap;
+    ScalarVector2u m_bitmap_resolution;
+
+    static std::mutex s_bitmap_mutex;
+
 
     // Permanent datasets loaded from files/memory
     ScalarFloatStorage m_sky_rad_dataset;
@@ -369,6 +402,9 @@ private:
     ScalarFloatStorage m_sun_ld; // Not initialized in RGB mode
     ScalarFloatStorage m_sun_rad_dataset;
 };
+
+MI_VARIANT
+std::mutex AvgSunskyEmitter<Float, Spectrum>::s_bitmap_mutex{};
 
 MI_EXPORT_PLUGIN(AvgSunskyEmitter)
 NAMESPACE_END(mitsuba)
