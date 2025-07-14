@@ -9,7 +9,6 @@
 #include <mitsuba/core/formatter.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/frame.h>
-#include <mitsuba/core/xml.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/mitsuba.h>
 #include <pugixml.hpp>
@@ -1596,6 +1595,28 @@ struct Scratch {
     Task* task = nullptr;
 };
 
+// Set JIT scopes while instantating nodes
+struct ScopedSetJITScope {
+    ScopedSetJITScope(uint32_t backend, uint32_t scope) : backend(backend), backup(0) {
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+        if (backend) {
+            backup = jit_scope((JitBackend) backend);
+            jit_set_scope((JitBackend) backend, scope);
+        }
+#endif
+    }
+
+    ~ScopedSetJITScope() {
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+        if (backend)
+            jit_set_scope((JitBackend) backend, backup);
+#endif
+    }
+
+    uint32_t backend, backup;
+};
+
+
 static Task* instantiate_node(const ParserConfig &config,
                               ParserState &state,
                               std::vector<Scratch> &scratch,
@@ -1644,7 +1665,7 @@ static Task* instantiate_node(const ParserConfig &config,
 
     // Lambda function to instantiate a node once its children are ready
     auto instantiate = [&config, &state, &scratch, index, backend, scope]() {
-        xml::ScopedSetJITScope set_scope(config.parallel ? backend : 0u, scope);
+        ScopedSetJITScope set_scope(config.parallel ? backend : 0u, scope);
 
         Scratch &s = scratch[index];
         SceneNode &node = state[index];

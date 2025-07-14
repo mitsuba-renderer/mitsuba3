@@ -16,7 +16,6 @@ set(CORE_PY_V_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/transform_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/vector_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/warp_v.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/xml_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/quad_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/any.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/any.h
