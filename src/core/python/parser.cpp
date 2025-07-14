@@ -5,6 +5,7 @@
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/string.h>
+#include <mitsuba/core/fresolver.h>
 #include <nanobind/stl/string_view.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
@@ -267,14 +268,31 @@ static ParserState parse_dict(const ParserConfig &, const nb::dict &d) {
     return state;
 }
 
-
 // Helper function to convert kwargs to ParameterList
 static ParameterList convert_param_list(const nb::kwargs &kwargs) {
     ParameterList params;
     params.reserve(kwargs.size());
     for (auto [k, v] : kwargs)
-        params.emplace_back(nb::cast<std::string>(k), nb::cast<std::string>(nb::str(v)));
+        params.emplace_back(nb::cast<std::string>(k),
+                            nb::cast<std::string>(nb::str(v)));
     return params;
+}
+
+/// Depending on whether or not the input vector has size 1, returns the first
+/// and only element of the vector or the entire vector as a list
+static nb::object single_object_or_list(std::vector<ref<Object>> &objects) {
+    if (objects.size() == 1)
+        return cast_object(objects[0]);
+
+    nb::list l;
+    for (ref<Object> &obj : objects)
+        l.append(cast_object(obj));
+    return l;
+}
+
+/// Get the current variant
+static nb::str get_variant_str() {
+    return nb::borrow<nb::str>(nb::module_::import_("mitsuba").attr("variant")());
 }
 
 MI_PY_EXPORT(parser) {
@@ -410,15 +428,7 @@ MI_PY_EXPORT(parser) {
                   nb::gil_scoped_release release;
                   objects = instantiate(config, state);
               }
-
-              if (objects.size() == 1) {
-                  return cast_object(objects[0].get());
-              } else {
-                  nb::list l;
-                  for (auto &obj : objects)
-                      l.append(cast_object(obj.get()));
-                  return l;
-              }
+              return single_object_or_list(objects);
           },
           "config"_a, "state"_a,
           "Instantiate the parsed representation into concrete Mitsuba objects");
@@ -430,4 +440,102 @@ MI_PY_EXPORT(parser) {
     parser.def("write_string", &write_string,
           "state"_a, "add_section_headers"_a = false,
           "Convert scene data to an XML string");
+
+    // ======================== Main interface ========================
+
+    m.def(
+        "load_file",
+        [](const std::string &name, bool parallel, bool optimize, nb::kwargs kwargs) {
+            parser::ParameterList params = convert_param_list(kwargs);
+            nb::str variant_str = get_variant_str();
+            parser::ParserConfig config(variant_str.c_str());
+
+            config.parallel = parallel;
+            config.merge_equivalent = optimize;
+            config.merge_meshes = optimize;
+
+            // Set up FileResolver like the old parser does
+            fs::path filename(name);
+            if (!fs::exists(filename))
+                Throw("\"%s\": file does not exist!", filename);
+
+            ref<FileResolver> fs_backup = file_resolver();
+            ref<FileResolver> fs = new FileResolver(*fs_backup);
+            fs->prepend(filename.parent_path());
+            set_file_resolver(fs.get());
+
+            std::vector<ref<Object>> objects;
+            try {
+                nb::gil_scoped_release release;
+                parser::ParserState state = parser::parse_file(config, name, params);
+                parser::transform_all(config, state);
+                objects = parser::instantiate(config, state);
+            } catch (...) {
+                set_file_resolver(fs_backup.get());
+                throw;
+            }
+
+            set_file_resolver(fs_backup.get());
+
+            return single_object_or_list(objects);
+        },
+        "path"_a, "parallel"_a = true, "optimize"_a = true, "kwargs"_a,
+        D(xml, load_file));
+
+    m.def(
+        "load_string",
+        [](const std::string &value, bool parallel, bool optimize, nb::kwargs kwargs) {
+            parser::ParameterList params = convert_param_list(kwargs);
+            nb::str variant_str = get_variant_str();
+            parser::ParserConfig config(variant_str.c_str());
+            config.parallel = parallel;
+            config.merge_equivalent = optimize;
+            config.merge_meshes = optimize;
+
+            std::vector<ref<Object>> objects;
+            {
+                nb::gil_scoped_release release;
+                parser::ParserState state = parser::parse_string(config, value, params);
+                parser::transform_all(config, state);
+                objects = parser::instantiate(config, state);
+            }
+
+            return single_object_or_list(objects);
+        },
+        "value"_a, "parallel"_a = true, "optimize"_a = true, "kwargs"_a,
+        D(xml, load_string));
+
+    m.def(
+        "load_dict",
+        [](const nb::dict &dict, bool parallel, bool optimize) {
+            nb::str variant_str = get_variant_str();
+            parser::ParserConfig config(variant_str.c_str());
+            config.parallel = parallel;
+            config.merge_equivalent = optimize;
+            config.merge_meshes = optimize;
+
+            // Parse, transform, and instantiate
+            parser::ParserState state = parse_dict(config, dict);
+            std::vector<ref<Object>> objects;
+            {
+                nb::gil_scoped_release release;
+                parser::transform_all(config, state);
+                objects = parser::instantiate(config, state);
+            }
+
+            return single_object_or_list(objects);
+        },
+        "dict"_a, "parallel"_a=true, "optimize"_a=true,
+        R"doc(Load a Mitsuba scene or object from an Python dictionary
+
+Parameter ``dict``:
+    Python dictionary containing the object description
+
+Parameter ``parallel``:
+    Whether the loading should be executed on multiple threads in parallel
+
+Parameter ``optimize``:
+    Whether to enable optimizations like merging identical objects (default: True)
+
+)doc");
 }

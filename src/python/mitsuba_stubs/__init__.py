@@ -53,9 +53,7 @@ sys.modules[__name__ +'.quad']       = mi.quad
 sys.modules[__name__ +'.mueller']    = mi.mueller
 sys.modules[__name__ +'.misc']       = mi.misc
 sys.modules[__name__ +'.python']     = mi.python
-# detail module might not be available during stub generation
-if hasattr(mi, 'detail'):
-    sys.modules[__name__ +'.detail']     = mi.detail
+sys.modules[__name__ +'.detail']     = mi.detail
 sys.modules[__name__ +'.filesystem'] = mi.filesystem
 sys.modules[__name__ +'.parser']     = mi.parser
 
