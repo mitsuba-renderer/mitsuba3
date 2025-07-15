@@ -159,7 +159,7 @@ def test05_test_uniform_emitter_pdf(variants_all_backends_once):
         'type': 'scene',
         'shape': {'type': 'sphere', 'emitter': {'type':'area'}},
         'emitter_0': {'type':'point', 'sampling_weight': 1.0},
-        'emitter_1': {'type':'constant', 'sampling_weight': 1.0},
+        'emitter_1': {'type':'constant', 'enable_nee': True, 'sampling_weight': 1.0},
     })
     assert dr.allclose(scene.pdf_emitter(0), 1.0 / 3.0)
     assert dr.allclose(scene.pdf_emitter(1), 1.0 / 3.0)
@@ -188,7 +188,7 @@ def test07_test_uniform_emitter_sampling(variants_all_backends_once):
         'type': 'scene',
         'shape': {'type': 'sphere', 'emitter': {'type':'area', 'sampling_weight': 1.0}},
         'emitter_0': {'type':'point', 'sampling_weight': 1.0},
-        'emitter_1': {'type':'constant', 'sampling_weight': 1.0},
+        'emitter_1': {'type':'constant', 'enable_nee': True, 'sampling_weight': 1.0},
     })
     sample = 0.6
     index, weight, reused_sample = scene.sample_emitter(sample)

@@ -82,3 +82,6 @@ These are specified as children of the corresponding ``<shape>`` element:
             }
         }
 
+All emitters take and expose a ``sampling_weight`` parameter that controls the
+relative number of samples assigned to them when sampling an emitter from the
+scene object.

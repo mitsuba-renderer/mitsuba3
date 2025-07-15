@@ -23,6 +23,13 @@ Constant environment emitter (:monosp:`constant`)
    - Specifies the emitted radiance in units of power per unit area per unit steradian.
    - |exposed|, |differentiable|
 
+ * - enable_nee
+   - |bool|
+   - Defines whether or not this emitter should be used for next event
+     estimation. When set to `false`, it will set the `sampling_weight` to 0.
+     If the `sampling_weight` property is explicitly defined, this parameter is
+     always set to `true`. (Default: false)
+
 This plugin implements a constant environment emitter, which surrounds
 the scene and radiates diffuse illumination towards it. This is often
 a good default light source when the goal is to visualize some loaded
@@ -34,6 +41,7 @@ geometry that uses basic (e.g. diffuse) materials.
 
         <emitter type="constant">
             <rgb name="radiance" value="1.0"/>
+            <boolean name="enable_nee" value="false"/>
         </emitter>
 
     .. code-tab:: python
@@ -42,7 +50,8 @@ geometry that uses basic (e.g. diffuse) materials.
         'radiance': {
             'type': 'rgb',
             'value': 1.0,
-        }
+        },
+        'enable_nee': False
 
  */
 
@@ -62,14 +71,15 @@ public:
 
         // By default NEE is disabled with Constant emitter as BSDF sampling will always perform better
         m_enable_nee = props.get<bool>("enable_nee", false);
+        if (props.has_property("sampling_weight"))
+            m_enable_nee = true;
 
         if (m_radiance->is_spatially_varying())
             Throw("Expected a non-spatially varying radiance spectra!");
 
         m_flags = +EmitterFlags::Infinite;
 
-        // Disable NEE with constant emitters
-        if (!m_enable_nee)
+        if (!m_enable_nee) // Disable NEE with constant emitters
             m_sampling_weight = 0.f;
     }
 
@@ -130,8 +140,8 @@ public:
                                                             Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
-        if (!m_enable_nee)
-            return { dr::zeros<DirectionSample3f>(), 0.f }; // Disable NEE with constant emitters
+        if (!m_enable_nee) // Disable NEE with constant emitters
+            return { dr::zeros<DirectionSample3f>(), 0.f };
 
         Vector3f d = warp::square_to_uniform_sphere(sample);
 
@@ -163,8 +173,8 @@ public:
                         Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        if (!m_enable_nee)
-            return 0.f; // Disable NEE with constant emitters
+        if (!m_enable_nee) // Disable NEE with constant emitters
+            return 0.f;
 
         return warp::square_to_uniform_sphere_pdf(ds.d);
     }
@@ -215,9 +225,9 @@ protected:
     ref<Texture> m_radiance;
     BoundingSphere3f m_bsphere;
     bool m_enable_nee;
+
     /// Surface area of the bounding sphere
     Float m_surface_area;
-
 
     MI_TRAVERSE_CB(Base, m_radiance, m_bsphere, m_surface_area)
 };

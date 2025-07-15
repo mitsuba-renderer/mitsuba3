@@ -19,7 +19,8 @@ spectrum_dicts = {
 def create_emitter_and_spectrum(s_key='d65'):
     emitter = mi.load_dict({
         "type" : "constant",
-        "radiance" : spectrum_dicts[s_key]
+        "radiance" : spectrum_dicts[s_key],
+        "enable_nee" : True
     })
     spectrum = mi.load_dict(spectrum_dicts[s_key])
     expanded = spectrum.expand()
