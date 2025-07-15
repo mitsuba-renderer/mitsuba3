@@ -68,7 +68,7 @@ nb::object import_with_deepbind_if_necessary(const char* name) {
 
 #if defined(__clang__) && !defined(__APPLE__)
     if (!std::getenv("DRJIT_NO_RTLD_DEEPBIND"))
-        sys.attr("setdlopenflags")(sys.attr("getdlopenflags")());
+        sys.attr("setdlopenflags")(backupflags);
 #endif
 
     return out;
