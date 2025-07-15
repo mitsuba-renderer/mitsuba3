@@ -21,8 +21,7 @@ NAMESPACE_BEGIN(mitsuba)
 MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props)
     : JitObject<Shape>(props.id()) {
     m_to_world =
-        (ScalarTransform4f) props.get<ScalarTransform4f>("to_world", ScalarTransform4f());
-    m_to_object = m_to_world.scalar().inverse();
+        (ScalarAffineTransform4f) props.get<ScalarAffineTransform4f>("to_world", ScalarAffineTransform4f());
 
     for (auto &prop : props.objects()) {
         if (Emitter *emitter = prop.try_get<Emitter>()) {
@@ -325,7 +324,7 @@ void Shape<Float, Spectrum>::optix_fill_hitgroup_records(
 MI_VARIANT void Shape<Float, Spectrum>::optix_prepare_ias(const OptixDeviceContext& /*context*/,
                                                            std::vector<OptixInstance>& /*instances*/,
                                                            uint32_t /*instance_id*/,
-                                                           const ScalarTransform4f& /*transf*/) {
+                                                           const ScalarAffineTransform4f& /*transf*/) {
     NotImplementedError("optix_prepare_ias");
 }
 
@@ -641,8 +640,8 @@ void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &
             bool is_bspline_curve = shape_type() == +ShapeType::BSplineCurve,
                  is_linear_curve  = shape_type() == +ShapeType::LinearCurve;
 
-            if (!is_mesh() && !is_bspline_curve && !is_linear_curve) // to_world/to_object is used
-                dr::make_opaque(m_to_world, m_to_object);
+            if (!is_mesh() && !is_bspline_curve && !is_linear_curve) // to_world is used
+                dr::make_opaque(m_to_world);
         }
 
         if (m_emitter)
@@ -667,8 +666,8 @@ MI_VARIANT void Shape<Float, Spectrum>::initialize() {
         bool is_bspline_curve = shape_type() == +ShapeType::BSplineCurve,
              is_linear_curve  = shape_type() == +ShapeType::LinearCurve;
 
-        if (!is_mesh() && !is_bspline_curve && !is_linear_curve) // to_world/to_object is not used
-            dr::make_opaque(m_to_world, m_to_object);
+        if (!is_mesh() && !is_bspline_curve && !is_linear_curve) // to_world is not used
+            dr::make_opaque(m_to_world);
     }
 
     // Explicitly register this shape as the parent of the provided sub-objects

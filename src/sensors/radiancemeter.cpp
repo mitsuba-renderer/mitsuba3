@@ -78,7 +78,7 @@ public:
                 ScalarPoint3f target     = origin + direction;
                 auto [up, unused]        = coordinate_system(dr::normalize(direction));
 
-                m_to_world = ScalarTransform4f::look_at(origin, target, up);
+                m_to_world = ScalarAffineTransform4f::look_at(origin, target, up);
                 dr::make_opaque(m_to_world);
             }
         }
@@ -111,8 +111,8 @@ public:
         ray.wavelengths = wavelengths;
 
         // 2. Set ray origin and direction
-        ray.o = m_to_world.value().transform_affine(Point3f(0.f, 0.f, 0.f));
-        ray.d = m_to_world.value().transform_affine(Vector3f(0.f, 0.f, 1.f));
+        ray.o = m_to_world.value() * Point3f(0.f, 0.f, 0.f);
+        ray.d = m_to_world.value() * Vector3f(0.f, 0.f, 1.f);
         ray.o += ray.d * math::RayEpsilon<Float>;
 
         return { ray, wav_weight };
@@ -135,8 +135,8 @@ public:
         ray.wavelengths = wavelengths;
 
         // 2. Set ray origin and direction
-        ray.o = m_to_world.value().transform_affine(Point3f(0.f, 0.f, 0.f));
-        ray.d = m_to_world.value().transform_affine(Vector3f(0.f, 0.f, 1.f));
+        ray.o = m_to_world.value() * Point3f(0.f, 0.f, 0.f);
+        ray.d = m_to_world.value() * Vector3f(0.f, 0.f, 1.f);
         ray.o += ray.d * math::RayEpsilon<Float>;
 
         // 3. Set differentials; since the film size is always 1x1, we don't

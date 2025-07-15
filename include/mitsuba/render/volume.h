@@ -97,7 +97,7 @@ protected:
     Volume(const Properties &props);
 
     void update_bbox() {
-        ScalarTransform4f to_world = m_to_local.inverse();
+        ScalarAffineTransform4f to_world = m_to_local.inverse();
         m_bbox = ScalarBoundingBox3f();
         m_bbox.expand(to_world * ScalarPoint3f(0.f, 0.f, 0.f));
         m_bbox.expand(to_world * ScalarPoint3f(0.f, 0.f, 1.f));
@@ -111,7 +111,7 @@ protected:
 
 protected:
     /// Used to bring points in world coordinates to local coordinates.
-    ScalarTransform4f m_to_local;
+    ScalarAffineTransform4f m_to_local;
     /// Bounding box
     ScalarBoundingBox3f m_bbox;
     /// Number of channels stored in the volume

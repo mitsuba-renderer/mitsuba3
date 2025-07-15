@@ -276,7 +276,7 @@ public:
 
                     for (size_t j = 0; j < count; ++j) {
                         InputPoint3f p = dr::load<InputPoint3f>(target);
-                        p = m_to_world.scalar().transform_affine(p);
+                        p = m_to_world.scalar() * p;
                         if (unlikely(!all(dr::isfinite(p))))
                             fail("mesh contains invalid vertex position data");
                         m_bbox.expand(p);
@@ -286,7 +286,7 @@ public:
                         if (has_vertex_normals) {
                             InputNormal3f n = dr::load<InputNormal3f>(
                                 target + sizeof(InputFloat) * 3);
-                            n = dr::normalize(m_to_world.scalar().transform_affine(n));
+                            n = dr::normalize(m_to_world.scalar() * n);
                             dr::store(normal_ptr, n);
                             normal_ptr += 3;
                         }

@@ -17,7 +17,7 @@ template <typename T, typename = void> struct prop_map { using type = void; };
 template <typename T> using prop_map_t = typename prop_map<std::decay_t<T>>::type;
 template <typename T> struct base_type;
 template <typename T> struct is_transform_3: std::false_type { };
-template <typename T> struct is_transform_3<Transform<Point<T, 3>>> : std::true_type { };
+template <typename T> struct is_transform_3<AffineTransform<Point<T, 3>>> : std::true_type { };
 NAMESPACE_END(detail)
 
 /** \brief Associative container for passing configuration parameters to Mitsuba
@@ -956,12 +956,12 @@ ref<T> Properties::get_volume(std::string_view name, Float def_val) const {
     MI_EXPORT_PROP(Mode, bool)                                                 \
     MI_EXPORT_PROP(Mode, dr::Array<double, 3>)                                 \
     MI_EXPORT_PROP(Mode, Color<double, 3>)                                     \
-    MI_EXPORT_PROP(Mode, Transform<Point<double, 4>>)                          \
+    MI_EXPORT_PROP(Mode, AffineTransform<Point<double, 4>>)                    \
     MI_EXPORT_PROP(Mode, std::string)                                          \
     MI_EXPORT_PROP(Mode, ref<Object>)                                          \
     MI_EXPORT_PROP(Mode, typename Properties::Reference)                       \
     MI_EXPORT_PROP(Mode, typename Properties::ResolvedReference)               \
-    MI_EXPORT_PROP(Mode, typename Properties::Spectrum)                    \
+    MI_EXPORT_PROP(Mode, typename Properties::Spectrum)                        \
     MI_EXPORT_PROP(Mode, Any)
 
 
@@ -978,7 +978,7 @@ template <typename T, size_t N> struct prop_map<Vector<T, N>> { using type = dr:
 template <typename T, size_t N> struct prop_map<Point<T, N>> { using type = dr::Array<double, N>; };
 template <typename T, size_t N> struct prop_map<dr::Array<T, N>> { using type = dr::Array<double, N>; };
 template <typename T> struct prop_map<Color<T, 3>> { using type = Color<double, 3>; };
-template <typename T, size_t N> struct prop_map<Transform<Point<T, N>>> { using type = Transform<Point<double, 4>>; };
+template <typename T, size_t N> struct prop_map<AffineTransform<Point<T, N>>> { using type = AffineTransform<Point<double, 4>>; };
 template <typename T> struct prop_map<mitsuba::ref<T>> { using type = ref<Object>; };
 template <typename T> struct prop_map<T, std::enable_if_t<std::is_base_of_v<Object, std::remove_pointer_t<T>>>> { using type = ref<Object>; };
 template <typename T> struct prop_map<dr::Tensor<T>> { using type = Any; };

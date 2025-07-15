@@ -112,7 +112,7 @@ public:
     TensorXf operator()(const TensorXf &noisy,
                         const TensorXf &albedo = TensorXf(),
                         const TensorXf &normals = TensorXf(),
-                        const Transform4f &to_sensor = Transform4f(),
+                        const AffineTransform4f &to_sensor = AffineTransform4f(),
                         const TensorXf &flow = TensorXf(),
                         const TensorXf &previous_denoised = TensorXf()) const;
 
@@ -173,7 +173,7 @@ public:
     ref<Bitmap> operator()(const ref<Bitmap> &noisy,
                            const std::string &albedo_ch = "",
                            const std::string &normals_ch = "",
-                           const Transform4f &to_sensor = Transform4f(),
+                           const AffineTransform4f &to_sensor = AffineTransform4f(),
                            const std::string &flow_ch = "",
                            const std::string &previous_denoised_ch = "",
                            const std::string &noisy_ch = "<root>") const;

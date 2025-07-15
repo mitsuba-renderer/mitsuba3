@@ -53,7 +53,7 @@ details on how to create instances, refer to the :ref:`shape-shapegroup` plugin.
 template <typename Float, typename Spectrum>
 class Instance final: public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_shape_type,
+    MI_IMPORT_BASE(Shape, m_to_world, m_shape_type,
                    mark_dirty)
     MI_IMPORT_TYPES(BSDF)
 
@@ -76,7 +76,7 @@ public:
 
         m_shape_type = ShapeType::Instance;
 
-        dr::make_opaque(m_to_world, m_to_object);
+        dr::make_opaque(m_to_world);
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -85,21 +85,7 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "to_world")) {
-            if constexpr (dr::is_diff_v<Float>) {
-                Transform4f to_world = m_to_world.value();
-                // Re-attach inverse_transpose to original matrix
-                if (dr::grad_enabled(to_world.matrix)) {
-                    Matrix4f invt_diff = dr::inverse_transpose(to_world.matrix);
-                    to_world.inverse_transpose =
-                        dr::replace_grad(to_world.inverse_transpose, invt_diff);
-                }
-                m_to_world = to_world;
-            } else {
-                // Update the scalar value of the matrix
-                m_to_world = m_to_world.value();
-            }
-
-            m_to_object = m_to_world.value().inverse();
+            m_to_world = m_to_world.value().update();
             mark_dirty();
         }
         Base::parameters_changed();
@@ -139,7 +125,7 @@ public:
                                    dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
         if constexpr (!dr::is_array_v<FloatP>) {
-            return m_shapegroup->ray_intersect_preliminary_scalar(m_to_object.scalar().transform_affine(ray));
+            return m_shapegroup->ray_intersect_preliminary_scalar(m_to_world.scalar().inverse() * ray);
         } else {
             Throw("Instance::ray_intersect_preliminary() should only be called with scalar types.");
         }
@@ -152,7 +138,7 @@ public:
         MI_MASK_ARGUMENT(active);
 
         if constexpr (!dr::is_array_v<FloatP>) {
-            return m_shapegroup->ray_test_scalar(m_to_object.scalar().transform_affine(ray));
+            return m_shapegroup->ray_test_scalar(m_to_world.scalar().inverse() * ray);
         } else {
             Throw("Instance::ray_test_impl() should only be called with scalar types.");
         }
@@ -167,8 +153,8 @@ public:
                                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
-        const Transform4f& to_world  = m_to_world.value();
-        const Transform4f& to_object = m_to_object.value();
+        const AffineTransform4f& to_world  = m_to_world.value();
+        AffineTransform4f to_object = to_world.inverse();
 
         constexpr bool IsDiff = dr::is_diff_v<Float>;
         bool grad_enabled = dr::grad_enabled(to_world);
@@ -198,15 +184,15 @@ public:
                to account for the motion of `si` already. */
             dr::suspend_grad<Float> scope2(grad_enabled);
             si = m_shapegroup->compute_surface_interaction(
-                to_object.transform_affine(ray), pi, ray_flags,
+                to_object * ray, pi, ray_flags,
                 recursion_depth, active);
         }
 
         // Hit point `si.p` is only attached to the surface motion
-        si.p = to_world.transform_affine(si.p);
-        si.n = dr::normalize(dr::detach(to_world).transform_affine(si.n));
+        si.p = to_world * si.p;
+        si.n = dr::normalize(dr::detach(to_world) * si.n);
         if (likely(has_flag(ray_flags, RayFlags::ShadingFrame)))
-            si.sh_frame.n = dr::normalize(dr::detach(to_world).transform_affine(si.sh_frame.n));
+            si.sh_frame.n = dr::normalize(dr::detach(to_world) * si.sh_frame.n);
 
         if constexpr (IsDiff) {
             if (follow_shape && grad_enabled) {
@@ -230,21 +216,21 @@ public:
             si.initialize_sh_frame();
 
         if (likely(has_flag(ray_flags, RayFlags::dPdUV))) {
-            si.dp_du = to_world.transform_affine(si.dp_du);
-            si.dp_dv = to_world.transform_affine(si.dp_dv);
+            si.dp_du = to_world * si.dp_du;
+            si.dp_dv = to_world * si.dp_dv;
         }
 
         if (has_flag(ray_flags, RayFlags::dNGdUV) || has_flag(ray_flags, RayFlags::dNSdUV)) {
             Normal3f n = has_flag(ray_flags, RayFlags::dNGdUV) ? si.n : si.sh_frame.n;
 
             // Determine the length of the transformed normal before it was re-normalized
-            Normal3f tn = to_world.transform_affine(dr::normalize(to_object.transform_affine(n)));
+            Normal3f tn = to_world * dr::normalize(to_object * n);
             Float inv_len = dr::rcp(dr::norm(tn));
             tn *= inv_len;
 
             // Apply transform to dn_du and dn_dv
-            si.dn_du = to_world.transform_affine(Normal3f(si.dn_du)) * inv_len;
-            si.dn_dv = to_world.transform_affine(Normal3f(si.dn_dv)) * inv_len;
+            si.dn_du = to_world * Normal3f(si.dn_du) * inv_len;
+            si.dn_dv = to_world * Normal3f(si.dn_dv) * inv_len;
 
             si.dn_du -= tn * dr::dot(tn, si.dn_du);
             si.dn_dv -= tn * dr::dot(tn, si.dn_dv);
@@ -288,7 +274,7 @@ public:
     virtual void optix_prepare_ias(const OptixDeviceContext& context,
                                    std::vector<OptixInstance>& out_instances,
                                    uint32_t instance_id,
-                                   const ScalarTransform4f& transf) override {
+                                   const ScalarAffineTransform4f& transf) override {
         m_shapegroup->optix_prepare_ias(context, out_instances, instance_id,
                                         transf * m_to_world.scalar());
     }

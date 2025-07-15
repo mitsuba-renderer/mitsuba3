@@ -127,7 +127,7 @@ struct Transform4f {
     Transform4f() = default;
 
     template <typename T>
-    Transform4f(const mitsuba::Transform<mitsuba::Point<T, 4>> &t)
+    Transform4f(const mitsuba::AffineTransform<mitsuba::Point<T, 4>> &t)
         : matrix((Matrix4f) t.matrix),
           inverse_transpose((Matrix4f) t.inverse_transpose) {}
 #else

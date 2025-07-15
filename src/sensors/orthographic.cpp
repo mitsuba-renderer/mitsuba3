@@ -67,11 +67,11 @@ The exact camera position and orientation is most easily expressed using the
     .. code-tab:: python
 
         'type': 'orthographic',
-        'to_world': mi.ScalarTransform4f().look_at(
+        'to_world': mi.ScalarAffineTransform4f().look_at(
             origin=[1, 1, 1],
             target=[1, 2, 1],
             up=[0, 0, 1]
-        ) @ mi.ScalarTransform4f().scale([10, 10, 1])
+        ) @ mi.ScalarAffineTransform4f().scale([10, 10, 1])
 
  */
 
@@ -100,11 +100,9 @@ public:
     }
 
     void update_camera_transforms() {
-        m_camera_to_sample = orthographic_projection(
+        m_sample_to_camera = orthographic_projection(
             m_film->size(), m_film->crop_size(), m_film->crop_offset(),
-            Float(m_near_clip), Float(m_far_clip));
-
-        m_sample_to_camera = m_camera_to_sample.inverse();
+            Float(m_near_clip), Float(m_far_clip)).inverse();
 
         // Position differentials on the near plane
         m_dx = m_sample_to_camera * Point3f(1.f / m_resolution.x(), 0.f, 0.f) -
@@ -113,7 +111,7 @@ public:
              - m_sample_to_camera * Point3f(0.f);
 
         m_normalization = 1.f / m_image_rect.volume();
-        dr::make_opaque(m_camera_to_sample, m_sample_to_camera, m_dx, m_dy, m_normalization);
+        dr::make_opaque(m_sample_to_camera, m_dx, m_dy, m_normalization);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -194,8 +192,7 @@ public:
 
     MI_DECLARE_CLASS(OrthographicCamera)
 private:
-    Transform4f m_camera_to_sample;
-    Transform4f m_sample_to_camera;
+    AffineTransform4f m_sample_to_camera;
     BoundingBox2f m_image_rect;
     Float m_normalization;
     Vector3f m_dx, m_dy;

@@ -60,7 +60,9 @@ template <typename Value, size_t Size>          struct Point;
 template <typename Value, size_t Size>          struct Normal;
 template <typename Value, size_t Size>          struct Color;
 template <typename Value, size_t Size>          struct Spectrum;
-template <typename Point>                       struct Transform;
+template <typename Point, bool Affine>          struct Transform;
+template <typename Point>                       using AffineTransform = Transform<Point, true>;
+template <typename Point>                       using ProjectiveTransform = Transform<Point, false>;
 template <typename Point, typename Spectrum>    struct Ray;
 template <typename Point, typename Spectrum>    struct RayDifferential;
 template <typename Point>                       struct BoundingBox;
@@ -170,10 +172,15 @@ template <typename Float_> struct CoreAliases {
     using BoundingSphere4f = BoundingSphere<Point4f>;
 
     using Frame3f     = Frame<Float>;
-    using Transform3f = Transform<Point3f>;
-    using Transform4f = Transform<Point4f>;
-    using Transform3d = Transform<Point3d>;
-    using Transform4d = Transform<Point4d>;
+
+    using AffineTransform3f = AffineTransform<Point3f>;
+    using AffineTransform4f = AffineTransform<Point4f>;
+    using AffineTransform3d = AffineTransform<Point3d>;
+    using AffineTransform4d = AffineTransform<Point4d>;
+    using ProjectiveTransform3f = ProjectiveTransform<Point3f>;
+    using ProjectiveTransform4f = ProjectiveTransform<Point4f>;
+    using ProjectiveTransform3d = ProjectiveTransform<Point3d>;
+    using ProjectiveTransform4d = ProjectiveTransform<Point4d>;
 
     using Color1f = Color<Float, 1>;
     using Color3f = Color<Float, 3>;
@@ -270,10 +277,18 @@ template <typename Float_> struct CoreAliases {
     using prefix ## BoundingSphere3f     = typename prefix ## CoreAliases::BoundingSphere3f;       \
     using prefix ## BoundingSphere4f     = typename prefix ## CoreAliases::BoundingSphere4f;       \
     using prefix ## Frame3f              = typename prefix ## CoreAliases::Frame3f;                \
-    using prefix ## Transform3f          = typename prefix ## CoreAliases::Transform3f;            \
-    using prefix ## Transform4f          = typename prefix ## CoreAliases::Transform4f;            \
-    using prefix ## Transform3d          = typename prefix ## CoreAliases::Transform3d;            \
-    using prefix ## Transform4d          = typename prefix ## CoreAliases::Transform4d;            \
+    using prefix ## Transform3f [[deprecated]] = typename prefix ## CoreAliases::AffineTransform3f;\
+    using prefix ## Transform4f [[deprecated]] = typename prefix ## CoreAliases::AffineTransform4f;\
+    using prefix ## Transform3d [[deprecated]] = typename prefix ## CoreAliases::AffineTransform3d;\
+    using prefix ## Transform4d [[deprecated]] = typename prefix ## CoreAliases::AffineTransform4d;\
+    using prefix ## AffineTransform3f    = typename prefix ## CoreAliases::AffineTransform3f;      \
+    using prefix ## AffineTransform4f    = typename prefix ## CoreAliases::AffineTransform4f;      \
+    using prefix ## AffineTransform3d    = typename prefix ## CoreAliases::AffineTransform3d;      \
+    using prefix ## AffineTransform4d    = typename prefix ## CoreAliases::AffineTransform4d;      \
+    using prefix ## ProjectiveTransform3f = typename prefix ## CoreAliases::ProjectiveTransform3f; \
+    using prefix ## ProjectiveTransform4f = typename prefix ## CoreAliases::ProjectiveTransform4f; \
+    using prefix ## ProjectiveTransform3d = typename prefix ## CoreAliases::ProjectiveTransform3d; \
+    using prefix ## ProjectiveTransform4d = typename prefix ## CoreAliases::ProjectiveTransform4d; \
     using prefix ## Color1f              = typename prefix ## CoreAliases::Color1f;                \
     using prefix ## Color3f              = typename prefix ## CoreAliases::Color3f;                \
     using prefix ## Color1d              = typename prefix ## CoreAliases::Color1d;                \

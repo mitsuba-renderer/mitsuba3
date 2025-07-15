@@ -105,7 +105,7 @@ points and increasing radii::
 
         'curves': {
             'type': 'linearcurve',
-            'to_world': mi.ScalarTransform4f().scale([2, 2, 2]).translate([1, 0, 0]),
+            'to_world': mi.ScalarAffineTransform4f().scale([2, 2, 2]).translate([1, 0, 0]),
             'filename': 'curves.txt'
         },
 
@@ -116,7 +116,7 @@ points and increasing radii::
 template <typename Float, typename Spectrum>
 class LinearCurve final : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance, m_shape_type,
+    MI_IMPORT_BASE(Shape, m_to_world, m_is_instance, m_shape_type,
                    initialize, mark_dirty, get_children_string,
                    parameters_grad_enabled)
     MI_IMPORT_TYPES()
@@ -221,7 +221,7 @@ public:
                 p[i] = string::strtof<InputFloat>(cur, (char **) &cur);
                 parse_error |= cur == orig;
             }
-            p = m_to_world.scalar().transform_affine(p);
+            p = m_to_world.scalar() * p;
 
             // Vertex radius
             InputFloat r;

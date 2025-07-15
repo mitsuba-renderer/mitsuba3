@@ -141,7 +141,7 @@ public:
 
             ScalarFloat scale_factor = props.get<ScalarFloat>("scale_factor", 1.f);
 
-            auto to_world = props.get<ScalarTransform4f>("to_world", ScalarTransform4f());
+            auto to_world = props.get<ScalarAffineTransform4f>("to_world", ScalarAffineTransform4f());
             auto [to_world_S, to_world_Q, to_world_T] = transform_decompose(to_world.matrix, 25);
             float to_world_scale = dr::mean(dr::diag(to_world_S));
 
@@ -150,7 +150,7 @@ public:
                 stream->read(buf.get(), el.struct_->size());
 
                 ScalarPoint3f center = dr::load<ScalarPoint3f>(buf.get());
-                center = to_world.transform_affine(center);
+                center = to_world * center;
 
                 ScalarPoint3f scale  = dr::load<ScalarPoint3f>(buf.get() + scale_offset);
                 scale = dr::exp(scale); // Scaling activation (exponential)
