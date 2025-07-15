@@ -1,0 +1,1 @@
+Before this can be merged, we still need to figure out a way to handle AdjointIntegrators like the `ptracer`. THere the `constant` emitter should always sampled regardless of whether or not the user set `enable_nee=False`
