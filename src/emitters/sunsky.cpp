@@ -894,19 +894,11 @@ private:
             m_sun_dir = dr::normalize(props.get<ScalarVector3f>("sun_direction"));
             dr::make_opaque(m_sun_dir);
         } else {
-            m_location.latitude  = props.get<ScalarFloat>("latitude", 35.6894f);
-            m_location.longitude = props.get<ScalarFloat>("longitude", 139.6917f);
-            m_location.timezone  = props.get<ScalarFloat>("timezone", 9);
-            m_time.year          = props.get<ScalarInt32>("year", 2010);
-            m_time.month         = props.get<ScalarUInt32>("month", 7);
-            m_time.day           = props.get<ScalarUInt32>("day", 10);
-            m_time.hour          = props.get<ScalarFloat>("hour", 15.0f);
-            m_time.minute        = props.get<ScalarFloat>("minute", 0.0f);
-            m_time.second        = props.get<ScalarFloat>("second", 0.0f);
-
             m_active_record = true;
-            dr::make_opaque(m_location.latitude, m_location.longitude, m_location.timezone,
-                            m_time.year, m_time.day, m_time.month, m_time.hour, m_time.minute, m_time.second);
+
+            m_location = LocationRecord<Float>(props);
+            m_time = DateTimeRecord<Float>(props);
+            dr::make_opaque(m_location, m_time);
 
             const auto [elevation, azimuth] = sun_coordinates(m_time, m_location);
             m_sun_dir = sph_to_dir(elevation, azimuth);

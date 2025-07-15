@@ -25,17 +25,42 @@ public:
         if constexpr (!(is_rgb_v<Spectrum> || is_spectral_v<Spectrum>))
             Throw("Unsupported spectrum type, can only render in Spectral or RGB modes!");
 
+        m_sun_scale = props.get<ScalarFloat>("sun_scale", 1.f);
+        if (m_sun_scale < 0.f)
+            Log(Error, "Invalid sun scale: %f, must be positive!", m_sun_scale);
+
+        m_sky_scale = props.get<ScalarFloat>("sky_scale", 1.f);
+        if (m_sky_scale < 0.f)
+            Log(Error, "Invalid sky scale: %f, must be positive!", m_sky_scale);
+
+        m_turbidity = props.get<ScalarFloat>("turbidity", 3.f);
+        if (m_turbidity < 1.f || 10.f < m_turbidity)
+            Log(Error, "Turbidity value %f is out of range [1, 10]", m_turbidity);
+
+        m_sun_half_aperture = dr::deg_to_rad(0.5f * props.get<ScalarFloat>("sun_aperture", 0.5358f));
+        if (m_sun_half_aperture <= 0.f || 0.5f * dr::Pi<Float> <= m_sun_half_aperture)
+            Log(Error, "Invalid sun aperture angle: %f, must be in ]0, 90[ degrees!", dr::rad_to_deg(2.f * m_sun_half_aperture));
+
+        m_albedo = props.get_texture<Texture>("albedo", 0.3f);
+        if (m_albedo->is_spatially_varying())
+            Log(Error, "Expected a non-spatially varying radiance spectra!");
+
+        m_year = props.get<ScalarUInt32>("year", 2025);
+        m_start_time = props.get<ScalarFloat>("start_time", 7.f);
+        m_end_time = props.get<ScalarFloat>("end_time", 19.f);
+        m_day_resolution = props.get<ScalarUInt32>("day_resolution", 5);
+
+        m_location = LocationRecord<ScalarFloat>(props);
+        dr::make_opaque(m_location);
+
+
+        // ====================== LOAD DATASETS =====================
         constexpr bool IS_RGB = is_rgb_v<Spectrum>;
-
-        init_from_props(props);
-
-        // ================= GET SKY RADIANCE =================
         m_sky_params_dataset = sunsky_array_from_file<Float64, Float>(
             path_to_dataset<IS_RGB>(Dataset::SkyParams));
         m_sky_rad_dataset = sunsky_array_from_file<Float64, Float>(
             path_to_dataset<IS_RGB>(Dataset::SkyRadiance));
 
-        // ================= GET SUN RADIANCE =================
         m_sun_rad_dataset = sunsky_array_from_file<Float64, Float>(
             path_to_dataset<IS_RGB>(Dataset::SunRadiance));
 
@@ -44,7 +69,8 @@ public:
             m_sun_ld = sunsky_array_from_file<Float64, Float>(
                 path_to_dataset<IS_RGB>(Dataset::SunLimbDarkening));
 
-        // =============== ENVMAP INSTANTIATION ===============
+
+        // ================== ENVMAP INSTANTIATION ==================
         m_bitmap_resolution = {256, 512};
         m_bitmap = new Bitmap(Bitmap::PixelFormat::RGB, Struct::Type::Float32, m_bitmap_resolution, 3);
         memset(m_bitmap->data(), 0, m_bitmap->buffer_size());
@@ -235,10 +261,10 @@ private:
 
 
         ScalarFloat dt = (payload->end_time - payload->start_time) / static_cast<ScalarFloat>(day_resolution);
-        DateTimeRecord<ScalarFloat> time = {
-            .year = payload->year,
-            .day = (ScalarInt32) thread_id,
-        };
+        DateTimeRecord<ScalarFloat> time {};
+        time.year = payload->year;
+        time.day = (ScalarInt32) thread_id;
+
 
         for (uint32_t i = 0; i < day_resolution; ++i) {
             time.hour = payload->start_time + i * dt;
@@ -279,41 +305,6 @@ private:
         std::lock_guard guard(s_bitmap_mutex);
         payload->bitmap->accumulate(result);
 
-    }
-
-
-    void init_from_props(const Properties& props) {
-        m_sun_scale = props.get<ScalarFloat>("sun_scale", 1.f);
-        if (m_sun_scale < 0.f)
-            Log(Error, "Invalid sun scale: %f, must be positive!", m_sun_scale);
-
-        m_sky_scale = props.get<ScalarFloat>("sky_scale", 1.f);
-        if (m_sky_scale < 0.f)
-            Log(Error, "Invalid sky scale: %f, must be positive!", m_sky_scale);
-
-        m_turbidity = props.get<ScalarFloat>("turbidity", 3.f);
-        if (m_turbidity < 1.f || 10.f < m_turbidity)
-            Log(Error, "Turbidity value %f is out of range [1, 10]", m_turbidity);
-
-        m_sun_half_aperture = dr::deg_to_rad(0.5f * props.get<ScalarFloat>("sun_aperture", 0.5358f));
-        if (m_sun_half_aperture <= 0.f || 0.5f * dr::Pi<Float> <= m_sun_half_aperture)
-            Log(Error, "Invalid sun aperture angle: %f, must be in ]0, 90[ degrees!", dr::rad_to_deg(2.f * m_sun_half_aperture));
-
-        m_albedo = props.get_texture<Texture>("albedo", 0.3f);
-        if (m_albedo->is_spatially_varying())
-            Log(Error, "Expected a non-spatially varying radiance spectra!");
-
-        m_year = props.get<ScalarUInt32>("year", 2025);
-        m_start_time = props.get<ScalarFloat>("start_time", 7.f);
-        m_end_time = props.get<ScalarFloat>("end_time", 19.f);
-        m_day_resolution = props.get<ScalarUInt32>("day_resolution", 5);
-
-
-        m_location.latitude  = props.get<ScalarFloat>("latitude", 35.6894f);
-        m_location.longitude = props.get<ScalarFloat>("longitude", 139.6917f);
-        m_location.timezone  = props.get<ScalarFloat>("timezone", 9);
-
-        dr::make_opaque(m_location.latitude, m_location.longitude, m_location.timezone);
     }
 
     /**
