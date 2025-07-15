@@ -244,13 +244,43 @@ DynamicBuffer<Float> sky_radiance_params(
 
 template<typename Float>
 struct DateTimeRecord {
-    using Int32 = dr::int32_array_t<Float>;
+    using Int32       = dr::int32_array_t<Float>;
+    using ScalarInt32 = dr::scalar_t<Int32>;
+    using ScalarFloat = dr::scalar_t<Float>;
     Int32 year = 2010;
     Int32 month = 7;
     Int32 day = 10;
     Float hour = 15.f;
     Float minute = 0.f;
     Float second = 0.f;
+
+    /** Calculate difference in days between the current Julian Day
+     *  and JD 2451545.0, which is noon 1 January 2000 Universal Time
+     *
+     *  \param timezone (Float) Timezone to use for conversion
+     *  \return The elapsed time in julian days since New Year of 2000.
+     */
+    Float to_elapsed_julian_date(const Float timezone) const {
+        // Calculate time of the day in UT decimal hours
+        Float dec_hours = hour - timezone + (minute + second / 60.f) / 60.f;
+
+        // Calculate current Julian Day
+        Int32 li_aux_1 = (month - 14) / 12;
+        Int32 li_aux_2 = (1461 * (year + 4800 + li_aux_1)) / 4 +
+                         (367 * (month - 2 - 12 * li_aux_1)) / 12 -
+                         (3 * ((year + 4900 + li_aux_1) / 100)) / 4 + day -
+                         32075;
+        Float d_julian_date = li_aux_2 - 0.5f + dec_hours / 24.f;
+
+        // Calculate difference between current Julian Day and JD 2451545.0
+        return d_julian_date - 2451545.f;
+    }
+
+    explicit DateTimeRecord(const Properties& props, const std::string& prefix = ""):
+        year(props.get<ScalarInt32>(prefix + "year", 2010)), month(props.get<ScalarInt32>(prefix + "month", 7)),
+        day(props.get<ScalarInt32>(prefix + "day", 10)), hour(props.get<ScalarFloat>(prefix + "hour", 15.f)),
+        minute(props.get<ScalarFloat>(prefix + "minute", 0.f)), second(props.get<ScalarFloat>(prefix + "second", 0.f)) {}
+
 
     std::string to_string() const {
         std::ostringstream oss;
@@ -269,9 +299,16 @@ struct DateTimeRecord {
 
 template<typename Float>
 struct LocationRecord {
-    Float longitude;
-    Float latitude;
-    Float timezone;
+    using ScalarFloat = dr::scalar_t<Float>;
+
+    Float longitude = 139.6917f;
+    Float latitude = 35.6894f;
+    Float timezone = 9.f;
+
+    explicit LocationRecord(const Properties& props, const std::string& prefix = ""):
+        longitude(props.get<ScalarFloat>(prefix + "longitude", 139.6917f)),
+        latitude(props.get<ScalarFloat>(prefix + "latitude", 35.6894f)),
+        timezone(props.get<ScalarFloat>(prefix + "timezone", 9)) {}
 
     std::string to_string() const {
         std::ostringstream oss;
@@ -280,6 +317,8 @@ struct LocationRecord {
             << ", timezone = " << timezone << "]";
         return oss.str();
     }
+
+    DRJIT_STRUCT(LocationRecord, longitude, latitude, timezone)
 };
 
 /**
