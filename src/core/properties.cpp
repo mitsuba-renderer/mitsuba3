@@ -44,7 +44,7 @@ std::string_view property_type_name(Properties::Type type) {
 using Float             = double;
 using Array3f           = dr::Array<Float, 3>;
 using Color3f           = Color<Float, 3>;
-using Transform4f       = Transform<Point<double, 4>>;
+using AffineTransform4f = AffineTransform<Point<double, 4>>;
 using Reference         = Properties::Reference;
 using ResolvedReference = Properties::ResolvedReference;
 using Type              = Properties::Type;
@@ -56,7 +56,7 @@ template<> struct variant_type<int64_t> { static constexpr auto value = Type::In
 template<> struct variant_type<std::string> { static constexpr auto value = Type::String; };
 template<> struct variant_type<Array3f> { static constexpr auto value = Type::Vector; };
 template<> struct variant_type<Color3f> { static constexpr auto value = Type::Color; };
-template<> struct variant_type<Transform4f> { static constexpr auto value = Type::Transform; };
+template<> struct variant_type<AffineTransform4f> { static constexpr auto value = Type::Transform; };
 template<> struct variant_type<Reference> { static constexpr auto value = Type::Reference; };
 template<> struct variant_type<ResolvedReference> { static constexpr auto value = Type::ResolvedReference; };
 template<> struct variant_type<ref<Object>> { static constexpr auto value = Type::Object; };
@@ -64,7 +64,7 @@ template<> struct variant_type<Any> { static constexpr auto value = Type::Any; }
 template<> struct variant_type<Properties::Spectrum> { static constexpr auto value = Type::Spectrum; };
 
 using Variant = std::variant<std::monostate, bool, int64_t, Float, std::string,
-                             Array3f, Color3f, Properties::Spectrum, Transform4f, Reference,
+                             Array3f, Color3f, Properties::Spectrum, AffineTransform4f, Reference,
                              ResolvedReference, ref<Object>, Any>;
 
 /// Minimal heap-allocated string for efficient storage with string_view compatibility
@@ -387,7 +387,7 @@ bool Properties::operator==(const Properties &p) const {
             bool operator()(const Array3f &v) const { return dr::all(v == std::get<Array3f>(other)); }
             bool operator()(const Color3f &v) const { return dr::all(v == std::get<Color3f>(other)); }
             bool operator()(const Properties::Spectrum &v) const { return v == std::get<Properties::Spectrum>(other); }
-            bool operator()(const Transform4f &v) const { return v == std::get<Transform4f>(other); }
+            bool operator()(const AffineTransform4f &v) const { return v == std::get<AffineTransform4f>(other); }
             bool operator()(const Reference &v) const { return v == std::get<Reference>(other); }
             bool operator()(const ResolvedReference &v) const { return v == std::get<ResolvedReference>(other); }
             bool operator()(const ref<Object> &v) const { return v == std::get<ref<Object>>(other); }
@@ -444,7 +444,7 @@ size_t Properties::hash() const {
                 h = hash_combine(h, mitsuba::hash(s.values));
                 return h;
             }
-            size_t operator()(const Transform4f &t) const {
+            size_t operator()(const AffineTransform4f &t) const {
                 size_t h = 0;
                 for (int i = 0; i < 4; ++i)
                     for (int j = 0; j < 4; ++j)
@@ -481,7 +481,7 @@ namespace {
         void operator()(const Float &f) { os << f; }
         void operator()(const Array3f &t) { os << t; }
         void operator()(const std::string &s) { os << "\"" << s << "\""; }
-        void operator()(const Transform4f &t) { os << t.matrix; }
+        void operator()(const AffineTransform4f &t) { os << t.matrix; }
         void operator()(const Color3f &t) { os << t; }
         void operator()(const Properties::Spectrum &s) {
             if (s.is_uniform()) {

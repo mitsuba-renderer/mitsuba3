@@ -107,7 +107,7 @@ operation remains efficient even if only a single pixel is turned on.
             'value': 1.0,
         },
         'fov': 45,
-        'to_world': mi.ScalarTransform4f().look_at(
+        'to_world': mi.ScalarAffineTransform4f().look_at(
             origin=[1, 1, 1],
             target=[1, 2, 1],
             up=[0, 0, 1]
@@ -144,19 +144,18 @@ public:
         if (keys.empty() || string::contains(keys, "irradiance")) {
             ScalarVector2i size = m_irradiance->resolution();
 
-            m_camera_to_sample = perspective_projection<Float>(size, size, 0, m_x_fov,
+            m_sample_to_camera = perspective_projection<Float>(size, size, 0, m_x_fov,
                                                         ScalarFloat(1e-4f),
-                                                        ScalarFloat(1e4f));
-            m_sample_to_camera = m_camera_to_sample.inverse();
+                                                        ScalarFloat(1e4f)).inverse();
 
             // Compute
             Point3f pmin(m_sample_to_camera * Point3f(0.f, 0.f, 0.f)),
-                        pmax(m_sample_to_camera * Point3f(1.f, 1.f, 0.f));
+                    pmax(m_sample_to_camera * Point3f(1.f, 1.f, 0.f));
             BoundingBox2f image_rect(Point2f(pmin.x(), pmin.y()) / pmin.z());
             image_rect.expand(Point2f(pmax.x(), pmax.y()) / pmax.z());
             m_sensor_area = image_rect.volume();
 
-            dr::make_opaque(m_camera_to_sample, m_sample_to_camera,
+            dr::make_opaque(m_sample_to_camera,
                             m_intensity_scale, m_sensor_area);
         }
         dr::make_opaque(m_intensity_scale);
@@ -206,10 +205,10 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         // 1. Transform the reference point into the local coordinate system
-        Point3f it_local = m_to_world.value().inverse().transform_affine(it.p);
+        Point3f it_local = m_to_world.value().inverse() * it.p;
 
         // 2. Map to UV coordinates
-        Point2f uv = dr::head<2>(m_camera_to_sample * it_local);
+        Point2f uv = dr::head<2>(m_sample_to_camera.inverse() * it_local);
         active &= dr::all(uv >= 0 && uv <= 1) && it_local.z() > 0;
 
         // 3. Query texture
@@ -275,7 +274,7 @@ public:
                             Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        Point3f it_local = m_to_world.value().inverse().transform_affine(it.p);
+        Point3f it_local = m_to_world.value().inverse() * it.p;
 
         SurfaceInteraction3f it_query = dr::zeros<SurfaceInteraction3f>();
         it_query.wavelengths = it.wavelengths;
@@ -315,12 +314,11 @@ public:
 protected:
     ref<Texture> m_irradiance;
     Float m_intensity_scale;
-    Transform4f m_camera_to_sample;
-    Transform4f m_sample_to_camera;
+    ProjectiveTransform4f m_sample_to_camera;
     ScalarFloat m_x_fov;
     Float m_sensor_area;
 
-    MI_TRAVERSE_CB(Base, m_irradiance, m_intensity_scale, m_camera_to_sample,
+    MI_TRAVERSE_CB(Base, m_irradiance, m_intensity_scale,
                    m_sample_to_camera, m_x_fov, m_sensor_area)
 };
 

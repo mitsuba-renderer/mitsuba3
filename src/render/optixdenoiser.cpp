@@ -70,7 +70,7 @@ MI_VARIANT
 typename OptixDenoiser<Float, Spectrum>::TensorXf
 OptixDenoiser<Float, Spectrum>::operator()(
     const TensorXf &noisy, const TensorXf &albedo,
-    const TensorXf &normals, const Transform4f &to_sensor, const TensorXf &flow,
+    const TensorXf &normals, const AffineTransform4f &to_sensor, const TensorXf &flow,
     const TensorXf &previous_denoised) const {
     using TensorArray = typename TensorXf::Array;
 
@@ -157,7 +157,7 @@ OptixDenoiser<Float, Spectrum>::operator()(
 MI_VARIANT
 ref<Bitmap> OptixDenoiser<Float, Spectrum>::operator()(
     const ref<Bitmap> &noisy, const std::string &albedo_ch,
-    const std::string &normals_ch, const Transform4f &to_sensor,
+    const std::string &normals_ch, const AffineTransform4f &to_sensor,
     const std::string &flow_ch, const std::string &previous_denoised_ch,
     const std::string &noisy_ch) const {
     if (noisy->pixel_format() != Bitmap::PixelFormat::MultiChannel) {

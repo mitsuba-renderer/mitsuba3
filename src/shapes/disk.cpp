@@ -78,7 +78,7 @@ The following XML snippet instantiates an example of a textured disk shape:
             'type': 'diffuse',
             'reflectance': {
                 'type': 'checkerboard',
-                'to_uv': mi.ScalarTransform4f([2, 10, 0])
+                'to_uv': mi.ScalarAffineTransform4f([2, 10, 0])
             }
         }
  */
@@ -86,7 +86,7 @@ The following XML snippet instantiates an example of a textured disk shape:
 template <typename Float, typename Spectrum>
 class Disk final : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance,
+    MI_IMPORT_BASE(Shape, m_to_world, m_is_instance,
                    m_discontinuity_types, m_shape_type, initialize, mark_dirty,
                    get_children_string, parameters_grad_enabled)
     MI_IMPORT_TYPES()
@@ -98,7 +98,7 @@ public:
         if (props.get<bool>("flip_normals", false))
             m_to_world =
                 m_to_world.scalar() *
-                ScalarTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
+                ScalarAffineTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
 
         m_discontinuity_types = (uint32_t) DiscontinuityFlags::PerimeterType;
 
@@ -109,8 +109,6 @@ public:
     }
 
     void update() {
-        m_to_object = m_to_world.value().inverse();
-
         Vector3f dp_du = m_to_world.value() * Vector3f(1.f, 0.f, 0.f);
         Vector3f dp_dv = m_to_world.value() * Vector3f(0.f, 1.f, 0.f);
 
@@ -137,20 +135,7 @@ public:
             if constexpr (dr::is_jit_v<Float>)
                 dr::sync_thread();
 
-            if constexpr (dr::is_diff_v<Float>) {
-                Transform4f to_world = m_to_world.value();
-                // Re-attach inverse_transpose to original matrix
-                if (dr::grad_enabled(to_world.matrix)) {
-                    Matrix4f invt_diff = dr::inverse_transpose(to_world.matrix);
-                    to_world.inverse_transpose =
-                        dr::replace_grad(to_world.inverse_transpose, invt_diff);
-                }
-                m_to_world = to_world;
-            } else {
-                // Update the scalar value of the matrix
-                m_to_world = m_to_world.value();
-            }
-
+            m_to_world = m_to_world.value().update();
             update();
         }
         Base::parameters_changed(keys);
@@ -158,7 +143,7 @@ public:
 
 
     ScalarBoundingBox3f bbox() const override {
-        ScalarTransform4f to_world = m_to_world.scalar();
+        ScalarAffineTransform4f to_world = m_to_world.scalar();
 
         ScalarPoint3f c = to_world * ScalarPoint3f(0.f, 0.f, 0.f);
         ScalarVector3f u = to_world * ScalarVector3f(1.f, 0.f, 0.f);
@@ -188,7 +173,7 @@ public:
         Point2f p = warp::square_to_uniform_disk_concentric(sample);
 
         PositionSample3f ps = dr::zeros<PositionSample3f>();
-        ps.p    = m_to_world.value().transform_affine(Point3f(p.x(), p.y(), 0.f));
+        ps.p    = m_to_world.value() * Point3f(p.x(), p.y(), 0.f);
         ps.n    = m_frame.n;
         ps.pdf  = m_inv_surface_area;
         ps.time = time;
@@ -214,7 +199,7 @@ public:
         Point2f uniform_disk = warp::square_to_uniform_disk_concentric(uv);
         Point3f local = Point3f(uniform_disk.x(), uniform_disk.y(), 0.f);
 
-        Point3f p = m_to_world.value().transform_affine(local);
+        Point3f p = m_to_world.value() * local;
 
         Ray3f ray(p + m_frame.n, -m_frame.n, 0, Wavelength(0));
 
@@ -246,7 +231,7 @@ public:
         if (!has_flag(flags, DiscontinuityFlags::PerimeterType))
             return dr::zeros<SilhouetteSample3f>();
 
-        const Transform4f& to_world = m_to_world.value();
+        const AffineTransform4f& to_world = m_to_world.value();
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
 
         /// Sample a point on the shape surface
@@ -255,7 +240,7 @@ public:
         Float sin_theta, cos_theta;
         std::tie(sin_theta, cos_theta) = dr::sincos(theta);
         Point3f local_p = Point3f(cos_theta, sin_theta, 0.f);
-        ss.p = to_world.transform_affine(Point3f(local_p.x(), local_p.y(), 0.f));
+        ss.p = to_world * Point3f(local_p.x(), local_p.y(), 0.f);
 
         /// Sample a tangential direction at the point
         ss.d = warp::square_to_uniform_sphere(Point2f(sample.y(), sample.z()));
@@ -263,20 +248,20 @@ public:
         /// Fill other fields
         ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
         ss.flags = flags;
-        ss.silhouette_d  = dr::normalize(to_world.transform_affine(
-            Vector3f(local_p.y(), -local_p.x(), 0.f)));
+        ss.silhouette_d  = dr::normalize(to_world *
+            Vector3f(local_p.y(), -local_p.x(), 0.f));
         Normal3f frame_n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
 
         // Normal direction `ss.n` must point outwards
         Vector3f inward_dir = -local_p;
-        inward_dir = to_world.transform_affine(inward_dir);
+        inward_dir = to_world * inward_dir;
         dr::masked(frame_n, dr::dot(inward_dir, frame_n) > 0.f) *= -1.f;
         ss.n = frame_n;
 
         // Arc-length ratio
         ss.pdf = dr::InvTwoPi<Float> *
-                 dr::rcp(dr::norm(to_world.transform_affine(
-                     Vector3f(local_p.y(), -local_p.x(), 0.f))));
+                 dr::rcp(dr::norm(to_world *
+                     Vector3f(local_p.y(), -local_p.x(), 0.f)));
         ss.pdf *= warp::square_to_uniform_sphere_pdf(ss.d);
         ss.foreshortening = dr::norm(dr::cross(ss.d, ss.silhouette_d));
         ss.shape = this;
@@ -311,7 +296,7 @@ public:
             Float sin_theta, cos_theta;
             std::tie(sin_theta, cos_theta) = dr::sincos(theta);
             Point3f local  = uv.x() * Point3f(cos_theta, sin_theta, 0.f);
-            Point3f p_diff = m_to_world.value().transform_affine(local);
+            Point3f p_diff = m_to_world.value() * local;
 
             return dr::replace_grad(si.p, p_diff);
         }
@@ -327,7 +312,7 @@ public:
         if (!has_flag(flags, DiscontinuityFlags::PerimeterType))
             return dr::zeros<SilhouetteSample3f>();
 
-        const Transform4f &to_world = m_to_world.value();
+        const AffineTransform4f &to_world = m_to_world.value();
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
 
         ss.uv = Point2f(1.f, si.uv.y());
@@ -338,15 +323,15 @@ public:
 
         Point3f local_p = Point3f(cos_theta, sin_theta, 0.f);
 
-        ss.p = to_world.transform_affine(local_p);
+        ss.p = to_world * local_p;
         ss.d = dr::normalize(ss.p - viewpoint);
 
-        ss.silhouette_d  = dr::normalize(to_world.transform_affine(
-            Vector3f(local_p.y(), -local_p.x(), 0.f)));
+        ss.silhouette_d  = dr::normalize(to_world *
+            Vector3f(local_p.y(), -local_p.x(), 0.f));
         Normal3f frame_n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
 
         Vector3f inward_dir = -local_p;
-        inward_dir = to_world.transform_affine(inward_dir);
+        inward_dir = to_world * inward_dir;
         dr::masked(frame_n, dr::dot(inward_dir, frame_n) > 0.f) *= -1.f;
         ss.n = frame_n;
 
@@ -381,11 +366,11 @@ public:
         uint32_t flags = (uint32_t) DiscontinuityFlags::PerimeterType;
         SilhouetteSample3f ss = primitive_silhouette_projection(viewpoint, si, flags, 0.f, active);
 
-        Point3f local_p = m_to_object.value().transform_affine(ss.p);
+        Point3f local_p = m_to_world.value().inverse() * ss.p;
         // Arc-length ratio
         ss.pdf = dr::InvTwoPi<Float> *
-                 dr::rcp(dr::norm(m_to_world.value().transform_affine(
-                     Vector3f(local_p.y(), -local_p.x(), 0.f))));
+                 dr::rcp(dr::norm(m_to_world.value() *
+                     Vector3f(local_p.y(), -local_p.x(), 0.f)));
 
         return ss;
     }
@@ -403,13 +388,13 @@ public:
     ray_intersect_preliminary_impl(const Ray3fP &ray_,
                                    ScalarIndex /*prim_index*/,
                                    dr::mask_t<FloatP> active) const {
-        Transform<Point<FloatP, 4>> to_object;
+        AffineTransform<Point<FloatP, 4>> to_object;
         if constexpr (!dr::is_jit_v<FloatP>)
-            to_object = m_to_object.scalar();
+            to_object = m_to_world.scalar().inverse();
         else
-            to_object = m_to_object.value();
+            to_object = m_to_world.value().inverse();
 
-        Ray3fP ray = to_object.transform_affine(ray_);
+        Ray3fP ray = to_object * ray_;
         FloatP t = -ray.o.z() / ray.d.z();
         Point<FloatP, 3> local = ray(t);
 
@@ -427,13 +412,13 @@ public:
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
-        Transform<Point<FloatP, 4>> to_object;
+        AffineTransform<Point<FloatP, 4>> to_object;
         if constexpr (!dr::is_jit_v<FloatP>)
-            to_object = m_to_object.scalar();
+            to_object = m_to_world.scalar().inverse();
         else
-            to_object = m_to_object.value();
+            to_object = m_to_world.value().inverse();
 
-        Ray3fP ray = to_object.transform_affine(ray_);
+        Ray3fP ray = to_object * ray_;
         FloatP t   = -ray.o.z() / ray.d.z();
         Point<FloatP, 3> local = ray(t);
 
@@ -459,8 +444,8 @@ public:
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
         bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
 
-        Transform4f to_world = m_to_world.value();
-        Transform4f to_object = m_to_object.value();
+        AffineTransform4f to_world = m_to_world.value();
+        AffineTransform4f to_object = to_world.inverse();
 
         dr::suspend_grad<Float> scope(detach_shape, to_world, to_object, m_frame);
 
@@ -475,11 +460,11 @@ public:
                    in local space and transform it back in world space to get a
                    point rigidly attached to the shape's motion, including
                    translation, scaling and rotation. */
-                Point3f local = to_object.transform_affine(ray(pi.t));
+                Point3f local = to_object * ray(pi.t);
                 /* With FollowShape the local position should always be static as
                    the intersection point follows any motion of the sphere. */
                 local = dr::detach(local);
-                si.p = to_world.transform_affine(local);
+                si.p = to_world * local;
                 si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) / dr::squared_norm(ray.d));
                 prim_uv = dr::head<2>(local);
             } else {
@@ -544,7 +529,7 @@ public:
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixDiskData));
 
-            OptixDiskData data = { bbox(), m_to_object.scalar() };
+            OptixDiskData data = { bbox(), m_to_world.scalar().inverse() };
 
             jit_memcpy_async(JitBackend::CUDA, m_optix_data_ptr, &data,
                              sizeof(OptixDiskData));

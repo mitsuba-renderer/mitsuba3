@@ -58,7 +58,7 @@ public:
     Checkerboard(const Properties &props) : Texture(props) {
         m_color0 = props.get_texture<Texture>("color0", .4f);
         m_color1 = props.get_texture<Texture>("color1", .2f);
-        m_transform = props.get<ScalarTransform3f>("to_uv", ScalarTransform3f());
+        m_transform = props.get<ScalarAffineTransform3f>("to_uv", ScalarAffineTransform3f());
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -70,7 +70,7 @@ public:
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &it, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
-        Point2f uv = m_transform.transform_affine(it.uv);
+        Point2f uv = m_transform * it.uv;
         dr::mask_t<Point2f> mask = uv - dr::floor(uv) > .5f;
         UnpolarizedSpectrum result = dr::zeros<UnpolarizedSpectrum>();
 
@@ -91,7 +91,7 @@ public:
     Float eval_1(const SurfaceInteraction3f &it, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
-        Point2f uv = m_transform.transform_affine(it.uv);
+        Point2f uv = m_transform * it.uv;
         dr::mask_t<Point2f> mask = (uv - dr::floor(uv)) > .5f;
         Float result = 0.f;
 
@@ -129,7 +129,7 @@ public:
 protected:
     ref<Texture> m_color0;
     ref<Texture> m_color1;
-    ScalarTransform3f m_transform;
+    ScalarAffineTransform3f m_transform;
 
     MI_TRAVERSE_CB(Texture, m_color0, m_color1)
 };

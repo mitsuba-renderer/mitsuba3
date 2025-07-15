@@ -31,7 +31,7 @@ using ScalarColor3d     = Color<double, 3>;
 using ScalarPoint3d     = Point<double, 3>;
 using ScalarPoint4d     = Point<double, 4>;
 using ScalarMatrix4d    = dr::Matrix<double, 4>;
-using ScalarTransform4d = Transform<ScalarPoint4d>;
+using ScalarAffineTransform4d = AffineTransform<ScalarPoint4d>;
 
 /// A list of all tag types that can be encountered in an XML file (excluding the various object type tags)
 enum class TagType {
@@ -452,7 +452,7 @@ template <typename... Args>
 // Helper function to parse transform nodes
 static void parse_transform_node(const ParserState &state, pugi::xml_node node,
                                  const SceneNode &scene_node,
-                                 ScalarTransform4d &transform,
+                                 ScalarAffineTransform4d &transform,
                                  SortedParameters &params) {
     // Apply parameter substitution to all attributes
     for (pugi::xml_attribute attr : node.attributes()) {
@@ -471,7 +471,7 @@ static void parse_transform_node(const ParserState &state, pugi::xml_node node,
             check_attributes(state, scene_node, node, {"x"sv, "y"sv, "z"sv});
 
             ScalarVector3d vec = parse_vector(state, scene_node, node);
-            transform = ScalarTransform4d::translate(vec) * transform;
+            transform = ScalarAffineTransform4d::translate(vec) * transform;
             break;
         }
 
@@ -490,7 +490,7 @@ static void parse_transform_node(const ParserState &state, pugi::xml_node node,
 
             try {
                 double angle = string::stof<double>(angle_str);
-                transform = ScalarTransform4d::rotate(axis, angle) * transform;
+                transform = ScalarAffineTransform4d::rotate(axis, angle) * transform;
             } catch (...) {
                 fail(state, scene_node, "could not parse angle value \"%s\"", angle_str);
             }
@@ -503,7 +503,7 @@ static void parse_transform_node(const ParserState &state, pugi::xml_node node,
             check_attributes(state, scene_node, node, {"x"sv, "y"sv, "z"sv});
 
             ScalarVector3d vec = parse_vector(state, scene_node, node, 1.0);
-            transform = ScalarTransform4d::scale(vec) * transform;
+            transform = ScalarAffineTransform4d::scale(vec) * transform;
             break;
         }
 
@@ -527,7 +527,7 @@ static void parse_transform_node(const ParserState &state, pugi::xml_node node,
                 std::tie(up, std::ignore) = coordinate_system(dir);
             }
 
-            transform = ScalarTransform4d::look_at(origin, target, up) * transform;
+            transform = ScalarAffineTransform4d::look_at(origin, target, up) * transform;
             if (dr::any_nested(dr::isnan(transform.matrix)))
                 fail(state, scene_node, "invalid lookat transformation");
 
@@ -556,7 +556,7 @@ static void parse_transform_node(const ParserState &state, pugi::xml_node node,
                 }
             }
 
-            transform = ScalarTransform4d(m) * transform;
+            transform = ScalarAffineTransform4d(m) * transform;
             break;
         }
 
@@ -888,7 +888,7 @@ static void parse_xml_node(const ParserConfig &config, ParserState &state,
             check_attributes(state, scene_node, node, {"!name"sv});
 
             // Create a fresh transform for this scope
-            ScalarTransform4d transform;
+            ScalarAffineTransform4d transform;
 
             // Process child transform operations
             for (pugi::xml_node child : node.children()) {
@@ -1228,8 +1228,8 @@ static void upgrade_from_v1(Properties &props) {
             props.remove_property("vscale");
         }
 
-        props.set("to_uv", ScalarTransform4d::scale(scale) *
-                           ScalarTransform4d::translate(offset));
+        props.set("to_uv", ScalarAffineTransform4d::scale(scale) *
+                           ScalarAffineTransform4d::translate(offset));
     }
 }
 
@@ -1815,7 +1815,7 @@ std::vector<ref<Object>> instantiate(const ParserConfig &config, ParserState &st
  * 6. For sensors without scale: <lookat> (when applicable)
  * Falls back to <matrix> if decomposition fails or results in multiple rotations
  */
-static bool decompose_transform(const ScalarTransform4d &transform,
+static bool decompose_transform(const ScalarAffineTransform4d &transform,
                                 pugi::xml_node &prop_node,
                                 bool is_sensor = false) {
     const ScalarMatrix4d &m = transform.matrix;
@@ -2057,7 +2057,7 @@ static void write_node_to_xml(WriterState &writer_state,
 
         // Special handling for transforms - check if identity before creating node
         if (prop_type == Properties::Type::Transform) {
-            ScalarMatrix4d mat = prop.get<ScalarTransform4d>().matrix;
+            ScalarMatrix4d mat = prop.get<ScalarAffineTransform4d>().matrix;
             using Array = dr::array_t<ScalarMatrix4d>;
 
             // Skip identity transforms entirely
@@ -2134,7 +2134,7 @@ static void write_node_to_xml(WriterState &writer_state,
             }
 
             case Properties::Type::Transform: {
-                ScalarTransform4d transform = prop.get<ScalarTransform4d>();
+                ScalarAffineTransform4d transform = prop.get<ScalarAffineTransform4d>();
 
                 // Try to decompose transform into one of several canonical formats
                 if (decompose_transform(transform, prop_node,

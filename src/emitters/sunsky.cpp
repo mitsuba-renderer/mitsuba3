@@ -168,7 +168,7 @@ public:
         FloatStorage albedo = extract_albedo(m_albedo);
 
         // ================= UPDATE ANGLES =================
-        Vector3f local_sun_dir = m_to_world.value().inverse().transform_affine(m_sun_dir);
+        Vector3f local_sun_dir = m_to_world.value().inverse() * m_sun_dir;
 
         m_sun_angles = dir_to_sph(local_sun_dir);
         m_sun_angles = { m_sun_angles.y(), m_sun_angles.x() }; // flip convention
@@ -278,9 +278,9 @@ public:
         Vector3f local_sun_dir;
         if (changed_time_record) {
             local_sun_dir = sun_coordinates(m_time, m_location);
-            m_sun_dir = m_to_world.value().transform_affine(local_sun_dir);
+            m_sun_dir = m_to_world.value() * local_sun_dir;
         } else if (changed_sun_dir) {
-            local_sun_dir = m_to_world.value().inverse().transform_affine(m_sun_dir);
+            local_sun_dir = m_to_world.value().inverse() * m_sun_dir;
         }
 
         m_sun_angles = dir_to_sph(local_sun_dir);
@@ -348,7 +348,7 @@ public:
         using SpecMask   = dr::mask_t<unpolarized_spectrum_t<Spectrum>>;
         using SpecUInt32 = dr::uint32_array_t<unpolarized_spectrum_t<Spectrum>>;
 
-        Vector3f local_wo = m_to_world.value().inverse().transform_affine(-si.wi);
+        Vector3f local_wo = m_to_world.value().inverse() * (-si.wi);
         Float cos_theta = Frame3f::cos_theta(local_wo),
               gamma = dr::unit_angle(Vector3f(m_local_sun_frame.n), local_wo);
 
@@ -424,7 +424,7 @@ public:
         );
         active &= Frame3f::cos_theta(d) >= 0.f;
         // Unlike \ref sample_direction, ray goes from the envmap toward the scene
-        Vector3f d_world = m_to_world.value().transform_affine(-d);
+        Vector3f d_world = m_to_world.value() * (-d);
 
         // 3. PDF
         Float sky_pdf, sun_pdf;
@@ -472,7 +472,7 @@ public:
         Float radius = dr::maximum(m_bsphere.radius, dr::norm(it.p - m_bsphere.center)),
               dist   = 2.f * radius;
 
-        Vector3f d = m_to_world.value().transform_affine(sample_dir);
+        Vector3f d = m_to_world.value() * sample_dir;
         DirectionSample3f ds = dr::zeros<DirectionSample3f>();
         ds.p = dr::fmadd(d, dist, it.p);
         ds.n = -d;
@@ -500,7 +500,7 @@ public:
                         Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        Vector3f local_dir = m_to_world.value().inverse().transform_affine(ds.d);
+        Vector3f local_dir = m_to_world.value().inverse() * ds.d;
         Float sky_pdf, sun_pdf;
         std::tie(sky_pdf, sun_pdf) = compute_pdfs(local_dir, true, active);
 
@@ -1060,7 +1060,7 @@ private:
             if (dr::all(m_sun_dir.z() < 0))
                 Log(Warn, "The sun is below the horizon at the specified time and location!");
 
-            m_sun_dir = m_to_world.value().transform_affine(m_sun_dir);
+            m_sun_dir = m_to_world.value() * m_sun_dir;
         }
     }
 

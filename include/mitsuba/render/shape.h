@@ -980,7 +980,7 @@ public:
     virtual void optix_prepare_ias(const OptixDeviceContext& /*context*/,
                                    std::vector<OptixInstance>& /*out_instances*/,
                                    uint32_t /*instance_id*/,
-                                   const ScalarTransform4f& /*transf*/);
+                                   const ScalarAffineTransform4f& /*transf*/);
 
     /**
      * \brief Creates and appends the HitGroupSbtRecord(s) associated with this
@@ -1057,8 +1057,7 @@ protected:
     tsl::robin_map<std::string, ref<Texture>, std::hash<std::string_view>,
                    std::equal_to<>> m_texture_attributes;
 
-    field<Transform4f, ScalarTransform4f> m_to_world;
-    field<Transform4f, ScalarTransform4f> m_to_object;
+    field<AffineTransform4f, ScalarAffineTransform4f> m_to_world;
 
     /// True if the shape is used in a \c ShapeGroup
     bool m_is_instance = false;
@@ -1076,8 +1075,7 @@ protected:
     bool m_initialized = false;
 
     MI_DECLARE_TRAVERSE_CB(m_bsdf, m_emitter, m_sensor, m_interior_medium,
-                           m_exterior_medium, m_texture_attributes, m_to_world,
-                           m_to_object)
+                           m_exterior_medium, m_texture_attributes, m_to_world)
 };
 
 // -----------------------------------------------------------------------

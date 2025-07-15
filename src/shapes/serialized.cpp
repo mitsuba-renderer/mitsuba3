@@ -359,15 +359,14 @@ public:
         InputFloat* position_ptr = vertex_positions.get();
         InputFloat* normal_ptr   = vertex_normals.get();
         for (ScalarSize i = 0; i < m_vertex_count; ++i) {
-            InputPoint3f p = m_to_world.scalar().transform_affine(
-                dr::load<InputPoint3f>(position_ptr));
+            InputPoint3f p = m_to_world.scalar() * dr::load<InputPoint3f>(position_ptr);
             dr::store(position_ptr, p);
             position_ptr += 3;
             m_bbox.expand(p);
 
             if (has_normals) {
                 InputNormal3f n = dr::load<InputNormal3f>(normal_ptr);
-                n = dr::normalize(m_to_world.scalar().transform_affine(n));
+                n = dr::normalize(m_to_world.scalar() * n);
                 dr::store(normal_ptr, n);
                 normal_ptr += 3;
             }

@@ -84,7 +84,7 @@ The two declarations below are equivalent.
 
         'sphere_1': {
             'type': 'sphere',
-            'to_world': mi.ScalarTransform4f().scale([2, 2, 2]).translate([1, 0, 0]),
+            'to_world': mi.ScalarAffineTransform4f().scale([2, 2, 2]).translate([1, 0, 0]),
             'bsdf': {
                 'type': 'diffuse'
             }
@@ -117,7 +117,7 @@ This makes it a good default choice for lighting new scenes.
 template <typename Float, typename Spectrum>
 class Sphere final : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance,
+    MI_IMPORT_BASE(Shape, m_to_world, m_is_instance,
                    m_discontinuity_types, m_shape_type, initialize, mark_dirty,
                    get_children_string, parameters_grad_enabled)
     MI_IMPORT_TYPES()
@@ -132,8 +132,8 @@ public:
         // Update the to_world transform if radius and center are also provided
         m_to_world =
             m_to_world.scalar() *
-            ScalarTransform4f::translate(props.get<ScalarPoint3f>("center", 0.f)) *
-            ScalarTransform4f::scale(props.get<ScalarFloat>("radius", 1.f));
+            ScalarAffineTransform4f::translate(props.get<ScalarPoint3f>("center", 0.f)) *
+            ScalarAffineTransform4f::scale(props.get<ScalarFloat>("radius", 1.f));
 
         m_discontinuity_types = (uint32_t) DiscontinuityFlags::InteriorType;
 
@@ -154,8 +154,8 @@ public:
         if (!(dr::abs(S[0][0] - S[1][1]) < 1e-6f && dr::abs(S[0][0] - S[2][2]) < 1e-6f))
             Log(Warn, "'to_world' transform shouldn't contain non-uniform scaling!");
 
-        m_radius = dr::norm(m_to_world.value().transform_affine(Vector3f(1.f, 0.f, 0.f)));
-        m_center = m_to_world.value().transform_affine(Point3f(0.f));
+        m_radius = dr::norm(m_to_world.value() * Vector3f(1.f, 0.f, 0.f));
+        m_center = m_to_world.value() * Point3f(0.f);
 
         if (S[0][0] <= 0.f) {
             m_radius = dr::abs(m_radius.value());
@@ -163,7 +163,6 @@ public:
         }
 
         // Compute the to_object transformation with uniform scaling and no shear
-        m_to_object = m_to_world.value().inverse();
 
         m_inv_surface_area = dr::rcp(surface_area());
 
@@ -178,25 +177,12 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "to_world")) {
-            // Ensure previous ray-tracing operation are fully evaluated before
-            // modifying the scalar values of the fields in this class
-            if constexpr (dr::is_jit_v<Float>)
+            // LLVM backend: don't overwrite local state until currently running
+            // ray tracing kernels finish
+            if constexpr (dr::is_llvm_v<Float>)
                 dr::sync_thread();
 
-            if constexpr (dr::is_diff_v<Float>) {
-                Transform4f to_world = m_to_world.value();
-                // Re-attach inverse_transpose to original matrix
-                if (dr::grad_enabled(to_world.matrix)) {
-                    Matrix4f invt_diff = dr::inverse_transpose(to_world.matrix);
-                    to_world.inverse_transpose =
-                        dr::replace_grad(to_world.inverse_transpose, invt_diff);
-                }
-                m_to_world = to_world;
-            } else {
-                // Update the scalar value of the matrix
-                m_to_world = m_to_world.value();
-            }
-
+            m_to_world = m_to_world.value().update();
             update();
         }
 
@@ -230,7 +216,7 @@ public:
         Point3f local = warp::square_to_uniform_sphere(sample);
 
         PositionSample3f ps = dr::zeros<PositionSample3f>();
-        ps.p = m_to_world.value().transform_affine(local);
+        ps.p = m_to_world.value() * local;
         ps.n = local;
 
         if (m_flip_normals)
@@ -353,7 +339,7 @@ public:
         Float theta = uv.y() * dr::Pi<Float>;
 
         Point3f local = sph_to_dir(theta, phi);
-        Point3f p = m_to_world.value().transform_affine(local);
+        Point3f p = m_to_world.value() * local;
 
         Ray3f ray(p + local, -local, 0, Wavelength(0));
 
@@ -431,7 +417,7 @@ public:
             Float theta = si.uv.y() * dr::Pi<Float>;
             Point3f local = dr::detach(sph_to_dir(theta, phi));
 
-            Point3f p_diff = m_to_world.value().transform_affine(local);
+            Point3f p_diff = m_to_world.value() * local;
 
             return dr::replace_grad(si.p, p_diff);
         }
@@ -467,7 +453,7 @@ public:
         ss.d = dr::normalize(ss.p - viewpoint);
         ss.n = dr::normalize(ss.p - center);
 
-        Point3f local = m_to_object.value().transform_affine(ss.p);
+        Point3f local = m_to_world.value().inverse() * ss.p;
         Point2f angles = dir_to_sph(Vector3f(local));
         Float theta = angles.x();
         Float phi = angles.y();
@@ -660,8 +646,8 @@ public:
 
         const Point3f& center = m_center.value();
         const Float& radius = m_radius.value();
-        const Transform4f& to_world = m_to_world.value();
-        const Transform4f& to_object = m_to_object.value();
+        const AffineTransform4f& to_world = m_to_world.value();
+        AffineTransform4f to_object = to_world.inverse();
 
         /* If necessary, temporally suspend gradient tracking for all shape
            parameters to construct a surface interaction completely detach from
@@ -679,11 +665,11 @@ public:
                    in local space and transform it back in world space to get a
                    point rigidly attached to the shape's motion, including
                    translation, scaling and rotation. */
-                local = to_object.transform_affine(ray(pi.t));
+                local = to_object * ray(pi.t);
                 /* With FollowShape the local position should always be static as
                    the intersection point follows any motion of the sphere. */
                 local = dr::detach(local);
-                si.p = to_world.transform_affine(local);
+                si.p = to_world * local;
                 si.sh_frame.n = (si.p - center) / radius;
                 si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) / dr::squared_norm(ray.d));
             } else {
@@ -694,14 +680,14 @@ public:
                 si.t = dr::replace_grad(pi.t, ray_intersect_preliminary(ray, 0, active).t);
                 si.p = ray(si.t);
                 si.sh_frame.n = dr::normalize(si.p - center);
-                local = to_object.transform_affine(si.p);
+                local = to_object * si.p;
             }
         } else {
             si.t = pi.t;
             si.sh_frame.n = dr::normalize(ray(si.t) - center);
             // Re-project onto the sphere to improve accuracy
             si.p = dr::fmadd(si.sh_frame.n, radius, center);
-            local = to_object.transform_affine(si.p);
+            local = to_object * si.p;
         }
 
         si.t = dr::select(active, si.t, dr::Infinity<Float>);
@@ -793,14 +779,11 @@ public:
     }
 
     MI_DECLARE_CLASS(Sphere)
+
 private:
-    /// Center in world-space
-    field<Point3f> m_center;
-    /// Radius in world-space
-    field<Float> m_radius;
-
+    field<Point3f> m_center; ///< Center in world-space
+    field<Float> m_radius;   ///< Radius in world-space
     Float m_inv_surface_area;
-
     bool m_flip_normals;
 
     MI_TRAVERSE_CB(Base, m_center, m_radius, m_inv_surface_area)

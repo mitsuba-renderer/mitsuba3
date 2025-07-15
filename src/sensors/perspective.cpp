@@ -112,7 +112,7 @@ The exact camera position and orientation is most easily expressed using the
 
         'type': 'perspective',
         'fov': 45,
-        'to_world': mi.ScalarTransform4f().look_at(
+        'to_world': mi.ScalarAffineTransform4f().look_at(
             origin=[1, 1, 1],
             target=[1, 2, 1],
             up=[0, 0, 1]
@@ -154,7 +154,7 @@ public:
 
     void traverse(TraversalCallback *cb) override {
         Base::traverse(cb);
-        cb->put("x_fov",                    m_x_fov,                        ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("x_fov",                    m_x_fov,                      ParamFlags::Differentiable | ParamFlags::Discontinuous);
         cb->put("principal_point_offset_x", m_principal_point_offset.x(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
         cb->put("principal_point_offset_y", m_principal_point_offset.y(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
         cb->put("to_world",                 m_to_world,                   ParamFlags::Differentiable | ParamFlags::Discontinuous);
@@ -165,17 +165,16 @@ public:
         if (keys.empty() || string::contains(keys, "to_world")) {
             if (m_to_world.scalar().has_scale())
                 Throw("Scale factors in the camera-to-world transformation are not allowed!");
+            m_to_world = m_to_world.value().update();
         }
 
         update_camera_transforms();
     }
 
     void update_camera_transforms() {
-        m_camera_to_sample = perspective_projection(
+        m_sample_to_camera = perspective_projection(
             m_film->size(), m_film->crop_size(), m_film->crop_offset(),
-            m_x_fov, Float(m_near_clip), Float(m_far_clip));
-
-        m_sample_to_camera = m_camera_to_sample.inverse();
+            m_x_fov, Float(m_near_clip), Float(m_far_clip)).inverse();
 
         // Position differentials on the near plane
         m_dx = m_sample_to_camera * Point3f(1.f / m_resolution.x(), 0.f, 0.f) -
@@ -194,7 +193,7 @@ public:
         m_normalization = 1.f / m_image_rect.volume();
         m_needs_sample_3 = false;
 
-        dr::make_opaque(m_camera_to_sample, m_sample_to_camera, m_dx, m_dy, m_x_fov,
+        dr::make_opaque(m_sample_to_camera, m_dx, m_dy, m_x_fov,
                         m_image_rect, m_normalization, m_principal_point_offset);
     }
 
@@ -283,8 +282,8 @@ public:
     sample_direction(const Interaction3f &it, const Point2f & /*sample*/,
                      Mask active) const override {
         // Transform the reference point into the local coordinate system
-        Transform4f trafo = m_to_world.value();
-        Point3f ref_p     = trafo.inverse().transform_affine(it.p);
+        AffineTransform4f trafo = m_to_world.value();
+        Point3f ref_p     = trafo.inverse() * it.p;
 
         // Check if it is outside of the clip range
         DirectionSample3f ds = dr::zeros<DirectionSample3f>();
@@ -296,7 +295,7 @@ public:
         Vector2f scaled_principal_point_offset =
             m_film->size() * m_principal_point_offset / m_film->crop_size();
 
-        Point3f screen_sample = m_camera_to_sample * ref_p;
+        Point3f screen_sample = m_sample_to_camera.inverse() * ref_p;
         ds.uv = Point2f(screen_sample.x() - scaled_principal_point_offset.x(),
                         screen_sample.y() - scaled_principal_point_offset.y());
         active &= (ds.uv.x() >= 0) && (ds.uv.x() <= 1) && (ds.uv.y() >= 0) &&
@@ -311,7 +310,7 @@ public:
         Float inv_dist = dr::rcp(dist);
         local_d *= inv_dist;
 
-        ds.p    = trafo.transform_affine(Point3f(0.0f));
+        ds.p    = trafo * Point3f(0.0f);
         ds.d    = (ds.p - it.p) * inv_dist;
         ds.dist = dist;
         ds.n    = trafo * Vector3f(0.0f, 0.0f, 1.0f);
@@ -405,15 +404,14 @@ public:
 
     MI_DECLARE_CLASS(PerspectiveCamera)
 private:
-    Transform4f m_camera_to_sample;
-    Transform4f m_sample_to_camera;
+    ProjectiveTransform4f m_sample_to_camera;
     BoundingBox2f m_image_rect;
     Float m_normalization;
     Float m_x_fov;
     Vector3f m_dx, m_dy;
     Vector2f m_principal_point_offset;
 
-    MI_TRAVERSE_CB(Base, m_camera_to_sample, m_sample_to_camera, m_image_rect,
+    MI_TRAVERSE_CB(Base, m_sample_to_camera, m_image_rect,
                    m_normalization, m_x_fov, m_dx, m_dy,
                    m_principal_point_offset)
 };

@@ -12,7 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT Volume<Float, Spectrum>::Volume(const Properties &props)
     : JitObject<Volume>(props.id()) {
-    m_to_local = props.get<ScalarTransform4f>("to_world", ScalarTransform4f()).inverse();
+    m_to_local = props.get<ScalarAffineTransform4f>("to_world", ScalarAffineTransform4f()).inverse();
     m_channel_count = 0;
     update_bbox();
 }

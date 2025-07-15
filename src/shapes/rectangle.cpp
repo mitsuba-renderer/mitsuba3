@@ -75,7 +75,7 @@ The following XML snippet showcases a simple example of a textured rectangle:
             'type': 'diffuse',
             'reflectance': {
                 'type': 'checkerboard',
-                'to_uv': mi.ScalarTransform4f().scale([5, 5, 1])
+                'to_uv': mi.ScalarAffineTransform4f().scale([5, 5, 1])
             }
         }
 
@@ -84,7 +84,7 @@ The following XML snippet showcases a simple example of a textured rectangle:
 template <typename Float, typename Spectrum>
 class Rectangle final : public Mesh<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Mesh, m_to_world, m_to_object, m_is_instance,
+    MI_IMPORT_BASE(Mesh, m_to_world, m_is_instance,
                    m_discontinuity_types, m_shape_type, m_flip_normals, initialize,
                    m_vertex_count, m_face_count, m_faces, m_vertex_positions,
                    m_vertex_normals, m_vertex_texcoords, get_children_string)
@@ -120,7 +120,6 @@ public:
 
         m_frame = Frame3f(dp_du, dp_dv, n);
         m_inv_surface_area = dr::rcp(surface_area());
-        m_to_object = m_to_world.value().inverse();
         dr::make_opaque(m_frame, m_inv_surface_area);
 
         m_faces = dr::load<DynamicBuffer<UInt32>>(s_faces, 6);
@@ -184,9 +183,9 @@ public:
         MI_MASK_ARGUMENT(active);
 
         PositionSample3f ps = dr::zeros<PositionSample3f>();
-        ps.p = m_to_world.value().transform_affine(
+        ps.p = m_to_world.value() *
             Point3f(dr::fmadd(sample.x(), 2.f, -1.f),
-                    dr::fmadd(sample.y(), 2.f, -1.f), 0.f));
+                    dr::fmadd(sample.y(), 2.f, -1.f), 0.f);
         ps.n    = m_frame.n;
         ps.pdf  = m_inv_surface_area;
         ps.uv   = sample;
@@ -210,12 +209,12 @@ public:
 
     ScalarBoundingBox3f bbox() const override {
         ScalarBoundingBox3f bbox;
-        ScalarTransform4f to_world = m_to_world.scalar();
+        ScalarAffineTransform4f to_world = m_to_world.scalar();
 
-        bbox.expand(to_world.transform_affine(ScalarPoint3f(-1.f, -1.f, 0.f)));
-        bbox.expand(to_world.transform_affine(ScalarPoint3f(-1.f,  1.f, 0.f)));
-        bbox.expand(to_world.transform_affine(ScalarPoint3f( 1.f, -1.f, 0.f)));
-        bbox.expand(to_world.transform_affine(ScalarPoint3f( 1.f,  1.f, 0.f)));
+        bbox.expand(to_world * ScalarPoint3f(-1.f, -1.f, 0.f));
+        bbox.expand(to_world * ScalarPoint3f(-1.f,  1.f, 0.f));
+        bbox.expand(to_world * ScalarPoint3f( 1.f, -1.f, 0.f));
+        bbox.expand(to_world * ScalarPoint3f( 1.f,  1.f, 0.f));
 
         return bbox;
     }
@@ -232,20 +231,7 @@ public:
             if constexpr (dr::is_jit_v<Float>)
                 dr::sync_thread();
 
-            if constexpr (dr::is_diff_v<Float>) {
-                Transform4f to_world = m_to_world.value();
-                // Re-attach inverse_transpose to original matrix
-                if (dr::grad_enabled(to_world.matrix)) {
-                    Matrix4f invt_diff = dr::inverse_transpose(to_world.matrix);
-                    to_world.inverse_transpose =
-                        dr::replace_grad(to_world.inverse_transpose, invt_diff);
-                }
-                m_to_world = to_world;
-            } else {
-                // Update the scalar value of the matrix
-                m_to_world = m_to_world.value();
-            }
-
+            m_to_world = m_to_world.value().update();
             initialize();
         }
         Base::parameters_changed(keys);
@@ -253,9 +239,9 @@ public:
 
     SurfaceInteraction3f eval_parameterization(const Point2f &uv, uint32_t, Mask active) const override {
         SurfaceInteraction3f si{};
-        si.p = m_to_world.value().transform_affine(
+        si.p = m_to_world.value() *
             Point3f(dr::fmadd(uv.x(), 2.f, - 1.f),
-                    dr::fmadd(uv.y(), 2.f, - 1.f), 0.f));
+                    dr::fmadd(uv.y(), 2.f, - 1.f), 0.f);
         si.sh_frame  = m_frame;
         si.n         = m_frame.n;
         si.dp_du     = m_frame.s;
@@ -297,7 +283,7 @@ public:
             return dr::zeros<SilhouetteSample3f>();
 
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
-        const Transform4f &to_world = m_to_world.value();
+        const AffineTransform4f &to_world = m_to_world.value();
 
         /// Sample a point on one of the edges
         Mask range = false;
@@ -329,7 +315,7 @@ public:
         Vector3f local(dr::fmsub(ss.uv.x(), 2.f, 1.f),
                        dr::fmsub(ss.uv.y(), 2.f, 1.f),
                        0.f);
-        ss.p = to_world.transform_affine(Point3f(local));
+        ss.p = to_world * Point3f(local);
 
         /// Sample a tangential direction at the point
         ss.d = warp::square_to_uniform_sphere(Point2f(dr::tail<2>(sample)));
@@ -338,14 +324,14 @@ public:
         ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
         ss.flags = flags;
 
-        Vector3f world_edge_dir = to_world.transform_affine(
-            Vector3f(edge_dir.x(), edge_dir.y(), 0.f));
+        Vector3f world_edge_dir = to_world *
+            Vector3f(edge_dir.x(), edge_dir.y(), 0.f);
         ss.silhouette_d = dr::normalize(world_edge_dir);
         Normal3f frame_n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
 
         // Normal direction `ss.n` must point outwards
         Vector3f inward_dir = -local;
-        inward_dir = to_world.transform_affine(inward_dir);
+        inward_dir = to_world * inward_dir;
         frame_n[dr::dot(inward_dir, frame_n) > 0.f] *= -1.f;
         ss.n = frame_n;
 
@@ -402,7 +388,7 @@ public:
 
             Point3f local(dr::fmadd(uv.x(), 2.f, -1.f),
                           dr::fmadd(uv.y(), 2.f, -1.f), 0.f);
-            Point3f p_diff = m_to_world.value().transform_affine(local);
+            Point3f p_diff = m_to_world.value() * local;
 
             return dr::replace_grad(si.p, p_diff);
         }
@@ -417,7 +403,7 @@ public:
             return dr::zeros<SilhouetteSample3f>();
 
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
-        const Transform4f &to_world = m_to_world.value();
+        const AffineTransform4f &to_world = m_to_world.value();
 
         // Project to nearest edge
         Mask top_right_triangle = si.uv.y() > 1 - si.uv.x();
@@ -449,14 +435,14 @@ public:
         dr::masked(edge_dir, left_edge) =   Point2f(0.f, 1.f);
         dr::masked(edge_dir, right_edge) =  Point2f(0.f, 1.f);
 
-        ss.p = to_world.transform_affine(Point3f(local));
+        ss.p = to_world * Point3f(local);
         ss.d            = dr::normalize(ss.p - viewpoint);
-        ss.silhouette_d = dr::normalize(to_world.transform_affine(
-            Vector3f(edge_dir.x(), edge_dir.y(), 0.f)));
+        ss.silhouette_d = dr::normalize(to_world *
+            Vector3f(edge_dir.x(), edge_dir.y(), 0.f));
 
         Vector3f frame_t = dr::normalize(viewpoint - ss.p);
         Normal3f frame_n = dr::normalize(dr::cross(frame_t, ss.silhouette_d));
-        Vector3f inward_dir = to_world.transform_affine(Vector3f(-local));
+        Vector3f inward_dir = to_world * Vector3f(-local);
         frame_n[dr::dot(inward_dir, frame_n) > 0.f] *= -1.f;
         ss.n = frame_n;
 
@@ -529,13 +515,13 @@ public:
         // Note: the outputs from this function will be post-processed into a
         // SurfaceInteraction3f by `Mesh::compute_surface_interaction()`.
 
-        Transform<Point<FloatP, 4>> to_object;
+        AffineTransform<Point<FloatP, 4>> to_object;
         if constexpr (!dr::is_jit_v<FloatP>)
-            to_object = m_to_object.scalar();
+            to_object = m_to_world.scalar().inverse();
         else
-            to_object = m_to_object.value();
+            to_object = m_to_world.value().inverse();
 
-        Ray3fP ray = to_object.transform_affine(ray_);
+        Ray3fP ray = to_object * ray_;
         FloatP t   = -ray.o.z() / ray.d.z();
         Point<FloatP, 3> local = ray(t);
 
@@ -582,13 +568,13 @@ public:
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
-        Transform<Point<FloatP, 4>> to_object;
+        AffineTransform<Point<FloatP, 4>> to_object;
         if constexpr (!dr::is_jit_v<FloatP>)
-            to_object = m_to_object.scalar();
+            to_object = m_to_world.scalar().inverse();
         else
-            to_object = m_to_object.value();
+            to_object = m_to_world.value().inverse();
 
-        Ray3fP ray     = to_object.transform_affine(ray_);
+        Ray3fP ray     = to_object * ray_;
         FloatP t       = -ray.o.z() / ray.d.z();
         Point<FloatP, 3> local = ray(t);
 

@@ -138,7 +138,7 @@ public:
     MI_IMPORT_TYPES(Texture)
 
     BitmapTexture(const Properties &props) : Texture(props) {
-        m_transform = props.get<ScalarTransform3f>("to_uv", ScalarTransform3f());
+        m_transform = props.get<ScalarAffineTransform3f>("to_uv", ScalarAffineTransform3f());
 
         /* Should Mitsuba disable transformations to the stored color data?
            (e.g. sRGB to linear, spectral upsampling, etc.) */
@@ -348,7 +348,7 @@ private:
 
     bool m_accel;
     bool m_raw;
-    ScalarTransform3f m_transform;
+    ScalarAffineTransform3f m_transform;
     std::string m_name;
     dr::FilterMode m_filter_mode;
     dr::WrapMode m_wrap_mode;
@@ -371,7 +371,7 @@ public:
     template <typename Tensor>
     BitmapTextureImpl(const Properties &props,
                       const std::string& name,
-                      const ScalarTransform3f& transform,
+                      const ScalarAffineTransform3f& transform,
                       dr::FilterMode filter_mode,
                       dr::WrapMode wrap_mode,
                       bool raw,
@@ -492,7 +492,7 @@ public:
                 if constexpr (!dr::is_array_v<Mask>)
                     active = true;
 
-                Point2f uv = m_transform.transform_affine(si.uv);
+                Point2f uv = m_transform * si.uv;
 
                 Float f00, f10, f01, f11;
                 if (channels == 1) {
@@ -711,7 +711,7 @@ protected:
         if constexpr (!dr::is_array_v<Mask>)
             active = true;
 
-        Point2f uv = m_transform.transform_affine(si.uv);
+        Point2f uv = m_transform * si.uv;
 
         if (m_texture.filter_mode() == dr::FilterMode::Linear) {
             Color3f v00, v10, v01, v11;
@@ -764,7 +764,7 @@ protected:
         if constexpr (!dr::is_array_v<Mask>)
             active = true;
 
-        Point2f uv = m_transform.transform_affine(si.uv);
+        Point2f uv = m_transform * si.uv;
 
         Float out;
         if (m_accel)
@@ -785,7 +785,7 @@ protected:
         if constexpr (!dr::is_array_v<Mask>)
             active = true;
 
-        Point2f uv = m_transform.transform_affine(si.uv);
+        Point2f uv = m_transform * si.uv;
 
         Color3f out;
         if (m_accel)
@@ -801,7 +801,7 @@ protected:
      * following an update
      */
     void rebuild_internals(const StoredTensorXf& tensor, bool init_mean, bool init_distr) {
-        if (m_transform != ScalarTransform3f())
+        if (m_transform != ScalarAffineTransform3f())
             dr::make_opaque(m_transform);
 
         const dr::vector<size_t> &shape = tensor.shape();
@@ -909,7 +909,7 @@ protected:
 
 protected:
     std::string m_name;
-    ScalarTransform3f m_transform;
+    ScalarAffineTransform3f m_transform;
     bool m_accel;
     bool m_raw;
     Float m_mean;

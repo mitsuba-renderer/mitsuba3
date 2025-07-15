@@ -353,7 +353,7 @@ public:
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        Vector3f v = m_to_world.value().inverse().transform_affine(-si.wi);
+        Vector3f v = m_to_world.value().inverse() * (-si.wi);
 
         // Convert to latitude-longitude texture coordinates
         Point2f uv = Point2f(dr::atan2(v.x(), -v.z()) * dr::InvTwoPi<Float>,
@@ -387,7 +387,7 @@ public:
         pdf *= inv_sin_theta * dr::InvTwoPi<Float> * dr::InvPi<Float>;
 
         // Unlike \ref sample_direction, ray goes from the envmap toward the scene
-        Vector3f d_global = m_to_world.value().transform_affine(-d);
+        Vector3f d_global = m_to_world.value() * -d;
 
         // Compute ray origin
         Vector3f perpendicular_offset =
@@ -433,7 +433,7 @@ public:
         Float inv_sin_theta = dr::safe_rsqrt(dr::maximum(
             dr::square(d.x()) + dr::square(d.z()), dr::square(dr::Epsilon<Float>)));
 
-        d = m_to_world.value().transform_affine(d);
+        d = m_to_world.value() * d;
 
         DirectionSample3f ds;
         ds.p       = it.p + d * dist;
@@ -461,7 +461,7 @@ public:
                         Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        Vector3f d = m_to_world.value().inverse().transform_affine(ds.d);
+        Vector3f d = m_to_world.value().inverse() * ds.d;
 
         // Convert to latitude-longitude texture coordinates
         Point2f uv = Point2f(dr::atan2(d.x(), -d.z()) * dr::InvTwoPi<Float>,

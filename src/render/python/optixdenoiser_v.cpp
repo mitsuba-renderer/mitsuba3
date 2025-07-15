@@ -19,9 +19,9 @@ MI_PY_EXPORT(OptixDenoiser) {
                const TensorXf &albedo, const TensorXf &normals,
                const nb::object &transform, const TensorXf &flow,
                const TensorXf &previous_denoised) {
-                Transform4f to_sensor;
+                AffineTransform4f to_sensor;
                 if (!transform.is(nb::none()))
-                    to_sensor = nb::cast<Transform4f>(transform);
+                    to_sensor = nb::cast<AffineTransform4f>(transform);
 
                 return denoiser(noisy, albedo, normals, to_sensor, flow,
                                 previous_denoised);
@@ -36,9 +36,9 @@ MI_PY_EXPORT(OptixDenoiser) {
                const nb::object &transform, const std::string &flow_ch,
                const std::string &previous_denoised_ch,
                const std::string &noisy_ch) {
-                Transform4f to_sensor;
+                AffineTransform4f to_sensor;
                 if (!transform.is(nb::none()))
-                    to_sensor = nb::cast<Transform4f>(transform);
+                    to_sensor = nb::cast<AffineTransform4f>(transform);
 
                 return denoiser(noisy, albedo_ch, normals_ch, to_sensor,
                                 flow_ch, previous_denoised_ch, noisy_ch);

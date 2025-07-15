@@ -317,7 +317,7 @@ public:
 
 
     /// Return the local space to world space transformation
-    Transform4f world_transform() const {
+    AffineTransform4f world_transform() const {
         return m_to_world.value();
     }
 
@@ -389,7 +389,7 @@ protected:
     Endpoint(const Properties &props, ObjectType type);
 
 protected:
-    field<Transform4f, ScalarTransform4f> m_to_world;
+    field<AffineTransform4f, ScalarAffineTransform4f> m_to_world;
     ref<Medium> m_medium;
     Shape *m_shape = nullptr;
     bool m_needs_sample_2 = true;

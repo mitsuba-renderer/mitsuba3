@@ -163,7 +163,7 @@ public:
 
             std::tie(std::ignore, up) = coordinate_system(direction);
 
-            m_to_world = ScalarTransform4f::look_at(
+            m_to_world = ScalarAffineTransform4f::look_at(
                 ScalarPoint3f(0.0f), ScalarPoint3f(direction), up);
         }
 
@@ -209,7 +209,7 @@ public:
         Spectrum ray_weight = 0.f;
 
         // Set ray direction
-        ray.d = m_to_world.value().transform_affine(Vector3f{ 0.f, 0.f, 1.f });
+        ray.d = m_to_world.value() * Vector3f{ 0.f, 0.f, 1.f };
 
         // Sample target point and position ray origin
         if constexpr (TargetType == RayTargetType::Point) {
@@ -226,7 +226,7 @@ public:
             Point2f offset =
                 warp::square_to_uniform_disk_concentric(aperture_sample);
             Vector3f perp_offset =
-                m_to_world.value().transform_affine(Vector3f(offset.x(), offset.y(), 0.f));
+                m_to_world.value() * Vector3f(offset.x(), offset.y(), 0.f);
             ray.o = m_bsphere.center + perp_offset * m_bsphere.radius - ray.d * m_bsphere.radius;
             ray_weight = wav_weight;
         }

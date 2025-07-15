@@ -31,10 +31,10 @@ static nb::object get_texture_binding_default(const Properties& p, std::string_v
 using ScalarColor3d = Color<double, 3>;
 using ScalarColor3f = Color<float, 3>;
 using ScalarArray3d = dr::Array<double, 3>;
-using ScalarTransform3f = Transform<Point<float, 3>>;
-using ScalarTransform3d = Transform<Point<double, 3>>;
-using ScalarTransform4f = Transform<Point<float, 4>>;
-using ScalarTransform4d = Transform<Point<double, 4>>;
+using ScalarAffineTransform3f = AffineTransform<Point<float, 3>>;
+using ScalarAffineTransform3d = AffineTransform<Point<double, 3>>;
+using ScalarAffineTransform4f = AffineTransform<Point<float, 4>>;
+using ScalarAffineTransform4d = AffineTransform<Point<double, 4>>;
 
 #define SET_ITEM_BINDING(Type, ...)                                            \
     def("__setitem__",                                                         \
@@ -55,7 +55,7 @@ static nb::object get_property(const Properties& p, std::string_view key) {
         case Properties::Type::ResolvedReference: return nb::cast(p.get<Properties::ResolvedReference>(key));
         case Properties::Type::Vector:            return nb::cast(p.get<dr::Array<double, 3>>(key));
         case Properties::Type::Color:             return nb::cast(p.get<Color<double, 3>>(key));
-        case Properties::Type::Transform:         return nb::cast(p.get<Transform<Point<double, 4>>>(key));
+        case Properties::Type::Transform:         return nb::cast(p.get<AffineTransform<Point<double, 4>>>(key));
         case Properties::Type::Object:            return cast_object(p.get<ref<Object>>(key).get());
         case Properties::Type::Spectrum:          return nb::cast(p.get<Properties::Spectrum>(key));
         case Properties::Type::Any: {
@@ -146,10 +146,10 @@ MI_PY_EXPORT(Properties) {
         .SET_ITEM_BINDING(ScalarArray3d)
         .SET_ITEM_BINDING(ScalarColor3f)
         .SET_ITEM_BINDING(ScalarColor3d)
-        .SET_ITEM_BINDING(ScalarTransform3f)
-        .SET_ITEM_BINDING(ScalarTransform3d)
-        .SET_ITEM_BINDING(ScalarTransform4f)
-        .SET_ITEM_BINDING(ScalarTransform4d)
+        .SET_ITEM_BINDING(ScalarAffineTransform3f)
+        .SET_ITEM_BINDING(ScalarAffineTransform3d)
+        .SET_ITEM_BINDING(ScalarAffineTransform4f)
+        .SET_ITEM_BINDING(ScalarAffineTransform4d)
         .SET_ITEM_BINDING(Properties::Spectrum)
         .def("__setitem__",
             [](Properties &p, std::string_view key, const fs::path &value) {

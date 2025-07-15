@@ -8390,8 +8390,6 @@ static const char *__doc_mitsuba_Shape_m_silhouette_sampling_weight = R"doc(Samp
 
 static const char *__doc_mitsuba_Shape_m_texture_attributes = R"doc()doc";
 
-static const char *__doc_mitsuba_Shape_m_to_object = R"doc()doc";
-
 static const char *__doc_mitsuba_Shape_m_to_world = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_mark_as_instance = R"doc()doc";

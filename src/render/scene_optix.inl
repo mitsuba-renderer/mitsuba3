@@ -464,7 +464,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
 
             // Gather information about the instance acceleration structure to be built
             std::vector<OptixInstance> ias;
-            prepare_ias(s.context, m_shapes, 0, s.accel, 0u, ScalarTransform4f(), ias);
+            prepare_ias(s.context, m_shapes, 0, s.accel, 0u, ScalarAffineTransform4f(), ias);
 
             // Build a "master" IAS that contains all the GAS of the scene (meshes,
             // custom shapes, curves, ...)
