@@ -2238,6 +2238,9 @@ static pugi::xml_document generate_xml_document(const ParserState &state, bool a
         node.append_attribute("value").set_value(param.value);
     }
 
+    // Add newlines to improve readability of the document
+    add_xml_newlines(doc, 0);
+
     // Add section headers if requested
     if (add_section_headers && !state.empty() && state.root().type == ObjectType::Scene) {
         std::string_view last_section_name;
@@ -2261,9 +2264,6 @@ static pugi::xml_document generate_xml_document(const ParserState &state, bool a
             }
         }
     }
-
-    // Add newlines to improve readability of the document
-    add_xml_newlines(doc, 0);
 
     return doc;
 }
