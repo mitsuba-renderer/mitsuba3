@@ -169,10 +169,6 @@ class DirectProjectiveIntegrator(PSIntegrator):
         active_em = active_em_ & (ds_em.pdf != 0.0)
 
         with dr.resume_grad(when=not primal):
-            # Evaluate the BSDF (foreshortening term included)
-            wo = si.to_local(ds_em.d)
-            bsdf_val, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
-
             # Re-compute some values with AD attached only in differentiable
             # phase
             if dr.hint(not primal, mode='scalar'):
@@ -194,6 +190,10 @@ class DirectProjectiveIntegrator(PSIntegrator):
                     (spec_em / ds_em.pdf) * (J / dr.detach(J)),
                     0
                 )
+
+            # Evaluate the BSDF (foreshortening term included)
+            wo = si.to_local(ds_em.d)
+            bsdf_val, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
 
             # Compute the detached MIS weight for the emitter sample
             mis_em = dr.select(ds_em.delta, 1.0, mis_weight(ds_em.pdf, bsdf_pdf))
@@ -231,9 +231,10 @@ class DirectProjectiveIntegrator(PSIntegrator):
                                      ray_bsdf.d)
                 wo = si.to_local(wo_world)
                 bsdf_val, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_bsdf)
-                weight_bsdf = bsdf_val / dr.detach(bsdf_pdf)
-
-                # ``ray_bsdf`` is left detached (both origin and direction)
+                weight_bsdf = (
+                    (bsdf_val / dr.detach(bsdf_pdf)) *
+                    (J / dr.detach(J))
+                )
 
             # Re-attach si_bsdf.wi if si.p was moving
             if (not primal):
