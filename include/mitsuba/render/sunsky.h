@@ -502,10 +502,10 @@ DynamicBuffer<Float> sun_params(const DynamicBuffer<Float>& sun_radiance_dataset
  * \return
  *      Sky radiance
  */
-template <typename Spec_, typename Float, typename Dataset, typename Spec = unpolarized_spectrum_t<Spec_>>
+template <typename Spec_, typename Float, typename Dataset1, typename Dataset2, typename Spec = unpolarized_spectrum_t<Spec_>>
 Spec_ eval_sky(const dr::uint32_array_t<Spec> &channel_idx,
                 const Float &cos_theta, const Float &gamma,
-                const Dataset &sky_params, const Dataset &sky_radiance,
+                const Dataset1 &sky_params, const Dataset2 &sky_radiance,
                 const dr::mask_t<Spec> &active = true) {
 
     // Gather coefficients for the skylight equation
