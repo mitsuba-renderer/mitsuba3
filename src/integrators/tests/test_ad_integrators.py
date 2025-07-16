@@ -895,13 +895,11 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
                 'to_world': mi.ScalarTransform4f.translate([4.0, 0.0, 4.0]) @ mi.ScalarTransform4f.scale(0.05)
             }
         }
+        self.spp = 4192 * 4
         self.ref_fd_epsilon = 1e-3
         self.error_mean_threshold = 0.03
         self.error_max_threshold = 1.65
         self.error_mean_threshold_bwd = 0.25
-        self.integrator_dict = {
-            'max_depth': 2,
-        }
 
 
 # Translate shadow receiver
@@ -1106,7 +1104,7 @@ INDIRECT_ILLUMINATION_CONFIGS_LIST = [
 INTEGRATORS = [
         #('path', False, False),
         #('prb', True, True),
-    #('direct_projective', True, True),
+    ('direct_projective', True, True),
     ('prb_projective', True, True)
 ]
 
@@ -1140,7 +1138,7 @@ def test01_rendering_primal(variant_cuda_ad_rgb, integrator_name, config):
     filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
     image_primal_ref = mi.TensorXf32(mi.Bitmap(filename))
     image = integrator.render(config.scene, seed=0, spp=config.spp)
-    mi.Bitmap(image).write("/home/nroussel/rgl/mitsuba3/tmp.exr")
+    mi.Bitmap(image).write("/home/nicolas/rgl/mitsuba3/tmp.exr")
 
     if not check_image_error(image, image_primal_ref, config, integrator_name,
                              epsilon=2e-2, test_type='primal'):
@@ -1158,9 +1156,10 @@ def test02_rendering_forward(variant_cuda_ad_rgb, integrator_name, config):
     config.initialize()
 
     config.integrator_dict['type'] = integrator_name
+    config.integrator_dict['guiding'] = 'none'
     integrator = mi.load_dict(config.integrator_dict)
     if 'projective' in integrator_name:
-        integrator.proj_seed_spp = 512#2048 * 2
+        integrator.proj_seed_spp = 4192
 
     filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
     image_fwd_ref = mi.TensorXf32(mi.Bitmap(filename))
@@ -1178,7 +1177,7 @@ def test02_rendering_forward(variant_cuda_ad_rgb, integrator_name, config):
     image_fwd = integrator.render_forward(
         config.scene, seed=0, spp=config.spp, params=theta)
     image_fwd = dr.detach(image_fwd)
-    mi.Bitmap(image_fwd).write("/home/nroussel/rgl/mitsuba3/tmp.exr")
+    mi.Bitmap(image_fwd).write("/home/nicolas/rgl/mitsuba3/tmp.exr")
 
     if not check_image_error(image_fwd, image_fwd_ref, config, integrator_name,
                              epsilon=2e-1, test_type='fwd', save_error_image=True):
