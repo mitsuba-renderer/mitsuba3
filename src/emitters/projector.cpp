@@ -223,7 +223,7 @@ public:
         ds.n       = m_to_world.value() * ScalarVector3f(0, 0, 1);
         ds.uv      = uv;
         ds.time    = it.time;
-        ds.pdf     = 1.f;
+        ds.pdf     = dr::select(active, 1.f, 0.f);
         ds.delta   = true;
         ds.emitter = this;
         ds.d       = ds.p - it.p;
@@ -279,6 +279,13 @@ public:
         SurfaceInteraction3f it_query = dr::zeros<SurfaceInteraction3f>();
         it_query.wavelengths = it.wavelengths;
         it_query.uv = ds.uv;
+        if constexpr (dr::is_diff_v<Float>) {
+            // Re-attach UV
+            if (dr::grad_enabled(it_local) && !dr::grad_enabled(ds.uv)) {
+                Point2f uv_diff = dr::head<2>(m_sample_to_camera.inverse() * it_local);
+                it_query.uv = dr::replace_grad(it_query.uv, uv_diff);
+            }
+        }
 
         UnpolarizedSpectrum spec = m_irradiance->eval(it_query, active);
         spec *= dr::Pi<Float> * m_intensity_scale /
