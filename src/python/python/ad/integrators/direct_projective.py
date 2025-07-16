@@ -3,7 +3,7 @@ from __future__ import annotations # Delayed parsing of type annotations
 import drjit as dr
 import mitsuba as mi
 
-from .common import PSIntegrator, mis_weight
+from .common import PSIntegrator, mis_weight, solid_angle_to_area_jacobian
 
 class DirectProjectiveIntegrator(PSIntegrator):
     r"""
@@ -169,18 +169,31 @@ class DirectProjectiveIntegrator(PSIntegrator):
         active_em = active_em_ & (ds_em.pdf != 0.0)
 
         with dr.resume_grad(when=not primal):
+            # Re-compute some values with AD attached only in differentiable
+            # phase
+            if dr.hint(not primal, mode='scalar'):
+                is_surface = mi.has_flag(ds_em.emitter.flags(), mi.EmitterFlags.Surface)
+                is_infinite = mi.has_flag(ds_em.emitter.flags(), mi.EmitterFlags.Infinite)
+
+                # If the current interaction point is moving, we need
+                # to differentiate the solid angle to surface area
+                # reparameterization.
+                J = solid_angle_to_area_jacobian(si.p, ds_em.p, ds_em.n, active_em & is_surface)
+
+                # Re-compute attached `emitter_val` to enable emitter optimization
+                ds_em_d_diff = dr.normalize(ds_em.p - si.p)
+                ds_em_d_diff = dr.select(~is_infinite, ds_em_d_diff, ds_em.d)
+                ds_em.d = dr.replace_grad(ds_em.d, ds_em_d_diff)
+                spec_em = scene.eval_emitter_direction(si, ds_em, active_em)
+                emitter_val = dr.select(
+                    ds_em.pdf != 0,
+                    (spec_em / ds_em.pdf) * (J / dr.detach(J)),
+                    0
+                )
+
             # Evaluate the BSDF (foreshortening term included)
             wo = si.to_local(ds_em.d)
             bsdf_val, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
-
-            # Re-compute some values with AD attached only in differentiable
-            # phase
-            if not primal:
-                # Re-compute attached `emitter_val` to enable emitter optimization
-                ds_em.d = dr.normalize(ds_em.p - si.p)
-                spec_em = scene.eval_emitter_direction(si, ds_em, active_em)
-                emitter_val = spec_em / ds_em.pdf
-                dr.disable_grad(ds_em.d)
 
             # Compute the detached MIS weight for the emitter sample
             mis_em = dr.select(ds_em.delta, 1.0, mis_weight(ds_em.pdf, bsdf_pdf))
@@ -199,18 +212,38 @@ class DirectProjectiveIntegrator(PSIntegrator):
         ray_bsdf = si.spawn_ray(si.to_world(sample_bsdf.wo))
 
         with dr.resume_grad(when=not primal):
-            # Re-compute `weight_bsdf` with AD attached only in differentiable
-            # phase
-            if not primal:
-                wo = si.to_local(ray_bsdf.d)
-                bsdf_val, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_bsdf)
-                weight_bsdf = bsdf_val / dr.detach(bsdf_pdf)
-
-                # ``ray_bsdf`` is left detached (both origin and direction)
-
             # Trace the BSDF sampled ray
             si_bsdf = scene.ray_intersect(
                 ray_bsdf, ray_flags=mi.RayFlags.All, coherent=False, active=active_bsdf)
+
+            if (not primal):
+                si_bsdf_detached = dr.detach(si_bsdf)
+
+            # Re-compute `weight_bsdf` with AD attached only in differentiable
+            # phase
+            if not primal:
+                J = solid_angle_to_area_jacobian(
+                    si.p, si_bsdf_detached.p, si_bsdf_detached.n, active_next & si_bsdf.is_valid()
+                )
+
+                # Recompute 'wo' to propagate derivatives to cosine term
+                wo_world_diff = dr.normalize(si_bsdf_detached.p - si.p)
+                wo_world = dr.replace_grad(
+                    ray_bsdf.d,
+                    dr.select(si_bsdf.is_valid(), wo_world_diff, ray_bsdf.d)
+                )
+                wo = si.to_local(wo_world)
+
+                bsdf_val, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_bsdf)
+                weight_bsdf = (
+                    (bsdf_val / dr.detach(bsdf_pdf)) *
+                    (J / dr.detach(J))
+                )
+
+            # Re-attach si_bsdf.wi if si.p was moving
+            if (not primal):
+                wi_global = dr.normalize(si.p - si_bsdf_detached.p)
+                si.wi = dr.replace_grad(si.wi, si_bsdf_detached.to_local(wi_global))
 
             # Evaluate the emitter
             L_bsdf = si_bsdf.emitter(scene, active_bsdf).eval(si_bsdf, active_bsdf)
