@@ -186,7 +186,7 @@ public:
             path_to_dataset<IS_RGB>(Dataset::SkyRadiance));
 
         m_sky_params = sky_radiance_params<SKY_DATASET_SIZE>(
-            m_sky_params_dataset, albedo, m_turbidity, sun_eta),
+            m_sky_params_dataset, albedo, m_turbidity, sun_eta);
         m_sky_radiance = sky_radiance_params<SKY_DATASET_RAD_SIZE>(
             m_sky_rad_dataset, albedo, m_turbidity, sun_eta);
 

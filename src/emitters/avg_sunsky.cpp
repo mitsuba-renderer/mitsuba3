@@ -19,6 +19,10 @@ public:
     using FloatStorage = DynamicBuffer<Float>;
     using ScalarFloatStorage = DynamicBuffer<ScalarFloat>;
 
+    // TODO adjust pre-computed dataset sizes
+    using SkyRadDataset    = Color3f;
+    using SkyParamsDataset = dr::Array<Color3f, SKY_PARAMS>;
+
     AvgSunskyEmitter(const Properties &props) : Base(props) {
         if constexpr (!(is_rgb_v<Spectrum> || is_spectral_v<Spectrum>))
             Throw("Unsupported spectrum type, can only render in Spectral or RGB modes!");
@@ -40,9 +44,10 @@ public:
         if (m_sun_half_aperture <= 0.f || 0.5f * dr::Pi<Float> <= m_sun_half_aperture)
             Log(Error, "Invalid sun aperture angle: %f, must be in ]0, 90[ degrees!", dr::rad_to_deg(2.f * m_sun_half_aperture));
 
-        m_albedo = props.get_texture<Texture>("albedo", 0.3f);
-        if (m_albedo->is_spatially_varying())
+        m_albedo_tex = props.get_texture<Texture>("albedo", 0.3f);
+        if (m_albedo_tex->is_spatially_varying())
             Log(Error, "Expected a non-spatially varying radiance spectra!");
+        m_albedo = extract_albedo(m_albedo_tex);
 
         m_year = props.get<ScalarUInt32>("year", 2025);
         m_nb_days = (m_year % 4 == 0 && (m_year % 100 != 0 || m_year % 400 == 0)) ? 366u : 365u;
@@ -76,7 +81,7 @@ public:
         m_bitmap = new Bitmap(Bitmap::PixelFormat::RGB, Struct::Type::Float32, m_bitmap_resolution, 3);
         memset(m_bitmap->data(), 0, m_bitmap->buffer_size());
 
-        compute_avg<dr::is_jit_v<Float>>();
+        compute_avg();
 
         // Permute axis for envmap's convention
         ScalarMatrix4f permute_axis {
@@ -100,7 +105,7 @@ public:
         cb->put("turbidity", m_turbidity, ParamFlags::NonDifferentiable);
         cb->put("sky_scale", m_sky_scale, ParamFlags::NonDifferentiable);
         cb->put("sun_scale", m_sun_scale, ParamFlags::NonDifferentiable);
-        cb->put("albedo",    m_albedo,    ParamFlags::NonDifferentiable);
+        cb->put("albedo",    m_albedo_tex,    ParamFlags::NonDifferentiable);
         cb->put("latitude",  m_location.latitude,  ParamFlags::NonDifferentiable);
         cb->put("longitude", m_location.longitude, ParamFlags::NonDifferentiable);
         cb->put("timezone",  m_location.timezone,  ParamFlags::NonDifferentiable);
@@ -108,7 +113,7 @@ public:
         cb->put("to_world", m_to_world, ParamFlags::NonDifferentiable);
     }
 
-    void parameters_changed(const std::vector<std::string> &) override {
+    void parameters_changed(const std::vector<std::string> &keys) override {
         if (m_sun_scale < 0.f)
             Log(Error, "Invalid sun scale: %f, must be positive!", m_sun_scale);
         if (m_sky_scale < 0.f)
@@ -118,10 +123,12 @@ public:
         if (m_sun_half_aperture <= 0.f || 0.5f * dr::Pi<Float> <= m_sun_half_aperture)
             Log(Error, "Invalid sun aperture angle: %f, must be in ]0, 90[ degrees!",
                 dr::rad_to_deg(2 * m_sun_half_aperture));
-        if (m_albedo->is_spatially_varying())
+        if (m_albedo_tex->is_spatially_varying())
             Log(Error, "Expected a non-spatially varying radiance spectra!");
 
         #define CHANGED(word) string::contains(keys, word)
+        if (keys.empty() || CHANGED("albedo"))
+                m_albedo = extract_albedo(m_albedo_tex);
 
         //bool changed_atmosphere = CHANGED("albedo") || CHANGED("turbidity");
         //bool changed_time_record = !keys.empty() && m_active_record && (
@@ -196,7 +203,7 @@ public:
             << "  turbidity = " << string::indent(m_turbidity) << std::endl
             << "  sky_scale = " << string::indent(m_sky_scale) << std::endl
             << "  sun_scale = " << string::indent(m_sun_scale) << std::endl
-            << "  albedo = " << string::indent(m_albedo) << std::endl
+            << "  albedo = " << string::indent(m_albedo_tex) << std::endl
             << "  sun aperture (°) = " << string::indent(dr::rad_to_deg(2 * m_sun_half_aperture))
             << "  location = " << m_location.to_string()
             << "]" << std::endl;
@@ -207,15 +214,147 @@ public:
 
 private:
 
-
-    template<bool isJit>
     void compute_avg() {
-        if constexpr (!isJit) {
+        if constexpr (!dr::is_jit_v<Float>) {
             Log(Warn, "Using this emitter in scalar mode can cause severe performance issues");
             task_submit_and_wait(nullptr, m_nb_days, compute_avg_day, this);
         } else {
 
+            struct Datasets {
+                Vector3f sun_dir;
+                SkyRadDataset sky_rad;
+                SkyParamsDataset sky_params;
+
+                DRJIT_STRUCT(Datasets, sun_dir, sky_rad, sky_params)
+            };
+
+            // ==================== COMPUTE TIMES =======================
+            size_t nb_time_samples = m_day_resolution * m_nb_days;
+
+            UInt32 time_idx = dr::arange<UInt32>(nb_time_samples);
+            const auto [time_idx_div, time_idx_mod] = dr::idivmod(time_idx, m_day_resolution);
+            UInt32 days = time_idx_div;
+            Float hours = m_start_time + (m_end_time - m_start_time) * time_idx_mod / m_day_resolution;
+
+            DateTimeRecord<Float> times = dr::zeros<DateTimeRecord<Float>>(nb_time_samples);
+            times.year = m_year;
+            times.day = days;
+            times.hour = hours;
+
+            // =================== COMPUTE DATASETS =====================
+            const auto [sun_elevation, sun_azimuth] = sun_coordinates(times, m_location);
+            const Float sun_eta = 0.5f * dr::Pi<Float> - sun_elevation;
+
+            Datasets datasets = {
+                sph_to_dir(sun_elevation, sun_azimuth),
+                compute_sky_dataset<SKY_DATASET_RAD_SIZE, SkyRadDataset>(m_sky_rad_dataset, sun_eta),
+                compute_sky_dataset<SKY_DATASET_SIZE, SkyParamsDataset>(m_sky_params_dataset, sun_eta)
+            };
+
+            // ==================== COMPUTE RAYS ======================
+            size_t nb_rays = dr::prod(m_bitmap_resolution);
+            UInt32 pixel_idx = dr::arange<UInt32>(nb_rays);
+
+            const auto [pixel_v_idx, pixel_u_idx] = dr::idivmod(pixel_idx, m_bitmap_resolution.x());
+            Vector3f ray_dir = sph_to_dir(
+                dr::Pi<Float> * pixel_v_idx / m_bitmap_resolution.y(),
+                dr::TwoPi<Float> * pixel_u_idx / m_bitmap_resolution.x()
+            );
+
+            // =============== BLEND TWO DIMENSIONS ===========
+            const auto [pixel_idx_wav, time_idx_wav] = dr::meshgrid(pixel_idx, time_idx);
+            Vector3f ray_dir_wav = dr::gather<Vector3f>(ray_dir, pixel_idx_wav);
+            Datasets datasets_wav = dr::gather<Datasets>(datasets, time_idx_wav);
+
+            Mask active = (ray_dir_wav.z() >= 0.f) & (datasets_wav.sun_dir.z() >= 0.f);
+            dr::mask_t<Color3f> color_active = active;
+
+            Float gamma = dr::unit_angle(ray_dir_wav, datasets_wav.sun_dir);
+            const Float& cos_theta = ray_dir_wav.z();
+
+            dr::uint32_array_t<Color3f> channel_idx = {0, 1, 2};
+            Color3f rays = m_sky_scale * eval_sky<Color3f>(channel_idx, cos_theta, gamma, datasets_wav.sky_params, datasets_wav.sky_rad, color_active);
+                    rays += m_sun_scale * SPEC_TO_RGB_SUN_CONV * get_area_ratio(m_sun_half_aperture) *
+                            eval_sun<Color3f>(channel_idx, cos_theta, gamma, m_sun_rad_params, Float(m_sun_half_aperture), color_active & (gamma < m_sun_half_aperture));
+                    rays *= MI_CIE_Y_NORMALIZATION / nb_time_samples;
+
+            Color3f result = dr::zeros<Color3f>(nb_rays);
+            dr::scatter_add(result.r(), rays.r(), pixel_idx_wav, active);
+            dr::scatter_add(result.g(), rays.g(), pixel_idx_wav, active);
+            dr::scatter_add(result.b(), rays.b(), pixel_idx_wav, active);
+
+            Float res = dr::migrate(dr::ravel(result), AllocType::Host);
+
+            dr::sync_thread();
+
+            memcpy(m_bitmap->data(), res.data(), m_bitmap->buffer_size());
+
         }
+    }
+
+    template <typename Result>
+    Result bezier_interpolate(
+        const FloatStorage& dataset, const uint32_t out_size,
+        const UInt32& offset, const Float& x, const Mask& active) const {
+
+        using UInt32Result = dr::uint32_array_t<Result>;
+
+        UInt32Result indices = offset;
+        if constexpr (drjit::depth_v<Result> == 3) {
+            const auto [idx_div, idx_mod] = dr::idivmod(dr::arange<UInt32>(out_size), CHANNEL_COUNT);
+            indices += dr::unravel<UInt32Result, UInt32>(SKY_PARAMS * idx_mod + idx_div);
+        } else if constexpr (drjit::depth_v<Result> == 2) {
+            indices += dr::unravel<UInt32Result, UInt32>(dr::arange<UInt32>(out_size));
+        } else {
+            Log(Warn, "Unsupported depth type");
+        }
+        constexpr ScalarFloat coefs[SKY_CTRL_PTS] = {1, 5, 10, 10, 5, 1};
+
+        Result out = dr::zeros<Result>();
+        for (uint8_t ctrl_pt = 0; ctrl_pt < SKY_CTRL_PTS; ++ctrl_pt) {
+            UInt32Result idx = indices + ctrl_pt * out_size;
+            Result data = dr::gather<Result>(dataset, idx, active);
+            out += coefs[ctrl_pt] * dr::pow(x, ctrl_pt) *
+                   dr::pow(1 - x, (SKY_CTRL_PTS - 1) - ctrl_pt) * data;
+        }
+
+        return out;
+    }
+
+    template<ScalarUInt32 dataset_size, typename Result>
+    Result compute_sky_dataset(const FloatStorage& dataset, const Float& eta) const {
+        using UInt32Result = dr::uint32_array_t<Result>;
+
+        Float x = dr::cbrt(2 * dr::InvPi<Float> * eta);
+
+        UInt32 t_high = dr::floor2int<UInt32>(m_turbidity),
+               t_low = t_high - 1;
+
+        Float t_rem = m_turbidity - t_high;
+
+        // Compute block sizes for each parameter to facilitate indexing
+        static constexpr uint32_t
+                    t_block_size = dataset_size / TURBITDITY_LVLS,
+                    a_block_size = t_block_size / ALBEDO_LVLS,
+                    result_size  = a_block_size / SKY_CTRL_PTS,
+                    nb_params    = result_size / CHANNEL_COUNT;
+
+        // Interpolate on elevation
+        Result t_low_a_low   = bezier_interpolate<Result>(dataset, result_size, t_low  * t_block_size + 0 * a_block_size, x, t_low < TURBITDITY_LVLS),
+               t_high_a_low  = bezier_interpolate<Result>(dataset, result_size, t_high * t_block_size + 0 * a_block_size, x, t_high < TURBITDITY_LVLS),
+               t_low_a_high  = bezier_interpolate<Result>(dataset, result_size, t_low  * t_block_size + 1 * a_block_size, x, t_low < TURBITDITY_LVLS),
+               t_high_a_high = bezier_interpolate<Result>(dataset, result_size, t_high * t_block_size + 1 * a_block_size, x, t_high < TURBITDITY_LVLS);
+
+        // Interpolate on turbidity
+        Result res_a_low  = dr::lerp(t_low_a_low, t_high_a_low, t_rem),
+               res_a_high = dr::lerp(t_low_a_high, t_high_a_high, t_rem);
+
+        // Interpolate on albedo
+        UInt32Result idx = dr::arange<UInt32Result>(m_albedo.size());
+        idx /= nb_params;
+
+        Result result = dr::lerp(res_a_low, res_a_high, dr::gather<Result>(m_albedo, idx));
+        return result & (0.f <= eta && eta <= 0.5f * dr::Pi<Float>);
     }
 
     static void compute_avg_day(uint32_t day, void* payload_) {
@@ -233,9 +372,6 @@ private:
         time.year = payload->m_year;
         time.day = (ScalarInt32) day;
 
-        DynamicBuffer<ScalarFloat> albedo = extract_albedo(payload->m_albedo);
-
-
         for (uint32_t i = 0; i < day_resolution; ++i) {
             time.hour = payload->m_start_time + i * dt;
 
@@ -244,8 +380,8 @@ private:
             if (sun_eta < 0.f) continue;
             const ScalarVector3f sun_dir = sph_to_dir(sun_elevation, sun_azimuth);
 
-            ScalarFloatStorage sky_params = sky_radiance_params<SKY_DATASET_SIZE>(payload->m_sky_params_dataset, albedo, payload->m_turbidity, sun_eta);
-            ScalarFloatStorage sky_radiance = sky_radiance_params<SKY_DATASET_RAD_SIZE>(payload->m_sky_rad_dataset, albedo, payload->m_turbidity, sun_eta);
+            FloatStorage sky_params = sky_radiance_params<SKY_DATASET_SIZE>(payload->m_sky_params_dataset, payload->m_albedo, payload->m_turbidity, sun_eta);
+            FloatStorage sky_radiance = sky_radiance_params<SKY_DATASET_RAD_SIZE>(payload->m_sky_rad_dataset, payload->m_albedo, payload->m_turbidity, sun_eta);
 
             // Iterate over top half of the image
             for (uint32_t pixel_idx = 0; pixel_idx < bitmap_resolution.x() * bitmap_resolution.y() / 2; ++pixel_idx) {
@@ -338,7 +474,8 @@ private:
     Float m_turbidity = 7.f;
     ScalarFloat m_sky_scale = 1.f;
     ScalarFloat m_sun_scale = 1.f;
-    ref<Texture> m_albedo;
+    ref<Texture> m_albedo_tex;
+    FloatStorage m_albedo;
 
     LocationRecord<Float> m_location;
     ScalarUInt32 m_year = 2025;
