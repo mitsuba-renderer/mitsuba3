@@ -1347,17 +1347,17 @@ def solid_angle_to_area_jacobian(o: mi.Point3f,
     angle (dω) to surface area (dA) when reparameterizing the integration over
     a surface.
 
-    Parameter ``p`` (``mi.Point3f``)
+    Parameter ``o`` (``mi.Point3f``)
         Origin point (e.g., shading point).
 
-    Parameter ``ps`` (``mi.Point3f``)
+    Parameter ``p`` (``mi.Point3f``)
         Sampled point on the surface.
 
-    Parameter ``n_ps`` (``mi.Normal3f``)
+    Parameter ``n`` (``mi.Normal3f``)
         Normal at the sampled point.
 
     Output:
-        The Jacobian determinant |∂A/∂ω| = (|dot(n_ps, wi)| / ||ps - p||^2)
+        The Jacobian determinant |∂A/∂ω| = (|dot(n, wi)| / ||p - o||^2)
     """
     d = p - o
     d_squared = dr.squared_norm(d)

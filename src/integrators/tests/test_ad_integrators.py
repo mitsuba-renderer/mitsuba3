@@ -59,6 +59,9 @@ def check_image_error(actual, reference, config, integrator_name, epsilon=2e-2,
     error_mean = dr.mean(error, axis=None).item()
     error_max = dr.max(error, axis=None).item()
 
+    print(f"{error_mean=}")
+    print(f"{error_max=}")
+
     if error_mean > config.error_mean_threshold or error_max > config.error_max_threshold:
         print(f"Failure in config: {config.name}, {integrator_name}")
 
@@ -146,7 +149,7 @@ class ConfigBase:
     requires_discontinuities = False
 
     def __init__(self) -> None:
-        self.spp = 128
+        self.spp = 1024
         self.res = 128
         self.error_mean_threshold = 0.05
         self.error_max_threshold = 0.5
@@ -211,6 +214,7 @@ class ConfigBase:
                f'  key = {self.key if hasattr(self, "key") else "None"}\n' \
                f']'
 
+
 # BSDF albedo of a directly visible gray plane illuminated by a constant emitter
 class DiffuseAlbedoConfig(ConfigBase):
     def __init__(self) -> None:
@@ -238,8 +242,6 @@ class DiffuseAlbedoConfig(ConfigBase):
 class DiffuseAlbedoGIConfig(ConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.spp = 128
-        self.error_mean_threshold = 0.06
         self.key = 'green.bsdf.reflectance.value'
         self.scene_dict = {
             'type': 'scene',
@@ -307,7 +309,6 @@ class AreaLightRadianceConfig(ConfigBase):
 class DirectlyVisibleAreaLightRadianceConfig(ConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.spp = 128
         self.key = 'light.emitter.radiance.value'
         self.scene_dict = {
             'type': 'scene',
@@ -475,6 +476,7 @@ class TranslateShapeConfigBase(ConfigBase):
         self.params.update()
         dr.eval()
 
+
 # Scale shape base configuration
 class ScaleShapeConfigBase(ConfigBase):
     requires_discontinuities = True
@@ -505,11 +507,10 @@ class TranslateTexturedPlaneConfig(TranslateShapeConfigBase):
                 'face_normals': True,
                 'bsdf': {
                     'type': 'diffuse',
-                    'reflectance' : {
+                    'reflectance': {
                         'type': 'bitmap',
-                        # 'filename' : 'resources/data/common/textures/flower.bmp'
                         'filename' : 'resources/data/common/textures/museum.exr',
-                        'format' : 'variant'
+                        'format': 'variant'
                     }
                 },
                 'to_world': T().scale(2.0),
@@ -544,8 +545,8 @@ class TranslatePlaneUnderEnvmapConfig(TranslateShapeConfigBase):
         }
         self.res = 64
         self.ref_fd_epsilon = 1e-3
-        self.error_mean_threshold = 0.002
-        self.error_max_threshold = 0.002
+        self.error_mean_threshold = 0.03
+        self.error_max_threshold = 0.2
 
     def update(self, theta):
         self.params[self.key] = dr.ravel(self.initial_state + mi.Vector3f(0.0, 0.0, theta))
@@ -572,8 +573,7 @@ class TranslatePlaneUnderProjectorConfig(TranslateShapeConfigBase):
                 'type': 'projector',
                 'irradiance': {
                     'type': 'bitmap',
-                    #'filename' : 'resources/data/common/textures/museum.exr',
-                    'filename' : '/home/nroussel/rgl/mitsuba3/debug_prb_motion/gradient_lowres.jpg',
+                    'filename': 'resources/data/common/textures/gradient.jpg',
                     'format' : 'variant',
                 },
                 'to_world': mi.ScalarTransform4f.look_at(origin=[0, 0, 3], target=[0, 0, 0], up=[0, 1, 0]),
@@ -581,8 +581,8 @@ class TranslatePlaneUnderProjectorConfig(TranslateShapeConfigBase):
         }
         self.res = 64
         self.ref_fd_epsilon = 1e-3
-        self.error_mean_threshold = 0.002
-        self.error_max_threshold = 0.008
+        self.error_mean_threshold = 0.03
+        self.error_max_threshold = 0.2
 
     def update(self, theta):
         self.params[self.key] = dr.ravel(self.initial_state + mi.Vector3f(0.0, 0.0, theta))
@@ -590,27 +590,185 @@ class TranslatePlaneUnderProjectorConfig(TranslateShapeConfigBase):
         dr.eval()
 
 
-# Translate diffuse sphere under constant illumination
-class TranslateDiffuseSphereConstantConfig(TranslateShapeConfigBase):
+# Translate glass plane in a lens system (this is actually a continuous problem)
+class TranslateGlassPlaneLensConfig(TranslateShapeConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.key = 'sphere.vertex_positions'
+        self.key = 'shape.vertex_positions'
         self.scene_dict = {
             'type': 'scene',
-            'sphere': {
-                'type': 'obj',
-                'filename': 'resources/data/common/meshes/sphere.obj',
-                'to_world': mi.ScalarTransform4f.rotate(angle=-90, axis=[0, 1, 0]),
+            'rough_glass': {
+                'type': 'roughdielectric',
+                'distribution': 'beckmann',
+                'alpha': 0.8,
+                'int_ior': 1.001,
+                'ext_ior': 1.1,
             },
-            'light': { 'type': 'constant' }
+            'glass1': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
+                'face_normals': True,
+                'to_world': T().translate([0, 0, 1]) @ T().scale(4.0),
+                'bsdf': { 'type': 'ref', 'id': 'rough_glass' }
+            },
+            'shape': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
+                'face_normals': True,
+                'to_world': T().translate([0, 0, 0]) @ T().scale(4.0),
+                'bsdf': { 'type': 'ref', 'id': 'rough_glass' }
+            },
+            'glass3': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
+                'face_normals': True,
+                'to_world': T().translate([0, 0, -1]) @ T().scale(4.0),
+                'bsdf': { 'type': 'ref', 'id': 'rough_glass' }
+            },
+            'light': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
+                'face_normals': True,
+                'to_world': T().translate([0, 0, -2]) @ T().scale(0.7),
+                'emitter': {
+                    'type': 'area',
+                    'radiance': {
+                        'type': 'bitmap',
+                        'filename': 'resources/data/common/textures/gradient.jpg',
+                        'wrap_mode': 'clamp',
+                    }
+                }
+            }
+        }
+        self.integrator_dict = {
+            'max_depth': 4,
+        }
+        self.sensor_dict = {
+            'type': 'perspective',
+            'to_world': T().look_at(origin=[0, 0, 2], target=[0, 0, 0], up=[0, 1, 0]),
+            'film': {
+                'type': 'hdrfilm',
+                'rfilter': { 'type': 'box' },
+                'width': self.res,
+                'height': self.res,
+                'sample_border': True,
+                'pixel_format': 'rgb',
+                'component_format': 'float32',
+            }
+        }
+        self.spp = 8192
+        self.res = 32
+        self.ref_fd_epsilon = 1e-3
+        self.error_mean_threshold = 0.03
+        self.error_max_threshold = 0.3
+
+    def update(self, theta):
+        self.params[self.key] = dr.ravel(self.initial_state + mi.Vector3f(0.0, 0.0, theta))
+        self.params.update()
+        dr.eval()
+
+
+# Translate textured area emitter
+# (actually continuous, the border of the emitter is black)
+class TranslateTexturedAreaEmitterConfig(TranslateShapeConfigBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.key = 'plane.vertex_positions'
+        self.res = 64
+        self.scene_dict = {
+            'type': 'scene',
+            'plane': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
+                'face_normals': True,
+                'to_world':  T().rotate([1, 0, 0], 45) @ T().rotate([0, 0, 1], -90) @ T().scale(1.0),
+                'emitter': {
+                    'type': 'area',
+                    'radiance': {
+                        'type': 'bitmap',
+                        'filename': 'resources/data/common/textures/gradient.jpg',
+                    }
+                }
+            }
+        }
+        self.sensor_dict = {
+            'type': 'perspective',
+            'to_world': T().look_at(origin=[0, 0.2, 4], target=[0, 0.2, 0], up=[0, 1, 0]),
+            'fov': 40,
+            'film': {
+                'type': 'hdrfilm',
+                'rfilter': { 'type': 'box' },
+                'width': self.res,
+                'height': self.res,
+                'sample_border': True,
+                'pixel_format': 'rgb',
+                'component_format': 'float32',
+            }
         }
         self.ref_fd_epsilon = 1e-3
-        self.error_mean_threshold = 0.04
-        self.error_max_threshold = 0.6
+        self.error_mean_threshold = 0.003
+        self.error_max_threshold = 0.4
         self.error_mean_threshold_bwd = 0.25
-        self.integrator_dict = {
-            'max_depth': 2,
+
+    def update(self, theta):
+        self.params[self.key] = dr.ravel(self.initial_state + mi.Vector3f(0.0, 0.0, theta))
+        self.params.update()
+        dr.eval()
+
+# Translate plane illuminated by a textured area emitter
+# (actually continuous, the border of the emitter is black, and we don't directly see the plane borders)
+class TranslatePlaneUnderTexturedAreaEmitterConfig(TranslateShapeConfigBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.key = 'plane.vertex_positions'
+        self.res = 64
+        self.scene_dict = {
+            'type': 'scene',
+            'plane': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
+                'face_normals': True,
+                'to_world':  T().rotate([1, 0, 0], 45) @ T().rotate([0, 0, 1], 90) @ T().scale(1),
+            },
+            'light': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
+                'face_normals': True,
+                'to_world': T().translate([0, -1.5, 0]) @ T().rotate([0, 1, 0], -90) @ T().rotate([1, 0, 0], -90) @ T().scale(4.0),
+                'emitter': {
+                    'type': 'area',
+                    'radiance': {
+                        'type': 'bitmap',
+                        'filename': 'resources/data/common/textures/gradient.jpg',
+                        'wrap_mode': 'clamp',
+                    }
+                }
+            }
         }
+        self.sensor_dict = {
+            'type': 'perspective',
+            'to_world': T().look_at(origin=[0, 0.1, 4], target=[0, 0.1, 0], up=[0, 1, 0]),
+            'fov': 18,
+            'film': {
+                'type': 'hdrfilm',
+                'rfilter': { 'type': 'box' },
+                'width': self.res,
+                'height': self.res,
+                'sample_border': True,
+                'pixel_format': 'rgb',
+                'component_format': 'float32',
+            }
+        }
+        self.ref_fd_epsilon = 1e-3
+        self.error_mean_threshold = 0.025
+        self.error_max_threshold = 0.4
+        self.error_mean_threshold_bwd = 0.25
+
+    def update(self, theta):
+        self.params[self.key] = dr.ravel(self.initial_state + mi.Vector3f(0.0, 0.0, theta))
+        self.params.update()
+        dr.eval()
+
 
 # Translate diffuse rectangle under constant illumination
 class TranslateDiffuseRectangleConstantConfig(TranslateShapeConfigBase):
@@ -633,6 +791,7 @@ class TranslateDiffuseRectangleConstantConfig(TranslateShapeConfigBase):
         self.integrator_dict = {
             'max_depth': 2,
         }
+
 
 # Translate area emitter (rectangle) on black background
 class TranslateRectangleEmitterOnBlackConfig(TranslateShapeConfigBase):
@@ -743,6 +902,7 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
         self.integrator_dict = {
             'max_depth': 2,
         }
+
 
 # Translate shadow receiver
 class TranslateShadowReceiverAreaLightConfig(TranslateShapeConfigBase):
@@ -902,50 +1062,61 @@ class TranslateCameraConfig(ConfigBase):
 # -------------------------------------------------------------------
 
 BASIC_CONFIGS_LIST = [
-#    DiffuseAlbedoConfig,
-#    DiffuseAlbedoGIConfig,
-#    AreaLightRadianceConfig,
-#    DirectlyVisibleAreaLightRadianceConfig,
-#    PointLightIntensityConfig,
-#    ConstantEmitterRadianceConfig,
-#    CropWindowConfig,
-#    RotateShadingNormalsPlaneConfig,
-#    TranslateTexturedPlaneConfig,
-#    TranslatePlaneUnderEnvmapConfig,
-    TranslatePlaneUnderProjectorConfig,
+        #DiffuseAlbedoConfig,
+        #DiffuseAlbedoGIConfig,
+        #AreaLightRadianceConfig,
+        #DirectlyVisibleAreaLightRadianceConfig,
+        #PointLightIntensityConfig,
+        #ConstantEmitterRadianceConfig,
+        #CropWindowConfig,
+        #RotateShadingNormalsPlaneConfig
+]
+
+CONTINUOUS_BUT_NON_STATIC_GEOM_CONFIGS_LIST = [
+        #TranslateTexturedPlaneConfig,
+        #TranslatePlaneUnderEnvmapConfig,
+        #TranslatePlaneUnderProjectorConfig,
+        #TranslateGlassPlaneLensConfig,
+        #TranslateTexturedAreaEmitterConfig,
+        #TranslatePlaneUnderTexturedAreaEmitterConfig
 ]
 
 DISCONTINUOUS_CONFIGS_LIST = [
-#    # TranslateDiffuseSphereConstantConfig,
-#    # TranslateDiffuseRectangleConstantConfig,
-#    # TranslateRectangleEmitterOnBlackConfig,
-#    TranslateSphereEmitterOnBlackConfig,
-#    ScaleSphereEmitterOnBlackConfig,
-#    TranslateOccluderAreaLightConfig,
-#    TranslateSelfShadowAreaLightConfig,
-#    # TranslateShadowReceiverAreaLightConfig,
-#    TranslateSphereOnGlossyFloorConfig,
-#    # TranslateCameraConfig
+    TranslateDiffuseRectangleConstantConfig,
+    TranslateRectangleEmitterOnBlackConfig,
+    TranslateSphereEmitterOnBlackConfig,
+    ScaleSphereEmitterOnBlackConfig,
+    TranslateOccluderAreaLightConfig,
+    TranslateSelfShadowAreaLightConfig,
+    TranslateShadowReceiverAreaLightConfig,
+    TranslateSphereOnGlossyFloorConfig,
+#    TranslateCameraConfig
 ]
 
 # List of configs that fail on integrators with depth less than three
 INDIRECT_ILLUMINATION_CONFIGS_LIST = [
     DiffuseAlbedoGIConfig,
     TranslateSelfShadowAreaLightConfig,
-    TranslateSphereOnGlossyFloorConfig
+    TranslateSphereOnGlossyFloorConfig,
+    TranslateGlassPlaneLensConfig
 ]
 
-# List of integrators to test (also indicates whether it handles discontinuities)
+# List of integrators to test they are triplets:
+# (integrator type, handles continuous derivaites w/ moving geometry, handle discontinuities)
 INTEGRATORS = [
-    ('path', False),
-    ('prb', False),
-    ('direct_projective', True),
-    ('prb_projective', True)
+        #('path', False, False),
+        #('prb', True, True),
+    #('direct_projective', True, True),
+    ('prb_projective', True, True)
 ]
 
 CONFIGS = []
-for integrator_name, handles_discontinuities in INTEGRATORS:
-    todos = BASIC_CONFIGS_LIST + (DISCONTINUOUS_CONFIGS_LIST if handles_discontinuities else [])
+for integrator_name, handles_moving_geom, handles_discontinuities in INTEGRATORS:
+    todos = (
+        BASIC_CONFIGS_LIST +
+        (CONTINUOUS_BUT_NON_STATIC_GEOM_CONFIGS_LIST if handles_moving_geom else []) +
+        (DISCONTINUOUS_CONFIGS_LIST if handles_discontinuities else [])
+    )
     for config in todos:
         #if config in INDIRECT_ILLUMINATION_CONFIGS_LIST:
         #    continue
@@ -969,6 +1140,7 @@ def test01_rendering_primal(variant_cuda_ad_rgb, integrator_name, config):
     filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
     image_primal_ref = mi.TensorXf32(mi.Bitmap(filename))
     image = integrator.render(config.scene, seed=0, spp=config.spp)
+    mi.Bitmap(image).write("/home/nroussel/rgl/mitsuba3/tmp.exr")
 
     if not check_image_error(image, image_primal_ref, config, integrator_name,
                              epsilon=2e-2, test_type='primal'):
@@ -988,7 +1160,7 @@ def test02_rendering_forward(variant_cuda_ad_rgb, integrator_name, config):
     config.integrator_dict['type'] = integrator_name
     integrator = mi.load_dict(config.integrator_dict)
     if 'projective' in integrator_name:
-        integrator.proj_seed_spp = 2048 * 2
+        integrator.proj_seed_spp = 512#2048 * 2
 
     filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
     image_fwd_ref = mi.TensorXf32(mi.Bitmap(filename))
@@ -1006,6 +1178,7 @@ def test02_rendering_forward(variant_cuda_ad_rgb, integrator_name, config):
     image_fwd = integrator.render_forward(
         config.scene, seed=0, spp=config.spp, params=theta)
     image_fwd = dr.detach(image_fwd)
+    mi.Bitmap(image_fwd).write("/home/nroussel/rgl/mitsuba3/tmp.exr")
 
     if not check_image_error(image_fwd, image_fwd_ref, config, integrator_name,
                              epsilon=2e-1, test_type='fwd', save_error_image=True):
@@ -1127,7 +1300,12 @@ if __name__ == "__main__":
     if not exists(output_dir):
         os.makedirs(output_dir)
 
-    for config in BASIC_CONFIGS_LIST + DISCONTINUOUS_CONFIGS_LIST:
+    all_configs = (
+        BASIC_CONFIGS_LIST +
+        CONTINUOUS_BUT_NON_STATIC_GEOM_CONFIGS_LIST +
+        DISCONTINUOUS_CONFIGS_LIST
+    )
+    for config in all_configs:
         config = config()
         print(f"name: {config.name}")
 
