@@ -256,9 +256,12 @@ NB_MODULE(mitsuba_alias, m) {
             all_variant_names[i].ptr(), nb::none().ptr());
     }
 
-    m.def("variant", []() { return curr_variant ? curr_variant : nb::none(); });
-    m.def("variants", []() { return nb::steal(PyDict_Keys(variant_modules)); });
-    m.def("set_variant", set_variant);
+    m.def("variant", []() { return curr_variant ? curr_variant : nb::none(); },
+          nb::sig("def variant() -> typing.Optional[str]"));
+    m.def("variants", []() { return nb::steal(PyDict_Keys(variant_modules)); },
+          nb::sig("def variants() -> typing.List[str]"));
+    m.def("set_variant", set_variant,
+          nb::sig("def set_variant(*args: str) -> None"));
     /// Only used for variant-specific attributes e.g. mi.scalar_rgb.T
     m.def("__getattr__", [](nb::handle key) { return get_attr(key); });
 
