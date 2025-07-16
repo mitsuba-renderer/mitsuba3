@@ -168,7 +168,9 @@ class BasicPRBIntegrator(RBIntegrator):
                     # tracking enabled.
 
                     # Recompute 'wo' to propagate derivatives to cosine term
-                    wo_world = dr.normalize(si_next.p - si.p)
+                    wo_world = dr.select(si_next.is_valid(),
+                                         dr.normalize(si_next.p - si.p),
+                                         ray_next.d)
                     wo = si.to_local(wo_world)
 
                     # Re-evaluate BSDF * cos(theta) differentiably
