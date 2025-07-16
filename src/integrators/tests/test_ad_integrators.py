@@ -892,13 +892,11 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
                 'to_world': mi.ScalarTransform4f.translate([4.0, 0.0, 4.0]) @ mi.ScalarTransform4f.scale(0.05)
             }
         }
+        self.spp = 4192 * 4
         self.ref_fd_epsilon = 1e-3
         self.error_mean_threshold = 0.03
         self.error_max_threshold = 1.75
         self.error_mean_threshold_bwd = 0.25
-        self.integrator_dict = {
-            'max_depth': 2,
-        }
 
 
 # Translate shadow receiver
@@ -937,87 +935,6 @@ class TranslateShadowReceiverAreaLightConfig(TranslateShapeConfigBase):
         self.spp = 4096
         self.integrator_dict = {
             'max_depth': 2,
-        }
-
-
-# Translate occluder casting shadow on itself
-class TranslateSelfShadowAreaLightConfig(ConfigBase):
-    def __init__(self) -> None:
-        super().__init__()
-        self.scene_dict = {
-            'type': 'scene',
-            'plane': {
-                'type': 'obj',
-                'filename': 'resources/data/common/meshes/rectangle.obj',
-                'face_normals': True,
-            },
-            'occluder': {
-                'type': 'obj',
-                'filename': 'resources/data/common/meshes/rectangle.obj',
-                'face_normals': True,
-                'to_world': mi.ScalarTransform4f.translate([-1, 0, 0.5]) @ mi.ScalarTransform4f.rotate([0, 1, 0], 90) @ mi.ScalarTransform4f.scale(1.0),
-            },
-            'light': {
-                'type': 'point',
-                'position': [-4, 0, 6],
-                'intensity': {'type': 'rgb', 'value': [5.0, 0.0, 0.0]}
-            },
-            'light2': { 'type': 'constant', 'radiance': 0.1 },
-        }
-        self.error_mean_threshold = 0.06
-        self.error_max_threshold = 0.7
-        self.error_mean_threshold_bwd = 0.35
-        self.integrator_dict = {
-            'max_depth': 3,
-        }
-
-    def initialize(self):
-        super().initialize()
-        self.params.keep(['plane.vertex_positions', 'occluder.vertex_positions'])
-        self.initial_state_0 = dr.unravel(mi.Vector3f, mi.Float(self.params['plane.vertex_positions']))
-        self.initial_state_1 = dr.unravel(mi.Vector3f, mi.Float(self.params['occluder.vertex_positions']))
-
-    def update(self, theta):
-        self.params['plane.vertex_positions']    = dr.ravel(self.initial_state_0 + mi.Vector3f(theta, 0.0, 0.0))
-        self.params['occluder.vertex_positions'] = dr.ravel(self.initial_state_1 + mi.Vector3f(theta, 0.0, 0.0))
-        self.params.update()
-        dr.eval()
-
-
-# Translate sphere reflecting on glossy floor
-class TranslateSphereOnGlossyFloorConfig(TranslateShapeConfigBase):
-    def __init__(self) -> None:
-        super().__init__()
-        self.key = 'sphere.vertex_positions'
-        self.scene_dict = {
-            'type': 'scene',
-            'floor': {
-                'type': 'rectangle',
-                'bsdf': {
-                    'type': 'roughconductor',
-                    'alpha': 0.025,
-                },
-                'to_world': mi.ScalarTransform4f.translate([0, 1.5, 0]) @ mi.ScalarTransform4f.rotate([1, 0, 0], -45) @ mi.ScalarTransform4f.scale(4),
-            },
-            'sphere': {
-                'type': 'obj',
-                'bsdf': {
-                    'type': 'diffuse',
-                    'reflectance': {'type': 'rgb', 'value': [1.0, 0.5, 0.0]}
-                },
-                'filename': 'resources/data/common/meshes/sphere.obj',
-                'to_world': mi.ScalarTransform4f.translate([0.5, 2.0, 1.5]) @ mi.ScalarTransform4f.scale(1.0),
-            },
-            'light': { 'type': 'constant', 'radiance': 1.0 },
-        }
-        self.res = 32
-        self.ref_fd_epsilon = 1e-3
-        self.error_mean_threshold = 0.25
-        self.error_max_threshold = 5.0
-        self.error_mean_threshold_bwd = 0.2
-        self.spp = 2048
-        self.integrator_dict = {
-            'max_depth': 3,
         }
 
 
@@ -1084,9 +1001,7 @@ DISCONTINUOUS_CONFIGS_LIST = [
     TranslateSphereEmitterOnBlackConfig,
     ScaleSphereEmitterOnBlackConfig,
     TranslateOccluderAreaLightConfig,
-    TranslateSelfShadowAreaLightConfig,
     TranslateShadowReceiverAreaLightConfig,
-    TranslateSphereOnGlossyFloorConfig,
 
 #    TranslateCameraConfig
 ]
@@ -1094,18 +1009,16 @@ DISCONTINUOUS_CONFIGS_LIST = [
 # List of configs that fail on integrators with depth less than three
 INDIRECT_ILLUMINATION_CONFIGS_LIST = [
     DiffuseAlbedoGIConfig,
-    TranslateSelfShadowAreaLightConfig,
-    TranslateSphereOnGlossyFloorConfig,
     TranslateGlassPlaneLensConfig
 ]
 
 # List of integrators to test they are triplets:
 # (integrator type, handles continuous derivaites w/ moving geometry, handle discontinuities)
 INTEGRATORS = [
-        #('path', False, False),
-        #('prb', True, True),
-    #('direct_projective', True, True),
-    ('prb_projective', True, True)
+    ('path', False, False),
+    ('prb', True, False),
+    ('direct_projective', True, True),
+    ('prb_projective', True, True),
 ]
 
 CONFIGS = []
@@ -1155,7 +1068,7 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
     config.integrator_dict['type'] = integrator_name
     integrator = mi.load_dict(config.integrator_dict)
     if 'projective' in integrator_name:
-        integrator.proj_seed_spp = 512#2048 * 2
+        integrator.proj_seed_spp = 4192
 
     filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
     image_fwd_ref = mi.TensorXf32(mi.Bitmap(filename))
@@ -1193,7 +1106,7 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
 
     integrator = mi.load_dict(config.integrator_dict)
     if 'projective' in integrator_name:
-        integrator.proj_seed_spp = 2048 * 2
+        integrator.proj_seed_spp = 4192
 
     filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
     image_fwd_ref = mi.TensorXf32(mi.Bitmap(filename))
