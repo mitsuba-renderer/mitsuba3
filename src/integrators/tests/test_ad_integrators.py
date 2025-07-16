@@ -522,6 +522,74 @@ class TranslateTexturedPlaneConfig(TranslateShapeConfigBase):
         self.error_max_threshold = 56.0
 
 
+# Translate diffuse plane illuminated by envmap towards the sensor
+# (this is actually a continuous problem, and should have 0 gradients)
+class TranslatePlaneUnderEnvmapConfig(TranslateShapeConfigBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.key = 'plane.vertex_positions'
+        self.scene_dict = {
+            'type': 'scene',
+            'plane': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
+                'face_normals': True,
+                'bsdf': { 'type': 'diffuse' },
+                'to_world': T().scale(3.0)
+            },
+            'light': {
+                'type': 'envmap',
+                'filename' : 'resources/data/common/textures/museum.exr'
+            }
+        }
+        self.res = 64
+        self.ref_fd_epsilon = 1e-3
+        self.error_mean_threshold = 0.002
+        self.error_max_threshold = 0.002
+
+    def update(self, theta):
+        self.params[self.key] = dr.ravel(self.initial_state + mi.Vector3f(0.0, 0.0, theta))
+        self.params.update()
+        dr.eval()
+
+
+# Translate diffuse plane illuminated by a projector towards the sensor
+# (this is actually a continuous problem)
+class TranslatePlaneUnderProjectorConfig(TranslateShapeConfigBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.key = 'plane.vertex_positions'
+        self.scene_dict = {
+            'type': 'scene',
+            'plane': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
+                'face_normals': True,
+                'bsdf': { 'type': 'diffuse' },
+                'to_world': T().scale(3.0)
+            },
+            'light': {
+                'type': 'projector',
+                'irradiance': {
+                    'type': 'bitmap',
+                    #'filename' : 'resources/data/common/textures/museum.exr',
+                    'filename' : '/home/nroussel/rgl/mitsuba3/debug_prb_motion/gradient_lowres.jpg',
+                    'format' : 'variant',
+                },
+                'to_world': mi.ScalarTransform4f.look_at(origin=[0, 0, 3], target=[0, 0, 0], up=[0, 1, 0]),
+            }
+        }
+        self.res = 64
+        self.ref_fd_epsilon = 1e-3
+        self.error_mean_threshold = 0.002
+        self.error_max_threshold = 0.008
+
+    def update(self, theta):
+        self.params[self.key] = dr.ravel(self.initial_state + mi.Vector3f(0.0, 0.0, theta))
+        self.params.update()
+        dr.eval()
+
+
 # Translate diffuse sphere under constant illumination
 class TranslateDiffuseSphereConstantConfig(TranslateShapeConfigBase):
     def __init__(self) -> None:
@@ -843,6 +911,8 @@ BASIC_CONFIGS_LIST = [
 #    CropWindowConfig,
 #    RotateShadingNormalsPlaneConfig,
 #    TranslateTexturedPlaneConfig,
+#    TranslatePlaneUnderEnvmapConfig,
+    TranslatePlaneUnderProjectorConfig,
 ]
 
 DISCONTINUOUS_CONFIGS_LIST = [
