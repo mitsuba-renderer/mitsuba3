@@ -280,7 +280,8 @@ public:
         it_query.wavelengths = it.wavelengths;
         it_query.uv = ds.uv;
         if constexpr (dr::is_diff_v<Float>) {
-            // Re-attach UV
+            // Re-compute attached UV when the shading point is moving and the
+            // input ds.uv has not been re-computed
             if (dr::grad_enabled(it_local) && !dr::grad_enabled(ds.uv)) {
                 Point2f uv_diff = dr::head<2>(m_sample_to_camera.inverse() * it_local);
                 it_query.uv = dr::replace_grad(it_query.uv, uv_diff);
