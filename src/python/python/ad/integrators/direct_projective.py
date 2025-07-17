@@ -216,12 +216,11 @@ class DirectProjectiveIntegrator(PSIntegrator):
             si_bsdf = scene.ray_intersect(
                 ray_bsdf, ray_flags=mi.RayFlags.All, coherent=False, active=active_bsdf)
 
-            if (not primal):
+            if dr.hint(not primal, mode='scalar'):
                 si_bsdf_detached = dr.detach(si_bsdf)
 
-            # Re-compute `weight_bsdf` with AD attached only in differentiable
-            # phase
-            if not primal:
+                # Re-compute `weight_bsdf` with AD attached only in
+                # differentiable phase
                 J = solid_angle_to_area_jacobian(
                     si.p, si_bsdf_detached.p, si_bsdf_detached.n, active_next & si_bsdf.is_valid()
                 )
@@ -240,8 +239,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
                     (J / dr.detach(J))
                 )
 
-            # Re-attach si_bsdf.wi if si.p was moving
-            if (not primal):
+                # Re-attach si_bsdf.wi if si.p was moving
                 wi_global = dr.normalize(si.p - si_bsdf_detached.p)
                 si.wi = dr.replace_grad(si.wi, si_bsdf_detached.to_local(wi_global))
 
