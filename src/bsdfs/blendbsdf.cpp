@@ -226,6 +226,16 @@ public:
                m_nested_bsdf[1]->eval_diffuse_reflectance(si, active) * weight;
     }
 
+    Spectrum eval_null_transmission(const SurfaceInteraction3f &si,
+                                    Mask active) const override {
+        if (likely(!has_flag(m_flags, BSDFFlags::Null)))
+            return 0.f;
+        // Evaluate the null transmission of the nested BSDFs
+        Float weight = eval_weight(si, active);
+        return m_nested_bsdf[0]->eval_null_transmission(si, active) * (1 - weight) +
+               m_nested_bsdf[1]->eval_null_transmission(si, active) * weight;
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "BlendBSDF[" << std::endl
