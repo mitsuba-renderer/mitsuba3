@@ -278,6 +278,10 @@ public:
         return { ray, wav_weight };
     }
 
+    ProjectiveTransform4f projection_transform() const override {
+        return m_sample_to_camera.inverse();
+    }
+
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &it, const Point2f & /*sample*/,
                      Mask active) const override {

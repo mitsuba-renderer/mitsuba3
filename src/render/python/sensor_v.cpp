@@ -193,7 +193,9 @@ MI_PY_EXPORT(Sensor) {
     MI_PY_CLASS(ProjectiveCamera, Sensor)
         .def_method(ProjectiveCamera, near_clip)
         .def_method(ProjectiveCamera, far_clip)
-        .def_method(ProjectiveCamera, focus_distance);
+        .def_method(ProjectiveCamera, focus_distance)
+        .def("projection_transform", &ProjectiveCamera::projection_transform,
+             "Return the projection matrix of this sensor (camera space to sample space transformation)");
 
     m.def("perspective_projection", &perspective_projection<Float>,
           "film_size"_a, "crop_size"_a, "crop_offset"_a, "fov_x"_a, "near_clip"_a, "far_clip"_a,
