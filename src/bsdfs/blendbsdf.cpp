@@ -15,10 +15,10 @@ Blended material (:monosp:`blendbsdf`)
 .. pluginparameters::
 
  * - weight
-   - |float|, |spectrum|, or |texture|
-   - A floating point value, spectrum, or texture with values between zero and one. The extreme values zero and
+   - |float| or |texture|
+   - A floating point value or texture with values between zero and one. The extreme values zero and
      one activate the first and second nested BSDF respectively, and in-between values interpolate
-     accordingly. When using spectral values, the mean is used for importance sampling decisions. (Default: 0.5)
+     accordingly. (Default: 0.5)
    - |exposed|, |differentiable|
 
  * - (Nested plugin)
@@ -114,8 +114,7 @@ public:
                                              Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
-        Spectrum weight = eval_weight(si, active);
-        Float weight_scalar = dr::mean(weight); // Use mean for sampling decision
+        Float weight = eval_weight(si, active);
         if (unlikely(ctx.component != (uint32_t) -1)) {
             bool sample_first = ctx.component < m_nested_bsdf[0]->component_count();
             BSDFContext ctx2(ctx);
@@ -131,19 +130,19 @@ public:
         BSDFSample3f bs = dr::zeros<BSDFSample3f>();
         Spectrum result(0.f);
 
-        Mask m0 = active && sample1 >  weight_scalar,
-             m1 = active && sample1 <= weight_scalar;
+        Mask m0 = active && sample1 >  weight,
+             m1 = active && sample1 <= weight;
 
         if (dr::any_or<true>(m0)) {
             auto [bs0, result0] = m_nested_bsdf[0]->sample(
-                ctx, si, (sample1 - weight_scalar) / (1 - weight_scalar), sample2, m0);
+                ctx, si, (sample1 - weight) / (1 - weight), sample2, m0);
             dr::masked(bs, m0) = bs0;
             dr::masked(result, m0) = result0;
         }
 
         if (dr::any_or<true>(m1)) {
             auto [bs1, result1] = m_nested_bsdf[1]->sample(
-                ctx, si, sample1 / weight_scalar, sample2, m1);
+                ctx, si, sample1 / weight, sample2, m1);
             dr::masked(bs, m1) = bs1;
             dr::masked(result, m1) = result1;
         }
@@ -155,7 +154,7 @@ public:
                   const Vector3f &wo, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        Spectrum weight = eval_weight(si, active);
+        Float weight = eval_weight(si, active);
         if (unlikely(ctx.component != (uint32_t) -1)) {
             bool sample_first = ctx.component < m_nested_bsdf[0]->component_count();
             BSDFContext ctx2(ctx);
@@ -182,10 +181,9 @@ public:
             return m_nested_bsdf[sample_first ? 0 : 1]->pdf(ctx2, si, wo, active);
         }
 
-        Spectrum weight = eval_weight(si, active);
-        Float weight_scalar = dr::mean(weight); // Use mean for PDF calculation
-        return m_nested_bsdf[0]->pdf(ctx, si, wo, active) * (1 - weight_scalar) +
-               m_nested_bsdf[1]->pdf(ctx, si, wo, active) * weight_scalar;
+        Float weight = eval_weight(si, active);
+        return m_nested_bsdf[0]->pdf(ctx, si, wo, active) * (1 - weight) +
+               m_nested_bsdf[1]->pdf(ctx, si, wo, active) * weight;
     }
 
     std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
@@ -194,8 +192,7 @@ public:
                                         Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        Spectrum weight = eval_weight(si, active);
-        
+        Float weight = eval_weight(si, active);
         if (unlikely(ctx.component != (uint32_t) -1)) {
             bool sample_first = ctx.component < m_nested_bsdf[0]->component_count();
             BSDFContext ctx2(ctx);
@@ -211,18 +208,17 @@ public:
         auto [val_0, pdf_0] = m_nested_bsdf[0]->eval_pdf(ctx, si, wo, active);
         auto [val_1, pdf_1] = m_nested_bsdf[1]->eval_pdf(ctx, si, wo, active);
 
-        Float weight_scalar = dr::mean(weight); // Use mean for PDF calculation
         return { val_0 * (1 - weight) + val_1 * weight,
-                 pdf_0 * (1 - weight_scalar) + pdf_1 * weight_scalar };
+                 pdf_0 * (1 - weight) + pdf_1 * weight };
     }
 
-    MI_INLINE Spectrum eval_weight(const SurfaceInteraction3f &si, const Mask &active) const {
-        return dr::clip(m_weight->eval(si, active), 0.f, 1.f);
+    MI_INLINE Float eval_weight(const SurfaceInteraction3f &si, const Mask &active) const {
+        return dr::clip(m_weight->eval_1(si, active), 0.f, 1.f);
     }
 
     Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
                                      Mask active) const override {
-        Spectrum weight = eval_weight(si, active);
+        Float weight = eval_weight(si, active);
         return m_nested_bsdf[0]->eval_diffuse_reflectance(si, active) * (1 - weight) +
                m_nested_bsdf[1]->eval_diffuse_reflectance(si, active) * weight;
     }
