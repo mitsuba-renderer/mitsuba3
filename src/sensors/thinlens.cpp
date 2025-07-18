@@ -212,6 +212,10 @@ public:
                         m_x_fov, m_image_rect, m_normalization);
     }
 
+    ProjectiveTransform4f projection_transform() const override {
+        return m_sample_to_camera.inverse();
+    }
+
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
                                           const Point2f &position_sample,
                                           const Point2f &aperture_sample,
