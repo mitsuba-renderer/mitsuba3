@@ -502,11 +502,12 @@ DynamicBuffer<Float> sun_params(const DynamicBuffer<Float>& sun_radiance_dataset
  * \return
  *      Sky radiance
  */
-template <typename Spec_, typename Float, typename Dataset1, typename Dataset2, typename Spec = unpolarized_spectrum_t<Spec_>>
-Spec_ eval_sky(const dr::uint32_array_t<Spec> &channel_idx,
-                const Float &cos_theta, const Float &gamma,
-                const Dataset1 &sky_params, const Dataset2 &sky_radiance,
-                const dr::mask_t<Spec> &active = true) {
+template <typename Spec_, typename Float,
+          typename Dataset1 = DynamicBuffer<Float>, typename Dataset2 = DynamicBuffer<Float>,
+          typename Index = dr::uint32_array_t<unpolarized_spectrum_t<Spec_>>,
+          typename Spec = unpolarized_spectrum_t<Spec_>>
+Spec_ eval_sky(const Index &channel_idx, const Float &cos_theta, const Float &gamma,
+               const Dataset1 &sky_params, const Dataset2 &sky_radiance, const dr::mask_t<Index> &active = true) {
 
     // Gather coefficients for the skylight equation
     using SpecSkyParams = dr::Array<Spec, SKY_PARAMS>;
@@ -552,10 +553,11 @@ Spec_ eval_sky(const dr::uint32_array_t<Spec> &channel_idx,
 *       Sun radiance
 */
 
-template <typename Spec_, typename Float, typename Dataset, typename Spec = unpolarized_spectrum_t<Spec_>>
+template <typename Spec_, typename Float,
+          typename Dataset = DynamicBuffer<Float>, typename Spec = unpolarized_spectrum_t<Spec_>>
 Spec_ eval_sun(const dr::uint32_array_t<Spec> &channel_idx,
                const Float &cos_theta, const Float &gamma,
-               const Dataset &sun_radiance, const Float &sun_half_aperture,
+               const Dataset &sun_radiance, const dr::scalar_t<Float> &sun_half_aperture,
                const dr::mask_t<Spec> &active = true) {
     using SpecUInt32 = dr::uint32_array_t<Spec>;
     using UInt32 = dr::uint32_array_t<Float>;
