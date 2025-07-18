@@ -199,6 +199,10 @@ public:
     /// Return the distance to the focal plane
     Float focus_distance() const { return m_focus_distance; }
 
+    /// Return the projection matrix of this sensor (camera space to sample
+    /// space transformation)
+    virtual ProjectiveTransform4f projection_transform() const = 0;
+
     void traverse(TraversalCallback *cb) override {
         cb->put("near_clip",      m_near_clip,      ParamFlags::NonDifferentiable);
         cb->put("far_clip",       m_far_clip,       ParamFlags::NonDifferentiable);
