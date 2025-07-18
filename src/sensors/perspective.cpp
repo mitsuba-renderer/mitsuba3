@@ -282,6 +282,10 @@ public:
         return m_sample_to_camera.inverse();
     }
 
+    ProjectiveTransform4f sample_to_camera() const override {
+        return m_sample_to_camera;
+    }
+
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &it, const Point2f & /*sample*/,
                      Mask active) const override {
