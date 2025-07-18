@@ -134,6 +134,8 @@ public:
         if (dr::any_or<true>(m0)) {
             auto [bs0, result0] = m_nested_bsdf[0]->sample(
                 ctx, si, (sample1 - weight) / (1 - weight), sample2, m0);
+            Float pdf1 = m_nested_bsdf[1]->pdf(ctx, si, bs0.wo, m0);
+            bs0.pdf = weight * pdf1 + (1.f - weight) * bs0.pdf;
             dr::masked(bs, m0) = bs0;
             dr::masked(result, m0) = result0;
         }
@@ -141,9 +143,12 @@ public:
         if (dr::any_or<true>(m1)) {
             auto [bs1, result1] = m_nested_bsdf[1]->sample(
                 ctx, si, sample1 / weight, sample2, m1);
+            Float pdf0 = m_nested_bsdf[0]->pdf(ctx, si, bs1.wo, m1);
+            bs1.pdf = weight * bs1.pdf + (1.f - weight) * pdf0;
             dr::masked(bs, m1) = bs1;
             dr::masked(result, m1) = result1;
         }
+
 
         return { bs, result };
     }
