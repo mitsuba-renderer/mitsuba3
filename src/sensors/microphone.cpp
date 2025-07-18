@@ -36,7 +36,7 @@ public:
             }
         }
 
-        m_kappa = props.get<ScalarFloat>("kappa", 0.f),
+        m_kappa = props.get<ScalarFloat>("kappa", 0.f);
 
         m_needs_sample_2 = false;
     }
@@ -50,8 +50,6 @@ public:
         ray.time = time;
 
         // 1. Sample spectrum
-        //Spectrum wav_weight(1.f);
-
         ray.wavelengths = wavelength_sample;
 
         // 2. Set ray origin and direction
@@ -59,8 +57,6 @@ public:
         auto sample_dir = warp::square_to_von_mises_fisher(sample3, m_kappa);
         ray.d = m_to_world.value() * sample_dir;
         Spectrum wav_weight(warp::square_to_von_mises_fisher_pdf(sample_dir, m_kappa));
-        //Spectrum wav_weight(1.f);
-        //ray.d = m_to_world.value() * warp::square_to_uniform_cone(sample3, m_kappa);
         ray.o += ray.d * math::RayEpsilon<Float>;
 
         return { ray, wav_weight };
@@ -77,8 +73,6 @@ public:
         ray.time = time;
 
         // 1. Sample spectrum
-        //Spectrum wav_weight(1.f);
-
         ray.wavelengths = wavelength_sample;
 
         // 2. Set ray origin and direction
@@ -86,8 +80,6 @@ public:
         auto sample_dir = warp::square_to_von_mises_fisher(sample3, m_kappa);
         ray.d = m_to_world.value() * sample_dir;
         Spectrum wav_weight(warp::square_to_von_mises_fisher_pdf(sample_dir, m_kappa));
-        // Spectrum wav_weight(1.f);
-        //ray.d = m_to_world.value() * warp::square_to_uniform_cone(sample3, m_kappa);
 
         // 3. Set differentials; since the film size is always 1x1, we don't have differentials
         ray.o_x = ray.o_y = ray.o; // nevertheless leave nothing uninitialized
@@ -103,7 +95,7 @@ public:
         Transform4f trafo_inv = trafo.inverse();
 
         DirectionSample3f ds = dr::zeros<PositionSample3f>();
-        ds.p = trafo.translation(),
+        ds.p = trafo.translation();
         ds.d = ds.p - it.p;
 
         Float dist_squared = dr::squared_norm(ds.d);
