@@ -117,19 +117,8 @@ class ProjectiveDetail():
         near_clip = sensor.near_clip()
         sensor_center = to_world @ mi.Point3f(0)
         sensor_lookat_dir = to_world @ mi.Vector3f(0, 0, 1)
-        x_fov = mi.traverse(sensor)["x_fov"][0]
-        film = sensor.film()
 
-        camera_to_sample = mi.perspective_projection(
-            film.size(),
-            film.crop_size(),
-            film.crop_offset(),
-            x_fov,
-            near_clip,
-            sensor.far_clip()
-        )
-
-        sample_to_camera = camera_to_sample.inverse()
+        sample_to_camera = sensor.sample_to_camera()
         p_min = sample_to_camera @ mi.Point3f(0, 0, 0)
         multiplier = dr.square(near_clip) / dr.abs(p_min[0] * p_min[1] * 4.0)
 
