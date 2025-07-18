@@ -262,20 +262,22 @@ private:
             );
 
             // =============== BLEND TWO DIMENSIONS ===========
+            // TODO handle integer overflow
             const auto [pixel_idx_wav, time_idx_wav] = dr::meshgrid(pixel_idx, time_idx);
             Vector3f ray_dir_wav = dr::gather<Vector3f>(ray_dir, pixel_idx_wav);
             Datasets datasets_wav = dr::gather<Datasets>(datasets, time_idx_wav);
 
             Mask active = (ray_dir_wav.z() >= 0.f) & (datasets_wav.sun_dir.z() >= 0.f);
-            dr::mask_t<Color3f> color_active = active;
-
             Float gamma = dr::unit_angle(ray_dir_wav, datasets_wav.sun_dir);
             const Float& cos_theta = ray_dir_wav.z();
 
-            dr::uint32_array_t<Color3f> channel_idx = {0, 1, 2};
-            Color3f rays = m_sky_scale * eval_sky<Color3f>(channel_idx, cos_theta, gamma, datasets_wav.sky_params, datasets_wav.sky_rad, color_active);
+            Color3f rays = m_sky_scale * eval_sky<Color3f, Float, SkyParamsDataset, SkyRadDataset, UInt32>(
+                                                    nb_rays * time_idx_wav, cos_theta, gamma,
+                                                    datasets_wav.sky_params, datasets_wav.sky_rad, active);
+
                     rays += m_sun_scale * SPEC_TO_RGB_SUN_CONV * get_area_ratio(m_sun_half_aperture) *
-                            eval_sun<Color3f>(channel_idx, cos_theta, gamma, m_sun_rad_params, Float(m_sun_half_aperture), color_active & (gamma < m_sun_half_aperture));
+                            eval_sun<Color3f>({0, 1, 2}, cos_theta, gamma, m_sun_rad_params, m_sun_half_aperture, active & (gamma < m_sun_half_aperture));
+
                     rays *= MI_CIE_Y_NORMALIZATION / nb_time_samples;
 
             Color3f result = dr::zeros<Color3f>(nb_rays);

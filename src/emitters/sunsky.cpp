@@ -369,9 +369,9 @@ public:
                 idx = SpecUInt32(0);
 
             res = m_sky_scale *
-                  eval_sky<Spectrum, Float, FloatStorage>(idx, cos_theta, gamma, m_sky_params, m_sky_radiance, active);
+                  eval_sky<Spectrum>(idx, cos_theta, gamma, m_sky_params, m_sky_radiance, active);
             res += m_sun_scale *
-                   eval_sun<Spectrum, Float, FloatStorage>(idx, cos_theta, gamma, m_sun_radiance, m_sun_half_aperture, hit_sun) *
+                   eval_sun<Spectrum>(idx, cos_theta, gamma, m_sun_radiance, m_sun_half_aperture, hit_sun) *
                    get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
 
             res *= MI_CIE_Y_NORMALIZATION;
@@ -388,8 +388,8 @@ public:
 
             // Linearly interpolate the sky's irradiance across the spectrum
             res = m_sky_scale * dr::lerp(
-                eval_sky<Spectrum, Float, FloatStorage>(query_idx_low, cos_theta, gamma, m_sky_params, m_sky_radiance, active & valid_idx),
-                eval_sky<Spectrum, Float, FloatStorage>(query_idx_high, cos_theta, gamma, m_sky_params, m_sky_radiance, active & valid_idx),
+                eval_sky<Spectrum>(query_idx_low, cos_theta, gamma, m_sky_params, m_sky_radiance, active & valid_idx),
+                eval_sky<Spectrum>(query_idx_high, cos_theta, gamma, m_sky_params, m_sky_radiance, active & valid_idx),
                 lerp_factor);
 
             // Linearly interpolate the sun's irradiance across the spectrum
@@ -775,7 +775,7 @@ private:
                 Float gamma = dr::unit_angle(Vector3f(m_local_sun_frame.n), sky_wo);
 
                 FullSpectrum ray_radiance =
-                    eval_sky<FullSpectrum, Float, FloatStorage>(channel_idx, cos_theta, gamma, m_sky_params, m_sky_radiance, true) * w_phi * w_cos_theta;
+                    eval_sky<FullSpectrum>(channel_idx, cos_theta, gamma, m_sky_params, m_sky_radiance, true) * w_phi * w_cos_theta;
                 sky_radiance = dr::sum_inner(ray_radiance) * J;
             }
 
@@ -805,7 +805,7 @@ private:
 
                 Mask active = cos_theta >= 0;
                 FullSpectrum ray_radiance =
-                    eval_sun<FullSpectrum, Float, FloatStorage>(channel_idx, cos_theta, gamma, m_sun_radiance, m_sun_half_aperture, active) *
+                    eval_sun<FullSpectrum>(channel_idx, cos_theta, gamma, m_sun_radiance, m_sun_half_aperture, active) *
                     w_phi * w_cos_theta;
 
                 // Apply sun limb darkening if not already
