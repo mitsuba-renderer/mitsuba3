@@ -153,23 +153,35 @@ std::string path_to_dataset(const Dataset dataset) {
  * \return
  *      Interpolated data
  */
-template <typename Float>
-DynamicBuffer<Float> bezier_interpolate(
-    const DynamicBuffer<Float>& dataset, const uint32_t out_size,
+template <typename Result, typename Float,
+          typename Dataset = DynamicBuffer<Float>,
+          typename Mask = dr::mask_t<Result>>
+Result bezier_interpolate(
+    const Dataset& dataset, const uint32_t out_size,
     const dr::uint32_array_t<Float>& offset,
-    const Float& x, const dr::mask_t<Float>& active) {
+    const Float& x, const Mask& active)  {
 
-    using ScalarFloat = dr::value_t<Float>;
-    using FloatStorage = DynamicBuffer<Float>;
+    using ScalarFloat = dr::scalar_t<Float>;
     using UInt32Storage = DynamicBuffer<dr::uint32_array_t<Float>>;
+    using UInt32Result = dr::uint32_array_t<Result>;
 
-    UInt32Storage indices = offset + dr::arange<UInt32Storage>(out_size);
+    UInt32Result indices = offset;
+    if constexpr (dr::depth_v<Result> == 3) {
+        // TODO change magic number
+        const auto [idx_div, idx_mod] = dr::idivmod(dr::arange<UInt32Storage>(out_size), 3);
+        indices += dr::unravel<UInt32Result, UInt32Storage>(SKY_PARAMS * idx_mod + idx_div);
+    } else if constexpr (dr::depth_v<Result> == 2) {
+        indices += dr::unravel<UInt32Result, UInt32Storage>(dr::arange<UInt32Storage>(out_size));
+    } else {
+        indices += dr::arange<UInt32Result>(out_size);
+    }
+
     constexpr ScalarFloat coefs[SKY_CTRL_PTS] = {1, 5, 10, 10, 5, 1};
 
-    FloatStorage res = dr::zeros<FloatStorage>(out_size);
+    Result res = dr::zeros<Result>();
     for (uint8_t ctrl_pt = 0; ctrl_pt < SKY_CTRL_PTS; ++ctrl_pt) {
-        UInt32Storage idx = indices + ctrl_pt * out_size;
-        FloatStorage data = dr::gather<FloatStorage>(dataset, idx, active);
+        UInt32Result idx = indices + ctrl_pt * out_size;
+        Result data = dr::gather<Result>(dataset, idx, active);
         res += coefs[ctrl_pt] * dr::pow(x, ctrl_pt) *
                dr::pow(1 - x, (SKY_CTRL_PTS - 1) - ctrl_pt) * data;
     }
@@ -194,15 +206,13 @@ DynamicBuffer<Float> bezier_interpolate(
  * \return
  *      The interpolated dataset
  */
-template <uint32_t dataset_size, typename Float>
-DynamicBuffer<Float> sky_radiance_params(
-    const DynamicBuffer<Float>& dataset,
-    const DynamicBuffer<Float>& albedo, Float turbidity, Float eta) {
+template<uint32_t dataset_size, typename Result,
+         typename Float = dr::value_t<Result>>
+Result sky_radiance_params(const DynamicBuffer<Float>& dataset,
+    const DynamicBuffer<Float>& albedo, const Float& turbidity, const Float& eta) {
 
     using UInt32 = dr::uint32_array_t<Float>;
-    using UInt32Storage = DynamicBuffer<UInt32>;
-    using FloatStorage = DynamicBuffer<Float>;
-
+    using UInt32Result = dr::uint32_array_t<Result>;
 
     Float x = dr::cbrt(2 * dr::InvPi<Float> * eta);
 
@@ -219,21 +229,25 @@ DynamicBuffer<Float> sky_radiance_params(
                                              // albedo.size() <==> NB_CHANNELS
 
     // Interpolate on elevation
-    FloatStorage
-        t_low_a_low   = bezier_interpolate(dataset, result_size, t_low  * t_block_size + 0 * a_block_size, x, t_low < TURBITDITY_LVLS),
-        t_high_a_low  = bezier_interpolate(dataset, result_size, t_high * t_block_size + 0 * a_block_size, x, t_high < TURBITDITY_LVLS),
-        t_low_a_high  = bezier_interpolate(dataset, result_size, t_low  * t_block_size + 1 * a_block_size, x, t_low < TURBITDITY_LVLS),
-        t_high_a_high = bezier_interpolate(dataset, result_size, t_high * t_block_size + 1 * a_block_size, x, t_high < TURBITDITY_LVLS);
+    Result t_low_a_low   = bezier_interpolate<Result>(dataset, result_size, t_low  * t_block_size + 0 * a_block_size, x, t_low < TURBITDITY_LVLS),
+           t_high_a_low  = bezier_interpolate<Result>(dataset, result_size, t_high * t_block_size + 0 * a_block_size, x, t_high < TURBITDITY_LVLS),
+           t_low_a_high  = bezier_interpolate<Result>(dataset, result_size, t_low  * t_block_size + 1 * a_block_size, x, t_low < TURBITDITY_LVLS),
+           t_high_a_high = bezier_interpolate<Result>(dataset, result_size, t_high * t_block_size + 1 * a_block_size, x, t_high < TURBITDITY_LVLS);
 
     // Interpolate on turbidity
-    FloatStorage res_a_low  = dr::lerp(t_low_a_low, t_high_a_low, t_rem),
-                 res_a_high = dr::lerp(t_low_a_high, t_high_a_high, t_rem);
+    Result res_a_low  = dr::lerp(t_low_a_low, t_high_a_low, t_rem),
+           res_a_high = dr::lerp(t_low_a_high, t_high_a_high, t_rem);
 
     // Interpolate on albedo
-    UInt32Storage idx = dr::arange<UInt32Storage>(nb_params * albedo.size());
-                  idx /= nb_params;
+    UInt32Result idx;
+    if constexpr (dr::depth_v<Result> > 1) {
+        idx = dr::arange<UInt32Result>(albedo.size());
+    } else {
+        idx = dr::arange<UInt32Result>(nb_params * albedo.size());
+    }
+    idx /= nb_params;
 
-    FloatStorage result = dr::lerp(res_a_low, res_a_high, dr::gather<FloatStorage>(albedo, idx));
+    Result result = dr::lerp(res_a_low, res_a_high, dr::gather<Result>(albedo, idx));
     return result & (0.f <= eta && eta <= 0.5f * dr::Pi<Float>);
 }
 

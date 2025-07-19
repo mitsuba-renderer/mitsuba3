@@ -90,7 +90,7 @@ public:
             ScalarVector4f{0, 1,  0, 0},
             ScalarVector4f{0, 0,  0, 1}
         };
-        ScalarTransform4f envmap_transform { permute_axis };
+        ScalarAffineTransform4f envmap_transform { permute_axis };
 
         Properties envmap_props = Properties("envmap");
         envmap_props.set("bitmap", static_cast<ref<Object>>(m_bitmap));
@@ -247,8 +247,8 @@ private:
 
             Datasets datasets = {
                 sph_to_dir(sun_elevation, sun_azimuth),
-                compute_sky_dataset<SKY_DATASET_RAD_SIZE, SkyRadDataset>(m_sky_rad_dataset, sun_eta),
-                compute_sky_dataset<SKY_DATASET_SIZE, SkyParamsDataset>(m_sky_params_dataset, sun_eta)
+                sky_radiance_params<SKY_DATASET_RAD_SIZE, SkyRadDataset>(m_sky_rad_dataset, m_albedo, m_turbidity, sun_eta),
+                sky_radiance_params<SKY_DATASET_SIZE, SkyParamsDataset>(m_sky_params_dataset,  m_albedo, m_turbidity, sun_eta)
             };
 
             // ==================== COMPUTE RAYS ======================
@@ -294,71 +294,6 @@ private:
         }
     }
 
-    template <typename Result>
-    Result bezier_interpolate(
-        const FloatStorage& dataset, const uint32_t out_size,
-        const UInt32& offset, const Float& x, const Mask& active) const {
-
-        using UInt32Result = dr::uint32_array_t<Result>;
-
-        UInt32Result indices = offset;
-        if constexpr (drjit::depth_v<Result> == 3) {
-            const auto [idx_div, idx_mod] = dr::idivmod(dr::arange<UInt32>(out_size), CHANNEL_COUNT);
-            indices += dr::unravel<UInt32Result, UInt32>(SKY_PARAMS * idx_mod + idx_div);
-        } else if constexpr (drjit::depth_v<Result> == 2) {
-            indices += dr::unravel<UInt32Result, UInt32>(dr::arange<UInt32>(out_size));
-        } else {
-            Log(Warn, "Unsupported depth type");
-        }
-        constexpr ScalarFloat coefs[SKY_CTRL_PTS] = {1, 5, 10, 10, 5, 1};
-
-        Result out = dr::zeros<Result>();
-        for (uint8_t ctrl_pt = 0; ctrl_pt < SKY_CTRL_PTS; ++ctrl_pt) {
-            UInt32Result idx = indices + ctrl_pt * out_size;
-            Result data = dr::gather<Result>(dataset, idx, active);
-            out += coefs[ctrl_pt] * dr::pow(x, ctrl_pt) *
-                   dr::pow(1 - x, (SKY_CTRL_PTS - 1) - ctrl_pt) * data;
-        }
-
-        return out;
-    }
-
-    template<ScalarUInt32 dataset_size, typename Result>
-    Result compute_sky_dataset(const FloatStorage& dataset, const Float& eta) const {
-        using UInt32Result = dr::uint32_array_t<Result>;
-
-        Float x = dr::cbrt(2 * dr::InvPi<Float> * eta);
-
-        UInt32 t_high = dr::floor2int<UInt32>(m_turbidity),
-               t_low = t_high - 1;
-
-        Float t_rem = m_turbidity - t_high;
-
-        // Compute block sizes for each parameter to facilitate indexing
-        static constexpr uint32_t
-                    t_block_size = dataset_size / TURBITDITY_LVLS,
-                    a_block_size = t_block_size / ALBEDO_LVLS,
-                    result_size  = a_block_size / SKY_CTRL_PTS,
-                    nb_params    = result_size / CHANNEL_COUNT;
-
-        // Interpolate on elevation
-        Result t_low_a_low   = bezier_interpolate<Result>(dataset, result_size, t_low  * t_block_size + 0 * a_block_size, x, t_low < TURBITDITY_LVLS),
-               t_high_a_low  = bezier_interpolate<Result>(dataset, result_size, t_high * t_block_size + 0 * a_block_size, x, t_high < TURBITDITY_LVLS),
-               t_low_a_high  = bezier_interpolate<Result>(dataset, result_size, t_low  * t_block_size + 1 * a_block_size, x, t_low < TURBITDITY_LVLS),
-               t_high_a_high = bezier_interpolate<Result>(dataset, result_size, t_high * t_block_size + 1 * a_block_size, x, t_high < TURBITDITY_LVLS);
-
-        // Interpolate on turbidity
-        Result res_a_low  = dr::lerp(t_low_a_low, t_high_a_low, t_rem),
-               res_a_high = dr::lerp(t_low_a_high, t_high_a_high, t_rem);
-
-        // Interpolate on albedo
-        UInt32Result idx = dr::arange<UInt32Result>(m_albedo.size());
-        idx /= nb_params;
-
-        Result result = dr::lerp(res_a_low, res_a_high, dr::gather<Result>(m_albedo, idx));
-        return result & (0.f <= eta && eta <= 0.5f * dr::Pi<Float>);
-    }
-
     static void compute_avg_day(uint32_t day, void* payload_) {
         AvgSunskyEmitter* payload = static_cast<AvgSunskyEmitter*>(payload_);
         ScalarUInt32 day_resolution = payload->m_day_resolution;
@@ -382,8 +317,8 @@ private:
             if (sun_eta < 0.f) continue;
             const ScalarVector3f sun_dir = sph_to_dir(sun_elevation, sun_azimuth);
 
-            FloatStorage sky_params = sky_radiance_params<SKY_DATASET_SIZE>(payload->m_sky_params_dataset, payload->m_albedo, payload->m_turbidity, sun_eta);
-            FloatStorage sky_radiance = sky_radiance_params<SKY_DATASET_RAD_SIZE>(payload->m_sky_rad_dataset, payload->m_albedo, payload->m_turbidity, sun_eta);
+            FloatStorage sky_params = sky_radiance_params<SKY_DATASET_SIZE, FloatStorage>(payload->m_sky_params_dataset, payload->m_albedo, payload->m_turbidity, sun_eta);
+            FloatStorage sky_radiance = sky_radiance_params<SKY_DATASET_RAD_SIZE, FloatStorage>(payload->m_sky_rad_dataset, payload->m_albedo, payload->m_turbidity, sun_eta);
 
             // Iterate over top half of the image
             for (uint32_t pixel_idx = 0; pixel_idx < bitmap_resolution.x() * bitmap_resolution.y() / 2; ++pixel_idx) {
