@@ -252,7 +252,8 @@ private:
             };
 
             // ==================== COMPUTE RAYS ======================
-            size_t nb_rays = dr::prod(m_bitmap_resolution);
+            // Only the top half of the image is used
+            size_t nb_rays = dr::prod(m_bitmap_resolution) / 2;
             UInt32 pixel_idx = dr::arange<UInt32>(nb_rays);
 
             const auto [pixel_v_idx, pixel_u_idx] = dr::idivmod(pixel_idx, m_bitmap_resolution.x());
@@ -262,34 +263,59 @@ private:
             );
 
             // =============== BLEND TWO DIMENSIONS ===========
-            // TODO handle integer overflow
-            const auto [pixel_idx_wav, time_idx_wav] = dr::meshgrid(pixel_idx, time_idx);
-            Vector3f ray_dir_wav = dr::gather<Vector3f>(ray_dir, pixel_idx_wav);
-            Datasets datasets_wav = dr::gather<Datasets>(datasets, time_idx_wav);
+            size_t time_width = UINT32_MAX / nb_rays;
 
-            Mask active = (ray_dir_wav.z() >= 0.f) & (datasets_wav.sun_dir.z() >= 0.f);
-            Float gamma = dr::unit_angle(ray_dir_wav, datasets_wav.sun_dir);
-            const Float& cos_theta = ray_dir_wav.z();
+            // Prevent perfect square edge case
+            if (time_width * nb_rays >= UINT32_MAX) {
+                if (time_width == 1)
+                    Throw("Image resolution is too high, cannot compute average sunsky!");
+                time_width -= 1;
+            }
 
-            Color3f rays = m_sky_scale * eval_sky<Color3f, Float, SkyParamsDataset, SkyRadDataset, UInt32>(
-                                                    nb_rays * time_idx_wav, cos_theta, gamma,
-                                                    datasets_wav.sky_params, datasets_wav.sky_rad, active);
-
-                    rays += m_sun_scale * SPEC_TO_RGB_SUN_CONV * get_area_ratio(m_sun_half_aperture) *
-                            eval_sun<Color3f>({0, 1, 2}, cos_theta, gamma, m_sun_rad_params, m_sun_half_aperture, active & (gamma < m_sun_half_aperture));
-
-                    rays *= MI_CIE_Y_NORMALIZATION / nb_time_samples;
+            Log(Info, "Using %zu time samples per wavefront and running %u iterations",
+                time_width, dr::ceil2int<ScalarUInt32>(nb_time_samples * ((float)nb_rays / UINT32_MAX))
+            );
 
             Color3f result = dr::zeros<Color3f>(nb_rays);
-            dr::scatter_add(result.r(), rays.r(), pixel_idx_wav, active);
-            dr::scatter_add(result.g(), rays.g(), pixel_idx_wav, active);
-            dr::scatter_add(result.b(), rays.b(), pixel_idx_wav, active);
+            const UInt32 frame_time_idx = dr::arange<UInt32>(time_width);
+            for (size_t frame_start = 0; frame_start < nb_time_samples; frame_start += time_width) {
+
+                const auto [pixel_idx_wav, time_idx_wav] = dr::meshgrid(pixel_idx, UInt32(frame_start) + frame_time_idx);
+                Mask active = time_idx_wav < nb_time_samples;
+
+                Vector3f ray_dir_wav = dr::gather<Vector3f>(ray_dir, pixel_idx_wav, active);
+                Datasets datasets_wav = dr::gather<Datasets>(datasets, time_idx_wav, active);
+
+                active &= (ray_dir_wav.z() >= 0.f) & (datasets_wav.sun_dir.z() >= 0.f);
+
+                Float gamma = dr::unit_angle(ray_dir_wav, datasets_wav.sun_dir);
+                const Float& cos_theta = ray_dir_wav.z();
+
+                // Compute sky appearance over the hemisphere
+                Color3f rays = m_sky_scale * eval_sky<Color3f, Float, SkyParamsDataset, SkyRadDataset, UInt32>(
+                                                        nb_rays * time_idx_wav, cos_theta, gamma,
+                                                        datasets_wav.sky_params, datasets_wav.sky_rad, active);
+
+                rays += m_sun_scale * SPEC_TO_RGB_SUN_CONV * get_area_ratio(m_sun_half_aperture) *
+                        eval_sun<Color3f>({0, 1, 2}, cos_theta, gamma, m_sun_rad_params, m_sun_half_aperture, active & (gamma < m_sun_half_aperture));
+
+                rays *= MI_CIE_Y_NORMALIZATION / nb_time_samples;
+
+                // Accumulate results
+                dr::scatter_add(result.r(), rays.r(), pixel_idx_wav, active);
+                dr::scatter_add(result.g(), rays.g(), pixel_idx_wav, active);
+                dr::scatter_add(result.b(), rays.b(), pixel_idx_wav, active);
+
+                // TODO is it needed?
+                // Launch wavefront
+                // dr::eval(result);
+            }
 
             Float res = dr::migrate(dr::ravel(result), AllocType::Host);
 
             dr::sync_thread();
 
-            memcpy(m_bitmap->data(), res.data(), m_bitmap->buffer_size());
+            memcpy(m_bitmap->data(), res.data(), 3 * sizeof(ScalarFloat) * nb_rays);
 
         }
     }
