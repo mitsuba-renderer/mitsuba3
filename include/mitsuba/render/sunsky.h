@@ -290,10 +290,25 @@ struct DateTimeRecord {
         return d_julian_date - 2451545.f;
     }
 
-    explicit DateTimeRecord(const Properties& props, const std::string& prefix = ""):
-        year(props.get<ScalarInt32>(prefix + "year", 2010)), month(props.get<ScalarInt32>(prefix + "month", 7)),
-        day(props.get<ScalarInt32>(prefix + "day", 10)), hour(props.get<ScalarFloat>(prefix + "hour", 15.f)),
-        minute(props.get<ScalarFloat>(prefix + "minute", 0.f)), second(props.get<ScalarFloat>(prefix + "second", 0.f)) {}
+    static DateTimeRecord time_from_props(const Properties& props, const std::string& prefix = "") {
+        return {
+            props.get<ScalarInt32>(prefix + "year", 2010),
+            props.get<ScalarInt32>(prefix + "month", 7),
+            props.get<ScalarInt32>(prefix + "day", 10),
+            props.get<ScalarFloat>(prefix + "hour", 15.f),
+            props.get<ScalarFloat>(prefix + "minute", 0.f),
+            props.get<ScalarFloat>(prefix + "second", 0.f)
+        };
+    }
+
+    static DateTimeRecord day_from_props(const Properties& props, const std::string& prefix = "") {
+        return {
+            props.get<ScalarInt32>(prefix + "year", 2010),
+            props.get<ScalarInt32>(prefix + "month", 7),
+            props.get<ScalarInt32>(prefix + "day", 10),
+            0.f, 0.f, 0.f
+        };
+    }
 
 
     std::string to_string() const {
