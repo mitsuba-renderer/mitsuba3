@@ -1114,7 +1114,7 @@ class PSIntegrator(ADIntegrator):
             active = ss.is_valid() & (ss.pdf > 0)
 
             # Jacobian (motion correction included)
-            J = self.proj_detail.perspective_sensor_jacobian(sensor, ss)
+            J = self.proj_detail.sensor_jacobian(sensor, ss)
 
             ΔL, wavelengths = self.proj_detail.eval_primary_silhouette_radiance_difference(
                 scene, sampler, ss, sensor, active=active)

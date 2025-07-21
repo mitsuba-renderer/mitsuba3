@@ -102,16 +102,14 @@ class ProjectiveDetail():
             viewpoint, sample2, shape_pmf, active
         )
 
-    def perspective_sensor_jacobian(self,
-                                    sensor: mi.Sensor,
-                                    ss: mi.SilhouetteSample3f):
+    def sensor_jacobian(self,
+                        sensor: mi.Sensor,
+                        ss: mi.SilhouetteSample3f) -> mi.Float:
         """
         The silhouette sample `ss` stores (1) the sampling density in the scene
         space, and (2) the motion of the silhouette point in the scene space.
         This Jacobian corrects both quantities to the camera sample space.
         """
-        if not sensor.__repr__().startswith('PerspectiveCamera'):
-            raise Exception("Only perspective cameras are supported")
 
         # Get transformation matrices
         to_world = sensor.world_transform()
@@ -119,56 +117,34 @@ class ProjectiveDetail():
         to_film = sensor.projection_transform()
 
         with dr.resume_grad():
-            eps_1 = mi.Float(0)
-            eps_2 = mi.Float(0)
-            dr.enable_grad(eps_1, eps_2)
-            p_1 = mi.Point3f(ss.p + ss.silhouette_d * eps_1)
-            p_2 = mi.Point3f(ss.p + ss.n * eps_2)
+            eps1 = mi.Float(0)
+            eps2 = mi.Float(0)
+            dr.enable_grad(eps1, eps2)
+            p1 = ss.p + ss.silhouette_d * eps1
+            p2 = ss.p + ss.n * eps2
 
             def get_projected_point(point):
                 point_NDC = to_film @ (to_local @ mi.Point3f(point))
-                return mi.Point2f(point_NDC[0], point_NDC[1]) / point_NDC[2]
+                # Do not divide by 'point_NDC[2]'
+                return mi.Point2f(point_NDC[0], point_NDC[1])
 
-            p_2_proj = get_projected_point(p_2)
-            p_1_proj = get_projected_point(p_1)
+            p1_proj = get_projected_point(p1)
+            p2_proj = get_projected_point(p2)
 
-            dr.set_grad(eps_1, 1.0)
-            dr.set_grad(eps_2, 1.0)
-            dr.enqueue(dr.ADMode.Forward, eps_1)
-            dr.enqueue(dr.ADMode.Forward, eps_2)
+            dr.set_grad(eps1, 1.0)
+            dr.set_grad(eps2, 1.0)
+            dr.enqueue(dr.ADMode.Forward, eps1)
+            dr.enqueue(dr.ADMode.Forward, eps2)
             dr.traverse(dr.ADMode.Forward)
 
-            partial_1 = dr.grad(p_1_proj)
-            partial_2 = dr.grad(p_2_proj)
+            partial1 = dr.grad(p1_proj)
+            partial2 = dr.grad(p2_proj)
 
-            jacobian_det = dr.abs(
-                partial_1[1] * partial_2[0] - partial_1[0] * partial_2[1]
-            )
+        jacobian_det = dr.abs(
+            partial1[1] * partial2[0] - partial1[0] * partial2[1]
+        )
 
         return jacobian_det
-
-        if False:
-            to_world = sensor.world_transform()
-            near_clip = sensor.near_clip()
-            sensor_center = to_world @ mi.Point3f(0)
-            sensor_lookat_dir = to_world @ mi.Vector3f(0, 0, 1)
-
-            sample_to_camera = sensor.sample_to_camera()
-            p_min = sample_to_camera @ mi.Point3f(0, 0, 0)
-            multiplier = dr.square(near_clip) / dr.abs(p_min[0] * p_min[1] * 4.0)
-
-            # Frame
-            frame_t = dr.normalize(sensor_center - ss.p)
-            frame_n = ss.n
-            frame_s = dr.cross(frame_t, frame_n)
-
-            J_num = dr.norm(dr.cross(frame_n, sensor_lookat_dir)) * \
-                    dr.norm(dr.cross(frame_s, sensor_lookat_dir)) * \
-                    dr.abs(dr.dot(frame_s, ss.silhouette_d))
-            J_den = dr.square(dr.square(dr.dot(frame_t, sensor_lookat_dir))) * \
-                    dr.squared_norm(ss.p - sensor_center)
-
-            return J_num / J_den * multiplier
 
     def eval_primary_silhouette_radiance_difference(self,
                                                     scene,
@@ -187,7 +163,7 @@ class ProjectiveDetail():
             to_world = sensor.world_transform()
             sensor_center = to_world @ mi.Point3f(0)
 
-            # Is the boundary point visible or is occluded ?
+            # Is the boundary point visible or is occluded?
             ss_invert = mi.SilhouetteSample3f(ss)
             ss_invert.d = -ss_invert.d
             ray_test = ss_invert.spawn_ray()
@@ -196,7 +172,7 @@ class ProjectiveDetail():
             ray_test.maxt = dist * (1 - mi.math.ShadowEpsilon)
             visible = ~scene.ray_test(ray_test, active) & active
 
-            # Is the boundary point within the view frustum ?
+            # Is the boundary point within the view frustum?
             it = dr.zeros(mi.Interaction3f)
             it.p = ss.p
             ds, _ = sensor.sample_direction(it, mi.Point2f(0), active)
