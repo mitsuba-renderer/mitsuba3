@@ -93,22 +93,32 @@ class AcousticADIntegrator(RBIntegrator):
         sensor: mi.Sensor,
         sampler: mi.Sampler
     ) -> Tuple[mi.RayDifferential3f, mi.Spectrum, mi.Vector2f, mi.Float]:
+        """
+        Sample a set of primary rays for a given sensor
+
+        Returns a tuple containing
+
+        - the set of sampled rays
+        - a ray weight (usually 1 if the sensor's response function is sampled
+          perfectly)
+        - the continuous positions on the Imageblock associated with each ray. 
+          The first value contains the frequency index, the second value is not used.
+        """
 
         film = sensor.film()
         film_size = film.crop_size()
-        rfilter = film.rfilter()
-        border_size = rfilter.border_size()
 
         if film.sample_border():
-            film_size += 2 * border_size
+            raise NotImplementedError("Acoustic sampling does not support border sampling")
+
+        if not (film.crop_offset()[0] == 0 and film.crop_offset()[1] == 0):
+            raise NotImplementedError("Acoustic sampling does not support crop offset")
 
         spp = sampler.sample_count()
 
-        # In the acoustic setting, film_size.x = number of wavelengths * number of microphones 
-        # (the latter can be > 1 for batch sensors)
-
-        # Compute discrete sample position
-        idx = dr.arange(mi.UInt32, film_size.x * spp) #dr.prod(film_size) * spp)
+        # Compute frequency indices for the rays
+        idx = dr.arange(mi.UInt32, film_size.x * spp)
+        mi.Log(mi.LogLevel.Debug, f"idx =\n{idx}")
 
         # Try to avoid a division by an unknown constant if we can help it
         log_spp = dr.log2i(spp)
@@ -117,12 +127,11 @@ class AcousticADIntegrator(RBIntegrator):
         else:
             idx //= dr.opaque(mi.UInt32, spp)
 
-        # Compute the position on the image plane
+        # Compute the position on the image plane 
+        # (frequency index, time index)
+        # time index is computed in sample() and not used here
         pos = mi.Vector2i(idx, 0 * idx)
-
-        # Re-scale the position to [0, 1]^2
-        scale = dr.rcp(mi.ScalarVector2f(film_size))
-        pos_adjusted = mi.Vector2f(pos) * scale
+        pos_f = mi.Vector2f(pos)
 
         aperture_sample = mi.Vector2f(0.0)
         if sensor.needs_aperture_sample():
@@ -130,25 +139,22 @@ class AcousticADIntegrator(RBIntegrator):
 
         time = 0.0 # sensor.shutter_open()
 
-        # NOTE (MW): The spectrum indexing is assumed to be 1-based in the scene construction.
-        #            If we change it here, we also have to change the Python scripts and notebooks.
-        # FIXME (MW): Why was this set to 0 if the indexing is 1-based (and we are subtracting 1 from ray.wavelengths.x)?
-        #             Maybe because it doesn't matter as mi.is_spectral is true for acoustic..
-        wavelength_sample = 0. 
-        if mi.is_spectral:
-            # FIXME (MW): This wavelength sampling scheme is broken for batch sensors,
-            #             because in this case `idx` does not correspond to a wavelength.
-            wavelength_sample = mi.Float(idx) + 1.0
+        frequency_sample = 0. 
+        if mi.has_flag(film.flags(), mi.FilmFlags.Spectral):
+            raise NotImplementedError("Full spectral rendering not implemented.")
+        else:
+            pass # wavelength determined from the wavelength bin (stored in pos.x).
 
         with dr.resume_grad():
             ray, weight = sensor.sample_ray_differential(
                 time=time,
-                sample1=wavelength_sample,
-                sample2=pos_adjusted,
+                sample1=frequency_sample, #unused for now,
+                sample2=pos_adjusted, # pos.x() stores frequency index, pos.y() is not used
                 sample3=aperture_sample
             )
 
-        return ray, weight
+        return ray, weight, pos_f
+    
 
     def prepare(self,
                 sensor: mi.Sensor,
