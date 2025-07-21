@@ -51,20 +51,21 @@ public:
     std::pair<RayDifferential3f, Spectrum>
     sample_ray_differential(Float time,
                             Float /*wavelength_sample*/, //wavelength sample only needed for spectral tape
-                            const Point2f & position_sample, // caution: not in [0,1] but in [0, n_wavelengths)]
+                            const Point2f & position_sample, // caution: not in [0,1] but in [0, n_frequencies)]
                             const Point2f & aperture_sample,
                             Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
         RayDifferential3f ray;
         ray.time = time;
-        
+
         // 1. Sample spectrum
-        Float wavelength_index = position_sample.x();
-        Log(Debug, "Sampled wavelength index: {%i}", wavelength_index);
-        
-        IrregularContinuousDistribution<Wavelength> wavelengths_spectrum = m_film->wavelengths_spectrum();
-        ray.wavelengths = wavelengths_spectrum.eval_pdf(wavelength_index);
-        Log(Debug, "Sampled wavelengths: {%s}", ray.wavelengths);
+        Float frequency_index = position_sample.x();
+        Log(Debug, "Sampled frequency index: {%i}", frequency_index);
+
+        //Note: misuka uses ray.wavelengths to store frequencies, not wavelengths
+        DiscreteDistribution<Wavelength> frequencies_spectrum = m_film->frequencies_spectrum();
+        ray.wavelengths = frequencies_spectrum.eval_pmf(frequency_index);
+        Log(Debug, "Sampled frequencies: {%s}", ray.wavelengths);
 
         // 2. Set ray origin and direction
         ray.o = m_to_world.value().translation();
@@ -81,7 +82,7 @@ public:
     }
 
     std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &it, const Point2f &, Mask /* active */) const override {        
+    sample_direction(const Interaction3f &it, const Point2f &, Mask /* active */) const override {
         Transform4f trafo = m_to_world.value();
         Transform4f trafo_inv = trafo.inverse();
 

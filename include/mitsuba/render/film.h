@@ -205,8 +205,8 @@ public:
     void traverse(TraversalCallback *callback) override;
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override;
 
-    /// Return the wavelength used by the film (only used in tape)
-    const IrregularContinuousDistribution<Wavelength> &wavelengths_spectrum() const { return m_wavelengths_spectrum;}
+    /// Return the frequencies used by the film (only used in tape)
+    const DiscreteDistribution<Wavelength> &frequencies_spectrum() const { return m_frequencies_spectrum;}
 
     //! @}
     // =============================================================
@@ -227,7 +227,7 @@ protected:
     ScalarPoint2u m_crop_offset;
     bool m_sample_border;
     ref<ReconstructionFilter> m_filter;
-    IrregularContinuousDistribution<Wavelength> m_wavelengths_spectrum; //used in tape
+    DiscreteDistribution<Wavelength> m_frequencies_spectrum; //used in tape
     ref<Texture> m_srf;
 };
 

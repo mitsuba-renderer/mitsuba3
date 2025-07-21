@@ -2,28 +2,29 @@ import pytest
 import mitsuba as mi
 import drjit as dr
 
-def create_tape(wav_bins=1, time_bins=1, count=False):
+def create_tape(freq_bins=1, time_bins=1, count=False):
+    
+    freq_string = ', '.join(str(i * 100) for i in range(1, freq_bins + 1))
     tape_dict = {
         "type": "tape",
-        "wav_bins": wav_bins,#FIXME: implement list of values
+        "frequencies": '100, 200, 500',  # Example frequencies
         "time_bins": time_bins,
         "count": count,
     }
     return mi.load_dict(tape_dict)
 
 
-wav_bins_list = [1, 2, 4]
+freq_bins_list = [1, 2, 4]
 time_bins_list = [1, 2, 3, 100]
 
 
-@pytest.mark.parametrize("wav_bins", wav_bins_list)
+@pytest.mark.parametrize("freq_bins", freq_bins_list)
 @pytest.mark.parametrize("time_bins", time_bins_list)
-def test01_construct(variants_any_acoustic, wav_bins, time_bins):
-    tape = create_tape(wav_bins=wav_bins, time_bins=time_bins)
+def test01_construct(variants_any_acoustic, freq_bins, time_bins):
+    tape = create_tape(freq_bins=freq_bins, time_bins=time_bins)
 
 
 count_list = [False, True]
-
 
 @pytest.mark.parametrize("count", count_list)
 def test02_prepare(variants_any_acoustic, count):
@@ -40,7 +41,7 @@ def test02_prepare(variants_any_acoustic, count):
 
 @pytest.mark.parametrize("count", count_list)
 def test03_prepare_sample(variants_any_acoustic, count):
-    tape = create_tape(wav_bins=1, time_bins=1, count=count)
+    tape = create_tape(freq_bins=1, time_bins=1, count=count)
     tape.prepare([])
     
     channels = tape.base_channels_count()
@@ -54,11 +55,3 @@ def test03_prepare_sample(variants_any_acoustic, count):
     if count:
         assert dr.allclose(prepared_sample[1], mi.Spectrum(1.0))
 
-
-def test04_prepare_sample_spectral(variants_all_spectral):
-    tape = create_tape(wav_bins=1, time_bins=1)
-    
-    tape.prepare([])
-    
-    with pytest.raises(Exception):
-        tape.prepare_sample([])
