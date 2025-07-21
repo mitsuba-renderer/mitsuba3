@@ -18,6 +18,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                sensor: mi.Sensor,
                ray: mi.Ray3f,
                block: mi.ImageBlock,
+               position_sample: mi.Point2f, # in [0,1]^2
                active: mi.Bool,
                mode: Optional[dr.ADMode] = dr.ADMode.Primal,
                δH: Optional[mi.ImageBlock] = None,
@@ -33,7 +34,8 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
         assert primal or prb_mode
 
         film = sensor.film()
-        nChannels = film.base_channels_count()
+        n_frequencies = mi.ScalarVector2f(film.crop_size()).x
+        n_channels = film.base_channels_count()
         
         # Standard BSDF evaluation context for path tracing
         bsdf_ctx = mi.BSDFContext()
@@ -189,8 +191,11 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                         δHdLdT_τ_cur = τ * δHdLdT + τ_dir * δHdLr_dirdT
                     δHdLdT = δHdLdT - δHdLedT - δHdLr_dirdT
 
-            Le_pos     = mi.Point2f(ray.wavelengths[0] - mi.Float(1.0), block.size().y * T     / max_distance)
-            Lr_dir_pos = mi.Point2f(ray.wavelengths[0] - mi.Float(1.0), block.size().y * T_dir / max_distance)
+            Le_pos     = mi.Point2f(position_sample.x * n_frequencies,
+                                    block.size().y * T     / max_distance)
+            Lr_dir_pos = mi.Point2f(position_sample.x * n_frequencies,
+                                    block.size().y * T_dir / max_distance)
+
             if dr.hint(prb_mode, mode='scalar'):
                 # backward_from(δHLx) is the same as splatting_and_backward_gradient_image but we can store it this way
                 with dr.resume_grad(when=not primal):
@@ -205,10 +210,10 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                 #       Should still work for samples that don't hit geometry (because distance will be inf)
                 #       but what about other reasons for becoming inactive?                             
                 block.put(pos=Le_pos,
-                          values=film.prepare_sample(Le[0], si.wavelengths, nChannels),
+                          values=film.prepare_sample(Le[0], si.wavelengths, n_channels),
                           active=(Le[0] > 0.))
                 block.put(pos=Lr_dir_pos, 
-                          values=film.prepare_sample(Lr_dir[0], si.wavelengths, nChannels),
+                          values=film.prepare_sample(Lr_dir[0], si.wavelengths, n_channels),
                           active=(Lr_dir[0] > 0.))
 
             # ---- Update loop variables based on current interaction -----
@@ -287,15 +292,6 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
             δHdLdT                 # State for the differential phase
         )
 
-    def render(self: mi.SamplingIntegrator,
-               scene: mi.Scene,
-               sensor: Union[int, mi.Sensor] = 0,
-               seed: int = 0,
-               spp: int = 0,
-               develop: bool = True,
-               evaluate: bool = True) -> None:
-
-        self.render_acoustic(scene, sensor, seed, spp, develop, evaluate)
     
     def render_backward(self: mi.SamplingIntegrator,
                         scene: mi.Scene,
@@ -304,6 +300,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                         sensor: Union[int, mi.Sensor] = 0,
                         seed: int = 0,
                         spp: int = 0) -> None:
+        mi.Log(mi.LogLevel.Info, "Rendering in backward mode")
 
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
@@ -321,8 +318,8 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
             )
 
             # Generate a set of rays starting at the sensor
-            ray, weight, pos = self.sample_rays_acoustic(scene, sensor, sampler)
-            # mi.log(mi.LogLevel.Debug, "Rendering ray at pos %s", pos)
+            ray, weight, position_sample = self.sample_rays(scene, sensor, sampler)
+
             δH = mi.ImageBlock(grad_in,
                                rfilter=film.rfilter(),
                                border=film.sample_border(),
@@ -336,6 +333,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                 sensor=sensor,
                 ray=ray,
                 block=block,
+                position_sample=position_sample,
                 active=mi.Bool(True),
                 mode=dr.ADMode.Primal,
                 δH=δH,
@@ -350,6 +348,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                 sensor=sensor,
                 ray=ray,
                 block=block,
+                position_sample=position_sample,
                 active=mi.Bool(True),
                 mode=dr.ADMode.Backward,
                 δH=δH,
@@ -359,7 +358,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
 
             # We don't need any of the outputs here
             del δHL, L_2, valid, valid_2, δHdT, state_out_δHdT_2, \
-                ray, weight, sampler #, pos
+                ray, weight, sampler, position_sample
 
             gc.collect()
 

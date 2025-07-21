@@ -18,12 +18,14 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
                sensor: mi.Sensor,
                ray: mi.Ray3f,
                block: mi.ImageBlock,
+               position_sample: mi.Point2f, # in [0,1]^2
                active: mi.Bool,
                **_ # Absorbs unused arguments
     ) -> Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
         
         film = sensor.film()
-        nChannels = film.base_channels_count()
+        n_frequencies = mi.ScalarVector2f(film.crop_size()).x
+        n_channels = film.base_channels_count()
 
         # Standard BSDF evaluation context for path tracing
         bsdf_ctx = mi.BSDFContext()
@@ -100,10 +102,11 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
             T       = distance + τ
 
 
-            Le_pos     = mi.Point2f(ray.wavelengths[0] - mi.Float(1.0), block.size().y * T     / max_distance)
+            Le_pos = mi.Point2f(position_sample.x * n_frequencies,
+                                block.size().y * T / max_distance)
             block.put(pos=Le_pos,
-                      values=film.prepare_sample(Le[0], si.wavelengths, nChannels),
-                      active=(Le[0] > 0.))
+                      values=film.prepare_sample(Le[0], si.wavelengths, n_channels),
+                      active= (Le[0] > 0.)) #FIXME: (TJ) should be active_next&(Le[0] > 0.) ?
             
             # ---------------------- Emitter sampling ----------------------
 
@@ -143,14 +146,14 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
 
             Lr_dir = β * dr.detach(mis_em) * bsdf_value_em * em_weight
 
+
+            # Store (emission sample) intensity to the image block
             τ_dir = dr.norm(si_em.p - si.p)
-
-            # 
             T_dir       = distance + τ + τ_dir
-
-            Lr_dir_pos = mi.Point2f(ray.wavelengths[0] - mi.Float(1.0), block.size().y * T_dir / max_distance)                         
+            Lr_dir_pos = mi.Point2f(position_sample.x * n_frequencies,
+                                    block.size().y * T_dir / max_distance)                       
             block.put(pos=Lr_dir_pos,
-                      values=film.prepare_sample(Lr_dir[0], si.wavelengths, nChannels),
+                      values=film.prepare_sample(Lr_dir[0], si.wavelengths, n_channels),
                       active=active_em)
 
             # ------------------ Detached BSDF sampling -------------------

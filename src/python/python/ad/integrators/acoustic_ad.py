@@ -61,8 +61,9 @@ class AcousticADIntegrator(RBIntegrator):
                 aovs=self.aov_names()
             )
 
-            # Generate a set of rays starting at the sensor
-            ray, weight = self.sample_rays(scene, sensor, sampler)
+            # Generate a set of rays starting at the sensor, 
+            # pos.x stores normalized frequency index, ray.wavelengths stores frequency
+            ray, weight, position_sample = self.sample_rays(scene, sensor, sampler)
 
             # Prepare an ImageBlock as specified by the film
             block = film.create_block()
@@ -74,11 +75,12 @@ class AcousticADIntegrator(RBIntegrator):
                 sensor=sensor,
                 ray=ray,
                 block=block,
+                position_sample=position_sample,
                 active=mi.Bool(True)
             )
 
             # Explicitly delete any remaining unused variables
-            del sampler, ray, weight#, pos, L, valid
+            del sampler, ray, weight, position_sample#, L, valid
             gc.collect()
 
             # Perform the weight division and return an image tensor
@@ -118,7 +120,7 @@ class AcousticADIntegrator(RBIntegrator):
 
         # Compute frequency indices for the rays
         idx = dr.arange(mi.UInt32, film_size.x * spp)
-        mi.Log(mi.LogLevel.Debug, f"idx =\n{idx}")
+        mi.Log(mi.LogLevel.Debug, f"idx = {idx}")
 
         # Try to avoid a division by an unknown constant if we can help it
         log_spp = dr.log2i(spp)
@@ -132,12 +134,22 @@ class AcousticADIntegrator(RBIntegrator):
         # time index is computed in sample() and not used here
         pos = mi.Vector2i(idx, 0 * idx)
         pos_f = mi.Vector2f(pos)
+        
+        # Re-scale the position to [0, 1]^2
+        if not dr.allclose(film.crop_size(), film.size()):
+            raise Exception("Acoustic sampling does not support cropping")
+        if not dr.allclose(film.crop_offset(), mi.Vector2i(0, 0)):
+            raise Exception("Acoustic sampling does not support cropping")
+        
+        scale = dr.rcp(mi.ScalarVector2f(film.crop_size()))
+        offset = -mi.ScalarVector2f(film.crop_offset()) * scale
+        pos_adjusted = dr.fma(pos_f, scale, offset)
 
         aperture_sample = mi.Vector2f(0.0)
         if sensor.needs_aperture_sample():
             aperture_sample = sampler.next_2d()
 
-        time = 0.0 # sensor.shutter_open()
+        time = 0.0 # unused
 
         frequency_sample = 0. 
         if mi.has_flag(film.flags(), mi.FilmFlags.Spectral):
@@ -149,11 +161,13 @@ class AcousticADIntegrator(RBIntegrator):
             ray, weight = sensor.sample_ray_differential(
                 time=time,
                 sample1=frequency_sample, #unused for now,
-                sample2=pos_adjusted, # pos.x() stores frequency index, pos.y() is not used
+                sample2=pos_adjusted, # pos.x() stores normalized frequency index in [0,1], pos.y() is not used
                 sample3=aperture_sample
             )
+        
+        mi.Log(mi.LogLevel.Debug, f"ray = {ray}")
 
-        return ray, weight, pos_f
+        return ray, weight, pos_adjusted
     
 
     def prepare(self,
@@ -162,7 +176,7 @@ class AcousticADIntegrator(RBIntegrator):
                 spp: int = 0,
                 aovs: list = []):
 
-        film = sensor.film()
+        film = sensor.film()               
         sampler = sensor.sampler().clone()
 
         if spp != 0:
@@ -174,6 +188,7 @@ class AcousticADIntegrator(RBIntegrator):
         film_size = film.crop_size()
 
         if film.sample_border():
+            raise Exception("Acoustic sampling does not support border sampling")
             film_size += 2 * film.rfilter().border_size()
 
         wavefront_size = film_size.x * spp # dr.prod(film_size) * spp
@@ -196,12 +211,14 @@ class AcousticADIntegrator(RBIntegrator):
                sensor: mi.Sensor,
                ray: mi.Ray3f,
                block: mi.ImageBlock,
+               position_sample: mi.Point2f, # in [0,1]^2
                active: mi.Bool,
                **_ # Absorbs unused arguments
     ) -> None:
 
         film = sensor.film()
-        nChannels = film.base_channels_count()
+        n_frequencies = mi.ScalarVector2f(film.crop_size()).x
+        n_channels = film.base_channels_count()
         
         # Standard BSDF evaluation context for path tracing
         bsdf_ctx = mi.BSDFContext()
@@ -262,10 +279,10 @@ class AcousticADIntegrator(RBIntegrator):
             # Store (direct) intensity to the image block
             T      = distance + τ
             active_next &= si.is_valid()
-            Le_pos = mi.Point2f(ray.wavelengths[0] - mi.Float(1.0),
+            Le_pos = mi.Point2f(position_sample.x * n_frequencies, # rescale from [0, 1] to [0, n_frequencies]
                                 block.size().y * T / max_distance)
             block.put(pos=Le_pos,
-                      values=film.prepare_sample(Le[0], si.wavelengths, nChannels),
+                      values=film.prepare_sample(Le[0], si.wavelengths, n_channels),
                       active=active_next &(Le[0] > 0.))
 
             # ---------------------- Emitter sampling ----------------------
@@ -308,10 +325,10 @@ class AcousticADIntegrator(RBIntegrator):
             # Store (emission sample) intensity to the image block
             τ_dir      = ds.dist
             T_dir      = T + τ_dir
-            Lr_dir_pos = mi.Point2f(ray.wavelengths[0] - mi.Float(1.0),
+            Lr_dir_pos = mi.Point2f(position_sample.x * n_frequencies, # rescale from [0, 1] to [0, n_frequencies]
                                     block.size().y * T_dir / max_distance)
             block.put(pos=Lr_dir_pos,
-                      values=film.prepare_sample(Lr_dir[0], si.wavelengths, nChannels),
+                      values=film.prepare_sample(Lr_dir[0], si.wavelengths, n_channels),
                       active=active_em & (Lr_dir[0] > 0.))
 
             # ------------------ Detached BSDF sampling -------------------
@@ -392,7 +409,7 @@ class AcousticADIntegrator(RBIntegrator):
             )
 
             # Generate a set of rays starting at the sensor
-            ray, weight = self.sample_rays(scene, sensor, sampler)
+            ray, weight, position_sample = self.sample_rays(scene, sensor, sampler)
 
             # Prepare an ImageBlock as specified by the film
             block = film.create_block()
@@ -406,6 +423,7 @@ class AcousticADIntegrator(RBIntegrator):
                     sensor=sensor,
                     ray=ray,
                     block=block,
+                    position_sample=position_sample,
                     active=mi.Bool(True)
                 )
                 
@@ -442,7 +460,7 @@ class AcousticADIntegrator(RBIntegrator):
             )
 
             # Generate a set of rays starting at the sensor
-            ray, weight = self.sample_rays(scene, sensor, sampler)
+            ray, weight, position_sample = self.sample_rays(scene, sensor, sampler)
 
             # Prepare an ImageBlock as specified by the film
             block = film.create_block()
@@ -456,6 +474,7 @@ class AcousticADIntegrator(RBIntegrator):
                     sensor=sensor,
                     ray=ray,
                     block=block,
+                    position_sample=position_sample,
                     active=mi.Bool(True)
                 )
                 
@@ -469,7 +488,7 @@ class AcousticADIntegrator(RBIntegrator):
                 dr.traverse(dr.ADMode.Backward)
 
                 # We don't need any of the outputs here
-                del ray, weight, block, sampler
+                del ray, weight, block, sampler, position_sample
 
                 gc.collect()
 

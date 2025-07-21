@@ -51,7 +51,7 @@ public:
     std::pair<RayDifferential3f, Spectrum>
     sample_ray_differential(Float time,
                             Float /*wavelength_sample*/, //wavelength sample only needed for spectral tape
-                            const Point2f & position_sample, // caution: not in [0,1] but in [0, n_frequencies)]
+                            const Point2f & position_sample, // in [0,1]^2
                             const Point2f & aperture_sample,
                             Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
@@ -59,10 +59,10 @@ public:
         ray.time = time;
 
         // 1. Sample spectrum
-        Float frequency_index = position_sample.x();
+        Float frequency_index = position_sample.x() * m_film->frequencies_spectrum().size();
         Log(Debug, "Sampled frequency index: {%i}", frequency_index);
 
-        //Note: misuka uses ray.wavelengths to store frequencies, not wavelengths
+        //Note: misuka uses ray.wavelengths to store frequencies rather than wavelengths
         DiscreteDistribution<Wavelength> frequencies_spectrum = m_film->frequencies_spectrum();
         ray.wavelengths = frequencies_spectrum.eval_pmf(frequency_index);
         Log(Debug, "Sampled frequencies: {%s}", ray.wavelengths);

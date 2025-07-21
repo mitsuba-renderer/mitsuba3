@@ -17,6 +17,7 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
                sensor: mi.Sensor,
                ray: mi.Ray3f,
                block: mi.ImageBlock,
+               position_sample: mi.Point2f, # in [0,1]^2
                active: mi.Bool,
                mode: Optional[dr.ADMode] = dr.ADMode.Primal,
                δH: Optional[mi.ImageBlock] = None,
@@ -32,7 +33,8 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
         assert primal or prb_mode
         
         film = sensor.film()
-        nChannels = film.base_channels_count()
+        n_frequencies = mi.ScalarVector2f(film.crop_size()).x
+        n_channels = film.base_channels_count()
 
         # Standard BSDF evaluation context for path tracing
         bsdf_ctx = mi.BSDFContext()
@@ -208,8 +210,11 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
                         δHdLdT_τ_cur = τ * δHdLdT + τ_dir * δHdLr_dirdT
                     δHdLdT = δHdLdT - δHdLedT - δHdLr_dirdT
 
-            Le_pos     = mi.Point2f(ray.wavelengths[0] - mi.Float(1.0), block.size().y * T     / max_distance)
-            Lr_dir_pos = mi.Point2f(ray.wavelengths[0] - mi.Float(1.0), block.size().y * T_dir / max_distance)
+            Le_pos     = mi.Point2f(position_sample.x * n_frequencies,
+                                    block.size().y * T     / max_distance)
+            Lr_dir_pos = mi.Point2f(position_sample.x * n_frequencies,
+                                    block.size().y * T_dir / max_distance)
+            
             if dr.hint(prb_mode, mode='scalar'):
                 # backward_from(δHLx) is the same as splatting_and_backward_gradient_image but we can store it this way
                 with dr.resume_grad(when=not primal):
@@ -224,10 +229,10 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
                 #       Should still work for samples that don't hit geometry (because distance will be inf)
                 #       but what about other reasons for becoming inactive?                             
                 block.put(pos=Le_pos,
-                          values=film.prepare_sample(Le[0], si.wavelengths, nChannels),
+                          values=film.prepare_sample(Le[0], si.wavelengths, n_channels),
                           active=(Le[0] > 0.))
                 block.put(pos=Lr_dir_pos, 
-                          values=film.prepare_sample(Lr_dir[0], si.wavelengths, nChannels),
+                          values=film.prepare_sample(Lr_dir[0], si.wavelengths, n_channels),
                           active=(Lr_dir[0] > 0.))
 
             # -------------------- Stopping criterion ---------------------
@@ -338,7 +343,7 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
             )
 
             # Generate a set of rays starting at the sensor
-            ray, weight = self.sample_rays(scene, sensor, sampler)
+            ray, weight, position_sample = self.sample_rays(scene, sensor, sampler)
 
             # Input gradient (a function) represented as discrete (1D-)function
             δH = mi.ImageBlock(grad_in,
@@ -357,6 +362,7 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
                 sensor=sensor,
                 ray=ray,
                 block=block,
+                position_sample=position_sample,
                 active=mi.Bool(True),
                 mode=dr.ADMode.Primal,
                 δH=δH,
@@ -372,6 +378,7 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
                 sensor=sensor,
                 ray=ray,
                 block=block,
+                position_sample=position_sample,
                 active=mi.Bool(True),
                 mode=dr.ADMode.Backward,
                 δH=δH,
