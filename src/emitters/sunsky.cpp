@@ -897,7 +897,7 @@ private:
             m_active_record = true;
 
             m_location = LocationRecord<Float>(props);
-            m_time = DateTimeRecord<Float>::time_from_props(props);
+            m_time = DateTimeRecord<Float>(props);
             dr::make_opaque(m_location, m_time);
 
             const auto [elevation, azimuth] = sun_coordinates(m_time, m_location);
