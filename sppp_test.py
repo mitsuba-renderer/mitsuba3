@@ -1,3 +1,5 @@
+# This is not a mitsuba test file yet
+
 import mitsuba as mi
 import drjit as dr
 import os
@@ -11,11 +13,13 @@ folder = 'output'
 if not os.path.exists(folder):
     os.makedirs(folder)
 
+deg = 60
+
 scene_dict = {
     'type': 'scene',
     'shape': {
-        'type': 'rectangle',
-        'to_world': T().translate([0, 0, 0]),
+        'type': 'disk',
+        'to_world': T().translate([0, 0, 0]) @ T().rotate([0, 1, 0], deg),
         'emitter': {
             'type': 'area',
             'radiance': {
@@ -39,8 +43,10 @@ scene_dict = {
     },
     'sensor': {
         'type': 'perspective',
-        'to_world': T().look_at(origin=[0, 0, 2], target=[0, 0, 0], up=[0, 1, 0]),
-        'fov': 90,
+        'to_world': T().look_at(origin=[0, 0, 1], target=[0, 0, 0], up=[0, 1, 0]),
+        'fov': 120,
+        'near_clip': 0.01,
+        # 'type': 'orthographic',
         'film': {
             'type': 'hdrfilm',
             'rfilter': {'type': 'box'},
@@ -65,8 +71,8 @@ def update_scene(theta):
 eps = 1e-3
 
 # Render FD
-repeat_fd = 8
-spp_fd = 8192 * 16
+repeat_fd = 2
+spp_fd = 8192 * 32
 image_fd = dr.zeros(mi.TensorXf, (reso, reso, 3))
 for i in range(repeat_fd):
     update_scene(eps)
@@ -77,11 +83,12 @@ for i in range(repeat_fd):
     image_fd += img1 - img2
     dr.eval(image_fd)
 image_fd /= (2 * eps * repeat_fd)
-mi.Bitmap(image_fd).write(f'{folder}/image_fd.exr')
+mi.Bitmap(image_fd).write(f'{folder}/image_fd_{deg}.exr')
 
 # Render AD
 repeat_ad = 1
-spp_ad = 8192 * 16
+spp_ad = 8192 * 4
+# spp_ad = 64
 image_ad = dr.zeros(mi.TensorXf, (reso, reso, 3))
 for i in range(repeat_ad):
 
@@ -95,4 +102,6 @@ for i in range(repeat_ad):
     image_ad += dr.grad(image)
     dr.eval(image_ad)
 image_ad /= repeat_ad
-mi.Bitmap(image_ad).write(f'{folder}/image_ad.exr')
+mi.Bitmap(image_ad).write(f'{folder}/image_ad_{deg}.exr')
+
+print(f"Rendered images with {deg} degrees.")
