@@ -22,6 +22,7 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
                active: mi.Bool,
                **_ # Absorbs unused arguments
     ) -> Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
+        mi.Log(mi.LogLevel.Debug, f"Running sample().")
         
         film = sensor.film()
         n_frequencies = mi.ScalarVector2f(film.crop_size()).x

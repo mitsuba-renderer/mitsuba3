@@ -14,6 +14,8 @@ NAMESPACE_BEGIN(mitsuba)
 MI_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props) {
     m_shutter_open      = props.get<ScalarFloat>("shutter_open", 0.f);
     m_shutter_open_time = props.get<ScalarFloat>("shutter_close", 0.f) - m_shutter_open;
+    Log(Debug, "line %d: Setting up %s.", __LINE__, __FUNCTION__);
+
 
     if (m_shutter_open_time < 0)
         Throw("Shutter opening time must be less than or equal to the shutter "
@@ -24,6 +26,7 @@ MI_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props
         auto *sampler = dynamic_cast<Sampler *>(obj.get());
 
         if (film) {
+            Log(Trace, "Setting film: %s", film);
             if (m_film)
                 Throw("Only one film can be specified per sensor.");
             m_film = film;

@@ -20,7 +20,7 @@ public:
 
     Tape(const Properties &props) : Base(props) {
         if (props.has_property("width") || props.has_property("height"))
-            Throw("Tape Plugin does not support (width, height). Set time_bins and specify a list of wavelengths instead.");
+            Throw("Tape Plugin does not support (width, height). Set time_bins and specify a list of frequencies instead.");
 
         // load frequencies that should be rendered (-> copied from irregular spectrum)
         // note: mitsuba uses wavelengths, we use the same variable to track frequencies.

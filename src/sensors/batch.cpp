@@ -109,8 +109,13 @@ public:
         if (m_sensors.empty())
             Throw("BatchSensor: at least one child sensor must be specified!");
 
+        Log(Debug, "BatchSensor: found %i child sensors", m_sensors.size());
+        Log(Debug, "BatchSensor->film: %s", m_film);
+
         ScalarPoint2u size = m_film->size();
+        Log(Debug, "BatchSensor->film size: %s", size);
         uint32_t sub_size = size.x() / (uint32_t) m_sensors.size();
+        Log(Debug, "BatchSensor->sub_size: %u", sub_size);
         if (sub_size * (uint32_t) m_sensors.size() != size.x())
             Throw("BatchSensor: the horizontal resolution (currently %u) must "
                   "be divisible by the number of child sensors (%zu)!",
@@ -119,6 +124,7 @@ public:
         m_needs_sample_3 = false;
         for (size_t i = 0; i < m_sensors.size(); ++i) {
             m_sensors[i]->film()->set_size(ScalarPoint2u(sub_size, size.y()));
+            Log(Debug, "BatchSensor: sensor[%zu] film size: %s", i, m_sensors[i]->film()->size());
             m_sensors[i]->parameters_changed();
             m_needs_sample_3 |= m_sensors[i]->needs_aperture_sample();
         }
@@ -133,14 +139,21 @@ public:
                Mask active = true) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
-        Float  idx_f = position_sample.x() * (ScalarFloat) m_sensors.size();
+        Log(Debug, "sample_ray() called with time=%f, wavelength_sample=%f, position_sample=%s, aperture_sample=%s",
+            time, wavelength_sample, position_sample, aperture_sample);
+        Float idx_f = position_sample.x() * (ScalarFloat) m_sensors.size();
+        Log(Trace, "idx_f=%f", idx_f);
         UInt32 idx_u = UInt32(idx_f);
+        Log(Trace, "idx_u=%u", idx_u);
 
         UInt32 index = dr::minimum(idx_u, (uint32_t) (m_sensors.size() - 1));
-        SensorPtr sensor = dr::gather<SensorPtr>(m_sensors_dr, index, active);
+        Log(Trace, "index=%u", index);
 
+        SensorPtr sensor = dr::gather<SensorPtr>(m_sensors_dr, index, active);
+        Log(Trace, "sensor=%s", sensor);
 
         Point2f position_sample_2(idx_f - Float(idx_u), position_sample.y());
+        Log(Trace, "position_sample_2=%s", position_sample_2);
 
         auto [ray, spec] =
             sensor->sample_ray(time, wavelength_sample, position_sample_2,
@@ -163,15 +176,29 @@ public:
                             Mask active) const override {
 
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+        Log(Debug, "sample_ray_differential() called with time=%f, wavelength_sample=%f, position_sample=%s, aperture_sample=%s",
+            time, wavelength_sample, position_sample, aperture_sample);
 
-        Float  idx_f = position_sample.x() * (ScalarFloat) m_sensors.size();
+        Float idx_f = position_sample.x() * (ScalarFloat) m_sensors.size();
+        Log(Trace, "idx_f=%f", idx_f);
         UInt32 idx_u = UInt32(idx_f);
+        Log(Trace, "idx_u=%u", idx_u);
 
         UInt32 index = dr::minimum(idx_u, (uint32_t) (m_sensors.size() - 1));
+        Log(Trace, "Sensor index=%u", index);
         SensorPtr sensor = dr::gather<SensorPtr>(m_sensors_dr, index, active);
+        Log(Trace, "sensor=%s", sensor);
 
         Point2f position_sample_2(idx_f - Float(idx_u), position_sample.y());
 
+        Log(Trace, "position_sample_2=%s", position_sample_2);
+
+        /*
+        FIXME: (TJ) accessing position_sample_2 inside the function yields an error:
+            RuntimeError: jit_var_schedule(r721): not permitted. You performed an operation that tried to evalute a *symbolic* variable which is not permitted. [...]
+            You cannot access specific elements of 1D arrays using indexing operations (this would require the contents to be known.)
+            Not sure how to fix this.
+        */
         auto [ray, spec] = sensor->sample_ray_differential(
             time, wavelength_sample, position_sample_2, aperture_sample,
             active);

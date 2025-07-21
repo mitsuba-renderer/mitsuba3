@@ -25,6 +25,7 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
                state_in_δHdT: Optional[mi.Spectrum] = None,
                **_ # Absorbs unused arguments
     ) -> Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
+        mi.Log(mi.LogLevel.Debug, f"Running sample() in {mode} mode.")
 
         # Rendering a primal image? (vs performing forward/reverse-mode AD)
         prb_mode = δH is not None
@@ -326,6 +327,7 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
                         sensor: Union[int, mi.Sensor] = 0,
                         seed: int = 0,
                         spp: int = 0) -> None:
+        mi.Log(mi.LogLevel.Info, "Rendering in backward mode")
 
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]

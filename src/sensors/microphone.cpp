@@ -13,6 +13,8 @@ public:
     MI_IMPORT_TYPES()
 
     Microphone(const Properties &props) : Base(props) {
+        Log(Debug, "line %d: Setting up %s.", __LINE__, __FUNCTION__);
+
         if (props.has_property("to_world")) {
             // if direction and origin are present but overridden by
             // to_world, they must still be marked as queried
@@ -55,6 +57,8 @@ public:
                             const Point2f & aperture_sample,
                             Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+        Log(Debug, "line %d: Running %s().", __LINE__, __FUNCTION__);
+
         RayDifferential3f ray;
         ray.time = time;
 
@@ -64,8 +68,11 @@ public:
 
         //Note: misuka uses ray.wavelengths to store frequencies rather than wavelengths
         DiscreteDistribution<Wavelength> frequencies_spectrum = m_film->frequencies_spectrum();
+        Log(Trace, "frequencies_spectrum: %s", frequencies_spectrum);
+
+        Log(Debug, "line %d: The following line crashes when using a batch sensor.", __LINE__);
         ray.wavelengths = frequencies_spectrum.eval_pmf(frequency_index);
-        Log(Debug, "Sampled frequencies: {%s}", ray.wavelengths);
+        Log(Trace, "Sampled frequencies: {%s}", ray.wavelengths);
 
         // 2. Set ray origin and direction
         ray.o = m_to_world.value().translation();
@@ -83,6 +90,8 @@ public:
 
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &it, const Point2f &, Mask /* active */) const override {
+        Log(Debug, "line %d: Running %s().", __LINE__, __FUNCTION__);
+
         Transform4f trafo = m_to_world.value();
         Transform4f trafo_inv = trafo.inverse();
 
