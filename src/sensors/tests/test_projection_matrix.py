@@ -83,18 +83,18 @@ def test_sample_to_camera_is_inverse_of_projection_transform(variant_scalar_rgb)
     """Test that sample_to_camera() returns the inverse of projection_transform()"""
     # Test with perspective camera
     sensor = create_perspective_camera(fov=45)
-    
+
     proj_matrix = sensor.projection_transform()
     sample_to_cam = sensor.sample_to_camera()
-    
+
     # sample_to_camera should be the inverse of projection_transform
     assert dr.allclose(sample_to_cam.matrix, proj_matrix.inverse().matrix)
-    
+
     # Test with orthographic camera
     sensor = create_orthographic_camera()
-    
+
     proj_matrix = sensor.projection_transform()
     sample_to_cam = sensor.sample_to_camera()
-    
+
     # sample_to_camera should be the inverse of projection_transform
     assert dr.allclose(sample_to_cam.matrix, proj_matrix.inverse().matrix)

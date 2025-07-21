@@ -113,27 +113,62 @@ class ProjectiveDetail():
         if not sensor.__repr__().startswith('PerspectiveCamera'):
             raise Exception("Only perspective cameras are supported")
 
+        # Get transformation matrices
         to_world = sensor.world_transform()
-        near_clip = sensor.near_clip()
-        sensor_center = to_world @ mi.Point3f(0)
-        sensor_lookat_dir = to_world @ mi.Vector3f(0, 0, 1)
+        to_local = to_world.inverse()
+        to_film = sensor.projection_transform()
 
-        sample_to_camera = sensor.sample_to_camera()
-        p_min = sample_to_camera @ mi.Point3f(0, 0, 0)
-        multiplier = dr.square(near_clip) / dr.abs(p_min[0] * p_min[1] * 4.0)
+        with dr.resume_grad():
+            eps_1 = mi.Float(0)
+            eps_2 = mi.Float(0)
+            dr.enable_grad(eps_1, eps_2)
+            p_1 = mi.Point3f(ss.p + ss.silhouette_d * eps_1)
+            p_2 = mi.Point3f(ss.p + ss.n * eps_2)
 
-        # Frame
-        frame_t = dr.normalize(sensor_center - ss.p)
-        frame_n = ss.n
-        frame_s = dr.cross(frame_t, frame_n)
+            def get_projected_point(point):
+                point_NDC = to_film @ (to_local @ mi.Point3f(point))
+                return mi.Point2f(point_NDC[0], point_NDC[1]) / point_NDC[2]
 
-        J_num = dr.norm(dr.cross(frame_n, sensor_lookat_dir)) * \
-                dr.norm(dr.cross(frame_s, sensor_lookat_dir)) * \
-                dr.abs(dr.dot(frame_s, ss.silhouette_d))
-        J_den = dr.square(dr.square(dr.dot(frame_t, sensor_lookat_dir))) * \
-                dr.squared_norm(ss.p - sensor_center)
+            p_2_proj = get_projected_point(p_2)
+            p_1_proj = get_projected_point(p_1)
 
-        return J_num / J_den * multiplier
+            dr.set_grad(eps_1, 1.0)
+            dr.set_grad(eps_2, 1.0)
+            dr.enqueue(dr.ADMode.Forward, eps_1)
+            dr.enqueue(dr.ADMode.Forward, eps_2)
+            dr.traverse(dr.ADMode.Forward)
+
+            partial_1 = dr.grad(p_1_proj)
+            partial_2 = dr.grad(p_2_proj)
+
+            jacobian_det = dr.abs(
+                partial_1[1] * partial_2[0] - partial_1[0] * partial_2[1]
+            )
+
+        return jacobian_det
+
+        if False:
+            to_world = sensor.world_transform()
+            near_clip = sensor.near_clip()
+            sensor_center = to_world @ mi.Point3f(0)
+            sensor_lookat_dir = to_world @ mi.Vector3f(0, 0, 1)
+
+            sample_to_camera = sensor.sample_to_camera()
+            p_min = sample_to_camera @ mi.Point3f(0, 0, 0)
+            multiplier = dr.square(near_clip) / dr.abs(p_min[0] * p_min[1] * 4.0)
+
+            # Frame
+            frame_t = dr.normalize(sensor_center - ss.p)
+            frame_n = ss.n
+            frame_s = dr.cross(frame_t, frame_n)
+
+            J_num = dr.norm(dr.cross(frame_n, sensor_lookat_dir)) * \
+                    dr.norm(dr.cross(frame_s, sensor_lookat_dir)) * \
+                    dr.abs(dr.dot(frame_s, ss.silhouette_d))
+            J_den = dr.square(dr.square(dr.dot(frame_t, sensor_lookat_dir))) * \
+                    dr.squared_norm(ss.p - sensor_center)
+
+            return J_num / J_den * multiplier
 
     def eval_primary_silhouette_radiance_difference(self,
                                                     scene,
