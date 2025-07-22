@@ -42,8 +42,7 @@ def test01_chi2(variants_vec_backends_once):
 def test02_average_of_average(variants_vec_backends_once):
     render_res = (512, 256)
 
-    # TODO use only 2 emitters and update 1 to do once january then february
-    january = mi.load_dict({
+    monthly_average = mi.load_dict({
         "type": "avg_sunsky",
         "time_resolution": 20,
         "end_year": 2025,
@@ -51,26 +50,27 @@ def test02_average_of_average(variants_vec_backends_once):
         "end_day": 1
     })
 
-    february = mi.load_dict({
+    bimonthly_average = mi.load_dict({
         "type": "avg_sunsky",
         "time_resolution": 20,
-        "start_month": 2,
-        "start_day": 1,
         "end_year": 2025,
         "end_month": 3,
         "end_day": 1
     })
 
-    average = mi.load_dict({
-        "type": "avg_sunsky",
-        "time_resolution": 20,
-        "end_year": 2025,
-        "end_month": 3,
-        "end_day": 1
-    })
     rays = generate_rays(render_res)
-    average_of_average = (31 / 59) * january.eval(rays) + (28 / 59) * february.eval(rays)
-    real_average = average.eval(rays)
+
+    january_image = monthly_average.eval(rays)
+
+    monthly_params = mi.traverse(monthly_average)
+    monthly_params["start_month"] = 2
+    monthly_params["end_month"] = 3
+    monthly_params.update()
+
+    february_image = monthly_average.eval(rays)
+
+    average_of_average = (31 / 59) * january_image + (28 / 59) * february_image
+    real_average = bimonthly_average.eval(rays)
 
     err = dr.mean(dr.abs(average_of_average - real_average) / (dr.abs(real_average) + 0.001), axis=None)
 
