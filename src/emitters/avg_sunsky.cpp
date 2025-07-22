@@ -166,6 +166,9 @@ public:
     using FloatStorage = DynamicBuffer<Float>;
     using ScalarFloatStorage = DynamicBuffer<ScalarFloat>;
 
+    using ScalarLocation = LocationRecord<ScalarFloat>;
+    using ScalarDateTime = DateTimeRecord<ScalarFloat>;
+
     using SkyRadDataset    = std::conditional_t<dr::is_jit_v<Float>, Color3f, FloatStorage>;
     using SkyParamsDataset = std::conditional_t<dr::is_jit_v<Float>, dr::Array<Color3f, SKY_PARAMS>, FloatStorage>;
 
@@ -202,21 +205,16 @@ public:
         if (m_window_start_time > m_window_end_time)
             Log(Error, "The given start time is greater than the end time");
 
-        LocationRecord<ScalarFloat> location {props};
-        DateTimeRecord<ScalarFloat> start_day, end_day;
-        start_day.year = props.get<ScalarInt32>("start_year", 2025);
-        start_day.month = props.get<ScalarInt32>("start_month", 1);
-        start_day.day = props.get<ScalarInt32>("start_day", 1);
+        m_location = ScalarLocation{props};
+        m_start_date.year = props.get<ScalarInt32>("start_year", 2025);
+        m_start_date.month = props.get<ScalarInt32>("start_month", 1);
+        m_start_date.day = props.get<ScalarInt32>("start_day", 1);
 
-        end_day.year = props.get<ScalarInt32>("end_year", start_day.year + 1);
-        end_day.month = props.get<ScalarInt32>("end_month", start_day.month);
-        end_day.day = props.get<ScalarInt32>("end_day", start_day.day);
+        m_end_date.year = props.get<ScalarInt32>("end_year", m_start_date.year + 1);
+        m_end_date.month = props.get<ScalarInt32>("end_month", m_start_date.month);
+        m_end_date.day = props.get<ScalarInt32>("end_day", m_start_date.day);
 
-        m_nb_days = DateTimeRecord<ScalarFloat>::get_days_between(start_day, end_day, location);
-
-        m_location = location;
-        m_start_date = start_day;
-        m_end_date = end_day;
+        m_nb_days = ScalarDateTime::get_days_between(m_start_date, m_end_date, m_location);
 
         m_time_samples_per_day = props.get<bool>("time_samples_per_day", true);
         m_time_resolution = props.get<ScalarUInt32>("time_resolution", 500);
@@ -246,13 +244,7 @@ public:
         m_bitmap = compute_avg_bitmap();
 
         // Permute axis for envmap's convention
-        ScalarMatrix4f permute_axis {
-            ScalarVector4f{0, 0, -1, 0},
-            ScalarVector4f{1, 0,  0, 0},
-            ScalarVector4f{0, 1,  0, 0},
-            ScalarVector4f{0, 0,  0, 1}
-        };
-        ScalarAffineTransform4f envmap_transform { m_to_world.scalar().matrix * permute_axis };
+        ScalarAffineTransform4f envmap_transform { m_to_world.scalar().matrix * s_permute_axis };
 
         Properties envmap_props = Properties("envmap");
         envmap_props.set("bitmap", static_cast<ref<Object>>(m_bitmap));
@@ -270,8 +262,6 @@ public:
         cb->put("albedo",    m_albedo_tex,    ParamFlags::NonDifferentiable);
         cb->put("latitude",  m_location.latitude,  ParamFlags::NonDifferentiable);
         cb->put("longitude", m_location.longitude, ParamFlags::NonDifferentiable);
-        cb->put("timezone",  m_location.timezone,  ParamFlags::NonDifferentiable);
-
         cb->put("timezone",  m_location.timezone,  ParamFlags::NonDifferentiable);
 
         cb->put("start_year",  m_start_date.year,  ParamFlags::NonDifferentiable);
@@ -303,17 +293,37 @@ public:
         if (m_albedo_tex->is_spatially_varying())
             Log(Error, "Expected a non-spatially varying radiance spectra!");
 
+        if (m_window_start_time < 0.f || m_window_start_time > 24.f)
+            Log(Error, "Start hour: %f is out of range [0, 24]", m_window_start_time);
+        if (m_window_end_time < 0.f || m_window_end_time > 24.f)
+            Log(Error, "Start hour: %f is out of range [0, 24]", m_window_end_time);
+        if (m_window_start_time > m_window_end_time)
+            Log(Error, "The given start time is greater than the end time");
+
+
         if (keys.empty() || string::contains(keys, "turbidity"))
             m_sun_rad_params = sun_params<SUN_DATASET_SIZE>(m_sun_rad_dataset, m_turbidity);
 
-        // TODO update envmap
-        if (keys.empty() || string::contains(keys, "to_world"))
-            Log(Warn, "Update for to_world not implemented");
-        ref<Bitmap> new_bitmap = compute_avg_bitmap();
+        m_nb_days = ScalarDateTime::get_days_between(m_start_date, m_end_date, m_location);
+        m_bitmap = compute_avg_bitmap();
+
+        // Permute axis for envmap's convention
+        ScalarAffineTransform4f envmap_transform { m_to_world.scalar().matrix * s_permute_axis };
+
+        // Cannot update envmap in place through a traversal since
+        // the input bitmap gets processed correctly only in the constructor
+        Properties envmap_props = Properties("envmap");
+        envmap_props.set("bitmap", static_cast<ref<Object>>(m_bitmap));
+        envmap_props.set("to_world", envmap_transform);
+        m_envmap = PluginManager::instance()->create_object<EnvEmitter>(envmap_props);
+
+        if (m_scene)
+            m_envmap->set_scene(m_scene);
 
     }
 
     MI_INLINE void set_scene(const Scene *scene) override {
+        m_scene = scene;
         m_envmap->set_scene(scene);
     }
 
@@ -369,13 +379,17 @@ public:
 
     std::string to_string() const override {
         std::ostringstream oss;
-        oss << "SunskyEmitter[" << std::endl
+        oss << "AvgSunskyEmitter[" << std::endl
             << "  turbidity = " << string::indent(m_turbidity) << std::endl
             << "  sky_scale = " << string::indent(m_sky_scale) << std::endl
             << "  sun_scale = " << string::indent(m_sun_scale) << std::endl
             << "  albedo = " << string::indent(m_albedo_tex) << std::endl
-            << "  sun aperture (°) = " << string::indent(dr::rad_to_deg(2.f * m_sun_half_aperture))
-            << "  location = " << m_location.to_string()
+            << "  sun aperture (°) = " << string::indent(dr::rad_to_deg(2.f * m_sun_half_aperture)) << std::endl
+            << "  location = " << string::indent(m_location.to_string()) << std::endl
+            << "  start date = " << string::indent(m_start_date.to_string()) << std::endl
+            << "  end date = " << string::indent(m_end_date.to_string()) << std::endl
+            << "  start time = " << string::indent(m_window_start_time) << std::endl
+            << "  end time = " << string::indent(m_window_end_time) << std::endl
             << "]" << std::endl;
         return oss.str();
     }
@@ -388,6 +402,16 @@ private:
         Vector3f sun_dir;
         SkyRadDataset sky_rad;
         SkyParamsDataset sky_params;
+
+        std::string to_string() const {
+            std::ostringstream oss;
+            oss << "Datasets[" << std::endl
+                << "  sun_dir = " << string::indent(sun_dir) << std::endl
+                << "  sky_rad = " << string::indent(sky_rad) << std::endl
+                << "  sky_params = " << string::indent(sky_params) << std::endl
+                << "]" << std::endl;
+            return oss.str();
+        }
 
         DRJIT_STRUCT(Datasets, sun_dir, sky_rad, sky_params)
     };
@@ -489,6 +513,9 @@ private:
             Color3f result = dr::zeros<Color3f>(nb_rays);
             const UInt32 frame_time_idx = dr::arange<UInt32>(time_width);
             auto [pixel_idx_wav, time_idx] = dr::meshgrid(pixel_idx, frame_time_idx);
+
+            // Necessary otherwise deadlock when gathering datasets in loop
+            dr::eval(datasets, ray_dir);
 
             // Slide the window along the time axis
             for (size_t frame_start = 0; frame_start < nb_time_samples; frame_start += time_width) {
@@ -646,8 +673,8 @@ private:
     ScalarFloat m_sun_scale;
     ref<Texture> m_albedo_tex;
 
-    LocationRecord<Float> m_location;
-    DateTimeRecord<Float> m_start_date, m_end_date;
+    ScalarLocation m_location;
+    ScalarDateTime m_start_date, m_end_date;
     ScalarUInt32 m_nb_days;
     ScalarFloat m_window_start_time;
     ScalarFloat m_window_end_time;
@@ -660,6 +687,11 @@ private:
     ref<EnvEmitter> m_envmap;
     ScalarVector2u m_bitmap_resolution;
 
+    // Used to re-set the envmap scene on update
+    const Scene* m_scene = nullptr;
+
+    static ScalarMatrix4f s_permute_axis;
+
     static std::mutex s_bitmap_mutex;
 
     // Permanent datasets loaded from files/memory
@@ -671,6 +703,14 @@ private:
 
 MI_VARIANT
 std::mutex AvgSunskyEmitter<Float, Spectrum>::s_bitmap_mutex{};
+
+MI_VARIANT
+typename AvgSunskyEmitter<Float, Spectrum>::ScalarMatrix4f AvgSunskyEmitter<Float, Spectrum>::s_permute_axis = ScalarMatrix4f{
+    ScalarVector4f{0, 0, -1, 0},
+    ScalarVector4f{1, 0,  0, 0},
+    ScalarVector4f{0, 1,  0, 0},
+    ScalarVector4f{0, 0,  0, 1}
+};
 
 MI_EXPORT_PLUGIN(AvgSunskyEmitter)
 NAMESPACE_END(mitsuba)

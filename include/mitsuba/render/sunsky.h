@@ -264,15 +264,6 @@ struct LocationRecord {
     Float latitude = 35.6894f;
     Float timezone = 9.f;
 
-    template<typename OtherFloat>
-    LocationRecord& operator=(const LocationRecord<OtherFloat>& other) {
-        this->longitude = other.longitude;
-        this->latitude = other.latitude;
-        this->timezone = other.timezone;
-        return *this;
-    }
-
-
     explicit LocationRecord(const Properties& props, const std::string& prefix = ""):
         longitude(props.get<ScalarFloat>(prefix + "longitude", 139.6917f)),
         latitude(props.get<ScalarFloat>(prefix + "latitude", 35.6894f)),
@@ -297,22 +288,6 @@ struct DateTimeRecord {
     using ScalarFloat = dr::scalar_t<Float>;
     Int32 year, month, day;
     Float hour = 0.f, minute = 0.f, second = 0.f;
-
-    template<typename OtherFloat>
-    DateTimeRecord& operator=(const DateTimeRecord<OtherFloat>& other) {
-        static_assert(!dr::is_jit_v<OtherFloat> || dr::is_jit_v<Float>,
-            "Cannot copy from JIT to non-JIT"
-        );
-
-        this->year = other.year;
-        this->month = other.month;
-        this->day = other.day;
-        this->hour = other.hour;
-        this->minute = other.minute;
-        this->second = other.second;
-        return *this;
-    }
-
 
     /** Calculate difference in days between the current Julian Day
      *  and JD 2451545.0, which is noon 1 January 2000 Universal Time
@@ -380,9 +355,9 @@ struct DateTimeRecord {
  * Diego C. Alarcon-Padilla, Teodoro Lopez-Moratalla, and Martin Lara-Coira,
  * in "Solar energy", vol 27, number 5, 2001 by Pergamon Press.
  */
-template <typename Float>
-std::pair<Float, Float> sun_coordinates(const DateTimeRecord<Float> &date_time,
-                                 const LocationRecord<Float> &location) {
+template <typename TimeFloat, typename LocFloat, typename Float = dr::expr_t<TimeFloat, LocFloat>>
+std::pair<Float, Float> sun_coordinates(const DateTimeRecord<TimeFloat> &date_time,
+                                        const LocationRecord<LocFloat> &location) {
     using Int32 = dr::int32_array_t<Float>;
 
     // Main variables
