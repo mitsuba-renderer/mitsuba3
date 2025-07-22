@@ -118,9 +118,9 @@ class Rayloader():
         if tile_size <= 0:
             raise ValueError(f"tile_size ({tile_size}) must be positive")
 
-        if type(target_images) != list:
+        if not isinstance(target_images, list):
             target_images = [target_images]
-        if type(sensors) != list:
+        if not isinstance(sensors, list):
             sensors = [sensors]
 
         reference_film = sensors[0].film()
@@ -132,8 +132,8 @@ class Rayloader():
 
         # Tile-related properties
         self.tile_size = tile_size
-        self.tiles_per_row = dr.ceil(self.width / tile_size)
-        self.tiles_per_col = dr.ceil(self.height / tile_size)
+        self.tiles_per_row = int(dr.ceil(self.width / tile_size))
+        self.tiles_per_col = int(dr.ceil(self.height / tile_size))
         self.tiles_per_sensor = self.tiles_per_row * self.tiles_per_col
 
         # Assert that pixels_per_batch is valid
@@ -231,6 +231,31 @@ class Rayloader():
         # Calculate the pixel batch multiplier
         self.pixel_batch_multiplier = float(self.ttl_pixels / pixels_per_batch)
 
+    def _update_target_image_buffer(self):
+        """Initialize the flattened target image buffer for efficient gathering."""
+        # Create the corresponding image reference tensor (same for both tile and pixel modes)
+        ttl_size = self.ttl_pixels * self.channel_size
+        # Unpermuted target image buffer
+        target_image_flat = dr.empty(mi.Float, ttl_size)
+        chunk_size = self.width * self.height * self.channel_size
+        for i in range(self.num_sensors):
+            dr.scatter(
+                target_image_flat,
+                dr.ravel(self.target_images[i]),
+                mi.UInt32(dr.arange(mi.UInt32, chunk_size) + i * chunk_size),
+            )
+        # Permuted target image buffer
+        self.perm_target_image_flat = dr.ravel(dr.gather(
+            mi.ArrayXf,
+            target_image_flat,
+            self.perm_pixel_index_buffer,
+            shape=(self.channel_size, self.effective_ttl_pixels)
+        ))
+
+        # Make sure the buffer is in memory
+        del target_image_flat
+        dr.eval(self.perm_pixel_index_buffer, self.perm_target_image_flat)
+
     def _create_padded_buffer(self, pixel_indices):
         """Create a padded buffer from pixel indices to fit effective_ttl_pixels.
 
@@ -304,6 +329,9 @@ class Rayloader():
         else:
             self._shuffle_pixel_index_tiled(seed)
 
+        # Update the target image buffer after shuffling
+        self._update_target_image_buffer()
+
     def _shuffle_pixel_index_tiled(self, seed: mi.UInt32):
         """Tile-based permutation for GPU coherence."""
         # Step 1: Create tile ordering permutation
@@ -365,9 +393,6 @@ class Rayloader():
         tile_y_offsets = dr.arange(mi.UInt32, self.tile_size)
         tile_x_offsets = dr.arange(mi.UInt32, self.tile_size)
 
-        # Generate coordinates for all pixels in all tiles
-        total_pixels_generated = num_tiles_to_sample * pixels_per_tile
-
         # Expand tile starts and sensor indices to match all pixels
         expanded_tile_start_y = dr.repeat(tile_start_y, pixels_per_tile)
         expanded_tile_start_x = dr.repeat(tile_start_x, pixels_per_tile)
@@ -401,29 +426,6 @@ class Rayloader():
 
         # Pad if necessary
         self.perm_pixel_index_buffer = self._create_padded_buffer(all_pixel_indices)
-
-        # Create the corresponding image reference tensor (same for both tile and pixel modes)
-        ttl_size = self.ttl_pixels * self.channel_size
-        # Unpermuted target image buffer
-        target_image_flat = dr.empty(mi.Float, ttl_size)
-        chunk_size = self.width * self.height * self.channel_size
-        for i in range(self.num_sensors):
-            dr.scatter(
-                target_image_flat,
-                dr.ravel(self.target_images[i]),
-                mi.UInt32(dr.arange(mi.UInt32, chunk_size) + i * chunk_size),
-            )
-        # Permuted target image buffer
-        self.perm_target_image_flat = dr.ravel(dr.gather(
-            mi.ArrayXf,
-            target_image_flat,
-            self.perm_pixel_index_buffer,
-            shape=(self.channel_size, self.effective_ttl_pixels)
-        ))
-
-        # Make sure the buffer is in memory
-        del target_image_flat
-        dr.eval(self.perm_pixel_index_buffer, self.perm_target_image_flat)
 
     def next(self):
         """Get the next batch of pixel indices and corresponding target tensor.

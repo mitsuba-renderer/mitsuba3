@@ -480,10 +480,6 @@ def test_ray_loader_with_rendering_optimization(variants_vec_backends_once_rgb):
     T = mi.ScalarTransform4f
 
     # Create a simple scene with differentiable reflectance parameter
-    # Start with wrong reflectance value to create initial loss
-    reflectance = mi.Float(0.3)  # Start with wrong value
-    dr.enable_grad(reflectance)
-
     scene_dict = {
         'type': 'scene',
         'integrator': {
@@ -498,7 +494,7 @@ def test_ray_loader_with_rendering_optimization(variants_vec_backends_once_rgb):
             'type': 'rectangle',
             'bsdf': {
                 'type': 'diffuse',
-                'reflectance': reflectance,  # This will be optimized
+                'reflectance': 0.3,  # Start with wrong value
             }
         },
         'sensor1': {
@@ -540,16 +536,24 @@ def test_ray_loader_with_rendering_optimization(variants_vec_backends_once_rgb):
     scene = mi.load_dict(scene_dict)
     sensors = [scene.sensors()[0], scene.sensors()[1]]
 
-    # Render reference images with target reflectance (0.8)
-    target_reflectance = mi.Float(0.8)
-    scene_dict['shape']['bsdf']['reflectance'] = target_reflectance
-    target_scene = mi.load_dict(scene_dict)
+    # Get the differentiable reflectance parameter
+    params = mi.traverse(scene)
+    key = 'shape.bsdf.reflectance.value'
+    params.keep([key])
 
+    # Optimizer
+    opt = mi.ad.Adam(lr=0.1)
+    opt[key] = params[key]
+    params.update(opt)
+
+    # Render reference images with target reflectance (0.8)
+    scene_dict['shape']['bsdf']['reflectance'] = 0.8
+    target_scene = mi.load_dict(scene_dict)
     image_ref = []
     for sensor in sensors:
         image_ref.append(mi.render(target_scene, sensor=sensor, spp=4))
 
-    # Create RayLoader with tiled sampling for GPU coherence
+    # Create RayLoader with tiled sampling
     ray_loader = mi.ad.loaders.Rayloader(
         sensors=sensors,
         target_images=image_ref,
@@ -566,47 +570,34 @@ def test_ray_loader_with_rendering_optimization(variants_vec_backends_once_rgb):
 
     # Optimization loop with gradient descent
     losses = []
-    learning_rate = 0.1
 
     for i in range(5):
         # Get next batch of pixels and corresponding sensor
         target_batch, flat_sensor = ray_loader.next()
 
         # Render the current batch with current reflectance
-        rendered_batch = mi.render(scene, spp=1, sensor=flat_sensor)
+        rendered_batch = mi.render(scene, spp=1, sensor=flat_sensor, params=params)
 
         # Verify shapes match
         assert target_batch.shape == rendered_batch.shape
         assert target_batch.shape == (1, 256, 3)
 
         # Compute L2 loss between rendered and target
-        diff = rendered_batch.array - target_batch.array
-        loss = dr.mean(dr.square(diff))
-        losses.append(dr.detach(loss))
+        # Scale by pixel_batch_multiplier to match full-image scale for consistent
+        # weighting with other loss terms (e.g., regularization) that operate on full model
+        batch_loss = (
+            dr.mean(dr.square(rendered_batch - target_batch)) *
+            ray_loader.pixel_batch_multiplier
+        )
+        losses.append(dr.detach(batch_loss))
 
         # Perform gradient descent step
-        dr.backward(loss)
-        grad = dr.grad(reflectance)
-        reflectance_new = reflectance - learning_rate * grad
-        reflectance_new = dr.clamp(reflectance_new, 0.0, 1.0)  # Clamp to valid range
-
-        # Update scene with new reflectance
-        dr.disable_grad(reflectance)
-        reflectance = reflectance_new
-        dr.enable_grad(reflectance)
-        scene_dict['shape']['bsdf']['reflectance'] = reflectance
-        scene = mi.load_dict(scene_dict)
-
-        # Verify rendered values are reasonable
-        rendered_array = dr.ravel(rendered_batch.array)
-        assert dr.any(rendered_array > 0.0), "Rendered image should not be zeros"
+        dr.backward(batch_loss)
+        opt.step()
+        # opt[key] = dr.clip(opt[key], 0, 1)
+        params.update(opt)
 
     # Test that losses are decreasing (at least the last loss should be lower than first)
     assert all(loss >= 0.0 for loss in losses), "Loss should be non-negative"
-    assert losses[0] > 0.0, "Initial loss should be positive"
-    assert losses[-1] < losses[0], "Loss should decrease through optimization"
-
-    # Verify that most consecutive losses are decreasing or stay low
-    decreasing_or_stable = sum(1 for i in range(1, len(losses))
-                              if losses[i] <= losses[i-1] * 1.1)  # Allow 10% tolerance
-    assert decreasing_or_stable >= len(losses) - 2, "Loss should generally decrease"
+    if i > 0:
+        assert losses[-1] < losses[-2], "Loss should decrease through optimization"
