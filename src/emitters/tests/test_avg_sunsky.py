@@ -3,7 +3,7 @@ import mitsuba as mi
 def test(variants_vec_backends_once):
     sky = {
         "type": "avg_sunsky",
-        "day_resolution": 20
+        "time_resolution": 200
     }
 
     sample_func, pdf_func = mi.chi2.EmitterAdapter("avg_sunsky", sky)

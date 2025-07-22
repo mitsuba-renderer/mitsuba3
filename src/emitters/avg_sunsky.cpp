@@ -8,7 +8,150 @@
 #include <nanothread/nanothread.h>
 
 NAMESPACE_BEGIN(mitsuba)
+/**!
 
+.. _emitter-avg_sunsky:
+
+Average sun and sky emitter (:monosp:`avg_sunsky`)
+-------------------------------------------------
+
+.. pluginparameters::
+
+ * - turbidity
+   - |float|
+   - Atmosphere turbidity, must be within [1, 10] (Default: 3, clear sky in a temperate climate).
+     Smaller turbidity values (∼ 1 − 2) produce an arctic-like clear blue sky,
+     whereas larger values (∼ 8 − 10) create an atmosphere that is more typical
+     of a warm, humid day.
+   - |exposed|
+
+ * - albedo
+   - |spectrum|
+   - Ground albedo, must be within [0, 1] for each wavelength/channel, (Default: 0.3).
+     This cannot be spatially varying (e.g. have bitmap as type).
+   - |exposed|
+
+ * - latitude
+   - |float|
+   - Latitude of the location in degrees (Default: 35.689, Tokyo's latitude).
+   - |exposed|
+
+ * - longitude
+   - |float|
+   - Longitude of the location in degrees (Default: 139.6917, Tokyo's longitude).
+   - |exposed|
+
+ * - timezone
+   - |float|
+   - Timezone of the location in hours (Default: 9).
+   - |exposed|
+
+ * - window_start_time
+   - |float|
+   - Start hour for the daily average (Default: 7).
+   - |exposed|
+
+ * - window_end_time
+   - |float|
+   - Final hour for the daily average (Default: 19).
+   - |exposed|
+
+ * - start_year
+   - |int|
+   - Year of the start of the average (Default: 2025).
+   - |exposed|
+
+ * - start_month
+   - |int|
+   - Month of the start of the average (Default: 01).
+   - |exposed|
+
+ * - start_day
+   - |int|
+   - Day of the start of the average (Default: 01).
+   - |exposed|
+
+ * - end_year
+   - |int|
+   - Year of the end of the average (Default: start_year + 1).
+   - |exposed|
+
+ * - end_month
+   - |int|
+   - Month of the end of the average (Default: start_month).
+   - |exposed|
+
+* - end_day
+  - |int|
+  - Day of the end of the average (Default: start_day).
+  - |exposed|
+
+* - time_resolution
+  - |int|
+  - Number of time samples used (Default: 500).
+  - |exposed|
+
+* - time_samples_per_day
+  - |bool|
+  - Indicates if the `time_resolution` applies per day, in which case
+     the total number of time samples is `time_resolution * nb_days`. In the
+     contrary, the `time_resolution` is uniformly spread out over the year.
+     This could be useful to turn off for averages over large amounts of time. (Default: true)
+
+ * - sun_scale
+   - |float|
+   - Scale factor for the sun radiance (Default: 1).
+     Can be used to turn the sun off (by setting it to 0).
+   - |exposed|
+
+ * - sky_scale
+   - |float|
+   - Scale factor for the sky radiance (Default: 1).
+     Can be used to turn the sky off (by setting it to 0).
+   - |exposed|
+
+ * - sun_aperture
+   - |float|
+   - Aperture angle of the sun in degrees (Default: 0.5338, normal sun aperture).
+   - |exposed|
+
+ * - to_world
+   - |transform|
+   - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
+   - |exposed|
+
+
+// TODO sort out plugin explanations and limitations
+This plugin exposes the average appearance of the sky over a given period.
+It computes on instantiation an average of the sky dome that is accumulated
+into a bitmap.
+
+This plugin implements an environment emitter for the average sun and sky dome.
+It uses the Hosek-Wilkie sun :cite:`HosekSun2013` and sky model
+:cite:`HosekSky2012` to generate strong approximations of the sky-dome without
+the cost of path tracing the atmosphere.
+
+Note that attaching a ``avg_sunsky`` emitter to the scene introduces physical units
+into the rendering process of Mitsuba 3, which is ordinarily a unitless system.
+Specifically, the evaluated spectral radiance has units of power (:math:`W`) per
+unit area (:math:`m^{-2}`) per steradian (:math:`sr^{-1}`) per unit wavelength
+(:math:`nm^{-1}`). As a consequence, your scene should be modeled in meters for
+this plugin to work properly.
+
+.. tabs::
+    .. code-tab:: xml
+        :name: avg_sunsky-light
+
+        <emitter type="avg_sunsky">
+            <integer name="start_year" value="2026"/>
+        </emitter>
+
+    .. code-tab:: python
+
+        'type': 'avg_sunsky',
+        'start_year': 2026
+
+*/
 template <typename Float, typename Spectrum>
 class AvgSunskyEmitter final : public Emitter<Float, Spectrum> {
 public:
@@ -44,15 +187,26 @@ public:
         if (m_albedo_tex->is_spatially_varying())
             Log(Error, "Expected a non-spatially varying radiance spectra!");
 
+        m_window_start_time = props.get<ScalarFloat>("window_start_time", 7.f);
+        if (m_window_start_time < 0.f || m_window_start_time > 24.f)
+            Log(Error, "Start hour: %f is out of range [0, 24]", m_window_start_time);
+
+        m_window_end_time = props.get<ScalarFloat>("window_end_time", 19.f);
+        if (m_window_end_time < 0.f || m_window_end_time > 24.f)
+            Log(Error, "Start hour: %f is out of range [0, 24]", m_window_end_time);
+
+        if (m_window_start_time > m_window_end_time)
+            Log(Error, "The given start time is greater than the end time");
+
         LocationRecord<ScalarFloat> location {props};
         DateTimeRecord<ScalarFloat> start_day, end_day;
         start_day.year = props.get<ScalarInt32>("start_year", 2025);
         start_day.month = props.get<ScalarInt32>("start_month", 1);
         start_day.day = props.get<ScalarInt32>("start_day", 1);
 
-        end_day.year = props.get<ScalarInt32>("end_year", 2025);
-        end_day.month = props.get<ScalarInt32>("end_month", 12);
-        end_day.day = props.get<ScalarInt32>("end_day", 31);
+        end_day.year = props.get<ScalarInt32>("end_year", start_day.year + 1);
+        end_day.month = props.get<ScalarInt32>("end_month", start_day.month);
+        end_day.day = props.get<ScalarInt32>("end_day", start_day.day);
 
         m_nb_days = DateTimeRecord<ScalarFloat>::get_days_between(start_day, end_day, location);
 
@@ -60,10 +214,8 @@ public:
         m_start_date = start_day;
         m_end_date = end_day;
 
-        m_uniform_resolution = props.get<bool>("uniform_resolution", true);
-        m_window_start_time = props.get<ScalarFloat>("window_start_time", 7.f);
-        m_window_end_time = props.get<ScalarFloat>("window_end_time", 19.f);
-        m_time_resolution = props.get<ScalarUInt32>("time_resolution", 5);
+        m_time_samples_per_day = props.get<bool>("time_samples_per_day", true);
+        m_time_resolution = props.get<ScalarUInt32>("time_resolution", 500);
 
         dr::make_opaque(m_start_date, m_end_date, m_location);
 
@@ -92,7 +244,7 @@ public:
             ScalarVector4f{0, 1,  0, 0},
             ScalarVector4f{0, 0,  0, 1}
         };
-        ScalarAffineTransform4f envmap_transform { permute_axis };
+        ScalarAffineTransform4f envmap_transform { m_to_world.scalar().matrix * permute_axis };
 
         Properties envmap_props = Properties("envmap");
         envmap_props.set("bitmap", static_cast<ref<Object>>(m_bitmap));
@@ -112,10 +264,25 @@ public:
         cb->put("longitude", m_location.longitude, ParamFlags::NonDifferentiable);
         cb->put("timezone",  m_location.timezone,  ParamFlags::NonDifferentiable);
 
+        cb->put("timezone",  m_location.timezone,  ParamFlags::NonDifferentiable);
+
+        cb->put("start_year",  m_start_date.year,  ParamFlags::NonDifferentiable);
+        cb->put("start_month",  m_start_date.month,  ParamFlags::NonDifferentiable);
+        cb->put("start_day",  m_start_date.day,  ParamFlags::NonDifferentiable);
+
+        cb->put("end_year",  m_end_date.year,  ParamFlags::NonDifferentiable);
+        cb->put("end_month",  m_end_date.month,  ParamFlags::NonDifferentiable);
+        cb->put("end_day",  m_end_date.day,  ParamFlags::NonDifferentiable);
+
+        cb->put("window_start_time", m_window_start_time,  ParamFlags::NonDifferentiable);
+        cb->put("window_end_time", m_window_end_time, ParamFlags::NonDifferentiable);
+
+        cb->put("time_resolution", m_time_resolution, ParamFlags::NonDifferentiable);
+
         cb->put("to_world", m_to_world, ParamFlags::NonDifferentiable);
     }
 
-    void parameters_changed(const std::vector<std::string> &) override {
+    void parameters_changed(const std::vector<std::string>& keys) override {
         if (m_sun_scale < 0.f)
             Log(Error, "Invalid sun scale: %f, must be positive!", m_sun_scale);
         if (m_sky_scale < 0.f)
@@ -128,19 +295,14 @@ public:
         if (m_albedo_tex->is_spatially_varying())
             Log(Error, "Expected a non-spatially varying radiance spectra!");
 
-        #define CHANGED(word) string::contains(keys, word)
+        if (keys.empty() || string::contains(keys, "turbidity"))
+            m_sun_rad_params = sun_params<SUN_DATASET_SIZE>(m_sun_rad_dataset, m_turbidity);
 
-        //bool changed_atmosphere = CHANGED("albedo") || CHANGED("turbidity");
-        //bool changed_time_record = !keys.empty() && m_active_record && (
-        //        CHANGED("timezone") || CHANGED("year") ||
-        //        CHANGED("day") || CHANGED("month") || CHANGED("hour") ||
-        //        CHANGED("minute") || CHANGED("second") || CHANGED("latitude") ||
-        //        CHANGED("longitude")
-        //    );
-        //bool changed_sun_dir = (!m_active_record && CHANGED("sun_direction")) || changed_time_record;
+        // TODO update envmap
+        if (keys.empty() || string::contains(keys, "to_world"))
+            Log(Warn, "Update for to_world not implemented");
+        ref<Bitmap> new_bitmap = compute_avg_bitmap();
 
-
-        #undef CHANGED
     }
 
     MI_INLINE void set_scene(const Scene *scene) override {
@@ -227,7 +389,7 @@ private:
         DateTimeRecord<Float> time = dr::zeros<DateTimeRecord<Float>>();
         time.year = m_start_date.year;
 
-        if (!m_uniform_resolution) {
+        if (!m_time_samples_per_day) {
             Float fractional_day = m_nb_days * (time_idx / Float(m_time_resolution - 1));
 
             time.day = dr::floor2int<Int32>(fractional_day);
@@ -286,7 +448,7 @@ private:
         } else {
 
             // ================== COMPUTE DATASETS =====================
-            size_t nb_time_samples = m_time_resolution * (m_uniform_resolution ? m_nb_days : 1);
+            size_t nb_time_samples = m_time_resolution * (m_time_samples_per_day ? m_nb_days : 1);
             Datasets datasets = compute_dataset(dr::arange<UInt32>(nb_time_samples), albedo);
 
             // ==================== COMPUTE RAYS ======================
@@ -372,7 +534,7 @@ private:
 
         ScalarFloat* bitmap_data = static_cast<ScalarFloat*>(result->data());
 
-        const uint32_t nb_time_samples = emitter->m_time_resolution * (emitter->m_uniform_resolution ? emitter->m_nb_days : 1);
+        const uint32_t nb_time_samples = emitter->m_time_resolution * (emitter->m_time_samples_per_day ? emitter->m_nb_days : 1);
         uint32_t times_per_thread = nb_time_samples / payload->nb_threads + 1;
 
         if (thread_id * times_per_thread >= nb_time_samples) return;
@@ -469,22 +631,21 @@ private:
 
 
     // ========= Common parameters =========
-    bool m_uniform_resolution = false;
-    ScalarUInt32 m_time_resolution = 300;
-    Float m_turbidity = 7.f;
-    ScalarFloat m_sky_scale = 1.f;
-    ScalarFloat m_sun_scale = 1.f;
+    bool m_time_samples_per_day;
+    ScalarUInt32 m_time_resolution;
+    Float m_turbidity;
+    ScalarFloat m_sky_scale;
+    ScalarFloat m_sun_scale;
     ref<Texture> m_albedo_tex;
 
     LocationRecord<Float> m_location;
     DateTimeRecord<Float> m_start_date, m_end_date;
     ScalarUInt32 m_nb_days;
-    ScalarFloat m_window_start_time = 7.f;
-    ScalarFloat m_window_end_time = 19.f;
+    ScalarFloat m_window_start_time;
+    ScalarFloat m_window_end_time;
 
     // ========= Sun parameter =========
-    // TODO find why macro does not work
-    ScalarFloat m_sun_half_aperture = dr::deg_to_rad(0.5358/2.0);
+    ScalarFloat m_sun_half_aperture;
 
     // ========= Envmap parameters =========
     ref<Bitmap> m_bitmap;

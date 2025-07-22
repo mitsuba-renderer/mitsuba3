@@ -167,8 +167,8 @@ Result bezier_interpolate(
 
     UInt32Result indices = offset;
     if constexpr (dr::depth_v<Result> == 3) {
-        // TODO change magic number
-        const auto [idx_div, idx_mod] = dr::idivmod(dr::arange<UInt32Storage>(out_size), 3);
+        // Hard-coded value since the avg_sunsky does not use the spectral datasets
+        const auto [idx_div, idx_mod] = dr::idivmod(dr::arange<UInt32Storage>(out_size), 3 /* nb_channels */);
         indices += dr::unravel<UInt32Result, UInt32Storage>(SKY_PARAMS * idx_mod + idx_div);
     } else if constexpr (dr::depth_v<Result> == 2) {
         indices += dr::unravel<UInt32Result, UInt32Storage>(dr::arange<UInt32Storage>(out_size));
@@ -350,7 +350,7 @@ struct DateTimeRecord {
             Throw("Start date is after end date");
 
         // Add one to count the end
-        return dr::floor2int<Int32>(1.f + elapsed_jd_end - elapsed_jd_start);
+        return dr::floor2int<Int32>(elapsed_jd_end - elapsed_jd_start);
     }
 
 
