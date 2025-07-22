@@ -19,8 +19,8 @@ public:
     using FloatStorage = DynamicBuffer<Float>;
     using ScalarFloatStorage = DynamicBuffer<ScalarFloat>;
 
-    using SkyRadDataset    = Color3f;
-    using SkyParamsDataset = dr::Array<Color3f, SKY_PARAMS>;
+    using SkyRadDataset    = std::conditional_t<dr::is_jit_v<Float>, Color3f, FloatStorage>;
+    using SkyParamsDataset = std::conditional_t<dr::is_jit_v<Float>, dr::Array<Color3f, SKY_PARAMS>, FloatStorage>;
 
     AvgSunskyEmitter(const Properties &props) : Base(props) {
         m_sun_scale = props.get<ScalarFloat>("sun_scale", 1.f);
@@ -214,12 +214,21 @@ public:
 
 private:
 
-    DateTimeRecord<Float> compute_intermediate_time(const UInt32& time_idx) const {
+    struct Datasets {
+        Vector3f sun_dir;
+        SkyRadDataset sky_rad;
+        SkyParamsDataset sky_params;
+
+        DRJIT_STRUCT(Datasets, sun_dir, sky_rad, sky_params)
+    };
+
+
+    Datasets compute_dataset(const UInt32& time_idx, const FloatStorage& albedo) const {
         DateTimeRecord<Float> time = dr::zeros<DateTimeRecord<Float>>();
         time.year = m_start_date.year;
 
         if (!m_uniform_resolution) {
-            Float fractional_day = m_nb_days * (time_idx / Float(m_time_resolution));
+            Float fractional_day = m_nb_days * (time_idx / Float(m_time_resolution - 1));
 
             time.day = dr::floor2int<Int32>(fractional_day);
             time.hour = m_window_start_time + (m_window_end_time - m_window_start_time) * dr::fmod(fractional_day, 1.f);
@@ -227,10 +236,30 @@ private:
             const auto [time_idx_div, time_idx_mod] = dr::idivmod(time_idx, m_time_resolution);
 
             time.day = m_start_date.day + time_idx_div;
-            time.hour = m_window_start_time + (m_window_end_time - m_window_start_time) * time_idx_mod / m_time_resolution;
+            time.hour = m_window_start_time + (m_window_end_time - m_window_start_time) * time_idx_mod / (m_time_resolution - 1);
         }
 
-        return time;
+
+        const auto [sun_elevation, sun_azimuth] = sun_coordinates(time, m_location);
+        const Float sun_eta = 0.5f * dr::Pi<Float> - sun_elevation;
+
+        Datasets dataset = {
+            sph_to_dir(sun_elevation, sun_azimuth),
+            sky_radiance_params<SKY_DATASET_RAD_SIZE, SkyRadDataset>(m_sky_rad_dataset, albedo, m_turbidity, sun_eta),
+            sky_radiance_params<SKY_DATASET_SIZE, SkyParamsDataset>(m_sky_params_dataset,  albedo, m_turbidity, sun_eta)
+        };
+
+        return dataset;
+    }
+
+    Vector3f compute_ray_dir(const UInt32& pixel_idx, const ScalarPoint2u& resolution) const {
+        const auto [pixel_u_idx, pixel_v_idx] = dr::idivmod(pixel_idx, resolution.x());
+
+        Point2f coord = Point2f(pixel_v_idx, pixel_u_idx) + 0.5f;
+                coord /= resolution - 1.f;
+                coord *= Point2f(dr::TwoPi<Float>, dr::Pi<Float>);
+
+        return sph_to_dir(coord.y(), coord.x());
     }
 
     struct ThreadPayload {
@@ -256,38 +285,16 @@ private:
 
         } else {
 
-            struct Datasets {
-                Vector3f sun_dir;
-                SkyRadDataset sky_rad;
-                SkyParamsDataset sky_params;
-
-                DRJIT_STRUCT(Datasets, sun_dir, sky_rad, sky_params)
-            };
-
-            // ==================== COMPUTE TIMES =======================
+            // ================== COMPUTE DATASETS =====================
             size_t nb_time_samples = m_time_resolution * (m_uniform_resolution ? m_nb_days : 1);
-            DateTimeRecord<Float> times = compute_intermediate_time(dr::arange<UInt32>(nb_time_samples));
-
-            // =================== COMPUTE DATASETS =====================
-            const auto [sun_elevation, sun_azimuth] = sun_coordinates(times, m_location);
-            const Float sun_eta = 0.5f * dr::Pi<Float> - sun_elevation;
-
-            Datasets datasets = {
-                sph_to_dir(sun_elevation, sun_azimuth),
-                sky_radiance_params<SKY_DATASET_RAD_SIZE, SkyRadDataset>(m_sky_rad_dataset, albedo, m_turbidity, sun_eta),
-                sky_radiance_params<SKY_DATASET_SIZE, SkyParamsDataset>(m_sky_params_dataset,  albedo, m_turbidity, sun_eta)
-            };
+            Datasets datasets = compute_dataset(dr::arange<UInt32>(nb_time_samples), albedo);
 
             // ==================== COMPUTE RAYS ======================
             // Only the top half of the image is used
             size_t nb_rays = dr::prod(m_bitmap_resolution) / 2;
-            UInt32 pixel_idx = dr::arange<UInt32>(nb_rays);
 
-            const auto [pixel_v_idx, pixel_u_idx] = dr::idivmod(pixel_idx, m_bitmap_resolution.x());
-            Vector3f ray_dir = sph_to_dir(
-                dr::Pi<Float> * pixel_v_idx / m_bitmap_resolution.y(),
-                dr::TwoPi<Float> * pixel_u_idx / m_bitmap_resolution.x()
-            );
+            UInt32 pixel_idx = dr::arange<UInt32>(nb_rays);
+            Vector3f ray_dir = compute_ray_dir(pixel_idx, m_bitmap_resolution);
 
             // =============== BLEND TWO DIMENSIONS ===========
             // This part computes a window on the 2D grid of (rays, time)
@@ -309,11 +316,11 @@ private:
 
             Color3f result = dr::zeros<Color3f>(nb_rays);
             const UInt32 frame_time_idx = dr::arange<UInt32>(time_width);
+            auto [pixel_idx_wav, time_idx] = dr::meshgrid(pixel_idx, frame_time_idx);
 
             // Slide the window along the time axis
             for (size_t frame_start = 0; frame_start < nb_time_samples; frame_start += time_width) {
-
-                const auto [pixel_idx_wav, time_idx_wav] = dr::meshgrid(pixel_idx, UInt32(frame_start) + frame_time_idx);
+                UInt32 time_idx_wav = time_idx + frame_start;
                 Mask active = time_idx_wav < nb_time_samples;
 
                 Vector3f ray_dir_wav = dr::gather<Vector3f>(ray_dir, pixel_idx_wav, active);
@@ -379,31 +386,18 @@ private:
         for (uint32_t i = 0; i < this_times_per_thread; ++i) {
 
             uint32_t time_idx = times_per_thread * thread_id + i;
-            DateTimeRecord<ScalarFloat> time = emitter->compute_intermediate_time(time_idx);
-
-            const auto [sun_elevation, sun_azimuth] = sun_coordinates(time, emitter->m_location);
-            const ScalarFloat sun_eta = 0.5f * dr::Pi<ScalarFloat> - sun_elevation;
-            const ScalarVector3f sun_dir = sph_to_dir(sun_elevation, sun_azimuth);
-
-            // Skip if the sun is under the horizon
-            if (sun_eta < 0.f) continue;
-
-            FloatStorage sky_params = sky_radiance_params<SKY_DATASET_SIZE, FloatStorage>(emitter->m_sky_params_dataset, payload->albedo, emitter->m_turbidity, sun_eta);
-            FloatStorage sky_radiance = sky_radiance_params<SKY_DATASET_RAD_SIZE, FloatStorage>(emitter->m_sky_rad_dataset, payload->albedo, emitter->m_turbidity, sun_eta);
+            Datasets dataset = emitter->compute_dataset(time_idx, payload->albedo);
+            if (dataset.sun_dir.z() < 0.f) continue;
 
             // Iterate over top half of the image
             for (uint32_t pixel_idx = 0; pixel_idx < bitmap_resolution.x() * bitmap_resolution.y() / 2; ++pixel_idx) {
-                ScalarFloat pixel_u = static_cast<ScalarFloat>(pixel_idx % bitmap_resolution.x()) / static_cast<ScalarFloat>(bitmap_resolution.x());
-                ScalarFloat pixel_v = static_cast<ScalarFloat>(pixel_idx / bitmap_resolution.x()) / static_cast<ScalarFloat>(bitmap_resolution.y());
+                ScalarVector3f ray_dir = emitter->compute_ray_dir(pixel_idx, bitmap_resolution);
+                if (ray_dir.z() < 0.f) continue;
 
-                ScalarVector3f ray_dir = sph_to_dir(
-                    dr::Pi<ScalarFloat> * pixel_v,
-                    dr::TwoPi<ScalarFloat> * pixel_u
-                );
-                ScalarFloat gamma = dr::unit_angle(ray_dir, sun_dir);
+                ScalarFloat gamma = dr::unit_angle(ray_dir, dataset.sun_dir);
 
                 ScalarColor3f res = 0.;
-                res += eval_sky<ScalarColor3f>({0, 1, 2}, ray_dir.z(), gamma, sky_params, sky_radiance);
+                res += eval_sky<ScalarColor3f>({0, 1, 2}, ray_dir.z(), gamma, dataset.sky_params, dataset.sky_rad);
                 res += SPEC_TO_RGB_SUN_CONV * get_area_ratio(emitter->m_sun_half_aperture) *
                         eval_sun<ScalarColor3f>({0, 1, 2}, ray_dir.z(), gamma, emitter->m_sun_rad_params, emitter->m_sun_half_aperture, gamma < emitter->m_sun_half_aperture);
                 res *= MI_CIE_Y_NORMALIZATION / nb_time_samples;
