@@ -234,7 +234,7 @@ public:
 
 
         // ================== ENVMAP INSTANTIATION ==================
-        m_bitmap_resolution = {512, 256};
+        m_bitmap_resolution = {512, 255};
         m_bitmap = compute_avg_bitmap();
 
         // Permute axis for envmap's convention
@@ -454,7 +454,7 @@ private:
 
             // ==================== COMPUTE RAYS ======================
             // Only the top half of the image is used
-            size_t nb_rays = dr::prod(m_bitmap_resolution) / 2;
+            size_t nb_rays = m_bitmap_resolution.x() * (m_bitmap_resolution.y() / 2 + 1);
 
             UInt32 pixel_idx = dr::arange<UInt32>(nb_rays);
             Vector3f ray_dir = compute_ray_dir(pixel_idx, m_bitmap_resolution);
@@ -465,6 +465,7 @@ private:
             // a maximum "area" of 2^32 in order to not have a wavefront size to large.
 
             size_t time_width = UINT32_MAX / nb_rays;
+                   time_width = dr::minimum(time_width, nb_time_samples);
 
             // Prevent perfect square edge case
             if (time_width * nb_rays >= UINT32_MAX) {
@@ -535,6 +536,7 @@ private:
 
         ScalarFloat* bitmap_data = static_cast<ScalarFloat*>(result->data());
 
+        const size_t nb_rays = bitmap_resolution.x() * (bitmap_resolution.y() / 2 + 1);
         const uint32_t nb_time_samples = emitter->m_time_resolution * (emitter->m_time_samples_per_day ? emitter->m_nb_days : 1);
         uint32_t times_per_thread = nb_time_samples / payload->nb_threads + 1;
 
@@ -553,7 +555,7 @@ private:
             if (dataset.sun_dir.z() < 0.f) continue;
 
             // Iterate over top half of the image
-            for (uint32_t pixel_idx = 0; pixel_idx < bitmap_resolution.x() * bitmap_resolution.y() / 2; ++pixel_idx) {
+            for (uint32_t pixel_idx = 0; pixel_idx < nb_rays; ++pixel_idx) {
                 ScalarVector3f ray_dir = emitter->compute_ray_dir(pixel_idx, bitmap_resolution);
                 if (ray_dir.z() < 0.f) continue;
 
