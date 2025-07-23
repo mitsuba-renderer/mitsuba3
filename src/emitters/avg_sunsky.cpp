@@ -98,6 +98,10 @@ Average sun and sky emitter (:monosp:`avg_sunsky`)
      contrary, the `time_resolution` is uniformly spread out over the year.
      This could be useful to turn off for averages over large amounts of time. (Default: true)
 
+* - bitmap_heigh
+  - |int|
+  - Indicates the size of the bitmap's height. The width is then given to be 2 * bitmap_resolution (Default: 255)
+
  * - sun_scale
    - |float|
    - Scale factor for the sun radiance (Default: 1).
@@ -234,7 +238,11 @@ public:
 
 
         // ================== ENVMAP INSTANTIATION ==================
-        m_bitmap_resolution = {512, 255};
+        ScalarInt32 bitmap_height = props.get<ScalarInt32>("bitmap_height", 255);
+        if (bitmap_height <= 3)
+            Log(Error, "Bitmap height must be greater than 3, given %d", bitmap_height);
+
+        m_bitmap_resolution = {2 * bitmap_height, bitmap_height};
         m_bitmap = compute_avg_bitmap();
 
         // Permute axis for envmap's convention
@@ -419,7 +427,7 @@ private:
         const auto [pixel_u_idx, pixel_v_idx] = dr::idivmod(pixel_idx, resolution.x());
 
         Point2f coord = Point2f(pixel_v_idx, pixel_u_idx) + 0.5f;
-                coord /= resolution - 1.f;
+                coord /= resolution; // No `-1` since we do not want the endpoints to overlap
                 coord *= Point2f(dr::TwoPi<Float>, dr::Pi<Float>);
 
         return sph_to_dir(coord.y(), coord.x());
