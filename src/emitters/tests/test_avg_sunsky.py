@@ -4,7 +4,7 @@ import mitsuba as mi
 
 def generate_rays(render_res):
     phis, thetas = dr.meshgrid(
-        dr.linspace(mi.Float, 0.0, dr.two_pi, render_res[0]),
+        dr.linspace(mi.Float, 0.0, dr.two_pi, render_res[0], endpoint=False),
         dr.linspace(mi.Float, 0, dr.pi, render_res[1], endpoint=False)
     )
 
@@ -33,7 +33,7 @@ def test01_chi2(variants_vec_backends_once):
         sample_func= sample_func,
         sample_dim=2,
         sample_count=200_000,
-        res=55,
+        res=64,
         ires=32
     )
 
