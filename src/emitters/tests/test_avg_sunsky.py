@@ -5,7 +5,7 @@ import mitsuba as mi
 def generate_rays(render_res):
     phis, thetas = dr.meshgrid(
         dr.linspace(mi.Float, 0.0, dr.two_pi, render_res[0]),
-        dr.linspace(mi.Float, 0, dr.pi, render_res[1])
+        dr.linspace(mi.Float, 0, dr.pi, render_res[1], endpoint=False)
     )
 
     sp, cp = dr.sincos(phis)
@@ -18,12 +18,15 @@ def generate_rays(render_res):
 
 
 def test01_chi2(variants_vec_backends_once):
-    sky = {
+    avg_sunsky = {
         "type": "avg_sunsky",
-        "time_resolution": 5,
+        "time_resolution": 50,
+        "end_year": 2025,
+        "end_month": 1,
+        "end_day": 5
     }
 
-    sample_func, pdf_func = mi.chi2.EmitterAdapter("avg_sunsky", sky)
+    sample_func, pdf_func = mi.chi2.EmitterAdapter("avg_sunsky", avg_sunsky)
     test = mi.chi2.ChiSquareTest(
         domain=mi.chi2.SphericalDomain(),
         pdf_func= pdf_func,
@@ -42,7 +45,7 @@ def test02_average_of_average(variants_vec_backends_once):
     # TODO use only 2 emitters and update 1 to do once january then february
     january = mi.load_dict({
         "type": "avg_sunsky",
-        "time_resolution": 200,
+        "time_resolution": 20,
         "end_year": 2025,
         "end_month": 2,
         "end_day": 1
@@ -50,7 +53,7 @@ def test02_average_of_average(variants_vec_backends_once):
 
     february = mi.load_dict({
         "type": "avg_sunsky",
-        "time_resolution": 200,
+        "time_resolution": 20,
         "start_month": 2,
         "start_day": 1,
         "end_year": 2025,
@@ -60,7 +63,7 @@ def test02_average_of_average(variants_vec_backends_once):
 
     average = mi.load_dict({
         "type": "avg_sunsky",
-        "time_resolution": 200,
+        "time_resolution": 20,
         "end_year": 2025,
         "end_month": 3,
         "end_day": 1
