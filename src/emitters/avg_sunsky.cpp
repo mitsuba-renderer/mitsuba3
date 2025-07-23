@@ -388,6 +388,7 @@ private:
     Datasets compute_dataset(const UInt32& time_idx, const FloatStorage& albedo) const {
         DateTimeRecord<Float> time = dr::zeros<DateTimeRecord<Float>>();
         time.year = m_start_date.year;
+        time.month = m_start_date.month;
 
         if (!m_time_samples_per_day) {
             Float fractional_day = m_nb_days * (time_idx / Float(m_time_resolution - 1));
@@ -432,7 +433,7 @@ private:
     };
 
     ref<Bitmap> compute_avg_bitmap() const {
-        ref<Bitmap> res_bitmap = new Bitmap(Bitmap::PixelFormat::RGB, Struct::Type::Float32, m_bitmap_resolution, 3);
+        ref<Bitmap> res_bitmap = new Bitmap(Bitmap::PixelFormat::RGB, struct_type_v<ScalarFloat>, m_bitmap_resolution, 3);
         memset(res_bitmap->data(), 0, res_bitmap->buffer_size());
 
         FloatStorage albedo = extract_albedo(m_albedo_tex);
@@ -529,7 +530,7 @@ private:
         const AvgSunskyEmitter* emitter = static_cast<const AvgSunskyEmitter*>(payload->emitter);
 
         ScalarVector2u bitmap_resolution = emitter->m_bitmap_resolution;
-        ref<Bitmap> result = new Bitmap(Bitmap::PixelFormat::RGB, Struct::Type::Float32, bitmap_resolution, 3);
+        ref<Bitmap> result = new Bitmap(Bitmap::PixelFormat::RGB, struct_type_v<ScalarFloat>, bitmap_resolution, 3);
         memset(result->data(), 0, result->buffer_size());
 
         ScalarFloat* bitmap_data = static_cast<ScalarFloat*>(result->data());
@@ -614,10 +615,8 @@ private:
     // ================================================================================================
 
     /// Number of channels used in the skylight model
-    static constexpr uint32_t CHANNEL_COUNT =
-        is_spectral_v<Spectrum> ?
-        WAVELENGTH_COUNT :
-        (is_monochromatic_v<Spectrum> ? 1 : 3);
+    /// Hard-coded to 3 since there are no spectral envmaps
+    static constexpr uint32_t CHANNEL_COUNT = 3;
 
     // Dataset sizes
     static constexpr uint32_t SKY_DATASET_SIZE =
@@ -626,8 +625,7 @@ private:
     static constexpr uint32_t SKY_DATASET_RAD_SIZE =
         TURBITDITY_LVLS * ALBEDO_LVLS * SKY_CTRL_PTS * CHANNEL_COUNT;
     static constexpr uint32_t SUN_DATASET_SIZE =
-        TURBITDITY_LVLS * CHANNEL_COUNT * SUN_SEGMENTS * SUN_CTRL_PTS *
-        (is_spectral_v<Spectrum> ? 1 : SUN_LD_PARAMS);
+        TURBITDITY_LVLS * CHANNEL_COUNT * SUN_SEGMENTS * SUN_CTRL_PTS * SUN_LD_PARAMS;
 
 
     // ========= Common parameters =========
