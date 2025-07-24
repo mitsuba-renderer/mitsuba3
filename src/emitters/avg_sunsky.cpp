@@ -515,9 +515,6 @@ private:
             const UInt32 frame_time_idx = dr::arange<UInt32>(time_width);
             auto [pixel_idx_wav, time_idx] = dr::meshgrid(pixel_idx, frame_time_idx);
 
-            // Necessary otherwise deadlock when gathering datasets in loop
-            dr::eval(datasets, ray_dir);
-
             // Slide the window along the time axis
             for (size_t frame_start = 0; frame_start < nb_time_samples; frame_start += time_width) {
                 UInt32 time_idx_wav = time_idx + frame_start;
@@ -546,9 +543,6 @@ private:
                 dr::scatter_add(result.g(), rays.g(), pixel_idx_wav, active);
                 dr::scatter_add(result.b(), rays.b(), pixel_idx_wav, active);
 
-                // TODO is it needed?
-                // Launch wavefront
-                // dr::eval(result);
             }
 
             Float res = dr::migrate(dr::ravel(result), AllocType::Host);
