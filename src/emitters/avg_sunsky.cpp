@@ -422,8 +422,9 @@ private:
         time.year = m_start_date.year;
         time.month = m_start_date.month;
 
+        Float time_scale = 1.f / dr::maximum(m_time_resolution - 1.f, 1.f);
         if (!m_time_samples_per_day) {
-            Float fractional_day = m_nb_days * (time_idx / Float(m_time_resolution - 1));
+            Float fractional_day = m_nb_days * time_idx * time_scale;
 
             time.day = dr::floor2int<Int32>(fractional_day);
             time.hour = m_window_start_time + (m_window_end_time - m_window_start_time) * dr::fmod(fractional_day, 1.f);
@@ -431,7 +432,7 @@ private:
             const auto [time_idx_div, time_idx_mod] = dr::idivmod(time_idx, m_time_resolution);
 
             time.day = m_start_date.day + time_idx_div;
-            time.hour = m_window_start_time + (m_window_end_time - m_window_start_time) * time_idx_mod / (m_time_resolution - 1);
+            time.hour = m_window_start_time + (m_window_end_time - m_window_start_time) * time_idx_mod * time_scale;
         }
 
 
