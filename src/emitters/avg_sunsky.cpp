@@ -181,9 +181,9 @@ public:
     using UInt32Storage = DynamicBuffer<UInt32>;
     using ScalarFloatStorage = DynamicBuffer<ScalarFloat>;
 
-    using ScalarLocation = LocationRecord<ScalarFloat>;
+    using Location = LocationRecord<Float>;
+    using DateTime = DateTimeRecord<Float>;
     using ScalarDateTime = DateTimeRecord<ScalarFloat>;
-
 
     using SkyRadDataset    = std::conditional_t<dr::is_jit_v<Float>, Color3f, FloatStorage>;
     using SkyParamsDataset = std::conditional_t<dr::is_jit_v<Float>, dr::Array<Color3f, SKY_PARAMS>, FloatStorage>;
@@ -210,35 +210,40 @@ public:
         if (m_albedo_tex->is_spatially_varying())
             Log(Error, "Expected a non-spatially varying radiance spectra!");
 
-        m_window_start_time = props.get<ScalarFloat>("window_start_time", 7.f);
-        if (m_window_start_time < 0.f || m_window_start_time > 24.f)
-            Log(Error, "Start hour: %f is out of range [0, 24]", m_window_start_time);
+        ScalarFloat window_start_time = props.get<ScalarFloat>("window_start_time", 7.f);
+        if (window_start_time < 0.f || window_start_time > 24.f)
+            Log(Error, "Start hour: %f is out of range [0, 24]", window_start_time);
+        m_window_start_time = window_start_time;
 
-        m_window_end_time = props.get<ScalarFloat>("window_end_time", 19.f);
-        if (m_window_end_time < 0.f || m_window_end_time > 24.f)
-            Log(Error, "Start hour: %f is out of range [0, 24]", m_window_end_time);
+        ScalarFloat window_end_time = props.get<ScalarFloat>("window_end_time", 19.f);
+        if (window_end_time < 0.f || window_end_time > 24.f)
+            Log(Error, "Start hour: %f is out of range [0, 24]", window_end_time);
+        m_window_end_time = window_end_time;
 
-        if (m_window_start_time > m_window_end_time)
+        if (window_start_time > window_end_time)
             Log(Error, "The given start time is greater than the end time");
 
         m_time_resolution = props.get<ScalarUInt32>("time_resolution", 400);
         if (m_time_resolution <= 0)
             Log(Error, "Time resolution must be greater than 0, got %u", m_time_resolution);
 
-        m_location = ScalarLocation{props};
-        m_start_date.year = props.get<ScalarInt32>("start_year", 2025);
-        m_start_date.month = props.get<ScalarInt32>("start_month", 1);
-        m_start_date.day = props.get<ScalarInt32>("start_day", 1);
-
-        m_end_date.year = props.get<ScalarInt32>("end_year", m_start_date.year + 1);
-        m_end_date.month = props.get<ScalarInt32>("end_month", m_start_date.month);
-        m_end_date.day = props.get<ScalarInt32>("end_day", m_start_date.day);
-
-        m_nb_days = ScalarDateTime::get_days_between(m_start_date, m_end_date, m_location);
-
         m_time_samples_per_day = props.get<bool>("time_samples_per_day", true);
 
-        dr::make_opaque(m_start_date, m_end_date, m_location);
+        m_location = Location{props};
+        ScalarDateTime start_date, end_date;
+        start_date.year = props.get<ScalarInt32>("start_year", 2025);
+        start_date.month = props.get<ScalarInt32>("start_month", 1);
+        start_date.day = props.get<ScalarInt32>("start_day", 1);
+
+        end_date.year = props.get<ScalarInt32>("end_year", start_date.year + 1);
+        end_date.month = props.get<ScalarInt32>("end_month", start_date.month);
+        end_date.day = props.get<ScalarInt32>("end_day", start_date.day);
+
+        m_start_date = start_date;
+        m_end_date = end_date;
+
+        dr::make_opaque(m_window_start_time, m_window_end_time,
+                        m_start_date, m_end_date, m_location);
 
         // ====================== LOAD DATASETS =====================
         // Force RGB datasets to load since there are no spectral envmaps
@@ -284,17 +289,17 @@ public:
         cb->put("sky_scale", m_sky_scale, ParamFlags::NonDifferentiable);
         cb->put("sun_scale", m_sun_scale, ParamFlags::NonDifferentiable);
         cb->put("albedo",    m_albedo_tex,    ParamFlags::NonDifferentiable);
-        cb->put("latitude",  m_location.latitude,  ParamFlags::NonDifferentiable);
-        cb->put("longitude", m_location.longitude, ParamFlags::NonDifferentiable);
-        cb->put("timezone",  m_location.timezone,  ParamFlags::NonDifferentiable);
+        cb->put("latitude",  m_location.value().latitude,  ParamFlags::NonDifferentiable);
+        cb->put("longitude", m_location.value().longitude, ParamFlags::NonDifferentiable);
+        cb->put("timezone",  m_location.value().timezone,  ParamFlags::NonDifferentiable);
 
-        cb->put("start_year",  m_start_date.year,  ParamFlags::NonDifferentiable);
-        cb->put("start_month",  m_start_date.month,  ParamFlags::NonDifferentiable);
-        cb->put("start_day",  m_start_date.day,  ParamFlags::NonDifferentiable);
+        cb->put("start_year",  m_start_date.value().year,  ParamFlags::NonDifferentiable);
+        cb->put("start_month",  m_start_date.value().month,  ParamFlags::NonDifferentiable);
+        cb->put("start_day",  m_start_date.value().day,  ParamFlags::NonDifferentiable);
 
-        cb->put("end_year",  m_end_date.year,  ParamFlags::NonDifferentiable);
-        cb->put("end_month",  m_end_date.month,  ParamFlags::NonDifferentiable);
-        cb->put("end_day",  m_end_date.day,  ParamFlags::NonDifferentiable);
+        cb->put("end_year",  m_end_date.value().year,  ParamFlags::NonDifferentiable);
+        cb->put("end_month",  m_end_date.value().month,  ParamFlags::NonDifferentiable);
+        cb->put("end_day",  m_end_date.value().day,  ParamFlags::NonDifferentiable);
 
         cb->put("window_start_time", m_window_start_time,  ParamFlags::NonDifferentiable);
         cb->put("window_end_time", m_window_end_time, ParamFlags::NonDifferentiable);
@@ -317,13 +322,16 @@ public:
         if (m_albedo_tex->is_spatially_varying())
             Log(Error, "Expected a non-spatially varying radiance spectra!");
 
-        m_nb_days = ScalarDateTime::get_days_between(m_start_date, m_end_date, m_location);
-        if (m_window_start_time < 0.f || m_window_start_time > 24.f)
+        if (dr::any(m_window_start_time < 0.f || m_window_start_time > 24.f))
             Log(Error, "Start hour: %f is out of range [0, 24]", m_window_start_time);
-        if (m_window_end_time < 0.f || m_window_end_time > 24.f)
+        if (dr::any(m_window_end_time < 0.f || m_window_end_time > 24.f))
             Log(Error, "Start hour: %f is out of range [0, 24]", m_window_end_time);
-        if (m_window_start_time > m_window_end_time)
+        if (dr::any(m_window_start_time > m_window_end_time))
             Log(Error, "The given start time is greater than the end time");
+
+        m_location = m_location.value();
+        m_start_date = m_start_date.value();
+        m_end_date = m_end_date.value();
 
         EnvMapCallback envmap_cb;
         m_envmap->traverse(&envmap_cb);
@@ -430,9 +438,9 @@ public:
             << "  sun_scale = " << string::indent(m_sun_scale) << std::endl
             << "  albedo = " << string::indent(m_albedo_tex) << std::endl
             << "  sun aperture (°) = " << string::indent(dr::rad_to_deg(2.f * m_sun_half_aperture)) << std::endl
-            << "  location = " << string::indent(m_location.to_string()) << std::endl
-            << "  start date = " << string::indent(m_start_date.to_string()) << std::endl
-            << "  end date = " << string::indent(m_end_date.to_string()) << std::endl
+            << "  location = " << string::indent(m_location.scalar().to_string()) << std::endl
+            << "  start date = " << string::indent(m_start_date.scalar().to_string()) << std::endl
+            << "  end date = " << string::indent(m_end_date.scalar().to_string()) << std::endl
             << "  start time = " << string::indent(m_window_start_time) << std::endl
             << "  end time = " << string::indent(m_window_end_time) << std::endl
             << "]" << std::endl;
@@ -450,26 +458,26 @@ private:
      * @return The ``Datasets`` instance containing the sky parameters, radiance
      * and associated direction
      */
-    Datasets compute_dataset(const UInt32& time_idx, const FloatStorage& albedo) const {
+    Datasets compute_dataset(const UInt32& time_idx, const UInt32& nb_days, const FloatStorage& albedo) const {
         DateTimeRecord<Float> time = dr::zeros<DateTimeRecord<Float>>();
-        time.year = m_start_date.year;
-        time.month = m_start_date.month;
+        time.year = m_start_date.value().year;
+        time.month = m_start_date.value().month;
 
         Float time_scale = 1.f / dr::maximum(m_time_resolution - 1.f, 1.f);
         if (!m_time_samples_per_day) {
-            Float fractional_day = m_nb_days * time_idx * time_scale;
+            Float fractional_day = nb_days * time_idx * time_scale;
 
             time.day = dr::floor2int<Int32>(fractional_day);
             time.hour = m_window_start_time + (m_window_end_time - m_window_start_time) * dr::fmod(fractional_day, 1.f);
         } else {
             const auto [time_idx_div, time_idx_mod] = dr::idivmod(time_idx, m_time_resolution);
 
-            time.day = m_start_date.day + time_idx_div;
+            time.day = m_start_date.value().day + time_idx_div;
             time.hour = m_window_start_time + (m_window_end_time - m_window_start_time) * time_idx_mod * time_scale;
         }
 
 
-        const auto [sun_elevation, sun_azimuth] = sun_coordinates(time, m_location);
+        const auto [sun_elevation, sun_azimuth] = sun_coordinates(time, m_location.value());
         const Float sun_eta = 0.5f * dr::Pi<Float> - sun_elevation;
 
         return Datasets {
@@ -500,16 +508,19 @@ private:
         const AvgSunskyEmitter *emitter;
         const FloatStorage albedo;
         FloatStorage& output;
+        const ScalarUInt32 nb_days;
     };
 
     FloatStorage compute_avg_bitmap() const {
         FloatStorage albedo = extract_albedo(m_albedo_tex);
         FloatStorage output = dr::zeros<FloatStorage>(CHANNEL_COUNT * dr::prod(m_bitmap_resolution));
 
+        ScalarUInt32 nb_days = ScalarDateTime::get_days_between(m_start_date.scalar(), m_end_date.scalar(), m_location.scalar());
+
         if constexpr (!dr::is_jit_v<Float>) {
 
             ThreadPayload payload = {
-                core_count(), this, albedo, output
+                core_count(), this, albedo, output, nb_days
             };
 
             task_submit_and_wait(nullptr, payload.nb_threads, compute_avg_bitmap_thread, &payload);
@@ -517,8 +528,8 @@ private:
         } else {
 
             // ================== COMPUTE DATASETS =====================
-            size_t nb_time_samples = m_time_resolution * (m_time_samples_per_day ? m_nb_days : 1);
-            Datasets datasets = compute_dataset(dr::arange<UInt32>(nb_time_samples), albedo);
+            size_t nb_time_samples = m_time_resolution * (m_time_samples_per_day ? nb_days : 1);
+            Datasets datasets = compute_dataset(dr::arange<UInt32>(nb_time_samples), nb_days, albedo);
 
             // ==================== COMPUTE RAYS ======================
             // Only the top half of the image is used
@@ -550,7 +561,7 @@ private:
             auto [pixel_idx_wav, time_idx] = dr::meshgrid(pixel_idx, frame_time_idx);
 
             // Necessary to avoid reindexing bug/lattency when gathering datasets in loop
-            dr::eval(datasets, ray_dir);
+            //dr::eval(datasets, ray_dir);
 
             // Slide the window along the time axis
             for (size_t frame_start = 0; frame_start < nb_time_samples; frame_start += time_width) {
@@ -596,7 +607,7 @@ private:
         const size_t nb_rays = bitmap_resolution.x() * (bitmap_resolution.y() / 2 + 1);
         FloatStorage bitmap_data = dr::zeros<FloatStorage>(CHANNEL_COUNT * nb_rays);
 
-        const uint32_t nb_time_samples = emitter->m_time_resolution * (emitter->m_time_samples_per_day ? emitter->m_nb_days : 1);
+        const uint32_t nb_time_samples = emitter->m_time_resolution * (emitter->m_time_samples_per_day ? payload->nb_days : 1);
         uint32_t times_per_thread = nb_time_samples / payload->nb_threads + 1;
 
         if (thread_id * times_per_thread >= nb_time_samples) return;
@@ -610,7 +621,7 @@ private:
         for (uint32_t i = 0; i < this_times_per_thread; ++i) {
 
             uint32_t time_idx = times_per_thread * thread_id + i;
-            Datasets dataset = emitter->compute_dataset(time_idx, payload->albedo);
+            Datasets dataset = emitter->compute_dataset(time_idx, payload->nb_days, payload->albedo);
             if (dataset.sun_dir.z() < 0.f) continue;
 
             // Iterate over top half of the image
@@ -738,11 +749,10 @@ private:
     ScalarFloat m_sun_scale;
     ref<Texture> m_albedo_tex;
 
-    ScalarLocation m_location;
-    ScalarDateTime m_start_date, m_end_date;
-    ScalarUInt32 m_nb_days;
-    ScalarFloat m_window_start_time;
-    ScalarFloat m_window_end_time;
+    field<Location, LocationRecord<ScalarFloat>> m_location;
+    field<DateTime, ScalarDateTime> m_start_date, m_end_date;
+    Float m_window_start_time;
+    Float m_window_end_time;
 
     // ========= Sun parameter =========
     ScalarFloat m_sun_half_aperture;

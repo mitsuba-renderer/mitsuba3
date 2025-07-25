@@ -269,6 +269,14 @@ struct LocationRecord {
         latitude(props.get<ScalarFloat>(prefix + "latitude", 35.6894f)),
         timezone(props.get<ScalarFloat>(prefix + "timezone", 9)) {}
 
+    template<typename OtherFloat>
+    LocationRecord& operator=(const LocationRecord<OtherFloat>& other) {
+        longitude = other.longitude;
+        latitude = other.latitude;
+        timezone = other.timezone;
+        return *this;
+    }
+
     std::string to_string() const {
         std::ostringstream oss;
         oss << "LocationRecord[latitude = " << latitude
@@ -328,6 +336,16 @@ struct DateTimeRecord {
         return dr::floor2int<Int32>(elapsed_jd_end - elapsed_jd_start);
     }
 
+    template<typename OtherFloat>
+    DateTimeRecord& operator=(const DateTimeRecord<OtherFloat>& other) {
+        year = other.year;
+        month = other.month;
+        day = other.day;
+        hour = other.hour;
+        minute = other.minute;
+        second = other.second;
+        return *this;
+    }
 
     std::string to_string() const {
         std::ostringstream oss;
