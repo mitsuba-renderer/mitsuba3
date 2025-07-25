@@ -90,7 +90,7 @@ Average sun and sky emitter (:monosp:`avg_sunsky`)
 
 * - time_resolution
   - |int|
-  - Number of time samples used (Default: 500).
+  - Number of time samples used (Default: 400).
   - |exposed|
 
 * - time_samples_per_day
@@ -102,7 +102,7 @@ Average sun and sky emitter (:monosp:`avg_sunsky`)
 
 * - bitmap_heigh
   - |int|
-  - Indicates the size of the bitmap's height. The width is then given to be 2 * bitmap_resolution (Default: 255)
+  - Indicates the size of the bitmap's height. The width is then given to be 2 * bitmap_resolution (Default: 512)
 
  * - sun_scale
    - |float|
@@ -127,22 +127,26 @@ Average sun and sky emitter (:monosp:`avg_sunsky`)
    - |exposed|
 
 
-// TODO sort out plugin explanations and limitations
-This plugin exposes the average appearance of the sky over a given period.
-It computes on instantiation an average of the sky dome that is accumulated
-into a bitmap.
+  This emitter generates a physically-based sun and sky environment map that represents the average radiance over a user-defined period.
+  It is particularly useful for applications like architectural visualization or horticultural studies,
+  where the goal is to simulate the average lighting conditions over a day, a month, a year, or
+  even longer, rather than the lighting at a specific instant.
 
-This plugin implements an environment emitter for the average sun and sky dome.
-It uses the Hosek-Wilkie sun :cite:`HosekSun2013` and sky model
-:cite:`HosekSky2012` to generate strong approximations of the sky-dome without
-the cost of path tracing the atmosphere.
+  The plugin works by internally computing the Hosek-Wilkie sun :cite:`HosekSun2013` and sky model
+  :cite:`HosekSky2012` for a large number of time steps within the specified date and time-of-day window.
+  The individual sky radiances are then averaged and baked into a high-dynamic-range environment map. This resulting map is then used for rendering. The sun is also included,
+  and its contribution is averaged over the time period. Note that as the sun moves, this will result in a sun track rather than a sharp disc if the time period is long enough.
 
-Note that attaching a ``avg_sunsky`` emitter to the scene introduces physical units
-into the rendering process of Mitsuba 3, which is ordinarily a unitless system.
-Specifically, the evaluated spectral radiance has units of power (:math:`W`) per
-unit area (:math:`m^{-2}`) per steradian (:math:`sr^{-1}`) per unit wavelength
-(:math:`nm^{-1}`). As a consequence, your scene should be modeled in meters for
-this plugin to work properly.
+  A few key points to pay attention to when using this emitter is both the time resolution, and the resolution of the generated environment map.
+  A time resolution to low will cause stripes to appear in the sky while a bitmap resolution too small would not accurately capture the sun do to its small aperture angle.
+  The parameters of this emitter are set to give a good lower bound for a continuous sun trajectory.
+
+  Note that attaching a ``avg_sunsky`` emitter to the scene introduces physical units
+  into the rendering process of Mitsuba 3, which is ordinarily a unitless system.
+  Specifically, the evaluated spectral radiance has units of power (:math:`W`) per
+  unit area (:math:`m^{-2}`) per steradian (:math:`sr^{-1}`) per unit wavelength
+  (:math:`nm^{-1}`). As a consequence, your scene should be modeled in meters for
+  this plugin to work properly.
 
 .. tabs::
     .. code-tab:: xml
@@ -159,32 +163,19 @@ this plugin to work properly.
 
 */
 
-
-template <typename TensorXf, typename ToWorld>
-struct EnvMapCB : public TraversalCallback {
-
-    void put_object(std::string_view, Object*, uint32_t) override {
-        Throw("put_object is not implemented for this custom traversal callback");
-    }
-
-    void put_value(std::string_view name, void *val, uint32_t, const std::type_info &) override {
-        if (name == "data") {
-            data = static_cast<TensorXf*>(val);
-        } else if (name == "to_world") {
-            to_world = static_cast<ToWorld*>(val);
-        }
-    }
-
-    ToWorld* to_world = nullptr;
-    TensorXf* data = nullptr;
-};
-
 template <typename Float, typename Spectrum>
 class AvgSunskyEmitter final : public Emitter<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Emitter, m_flags, m_to_world)
     MI_IMPORT_TYPES(Scene, Shape, Texture)
 
+private:
+    // Forward declarations
+    struct Datasets;
+    template <typename TensorXf, typename ToWorld> struct EnvMapCB;
+    using EnvMapCallback = EnvMapCB<TensorXf, field<AffineTransform4f, ScalarAffineTransform4f>>;
+
+public:
     using EnvEmitter = Emitter<Float, Spectrum>;
     using FloatStorage = DynamicBuffer<Float>;
     using UInt32Storage = DynamicBuffer<UInt32>;
@@ -193,7 +184,6 @@ public:
     using ScalarLocation = LocationRecord<ScalarFloat>;
     using ScalarDateTime = DateTimeRecord<ScalarFloat>;
 
-    using EnvMapCallback = EnvMapCB<TensorXf, field<AffineTransform4f, ScalarAffineTransform4f>>;
 
     using SkyRadDataset    = std::conditional_t<dr::is_jit_v<Float>, Color3f, FloatStorage>;
     using SkyParamsDataset = std::conditional_t<dr::is_jit_v<Float>, dr::Array<Color3f, SKY_PARAMS>, FloatStorage>;
@@ -231,7 +221,7 @@ public:
         if (m_window_start_time > m_window_end_time)
             Log(Error, "The given start time is greater than the end time");
 
-        m_time_resolution = props.get<ScalarUInt32>("time_resolution", 500);
+        m_time_resolution = props.get<ScalarUInt32>("time_resolution", 400);
         if (m_time_resolution <= 0)
             Log(Error, "Time resolution must be greater than 0, got %u", m_time_resolution);
 
@@ -269,7 +259,7 @@ public:
         envmap_props.set("to_world", ScalarAffineTransform4f(m_to_world.scalar().matrix * s_permute_axis));
 
 
-        ScalarInt32 bitmap_height = props.get<ScalarInt32>("bitmap_height", 255);
+        ScalarInt32 bitmap_height = props.get<ScalarInt32>("bitmap_height", 512);
         if (bitmap_height <= 3)
             Log(Error, "Bitmap height must be greater than 3, given %d", bitmap_height);
 
@@ -452,26 +442,14 @@ public:
     MI_DECLARE_CLASS(AvgSunskyEmitter)
 
 private:
-
-    struct Datasets {
-        Vector3f sun_dir;
-        SkyRadDataset sky_rad;
-        SkyParamsDataset sky_params;
-
-        std::string to_string() const {
-            std::ostringstream oss;
-            oss << "Datasets[" << std::endl
-                << "  sun_dir = " << string::indent(sun_dir) << std::endl
-                << "  sky_rad = " << string::indent(sky_rad) << std::endl
-                << "  sky_params = " << string::indent(sky_params) << std::endl
-                << "]" << std::endl;
-            return oss.str();
-        }
-
-        DRJIT_STRUCT(Datasets, sun_dir, sky_rad, sky_params)
-    };
-
-
+    /**
+     * Computes the sky datasets associated with a given time
+     *
+     * @param time_idx Time index
+     * @param albedo Buffer containing the extracted albedo values
+     * @return The ``Datasets`` instance containing the sky parameters, radiance
+     * and associated direction
+     */
     Datasets compute_dataset(const UInt32& time_idx, const FloatStorage& albedo) const {
         DateTimeRecord<Float> time = dr::zeros<DateTimeRecord<Float>>();
         time.year = m_start_date.year;
@@ -494,15 +472,19 @@ private:
         const auto [sun_elevation, sun_azimuth] = sun_coordinates(time, m_location);
         const Float sun_eta = 0.5f * dr::Pi<Float> - sun_elevation;
 
-        Datasets dataset = {
+        return Datasets {
             sph_to_dir(sun_elevation, sun_azimuth),
             sky_radiance_params<SKY_DATASET_RAD_SIZE, SkyRadDataset>(m_sky_rad_dataset, albedo, m_turbidity, sun_eta),
             sky_radiance_params<SKY_DATASET_SIZE, SkyParamsDataset>(m_sky_params_dataset,  albedo, m_turbidity, sun_eta)
         };
-
-        return dataset;
     }
 
+    /**
+     * Computes the ray direction associated to a pixel
+     * @param pixel_idx The index of the pixel
+     * @param resolution The resolution of the bitmap associated to the pixel
+     * @return The queried direction
+     */
     Vector3f compute_ray_dir(const UInt32& pixel_idx, const ScalarPoint2u& resolution) const {
         const auto [pixel_u_idx, pixel_v_idx] = dr::idivmod(pixel_idx, resolution.x());
 
@@ -567,7 +549,7 @@ private:
             const UInt32 frame_time_idx = dr::arange<UInt32>(time_width);
             auto [pixel_idx_wav, time_idx] = dr::meshgrid(pixel_idx, frame_time_idx);
 
-            // Necessary otherwise deadlock when gathering datasets in loop
+            // Necessary to avoid reindexing bug/lattency when gathering datasets in loop
             dr::eval(datasets, ray_dir);
 
             // Slide the window along the time axis
@@ -688,6 +670,47 @@ private:
 
         return albedo;
     }
+
+    // ================================================================================================
+    // ======================================= CUSTOM TYPES ===========================================
+    // ================================================================================================
+
+    template <typename TensorXf, typename ToWorld>
+    struct EnvMapCB : public TraversalCallback {
+
+        void put_object(std::string_view, Object*, uint32_t) override {
+            Throw("put_object is not implemented for this custom traversal callback");
+        }
+
+        void put_value(std::string_view name, void *val, uint32_t, const std::type_info &) override {
+            if (name == "data") {
+                data = static_cast<TensorXf*>(val);
+            } else if (name == "to_world") {
+                to_world = static_cast<ToWorld*>(val);
+            }
+        }
+
+        ToWorld* to_world = nullptr;
+        TensorXf* data = nullptr;
+    };
+
+    struct Datasets {
+        Vector3f sun_dir;
+        SkyRadDataset sky_rad;
+        SkyParamsDataset sky_params;
+
+        std::string to_string() const {
+            std::ostringstream oss;
+            oss << "Datasets[" << std::endl
+                << "  sun_dir = " << string::indent(sun_dir) << std::endl
+                << "  sky_rad = " << string::indent(sky_rad) << std::endl
+                << "  sky_params = " << string::indent(sky_params) << std::endl
+                << "]" << std::endl;
+            return oss.str();
+        }
+
+        DRJIT_STRUCT(Datasets, sun_dir, sky_rad, sky_params)
+    };
 
     // ================================================================================================
     // ========================================= ATTRIBUTES ===========================================

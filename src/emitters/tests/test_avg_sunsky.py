@@ -23,6 +23,7 @@ def test01_chi2(variants_vec_backends_once):
     avg_sunsky = {
         "type": "avg_sunsky",
         "time_resolution": 50,
+        "bitmap_height": 101,
         "end_year": 2025,
         "end_month": 1,
         "end_day": 5
