@@ -96,15 +96,15 @@ class BasicPRBIntegrator(RBIntegrator):
             with dr.resume_grad(when=not primal):
                 si = pi.compute_surface_interaction(ray, ray_flags=mi.RayFlags.All)
 
-                # Recompute an attached si.wi to account for motion of the
-                # previous surface interaction
-                if (not primal) & mi.Bool(depth >= 1):
-                    si_prev = pi_prev.compute_surface_interaction(ray_prev, ray_flags=mi.RayFlags.All)
-                    # We should not account for the current interaction's motion
-                    si_detach = dr.detach(si)
-                    wi_global = dr.normalize(si_prev.p - si_detach.p)
-                    si_wi_diff = si_detach.to_local(wi_global)
-                    si.wi = dr.replace_grad(si.wi, si_wi_diff)
+                ## Recompute an attached si.wi to account for motion of the
+                ## previous surface interaction
+                #if (not primal) & mi.Bool(depth >= 1):
+                #    si_prev = pi_prev.compute_surface_interaction(ray_prev, ray_flags=mi.RayFlags.All)
+                #    # We should not account for the current interaction's motion
+                #    si_detach = dr.detach(si)
+                #    wi_global = dr.normalize(si_prev.p - si_detach.p)
+                #    si_wi_diff = si_detach.to_local(wi_global)
+                #    si.wi = dr.replace_grad(si.wi, si_wi_diff)
 
             # ---------------------- Direct emission ----------------------
 

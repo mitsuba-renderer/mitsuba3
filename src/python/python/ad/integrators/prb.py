@@ -152,7 +152,7 @@ class PRBIntegrator(RBIntegrator):
             active_next &= (depth + 1 < self.max_depth) & si.is_valid()
 
             # Is emitter sampling even possible on the current vertex?
-            active_em = active_next & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth)
+            active_em = mi.Bool(False) #active_next & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth)
 
             # If so, randomly sample an emitter without derivative tracking.
             ds, em_weight = scene.sample_emitter_direction(
@@ -206,7 +206,7 @@ class PRBIntegrator(RBIntegrator):
 
             si_prev = dr.detach(si, True)
             bsdf_pdf_prev = bsdf_sample.pdf
-            bsdf_delta_prev = mi.has_flag(bsdf_sample.sampled_type, mi.BSDFFlags.Delta)
+            bsdf_delta_prev = mi.Bool(True) #mi.has_flag(bsdf_sample.sampled_type, mi.BSDFFlags.Delta)
 
             # -------------------- Stopping criterion ---------------------
 

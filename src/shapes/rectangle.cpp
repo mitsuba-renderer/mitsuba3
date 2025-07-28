@@ -436,7 +436,7 @@ public:
         dr::masked(edge_dir, right_edge) =  Point2f(0.f, 1.f);
 
         ss.p = to_world * Point3f(local);
-        ss.d            = dr::normalize(ss.p - viewpoint);
+        ss.d = dr::normalize(ss.p - viewpoint);
         ss.silhouette_d = dr::normalize(to_world *
             Vector3f(edge_dir.x(), edge_dir.y(), 0.f));
 
@@ -455,7 +455,7 @@ public:
 
     std::tuple<DynamicBuffer<UInt32>, DynamicBuffer<Float>>
     precompute_silhouette(const ScalarPoint3f & /*viewpoint*/) const override {
-        DynamicBuffer<UInt32> indices((uint32_t)DiscontinuityFlags::PerimeterType);
+        DynamicBuffer<UInt32> indices((uint32_t) DiscontinuityFlags::PerimeterType);
         DynamicBuffer<Float> weights(1.f);
 
         return {indices, weights};

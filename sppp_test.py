@@ -18,7 +18,7 @@ deg = 60
 scene_dict = {
     'type': 'scene',
     'shape': {
-        'type': 'disk',
+        'type': 'rectangle',
         'to_world': T().translate([0, 0, 0]) @ T().rotate([0, 1, 0], deg),
         'emitter': {
             'type': 'area',
@@ -43,8 +43,8 @@ scene_dict = {
     },
     'sensor': {
         'type': 'perspective',
-        'to_world': T().look_at(origin=[0, 0, 1], target=[0, 0, 0], up=[0, 1, 0]),
-        'fov': 120,
+        'to_world': T().look_at(origin=[0, 0, 3], target=[0, 0, 0], up=[0, 1, 0]),
+        'fov': 90,
         'near_clip': 0.01,
         # 'type': 'orthographic',
         'film': {
