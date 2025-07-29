@@ -22,7 +22,7 @@ def generate_rays(render_res):
 def test01_chi2(variants_vec_backends_once):
     avg_sunsky = {
         "type": "avg_sunsky",
-        "time_resolution": 50,
+        "time_samples_per_day": 50,
         "bitmap_height": 101,
         "end_year": 2025,
         "end_month": 1,
@@ -47,7 +47,7 @@ def test02_average_of_average(variants_vec_backends_once):
 
     monthly_average = mi.load_dict({
         "type": "avg_sunsky",
-        "time_resolution": 20,
+        "time_samples_per_day": 20,
         "end_year": 2025,
         "end_month": 2,
         "end_day": 1
@@ -55,7 +55,7 @@ def test02_average_of_average(variants_vec_backends_once):
 
     bimonthly_average = mi.load_dict({
         "type": "avg_sunsky",
-        "time_resolution": 20,
+        "time_samples_per_day": 20,
         "end_year": 2025,
         "end_month": 3,
         "end_day": 1
@@ -86,7 +86,7 @@ def test03_average_of_an_instant(variants_vec_backends_once, hour):
 
     point_average = mi.load_dict({
         "type": "avg_sunsky",
-        "time_resolution": 1,
+        "time_samples_per_day": 1,
         "bitmap_height": 255,
         "end_year": 2025,
         "end_day": 2,

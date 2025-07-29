@@ -88,17 +88,10 @@ Average sun and sky emitter (:monosp:`avg_sunsky`)
   - Day of the end of the average (Default: start_day).
   - |exposed|
 
-* - time_resolution
-  - |int|
-  - Number of time samples used (Default: 400).
-  - |exposed|
-
 * - time_samples_per_day
-  - |bool|
-  - Indicates if the `time_resolution` applies per day, in which case
-     the total number of time samples is `time_resolution * nb_days`. In the
-     contrary, the `time_resolution` is uniformly spread out over the year.
-     This could be useful to turn off for averages over large amounts of time. (Default: true)
+  - |int|
+  - Number of time samples per day (Default: 400).
+  - |exposed|
 
 * - bitmap_heigh
   - |int|
@@ -223,11 +216,9 @@ public:
         if (window_start_time > window_end_time)
             Log(Error, "The given start time is greater than the end time");
 
-        m_time_resolution = props.get<ScalarUInt32>("time_resolution", 400);
+        m_time_resolution = props.get<ScalarUInt32>("time_samples_per_day", 400);
         if (m_time_resolution <= 0)
             Log(Error, "Time resolution must be greater than 0, got %u", m_time_resolution);
-
-        m_time_samples_per_day = props.get<bool>("time_samples_per_day", true);
 
         m_location = Location{props};
         ScalarDateTime start_date, end_date;
@@ -458,24 +449,17 @@ private:
      * @return The ``Datasets`` instance containing the sky parameters, radiance
      * and associated direction
      */
-    Datasets compute_dataset(const UInt32& time_idx, const UInt32& nb_days, const FloatStorage& albedo) const {
+    Datasets compute_dataset(const UInt32& time_idx, const FloatStorage& albedo) const {
         DateTimeRecord<Float> time = dr::zeros<DateTimeRecord<Float>>();
         time.year = m_start_date.value().year;
         time.month = m_start_date.value().month;
 
+        const auto [time_idx_div, time_idx_mod] = dr::idivmod(time_idx, m_time_resolution);
+
+        time.day = m_start_date.value().day + time_idx_div;
+
         Float time_scale = 1.f / dr::maximum(m_time_resolution - 1.f, 1.f);
-        if (!m_time_samples_per_day) {
-            Float fractional_day = nb_days * time_idx * time_scale;
-
-            time.day = dr::floor2int<Int32>(fractional_day);
-            time.hour = m_window_start_time + (m_window_end_time - m_window_start_time) * dr::fmod(fractional_day, 1.f);
-        } else {
-            const auto [time_idx_div, time_idx_mod] = dr::idivmod(time_idx, m_time_resolution);
-
-            time.day = m_start_date.value().day + time_idx_div;
-            time.hour = m_window_start_time + (m_window_end_time - m_window_start_time) * time_idx_mod * time_scale;
-        }
-
+        time.hour = m_window_start_time + (m_window_end_time - m_window_start_time) * time_idx_mod * time_scale;
 
         const auto [sun_elevation, sun_azimuth] = sun_coordinates(time, m_location.value());
         const Float sun_eta = 0.5f * dr::Pi<Float> - sun_elevation;
@@ -516,6 +500,7 @@ private:
         FloatStorage output = dr::zeros<FloatStorage>(CHANNEL_COUNT * dr::prod(m_bitmap_resolution));
 
         ScalarUInt32 nb_days = ScalarDateTime::get_days_between(m_start_date.scalar(), m_end_date.scalar(), m_location.scalar());
+        size_t nb_time_samples = m_time_resolution * nb_days;
 
         if constexpr (!dr::is_jit_v<Float>) {
 
@@ -528,8 +513,7 @@ private:
         } else {
 
             // ================== COMPUTE DATASETS =====================
-            size_t nb_time_samples = m_time_resolution * (m_time_samples_per_day ? nb_days : 1);
-            Datasets datasets = compute_dataset(dr::arange<UInt32>(nb_time_samples), nb_days, albedo);
+            Datasets datasets = compute_dataset(dr::arange<UInt32>(nb_time_samples), albedo);
 
             // ==================== COMPUTE RAYS ======================
             // Only the top half of the image is used
@@ -560,9 +544,6 @@ private:
             const UInt32 frame_time_idx = dr::arange<UInt32>(time_width);
             auto [pixel_idx_wav, time_idx] = dr::meshgrid(pixel_idx, frame_time_idx);
 
-            // Necessary to avoid reindexing bug/lattency when gathering datasets in loop
-            //dr::eval(datasets, ray_dir);
-
             // Slide the window along the time axis
             for (size_t frame_start = 0; frame_start < nb_time_samples; frame_start += time_width) {
                 UInt32 time_idx_wav = time_idx + frame_start;
@@ -584,8 +565,6 @@ private:
                 rays += m_sun_scale * SPEC_TO_RGB_SUN_CONV * get_area_ratio(m_sun_half_aperture) *
                         eval_sun<Color3f>({0, 1, 2}, cos_theta, gamma, m_sun_rad_params, m_sun_half_aperture, active & (gamma < m_sun_half_aperture));
 
-                rays *= MI_CIE_Y_NORMALIZATION / nb_time_samples;
-
                 // Accumulate results
                 dr::scatter_add(output, rays.r(), CHANNEL_COUNT * pixel_idx_wav + 0, active);
                 dr::scatter_add(output, rays.g(), CHANNEL_COUNT * pixel_idx_wav + 1, active);
@@ -594,6 +573,8 @@ private:
             }
 
         }
+
+        output *= MI_CIE_Y_NORMALIZATION / (ScalarFloat)nb_time_samples;
 
         return output;
     }
@@ -607,7 +588,7 @@ private:
         const size_t nb_rays = bitmap_resolution.x() * (bitmap_resolution.y() / 2 + 1);
         FloatStorage bitmap_data = dr::zeros<FloatStorage>(CHANNEL_COUNT * nb_rays);
 
-        const uint32_t nb_time_samples = emitter->m_time_resolution * (emitter->m_time_samples_per_day ? payload->nb_days : 1);
+        const uint32_t nb_time_samples = emitter->m_time_resolution * payload->nb_days;
         uint32_t times_per_thread = nb_time_samples / payload->nb_threads + 1;
 
         if (thread_id * times_per_thread >= nb_time_samples) return;
@@ -621,7 +602,7 @@ private:
         for (uint32_t i = 0; i < this_times_per_thread; ++i) {
 
             uint32_t time_idx = times_per_thread * thread_id + i;
-            Datasets dataset = emitter->compute_dataset(time_idx, payload->nb_days, payload->albedo);
+            Datasets dataset = emitter->compute_dataset(time_idx, payload->albedo);
             if (dataset.sun_dir.z() < 0.f) continue;
 
             // Iterate over top half of the image
@@ -635,7 +616,6 @@ private:
                 res += eval_sky<ScalarColor3f>({0, 1, 2}, ray_dir.z(), gamma, dataset.sky_params, dataset.sky_rad);
                 res += SPEC_TO_RGB_SUN_CONV * get_area_ratio(emitter->m_sun_half_aperture) *
                         eval_sun<ScalarColor3f>({0, 1, 2}, ray_dir.z(), gamma, emitter->m_sun_rad_params, emitter->m_sun_half_aperture, gamma < emitter->m_sun_half_aperture);
-                res *= MI_CIE_Y_NORMALIZATION / nb_time_samples;
 
                 dr::scatter_add(bitmap_data, res.r(), CHANNEL_COUNT * pixel_idx + 0);
                 dr::scatter_add(bitmap_data, res.g(), CHANNEL_COUNT * pixel_idx + 1);
@@ -742,7 +722,6 @@ private:
 
 
     // ========= Common parameters =========
-    bool m_time_samples_per_day;
     ScalarUInt32 m_time_resolution;
     Float m_turbidity;
     ScalarFloat m_sky_scale;
