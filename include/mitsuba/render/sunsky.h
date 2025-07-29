@@ -199,6 +199,7 @@ template<uint32_t dataset_size, typename Result,
 Result sky_radiance_params(const DynamicBuffer<Float>& dataset,
     const DynamicBuffer<Float>& albedo, const Float& turbidity, const Float& eta) {
 
+    using Mask = dr::mask_t<Result>;
     using UInt32 = dr::uint32_array_t<Float>;
     using UInt32Storage = DynamicBuffer<UInt32>;
     using UInt32Result = dr::uint32_array_t<Result>;
@@ -219,31 +220,40 @@ Result sky_radiance_params(const DynamicBuffer<Float>& dataset,
 
     // Compute indices
     UInt32Result idx;
+    Mask mask = 0.f <= eta && eta <= 0.5f * dr::Pi<Float>;
     if constexpr (dr::depth_v<Result> == 3) {
-        const auto [idx_div, idx_mod] = dr::idivmod(dr::arange<UInt32Storage>(nb_params * albedo.size()), albedo.size());
+        constexpr size_t nb_channels = dr::size_v<typename Result::Value>;
+
+        const auto [idx_div, idx_mod] = dr::idivmod(dr::arange<UInt32Storage>(nb_params * nb_channels), nb_channels);
         idx = dr::unravel<UInt32Result, UInt32Storage>(nb_params * idx_mod + idx_div);
+        mask &= idx < nb_params * albedo.size();
+
     } else if constexpr (dr::depth_v<Result> == 2) {
-        idx = dr::unravel<UInt32Result, UInt32Storage>(dr::arange<UInt32Storage>(nb_params * albedo.size()));
+        constexpr size_t nb_channels = Result::Size;
+
+        idx = dr::unravel<UInt32Result, UInt32Storage>(dr::arange<UInt32Storage>(nb_params * nb_channels));
+        mask &= idx < nb_params * albedo.size();
+
     } else {
         idx = dr::arange<UInt32Result>(nb_params * albedo.size());
     }
 
     // Interpolate on elevation
     Result t_low_a_low   = bezier_interpolate<Result>(dataset, result_size,
-        idx + t_low  * t_block_size + 0 * a_block_size, x, t_low < TURBITDITY_LVLS);
+            idx + t_low  * t_block_size + 0 * a_block_size, x, mask & (t_low < TURBITDITY_LVLS));
     Result t_high_a_low  = bezier_interpolate<Result>(dataset, result_size,
-               idx + t_high * t_block_size + 0 * a_block_size, x, t_high < TURBITDITY_LVLS);
+            idx + t_high * t_block_size + 0 * a_block_size, x, mask & (t_high < TURBITDITY_LVLS));
     Result t_low_a_high  = bezier_interpolate<Result>(dataset, result_size,
-               idx + t_low  * t_block_size + 1 * a_block_size, x, t_low < TURBITDITY_LVLS);
+            idx + t_low  * t_block_size + 1 * a_block_size, x, mask & (t_low < TURBITDITY_LVLS));
     Result t_high_a_high = bezier_interpolate<Result>(dataset, result_size,
-               idx + t_high * t_block_size + 1 * a_block_size, x, t_high < TURBITDITY_LVLS);
+            idx + t_high * t_block_size + 1 * a_block_size, x, mask & (t_high < TURBITDITY_LVLS));
 
     // Interpolate on turbidity
     Result res_a_low  = dr::lerp(t_low_a_low, t_high_a_low, t_rem),
            res_a_high = dr::lerp(t_low_a_high, t_high_a_high, t_rem);
 
     // Interpolate on albedo
-    return dr::lerp(res_a_low, res_a_high, dr::gather<Result>(albedo, idx / nb_params)) & (0.f <= eta && eta <= 0.5f * dr::Pi<Float>);
+    return dr::lerp(res_a_low, res_a_high, dr::gather<Result>(albedo, idx / nb_params, mask));
 }
 
 
@@ -590,7 +600,7 @@ Spec_ eval_sky(const Index &channel_idx, const Float &cos_theta, const Float &ga
 *       Sun radiance
 */
 
-template <typename Spec_, typename Float,
+template <typename Spec_, bool IsSpectral = is_spectral_v<Spec_>, typename Float = dr::value_t<Spec_>,
           typename Dataset = DynamicBuffer<Float>, typename Spec = unpolarized_spectrum_t<Spec_>>
 Spec_ eval_sun(const dr::uint32_array_t<Spec> &channel_idx,
                const Float &cos_theta, const Float &gamma,
@@ -612,7 +622,7 @@ Spec_ eval_sun(const dr::uint32_array_t<Spec> &channel_idx,
     Float x = elevation - break_x;
 
     Spec solar_radiance = 0.f;
-    if constexpr (is_spectral_v<Spec>) {
+    if constexpr (IsSpectral) {
         DRJIT_MARK_USED(gamma);
         // Compute sun radiance
         SpecUInt32 global_idx = pos * WAVELENGTH_COUNT * SUN_CTRL_PTS +

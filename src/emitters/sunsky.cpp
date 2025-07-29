@@ -156,8 +156,6 @@ public:
         unpolarized_spectrum_t<mitsuba::Spectrum<Float, WAVELENGTH_COUNT>>,
         unpolarized_spectrum_t<Spectrum>>;
 
-    // TODO possibly make a macro to call the eval implementations
-
     SunskyEmitter(const Properties &props) : Base(props) {
         if constexpr (!(is_rgb_v<Spectrum> || is_spectral_v<Spectrum>))
             Throw("Unsupported spectrum type, can only render in Spectral or RGB modes!");
@@ -393,9 +391,9 @@ public:
                 lerp_factor);
 
             // Linearly interpolate the sun's irradiance across the spectrum
-            Spectrum sun_rad_low = eval_sun<Spectrum, Float, FloatStorage>(
+            Spectrum sun_rad_low = eval_sun<Spectrum>(
                          query_idx_low, cos_theta, gamma, m_sun_radiance, m_sun_half_aperture, hit_sun & valid_idx);
-            Spectrum sun_rad_high = eval_sun<Spectrum, Float, FloatStorage>(
+            Spectrum sun_rad_high = eval_sun<Spectrum>(
                          query_idx_high, cos_theta, gamma, m_sun_radiance, m_sun_half_aperture, hit_sun & valid_idx);
             Spectrum sun_rad = dr::lerp(sun_rad_low, sun_rad_high, lerp_factor);
 

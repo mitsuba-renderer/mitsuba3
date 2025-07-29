@@ -178,8 +178,11 @@ public:
     using DateTime = DateTimeRecord<Float>;
     using ScalarDateTime = DateTimeRecord<ScalarFloat>;
 
-    using SkyRadDataset    = std::conditional_t<dr::is_jit_v<Float>, Color3f, FloatStorage>;
-    using SkyParamsDataset = std::conditional_t<dr::is_jit_v<Float>, dr::Array<Color3f, SKY_PARAMS>, FloatStorage>;
+    // Spectrum struct is used here to avoid compilation errors that would occur with:
+    // unpolarized_spectrum_t<Color<Float, 4>>
+    using Color4f = mitsuba::Spectrum<Float, 4>;
+    using SkyRadDataset    = std::conditional_t<dr::is_jit_v<Float>, Color4f, FloatStorage>;
+    using SkyParamsDataset = std::conditional_t<dr::is_jit_v<Float>, dr::Array<Color4f, SKY_PARAMS>, FloatStorage>;
 
     AvgSunskyEmitter(const Properties &props) : Base(props) {
         m_sun_scale = props.get<ScalarFloat>("sun_scale", 1.f);
@@ -248,6 +251,12 @@ public:
             path_to_dataset<IS_RGB>(Dataset::SunRadiance));
 
         m_sun_rad_params = sun_params<SUN_DATASET_SIZE>(m_sun_rad_dataset, m_turbidity);
+
+
+        using Temp = dr::Array<Color4f, SKY_PARAMS>;
+        //static_assert(dr::depth_v<Temp> == 3);
+        if constexpr (dr::is_jit_v<Float>)
+            Temp res = sky_radiance_params<SKY_DATASET_SIZE, Temp>(m_sky_params_dataset, extract_albedo(m_albedo_tex), m_turbidity, Float(0.3f));
 
 
         // ================== ENVMAP INSTANTIATION ==================
@@ -512,6 +521,8 @@ private:
 
         } else {
 
+            using Color4fUInt = dr::uint32_array_t<Color4f>;
+
             // ================== COMPUTE DATASETS =====================
             Datasets datasets = compute_dataset(dr::arange<UInt32>(nb_time_samples), albedo);
 
@@ -558,17 +569,19 @@ private:
                 const Float& cos_theta = ray_dir_wav.z();
 
                 // Compute sky appearance over the hemisphere
-                Color3f rays = m_sky_scale * eval_sky<Color3f, Float, SkyParamsDataset, SkyRadDataset, UInt32>(
+                Color4f rays = m_sky_scale * eval_sky<Color4f, Float, SkyParamsDataset, SkyRadDataset, Color4fUInt>(
                                                         nb_rays * time_idx_wav, cos_theta, gamma,
                                                         datasets_wav.sky_params, datasets_wav.sky_rad, active);
 
+                Color4fUInt sun_idx = Color4fUInt{0, 1, 2, 3};
+                auto sun_idx_mask = active & (sun_idx < CHANNEL_COUNT) & (gamma < m_sun_half_aperture);
                 rays += m_sun_scale * SPEC_TO_RGB_SUN_CONV * get_area_ratio(m_sun_half_aperture) *
-                        eval_sun<Color3f>({0, 1, 2}, cos_theta, gamma, m_sun_rad_params, m_sun_half_aperture, active & (gamma < m_sun_half_aperture));
+                        eval_sun<Color4f, false>(sun_idx, cos_theta, gamma, m_sun_rad_params, m_sun_half_aperture, sun_idx_mask);
 
                 // Accumulate results
-                dr::scatter_add(output, rays.r(), CHANNEL_COUNT * pixel_idx_wav + 0, active);
-                dr::scatter_add(output, rays.g(), CHANNEL_COUNT * pixel_idx_wav + 1, active);
-                dr::scatter_add(output, rays.b(), CHANNEL_COUNT * pixel_idx_wav + 2, active);
+                dr::scatter_add(output, rays[0] /* .r() */, CHANNEL_COUNT * pixel_idx_wav + 0, active);
+                dr::scatter_add(output, rays[1] /* .g() */, CHANNEL_COUNT * pixel_idx_wav + 1, active);
+                dr::scatter_add(output, rays[2] /* .b() */, CHANNEL_COUNT * pixel_idx_wav + 2, active);
 
             }
 
