@@ -549,11 +549,10 @@ DynamicBuffer<Float> sun_params(const DynamicBuffer<Float>& sun_radiance_dataset
  * \return
  *      Sky radiance
  */
-template <typename Spec_, typename Float,
+template <typename Spec, typename Float,
           typename Dataset1 = DynamicBuffer<Float>, typename Dataset2 = DynamicBuffer<Float>,
-          typename Index = dr::uint32_array_t<unpolarized_spectrum_t<Spec_>>,
-          typename Spec = unpolarized_spectrum_t<Spec_>>
-Spec_ eval_sky(const Index &channel_idx, const Float &cos_theta, const Float &gamma,
+          typename Index = dr::uint32_array_t<Spec>>
+Spec eval_sky(const Index &channel_idx, const Float &cos_theta, const Float &gamma,
                const Dataset1 &sky_params, const Dataset2 &sky_radiance, const dr::mask_t<Index> &active = true) {
 
     // Gather coefficients for the skylight equation
@@ -600,9 +599,9 @@ Spec_ eval_sky(const Index &channel_idx, const Float &cos_theta, const Float &ga
 *       Sun radiance
 */
 
-template <typename Spec_, bool IsSpectral = is_spectral_v<Spec_>, typename Float = dr::value_t<Spec_>,
-          typename Dataset = DynamicBuffer<Float>, typename Spec = unpolarized_spectrum_t<Spec_>>
-Spec_ eval_sun(const dr::uint32_array_t<Spec> &channel_idx,
+template <typename Spec, bool isRGB = is_spectral_v<Spec>,
+          typename Float = dr::value_t<Spec>, typename Dataset = DynamicBuffer<Float>>
+Spec eval_sun(const dr::uint32_array_t<Spec> &channel_idx,
                const Float &cos_theta, const Float &gamma,
                const Dataset &sun_radiance, const dr::scalar_t<Float> &sun_half_aperture,
                const dr::mask_t<Spec> &active = true) {
@@ -622,7 +621,7 @@ Spec_ eval_sun(const dr::uint32_array_t<Spec> &channel_idx,
     Float x = elevation - break_x;
 
     Spec solar_radiance = 0.f;
-    if constexpr (IsSpectral) {
+    if constexpr (isRGB) {
         DRJIT_MARK_USED(gamma);
         // Compute sun radiance
         SpecUInt32 global_idx = pos * WAVELENGTH_COUNT * SUN_CTRL_PTS +
@@ -679,8 +678,8 @@ Spec_ eval_sun(const dr::uint32_array_t<Spec> &channel_idx,
  *      The spectral values of limb darkening to apply to the sun's
  *      radiance by multiplication
  */
-template <typename Spec_, typename Float, typename Dataset, typename Spec = unpolarized_spectrum_t<Spec_>>
-Spec_ compute_sun_ld(const dr::uint32_array_t<Spec> &channel_idx_low,
+template <typename Spec, typename Float, typename Dataset>
+Spec compute_sun_ld(const dr::uint32_array_t<Spec> &channel_idx_low,
                      const dr::uint32_array_t<Spec> &channel_idx_high,
                      const wavelength_t<Spec> &lerp_f, const Float &gamma,
                      const Dataset &sun_ld_data, const Float &sun_half_apperture,

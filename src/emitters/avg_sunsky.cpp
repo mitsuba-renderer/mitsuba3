@@ -178,9 +178,8 @@ public:
     using DateTime = DateTimeRecord<Float>;
     using ScalarDateTime = DateTimeRecord<ScalarFloat>;
 
-    // Spectrum struct is used here to avoid compilation errors that would occur with:
-    // unpolarized_spectrum_t<Color<Float, 4>>
-    using Color4f = mitsuba::Spectrum<Float, 4>;
+
+    using Color4f = mitsuba::Color<Float, 4>;
     using SkyRadDataset    = std::conditional_t<dr::is_jit_v<Float>, Color4f, FloatStorage>;
     using SkyParamsDataset = std::conditional_t<dr::is_jit_v<Float>, dr::Array<Color4f, SKY_PARAMS>, FloatStorage>;
 
@@ -252,13 +251,6 @@ public:
 
         m_sun_rad_params = sun_params<SUN_DATASET_SIZE>(m_sun_rad_dataset, m_turbidity);
 
-
-        using Temp = dr::Array<Color4f, SKY_PARAMS>;
-        //static_assert(dr::depth_v<Temp> == 3);
-        if constexpr (dr::is_jit_v<Float>)
-            Temp res = sky_radiance_params<SKY_DATASET_SIZE, Temp>(m_sky_params_dataset, extract_albedo(m_albedo_tex), m_turbidity, Float(0.3f));
-
-
         // ================== ENVMAP INSTANTIATION ==================
         Properties envmap_props = Properties("envmap");
         envmap_props.set("to_world", ScalarAffineTransform4f(m_to_world.scalar().matrix * s_permute_axis));
@@ -270,12 +262,7 @@ public:
 
         m_bitmap_resolution = {2 * bitmap_height, bitmap_height};
 
-        FloatStorage bitmap_data = compute_avg_bitmap();
-                     bitmap_data = dr::migrate(bitmap_data, AllocType::Host);
-        if constexpr (dr::is_jit_v<Float>)
-            dr::sync_thread();
-
-        ref<Bitmap> bitmap = new Bitmap(Bitmap::PixelFormat::RGB, struct_type_v<ScalarFloat>, m_bitmap_resolution, 3, {}, (uint8_t *)bitmap_data.data());
+        ref<Bitmap> bitmap = compute_avg_bitmap();
         envmap_props.set("bitmap", static_cast<ref<Object>>(bitmap));
 
         m_envmap = PluginManager::instance()->create_object<EnvEmitter>(envmap_props);
@@ -333,46 +320,16 @@ public:
         m_start_date = m_start_date.value();
         m_end_date = m_end_date.value();
 
-        EnvMapCallback envmap_cb;
-        m_envmap->traverse(&envmap_cb);
-
-        if (unlikely(!envmap_cb.data))
-            Throw("Envmap callback did not find 'data' property of envmap");
-
         if (keys.empty() || string::contains(keys, "turbidity"))
             m_sun_rad_params = sun_params<SUN_DATASET_SIZE>(m_sun_rad_dataset, m_turbidity);
 
-        std::vector<std::string> envmap_keys = {"data"};
-        if (keys.empty() || string::contains(keys, "to_world")) {
-            envmap_keys.emplace_back("to_world");
-            if (unlikely(!envmap_cb.to_world))
-                Throw("Envmap callback did not find 'to_world' property of envmap");
-            *envmap_cb.to_world = ScalarAffineTransform4f(m_to_world.scalar().matrix * s_permute_axis);
-        }
+        Properties envmap_props = Properties("envmap");
+        envmap_props.set("to_world", ScalarAffineTransform4f(m_to_world.scalar().matrix * s_permute_axis));
 
-        FloatStorage bitmap_data = compute_avg_bitmap();
-        // Add an extra column
-        FloatStorage tensor_data = dr::zeros<FloatStorage>(dr::width(bitmap_data) + CHANNEL_COUNT * m_bitmap_resolution.y());
+        ref<Bitmap> bitmap = compute_avg_bitmap();
+        envmap_props.set("bitmap", static_cast<ref<Object>>(bitmap));
 
-
-        // Scatter original image, leaving last column empty
-        ScalarUInt32 copy_width = CHANNEL_COUNT * m_bitmap_resolution.x(),
-                     real_width = copy_width + CHANNEL_COUNT;
-        UInt32Storage tensor_cpy_idx = dr::arange<UInt32Storage>(dr::width(bitmap_data));
-        const auto [tensor_cpy_idx_div, tensor_cpy_idx_mod] = dr::idivmod(tensor_cpy_idx, copy_width);
-
-        dr::scatter(tensor_data, bitmap_data, tensor_cpy_idx_div * real_width + tensor_cpy_idx_mod);
-
-        // Scatter first row into last to complete envmap formating
-        UInt32Storage row_cpy_idx = dr::arange<UInt32Storage>(CHANNEL_COUNT * m_bitmap_resolution.y());
-        const auto [row_cpy_idx_div, row_cpy_idx_mod] = dr::idivmod(row_cpy_idx, CHANNEL_COUNT);
-        FloatStorage first_row = dr::gather<FloatStorage>(bitmap_data, row_cpy_idx_div * copy_width + row_cpy_idx_mod);
-        dr::scatter(tensor_data, first_row, row_cpy_idx_div * real_width + row_cpy_idx_mod + copy_width);
-
-        // Update envmap's tensor and notify it
-        size_t shape[3] = {m_bitmap_resolution.y(), m_bitmap_resolution.x() + 1, CHANNEL_COUNT};
-        *envmap_cb.data = TensorXf(std::move(tensor_data), 3, shape);
-        m_envmap->parameters_changed(envmap_keys);
+        m_envmap = PluginManager::instance()->create_object<EnvEmitter>(envmap_props);
 
     }
 
@@ -504,9 +461,9 @@ private:
         const ScalarUInt32 nb_days;
     };
 
-    FloatStorage compute_avg_bitmap() const {
+    ref<Bitmap> compute_avg_bitmap() const {
         FloatStorage albedo = extract_albedo(m_albedo_tex);
-        FloatStorage output = dr::zeros<FloatStorage>(CHANNEL_COUNT * dr::prod(m_bitmap_resolution));
+        FloatStorage output = dr::zeros<FloatStorage>(BITMAP_CHANNEL_COUNT * dr::prod(m_bitmap_resolution));
 
         ScalarUInt32 nb_days = ScalarDateTime::get_days_between(m_start_date.scalar(), m_end_date.scalar(), m_location.scalar());
         size_t nb_time_samples = m_time_resolution * nb_days;
@@ -578,18 +535,21 @@ private:
                 rays += m_sun_scale * SPEC_TO_RGB_SUN_CONV * get_area_ratio(m_sun_half_aperture) *
                         eval_sun<Color4f, false>(sun_idx, cos_theta, gamma, m_sun_rad_params, m_sun_half_aperture, sun_idx_mask);
 
-                // Accumulate results
-                dr::scatter_add(output, rays[0] /* .r() */, CHANNEL_COUNT * pixel_idx_wav + 0, active);
-                dr::scatter_add(output, rays[1] /* .g() */, CHANNEL_COUNT * pixel_idx_wav + 1, active);
-                dr::scatter_add(output, rays[2] /* .b() */, CHANNEL_COUNT * pixel_idx_wav + 2, active);
-
+                dr::scatter_add(output, rays, pixel_idx_wav, active, ReduceMode::Expand);
             }
 
         }
 
         output *= MI_CIE_Y_NORMALIZATION / (ScalarFloat)nb_time_samples;
 
-        return output;
+        output = dr::migrate(output, AllocType::Host);
+        if constexpr (dr::is_jit_v<Float>)
+            dr::sync_thread();
+
+        return new Bitmap(
+            Bitmap::PixelFormat::RGBA, struct_type_v<ScalarFloat>,
+            m_bitmap_resolution, BITMAP_CHANNEL_COUNT,
+            {}, (uint8_t *)output.data());
     }
 
     static void compute_avg_bitmap_thread(uint32_t thread_id, void* payload_) {
@@ -599,7 +559,7 @@ private:
         ScalarVector2u bitmap_resolution = emitter->m_bitmap_resolution;
 
         const size_t nb_rays = bitmap_resolution.x() * (bitmap_resolution.y() / 2 + 1);
-        FloatStorage bitmap_data = dr::zeros<FloatStorage>(CHANNEL_COUNT * nb_rays);
+        FloatStorage bitmap_data = dr::zeros<FloatStorage>(BITMAP_CHANNEL_COUNT * nb_rays);
 
         const uint32_t nb_time_samples = emitter->m_time_resolution * payload->nb_days;
         uint32_t times_per_thread = nb_time_samples / payload->nb_threads + 1;
@@ -625,21 +585,25 @@ private:
 
                 ScalarFloat gamma = dr::unit_angle(ray_dir, dataset.sun_dir);
 
-                ScalarColor3f res = 0.;
-                res += eval_sky<ScalarColor3f>({0, 1, 2}, ray_dir.z(), gamma, dataset.sky_params, dataset.sky_rad);
-                res += SPEC_TO_RGB_SUN_CONV * get_area_ratio(emitter->m_sun_half_aperture) *
-                        eval_sun<ScalarColor3f>({0, 1, 2}, ray_dir.z(), gamma, emitter->m_sun_rad_params, emitter->m_sun_half_aperture, gamma < emitter->m_sun_half_aperture);
+                ScalarColor3f res = eval_sky<ScalarColor3f>({0, 1, 2}, ray_dir.z(), gamma, dataset.sky_params, dataset.sky_rad);
+                              res += SPEC_TO_RGB_SUN_CONV * get_area_ratio(emitter->m_sun_half_aperture) *
+                                      eval_sun<ScalarColor3f>({0, 1, 2}, ray_dir.z(), gamma,
+                                          emitter->m_sun_rad_params, emitter->m_sun_half_aperture,
+                                          gamma < emitter->m_sun_half_aperture);
 
-                dr::scatter_add(bitmap_data, res.r(), CHANNEL_COUNT * pixel_idx + 0);
-                dr::scatter_add(bitmap_data, res.g(), CHANNEL_COUNT * pixel_idx + 1);
-                dr::scatter_add(bitmap_data, res.b(), CHANNEL_COUNT * pixel_idx + 2);
+                dr::scatter_add(bitmap_data, res.r(), BITMAP_CHANNEL_COUNT * pixel_idx + 0);
+                dr::scatter_add(bitmap_data, res.g(), BITMAP_CHANNEL_COUNT * pixel_idx + 1);
+                dr::scatter_add(bitmap_data, res.b(), BITMAP_CHANNEL_COUNT * pixel_idx + 2);
 
             }
 
         }
 
+        UInt32Storage scatter_idx = dr::arange<UInt32Storage>(BITMAP_CHANNEL_COUNT * nb_rays);
+        auto scatter_mask = scatter_idx % BITMAP_CHANNEL_COUNT != 4;
+
         std::lock_guard guard(s_bitmap_mutex);
-        dr::scatter_add(payload->output, bitmap_data, dr::arange<UInt32Storage>(CHANNEL_COUNT * nb_rays));
+        dr::scatter_add(payload->output, bitmap_data, scatter_idx, scatter_mask);
 
     }
 
@@ -655,18 +619,27 @@ private:
         FloatStorage albedo = dr::zeros<FloatStorage>(CHANNEL_COUNT);
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
-        if constexpr (is_rgb_v<Spectrum>) {
-            albedo = dr::ravel(albedo_tex->eval(si));
+        if constexpr (is_monochromatic_v<Spectrum> || is_rgb_v<Spectrum>) {
+            albedo += dr::ravel(albedo_tex->eval(si));
+        } else if constexpr (is_spectral_v<Spectrum>) {
 
-        } else if constexpr (dr::is_array_v<Float> && is_spectral_v<Spectrum>) {
-            si.wavelengths = dr::load<FloatStorage>(WAVELENGTHS<ScalarFloat>, CHANNEL_COUNT);
-            albedo = albedo_tex->eval(si)[0];
-        } else if (!dr::is_array_v<Float> && is_spectral_v<Spectrum>) {
-            for (ScalarUInt32 i = 0; i < CHANNEL_COUNT; ++i) {
-                if constexpr (!is_monochromatic_v<Spectrum>)
+            FloatStorage temp = dr::zeros<FloatStorage>(WAVELENGTH_COUNT);
+            FloatStorage wavelengths = dr::load<FloatStorage>(WAVELENGTHS<ScalarFloat>, WAVELENGTH_COUNT);
+            if constexpr (dr::is_array_v<Float>) {
+                si.wavelengths = wavelengths;
+                temp += albedo_tex->eval(si)[0];
+            } else {
+                for (ScalarUInt32 i = 0; i < WAVELENGTH_COUNT; ++i) {
                     si.wavelengths = WAVELENGTHS<ScalarFloat>[i];
-                dr::scatter(albedo, albedo_tex->eval(si)[0], (UInt32) i);
+                    dr::scatter(temp, albedo_tex->eval(si)[0], (UInt32) i);
+                }
             }
+
+            using FullSpectrum = mitsuba::Spectrum<Float, WAVELENGTH_COUNT>;
+            albedo = dr::ravel(spectrum_to_srgb(
+                dr::unravel<FullSpectrum, FloatStorage>(temp),
+                dr::unravel<FullSpectrum, FloatStorage>(wavelengths)
+            ));
         }
 
         if (dr::any(albedo < 0.f || albedo > 1.f))
@@ -723,6 +696,7 @@ private:
     /// Number of channels used in the skylight model
     /// Hard-coded to 3 since there are no spectral envmaps
     static constexpr uint32_t CHANNEL_COUNT = 3;
+    static constexpr uint32_t BITMAP_CHANNEL_COUNT = 4;
 
     // Dataset sizes
     static constexpr uint32_t SKY_DATASET_SIZE =
