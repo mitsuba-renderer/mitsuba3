@@ -98,14 +98,19 @@ class DirectPyIntegrator(ADIntegrator):
                     # If the current interaction point is moving, we need
                     # to differentiate the solid angle to surface area
                     # reparameterization.
-                    J = solid_angle_to_area_jacobian(si.p, ds_em.p, ds_em.n, active_em & is_surface)
-                    J = dr.rcp(dr.squared_norm(ds_em.p - si.p))
-                    #J = mi.Float(1)
+                    #J = solid_angle_to_area_jacobian(si.p, dr.detach(ds_em.p), dr.detach(ds_em.n), active_em & is_surface)
+                    #J = solid_angle_to_area_jacobian(si.p, ds_em.p, ds_em.n, active_em & is_surface)
+                    #J = dr.rcp(dr.squared_norm(ds_em.p - si.p))
+                    J = mi.Float(1)
 
                     # Re-compute attached `emitter_val` to enable emitter optimization
                     spec_em = scene.eval_emitter_direction(si, ds_em, active_em)
 
-                    emitter_val_diff = dr.select(active_em, (spec_em / ds_em.pdf) * (J / dr.detach(J)), 0)
+                    emitter_val_diff = dr.select(
+                        active_em,
+                        (spec_em / dr.detach(ds_em.pdf)) * (J / dr.detach(J)),
+                        0
+                    )
                     emitter_val = dr.replace_grad(
                         emitter_val,
                         dr.select(ds_em.pdf != 0, emitter_val_diff, 0)
@@ -119,7 +124,11 @@ class DirectPyIntegrator(ADIntegrator):
                 # Compute the detached MIS weight for the emitter sample
                 mis_em = dr.select(ds_em.delta, 1.0, mis_weight(ds_em.pdf, bsdf_pdf))
 
-                L[active_em] += bsdf_val * emitter_val * mis_em
+                L[active_em] += emitter_val * bsdf_val #* mis_em
+
+                # (emitter.eval_direction / emitter.pdf_direction) * bsdf.eval
+                # (emitter.eval / emitter.pdf_direction) * bsdf.eval
+                # emitter.eval(UV) / detach(emitter_pdf_direction) * detach(bsdf.eval)
 
             # ---------------------- BSDF sampling ----------------------
 
@@ -157,7 +166,7 @@ class DirectPyIntegrator(ADIntegrator):
 
             #        bsdf_val, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_bsdf)
             #        weight_bsdf = (
-            #            (bsdf_val / dr.detach(bsdf_pdf)) *
+            #            (dr.detach(bsdf_val) / dr.detach(bsdf_pdf)) *
             #            (J / dr.detach(J))
             #        )
 
@@ -175,6 +184,10 @@ class DirectPyIntegrator(ADIntegrator):
             #    mis_bsdf = dr.select(delta_bsdf, 1.0, mis_weight(sample_bsdf.pdf, pdf_emitter))
 
             #    L[active_bsdf] += L_bsdf * dr.detach(weight_bsdf) #* mis_bsdf
+
+            # #  emitter.eval_direction * bsdf.eval / bsdf.pdf
+            # #  emitter.eval * (bsdf.eval / bsdf.pdf) 
+            # #  emitter.eval(UV) * (detach(bsdf.eval) / detach(bsdf.pdf)) 
 
             return L, active, [], None
 

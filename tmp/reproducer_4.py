@@ -339,8 +339,8 @@ class kernel_timer:
 
 scene = mi.load_dict(scene_description, optimize=False)
 
-#primal = mi.render(scene, spp=2 ** 16)
-#mi.Bitmap(primal).write(f'{folder_out}/primal.exr')
+primal = mi.render(scene, spp=2 ** 16)
+mi.Bitmap(primal).write(f'{folder_out}/primal.exr')
 
 params = mi.traverse(scene)
 if not is_mesh:
@@ -502,6 +502,11 @@ if generate_direct_py:
     )
     mi.Bitmap(direct_py_fwd).write(f'{folder_out}/direct_py_fwd.exr')
     timer.stop()
+
+    direct_py_primal = direct_py_integrator.render(scene, spp=spp_grad)
+    mi.Bitmap(direct_py_primal).write(f'{folder_out}/direct_py_primal.exr')
+    direct_primal = mi.load_dict({'type': 'direct', 'bsdf_samples': 0, 'emitter_samples': 10}).render(scene, spp=spp_grad)
+    mi.Bitmap(direct_primal).write(f'{folder_out}/direct_primal.exr')
 
 if generate_prb_basic:
     timer.start("prb_basic_fwd")

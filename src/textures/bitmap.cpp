@@ -824,8 +824,11 @@ protected:
 
                 if (is_spectral_v<Spectrum> && !m_raw)
                     values = srgb_model_mean(colors_fl);
-                else
-                    values = luminance(colors_fl);
+                else{
+                    //values = luminance(colors_fl);
+                    values = dr::full<FloatStorage>(1, pixel_count);
+                }
+
             } else {
                 StoredScalar* ptr = (StoredScalar*) tensor.data();
                 ScalarFloat *out = nullptr, mean = 0;

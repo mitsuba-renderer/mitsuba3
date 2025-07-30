@@ -119,6 +119,7 @@ public:
         bs.sampled_component = 0;
 
         UnpolarizedSpectrum value = m_reflectance->eval(si, active);
+        // pdf = cos(wo) / PI 
 
         return { bs, depolarizer<Spectrum>(value) & (active && bs.pdf > 0.f) };
     }
