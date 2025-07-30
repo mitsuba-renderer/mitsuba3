@@ -139,7 +139,7 @@ class PRBIntegrator(RBIntegrator):
             ds = mi.DirectionSample3f(scene, si=si, ref=si_prev)
 
             mis = mis_weight(
-                0, #bsdf_pdf_prev,
+                bsdf_pdf_prev,
                 scene.pdf_emitter_direction(si_prev, ds, ~bsdf_delta_prev)
             )
 
@@ -164,32 +164,10 @@ class PRBIntegrator(RBIntegrator):
                     is_surface = mi.has_flag(ds.emitter.flags(), mi.EmitterFlags.Surface)
                     is_infinite = mi.has_flag(ds.emitter.flags(), mi.EmitterFlags.Infinite)
 
-                    
-                    # For textured area lights, we need to do a differentiable
-                    # ray intersection to track UV changes
-                    active_diff_em = (
-                        active_em &
-                        mi.has_flag(ds.emitter.flags(), mi.EmitterFlags.SpatiallyVarying) &
-                        mi.has_flag(ds.emitter.flags(), mi.EmitterFlags.Surface)
-                    )
-
-                    # Visibility is already accounted for, we can move the ray
-                    # origin closer to the surface
-                    ray_em = si.spawn_ray_to(ds.p)
-                    ray_em.o = dr.fma(ray_em.d, ray_em.maxt, ray_em.o) 
-                    ray_em.maxt = dr.largest(ray_em.maxt) 
-                    si_em = scene.ray_intersect(ray_em, active_diff_em)
-
-                    ds_diff = mi.DirectionSample3f(scene, si_em, si)
-                    ds_diff = dr.select(active_diff_em, ds_diff, dr.zeros(mi.DirectionSample3f))
-                    ds = dr.replace_grad(ds, ds_diff)
-
-                    # -------------
-
                     # If the current interaction point is moving, we need
                     # to differentiate the solid angle to surface area
                     # reparameterization.
-                    #J = solid_angle_to_area_jacobian(si.p, ds.p, ds.n, active_em & is_surface)
+                    J = solid_angle_to_area_jacobian(si.p, ds.p, ds.n, active_em & is_surface)
 
                     # Given the detached emitter sample, *recompute* its
                     # contribution with AD to enable light source optimization
@@ -200,14 +178,14 @@ class PRBIntegrator(RBIntegrator):
 
                     em_weight = dr.replace_grad(em_weight, dr.select(
                         (ds.pdf != 0),
-                        (em_val / ds.pdf), #* (J / dr.detach(J)),
+                        (em_val / ds.pdf) * (J / dr.detach(J)),
                         0
                     ))
 
                 # Evaluate BSDF * cos(theta) differentiably
                 wo = si.to_local(ds.d)
                 bsdf_value_em, bsdf_pdf_em = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
-                mis_em = dr.select(ds.delta, 1, mis_weight(ds.pdf, 0)) #bsdf_pdf_em))
+                mis_em = dr.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf_em))
                 Lr_dir = β * mis_em * bsdf_value_em * em_weight
 
             # ------------------ Detached BSDF sampling -------------------

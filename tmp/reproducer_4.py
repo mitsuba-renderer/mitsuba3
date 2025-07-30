@@ -1,12 +1,14 @@
 import mitsuba as mi
 import drjit as dr
 import os
-
 from mitsuba.scalar_rgb import ScalarTransform4f as T
 import time
 
 mi.set_variant('cuda_ad_rgb')
-dr.set_flag(dr.JitFlag.ShaderExecutionReordering, False)
+# dr.set_flag(dr.JitFlag.ShaderExecutionReordering, False)
+#dr.set_flag(dr.JitFlag.SymbolicCalls, False)
+#dr.set_flag(dr.JitFlag.SymbolicLoops, False)
+
 
 EXP_NAME = 'lens'
 SHAPE = 'plane'
@@ -18,11 +20,12 @@ if EXP_NAME == 'lens':
     assert SHAPE in ['sphere', 'plane'], "Invalid shape name."
     MATE = ""
 
-    generate_ref = True
+    generate_ref = False
     generate_path = False
-    generate_prb = True
-    generate_prb_2 = False 
+    generate_prb = False
+    generate_prb_2 = False
     generate_prb_basic = True 
+    generate_direct_py = True
     generate_prb_basic2 = False
     generate_prb_threepoint = False
     generate_prb_projective_fix = False
@@ -238,26 +241,26 @@ elif EXP_NAME == 'lens':
             'int_ior': 1.001,
             'ext_ior': 1.1,
         },
-        'glass1': {
-            'type': 'obj',
-            'filename': '../resources/data/common/meshes/rectangle.obj',
-            'face_normals': True,
-            'to_world': T().translate([0, 0, 1]) @ T().scale(4.0),
-            'bsdf': {
-                'type': 'ref',
-                'id': 'rough_glass',
-            }
-        },
-        'shape': {
-            'type': 'obj',
-            'filename': '../resources/data/common/meshes/rectangle.obj',
-            'face_normals': True,
-            'to_world': T().translate([0, 0, 0]) @ T().scale(4.0),
-            'bsdf': {
-                'type': 'ref',
-                'id': 'rough_glass',
-            }
-        },
+        # 'glass1': {
+        #     'type': 'obj',
+        #     'filename': 'resources/data/common/meshes/rectangle.obj',
+        #     'face_normals': True,
+        #     'to_world': T().translate([0, 0, 1]) @ T().scale(4.0),
+        #     'bsdf': {
+        #         'type': 'ref',
+        #         'id': 'rough_glass',
+        #     }
+        # },
+        # 'glass2': {
+        #     'type': 'obj',
+        #     'filename': 'resources/data/common/meshes/rectangle.obj',
+        #     'face_normals': True,
+        #     'to_world': T().translate([0, 0, 0]) @ T().scale(4.0),
+        #     'bsdf': {
+        #         'type': 'ref',
+        #         'id': 'rough_glass',
+        #     }
+        # },
         'glass3': {
             'type': 'obj',
             'filename': '../resources/data/common/meshes/rectangle.obj',
@@ -277,7 +280,7 @@ elif EXP_NAME == 'lens':
                 'type': 'area',
                 'radiance': {
                     'type': 'bitmap',
-                    'filename': '../resources/data/common/textures/gradient.jpg',
+                    'filename': '../resources/data/common/textures/gradient_bi.jpg',
                     'wrap_mode': 'clamp',
                 }
             }
@@ -291,6 +294,10 @@ elif EXP_NAME == 'lens':
                 'rfilter': { 'type': 'box' },
                 'width': res,
                 'height': res,
+                #'crop_offset_x': 49,
+                #'crop_offset_y': 61,
+                #'crop_width': 2,
+                #'crop_height': 2,
                 'sample_border': True,
                 'pixel_format': 'rgb',
                 'component_format': 'float32',
@@ -332,20 +339,23 @@ class kernel_timer:
 
 scene = mi.load_dict(scene_description, optimize=False)
 
-primal = mi.render(scene, spp=2 ** 16)
-mi.Bitmap(primal).write(f'{folder_out}/primal.exr')
+#primal = mi.render(scene, spp=2 ** 16)
+#mi.Bitmap(primal).write(f'{folder_out}/primal.exr')
 
 params = mi.traverse(scene)
 if not is_mesh:
     key = 'shape.to_world'
     initial_params = mi.Transform4f(params[key])
 else:
-    key = 'shape.vertex_positions'
-    initial_params = dr.unravel(mi.Vector3f, params[key])
+    key1 = 'light.vertex_positions'
+    initial_params1 = dr.unravel(mi.Vector3f, params[key1])
+    # key2 = 'glass3.vertex_positions'
+    # initial_params2 = dr.unravel(mi.Vector3f, params[key2])
 
 def update(theta):
     if is_mesh:
-        params[key] = dr.ravel(initial_params + mi.Vector3f(0.0, 0.0, theta))
+        params[key1] = dr.ravel(initial_params1 + mi.Vector3f(theta))
+        # params[key2] = dr.ravel(initial_params2 + mi.Vector3f(theta))
     else:
         params[key] = mi.Transform4f().translate(mi.Vector3f(0.0, 0.0, theta)) @ initial_params
     params.update()
@@ -356,8 +366,8 @@ image_1 = dr.zeros(mi.TensorXf, (res[1], res[0], 3))
 image_2 = dr.zeros(mi.TensorXf, (res[1], res[0], 3))
 
 if generate_ref:
-    epsilon = 1e-3
-    N = 1 if EXP_NAME == 'lens' else 8
+    epsilon = 1e-5
+    N = 10 if EXP_NAME == 'lens' else 8
     for it in range(N):
         theta = mi.Float(-0.5 * epsilon)
         update(theta)
@@ -391,32 +401,36 @@ prb_basic_integrator = mi.load_dict({
     'max_depth': max_depth
 })
 
-#prb_2_integrator = mi.load_dict({
-#    'type': 'prb_2',
-#    'max_depth': max_depth
-#})
-#
-#prb_basic2_integrator = mi.load_dict({
-#    'type': 'prb_basic_2',
-#    'max_depth': max_depth
-#})
-#
-#prb_threepoint = mi.load_dict({
-#    'type': 'prb_threepoint',
-#    'max_depth': max_depth,
-#})
+direct_py_integrator = mi.load_dict({
+    'type': 'direct_py'
+})
+
+prb_2_integrator = mi.load_dict({
+    'type': 'prb',
+    'max_depth': max_depth
+})
+
+prb_basic2_integrator = mi.load_dict({
+    'type': 'prb_basic',
+    'max_depth': max_depth
+})
+
+prb_threepoint = mi.load_dict({
+    'type': 'prb',
+    'max_depth': max_depth,
+})
 
 sppc = 0
 sppp = 512
 sppi = 2048
-#prb_projective_fix = mi.load_dict({
-#    'type': 'prb_projective_fix',
-#    'max_depth': max_depth,
-#    'sppi': sppi,
-#    'sppc': sppc,
-#    'sppp': sppp,
-#})
-#prb_projective_fix.sample_border_warning = False
+prb_projective_fix = mi.load_dict({
+    'type': 'prb_projective',
+    'max_depth': max_depth,
+    'sppi': sppi,
+    'sppc': sppc,
+    'sppp': sppp,
+})
+prb_projective_fix.sample_border_warning = False
 
 projective_integrator = mi.load_dict({
     'type': 'prb_projective',
@@ -473,6 +487,20 @@ if generate_prb:
         scene, params=params, spp=spp_grad
     )
     mi.Bitmap(prb_fwd).write(f'{folder_out}/prb_fwd.exr')
+    timer.stop()
+
+if generate_direct_py:
+    timer.start("direct_py_fwd")
+    update(0)
+    theta = mi.Float(0)
+    dr.enable_grad(theta)
+    update(theta)
+    dr.forward(theta, flags=dr.ADFlag.ClearEdges)
+
+    direct_py_fwd = direct_py_integrator.render_forward(
+        scene, params=params, spp=spp_grad
+    )
+    mi.Bitmap(direct_py_fwd).write(f'{folder_out}/direct_py_fwd.exr')
     timer.stop()
 
 if generate_prb_basic:

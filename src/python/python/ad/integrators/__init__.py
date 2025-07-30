@@ -11,7 +11,8 @@ if mi.variant() is not None and not mi.variant().startswith('scalar'):
         'prbvolpath',
         'direct_projective',
         'prb_projective',
-        'volprim_rf_basic'
+        'volprim_rf_basic',
+        'direct_py'
     ]
 
     # Are we importing the submodules for the first time or reloading them?
