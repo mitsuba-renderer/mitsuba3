@@ -42,8 +42,24 @@ def test01_basics(variants_all_backends_once, transform_type):
     assert dr.allclose(TransformClass(m2).matrix, m2)
     assert dr.allclose(TransformClass(m3).matrix, m3)
 
+    mi.ProjectiveTransform4f(mi.ScalarProjectiveTransform4f(m1))
+    mi.AffineTransform4f(mi.ScalarAffineTransform4f(m1))
+
     mi.ProjectiveTransform4f(mi.AffineTransform4f(m1))
     mi.AffineTransform4f(mi.ProjectiveTransform4f(m1))
+
+    if dr.is_dynamic_v(mi.Float):
+        # Check that it can be constructed from a wide Numpy array
+        mat = np.tile(np.eye(4, 4)[..., None], (1, 1, 10))
+        mat[3, 2, 0] += 0.5
+        mat[1, 0, 7] += 0.7
+        trafo1 = TransformClass(mi.Matrix4f(mat))
+        assert dr.allclose(trafo1.matrix, mat)
+        assert dr.width(trafo1.matrix) == 10
+        trafo2 = TransformClass(mat)
+        assert dr.allclose(trafo2.matrix, mat)
+        assert dr.width(trafo2.matrix) == 10
+
 
 @transform_types
 def test02_inverse(variant_scalar_rgb, np_rng, transform_type):

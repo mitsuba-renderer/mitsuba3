@@ -31,8 +31,7 @@ void bind_transform(nb::module_ &m, const char *name) {
     using MatrixType = dr::Matrix<Float, Dimension>;
     using RayType = Ray<PointType, Spectrum>;
     using ScalarMatrix = dr::Matrix<ScalarType, Dimension>;
-    using ScalarVector = Vector<ScalarType, Dimension - 1>;
-    using ScalarPoint = Point<ScalarType, Dimension - 1>;
+    using ScalarPoint = Point<ScalarType, Dimension>;
     using NdMatrix = nb::ndarray<ScalarType, nb::shape<Dimension, Dimension>,
                                  nb::c_contig, nb::device::cpu>;
 
@@ -55,19 +54,22 @@ void bind_transform(nb::module_ &m, const char *name) {
                     m.entry(i, j) = v(i, j);
             new (t) Transform(m);
         })
-
         .def(nb::init<MatrixType>(), D(Transform, Transform))
         .def(nb::init<MatrixType, MatrixType>(), "Initialize from a matrix and its inverse transpose")
 
         // List initialization
         .def("__init__", [](Transform *t, const nb::sequence &seq) {
+            using Row = dr::value_t<MatrixType>;
+
             size_t size = nb::len(seq);
             if (size != Dimension)
-                nb::raise_type_error("Expected a %zu x %zu-dimensional input", Dimension, Dimension);
+                throw nb::next_overload();
 
-            ScalarMatrix m;
-            for (size_t i = 0; i < size; ++i)
-                m.entry(i) = nb::cast<dr::value_t<ScalarMatrix>>(seq[i]);
+            MatrixType m;
+            for (size_t i = 0; i < size; ++i) {
+                if (!nb::try_cast<Row>(seq[i], m.entry(i)))
+                    throw nb::next_overload();
+            }
 
             new (t) Transform(m);
         })
@@ -189,7 +191,7 @@ void bind_transform(nb::module_ &m, const char *name) {
     // Dynamic variant constructor
     if constexpr (dr::is_dynamic_v<Float>) {
         using ScalarTransform = std::conditional_t<
-            std::is_same_v<Transform, AffineTransform<PointType>>,
+            IsAffine,
             AffineTransform<ScalarPoint>,
             ProjectiveTransform<ScalarPoint>
         >;
