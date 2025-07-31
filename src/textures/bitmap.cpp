@@ -612,7 +612,7 @@ public:
             }
         }
 
-        return { sample2, pdf * dr::prod(res) };
+        return { sample2, pdf_position(sample2) };
     }
 
     Float pdf_position(const Point2f &pos_, Mask active = true) const override {

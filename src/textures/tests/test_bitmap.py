@@ -249,3 +249,23 @@ def test06_tensor_load(variants_all_rgb):
     })
 
     assert dr.allclose(bitmap.mean(), 3.0);
+
+
+@fresolver_append_path
+@pytest.mark.parametrize('filter_type', ['nearest', 'bilinear'])
+@pytest.mark.parametrize('wrap_mode', ['repeat', 'clamp', 'mirror'])
+def test07_sample_position_consistency(variants_vec_backends_once, filter_type, wrap_mode):
+    bitmap = mi.load_dict({
+        "type" : "bitmap",
+        "filename" : "resources/data/common/textures/carrot.png",
+        "filter_type" : filter_type,
+        "wrap_mode" : wrap_mode
+    })
+
+    N = 10000
+    x = dr.linspace(mi.Float, 0, 1, N)
+    x, y = dr.meshgrid(x, x)
+    out = bitmap.sample_position(mi.Point2f(x, y))
+    pdf = bitmap.pdf_position(mi.Point2f(out[0]))
+
+    assert dr.allclose(out[1], pdf)
