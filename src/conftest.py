@@ -119,6 +119,7 @@ variant_groups = {
     'all_scalar' : [x for x in variants if x.startswith('scalar')],
     'all_rgb' : [x for x in variants if x.endswith('rgb')],
     'all_spectral' : [x for x in variants if x.endswith('spectral')],
+    'all_acoustic' : [x for x in variants if x.endswith('acoustic')],
     'all_backends_once' : [any_scalar, any_llvm, any_cuda],
     'vec_backends_once' : [any_llvm, any_cuda],
     'vec_backends_once_rgb' : [any_llvm_rgb, any_cuda_rgb],
