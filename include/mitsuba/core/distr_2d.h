@@ -48,7 +48,7 @@ NAMESPACE_BEGIN(mitsuba)
  * play an important role in certain applications. In particular:
  *
  * \c Hierarchical2D generates samples using hierarchical sample warping, which
- * is essentially a course-to-fine traversal of a MIP map. It generates a
+ * is essentially a coarse-to-fine traversal of a MIP map. It generates a
  * mapping with very little shear/distortion, but it has numerous
  * discontinuities that can be problematic for some applications.
  *
