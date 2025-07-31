@@ -19,13 +19,18 @@ Irregular spectrum (:monosp:`irregular`)
    - Wavelength values where the function is defined.
    - |exposed|, |differentiable|
 
+ * - frequencies
+   - |string|
+   - Frequency values where the function is defined (alternative to wavelengths for acoustic rendering).
+   - |exposed|, |differentiable|
+
  * - values
    - |string|
-   - Values of the spectral function at the specified wavelengths.
+   - Values of the spectral function at the specified wavelengths or frequencies.
    - |exposed|, |differentiable|
 
 This spectrum returns linearly interpolated reflectance or emission values from *irregularly*
-placed samples.
+placed samples. You can specify either wavelengths or frequencies as the domain.
 
 .. tabs::
     .. code-tab:: xml
@@ -41,6 +46,21 @@ placed samples.
         'type': 'irregular',
         'wavelengths': '400, 700',
         'values': '0.1, 0.2'
+
+    .. code-tab:: xml XML (acoustic)
+        :name: irregular-acoustic
+
+        <spectrum type="irregular">
+            <string name="frequencies" value="250, 500">
+            <string name="values" value="0.1, 0.2">
+        </spectrum>
+
+    .. code-tab:: python Python (acoustic)
+        :name: irregular-acoustic
+
+        'type': 'irregular',
+        'frequencies': '250, 500',
+        'values': '0.1, 0.2'
  */
 
 template <typename Float, typename Spectrum>
@@ -51,13 +71,32 @@ public:
 public:
     IrregularSpectrum(const Properties &props) : Texture(props) {
         if (props.type("values") == Properties::Type::String) {
-            std::vector<std::string> wavelengths_str =
-                string::tokenize(props.string("wavelengths"), " ,");
+            // Check if both wavelengths and frequencies are provided
+            bool has_wavelengths = props.has_property("wavelengths");
+            bool has_frequencies = props.has_property("frequencies");
+            
+            if (has_wavelengths && has_frequencies) {
+                Throw("IrregularSpectrum: Only one of 'wavelengths' or 'frequencies' should be specified. "
+                      "Use 'frequencies' for acoustic rendering.");
+            }
+            
+            if (!has_wavelengths && !has_frequencies) {
+                Throw("IrregularSpectrum: Either 'wavelengths' or 'frequencies' must be specified.");
+            }
+            
+            std::vector<std::string> wavelengths_str;
+            if (has_frequencies) {
+                // Use frequency nodes as wavelengths (semantically unclean but intended)
+                wavelengths_str = string::tokenize(props.string("frequencies"), " ,");
+            } else {
+                wavelengths_str = string::tokenize(props.string("wavelengths"), " ,");
+            }
+            
             std::vector<std::string> entry_str, values_str =
                 string::tokenize(props.string("values"), " ,");
 
             if (values_str.size() != wavelengths_str.size())
-                Throw("IrregularSpectrum: 'wavelengths' and 'values' parameters must have the same size!");
+                Throw("IrregularSpectrum: 'wavelengths'/'frequencies' and 'values' parameters must have the same size!");
 
             std::vector<ScalarFloat> values, wavelengths;
             values.reserve(values_str.size());
@@ -81,8 +120,27 @@ public:
             );
         } else {
             // Scene/property parsing is in double precision, cast to single precision depending on variant.
+            // Check if both wavelengths and frequencies are provided
+            bool has_wavelengths = props.has_property("wavelengths");
+            bool has_frequencies = props.has_property("frequencies");
+            
+            if (has_wavelengths && has_frequencies) {
+                Throw("IrregularSpectrum: Only one of 'wavelengths' or 'frequencies' should be specified. "
+                      "Use 'frequencies' for acoustic rendering.");
+            }
+            
+            if (!has_wavelengths && !has_frequencies) {
+                Throw("IrregularSpectrum: Either 'wavelengths' or 'frequencies' must be specified.");
+            }
+            
             size_t size = props.get<size_t>("size");
-            const double *whl = static_cast<const double*>(props.pointer("wavelengths"));
+            const double *whl;
+            if (has_frequencies) {
+                // Use frequencies as wavelengths (semantically unclean but intended)
+                whl = static_cast<const double*>(props.pointer("frequencies"));
+            } else {
+                whl = static_cast<const double*>(props.pointer("wavelengths"));
+            }
             const double *ptr = static_cast<const double*>(props.pointer("values"));
 
             if constexpr (std::is_same_v<ScalarFloat, double>) {

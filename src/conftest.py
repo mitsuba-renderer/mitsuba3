@@ -74,7 +74,7 @@ def generate_fixture(variant):
 
 
 # Compute set of valid variants
-suffix_variants = [a + b for a in ["_mono", "_mono_polarized", "_rgb", "_spectral", "_spectral_polarized"] for b in ["", "_double"]]
+suffix_variants = [a + b for a in ["_mono", "_mono_polarized", "_rgb", "_spectral", "_spectral_polarized", "_acoustic"] for b in ["", "_double"]]
 scalar_variants = ["scalar" + s for s in suffix_variants]
 other_variants  = [a + b + c for a in ["llvm", "cuda"] for b in ["", "_ad"] for c in suffix_variants]
 
