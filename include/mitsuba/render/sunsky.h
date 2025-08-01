@@ -8,7 +8,7 @@
 #include <mitsuba/core/fstream.h>
 #include <mitsuba/core/spectrum.h>
 #include <drjit/sphere.h>
-
+#include <mitsuba/core/tensor.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -56,13 +56,7 @@ static const constexpr double ASTRONOMICAL_UNIT = 149597890; // In km
 /// Conversion constant to convert spectral solar luminosity to RGB
 static const constexpr float SPEC_TO_RGB_SUN_CONV = 467.069280386f;
 
-#define DATABASE_PATH "data/sunsky/"
-
-enum class Dataset {
-    SkyParams, SkyRadiance,
-    SunRadiance, SunLimbDarkening,
-    TGMMTables
-};
+static const std::string DATABASE_PATH = "data/sunsky/";
 
 // ================================================================================================
 // ====================================== HELPER FUNCTIONS ========================================
@@ -104,33 +98,19 @@ MI_INLINE Value gaussian_cdf(const Value &mu, const Value &sigma,
     return 0.5f * (1 + dr::erf(dr::InvSqrtTwo<Value> * (x - mu) / sigma));
 }
 
-/**
- * \brief Extracts the relative path to the given dataset
- *
- * \tparam IsRGB
- *      Indicates if the dataset is RGB or spectral
- * \param dataset
- *      Dataset to retrieve the path for
- * \return
- *      The path to the dataset
- */
-template<bool IsRGB>
-std::string path_to_dataset(const Dataset dataset) {
-    const std::string type_str = IsRGB ? "_rgb_" : "_spec_";
-    switch (dataset) {
-        case Dataset::SkyParams:
-            return DATABASE_PATH "sky" + type_str + "params.bin";
-        case Dataset::SkyRadiance:
-            return DATABASE_PATH "sky" + type_str + "rad.bin";
-        case Dataset::SunRadiance:
-            return DATABASE_PATH "sun" + type_str + "rad.bin";
-        case Dataset::SunLimbDarkening:
-            return DATABASE_PATH "sun_spec_ld.bin";
-        case Dataset::TGMMTables:
-            return DATABASE_PATH "tgmm_tables.bin";
-        default:
-            return "Unknown dataset";
-    }
+template <typename FileType, typename OutType>
+DynamicBuffer<OutType> load_field(const TensorFile::Field& field) {
+    if (unlikely(field.dtype != struct_type_v<FileType>))
+        Throw("Incoherent type requested from field");
+
+    size_t nb_elements = 1;
+    for (const auto& element : field.shape)
+        nb_elements *= element;
+
+    DynamicBuffer<FileType> file_buffer =
+        dr::load<FileType>(field.data, nb_elements);
+
+    return DynamicBuffer<OutType>(file_buffer);
 }
 
 // ================================================================================================
@@ -144,8 +124,8 @@ std::string path_to_dataset(const Dataset dataset) {
  *      Dataset to interpolate using a degree 5 bezier curve
  * \param out_size
  *      Size of the data to interpolate
- * \param offset
- *      Offset to apply to the indices
+ * \param indices
+ *      Indices to gather the data
  * \param x
  *      Interpolation factor
  * \param active
@@ -153,23 +133,23 @@ std::string path_to_dataset(const Dataset dataset) {
  * \return
  *      Interpolated data
  */
-template <typename Float>
-DynamicBuffer<Float> bezier_interpolate(
-    const DynamicBuffer<Float>& dataset, const uint32_t out_size,
-    const dr::uint32_array_t<Float>& offset,
-    const Float& x, const dr::mask_t<Float>& active) {
+template <typename Result, typename Float,
+          typename Dataset = DynamicBuffer<Float>,
+          typename Mask = dr::mask_t<Result>>
+Result bezier_interpolate(
+    const Dataset& dataset, const uint32_t out_size,
+    const dr::uint32_array_t<Result>& indices,
+    const Float& x, const Mask& active)  {
 
-    using ScalarFloat = dr::value_t<Float>;
-    using FloatStorage = DynamicBuffer<Float>;
-    using UInt32Storage = DynamicBuffer<dr::uint32_array_t<Float>>;
+    using ScalarFloat = dr::scalar_t<Float>;
+    using UInt32Result = dr::uint32_array_t<Result>;
 
-    UInt32Storage indices = offset + dr::arange<UInt32Storage>(out_size);
     constexpr ScalarFloat coefs[SKY_CTRL_PTS] = {1, 5, 10, 10, 5, 1};
 
-    FloatStorage res = dr::zeros<FloatStorage>(out_size);
+    Result res = dr::zeros<Result>();
     for (uint8_t ctrl_pt = 0; ctrl_pt < SKY_CTRL_PTS; ++ctrl_pt) {
-        UInt32Storage idx = indices + ctrl_pt * out_size;
-        FloatStorage data = dr::gather<FloatStorage>(dataset, idx, active);
+        UInt32Result idx = indices + ctrl_pt * out_size;
+        Result data = dr::gather<Result>(dataset, idx, active);
         res += coefs[ctrl_pt] * dr::pow(x, ctrl_pt) *
                dr::pow(1 - x, (SKY_CTRL_PTS - 1) - ctrl_pt) * data;
     }
@@ -194,15 +174,16 @@ DynamicBuffer<Float> bezier_interpolate(
  * \return
  *      The interpolated dataset
  */
-template <uint32_t dataset_size, typename Float>
-DynamicBuffer<Float> sky_radiance_params(
-    const DynamicBuffer<Float>& dataset,
-    const DynamicBuffer<Float>& albedo, Float turbidity, Float eta) {
+// TODO add active mask
+template<uint32_t dataset_size, typename Result,
+         typename Float = dr::value_t<Result>>
+Result sky_radiance_params(const DynamicBuffer<Float>& dataset,
+    const DynamicBuffer<Float>& albedo, const Float& turbidity, const Float& eta) {
 
+    using Mask = dr::mask_t<Result>;
     using UInt32 = dr::uint32_array_t<Float>;
     using UInt32Storage = DynamicBuffer<UInt32>;
-    using FloatStorage = DynamicBuffer<Float>;
-
+    using UInt32Result = dr::uint32_array_t<Result>;
 
     Float x = dr::cbrt(2 * dr::InvPi<Float> * eta);
 
@@ -218,23 +199,42 @@ DynamicBuffer<Float> sky_radiance_params(
                    nb_params    = result_size / (uint32_t) albedo.size();
                                              // albedo.size() <==> NB_CHANNELS
 
+    // Compute indices
+    UInt32Result idx;
+    Mask mask = 0.f <= eta && eta <= 0.5f * dr::Pi<Float>;
+    if constexpr (dr::depth_v<Result> == 3) {
+        constexpr size_t nb_channels = dr::size_v<typename Result::Value>;
+
+        const auto [idx_div, idx_mod] = dr::idivmod(dr::arange<UInt32Storage>(nb_params * nb_channels), nb_channels);
+        idx = dr::unravel<UInt32Result, UInt32Storage>(nb_params * idx_mod + idx_div);
+        mask &= idx < nb_params * albedo.size();
+
+    } else if constexpr (dr::depth_v<Result> == 2) {
+        constexpr size_t nb_channels = Result::Size;
+
+        idx = dr::unravel<UInt32Result, UInt32Storage>(dr::arange<UInt32Storage>(nb_params * nb_channels));
+        mask &= idx < nb_params * albedo.size();
+
+    } else {
+        idx = dr::arange<UInt32Result>(nb_params * albedo.size());
+    }
+
     // Interpolate on elevation
-    FloatStorage
-        t_low_a_low   = bezier_interpolate(dataset, result_size, t_low  * t_block_size + 0 * a_block_size, x, t_low < TURBITDITY_LVLS),
-        t_high_a_low  = bezier_interpolate(dataset, result_size, t_high * t_block_size + 0 * a_block_size, x, t_high < TURBITDITY_LVLS),
-        t_low_a_high  = bezier_interpolate(dataset, result_size, t_low  * t_block_size + 1 * a_block_size, x, t_low < TURBITDITY_LVLS),
-        t_high_a_high = bezier_interpolate(dataset, result_size, t_high * t_block_size + 1 * a_block_size, x, t_high < TURBITDITY_LVLS);
+    Result t_low_a_low   = bezier_interpolate<Result>(dataset, result_size,
+            idx + t_low  * t_block_size + 0 * a_block_size, x, mask & (t_low < TURBITDITY_LVLS));
+    Result t_high_a_low  = bezier_interpolate<Result>(dataset, result_size,
+            idx + t_high * t_block_size + 0 * a_block_size, x, mask & (t_high < TURBITDITY_LVLS));
+    Result t_low_a_high  = bezier_interpolate<Result>(dataset, result_size,
+            idx + t_low  * t_block_size + 1 * a_block_size, x, mask & (t_low < TURBITDITY_LVLS));
+    Result t_high_a_high = bezier_interpolate<Result>(dataset, result_size,
+            idx + t_high * t_block_size + 1 * a_block_size, x, mask & (t_high < TURBITDITY_LVLS));
 
     // Interpolate on turbidity
-    FloatStorage res_a_low  = dr::lerp(t_low_a_low, t_high_a_low, t_rem),
-                 res_a_high = dr::lerp(t_low_a_high, t_high_a_high, t_rem);
+    Result res_a_low  = dr::lerp(t_low_a_low, t_high_a_low, t_rem),
+           res_a_high = dr::lerp(t_low_a_high, t_high_a_high, t_rem);
 
     // Interpolate on albedo
-    UInt32Storage idx = dr::arange<UInt32Storage>(nb_params * albedo.size());
-                  idx /= nb_params;
-
-    FloatStorage result = dr::lerp(res_a_low, res_a_high, dr::gather<FloatStorage>(albedo, idx));
-    return result & (0.f <= eta && eta <= 0.5f * dr::Pi<Float>);
+    return dr::lerp(res_a_low, res_a_high, dr::gather<Result>(albedo, idx / nb_params, mask));
 }
 
 
@@ -243,32 +243,25 @@ DynamicBuffer<Float> sky_radiance_params(
 // ================================================================================================
 
 template<typename Float>
-struct DateTimeRecord {
-    using Int32 = dr::int32_array_t<Float>;
-    Int32 year;
-    Int32 month;
-    Int32 day;
-    Float hour;
-    Float minute;
-    Float second;
-
-    std::string to_string() const {
-        std::ostringstream oss;
-        oss << "DateTimeRecord[year = " << year
-            << ", month= " << month
-            << ", day = " << day
-            << ", hour = " << hour
-            << ", minute = " << minute
-            << ", second = " << second << "]";
-        return oss.str();
-    }
-};
-
-template<typename Float>
 struct LocationRecord {
-    Float longitude;
-    Float latitude;
-    Float timezone;
+    using ScalarFloat = dr::scalar_t<Float>;
+
+    Float longitude = 139.6917f;
+    Float latitude = 35.6894f;
+    Float timezone = 9.f;
+
+    explicit LocationRecord(const Properties& props, const std::string& prefix = ""):
+        longitude(props.get<ScalarFloat>(prefix + "longitude", 139.6917f)),
+        latitude(props.get<ScalarFloat>(prefix + "latitude", 35.6894f)),
+        timezone(props.get<ScalarFloat>(prefix + "timezone", 9)) {}
+
+    template<typename OtherFloat>
+    LocationRecord& operator=(const LocationRecord<OtherFloat>& other) {
+        longitude = other.longitude;
+        latitude = other.latitude;
+        timezone = other.timezone;
+        return *this;
+    }
 
     std::string to_string() const {
         std::ostringstream oss;
@@ -277,18 +270,96 @@ struct LocationRecord {
             << ", timezone = " << timezone << "]";
         return oss.str();
     }
+
+    DRJIT_STRUCT(LocationRecord, longitude, latitude, timezone)
+};
+
+
+template<typename Float>
+struct DateTimeRecord {
+    using Int32       = dr::int32_array_t<Float>;
+    using ScalarInt32 = dr::scalar_t<Int32>;
+    using ScalarFloat = dr::scalar_t<Float>;
+    Int32 year, month, day;
+    Float hour = 0.f, minute = 0.f, second = 0.f;
+
+    /** Calculate difference in days between the current Julian Day
+     *  and JD 2451545.0, which is noon 1 January 2000 Universal Time
+     *
+     *  \param timezone (Float) Timezone to use for conversion
+     *  \return The elapsed time in julian days since New Year of 2000.
+     */
+    Float to_elapsed_julian_date(const Float& timezone) const {
+        // Calculate time of the day in UT decimal hours
+        Float dec_hours = hour - timezone + (minute + second / 60.f) / 60.f;
+
+        // Calculate current Julian Day
+        Int32 li_aux_1 = (month - 14) / 12;
+        Int32 li_aux_2 = (1461 * (year + 4800 + li_aux_1)) / 4 +
+                         (367 * (month - 2 - 12 * li_aux_1)) / 12 -
+                         (3 * ((year + 4900 + li_aux_1) / 100)) / 4 + day -
+                         32075;
+        Float d_julian_date = li_aux_2 - 0.5f + dec_hours / 24.f;
+
+        // Calculate difference between current Julian Day and JD 2451545.0
+        return d_julian_date - 2451545.f;
+    }
+
+    explicit DateTimeRecord(const Properties& props, const std::string& prefix = ""):
+        year(props.get<ScalarInt32>(prefix + "year", 2010)), month(props.get<ScalarInt32>(prefix + "month", 7)),
+        day(props.get<ScalarInt32>(prefix + "day", 10)), hour(props.get<ScalarFloat>(prefix + "hour", 15.f)),
+        minute(props.get<ScalarFloat>(prefix + "minute", 0.f)), second(props.get<ScalarFloat>(prefix + "second", 0.f)) {}
+
+
+    static Int32 get_days_between(const DateTimeRecord& start, const DateTimeRecord& end, const LocationRecord<Float>& location) {
+        Float elapsed_jd_start = start.to_elapsed_julian_date(location.timezone),
+              elapsed_jd_end = end.to_elapsed_julian_date(location.timezone);
+
+        if (dr::any(elapsed_jd_start > elapsed_jd_end))
+            Throw("Start date is after end date");
+
+        // Add one to count the end
+        return dr::floor2int<Int32>(elapsed_jd_end - elapsed_jd_start);
+    }
+
+    template<typename OtherFloat>
+    DateTimeRecord& operator=(const DateTimeRecord<OtherFloat>& other) {
+        year = other.year;
+        month = other.month;
+        day = other.day;
+        hour = other.hour;
+        minute = other.minute;
+        second = other.second;
+        return *this;
+    }
+
+    std::string to_string() const {
+        std::ostringstream oss;
+        oss << "DateTimeRecord[\n"
+            << "year = " << year
+            << ",\n month= " << month
+            << ",\n day = " << day
+            << ",\n hour = " << hour
+            << ",\n minute = " << minute
+            << ",\n second = " << second << "]";
+        return oss.str();
+    }
+
+    DRJIT_STRUCT(DateTimeRecord, year, month, day, hour, minute, second)
 };
 
 /**
  * \brief Compute the elevation and azimuth of the sun as seen by an observer
  * at \c location at the date and time specified in \c dateTime.
  *
+ * \returns The pair containing the polar angle and the azimuth
+ *
  * Based on "Computing the Solar Vector" by Manuel Blanco-Muriel,
  * Diego C. Alarcon-Padilla, Teodoro Lopez-Moratalla, and Martin Lara-Coira,
  * in "Solar energy", vol 27, number 5, 2001 by Pergamon Press.
  */
 template <typename Float>
-Vector<Float, 3> sun_coordinates(const DateTimeRecord<Float> &date_time,
+std::pair<Float, Float> sun_coordinates(const DateTimeRecord<Float> &date_time,
                                  const LocationRecord<Float> &location) {
     using Int32 = dr::int32_array_t<Float>;
 
@@ -378,7 +449,7 @@ Vector<Float, 3> sun_coordinates(const DateTimeRecord<Float> &date_time,
         elevation += Float(EARTH_MEAN_RADIUS / ASTRONOMICAL_UNIT) * dr::sin(elevation);
     }
 
-    return sph_to_dir(elevation, azimuth - dr::Pi<Float>);
+    return std::make_pair(elevation, azimuth - dr::Pi<Float>);
 }
 
 /**
@@ -435,6 +506,180 @@ DynamicBuffer<Float> sun_params(const DynamicBuffer<Float>& sun_radiance_dataset
         t_rem
     );
 }
+
+/**
+ * \brief Evaluate the sky model for the given channel indices and angles
+ *
+ * Based on the Hosek-Wilkie skylight model
+ * https://cgg.mff.cuni.cz/projects/SkylightModelling/HosekWilkie_SkylightModel_SIGGRAPH2012_Preprint_lowres.pdf
+ * \tparam Spec
+ *      Spectral type to render (adapts the number of channels)
+ * \param channel_idx
+ *      Indices of the channels to render
+ * \param cos_theta
+ *      Cosine of the angle between the z-axis (up) and the viewing direction
+ * \param gamma
+ *      Angle between the sun and the viewing direction
+ * \param sky_params
+ *      Sky parameters dataset
+ * \param sky_radiance
+ *      Sky radiance dataset
+ * \param active
+ *      Mask for the active lanes and channel indices
+ * \return
+ *      Sky radiance
+ */
+template <typename Spec, typename Float,
+          typename Dataset1 = DynamicBuffer<Float>, typename Dataset2 = DynamicBuffer<Float>,
+          typename Index = dr::uint32_array_t<Spec>>
+Spec eval_sky(const Index &channel_idx, const Float &cos_theta, const Float &gamma,
+               const Dataset1 &sky_params, const Dataset2 &sky_radiance, const dr::mask_t<Index> &active = true) {
+
+    // Gather coefficients for the skylight equation
+    using SpecSkyParams = dr::Array<Spec, SKY_PARAMS>;
+    SpecSkyParams coefs = dr::gather<SpecSkyParams>(sky_params, channel_idx, active);
+
+    Float cos_gamma = dr::cos(gamma),
+            cos_gamma_sqr = dr::square(cos_gamma);
+
+    Spec c1 = 1 + coefs[0] * dr::exp(coefs[1] / (cos_theta + 0.01f));
+    Spec chi = (1 + cos_gamma_sqr) /
+                dr::pow(1 + dr::square(coefs[8]) - 2 * coefs[8] * cos_gamma, 1.5f);
+    Spec c2 = coefs[2] + coefs[3] * dr::exp(coefs[4] * gamma) +
+                coefs[5] * cos_gamma_sqr + coefs[6] * chi +
+                coefs[7] * dr::safe_sqrt(cos_theta);
+
+    return c1 * c2 * dr::gather<Spec>(sky_radiance, channel_idx, active);
+}
+
+/**
+* \brief Evaluates the sun model for the given channel indices and angles
+*
+* The template parameter is used to render the full 11 wavelengths at once
+* in pre-computations
+*
+* Based on the Hosek-Wilkie sun model
+* https://cgg.mff.cuni.cz/publications/adding-a-solar-radiance-function-to-the-hosek-wilkie-skylight-model/
+*
+* \tparam Spec
+*       Spectral type to render (adapts the number of channels)
+* \param channel_idx
+*       Indices of the channels to render
+* \param cos_theta
+*       Cosine of the angle between the z-axis (up) and the viewing direction
+* \param gamma
+*       Angle between the sun and the viewing direction
+* \param sun_radiance
+*       Sun radiance dataset
+* \param sun_half_aperture
+        Sun half apperture angle
+* \param active
+*       Mask for the active lanes and channel indices
+* \return
+*       Sun radiance
+*/
+
+template <typename Spec, bool isRGB = is_spectral_v<Spec>,
+          typename Float = dr::value_t<Spec>, typename Dataset = DynamicBuffer<Float>>
+Spec eval_sun(const dr::uint32_array_t<Spec> &channel_idx,
+               const Float &cos_theta, const Float &gamma,
+               const Dataset &sun_radiance, const dr::scalar_t<Float> &sun_half_aperture,
+               const dr::mask_t<Spec> &active = true) {
+    using SpecUInt32 = dr::uint32_array_t<Spec>;
+    using UInt32 = dr::uint32_array_t<Float>;
+
+    // Angles computation
+    Float elevation = 0.5f * dr::Pi<Float> - dr::acos(cos_theta);
+
+    // Find the segment of the piecewise function we are in
+    UInt32 pos = dr::floor2int<UInt32>(
+        dr::cbrt(2 * elevation * dr::InvPi<Float>) * SUN_SEGMENTS);
+    pos = dr::minimum(pos, SUN_SEGMENTS - 1);
+
+    Float break_x =
+        0.5f * dr::Pi<Float> * dr::pow((Float) pos / SUN_SEGMENTS, 3.f);
+    Float x = elevation - break_x;
+
+    Spec solar_radiance = 0.f;
+    if constexpr (isRGB) {
+        DRJIT_MARK_USED(gamma);
+        // Compute sun radiance
+        SpecUInt32 global_idx = pos * WAVELENGTH_COUNT * SUN_CTRL_PTS +
+                                channel_idx * SUN_CTRL_PTS;
+        for (uint8_t k = 0; k < SUN_CTRL_PTS; ++k)
+            solar_radiance +=
+                dr::pow(x, k) *
+                dr::gather<Spec>(sun_radiance, global_idx + k, active);
+    } else {
+        // Reproduces the spectral computation for RGB, however, in this case,
+        // limb darkening is baked into the dataset, hence the two for-loops
+        Float cos_psi = sun_cos_psi<Float>(gamma, sun_half_aperture);
+        SpecUInt32 global_idx = pos * (3 * SUN_CTRL_PTS * SUN_LD_PARAMS) +
+                                channel_idx * (SUN_CTRL_PTS * SUN_LD_PARAMS);
+
+        for (uint8_t k = 0; k < SUN_CTRL_PTS; ++k) {
+            for (uint8_t j = 0; j < SUN_LD_PARAMS; ++j) {
+                SpecUInt32 idx = global_idx + k * SUN_LD_PARAMS + j;
+                solar_radiance +=
+                    dr::pow(x, k) *
+                    dr::pow(cos_psi, j) *
+                    dr::gather<Spec>(sun_radiance, idx, active);
+            }
+        }
+    }
+
+    return solar_radiance & active;
+}
+
+
+/**
+ * \brief Computes the limb darkening of the sun for a given gamma.
+ *
+ * Only works for spectral mode since limb darkening is baked into the RGB
+ * model
+ *
+ * \tparam Spec
+ *      Spectral type to render (adapts the number of channels)
+ * \param channel_idx_low
+ *      Indices of the lower wavelengths
+ * \param channel_idx_high
+ *      Indices of the upper wavelengths
+ * \param lerp_f
+ *      Linear interpolation factor for wavelength
+ * \param gamma
+ *      Angle between the sun's center and the viewing ray
+ * \param sun_ld_data
+ *      The sun's limb darkening dataset
+ * \param sun_half_apperture
+ *      Sun half apperture angle
+ * \param active
+ *      Indicates if the channel indices are valid and that the sun was hit
+ * \return
+ *      The spectral values of limb darkening to apply to the sun's
+ *      radiance by multiplication
+ */
+template <typename Spec, typename Float, typename Dataset = DynamicBuffer<Float>>
+Spec compute_sun_ld(const dr::uint32_array_t<Spec> &channel_idx_low,
+                     const dr::uint32_array_t<Spec> &channel_idx_high,
+                     const wavelength_t<Spec> &lerp_f, const Float &gamma,
+                     const Dataset &sun_ld_data, const Float &sun_half_apperture,
+                     const dr::mask_t<Spec> &active) {
+    using SpecLdArray = dr::Array<Spec, SUN_LD_PARAMS>;
+
+    SpecLdArray sun_ld_low  = dr::gather<SpecLdArray>(sun_ld_data, channel_idx_low, active),
+                sun_ld_high = dr::gather<SpecLdArray>(sun_ld_data, channel_idx_high, active),
+                sun_ld_coefs = dr::lerp(sun_ld_low, sun_ld_high, lerp_f);
+
+    Float cos_psi = sun_cos_psi<Float>(gamma, sun_half_apperture);
+
+    Spec sun_ld = 0.f;
+    for (uint8_t j = 0; j < SUN_LD_PARAMS; ++j)
+        sun_ld += dr::pow(cos_psi, j) * sun_ld_coefs[j];
+
+    return sun_ld & active;
+}
+
+
 
 // ================================================================================================
 // ======================================== SAMPLING MODEL ========================================
@@ -526,71 +771,6 @@ build_tgmm_distribution(const DynamicBuffer<Float> &tgmm_tables,
     return std::make_pair(distrib_params, mis_weights);
 }
 
-// ================================================================================================
-// =========================================== FILE I/O ===========================================
-// ================================================================================================
-
-/**
- * \brief Extracts an array from a compatible file
- *
- * \tparam FileType
- *      Type of the data stored in the file
- * \tparam OutType
- *      The type of the data to return
- * \param path
- *      Path of the data file
- * \return
- *      The extracted array
- */
-template <typename FileType, typename OutType>
-DynamicBuffer<OutType> sunsky_array_from_file(const std::string &path) {
-    auto fs = mitsuba::file_resolver();
-    fs::path file_path = fs->resolve(path);
-    if (!fs::exists(file_path))
-        Log(Error, "\"%s\": file does not exist!", file_path);
-
-    FileStream file(file_path, FileStream::EMode::ERead);
-
-    using ScalarFileType = dr::value_t<FileType>;
-    using FileStorage = DynamicBuffer<FileType>;
-    using FloatStorage = DynamicBuffer<OutType>;
-
-    // =============== Read headers ===============
-    char text_buff[5] = "";
-    file.read(text_buff, 3);
-    if (strcmp(text_buff, "SKY") != 0 && strcmp(text_buff, "SUN") != 0)
-        Throw("File \"%s\" does not contain the expected header!", path);
-
-    // Read version
-    uint32_t version;
-    file.read(version);
-
-    // =============== Read tensor dimensions ===============
-    size_t nb_dims = 0;
-    file.read(nb_dims);
-
-    size_t nb_elements = 1;
-    std::vector<size_t> shape(nb_dims);
-    for (size_t dim = 0; dim < nb_dims; ++dim) {
-        file.read(shape[dim]);
-
-        if (!shape[dim])
-            Throw("Got dimension with 0 elements");
-
-        nb_elements *= shape[dim];
-    }
-
-    // ==================== Read data ====================
-    std::vector<ScalarFileType> buffer(nb_elements);
-    file.read_array(buffer.data(), nb_elements);
-    file.close();
-
-    FileStorage data_f = dr::load<FileStorage>(buffer.data(), nb_elements);
-
-    return FloatStorage(data_f);
-}
-
-#undef DATABASE_PATH
 #undef SUN_HALF_APERTURE
 
 NAMESPACE_END(mitsuba)
