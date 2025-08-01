@@ -310,6 +310,7 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
     } else if (emitter_count == 1) {
         std::tie(ray, weight) =
             m_emitters[0]->sample_ray(time, sample1, sample2, sample3, active);
+        emitter = m_emitters[0].get();
     } else {
         ray = dr::zeros<Ray3f>();
         weight = dr::zeros<Spectrum>();
