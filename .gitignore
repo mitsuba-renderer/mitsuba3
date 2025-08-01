@@ -6,6 +6,9 @@
 /\.vscode
 /\.vs
 
+# JetBrains
+/\.idea
+
 # Jupyter
 /.ipynb_checkpoints
 
