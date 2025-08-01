@@ -308,7 +308,7 @@ class ADIntegrator(mi.CppADIntegrator):
 
         return ray, weight, splatting_pos
 
-    
+
     def prepare(self,
                 sensor: mi.Sensor,
                 seed: mi.UInt32 = 0,

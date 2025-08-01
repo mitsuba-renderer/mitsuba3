@@ -10,7 +10,7 @@ from .acoustic_ad import AcousticADIntegrator
 
 class AcousticPRBIntegrator(AcousticADIntegrator):
     """This Integrator is biased for when moving geometry"""
-    
+
     @dr.syntax
     def sample(self,
                scene: mi.Scene,
@@ -37,7 +37,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
         film = sensor.film()
         n_frequencies = mi.ScalarVector2f(film.crop_size()).x
         n_channels = film.base_channels_count()
-        
+
         # Standard BSDF evaluation context for path tracing
         bsdf_ctx = mi.BSDFContext()
 
@@ -71,7 +71,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                 dr.forward_from(T)
                 δHdLedT = dr.detach(dr.grad(δHL))
                 dr.disable_grad(T)
-                    
+
             return δHdLedT
 
         while dr.hint(active,
@@ -80,7 +80,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
             active_next = mi.Bool(active)
 
             # The first path vertex requires some special handling (see below)
-            first_vertex = (depth == 0)            
+            first_vertex = (depth == 0)
 
             with dr.resume_grad(when=not primal):
                 prev_si = prev_pi.compute_surface_interaction(prev_ray, ray_flags=mi.RayFlags.All)
@@ -105,7 +105,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
             # Hide the environment emitter if necessary
             if dr.hint(self.hide_emitters, mode='scalar'):
                 active_next &= ~((depth == 0) & ~si.is_valid())
-                
+
 
             # Compute MIS weight for emitter sample from previous bounce
             ds = mi.DirectionSample3f(scene, si=si, ref=prev_si)
@@ -122,7 +122,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
             with dr.resume_grad(when=not primal):
                 τ = dr.select(first_vertex, dr.norm(si.p - ray.o), dr.norm(si.p - prev_si.p))
 
-            # 
+            #
             T       = distance + τ
             δHdLedT = compute_δH_dot_dLedT(Le, T, ray, active=active_next & si.is_valid()) \
                       if dr.hint(prb_mode and self.track_time_derivatives, mode='scalar') else 0
@@ -160,7 +160,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                 wo = si.to_local(ds_em.d)
                 bsdf_value_em, bsdf_pdf_em = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
                 dr.disable_grad(bsdf_pdf_em)
-            
+
             mis_em = dr.select(ds_em.delta, 1, mis_weight(ds_em.pdf, bsdf_pdf_em))
 
             with dr.resume_grad(when=not primal):
@@ -169,7 +169,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
             with dr.resume_grad(when=not primal):
                 τ_dir = dr.norm(ds_em.p - si.p)
 
-            # 
+            #
             T_dir       = distance + τ + τ_dir
             δHdLr_dirdT = compute_δH_dot_dLedT(Lr_dir, T_dir, ray, active=active_em) \
                           if dr.hint(prb_mode and self.track_time_derivatives, mode='scalar') else 0
@@ -209,11 +209,11 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
             else: # primal
                 # FIXME (MW): Why are we ignoring active and active_em when writing to the block?
                 #       Should still work for samples that don't hit geometry (because distance will be inf)
-                #       but what about other reasons for becoming inactive?                             
+                #       but what about other reasons for becoming inactive?
                 block.put(pos=Le_pos,
                           values=film.prepare_sample(Le[0], si.wavelengths, n_channels),
                           active=(Le[0] > 0.))
-                block.put(pos=Lr_dir_pos, 
+                block.put(pos=Lr_dir_pos,
                           values=film.prepare_sample(Lr_dir[0], si.wavelengths, n_channels),
                           active=(Lr_dir[0] > 0.))
 
@@ -293,7 +293,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
             δHdLdT                 # State for the differential phase
         )
 
-    
+
     def render_backward(self: mi.SamplingIntegrator,
                         scene: mi.Scene,
                         params: Any,

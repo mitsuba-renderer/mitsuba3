@@ -63,6 +63,7 @@ class AcousticADIntegrator(RBIntegrator):
             )
 
             # Generate a set of rays starting at the sensor,
+            # Generate a set of rays starting at the sensor,
             # pos.x stores normalized frequency index, ray.wavelengths stores frequency
             ray, weight, position_sample = self.sample_rays(scene, sensor, sampler)
 

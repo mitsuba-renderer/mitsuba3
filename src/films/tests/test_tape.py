@@ -49,14 +49,9 @@ def test03_prepare_sample(variants_any_acoustic, count):
     channels = tape.base_channels_count()
     assert channels == 2 if count else 1
     
-    
     sample = mi.Spectrum([0.5])
     prepared_sample = tape.prepare_sample(sample, wavelengths=mi.Spectrum(1.0), nChannels=channels)
     print(f'sample: {sample}, count: {count}, prepared sample: {prepared_sample}')
     assert dr.allclose(prepared_sample[0], sample)
     if count:
         assert dr.allclose(prepared_sample[1], mi.Spectrum(1.0))
-
-@pytest.mark.parametrize("count", count_list)
-def test04_(variants_any_acoustic, count):
-    tape = create_tape(freq_bins=1, time_bins=1, count=count)
