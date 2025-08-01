@@ -887,16 +887,25 @@ class PSIntegrator(ADIntegrator):
         Utility method to override the intergrator's spp value with the one
         received at runtime in `render`/`render_backward`/`render_forward`.
 
-        The runtime value is overriden only if it is 0 and if the integrator
-        has defined a spp value. If the integrator hasn't defined a value, the
-        sampler's spp is used.
+        Priority order:
+        1. If the integrator's spp is explicitly disabled (set to 0), use 0
+           regardless of runtime_spp.
+        2. Otherwise, prefer the runtime_spp value.
+        3. If runtime_spp is 0:
+            - Use integrator_spp if it is defined (not None).
+            - Otherwise, fall back to sampler_spp.
         """
-        out = runtime_spp
-        if runtime_spp == 0:
-            if integrator_spp is not None:
-                out = integrator_spp
-            else:
-                out = sampler_spp
+        if integrator_spp is not None and integrator_spp == 0:
+            # If spp is explicitly disabled (set to 0), do not override it with
+            # runtime_spp
+            out = integrator_spp
+        else:
+            out = runtime_spp
+            if runtime_spp == 0:
+                if integrator_spp is not None:
+                    out = integrator_spp
+                else:
+                    out = sampler_spp
 
         return out
 
@@ -1105,7 +1114,7 @@ class PSIntegrator(ADIntegrator):
             active = ss.is_valid() & (ss.pdf > 0)
 
             # Jacobian (motion correction included)
-            J = self.proj_detail.perspective_sensor_jacobian(sensor, ss)
+            J = self.proj_detail.sensor_jacobian(sensor, ss)
 
             ΔL, wavelengths = self.proj_detail.eval_primary_silhouette_radiance_difference(
                 scene, sampler, ss, sensor, active=active)
