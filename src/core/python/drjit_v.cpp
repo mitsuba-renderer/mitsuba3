@@ -128,6 +128,7 @@ MI_PY_EXPORT(DrJit) {
     constexpr SuffixMapping float_mappings[] = {
         { "f",   is_double_precision ? "f64" : "f" },
         { "f32", "f" },
+        { "f16", "f16" },
         { "f64", "f64" },
         { "d",   "f64" }
     };
@@ -149,8 +150,15 @@ MI_PY_EXPORT(DrJit) {
             std::string name = prefix + map.mitsuba_suffix;
             std::string dr_name = prefix + map.drjit_suffix;
 
-            m.attr(name.c_str()) = drjit_variant.attr(dr_name.c_str());
-            m.attr(("Scalar" + name).c_str()) = drjit_scalar.attr(dr_name.c_str());
+            nb::object value = nb::getattr(drjit_variant, dr_name.c_str(), nb::handle());
+
+            if (value.is_valid())
+                m.attr(name.c_str()) = value;
+
+            value = nb::getattr(drjit_scalar, dr_name.c_str(), nb::handle());
+
+            if (value.is_valid())
+                m.attr(("Scalar" + name).c_str()) = value;
         }
     };
 
