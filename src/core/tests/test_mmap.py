@@ -64,3 +64,55 @@ def test04_create_temp(variant_scalar_rgb):
     assert mmap.can_write()
     del mmap
     assert not os.path.exists(fname)
+
+
+def test05_tensor_file(variants_all, tmp_path):
+    test1 = np.array([[1, 2],[3, 4]], dtype=np.float32)
+    test2 = np.arange(1024, dtype=np.float32)
+
+    path = str(tmp_path / "data")
+
+    mi.tensor_io.write(
+        path,
+        test1=test1,
+        test2=test2
+    )
+    data = mi.tensor_io.read(
+        path
+    )
+    assert np.all(data['test1'] == test1, axis=None)
+    assert np.all(data['test2'] == test2)
+
+    data_mi = mi.TensorFile(path)
+
+    assert str(data_mi) == f'''TensorFile[
+  filename = "{path}",
+  size = 4.09 KiB,
+  fields = {{
+    "test1" => [
+      dtype = float32,
+      offset = 80,
+      shape = [2, 2]
+    ],
+    "test2" => [
+      dtype = float32,
+      offset = 96,
+      shape = [1024]
+    ]
+  }}
+]'''
+
+    test1_field = data_mi['test1']
+    test2_field = data_mi['test2']
+
+    assert str(test1_field) == '''TensorFile.Field[
+  dtype = float32,
+  offset = 80,
+  shape = [2, 2]
+]'''
+
+    test1_mi = test1_field.to(mi.TensorXf32)
+    assert np.all(test1_mi.numpy() == test1, axis=None)
+
+    test2_mi = test2_field.to(mi.TensorXf32)
+    assert np.all(test2_mi.numpy() == test2)
