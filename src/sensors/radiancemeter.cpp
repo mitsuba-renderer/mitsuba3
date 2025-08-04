@@ -126,6 +126,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
         RayDifferential3f ray = dr::zeros<RayDifferential3f>();
         ray.time = time;
+        ray.maxt = dr::Largest<Float>;
 
         // 1. Sample spectrum
         auto [wavelengths, wav_weight] =
