@@ -144,10 +144,17 @@ this plugin to work properly.
 */
 
 template <typename Float, typename Spectrum>
-class SunskyEmitter final : public Emitter<Float, Spectrum> {
+class SunskyEmitter final: public BaseSunskyEmitter<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Emitter, m_flags, m_to_world)
-    MI_IMPORT_TYPES(Scene, Shape, Texture)
+    using Emitter<Float, Spectrum>::m_to_world;
+    MI_IMPORT_BASE(BaseSunskyEmitter,
+        m_turbidity, m_sky_scale, m_sun_scale, m_albedo, m_bsphere,
+        m_sun_half_aperture, m_location, m_sky_rad_dataset,
+        m_sky_params_dataset, m_sun_ld, m_sun_rad_dataset,
+        CHANNEL_COUNT
+    )
+
+    MI_IMPORT_TYPES(Scene, Texture)
 
     using FloatStorage = DynamicBuffer<Float>;
     using Gaussian     = dr::Array<Float, TGMM_GAUSSIAN_PARAMS>;
@@ -157,15 +164,39 @@ public:
         unpolarized_spectrum_t<Spectrum>>;
 
     SunskyEmitter(const Properties &props) : Base(props) {
-        if constexpr (!(is_rgb_v<Spectrum> || is_spectral_v<Spectrum>))
-            Throw("Unsupported spectrum type, can only render in Spectral or RGB modes!");
+        if (props.has_property("sun_direction")) {
+            if (props.has_property("latitude") || props.has_property("longitude")
+                || props.has_property("timezone") || props.has_property("year")
+                || props.has_property("month") || props.has_property("day")
+                || props.has_property("hour") || props.has_property("minute")
+                || props.has_property("second")) {
+                Log(Error, "Both the 'sun_direction' and parameters for time/location "
+                           "were provided, both information cannot be given at the same time!");
+                }
 
-        constexpr bool IS_RGB = is_rgb_v<Spectrum>;
+            m_active_record = false;
+            m_sun_dir = dr::normalize(props.get<ScalarVector3f>("sun_direction"));
+            dr::make_opaque(m_sun_dir);
+        } else {
+            m_location.latitude  = props.get<ScalarFloat>("latitude", 35.6894f);
+            m_location.longitude = props.get<ScalarFloat>("longitude", 139.6917f);
+            m_location.timezone  = props.get<ScalarFloat>("timezone", 9);
+            m_time.year          = props.get<ScalarInt32>("year", 2010);
+            m_time.month         = props.get<ScalarUInt32>("month", 7);
+            m_time.day           = props.get<ScalarUInt32>("day", 10);
+            m_time.hour          = props.get<ScalarFloat>("hour", 15.0f);
+            m_time.minute        = props.get<ScalarFloat>("minute", 0.0f);
+            m_time.second        = props.get<ScalarFloat>("second", 0.0f);
 
-        init_from_props(props);
+            m_active_record = true;
+            dr::make_opaque(m_location, m_time);
 
-        // Extract albedo from texture
-        FloatStorage albedo = extract_albedo(m_albedo);
+            const auto [theta, phi] = Base::sun_coordinates(m_time, m_location);
+            if (dr::all(theta > 0.5f * dr::Pi<Float>))
+                Log(Warn, "The sun is below the horizon at the specified time and location!");
+
+            m_sun_dir = m_to_world.value() * sph_to_dir(theta, phi);
+        }
 
         // ================= UPDATE ANGLES =================
         Vector3f local_sun_dir = m_to_world.value().inverse() * m_sun_dir;
@@ -177,35 +208,20 @@ public:
 
         Float sun_eta = 0.5f * dr::Pi<Float> - m_sun_angles.y();
 
-        // ================= GET SKY RADIANCE =================
-        const std::string dataset_type = IS_RGB ? "_rgb" : "_spec";
-        const TensorFile datasets {
-            file_resolver()->resolve(DATABASE_PATH + "sunsky_datasets.bin")
-        };
-
-        m_sky_params_dataset = load_field<TensorXf64, TensorXf>(datasets, "sky_params" + dataset_type);
-        m_sky_rad_dataset = load_field<TensorXf64, TensorXf>(datasets, "sky_rad" + dataset_type);
-
-        m_sky_params = sky_radiance_params<TensorXf>(
-            m_sky_params_dataset, albedo, m_turbidity, sun_eta);
-        m_sky_radiance = sky_radiance_params<TensorXf>(
-            m_sky_rad_dataset, albedo, m_turbidity, sun_eta);
-
-        // ================= GET SUN RADIANCE =================
-        m_sun_rad_dataset = load_field<TensorXf64, TensorXf>(datasets, "sun_rad" + dataset_type);
-
-        m_sun_radiance = dr::take_interp(m_sun_rad_dataset, m_turbidity - 1.f);
-
-        // Only used in spectral mode since limb darkening is baked in the RGB dataset
-        if constexpr (is_spectral_v<Spectrum>) {
-            m_sun_ld = load_field<TensorXf64, TensorXf>(datasets, "sun_ld_spec");
-        }
-
-        // ================= GET TGMM TABLES =================
+        // ================= Extract TGMM =================
         const TensorFile tgmm_dataset(
             file_resolver()->resolve(DATABASE_PATH + "tgmm_tables.bin")
         );
-        m_tgmm_tables = load_field<TensorXf32, TensorXf>(tgmm_dataset, "tgmm_tables");
+        m_tgmm_tables = Base::template load_field<TensorXf32>(tgmm_dataset, "tgmm_tables");
+
+        // ================= Compute datasets =================
+        TensorXf temp_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
+        m_sky_params = Base::bezier_interp(temp_sky_params, sun_eta);
+
+        TensorXf temp_sky_radiance = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
+        m_sky_radiance = Base::bezier_interp(temp_sky_radiance, sun_eta);
+
+        m_sun_radiance = dr::take_interp(m_sun_rad_dataset, m_turbidity - 1.f);
 
         FloatStorage distrib_params, mis_weights;
         std::tie(distrib_params, mis_weights) =
@@ -223,19 +239,10 @@ public:
 
         // ================= GENERAL PARAMETERS =================
 
-        /* Until `set_scene` is called, we have no information
-        about the scene and default to the unit bounding sphere. */
-        m_bsphere = BoundingSphere3f(ScalarPoint3f(0.f), 1.f);
-
-        m_flags = +EmitterFlags::Infinite | +EmitterFlags::SpatiallyVarying;
     }
 
     void traverse(TraversalCallback *cb) override {
         Base::traverse(cb);
-        cb->put("turbidity", m_turbidity, ParamFlags::NonDifferentiable);
-        cb->put("sky_scale", m_sky_scale, ParamFlags::NonDifferentiable);
-        cb->put("sun_scale", m_sun_scale, ParamFlags::NonDifferentiable);
-        cb->put("albedo",    m_albedo,    ParamFlags::NonDifferentiable);
         if (m_active_record) {
             cb->put("latitude",  m_location.latitude,  ParamFlags::NonDifferentiable);
             cb->put("longitude", m_location.longitude, ParamFlags::NonDifferentiable);
@@ -249,21 +256,10 @@ public:
         } else {
             cb->put("sun_direction", m_sun_dir, ParamFlags::Differentiable);
         }
-        cb->put("to_world", m_to_world, ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
-        if (m_sun_scale < 0.f)
-            Log(Error, "Invalid sun scale: %f, must be positive!", m_sun_scale);
-        if (m_sky_scale < 0.f)
-            Log(Error, "Invalid sky scale: %f, must be positive!", m_sky_scale);
-        if (dr::any(m_turbidity < 1.f || 10.f < m_turbidity))
-            Log(Error, "Turbidity value %f is out of range [1, 10]", m_turbidity);
-        if (m_sun_half_aperture <= 0.f || 0.5f * dr::Pi<Float> <= m_sun_half_aperture)
-            Log(Error, "Invalid sun aperture angle: %f, must be in ]0, 90[ degrees!",
-                dr::rad_to_deg(2 * m_sun_half_aperture));
-        if (m_albedo->is_spatially_varying())
-            Log(Error, "Expected a non-spatially varying radiance spectra!");
+        Base::parameters_changed(keys);
 
         #define CHANGED(word) string::contains(keys, word)
 
@@ -280,7 +276,7 @@ public:
         // Update sun angles
         Vector3f local_sun_dir;
         if (changed_time_record) {
-            const auto [theta, phi] = sun_coordinates(m_time, m_location);
+            const auto [theta, phi] = Base::sun_coordinates(m_time, m_location);
             local_sun_dir = sph_to_dir(theta, phi);
             m_sun_dir = m_to_world.value() * local_sun_dir;
             m_sun_angles = { phi, theta }; // flip convention
@@ -296,11 +292,11 @@ public:
 
         // Update sky
         if (changed_sun_dir || changed_atmosphere) {
-            FloatStorage albedo = extract_albedo(m_albedo);
-            m_sky_params = sky_radiance_params<TensorXf>(
-                m_sky_params_dataset, albedo, m_turbidity, eta);
-            m_sky_radiance = sky_radiance_params<TensorXf>(
-                m_sky_rad_dataset, albedo, m_turbidity, eta);
+            TensorXf temp_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
+            m_sky_params = Base::bezier_interp(temp_sky_params, eta);
+
+            TensorXf temp_sky_radiance = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
+            m_sky_radiance = Base::bezier_interp(temp_sky_radiance, eta);
         }
 
         // Update sun
@@ -328,22 +324,6 @@ public:
         m_spectral_distr = wav_dist;
 
         #undef CHANGED
-    }
-
-    void set_scene(const Scene *scene) override {
-        if (scene->bbox().valid()) {
-            ScalarBoundingSphere3f scene_sphere =
-                scene->bbox().bounding_sphere();
-            m_bsphere = BoundingSphere3f(scene_sphere.center, scene_sphere.radius);
-            m_bsphere.radius =
-                dr::maximum(math::RayEpsilon<Float>,
-                        m_bsphere.radius * (1.f + math::RayEpsilon<Float>));
-        } else {
-            m_bsphere.center = 0.f;
-            m_bsphere.radius = math::RayEpsilon<Float>;
-        }
-
-        dr::make_opaque(m_bsphere.center, m_bsphere.radius);
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
@@ -513,18 +493,6 @@ public:
         return dr::select(active, combined_pdf, 0.f);
     }
 
-    Spectrum eval_direction(const Interaction3f &it,
-                            const DirectionSample3f &ds,
-                            Mask active) const override {
-        MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
-
-        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
-        si.wavelengths = it.wavelengths;
-        si.wi = -ds.d;
-
-        return eval(si, active);
-    }
-
     std::pair<Wavelength, Spectrum>
     sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
                        Mask active) const override {
@@ -545,25 +513,6 @@ public:
 
             return { Wavelength(0.f), eval(si, active) };
         }
-    }
-
-    std::pair<PositionSample3f, Float>
-    sample_position(Float /*time*/, const Point2f & /*sample*/,
-                    Mask /*active*/) const override {
-        if constexpr (dr::is_jit_v<Float>) {
-            /* Do not throw an exception in JIT-compiled variants. This
-               function might be invoked by DrJit's virtual function call
-               recording mechanism despite not influencing any actual
-               calculation. */
-            return { dr::zeros<PositionSample3f>(), dr::NaN<Float> };
-        } else {
-            NotImplementedError("sample_position");
-        }
-    }
-
-    /// This emitter does not occupy any particular region of space, return an invalid bounding box
-    ScalarBoundingBox3f bbox() const override {
-        return ScalarBoundingBox3f();
     }
 
     std::string to_string() const override {
@@ -858,127 +807,13 @@ private:
         }
     }
 
-    void init_from_props(const Properties& props) {
-        m_sun_scale = props.get<ScalarFloat>("sun_scale", 1.f);
-        if (m_sun_scale < 0.f)
-            Log(Error, "Invalid sun scale: %f, must be positive!", m_sun_scale);
-
-        m_sky_scale = props.get<ScalarFloat>("sky_scale", 1.f);
-        if (m_sky_scale < 0.f)
-            Log(Error, "Invalid sky scale: %f, must be positive!", m_sky_scale);
-
-        ScalarFloat turb = props.get<ScalarFloat>("turbidity", 3.f);
-        if (turb < 1.f || 10.f < turb)
-            Log(Error, "Turbidity value %f is out of range [1, 10]", turb);
-        m_turbidity = turb;
-        dr::make_opaque(m_turbidity);
-
-        m_sun_half_aperture = dr::deg_to_rad(.5f * props.get<float>("sun_aperture", 0.5358f));
-        if (m_sun_half_aperture <= 0.f || 0.5f * dr::Pi<Float> <= m_sun_half_aperture)
-            Log(Error, "Invalid sun aperture angle: %f, must be in ]0, 90[ degrees!", dr::rad_to_deg(2 * m_sun_half_aperture));
-
-        m_albedo = props.get_texture<Texture>("albedo", 0.3f);
-        if (m_albedo->is_spatially_varying())
-            Log(Error, "Expected a non-spatially varying radiance spectra!");
-
-        if (props.has_property("sun_direction")) {
-            if (props.has_property("latitude") || props.has_property("longitude")
-                || props.has_property("timezone") || props.has_property("year")
-                || props.has_property("month") || props.has_property("day")
-                || props.has_property("hour") || props.has_property("minute")
-                || props.has_property("second")) {
-                Log(Error, "Both the 'sun_direction' and parameters for time/location "
-                           "were provided, both information cannot be given at the same time!");
-            }
-
-            m_active_record = false;
-            m_sun_dir = dr::normalize(props.get<ScalarVector3f>("sun_direction"));
-            dr::make_opaque(m_sun_dir);
-        } else {
-            m_location.latitude  = props.get<ScalarFloat>("latitude", 35.6894f);
-            m_location.longitude = props.get<ScalarFloat>("longitude", 139.6917f);
-            m_location.timezone  = props.get<ScalarFloat>("timezone", 9);
-            m_time.year          = props.get<ScalarInt32>("year", 2010);
-            m_time.month         = props.get<ScalarUInt32>("month", 7);
-            m_time.day           = props.get<ScalarUInt32>("day", 10);
-            m_time.hour          = props.get<ScalarFloat>("hour", 15.0f);
-            m_time.minute        = props.get<ScalarFloat>("minute", 0.0f);
-            m_time.second        = props.get<ScalarFloat>("second", 0.0f);
-
-            m_active_record = true;
-            dr::make_opaque(m_location, m_time);
-
-            const auto [theta, phi] = sun_coordinates(m_time, m_location);
-            if (dr::all(theta > 0.5f * dr::Pi<Float>))
-                Log(Warn, "The sun is below the horizon at the specified time and location!");
-
-            m_sun_dir = m_to_world.value() * sph_to_dir(theta, phi);
-        }
-    }
-
-    /**
-     * \brief Extract the albedo values for the required wavelengths/channels
-     *
-     * \param albedo_tex
-     *      Texture to extract the albedo from
-     * \return
-     *      The buffer with the extracted albedo values for the needed wavelengths/channels
-     */
-    FloatStorage extract_albedo(const ref<Texture>& albedo_tex) const {
-        FloatStorage albedo = dr::zeros<FloatStorage>(CHANNEL_COUNT);
-        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
-
-        if constexpr (is_rgb_v<Spectrum>) {
-            albedo = dr::ravel(albedo_tex->eval(si));
-
-        } else if constexpr (dr::is_array_v<Float> && is_spectral_v<Spectrum>) {
-            si.wavelengths = dr::load<FloatStorage>(WAVELENGTHS<ScalarFloat>, CHANNEL_COUNT);
-            albedo = albedo_tex->eval(si)[0];
-        } else if (!dr::is_array_v<Float> && is_spectral_v<Spectrum>) {
-            for (ScalarUInt32 i = 0; i < CHANNEL_COUNT; ++i) {
-                if constexpr (!is_monochromatic_v<Spectrum>)
-                    si.wavelengths = WAVELENGTHS<ScalarFloat>[i];
-                dr::scatter(albedo, albedo_tex->eval(si)[0], (UInt32) i);
-            }
-        }
-
-        if (dr::any(albedo < 0.f || albedo > 1.f))
-            Log(Error, "Albedo values must be in [0, 1], got: %f", albedo);
-
-        return albedo;
-    }
-
     // ================================================================================================
     // ========================================= ATTRIBUTES ===========================================
     // ================================================================================================
 
-    /// Number of channels used in the skylight model
-    static constexpr uint32_t CHANNEL_COUNT =
-        is_spectral_v<Spectrum> ?
-        WAVELENGTH_COUNT :
-        (is_monochromatic_v<Spectrum> ? 1 : 3);
-
-    // Dataset sizes
-    static constexpr uint32_t SKY_DATASET_SIZE =
-        TURBITDITY_LVLS * ALBEDO_LVLS * SKY_CTRL_PTS * CHANNEL_COUNT *
-        SKY_PARAMS;
-    static constexpr uint32_t SKY_DATASET_RAD_SIZE =
-        TURBITDITY_LVLS * ALBEDO_LVLS * SKY_CTRL_PTS * CHANNEL_COUNT;
-    static constexpr uint32_t SUN_DATASET_SIZE =
-        TURBITDITY_LVLS * CHANNEL_COUNT * SUN_SEGMENTS * SUN_CTRL_PTS *
-        (is_spectral_v<Spectrum> ? 1 : SUN_LD_PARAMS);
     static constexpr uint32_t TGMM_DATA_SIZE =
         (TURBITDITY_LVLS - 1) * ELEVATION_CTRL_PTS * TGMM_COMPONENTS *
         TGMM_GAUSSIAN_PARAMS;
-
-    BoundingSphere3f m_bsphere;
-
-    // ========= Common parameters =========
-    Float m_turbidity;
-    Float m_sky_sampling_w;
-    ScalarFloat m_sky_scale;
-    ScalarFloat m_sun_scale;
-    ref<Texture> m_albedo;
 
     // ========= Sun parameters =========
 
@@ -987,10 +822,8 @@ private:
     /// Sun angles in local coordinates, (phi, theta)
     Point2f m_sun_angles;
     Frame3f m_local_sun_frame;
-    ScalarFloat m_sun_half_aperture;
     /// Indicates if the plugin was initialized with a location/time record
     bool m_active_record;
-    LocationRecord<Float> m_location;
     DateTimeRecord<Float> m_time;
 
     // ========= Radiance parameters =========
@@ -999,15 +832,11 @@ private:
     FloatStorage m_sun_radiance;
 
     // ========= Sampling parameters =========
+    Float m_sky_sampling_w;
     FloatStorage m_gaussians;
     DiscreteDistribution<Float> m_gaussian_distr;
     ContinuousDistribution<Wavelength> m_spectral_distr;
 
-    // Permanent datasets loaded from files/memory
-    TensorXf m_sky_rad_dataset;
-    TensorXf m_sky_params_dataset;
-    FloatStorage m_sun_ld; // Not initialized in RGB mode
-    TensorXf m_sun_rad_dataset;
     TensorXf m_tgmm_tables;
 };
 

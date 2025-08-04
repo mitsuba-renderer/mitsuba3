@@ -59,129 +59,6 @@ static const constexpr float SPEC_TO_RGB_SUN_CONV = 467.069280386f;
 
 static const std::string DATABASE_PATH = "data/sunsky/";
 
-// ================================================================================================
-// ====================================== HELPER FUNCTIONS ========================================
-// ================================================================================================
-
-/**
- * \brief Provides the ratio of the sun's original area to that
- * of a custom aperture angle
- *
- * \param custom_half_aperture
- *      Angle of the sun's half aperture
- * \return
- *      The ratio of the sun's area to the custom aperture's area
- */
-template <typename Value>
-MI_INLINE Value get_area_ratio(const Value &custom_half_aperture) {
-    return (1 - Value(dr::cos(SUN_HALF_APERTURE))) /
-           (1 - dr::cos(custom_half_aperture));
-}
-
-/**
- * \brief Computes the Gaussian CDF for the given mean and standard
- * deviation
- *
- * \tparam Value
- *      Type to compute on
- * \param mu
- *      Mean of the gaussian
- * \param sigma
- *      Standard deviation of the gaussian
- * \param x
- *      Point to evaluate
- * \return
- *      The Gaussian cumulative distribution function at x
- */
-template <typename Value>
-MI_INLINE Value gaussian_cdf(const Value &mu, const Value &sigma,
-                             const Value &x) {
-    return 0.5f * (1 + dr::erf(dr::InvSqrtTwo<Value> * (x - mu) / sigma));
-}
-
-template <typename FileType, typename OutType>
-OutType load_field(const TensorFile& tensor_file, std::string_view tensor_name) {
-    const TensorFile::Field& field = tensor_file.field(tensor_name);
-    if (unlikely(field.dtype != struct_type_v<FileType>))
-        Throw("Incoherent type requested from field");
-
-    FileType res = field.to<FileType>();
-    return OutType(res);
-}
-
-// ================================================================================================
-// ========================================== SKY MODEL ===========================================
-// ================================================================================================
-
-/**
- * \brief Pre-computes the sky dataset using turbidity, albedo and sun
- * elevation
- *
- * \param dataset
- *      Dataset to interpolate
- * \param albedo
- *      Albedo values corresponding to each channel
- * \param turbidity
- *      Turbidity used for the skylight model
- * \param eta
- *      Sun elevation angle
- * \return
- *      The interpolated dataset
- */
-template<typename Dataset, typename Float>
-Dataset sky_radiance_params(const Dataset& dataset,
-    const DynamicBuffer<Float>& albedo, const Float& turbidity, const Float& eta) {
-
-    using UInt32 = dr::uint32_array_t<Float>;
-    using UInt32Storage = DynamicBuffer<UInt32>;
-    using FloatStorage  = DynamicBuffer<Float>;
-
-    const size_t dataset_size           = dataset.size();
-    const typename Dataset::Shape shape = dataset.shape();
-
-    uint32_t bilinear_res_size = dataset_size / (shape[0] * shape[1]),
-             result_size = bilinear_res_size / shape[2],
-             nb_params = result_size / shape[3];
-
-    // Interpolate on turbidity
-    Dataset simplified = dr::take_interp(dataset, turbidity - 1.f);
-
-    // Interpolate on albedo
-    UInt32Storage rep_albedo_idx = dr::arange<UInt32Storage>(bilinear_res_size);
-    FloatStorage rep_albedo = dr::gather<FloatStorage>(
-        albedo,
-        (rep_albedo_idx / nb_params) % (uint32_t) albedo.size()
-    );
-    simplified = dr::take_interp(simplified, rep_albedo);
-
-    // Interpolate on elevation
-    Dataset res = Dataset(
-        dr::zeros<FloatStorage>(result_size),
-        shape.size() - 3, shape.data() + 3
-    );
-
-    Float x = dr::cbrt(2 * dr::InvPi<Float> * eta);
-    constexpr dr::scalar_t<Float> coefs[SKY_CTRL_PTS] = {1, 5, 10, 10, 5, 1};
-
-    Float x_pow = 1.f, x_pow_inv = dr::pow(1.f - x, SKY_CTRL_PTS - 1);
-    Float x_pow_inv_scale = dr::rcp(1.f - x);
-    for (uint32_t ctrl_pt = 0; ctrl_pt < SKY_CTRL_PTS; ++ctrl_pt) {
-        Dataset data = dr::take(simplified, ctrl_pt);
-        Dataset coef = coefs[ctrl_pt] * x_pow * x_pow_inv;
-        res += data * coef;
-
-        x_pow *= x;
-        x_pow_inv *= x_pow_inv_scale;
-    }
-
-    return res;
-}
-
-
-// ================================================================================================
-// ========================================== SUN MODEL ===========================================
-// ================================================================================================
-
 template<typename Float>
 struct LocationRecord {
     using ScalarFloat = dr::scalar_t<Float>;
@@ -288,109 +165,407 @@ struct DateTimeRecord {
     DRJIT_STRUCT(DateTimeRecord, year, month, day, hour, minute, second)
 };
 
+MI_VARIANT
+class BaseSunskyEmitter: public Emitter<Float, Spectrum> {
+public:
+    MI_IMPORT_BASE(Emitter, m_flags, m_to_world)
+    MI_IMPORT_TYPES(Scene, Texture)
+
+    using FloatStorage = DynamicBuffer<Float>;
+
+    BaseSunskyEmitter(const Properties &props) : Base(props) {
+        if constexpr (!(is_rgb_v<Spectrum> || is_spectral_v<Spectrum>))
+            Throw("Unsupported spectrum type, can only render in Spectral or RGB modes!");
+
+        m_sun_scale = props.get<ScalarFloat>("sun_scale", 1.f);
+        if (m_sun_scale < 0.f)
+            Log(Error, "Invalid sun scale: %f, must be positive!", m_sun_scale);
+
+        m_sky_scale = props.get<ScalarFloat>("sky_scale", 1.f);
+        if (m_sky_scale < 0.f)
+            Log(Error, "Invalid sky scale: %f, must be positive!", m_sky_scale);
+
+        ScalarFloat turb = props.get<ScalarFloat>("turbidity", 3.f);
+        if (turb < 1.f || 10.f < turb)
+            Log(Error, "Turbidity value %f is out of range [1, 10]", turb);
+        m_turbidity = turb;
+        dr::make_opaque(m_turbidity);
+
+        m_sun_half_aperture = dr::deg_to_rad(.5f * props.get<ScalarFloat>("sun_aperture", 0.5358f));
+        if (m_sun_half_aperture <= 0.f || 0.5f * dr::Pi<Float> <= m_sun_half_aperture)
+            Log(Error, "Invalid sun aperture angle: %f, must be in ]0, 90[ degrees!", dr::rad_to_deg(2 * m_sun_half_aperture));
+
+        m_albedo_tex = props.get_texture<Texture>("albedo", 0.3f);
+        if (m_albedo_tex->is_spatially_varying())
+            Log(Error, "Expected a non-spatially varying radiance spectra!");
+        m_albedo = extract_albedo(m_albedo_tex);
+
+
+        const std::string dataset_type = is_rgb_v<Spectrum> ? "_rgb" : "_spec";
+        const TensorFile datasets {
+            file_resolver()->resolve(DATABASE_PATH + "sunsky_datasets.bin")
+        };
+
+        m_sky_params_dataset = load_field<TensorXf64>(datasets, "sky_params" + dataset_type);
+        m_sky_rad_dataset = load_field<TensorXf64>(datasets, "sky_rad" + dataset_type);
+        m_sun_rad_dataset = load_field<TensorXf64>(datasets, "sun_rad" + dataset_type);
+
+        // Only used in spectral mode since limb darkening is baked in the RGB dataset
+        if constexpr (is_spectral_v<Spectrum>) {
+            m_sun_ld = load_field<TensorXf64>(datasets, "sun_ld_spec");
+        }
+
+        /* Until `set_scene` is called, we have no information
+        about the scene and default to the unit bounding sphere. */
+        m_bsphere = BoundingSphere3f(ScalarPoint3f(0.f), 1.f);
+
+        m_flags = +EmitterFlags::Infinite | +EmitterFlags::SpatiallyVarying;
+    }
+
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("turbidity", m_turbidity, ParamFlags::NonDifferentiable);
+        cb->put("sky_scale", m_sky_scale, ParamFlags::NonDifferentiable);
+        cb->put("sun_scale", m_sun_scale, ParamFlags::NonDifferentiable);
+        cb->put("albedo",    m_albedo_tex,    ParamFlags::NonDifferentiable);
+        cb->put("to_world", m_to_world, ParamFlags::NonDifferentiable);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        if (m_sun_scale < 0.f)
+            Log(Error, "Invalid sun scale: %f, must be positive!", m_sun_scale);
+        if (m_sky_scale < 0.f)
+            Log(Error, "Invalid sky scale: %f, must be positive!", m_sky_scale);
+        if (dr::any(m_turbidity < 1.f || 10.f < m_turbidity))
+            Log(Error, "Turbidity value %f is out of range [1, 10]", m_turbidity);
+        if (m_sun_half_aperture <= 0.f || 0.5f * dr::Pi<Float> <= m_sun_half_aperture)
+            Log(Error, "Invalid sun aperture angle: %f, must be in ]0, 90[ degrees!",
+                dr::rad_to_deg(2 * m_sun_half_aperture));
+        if (m_albedo_tex->is_spatially_varying())
+            Log(Error, "Expected a non-spatially varying radiance spectra!");
+
+        if (keys.empty() || string::contains(keys, "albedo"))
+            m_albedo = extract_albedo(m_albedo_tex);
+
+    }
+
+    void set_scene(const Scene *scene) override {
+        if (scene->bbox().valid()) {
+            ScalarBoundingSphere3f scene_sphere =
+                scene->bbox().bounding_sphere();
+            m_bsphere = BoundingSphere3f(scene_sphere.center, scene_sphere.radius);
+            m_bsphere.radius =
+                dr::maximum(math::RayEpsilon<Float>,
+                        m_bsphere.radius * (1.f + math::RayEpsilon<Float>));
+        } else {
+            m_bsphere.center = 0.f;
+            m_bsphere.radius = math::RayEpsilon<Float>;
+        }
+
+        dr::make_opaque(m_bsphere.center, m_bsphere.radius);
+    }
+
+    Spectrum eval_direction(const Interaction3f &it,
+                            const DirectionSample3f &ds,
+                            Mask active) const override {
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        si.wavelengths = it.wavelengths;
+        si.time = it.time;
+        si.wi = -ds.d;
+
+        return this->eval(si, active);
+    }
+
+    std::pair<PositionSample3f, Float>
+    sample_position(Float /*time*/, const Point2f & /*sample*/,
+                    Mask /*active*/) const override {
+        if constexpr (dr::is_jit_v<Float>) {
+            /* Do not throw an exception in JIT-compiled variants. This
+               function might be invoked by DrJit's virtual function call
+               recording mechanism despite not influencing any actual
+               calculation. */
+            return { dr::zeros<PositionSample3f>(), dr::NaN<Float> };
+        } else {
+            NotImplementedError("sample_position");
+        }
+    }
+
+    /// This emitter does not occupy any particular region of space, return an invalid bounding box
+    ScalarBoundingBox3f bbox() const override {
+        return ScalarBoundingBox3f();
+    }
+
+protected:
+
+    TensorXf bilinear_interp(const TensorXf& dataset,
+        const FloatStorage& albedo, const Float& turbidity) {
+
+        using UInt32 = dr::uint32_array_t<Float>;
+        using UInt32Storage = DynamicBuffer<UInt32>;
+
+        const size_t dataset_size            = dataset.size();
+        const typename TensorXf::Shape shape = dataset.shape();
+
+        uint32_t bilinear_res_size = dataset_size / (shape[0] * shape[1]),
+                 nb_params = bilinear_res_size / (shape[2] * shape[3]);
+
+        // Interpolate on turbidity
+        TensorXf res = dr::take_interp(dataset, turbidity - 1.f);
+
+        // Interpolate on albedo
+        UInt32Storage rep_albedo_idx = dr::arange<UInt32Storage>(bilinear_res_size);
+        FloatStorage rep_albedo = dr::gather<FloatStorage>(
+            albedo,
+            (rep_albedo_idx / nb_params) % (uint32_t) albedo.size()
+        );
+
+        return dr::take_interp(res, rep_albedo);
+    }
+
+    TensorXf bezier_interp(const TensorXf& dataset, const Float& eta) {
+        const typename TensorXf::Shape shape = dataset.shape();
+        uint32_t result_size = dataset.size() / shape[0];
+
+        TensorXf res = TensorXf(
+            dr::zeros<FloatStorage>(result_size),
+            shape.size() - 1, shape.data() + 1
+        );
+
+        Float x = dr::cbrt(2 * dr::InvPi<Float> * eta);
+        constexpr dr::scalar_t<Float> coefs[SKY_CTRL_PTS] = {1, 5, 10, 10, 5, 1};
+
+        Float x_pow = 1.f, x_pow_inv = dr::pow(1.f - x, SKY_CTRL_PTS - 1);
+        Float x_pow_inv_scale = dr::rcp(1.f - x);
+        for (uint32_t ctrl_pt = 0; ctrl_pt < SKY_CTRL_PTS; ++ctrl_pt) {
+            TensorXf data = dr::take(dataset, ctrl_pt);
+            TensorXf coef = coefs[ctrl_pt] * x_pow * x_pow_inv;
+            res += data * coef;
+
+            x_pow *= x;
+            x_pow_inv *= x_pow_inv_scale;
+        }
+
+        return res;
+    }
+
+    /**
+     * \brief Compute the elevation and azimuth of the sun as seen by an observer
+     * at \c location at the date and time specified in \c dateTime.
+     *
+     * \returns The pair containing the polar angle and the azimuth
+     *
+     * Based on "Computing the Solar Vector" by Manuel Blanco-Muriel,
+     * Diego C. Alarcon-Padilla, Teodoro Lopez-Moratalla, and Martin Lara-Coira,
+     * in "Solar energy", vol 27, number 5, 2001 by Pergamon Press.
+     */
+    std::pair<Float, Float> sun_coordinates(const DateTimeRecord<Float> &date_time,
+                                            const LocationRecord<Float> &location) {
+
+        // Main variables
+        Float elapsed_julian_days, dec_hours;
+        Float ecliptic_longitude, ecliptic_obliquity;
+        Float right_ascension, declination;
+        Float elevation, azimuth;
+
+        // Auxiliary variables
+        Float d_y;
+        Float d_x;
+
+        /* Calculate difference in days between the current Julian Day
+           and JD 2451545.0, which is noon 1 January 2000 Universal Time */
+        {
+            // Calculate time of the day in UT decimal hours
+            dec_hours = date_time.hour - location.timezone +
+                (date_time.minute + date_time.second / 60.f ) / 60.f;
+
+            // Calculate current Julian Day
+            Int32 li_aux_1 = (date_time.month-14) / 12;
+            Int32 li_aux_2 = (1461*(date_time.year + 4800 + li_aux_1)) / 4
+                + (367 * (date_time.month - 2 - 12 * li_aux_1)) / 12
+                - (3 * ((date_time.year + 4900 + li_aux_1) / 100)) / 4
+                + date_time.day - 32075;
+            Float d_julian_date = li_aux_2 - 0.5f + dec_hours / 24.f;
+
+            // Calculate difference between current Julian Day and JD 2451545.0
+            elapsed_julian_days = d_julian_date - 2451545.f;
+        }
+
+        /* Calculate ecliptic coordinates (ecliptic longitude and obliquity of the
+           ecliptic in radians but without limiting the angle to be less than 2*Pi
+           (i.e., the result may be greater than 2*Pi) */
+        {
+            Float omega = 2.1429f - 0.0010394594f * elapsed_julian_days;
+            Float mean_longitude = 4.8950630f + 0.017202791698f * elapsed_julian_days; // Radians
+            Float anomaly = 6.2400600f + 0.0172019699f * elapsed_julian_days;
+
+            ecliptic_longitude = mean_longitude + 0.03341607f * dr::sin(anomaly)
+                + 0.00034894f * dr::sin(2*anomaly) - 0.0001134f
+                - 0.0000203f * dr::sin(omega);
+
+            ecliptic_obliquity = 0.4090928f - 6.2140e-9f * elapsed_julian_days
+                + 0.0000396f * dr::cos(omega);
+        }
+
+        /* Calculate celestial coordinates ( right ascension and declination ) in radians
+           but without limiting the angle to be less than 2*Pi (i.e., the result may be
+           greater than 2*Pi) */
+        {
+            Float sin_ecliptic_longitude = dr::sin(ecliptic_longitude);
+            d_y = dr::cos(ecliptic_obliquity) * sin_ecliptic_longitude;
+            d_x = dr::cos(ecliptic_longitude);
+            right_ascension = dr::atan2(d_y, d_x);
+            right_ascension += dr::select(right_ascension < 0.f, dr::TwoPi<Float>, 0.f);
+
+            declination = dr::asin(dr::sin(ecliptic_obliquity) * sin_ecliptic_longitude);
+        }
+
+        // Calculate local coordinates (azimuth and zenith angle) in degrees
+        {
+            Float greenwich_mean_sidereal_time = 6.6974243242f
+                + 0.0657098283f * elapsed_julian_days + dec_hours;
+
+            Float local_mean_sidereal_time = dr::deg_to_rad(greenwich_mean_sidereal_time * 15
+                + location.longitude);
+
+            Float latitude_in_radians = dr::deg_to_rad(location.latitude);
+            Float cos_latitude = dr::cos(latitude_in_radians);
+            Float sin_latitude = dr::sin(latitude_in_radians);
+
+            Float hour_angle = local_mean_sidereal_time - right_ascension;
+            Float cos_hour_angle = dr::cos(hour_angle);
+
+            elevation = dr::acos(cos_latitude * cos_hour_angle
+                * dr::cos(declination) + dr::sin(declination) * sin_latitude);
+
+            d_y = -dr::sin(hour_angle);
+            d_x = dr::tan(declination) * cos_latitude - sin_latitude * cos_hour_angle;
+
+            azimuth = dr::atan2(d_y, d_x);
+            azimuth += dr::select(azimuth < 0.f, dr::TwoPi<Float>, 0.f);
+
+            // Parallax Correction
+            elevation += Float(EARTH_MEAN_RADIUS / ASTRONOMICAL_UNIT) * dr::sin(elevation);
+        }
+
+        return std::make_pair(elevation, azimuth - dr::Pi<Float>);
+    }
+
+    template <typename FileTensor>
+    TensorXf load_field(const TensorFile& tensor_file, const std::string_view tensor_name) {
+
+        const TensorFile::Field& field = tensor_file.field(tensor_name);
+        if (unlikely(field.dtype != struct_type_v<FileTensor>))
+            Throw("Incoherent type requested from field");
+
+        FileTensor ft = field.to<FileTensor>();
+        return TensorXf(ft);
+    }
+
+    /**
+     * \brief Extract the albedo values for the required wavelengths/channels
+     *
+     * \param albedo_tex
+     *      Texture to extract the albedo from
+     * \return
+     *      The buffer with the extracted albedo values for the needed wavelengths/channels
+     */
+    FloatStorage extract_albedo(const ref<Texture>& albedo_tex) const {
+        FloatStorage albedo = dr::zeros<FloatStorage>(CHANNEL_COUNT);
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+
+        if constexpr (is_rgb_v<Spectrum>) {
+            albedo = dr::ravel(albedo_tex->eval(si));
+
+        } else if constexpr (dr::is_array_v<Float> && is_spectral_v<Spectrum>) {
+            si.wavelengths = dr::load<FloatStorage>(WAVELENGTHS<ScalarFloat>, CHANNEL_COUNT);
+            albedo = albedo_tex->eval(si)[0];
+        } else if (!dr::is_array_v<Float> && is_spectral_v<Spectrum>) {
+            for (ScalarUInt32 i = 0; i < CHANNEL_COUNT; ++i) {
+                if constexpr (!is_monochromatic_v<Spectrum>)
+                    si.wavelengths = WAVELENGTHS<ScalarFloat>[i];
+                dr::scatter(albedo, albedo_tex->eval(si)[0], (UInt32) i);
+            }
+        }
+
+        if (dr::any(albedo < 0.f || albedo > 1.f))
+            Log(Error, "Albedo values must be in [0, 1], got: %f", albedo);
+
+        return albedo;
+    }
+
+protected:
+    /// Number of channels used in the skylight model
+    static constexpr uint32_t CHANNEL_COUNT =
+        is_spectral_v<Spectrum> ? WAVELENGTH_COUNT : 3;
+
+    BoundingSphere3f m_bsphere;
+
+    // ========= Common parameters =========
+    Float m_turbidity;
+    ScalarFloat m_sky_scale;
+    ScalarFloat m_sun_scale;
+
+    ref<Texture> m_albedo_tex;
+    FloatStorage m_albedo;
+
+    ScalarFloat m_sun_half_aperture;
+
+    LocationRecord<Float> m_location;
+
+    TensorXf m_sky_rad_dataset;
+    TensorXf m_sky_params_dataset;
+    FloatStorage m_sun_ld; // Not initialized in RGB mode
+    TensorXf m_sun_rad_dataset;
+};
+
+
+// ================================================================================================
+// ====================================== HELPER FUNCTIONS ========================================
+// ================================================================================================
+
 /**
- * \brief Compute the elevation and azimuth of the sun as seen by an observer
- * at \c location at the date and time specified in \c dateTime.
+ * \brief Provides the ratio of the sun's original area to that
+ * of a custom aperture angle
  *
- * \returns The pair containing the polar angle and the azimuth
- *
- * Based on "Computing the Solar Vector" by Manuel Blanco-Muriel,
- * Diego C. Alarcon-Padilla, Teodoro Lopez-Moratalla, and Martin Lara-Coira,
- * in "Solar energy", vol 27, number 5, 2001 by Pergamon Press.
+ * \param custom_half_aperture
+ *      Angle of the sun's half aperture
+ * \return
+ *      The ratio of the sun's area to the custom aperture's area
  */
-template <typename Float>
-std::pair<Float, Float> sun_coordinates(const DateTimeRecord<Float> &date_time,
-                                 const LocationRecord<Float> &location) {
-    using Int32 = dr::int32_array_t<Float>;
-
-    // Main variables
-    Float elapsed_julian_days, dec_hours;
-    Float ecliptic_longitude, ecliptic_obliquity;
-    Float right_ascension, declination;
-    Float elevation, azimuth;
-
-    // Auxiliary variables
-    Float d_y;
-    Float d_x;
-
-    /* Calculate difference in days between the current Julian Day
-       and JD 2451545.0, which is noon 1 January 2000 Universal Time */
-    {
-        // Calculate time of the day in UT decimal hours
-        dec_hours = date_time.hour - location.timezone +
-            (date_time.minute + date_time.second / 60.f ) / 60.f;
-
-        // Calculate current Julian Day
-        Int32 li_aux_1 = (date_time.month-14) / 12;
-        Int32 li_aux_2 = (1461*(date_time.year + 4800 + li_aux_1)) / 4
-            + (367 * (date_time.month - 2 - 12 * li_aux_1)) / 12
-            - (3 * ((date_time.year + 4900 + li_aux_1) / 100)) / 4
-            + date_time.day - 32075;
-        Float d_julian_date = li_aux_2 - 0.5f + dec_hours / 24.f;
-
-        // Calculate difference between current Julian Day and JD 2451545.0
-        elapsed_julian_days = d_julian_date - 2451545.f;
-    }
-
-    /* Calculate ecliptic coordinates (ecliptic longitude and obliquity of the
-       ecliptic in radians but without limiting the angle to be less than 2*Pi
-       (i.e., the result may be greater than 2*Pi) */
-    {
-        Float omega = 2.1429f - 0.0010394594f * elapsed_julian_days;
-        Float mean_longitude = 4.8950630f + 0.017202791698f * elapsed_julian_days; // Radians
-        Float anomaly = 6.2400600f + 0.0172019699f * elapsed_julian_days;
-
-        ecliptic_longitude = mean_longitude + 0.03341607f * dr::sin(anomaly)
-            + 0.00034894f * dr::sin(2*anomaly) - 0.0001134f
-            - 0.0000203f * dr::sin(omega);
-
-        ecliptic_obliquity = 0.4090928f - 6.2140e-9f * elapsed_julian_days
-            + 0.0000396f * dr::cos(omega);
-    }
-
-    /* Calculate celestial coordinates ( right ascension and declination ) in radians
-       but without limiting the angle to be less than 2*Pi (i.e., the result may be
-       greater than 2*Pi) */
-    {
-        Float sin_ecliptic_longitude = dr::sin(ecliptic_longitude);
-        d_y = dr::cos(ecliptic_obliquity) * sin_ecliptic_longitude;
-        d_x = dr::cos(ecliptic_longitude);
-        right_ascension = dr::atan2(d_y, d_x);
-        right_ascension += dr::select(right_ascension < 0.f, dr::TwoPi<Float>, 0.f);
-
-        declination = dr::asin(dr::sin(ecliptic_obliquity) * sin_ecliptic_longitude);
-    }
-
-    // Calculate local coordinates (azimuth and zenith angle) in degrees
-    {
-        Float greenwich_mean_sidereal_time = 6.6974243242f
-            + 0.0657098283f * elapsed_julian_days + dec_hours;
-
-        Float local_mean_sidereal_time = dr::deg_to_rad(greenwich_mean_sidereal_time * 15
-            + location.longitude);
-
-        Float latitude_in_radians = dr::deg_to_rad(location.latitude);
-        Float cos_latitude = dr::cos(latitude_in_radians);
-        Float sin_latitude = dr::sin(latitude_in_radians);
-
-        Float hour_angle = local_mean_sidereal_time - right_ascension;
-        Float cos_hour_angle = dr::cos(hour_angle);
-
-        elevation = dr::acos(cos_latitude * cos_hour_angle
-            * dr::cos(declination) + dr::sin(declination) * sin_latitude);
-
-        d_y = -dr::sin(hour_angle);
-        d_x = dr::tan(declination) * cos_latitude - sin_latitude * cos_hour_angle;
-
-        azimuth = dr::atan2(d_y, d_x);
-        azimuth += dr::select(azimuth < 0.f, dr::TwoPi<Float>, 0.f);
-
-        // Parallax Correction
-        elevation += Float(EARTH_MEAN_RADIUS / ASTRONOMICAL_UNIT) * dr::sin(elevation);
-    }
-
-    return std::make_pair(elevation, azimuth - dr::Pi<Float>);
+template <typename Value>
+MI_INLINE Value get_area_ratio(const Value &custom_half_aperture) {
+    return (1 - Value(dr::cos(SUN_HALF_APERTURE))) /
+           (1 - dr::cos(custom_half_aperture));
 }
+
+/**
+ * \brief Computes the Gaussian CDF for the given mean and standard
+ * deviation
+ *
+ * \tparam Value
+ *      Type to compute on
+ * \param mu
+ *      Mean of the gaussian
+ * \param sigma
+ *      Standard deviation of the gaussian
+ * \param x
+ *      Point to evaluate
+ * \return
+ *      The Gaussian cumulative distribution function at x
+ */
+template <typename Value>
+MI_INLINE Value gaussian_cdf(const Value &mu, const Value &sigma,
+                             const Value &x) {
+    return 0.5f * (1 + dr::erf(dr::InvSqrtTwo<Value> * (x - mu) / sigma));
+}
+
+
+// ================================================================================================
+// ==================================== RADIANCE COMPUTATIONS =====================================
+// ================================================================================================
+
 
 /**
  * \brief Computes the cosine of the angle made between the sun's radius and the viewing direction
