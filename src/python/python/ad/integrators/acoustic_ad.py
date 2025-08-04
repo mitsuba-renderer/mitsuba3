@@ -191,12 +191,12 @@ class AcousticADIntegrator(RBIntegrator):
             raise Exception("Acoustic sampling does not support border sampling")
             film_size += 2 * film.rfilter().border_size()
 
-        wavefront_size = film_size.x * spp # dr.prod(film_size) * spp
+        wavefront_size = film_size.x * spp
 
-        if wavefront_size > 2**32:
+        if wavefront_size >= 2**32:
             raise Exception(
                 "The total number of Monte Carlo samples required by this "
-                "rendering task (%i) exceeds 2^32 = 4294967296. Please use "
+                "rendering task (%i) exceeds 2^32-1 = 4294967295. Please use "
                 "fewer samples per pixel or render using multiple passes."
                 % wavefront_size)
 
