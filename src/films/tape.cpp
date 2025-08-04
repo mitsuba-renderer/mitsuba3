@@ -66,7 +66,7 @@ public:
         std::string file_format = string::to_lower(
             props.string("file_format", "openexr"));
         std::string pixel_format = string::to_lower(
-            props.string("pixel_format", "rgb")); //FIXME: do we want rgb?
+            props.string("pixel_format", "MultiChannel"));
         std::string component_format = string::to_lower(
             props.string("component_format", "float16"));
 
