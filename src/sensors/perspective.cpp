@@ -154,10 +154,10 @@ public:
 
     void traverse(TraversalCallback *cb) override {
         Base::traverse(cb);
-        cb->put("x_fov",                    m_x_fov,                      ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        cb->put("principal_point_offset_x", m_principal_point_offset.x(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        cb->put("principal_point_offset_y", m_principal_point_offset.y(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        cb->put("to_world",                 m_to_world,                   ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("x_fov",                    m_x_fov,                      ParamFlags::NonDifferentiable);
+        cb->put("principal_point_offset_x", m_principal_point_offset.x(), ParamFlags::NonDifferentiable);
+        cb->put("principal_point_offset_y", m_principal_point_offset.y(), ParamFlags::NonDifferentiable);
+        cb->put("to_world",                 m_to_world,                   ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
