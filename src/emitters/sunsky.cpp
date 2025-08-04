@@ -183,40 +183,29 @@ public:
             file_resolver()->resolve(DATABASE_PATH + "sunsky_datasets.bin")
         };
 
-        m_sky_params_dataset = load_field<Float64, Float>(
-            datasets.field("sky_params" + dataset_type)
-        );
-        m_sky_rad_dataset = load_field<Float64, Float>(
-            datasets.field("sky_rad" + dataset_type)
-        );
+        m_sky_params_dataset = load_field<TensorXf64, TensorXf>(datasets, "sky_params" + dataset_type);
+        m_sky_rad_dataset = load_field<TensorXf64, TensorXf>(datasets, "sky_rad" + dataset_type);
 
-        m_sky_params = sky_radiance_params<SKY_DATASET_SIZE, FloatStorage>(
-            m_sky_params_dataset, albedo, m_turbidity, sun_eta),
-        m_sky_radiance = sky_radiance_params<SKY_DATASET_RAD_SIZE, FloatStorage>(
+        m_sky_params = sky_radiance_params<TensorXf>(
+            m_sky_params_dataset, albedo, m_turbidity, sun_eta);
+        m_sky_radiance = sky_radiance_params<TensorXf>(
             m_sky_rad_dataset, albedo, m_turbidity, sun_eta);
 
         // ================= GET SUN RADIANCE =================
-        m_sun_rad_dataset = load_field<Float64, Float>(
-            datasets.field("sun_rad" + dataset_type)
-        );
+        m_sun_rad_dataset = load_field<TensorXf64, TensorXf>(datasets, "sun_rad" + dataset_type);
 
-        m_sun_radiance = sun_params<SUN_DATASET_SIZE>(
-            m_sun_rad_dataset, m_turbidity);
+        m_sun_radiance = dr::take_interp(m_sun_rad_dataset, m_turbidity - 1.f);
 
         // Only used in spectral mode since limb darkening is baked in the RGB dataset
         if constexpr (is_spectral_v<Spectrum>) {
-            m_sun_ld = load_field<Float64, Float>(
-                datasets.field("sun_ld_spec")
-            );
+            m_sun_ld = load_field<TensorXf64, TensorXf>(datasets, "sun_ld_spec");
         }
 
         // ================= GET TGMM TABLES =================
         const TensorFile tgmm_dataset(
             file_resolver()->resolve(DATABASE_PATH + "tgmm_tables.bin")
         );
-        m_tgmm_tables = load_field<Float32, Float>(
-            tgmm_dataset.field("tgmm_tables")
-        );
+        m_tgmm_tables = load_field<TensorXf32, TensorXf>(tgmm_dataset, "tgmm_tables");
 
         FloatStorage distrib_params, mis_weights;
         std::tie(distrib_params, mis_weights) =
@@ -308,16 +297,16 @@ public:
         // Update sky
         if (changed_sun_dir || changed_atmosphere) {
             FloatStorage albedo = extract_albedo(m_albedo);
-            m_sky_params = sky_radiance_params<SKY_DATASET_SIZE, FloatStorage>(
+            m_sky_params = sky_radiance_params<TensorXf>(
                 m_sky_params_dataset, albedo, m_turbidity, eta);
-            m_sky_radiance = sky_radiance_params<SKY_DATASET_RAD_SIZE, FloatStorage>(
+            m_sky_radiance = sky_radiance_params<TensorXf>(
                 m_sky_rad_dataset, albedo, m_turbidity, eta);
         }
 
         // Update sun
         if (changed_atmosphere) {
             m_sun_radiance =
-                sun_params<SUN_DATASET_SIZE>(m_sun_rad_dataset, m_turbidity);
+                dr::take_interp(m_sun_rad_dataset, m_turbidity - 1.f);
         }
 
         // Update TGMM (no dependance on albedo)
@@ -1015,11 +1004,11 @@ private:
     ContinuousDistribution<Wavelength> m_spectral_distr;
 
     // Permanent datasets loaded from files/memory
-    FloatStorage m_sky_rad_dataset;
-    FloatStorage m_sky_params_dataset;
+    TensorXf m_sky_rad_dataset;
+    TensorXf m_sky_params_dataset;
     FloatStorage m_sun_ld; // Not initialized in RGB mode
-    FloatStorage m_sun_rad_dataset;
-    FloatStorage m_tgmm_tables;
+    TensorXf m_sun_rad_dataset;
+    TensorXf m_tgmm_tables;
 };
 
 MI_EXPORT_PLUGIN(SunskyEmitter)
