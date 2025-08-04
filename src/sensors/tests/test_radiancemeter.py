@@ -142,3 +142,49 @@ def test_render(variant_scalar_rgb, radiance):
     scene = mi.load_dict(scene_dict)
     img = mi.render(scene)
     assert dr.allclose(img, radiance)
+
+
+@pytest.mark.parametrize("radiance", [10**x for x in range(-3, 4)])
+def test_render2(variant_scalar_rgb, radiance):
+    """Test render results with an area light, this guarantees
+       that the ray-intersection routine works as expected"""
+
+    spp = 1
+
+    scene_dict = {
+        'type': 'scene',
+        'integrator': {
+            'type': 'path'
+        },
+        'sensor': {
+            'type': 'radiancemeter',
+            'to_world': mi.ScalarTransform4f.look_at(origin=[0, 0, -3], target=[0, 0, 0], up=[0, 1, 0]),
+            'film': {
+                'type': 'hdrfilm',
+                'width': 1,
+                'height': 1,
+                'pixel_format': 'rgb',
+                'rfilter': {
+                    'type': 'box'
+                }
+            },
+            'sampler': {
+                'type': 'independent',
+                'sample_count': spp
+            }
+        },
+        'emissive_sphere': {
+            'type': 'sphere',
+            'emitter': {
+                'type': 'area',
+                'radiance': {
+                    'type': 'uniform',
+                    'value': radiance
+                }
+            }
+        }
+    }
+
+    scene = mi.load_dict(scene_dict)
+    img = mi.render(scene)
+    assert dr.allclose(img, radiance)
