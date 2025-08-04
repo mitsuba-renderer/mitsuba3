@@ -360,8 +360,9 @@ public:
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        using SpecMask   = dr::mask_t<unpolarized_spectrum_t<Spectrum>>;
-        using SpecUInt32 = dr::uint32_array_t<unpolarized_spectrum_t<Spectrum>>;
+        using Spec = unpolarized_spectrum_t<Spectrum>;
+        using SpecMask   = dr::mask_t<Spec>;
+        using SpecUInt32 = dr::uint32_array_t<Spec>;
 
         Vector3f local_wo = m_to_world.value().inverse() * (-si.wi);
         Float cos_theta = Frame3f::cos_theta(local_wo),
@@ -371,7 +372,7 @@ public:
         Mask hit_sun = active &
             (dr::dot(m_local_sun_frame.n, local_wo) >= dr::cos(m_sun_half_aperture));
 
-        Spectrum res = 0.f;
+        Spec res = 0.f;
         if constexpr (!is_spectral_v<Spectrum>) {
             SpecUInt32 idx = dr::zeros<SpecUInt32>();
             if constexpr (is_rgb_v<Spectrum>)
@@ -380,9 +381,9 @@ public:
                 idx = SpecUInt32(0);
 
             res = m_sky_scale *
-                  eval_sky<Spectrum>(idx, cos_theta, gamma, m_sky_params, m_sky_radiance, active);
+                  eval_sky<Spec>(idx, cos_theta, gamma, m_sky_params, m_sky_radiance, active);
             res += m_sun_scale *
-                   eval_sun<Spectrum>(idx, cos_theta, gamma, m_sun_radiance, m_sun_half_aperture, hit_sun) *
+                   eval_sun<Spec>(idx, cos_theta, gamma, m_sun_radiance, m_sun_half_aperture, hit_sun) *
                    get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
 
             res *= MI_CIE_Y_NORMALIZATION;
@@ -399,18 +400,18 @@ public:
 
             // Linearly interpolate the sky's irradiance across the spectrum
             res = m_sky_scale * dr::lerp(
-                eval_sky<Spectrum>(query_idx_low, cos_theta, gamma, m_sky_params, m_sky_radiance, active & valid_idx),
-                eval_sky<Spectrum>(query_idx_high, cos_theta, gamma, m_sky_params, m_sky_radiance, active & valid_idx),
+                eval_sky<Spec>(query_idx_low, cos_theta, gamma, m_sky_params, m_sky_radiance, active & valid_idx),
+                eval_sky<Spec>(query_idx_high, cos_theta, gamma, m_sky_params, m_sky_radiance, active & valid_idx),
                 lerp_factor);
 
             // Linearly interpolate the sun's irradiance across the spectrum
-            Spectrum sun_rad_low = eval_sun<Spectrum>(
+            Spec sun_rad_low = eval_sun<Spec>(
                          query_idx_low, cos_theta, gamma,  m_sun_radiance, m_sun_half_aperture, hit_sun & valid_idx);
-            Spectrum sun_rad_high = eval_sun<Spectrum>(
+            Spec sun_rad_high = eval_sun<Spec>(
                          query_idx_high, cos_theta, gamma, m_sun_radiance, m_sun_half_aperture, hit_sun & valid_idx);
-            Spectrum sun_rad = dr::lerp(sun_rad_low, sun_rad_high, lerp_factor);
+            Spec sun_rad = dr::lerp(sun_rad_low, sun_rad_high, lerp_factor);
 
-            Spectrum sun_ld = compute_sun_ld<Spectrum, Float>(
+            Spec sun_ld = compute_sun_ld<Spec, Float>(
                 query_idx_low, query_idx_high, lerp_factor, gamma, m_sun_ld, m_sun_half_aperture,
                 hit_sun & valid_idx
             );
