@@ -766,6 +766,61 @@ class TranslatePlaneUnderTexturedAreaEmitterConfig(TranslateShapeConfigBase):
         self.params.update()
         dr.eval()
 
+# Plane illuminated by a moving textured area emitter
+# (actually continuous, the border of the emitter is black, and we don't directly see the plane borders)
+class TranslateTexturedAreaEmitterIlluminatingPlaneConfig(TranslateShapeConfigBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.key = 'light.vertex_positions'
+        self.res = 64
+        self.scene_dict = {
+            'type': 'scene',
+            'plane': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
+                'face_normals': True,
+                'to_world':  T().rotate([1, 0, 0], 45) @ T().rotate([0, 0, 1], 90) @ T().scale(1),
+            },
+            'light': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
+                'face_normals': True,
+                'to_world': T().translate([0, -1.5, 0]) @ T().rotate([0, 1, 0], -90) @ T().rotate([1, 0, 0], -90) @ T().scale(4.0),
+                'emitter': {
+                    'type': 'area',
+                    'radiance': {
+                        'type': 'bitmap',
+                        'filename': 'resources/data/common/textures/gradient.jpg',
+                        'wrap_mode': 'clamp',
+                    }
+                }
+            }
+        }
+        self.sensor_dict = {
+            'type': 'perspective',
+            'to_world': T().look_at(origin=[0, 0.1, 4], target=[0, 0.1, 0], up=[0, 1, 0]),
+            'fov': 18,
+            'film': {
+                'type': 'hdrfilm',
+                'rfilter': { 'type': 'box' },
+                'width': self.res,
+                'height': self.res,
+                'sample_border': True,
+                'pixel_format': 'rgb',
+                'component_format': 'float32',
+            }
+        }
+        self.ref_fd_epsilon = 1e-3
+        self.error_mean_threshold = 0.025
+        self.error_max_threshold = 0.4
+        self.error_mean_threshold_bwd = 0.25
+
+    def update(self, theta):
+        self.params[self.key] = dr.ravel(self.initial_state + mi.Vector3f(0.0, 0.0, theta))
+        self.params.update()
+        dr.eval()
+
+
 
 # Translate diffuse rectangle under constant illumination
 class TranslateDiffuseRectangleConstantConfig(TranslateShapeConfigBase):
@@ -861,9 +916,6 @@ class ScaleSphereEmitterOnBlackConfig(ScaleShapeConfigBase):
         self.error_mean_threshold = 0.08
         self.error_max_threshold = 0.5
         self.error_mean_threshold_bwd = 0.1
-        self.integrator_dict = {
-            'max_depth': 3,
-        }
 
 
 # Translate occluder (sphere) casting shadow on gray wall
@@ -992,7 +1044,8 @@ CONTINUOUS_BUT_NON_STATIC_GEOM_CONFIGS_LIST = [
     TranslatePlaneUnderProjectorConfig,
     TranslateGlassPlaneLensConfig,
     TranslateTexturedAreaEmitterConfig,
-    TranslatePlaneUnderTexturedAreaEmitterConfig
+    TranslatePlaneUnderTexturedAreaEmitterConfig,
+    TranslateTexturedAreaEmitterIlluminatingPlaneConfig
 ]
 
 DISCONTINUOUS_CONFIGS_LIST = [
