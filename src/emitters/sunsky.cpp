@@ -216,10 +216,10 @@ public:
 
         // ================= Compute datasets =================
         TensorXf temp_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
-        m_sky_params = Base::bezier_interp(temp_sky_params, sun_eta);
+        m_sky_params = Base::template bezier_interp<FloatStorage>(temp_sky_params, sun_eta);
 
         TensorXf temp_sky_radiance = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
-        m_sky_radiance = Base::bezier_interp(temp_sky_radiance, sun_eta);
+        m_sky_radiance = Base::template bezier_interp<FloatStorage>(temp_sky_radiance, sun_eta);
 
         m_sun_radiance = dr::take_interp(m_sun_rad_dataset, m_turbidity - 1.f);
 
@@ -293,10 +293,10 @@ public:
         // Update sky
         if (changed_sun_dir || changed_atmosphere) {
             TensorXf temp_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
-            m_sky_params = Base::bezier_interp(temp_sky_params, eta);
+            m_sky_params = Base::template bezier_interp<FloatStorage>(temp_sky_params, eta);
 
             TensorXf temp_sky_radiance = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
-            m_sky_radiance = Base::bezier_interp(temp_sky_radiance, eta);
+            m_sky_radiance = Base::template bezier_interp<FloatStorage>(temp_sky_radiance, eta);
         }
 
         // Update sun
@@ -350,7 +350,7 @@ public:
                 idx = SpecUInt32(0);
 
             res = m_sky_scale *
-                  eval_sky<Spec>(idx, cos_theta, gamma, m_sky_params, m_sky_radiance, active);
+                  Base::template eval_sky<Spec>(idx, cos_theta, gamma, m_sky_params, m_sky_radiance, active);
             res += m_sun_scale *
                    eval_sun<Spec>(idx, cos_theta, gamma, m_sun_radiance, m_sun_half_aperture, hit_sun) *
                    get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
@@ -369,8 +369,8 @@ public:
 
             // Linearly interpolate the sky's irradiance across the spectrum
             res = m_sky_scale * dr::lerp(
-                eval_sky<Spec>(query_idx_low, cos_theta, gamma, m_sky_params, m_sky_radiance, active & valid_idx),
-                eval_sky<Spec>(query_idx_high, cos_theta, gamma, m_sky_params, m_sky_radiance, active & valid_idx),
+                Base::template eval_sky<Spec>(query_idx_low, cos_theta, gamma, m_sky_params, m_sky_radiance, active & valid_idx),
+                Base::template eval_sky<Spec>(query_idx_high, cos_theta, gamma, m_sky_params, m_sky_radiance, active & valid_idx),
                 lerp_factor);
 
             // Linearly interpolate the sun's irradiance across the spectrum
@@ -725,7 +725,7 @@ private:
                 Float gamma = dr::unit_angle(Vector3f(m_local_sun_frame.n), sky_wo);
 
                 FullSpectrum ray_radiance =
-                    eval_sky<FullSpectrum>(channel_idx, cos_theta, gamma, m_sky_params, m_sky_radiance, true) * w_phi * w_cos_theta;
+                    Base::template eval_sky<FullSpectrum>(channel_idx, cos_theta, gamma, m_sky_params, m_sky_radiance, true) * w_phi * w_cos_theta;
                 sky_radiance = dr::sum_inner(ray_radiance) * J;
             }
 
