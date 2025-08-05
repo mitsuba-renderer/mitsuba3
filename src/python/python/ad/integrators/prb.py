@@ -163,24 +163,35 @@ class PRBIntegrator(RBIntegrator):
                 if dr.hint(not primal, mode='scalar'):
                     is_surface = mi.has_flag(ds.emitter.flags(), mi.EmitterFlags.Surface)
                     is_infinite = mi.has_flag(ds.emitter.flags(), mi.EmitterFlags.Infinite)
+                    is_spatially_varying = mi.has_flag(ds.emitter.flags(), mi.EmitterFlags.SpatiallyVarying)
+
+                    # For textured area lights, we need to track UV changes on
+                    # the emitter if it is moving
+                    textured_area_em = active_em & is_surface & is_spatially_varying
+                    ray_em = si.spawn_ray_to(ds.p)
+                    # Move ray origin closer, visibibliy is already accounted for
+                    ray_em.o = dr.fma(ray_em.d, ray_em.maxt, ray_em.o)
+                    ray_em.maxt = dr.largest(ray_em.maxt)
+                    si_em = scene.ray_intersect(ray_em, textured_area_em)
+
+                    # Re-attach gradients for the the `ds` struct
+                    ds_diff = mi.DirectionSample3f(scene, si_em, si)
+                    ds_diff = dr.select(textured_area_em, ds_diff, dr.zeros(mi.DirectionSample3f))
+                    ds_diff.d = dr.select(~is_infinite, ds_diff.d, ds.d)
+                    ds = dr.replace_grad(ds, ds_diff)
 
                     # If the current interaction point is moving, we need
                     # to differentiate the solid angle to surface area
                     # reparameterization.
-                    J = solid_angle_to_area_jacobian(si.p, ds.p, ds.n, active_em & is_surface)
+                    J = solid_angle_to_area_jacobian(
+                        si.p, dr.detach(ds.p), dr.detach(ds.n), active_em & is_surface
+                    )
 
                     # Given the detached emitter sample, *recompute* its
                     # contribution with AD to enable light source optimization
-                    ds_d_diff = dr.normalize(ds.p - si.p)
-                    ds_d_diff = dr.select(~is_infinite, ds_d_diff, ds.d)
-                    ds.d = dr.replace_grad(ds.d, ds_d_diff)
-                    em_val = scene.eval_emitter_direction(si, ds, active_em)
-
-                    em_weight = dr.replace_grad(em_weight, dr.select(
-                        (ds.pdf != 0),
-                        (em_val / ds.pdf) * (J / dr.detach(J)),
-                        0
-                    ))
+                    em_val_diff = scene.eval_emitter_direction(si, ds, active_em)
+                    em_weight_diff = (em_val_diff / dr.detach(ds.pdf)) * (J / dr.detach(J))
+                    em_weight = dr.replace_grad(em_weight, em_weight_diff)
 
                 # Evaluate BSDF * cos(theta) differentiably
                 wo = si.to_local(ds.d)
@@ -314,8 +325,6 @@ class PRBIntegrator(RBIntegrator):
             [],                  # Empty typle of AOVs
             L                    # State for the differential phase
         )
-
-
 
 mi.register_integrator("prb", lambda props: PRBIntegrator(props))
 
