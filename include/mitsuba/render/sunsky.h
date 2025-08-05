@@ -4,11 +4,13 @@
 
 #pragma once
 
-#include <drjit/tensor.h>
-#include <mitsuba/core/fresolver.h>
-#include <mitsuba/core/fstream.h>
-#include <mitsuba/core/spectrum.h>
+#include "drjit/util.h"
 #include <drjit/sphere.h>
+#include <drjit/tensor.h>
+#include <mitsuba/render/scene.h>
+#include <mitsuba/render/emitter.h>
+#include <mitsuba/core/fresolver.h>
+#include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/tensor.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -299,17 +301,116 @@ public:
 
 protected:
 
+    template <typename Spec, typename Dataset>
+    Spec eval_sky(const dr::uint32_array_t<Spec> &channel_idx, const Float &cos_theta, const Float &gamma,
+               const Dataset &sky_params, const Dataset &sky_radiance, const dr::mask_t<Spec> &active = true) const {
+        using SpecSkyParams = dr::Array<Spec, SKY_PARAMS>;
+
+        using SpecSkyParams = dr::Array<Spec, SKY_PARAMS>;
+        SpecSkyParams coefs = dr::gather<SpecSkyParams>(sky_params, channel_idx, active);
+
+        Float cos_gamma = dr::cos(gamma),
+                cos_gamma_sqr = dr::square(cos_gamma);
+
+        Spec c1 = 1 + coefs[0] * dr::exp(coefs[1] / (cos_theta + 0.01f));
+        Spec chi = (1 + cos_gamma_sqr) /
+                    dr::pow(1 + dr::square(coefs[8]) - 2 * coefs[8] * cos_gamma, 1.5f);
+        Spec c2 = coefs[2] + coefs[3] * dr::exp(coefs[4] * gamma) +
+                    coefs[5] * cos_gamma_sqr + coefs[6] * chi +
+                    coefs[7] * dr::safe_sqrt(cos_theta);
+
+        return c1 * c2 * dr::gather<Spec>(sky_radiance, channel_idx, active);
+    }
+
+    /*
+    template <typename Spec>
+    Spec eval_sun(const dr::uint32_array_t<Spec> &channel_idx,
+                   const Float &cos_theta, const Float &gamma,
+                   const FloatStorage &sun_radiance,
+                   const dr::mask_t<Spec> &active = true) const {
+        using SpecUInt32 = dr::uint32_array_t<Spec>;
+        using UInt32 = dr::uint32_array_t<Float>;
+
+        // Angles computation
+        Float elevation = 0.5f * dr::Pi<Float> - dr::acos(cos_theta);
+
+        // Find the segment of the piecewise function we are in
+        UInt32 pos = dr::floor2int<UInt32>(
+            dr::cbrt(2 * elevation * dr::InvPi<Float>) * SUN_SEGMENTS);
+        pos = dr::minimum(pos, SUN_SEGMENTS - 1);
+
+        Float break_x =
+            0.5f * dr::Pi<Float> * dr::pow((Float) pos / SUN_SEGMENTS, 3.f);
+        Float x = elevation - break_x;
+
+        Spec solar_radiance = 0.f;
+        if constexpr (is_rgb_v<Spectrum>) {
+            DRJIT_MARK_USED(gamma);
+            // Compute sun radiance
+            SpecUInt32 global_idx = pos * WAVELENGTH_COUNT * SUN_CTRL_PTS +
+                                    channel_idx * SUN_CTRL_PTS;
+            for (uint8_t k = 0; k < SUN_CTRL_PTS; ++k)
+                solar_radiance +=
+                    dr::pow(x, k) *
+                    dr::gather<Spec>(sun_radiance, global_idx + k, active);
+        } else if constexpr (is_spectral_v<Spectrum>) {
+            // Reproduces the spectral computation for RGB, however, in this case,
+            // limb darkening is baked into the dataset, hence the two for-loops
+            Float cos_psi = sun_cos_psi(gamma);
+            SpecUInt32 global_idx = pos * (3 * SUN_CTRL_PTS * SUN_LD_PARAMS) +
+                                    channel_idx * (SUN_CTRL_PTS * SUN_LD_PARAMS);
+
+            for (uint8_t k = 0; k < SUN_CTRL_PTS; ++k) {
+                for (uint8_t j = 0; j < SUN_LD_PARAMS; ++j) {
+                    SpecUInt32 idx = global_idx + k * SUN_LD_PARAMS + j;
+                    solar_radiance +=
+                        dr::pow(x, k) *
+                        dr::pow(cos_psi, j) *
+                        dr::gather<Spec>(sun_radiance, idx, active);
+                }
+            }
+        }
+
+        return solar_radiance & active;
+    }
+
+    template <typename Spec>
+    Spec compute_sun_ld(const dr::uint32_array_t<Spec> &channel_idx_low,
+                         const dr::uint32_array_t<Spec> &channel_idx_high,
+                         const wavelength_t<Spec> &lerp_f, const Float &gamma,
+                         const dr::mask_t<Spec> &active) const {
+        using SpecLdArray = dr::Array<Spec, SUN_LD_PARAMS>;
+
+        SpecLdArray sun_ld_low  = dr::gather<SpecLdArray>(m_sun_ld, channel_idx_low, active),
+                    sun_ld_high = dr::gather<SpecLdArray>(m_sun_ld, channel_idx_high, active),
+                    sun_ld_coefs = dr::lerp(sun_ld_low, sun_ld_high, lerp_f);
+
+        Float cos_psi = sun_cos_psi(gamma);
+
+        Spec sun_ld = 0.f;
+        for (uint8_t j = 0; j < SUN_LD_PARAMS; ++j)
+            sun_ld += dr::pow(cos_psi, j) * sun_ld_coefs[j];
+
+        return sun_ld & active;
+    }
+
+    MI_INLINE Float sun_cos_psi(const Float& gamma) const {
+        const Float sol_rad_sin = dr::sin(m_sun_half_aperture),
+                    ar2 = 1.f / (sol_rad_sin * sol_rad_sin),
+                    sin_gamma = dr::sin(gamma),
+                    sc2 = 1.f - ar2 * sin_gamma * sin_gamma;
+
+        return dr::safe_sqrt(sc2);
+    }*/
+
     TensorXf bilinear_interp(const TensorXf& dataset,
-        const FloatStorage& albedo, const Float& turbidity) {
+        const FloatStorage& albedo, const Float& turbidity) const {
 
         using UInt32 = dr::uint32_array_t<Float>;
         using UInt32Storage = DynamicBuffer<UInt32>;
 
-        const size_t dataset_size            = dataset.size();
-        const typename TensorXf::Shape shape = dataset.shape();
-
-        uint32_t bilinear_res_size = dataset_size / (shape[0] * shape[1]),
-                 nb_params = bilinear_res_size / (shape[2] * shape[3]);
+        uint32_t bilinear_res_size = dataset.size() / (dataset.shape(0) * dataset.shape(1)),
+                 nb_params = bilinear_res_size / (dataset.shape(2) * dataset.shape(3));
 
         // Interpolate on turbidity
         TensorXf res = dr::take_interp(dataset, turbidity - 1.f);
@@ -324,14 +425,9 @@ protected:
         return dr::take_interp(res, rep_albedo);
     }
 
-    TensorXf bezier_interp(const TensorXf& dataset, const Float& eta) {
-        const typename TensorXf::Shape shape = dataset.shape();
-        uint32_t result_size = dataset.size() / shape[0];
-
-        TensorXf res = TensorXf(
-            dr::zeros<FloatStorage>(result_size),
-            shape.size() - 1, shape.data() + 1
-        );
+    template<typename Dataset>
+    Dataset bezier_interp(const TensorXf& dataset, const Float& eta) const {
+        Dataset res = dr::zeros<Dataset>(dataset.size() / dataset.shape(0));
 
         Float x = dr::cbrt(2 * dr::InvPi<Float> * eta);
         constexpr dr::scalar_t<Float> coefs[SKY_CTRL_PTS] = {1, 5, 10, 10, 5, 1};
@@ -339,9 +435,7 @@ protected:
         Float x_pow = 1.f, x_pow_inv = dr::pow(1.f - x, SKY_CTRL_PTS - 1);
         Float x_pow_inv_scale = dr::rcp(1.f - x);
         for (uint32_t ctrl_pt = 0; ctrl_pt < SKY_CTRL_PTS; ++ctrl_pt) {
-            TensorXf data = dr::take(dataset, ctrl_pt);
-            TensorXf coef = coefs[ctrl_pt] * x_pow * x_pow_inv;
-            res += data * coef;
+            res += dr::take(dataset, ctrl_pt) * coefs[ctrl_pt] * x_pow * x_pow_inv;
 
             x_pow *= x;
             x_pow_inv *= x_pow_inv_scale;
@@ -361,7 +455,7 @@ protected:
      * in "Solar energy", vol 27, number 5, 2001 by Pergamon Press.
      */
     std::pair<Float, Float> sun_coordinates(const DateTimeRecord<Float> &date_time,
-                                            const LocationRecord<Float> &location) {
+                                            const LocationRecord<Float> &location) const {
 
         // Main variables
         Float elapsed_julian_days, dec_hours;
@@ -453,7 +547,7 @@ protected:
     }
 
     template <typename FileTensor>
-    TensorXf load_field(const TensorFile& tensor_file, const std::string_view tensor_name) {
+    TensorXf load_field(const TensorFile& tensor_file, const std::string_view tensor_name) const {
 
         const TensorFile::Field& field = tensor_file.field(tensor_name);
         if (unlikely(field.dtype != struct_type_v<FileTensor>))
@@ -590,51 +684,6 @@ MI_INLINE Value sun_cos_psi(const Value& gamma, const Value& sun_half_aperture) 
 }
 
 /**
- * \brief Evaluate the sky model for the given channel indices and angles
- *
- * Based on the Hosek-Wilkie skylight model
- * https://cgg.mff.cuni.cz/projects/SkylightModelling/HosekWilkie_SkylightModel_SIGGRAPH2012_Preprint_lowres.pdf
- * \tparam Spec
- *      Spectral type to render (adapts the number of channels)
- * \param channel_idx
- *      Indices of the channels to render
- * \param cos_theta
- *      Cosine of the angle between the z-axis (up) and the viewing direction
- * \param gamma
- *      Angle between the sun and the viewing direction
- * \param sky_params
- *      Sky parameters dataset
- * \param sky_radiance
- *      Sky radiance dataset
- * \param active
- *      Mask for the active lanes and channel indices
- * \return
- *      Sky radiance
- */
-template <typename Spec, typename Float,
-          typename Dataset1 = DynamicBuffer<Float>, typename Dataset2 = DynamicBuffer<Float>,
-          typename Index = dr::uint32_array_t<Spec>>
-Spec eval_sky(const Index &channel_idx, const Float &cos_theta, const Float &gamma,
-               const Dataset1 &sky_params, const Dataset2 &sky_radiance, const dr::mask_t<Index> &active = true) {
-
-    // Gather coefficients for the skylight equation
-    using SpecSkyParams = dr::Array<Spec, SKY_PARAMS>;
-    SpecSkyParams coefs = dr::gather<SpecSkyParams>(sky_params, channel_idx, active);
-
-    Float cos_gamma = dr::cos(gamma),
-            cos_gamma_sqr = dr::square(cos_gamma);
-
-    Spec c1 = 1 + coefs[0] * dr::exp(coefs[1] / (cos_theta + 0.01f));
-    Spec chi = (1 + cos_gamma_sqr) /
-                dr::pow(1 + dr::square(coefs[8]) - 2 * coefs[8] * cos_gamma, 1.5f);
-    Spec c2 = coefs[2] + coefs[3] * dr::exp(coefs[4] * gamma) +
-                coefs[5] * cos_gamma_sqr + coefs[6] * chi +
-                coefs[7] * dr::safe_sqrt(cos_theta);
-
-    return c1 * c2 * dr::gather<Spec>(sky_radiance, channel_idx, active);
-}
-
-/**
 * \brief Evaluates the sun model for the given channel indices and angles
 *
 * The template parameter is used to render the full 11 wavelengths at once
@@ -710,7 +759,7 @@ Spec eval_sun(const dr::uint32_array_t<Spec> &channel_idx,
         }
     }
 
-    return solar_radiance & active;
+    return dr::select(active, solar_radiance, 0.f);
 }
 
 
