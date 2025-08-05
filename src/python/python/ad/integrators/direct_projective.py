@@ -174,22 +174,33 @@ class DirectProjectiveIntegrator(PSIntegrator):
             if dr.hint(not primal, mode='scalar'):
                 is_surface = mi.has_flag(ds_em.emitter.flags(), mi.EmitterFlags.Surface)
                 is_infinite = mi.has_flag(ds_em.emitter.flags(), mi.EmitterFlags.Infinite)
+                is_spatially_varying = mi.has_flag(ds_em.emitter.flags(), mi.EmitterFlags.SpatiallyVarying)
 
-                # If the current interaction point is moving, we need
+                # For textured area lights, we need to track UV changes on
+                # the emitter if it is moving
+                textured_area_em = active_em & is_surface & is_spatially_varying
+                ray_em = si.spawn_ray_to(ds_em.p)
+                # Move ray origin closer, visibibliy is already accounted for
+                ray_em.o = dr.fma(ray_em.d, ray_em.maxt, ray_em.o)
+                ray_em.maxt = dr.largest(ray_em.maxt)
+                si_em = scene.ray_intersect(ray_em, textured_area_em)
+
+                # Re-attach gradients for the the `ds_em` struct
+                ds_em_diff = mi.DirectionSample3f(scene, si_em, si)
+                ds_em_diff = dr.select(textured_area_em, ds_em_diff, dr.zeros(mi.DirectionSample3f))
+                ds_em_diff.d = dr.select(~is_infinite, ds_em_diff.d, ds_em.d)
+                ds_em = dr.replace_grad(ds_em, ds_em_diff)
+
                 # to differentiate the solid angle to surface area
                 # reparameterization.
-                J = solid_angle_to_area_jacobian(si.p, ds_em.p, ds_em.n, active_em & is_surface)
+                J = solid_angle_to_area_jacobian(
+                    si.p, dr.detach(ds_em.p), dr.detach(ds_em.n), active_em & is_surface
+                )
 
                 # Re-compute attached `emitter_val` to enable emitter optimization
-                ds_em_d_diff = dr.normalize(ds_em.p - si.p)
-                ds_em_d_diff = dr.select(~is_infinite, ds_em_d_diff, ds_em.d)
-                ds_em.d = dr.replace_grad(ds_em.d, ds_em_d_diff)
                 spec_em = scene.eval_emitter_direction(si, ds_em, active_em)
-                emitter_val = dr.select(
-                    ds_em.pdf != 0,
-                    (spec_em / ds_em.pdf) * (J / dr.detach(J)),
-                    0
-                )
+                emitter_val_diff = (spec_em / ds_em.pdf) * (J / dr.detach(J))
+                emitter_val = dr.replace_grad(emitter_val, emitter_val_diff)
 
             # Evaluate the BSDF (foreshortening term included)
             wo = si.to_local(ds_em.d)
