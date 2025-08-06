@@ -17,26 +17,26 @@ class DirectProjectiveIntegrator(PSIntegrator):
      * - sppc
        - |int|
        - Number of samples per pixel used to estimate the continuous
-         derivatives. This is overriden by whatever runtime `spp` value is
-         passed to the `render()` method. If this value was not set and no
-         runtime value `spp` is used, the `sample_count` of the film's sampler
-         will be used.
+         derivatives. Unless it is zero, this parameter is overriden by the
+         `spp` argument of the `render()` method. If neither this parameter nor
+         the `spp` argument are defined, the `sample_count` of the film's
+         sampler will be used.
 
      * - sppp
        - |int|
        - Number of samples per pixel used to to estimate the gradients resulting
          from primary visibility changes (on the first segment of the light
-         path: from the sensor to the first bounce) derivatives. This is
-         overriden by whatever runtime `spp` value is passed to the `render()`
-         method. If this value was not set and no runtime value `spp` is used,
-         the `sample_count` of the film's sampler will be used.
+         path: from the sensor to the first bounce) derivatives. Unless it is
+         zero, this parameter is overriden by the `spp` argument of the
+         `render()` method. If neither this parameter nor the `spp` argument are
+         defined, the `sample_count` of the film's sampler will be used.
 
      * - sppi
        - |int|
        - Number of samples per pixel used to to estimate the gradients resulting
-         from indirect visibility changes  derivatives. This is overriden by
-         whatever runtime `spp` value is passed to the `render()` method. If
-         this value was not set and no runtime value `spp` is used, the
+         from indirect visibility changes  derivatives. Unless it is zero, this
+         parameter is overriden by the `spp` argument of the `render()` method.
+         If neither this parameter nor the `spp` argument are defined, the
          `sample_count` of the film's sampler will be used.
 
      * - guiding
