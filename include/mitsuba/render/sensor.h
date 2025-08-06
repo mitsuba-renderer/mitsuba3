@@ -203,10 +203,6 @@ public:
     /// space transformation)
     virtual ProjectiveTransform4f projection_transform() const = 0;
 
-    /// Return the sample-to-camera transformation matrix (inverse of
-    /// projection_transform)
-    virtual ProjectiveTransform4f sample_to_camera() const = 0;
-
     void traverse(TraversalCallback *cb) override {
         cb->put("near_clip",      m_near_clip,      ParamFlags::NonDifferentiable);
         cb->put("far_clip",       m_far_clip,       ParamFlags::NonDifferentiable);
