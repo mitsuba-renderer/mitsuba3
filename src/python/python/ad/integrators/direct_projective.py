@@ -146,7 +146,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
         else:
             with dr.resume_grad(when=not primal):
                 si = scene.ray_intersect(ray, ray_flags=mi.RayFlags.All,
-                             coherent=True, active=active)
+                                         coherent=True, active=active)
 
         # Hide the environment emitter if necessary
         if not self.hide_emitters:
@@ -225,8 +225,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
 
         with dr.resume_grad(when=not primal):
             # Trace the BSDF sampled ray
-            si_bsdf = scene.ray_intersect(
-                ray_bsdf, ray_flags=mi.RayFlags.All, coherent=False, active=active_bsdf)
+            si_bsdf = scene.ray_intersect(ray_bsdf, active=active_bsdf)
 
             if dr.hint(not primal, mode='scalar'):
                 si_bsdf_detached = dr.detach(si_bsdf)
@@ -401,52 +400,40 @@ class DirectProjectiveIntegrator(PSIntegrator):
         return radiance_diff, active_diff
 
 
-    def sample_importance(self, scene, sensor, ss, max_depth, sampler, wavelengths, preprocess, active):
+    def sample_importance(self, scene, sensor, ss, max_depth, sampler, wavelengths, active_):
         del max_depth  # Unused
 
         # Trace a ray to the camera ray intersection
+        active = mi.Mask(active_)
         ss_importance = mi.SilhouetteSample3f(ss)
         ss_importance.d = -ss_importance.d
         ray_boundary = ss_importance.spawn_ray(wavelengths)
-        if preprocess:
-            si_boundary = scene.ray_intersect(ray_boundary, active=active)
-        else:
-            with dr.resume_grad():
-                si_boundary = scene.ray_intersect(
-                    ray_boundary,
-                    ray_flags=mi.RayFlags.All | mi.RayFlags.FollowShape,
-                    coherent=False,
-                    active=active)
-        active_i = active & si_boundary.is_valid()
+        si_boundary = scene.ray_intersect(ray_boundary,
+                                          ray_flags=mi.RayFlags.All,
+                                          coherent=False,
+                                          reorder=True,
+                                          active=active)
+        active &= si_boundary.is_valid()
 
         # Connect `si_boundary` to the sensor
         it = dr.zeros(mi.Interaction3f)
         it.p = si_boundary.p
-        sensor_ds, sensor_weight = sensor.sample_direction(it, sampler.next_2d(active_i), active_i)
-        active_i &= (sensor_ds.pdf != 0)
+        sensor_ds, sensor_weight = sensor.sample_direction(it, sampler.next_2d(active), active)
+        active &= (sensor_ds.pdf != 0)
 
         # Visibility to sensor
         cam_test_ray = si_boundary.spawn_ray_to(sensor_ds.p)
-        active_i &= ~scene.ray_test(cam_test_ray, active_i)
-
-        # Recompute the correct motion of the first interaction point (camera
-        # ray intersection in the direct illumination integrator)
-        if not preprocess:
-            d = dr.normalize(sensor_ds.p - si_boundary.p)
-            O = si_boundary.p - d
-            with dr.resume_grad():
-                t = dr.dot(si_boundary.p - O, si_boundary.n) / dr.dot(d, si_boundary.n)
-                si_boundary.p = dr.replace_grad(si_boundary.p, O + t * d)
+        active &= ~scene.ray_test(cam_test_ray, active)
 
         # Evaluate the BSDF
         bsdf_ctx = mi.BSDFContext(mi.TransportMode.Importance)
         wo_local = si_boundary.to_local(sensor_ds.d)
         bsdf_val = si_boundary.bsdf().eval(
-            bsdf_ctx, si_boundary, wo_local, active_i)
-        active_i &= (dr.max(bsdf_val) != 0)
+            bsdf_ctx, si_boundary, wo_local, active)
+        active &= (dr.max(bsdf_val) != 0)
 
         importance = bsdf_val * sensor_weight
-        return importance, sensor_ds.uv, mi.UInt32(2), si_boundary.p, active_i
+        return importance, sensor_ds.uv, mi.UInt32(2), active
 
 mi.register_integrator("direct_projective", lambda props: DirectProjectiveIntegrator(props))
 
