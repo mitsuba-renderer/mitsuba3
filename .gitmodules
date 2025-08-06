@@ -48,3 +48,6 @@
 [submodule "resources/data_acoustic"]
 	path = resources/data_acoustic
 	url = git@github.com:tjueterb/misuka-data.git
+[submodule "tutorials_acoustic"]
+	path = tutorials_acoustic
+	url = https://github.com/tjueterb/misuka-tutorials
