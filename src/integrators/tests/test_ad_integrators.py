@@ -159,7 +159,7 @@ class ConfigBase:
 
         self.sensor_dict = {
             'type': 'perspective',
-            'to_world': mi.ScalarTransform4f.look_at(origin=[0, 0, 4], target=[0, 0, 0], up=[0, 1, 0]),
+            'to_world': T().look_at(origin=[0, 0, 4], target=[0, 0, 0], up=[0, 1, 0]),
             'film': {
                 'type': 'hdrfilm',
                 'rfilter': { 'type': 'box' },
@@ -225,7 +225,7 @@ class DiffuseAlbedoConfig(ConfigBase):
             },
             'sphere': {
                 'type': 'sphere',
-                'to_world': mi.ScalarTransform4f.scale(0.25),
+                'to_world': T().scale(0.25),
             },
             'light': { 'type': 'constant' }
         }
@@ -245,7 +245,7 @@ class DiffuseAlbedoGIConfig(ConfigBase):
             'plane': { 'type': 'rectangle' },
             'sphere': {
                 'type': 'sphere',
-                'to_world': mi.ScalarTransform4f.scale(0.25)
+                'to_world': T().scale(0.25)
             },
             'green': {
                 'type': 'rectangle',
@@ -256,7 +256,7 @@ class DiffuseAlbedoGIConfig(ConfigBase):
                         'value': [0.1, 1.0, 0.1]
                     }
                 },
-                'to_world': mi.ScalarTransform4f.translate([1.25, 0.0, 1.0]) @ mi.ScalarTransform4f.rotate([0, 1, 0], -90),
+                'to_world': T().translate([1.25, 0.0, 1.0]) @ T().rotate([0, 1, 0], -90),
             },
             'light': { 'type': 'constant', 'radiance': 3.0 }
         }
@@ -285,11 +285,11 @@ class AreaLightRadianceConfig(ConfigBase):
             },
             'sphere': {
                 'type': 'sphere',
-                'to_world': mi.ScalarTransform4f.scale(0.25),
+                'to_world': T().scale(0.25),
             },
             'light': {
                 'type': 'rectangle',
-                'to_world': mi.ScalarTransform4f.translate([1.25, 0.0, 1.0]) @ mi.ScalarTransform4f.rotate([0, 1, 0], -90),
+                'to_world': T().translate([1.25, 0.0, 1.0]) @ T().rotate([0, 1, 0], -90),
                 'emitter': {
                     'type': 'area',
                     'radiance': {'type': 'rgb', 'value': [3.0, 3.0, 3.0]}
@@ -339,7 +339,7 @@ class PointLightIntensityConfig(ConfigBase):
             },
             'sphere': {
                 'type': 'sphere',
-                'to_world': mi.ScalarTransform4f.scale(0.25),
+                'to_world': T().scale(0.25),
             },
             'light': {
                 'type': 'point',
@@ -366,7 +366,7 @@ class ConstantEmitterRadianceConfig(ConfigBase):
             },
             'sphere': {
                 'type': 'sphere',
-                'to_world': mi.ScalarTransform4f.scale(0.25),
+                'to_world': T().scale(0.25),
             },
             'light': { 'type': 'constant' }
         }
@@ -392,7 +392,7 @@ class CropWindowConfig(ConfigBase):
         self.res = 64
         self.sensor_dict = {
             'type': 'perspective',
-            'to_world': mi.ScalarTransform4f.look_at(origin=[0, 0, 4], target=[0, 0, 0], up=[0, 1, 0]),
+            'to_world': T().look_at(origin=[0, 0, 4], target=[0, 0, 0], up=[0, 1, 0]),
             'film': {
                 'type': 'hdrfilm',
                 'rfilter': { 'type': 'gaussian', 'stddev': 0.5 },
@@ -573,7 +573,7 @@ class TranslatePlaneUnderProjectorConfig(TranslateShapeConfigBase):
                     'filename': 'resources/data/common/textures/gradient.jpg',
                     'format' : 'variant',
                 },
-                'to_world': mi.ScalarTransform4f.look_at(origin=[0, 0, 3], target=[0, 0, 0], up=[0, 1, 0]),
+                'to_world': T().look_at(origin=[0, 0, 3], target=[0, 0, 0], up=[0, 1, 0]),
             }
         }
         self.res = 64
@@ -860,7 +860,7 @@ class TranslateRectangleEmitterOnBlackConfig(TranslateShapeConfigBase):
                     'type': 'area',
                     'radiance': {'type': 'rgb', 'value': [1.0, 1.0, 1.0]}
                 },
-                'to_world': mi.ScalarTransform4f.translate([1.25, 0.0, 0.0]),
+                'to_world': T().translate([1.25, 0.0, 0.0]),
             }
         }
         self.ref_fd_epsilon = 1e-3
@@ -870,6 +870,66 @@ class TranslateRectangleEmitterOnBlackConfig(TranslateShapeConfigBase):
         self.integrator_dict = {
             'max_depth': 2,
         }
+
+
+# Translate area emitter (disk) on gray background
+class TranslateDiskEmitterOnGrayConfig(ConfigBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.key = 'disk.to_world'
+        self.scene_dict = {
+            'type': 'scene',
+            'disk': {
+                'type': 'disk',
+                'to_world': T().translate([0.2, 0, -1]) @ T().rotate([0, 1, 0], 60).scale(1.5),
+                'emitter': {
+                    'type': 'area',
+                    'radiance': {'type': 'rgb', 'value': 2 }
+                },
+            },
+            'light': {
+                'type': 'constant',
+                'radiance': {
+                    'type': 'rgb',
+                    'value': 0.2,
+                }
+            },
+        }
+        self.res = 64
+        self.ref_fd_epsilon = 1e-3
+        self.error_mean_threshold = 0.03
+        self.error_max_threshold = 1.0
+        self.error_mean_threshold_bwd = 0.2
+        self.integrator_dict = {
+            'max_depth': 1,
+            'sppc': 0,
+            'sppi': 0,
+        }
+        self.sensor_dict = {
+            'type': 'perspective',
+            'to_world': T().look_at(origin=[0, 0, 1], target=[0, 0, 0], up=[0, 1, 0]),
+            'fov': 120,
+            'near_clip': 0.01,
+            'film': {
+                'type': 'hdrfilm',
+                'rfilter': {'type': 'box'},
+                'width': self.res,
+                'height': self.res,
+                'sample_border': True,
+                'pixel_format': 'rgb',
+                'component_format': 'float32',
+            }
+        }
+
+    def initialize(self):
+        super().initialize()
+        self.params.keep([self.key])
+        self.initial_state = mi.Transform4f(self.params[self.key])
+
+    def update(self, theta):
+        self.params[self.key] = mi.Transform4f().translate([theta, 0, 0]) @ self.initial_state
+        self.params.update()
+        dr.eval()
 
 
 # Translate area emitter (sphere) on black background
@@ -886,7 +946,7 @@ class TranslateSphereEmitterOnBlackConfig(TranslateShapeConfigBase):
                     'type': 'area',
                     'radiance': {'type': 'rgb', 'value': [1.0, 1.0, 1.0]}
                 },
-                'to_world': mi.ScalarTransform4f.translate([1.25, 0.0, 0.0]) @ mi.ScalarTransform4f.rotate(angle=180, axis=[0, 1, 0]),
+                'to_world': T().translate([1.25, 0.0, 0.0]) @ T().rotate(angle=180, axis=[0, 1, 0]),
             }
         }
         self.ref_fd_epsilon = 1e-4
@@ -932,7 +992,7 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
             'occluder': {
                 'type': 'obj',
                 'filename': 'resources/data/common/meshes/sphere.obj',
-                'to_world': mi.ScalarTransform4f.translate([2.0, 0.0, 2.0]) @ mi.ScalarTransform4f.scale(0.25),
+                'to_world': T().translate([2.0, 0.0, 2.0]) @ T().scale(0.25),
             },
             'light': {
                 'type': 'obj',
@@ -941,7 +1001,7 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
                     'type': 'area',
                     'radiance': {'type': 'rgb', 'value': [1000.0, 1000.0, 1000.0]}
                 },
-                'to_world': mi.ScalarTransform4f.translate([4.0, 0.0, 4.0]) @ mi.ScalarTransform4f.scale(0.05)
+                'to_world': T().translate([4.0, 0.0, 4.0]) @ T().scale(0.05)
             }
         }
         self.spp = 4192 * 4
@@ -967,7 +1027,7 @@ class TranslateShadowReceiverAreaLightConfig(TranslateShapeConfigBase):
             'occluder': {
                 'type': 'obj',
                 'filename': 'resources/data/common/meshes/sphere.obj',
-                'to_world': mi.ScalarTransform4f.translate([2.0, 0.0, 2.0]) @ mi.ScalarTransform4f.scale(0.25),
+                'to_world': T().translate([2.0, 0.0, 2.0]) @ T().scale(0.25),
             },
             'light': {
                 'type': 'obj',
@@ -976,7 +1036,7 @@ class TranslateShadowReceiverAreaLightConfig(TranslateShapeConfigBase):
                     'type': 'area',
                     'radiance': {'type': 'rgb', 'value': [1000.0, 1000.0, 1000.0]}
                 },
-                'to_world': mi.ScalarTransform4f.translate([4.0, 0.0, 4.0]) @ mi.ScalarTransform4f.scale(0.05)
+                'to_world': T().translate([4.0, 0.0, 4.0]) @ T().scale(0.05)
             }
         }
         self.ref_fd_epsilon = 1e-4
@@ -1189,6 +1249,7 @@ CONTINUOUS_BUT_NON_STATIC_GEOM_CONFIGS_LIST = [
 DISCONTINUOUS_CONFIGS_LIST = [
     TranslateDiffuseRectangleConstantConfig,
     TranslateRectangleEmitterOnBlackConfig,
+    TranslateDiskEmitterOnGrayConfig,
     TranslateSphereEmitterOnBlackConfig,
     ScaleSphereEmitterOnBlackConfig,
     TranslateOccluderAreaLightConfig,
