@@ -221,16 +221,6 @@ public:
         using ExtendedSpecUInt32 = dr::uint32_array_t<ExtendedSpec>;
         using ExtendedSpecMask   = dr::mask_t<ExtendedSpec>;
 
-        Datasets datasets = compute_dataset(si.time);
-
-        // Compute angles
-        Vector3f local_wo = m_to_world.value().inverse() * (-si.wi);
-        Float cos_theta = Frame3f::cos_theta(local_wo),
-              gamma = dr::unit_angle(datasets.sun_dir, local_wo);
-
-        active &= cos_theta >= 0;
-        Mask hit_sun = dr::dot(datasets.sun_dir, local_wo) >= dr::cos(m_sun_half_aperture);
-
         // Compute interpolation coefficients and indices for the wavelengths
         ExtendedSpec lerp_factor;
         ExtendedSpecUInt32 channel_idx;
@@ -251,6 +241,16 @@ public:
             valid_idx &= (0.f <= lerp_factor) & (lerp_factor <= 1.f);
         }
 
+        Datasets datasets = compute_dataset(si.time);
+
+        // Compute angles
+        Vector3f local_wo = m_to_world.value().inverse() * (-si.wi);
+        Float cos_theta = Frame3f::cos_theta(local_wo),
+              gamma = dr::unit_angle(datasets.sun_dir, local_wo);
+
+        active &= cos_theta >= 0;
+        Mask hit_sun = dr::dot(datasets.sun_dir, local_wo) >= dr::cos(m_sun_half_aperture);
+
         // Evaluate the model channel by channel
         Spec res = 0.f;
         for (uint32_t idx = 0; idx < dr::size_v<ExtendedSpec>; ++idx) {
@@ -266,7 +266,7 @@ public:
                 sun_rad *= 1.f;
             }
 
-            res[idx % dr::size_v<Spec>] += lerp_factor[idx] * sky_rad * sun_rad * (is_rgb_v<Spec> ? ScalarFloat(MI_CIE_Y_NORMALIZATION) : 1.f);
+            res[idx % dr::size_v<Spec>] += lerp_factor[idx] * (sky_rad + sun_rad) * (is_rgb_v<Spec> ? ScalarFloat(MI_CIE_Y_NORMALIZATION) : 1.f);
         }
 
         return depolarizer<Spectrum>(res) & active;
@@ -386,6 +386,9 @@ private:
             sph_to_dir(sun_elevation, sun_azimuth),
             RadLocal(sun_eta), ParamsLocal(sun_eta),
         };
+
+        Log(Warn, "Sky rad: %f", sky_rad);
+        Log(Warn, "Sky params: %f", sky_params);
 
         for (uint32_t channel_idx = 0; channel_idx < CHANNEL_COUNT; ++channel_idx) {
             result.sky_rad.write(channel_idx, sky_rad[channel_idx]);
