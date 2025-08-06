@@ -173,10 +173,6 @@ public:
         return ProjectiveTransform4f(camera_to_sample.matrix);
     }
 
-    ProjectiveTransform4f sample_to_camera() const override {
-        return ProjectiveTransform4f(m_sample_to_camera.matrix);
-    }
-
     ScalarBoundingBox3f bbox() const override {
         ScalarPoint3f p = m_to_world.scalar() * ScalarPoint3f(0.f);
         return ScalarBoundingBox3f(p, p);

@@ -216,10 +216,6 @@ public:
         return m_sample_to_camera.inverse();
     }
 
-    ProjectiveTransform4f sample_to_camera() const override {
-        return m_sample_to_camera;
-    }
-
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
                                           const Point2f &position_sample,
                                           const Point2f &aperture_sample,
