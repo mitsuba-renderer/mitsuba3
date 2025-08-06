@@ -188,6 +188,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
                 # Re-attach gradients for the the `ds_em` struct
                 ds_em_diff = mi.DirectionSample3f(scene, si_em, si)
                 ds_em_diff = dr.select(textured_area_em, ds_em_diff, dr.zeros(mi.DirectionSample3f))
+                ds_em_diff.d = dr.select(textured_area_em, ds_em_diff.d, dr.normalize(ds_em.p - si.p))
                 ds_em_diff.d = dr.select(~is_infinite, ds_em_diff.d, ds_em.d)
                 ds_em = dr.replace_grad(ds_em, ds_em_diff)
 
