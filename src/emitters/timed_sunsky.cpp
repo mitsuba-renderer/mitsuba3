@@ -5,157 +5,23 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/**!
-
-.. _emitter-sunsky:
-
-Sun and sky emitter (:monosp:`sunsky`)
--------------------------------------------------
-
-.. pluginparameters::
-
- * - turbidity
-   - |float|
-   - Atmosphere turbidity, must be within [1, 10] (Default: 3, clear sky in a temperate climate).
-     Smaller turbidity values (∼ 1 − 2) produce an arctic-like clear blue sky,
-     whereas larger values (∼ 8 − 10) create an atmosphere that is more typical
-     of a warm, humid day.
-   - |exposed|
-
- * - albedo
-   - |spectrum|
-   - Ground albedo, must be within [0, 1] for each wavelength/channel, (Default: 0.3).
-     This cannot be spatially varying (e.g. have bitmap as type).
-   - |exposed|
-
- * - latitude
-   - |float|
-   - Latitude of the location in degrees (Default: 35.689, Tokyo's latitude).
-   - |exposed|
-
- * - longitude
-   - |float|
-   - Longitude of the location in degrees (Default: 139.6917, Tokyo's longitude).
-   - |exposed|
-
- * - timezone
-   - |float|
-   - Timezone of the location in hours (Default: 9).
-   - |exposed|
-
- * - year
-   - |int|
-   - Year (Default: 2010).
-   - |exposed|
-
- * - month
-   - |int|
-   - Month (Default: 7).
-   - |exposed|
-
- * - day
-   - |int|
-   - Day (Default: 10).
-   - |exposed|
-
- * - hour
-   - |float|
-   - Hour (Default: 15).
-   - |exposed|
-
- * - minute
-   - |float|
-   - Minute (Default: 0).
-   - |exposed|
-
- * - second
-   - |float|
-   - Second (Default: 0).
-   - |exposed|
-
- * - sun_direction
-   - |vector|
-   - Direction of the sun in the sky (No defaults),
-     cannot be specified along with one of the location/time parameters.
-   - |exposed|, |differentiable|
-
- * - sun_scale
-   - |float|
-   - Scale factor for the sun radiance (Default: 1).
-     Can be used to turn the sun off (by setting it to 0).
-   - |exposed|
-
- * - sky_scale
-   - |float|
-   - Scale factor for the sky radiance (Default: 1).
-     Can be used to turn the sky off (by setting it to 0).
-   - |exposed|
-
- * - sun_aperture
-   - |float|
-   - Aperture angle of the sun in degrees (Default: 0.5338, normal sun aperture).
-   - |exposed|
-
- * - to_world
-   - |transform|
-   - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
-   - |exposed|
-
-This plugin implements an environment emitter for the sun and sky dome.
-It uses the Hosek-Wilkie sun :cite:`HosekSun2013` and sky model
-:cite:`HosekSky2012` to generate strong approximations of the sky-dome without
-the cost of path tracing the atmosphere.
-
-Internally, this emitter does not compute a bitmap of the sky-dome like an
-environment map, but evaluates the spectral radiance whenever it is needed.
-Consequently, sampling is done through a Truncated Gaussian Mixture Model
-pre-fitted to the given parameters :cite:`vitsas2021tgmm`.
-
-Users should be aware that given certain parameters, the sun's radiance is
-ill-represented by the linear sRGB color space. Whether Mitsuba is rendering in
-spectral or RGB mode, if the final output is an sRGB image, it can happen that
-it contains negative pixel values or be over-saturated. These results are left
-un-clamped to let the user post-process the image to their liking, without
-losing information.
-
-Note that attaching a ``sunsky`` emitter to the scene introduces physical units
-into the rendering process of Mitsuba 3, which is ordinarily a unitless system.
-Specifically, the evaluated spectral radiance has units of power (:math:`W`) per
-unit area (:math:`m^{-2}`) per steradian (:math:`sr^{-1}`) per unit wavelength
-(:math:`nm^{-1}`). As a consequence, your scene should be modeled in meters for
-this plugin to work properly.
-
-.. tabs::
-    .. code-tab:: xml
-        :name: sunsky-light
-
-        <emitter type="sunsky">
-            <float name="hour" value="20.0"/>
-        </emitter>
-
-    .. code-tab:: python
-
-        'type': 'sunsky',
-        'hour': 20.0
-
-*/
-
 template <typename Float, typename Spectrum>
 class TimedSunskyEmitter final: public BaseSunskyEmitter<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BaseSunskyEmitter,
         m_turbidity, m_sky_scale, m_sun_scale, m_albedo,
-        m_sun_half_aperture, m_location, m_sky_rad_dataset,
-        m_sky_params_dataset, m_sun_ld, m_sun_rad_dataset,
+        m_sun_half_aperture, m_sky_rad_dataset,
+        m_sky_params_dataset,
         CHANNEL_COUNT, m_to_world
     )
+
+    using typename Base::FloatStorage;
 
     MI_IMPORT_TYPES()
 
 private:
     using RadLocal = dr::Local<Float, CHANNEL_COUNT>;
     using ParamsLocal = dr::Local<Float, SKY_PARAMS * CHANNEL_COUNT>;
-    using FloatStorage = DynamicBuffer<Float>;
 
 public:
 
@@ -193,7 +59,6 @@ public:
 
         m_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
         m_sky_radiance = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
-        m_sun_radiance = dr::take_interp(m_sun_rad_dataset, m_turbidity - 1.f);
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -213,7 +78,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
         using Spec = unpolarized_spectrum_t<Spectrum>;
-        using UInt32Spec = dr::uint32_array_t<Spec>;
+        using SpecUInt32 = dr::uint32_array_t<Spec>;
 
         // These typedefs concatenate the discrete spectrae together
         // to make it easier to iterate over them for interpolation
@@ -232,7 +97,7 @@ public:
             Wavelength normalized_wavelengths =
                 (si.wavelengths - WAVELENGTHS<ScalarFloat>[0]) / WAVELENGTH_STEP;
 
-            UInt32Spec query_idx_low = dr::floor2int<UInt32Spec>(normalized_wavelengths);
+            SpecUInt32 query_idx_low = dr::floor2int<SpecUInt32>(normalized_wavelengths);
             channel_idx = dr::concat(query_idx_low, query_idx_low + 1);
 
             Wavelength lerp_factor_wavelength = normalized_wavelengths - query_idx_low;
@@ -256,8 +121,8 @@ public:
         for (uint32_t idx = 0; idx < dr::size_v<ExtendedSpec>; ++idx) {
             Float sky_rad = m_sky_scale * eval_sky(channel_idx[idx], cos_theta, gamma, datasets.sky_rad, datasets.sky_params, valid_idx[idx]);
 
-            Float sun_rad = m_sun_scale * get_area_ratio(m_sun_half_aperture) *
-                eval_sun<Float, is_rgb_v<Spec>>(channel_idx[idx], cos_theta, gamma, m_sun_radiance, m_sun_half_aperture, hit_sun & valid_idx[idx]);
+            Float sun_rad = m_sun_scale * Base::get_area_ratio(m_sun_half_aperture) *
+                Base::template eval_sun<Float>(channel_idx[idx], cos_theta, gamma,hit_sun & valid_idx[idx]);
 
             if constexpr (is_rgb_v<Spec>) {
                 sun_rad *= SPEC_TO_RGB_SUN_CONV;
@@ -387,9 +252,6 @@ private:
             RadLocal(sun_eta), ParamsLocal(sun_eta),
         };
 
-        Log(Warn, "Sky rad: %f", sky_rad);
-        Log(Warn, "Sky params: %f", sky_params);
-
         for (uint32_t channel_idx = 0; channel_idx < CHANNEL_COUNT; ++channel_idx) {
             result.sky_rad.write(channel_idx, sky_rad[channel_idx]);
             for (uint32_t param_idx = 0; param_idx < SKY_PARAMS; ++param_idx) {
@@ -407,6 +269,7 @@ private:
 
     Float m_window_start_time, m_window_end_time;
     DateTimeRecord<Float> m_start_date, m_end_date;
+    LocationRecord<Float> m_location;
 
     // ========= Radiance parameters =========
     TensorXf m_sky_params;

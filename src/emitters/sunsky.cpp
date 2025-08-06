@@ -146,17 +146,15 @@ this plugin to work properly.
 template <typename Float, typename Spectrum>
 class SunskyEmitter final: public BaseSunskyEmitter<Float, Spectrum> {
 public:
-    using Emitter<Float, Spectrum>::m_to_world;
     MI_IMPORT_BASE(BaseSunskyEmitter,
         m_turbidity, m_sky_scale, m_sun_scale, m_albedo, m_bsphere,
-        m_sun_half_aperture, m_location, m_sky_rad_dataset,
-        m_sky_params_dataset, m_sun_ld, m_sun_rad_dataset,
-        CHANNEL_COUNT
+        m_sun_half_aperture, m_sky_rad_dataset,
+        m_sky_params_dataset, CHANNEL_COUNT, m_to_world
     )
+    using typename Base::FloatStorage;
 
     MI_IMPORT_TYPES(Scene, Texture)
 
-    using FloatStorage = DynamicBuffer<Float>;
     using Gaussian     = dr::Array<Float, TGMM_GAUSSIAN_PARAMS>;
     using FullSpectrum = std::conditional_t<
         is_spectral_v<Spectrum>,
@@ -220,8 +218,6 @@ public:
 
         TensorXf temp_sky_radiance = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
         m_sky_radiance = Base::template bezier_interp<FloatStorage>(temp_sky_radiance, sun_eta);
-
-        m_sun_radiance = dr::take_interp(m_sun_rad_dataset, m_turbidity - 1.f);
 
         FloatStorage distrib_params, mis_weights;
         std::tie(distrib_params, mis_weights) =
@@ -299,12 +295,6 @@ public:
             m_sky_radiance = Base::template bezier_interp<FloatStorage>(temp_sky_radiance, eta);
         }
 
-        // Update sun
-        if (changed_atmosphere) {
-            m_sun_radiance =
-                dr::take_interp(m_sun_rad_dataset, m_turbidity - 1.f);
-        }
-
         // Update TGMM (no dependance on albedo)
         if (changed_sun_dir || CHANGED("turbidity")) {
             FloatStorage gaussian_params, mis_weights;
@@ -349,11 +339,9 @@ public:
             else
                 idx = SpecUInt32(0);
 
-            res = m_sky_scale *
-                  eval_sky<Spec>(idx, cos_theta, gamma, active);
-            res += m_sun_scale *
-                   eval_sun<Spec>(idx, cos_theta, gamma, m_sun_radiance, m_sun_half_aperture, hit_sun) *
-                   get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
+            res = m_sky_scale * eval_sky<Spec>(idx, cos_theta, gamma, active);
+            res += m_sun_scale * Base::template eval_sun<Spec>(idx, cos_theta, gamma, hit_sun) *
+                   Base::get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
 
             res *= MI_CIE_Y_NORMALIZATION;
         } else {
@@ -374,18 +362,18 @@ public:
                 lerp_factor);
 
             // Linearly interpolate the sun's irradiance across the spectrum
-            Spec sun_rad_low = eval_sun<Spec>(
-                         query_idx_low, cos_theta, gamma,  m_sun_radiance, m_sun_half_aperture, hit_sun & valid_idx);
-            Spec sun_rad_high = eval_sun<Spec>(
-                         query_idx_high, cos_theta, gamma, m_sun_radiance, m_sun_half_aperture, hit_sun & valid_idx);
+            Spec sun_rad_low = Base::template eval_sun<Spec>(
+                         query_idx_low, cos_theta, gamma, hit_sun & valid_idx);
+            Spec sun_rad_high = Base::template eval_sun<Spec>(
+                         query_idx_high, cos_theta, gamma, hit_sun & valid_idx);
             Spec sun_rad = dr::lerp(sun_rad_low, sun_rad_high, lerp_factor);
 
-            Spec sun_ld = compute_sun_ld<Spec, Float>(
-                query_idx_low, query_idx_high, lerp_factor, gamma, m_sun_ld, m_sun_half_aperture,
+            Spec sun_ld = Base::template compute_sun_ld<Spec>(
+                query_idx_low, query_idx_high, lerp_factor, gamma,
                 hit_sun & valid_idx
             );
 
-            res += m_sun_scale * sun_rad * sun_ld * get_area_ratio(m_sun_half_aperture);
+            res += m_sun_scale * sun_rad * sun_ld * Base::get_area_ratio(m_sun_half_aperture);
         }
 
         return depolarizer<Spectrum>(res) & active;
@@ -576,8 +564,8 @@ private:
         Point2f mu    = { gaussian[0], gaussian[1] },
                 sigma = { gaussian[2], gaussian[3] };
 
-        Point2f cdf_a = gaussian_cdf(mu, sigma, a),
-                cdf_b = gaussian_cdf(mu, sigma, b);
+        Point2f cdf_a = Base::gaussian_cdf(mu, sigma, a),
+                cdf_b = Base::gaussian_cdf(mu, sigma, b);
 
         sample = dr::lerp(cdf_a, cdf_b, Point2f{temp_sample, sample.y()});
         // Clamp to erfinv's domain of definition
@@ -669,8 +657,8 @@ private:
             Point2f mu    = { m_gaussians[base_idx + 0], m_gaussians[base_idx + 1] },
                     sigma = { m_gaussians[base_idx + 2], m_gaussians[base_idx + 3] };
 
-            Point2f cdf_a = gaussian_cdf(mu, sigma, a),
-                    cdf_b = gaussian_cdf(mu, sigma, b);
+            Point2f cdf_a = Base::gaussian_cdf(mu, sigma, a),
+                    cdf_b = Base::gaussian_cdf(mu, sigma, b);
 
             Float volume = (cdf_b.x() - cdf_a.x()) *
                            (cdf_b.y() - cdf_a.y()) *
@@ -709,8 +697,6 @@ private:
             dr::uint32_array_t<FullSpectrum> channel_idx;
             if constexpr (is_rgb_v<Spectrum>)
                 channel_idx = {0, 1, 2};
-            else if constexpr (is_monochromatic_v<Spectrum>)
-                channel_idx = {0};
             else
                 channel_idx = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
@@ -764,13 +750,13 @@ private:
 
                 Mask active = cos_theta >= 0;
                 FullSpectrum ray_radiance =
-                    eval_sun<FullSpectrum>(channel_idx, cos_theta, gamma, m_sun_radiance, m_sun_half_aperture, active) *
+                    Base::template eval_sun<FullSpectrum>(channel_idx, cos_theta, gamma, active) *
                     w_phi * w_cos_theta;
 
                 // Apply sun limb darkening if not already
-                if constexpr (is_spectral_v<Spectrum>)
-                    ray_radiance *= compute_sun_ld<FullSpectrum, Float>(
-                        channel_idx, channel_idx, 0.f, gamma, m_sun_ld, m_sun_half_aperture, active);
+                if constexpr (!is_rgb_v<Spectrum>)
+                    ray_radiance *= Base::template compute_sun_ld<FullSpectrum>(
+                        channel_idx, channel_idx, 0.f, gamma, active);
 
                 sun_radiance = dr::sum_inner(ray_radiance) * J;
             }
@@ -779,16 +765,12 @@ private:
             Float sky_lum = m_sky_scale, sun_lum = m_sun_scale;
             if constexpr (is_rgb_v<Spectrum>) {
                 sky_lum *= luminance(sky_radiance);
-                sun_lum *= luminance(sun_radiance) * get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
-            } else if constexpr (is_monochromatic_v<Spectrum>) {
-                // Use dummy wavelength
-                sky_lum *= luminance(sky_radiance, {0});
-                sun_lum *= luminance(sun_radiance, {0}) * get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
-            } else  {
-                FullSpectrum wavelengths = {320, 360, 400, 440, 480, 520, 560, 600, 640, 680, 720};
+                sun_lum *= luminance(sun_radiance) * Base::get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
+            } else {
+                FullSpectrum wavelengths = FullSpectrum(channel_idx);
 
                 sky_lum *= luminance(sky_radiance, wavelengths);
-                sun_lum *= luminance(sun_radiance, wavelengths) * get_area_ratio(m_sun_half_aperture);
+                sun_lum *= luminance(sun_radiance, wavelengths) * Base::get_area_ratio(m_sun_half_aperture);
             }
 
             // Normalize quantities for valid distribution
@@ -834,11 +816,11 @@ private:
     /// Indicates if the plugin was initialized with a location/time record
     bool m_active_record;
     DateTimeRecord<Float> m_time;
+    LocationRecord<Float> m_location;
 
     // ========= Radiance parameters =========
     FloatStorage m_sky_params;
     FloatStorage m_sky_radiance;
-    FloatStorage m_sun_radiance;
 
     // ========= Sampling parameters =========
     Float m_sky_sampling_w;
