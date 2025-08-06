@@ -1064,7 +1064,7 @@ class TranslateSelfShadowingRightAngleConfig(ConfigBase):
             'type': 'scene',
             'wall': {
                 'type': 'obj',
-                'filename': '../resources/data/common/meshes/rectangle.obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
                 'face_normals': True,
                 'to_world': T().look_at(origin=[0,  0, -1], target=[0, 0,  0], up=[0, 1, 0]),
                 'material': {
@@ -1074,7 +1074,7 @@ class TranslateSelfShadowingRightAngleConfig(ConfigBase):
             },
             'floor': {
                 'type': 'obj',
-                'filename': '../resources/data/common/meshes/rectangle.obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
                 'face_normals': True,
                 'to_world': T().look_at(origin=[0, -1, -1], target=[0, 0,  -1], up=[0, 0, 1]),
                 'material': {
