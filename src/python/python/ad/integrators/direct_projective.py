@@ -315,10 +315,23 @@ class DirectProjectiveIntegrator(PSIntegrator):
             # ----------- Estimate the radiance of the foreground -----------
 
             # For direct illumination integrators, only an area emitter can
-            # contribute here. It is possible to call ``sample()`` to estimate
-            # this contribution. But to avoid the overhead we simply query the
-            # emitter here to obtain the radiance.
-            si_fg = dr.zeros(mi.SurfaceInteraction3f)
+            # contribute here. In order to get its contribution, we must create
+            # a valid surface interaction object.
+            pi_fg = dr.zeros(mi.PreliminaryIntersection3f)
+            pi_fg.t = 1
+            pi_fg.prim_index = ss.prim_index
+            pi_fg.prim_uv = ss.uv
+            pi_fg.shape = ss.shape
+
+            # Create a dummy ray that we never perform ray-intersection with to
+            # compute other fields in ``si``
+            dummy_ray = mi.Ray3f(ss.p - ss.d, ss.d)
+            ray_bg.wavelengths = wavelengths
+
+            # The ray origin is wrong, but this is fine if we only need the primal
+            # radiance
+            si_fg = pi_fg.compute_surface_interaction(
+                dummy_ray, mi.RayFlags.All, active)
 
             # We know the incident direction is valid since this is the
             # foreground interaction. Overwrite the incident direction to avoid
