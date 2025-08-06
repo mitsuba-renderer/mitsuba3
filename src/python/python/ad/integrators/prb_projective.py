@@ -532,20 +532,11 @@ class PathProjectiveIntegrator(PSIntegrator):
         ss_importance = mi.SilhouetteSample3f(ss)
         ss_importance.d = -ss_importance.d
         ray_boundary = ss_importance.spawn_ray(wavelengths)
-        if dr.hint(preprocess, mode='scalar'):
-            si_boundary = scene.ray_intersect(ray_boundary,
-                                              ray_flags=mi.RayFlags.All,
-                                              coherent=False,
-                                              reorder=True,
-                                              active=active)
-        else:
-            with dr.resume_grad():
-                si_boundary = scene.ray_intersect(
-                    ray_boundary,
-                    ray_flags=mi.RayFlags.All | mi.RayFlags.FollowShape,
-                    coherent=False,
-                    reorder=True,
-                    active=active)
+        si_boundary = scene.ray_intersect(ray_boundary,
+                                          ray_flags=mi.RayFlags.All,
+                                          coherent=False,
+                                          reorder=True,
+                                          active=active)
         active = active & si_boundary.is_valid()
 
         # Loop state variables
@@ -639,15 +630,7 @@ class PathProjectiveIntegrator(PSIntegrator):
         # 1 because we have not counted the camera ray itself.
         depth_cam += 2
 
-        # Recompute the correct motion of the first interaction point
-        if dr.hint(not preprocess, mode='scalar'):
-            d = -first_wo
-            O = si_boundary.p - d
-            with dr.resume_grad():
-                t = dr.dot(si_boundary.p - O, si_boundary.n) / dr.dot(d, si_boundary.n)
-                si_boundary.p = dr.replace_grad(si_boundary.p, O + t * d)
-
-        return W, sensor_ds.uv, depth_cam, si_boundary.p, active_found
+        return W, sensor_ds.uv, depth_cam, active_found
 
 mi.register_integrator("prb_projective", lambda props: PathProjectiveIntegrator(props))
 

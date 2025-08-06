@@ -579,8 +579,8 @@ class ProjectiveDetail():
                 dr.zeros(mi.SurfaceInteraction3f),  wavelength_sample, active)
 
             # Estimate the importance
-            fS, sensor_uv, sensor_depth, shading_p, active_i = parent.sample_importance(
-                scene, sensor, ss, parent.max_depth, sampler, wavelengths, preprocess, active)
+            fS, sensor_uv, sensor_depth, active_i = parent.sample_importance(
+                scene, sensor, ss, parent.max_depth, sampler, wavelengths, active)
             active &= active_i
 
             # Estimate the radiance difference
@@ -603,7 +603,7 @@ class ProjectiveDetail():
             si.uv = ss.uv
             x_b_follow = ss.shape.differential_motion(dr.detach(si), active)
 
-            motion = dr.dot(dr.detach(ss.n), (x_b_follow - shading_p))
+            motion = dr.dot(dr.detach(ss.n), x_b_follow)
             result = dr.select(active, result * motion, 0)
             return result, wavelengths, sensor_uv
 

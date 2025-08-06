@@ -1183,7 +1183,7 @@ class PSIntegrator(ADIntegrator):
                         'specialize the abstract PSIntegrator interface.')
 
     def sample_importance(self, scene, sensor, ss, max_depth, sampler,
-                          wavelengths, preprocess, active):
+                          wavelengths, active):
         """
         Sample the incident importance at the silhouette point `ss.p` with
         direction `-ss.d`. If multiple connections to the sensor are valid, this
@@ -1204,10 +1204,6 @@ class PSIntegrator(ADIntegrator):
 
         Parameter ``wavelengths`` (``mi.Wavelength``):
             Set of sampled wavelengths to be used for the boundary path.
-
-        Parameter ``preprocess`` (``bool``):
-            Flag to indicate whether or not the motion of the boundary point
-            should be detached for this sample.
 
         The function returns a tuple ``(importance, uv, depth, boundary_p,
         valid)`` where
