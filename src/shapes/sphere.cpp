@@ -383,6 +383,7 @@ public:
         ss.flags = flags;
         ss.pdf *= dr::InvTwoPi<Float>;
         ss.shape = this;
+        ss.silhouette_d = dr::cross(ss.n, -ss.d);
         ss.foreshortening = dr::rcp(m_radius.value());
 
         return ss;
@@ -459,9 +460,7 @@ public:
         Float phi = angles.y();
         dr::masked(phi, phi < 0.f) += 2.f * dr::Pi<Float>;
         ss.uv = Point2f(phi * dr::InvTwoPi<Float>, theta * dr::InvPi<Float>);
-
-        Vector3f frame_t = dr::normalize(viewpoint - ss.p);
-        ss.silhouette_d = dr::cross(ss.n, frame_t);
+        ss.silhouette_d = dr::cross(ss.n, -ss.d);
 
         ss.discontinuity_type = (uint32_t) DiscontinuityFlags::InteriorType;
         ss.flags = flags;
