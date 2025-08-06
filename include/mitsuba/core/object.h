@@ -7,6 +7,7 @@
 #include <typeinfo>
 #include <string>
 #include <string_view>
+#include <stdexcept>
 #include <drjit/traversable_base.h>
 
 NAMESPACE_BEGIN(mitsuba)
