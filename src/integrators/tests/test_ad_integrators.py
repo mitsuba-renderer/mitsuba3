@@ -969,18 +969,17 @@ class TranslateShadowReceiverAreaLightConfig(TranslateShapeConfigBase):
                 'filename': 'resources/data/common/meshes/sphere.obj',
                 'to_world': mi.ScalarTransform4f.translate([2.0, 0.0, 2.0]) @ mi.ScalarTransform4f.scale(0.25),
             },
-            # 'light': {
-            #     'type': 'obj',
-            #     'filename': 'resources/data/common/meshes/sphere.obj',
-            #     'emitter': {
-            #         'type': 'area',
-            #         'radiance': {'type': 'rgb', 'value': [1000.0, 1000.0, 1000.0]}
-            #     },
-            #     'to_world': mi.ScalarTransform4f.translate([4.0, 0.0, 4.0]) @ mi.ScalarTransform4f.scale(0.05)
-            # }
-            'light': { 'type': 'constant' }
+            'light': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/sphere.obj',
+                'emitter': {
+                    'type': 'area',
+                    'radiance': {'type': 'rgb', 'value': [1000.0, 1000.0, 1000.0]}
+                },
+                'to_world': mi.ScalarTransform4f.translate([4.0, 0.0, 4.0]) @ mi.ScalarTransform4f.scale(0.05)
+            }
         }
-        self.ref_fd_epsilon = 1e-3
+        self.ref_fd_epsilon = 1e-4
         self.error_mean_threshold = 0.02
         self.error_max_threshold = 0.5
         self.error_mean_threshold_bwd = 0.25
@@ -988,6 +987,145 @@ class TranslateShadowReceiverAreaLightConfig(TranslateShapeConfigBase):
         self.integrator_dict = {
             'max_depth': 2,
         }
+
+
+# Plane illuminated by a textured area emitter: both are moving
+class TranslatePlaneAndAreaEmitterConfig(ConfigBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.key1 = 'plane.vertex_positions'
+        self.key2 = 'light.vertex_positions'
+        self.scene_dict = {
+            'type': 'scene',
+            'plane': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
+                'face_normals': True,
+                'to_world': T().look_at(origin=[0,  0, -1], target=[0, -1,  0], up=[0, 1, 0]).scale(0.25),
+            },
+            'light': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
+                'face_normals': True,
+                'to_world': T().look_at(origin=[0, -2, -1], target=[0, 0,  -1], up=[0, 0, 1]).scale(0.75),
+                'emitter': {
+                    'type': 'area',
+                    'radiance': {
+                        'type': 'rgb',
+                        'value': 1.0,
+                    }
+                }
+            },
+        }
+        self.ref_fd_epsilon = 1e-3
+        self.error_mean_threshold = 0.01
+        self.error_max_threshold = 0.1
+        self.error_mean_threshold_bwd = 0.25
+        self.spp = 4096
+        self.integrator_dict = {
+            'max_depth': 2,
+            'guiding': 'grid',
+        }
+        self.sensor_dict = {
+            'type': 'perspective',
+            'to_world': T().look_at(origin=[0, 0,  0], target=[0, 0, -1], up=[0, 1, 0]),
+            'film': {
+                'type': 'hdrfilm',
+                'rfilter': { 'type': 'box' },
+                'width': self.res,
+                'height': self.res,
+                'sample_border': True,
+                'pixel_format': 'rgb',
+                'component_format': 'float32',
+            }
+        }
+
+    def initialize(self):
+        super().initialize()
+        self.params.keep([self.key1, self.key2])
+        self.initial_state1 = mi.Vector3f(dr.unravel(mi.Vector3f, mi.Float(self.params[self.key1])))
+        self.initial_state2 = mi.Vector3f(dr.unravel(mi.Vector3f, mi.Float(self.params[self.key2])))
+
+    def update(self, theta):
+        self.params[self.key1] = dr.ravel(self.initial_state1 + mi.Vector3f(0.0, 0.0, theta))
+        self.params[self.key2] = dr.ravel(self.initial_state2 + mi.Vector3f(0.0, 0.0, theta))
+        self.params.update()
+        dr.eval()
+
+
+# Two perpendicular planes are moving with the same motion,
+# an area emitter casts the shadow of one plane onto the other
+class TranslateSelfShadowingRightAngleConfig(ConfigBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.key1 = 'wall.vertex_positions'
+        self.key2 = 'floor.vertex_positions'
+        self.scene_dict = {
+            'type': 'scene',
+            'wall': {
+                'type': 'obj',
+                'filename': '../resources/data/common/meshes/rectangle.obj',
+                'face_normals': True,
+                'to_world': T().look_at(origin=[0,  0, -1], target=[0, 0,  0], up=[0, 1, 0]),
+                'material': {
+                    'type': 'diffuse',
+                    'reflectance' : { 'type': 'rgb', 'value': [0.1, 0.1, 0.4] }
+                }
+            },
+            'floor': {
+                'type': 'obj',
+                'filename': '../resources/data/common/meshes/rectangle.obj',
+                'face_normals': True,
+                'to_world': T().look_at(origin=[0, -1, -1], target=[0, 0,  -1], up=[0, 0, 1]),
+                'material': {
+                    'type': 'diffuse',
+                    'reflectance' : { 'type': 'rgb', 'value': [0.4, 0.1, 0.1] }
+                }
+            },
+            'light': {
+                'type': 'rectangle',
+                'to_world': T().translate(mi.ScalarPoint3f(0, 8, -4)).scale(mi.ScalarVector3f(2, 0.5, 1)),
+                'emitter': {
+                    'type': 'area',
+                    'radiance': { 'type': 'rgb', 'value': 1 }
+                }
+            },
+        }
+        self.ref_fd_epsilon = 1e-3
+        self.error_mean_threshold = 0.01
+        self.error_max_threshold = 0.05
+        self.error_mean_threshold_bwd = 0.25
+        self.spp = 4096
+        self.integrator_dict = {
+            'max_depth': 2,
+            'guiding': 'grid',
+        }
+        self.sensor_dict = {
+            'type': 'perspective',
+            'to_world': T().look_at(origin=[0, 0,  1], target=[0, 0, -1], up=[0, 1, 0]),
+            'fov': 87,
+            'film': {
+                'type': 'hdrfilm',
+                'rfilter': { 'type': 'box' },
+                'width': self.res,
+                'height': self.res,
+                'sample_border': True,
+                'pixel_format': 'rgb',
+                'component_format': 'float32',
+            }
+        }
+
+    def initialize(self):
+        super().initialize()
+        self.params.keep([self.key1, self.key2])
+        self.initial_state1 = mi.Vector3f(dr.unravel(mi.Vector3f, mi.Float(self.params[self.key1])))
+        self.initial_state2 = mi.Vector3f(dr.unravel(mi.Vector3f, mi.Float(self.params[self.key2])))
+
+    def update(self, theta):
+        self.params[self.key1] = dr.ravel(self.initial_state1 + mi.Vector3f(0.0, 0.0, theta))
+        self.params[self.key2] = dr.ravel(self.initial_state2 + mi.Vector3f(0.0, 0.0, theta))
+        self.params.update()
+        dr.eval()
 
 
 # Translate camera
@@ -1055,6 +1193,8 @@ DISCONTINUOUS_CONFIGS_LIST = [
     ScaleSphereEmitterOnBlackConfig,
     TranslateOccluderAreaLightConfig,
     TranslateShadowReceiverAreaLightConfig,
+    TranslatePlaneAndAreaEmitterConfig,
+    TranslateSelfShadowingRightAngleConfig
 
 #    TranslateCameraConfig
 ]
