@@ -125,7 +125,6 @@ class ProjectiveDetail():
 
             def get_projected_point(point):
                 point_NDC = to_film @ (to_local @ mi.Point3f(point))
-                # Do not divide by 'point_NDC[2]'
                 return mi.Point2f(point_NDC[0], point_NDC[1])
 
             p1_proj = get_projected_point(p1)

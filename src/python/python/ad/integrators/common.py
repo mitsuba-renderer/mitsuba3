@@ -882,7 +882,7 @@ class PSIntegrator(ADIntegrator):
         self.sample_border_warning = True
 
 
-    def override_spp(self, integrator_spp: int, runtime_spp: int, sampler_spp: int):
+    def override_spp(self, integrator_spp: Optional[int], runtime_spp: int, sampler_spp: int):
         """
         Utility method to override the intergrator's spp value with the one
         received at runtime in `render`/`render_backward`/`render_forward`.
@@ -898,16 +898,15 @@ class PSIntegrator(ADIntegrator):
         if integrator_spp is not None and integrator_spp == 0:
             # If spp is explicitly disabled (set to 0), do not override it with
             # runtime_spp
-            out = integrator_spp
+            return 0
         else:
-            out = runtime_spp
             if runtime_spp == 0:
                 if integrator_spp is not None:
-                    out = integrator_spp
+                    return integrator_spp
                 else:
-                    out = sampler_spp
-
-        return out
+                    return sampler_spp
+            else:
+                return runtime_spp
 
     def render_ad(self,
                   scene: mi.Scene,
