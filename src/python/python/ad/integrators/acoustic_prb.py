@@ -88,7 +88,8 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                 # The previous intersection defines the origin of the ray, and it moves with the intersected shape
                 # This only captures part of the gradient since moving a single vertex moves the *full* path suffix,
                 # assuming sampling of directions (i.e., `prev_si` also affects all intersections after `si`)
-                ray.o = dr.replace_grad(ray.o, dr.select(~first_vertex, prev_si.p, 0))
+                if dr.hint(not primal, mode='scalar'):
+                    ray.o = dr.replace_grad(ray.o, dr.select(~first_vertex, prev_si.p, 0))
 
             # Compute a surface interaction that tracks derivatives arising
             # from differentiable shape parameters (position, normals, etc.)

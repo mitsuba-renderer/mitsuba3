@@ -31,6 +31,10 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
         # Standard BSDF evaluation context for path tracing
         bsdf_ctx = mi.BSDFContext()
 
+        # dr.replace_grad breaks code in non ad variants.
+        ad_variant = dr.replace_grad(mi.Float(1.0), mi.Float(2.0)).shape != (0,)
+        mi.Log(mi.LogLevel.Debug, f"ad_variant: {ad_variant}")
+
         # --------------------- Configure loop state ----------------------
 
         distance     = mi.Float(0.0)
@@ -91,7 +95,8 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
             # The first samples are sampled differently
             mis = dr.select(first_vertex, 1, mis)
 
-            β *= dr.replace_grad(1, D/dr.detach(D))
+            if dr.hint(ad_variant, mode='scalar'):
+                β *= dr.replace_grad(1, D/dr.detach(D))
 
             # Intensity of current emitter weighted by importance (def. by prev bsdf hits)
             Le = β * dr.detach(mis) * si.emitter(scene).eval(si, active_next)
@@ -119,7 +124,9 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
 
             # If so, randomly sample an emitter without derivative tracking.
             ds_em, em_weight = scene.sample_emitter_direction(si, sampler.next_2d(), True, active_em)
-            em_weight *= dr.replace_grad(1, ds_em.pdf/dr.detach(ds_em.pdf))
+
+            if dr.hint(ad_variant, mode='scalar'):
+                em_weight *= dr.replace_grad(1, ds_em.pdf/dr.detach(ds_em.pdf))
 
             active_em &= (ds_em.pdf != 0.0)
 
@@ -143,7 +150,8 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
             D_em = dr.select(active_em, dr.norm(dr.cross(si_em.dp_du, si_em.dp_dv)) * -dp_em / dist_squared_em , 0.)
             mis_em = dr.select(ds_em.delta, 1, mis_weight(ds_em.pdf*D_em, bsdf_pdf_em*D_em))
             # Detached Sampling
-            em_weight *= dr.replace_grad(1, D_em/dr.detach(D_em))
+            if dr.hint(ad_variant, mode='scalar'):
+                em_weight *= dr.replace_grad(1, D_em/dr.detach(D_em))
 
             Lr_dir = β * dr.detach(mis_em) * bsdf_value_em * em_weight
 
@@ -175,7 +183,10 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
             dir_next = dr.normalize(diff_next)
             wo = si.to_local(dir_next)
             bsdf_val    = bsdf.eval(bsdf_ctx, si, wo, active_next)
-            bsdf_weight = dr.replace_grad(bsdf_weight, dr.select((bsdf_sample.pdf != 0), bsdf_val / dr.detach(bsdf_sample.pdf), 0))
+            
+            if dr.hint(ad_variant, mode='scalar'):
+                bsdf_weight = dr.replace_grad(bsdf_weight, dr.select(
+                    (bsdf_sample.pdf != 0), bsdf_val / dr.detach(bsdf_sample.pdf), 0))
 
 
             # ---- Update loop variables based on current interaction -----

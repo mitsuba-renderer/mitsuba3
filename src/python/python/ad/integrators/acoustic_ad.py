@@ -224,6 +224,10 @@ class AcousticADIntegrator(RBIntegrator):
         # Standard BSDF evaluation context for path tracing
         bsdf_ctx = mi.BSDFContext()
 
+        # dr.replace_grad breaks code in non ad variants.
+        ad_variant = dr.replace_grad(mi.Float(1.0), mi.Float(2.0)).shape != (0,)
+        mi.Log(mi.LogLevel.Debug, f"ad_variant: {ad_variant}")
+
         # --------------------- Configure loop state ----------------------
 
         distance     = mi.Float(0.0)
@@ -311,7 +315,9 @@ class AcousticADIntegrator(RBIntegrator):
                 # Recompute `em_weight = em_val / ds.pdf` with only `em_val` attached
                 dr.disable_grad(ds.d, ds.pdf)
                 em_val    = scene.eval_emitter_direction(si, ds, active_em)
-                em_weight = dr.replace_grad(em_weight, dr.select((ds.pdf != 0), em_val / ds.pdf, 0))
+                
+                if dr.hint(ad_variant, mode='scalar'):
+                    em_weight = dr.replace_grad(em_weight, dr.select((ds.pdf != 0), em_val / ds.pdf, 0))
 
             active_em &= (ds.pdf != 0.0)
 
@@ -321,6 +327,7 @@ class AcousticADIntegrator(RBIntegrator):
             if self.is_detached:
                 dr.disable_grad(bsdf_pdf_em)
             mis_em = dr.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf_em))
+            
             Lr_dir = β * mis_em * bsdf_value_em * em_weight
 
             # Store (emission sample) intensity to the image block
@@ -344,7 +351,10 @@ class AcousticADIntegrator(RBIntegrator):
                 # Recompute `bsdf_weight = bsdf_val / bsdf_sample.pdf` with only `bsdf_val` attached
                 dr.disable_grad(bsdf_sample.wo, bsdf_sample.pdf)
                 bsdf_val    = bsdf.eval(bsdf_ctx, si, bsdf_sample.wo, active_next)
-                bsdf_weight = dr.replace_grad(bsdf_weight, dr.select((bsdf_sample.pdf != 0), bsdf_val / bsdf_sample.pdf, 0))
+                
+                if dr.hint(ad_variant, mode='scalar'):
+                    bsdf_weight = dr.replace_grad(bsdf_weight, dr.select(
+                    (bsdf_sample.pdf != 0), bsdf_val / bsdf_sample.pdf, 0))
 
             # ---- Update loop variables based on current interaction -----
 

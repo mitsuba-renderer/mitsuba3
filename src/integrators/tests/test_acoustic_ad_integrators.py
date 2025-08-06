@@ -295,7 +295,6 @@ def test03_rendering_backward(variants_all_ad_acoustic, integrator_name, config)
     dr.set_label(theta, 'theta')
     config.update(theta)
 
-    print(f'{config.spp = }')
     integrator.render_backward(config.scene, grad_in=etc_adj, seed=0, spp=config.spp, params=theta) 
 
     grad = dr.grad(theta) / dr.width(etc_fwd_ref) / config.spp

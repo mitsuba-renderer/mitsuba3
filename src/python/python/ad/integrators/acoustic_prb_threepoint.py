@@ -108,7 +108,10 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
                 dist_squared = dr.squared_norm(si.p-prev_si.p)
                 dp = dr.dot(si.to_world(si.wi), si.n)
                 D = dr.select(active_next, dr.norm(dr.cross(si.dp_du, si.dp_dv)) * dp / dist_squared, 1.)
-                δHLD = δHL * dr.replace_grad(1., D/dr.detach(D))
+                if dr.hint(not primal, mode='scalar'):
+                    δHLD = δHL * dr.replace_grad(1., D/dr.detach(D))
+                else:
+                    δHLD = δHL
                 δHLD = dr.select(first_vertex, 0, δHLD)
 
             mis = mis_weight(
