@@ -384,8 +384,8 @@ class OcSpaceDistr(BaseGuidingDistr):
             if leaves_count_scalar + active_node_count * 8 > self.max_leaf_count:
                 raise RuntimeError(
                     "OcSpaceDistr: Number of leaf nodes exceeds "
-                    "'max_leaf_count'. Please increase 'max_leaf_count' or "
-                    "increase 'mass_contruction_thres'."
+                    "'max_leaf_count'. Please increase 'max_leaf_count', "
+                    "decrease 'max_depth', or increase 'mass_construction_thres'."
                 )
 
         if self.debug_logs:
