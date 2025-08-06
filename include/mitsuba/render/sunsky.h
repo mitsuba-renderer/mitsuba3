@@ -301,25 +301,21 @@ public:
 
 protected:
 
-    template <typename Spec, typename Dataset>
-    Spec eval_sky(const dr::uint32_array_t<Spec> &channel_idx, const Float &cos_theta, const Float &gamma,
-               const Dataset &sky_params, const Dataset &sky_radiance, const dr::mask_t<Spec> &active = true) const {
-        using SpecSkyParams = dr::Array<Spec, SKY_PARAMS>;
-
-        using SpecSkyParams = dr::Array<Spec, SKY_PARAMS>;
-        SpecSkyParams coefs = dr::gather<SpecSkyParams>(sky_params, channel_idx, active);
+    template <typename Spec, typename SkyParamsData, typename SkyRadData>
+    Spec eval_sky(const Float &cos_theta, const Float &gamma,
+                  const SkyParamsData &sky_params, const SkyRadData &sky_radiance) const {
 
         Float cos_gamma = dr::cos(gamma),
-                cos_gamma_sqr = dr::square(cos_gamma);
+              cos_gamma_sqr = dr::square(cos_gamma);
 
-        Spec c1 = 1 + coefs[0] * dr::exp(coefs[1] / (cos_theta + 0.01f));
+        Spec c1 = 1 + sky_params[0] * dr::exp(sky_params[1] / (cos_theta + 0.01f));
         Spec chi = (1 + cos_gamma_sqr) /
-                    dr::pow(1 + dr::square(coefs[8]) - 2 * coefs[8] * cos_gamma, 1.5f);
-        Spec c2 = coefs[2] + coefs[3] * dr::exp(coefs[4] * gamma) +
-                    coefs[5] * cos_gamma_sqr + coefs[6] * chi +
-                    coefs[7] * dr::safe_sqrt(cos_theta);
+                    dr::pow(1 + dr::square(sky_params[8]) - 2 * sky_params[8] * cos_gamma, 1.5f);
+        Spec c2 = sky_params[2] + sky_params[3] * dr::exp(sky_params[4] * gamma) +
+                    sky_params[5] * cos_gamma_sqr + sky_params[6] * chi +
+                    sky_params[7] * dr::safe_sqrt(cos_theta);
 
-        return c1 * c2 * dr::gather<Spec>(sky_radiance, channel_idx, active);
+        return c1 * c2 * sky_radiance;
     }
 
     /*

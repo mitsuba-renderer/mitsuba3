@@ -1,4 +1,4 @@
-#include <mitsuba/core/bsphere.h>
+#include <drjit/local.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/sunsky.h>
 
@@ -144,7 +144,7 @@ template <typename Float, typename Spectrum>
 class TimedSunskyEmitter final: public BaseSunskyEmitter<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BaseSunskyEmitter,
-        m_turbidity, m_sky_scale, m_sun_scale, m_albedo, m_bsphere,
+        m_turbidity, m_sky_scale, m_sun_scale, m_albedo,
         m_sun_half_aperture, m_location, m_sky_rad_dataset,
         m_sky_params_dataset, m_sun_ld, m_sun_rad_dataset,
         CHANNEL_COUNT, m_to_world
@@ -152,8 +152,12 @@ public:
 
     MI_IMPORT_TYPES()
 
-    using ArrayXf = dr::DynamicArray<Float>;
+private:
+    using RadLocal = dr::Local<Float, CHANNEL_COUNT>;
+    using ParamsLocal = dr::Local<Float, SKY_PARAMS * CHANNEL_COUNT>;
     using FloatStorage = DynamicBuffer<Float>;
+
+public:
 
     TimedSunskyEmitter(const Properties &props) : Base(props) {
 
@@ -218,7 +222,6 @@ public:
         using ExtendedSpecMask   = dr::mask_t<ExtendedSpec>;
 
         Datasets datasets = compute_dataset(si.time);
-        ArrayXf sky_rad_data = datasets.sky_rad, sky_params_data = datasets.sky_params;
 
         // Compute angles
         Vector3f local_wo = m_to_world.value().inverse() * (-si.wi);
@@ -251,7 +254,7 @@ public:
         // Evaluate the model channel by channel
         Spec res = 0.f;
         for (uint32_t idx = 0; idx < dr::size_v<ExtendedSpec>; ++idx) {
-            Float sky_rad = m_sky_scale * Base::template eval_sky<Float>(channel_idx[idx], cos_theta, gamma, sky_params_data, sky_rad_data, valid_idx[idx]);
+            Float sky_rad = m_sky_scale * eval_sky(channel_idx[idx], cos_theta, gamma, datasets.sky_rad, datasets.sky_params, valid_idx[idx]);
 
             Float sun_rad = m_sun_scale * get_area_ratio(m_sun_half_aperture) *
                 eval_sun<Float, is_rgb_v<Spec>>(channel_idx[idx], cos_theta, gamma, m_sun_radiance, m_sun_half_aperture, hit_sun & valid_idx[idx]);
@@ -267,6 +270,20 @@ public:
         }
 
         return depolarizer<Spectrum>(res) & active;
+    }
+
+
+    Float eval_sky(const UInt32 &channel_idx,
+        const Float &cos_theta, const Float &gamma,
+        const RadLocal& sky_rad, const ParamsLocal& sky_params,
+        const Mask &active) const {
+
+        using SpecSkyParams = dr::Array<Float, SKY_PARAMS>;
+        SpecSkyParams needed_sky_params = dr::zeros<SpecSkyParams>();
+        for (uint32_t param_idx = 0; param_idx < SKY_PARAMS; ++param_idx)
+            needed_sky_params[param_idx] = sky_params.read(channel_idx * SKY_PARAMS + param_idx, active);
+
+        return Base::template eval_sky<Float>(cos_theta, gamma, needed_sky_params, sky_rad.read(channel_idx, active));
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -309,7 +326,6 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "SunskyEmitter[" << std::endl
-            << "  bsphere = " << string::indent(m_bsphere) << std::endl
             << "  turbidity = " << string::indent(m_turbidity) << std::endl
             << "  sky_scale = " << string::indent(m_sky_scale) << std::endl
             << "  sun_scale = " << string::indent(m_sun_scale) << std::endl
@@ -325,8 +341,8 @@ private:
 
     struct Datasets {
         Vector3f sun_dir;
-        ArrayXf sky_rad;
-        ArrayXf sky_params;
+        RadLocal sky_rad;
+        ParamsLocal sky_params;
 
         std::string to_string() const {
             std::ostringstream oss;
@@ -356,17 +372,29 @@ private:
 
         Float day = time * DateTimeRecord<Float>::get_days_between(m_start_date, m_end_date, m_location);
 
-        date_time.day = dr::floor2int<Int32>(day);
+        date_time.day = m_start_date.day + dr::floor2int<Int32>(day);
         date_time.hour = m_window_start_time + (m_window_end_time - m_window_start_time) * dr::fmod(day, 1.f);
 
         const auto [sun_elevation, sun_azimuth] = Base::sun_coordinates(date_time, m_location);
         const Float sun_eta = 0.5f * dr::Pi<Float> - sun_elevation;
 
-        return Datasets {
+        using ArrayXf = dr::DynamicArray<Float>;
+        ArrayXf sky_rad = Base::template bezier_interp<ArrayXf>(m_sky_radiance, sun_eta);
+        ArrayXf sky_params = Base::template bezier_interp<ArrayXf>(m_sky_params, sun_eta);
+
+        Datasets result = {
             sph_to_dir(sun_elevation, sun_azimuth),
-            Base::template bezier_interp<ArrayXf>(m_sky_radiance, sun_eta),
-            Base::template bezier_interp<ArrayXf>(m_sky_params, sun_eta)
+            RadLocal(sun_eta), ParamsLocal(sun_eta),
         };
+
+        for (uint32_t channel_idx = 0; channel_idx < CHANNEL_COUNT; ++channel_idx) {
+            result.sky_rad.write(channel_idx, sky_rad[channel_idx]);
+            for (uint32_t param_idx = 0; param_idx < SKY_PARAMS; ++param_idx) {
+                result.sky_params.write(channel_idx * SKY_PARAMS + param_idx, sky_params[channel_idx * SKY_PARAMS + param_idx]);
+            }
+        }
+
+        return result;
     }
 
 
