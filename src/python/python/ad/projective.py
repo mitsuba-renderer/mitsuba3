@@ -594,7 +594,7 @@ class ProjectiveDetail():
             result = dr.select(active, weight * fS * fB * fE * dr.rcp(ss.pdf), 0)
 
         # Compute the motion of the boundary segment if this is not a preprocess
-        if preprocess: # TODO cleanup
+        if preprocess:
             return dr.abs(result), wavelengths, mi.Point2f(0)
         else:
             si = dr.zeros(mi.SurfaceInteraction3f)
@@ -628,15 +628,11 @@ class ProjectiveDetail():
 
         @dr.syntax
         def mesh_walk(self,
-                      si_: mi.SurfaceInteraction3f,
+                      si: mi.SurfaceInteraction3f,
                       viewpoint: mi.Point3f,
                       state: mi.UInt64,
                       active: mi.Bool,
                       max_move: int):
-            # TODO: This copy is necessary for "Dr.Jit reasons". Should be fixed
-            # when Dr.Jit uses nanobind
-            si = mi.SurfaceInteraction3f(si_)
-
             ss = dr.zeros(mi.SilhouetteSample3f)
             sampler = mi.PCG32(dr.width(si), state)
 
@@ -665,15 +661,11 @@ class ProjectiveDetail():
         @dr.syntax
         def mesh_jump(self,
                       scene: mi.Scene,
-                      si_: mi.SurfaceInteraction3f,
+                      si: mi.SurfaceInteraction3f,
                       viewpoint: mi.Point3f,
                       state: mi.UInt64,
                       active: mi.Bool,
                       max_jump: int):
-            # TODO: This copy is necessary for "Dr.Jit reasons". Should be fixed
-            # when Dr.Jit uses nanobind
-            si = mi.SurfaceInteraction3f(si_)
-
             shape = si.shape
             sampler = mi.PCG32(dr.width(si), state)
 
