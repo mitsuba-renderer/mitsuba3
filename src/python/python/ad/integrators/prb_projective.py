@@ -266,6 +266,7 @@ class PathProjectiveIntegrator(PSIntegrator):
                     # Re-attach gradients for the the `ds` struct
                     ds_diff = mi.DirectionSample3f(scene, si_em, si)
                     ds_diff = dr.select(textured_area_em, ds_diff, dr.zeros(mi.DirectionSample3f))
+                    ds_diff.d = dr.select(textured_area_em, ds_diff.d, dr.normalize(ds.p - si.p))
                     ds_diff.d = dr.select(~is_infinite, ds_diff.d, ds.d)
                     ds = dr.replace_grad(ds, ds_diff)
 
