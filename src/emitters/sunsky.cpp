@@ -350,7 +350,7 @@ public:
                 idx = SpecUInt32(0);
 
             res = m_sky_scale *
-                  Base::template eval_sky<Spec>(idx, cos_theta, gamma, m_sky_params, m_sky_radiance, active);
+                  eval_sky<Spec>(idx, cos_theta, gamma, active);
             res += m_sun_scale *
                    eval_sun<Spec>(idx, cos_theta, gamma, m_sun_radiance, m_sun_half_aperture, hit_sun) *
                    get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
@@ -369,8 +369,8 @@ public:
 
             // Linearly interpolate the sky's irradiance across the spectrum
             res = m_sky_scale * dr::lerp(
-                Base::template eval_sky<Spec>(query_idx_low, cos_theta, gamma, m_sky_params, m_sky_radiance, active & valid_idx),
-                Base::template eval_sky<Spec>(query_idx_high, cos_theta, gamma, m_sky_params, m_sky_radiance, active & valid_idx),
+                eval_sky<Spec>(query_idx_low, cos_theta, gamma, active & valid_idx),
+                eval_sky<Spec>(query_idx_high, cos_theta, gamma, active & valid_idx),
                 lerp_factor);
 
             // Linearly interpolate the sun's irradiance across the spectrum
@@ -537,6 +537,15 @@ public:
     MI_DECLARE_CLASS(SunskyEmitter)
 
 private:
+
+    template <typename Spec>
+    Spec eval_sky(const dr::uint32_array_t<Spec> &channel_idx, const Float &cos_theta, const Float &gamma, const dr::mask_t<Spec> &active) const {
+        using SpecSkyParams = dr::Array<Spec, SKY_PARAMS>;
+        Spec mean_rad       = dr::gather<Spec>(m_sky_radiance, channel_idx, active);
+        SpecSkyParams coefs = dr::gather<SpecSkyParams>(m_sky_params, channel_idx, active);
+
+        return Base::template eval_sky<Spec>(cos_theta, gamma, coefs, mean_rad);
+    }
 
     /**
      * \brief Samples the sky from the truncated gaussian mixture with the given sample.
@@ -725,7 +734,7 @@ private:
                 Float gamma = dr::unit_angle(Vector3f(m_local_sun_frame.n), sky_wo);
 
                 FullSpectrum ray_radiance =
-                    Base::template eval_sky<FullSpectrum>(channel_idx, cos_theta, gamma, m_sky_params, m_sky_radiance, true) * w_phi * w_cos_theta;
+                    eval_sky<FullSpectrum>(channel_idx, cos_theta, gamma, true) * w_phi * w_cos_theta;
                 sky_radiance = dr::sum_inner(ray_radiance) * J;
             }
 
