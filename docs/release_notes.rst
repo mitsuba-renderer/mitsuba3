@@ -7,6 +7,7 @@ strive to document breaking API changes in the release notes below.
 
 Mitsuba 3.7.0
 -------------
+*August 7, 2025*
 
 - Upgrade Dr.Jit to version `1.1.0
   <https://github.com/mitsuba-renderer/drjit/releases/tag/v1.1.0>`__. The

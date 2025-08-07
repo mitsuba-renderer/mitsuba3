@@ -6145,7 +6145,7 @@
 
 .. py:data:: mitsuba.MI_VERSION
     :type: str
-    :value: 3.6.4
+    :value: 3.7.0
 
 .. py:data:: mitsuba.MI_VERSION_MAJOR
     :type: int
@@ -6153,11 +6153,11 @@
 
 .. py:data:: mitsuba.MI_VERSION_MINOR
     :type: int
-    :value: 6
+    :value: 7
 
 .. py:data:: mitsuba.MI_VERSION_PATCH
     :type: int
-    :value: 4
+    :value: 0
 
 .. py:data:: mitsuba.MI_YEAR
     :type: str
