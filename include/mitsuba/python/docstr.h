@@ -541,6 +541,8 @@ static const char *__doc_mitsuba_AdjointIntegrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_AdjointIntegrator_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_AdjointIntegrator_AdjointIntegrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator_class_name = R"doc()doc";
@@ -638,6 +640,10 @@ static const char *__doc_mitsuba_Any_data_2 = R"doc()doc";
 static const char *__doc_mitsuba_Any_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Any_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Any_operator_eq = R"doc()doc";
+
+static const char *__doc_mitsuba_Any_operator_ne = R"doc()doc";
 
 static const char *__doc_mitsuba_Any_p = R"doc()doc";
 
@@ -798,6 +804,8 @@ static const char *__doc_mitsuba_BSDF_4 = R"doc()doc";
 static const char *__doc_mitsuba_BSDF_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_BSDF_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFContext =
 R"doc(Context data structure for BSDF evaluation and sampling
@@ -2269,7 +2277,7 @@ which can play an important role in certain applications. In
 particular:
 
 ``Hierarchical2D`` generates samples using hierarchical sample
-warping, which is essentially a course-to-fine traversal of a MIP map.
+warping, which is essentially a coarse-to-fine traversal of a MIP map.
 It generates a mapping with very little shear/distortion, but it has
 numerous discontinuities that can be problematic for some
 applications.
@@ -2531,6 +2539,8 @@ static const char *__doc_mitsuba_Emitter_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Emitter_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_EmitterFlags =
 R"doc(This list of flags is used to classify the different types of
 emitters.)doc";
@@ -2635,6 +2645,8 @@ static const char *__doc_mitsuba_Endpoint_4 = R"doc()doc";
 static const char *__doc_mitsuba_Endpoint_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_Endpoint = R"doc()doc";
 
@@ -3041,6 +3053,8 @@ static const char *__doc_mitsuba_Film_4 = R"doc()doc";
 static const char *__doc_mitsuba_Film_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Film_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_FilmFlags = R"doc(This list of flags is used to classify the different types of films.)doc";
 
@@ -3518,6 +3532,8 @@ static const char *__doc_mitsuba_ImageBlock_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_ImageBlock_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_ImageBlock_ImageBlock =
 R"doc(Construct a zero-initialized image block with the desired shape and
 channel count
@@ -3777,6 +3793,8 @@ static const char *__doc_mitsuba_Integrator_4 = R"doc()doc";
 static const char *__doc_mitsuba_Integrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Integrator_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_Integrator = R"doc(Create an integrator)doc";
 
@@ -4457,6 +4475,8 @@ static const char *__doc_mitsuba_Medium_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Medium_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_MediumInteraction = R"doc(Stores information related to a medium scattering interaction)doc";
 
 static const char *__doc_mitsuba_MediumInteraction_MediumInteraction = R"doc(//! @})doc";
@@ -4739,6 +4759,8 @@ static const char *__doc_mitsuba_Mesh_4 = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_Mesh =
 R"doc(Creates a zero-initialized mesh with the given vertex and face counts
@@ -5274,6 +5296,8 @@ static const char *__doc_mitsuba_MonteCarloIntegrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_MonteCarloIntegrator_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_MonteCarloIntegrator_MonteCarloIntegrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_class_name = R"doc()doc";
@@ -5452,6 +5476,8 @@ static const char *__doc_mitsuba_OptixDenoiser_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_OptixDenoiser_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_OptixDenoiser_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_OptixDenoiser_OptixDenoiser =
 R"doc(Constructs an OptiX denoiser
 
@@ -5628,6 +5654,8 @@ static const char *__doc_mitsuba_PCG32Sampler_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_PCG32Sampler_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_PCG32Sampler_PCG32Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_PCG32Sampler_2 = R"doc(Copy state to a new PCG32Sampler object)doc";
@@ -5678,6 +5706,8 @@ static const char *__doc_mitsuba_PhaseFunction_4 = R"doc()doc";
 static const char *__doc_mitsuba_PhaseFunction_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunction_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunction_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunctionContext = R"doc()doc";
 
@@ -5970,8 +6000,8 @@ It stores whether the shape is intersected by a given ray, and cache
 preliminary information about the intersection if that is the case.
 
 If the intersection is deemed relevant, detailed intersection
-information can later be obtained via the compute_surface_interaction()
-method.)doc";
+information can later be obtained via the
+compute_surface_interaction() method.)doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_2 =
 R"doc(Stores preliminary information related to a ray intersection
@@ -5982,8 +6012,8 @@ It stores whether the shape is intersected by a given ray, and cache
 preliminary information about the intersection if that is the case.
 
 If the intersection is deemed relevant, detailed intersection
-information can later be obtained via the compute_surface_interaction()
-method.)doc";
+information can later be obtained via the
+compute_surface_interaction() method.)doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_PreliminaryIntersection = R"doc(//! @})doc";
 
@@ -6166,6 +6196,8 @@ static const char *__doc_mitsuba_ProjectiveCamera_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_ProjectiveCamera_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_ProjectiveCamera_ProjectiveCamera = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_class_name = R"doc()doc";
@@ -6182,6 +6214,10 @@ static const char *__doc_mitsuba_ProjectiveCamera_m_near_clip = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_near_clip = R"doc(Return the near clip plane distance)doc";
 
+static const char *__doc_mitsuba_ProjectiveCamera_projection_transform =
+R"doc(Return the projection matrix of this sensor (camera space to sample
+space transformation))doc";
+
 static const char *__doc_mitsuba_ProjectiveCamera_traverse = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_traverse_1_cb_ro = R"doc()doc";
@@ -6189,39 +6225,94 @@ static const char *__doc_mitsuba_ProjectiveCamera_traverse_1_cb_ro = R"doc()doc"
 static const char *__doc_mitsuba_ProjectiveCamera_traverse_1_cb_rw = R"doc()doc";
 
 static const char *__doc_mitsuba_Properties =
-R"doc(Map data structure for passing parameters to scene objects.
+R"doc(Associative container for passing configuration parameters to Mitsuba
+plugins.
 
-The constructors of Mitsuba scene objects take a Properties object as
-input. It specifies named parameters of various types, such as
-filenames, colors, etc. It can also pass nested objects that have
-already been constructed.
+When Mitsuba scene objects (BSDFs, textures, emitters, etc.) are
+instantiated, they receive their configuration through a Properties
+object. This container maps parameter names to values of various
+types: booleans, integers, floats, strings, colors, transforms, and
+references to other scene objects.
 
-The C++ and Python APIs are slightly different. In C++, the type to be
-retrieved must be specified as a template parameter:
+The Properties class combines the convenience of a dictionary with
+type safety and provides several key features:
+
+- Fast O(1) insertion and lookup by property name. - Traversal of
+properties in the original insertion order. - Automatic tracking of
+queried properties. - Reference properties that can be used to build
+object hierarchies.
+
+## Basic C++ Usage
 
 ```
-Properties props("plugin_name")
+Properties props("plugin_name");
 
 // Write to 'props':
 props.set("color_value", ScalarColor3f(0.1f, 0.2f, 0.3f));
+props.set("my_bsdf", bsdf); // ref<BSDF> or BSDF*
 
 // Read from 'props':
-Color3f value = props.get<ScalarColor3f>("color_value");
+ScalarColor3f value = props.get<ScalarColor3f>("color_value");
+BSDF *bsdf = props.get<BSDF*>("my_bsdf");
 ```
 
-In Python, the API behaves like a standard dictionary.
+## Iterating Over Properties
+
+```
+// Iterate over all properties
+for (const auto &prop : props) {
+    std::cout << prop.name() << " = " << prop.type() << std::endl;
+}
+
+// Iterate only over object properties
+for (const auto &prop : props.objects()) {
+    if (BSDF *bsdf = prop.try_get<BSDF>()) {
+        // Process BSDF object
+    } else if (Texture *texture = prop.try_get<Texture>()) {
+        // Process Texture object
+    }
+}
+```
+
+## Iterator stability
+
+It is legal to mutate the container (e.g., by adding/removing
+elements) while iterating over its elements.
+
+## Python API
+
+In Python, Property instances implement a dictionary-like interface:
 
 ```
 props = mi.Properties("plugin_name")
 
-// Write to 'props':
+# Write to 'props':
 props["color_value"] = mi.ScalarColor3f(0.1, 0.2, 0.3)
 
-// Read from 'props':
-value = props["color_value"]
+for k, v in props.items():
+   print(f'{k} = {v}')
 ```
 
-or using the ``get(key, default)`` method.)doc";
+## Query Tracking
+
+Each property stores a flag that tracks whether it has been accessed.
+This helps detect configuration errors such as typos in parameter
+names or unused parameters. The get() function automatically marks
+parameters as queried.
+
+Use the following methods to work with query tracking: -
+was_queried(name): Check if a specific parameter was accessed -
+unqueried(): Get a list of all parameters that were never accessed -
+mark_queried(name): Manually mark a parameter as accessed
+
+This is particularly useful during plugin initialization to warn users
+about potentially misspelled or unnecessary parameters in their scene
+descriptions.
+
+## Caveats
+
+Deleting parameters leaves unused entries ("tombstones") that reduce
+memory efficiency especially following a large number of deletions.)doc";
 
 static const char *__doc_mitsuba_Properties_Properties = R"doc(Construct an empty and unnamed properties object)doc";
 
@@ -6233,19 +6324,68 @@ static const char *__doc_mitsuba_Properties_Properties_4 = R"doc(Move constructo
 
 static const char *__doc_mitsuba_Properties_PropertiesPrivate = R"doc()doc";
 
-static const char *__doc_mitsuba_Properties_Reference =
-R"doc(Represents an indirect dependence on another object (referenced by
-name))doc";
+static const char *__doc_mitsuba_Properties_Reference = R"doc(Represents an indirect dependence on another object by name)doc";
 
 static const char *__doc_mitsuba_Properties_Reference_Reference = R"doc()doc";
 
-static const char *__doc_mitsuba_Properties_Reference_m_name = R"doc()doc";
+static const char *__doc_mitsuba_Properties_Reference_id = R"doc()doc";
 
-static const char *__doc_mitsuba_Properties_Reference_operator_const_std_string = R"doc()doc";
+static const char *__doc_mitsuba_Properties_Reference_m_name = R"doc()doc";
 
 static const char *__doc_mitsuba_Properties_Reference_operator_eq = R"doc()doc";
 
 static const char *__doc_mitsuba_Properties_Reference_operator_ne = R"doc()doc";
+
+static const char *__doc_mitsuba_Properties_ResolvedReference =
+R"doc(Represents an indirect dependence that has been resolved to a specific
+element of ``ParserState::nodes`` (by the
+parser::transform_resolve_references pass))doc";
+
+static const char *__doc_mitsuba_Properties_ResolvedReference_ResolvedReference = R"doc()doc";
+
+static const char *__doc_mitsuba_Properties_ResolvedReference_index = R"doc()doc";
+
+static const char *__doc_mitsuba_Properties_ResolvedReference_m_index = R"doc()doc";
+
+static const char *__doc_mitsuba_Properties_ResolvedReference_operator_eq = R"doc()doc";
+
+static const char *__doc_mitsuba_Properties_ResolvedReference_operator_ne = R"doc()doc";
+
+static const char *__doc_mitsuba_Properties_Spectrum =
+R"doc(Temporary data structure to store spectral data before expansion into
+a plugin like ``RegularSpectrum`` or ``IrregularSpectrum``.)doc";
+
+static const char *__doc_mitsuba_Properties_Spectrum_Spectrum = R"doc(Default constructor (creates empty spectrum))doc";
+
+static const char *__doc_mitsuba_Properties_Spectrum_Spectrum_2 = R"doc(Construct uniform spectrum)doc";
+
+static const char *__doc_mitsuba_Properties_Spectrum_Spectrum_3 = R"doc(Construct spectrum from wavelength-value pairs)doc";
+
+static const char *__doc_mitsuba_Properties_Spectrum_Spectrum_4 =
+R"doc(Construct spectrum from string (either single value or
+wavelength:value pairs))doc";
+
+static const char *__doc_mitsuba_Properties_Spectrum_Spectrum_5 = R"doc(Construct regular spectrum from string of values and wavelength range)doc";
+
+static const char *__doc_mitsuba_Properties_Spectrum_Spectrum_6 = R"doc(Construct regular spectrum from vector of values and wavelength range)doc";
+
+static const char *__doc_mitsuba_Properties_Spectrum_Spectrum_7 =
+R"doc(Construct irregular spectrum from separate wavelength and value
+strings)doc";
+
+static const char *__doc_mitsuba_Properties_Spectrum_Spectrum_8 = R"doc(Construct spectrum from file)doc";
+
+static const char *__doc_mitsuba_Properties_Spectrum_is_regular = R"doc(Check if wavelengths are regularly spaced)doc";
+
+static const char *__doc_mitsuba_Properties_Spectrum_is_uniform = R"doc(Check if this is a uniform spectrum (single value, no wavelengths))doc";
+
+static const char *__doc_mitsuba_Properties_Spectrum_m_regular = R"doc(True if wavelengths are regularly spaced)doc";
+
+static const char *__doc_mitsuba_Properties_Spectrum_operator_eq = R"doc()doc";
+
+static const char *__doc_mitsuba_Properties_Spectrum_values = R"doc(Corresponding values, or uniform value if wavelengths is empty)doc";
+
+static const char *__doc_mitsuba_Properties_Spectrum_wavelengths = R"doc(For sampled spectra: wavelength values (in nanometers))doc";
 
 static const char *__doc_mitsuba_Properties_Type = R"doc(Enumeration of representable property types)doc";
 
@@ -6261,17 +6401,19 @@ static const char *__doc_mitsuba_Properties_Type_Integer = R"doc(64-bit signed i
 
 static const char *__doc_mitsuba_Properties_Type_Object = R"doc(An arbitrary Mitsuba scene object)doc";
 
-static const char *__doc_mitsuba_Properties_Type_Reference = R"doc(Indirect dependence to another object (referenced by name))doc";
+static const char *__doc_mitsuba_Properties_Type_Reference = R"doc(Indirect reference to another scene object (by name))doc";
 
-static const char *__doc_mitsuba_Properties_Type_ResolvedReference = R"doc(Reference that has been resolved to a concrete ID))doc";
+static const char *__doc_mitsuba_Properties_Type_ResolvedReference = R"doc(Indirect reference to another scene object (by index))doc";
+
+static const char *__doc_mitsuba_Properties_Type_Spectrum = R"doc(Spectrum data (uniform value or wavelength-value pairs))doc";
 
 static const char *__doc_mitsuba_Properties_Type_String = R"doc(String)doc";
 
 static const char *__doc_mitsuba_Properties_Type_Transform = R"doc(3x3 or 4x4 homogeneous coordinate transform)doc";
 
-static const char *__doc_mitsuba_Properties_Type_Vector = R"doc(3D array)doc";
+static const char *__doc_mitsuba_Properties_Type_Unknown = R"doc(Unknown/deleted property (used for tombstones))doc";
 
-static const char *__doc_mitsuba_Properties_Type_Spectrum = R"doc(A Spectral curve)doc";
+static const char *__doc_mitsuba_Properties_Type_Vector = R"doc(3D array)doc";
 
 static const char *__doc_mitsuba_Properties_as_string = R"doc(Return one of the parameters (converting it to a string if necessary))doc";
 
@@ -6279,7 +6421,29 @@ static const char *__doc_mitsuba_Properties_as_string_2 =
 R"doc(Return one of the parameters (converting it to a string if necessary,
 with default value))doc";
 
+static const char *__doc_mitsuba_Properties_begin = R"doc(Return an iterator representing the beginning of the container)doc";
+
 static const char *__doc_mitsuba_Properties_d = R"doc()doc";
+
+static const char *__doc_mitsuba_Properties_empty = R"doc(Check if there are no entries)doc";
+
+static const char *__doc_mitsuba_Properties_end = R"doc(Return an iterator representing the end of the container)doc";
+
+static const char *__doc_mitsuba_Properties_entry_name = R"doc(Get the name of an entry by index (for error messages))doc";
+
+static const char *__doc_mitsuba_Properties_filter = R"doc(Return a range that only yields properties of the specified type)doc";
+
+static const char *__doc_mitsuba_Properties_filtered_range = R"doc(Helper class to provide a range for filtered iteration)doc";
+
+static const char *__doc_mitsuba_Properties_filtered_range_begin = R"doc()doc";
+
+static const char *__doc_mitsuba_Properties_filtered_range_end = R"doc()doc";
+
+static const char *__doc_mitsuba_Properties_filtered_range_filtered_range = R"doc()doc";
+
+static const char *__doc_mitsuba_Properties_filtered_range_m_filter_type = R"doc()doc";
+
+static const char *__doc_mitsuba_Properties_filtered_range_m_props = R"doc()doc";
 
 static const char *__doc_mitsuba_Properties_get =
 R"doc(Retrieve a scalar parameter by name
@@ -6303,9 +6467,11 @@ The template parameter ``T`` may refer to:
 - Affine transformations (``ScalarTransform3f``,
 ``ScalarTransform4f``)
 
-Both single/double precision versions of these are supported; the
-function will convert them as needed. The function cannot be used to
-obtain vectorized (e.g. JIT-compiled) arrays.)doc";
+- Mitsuba object classes (``ref<BSDF>``, ``BSDF *``, etc.)
+
+Both single/double precision versions of arithmetic types are
+supported; the function will convert them as needed. The function
+*cannot* be used to obtain vectorized (e.g. JIT-compiled) arrays.)doc";
 
 static const char *__doc_mitsuba_Properties_get_2 =
 R"doc(Retrieve a parameter (with default value)
@@ -6315,36 +6481,101 @@ of this overload is that it automatically substitutes a default value
 ``def_val`` when the requested parameter cannot be found. It function
 raises an error if current parameter value has an incompatible type.)doc";
 
+static const char *__doc_mitsuba_Properties_get_3 =
+R"doc(Retrieve a scalar parameter by index
+
+This is the primary implementation. All type conversions and error
+checking is done here. The name-based get() is a thin wrapper.)doc";
+
 static const char *__doc_mitsuba_Properties_get_any =
 R"doc(Retrieve an arbitrarily typed value for inter-plugin communication
 
+This method enables plugins to exchange custom types that are not
+natively supported by the Properties system. It uses type-erased
+storage to hold arbitrary C++ objects while preserving type safety
+through runtime type checking.
+
 The function raises an exception if the parameter does not exist or
-cannot be cast. Accessing the parameter automatically marks it as
-queried.)doc";
+cannot be cast to the requested type. Accessing the parameter
+automatically marks it as queried.)doc";
+
+static const char *__doc_mitsuba_Properties_get_emissive_texture =
+R"doc(Retrieve an emissive texture parameter with variant-specific
+conversions (see get_texture_impl for details))doc";
+
+static const char *__doc_mitsuba_Properties_get_emissive_texture_2 =
+R"doc(Retrieve an emissive texture parameter with default value and variant-
+specific conversions (see get_texture_impl for details))doc";
 
 static const char *__doc_mitsuba_Properties_get_impl = R"doc(Implementation detail of get())doc";
 
 static const char *__doc_mitsuba_Properties_get_texture =
-R"doc(Retrieve a texture parameter
-
-This method retrieves a texture parameter, where ``T`` is a subclass
-of ``mitsuba::Texture<...>``.
-
-Scalar and color values are also accepted. In this case, the plugin
-manager will automatically construct a ``uniform`` or ``srgb`` texture
-instance.)doc";
+R"doc(Retrieve a texture parameter with variant-specific conversions (see
+get_texture_impl for details))doc";
 
 static const char *__doc_mitsuba_Properties_get_texture_2 =
-R"doc(Retrieve a texture parameter with float default
+R"doc(Retrieve a texture parameter with default value and variant-specific
+conversions (see get_texture_impl for details))doc";
 
-When the texture parameter doesn't exist, creates a uniform texture
-with the specified floating point value.)doc";
+static const char *__doc_mitsuba_Properties_get_texture_impl =
+R"doc(Retrieve a texture parameter (internal method)
 
-static const char *__doc_mitsuba_Properties_get_texture_d65 =
-R"doc(Retrieve a texture parameter with float default value
+This method exposes a low level interface for texture construction, in
+general get_texture(), get_emissive_texture(), and
+get_unbounded_texture() are preferable.
 
-When the texture parameter doesn't exist, creates a uniform D65
-whitepoint texture scaled by the specified floating point value.)doc";
+The method retrieves or construct a texture object (a subclass of
+``mitsuba::Texture<...>``).
+
+If the parameter already holds a texture object, this function returns
+it directly. Otherwise, it creates an appropriate texture based on the
+property type and the current variant. The exact behavior is:
+
+**Float/Integer Values:** - Monochromatic variants: Create ``uniform``
+texture with the value. - RGB/spectral variants: - For reflectance
+spectra: Create ``uniform`` texture with the value. - For emission
+spectra: Create ``d65`` texture with grayscale color.
+
+**Color Values (RGB triplets):** - Monochromatic variants: Compute
+luminance and create a ``uniform`` texture. - RGB/spectral variants: -
+For emission spectra: Create ``d65`` texture. - For reflectance
+spectra: Create ``srgb`` texture.
+
+**Spectrum Values:** *Uniform spectrum (single value):* - RGB
+variants: For emission spectra, create ``srgb`` texture with a color
+that represents the RGB appearance of a uniform spectral emitter. -
+All other cases: Create ``uniform`` texture.
+
+*Wavelength-value pairs:* - Spectral variants: create a ``regular`` or
+``irregular`` spectrum texture based on the regularity of the
+wavelength-value pairs. - RGB/monochromatic variants: Pre-integrate
+against the CIE color matching functions to convert to sRGB color,
+then: - Monochromatic: Extract luminance and create ``uniform``
+texture. - RGB: Create a ``srgb`` texture with the computed color.
+
+Parameter ``name``:
+    The property name to look up
+
+Parameter ``emitter``:
+    Set to true when retrieving textures for emission spectra
+
+Parameter ``unbounded``:
+    Set this parameter to true if the spectrum is not emissive but may
+    still exceed the [0,1] range. An example would be the real or
+    imaginary index of refraction. This is important when spectral
+    upsampling is involved.)doc";
+
+static const char *__doc_mitsuba_Properties_get_texture_impl_2 =
+R"doc(Version of the above that switches to a default initialization when
+the property was not specified)doc";
+
+static const char *__doc_mitsuba_Properties_get_unbounded_texture =
+R"doc(Retrieve an unbounded texture parameter with default value and
+variant-specific conversions (see get_texture_impl for details))doc";
+
+static const char *__doc_mitsuba_Properties_get_unbounded_texture_2 =
+R"doc(Retrieve an unbounded texture parameter with variant-specific
+conversions (see get_texture_impl for details))doc";
 
 static const char *__doc_mitsuba_Properties_get_volume =
 R"doc(Retrieve a volume parameter
@@ -6363,17 +6594,63 @@ with the specified floating point value.)doc";
 
 static const char *__doc_mitsuba_Properties_has_property = R"doc(Verify if a property with the specified name exists)doc";
 
+static const char *__doc_mitsuba_Properties_hash =
+R"doc(Compute a hash of the Properties object
+
+This hash is suitable for deduplication and ignores: - The insertion
+order of properties - The 'id' field (which assigns a name to the
+object elsewhere) - Property names starting with '_arg_' (which are
+auto-generated)
+
+The hash function is designed to work with the equality operator for
+identifying equivalent Properties objects that can be merged during
+scene optimization.)doc";
+
 static const char *__doc_mitsuba_Properties_id =
 R"doc(Returns a unique identifier associated with this instance (or an empty
 string)
 
 The ID is used to enable named references by other plugins)doc";
 
+static const char *__doc_mitsuba_Properties_key_index =
+R"doc(Find the index of a property by name
+
+Returns:
+    The index in the internal storage, or ``size_t(-1)`` if not found)doc";
+
+static const char *__doc_mitsuba_Properties_key_index_checked =
+R"doc(Find the index of a property by name or raise an exception if the
+entry was not found.
+
+Returns:
+    The index in the internal storage)doc";
+
+static const char *__doc_mitsuba_Properties_key_iterator = R"doc(Forward declaration of iterator)doc";
+
 static const char *__doc_mitsuba_Properties_mark_queried =
 R"doc(Manually mark a certain property as queried
 
+Parameter ``name``:
+    The property name
+
+Parameter ``value``:
+    Whether to mark as queried (true) or unqueried (false)
+
 Returns:
     ``True`` upon success)doc";
+
+static const char *__doc_mitsuba_Properties_mark_queried_2 =
+R"doc(Mark a property as queried by its internal index
+
+This method is used internally by the iterator to mark properties as
+accessed only after successful type casting.)doc";
+
+static const char *__doc_mitsuba_Properties_maybe_append =
+R"doc(Get or create a property entry by name
+
+This method looks up an existing property by name. If found and
+raise_if_exists is true, it raises an exception. If not found, it
+creates a new entry with the given name and an empty value.)doc";
 
 static const char *__doc_mitsuba_Properties_merge =
 R"doc(Merge another properties record into the current one.
@@ -6381,12 +6658,7 @@ R"doc(Merge another properties record into the current one.
 Existing properties will be overwritten with the values from ``props``
 if they have the same name.)doc";
 
-static const char *__doc_mitsuba_Properties_objects =
-R"doc(Return an array containing directly nested scene objects and their
-associated names (in insertion order)
-
-Parameter ``mark_queried``:
-    Whether all stored objects should be marked as queried)doc";
+static const char *__doc_mitsuba_Properties_objects = R"doc(Return a range that only yields Object-type properties)doc";
 
 static const char *__doc_mitsuba_Properties_operator_assign = R"doc(Copy assignment operator)doc";
 
@@ -6398,20 +6670,9 @@ static const char *__doc_mitsuba_Properties_operator_ne = R"doc(Inequality compa
 
 static const char *__doc_mitsuba_Properties_plugin_name = R"doc(Get the plugin name)doc";
 
-static const char *__doc_mitsuba_Properties_property_names =
-R"doc(Return an array containing the names of all stored properties (in
-insertion order))doc";
-
 static const char *__doc_mitsuba_Properties_raise_any_type_error = R"doc(Raise an exception when get_any() has incompatible type)doc";
 
 static const char *__doc_mitsuba_Properties_raise_object_type_error = R"doc(Raise an exception when an object has incompatible type)doc";
-
-static const char *__doc_mitsuba_Properties_references =
-R"doc(Return an array containing indirect references to scene objects and
-their associated names (in insertion order)
-
-Parameter ``mark_queried``:
-    Whether all stored objects should be marked as queried)doc";
 
 static const char *__doc_mitsuba_Properties_remove_property =
 R"doc(Remove a property with the specified name
@@ -6419,12 +6680,28 @@ R"doc(Remove a property with the specified name
 Returns:
     ``True`` upon success)doc";
 
+static const char *__doc_mitsuba_Properties_rename_property =
+R"doc(Rename a property
+
+Changes the name of an existing property while preserving its value
+and queried status.
+
+Parameter ``old_name``:
+    The current name of the property
+
+Parameter ``new_name``:
+    The new name for the property
+
+Returns:
+    ``True`` upon success, ``False`` if the old property doesn't exist
+    or new name already exists)doc";
+
 static const char *__doc_mitsuba_Properties_set =
 R"doc(Set a parameter value
 
 When a parameter with a matching names is already present, the method
-raises an exception if ``raise_if_exists`` is set to ``True`` (the
-default). Otherwise, it replaces the parameter.
+raises an exception if ``raise_if_exists`` is set (the default).
+Otherwise, it replaces the parameter.
 
 The parameter is initially marked as unqueried (see was_queried).)doc";
 
@@ -6443,6 +6720,31 @@ static const char *__doc_mitsuba_Properties_set_impl = R"doc(Implementation deta
 static const char *__doc_mitsuba_Properties_set_impl_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Properties_set_plugin_name = R"doc(Set the plugin name)doc";
+
+static const char *__doc_mitsuba_Properties_size = R"doc(Return the number of entries)doc";
+
+static const char *__doc_mitsuba_Properties_try_get =
+R"doc(Try to retrieve a property value without implicit conversions
+
+This method attempts to retrieve a property value of type T. Unlike
+get<T>(), it returns a pointer to the stored value without performing
+any implicit conversions. If the property doesn't exist, has a
+different type, or would require conversion, it returns nullptr.
+
+For Object-derived types, dynamic_cast is used to check type
+compatibility. The property is only marked as queried if retrieval
+succeeds.
+
+Template parameter ``T``:
+    The requested type
+
+Parameter ``name``:
+    Property name
+
+Returns:
+    Pointer to the value if successful, nullptr otherwise)doc";
+
+static const char *__doc_mitsuba_Properties_try_get_2 = R"doc(Try to get a property value by index without implicit conversions)doc";
 
 static const char *__doc_mitsuba_Properties_type =
 R"doc(Returns the type of an existing property.
@@ -6693,6 +6995,8 @@ static const char *__doc_mitsuba_ReconstructionFilter_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_ReconstructionFilter_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_ReconstructionFilter_ReconstructionFilter = R"doc(Create a new reconstruction filter)doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_border_size = R"doc(Return the block border size required when rendering with this filter)doc";
@@ -6906,6 +7210,8 @@ static const char *__doc_mitsuba_Sampler_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Sampler_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_Sampler_Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_Sampler_2 = R"doc(Copy state to a new sampler object)doc";
@@ -7009,6 +7315,8 @@ static const char *__doc_mitsuba_SamplingIntegrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_SamplingIntegrator_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_SamplingIntegrator_SamplingIntegrator = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_class_name = R"doc()doc";
@@ -7105,6 +7413,8 @@ static const char *__doc_mitsuba_Scene_4 = R"doc()doc";
 static const char *__doc_mitsuba_Scene_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_Scene = R"doc(Instantiate a scene from a Properties object)doc";
 
@@ -7839,6 +8149,8 @@ static const char *__doc_mitsuba_Sensor_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Sensor_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_Sensor_Sensor = R"doc(This is both a class and the base of various Mitsuba plugins)doc";
 
 static const char *__doc_mitsuba_Sensor_class_name = R"doc()doc";
@@ -7968,6 +8280,8 @@ static const char *__doc_mitsuba_Shape_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_7 = R"doc()doc";
 
+static const char *__doc_mitsuba_Shape_8 = R"doc()doc";
+
 static const char *__doc_mitsuba_ShapeGroup = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_2 = R"doc()doc";
@@ -7979,6 +8293,8 @@ static const char *__doc_mitsuba_ShapeGroup_4 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeGroup_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeGroup_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_ShapeGroup = R"doc()doc";
 
@@ -8053,6 +8369,8 @@ static const char *__doc_mitsuba_ShapeKDTree_4 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeKDTree_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeKDTree_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_ShapeKDTree =
 R"doc(Create an empty kd-tree and take build-related parameters from
@@ -9997,7 +10315,16 @@ static const char *__doc_mitsuba_TensorFile =
 R"doc(Simple exchange format for tensor data of arbitrary rank and size
 
 This class provides convenient memory-mapped read-only access to
-tensor data, usually exported from NumPy.)doc";
+tensor data, usually exported from NumPy.
+
+The Python functions :python:func:`mi.tensor_io.write(filename,
+tensor_1=.., tensor_2=.., ...) <mitsuba.tensor_io.write>` and
+:py:func:`tensor_file = mi.tensor_io.read(filename)
+<mitsuba.tensor_io.read>` can be used to create and modify these files
+within Python.
+
+On the C++ end, use ``tensor_file.field("field_name").as<TensorXf>()``
+to upload the data and obtain a device tensor handle.)doc";
 
 static const char *__doc_mitsuba_TensorFile_Field = R"doc(Information about the specified field)doc";
 
@@ -10009,15 +10336,21 @@ static const char *__doc_mitsuba_TensorFile_Field_offset = R"doc(Offset within t
 
 static const char *__doc_mitsuba_TensorFile_Field_shape = R"doc(Specifies both rank and size along each dimension)doc";
 
+static const char *__doc_mitsuba_TensorFile_Field_to = R"doc()doc";
+
+static const char *__doc_mitsuba_TensorFile_Field_to_string = R"doc(Return a human-readable summary)doc";
+
 static const char *__doc_mitsuba_TensorFile_TensorFile = R"doc(Map the specified file into memory)doc";
 
+static const char *__doc_mitsuba_TensorFile_TensorFileImpl = R"doc()doc";
+
 static const char *__doc_mitsuba_TensorFile_class_name = R"doc()doc";
+
+static const char *__doc_mitsuba_TensorFile_d = R"doc()doc";
 
 static const char *__doc_mitsuba_TensorFile_field = R"doc(Return a data structure with information about the specified field)doc";
 
 static const char *__doc_mitsuba_TensorFile_has_field = R"doc(Does the file contain a field of the specified name?)doc";
-
-static const char *__doc_mitsuba_TensorFile_m_fields = R"doc()doc";
 
 static const char *__doc_mitsuba_TensorFile_to_string = R"doc(Return a human-readable summary)doc";
 
@@ -10043,6 +10376,8 @@ static const char *__doc_mitsuba_Texture_4 = R"doc()doc";
 static const char *__doc_mitsuba_Texture_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Texture_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_D65 = R"doc(Convenience function returning the standard D65 illuminant)doc";
 
@@ -10251,29 +10586,33 @@ static const char *__doc_mitsuba_Timer_start = R"doc()doc";
 static const char *__doc_mitsuba_Timer_value = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform =
-R"doc(Encapsulates a 4x4 homogeneous coordinate transformation along with
-its inverse transpose
+R"doc(Unified homogeneous coordinate transformation
 
-The Transform class provides a set of overloaded matrix-vector
-multiplication operators for vectors, points, and normals (all of them
-behave differently under homogeneous coordinate transformations, hence
-the need to represent them using separate types))doc";
+This class represents homogeneous coordinate transformations, i.e.,
+composable mappings that include rotations, scaling, translations, and
+perspective transformation. As a special case, the implementation can
+also be specialized to *affine* (non-perspective) transformations,
+which imposes a simpler structure that can be exploited to simplify
+certain operations (e.g., transformation of points, compsition,
+initialization from a matrix).
 
-static const char *__doc_mitsuba_Transform_Transform =
-R"doc(Initialize the transformation from the given matrix (and compute its
-inverse transpose))doc";
+The class internally stores the matrix and its inverse transpose. The
+latter is precomputed so that the class admits efficient
+transformation of surface normals.)doc";
+
+static const char *__doc_mitsuba_Transform_Transform = R"doc(Initialize the transformation from the given matrix)doc";
 
 static const char *__doc_mitsuba_Transform_Transform_2 = R"doc(Initialize the transformation from the given matrix and its inverse)doc";
 
-static const char *__doc_mitsuba_Transform_Transform_3 = R"doc()doc";
+static const char *__doc_mitsuba_Transform_Transform_3 = R"doc(Copy constructor with type conversion)doc";
 
-static const char *__doc_mitsuba_Transform_Transform_4 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Transform_Transform_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_Transform_Transform_5 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Transform_Transform_5 = R"doc()doc";
 
-static const char *__doc_mitsuba_Transform_Transform_6 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Transform_Transform_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_Transform_extract = R"doc(Extract a lower-dimensional submatrix)doc";
+static const char *__doc_mitsuba_Transform_extract = R"doc(Extract a lower-dimensional submatrix (only for affine transforms))doc";
 
 static const char *__doc_mitsuba_Transform_fields = R"doc()doc";
 
@@ -10288,9 +10627,7 @@ R"doc(Test for a scale component in each transform matrix by checking
 whether ``M . M^T == I`` (where ``M`` is the matrix in question and
 ``I`` is the identity).)doc";
 
-static const char *__doc_mitsuba_Transform_inverse =
-R"doc(Compute the inverse of this transformation (involves just shuffles, no
-arithmetic))doc";
+static const char *__doc_mitsuba_Transform_inverse = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_inverse_transpose = R"doc()doc";
 
@@ -10314,33 +10651,33 @@ static const char *__doc_mitsuba_Transform_name = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_operator_assign = R"doc()doc";
 
-static const char *__doc_mitsuba_Transform_operator_assign_2 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Transform_operator_assign_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_Transform_operator_assign_3 = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Transform_operator_assign_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_operator_eq = R"doc(Equality comparison operator)doc";
 
-static const char *__doc_mitsuba_Transform_operator_mul = R"doc(Concatenate transformations)doc";
-
-static const char *__doc_mitsuba_Transform_operator_mul_2 =
-R"doc(Transform a 3D point
-
-Remark:
-    In the Python API, one should use the \c @ operator)doc";
-
-static const char *__doc_mitsuba_Transform_operator_mul_3 =
+static const char *__doc_mitsuba_Transform_operator_mul =
 R"doc(Transform a 3D vector
 
 Remark:
-    In the Python API, one should use the \c @ operator)doc";
+    In the Python API, this maps to the \c @ operator)doc";
 
-static const char *__doc_mitsuba_Transform_operator_mul_4 =
+static const char *__doc_mitsuba_Transform_operator_mul_2 =
 R"doc(Transform a 3D normal vector
 
 Remark:
     In the Python API, one should use the \c @ operator)doc";
 
-static const char *__doc_mitsuba_Transform_operator_mul_5 = R"doc(Transform a ray (for perspective transformations))doc";
+static const char *__doc_mitsuba_Transform_operator_mul_3 =
+R"doc(Transform a 3D point with or without perspective division
+
+Remark:
+    In the Python API, this maps to the \c @ operator)doc";
+
+static const char *__doc_mitsuba_Transform_operator_mul_4 = R"doc(Transform a ray (optimized for affine case))doc";
+
+static const char *__doc_mitsuba_Transform_operator_mul_5 = R"doc(Concatenate transformations)doc";
 
 static const char *__doc_mitsuba_Transform_operator_ne = R"doc(Inequality comparison operator)doc";
 
@@ -10387,21 +10724,15 @@ static const char *__doc_mitsuba_Transform_to_frame =
 R"doc(Creates a transformation that converts from the standard basis to
 'frame')doc";
 
-static const char *__doc_mitsuba_Transform_transform_affine =
-R"doc(Transform a 3D vector/point/normal/ray by a transformation that is
-known to be an affine 3D transformation (i.e. no perspective))doc";
-
-static const char *__doc_mitsuba_Transform_transform_affine_2 =
-R"doc(Transform a point (handles affine/non-perspective transformations
-only))doc";
-
-static const char *__doc_mitsuba_Transform_transform_affine_3 = R"doc(Transform a ray (for affine/non-perspective transformations))doc";
+static const char *__doc_mitsuba_Transform_transform_affine = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_translate = R"doc(Create a translation transformation)doc";
 
 static const char *__doc_mitsuba_Transform_translation = R"doc(Get the translation part of a matrix)doc";
 
 static const char *__doc_mitsuba_Transform_transpose = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_update = R"doc(Update the inverse transpose part following a modification to 'matrix')doc";
 
 static const char *__doc_mitsuba_TransportMode =
 R"doc(Specifies the transport mode when sampling or evaluating a scattering
@@ -10480,6 +10811,8 @@ static const char *__doc_mitsuba_Volume_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Volume_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Volume_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_VolumeGrid =
 R"doc(Class to read and write 3D volume grids
 
@@ -10496,6 +10829,8 @@ static const char *__doc_mitsuba_VolumeGrid_4 = R"doc()doc";
 static const char *__doc_mitsuba_VolumeGrid_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeGrid_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_VolumeGrid =
 R"doc(Load a VolumeGrid from a given filename
@@ -10729,6 +11064,8 @@ static const char *__doc_mitsuba_any_cast = R"doc()doc";
 
 static const char *__doc_mitsuba_any_cast_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_begin = R"doc()doc";
+
 static const char *__doc_mitsuba_bezier_interpolate =
 R"doc(Interpolates the dataset along a quintic bezier curve
 
@@ -10960,6 +11297,10 @@ static const char *__doc_mitsuba_detail_prop_map_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_prop_map_7 = R"doc()doc";
 
+static const char *__doc_mitsuba_detail_prop_map_8 = R"doc()doc";
+
+static const char *__doc_mitsuba_detail_prop_map_9 = R"doc()doc";
+
 static const char *__doc_mitsuba_detail_serialization_helper =
 R"doc(The serialization_helper<T> implementations for new types should in
 general be implemented as a series of calls to the lower-level
@@ -11052,6 +11393,8 @@ static const char *__doc_mitsuba_detail_variant_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_variant_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_detail_variant_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_dir_to_sph =
 R"doc(Converts a unit vector to its spherical coordinates parameterization
 
@@ -11064,6 +11407,8 @@ Returns:
 static const char *__doc_mitsuba_emitter =
 R"doc(Return the emitter associated with the intersection (if any) \note
 Defined in scene.h)doc";
+
+static const char *__doc_mitsuba_end = R"doc()doc";
 
 static const char *__doc_mitsuba_eval_reflectance = R"doc()doc";
 
@@ -11102,6 +11447,11 @@ relative to ``base``.
 
 See also:
     http ://en.cppreference.com/w/cpp/experimental/fs/absolute))doc";
+
+static const char *__doc_mitsuba_filesystem_copy_file =
+R"doc(Copies a file from source to destination. Returns true if copying was
+successful, false if there was an error (e.g. the source file did not
+exist). Creates intermediate directories if necessary.)doc";
 
 static const char *__doc_mitsuba_filesystem_create_directory =
 R"doc(Creates a directory at ``p`` as if ``mkdir`` was used. Returns true if
@@ -11386,6 +11736,12 @@ Parameter ``x``:
 Returns:
     The Gaussian cumulative distribution function at x)doc";
 
+static const char *__doc_mitsuba_get =
+R"doc(Retrieve a scalar parameter by index
+
+This is the primary implementation. All type conversions and error
+checking is done here. The name-based get() is a thin wrapper.)doc";
+
 static const char *__doc_mitsuba_get_area_ratio =
 R"doc(Provides the ratio of the sun's original area to that of a custom
 aperture angle
@@ -11395,28 +11751,6 @@ Parameter ``custom_half_aperture``:
 
 Returns:
     The ratio of the sun's area to the custom aperture's area)doc";
-
-static const char *__doc_mitsuba_get_texture =
-R"doc(Retrieve a texture parameter
-
-This method retrieves a texture parameter, where ``T`` is a subclass
-of ``mitsuba::Texture<...>``.
-
-Scalar and color values are also accepted. In this case, the plugin
-manager will automatically construct a ``uniform`` or ``srgb`` texture
-instance.)doc";
-
-static const char *__doc_mitsuba_get_texture_2 =
-R"doc(Retrieve a texture parameter with float default
-
-When the texture parameter doesn't exist, creates a uniform texture
-with the specified floating point value.)doc";
-
-static const char *__doc_mitsuba_get_texture_d65 =
-R"doc(Retrieve a texture parameter with float default value
-
-When the texture parameter doesn't exist, creates a uniform D65
-whitepoint texture scaled by the specified floating point value.)doc";
 
 static const char *__doc_mitsuba_get_volume =
 R"doc(Retrieve a volume parameter
@@ -11470,6 +11804,59 @@ static const char *__doc_mitsuba_hasher = R"doc()doc";
 static const char *__doc_mitsuba_hasher_operator_call = R"doc()doc";
 
 static const char *__doc_mitsuba_ior_from_file = R"doc()doc";
+
+static const char *__doc_mitsuba_key_iterator = R"doc(Forward declaration of iterator)doc";
+
+static const char *__doc_mitsuba_key_iterator_get = R"doc(Retrieve the current property value using Properties::get<T>)doc";
+
+static const char *__doc_mitsuba_key_iterator_index = R"doc(Return the current property index in the internal storage)doc";
+
+static const char *__doc_mitsuba_key_iterator_key_iterator = R"doc()doc";
+
+static const char *__doc_mitsuba_key_iterator_m_filter_type = R"doc()doc";
+
+static const char *__doc_mitsuba_key_iterator_m_index = R"doc()doc";
+
+static const char *__doc_mitsuba_key_iterator_m_name = R"doc()doc";
+
+static const char *__doc_mitsuba_key_iterator_m_props = R"doc()doc";
+
+static const char *__doc_mitsuba_key_iterator_m_queried = R"doc()doc";
+
+static const char *__doc_mitsuba_key_iterator_m_type = R"doc()doc";
+
+static const char *__doc_mitsuba_key_iterator_name = R"doc(Return the current property name)doc";
+
+static const char *__doc_mitsuba_key_iterator_operator_eq = R"doc()doc";
+
+static const char *__doc_mitsuba_key_iterator_operator_inc = R"doc()doc";
+
+static const char *__doc_mitsuba_key_iterator_operator_inc_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_key_iterator_operator_mul = R"doc()doc";
+
+static const char *__doc_mitsuba_key_iterator_operator_ne = R"doc()doc";
+
+static const char *__doc_mitsuba_key_iterator_operator_sub = R"doc()doc";
+
+static const char *__doc_mitsuba_key_iterator_queried = R"doc(Check if the current property has been queried)doc";
+
+static const char *__doc_mitsuba_key_iterator_skip_to_next_valid = R"doc()doc";
+
+static const char *__doc_mitsuba_key_iterator_try_get =
+R"doc(Attempt to retrieve and cast an object property to a specific type
+
+This method retrieves the property value if it's an Object type and
+attempts to dynamically cast it to the requested type T. The property
+is only marked as queried if the cast succeeds.
+
+Template parameter ``T``:
+    The target type (must be derived from Object)
+
+Returns:
+    A pointer to the object of type T if successful, nullptr otherwise)doc";
+
+static const char *__doc_mitsuba_key_iterator_type = R"doc(Return the current property type)doc";
 
 static const char *__doc_mitsuba_librender_nop =
 R"doc(Dummy function which can be called to ensure that the librender shared
@@ -11961,7 +12348,7 @@ static const char *__doc_mitsuba_operator_lshift_15 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_16 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_17 = R"doc(//! @{ \name Printing)doc";
+static const char *__doc_mitsuba_operator_lshift_17 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_18 = R"doc(//! @{ \name Misc implementations)doc";
 
@@ -12010,6 +12397,368 @@ static const char *__doc_mitsuba_pair_hasher = R"doc()doc";
 static const char *__doc_mitsuba_pair_hasher_operator_call = R"doc()doc";
 
 static const char *__doc_mitsuba_parse_fov = R"doc(Helper function to parse the field of view field of a camera)doc";
+
+static const char *__doc_mitsuba_parser_ParserConfig =
+R"doc(Configuration options for the parser
+
+This structure contains various options that control parser behavior,
+such as how to handle unused parameters and other validation settings.)doc";
+
+static const char *__doc_mitsuba_parser_ParserConfig_ParserConfig = R"doc(Constructor that takes variant name)doc";
+
+static const char *__doc_mitsuba_parser_ParserConfig_max_include_depth = R"doc(Maximum include depth to prevent infinite recursion)doc";
+
+static const char *__doc_mitsuba_parser_ParserConfig_merge_equivalent = R"doc(Enable merging of identical plugin instances (e.g., materials))doc";
+
+static const char *__doc_mitsuba_parser_ParserConfig_merge_meshes = R"doc(Merge compatible meshes (same material) into single larger mesh)doc";
+
+static const char *__doc_mitsuba_parser_ParserConfig_parallel = R"doc(Enable parallel instantiation for better performance)doc";
+
+static const char *__doc_mitsuba_parser_ParserConfig_unused_parameters =
+R"doc(How to handle unused "$key" -> "value" substitutions during parsing:
+Error (default), Warn, or Debug)doc";
+
+static const char *__doc_mitsuba_parser_ParserConfig_unused_properties =
+R"doc(How to handle unused properties during instantiation: Error (default),
+Warn, or Debug)doc";
+
+static const char *__doc_mitsuba_parser_ParserConfig_variant = R"doc(Target variant for instantiation (e.g., "scalar_rgb", "cuda_spectral"))doc";
+
+static const char *__doc_mitsuba_parser_ParserState = R"doc(Keeps track of common state while parsing an XML file or dictionary)doc";
+
+static const char *__doc_mitsuba_parser_ParserState_content =
+R"doc(When parsing a file via parse_string(), this references the string
+contents. Used to compute line information for error messages.)doc";
+
+static const char *__doc_mitsuba_parser_ParserState_depth = R"doc(Current include depth (for preventing infinite recursion))doc";
+
+static const char *__doc_mitsuba_parser_ParserState_empty = R"doc()doc";
+
+static const char *__doc_mitsuba_parser_ParserState_files =
+R"doc(List of files that were parsed while loading for error reporting.
+Indexed by SceneNode.file_index, unused in the dictionary parser)doc";
+
+static const char *__doc_mitsuba_parser_ParserState_id_to_index =
+R"doc(Maps named nodes with an ``id`` attribute to their index in ``nodes``
+Allows efficient lookup of objects for reference resolution)doc";
+
+static const char *__doc_mitsuba_parser_ParserState_node_paths =
+R"doc(Node paths (e.g., "scene.myshape.mybsdf") parallel to ``nodes``. Only
+used in the dictionary parser, specifically for error reporting.)doc";
+
+static const char *__doc_mitsuba_parser_ParserState_nodes =
+R"doc(The list of all scene nodes. The root node is at position 0. Nodes are
+added during parsing and never removed, only modified)doc";
+
+static const char *__doc_mitsuba_parser_ParserState_operator_array = R"doc(Convenience operator for accessing nodes (const version))doc";
+
+static const char *__doc_mitsuba_parser_ParserState_operator_array_2 = R"doc(Convenience operator for accessing nodes)doc";
+
+static const char *__doc_mitsuba_parser_ParserState_operator_eq = R"doc(Equality comparison for ParserState)doc";
+
+static const char *__doc_mitsuba_parser_ParserState_operator_ne = R"doc()doc";
+
+static const char *__doc_mitsuba_parser_ParserState_root = R"doc(Return the root node)doc";
+
+static const char *__doc_mitsuba_parser_ParserState_root_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_parser_ParserState_size = R"doc()doc";
+
+static const char *__doc_mitsuba_parser_ParserState_versions =
+R"doc(Version number of each parsed file in files. Used by
+transform_upgrade() to apply appropriate upgrades per file)doc";
+
+static const char *__doc_mitsuba_parser_SceneNode =
+R"doc(Intermediate scene object representation
+
+This class stores information needed to instantiate a Mitsuba object
+at some future point in time, including its plugin name and any
+parameters to be supplied. The parse_string and parse_file functions
+below turn an XML file or string into a sequence of SceneNode
+instances that may undergo further transformation before finally being
+instantiated.)doc";
+
+static const char *__doc_mitsuba_parser_SceneNode_file_index =
+R"doc(File index, identifies an entry of ParserState::files Used for error
+reporting to show which file contains this node (unused in the dict
+parser))doc";
+
+static const char *__doc_mitsuba_parser_SceneNode_offset =
+R"doc(Byte offset in the file where this node is found in the XML file Used
+for precise error reporting with line/column information (unused in
+the dict parser))doc";
+
+static const char *__doc_mitsuba_parser_SceneNode_operator_eq = R"doc(Equality comparison for SceneNode)doc";
+
+static const char *__doc_mitsuba_parser_SceneNode_operator_ne = R"doc()doc";
+
+static const char *__doc_mitsuba_parser_SceneNode_props =
+R"doc(Stores the plugin attributes, sub-objects, ID, and plugin name.
+References are also kept here. They are initially unresolved and later
+resolved into concrete indices into ``ParserState.nodes``.)doc";
+
+static const char *__doc_mitsuba_parser_SceneNode_type =
+R"doc(Object type of this node (if known) Used for validation and type-
+specific transformations (unused in the dict parser))doc";
+
+static const char *__doc_mitsuba_parser_file_location =
+R"doc(Generate a human-readable file location string for error reporting
+
+Returns a string in the format "filename.xml:line:col" associated with
+a given SceneNode. In the case of the dictionary parser, it returns a
+period-separated string identifying the path to the object.
+
+Parameter ``state``:
+    Parser state containing file information
+
+Parameter ``node``:
+    Scene node to locate
+
+Returns:
+    Human-readable location string)doc";
+
+static const char *__doc_mitsuba_parser_instantiate =
+R"doc(Instantiate the parsed representation into concrete Mitsuba objects
+
+This final stage creates the actual scene objects from the
+intermediate representation. It handles:
+
+- Plugin instantiation via the PluginManager - Dependency ordering for
+correct instantiation order - Parallel instantiation of independent
+objects (if enabled via ``config.parallel``) - Property validation and
+type checking - Object expansion (Object::expand())
+
+This function creates plugins with variant ParserConfig::variant,
+using parallelism if requested (ParserConfig::parallel). It will
+usually return a single object but may also produce multiple return
+values if the top-level object expands into sub-objects.
+
+Parameter ``config``:
+    Parser configuration options including target variant and parallel
+    flag
+
+Parameter ``state``:
+    Parser state containing the scene graph
+
+Returns:
+    Expanded top-level object)doc";
+
+static const char *__doc_mitsuba_parser_parse_file =
+R"doc(Parse a scene from an XML file and return the resulting parser state
+
+This function loads an XML file and converts it to the intermediate
+representation. It handles
+
+- File includes via <include> tags - Parameter substitution using the
+provided parameter list - Basic structural validation - Source
+location tracking for error reporting
+
+It does no further interpretation/instantiation.
+
+This function is variant-independent.
+
+Parameter ``config``:
+    Parser configuration options
+
+Parameter ``filename``:
+    Path to the XML file to load
+
+Parameter ``params``:
+    List of parameter substitutions to apply
+
+Returns:
+    Parser state containing the scene graph)doc";
+
+static const char *__doc_mitsuba_parser_parse_string =
+R"doc(Parse a scene from an XML string and return the resulting parser state
+
+Similar to parse_file() but takes the XML content as a string. This
+function is variant-independent.
+
+Parameter ``config``:
+    Parser configuration options
+
+Parameter ``string``:
+    XML content to parse
+
+Parameter ``params``:
+    List of parameter substitutions to apply
+
+Returns:
+    Parser state containing the scene graph)doc";
+
+static const char *__doc_mitsuba_parser_transform_all =
+R"doc(Apply all transformations in sequence
+
+This convenience function applies all parser transformations to the
+scene graph in the following order: 1. transform_upgrade() 2.
+transform_resolve() 3. transform_merge_equivalent() (if
+config.merge_equivalent is enabled) 4. transform_merge_meshes() (if
+config.merge_meshes is enabled)
+
+Parameter ``config``:
+    Parser configuration containing variant and other settings
+
+Parameter ``state``:
+    Parser state to transform (modified in-place))doc";
+
+static const char *__doc_mitsuba_parser_transform_merge_equivalent =
+R"doc(Merge equivalent nodes to reduce memory usage and instantiation time
+
+This transformation identifies nodes with identical properties and
+merges them. All references to duplicate nodes are updated to point to
+a single canonical instance.
+
+This optimization is particularly effective for scenes with many
+repeated elements (e.g., identical materials or textures referenced by
+multiple shapes).
+
+Note: Nodes containing Object or Any properties are never deduplicated
+as their equality cannot be reliably determined. Additionally, emitter
+and shape nodes are excluded from merging to preserve their distinct
+identities.
+
+Parameter ``config``:
+    Parser configuration
+
+Parameter ``state``:
+    Parser state to optimize (modified in-place))doc";
+
+static const char *__doc_mitsuba_parser_transform_merge_meshes =
+R"doc(Adapt the scene description to merge geometry whenever possible
+
+This transformation moves all top-level geometry (i.e., occurring
+directly within the <scene>) into a a shape plugin of type ``merge``.
+
+When instantiated, this ``merge`` shape - Collects compatible groups
+of mesh objects (i.e., with identical BSDF, media, emitter, etc.) -
+Merges them into single mesh instances to reduce memory usage -
+Preserves non-mesh shapes and meshes with unique attributes
+
+Parameter ``config``:
+    Parser configuration (currently unused)
+
+Parameter ``state``:
+    Parser state to modify in-place)doc";
+
+static const char *__doc_mitsuba_parser_transform_relocate =
+R"doc(Relocate scene files to subfolders
+
+This transformation identifies file paths in the scene description and
+relocates them to organized subfolders within the output directory,
+creating subdirectories as needed.
+
+File organization: - Textures and emitter files → textures/ subfolder
+- Shape files (meshes) → meshes/ subfolder - Spectrum files → spectra/
+subfolder - Other files → assets/ subfolder
+
+Note: This transformation is not included in transform_all() and must
+be called explicitly if desired, typically before XML export.
+
+Parameter ``config``:
+    Parser configuration (currently unused)
+
+Parameter ``state``:
+    Parser state containing the scene (modified in-place)
+
+Parameter ``output_directory``:
+    Base directory where files should be relocated)doc";
+
+static const char *__doc_mitsuba_parser_transform_reorder =
+R"doc(Reorder immediate children of scene nodes for better readability
+
+This transformation reorders the immediate children of scene nodes to
+follow a logical grouping that improves XML readability. The ordering
+is:
+
+1. Defaults 2. Integrators 3. Sensors 4. Materials (BSDFs, textures,
+spectra) 5. Emitters (including shapes with area lights) 6. Shapes 7.
+Media/volumes 8. Other elements
+
+Shapes containing area lights are categorized as emitters rather than
+shapes, keeping light sources grouped together.
+
+This transformation only affects the ordering of immediate children of
+the scene node. It does not recurse into nested structures.
+
+Note: This transformation is not included in transform_all() and must
+be called explicitly if desired.
+
+Parameter ``config``:
+    Parser configuration (currently unused)
+
+Parameter ``state``:
+    Parser state containing the scene to reorder (modified in-place))doc";
+
+static const char *__doc_mitsuba_parser_transform_resolve =
+R"doc(Resolve named references and raise an error when detecting broken
+links
+
+This transformation converts all (named) Properties::Reference objects
+into index-based Properties::ResolvedReference references.
+
+This transformation is variant-independent.
+
+Parameter ``config``:
+    Parser configuration
+
+Parameter ``state``:
+    Parser state to modify in-place
+
+Throws:
+    std::runtime_error if a reference cannot be resolved)doc";
+
+static const char *__doc_mitsuba_parser_transform_upgrade =
+R"doc(Upgrade scene data to the latest version
+
+This transformation updates older scene formats for compatibility with
+the current Mitsuba version. It performs the following steps:
+
+- Converting property names from camelCase to underscore_case (version
+< 2.0) - Upgrading deprecated plugin names/parameters to newer
+equivalents
+
+Parameter ``config``:
+    Parser configuration
+
+Parameter ``state``:
+    Parser state to modify in-place)doc";
+
+static const char *__doc_mitsuba_parser_write_file =
+R"doc(Write scene data back to XML file
+
+This function converts the intermediate representation into an XML
+format and writes it to disk. Useful for: - Converting between scene
+formats (dict to XML) - Saving programmatically generated scenes -
+Debugging the parser's intermediate representation
+
+Parameter ``state``:
+    Parser state containing the scene graph
+
+Parameter ``filename``:
+    Path where the XML file should be written
+
+Parameter ``add_section_headers``:
+    Whether to add XML comment headers that group scene elements by
+    category (e.g., "Materials", "Emitters", "Shapes"). These section
+    headers improve readability and are particularly useful when the
+    scene has been reorganized using the transform_reorder() function,
+    which groups related elements together)doc";
+
+static const char *__doc_mitsuba_parser_write_string =
+R"doc(Convert scene data to an XML string
+
+Similar to write_file() but returns the XML content as a string
+instead of writing to disk.
+
+Parameter ``state``:
+    Parser state containing the scene graph
+
+Parameter ``add_section_headers``:
+    Whether to add section header comments for organization
+
+Returns:
+    XML representation of the scene)doc";
 
 static const char *__doc_mitsuba_path_to_dataset =
 R"doc(Extracts the relative path to the given dataset
@@ -12929,6 +13678,10 @@ static const char *__doc_mitsuba_string_contains = R"doc(Check if a list of keys
 
 static const char *__doc_mitsuba_string_ends_with = R"doc(Check if the given string ends with a specified suffix)doc";
 
+static const char *__doc_mitsuba_string_iequals =
+R"doc(Case-insensitive comparison of two string_views (warning: not unicode
+compliant))doc";
+
 static const char *__doc_mitsuba_string_indent = R"doc(Indent every line of a string by some number of spaces)doc";
 
 static const char *__doc_mitsuba_string_indent_2 =
@@ -13079,6 +13832,8 @@ static const char *__doc_mitsuba_util_Version_operator_lt = R"doc()doc";
 static const char *__doc_mitsuba_util_Version_operator_ne = R"doc()doc";
 
 static const char *__doc_mitsuba_util_Version_patch_version = R"doc()doc";
+
+static const char *__doc_mitsuba_util_Version_to_string = R"doc()doc";
 
 static const char *__doc_mitsuba_util_core_count = R"doc(Determine the number of available CPU cores (including virtual cores))doc";
 
@@ -13265,56 +14020,6 @@ static const char *__doc_mitsuba_warp_uniform_spherical_lune_to_square = R"doc(I
 static const char *__doc_mitsuba_warp_uniform_triangle_to_square = R"doc(Inverse of the mapping square_to_uniform_triangle)doc";
 
 static const char *__doc_mitsuba_warp_von_mises_fisher_to_square = R"doc(Inverse of the mapping von_mises_fisher_to_square)doc";
-
-static const char *__doc_mitsuba_xml_ScopedSetJITScope = R"doc()doc";
-
-static const char *__doc_mitsuba_xml_ScopedSetJITScope_ScopedSetJITScope = R"doc()doc";
-
-static const char *__doc_mitsuba_xml_ScopedSetJITScope_backend = R"doc()doc";
-
-static const char *__doc_mitsuba_xml_ScopedSetJITScope_backup = R"doc()doc";
-
-static const char *__doc_mitsuba_xml_detail_create_texture_from_rgb = R"doc(Create a Texture object from RGB values)doc";
-
-static const char *__doc_mitsuba_xml_detail_create_texture_from_spectrum =
-R"doc(Create a Texture object from a constant value or spectral values if
-available)doc";
-
-static const char *__doc_mitsuba_xml_detail_expand_node =
-R"doc(Expands a node (if it does not expand it is wrapped into a
-std::vector))doc";
-
-static const char *__doc_mitsuba_xml_detail_xml_to_properties =
-R"doc(Read a Mitsuba XML file and return a list of pairs containing the name
-of the plugin and the corresponding populated Properties object)doc";
-
-static const char *__doc_mitsuba_xml_load_file =
-R"doc(Load a Mitsuba scene from an XML file
-
-Parameter ``path``:
-    Filename of the scene XML file
-
-Parameter ``parameters``:
-    Optional list of parameters that can be referenced as ``$varname``
-    in the scene.
-
-Parameter ``variant``:
-    Specifies the variant of plugins to instantiate (e.g.
-    "scalar_rgb")
-
-Parameter ``update_scene``:
-    When Mitsuba updates scene to a newer version, should the updated
-    XML file be written back to disk?
-
-Parameter ``parallel``:
-    Whether the loading should be executed on multiple threads in
-    parallel)doc";
-
-static const char *__doc_mitsuba_xml_load_string = R"doc(Load a Mitsuba scene from an XML string)doc";
-
-static const char *__doc_mitsuba_xml_tag_to_object_type =
-R"doc(Analyze an XML tag name (e.g. "shape") and map it to a known
-ObjectType enumeration value or ObjectType::Unknown.)doc";
 
 static const char *__doc_mitsuba_xyz_to_srgb = R"doc(Convert XYZ tristimulus values to ITU-R Rec. BT.709 linear RGB)doc";
 

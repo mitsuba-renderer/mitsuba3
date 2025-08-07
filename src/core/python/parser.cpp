@@ -480,7 +480,22 @@ MI_PY_EXPORT(parser) {
             return single_object_or_list(objects);
         },
         "path"_a, "parallel"_a = true, "optimize"_a = true, "kwargs"_a,
-        D(xml, load_file));
+        R"doc(Load a Mitsuba scene or object from an XML file
+
+Parameter ``name``:
+    The XML scene description's filename
+
+Parameter ``parallel``:
+    Whether the loading should be executed on multiple threads in parallel
+
+Parameter ``optimize``:
+    Whether to enable optimizations like merging identical objects (default: True)
+
+Parameter ``kwargs``:
+    A dictionary of key value pairs that will replace any default parameters declared in the XML.
+
+)doc");
+
 
     m.def(
         "load_string",
@@ -503,7 +518,21 @@ MI_PY_EXPORT(parser) {
             return single_object_or_list(objects);
         },
         "value"_a, "parallel"_a = true, "optimize"_a = true, "kwargs"_a,
-        D(xml, load_string));
+        R"doc(Load a Mitsuba scene or object from an XML string
+
+Parameter ``value``:
+    The XML scene description as a string
+
+Parameter ``parallel``:
+    Whether the loading should be executed on multiple threads in parallel
+
+Parameter ``optimize``:
+    Whether to enable optimizations like merging identical objects (default: True)
+
+Parameter ``kwargs``:
+    A dictionary of key value pairs that will replace any default parameters declared in the XML.
+
+)doc");
 
     m.def(
         "load_dict",

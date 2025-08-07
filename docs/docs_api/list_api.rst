@@ -1,5 +1,13 @@
 .. autoclass:: mitsuba.AdjointIntegrator
 
+.. autoclass:: mitsuba.AffineTransform3d
+
+.. autoclass:: mitsuba.AffineTransform3f
+
+.. autoclass:: mitsuba.AffineTransform4d
+
+.. autoclass:: mitsuba.AffineTransform4f
+
 .. autoclass:: mitsuba.Appender
 
 .. autoclass:: mitsuba.ArgParser
@@ -9,6 +17,8 @@
 .. autoclass:: mitsuba.ArrayXd
 
 .. autoclass:: mitsuba.ArrayXf
+
+.. autoclass:: mitsuba.ArrayXf16
 
 .. autoclass:: mitsuba.ArrayXf32
 
@@ -190,6 +200,8 @@
 
 .. autoclass:: mitsuba.Matrix2f
 
+.. autoclass:: mitsuba.Matrix2f16
+
 .. autoclass:: mitsuba.Matrix2f32
 
 .. autoclass:: mitsuba.Matrix2f64
@@ -198,6 +210,8 @@
 
 .. autoclass:: mitsuba.Matrix3f
 
+.. autoclass:: mitsuba.Matrix3f16
+
 .. autoclass:: mitsuba.Matrix3f32
 
 .. autoclass:: mitsuba.Matrix3f64
@@ -205,6 +219,8 @@
 .. autoclass:: mitsuba.Matrix4d
 
 .. autoclass:: mitsuba.Matrix4f
+
+.. autoclass:: mitsuba.Matrix4f16
 
 .. autoclass:: mitsuba.Matrix4f32
 
@@ -300,11 +316,21 @@
 
 .. autoclass:: mitsuba.ProjectiveCamera
 
+.. autoclass:: mitsuba.ProjectiveTransform3d
+
+.. autoclass:: mitsuba.ProjectiveTransform3f
+
+.. autoclass:: mitsuba.ProjectiveTransform4d
+
+.. autoclass:: mitsuba.ProjectiveTransform4f
+
 .. autoclass:: mitsuba.Properties
 
 .. autoclass:: mitsuba.Quaternion4d
 
 .. autoclass:: mitsuba.Quaternion4f
+
+.. autoclass:: mitsuba.Quaternion4f16
 
 .. autoclass:: mitsuba.Quaternion4f32
 
@@ -331,6 +357,14 @@
 .. autoclass:: mitsuba.Sampler
 
 .. autoclass:: mitsuba.SamplingIntegrator
+
+.. autoclass:: mitsuba.ScalarAffineTransform3d
+
+.. autoclass:: mitsuba.ScalarAffineTransform3f
+
+.. autoclass:: mitsuba.ScalarAffineTransform4d
+
+.. autoclass:: mitsuba.ScalarAffineTransform4f
 
 .. autoclass:: mitsuba.ScalarBoundingBox2f
 
@@ -393,6 +427,14 @@
 .. autoclass:: mitsuba.ScalarPoint4i
 
 .. autoclass:: mitsuba.ScalarPoint4u
+
+.. autoclass:: mitsuba.ScalarProjectiveTransform3d
+
+.. autoclass:: mitsuba.ScalarProjectiveTransform3f
+
+.. autoclass:: mitsuba.ScalarProjectiveTransform4d
+
+.. autoclass:: mitsuba.ScalarProjectiveTransform4f
 
 .. autoclass:: mitsuba.ScalarTransform3d
 
@@ -472,11 +514,15 @@
 
 .. autoclass:: mitsuba.SurfaceInteraction3f
 
+.. autoclass:: mitsuba.TensorFile
+
 .. autoclass:: mitsuba.TensorXb
 
 .. autoclass:: mitsuba.TensorXd
 
 .. autoclass:: mitsuba.TensorXf
+
+.. autoclass:: mitsuba.TensorXf16
 
 .. autoclass:: mitsuba.TensorXf32
 
@@ -500,6 +546,8 @@
 
 .. autoclass:: mitsuba.Texture1f
 
+.. autoclass:: mitsuba.Texture1f16
+
 .. autoclass:: mitsuba.Texture1f32
 
 .. autoclass:: mitsuba.Texture1f64
@@ -508,6 +556,8 @@
 
 .. autoclass:: mitsuba.Texture2f
 
+.. autoclass:: mitsuba.Texture2f16
+
 .. autoclass:: mitsuba.Texture2f32
 
 .. autoclass:: mitsuba.Texture2f64
@@ -515,6 +565,8 @@
 .. autoclass:: mitsuba.Texture3d
 
 .. autoclass:: mitsuba.Texture3f
+
+.. autoclass:: mitsuba.Texture3f16
 
 .. autoclass:: mitsuba.Texture3f32
 
@@ -584,6 +636,8 @@
 
 .. autoclass:: mitsuba.Vector4u
 
+.. autoclass:: mitsuba.Version
+
 .. autoclass:: mitsuba.Volume
 
 .. autoclass:: mitsuba.VolumeGrid
@@ -611,6 +665,8 @@
 .. autoclass:: mitsuba.ad.integrators.common.RBIntegrator
 
 .. autofunction:: mitsuba.ad.integrators.common.mis_weight
+
+.. autofunction:: mitsuba.ad.integrators.common.solid_angle_to_area_jacobian
 
 .. autoclass:: mitsuba.ad.integrators.volprim_rf_basic.BasicVolumetricPrimitiveRadianceFieldIntegrator
 
@@ -665,6 +721,8 @@
 .. autofunction:: mitsuba.file_resolver
 
 .. autofunction:: mitsuba.filesystem.absolute
+
+.. autofunction:: mitsuba.filesystem.copy_file
 
 .. autofunction:: mitsuba.filesystem.create_directory
 
@@ -806,6 +864,44 @@
 
 .. autofunction:: mitsuba.parse_fov
 
+.. autoclass:: mitsuba.parser.ParserConfig
+
+.. autoclass:: mitsuba.parser.ParserState
+
+.. autoclass:: mitsuba.parser.SceneNode
+
+.. autoclass:: mitsuba.parser.SceneNodeList
+
+.. autofunction:: mitsuba.parser.file_location
+
+.. autofunction:: mitsuba.parser.instantiate
+
+.. autofunction:: mitsuba.parser.parse_dict
+
+.. autofunction:: mitsuba.parser.parse_file
+
+.. autofunction:: mitsuba.parser.parse_string
+
+.. autofunction:: mitsuba.parser.transform_all
+
+.. autofunction:: mitsuba.parser.transform_merge_equivalent
+
+.. autofunction:: mitsuba.parser.transform_merge_meshes
+
+.. autofunction:: mitsuba.parser.transform_relocate
+
+.. autofunction:: mitsuba.parser.transform_reorder
+
+.. autofunction:: mitsuba.parser.transform_resolve
+
+.. autofunction:: mitsuba.parser.transform_resolve_references
+
+.. autofunction:: mitsuba.parser.transform_upgrade
+
+.. autofunction:: mitsuba.parser.write_file
+
+.. autofunction:: mitsuba.parser.write_string
+
 .. autofunction:: mitsuba.pdf_rgb_spectrum
 
 .. autofunction:: mitsuba.permute
@@ -917,6 +1013,12 @@
 .. autofunction:: mitsuba.srgb_model_mean
 
 .. autofunction:: mitsuba.srgb_to_xyz
+
+.. autofunction:: mitsuba.tensor_io.read
+
+.. autofunction:: mitsuba.tensor_io.size_fmt
+
+.. autofunction:: mitsuba.tensor_io.write
 
 .. autoclass:: mitsuba.testing.RenderingRegressionTest
 
@@ -1039,10 +1141,6 @@
 .. autofunction:: mitsuba.warp.von_mises_fisher_to_square
 
 .. autofunction:: mitsuba.while_loop
-
-.. autofunction:: mitsuba.xml.dict_to_xml
-
-.. autofunction:: mitsuba.xml_to_props
 
 .. autofunction:: mitsuba.xyz_to_srgb
 
