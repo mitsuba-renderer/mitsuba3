@@ -113,7 +113,7 @@ public:
         Float cos_theta = Frame3f::cos_theta(local_wo),
               gamma = dr::unit_angle(datasets.sun_dir, local_wo);
 
-        active &= cos_theta >= 0;
+        active &= cos_theta >= 0 && Frame3f::cos_theta(datasets.sun_dir) > 0.f;
         Mask hit_sun = dr::dot(datasets.sun_dir, local_wo) >= dr::cos(m_sun_half_aperture);
 
         // Evaluate the model channel by channel
@@ -204,22 +204,20 @@ public:
 
 private:
 
+    std::pair<UInt32, Float> sample_reuse_tgmm(const Float&, const Float&, const Mask&) const override {
+        return std::make_pair(0, 0.f);
+    }
+    Point2f get_sun_angles(const Float&, const Mask&) const override {
+        return 0.f;
+    }
+    std::pair<Vector4f, Vector4u> get_tgmm_data(const Float&, const Mask&) const override {
+        return std::make_pair(0.f, 0);
+    }
+
     struct Datasets {
         Vector3f sun_dir;
         RadLocal sky_rad;
         ParamsLocal sky_params;
-
-        std::string to_string() const {
-            std::ostringstream oss;
-            oss << "Datasets[" << std::endl
-                << "  sun_dir = " << string::indent(sun_dir) << std::endl
-                << "  sky_rad = " << string::indent(sky_rad) << std::endl
-                << "  sky_params = " << string::indent(sky_params) << std::endl
-                << "]" << std::endl;
-            return oss.str();
-        }
-
-        DRJIT_STRUCT(Datasets, sun_dir, sky_rad, sky_params)
     };
 
 
