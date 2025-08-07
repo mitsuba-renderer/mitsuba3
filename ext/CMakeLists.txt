@@ -257,7 +257,7 @@ if (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
 set(PNG_ARM_NEON "on" CACHE STRING " " FORCE)
 endif()
 add_subdirectory(libpng)
-set_property(TARGET png genfiles PROPERTY FOLDER "dependencies")
+set_property(TARGET png png_genfiles PROPERTY FOLDER "dependencies")
 set_property(TARGET png PROPERTY OUTPUT_NAME "png-mitsuba")
 
 set(PNG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libpng;${CMAKE_CURRENT_BINARY_DIR}/libpng" PARENT_SCOPE)
@@ -266,7 +266,8 @@ set(PNG_DEFINES      -DMI_HAS_LIBPNG PARENT_SCOPE)
 
 mark_as_advanced(DFA_XTRA AWK PNG_FRAMEWORK PNG_HARDWARE_OPTIMIZATIONS
   PNG_PREFIX PNG_SHARED PNG_STATIC PNG_TESTS PNG_BUILD_ZLIB PNG_DEBUG
-  PNG_INTEL_SSE M_LIBRARY ld-version-script)
+  PNG_INTEL_SSE M_LIBRARY ld-version-script PNG_EXECUTABLES PNG_LIBCONF_HEADER
+  PNG_TOOLS)
 
 # ----------------------------------------------------------
 #  libjpeg 7
