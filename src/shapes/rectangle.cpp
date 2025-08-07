@@ -271,6 +271,238 @@ public:
     // =============================================================
 
     // =============================================================
+    //! @{ \name Silhouette sampling routines and other utilities
+    // =============================================================
+
+    SilhouetteSample3f sample_silhouette(const Point3f &sample,
+                                         uint32_t flags,
+                                         Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        if (!has_flag(flags, DiscontinuityFlags::PerimeterType))
+            return dr::zeros<SilhouetteSample3f>();
+
+        SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
+        const AffineTransform4f &to_world = m_to_world.value();
+
+        /// Sample a point on one of the edges
+        Mask range = false;
+        Vector2f edge_dir = dr::zeros<Vector2f>();
+
+        // Use sample.x() to determine a point on the rectangle edges:
+        // clockwise rotation starting at bottom left corner
+        range = (sample.x() < 0.25f);
+        dr::masked(edge_dir, range) = Vector2f(0.f, 1.f);
+        dr::masked(ss.uv, range) =
+            dr::fmadd(edge_dir * 4.f, sample.x() - 0.00f, Point2f(0.f, 0.f));
+
+        range = (0.25f <= sample.x() && sample.x() < 0.50f);
+        dr::masked(edge_dir, range) = Vector2f(1.f, 0.f);
+        dr::masked(ss.uv, range) =
+            dr::fmadd(edge_dir * 4.f, sample.x() - 0.25f, Point2f(0.f, 1.f));
+
+        range = (0.50f <= sample.x() && sample.x() < 0.75f);
+        dr::masked(edge_dir, range) = Vector2f(0.f, -1.f);
+        dr::masked(ss.uv, range) =
+            dr::fmadd(edge_dir * 4.f, sample.x() - 0.50f, Point2f(1.f, 1.f));
+
+        range = (0.75f <= sample.x());
+        dr::masked(edge_dir, range) = Vector2f(-1.f, 0.f);
+        dr::masked(ss.uv, range) =
+            dr::fmadd(edge_dir * 4.f, sample.x() - 0.75f, Point2f(1.f, 0.f));
+
+        // Object space spans [-1,1]x[-1,1], UV coordinates span [0,1]x[0,1]
+        Vector3f local(dr::fmsub(ss.uv.x(), 2.f, 1.f),
+                       dr::fmsub(ss.uv.y(), 2.f, 1.f),
+                       0.f);
+        ss.p = to_world * Point3f(local);
+
+        /// Sample a tangential direction at the point
+        ss.d = warp::square_to_uniform_sphere(Point2f(dr::tail<2>(sample)));
+
+        /// Fill other fields
+        ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
+        ss.flags = flags;
+
+        Vector3f world_edge_dir = to_world *
+            Vector3f(edge_dir.x(), edge_dir.y(), 0.f);
+        ss.silhouette_d = dr::normalize(world_edge_dir);
+        Normal3f frame_n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
+
+        // Normal direction `ss.n` must point outwards
+        Vector3f inward_dir = -local;
+        inward_dir = to_world * inward_dir;
+        frame_n[dr::dot(inward_dir, frame_n) > 0.f] *= -1.f;
+        ss.n = frame_n;
+
+        ss.pdf = dr::rcp(dr::norm(world_edge_dir) * 2.f) * 0.25f;
+        ss.pdf *= warp::square_to_uniform_sphere_pdf(ss.d);
+        ss.foreshortening = dr::norm(dr::cross(ss.d, ss.silhouette_d));
+        ss.shape = this;
+
+        return ss;
+    }
+
+    Point3f invert_silhouette_sample(const SilhouetteSample3f &ss,
+                                     Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        Mask range = false;
+        Float sample_x = dr::zeros<Float>();
+        Bool done = false;
+
+        // Clockwise rotation starting at bottom left corner
+        range = (ss.uv.x() == 0.f);
+        dr::masked(sample_x, range && !done) = ss.uv.y() * 0.25f + 0.00f;
+        done |= range;
+
+        range = (ss.uv.y() == 1.f);
+        dr::masked(sample_x, range && !done) = ss.uv.x() * 0.25f + 0.25f;
+        done |= range;
+
+        range = (ss.uv.x() == 1.f);
+        dr::masked(sample_x, range && !done) = (1.f - ss.uv.y()) * 0.25f + 0.50f;
+        done |= range;
+
+        range = (ss.uv.y() == 0.f);
+        dr::masked(sample_x, range && !done) = (1.f - ss.uv.x()) * 0.25f + 0.75f;
+
+        Point2f sample_yz = warp::uniform_sphere_to_square(ss.d);
+
+        Point3f sample = dr::zeros<Point3f>(dr::width(ss));
+        sample.x() = sample_x;
+        sample.y() = sample_yz.x();
+        sample.z() = sample_yz.y();
+
+        return sample;
+    }
+
+    Point3f differential_motion(const SurfaceInteraction3f &si,
+                                Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        if constexpr (!dr::is_diff_v<Float>) {
+            return si.p;
+        } else {
+            Point2f uv = dr::detach(si.uv);
+
+            Point3f local(dr::fmadd(uv.x(), 2.f, -1.f),
+                          dr::fmadd(uv.y(), 2.f, -1.f), 0.f);
+            Point3f p_diff = m_to_world.value() * local;
+
+            return dr::replace_grad(si.p, p_diff);
+        }
+    }
+
+    SilhouetteSample3f primitive_silhouette_projection(
+        const Point3f &viewpoint, const SurfaceInteraction3f &si,
+        uint32_t flags, Float sample, Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        if (!has_flag(flags, DiscontinuityFlags::PerimeterType))
+            return dr::zeros<SilhouetteSample3f>();
+
+        SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
+        const AffineTransform4f &to_world = m_to_world.value();
+
+        // Project to nearest edge
+        Mask top_right_triangle = si.uv.y() > 1 - si.uv.x();
+        Mask bottom_left_triangle = !top_right_triangle;
+        Mask top_left_triangle = si.uv.y() > si.uv.x();
+        Mask bottom_right_triangle = !top_left_triangle;
+
+        Mask bottom_edge = bottom_left_triangle && bottom_right_triangle;
+        Mask left_edge = bottom_left_triangle && top_left_triangle;
+        Mask top_edge = top_right_triangle && top_left_triangle;
+        Mask right_edge = active && !top_edge && !bottom_edge && !left_edge;
+
+        // Uniformly pick a point on the edge
+        Point3f local = dr::zeros<Point3f>();
+        dr::masked(local, bottom_edge) = Point3f(dr::fmsub(sample, 2.f, 1), -1.f, 0.f);
+        dr::masked(local, top_edge) =    Point3f(dr::fmsub(sample, 2.f, 1),  1.f, 0.f);
+        dr::masked(local, left_edge) =   Point3f(-1.f, dr::fmsub(sample, 2.f, 1), 0.f);
+        dr::masked(local, right_edge) =  Point3f( 1.f, dr::fmsub(sample, 2.f, 1), 0.f);
+
+        // Explicitly write UVs with 0s and 1s to match `invert_silhouette_sample`
+        dr::masked(ss.uv, bottom_edge) = Point2f(sample, 0.f);
+        dr::masked(ss.uv, top_edge) =    Point2f(sample, 1.f);
+        dr::masked(ss.uv, left_edge) =   Point2f(0.f, sample);
+        dr::masked(ss.uv, right_edge) =  Point2f(1.f, sample);
+
+        Point2f edge_dir = dr::zeros<Point2f>();
+        dr::masked(edge_dir, bottom_edge) = Point2f(1.f, 0.f);
+        dr::masked(edge_dir, top_edge) =    Point2f(1.f, 0.f);
+        dr::masked(edge_dir, left_edge) =   Point2f(0.f, 1.f);
+        dr::masked(edge_dir, right_edge) =  Point2f(0.f, 1.f);
+
+        ss.p = to_world * Point3f(local);
+        ss.d            = dr::normalize(ss.p - viewpoint);
+        ss.silhouette_d = dr::normalize(to_world *
+            Vector3f(edge_dir.x(), edge_dir.y(), 0.f));
+
+        Vector3f frame_t = dr::normalize(viewpoint - ss.p);
+        Normal3f frame_n = dr::normalize(dr::cross(frame_t, ss.silhouette_d));
+        Vector3f inward_dir = to_world * Vector3f(-local);
+        frame_n[dr::dot(inward_dir, frame_n) > 0.f] *= -1.f;
+        ss.n = frame_n;
+
+        ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
+        ss.flags = flags;
+        ss.shape = this;
+
+        return ss;
+    }
+
+    std::tuple<DynamicBuffer<UInt32>, DynamicBuffer<Float>>
+    precompute_silhouette(const ScalarPoint3f & /*viewpoint*/) const override {
+        DynamicBuffer<UInt32> indices((uint32_t)DiscontinuityFlags::PerimeterType);
+        DynamicBuffer<Float> weights(1.f);
+
+        return {indices, weights};
+    }
+
+    SilhouetteSample3f
+    sample_precomputed_silhouette(const Point3f &viewpoint,
+                                  UInt32 /*sample1*/,
+                                  Float sample, Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
+
+        Mask range = false;
+        Float sample_reuse(0.f);
+
+        range = (sample < 0.25f);
+        si.uv[range] = Point2f(0.f, 0.5f);
+        dr::masked(sample_reuse, range) = sample * 4.f;
+
+        range = (0.25f <= sample && sample < 0.50f);
+        si.uv[range] = Point2f(0.5f, 1.f);
+        dr::masked(sample_reuse, range) = (sample - 0.25f) * 4.f;
+
+        range = (0.50f <= sample && sample < 0.75f);
+        si.uv[range] = Point2f(1.f, 0.5f);
+        dr::masked(sample_reuse, range) = (sample - 0.50f) * 4.f;
+
+        range = (0.75f <= sample);
+        si.uv[range] = Point2f(0.5f, 0.f);
+        dr::masked(sample_reuse, range) = (sample - 0.75f) * 4.f;
+
+        uint32_t flags = (uint32_t) DiscontinuityFlags::PerimeterType;
+        ss = primitive_silhouette_projection(viewpoint, si, flags, sample_reuse,
+                                             active);
+        ss.pdf = dr::rcp(m_to_world.value().matrix(0, 0) * 4 +
+                         m_to_world.value().matrix(1, 1) * 4);
+
+        return ss;
+    }
+
+    //! @}
+    // =============================================================
+
+
+    // =============================================================
     //! @{ \name Ray tracing routines
     // =============================================================
 
