@@ -2,7 +2,7 @@
 requires = [
     "scikit-build-core",
     "nanobind==2.8.0",
-    "drjit==1.0.5",
+    "drjit==1.1.0",
     "typing_extensions>=4.12",
     "hatch-fancy-pypi-readme",
 ]
@@ -15,7 +15,7 @@ dynamic = ["version", "readme"]
 description = "Mitsuba 3: A Retargetable Forward and Inverse Renderer"
 dependencies = [
   "typing_extensions>=4.12;python_version<\"3.11\"",
-  "drjit==1.0.5",
+  "drjit==1.1.0",
 ]
 requires-python = ">=3.9"
 authors = [
