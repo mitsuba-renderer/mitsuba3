@@ -18,11 +18,12 @@ Mitsuba 3.7.0
   - **Cooperative vectors** and a **neural network library**: Dr.Jit now
     supports efficient `matrix-vector arithmetic
     <https://drjit.readthedocs.io/en/latest/coop_vec.html>`__ that compiles to
-    tensor core machine instructions on NVIDIA GPUs. A modular `neural network
-    library <https://drjit.readthedocs.io/en/latest/nn.html>`__ facilitates
-    evaluating and optimizing fully fused MLPs in rendering code. (Dr.Jit PR
-    `#384 <https://github.com/mitsuba-renderer/drjit/pull/384>`__, Dr.Jit-Core
-    PR `#141 <https://github.com/mitsuba-renderer/drjit-core/pull/141>`__).
+    tensor core machine instructions on NVIDIA GPUs and packet instructions
+    (e.g., AVX512) on the LLVM backend. A modular `neural network library
+    <https://drjit.readthedocs.io/en/latest/nn.html>`__ facilitates evaluating
+    and optimizing fully fused MLPs in rendering code. (Dr.Jit PR `#384
+    <https://github.com/mitsuba-renderer/drjit/pull/384>`__, Dr.Jit-Core PR
+    `#141 <https://github.com/mitsuba-renderer/drjit-core/pull/141>`__).
 
   - **Hash grid encoding**: Neural network hash grid encoding inspired by
     Instant NGP, including both traditional hash grids and permutohedral
