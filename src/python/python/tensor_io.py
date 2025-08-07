@@ -1,4 +1,3 @@
-import numpy as np
 import struct
 import os
 
@@ -12,6 +11,8 @@ def size_fmt(num, suffix='B'):
 
 
 def read(filename):
+    import numpy as np
+
     with open(filename, 'rb') as f:
         def unpack(fmt):
             result = struct.unpack(fmt, f.read(struct.calcsize(fmt)))
@@ -63,6 +64,8 @@ def read(filename):
 
 
 def write(filename, align=8, **kwargs):
+    import numpy as np
+
     with open(filename, 'wb') as f:
         # Identifier
         f.write('tensor_file\0'.encode('utf8'))
@@ -138,5 +141,3 @@ def write(filename, align=8, **kwargs):
             v.tofile(f)
 
         print('Wrote \"%s\" (%s)' % (filename, size_fmt(f.tell())))
-
-
