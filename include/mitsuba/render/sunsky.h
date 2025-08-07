@@ -174,6 +174,7 @@ public:
     MI_IMPORT_TYPES(Scene, Texture)
 
     using FloatStorage = DynamicBuffer<Float>;
+    using Gaussian     = dr::Array<Float, TGMM_GAUSSIAN_PARAMS>;
 
     BaseSunskyEmitter(const Properties &props) : Base(props) {
         if constexpr (!(is_rgb_v<Spectrum> || is_spectral_v<Spectrum>))
@@ -207,10 +208,15 @@ public:
         const TensorFile datasets {
             file_resolver()->resolve(DATABASE_PATH + "sunsky_datasets.bin")
         };
+        const TensorFile tgmm_dataset(
+            file_resolver()->resolve(DATABASE_PATH + "tgmm_tables.bin")
+        );
 
         m_sky_params_dataset = load_field<TensorXf64>(datasets, "sky_params" + dataset_type);
         m_sky_rad_dataset = load_field<TensorXf64>(datasets, "sky_rad" + dataset_type);
         m_sun_rad_dataset = load_field<TensorXf64>(datasets, "sun_rad" + dataset_type);
+
+        m_tgmm_tables = load_field<TensorXf32>(tgmm_dataset, "tgmm_tables");
 
         // Only used in spectral mode since limb darkening is baked in the RGB dataset
         if constexpr (!is_rgb_v<Spectrum>) {
@@ -279,6 +285,108 @@ public:
         }
 
         dr::make_opaque(m_bsphere.center, m_bsphere.radius);
+    }
+
+    std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
+                                      const Point2f &sample2,
+                                      const Point2f &sample3,
+                                      Mask active) const override {
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+
+        // 1. Sample spatial component
+        Point2f offset = warp::square_to_uniform_disk_concentric(sample2);
+
+        // 2. Sample directional component
+        Mask pick_sky = sample3.x() < m_sky_sampling_w;
+        Vector3f d = dr::select(
+                pick_sky,
+                sample_sky({sample3.x() / m_sky_sampling_w, sample3.y()}, time, active),
+                sample_sun({(sample3.x() - m_sky_sampling_w) / (1 - m_sky_sampling_w), sample3.y()}, time)
+        );
+        active &= Frame3f::cos_theta(d) >= 0.f;
+        // Unlike \ref sample_direction, ray goes from the envmap toward the scene
+        Vector3f d_world = m_to_world.value() * (-d);
+
+        // 3. PDF
+        Float sky_pdf, sun_pdf;
+        std::tie(sky_pdf, sun_pdf) = compute_pdfs(d, time, pick_sky, active);
+        Float pdf = dr::lerp(sun_pdf, sky_pdf, m_sky_sampling_w);
+        // Apply pdf of the origin offset
+        pdf *= dr::InvPi<Float> * dr::rcp(dr::square(m_bsphere.radius));
+        active &= pdf > 0.f;
+
+        // 4. Sample spectrum
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        si.wi = d_world;
+        Wavelength wavelengths;
+        Spectrum weight;
+        std::tie(wavelengths, weight) =
+            this->sample_wavelengths(si, wavelength_sample, active);
+
+        // 5. Compute ray origin
+        Vector3f perpendicular_offset =
+            Frame3f(d_world).to_world(Vector3f(offset.x(), offset.y(), 0));
+        Point3f origin = m_bsphere.center +
+                         (perpendicular_offset - d_world) * m_bsphere.radius;
+
+        weight /= pdf;
+        weight &= dr::isfinite(weight);
+        return { Ray3f(origin, d_world, time, wavelengths), weight };
+    }
+
+    std::pair<DirectionSample3f, Spectrum>
+    sample_direction(const Interaction3f &it, const Point2f &sample,
+                     Mask active) const override {
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
+
+        Mask pick_sky = sample.x() < m_sky_sampling_w;
+
+        // Sample the sun or the sky
+        Vector3f sample_dir = dr::select(
+                pick_sky,
+                sample_sky({sample.x() / m_sky_sampling_w, sample.y()}, it.time, active),
+                sample_sun({(sample.x() - m_sky_sampling_w) / (1 - m_sky_sampling_w), sample.y()}, it.time)
+        );
+        active &= Frame3f::cos_theta(sample_dir) >= 0.f;
+
+        // Automatically enlarge the bounding sphere when it does not contain the reference point
+        Float radius = dr::maximum(m_bsphere.radius, dr::norm(it.p - m_bsphere.center)),
+              dist   = 2.f * radius;
+
+        Vector3f d = m_to_world.value() * sample_dir;
+        DirectionSample3f ds = dr::zeros<DirectionSample3f>();
+        ds.p = dr::fmadd(d, dist, it.p);
+        ds.n = -d;
+        ds.uv = sample;
+        ds.time = it.time;
+        ds.delta = false;
+        ds.emitter = this;
+        ds.d = d;
+        ds.dist = dist;
+
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        si.wi = -d;
+        si.wavelengths = it.wavelengths;
+
+        Float sky_pdf, sun_pdf;
+        std::tie(sky_pdf, sun_pdf) = compute_pdfs(sample_dir, it.time, pick_sky, active);
+        ds.pdf = dr::lerp(sun_pdf, sky_pdf, m_sky_sampling_w);
+
+        Spectrum res = this->eval(si, active) / ds.pdf;
+                 res &= dr::isfinite(res);
+        return { ds, res };
+    }
+
+    Float pdf_direction(const Interaction3f &, const DirectionSample3f &ds,
+                    Mask active) const override {
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+
+        Vector3f local_dir = m_to_world.value().inverse() * ds.d;
+        Float sky_pdf, sun_pdf;
+        std::tie(sky_pdf, sun_pdf) = compute_pdfs(local_dir, ds.time, true, active);
+
+        Float combined_pdf = dr::lerp(sun_pdf, sky_pdf, m_sky_sampling_w);
+        return dr::select(active, combined_pdf, 0.f);
     }
 
     Spectrum eval_direction(const Interaction3f &it,
@@ -388,8 +496,8 @@ protected:
                          const dr::mask_t<Spec> &active) const {
         using SpecLdArray = dr::Array<Spec, SUN_LD_PARAMS>;
 
-        SpecLdArray sun_ld_low  = dr::gather<SpecLdArray>(m_sun_ld, channel_idx_low, active),
-                    sun_ld_high = dr::gather<SpecLdArray>(m_sun_ld, channel_idx_high, active),
+        SpecLdArray sun_ld_low  = dr::gather<SpecLdArray>(m_sun_ld.array(), channel_idx_low, active),
+                    sun_ld_high = dr::gather<SpecLdArray>(m_sun_ld.array(), channel_idx_high, active),
                     sun_ld_coefs = dr::lerp(sun_ld_low, sun_ld_high, lerp_f);
 
         Float cos_psi = sun_cos_psi(gamma);
@@ -552,6 +660,145 @@ protected:
     }
 
     // ================================================================================================
+    // ===================================== SAMPLING FUNCTIONS =======================================
+    // ================================================================================================
+
+    virtual std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Float &time, const Mask &active) const = 0;
+    virtual Point2f get_sun_angles(const Float& time, const Mask& active) const = 0;
+    virtual std::pair<Vector4f, Vector4u> get_tgmm_data(const Float& time, const Mask& active) const = 0;
+
+    Vector3f sample_sky(Point2f sample, const Float& time, const Mask& active) const {
+        // Sample a gaussian from the mixture
+        const Point2f sun_angles = get_sun_angles(time, active);
+        const auto [ gaussian_idx, temp_sample ] = sample_reuse_tgmm(sample.x(), time, active);
+
+        // {mu_phi, mu_theta, sigma_phi, sigma_theta, weight}
+        Gaussian gaussian = dr::gather<Gaussian>(m_tgmm_tables, gaussian_idx, active);
+
+        ScalarPoint2f a = { 0.f,                    0.f },
+                      b = { dr::TwoPi<ScalarFloat>, 0.5f * dr::Pi<ScalarFloat> };
+
+        Point2f mu    = { gaussian[0], gaussian[1] },
+                sigma = { gaussian[2], gaussian[3] };
+
+        Point2f cdf_a = gaussian_cdf(mu, sigma, a),
+                cdf_b = gaussian_cdf(mu, sigma, b);
+
+        sample = dr::lerp(cdf_a, cdf_b, Point2f{temp_sample, sample.y()});
+        // Clamp to erfinv's domain of definition
+        sample = dr::clip(sample, dr::Epsilon<Float>, dr::OneMinusEpsilon<Float>);
+
+        Point2f angles = dr::SqrtTwo<Float> * dr::erfinv(2 * sample - 1) * sigma + mu;
+
+        // From fixed reference frame where sun_phi = pi/2 to local frame
+        angles.x() += sun_angles.x() - 0.5f * dr::Pi<Float>;
+        // Clamp theta to avoid negative z-axis values (FP errors)
+        angles.y() = dr::minimum(angles.y(), 0.5f * dr::Pi<Float> - dr::Epsilon<Float>);
+
+        return dr::sphdir(angles.y(), angles.x());
+    }
+
+    Float tgmm_pdf(Point2f angles, const Float& time, Mask active) const {
+        const Point2f sun_angles = get_sun_angles(time, active);
+        const auto [ lerp_w, tgmm_idx ] = get_tgmm_data(time, active);
+
+        // From local frame to reference frame where sun_phi = pi/2 and phi is in [0, 2pi]
+        angles.x() -= sun_angles.x() - 0.5f * dr::Pi<Float>;
+        angles.x() = dr::select(angles.x() < 0, angles.x() + dr::TwoPi<Float>, angles.x());
+        angles.x() = dr::select(angles.x() > dr::TwoPi<Float>, angles.x() - dr::TwoPi<Float>, angles.x());
+
+        // Bounds check for theta
+        active &= (angles.y() >= 0.f) && (angles.y() <= 0.5f * dr::Pi<Float>);
+
+        // Bounding points of the truncated gaussian mixture
+        ScalarPoint2f a = { 0.f,                    0.f },
+                      b = { dr::TwoPi<ScalarFloat>, 0.5f * dr::Pi<ScalarFloat> };
+
+        Float pdf = 0.f;
+        for (uint32_t mixture_idx = 0; mixture_idx < 4; ++mixture_idx) {
+            for (uint32_t gaussian_idx = 0; gaussian_idx < TGMM_COMPONENTS; ++gaussian_idx) {
+
+                Gaussian gaussian = dr::gather<Gaussian>(
+                    m_tgmm_tables,
+                    gaussian_idx + tgmm_idx[mixture_idx],
+                    active
+                );
+
+                // {mu_phi, mu_theta}, {sigma_phi, sigma_theta}
+                Point2f mu    = { gaussian[0], gaussian[1] },
+                        sigma = { gaussian[2], gaussian[3] };
+
+                Point2f cdf_a = gaussian_cdf(mu, sigma, a),
+                        cdf_b = gaussian_cdf(mu, sigma, b);
+
+                Float volume = (cdf_b.x() - cdf_a.x()) *
+                               (cdf_b.y() - cdf_a.y()) *
+                               (sigma.x() * sigma.y());
+
+                Point2f sample = (angles - mu) / sigma;
+                Float gaussian_pdf = warp::square_to_std_normal_pdf(sample);
+
+                pdf += lerp_w[mixture_idx] * gaussian[4] * gaussian_pdf / volume;
+
+            }
+        }
+
+        return dr::select(active, pdf, 0.f);
+    }
+
+
+    /**
+     * \brief Samples the sun from a uniform cone with the given sample
+     *
+     * \param sample
+     *      Sample to generate the sun ray
+     * \return
+     *      The sampled sun direction
+     */
+    Vector3f sample_sun(const Point2f& sample, const Float& time) const {
+        const Point2f sun_angles = get_sun_angles(time, true);
+        return Frame3f(sph_to_dir(sun_angles.y(), sun_angles.x())).to_world(
+            warp::square_to_uniform_cone<Float>(sample, dr::cos(m_sun_half_aperture))
+        );
+    }
+
+    /**
+     * Computes the PDFs of the sky and sun for the given local direction
+     *
+     * \param local_dir
+     *      Local direction in the sky
+     * \param check_sun
+     *      Indicates if the sun's intersection should be tested
+     * \param active
+     *      Mask for the active lanes
+     * \return
+     *      The sky and sun PDFs
+     */
+    std::pair<Float, Float> compute_pdfs(const Vector3f &local_dir,
+                                         const Float &time,
+                                         const Mask &check_sun,
+                                         Mask active) const {
+        // Check for bounds on PDF
+        Float sin_theta = Frame3f::sin_theta(local_dir);
+        active &= (Frame3f::cos_theta(local_dir) >= 0.f) && (sin_theta != 0.f);
+        sin_theta = dr::maximum(sin_theta, dr::Epsilon<Float>);
+        Point2f angles = dir_to_sph(local_dir);
+        angles = { angles.y(), angles.x() }; // flip convention
+        Float sky_pdf = tgmm_pdf(angles, time, active) / sin_theta;
+
+        const Point2f sun_angles = get_sun_angles(time, active);
+        Frame3f local_sun_frame = Frame3f(sph_to_dir(sun_angles.y(), sun_angles.x()));
+
+        Float cosine_cutoff = dr::cos(m_sun_half_aperture);
+        Float sun_pdf = warp::square_to_uniform_cone_pdf(
+            local_sun_frame.to_local(local_dir), cosine_cutoff);
+        Mask valid = (dr::dot(local_sun_frame.n, local_dir) >= cosine_cutoff);
+        sun_pdf = dr::select(!check_sun || valid, sun_pdf, 0.f);
+
+        return {sky_pdf, sun_pdf};
+    }
+
+    // ================================================================================================
     // ====================================== HELPER FUNCTIONS ========================================
     // ================================================================================================
 
@@ -560,7 +807,7 @@ protected:
                (1 - dr::cos(custom_half_aperture));
     }
 
-    MI_INLINE Point2f gaussian_cdf(const Point2f &mu, const Point2f &sigma, const Point2f &x) const {
+    MI_INLINE Point2f gaussian_cdf(const Point2f &mu, const Point2f &sigma, const ScalarPoint2f &x) const {
         return 0.5f * (1 + dr::erf(dr::InvSqrtTwo<Float> * (x - mu) / sigma));
     }
 
@@ -622,6 +869,7 @@ protected:
     ref<Texture> m_albedo_tex;
     FloatStorage m_albedo;
 
+    Float m_sky_sampling_w = 0.5f;
     ScalarFloat m_sun_half_aperture;
 
     // Precomputed dataset
@@ -630,99 +878,11 @@ protected:
     // Datasets from file
     TensorXf m_sky_rad_dataset;
     TensorXf m_sky_params_dataset;
-    FloatStorage m_sun_ld; // Not initialized in RGB mode
+    TensorXf m_sun_ld; // Not initialized in RGB mode
     TensorXf m_sun_rad_dataset;
+
+    FloatStorage m_tgmm_tables;
 };
-
-// ================================================================================================
-// ======================================== SAMPLING MODEL ========================================
-// ================================================================================================
-
-/**
- * \brief Extracts the Gaussian Mixture Model parameters from the TGMM
- * dataset The 4 * (5 gaussians) cannot be interpolated directly, so we need
- * to combine them and adjust the weights based on the elevation and
- * turbidity linear interpolation parameters.
- *
- * \tparam dataset_size
- *      Size of the TGMM dataset
- * \param tgmm_tables
- *      Dataset for the Gaussian Mixture Models
- * \param turbidity
- *      Turbidity used for the skylight model
- * \param eta
- *      Elevation of the sun
- * \return
- *      The new distribution parameters and the mixture weights
- */
-template <uint32_t dataset_size, typename Float>
-std::pair<DynamicBuffer<Float>, DynamicBuffer<Float>>
-build_tgmm_distribution(const DynamicBuffer<Float> &tgmm_tables,
-                          Float turbidity, Float eta) {
-    using UInt32        = dr::uint32_array_t<Float>;
-    using ScalarUInt32  = dr::value_t<UInt32>;
-    using UInt32Storage = DynamicBuffer<UInt32>;
-    using FloatStorage  = DynamicBuffer<Float>;
-
-    // ============== EXTRACT INDEXES AND LERP WEIGHTS ==============
-
-    eta = dr::rad_to_deg(eta);
-    Float eta_idx_f = dr::clip((eta - 2) / 3, 0, ELEVATION_CTRL_PTS - 1),
-          t_idx_f = dr::clip(turbidity - 2, 0, (TURBITDITY_LVLS - 1) - 1);
-
-    UInt32 eta_idx_low = dr::floor2int<UInt32>(eta_idx_f),
-           t_idx_low = dr::floor2int<UInt32>(t_idx_f);
-
-    UInt32 eta_idx_high = dr::minimum(eta_idx_low + 1, ELEVATION_CTRL_PTS - 1),
-           t_idx_high = dr::minimum(t_idx_low + 1, (TURBITDITY_LVLS - 1) - 1);
-
-    Float eta_rem = eta_idx_f - eta_idx_low,
-          t_rem = t_idx_f - t_idx_low;
-
-    uint32_t t_block_size = dataset_size / (TURBITDITY_LVLS - 1),
-             result_size  = t_block_size / ELEVATION_CTRL_PTS;
-
-    UInt32 indices[4] = {
-        t_idx_low * t_block_size + eta_idx_low * result_size,
-        t_idx_low * t_block_size + eta_idx_high * result_size,
-        t_idx_high * t_block_size + eta_idx_low * result_size,
-        t_idx_high * t_block_size + eta_idx_high * result_size
-    };
-
-    Float lerp_factors[4] = {
-        (1 - t_rem) * (1 - eta_rem),
-        (1 - t_rem) * eta_rem,
-        t_rem * (1 - eta_rem),
-        t_rem * eta_rem
-    };
-
-    // ==================== EXTRACT PARAMETERS AND APPLY LERP WEIGHT ====================
-    FloatStorage distrib_params = dr::zeros<FloatStorage>(4 * result_size);
-    UInt32Storage param_indices = dr::arange<UInt32Storage>(result_size);
-    for (ScalarUInt32 mixture_idx = 0; mixture_idx < 4; ++mixture_idx) {
-
-        // Gather gaussian weights and parameters
-        FloatStorage params = dr::gather<FloatStorage>(tgmm_tables, indices[mixture_idx] + param_indices);
-
-        // Apply lerp factor to gaussian weights
-        for (ScalarUInt32 weight_idx = 0; weight_idx < TGMM_COMPONENTS; ++weight_idx) {
-            ScalarUInt32 gaussian_weight_idx = weight_idx * TGMM_GAUSSIAN_PARAMS + (TGMM_GAUSSIAN_PARAMS - 1);
-            dr::scatter(params, params[gaussian_weight_idx] * lerp_factors[mixture_idx], (UInt32) gaussian_weight_idx);
-        }
-
-        // Scatter back the parameters in the final gaussian mixture buffer
-        dr::scatter(distrib_params, params, mixture_idx * result_size + param_indices);
-    }
-
-    // Extract gaussian weights
-    UInt32Storage mis_weight_idx =
-        TGMM_GAUSSIAN_PARAMS * dr::arange<UInt32Storage>(4 * TGMM_COMPONENTS) +
-        (TGMM_GAUSSIAN_PARAMS - 1);
-    FloatStorage mis_weights =
-        dr::gather<FloatStorage>(distrib_params, mis_weight_idx);
-
-    return std::make_pair(distrib_params, mis_weights);
-}
 
 #undef SUN_HALF_APERTURE
 
