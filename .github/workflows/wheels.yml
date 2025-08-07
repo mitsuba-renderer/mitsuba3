@@ -37,6 +37,12 @@ jobs:
         with:
           python-version: '3.10'
 
+      - name: Install LLVM 18.1.8 on Windows
+        if: runner.os == 'Windows'
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: 18.1.8
+
       - name: Prepare compiler environment for Windows
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
