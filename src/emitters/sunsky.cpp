@@ -149,6 +149,13 @@ public:
     )
     using typename Base::FloatStorage;
 
+    using typename Base::SkyRadData;
+    using typename Base::SkyParamsData;
+
+    using typename Base::USpec;
+    using typename Base::USpecUInt32;
+    using typename Base::USpecMask;
+
     MI_IMPORT_TYPES(Scene, Texture)
 
     using FullSpectrum = std::conditional_t<
@@ -196,8 +203,6 @@ public:
 
         m_sun_angles = dir_to_sph(local_sun_dir);
         m_sun_angles = { m_sun_angles.y(), m_sun_angles.x() }; // flip convention
-
-        m_local_sun_frame = Frame3f(local_sun_dir);
 
         Float sun_eta = 0.5f * dr::Pi<Float> - m_sun_angles.y();
 
@@ -254,19 +259,14 @@ public:
 
 
         // Update sun angles
-        Vector3f local_sun_dir;
         if (changed_time_record) {
             const auto [theta, phi] = Base::sun_coordinates(m_time, m_location);
-            local_sun_dir = sph_to_dir(theta, phi);
-            m_sun_dir = m_to_world.value() * local_sun_dir;
+            m_sun_dir = m_to_world.value() * sph_to_dir(theta, phi);
             m_sun_angles = { phi, theta }; // flip convention
         } else if (changed_sun_dir) {
-            local_sun_dir = m_to_world.value().inverse() * m_sun_dir;
-            m_sun_angles = dir_to_sph(local_sun_dir);
+            m_sun_angles = dir_to_sph(m_to_world.value().inverse() * m_sun_dir);
             m_sun_angles = { m_sun_angles.y(), m_sun_angles.x() }; // flip convention
         }
-
-        m_local_sun_frame = Frame3f(local_sun_dir);
 
         Float eta = 0.5f * dr::Pi<Float> - m_sun_angles.y();
 
@@ -294,69 +294,6 @@ public:
         #undef CHANGED
     }
 
-    Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
-        MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
-
-        using Spec = unpolarized_spectrum_t<Spectrum>;
-        using SpecMask   = dr::mask_t<Spec>;
-        using SpecUInt32 = dr::uint32_array_t<Spec>;
-
-        Vector3f local_wo = m_to_world.value().inverse() * (-si.wi);
-        Float cos_theta = Frame3f::cos_theta(local_wo),
-              gamma = dr::unit_angle(Vector3f(m_local_sun_frame.n), local_wo);
-
-        active &= cos_theta >= 0;
-        Mask hit_sun = active &
-            (dr::dot(m_local_sun_frame.n, local_wo) >= dr::cos(m_sun_half_aperture));
-
-        Spec res = 0.f;
-        if constexpr (!is_spectral_v<Spectrum>) {
-            SpecUInt32 idx = dr::zeros<SpecUInt32>();
-            if constexpr (is_rgb_v<Spectrum>)
-                idx = {0, 1, 2};
-            else
-                idx = SpecUInt32(0);
-
-            res = m_sky_scale * eval_sky<Spec>(idx, cos_theta, gamma, active);
-            res += m_sun_scale * Base::template eval_sun<Spec>(idx, cos_theta, gamma, hit_sun) *
-                   Base::get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
-
-            res *= MI_CIE_Y_NORMALIZATION;
-        } else {
-            Wavelength normalized_wavelengths =
-                (si.wavelengths - WAVELENGTHS<ScalarFloat>[0]) / WAVELENGTH_STEP;
-            SpecMask valid_idx = (0.f <= normalized_wavelengths) &
-                                 (normalized_wavelengths <= CHANNEL_COUNT - 1);
-
-            SpecUInt32 query_idx_low = dr::floor2int<SpecUInt32>(normalized_wavelengths);
-            SpecUInt32 query_idx_high = query_idx_low + 1;
-
-            Wavelength lerp_factor = normalized_wavelengths - query_idx_low;
-
-            // Linearly interpolate the sky's irradiance across the spectrum
-            res = m_sky_scale * dr::lerp(
-                eval_sky<Spec>(query_idx_low, cos_theta, gamma, active & valid_idx),
-                eval_sky<Spec>(query_idx_high, cos_theta, gamma, active & valid_idx),
-                lerp_factor);
-
-            // Linearly interpolate the sun's irradiance across the spectrum
-            Spec sun_rad_low = Base::template eval_sun<Spec>(
-                         query_idx_low, cos_theta, gamma, hit_sun & valid_idx);
-            Spec sun_rad_high = Base::template eval_sun<Spec>(
-                         query_idx_high, cos_theta, gamma, hit_sun & valid_idx);
-            Spec sun_rad = dr::lerp(sun_rad_low, sun_rad_high, lerp_factor);
-
-            Spec sun_ld = Base::template compute_sun_ld<Spec>(
-                query_idx_low, query_idx_high, lerp_factor, gamma,
-                hit_sun & valid_idx
-            );
-
-            res += m_sun_scale * sun_rad * sun_ld * Base::get_area_ratio(m_sun_half_aperture);
-        }
-
-        return depolarizer<Spectrum>(res) & active;
-    }
-
     std::pair<Wavelength, Spectrum>
     sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
                        Mask active) const override {
@@ -371,11 +308,11 @@ public:
             SurfaceInteraction3f si_query = si;
             si_query.wavelengths = wavelengths;
 
-            return { si_query.wavelengths, eval(si_query, active) / pdf };
+            return { si_query.wavelengths, Base::eval(si_query, active) / pdf };
         } else {
             DRJIT_MARK_USED(sample);
 
-            return { Wavelength(0.f), eval(si, active) };
+            return { Wavelength(0.f), Base::eval(si, active) };
         }
     }
 
@@ -401,6 +338,14 @@ public:
     MI_DECLARE_CLASS(SunskyEmitter)
 
 private:
+
+    std::pair<SkyRadData, SkyParamsData>
+    get_datasets(const Point2f&, const USpecUInt32& channel_idx, const USpecMask& active) const override {
+        SkyRadData mean_rad = dr::gather<SkyRadData>(m_sky_radiance, channel_idx, active);
+        SkyParamsData coefs = dr::gather<SkyParamsData>(m_sky_params, channel_idx, active);
+
+        return std::make_pair(mean_rad, coefs);
+    }
 
     template <typename Spec>
     Spec eval_sky(const dr::uint32_array_t<Spec> &channel_idx, const Float &cos_theta, const Float &gamma, const dr::mask_t<Spec> &active) const {
@@ -499,6 +444,7 @@ private:
             else
                 channel_idx = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
+            const Vector3f local_sun_dir = sph_to_dir(m_sun_angles.y(), m_sun_angles.x());
             // Quadrature points and weights
             const auto [x, w_x] = quad::gauss_legendre<Float>(200);
 
@@ -516,7 +462,7 @@ private:
                 const auto sin_theta = dr::safe_sqrt(1 - dr::square(cos_theta));
 
                 Vector3f sky_wo {sin_theta * cos_phi, sin_theta * sin_phi, cos_theta};
-                Float gamma = dr::unit_angle(Vector3f(m_local_sun_frame.n), sky_wo);
+                Float gamma = dr::unit_angle(local_sun_dir, sky_wo);
 
                 FullSpectrum ray_radiance =
                     eval_sky<FullSpectrum>(channel_idx, cos_theta, gamma, true) * w_phi * w_cos_theta;
@@ -543,7 +489,7 @@ private:
                 Float gamma = dr::unit_angle_z(sun_wo);
 
                 // View ray in local emitter coordinates
-                sun_wo = m_local_sun_frame.to_world(sun_wo);
+                sun_wo = Frame3f(local_sun_dir).to_world(sun_wo);
 
                 Float cos_theta = Frame3f::cos_theta(sun_wo);
 
@@ -607,7 +553,7 @@ private:
     Vector3f m_sun_dir;
     /// Sun angles in local coordinates, (phi, theta)
     Point2f m_sun_angles;
-    Frame3f m_local_sun_frame;
+
     /// Indicates if the plugin was initialized with a location/time record
     bool m_active_record;
     DateTimeRecord<Float> m_time;

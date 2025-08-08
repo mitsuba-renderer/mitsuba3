@@ -16,6 +16,13 @@ public:
 
     using typename Base::FloatStorage;
 
+    using typename Base::SkyRadData;
+    using typename Base::SkyParamsData;
+
+    using typename Base::USpec;
+    using typename Base::USpecUInt32;
+    using typename Base::USpecMask;
+
     MI_IMPORT_TYPES()
 
 private:
@@ -80,12 +87,9 @@ public:
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        using Spec = unpolarized_spectrum_t<Spectrum>;
-        using SpecUInt32 = dr::uint32_array_t<Spec>;
-
         // These typedefs concatenate the discrete spectrae together
         // to make it easier to iterate over them for interpolation
-        using ExtendedSpec = dr::Array<Float, (is_spectral_v<Spec> ? 2 : 1) * dr::size_v<Spec>>;
+        using ExtendedSpec = dr::Array<Float, (is_spectral_v<USpec> ? 2 : 1) * dr::size_v<USpec>>;
         using ExtendedSpecUInt32 = dr::uint32_array_t<ExtendedSpec>;
         using ExtendedSpecMask   = dr::mask_t<ExtendedSpec>;
 
@@ -93,14 +97,14 @@ public:
         ExtendedSpec lerp_factor;
         ExtendedSpecUInt32 channel_idx;
         ExtendedSpecMask valid_idx = active;
-        if constexpr (is_rgb_v<Spec>) {
+        if constexpr (is_rgb_v<USpec>) {
             lerp_factor = 1.f;
             channel_idx = {0, 1, 2};
-        } else if constexpr (is_spectral_v<Spec>) {
+        } else if constexpr (is_spectral_v<USpec>) {
             Wavelength normalized_wavelengths =
                 (si.wavelengths - WAVELENGTHS<ScalarFloat>[0]) / WAVELENGTH_STEP;
 
-            SpecUInt32 query_idx_low = dr::floor2int<SpecUInt32>(normalized_wavelengths);
+            USpecUInt32 query_idx_low = dr::floor2int<USpecUInt32>(normalized_wavelengths);
             channel_idx = dr::concat(query_idx_low, query_idx_low + 1);
 
             Wavelength lerp_factor_wavelength = normalized_wavelengths - query_idx_low;
@@ -120,21 +124,21 @@ public:
         Mask hit_sun = dr::dot(datasets.sun_dir, local_wo) >= dr::cos(m_sun_half_aperture);
 
         // Evaluate the model channel by channel
-        Spec res = 0.f;
+        USpec res = 0.f;
         for (uint32_t idx = 0; idx < dr::size_v<ExtendedSpec>; ++idx) {
             Float sky_rad = m_sky_scale * eval_sky(channel_idx[idx], cos_theta, gamma, datasets.sky_rad, datasets.sky_params, valid_idx[idx]);
 
             Float sun_rad = m_sun_scale * Base::get_area_ratio(m_sun_half_aperture) *
                 Base::template eval_sun<Float>(channel_idx[idx], cos_theta, gamma,hit_sun & valid_idx[idx]);
 
-            if constexpr (is_rgb_v<Spec>) {
+            if constexpr (is_rgb_v<USpec>) {
                 sun_rad *= SPEC_TO_RGB_SUN_CONV;
-            } else if constexpr (is_spectral_v<Spec>) {
+            } else if constexpr (is_spectral_v<USpec>) {
                 // TODO sort sun limb darkening
                 sun_rad *= 1.f;
             }
 
-            res[idx % dr::size_v<Spec>] += lerp_factor[idx] * (sky_rad + sun_rad) * (is_rgb_v<Spec> ? ScalarFloat(MI_CIE_Y_NORMALIZATION) : 1.f);
+            res[idx % dr::size_v<USpec>] += lerp_factor[idx] * (sky_rad + sun_rad) * (is_rgb_v<USpec> ? ScalarFloat(MI_CIE_Y_NORMALIZATION) : 1.f);
         }
 
         return depolarizer<Spectrum>(res) & active;
@@ -224,6 +228,10 @@ private:
         return std::make_pair(res_gaussian_idx, (sample - last_cdf) / (cdf - last_cdf));
     }
 
+    std::pair<SkyRadData, SkyParamsData>
+    get_datasets(const Point2f& sun_angles, const USpecUInt32& channel_idx, const USpecMask& active) const override {
+
+    }
 
     struct Datasets {
         Vector3f sun_dir;
