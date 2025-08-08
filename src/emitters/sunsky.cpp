@@ -486,7 +486,9 @@ private:
             // Mean ratio over the range of parameters (turbidity, sun angle)
             // And uniform spectral sampling
             ScalarFloat distribution[2] = {1.f, 1.f};
-            return { 0.5f, ContinuousDistribution<Wavelength>(range, distribution, 2) };
+            Float sky_weight = m_sky_scale / (m_sky_scale + m_sun_scale);
+                  sky_weight = dr::select(dr::isnan(sky_weight), 0.f, sky_weight);
+            return { sky_weight, ContinuousDistribution<Wavelength>(range, distribution, 2) };
         } else {
             FullSpectrum sky_radiance = dr::zeros<FullSpectrum>(),
                          sun_radiance = dr::zeros<FullSpectrum>();

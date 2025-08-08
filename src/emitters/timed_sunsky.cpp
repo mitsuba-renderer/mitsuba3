@@ -9,8 +9,8 @@ class TimedSunskyEmitter final: public BaseSunskyEmitter<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BaseSunskyEmitter,
         m_turbidity, m_sky_scale, m_sun_scale, m_albedo,
-        m_sun_half_aperture, m_sky_rad_dataset,
-        m_sky_params_dataset,
+        m_sun_half_aperture, m_sky_rad_dataset, m_tgmm_tables,
+        m_sky_params_dataset, m_sky_sampling_w,
         CHANNEL_COUNT, m_to_world
     )
 
@@ -58,6 +58,10 @@ public:
 
         m_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
         m_sky_radiance = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
+
+        // TODO find better weighing
+        m_sky_sampling_w = m_sky_scale / (m_sky_scale + m_sun_scale);
+        m_sky_sampling_w = dr::select(dr::isnan(m_sky_sampling_w), 0.f, m_sky_sampling_w);
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -180,7 +184,7 @@ private:
         date_time.year = m_start_date.year;
         date_time.month = m_start_date.month;
 
-        Float day = time * DateTimeRecord<Float>::get_days_between(m_start_date, m_end_date, m_location);
+        Float day = dr::clip(time, 0.f, 1.f) *  DateTimeRecord<Float>::get_days_between(m_start_date, m_end_date, m_location);
 
         date_time.day = m_start_date.day + dr::floor2int<Int32>(day);
         date_time.hour = m_window_start_time + (m_window_end_time - m_window_start_time) * dr::fmod(day, 1.f);
@@ -189,8 +193,35 @@ private:
         return {sun_azimuth, sun_elevation};
     }
 
-    std::pair<UInt32, Float> sample_reuse_tgmm(const Float&, const Point2f&, const Mask&) const override {
-        return std::make_pair(0, 0.f);
+    std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Point2f& sun_angles, const Mask& active) const override {
+        const auto [ lerp_w, tgmm_idx ] = Base::get_tgmm_data(sun_angles);
+
+        Mask active_loop = active;
+        Float last_cdf = 0.f, cdf = 0.f;
+        UInt32 res_gaussian_idx = 0;
+        for (uint32_t mixture_idx = 0; mixture_idx < 4; ++mixture_idx) {
+            for (uint32_t gaussian_idx = 0; gaussian_idx < TGMM_COMPONENTS; ++gaussian_idx) {
+                last_cdf = dr::select(active_loop, cdf, last_cdf);
+
+                res_gaussian_idx = dr::select(active_loop,
+                    tgmm_idx[mixture_idx] + gaussian_idx,
+                    res_gaussian_idx
+                );
+
+                Float gaussian_w = lerp_w[mixture_idx] * dr::gather<Float>(m_tgmm_tables,
+                    res_gaussian_idx * TGMM_GAUSSIAN_PARAMS + (TGMM_GAUSSIAN_PARAMS - 1),
+                    active_loop
+                );
+
+                // Gathered weight is 0 if inactive
+                cdf += gaussian_w;
+
+                active_loop &= cdf < sample;
+
+            }
+        }
+
+        return std::make_pair(res_gaussian_idx, (sample - last_cdf) / (cdf - last_cdf));
     }
 
 
