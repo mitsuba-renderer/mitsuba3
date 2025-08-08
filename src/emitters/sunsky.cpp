@@ -1,8 +1,4 @@
-#include <mitsuba/core/bsphere.h>
-#include <mitsuba/core/warp.h>
 #include <mitsuba/core/quad.h>
-#include <mitsuba/render/emitter.h>
-#include <mitsuba/render/scene.h>
 #include <mitsuba/render/sunsky.h>
 
 
@@ -415,7 +411,11 @@ private:
         return Base::template eval_sky<Spec>(cos_theta, gamma, coefs, mean_rad);
     }
 
-    std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Float &, const Mask &active) const override {
+    Point2f get_sun_angles(const Float&) const override {
+        return m_sun_angles;
+    }
+
+    std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Point2f &, const Mask &active) const override {
         const auto [ idx, temp_sample ] = m_gaussian_distr.sample_reuse(sample, active);
         const auto [ idx_div, idx_mod ] = dr::idivmod(idx, TGMM_COMPONENTS);
 
@@ -425,7 +425,7 @@ private:
         UInt32 eta_idx_low = dr::floor2int<UInt32>(dr::clip((sun_eta - 2) / 3, 0, ELEVATION_CTRL_PTS - 1)),
                t_idx_low   = dr::floor2int<UInt32>(dr::clip(m_turbidity - 2, 0, (TURBITDITY_LVLS - 1) - 1));
 
-        constexpr uint32_t t_block_size = GAUSSIAN_NB / (TURBITDITY_LVLS - 1),
+        constexpr uint32_t t_block_size = Base::GAUSSIAN_NB / (TURBITDITY_LVLS - 1),
                  result_size  = t_block_size / ELEVATION_CTRL_PTS;
 
         UInt32 gaussian_idx = (t_idx_low + ((idx_div >> 1) & 1)) * t_block_size +
@@ -435,47 +435,7 @@ private:
         return std::make_pair(gaussian_idx, temp_sample);
     }
 
-    Point2f get_sun_angles(const Float&, const Mask&) const override {
-        return m_sun_angles;
-    }
-
-    std::pair<Vector4f, Vector4u> get_tgmm_data(const Float&, const Mask&) const override {
-        Float sun_eta = 0.5f * dr::Pi<Float> - m_sun_angles.y();
-              sun_eta = dr::rad_to_deg(sun_eta);
-
-        Float eta_idx_f = dr::clip((sun_eta - 2) / 3, 0, ELEVATION_CTRL_PTS - 1),
-              t_idx_f   = dr::clip(m_turbidity - 2, 0, (TURBITDITY_LVLS - 1) - 1);
-
-        UInt32 eta_idx_low = dr::floor2int<UInt32>(eta_idx_f),
-               t_idx_low   = dr::floor2int<UInt32>(t_idx_f);
-
-        UInt32 eta_idx_high = dr::minimum(eta_idx_low + 1, ELEVATION_CTRL_PTS - 1),
-               t_idx_high   = dr::minimum(t_idx_low + 1, (TURBITDITY_LVLS - 1) - 1);
-
-        Float eta_rem = eta_idx_f - eta_idx_low,
-              t_rem = t_idx_f - t_idx_low;
-
-        constexpr uint32_t t_block_size = GAUSSIAN_NB / (TURBITDITY_LVLS - 1),
-                 result_size  = t_block_size / ELEVATION_CTRL_PTS;
-
-        Vector4u indices = {
-            t_idx_low * t_block_size + eta_idx_low * result_size,
-            t_idx_low * t_block_size + eta_idx_high * result_size,
-            t_idx_high * t_block_size + eta_idx_low * result_size,
-            t_idx_high * t_block_size + eta_idx_high * result_size
-        };
-
-        Vector4f lerp_factors = {
-            (1 - t_rem) * (1 - eta_rem),
-            (1 - t_rem) * eta_rem,
-            t_rem * (1 - eta_rem),
-            t_rem * eta_rem
-        };
-
-        return std::make_pair(lerp_factors, indices);
-    }
-
-     /**
+    /**
      * \brief Extracts the Gaussian Mixture Model parameters from the TGMM
      * dataset The 4 * (5 gaussians) cannot be interpolated directly, so we need
      * to combine them and adjust the weights based on the elevation and
@@ -490,7 +450,7 @@ private:
         using UInt32Storage = DynamicBuffer<UInt32>;
 
         // ============== EXTRACT INDEXES AND LERP WEIGHTS ==============
-        const auto [ lerp_w, tgmm_idx ] = get_tgmm_data(0.f, true);
+        const auto [ lerp_w, tgmm_idx ] = Base::get_tgmm_data(m_sun_angles);
 
         // ==================== EXTRACT PARAMETERS AND APPLY LERP WEIGHT ====================
         FloatStorage gaussian_weights = dr::zeros<FloatStorage>(4 * TGMM_COMPONENTS);
@@ -638,12 +598,6 @@ private:
     // ================================================================================================
     // ========================================= ATTRIBUTES ===========================================
     // ================================================================================================
-
-    static constexpr uint32_t TGMM_DATA_SIZE =
-        (TURBITDITY_LVLS - 1) * ELEVATION_CTRL_PTS * TGMM_COMPONENTS *
-        TGMM_GAUSSIAN_PARAMS;
-    static constexpr uint32_t GAUSSIAN_NB =
-        (TURBITDITY_LVLS - 1) * ELEVATION_CTRL_PTS * TGMM_COMPONENTS;
 
     // ========= Sun parameters =========
 

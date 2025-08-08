@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "drjit/util.h"
 #include <drjit/sphere.h>
 #include <drjit/tensor.h>
+#include <mitsuba/core/warp.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/core/fresolver.h>
@@ -292,6 +292,7 @@ public:
                                       const Point2f &sample3,
                                       Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+        const Point2f sun_angles = get_sun_angles(time);
 
         // 1. Sample spatial component
         Point2f offset = warp::square_to_uniform_disk_concentric(sample2);
@@ -300,8 +301,8 @@ public:
         Mask pick_sky = sample3.x() < m_sky_sampling_w;
         Vector3f d = dr::select(
                 pick_sky,
-                sample_sky({sample3.x() / m_sky_sampling_w, sample3.y()}, time, active),
-                sample_sun({(sample3.x() - m_sky_sampling_w) / (1 - m_sky_sampling_w), sample3.y()}, time)
+                sample_sky({sample3.x() / m_sky_sampling_w, sample3.y()}, sun_angles, active),
+                sample_sun({(sample3.x() - m_sky_sampling_w) / (1 - m_sky_sampling_w), sample3.y()}, sun_angles)
         );
         active &= Frame3f::cos_theta(d) >= 0.f;
         // Unlike \ref sample_direction, ray goes from the envmap toward the scene
@@ -309,7 +310,7 @@ public:
 
         // 3. PDF
         Float sky_pdf, sun_pdf;
-        std::tie(sky_pdf, sun_pdf) = compute_pdfs(d, time, pick_sky, active);
+        std::tie(sky_pdf, sun_pdf) = compute_pdfs(d, sun_angles, pick_sky, active);
         Float pdf = dr::lerp(sun_pdf, sky_pdf, m_sky_sampling_w);
         // Apply pdf of the origin offset
         pdf *= dr::InvPi<Float> * dr::rcp(dr::square(m_bsphere.radius));
@@ -318,6 +319,7 @@ public:
         // 4. Sample spectrum
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.wi = d_world;
+        si.time = time;
         Wavelength wavelengths;
         Spectrum weight;
         std::tie(wavelengths, weight) =
@@ -339,13 +341,14 @@ public:
                      Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
+        const Point2f sun_angles = get_sun_angles(it.time);
         Mask pick_sky = sample.x() < m_sky_sampling_w;
 
         // Sample the sun or the sky
         Vector3f sample_dir = dr::select(
                 pick_sky,
-                sample_sky({sample.x() / m_sky_sampling_w, sample.y()}, it.time, active),
-                sample_sun({(sample.x() - m_sky_sampling_w) / (1 - m_sky_sampling_w), sample.y()}, it.time)
+                sample_sky({sample.x() / m_sky_sampling_w, sample.y()}, sun_angles, active),
+                sample_sun({(sample.x() - m_sky_sampling_w) / (1 - m_sky_sampling_w), sample.y()}, sun_angles)
         );
         active &= Frame3f::cos_theta(sample_dir) >= 0.f;
 
@@ -366,10 +369,11 @@ public:
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.wi = -d;
+        si.time = it.time;
         si.wavelengths = it.wavelengths;
 
         Float sky_pdf, sun_pdf;
-        std::tie(sky_pdf, sun_pdf) = compute_pdfs(sample_dir, it.time, pick_sky, active);
+        std::tie(sky_pdf, sun_pdf) = compute_pdfs(sample_dir, sun_angles, pick_sky, active);
         ds.pdf = dr::lerp(sun_pdf, sky_pdf, m_sky_sampling_w);
 
         Spectrum res = this->eval(si, active) / ds.pdf;
@@ -380,10 +384,11 @@ public:
     Float pdf_direction(const Interaction3f &, const DirectionSample3f &ds,
                     Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+        const Point2f sun_angles = get_sun_angles(ds.time);
 
         Vector3f local_dir = m_to_world.value().inverse() * ds.d;
         Float sky_pdf, sun_pdf;
-        std::tie(sky_pdf, sun_pdf) = compute_pdfs(local_dir, ds.time, true, active);
+        std::tie(sky_pdf, sun_pdf) = compute_pdfs(local_dir, sun_angles, true, active);
 
         Float combined_pdf = dr::lerp(sun_pdf, sky_pdf, m_sky_sampling_w);
         return dr::select(active, combined_pdf, 0.f);
@@ -663,14 +668,49 @@ protected:
     // ===================================== SAMPLING FUNCTIONS =======================================
     // ================================================================================================
 
-    virtual std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Float &time, const Mask &active) const = 0;
-    virtual Point2f get_sun_angles(const Float& time, const Mask& active) const = 0;
-    virtual std::pair<Vector4f, Vector4u> get_tgmm_data(const Float& time, const Mask& active) const = 0;
+    /// Sun angles in local coordinates (phi, theta)
+    virtual Point2f get_sun_angles(const Float& time) const = 0;
+    virtual std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Point2f& sun_angles, const Mask &active) const = 0;
 
-    Vector3f sample_sky(Point2f sample, const Float& time, const Mask& active) const {
+    std::pair<Vector4f, Vector4u> get_tgmm_data(const Point2f& sun_angles) const {
+        Float sun_eta = 0.5f * dr::Pi<Float> - sun_angles.y();
+              sun_eta = dr::rad_to_deg(sun_eta);
+
+        Float eta_idx_f = dr::clip((sun_eta - 2) / 3, 0, ELEVATION_CTRL_PTS - 1),
+              t_idx_f   = dr::clip(m_turbidity - 2, 0, (TURBITDITY_LVLS - 1) - 1);
+
+        UInt32 eta_idx_low = dr::floor2int<UInt32>(eta_idx_f),
+               t_idx_low   = dr::floor2int<UInt32>(t_idx_f);
+
+        UInt32 eta_idx_high = dr::minimum(eta_idx_low + 1, ELEVATION_CTRL_PTS - 1),
+               t_idx_high   = dr::minimum(t_idx_low + 1, (TURBITDITY_LVLS - 1) - 1);
+
+        Float eta_rem = eta_idx_f - eta_idx_low,
+              t_rem = t_idx_f - t_idx_low;
+
+        constexpr uint32_t t_block_size = GAUSSIAN_NB / (TURBITDITY_LVLS - 1),
+                 result_size  = t_block_size / ELEVATION_CTRL_PTS;
+
+        Vector4u indices = {
+            t_idx_low * t_block_size + eta_idx_low * result_size,
+            t_idx_low * t_block_size + eta_idx_high * result_size,
+            t_idx_high * t_block_size + eta_idx_low * result_size,
+            t_idx_high * t_block_size + eta_idx_high * result_size
+        };
+
+        Vector4f lerp_factors = {
+            (1 - t_rem) * (1 - eta_rem),
+            (1 - t_rem) * eta_rem,
+            t_rem * (1 - eta_rem),
+            t_rem * eta_rem
+        };
+
+        return std::make_pair(lerp_factors, indices);
+    }
+
+    Vector3f sample_sky(Point2f sample, const Point2f& sun_angles, const Mask& active) const {
         // Sample a gaussian from the mixture
-        const Point2f sun_angles = get_sun_angles(time, active);
-        const auto [ gaussian_idx, temp_sample ] = sample_reuse_tgmm(sample.x(), time, active);
+        const auto [ gaussian_idx, temp_sample ] = sample_reuse_tgmm(sample.x(), sun_angles, active);
 
         // {mu_phi, mu_theta, sigma_phi, sigma_theta, weight}
         Gaussian gaussian = dr::gather<Gaussian>(m_tgmm_tables, gaussian_idx, active);
@@ -698,9 +738,8 @@ protected:
         return dr::sphdir(angles.y(), angles.x());
     }
 
-    Float tgmm_pdf(Point2f angles, const Float& time, Mask active) const {
-        const Point2f sun_angles = get_sun_angles(time, active);
-        const auto [ lerp_w, tgmm_idx ] = get_tgmm_data(time, active);
+    Float tgmm_pdf(Point2f angles, const Point2f& sun_angles, Mask active) const {
+        const auto [ lerp_w, tgmm_idx ] = get_tgmm_data(sun_angles);
 
         // From local frame to reference frame where sun_phi = pi/2 and phi is in [0, 2pi]
         angles.x() -= sun_angles.x() - 0.5f * dr::Pi<Float>;
@@ -755,8 +794,7 @@ protected:
      * \return
      *      The sampled sun direction
      */
-    Vector3f sample_sun(const Point2f& sample, const Float& time) const {
-        const Point2f sun_angles = get_sun_angles(time, true);
+    Vector3f sample_sun(const Point2f& sample, const Point2f& sun_angles) const {
         return Frame3f(sph_to_dir(sun_angles.y(), sun_angles.x())).to_world(
             warp::square_to_uniform_cone<Float>(sample, dr::cos(m_sun_half_aperture))
         );
@@ -775,7 +813,7 @@ protected:
      *      The sky and sun PDFs
      */
     std::pair<Float, Float> compute_pdfs(const Vector3f &local_dir,
-                                         const Float &time,
+                                         const Point2f &sun_angles,
                                          const Mask &check_sun,
                                          Mask active) const {
         // Check for bounds on PDF
@@ -784,9 +822,8 @@ protected:
         sin_theta = dr::maximum(sin_theta, dr::Epsilon<Float>);
         Point2f angles = dir_to_sph(local_dir);
         angles = { angles.y(), angles.x() }; // flip convention
-        Float sky_pdf = tgmm_pdf(angles, time, active) / sin_theta;
+        Float sky_pdf = tgmm_pdf(angles, sun_angles, active) / sin_theta;
 
-        const Point2f sun_angles = get_sun_angles(time, active);
         Frame3f local_sun_frame = Frame3f(sph_to_dir(sun_angles.y(), sun_angles.x()));
 
         Float cosine_cutoff = dr::cos(m_sun_half_aperture);
@@ -858,6 +895,11 @@ protected:
     /// Number of channels used in the skylight model
     static constexpr uint32_t CHANNEL_COUNT =
         is_spectral_v<Spectrum> ? WAVELENGTH_COUNT : 3;
+    static constexpr uint32_t TGMM_DATA_SIZE =
+        (TURBITDITY_LVLS - 1) * ELEVATION_CTRL_PTS * TGMM_COMPONENTS *
+        TGMM_GAUSSIAN_PARAMS;
+    static constexpr uint32_t GAUSSIAN_NB =
+        (TURBITDITY_LVLS - 1) * ELEVATION_CTRL_PTS * TGMM_COMPONENTS;
 
     BoundingSphere3f m_bsphere;
 

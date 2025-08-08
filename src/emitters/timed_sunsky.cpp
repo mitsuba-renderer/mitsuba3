@@ -1,5 +1,4 @@
 #include <drjit/local.h>
-#include <mitsuba/core/warp.h>
 #include <mitsuba/render/sunsky.h>
 
 
@@ -151,34 +150,6 @@ public:
         return Base::template eval_sky<Float>(cos_theta, gamma, needed_sky_params, sky_rad.read(channel_idx, active));
     }
 
-    std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
-                                      const Point2f &sample2,
-                                      const Point2f &sample3,
-                                      Mask active) const override {
-        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
-        DRJIT_MARK_USED(time);
-        DRJIT_MARK_USED(wavelength_sample);
-        DRJIT_MARK_USED(sample2);
-        DRJIT_MARK_USED(sample3);
-        NotImplementedError()
-    }
-
-    std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &it, const Point2f &sample,
-                     Mask active) const override {
-        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
-        DRJIT_MARK_USED(it);
-        DRJIT_MARK_USED(sample);
-        NotImplementedError()
-    }
-
-    Float pdf_direction(const Interaction3f &, const DirectionSample3f &ds,
-                        Mask active) const override {
-        MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
-        DRJIT_MARK_USED(ds);
-        NotImplementedError()
-    }
-
     std::pair<Wavelength, Spectrum>
     sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
                        Mask active) const override {
@@ -204,15 +175,24 @@ public:
 
 private:
 
-    std::pair<UInt32, Float> sample_reuse_tgmm(const Float&, const Float&, const Mask&) const override {
+    Point2f get_sun_angles(const Float& time) const override {
+        DateTimeRecord<Float> date_time = dr::zeros<DateTimeRecord<Float>>();
+        date_time.year = m_start_date.year;
+        date_time.month = m_start_date.month;
+
+        Float day = time * DateTimeRecord<Float>::get_days_between(m_start_date, m_end_date, m_location);
+
+        date_time.day = m_start_date.day + dr::floor2int<Int32>(day);
+        date_time.hour = m_window_start_time + (m_window_end_time - m_window_start_time) * dr::fmod(day, 1.f);
+
+        const auto [sun_elevation, sun_azimuth] = Base::sun_coordinates(date_time, m_location);
+        return {sun_azimuth, sun_elevation};
+    }
+
+    std::pair<UInt32, Float> sample_reuse_tgmm(const Float&, const Point2f&, const Mask&) const override {
         return std::make_pair(0, 0.f);
     }
-    Point2f get_sun_angles(const Float&, const Mask&) const override {
-        return 0.f;
-    }
-    std::pair<Vector4f, Vector4u> get_tgmm_data(const Float&, const Mask&) const override {
-        return std::make_pair(0.f, 0);
-    }
+
 
     struct Datasets {
         Vector3f sun_dir;
@@ -229,24 +209,15 @@ private:
      * and associated direction
      */
     Datasets compute_dataset(const Float& time) const {
-        DateTimeRecord<Float> date_time = dr::zeros<DateTimeRecord<Float>>();
-        date_time.year = m_start_date.year;
-        date_time.month = m_start_date.month;
-
-        Float day = time * DateTimeRecord<Float>::get_days_between(m_start_date, m_end_date, m_location);
-
-        date_time.day = m_start_date.day + dr::floor2int<Int32>(day);
-        date_time.hour = m_window_start_time + (m_window_end_time - m_window_start_time) * dr::fmod(day, 1.f);
-
-        const auto [sun_elevation, sun_azimuth] = Base::sun_coordinates(date_time, m_location);
-        const Float sun_eta = 0.5f * dr::Pi<Float> - sun_elevation;
+        const Point2f sun_angles = get_sun_angles(time);
+        const Float sun_eta = 0.5f * dr::Pi<Float> - sun_angles.y();
 
         using ArrayXf = dr::DynamicArray<Float>;
         ArrayXf sky_rad = Base::template bezier_interp<ArrayXf>(m_sky_radiance, sun_eta);
         ArrayXf sky_params = Base::template bezier_interp<ArrayXf>(m_sky_params, sun_eta);
 
         Datasets result = {
-            sph_to_dir(sun_elevation, sun_azimuth),
+            sph_to_dir(sun_angles.y(), sun_angles.x()),
             RadLocal(sun_eta), ParamsLocal(sun_eta),
         };
 
