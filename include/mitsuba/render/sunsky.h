@@ -301,7 +301,7 @@ public:
         Mask pick_sky = sample3.x() < m_sky_sampling_w;
         Vector3f d = dr::select(
                 pick_sky,
-                sample_sky({sample3.x() / m_sky_sampling_w, sample3.y()}, sun_angles, active),
+                sample_sky({sample3.x() / m_sky_sampling_w, sample3.y()}, sun_angles, active & pick_sky),
                 sample_sun({(sample3.x() - m_sky_sampling_w) / (1 - m_sky_sampling_w), sample3.y()}, sun_angles)
         );
         active &= Frame3f::cos_theta(d) >= 0.f;
@@ -347,7 +347,7 @@ public:
         // Sample the sun or the sky
         Vector3f sample_dir = dr::select(
                 pick_sky,
-                sample_sky({sample.x() / m_sky_sampling_w, sample.y()}, sun_angles, active),
+                sample_sky({sample.x() / m_sky_sampling_w, sample.y()}, sun_angles, active & pick_sky),
                 sample_sun({(sample.x() - m_sky_sampling_w) / (1 - m_sky_sampling_w), sample.y()}, sun_angles)
         );
         active &= Frame3f::cos_theta(sample_dir) >= 0.f;
