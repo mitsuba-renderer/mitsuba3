@@ -176,6 +176,13 @@ public:
     using FloatStorage = DynamicBuffer<Float>;
     using Gaussian     = dr::Array<Float, TGMM_GAUSSIAN_PARAMS>;
 
+    using USpec       = unpolarized_spectrum_t<Spectrum>;
+    using USpecUInt32 = dr::uint32_array_t<USpec>;
+    using USpecMask   = dr::mask_t<USpec>;
+
+    using SkyRadData    = USpec;
+    using SkyParamsData = dr::Array<SkyRadData, SKY_PARAMS>;
+
     BaseSunskyEmitter(const Properties &props) : Base(props) {
         if constexpr (!(is_rgb_v<Spectrum> || is_spectral_v<Spectrum>))
             Throw("Unsupported spectrum type, can only render in Spectral or RGB modes!");
@@ -285,6 +292,72 @@ public:
         }
 
         dr::make_opaque(m_bsphere.center, m_bsphere.radius);
+    }
+
+    Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
+        MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+        const Point2f sun_angles = get_sun_angles(si.time);
+        const Vector3f sun_dir = sph_to_dir(sun_angles.y(), sun_angles.x());
+
+        Vector3f local_wo = m_to_world.value().inverse() * (-si.wi);
+        Float cos_theta = Frame3f::cos_theta(local_wo),
+              gamma = dr::unit_angle(Vector3f(sun_dir), local_wo);
+
+        active &= (cos_theta >= 0) && (sun_dir.y() < 0.5f * dr::Pi<Float>);
+        Mask hit_sun = active &
+            (dr::dot(sun_dir, local_wo) >= dr::cos(m_sun_half_aperture));
+
+        USpec res = 0.f;
+        if constexpr (!is_spectral_v<Spectrum>) {
+            USpecUInt32 idx = dr::zeros<USpecUInt32>();
+            if constexpr (is_rgb_v<Spectrum>)
+                idx = {0, 1, 2};
+            else
+                idx = USpecUInt32(0);
+
+            const auto [ sky_rad, sky_params ] = get_datasets(sun_angles, idx, active);
+
+            res = m_sky_scale * eval_sky<USpec>(cos_theta, gamma, sky_params, sky_rad);
+            res += m_sun_scale * eval_sun<USpec>(idx, cos_theta, gamma, hit_sun) *
+                   get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
+
+            res *= MI_CIE_Y_NORMALIZATION;
+        } else {
+            Wavelength normalized_wavelengths =
+                (si.wavelengths - WAVELENGTHS<ScalarFloat>[0]) / WAVELENGTH_STEP;
+            USpecMask valid_idx = (0.f <= normalized_wavelengths) &
+                                 (normalized_wavelengths <= CHANNEL_COUNT - 1);
+
+            USpecUInt32 query_idx_low = dr::floor2int<USpecUInt32>(normalized_wavelengths);
+            USpecUInt32 query_idx_high = query_idx_low + 1;
+
+            Wavelength lerp_factor = normalized_wavelengths - query_idx_low;
+
+            const auto [ sky_rad_low, sky_params_low ] = get_datasets(sun_angles, query_idx_low, active);
+            const auto [ sky_rad_high, sky_params_high ] = get_datasets(sun_angles, query_idx_high, active);
+
+            // Linearly interpolate the sky's irradiance across the spectrum
+            res = m_sky_scale * dr::lerp(
+                eval_sky<USpec>(cos_theta, gamma, sky_params_low, sky_rad_low),
+                eval_sky<USpec>(cos_theta, gamma, sky_params_high, sky_rad_high),
+                lerp_factor);
+
+            // Linearly interpolate the sun's irradiance across the spectrum
+            USpec sun_rad_low = eval_sun<USpec>(
+                         query_idx_low, cos_theta, gamma, hit_sun & valid_idx);
+            USpec sun_rad_high = eval_sun<USpec>(
+                         query_idx_high, cos_theta, gamma, hit_sun & valid_idx);
+            USpec sun_rad = dr::lerp(sun_rad_low, sun_rad_high, lerp_factor);
+
+            USpec sun_ld = compute_sun_ld<USpec>(
+                query_idx_low, query_idx_high, lerp_factor, gamma,
+                hit_sun & valid_idx
+            );
+
+            res += m_sun_scale * sun_rad * sun_ld * get_area_ratio(m_sun_half_aperture);
+        }
+
+        return depolarizer<Spectrum>(res) & active;
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -427,6 +500,9 @@ public:
     }
 
 protected:
+
+    virtual std::pair<SkyRadData, SkyParamsData>
+    get_datasets(const Point2f& sun_angles, const USpecUInt32& channel_idx, const USpecMask& active) const = 0;
 
     template <typename Spec, typename SkyParamsData, typename SkyRadData>
     Spec eval_sky(const Float &cos_theta, const Float &gamma,
