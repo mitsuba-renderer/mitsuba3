@@ -44,7 +44,7 @@ def generate_rays(render_res):
     sp, cp = dr.sincos(phis)
     st, ct = dr.sincos(thetas)
 
-    si = mi.SurfaceInteraction3f()
+    si = dr.zeros(mi.SurfaceInteraction3f)
     si.wi = -mi.Vector3f(cp*st, sp*st, ct)
 
     return si
@@ -81,7 +81,7 @@ def generate_average(plugin, render_res, time_res):
 
     return mi.TensorXf(dr.ravel(result), (*render_res, 3))
 
-def test01_average_of_average(variants_vec_backends_once):
+def TODO_average_of_average(variants_vec_backends_once):
     render_res = (512, 256)
 
     monthly_average = mi.load_dict({

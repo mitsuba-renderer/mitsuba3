@@ -62,6 +62,7 @@ public:
         dr::make_opaque(m_window_start_time, m_window_end_time,
                         m_start_date, m_end_date, m_location);
 
+        m_nb_days = DateTimeRecord<Float>::get_days_between(m_start_date, m_end_date, m_location);
 
         m_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
         m_sky_radiance = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
@@ -82,80 +83,6 @@ public:
     void parameters_changed(const std::vector<std::string> &keys) override {
         Base::parameters_changed(keys);
         NotImplementedError()
-    }
-
-    Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
-        MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
-
-        // These typedefs concatenate the discrete spectrae together
-        // to make it easier to iterate over them for interpolation
-        using ExtendedSpec = dr::Array<Float, (is_spectral_v<USpec> ? 2 : 1) * dr::size_v<USpec>>;
-        using ExtendedSpecUInt32 = dr::uint32_array_t<ExtendedSpec>;
-        using ExtendedSpecMask   = dr::mask_t<ExtendedSpec>;
-
-        // Compute interpolation coefficients and indices for the wavelengths
-        ExtendedSpec lerp_factor;
-        ExtendedSpecUInt32 channel_idx;
-        ExtendedSpecMask valid_idx = active;
-        if constexpr (is_rgb_v<USpec>) {
-            lerp_factor = 1.f;
-            channel_idx = {0, 1, 2};
-        } else if constexpr (is_spectral_v<USpec>) {
-            Wavelength normalized_wavelengths =
-                (si.wavelengths - WAVELENGTHS<ScalarFloat>[0]) / WAVELENGTH_STEP;
-
-            USpecUInt32 query_idx_low = dr::floor2int<USpecUInt32>(normalized_wavelengths);
-            channel_idx = dr::concat(query_idx_low, query_idx_low + 1);
-
-            Wavelength lerp_factor_wavelength = normalized_wavelengths - query_idx_low;
-            lerp_factor = dr::concat(lerp_factor_wavelength, 1.f - lerp_factor_wavelength);
-
-            valid_idx &= (0.f <= lerp_factor) & (lerp_factor <= 1.f);
-        }
-
-        Datasets datasets = compute_dataset(si.time);
-
-        // Compute angles
-        Vector3f local_wo = m_to_world.value().inverse() * (-si.wi);
-        Float cos_theta = Frame3f::cos_theta(local_wo),
-              gamma = dr::unit_angle(datasets.sun_dir, local_wo);
-
-        active &= cos_theta >= 0 && Frame3f::cos_theta(datasets.sun_dir) > 0.f;
-        Mask hit_sun = dr::dot(datasets.sun_dir, local_wo) >= dr::cos(m_sun_half_aperture);
-
-        // Evaluate the model channel by channel
-        USpec res = 0.f;
-        for (uint32_t idx = 0; idx < dr::size_v<ExtendedSpec>; ++idx) {
-            Float sky_rad = m_sky_scale * eval_sky(channel_idx[idx], cos_theta, gamma, datasets.sky_rad, datasets.sky_params, valid_idx[idx]);
-
-            Float sun_rad = m_sun_scale * Base::get_area_ratio(m_sun_half_aperture) *
-                Base::template eval_sun<Float>(channel_idx[idx], cos_theta, gamma,hit_sun & valid_idx[idx]);
-
-            if constexpr (is_rgb_v<USpec>) {
-                sun_rad *= SPEC_TO_RGB_SUN_CONV;
-            } else if constexpr (is_spectral_v<USpec>) {
-                // TODO sort sun limb darkening
-                sun_rad *= 1.f;
-            }
-
-            res[idx % dr::size_v<USpec>] += lerp_factor[idx] * (sky_rad + sun_rad) * (is_rgb_v<USpec> ? ScalarFloat(MI_CIE_Y_NORMALIZATION) : 1.f);
-        }
-
-        return depolarizer<Spectrum>(res) & active;
-    }
-
-
-    Float eval_sky(const UInt32 &channel_idx,
-        const Float &cos_theta, const Float &gamma,
-        const RadLocal& sky_rad, const ParamsLocal& sky_params,
-        const Mask &active) const {
-
-        using SpecSkyParams = dr::Array<Float, SKY_PARAMS>;
-        SpecSkyParams needed_sky_params = dr::zeros<SpecSkyParams>();
-        for (uint32_t param_idx = 0; param_idx < SKY_PARAMS; ++param_idx)
-            needed_sky_params[param_idx] = sky_params.read(channel_idx * SKY_PARAMS + param_idx, active);
-
-        return Base::template eval_sky<Float>(cos_theta, gamma, needed_sky_params, sky_rad.read(channel_idx, active));
     }
 
     std::pair<Wavelength, Spectrum>
@@ -188,7 +115,7 @@ private:
         date_time.year = m_start_date.year;
         date_time.month = m_start_date.month;
 
-        Float day = dr::clip(time, 0.f, 1.f) *  DateTimeRecord<Float>::get_days_between(m_start_date, m_end_date, m_location);
+        Float day = dr::clip(time, 0.f, 1.f) * m_nb_days;
 
         date_time.day = m_start_date.day + dr::floor2int<Int32>(day);
         date_time.hour = m_window_start_time + (m_window_end_time - m_window_start_time) * dr::fmod(day, 1.f);
@@ -230,46 +157,38 @@ private:
 
     std::pair<SkyRadData, SkyParamsData>
     get_datasets(const Point2f& sun_angles, const USpecUInt32& channel_idx, const USpecMask& active) const override {
-
-    }
-
-    struct Datasets {
-        Vector3f sun_dir;
-        RadLocal sky_rad;
-        ParamsLocal sky_params;
-    };
-
-
-    /**
-     * Computes the sky datasets associated with a given time
-     *
-     * @param time Time value in [0, 1]
-     * @return The ``Datasets`` instance containing the sky parameters, radiance
-     * and associated direction
-     */
-    Datasets compute_dataset(const Float& time) const {
-        const Point2f sun_angles = get_sun_angles(time);
         const Float sun_eta = 0.5f * dr::Pi<Float> - sun_angles.y();
 
-        using ArrayXf = dr::DynamicArray<Float>;
-        ArrayXf sky_rad = Base::template bezier_interp<ArrayXf>(m_sky_radiance, sun_eta);
-        ArrayXf sky_params = Base::template bezier_interp<ArrayXf>(m_sky_params, sun_eta);
-
-        Datasets result = {
-            sph_to_dir(sun_angles.y(), sun_angles.x()),
-            RadLocal(sun_eta), ParamsLocal(sun_eta),
-        };
-
-        for (uint32_t channel_idx = 0; channel_idx < CHANNEL_COUNT; ++channel_idx) {
-            result.sky_rad.write(channel_idx, sky_rad[channel_idx]);
-            for (uint32_t param_idx = 0; param_idx < SKY_PARAMS; ++param_idx) {
-                result.sky_params.write(channel_idx * SKY_PARAMS + param_idx, sky_params[channel_idx * SKY_PARAMS + param_idx]);
-            }
-        }
-
-        return result;
+        return std::make_pair(
+            bezier_interp<SkyRadData>(m_sky_radiance, channel_idx, sun_eta, active),
+            bezier_interp<SkyParamsData>(m_sky_params, channel_idx, sun_eta, active)
+        );
     }
 
+    template<typename Dataset>
+    Dataset bezier_interp(const TensorXf& dataset, const USpecUInt32& channel_idx, const Float& eta, const USpecMask& active) const {
+
+        Dataset res = dr::zeros<Dataset>();
+        Float x = dr::cbrt(2 * dr::InvPi<Float> * eta);
+        constexpr dr::scalar_t<Float> coefs[SKY_CTRL_PTS] = {1, 5, 10, 10, 5, 1};
+
+        Float x_pow = 1.f, x_pow_inv = dr::pow(1.f - x, SKY_CTRL_PTS - 1);
+        Float x_pow_inv_scale = dr::rcp(1.f - x);
+
+        for (uint32_t ctrl_pt = 0; ctrl_pt < SKY_CTRL_PTS; ++ctrl_pt) {
+            TensorXf temp = dr::take(dataset, ctrl_pt);
+            Dataset data_ctrl_pt = dr::gather<Dataset>(
+                temp.array(), channel_idx, active
+            );
+
+            res += data_ctrl_pt * coefs[ctrl_pt] * x_pow * x_pow_inv;
+
+            x_pow *= x;
+            x_pow_inv *= x_pow_inv_scale;
+        }
+
+        return res;
+    }
 
     // ================================================================================================
     // ========================================= ATTRIBUTES ===========================================
@@ -278,6 +197,8 @@ private:
     Float m_window_start_time, m_window_end_time;
     DateTimeRecord<Float> m_start_date, m_end_date;
     LocationRecord<Float> m_location;
+
+    Int32 m_nb_days;
 
     // ========= Radiance parameters =========
     TensorXf m_sky_params;
