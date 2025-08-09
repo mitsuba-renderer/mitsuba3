@@ -449,7 +449,7 @@ public:
         std::tie(sky_pdf, sun_pdf) = compute_pdfs(sample_dir, sun_angles, pick_sky, active);
         ds.pdf = dr::lerp(sun_pdf, sky_pdf, m_sky_sampling_w);
 
-        Spectrum res = this->eval(si, active) / ds.pdf;
+        Spectrum res = eval(si, active) / ds.pdf;
                  res &= dr::isfinite(res);
         return { ds, res };
     }
@@ -477,7 +477,7 @@ public:
         si.time = it.time;
         si.wi = -ds.d;
 
-        return this->eval(si, active);
+        return eval(si, active);
     }
 
     std::pair<PositionSample3f, Float>
@@ -617,25 +617,6 @@ protected:
         );
 
         return dr::take_interp(res, rep_albedo);
-    }
-
-    template<typename Dataset>
-    Dataset bezier_interp(const TensorXf& dataset, const Float& eta) const {
-        Dataset res = dr::zeros<Dataset>(dataset.size() / dataset.shape(0));
-
-        Float x = dr::cbrt(2 * dr::InvPi<Float> * eta);
-        constexpr dr::scalar_t<Float> coefs[SKY_CTRL_PTS] = {1, 5, 10, 10, 5, 1};
-
-        Float x_pow = 1.f, x_pow_inv = dr::pow(1.f - x, SKY_CTRL_PTS - 1);
-        Float x_pow_inv_scale = dr::rcp(1.f - x);
-        for (uint32_t ctrl_pt = 0; ctrl_pt < SKY_CTRL_PTS; ++ctrl_pt) {
-            res += dr::take(dataset, ctrl_pt) * coefs[ctrl_pt] * x_pow * x_pow_inv;
-
-            x_pow *= x;
-            x_pow_inv *= x_pow_inv_scale;
-        }
-
-        return res;
     }
 
     /**

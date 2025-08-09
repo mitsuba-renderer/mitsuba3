@@ -208,10 +208,10 @@ public:
 
         // ================= Compute datasets =================
         TensorXf temp_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
-        m_sky_params = Base::template bezier_interp<FloatStorage>(temp_sky_params, sun_eta);
+        m_sky_params = bezier_interp(temp_sky_params, sun_eta);
 
         TensorXf temp_sky_radiance = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
-        m_sky_radiance = Base::template bezier_interp<FloatStorage>(temp_sky_radiance, sun_eta);
+        m_sky_radiance = bezier_interp(temp_sky_radiance, sun_eta);
 
         m_gaussian_distr = build_tgmm_distribution(m_tgmm_tables);
 
@@ -273,10 +273,10 @@ public:
         // Update sky
         if (changed_sun_dir || changed_atmosphere) {
             TensorXf temp_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
-            m_sky_params = Base::template bezier_interp<FloatStorage>(temp_sky_params, eta);
+            m_sky_params = bezier_interp(temp_sky_params, eta);
 
             TensorXf temp_sky_radiance = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
-            m_sky_radiance = Base::template bezier_interp<FloatStorage>(temp_sky_radiance, eta);
+            m_sky_radiance = bezier_interp(temp_sky_radiance, eta);
         }
 
         // Update TGMM (no dependance on albedo)
@@ -378,6 +378,24 @@ private:
                               idx_mod;
 
         return std::make_pair(gaussian_idx, temp_sample);
+    }
+
+    FloatStorage bezier_interp(const TensorXf& dataset, const Float& eta) const {
+        FloatStorage res = dr::zeros<FloatStorage>(dataset.size() / dataset.shape(0));
+
+        Float x = dr::cbrt(2 * dr::InvPi<Float> * eta);
+        constexpr dr::scalar_t<Float> coefs[SKY_CTRL_PTS] = {1, 5, 10, 10, 5, 1};
+
+        Float x_pow = 1.f, x_pow_inv = dr::pow(1.f - x, SKY_CTRL_PTS - 1);
+        Float x_pow_inv_scale = dr::rcp(1.f - x);
+        for (uint32_t ctrl_pt = 0; ctrl_pt < SKY_CTRL_PTS; ++ctrl_pt) {
+            res += dr::take(dataset, ctrl_pt) * coefs[ctrl_pt] * x_pow * x_pow_inv;
+
+            x_pow *= x;
+            x_pow_inv *= x_pow_inv_scale;
+        }
+
+        return res;
     }
 
     /**
