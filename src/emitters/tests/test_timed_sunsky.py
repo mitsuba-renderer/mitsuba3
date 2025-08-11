@@ -1,39 +1,34 @@
 import pytest
+import numpy as np
 
 import drjit as dr
 import mitsuba as mi
 
 UINT_32_MAX = (1 << 32) - 1
 
-def TimedSunskyAdapter_(plugin_dict):
+def TimedSunskyAdapter(plugin, time_value):
     """
     Extracts the sampling and pdf functions of a TimedSunskyEmitter
     It also adds a varying time in order to get more code coverage
-    :param plugin_dict: TimedSunskyEmitter under it's mitsuba dictionary format
+    :param plugin: TimedSunskyPlugin
+    :param time_value: Time value for the current Chi2 test
     :return: Sampling function and pdf function
     """
     def sample_functor(sample, *args):
-        n = dr.width(sample)
-        plugin = mi.load_dict(plugin_dict)
         si = dr.zeros(mi.Interaction3f)
-        si.time = dr.linspace(mi.Float, 0, 1, n)
+        si.time = mi.Float(time_value)
         ds, w = plugin.sample_direction(si, sample)
         return ds.d
 
     def pdf_functor(wo, *args):
-        n = dr.width(wo)
-        plugin = mi.load_dict(plugin_dict)
         si = dr.zeros(mi.Interaction3f)
         ds = dr.zeros(mi.DirectionSample3f)
         ds.d = wo
-        ds.time = dr.linspace(mi.Float, 0, 1, n)
+        ds.time = mi.Float(time_value)
 
         return plugin.pdf_direction(si, ds)
 
     return sample_functor, pdf_functor
-
-TimedSunskyAdapter = TimedSunskyAdapter_ if False else \
-                            lambda dict_args: mi.chi2.EmitterAdapter("timed_sunsky", dict_args)
 
 def generate_rays(render_res):
     phis, thetas = dr.meshgrid(
@@ -166,27 +161,29 @@ def test02_average_of_an_instant(variants_vec_backends_once, hour):
 def test03_sky_sampling(variants_vec_backends_once, turb, start_day):
     from .test_sunsky import CroppedSphericalDomain
 
-    timed_sunsky = {
+    timed_sunsky = mi.load_dict({
         "type": "timed_sunsky",
         "start_day": start_day,
 
         "sun_scale": 0.0,
         "turbidity": turb,
         "albedo": 0.5
-    }
+    })
 
-    sample_func, pdf_func = TimedSunskyAdapter(timed_sunsky)
-    test = mi.chi2.ChiSquareTest(
-        domain=CroppedSphericalDomain(),
-        pdf_func= pdf_func,
-        sample_func= sample_func,
-        sample_dim=2,
-        sample_count=200_000,
-        res=55,
-        ires=32
-    )
+    for time in np.linspace(0, 1, 6):
+        sample_func, pdf_func = TimedSunskyAdapter(timed_sunsky, time)
 
-    assert test.run(), "Chi2 test failed"
+        test = mi.chi2.ChiSquareTest(
+            domain=CroppedSphericalDomain(),
+            pdf_func= pdf_func,
+            sample_func= sample_func,
+            sample_dim=2,
+            sample_count=400_000,
+            res=85,
+            ires=32
+        )
+
+        assert test.run(), f"Chi2 test failed at {time=}"
 
 
 @pytest.mark.slow
@@ -195,24 +192,25 @@ def test03_sky_sampling(variants_vec_backends_once, turb, start_day):
 def test04_sun_and_sky_sampling(variants_vec_backends_once, turb, start_day):
     from .test_sunsky import CroppedSphericalDomain
 
-    timed_sunsky = {
+    timed_sunsky = mi.load_dict({
         "type": "timed_sunsky",
         "turbidity": turb,
         "start_day": start_day,
         # Increase the sun aperture to avoid errors with chi2's resolution
         "sun_aperture": 30.0,
         "albedo": 0.5
-    }
+    })
 
-    sample_func, pdf_func = TimedSunskyAdapter(timed_sunsky)
-    test = mi.chi2.ChiSquareTest(
-        domain=CroppedSphericalDomain(),
-        pdf_func= pdf_func,
-        sample_func= sample_func,
-        sample_dim=2,
-        sample_count=200_000,
-        res=55,
-        ires=32
-    )
+    for time in np.linspace(0, 1, 6):
+        sample_func, pdf_func = TimedSunskyAdapter(timed_sunsky, time)
+        test = mi.chi2.ChiSquareTest(
+            domain=CroppedSphericalDomain(),
+            pdf_func= pdf_func,
+            sample_func= sample_func,
+            sample_dim=2,
+            sample_count=200_000,
+            res=55,
+            ires=32
+        )
 
-    assert test.run(), "Chi2 test failed"
+        assert test.run(), f"Chi2 test failed at {time=}"

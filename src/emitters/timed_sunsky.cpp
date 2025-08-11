@@ -158,10 +158,11 @@ private:
     std::pair<SkyRadData, SkyParamsData>
     get_datasets(const Point2f& sun_angles, const USpecUInt32& channel_idx, const USpecMask& active) const override {
         const Float sun_eta = 0.5f * dr::Pi<Float> - sun_angles.y();
+        USpecMask active_dataset = active & (sun_eta >= 0.f);
 
         return std::make_pair(
-            bezier_interp<SkyRadData>(m_sky_radiance, channel_idx, sun_eta, active),
-            bezier_interp<SkyParamsData>(m_sky_params, channel_idx, sun_eta, active)
+            bezier_interp<SkyRadData>(m_sky_radiance, channel_idx, sun_eta, active_dataset),
+            bezier_interp<SkyParamsData>(m_sky_params, channel_idx, sun_eta, active_dataset)
         );
     }
 
