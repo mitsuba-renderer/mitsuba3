@@ -56,7 +56,10 @@ public:
             m_start_date, m_end_date, m_location
         );
 
-        m_nb_days = DateTimeRecord<Float>::get_days_between(m_start_date, m_end_date, m_location);
+        m_nb_days = dr::maximum(
+            DateTimeRecord<Float>::get_days_between(m_start_date, m_end_date, m_location) - 1,
+            1
+        );
 
         m_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
         m_sky_radiance = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
@@ -73,7 +76,14 @@ public:
         cb->put("latitude",  m_location.latitude,  ParamFlags::NonDifferentiable);
         cb->put("longitude", m_location.longitude, ParamFlags::NonDifferentiable);
         cb->put("timezone",  m_location.timezone,  ParamFlags::NonDifferentiable);
-        NotImplementedError()
+        cb->put("window_start_time", m_window_start_time, ParamFlags::NonDifferentiable);
+        cb->put("window_end_time", m_window_start_time, ParamFlags::NonDifferentiable);
+        cb->put("start_year", m_start_date.year, ParamFlags::NonDifferentiable);
+        cb->put("start_month", m_start_date.month, ParamFlags::NonDifferentiable);
+        cb->put("start_day", m_start_date.day, ParamFlags::NonDifferentiable);
+        cb->put("end_year", m_end_date.year, ParamFlags::NonDifferentiable);
+        cb->put("end_month", m_end_date.month, ParamFlags::NonDifferentiable);
+        cb->put("end_day", m_end_date.day, ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -89,7 +99,10 @@ public:
             m_start_date, m_end_date
         );
 
-        m_nb_days = DateTimeRecord<Float>::get_days_between(m_start_date, m_end_date, m_location);
+        m_nb_days = dr::maximum(
+            DateTimeRecord<Float>::get_days_between(m_start_date, m_end_date, m_location) - 1,
+            1
+        );
 
         m_sky_radiance = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
         m_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
@@ -125,10 +138,11 @@ private:
         date_time.year = m_start_date.year;
         date_time.month = m_start_date.month;
 
-        Float day = dr::clip(time, 0.f, 1.f) * m_nb_days;
+        Float day = dr::clip(time, 0.f, 1.f) * (m_nb_days - dr::Epsilon<Float>);
+        Int32 int_day = dr::floor2int<Int32>(day);
 
-        date_time.day = m_start_date.day + dr::floor2int<Int32>(day);
-        date_time.hour = m_window_start_time + (m_window_end_time - m_window_start_time) * dr::fmod(day, 1.f);
+        date_time.day = m_start_date.day + int_day;
+        date_time.hour = m_window_start_time + (m_window_end_time - m_window_start_time) * (day - int_day);
 
         const auto [sun_elevation, sun_azimuth] = Base::sun_coordinates(date_time, m_location);
         return {sun_azimuth, sun_elevation};

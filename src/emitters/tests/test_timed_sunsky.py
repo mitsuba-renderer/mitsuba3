@@ -49,10 +49,10 @@ def generate_average(plugin, render_res, time_res):
     pixel_idx = dr.arange(mi.UInt32, nb_rays)
 
     rays = generate_rays(render_res).wi
-    times = mi.PCG32(size=time_res).next_float32()
+    times = dr.linspace(mi.Float, 0, 1, time_res)
 
     time_width = UINT_32_MAX // nb_rays
-    time_width = dr.minimum(time_width, time_width)
+    time_width = dr.minimum(time_width, time_res)
 
     if time_width * nb_rays > UINT_32_MAX:
         time_width -= 1
@@ -76,8 +76,8 @@ def generate_average(plugin, render_res, time_res):
 
     return mi.TensorXf(dr.ravel(result), (*render_res, 3))
 
-def TODO_average_of_average(variants_vec_backends_once):
-    render_res = (512, 256)
+def test01_average_of_average():
+    render_res = (64, 32)
 
     monthly_average = mi.load_dict({
         "type": "timed_sunsky",
@@ -93,7 +93,9 @@ def TODO_average_of_average(variants_vec_backends_once):
         "end_day": 1
     })
 
-    january_image = generate_average(monthly_average, render_res, 31 * 500)
+    samples_per_day = 500
+
+    january_image = generate_average(monthly_average, render_res, 31*samples_per_day)
 
     # Update emitter to average in february
     monthly_params = mi.traverse(monthly_average)
@@ -101,16 +103,16 @@ def TODO_average_of_average(variants_vec_backends_once):
     monthly_params["end_month"] = 3
     monthly_params.update()
 
-    february_image = generate_average(monthly_average, render_res, 28 * 500)
+    february_image = generate_average(monthly_average, render_res, 28*samples_per_day)
 
     average_of_average = (31 / 59) * january_image + (28 / 59) * february_image
-    real_average = generate_average(bimonthly_average, render_res, (31 + 28) * 500)
+    real_average = generate_average(bimonthly_average, render_res, (31 + 28)*samples_per_day)
 
     err = dr.mean(dr.abs(average_of_average - real_average) / (dr.abs(real_average) + 0.001), axis=None)
 
-    assert err < 0.0001, f"Average of average is incorrect {err = }"
+    assert err < 0.01, f"Average of average is incorrect {err = }"
 
-@pytest.mark.parametrize("hour", [10, 14.3])
+@pytest.mark.parametrize("hour", [10.83, 14.3, 15.24])
 def test02_average_of_an_instant(variants_vec_backends_once, hour):
     render_res = (512, 254)
 
@@ -138,22 +140,9 @@ def test02_average_of_an_instant(variants_vec_backends_once, hour):
     point_average_res = point_average.eval(rays)
     sky_res = sky.eval(rays)
 
-    # We cut the image in two, removing the 2-pixel strip around the horizon
-    # In order to avoid issues with texture interpolation
+    err = dr.mean(dr.abs(point_average_res - sky_res) / (dr.abs(sky_res) + 0.001), axis=None)
+    assert err < 0.00001, f"Top portion of the image does not match reference {err = }"
 
-    half_image_idx_top = dr.arange(mi.UInt32, render_res[0] * (render_res[1]//2 - 1))
-    sky_top = dr.gather(mi.Spectrum, sky_res, half_image_idx_top)
-    point_average_top = dr.gather(mi.Spectrum, point_average_res, half_image_idx_top)
-
-    half_image_idx_bot = half_image_idx_top + render_res[0] * (render_res[1]//2 + 1)
-    sky_bottom = dr.gather(mi.Spectrum, sky_res, half_image_idx_bot)
-    point_average_bottom = dr.gather(mi.Spectrum, point_average_res, half_image_idx_bot)
-
-    err = dr.mean(dr.abs(point_average_top - sky_top) / (dr.abs(sky_top) + 0.001), axis=None)
-    assert err < 0.003, f"Top portion of the image does not match reference {err = }"
-
-    err = dr.mean(dr.abs(point_average_bottom - sky_bottom) / (dr.abs(sky_bottom) + 0.001), axis=None)
-    assert err < 0.0001, f"Bottom portion of the image does not match reference {err = }"
 
 @pytest.mark.slow
 @pytest.mark.parametrize("turb",      [2.2, 4.8, 6.0])
@@ -179,7 +168,7 @@ def test03_sky_sampling(variants_vec_backends_once, turb, start_day):
             sample_func= sample_func,
             sample_dim=2,
             sample_count=400_000,
-            res=85,
+            res=95,
             ires=32
         )
 
@@ -208,8 +197,8 @@ def test04_sun_and_sky_sampling(variants_vec_backends_once, turb, start_day):
             pdf_func= pdf_func,
             sample_func= sample_func,
             sample_dim=2,
-            sample_count=200_000,
-            res=55,
+            sample_count=400_000,
+            res=85,
             ires=32
         )
 
