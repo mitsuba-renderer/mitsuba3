@@ -1,4 +1,3 @@
-#include <drjit/local.h>
 #include <mitsuba/render/sunsky.h>
 
 
@@ -10,7 +9,7 @@ public:
     MI_IMPORT_BASE(BaseSunskyEmitter,
         m_turbidity, m_sky_scale, m_sun_scale, m_albedo,
         m_sun_half_aperture, m_sky_rad_dataset, m_tgmm_tables,
-        m_sky_params_dataset, m_sky_sampling_w,
+        m_sky_params_dataset, m_sky_sampling_w, m_sun_radiance,
         CHANNEL_COUNT, m_to_world
     )
 
@@ -24,12 +23,6 @@ public:
     using typename Base::USpecMask;
 
     MI_IMPORT_TYPES()
-
-private:
-    using RadLocal = dr::Local<Float, CHANNEL_COUNT>;
-    using ParamsLocal = dr::Local<Float, SKY_PARAMS * CHANNEL_COUNT>;
-
-public:
 
     TimedSunskyEmitter(const Properties &props) : Base(props) {
 
@@ -58,9 +51,10 @@ public:
 
         m_start_date = start_date;
         m_end_date = end_date;
-
-        dr::make_opaque(m_window_start_time, m_window_end_time,
-                        m_start_date, m_end_date, m_location);
+        dr::make_opaque(
+            m_window_start_time, m_window_end_time,
+            m_start_date, m_end_date, m_location
+        );
 
         m_nb_days = DateTimeRecord<Float>::get_days_between(m_start_date, m_end_date, m_location);
 
@@ -70,6 +64,8 @@ public:
         // TODO find better weighing
         m_sky_sampling_w = m_sky_scale / (m_sky_scale + m_sun_scale);
         m_sky_sampling_w = dr::select(dr::isnan(m_sky_sampling_w), 0.f, m_sky_sampling_w);
+
+        dr::make_opaque(m_sky_sampling_w);
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -82,7 +78,21 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         Base::parameters_changed(keys);
-        NotImplementedError()
+
+        // TODO find better weighing
+        m_sky_sampling_w = m_sky_scale / (m_sky_scale + m_sun_scale);
+        m_sky_sampling_w = dr::select(dr::isnan(m_sky_sampling_w), 0.f, m_sky_sampling_w);
+
+        dr::make_opaque(
+            m_sky_sampling_w, m_location,
+            m_window_start_time, m_window_end_time,
+            m_start_date, m_end_date
+        );
+
+        m_nb_days = DateTimeRecord<Float>::get_days_between(m_start_date, m_end_date, m_location);
+
+        m_sky_radiance = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
+        m_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
     }
 
     std::pair<Wavelength, Spectrum>
@@ -204,7 +214,6 @@ private:
     // ========= Radiance parameters =========
     TensorXf m_sky_params;
     TensorXf m_sky_radiance;
-    FloatStorage m_sun_radiance;
 
 };
 

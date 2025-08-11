@@ -209,6 +209,7 @@ public:
         if (m_albedo_tex->is_spatially_varying())
             Log(Error, "Expected a non-spatially varying radiance spectra!");
         m_albedo = extract_albedo(m_albedo_tex);
+        dr::make_opaque(m_albedo);
 
 
         const std::string dataset_type = is_rgb_v<Spectrum> ? "_rgb" : "_spec";
@@ -265,16 +266,11 @@ public:
         if (keys.empty() || string::contains(keys, "albedo"))
             m_albedo = extract_albedo(m_albedo_tex);
 
-        #define CHANGED(word) string::contains(keys, word)
-        bool changed_atmosphere = keys.empty() || CHANGED("albedo") || CHANGED("turbidity");
+        dr::make_opaque(m_turbidity, m_albedo);
 
         // Update sun
-        if (changed_atmosphere) {
-            m_sun_radiance =
-                dr::take_interp(m_sun_rad_dataset, m_turbidity - 1.f);
-        }
-
-        #undef CHANGED
+        if (keys.empty() || string::contains(keys, "turbidity"))
+            m_sun_radiance = dr::take_interp(m_sun_rad_dataset, m_turbidity - 1.f);
 
     }
 
@@ -968,7 +964,7 @@ protected:
     ref<Texture> m_albedo_tex;
     FloatStorage m_albedo;
 
-    Float m_sky_sampling_w = 0.5f;
+    Float m_sky_sampling_w;
     ScalarFloat m_sun_half_aperture;
 
     // Precomputed dataset
