@@ -222,8 +222,6 @@ public:
         m_sky_sampling_w = sampling_w;
         m_spectral_distr = wav_dist;
 
-        // ================= GENERAL PARAMETERS =================
-
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -245,6 +243,8 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         Base::parameters_changed(keys);
+
+        dr::make_opaque(m_sun_dir, m_time, m_location);
 
         #define CHANGED(word) string::contains(keys, word)
 
@@ -279,7 +279,7 @@ public:
             m_sky_radiance = bezier_interp(temp_sky_radiance, eta);
         }
 
-        // Update TGMM (no dependance on albedo)
+        // Update TGMM (no dependence on albedo)
         if (changed_sun_dir || CHANGED("turbidity"))
             m_gaussian_distr = build_tgmm_distribution(m_tgmm_tables);
 
