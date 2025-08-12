@@ -329,8 +329,8 @@ public:
 
             Wavelength lerp_factor = normalized_wavelengths - query_idx_low;
 
-            const auto [ sky_rad_low, sky_params_low ] = get_datasets(sun_angles, query_idx_low, active);
-            const auto [ sky_rad_high, sky_params_high ] = get_datasets(sun_angles, query_idx_high, active);
+            const auto [ sky_rad_low, sky_params_low ] = get_datasets(sun_angles, query_idx_low, active & valid_idx);
+            const auto [ sky_rad_high, sky_params_high ] = get_datasets(sun_angles, query_idx_high, active & valid_idx);
 
             // Linearly interpolate the sky's irradiance across the spectrum
             res = m_sky_scale * dr::lerp(
