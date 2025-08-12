@@ -58,10 +58,7 @@ public:
             m_start_date, m_end_date, m_location
         );
 
-        m_nb_days = dr::maximum(
-            DateTimeRecord<Float>::get_days_between(m_start_date, m_end_date, m_location) - 1,
-            1
-        );
+        m_nb_days = DateTimeRecord<Float>::get_days_between(m_start_date, m_end_date, m_location);
 
         m_sky_rad = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
         m_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
@@ -82,7 +79,7 @@ public:
         cb->put("longitude", m_location.longitude, ParamFlags::NonDifferentiable);
         cb->put("timezone",  m_location.timezone,  ParamFlags::NonDifferentiable);
         cb->put("window_start_time", m_window_start_time, ParamFlags::NonDifferentiable);
-        cb->put("window_end_time", m_window_start_time, ParamFlags::NonDifferentiable);
+        cb->put("window_end_time", m_window_end_time, ParamFlags::NonDifferentiable);
         cb->put("start_year", m_start_date.year, ParamFlags::NonDifferentiable);
         cb->put("start_month", m_start_date.month, ParamFlags::NonDifferentiable);
         cb->put("start_day", m_start_date.day, ParamFlags::NonDifferentiable);
@@ -100,10 +97,7 @@ public:
             m_start_date, m_end_date
         );
 
-        m_nb_days = dr::maximum(
-            DateTimeRecord<Float>::get_days_between(m_start_date, m_end_date, m_location) - 1,
-            1
-        );
+        m_nb_days = DateTimeRecord<Float>::get_days_between(m_start_date, m_end_date, m_location);
 
         m_sky_rad = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
         m_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
@@ -135,44 +129,25 @@ public:
     }
 
     std::string to_string() const override {
+        std::string base_str = Base::to_string();
         std::ostringstream oss;
-        oss << "SunskyEmitter[" << std::endl
-            << "  turbidity = " << string::indent(m_turbidity) << std::endl
-            << "  sky_scale = " << string::indent(m_sky_scale) << std::endl
-            << "  sun_scale = " << string::indent(m_sun_scale) << std::endl
-            << "  albedo = " << string::indent(m_albedo) << std::endl
-            << "  sun aperture (°) = " << string::indent(dr::rad_to_deg(2 * m_sun_half_aperture)) << std::endl;
-        oss << "]";
+        oss << "TimedSunskyEmitter["
+            << "\n\tWindow start time = " << m_window_start_time
+            << "\n\tWindow end time = " << m_window_end_time
+            << "\n\tStart year = " << m_start_date.year
+            << "\n\tStart month = " << m_start_date.month
+            << "\n\tStart day = " << m_start_date.day
+            << "\n\tEnd year = " << m_end_date.year
+            << "\n\tEnd month = " << m_end_date.month
+            << "\n\tEnd day = " << m_end_date.day
+            << "\n\tLocation = " << m_location.to_string()
+            << base_str << "\n]";
         return oss.str();
     }
 
     MI_DECLARE_CLASS(TimedSunskyEmitter)
 
 private:
-
-    FloatStorage compute_sky_sampling_weights() const {
-        using UInt32Storage = dr::uint32_array_t<FloatStorage>;
-        using FullSpectrumStorage = unpolarized_spectrum_t<
-            mitsuba::Spectrum<FloatStorage, WAVELENGTH_COUNT>
-        >;
-
-        UInt32Storage elevation_idx = dr::arange<UInt32Storage>(ELEVATION_CTRL_PTS);
-
-        FullSpectrumStorage wavelengths = {
-            320, 360, 400, 440, 480, 520, 560, 600, 640, 680, 720
-        };
-
-        FloatStorage sky_irrad_data = dr::take_interp(m_sky_irrad_dataset, m_turbidity),
-                     sun_irrad_data = dr::take_interp(m_sun_irrad_dataset, m_turbidity);
-
-        FullSpectrumStorage sky_irrad = dr::gather<FullSpectrumStorage>(sky_irrad_data, elevation_idx),
-                            sun_irrad = dr::gather<FullSpectrumStorage>(sun_irrad_data, elevation_idx);
-
-        FloatStorage sky_lum = m_sky_scale * luminance(sky_irrad, wavelengths),
-                     sun_lum = m_sun_scale * luminance(sun_irrad, wavelengths);
-
-        return sky_lum / (sky_lum + sun_lum);
-    }
 
     Point2f get_sun_angles(const Float& time) const override {
         DateTimeRecord<Float> date_time = dr::zeros<DateTimeRecord<Float>>();
@@ -187,6 +162,17 @@ private:
 
         const auto [sun_elevation, sun_azimuth] = Base::sun_coordinates(date_time, m_location);
         return {sun_azimuth, sun_elevation};
+    }
+
+    std::pair<SkyRadData, SkyParamsData>
+    get_sky_datasets(const Point2f& sun_angles, const USpecUInt32& channel_idx, const USpecMask& active) const override {
+        const Float sun_eta = 0.5f * dr::Pi<Float> - sun_angles.y();
+        USpecMask active_dataset = active & (sun_eta >= 0.f);
+
+        return std::make_pair(
+            bezier_interp<SkyRadData>(m_sky_rad, channel_idx, sun_eta, active_dataset),
+            bezier_interp<SkyParamsData>(m_sky_params, channel_idx, sun_eta, active_dataset)
+        );
     }
 
     Float get_sky_sampling_weight(const Point2f& sun_angles, const Mask& active) const override {
@@ -235,16 +221,43 @@ private:
         return std::make_pair(res_gaussian_idx, (sample - last_cdf) / (cdf - last_cdf));
     }
 
-    std::pair<SkyRadData, SkyParamsData>
-    get_datasets(const Point2f& sun_angles, const USpecUInt32& channel_idx, const USpecMask& active) const override {
-        const Float sun_eta = 0.5f * dr::Pi<Float> - sun_angles.y();
-        USpecMask active_dataset = active & (sun_eta >= 0.f);
+    // ================================================================================================
+    // ===================================== SAMPLING FUNCTIONS =======================================
+    // ================================================================================================
 
-        return std::make_pair(
-            bezier_interp<SkyRadData>(m_sky_rad, channel_idx, sun_eta, active_dataset),
-            bezier_interp<SkyParamsData>(m_sky_params, channel_idx, sun_eta, active_dataset)
-        );
+    /**
+     * \brief Computed the probabilities of sampling the sky over the sun for 30
+     *      different angles
+     * @return 30 different weights for sun angles ranging from 2 degrees to 89
+     * degrees
+     */
+    FloatStorage compute_sky_sampling_weights() const {
+        using UInt32Storage = dr::uint32_array_t<FloatStorage>;
+        using FullSpectrumStorage = unpolarized_spectrum_t<
+            mitsuba::Spectrum<FloatStorage, WAVELENGTH_COUNT>
+        >;
+
+        UInt32Storage elevation_idx = dr::arange<UInt32Storage>(ELEVATION_CTRL_PTS);
+
+        FullSpectrumStorage wavelengths = {
+            320, 360, 400, 440, 480, 520, 560, 600, 640, 680, 720
+        };
+
+        FloatStorage sky_irrad_data = dr::take_interp(m_sky_irrad_dataset, m_turbidity),
+                     sun_irrad_data = dr::take_interp(m_sun_irrad_dataset, m_turbidity);
+
+        FullSpectrumStorage sky_irrad = dr::gather<FullSpectrumStorage>(sky_irrad_data, elevation_idx),
+                            sun_irrad = dr::gather<FullSpectrumStorage>(sun_irrad_data, elevation_idx);
+
+        FloatStorage sky_lum = m_sky_scale * luminance(sky_irrad, wavelengths),
+                     sun_lum = m_sun_scale * luminance(sun_irrad, wavelengths);
+
+        return sky_lum / (sky_lum + sun_lum);
     }
+
+    // ================================================================================================
+    // ====================================== HELPER FUNCTIONS ========================================
+    // ================================================================================================
 
     template<typename Dataset>
     Dataset bezier_interp(const TensorXf& dataset, const USpecUInt32& channel_idx, const Float& eta, const USpecMask& active) const {

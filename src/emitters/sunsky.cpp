@@ -177,6 +177,10 @@ public:
             m_active_record = false;
             m_sun_dir = dr::normalize(props.get<ScalarVector3f>("sun_direction"));
             dr::make_opaque(m_sun_dir);
+
+            if (dr::any(m_sun_dir.z() < 0.f))
+                Log(Warn, "The sun is below the horizon at the specified time and location!");
+
         } else {
             m_location.latitude  = props.get<ScalarFloat>("latitude", 35.6894f);
             m_location.longitude = props.get<ScalarFloat>("longitude", 139.6917f);
@@ -230,9 +234,9 @@ public:
             cb->put("latitude",  m_location.latitude,  ParamFlags::NonDifferentiable);
             cb->put("longitude", m_location.longitude, ParamFlags::NonDifferentiable);
             cb->put("timezone",  m_location.timezone,  ParamFlags::NonDifferentiable);
-            cb->put("year",      m_time.year,          ParamFlags::NonDifferentiable);
-            cb->put("day",       m_time.day,           ParamFlags::NonDifferentiable);
-            cb->put("month",     m_time.month,         ParamFlags::NonDifferentiable);
+            cb->put("year",             m_time.year,              ParamFlags::NonDifferentiable);
+            cb->put("day",              m_time.day,               ParamFlags::NonDifferentiable);
+            cb->put("month",            m_time.month,             ParamFlags::NonDifferentiable);
             cb->put("hour",      m_time.hour,          ParamFlags::NonDifferentiable);
             cb->put("minute",    m_time.minute,        ParamFlags::NonDifferentiable);
             cb->put("second",    m_time.second,        ParamFlags::NonDifferentiable);
@@ -317,21 +321,16 @@ public:
     }
 
     std::string to_string() const override {
+        std::string base_str = Base::to_string();
         std::ostringstream oss;
-        oss << "SunskyEmitter[" << std::endl
-            << "  bsphere = " << string::indent(m_bsphere) << std::endl
-            << "  turbidity = " << string::indent(m_turbidity) << std::endl
-            << "  sky_scale = " << string::indent(m_sky_scale) << std::endl
-            << "  sun_scale = " << string::indent(m_sun_scale) << std::endl
-            << "  albedo = " << string::indent(m_albedo) << std::endl
-            << "  sun aperture (°) = " << string::indent(dr::rad_to_deg(2 * m_sun_half_aperture)) << std::endl;
+        oss << "SunskyEmitter[";
         if (m_active_record) {
-            oss << "  location = " << m_location.to_string() << std::endl
-                << "  date_time = " << m_time.to_string() << std::endl;
+            oss << "\n\tLocation = " << m_location.to_string()
+                << "\n\tDate and time = " << m_time.to_string();
         } else {
-            oss << "  sun_dir = " << string::indent(m_sun_dir) << std::endl;
+            oss << "\n\tSun dir = " << m_sun_dir;
         }
-        oss << "]";
+        oss << base_str << "\n]";
         return oss.str();
     }
 
@@ -339,25 +338,16 @@ public:
 
 private:
 
+    Point2f get_sun_angles(const Float&) const override {
+        return m_sun_angles;
+    }
+
     std::pair<SkyRadData, SkyParamsData>
-    get_datasets(const Point2f&, const USpecUInt32& channel_idx, const USpecMask& active) const override {
+    get_sky_datasets(const Point2f&, const USpecUInt32& channel_idx, const USpecMask& active) const override {
         SkyRadData mean_rad = dr::gather<SkyRadData>(m_sky_radiance, channel_idx, active);
         SkyParamsData coefs = dr::gather<SkyParamsData>(m_sky_params, channel_idx, active);
 
         return std::make_pair(mean_rad, coefs);
-    }
-
-    template <typename Spec>
-    Spec eval_sky(const dr::uint32_array_t<Spec> &channel_idx, const Float &cos_theta, const Float &gamma, const dr::mask_t<Spec> &active) const {
-        using SpecSkyParams = dr::Array<Spec, SKY_PARAMS>;
-        Spec mean_rad       = dr::gather<Spec>(m_sky_radiance, channel_idx, active);
-        SpecSkyParams coefs = dr::gather<SpecSkyParams>(m_sky_params, channel_idx, active);
-
-        return Base::template eval_sky<Spec>(cos_theta, gamma, coefs, mean_rad);
-    }
-
-    Point2f get_sun_angles(const Float&) const override {
-        return m_sun_angles;
     }
 
     Float get_sky_sampling_weight(const Point2f&, const Mask&) const override {
@@ -384,23 +374,9 @@ private:
         return std::make_pair(gaussian_idx, temp_sample);
     }
 
-    FloatStorage bezier_interp(const TensorXf& dataset, const Float& eta) const {
-        FloatStorage res = dr::zeros<FloatStorage>(dataset.size() / dataset.shape(0));
-
-        Float x = dr::cbrt(2 * dr::InvPi<Float> * eta);
-        constexpr dr::scalar_t<Float> coefs[SKY_CTRL_PTS] = {1, 5, 10, 10, 5, 1};
-
-        Float x_pow = 1.f, x_pow_inv = dr::pow(1.f - x, SKY_CTRL_PTS - 1);
-        Float x_pow_inv_scale = dr::rcp(1.f - x);
-        for (uint32_t ctrl_pt = 0; ctrl_pt < SKY_CTRL_PTS; ++ctrl_pt) {
-            res += dr::take(dataset, ctrl_pt) * coefs[ctrl_pt] * x_pow * x_pow_inv;
-
-            x_pow *= x;
-            x_pow_inv *= x_pow_inv_scale;
-        }
-
-        return res;
-    }
+    // ================================================================================================
+    // ===================================== SAMPLING FUNCTIONS =======================================
+    // ================================================================================================
 
     /**
      * \brief Extracts the Gaussian Mixture Model parameters from the TGMM
@@ -486,8 +462,12 @@ private:
                 Vector3f sky_wo {sin_theta * cos_phi, sin_theta * sin_phi, cos_theta};
                 Float gamma = dr::unit_angle(local_sun_dir, sky_wo);
 
+                using FullSpecSkyParams = dr::Array<FullSpectrum, SKY_PARAMS>;
+                FullSpectrum mean_rad   = dr::gather<FullSpectrum>(m_sky_radiance, channel_idx, true);
+                FullSpecSkyParams coefs = dr::gather<FullSpecSkyParams>(m_sky_params, channel_idx, true);
+
                 FullSpectrum ray_radiance =
-                    eval_sky<FullSpectrum>(channel_idx, cos_theta, gamma, true) * w_phi * w_cos_theta;
+                    Base::template eval_sky<FullSpectrum>(cos_theta, gamma, coefs, mean_rad) * w_phi * w_cos_theta;
                 sky_radiance = dr::sum_inner(ray_radiance) * J;
             }
 
@@ -566,10 +546,30 @@ private:
     }
 
     // ================================================================================================
-    // ========================================= ATTRIBUTES ===========================================
+    // ====================================== HELPER FUNCTIONS ========================================
     // ================================================================================================
 
-    // ========= Sun parameters =========
+    FloatStorage bezier_interp(const TensorXf& dataset, const Float& eta) const {
+        FloatStorage res = dr::zeros<FloatStorage>(dataset.size() / dataset.shape(0));
+
+        Float x = dr::cbrt(2 * dr::InvPi<Float> * eta);
+        constexpr dr::scalar_t<Float> coefs[SKY_CTRL_PTS] = {1, 5, 10, 10, 5, 1};
+
+        Float x_pow = 1.f, x_pow_inv = dr::pow(1.f - x, SKY_CTRL_PTS - 1);
+        Float x_pow_inv_scale = dr::rcp(1.f - x);
+        for (uint32_t ctrl_pt = 0; ctrl_pt < SKY_CTRL_PTS; ++ctrl_pt) {
+            res += dr::take(dataset, ctrl_pt) * coefs[ctrl_pt] * x_pow * x_pow_inv;
+
+            x_pow *= x;
+            x_pow_inv *= x_pow_inv_scale;
+        }
+
+        return res;
+    }
+
+    // ================================================================================================
+    // ========================================= ATTRIBUTES ===========================================
+    // ================================================================================================
 
     /// Sun direction in world coordinates
     Vector3f m_sun_dir;
