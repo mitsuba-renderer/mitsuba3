@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/tjueterb/misuka-data/raw/main/docs/images/misuka_logo_green.svg" width="350" alt="misuka logo">
+  <img src="https://github.com/tjueterb/misuka-data/raw/main/docs/images/misuka_logo_green.svg" width="250" alt="misuka logo">
 </p>
 
 # misuka
@@ -43,10 +43,25 @@ Please refer the [Mitsuba 3 documentation](https://mitsuba.readthedocs.io/en/lat
 - (optional) For computation on the GPU: `Nvidia driver >= 535`
 - (optional) For vectorized / parallel computation on the CPU: `LLVM >= 11.1`
 
+When using misuka in academic projects, please cite:
 
+```bibtex
+@article{Finnendahl2025,
+  title = {Differentiable Geometric Acoustic Path Tracing Using Time-Resolved Path Replay Backpropagation},
+  author = {Finnendahl, Ugo and Worchel, Markus and J{\"u}terbock, Tobias and Wujecki, Daniel and Brinkmann, Fabian and Weinzierl, Stefan and Alexa, Marc},
+  year = {2025},
+  month = aug,
+  journal = {ACM Transactions on Graphics},
+  volume = {44},
+  number = {4},
+  publisher = {Association for Computing Machinery},
+  address = {New York, NY, USA},
+  doi = {10.1145/3730900},
+  issue_date = {August 2025}
+}
+```
 <!--  Add once published: -->
 <!--
-When using misuka in academic projects, please cite:
 
 ```bibtex
 @inproceedings{misuka,
