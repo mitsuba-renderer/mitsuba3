@@ -14,7 +14,7 @@ Regular spectrum (:monosp:`regular`)
 ------------------------------------
 
 .. pluginparameters::
- :extra-rows: 3
+ :extra-rows: 5
 
  * - wavelength_min
    - |float|
@@ -24,6 +24,14 @@ Regular spectrum (:monosp:`regular`)
    - |float|
    - Maximum wavelength of the spectral range in nanometers.
 
+ * - frequency_min
+   - |float|
+   - Minimum frequency of the spectral range in Hz (alternative to wavelength parameters for acoustic rendering).
+
+ * - frequency_max
+   - |float|
+   - Maximum frequency of the spectral range in Hz (alternative to wavelength parameters for acoustic rendering).
+
  * - values
    - |string|
    - Values of the spectral function at spectral range extremities.
@@ -31,11 +39,11 @@ Regular spectrum (:monosp:`regular`)
 
  * - range
    - |string|
-   - Spectral emission range.
+   - Spectral emission range (wavelengths or frequencies).
    - |exposed|, |differentiable|
 
 This spectrum returns linearly interpolated reflectance or emission values from *regularly*
-placed samples.
+placed samples. You can specify either wavelengths or frequencies as the domain.
 
 .. tabs::
     .. code-tab:: xml
@@ -52,6 +60,14 @@ placed samples.
         'wavelength_min': 400,
         'wavelength_max': 700,
         'values': '0.1, 0.2'
+
+    .. code-tab:: python Python (acoustic)
+        :name: regular-acoustic
+
+        'type': 'regular',
+        'frequency_min': 250,
+        'frequency_max': 500,
+        'values': '0.1, 0.2'
  */
 
 template <typename Float, typename Spectrum>
@@ -61,10 +77,33 @@ public:
 
 public:
     RegularSpectrum(const Properties &props) : Texture(props) {
-        ScalarVector2f wavelength_range(
-            props.get<ScalarFloat>("wavelength_min"),
-            props.get<ScalarFloat>("wavelength_max")
-        );
+        // Check if both wavelength and frequency parameters are provided
+        bool has_wavelength = props.has_property("wavelength_min") || props.has_property("wavelength_max");
+        bool has_frequency = props.has_property("frequency_min") || props.has_property("frequency_max");
+        
+        if (has_wavelength && has_frequency) {
+            Throw("RegularSpectrum: Only one of wavelength or frequency parameters should be specified. "
+                  "Use frequency parameters for acoustic rendering.");
+        }
+        
+        if (!has_wavelength && !has_frequency) {
+            Throw("RegularSpectrum: Either wavelength parameters (wavelength_min/wavelength_max) or "
+                  "frequency parameters (frequency_min/frequency_max) must be specified.");
+        }
+        
+        ScalarVector2f wavelength_range;
+        if (has_frequency) {
+            // Use frequency nodes as wavelengths (semantically unclean but intended)
+            wavelength_range = ScalarVector2f(
+                props.get<ScalarFloat>("frequency_min"),
+                props.get<ScalarFloat>("frequency_max")
+            );
+        } else {
+            wavelength_range = ScalarVector2f(
+                props.get<ScalarFloat>("wavelength_min"),
+                props.get<ScalarFloat>("wavelength_max")
+            );
+        }
 
         if (props.type("values") == Properties::Type::String) {
             std::vector<std::string> values_str =

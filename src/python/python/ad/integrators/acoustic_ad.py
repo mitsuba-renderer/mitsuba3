@@ -41,6 +41,7 @@ class AcousticADIntegrator(RBIntegrator):
                spp: int = 0,
                develop: bool = True,
                evaluate: bool = True) -> mi.TensorXf:
+        mi.Log(mi.LogLevel.Info, "Rendering in normal mode")
 
         if not develop:
             raise Exception("develop=True must be specified when "
@@ -61,8 +62,10 @@ class AcousticADIntegrator(RBIntegrator):
                 aovs=self.aov_names()
             )
 
-            # Generate a set of rays starting at the sensor
-            ray, weight = self.sample_rays(scene, sensor, sampler)
+            # Generate a set of rays starting at the sensor,
+            # Generate a set of rays starting at the sensor,
+            # pos.x stores normalized frequency index, ray.wavelengths stores frequency
+            ray, weight, position_sample = self.sample_rays(scene, sensor, sampler)
 
             # Prepare an ImageBlock as specified by the film
             block = film.create_block()
@@ -74,11 +77,12 @@ class AcousticADIntegrator(RBIntegrator):
                 sensor=sensor,
                 ray=ray,
                 block=block,
+                position_sample=position_sample,
                 active=mi.Bool(True)
             )
 
             # Explicitly delete any remaining unused variables
-            del sampler, ray, weight#, pos, L, valid
+            del sampler, ray, weight, position_sample#, L, valid
             gc.collect()
 
             # Perform the weight division and return an image tensor
@@ -93,22 +97,31 @@ class AcousticADIntegrator(RBIntegrator):
         sensor: mi.Sensor,
         sampler: mi.Sampler
     ) -> Tuple[mi.RayDifferential3f, mi.Spectrum, mi.Vector2f, mi.Float]:
+        """
+        Sample a set of primary rays for a given sensor
+
+        Returns a tuple containing
+
+        - the set of sampled rays
+        - a ray weight (usually 1 if the sensor's response function is sampled
+          perfectly)
+        - the continuous positions on the Imageblock associated with each ray.
+          The first value contains the frequency index, the second value is not used.
+        """
 
         film = sensor.film()
         film_size = film.crop_size()
-        rfilter = film.rfilter()
-        border_size = rfilter.border_size()
 
         if film.sample_border():
-            film_size += 2 * border_size
+            raise NotImplementedError("Acoustic sampling does not support border sampling")
+
+        if not (film.crop_offset()[0] == 0 and film.crop_offset()[1] == 0):
+            raise NotImplementedError("Acoustic sampling does not support crop offset")
 
         spp = sampler.sample_count()
 
-        # In the acoustic setting, film_size.x = number of wavelengths * number of microphones 
-        # (the latter can be > 1 for batch sensors)
-
-        # Compute discrete sample position
-        idx = dr.arange(mi.UInt32, film_size.x * spp) #dr.prod(film_size) * spp)
+        # Compute frequency indices for the rays
+        idx = dr.arange(mi.UInt32, film_size.x * spp)
 
         # Try to avoid a division by an unknown constant if we can help it
         log_spp = dr.log2i(spp)
@@ -118,37 +131,44 @@ class AcousticADIntegrator(RBIntegrator):
             idx //= dr.opaque(mi.UInt32, spp)
 
         # Compute the position on the image plane
+        # (frequency index, time index)
+        # time index is computed in sample() and not used here
         pos = mi.Vector2i(idx, 0 * idx)
+        pos_f = mi.Vector2f(pos)
 
         # Re-scale the position to [0, 1]^2
-        scale = dr.rcp(mi.ScalarVector2f(film_size))
-        pos_adjusted = mi.Vector2f(pos) * scale
+        if not dr.allclose(film.crop_size(), film.size()):
+            raise Exception("Acoustic sampling does not support cropping")
+        if not dr.allclose(film.crop_offset(), mi.Vector2i(0, 0)):
+            raise Exception("Acoustic sampling does not support cropping")
+
+        scale = dr.rcp(mi.ScalarVector2f(film.crop_size()))
+        offset = -mi.ScalarVector2f(film.crop_offset()) * scale
+        pos_adjusted = dr.fma(pos_f, scale, offset)
 
         aperture_sample = mi.Vector2f(0.0)
         if sensor.needs_aperture_sample():
             aperture_sample = sampler.next_2d()
 
-        time = 0.0 # sensor.shutter_open()
+        time = 0.0 # unused
 
-        # NOTE (MW): The spectrum indexing is assumed to be 1-based in the scene construction.
-        #            If we change it here, we also have to change the Python scripts and notebooks.
-        # FIXME (MW): Why was this set to 0 if the indexing is 1-based (and we are subtracting 1 from ray.wavelengths.x)?
-        #             Maybe because it doesn't matter as mi.is_spectral is true for acoustic..
-        wavelength_sample = 0. 
-        if mi.is_spectral:
-            # FIXME (MW): This wavelength sampling scheme is broken for batch sensors,
-            #             because in this case `idx` does not correspond to a wavelength.
-            wavelength_sample = mi.Float(idx) + 1.0
+        frequency_sample = 0.
+        if mi.has_flag(film.flags(), mi.FilmFlags.Spectral):
+            raise NotImplementedError("Full spectral rendering not implemented.")
+        else:
+            pass # wavelength determined from the wavelength bin (stored in pos.x.).
+
 
         with dr.resume_grad():
             ray, weight = sensor.sample_ray_differential(
                 time=time,
-                sample1=wavelength_sample,
-                sample2=pos_adjusted,
+                sample1=frequency_sample, #unused for now,
+                sample2=pos_adjusted, # pos.x() stores normalized frequency index in [0,1], pos.y() is not used
                 sample3=aperture_sample
             )
 
-        return ray, weight
+        return ray, weight, pos_adjusted
+
 
     def prepare(self,
                 sensor: mi.Sensor,
@@ -168,14 +188,15 @@ class AcousticADIntegrator(RBIntegrator):
         film_size = film.crop_size()
 
         if film.sample_border():
+            raise Exception("Acoustic sampling does not support border sampling")
             film_size += 2 * film.rfilter().border_size()
 
-        wavefront_size = film_size.x * spp # dr.prod(film_size) * spp
+        wavefront_size = film_size.x * spp
 
-        if wavefront_size > 2**32:
+        if wavefront_size >= 2**32:
             raise Exception(
                 "The total number of Monte Carlo samples required by this "
-                "rendering task (%i) exceeds 2^32 = 4294967296. Please use "
+                "rendering task (%i) exceeds 2^32-1 = 4294967295. Please use "
                 "fewer samples per pixel or render using multiple passes."
                 % wavefront_size)
 
@@ -190,15 +211,22 @@ class AcousticADIntegrator(RBIntegrator):
                sensor: mi.Sensor,
                ray: mi.Ray3f,
                block: mi.ImageBlock,
+               position_sample: mi.Point2f, # in [0,1]^2
                active: mi.Bool,
                **_ # Absorbs unused arguments
     ) -> None:
+        mi.Log(mi.LogLevel.Debug, f"running sample().")
 
         film = sensor.film()
-        nChannels = film.base_channels_count()
-        
+        n_frequencies = mi.ScalarVector2f(film.crop_size()).x
+        n_channels = film.base_channels_count()
+
         # Standard BSDF evaluation context for path tracing
         bsdf_ctx = mi.BSDFContext()
+
+        # dr.replace_grad breaks code in non ad variants.
+        ad_variant = dr.replace_grad(mi.Float(1.0), mi.Float(2.0)).shape != (0,)
+        mi.Log(mi.LogLevel.Debug, f"ad_variant: {ad_variant}")
 
         # --------------------- Configure loop state ----------------------
 
@@ -226,7 +254,7 @@ class AcousticADIntegrator(RBIntegrator):
             si = scene.ray_intersect(ray,
                                         ray_flags=mi.RayFlags.All,
                                         coherent=(depth == 0))
-            
+
             τ = si.t
 
             # Get the BSDF, potentially computes texture-space differentials
@@ -256,10 +284,10 @@ class AcousticADIntegrator(RBIntegrator):
             # Store (direct) intensity to the image block
             T      = distance + τ
             active_next &= si.is_valid()
-            Le_pos = mi.Point2f(ray.wavelengths[0] - mi.Float(1.0),
+            Le_pos = mi.Point2f(position_sample.x * n_frequencies, # rescale from [0, 1] to [0, n_frequencies]
                                 block.size().y * T / max_distance)
             block.put(pos=Le_pos,
-                      values=film.prepare_sample(Le[0], si.wavelengths, nChannels),
+                      values=film.prepare_sample(Le[0], si.wavelengths, n_channels),
                       active=active_next &(Le[0] > 0.))
 
             # ---------------------- Emitter sampling ----------------------
@@ -287,7 +315,9 @@ class AcousticADIntegrator(RBIntegrator):
                 # Recompute `em_weight = em_val / ds.pdf` with only `em_val` attached
                 dr.disable_grad(ds.d, ds.pdf)
                 em_val    = scene.eval_emitter_direction(si, ds, active_em)
-                em_weight = dr.replace_grad(em_weight, dr.select((ds.pdf != 0), em_val / ds.pdf, 0))
+                
+                if dr.hint(ad_variant, mode='scalar'):
+                    em_weight = dr.replace_grad(em_weight, dr.select((ds.pdf != 0), em_val / ds.pdf, 0))
 
             active_em &= (ds.pdf != 0.0)
 
@@ -297,15 +327,16 @@ class AcousticADIntegrator(RBIntegrator):
             if self.is_detached:
                 dr.disable_grad(bsdf_pdf_em)
             mis_em = dr.select(ds.delta, 1, mis_weight(ds.pdf, bsdf_pdf_em))
+            
             Lr_dir = β * mis_em * bsdf_value_em * em_weight
 
             # Store (emission sample) intensity to the image block
             τ_dir      = ds.dist
             T_dir      = T + τ_dir
-            Lr_dir_pos = mi.Point2f(ray.wavelengths[0] - mi.Float(1.0),
+            Lr_dir_pos = mi.Point2f(position_sample.x * n_frequencies, # rescale from [0, 1] to [0, n_frequencies]
                                     block.size().y * T_dir / max_distance)
             block.put(pos=Lr_dir_pos,
-                      values=film.prepare_sample(Lr_dir[0], si.wavelengths, nChannels),
+                      values=film.prepare_sample(Lr_dir[0], si.wavelengths, n_channels),
                       active=active_em & (Lr_dir[0] > 0.))
 
             # ------------------ Detached BSDF sampling -------------------
@@ -314,13 +345,16 @@ class AcousticADIntegrator(RBIntegrator):
                                                 sampler.next_1d(),
                                                 sampler.next_2d(),
                                                 active_next)
-            
+
             if self.is_detached:
                 # The sampled bsdf direction and the pdf must be detached
                 # Recompute `bsdf_weight = bsdf_val / bsdf_sample.pdf` with only `bsdf_val` attached
                 dr.disable_grad(bsdf_sample.wo, bsdf_sample.pdf)
                 bsdf_val    = bsdf.eval(bsdf_ctx, si, bsdf_sample.wo, active_next)
-                bsdf_weight = dr.replace_grad(bsdf_weight, dr.select((bsdf_sample.pdf != 0), bsdf_val / bsdf_sample.pdf, 0))
+                
+                if dr.hint(ad_variant, mode='scalar'):
+                    bsdf_weight = dr.replace_grad(bsdf_weight, dr.select(
+                    (bsdf_sample.pdf != 0), bsdf_val / bsdf_sample.pdf, 0))
 
             # ---- Update loop variables based on current interaction -----
 
@@ -329,7 +363,7 @@ class AcousticADIntegrator(RBIntegrator):
                 # The direction in *world space* is detached
                 wo_world = dr.detach(wo_world)
 
-            ray = si.spawn_ray(wo_world) 
+            ray = si.spawn_ray(wo_world)
             η *= bsdf_sample.eta
             β *= bsdf_weight
 
@@ -369,6 +403,7 @@ class AcousticADIntegrator(RBIntegrator):
                        sensor: Union[int, mi.Sensor] = 0,
                        seed: int = 0,
                        spp: int = 0) -> mi.TensorXf:
+        mi.Log(mi.LogLevel.Info, "Rendering in forward mode")
 
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
@@ -386,23 +421,24 @@ class AcousticADIntegrator(RBIntegrator):
             )
 
             # Generate a set of rays starting at the sensor
-            ray, weight = self.sample_rays(scene, sensor, sampler)
+            ray, weight, position_sample = self.sample_rays(scene, sensor, sampler)
 
             # Prepare an ImageBlock as specified by the film
             block = film.create_block()
 
             with dr.resume_grad():
                 # Launch the Monte Carlo sampling process in primal mode (1)
-                # Contrary to the light case we already need the input gradient as we return δH dot L to avoid storing L which is a function. 
+                # Contrary to the light case we already need the input gradient as we return δH dot L to avoid storing L which is a function.
                 self.sample(
                     scene=scene,
                     sampler=sampler.clone(),
                     sensor=sensor,
                     ray=ray,
                     block=block,
+                    position_sample=position_sample,
                     active=mi.Bool(True)
                 )
-                
+
                 film.put_block(block)
                 result_img = film.develop()
 
@@ -419,6 +455,7 @@ class AcousticADIntegrator(RBIntegrator):
                         sensor: Union[int, mi.Sensor] = 0,
                         seed: int = 0,
                         spp: int = 0) -> None:
+        mi.Log(mi.LogLevel.Info, "Rendering in backward mode")
 
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
@@ -436,23 +473,24 @@ class AcousticADIntegrator(RBIntegrator):
             )
 
             # Generate a set of rays starting at the sensor
-            ray, weight = self.sample_rays(scene, sensor, sampler)
+            ray, weight, position_sample = self.sample_rays(scene, sensor, sampler)
 
             # Prepare an ImageBlock as specified by the film
             block = film.create_block()
 
             with dr.resume_grad():
                 # Launch the Monte Carlo sampling process in primal mode (1)
-                # Contrary to the light case we already need the input gradient as we return δH dot L to avoid storing L which is a function. 
+                # Contrary to the light case we already need the input gradient as we return δH dot L to avoid storing L which is a function.
                 self.sample(
                     scene=scene,
                     sampler=sampler.clone(),
                     sensor=sensor,
                     ray=ray,
                     block=block,
+                    position_sample=position_sample,
                     active=mi.Bool(True)
                 )
-                
+
                 film.put_block(block)
                 result_img = film.develop()
 
@@ -463,7 +501,7 @@ class AcousticADIntegrator(RBIntegrator):
                 dr.traverse(dr.ADMode.Backward)
 
                 # We don't need any of the outputs here
-                del ray, weight, block, sampler
+                del ray, weight, block, sampler, position_sample
 
                 gc.collect()
 

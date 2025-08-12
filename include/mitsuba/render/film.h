@@ -8,6 +8,7 @@
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/texture.h>
+#include <mitsuba/core/distr_1d.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -204,6 +205,9 @@ public:
     void traverse(TraversalCallback *callback) override;
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override;
 
+    /// Return the frequencies used by the film (only used in tape)
+    const DiscreteDistribution<Wavelength> &frequencies_spectrum() const { return m_frequencies_spectrum;}
+
     //! @}
     // =============================================================
 
@@ -223,6 +227,7 @@ protected:
     ScalarPoint2u m_crop_offset;
     bool m_sample_border;
     ref<ReconstructionFilter> m_filter;
+    DiscreteDistribution<Wavelength> m_frequencies_spectrum; //used in tape
     ref<Texture> m_srf;
 };
 

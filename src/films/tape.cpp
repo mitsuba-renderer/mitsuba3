@@ -15,14 +15,48 @@ template <typename Float, typename Spectrum>
 class Tape final : public Film<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset, m_sample_border,
-                   m_filter, m_flags, set_crop_window)
+                   m_filter, m_flags, set_crop_window, m_frequencies_spectrum)
     MI_IMPORT_TYPES(ImageBlock)
 
     Tape(const Properties &props) : Base(props) {
         if (props.has_property("width") || props.has_property("height"))
-            Throw("Tape Plugin should use (time_steps, wav_bins) instead of (width, height).");
+            Throw("Tape Plugin does not support (width, height). Set time_bins and specify a list of frequencies instead.");
+
+        // load frequencies that should be rendered (-> copied from irregular spectrum)
+        // note: mitsuba uses wavelengths, we use the same variable to track frequencies.
+        // This is semantically inconsistent but no problem if we use frequencies everywhere consistently.
+        if (props.type("frequencies") == Properties::Type::String) {
+            std::vector<std::string> frequencies_str =
+                string::tokenize(props.string("frequencies"), " ,");
+
+            std::vector<ScalarFloat> frequencies;
+            frequencies.reserve(frequencies_str.size());
+
+            for (size_t i = 0; i < frequencies_str.size(); ++i) {
+                try {
+                    frequencies.push_back(string::stof<ScalarFloat>(frequencies_str[i]));
+                } catch (...) {
+                    Throw("Could not parse floating point value '%s'", frequencies_str[i]);
+                }
+            }
+
+            m_frequencies = frequencies;
+            if (m_frequencies.size() == 1) {
+                Log(Info, "Tape will store 1 frequency: %s", m_frequencies);
+            } else {
+                Log(Info, "Tape will store %i frequencies: %s", m_frequencies.size(), m_frequencies);
+            }
+
+            // load into spectrum for parallel evaluation
+            m_frequencies_spectrum = DiscreteDistribution<Wavelength>(
+                frequencies.data(), frequencies.size()
+            );
+        } else {
+            NotImplementedError("Tape Plugin expects the 'frequencies' to be a string containing a comma-separated list of frequencies).");
+        }
+
         m_size = ScalarVector2u(
-            props.get<uint32_t>("wav_bins", 1),
+            m_frequencies.size(),
             props.get<uint32_t>("time_bins", 1)
         );
         set_crop_window(ScalarPoint2u(0, 0), m_size);
@@ -32,7 +66,7 @@ public:
         std::string file_format = string::to_lower(
             props.string("file_format", "openexr"));
         std::string pixel_format = string::to_lower(
-            props.string("pixel_format", "rgb"));
+            props.string("pixel_format", "MultiChannel"));
         std::string component_format = string::to_lower(
             props.string("component_format", "float16"));
 
@@ -69,7 +103,7 @@ public:
         return m_channels.size();
     }
 
-    size_t prepare(const std::vector<std::string> & /*aovs*/) override {    
+    size_t prepare(const std::vector<std::string> & /*aovs*/) override {
         m_channels = { "values" };
 
         if (m_count) {
@@ -119,6 +153,7 @@ public:
     }
 
     TensorXf develop(bool raw = false) const override {
+        Log(Info, "developing tape");
         if (!m_storage)
             Throw("No storage allocated, was prepare() called first?");
 
@@ -160,18 +195,18 @@ public:
     }
 
 
-    void prepare_sample(const UnpolarizedSpectrum &spec, 
-                        const Wavelength & /* wavelengths */,
+    void prepare_sample(const UnpolarizedSpectrum &spec,
+                        const Wavelength & /* frequencies */,
                         Float* aovs, // result array. Length need to match number of channels.
                         Float weight,
                         Float /* alpha */,
                         Mask /* active */) const override {
 
         size_t channel_count = m_channels.size();
-        
+
         if (spec.size() > 1)
             Throw("Tape only supports single spectrum values. Use an acoustic variant instead.");
-        
+
         aovs[0] = weight * spec[0];
 
         if (m_count) {
@@ -228,9 +263,12 @@ public:
         std::ostringstream oss;
         oss << "Tape[" << std::endl
             << "  size = " << m_size << "," << std::endl
-            << "  crop_size = " << m_crop_size << "," << std::endl
-            << "  crop_offset = " << m_crop_offset << "," << std::endl
-            << "  sample_border = " << m_sample_border << "," << std::endl
+            << "  frequencies = " << m_frequencies << "," << std::endl
+            << "  time_bins = " << m_size[1] << "," << std::endl
+            << "  channels = " << m_channels << "," << std::endl
+            // << "  crop_size = " << m_crop_size << "," << std::endl
+            // << "  crop_offset = " << m_crop_offset << "," << std::endl
+            // << "  sample_border = " << m_sample_border << "," << std::endl
             << "  filter = " << m_filter << "," << std::endl
             << "  file_format = " << m_file_format << "," << std::endl
             << "  component_format = " << m_component_format << "," << std::endl
@@ -245,6 +283,7 @@ protected:
     ref<ImageBlock> m_storage;
     mutable std::mutex m_mutex;
     std::vector<std::string> m_channels;
+    std::vector<ScalarFloat> m_frequencies;
     bool m_count;
 };
 

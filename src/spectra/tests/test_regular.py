@@ -14,6 +14,15 @@ def obj():
         "wavelength_max" : 600,
         "values" : "1, 2"
     })
+    
+@pytest.fixture()
+def obj_acoustic():
+    return mi.load_dict({
+        "type" : "regular",
+        "frequency_min" : 500,
+        "frequency_max" : 600,
+        "values" : "1, 2"
+    })
 
 
 def test01_eval(variant_scalar_spectral, obj):
@@ -42,3 +51,31 @@ def test02_sample_spectrum(variant_scalar_spectral, obj):
         obj.sample_spectrum(si, .5),
         [500 + 100 * (dr.sqrt(10) / 2 - 1), 150]
     )
+
+
+def test_03_initialization(variant_scalar_acoustic):
+    with pytest.raises(RuntimeError) as excinfo:
+        mi.load_dict({
+            "type": "regular",
+            "frequency_min": 500,
+            "frequency_max": 600,
+            "wavelength_min": 500,
+            "wavelength_max": 600,
+            "values": "1, 2, 3"
+        })
+    assert 'Only one of' in str(excinfo.value)
+
+
+def test04_acoustic_equivalence(variant_scalar_acoustic, obj, obj_acoustic):
+    "make sure that spectra are equivalent when using frequencies vs wavelengths"
+    
+    si = mi.SurfaceInteraction3f()
+
+    for i in range(5):
+        si.wavelengths = 450 + 50 * i
+        assert dr.allclose(obj_acoustic.eval(si), obj.eval(si))
+        assert dr.allclose(obj_acoustic.pdf_spectrum(si), obj.pdf_spectrum(si))
+
+    assert dr.allclose(obj_acoustic.sample_spectrum(si, 0),  obj.sample_spectrum(si, 0))
+    assert dr.allclose(obj_acoustic.sample_spectrum(si, 1),  obj.sample_spectrum(si, 1))
+    assert dr.allclose(obj_acoustic.sample_spectrum(si, .5), obj.sample_spectrum(si, .5))

@@ -18,15 +18,22 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
                sensor: mi.Sensor,
                ray: mi.Ray3f,
                block: mi.ImageBlock,
+               position_sample: mi.Point2f, # in [0,1]^2
                active: mi.Bool,
                **_ # Absorbs unused arguments
     ) -> Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
-        
+        mi.Log(mi.LogLevel.Debug, f"Running sample().")
+
         film = sensor.film()
-        nChannels = film.base_channels_count()
+        n_frequencies = mi.ScalarVector2f(film.crop_size()).x
+        n_channels = film.base_channels_count()
 
         # Standard BSDF evaluation context for path tracing
         bsdf_ctx = mi.BSDFContext()
+
+        # dr.replace_grad breaks code in non ad variants.
+        ad_variant = dr.replace_grad(mi.Float(1.0), mi.Float(2.0)).shape != (0,)
+        mi.Log(mi.LogLevel.Debug, f"ad_variant: {ad_variant}")
 
         # --------------------- Configure loop state ----------------------
 
@@ -88,23 +95,25 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
             # The first samples are sampled differently
             mis = dr.select(first_vertex, 1, mis)
 
-            β *= dr.replace_grad(1, D/dr.detach(D))
-            
+            if dr.hint(ad_variant, mode='scalar'):
+                β *= dr.replace_grad(1, D/dr.detach(D))
+
             # Intensity of current emitter weighted by importance (def. by prev bsdf hits)
             Le = β * dr.detach(mis) * si.emitter(scene).eval(si, active_next)
 
             τ = dr.norm(si.p - ray.o)
-            
+
             active_next &= si.is_valid()
 
             T       = distance + τ
 
 
-            Le_pos     = mi.Point2f(ray.wavelengths[0] - mi.Float(1.0), block.size().y * T     / max_distance)
+            Le_pos = mi.Point2f(position_sample.x * n_frequencies,
+                                block.size().y * T / max_distance)
             block.put(pos=Le_pos,
-                      values=film.prepare_sample(Le[0], si.wavelengths, nChannels),
-                      active=(Le[0] > 0.))
-            
+                      values=film.prepare_sample(Le[0], si.wavelengths, n_channels),
+                      active= (Le[0] > 0.)) #FIXME: (TJ) should be active_next&(Le[0] > 0.) ?
+
             # ---------------------- Emitter sampling ----------------------
 
             # Should we continue tracing to reach one more vertex?
@@ -115,12 +124,14 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
 
             # If so, randomly sample an emitter without derivative tracking.
             ds_em, em_weight = scene.sample_emitter_direction(si, sampler.next_2d(), True, active_em)
-            em_weight *= dr.replace_grad(1, ds_em.pdf/dr.detach(ds_em.pdf))
+
+            if dr.hint(ad_variant, mode='scalar'):
+                em_weight *= dr.replace_grad(1, ds_em.pdf/dr.detach(ds_em.pdf))
 
             active_em &= (ds_em.pdf != 0.0)
-            
+
             # We need to recompute the sample with follow shape so it is a detached uv sample
-            si_em = scene.ray_intersect(dr.detach(si.spawn_ray(ds_em.d)), 
+            si_em = scene.ray_intersect(dr.detach(si.spawn_ray(ds_em.d)),
                                         ray_flags=mi.RayFlags.All | mi.RayFlags.FollowShape,
                                         coherent=mi.Bool(False),
                                         active=active_em)
@@ -130,27 +141,28 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
             ds_em.d = dr.normalize(diff_em)
             wo = si.to_local(ds_em.d)
             bsdf_value_em, bsdf_pdf_em = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
-            
-            # ds_em.pdf includes the inv geometry term, 
+
+            # ds_em.pdf includes the inv geometry term,
             # and bsdf_pdf_em does not contain the geometry term.
             # -> We need to multiply both with the geometry term:
             dp_em = dr.dot(ds_em.d, si_em.n)
             dist_squared_em = dr.squared_norm(diff_em)
-            D_em = dr.select(active_em, dr.norm(dr.cross(si_em.dp_du, si_em.dp_dv)) * -dp_em / dist_squared_em , 0.) 
+            D_em = dr.select(active_em, dr.norm(dr.cross(si_em.dp_du, si_em.dp_dv)) * -dp_em / dist_squared_em , 0.)
             mis_em = dr.select(ds_em.delta, 1, mis_weight(ds_em.pdf*D_em, bsdf_pdf_em*D_em))
             # Detached Sampling
-            em_weight *= dr.replace_grad(1, D_em/dr.detach(D_em))
+            if dr.hint(ad_variant, mode='scalar'):
+                em_weight *= dr.replace_grad(1, D_em/dr.detach(D_em))
 
             Lr_dir = β * dr.detach(mis_em) * bsdf_value_em * em_weight
 
+
+            # Store (emission sample) intensity to the image block
             τ_dir = dr.norm(si_em.p - si.p)
-
-            # 
             T_dir       = distance + τ + τ_dir
-
-            Lr_dir_pos = mi.Point2f(ray.wavelengths[0] - mi.Float(1.0), block.size().y * T_dir / max_distance)                         
+            Lr_dir_pos = mi.Point2f(position_sample.x * n_frequencies,
+                                    block.size().y * T_dir / max_distance)
             block.put(pos=Lr_dir_pos,
-                      values=film.prepare_sample(Lr_dir[0], si.wavelengths, nChannels),
+                      values=film.prepare_sample(Lr_dir[0], si.wavelengths, n_channels),
                       active=active_em)
 
             # ------------------ Detached BSDF sampling -------------------
@@ -166,14 +178,17 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
             si_next = scene.ray_intersect(dr.detach(ray),
                                             ray_flags=mi.RayFlags.All | mi.RayFlags.FollowShape,
                                             coherent=mi.Bool(False))
-            
+
             diff_next = si_next.p - si.p
             dir_next = dr.normalize(diff_next)
             wo = si.to_local(dir_next)
             bsdf_val    = bsdf.eval(bsdf_ctx, si, wo, active_next)
-            bsdf_weight = dr.replace_grad(bsdf_weight, dr.select((bsdf_sample.pdf != 0), bsdf_val / dr.detach(bsdf_sample.pdf), 0))
             
-            
+            if dr.hint(ad_variant, mode='scalar'):
+                bsdf_weight = dr.replace_grad(bsdf_weight, dr.select(
+                    (bsdf_sample.pdf != 0), bsdf_val / dr.detach(bsdf_sample.pdf), 0))
+
+
             # ---- Update loop variables based on current interaction -----
 
             η *= bsdf_sample.eta

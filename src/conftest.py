@@ -74,7 +74,7 @@ def generate_fixture(variant):
 
 
 # Compute set of valid variants
-suffix_variants = [a + b for a in ["_mono", "_mono_polarized", "_rgb", "_spectral", "_spectral_polarized"] for b in ["", "_double"]]
+suffix_variants = [a + b for a in ["_mono", "_mono_polarized", "_rgb", "_spectral", "_spectral_polarized", "_acoustic"] for b in ["", "_double"]]
 scalar_variants = ["scalar" + s for s in suffix_variants]
 other_variants  = [a + b + c for a in ["llvm", "cuda"] for b in ["", "_ad"] for c in suffix_variants]
 
@@ -119,6 +119,7 @@ variant_groups = {
     'all_scalar' : [x for x in variants if x.startswith('scalar')],
     'all_rgb' : [x for x in variants if x.endswith('rgb')],
     'all_spectral' : [x for x in variants if x.endswith('spectral')],
+    'all_acoustic' : [x for x in variants if x.endswith('acoustic')],
     'all_backends_once' : [any_scalar, any_llvm, any_cuda],
     'vec_backends_once' : [any_llvm, any_cuda],
     'vec_backends_once_rgb' : [any_llvm_rgb, any_cuda_rgb],
@@ -127,6 +128,8 @@ variant_groups = {
     'vec_spectral' : [x for x in variants if x.endswith('spectral') and not x.startswith('scalar')],
     'all_ad_rgb' : [x for x in variants if x.endswith('ad_rgb')],
     'all_ad_spectral' : [x for x in variants if x.endswith('ad_spectral')],
+    'all_ad_acoustic' : [x for x in variants if x.endswith('ad_acoustic')],
+    'all_jit_acoustic' : [x for x in variants if x.endswith('acoustic') and not x.startswith('scalar')],
 }
 
 del variants

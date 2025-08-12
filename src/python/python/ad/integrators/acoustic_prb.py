@@ -10,7 +10,7 @@ from .acoustic_ad import AcousticADIntegrator
 
 class AcousticPRBIntegrator(AcousticADIntegrator):
     """This Integrator is biased for when moving geometry"""
-    
+
     @dr.syntax
     def sample(self,
                scene: mi.Scene,
@@ -18,6 +18,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                sensor: mi.Sensor,
                ray: mi.Ray3f,
                block: mi.ImageBlock,
+               position_sample: mi.Point2f, # in [0,1]^2
                active: mi.Bool,
                mode: Optional[dr.ADMode] = dr.ADMode.Primal,
                δH: Optional[mi.ImageBlock] = None,
@@ -25,6 +26,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                state_in_δHdT: Optional[mi.Spectrum] = None,
                **_ # Absorbs unused arguments
     ) -> Tuple[mi.Spectrum, mi.Bool, mi.Spectrum]:
+        mi.Log(mi.LogLevel.Debug, f"Running sample() in {mode} mode.")
 
         # Rendering a primal image? (vs performing forward/reverse-mode AD)
         prb_mode = δH is not None
@@ -33,8 +35,9 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
         assert primal or prb_mode
 
         film = sensor.film()
-        nChannels = film.base_channels_count()
-        
+        n_frequencies = mi.ScalarVector2f(film.crop_size()).x
+        n_channels = film.base_channels_count()
+
         # Standard BSDF evaluation context for path tracing
         bsdf_ctx = mi.BSDFContext()
 
@@ -68,7 +71,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                 dr.forward_from(T)
                 δHdLedT = dr.detach(dr.grad(δHL))
                 dr.disable_grad(T)
-                    
+
             return δHdLedT
 
         while dr.hint(active,
@@ -77,7 +80,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
             active_next = mi.Bool(active)
 
             # The first path vertex requires some special handling (see below)
-            first_vertex = (depth == 0)            
+            first_vertex = (depth == 0)
 
             with dr.resume_grad(when=not primal):
                 prev_si = prev_pi.compute_surface_interaction(prev_ray, ray_flags=mi.RayFlags.All)
@@ -85,7 +88,8 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                 # The previous intersection defines the origin of the ray, and it moves with the intersected shape
                 # This only captures part of the gradient since moving a single vertex moves the *full* path suffix,
                 # assuming sampling of directions (i.e., `prev_si` also affects all intersections after `si`)
-                ray.o = dr.replace_grad(ray.o, dr.select(~first_vertex, prev_si.p, 0))
+                if dr.hint(not primal, mode='scalar'):
+                    ray.o = dr.replace_grad(ray.o, dr.select(~first_vertex, prev_si.p, 0))
 
             # Compute a surface interaction that tracks derivatives arising
             # from differentiable shape parameters (position, normals, etc.)
@@ -102,7 +106,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
             # Hide the environment emitter if necessary
             if dr.hint(self.hide_emitters, mode='scalar'):
                 active_next &= ~((depth == 0) & ~si.is_valid())
-                
+
 
             # Compute MIS weight for emitter sample from previous bounce
             ds = mi.DirectionSample3f(scene, si=si, ref=prev_si)
@@ -119,7 +123,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
             with dr.resume_grad(when=not primal):
                 τ = dr.select(first_vertex, dr.norm(si.p - ray.o), dr.norm(si.p - prev_si.p))
 
-            # 
+            #
             T       = distance + τ
             δHdLedT = compute_δH_dot_dLedT(Le, T, ray, active=active_next & si.is_valid()) \
                       if dr.hint(prb_mode and self.track_time_derivatives, mode='scalar') else 0
@@ -157,7 +161,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                 wo = si.to_local(ds_em.d)
                 bsdf_value_em, bsdf_pdf_em = bsdf.eval_pdf(bsdf_ctx, si, wo, active_em)
                 dr.disable_grad(bsdf_pdf_em)
-            
+
             mis_em = dr.select(ds_em.delta, 1, mis_weight(ds_em.pdf, bsdf_pdf_em))
 
             with dr.resume_grad(when=not primal):
@@ -166,7 +170,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
             with dr.resume_grad(when=not primal):
                 τ_dir = dr.norm(ds_em.p - si.p)
 
-            # 
+            #
             T_dir       = distance + τ + τ_dir
             δHdLr_dirdT = compute_δH_dot_dLedT(Lr_dir, T_dir, ray, active=active_em) \
                           if dr.hint(prb_mode and self.track_time_derivatives, mode='scalar') else 0
@@ -189,8 +193,11 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                         δHdLdT_τ_cur = τ * δHdLdT + τ_dir * δHdLr_dirdT
                     δHdLdT = δHdLdT - δHdLedT - δHdLr_dirdT
 
-            Le_pos     = mi.Point2f(ray.wavelengths[0] - mi.Float(1.0), block.size().y * T     / max_distance)
-            Lr_dir_pos = mi.Point2f(ray.wavelengths[0] - mi.Float(1.0), block.size().y * T_dir / max_distance)
+            Le_pos     = mi.Point2f(position_sample.x * n_frequencies,
+                                    block.size().y * T     / max_distance)
+            Lr_dir_pos = mi.Point2f(position_sample.x * n_frequencies,
+                                    block.size().y * T_dir / max_distance)
+
             if dr.hint(prb_mode, mode='scalar'):
                 # backward_from(δHLx) is the same as splatting_and_backward_gradient_image but we can store it this way
                 with dr.resume_grad(when=not primal):
@@ -203,12 +210,12 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
             else: # primal
                 # FIXME (MW): Why are we ignoring active and active_em when writing to the block?
                 #       Should still work for samples that don't hit geometry (because distance will be inf)
-                #       but what about other reasons for becoming inactive?                             
+                #       but what about other reasons for becoming inactive?
                 block.put(pos=Le_pos,
-                          values=film.prepare_sample(Le[0], si.wavelengths, nChannels),
+                          values=film.prepare_sample(Le[0], si.wavelengths, n_channels),
                           active=(Le[0] > 0.))
-                block.put(pos=Lr_dir_pos, 
-                          values=film.prepare_sample(Lr_dir[0], si.wavelengths, nChannels),
+                block.put(pos=Lr_dir_pos,
+                          values=film.prepare_sample(Lr_dir[0], si.wavelengths, n_channels),
                           active=(Lr_dir[0] > 0.))
 
             # ---- Update loop variables based on current interaction -----
@@ -287,6 +294,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
             δHdLdT                 # State for the differential phase
         )
 
+
     def render_backward(self: mi.SamplingIntegrator,
                         scene: mi.Scene,
                         params: Any,
@@ -294,6 +302,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                         sensor: Union[int, mi.Sensor] = 0,
                         seed: int = 0,
                         spp: int = 0) -> None:
+        mi.Log(mi.LogLevel.Info, "Rendering in backward mode")
 
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
@@ -311,7 +320,8 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
             )
 
             # Generate a set of rays starting at the sensor
-            ray, weight = self.sample_rays(scene, sensor, sampler)
+            ray, weight, position_sample = self.sample_rays(scene, sensor, sampler)
+
             δH = mi.ImageBlock(grad_in,
                                rfilter=film.rfilter(),
                                border=film.sample_border(),
@@ -325,6 +335,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                 sensor=sensor,
                 ray=ray,
                 block=block,
+                position_sample=position_sample,
                 active=mi.Bool(True),
                 mode=dr.ADMode.Primal,
                 δH=δH,
@@ -339,6 +350,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
                 sensor=sensor,
                 ray=ray,
                 block=block,
+                position_sample=position_sample,
                 active=mi.Bool(True),
                 mode=dr.ADMode.Backward,
                 δH=δH,
@@ -348,7 +360,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
 
             # We don't need any of the outputs here
             del δHL, L_2, valid, valid_2, δHdT, state_out_δHdT_2, \
-                ray, weight, sampler #, pos
+                ray, weight, sampler, position_sample
 
             gc.collect()
 

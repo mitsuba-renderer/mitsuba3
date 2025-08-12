@@ -16,8 +16,8 @@ Batch sensor (:monosp:`batch`)
 
  * - srf
    - |spectrum|
-   - Sensor Response Function that defines the :ref:`spectral sensitivity <explanation_srf_sensor>`
-     of the sensor (Default: :monosp:`none`)
+   - Sensor Response Function that defines the :ref:`spectral sensitivity
+<explanation_srf_sensor>` of the sensor (Default: :monosp:`none`)
 
 This meta-sensor groups multiple sub-sensors so that they can be rendered
 simultaneously. This reduces tracing overheads in applications that need to
@@ -87,7 +87,8 @@ timings specified for the `batch` sensor itself.
 
 MI_VARIANT class BatchSensor final : public Sensor<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Sensor, m_film, m_shape, m_needs_sample_3, sample_wavelengths)
+    MI_IMPORT_BASE(Sensor, m_film, m_shape, m_needs_sample_3,
+                   sample_wavelengths)
     MI_IMPORT_TYPES(Shape, SensorPtr)
 
     BatchSensor(const Properties &props) : Base(props) {
@@ -109,8 +110,13 @@ public:
         if (m_sensors.empty())
             Throw("BatchSensor: at least one child sensor must be specified!");
 
+        Log(Debug, "BatchSensor: found %i child sensors", m_sensors.size());
+        Log(Debug, "BatchSensor->film: %s", m_film);
+
         ScalarPoint2u size = m_film->size();
+        Log(Debug, "BatchSensor->film size: %s", size);
         uint32_t sub_size = size.x() / (uint32_t) m_sensors.size();
+        Log(Debug, "BatchSensor->sub_size: %u", sub_size);
         if (sub_size * (uint32_t) m_sensors.size() != size.x())
             Throw("BatchSensor: the horizontal resolution (currently %u) must "
                   "be divisible by the number of child sensors (%zu)!",
@@ -119,6 +125,8 @@ public:
         m_needs_sample_3 = false;
         for (size_t i = 0; i < m_sensors.size(); ++i) {
             m_sensors[i]->film()->set_size(ScalarPoint2u(sub_size, size.y()));
+            Log(Debug, "BatchSensor: sensor[%zu] film size: %s", i,
+                m_sensors[i]->film()->size());
             m_sensors[i]->parameters_changed();
             m_needs_sample_3 |= m_sensors[i]->needs_aperture_sample();
         }
@@ -133,14 +141,23 @@ public:
                Mask active = true) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
-        Float  idx_f = position_sample.x() * (ScalarFloat) m_sensors.size();
+        Log(Debug,
+            "sample_ray() called with time=%f, wavelength_sample=%f, "
+            "position_sample=%s, aperture_sample=%s",
+            time, wavelength_sample, position_sample, aperture_sample);
+        Float idx_f = position_sample.x() * (ScalarFloat) m_sensors.size();
+        Log(Trace, "idx_f=%f", idx_f);
         UInt32 idx_u = UInt32(idx_f);
+        Log(Trace, "idx_u=%u", idx_u);
 
         UInt32 index = dr::minimum(idx_u, (uint32_t) (m_sensors.size() - 1));
-        SensorPtr sensor = dr::gather<SensorPtr>(m_sensors_dr, index, active);
+        Log(Trace, "index=%u", index);
 
+        SensorPtr sensor = dr::gather<SensorPtr>(m_sensors_dr, index, active);
+        Log(Trace, "sensor=%s", sensor);
 
         Point2f position_sample_2(idx_f - Float(idx_u), position_sample.y());
+        Log(Trace, "position_sample_2=%s", position_sample_2);
 
         auto [ray, spec] =
             sensor->sample_ray(time, wavelength_sample, position_sample_2,
@@ -156,22 +173,36 @@ public:
         return { ray, spec };
     }
 
-    std::pair<RayDifferential3f, Spectrum>
-    sample_ray_differential(Float time, Float wavelength_sample,
-                            const Point2f &position_sample,
-                            const Point2f &aperture_sample,
-                            Mask active) const override {
+    std::pair<RayDifferential3f, Spectrum> sample_ray_differential(
+        Float time, Float wavelength_sample, const Point2f &position_sample,
+        const Point2f &aperture_sample, Mask active) const override {
 
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+        Log(Debug,
+            "sample_ray_differential() called with time=%f, "
+            "wavelength_sample=%f, position_sample=%s, aperture_sample=%s",
+            time, wavelength_sample, position_sample, aperture_sample);
 
-        Float  idx_f = position_sample.x() * (ScalarFloat) m_sensors.size();
+        Float idx_f = position_sample.x() * (ScalarFloat) m_sensors.size();
+        Log(Trace, "idx_f=%f", idx_f);
         UInt32 idx_u = UInt32(idx_f);
+        Log(Trace, "idx_u=%u", idx_u);
 
         UInt32 index = dr::minimum(idx_u, (uint32_t) (m_sensors.size() - 1));
+        Log(Trace, "Sensor index=%u", index);
         SensorPtr sensor = dr::gather<SensorPtr>(m_sensors_dr, index, active);
+        Log(Trace, "sensor=%s", sensor);
 
         Point2f position_sample_2(idx_f - Float(idx_u), position_sample.y());
 
+        Log(Trace, "position_sample_2=%s", position_sample_2);
+
+        /*
+        FIXME: (TJ) accessing position_sample_2 inside the function yields an error:
+            RuntimeError: jit_var_schedule(r721): not permitted. You performed an operation that tried to evalute a *symbolic* variable which is not permitted. [...]
+            You cannot access specific elements of 1D arrays using indexing operations (this would require the contents to be known.)
+            Not sure how to fix this.
+        */
         auto [ray, spec] = sensor->sample_ray_differential(
             time, wavelength_sample, position_sample_2, aperture_sample,
             active);
@@ -187,9 +218,10 @@ public:
     }
 
     std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
+    sample_direction(const Interaction3f &it, const Point2f &sample,
+                     Mask active) const override {
         DirectionSample3f result_1 = dr::zeros<DirectionSample3f>();
-        Spectrum result_2 = dr::zeros<Spectrum>();
+        Spectrum result_2          = dr::zeros<Spectrum>();
 
         // The behavior of random sampling a sensor instead of
         // querying `m_last_index` is useful for ptracer rendering. But it
@@ -220,9 +252,9 @@ public:
                 valid_count += dr::select(active_i, 1u, 0u);
 
                 // Should we put this sample into the reservoir?
-                Float  idx_f = sample_.x() * valid_count;
+                Float idx_f  = sample_.x() * valid_count;
                 UInt32 idx_u = UInt32(idx_f);
-                Mask   accept = active_i && (idx_u == valid_count - 1u);
+                Mask accept  = active_i && (idx_u == valid_count - 1u);
 
                 // Reuse sample_.x
                 sample_.x() = dr::select(active_i, idx_f - idx_u, sample_.x());
@@ -233,11 +265,12 @@ public:
             }
 
             // Account for reservoir sampling probability
-            Float reservoir_pdf = dr::select(valid_count > 0u, valid_count, 1u) / (ScalarFloat) m_sensors.size();
+            Float reservoir_pdf =
+                dr::select(valid_count > 0u, valid_count, 1u) /
+                (ScalarFloat) m_sensors.size();
             result_1.pdf /= reservoir_pdf;
             result_2 *= reservoir_pdf;
         }
-
 
         return { result_1, result_2 };
     }
@@ -247,7 +280,8 @@ public:
         Float result = dr::zeros<Float>();
         for (size_t i = 0; i < m_sensors.size(); ++i) {
             Mask active_i = active && (m_last_index == i);
-            dr::masked(result, active_i) = m_sensors[i]->pdf_direction(it, ds, active_i);
+            dr::masked(result, active_i) =
+                m_sensors[i]->pdf_direction(it, ds, active_i);
         }
         return result;
     }
@@ -255,7 +289,7 @@ public:
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         Spectrum result = dr::zeros<Spectrum>();
         for (size_t i = 0; i < m_sensors.size(); ++i) {
-            Mask active_i = active && (m_last_index == i);
+            Mask active_i    = active && (m_last_index == i);
             result[active_i] = m_sensors[i]->eval(si, active_i);
         }
         return result;
@@ -271,11 +305,12 @@ public:
     void traverse(TraversalCallback *callback) override {
         Base::traverse(callback);
         std::string id;
-        for(size_t i = 0; i < m_sensors.size(); i++) {
+        for (size_t i = 0; i < m_sensors.size(); i++) {
             id = m_sensors.at(i)->id();
             if (id.empty() || string::starts_with(id, "_unnamed_"))
                 id = "sensor" + std::to_string(i);
-            callback->put_object(id, m_sensors.at(i).get(), +ParamFlags::NonDifferentiable);
+            callback->put_object(id, m_sensors.at(i).get(),
+                                 +ParamFlags::NonDifferentiable);
         }
     }
 
