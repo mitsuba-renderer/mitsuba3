@@ -63,8 +63,8 @@ public:
             1
         );
 
+        m_sky_rad = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
         m_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
-        m_sky_radiance = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
 
         const TensorFile sampling_datasets(
             file_resolver()->resolve(DATABASE_PATH + "sampling_data.bin")
@@ -105,7 +105,7 @@ public:
             1
         );
 
-        m_sky_radiance = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
+        m_sky_rad = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
         m_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
 
         m_sky_sampling_weights = compute_sky_sampling_weights();
@@ -114,10 +114,24 @@ public:
     std::pair<Wavelength, Spectrum>
     sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
                        Mask active) const override {
-        DRJIT_MARK_USED(si);
-        DRJIT_MARK_USED(sample);
-        DRJIT_MARK_USED(active);
-        NotImplementedError()
+        if constexpr (!is_spectral_v<Spectrum>) {
+            DRJIT_MARK_USED(si);
+            DRJIT_MARK_USED(sample);
+            DRJIT_MARK_USED(active);
+            NotImplementedError("sample_wavelengths");
+        } else {
+            static constexpr ScalarFloat
+                    min_w = std::max(MI_CIE_MIN, WAVELENGTHS<ScalarFloat>[0]),
+                    max_w = std::min(MI_CIE_MAX, WAVELENGTHS<ScalarFloat>[WAVELENGTH_COUNT - 1]);
+
+            Wavelength w_sample = math::sample_shifted<Wavelength>(sample);
+                       w_sample = min_w + (max_w - min_w) * w_sample;
+
+            SurfaceInteraction3f new_si(si);
+            new_si.wavelengths = w_sample;
+
+            return { w_sample, Base::eval(new_si, active) / (max_w - min_w) };
+        }
     }
 
     std::string to_string() const override {
@@ -200,12 +214,10 @@ private:
         UInt32 res_gaussian_idx = 0;
         for (uint32_t mixture_idx = 0; mixture_idx < 4; ++mixture_idx) {
             for (uint32_t gaussian_idx = 0; gaussian_idx < TGMM_COMPONENTS; ++gaussian_idx) {
-                last_cdf = dr::select(active_loop, cdf, last_cdf);
+                dr::masked(last_cdf, active_loop) = cdf;
 
-                res_gaussian_idx = dr::select(active_loop,
-                    tgmm_idx[mixture_idx] + gaussian_idx,
-                    res_gaussian_idx
-                );
+                dr::masked(res_gaussian_idx, active_loop) =
+                    tgmm_idx[mixture_idx] + gaussian_idx;
 
                 Float gaussian_w = lerp_w[mixture_idx] * dr::gather<Float>(m_tgmm_tables,
                     res_gaussian_idx * TGMM_GAUSSIAN_PARAMS + (TGMM_GAUSSIAN_PARAMS - 1),
@@ -229,7 +241,7 @@ private:
         USpecMask active_dataset = active & (sun_eta >= 0.f);
 
         return std::make_pair(
-            bezier_interp<SkyRadData>(m_sky_radiance, channel_idx, sun_eta, active_dataset),
+            bezier_interp<SkyRadData>(m_sky_rad, channel_idx, sun_eta, active_dataset),
             bezier_interp<SkyParamsData>(m_sky_params, channel_idx, sun_eta, active_dataset)
         );
     }
@@ -270,13 +282,16 @@ private:
     Int32 m_nb_days;
 
     // ========= Radiance parameters =========
+    TensorXf m_sky_rad;
     TensorXf m_sky_params;
-    TensorXf m_sky_radiance;
 
-    /// Holds the sampling weights (sun vs sky) for each elevation
+    // ========= Sampling parameters =========
+    /// Sampling weights (sun vs sky) for each elevation
     FloatStorage m_sky_sampling_weights;
 
-    // ========= Loaded from file =========
+    // ========= Irradiance datasets loaded from file =========
+    // Contains irradiance values for the 10 turbidites,
+    // 30 elevations and 11 wavelengths
     TensorXf m_sky_irrad_dataset;
     TensorXf m_sun_irrad_dataset;
 
