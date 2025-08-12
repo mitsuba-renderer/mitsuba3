@@ -362,16 +362,17 @@ public:
                                       Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
         const Point2f sun_angles = get_sun_angles(time);
+        const Float sky_sampling_w = get_sky_sampling_weight(sun_angles, active);
 
         // 1. Sample spatial component
         Point2f offset = warp::square_to_uniform_disk_concentric(sample2);
 
         // 2. Sample directional component
-        Mask pick_sky = sample3.x() < m_sky_sampling_w;
+        Mask pick_sky = sample3.x() < sky_sampling_w;
         Vector3f d = dr::select(
                 pick_sky,
-                sample_sky({sample3.x() / m_sky_sampling_w, sample3.y()}, sun_angles, active & pick_sky),
-                sample_sun({(sample3.x() - m_sky_sampling_w) / (1 - m_sky_sampling_w), sample3.y()}, sun_angles)
+                sample_sky({sample3.x() / sky_sampling_w, sample3.y()}, sun_angles, active & pick_sky),
+                sample_sun({(sample3.x() - sky_sampling_w) / (1 - sky_sampling_w), sample3.y()}, sun_angles)
         );
         active &= Frame3f::cos_theta(d) >= 0.f;
         // Unlike \ref sample_direction, ray goes from the envmap toward the scene
@@ -380,7 +381,7 @@ public:
         // 3. PDF
         Float sky_pdf, sun_pdf;
         std::tie(sky_pdf, sun_pdf) = compute_pdfs(d, sun_angles, pick_sky, active);
-        Float pdf = dr::lerp(sun_pdf, sky_pdf, m_sky_sampling_w);
+        Float pdf = dr::lerp(sun_pdf, sky_pdf, sky_sampling_w);
         // Apply pdf of the origin offset
         pdf *= dr::InvPi<Float> * dr::rcp(dr::square(m_bsphere.radius));
         active &= pdf > 0.f;
@@ -411,13 +412,15 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         const Point2f sun_angles = get_sun_angles(it.time);
-        Mask pick_sky = sample.x() < m_sky_sampling_w;
+        const Float sky_sampling_w = get_sky_sampling_weight(sun_angles, active);
+
+        Mask pick_sky = sample.x() < sky_sampling_w;
 
         // Sample the sun or the sky
         Vector3f sample_dir = dr::select(
                 pick_sky,
-                sample_sky({sample.x() / m_sky_sampling_w, sample.y()}, sun_angles, active & pick_sky),
-                sample_sun({(sample.x() - m_sky_sampling_w) / (1 - m_sky_sampling_w), sample.y()}, sun_angles)
+                sample_sky({sample.x() / sky_sampling_w, sample.y()}, sun_angles, active & pick_sky),
+                sample_sun({(sample.x() - sky_sampling_w) / (1 - sky_sampling_w), sample.y()}, sun_angles)
         );
         active &= Frame3f::cos_theta(sample_dir) >= 0.f;
 
@@ -443,7 +446,7 @@ public:
 
         Float sky_pdf, sun_pdf;
         std::tie(sky_pdf, sun_pdf) = compute_pdfs(sample_dir, sun_angles, pick_sky, active);
-        ds.pdf = dr::lerp(sun_pdf, sky_pdf, m_sky_sampling_w);
+        ds.pdf = dr::lerp(sun_pdf, sky_pdf, sky_sampling_w);
 
         Spectrum res = eval(si, active) / ds.pdf;
                  res &= dr::isfinite(res);
@@ -454,12 +457,13 @@ public:
                     Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
         const Point2f sun_angles = get_sun_angles(ds.time);
+        const Float sky_sampling_w = get_sky_sampling_weight(sun_angles, active);
 
         Vector3f local_dir = m_to_world.value().inverse() * ds.d;
         Float sky_pdf, sun_pdf;
         std::tie(sky_pdf, sun_pdf) = compute_pdfs(local_dir, sun_angles, true, active);
 
-        Float combined_pdf = dr::lerp(sun_pdf, sky_pdf, m_sky_sampling_w);
+        Float combined_pdf = dr::lerp(sun_pdf, sky_pdf, sky_sampling_w);
         return dr::select(active, combined_pdf, 0.f);
     }
 
@@ -723,6 +727,7 @@ protected:
 
     /// Sun angles in local coordinates (phi, theta)
     virtual Point2f get_sun_angles(const Float& time) const = 0;
+    virtual Float get_sky_sampling_weight(const Point2f& sun_angles, const Mask& active) const = 0;
     virtual std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Point2f& sun_angles, const Mask &active) const = 0;
 
     std::pair<Vector4f, Vector4u> get_tgmm_data(const Point2f& sun_angles) const {
@@ -964,7 +969,6 @@ protected:
     ref<Texture> m_albedo_tex;
     FloatStorage m_albedo;
 
-    Float m_sky_sampling_w;
     ScalarFloat m_sun_half_aperture;
 
     // Precomputed dataset
