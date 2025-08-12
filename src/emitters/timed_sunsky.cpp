@@ -73,9 +73,7 @@ public:
         m_sky_irrad_dataset = Base::template load_field<TensorXf32>(sampling_datasets, "sky_irradiance");
         m_sun_irrad_dataset = Base::template load_field<TensorXf32>(sampling_datasets, "sun_irradiance");
 
-        m_sky_irrad = dr::take_interp(m_sky_irrad_dataset, m_turbidity);
-        m_sun_irrad = dr::take_interp(m_sun_irrad_dataset, m_turbidity);
-
+        m_sky_sampling_weights = compute_sky_sampling_weights();
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -110,8 +108,7 @@ public:
         m_sky_radiance = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
         m_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
 
-        m_sky_irrad = dr::take_interp(m_sky_irrad_dataset, m_turbidity);
-        m_sun_irrad = dr::take_interp(m_sun_irrad_dataset, m_turbidity);
+        m_sky_sampling_weights = compute_sky_sampling_weights();
     }
 
     std::pair<Wavelength, Spectrum>
@@ -139,6 +136,30 @@ public:
 
 private:
 
+    FloatStorage compute_sky_sampling_weights() const {
+        using UInt32Storage = dr::uint32_array_t<FloatStorage>;
+        using FullSpectrumStorage = unpolarized_spectrum_t<
+            mitsuba::Spectrum<FloatStorage, WAVELENGTH_COUNT>
+        >;
+
+        UInt32Storage elevation_idx = dr::arange<UInt32Storage>(ELEVATION_CTRL_PTS);
+
+        FullSpectrumStorage wavelengths = {
+            320, 360, 400, 440, 480, 520, 560, 600, 640, 680, 720
+        };
+
+        FloatStorage sky_irrad_data = dr::take_interp(m_sky_irrad_dataset, m_turbidity),
+                     sun_irrad_data = dr::take_interp(m_sun_irrad_dataset, m_turbidity);
+
+        FullSpectrumStorage sky_irrad = dr::gather<FullSpectrumStorage>(sky_irrad_data, elevation_idx),
+                            sun_irrad = dr::gather<FullSpectrumStorage>(sun_irrad_data, elevation_idx);
+
+        FloatStorage sky_lum = m_sky_scale * luminance(sky_irrad, wavelengths),
+                     sun_lum = m_sun_scale * luminance(sun_irrad, wavelengths);
+
+        return sky_lum / (sky_lum + sun_lum);
+    }
+
     Point2f get_sun_angles(const Float& time) const override {
         DateTimeRecord<Float> date_time = dr::zeros<DateTimeRecord<Float>>();
         date_time.year = m_start_date.year;
@@ -163,35 +184,12 @@ private:
         UInt32 sun_idx_low = dr::floor2int<UInt32>(sun_idx),
                sun_idx_high = sun_idx_low + 1;
 
-        FullSpectrum wavelengths = {
-            320, 360, 400, 440, 480, 520, 560, 600, 640, 680, 720
-        };
+        Float low_weight = dr::gather<Float>(m_sky_sampling_weights, sun_idx_low, valid_elevation),
+              high_weight = dr::gather<Float>(m_sky_sampling_weights, sun_idx_high, valid_elevation);
 
-        Float sky_lum, sun_lum;
-        {
-            FullSpectrum spec_idx_low = dr::gather<FullSpectrum>(m_sky_irrad, sun_idx_low, valid_elevation),
-                         spec_idx_heigh = dr::gather<FullSpectrum>(m_sky_irrad, sun_idx_high, valid_elevation);
+        Float res = dr::lerp(low_weight, high_weight, sun_idx - sun_idx_low);
 
-            sky_lum = dr::lerp(
-                    luminance(spec_idx_low, wavelengths),
-                    luminance(spec_idx_heigh, wavelengths),
-                    sun_idx - sun_idx_low
-            );
-        }
-        {
-            FullSpectrum spec_idx_low = dr::gather<FullSpectrum>(m_sun_irrad, sun_idx_low, valid_elevation),
-                         spec_idx_heigh = dr::gather<FullSpectrum>(m_sun_irrad, sun_idx_high, valid_elevation);
-
-            sun_lum = dr::lerp(
-                    luminance(spec_idx_low, wavelengths),
-                    luminance(spec_idx_heigh, wavelengths),
-                    sun_idx - sun_idx_low
-            );
-        }
-
-        Float sampling_w = sky_lum / (sky_lum + sun_lum * (m_sun_scale / m_sun_scale));
-
-        return dr::select(dr::isnan(sampling_w), 1.f, sampling_w);
+        return dr::select(res == 0.f, 1.f, res);
     }
 
     std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Point2f& sun_angles, const Mask& active) const override {
@@ -275,9 +273,8 @@ private:
     TensorXf m_sky_params;
     TensorXf m_sky_radiance;
 
-
-    FloatStorage m_sky_irrad;
-    FloatStorage m_sun_irrad;
+    /// Holds the sampling weights (sun vs sky) for each elevation
+    FloatStorage m_sky_sampling_weights;
 
     // ========= Loaded from file =========
     TensorXf m_sky_irrad_dataset;
