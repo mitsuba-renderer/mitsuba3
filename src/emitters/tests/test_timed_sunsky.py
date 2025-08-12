@@ -198,7 +198,7 @@ def test04_sun_and_sky_sampling(variants_vec_backends_once, turb, start_day):
             sample_func= sample_func,
             sample_dim=2,
             sample_count=400_000,
-            res=85,
+            res=95,
             ires=32
         )
 
