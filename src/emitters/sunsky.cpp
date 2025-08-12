@@ -145,7 +145,7 @@ public:
     MI_IMPORT_BASE(BaseSunskyEmitter,
         m_turbidity, m_sky_scale, m_sun_scale, m_albedo, m_bsphere,
         m_sun_half_aperture, m_sky_rad_dataset, m_tgmm_tables,
-        m_sky_params_dataset, CHANNEL_COUNT, m_to_world, m_sky_sampling_w
+        m_sky_params_dataset, CHANNEL_COUNT, m_to_world
     )
     using typename Base::FloatStorage;
 
@@ -360,6 +360,10 @@ private:
         return m_sun_angles;
     }
 
+    Float get_sky_sampling_weight(const Point2f&, const Mask&) const override {
+        return m_sky_sampling_w;
+    }
+
     std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Point2f &, const Mask &active) const override {
         const auto [ idx, temp_sample ] = m_gaussian_distr.sample_reuse(sample, active);
         const auto [ idx_div, idx_mod ] = dr::idivmod(idx, TGMM_COMPONENTS);
@@ -530,7 +534,7 @@ private:
                 sky_lum *= luminance(sky_radiance);
                 sun_lum *= luminance(sun_radiance) * Base::get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
             } else {
-                FullSpectrum wavelengths = FullSpectrum(channel_idx);
+                FullSpectrum wavelengths = WAVELENGTH_STEP * channel_idx + WAVELENGTHS<ScalarFloat>[0];
 
                 sky_lum *= luminance(sky_radiance, wavelengths);
                 sun_lum *= luminance(sun_radiance, wavelengths) * Base::get_area_ratio(m_sun_half_aperture);
@@ -582,6 +586,7 @@ private:
     FloatStorage m_sky_radiance;
 
     // ========= Sampling parameters =========
+    Float m_sky_sampling_w;
     DiscreteDistribution<Float> m_gaussian_distr;
     ContinuousDistribution<Wavelength> m_spectral_distr;
 

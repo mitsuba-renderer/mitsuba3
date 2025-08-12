@@ -61,7 +61,7 @@ def generate_average(plugin, render_res, time_res):
 
     pixel_idx_wav, time_idx = dr.meshgrid(pixel_idx, time_idx)
 
-    result = dr.zeros(mi.Color3f, nb_rays)
+    result = dr.zeros(mi.Float, dr.size_v(mi.Spectrum) * nb_rays)
     si = dr.zeros(mi.SurfaceInteraction3f, nb_rays * time_width)
     for frame_start in range(0, time_res, time_width):
         time_idx_wav = time_idx + frame_start
@@ -74,7 +74,7 @@ def generate_average(plugin, render_res, time_res):
         dr.scatter_add(result, color, pixel_idx_wav, active)
 
 
-    return mi.TensorXf(dr.ravel(result), (*render_res, 3))
+    return mi.TensorXf(dr.ravel(result), (*render_res, dr.size_v(mi.Spectrum)))
 
 def test01_average_of_average():
     render_res = (64, 32)
