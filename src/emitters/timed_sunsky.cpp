@@ -270,14 +270,14 @@ private:
 
     template<typename Dataset>
     Dataset bezier_interp(const TensorXf& dataset, const USpecUInt32& channel_idx, const Float& eta, const USpecMask& active) const {
-
         Dataset res = dr::zeros<Dataset>();
+
         Float x = dr::cbrt(2 * dr::InvPi<Float> * eta);
-        constexpr dr::scalar_t<Float> coefs[SKY_CTRL_PTS] = {1, 5, 10, 10, 5, 1};
+              x = dr::minimum(x, dr::OneMinusEpsilon<Float>);
+        constexpr ScalarFloat coefs[SKY_CTRL_PTS] = {1, 5, 10, 10, 5, 1};
 
         Float x_pow = 1.f, x_pow_inv = dr::pow(1.f - x, SKY_CTRL_PTS - 1);
         Float x_pow_inv_scale = dr::rcp(1.f - x);
-
         for (uint32_t ctrl_pt = 0; ctrl_pt < SKY_CTRL_PTS; ++ctrl_pt) {
             TensorXf temp = dr::take(dataset, ctrl_pt);
             Dataset data_ctrl_pt = dr::gather<Dataset>(
