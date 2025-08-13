@@ -1,6 +1,5 @@
 #include <mitsuba/render/sunsky.h>
 
-
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
@@ -27,6 +26,14 @@ public:
     MI_IMPORT_TYPES()
 
     TimedSunskyEmitter(const Properties &props) : Base(props) {
+        m_shutter_open          = props.get<ScalarFloat>("shutter_open", 0.f);
+        m_inv_shutter_open_time = props.get<ScalarFloat>("shutter_close", 1.f) - m_shutter_open;
+
+        if (m_inv_shutter_open_time < 0)
+            Log(Error, "Shutter opening time must be less than or equal to the shutter "
+                       "closing time!");
+
+        m_inv_shutter_open_time = 1.f / m_inv_shutter_open_time;
 
         ScalarFloat window_start_time = props.get<ScalarFloat>("window_start_time", 7.f);
         if (window_start_time < 0.f || window_start_time > 24.f)
@@ -124,7 +131,7 @@ public:
             SurfaceInteraction3f new_si(si);
             new_si.wavelengths = w_sample;
 
-            return { w_sample, Base::eval(new_si, active) / (max_w - min_w) };
+            return { w_sample, Base::eval(new_si, active) * (max_w - min_w) };
         }
     }
 
@@ -154,7 +161,9 @@ private:
         date_time.year = m_start_date.year;
         date_time.month = m_start_date.month;
 
-        Float day = dr::clip(time, 0.f, 1.f) * (m_nb_days - dr::Epsilon<Float>);
+        Float remaped_time = (time - m_shutter_open) * m_inv_shutter_open_time;
+
+        Float day = remaped_time * (m_nb_days - dr::Epsilon<Float>);
         Int32 int_day = dr::floor2int<Int32>(day);
 
         date_time.day = m_start_date.day + int_day;
@@ -287,6 +296,8 @@ private:
     // ================================================================================================
     // ========================================= ATTRIBUTES ===========================================
     // ================================================================================================
+
+    ScalarFloat m_shutter_open, m_inv_shutter_open_time;
 
     Float m_window_start_time, m_window_end_time;
     DateTimeRecord<Float> m_start_date, m_end_date;
