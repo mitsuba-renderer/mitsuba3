@@ -2,6 +2,157 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _emitter-timed_sunsky:
+
+Timed sun and sky emitter (:monosp:`timed_sunsky`)
+-------------------------------------------------
+
+.. pluginparameters::
+
+ * - turbidity
+   - |float|
+   - Atmosphere turbidity, must be within [1, 10] (Default: 3, clear sky in a temperate climate).
+     Smaller turbidity values (∼ 1 − 2) produce an arctic-like clear blue sky,
+     whereas larger values (∼ 8 − 10) create an atmosphere that is more typical
+     of a warm, humid day.
+   - |exposed|
+
+ * - albedo
+   - |spectrum|
+   - Ground albedo, must be within [0, 1] for each wavelength/channel, (Default: 0.3).
+     This cannot be spatially varying (e.g. have bitmap as type).
+   - |exposed|
+
+ * - latitude
+   - |float|
+   - Latitude of the location in degrees (Default: 35.689, Tokyo's latitude).
+   - |exposed|
+
+ * - longitude
+   - |float|
+   - Longitude of the location in degrees (Default: 139.6917, Tokyo's longitude).
+   - |exposed|
+
+ * - timezone
+   - |float|
+   - Timezone of the location in hours (Default: 9).
+   - |exposed|
+
+ * - window_start_time
+   - |float|
+   - Start hour for the daily average (Default: 7).
+   - |exposed|
+
+ * - window_end_time
+   - |float|
+   - Final hour for the daily average (Default: 19).
+   - |exposed|
+
+ * - start_year
+   - |int|
+   - Year of the start of the average (Default: 2025).
+   - |exposed|
+
+ * - start_month
+   - |int|
+   - Month of the start of the average (Default: 01).
+   - |exposed|
+
+ * - start_day
+   - |int|
+   - Day of the start of the average (Default: 01).
+   - |exposed|
+
+ * - end_year
+   - |int|
+   - Year of the end of the average (Default: start_year + 1).
+   - |exposed|
+
+ * - end_month
+   - |int|
+   - Month of the end of the average (Default: start_month).
+   - |exposed|
+
+* - end_day
+  - |int|
+  - Day of the end of the average (Default: start_day).
+  - |exposed|
+
+ * - sun_scale
+   - |float|
+   - Scale factor for the sun radiance (Default: 1).
+     Can be used to turn the sun off (by setting it to 0).
+   - |exposed|
+
+ * - sky_scale
+   - |float|
+   - Scale factor for the sky radiance (Default: 1).
+     Can be used to turn the sky off (by setting it to 0).
+   - |exposed|
+
+ * - sun_aperture
+   - |float|
+   - Aperture angle of the sun in degrees (Default: 0.5338, normal sun aperture).
+
+* - shutter_open
+   - |float|
+   - Shutter opening time (Default: 0).
+     Used to vary sunsky appearance
+
+ * - shutter_close
+   - |float|
+   - Shutter closing time (Default: 1).
+     Used to vary sunsky appearance
+
+ * - to_world
+   - |transform|
+   - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
+   - |exposed|
+
+
+  This emitter represents a sun and sky environment emitter for a dynamic time interval
+  (where time is passed as attribute of the various query records).
+  It is particularly useful for applications like architectural visualization or horticultural studies,
+  where the goal is to simulate the lighting conditions over multiple days, months, years, or
+  even longer, rather than the lighting at a specific instant. If the goal is to
+  render using the sunsky background emitter at a fixed point in time,
+  please take a look at the :ref:`sunsky <Sunsky Emitter>` that is optimised and more efficient for that.
+
+  The plugin works by dynamically computing the Hosek-Wilkie sun :cite:`HosekSun2013` and sky model
+  :cite:`HosekSky2012` for the given time and direction of the ray/sample.
+  The time parameter is controlled by the ``shutter_open`` and ``shutter_close``
+  parameters that should thus be the same as the sensor's.
+
+  Note that attaching a ``timed_sunsky`` emitter to the scene introduces physical units
+  into the rendering process of Mitsuba 3, which is ordinarily a unitless system.
+  Specifically, the evaluated spectral radiance has units of power (:math:`W`) per
+  unit area (:math:`m^{-2}`) per steradian (:math:`sr^{-1}`) per unit wavelength
+  (:math:`nm^{-1}`). As a consequence, your scene should be modeled in meters for
+  this plugin to work properly.
+
+.. tabs::
+    .. code-tab:: xml
+        :name: timed_sunsky-light
+
+        <emitter type="timed_sunsky">
+            <integer name="start_year" value="2026"/>
+        </emitter>
+
+    .. code-tab:: python
+
+        'type': 'timed_sunsky',
+        'start_year': 2026
+
+.. warning::
+
+    - Note that this emitter is dependent on a valid sensor shutter open and close
+    time. The sensor's defaults being 0 and 0 respectively,
+    this emitter will not see the time vary. Please set a valid shutter
+    open and close time and pass the same time parameters to this plugin.
+
+*/
 template <typename Float, typename Spectrum>
 class TimedSunskyEmitter final: public BaseSunskyEmitter<Float, Spectrum> {
 public:
