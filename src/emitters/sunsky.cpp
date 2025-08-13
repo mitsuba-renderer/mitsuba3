@@ -178,9 +178,6 @@ public:
             m_sun_dir = dr::normalize(props.get<ScalarVector3f>("sun_direction"));
             dr::make_opaque(m_sun_dir);
 
-            if (dr::any(m_sun_dir.z() < 0.f))
-                Log(Warn, "The sun is below the horizon at the specified time and location!");
-
         } else {
             m_location.latitude  = props.get<ScalarFloat>("latitude", 35.6894f);
             m_location.longitude = props.get<ScalarFloat>("longitude", 139.6917f);
@@ -196,14 +193,14 @@ public:
             dr::make_opaque(m_location, m_time);
 
             const auto [theta, phi] = Base::sun_coordinates(m_time, m_location);
-            if (dr::all(theta > 0.5f * dr::Pi<Float>))
-                Log(Warn, "The sun is below the horizon at the specified time and location!");
-
             m_sun_dir = m_to_world.value() * sph_to_dir(theta, phi);
         }
 
         // ================= UPDATE ANGLES =================
         Vector3f local_sun_dir = m_to_world.value().inverse() * m_sun_dir;
+
+        if (dr::any(local_sun_dir.z() < 0.f))
+            Log(Warn, "The sun is below the horizon at the specified time and location!");
 
         m_sun_angles = dir_to_sph(local_sun_dir);
         m_sun_angles = { m_sun_angles.y(), m_sun_angles.x() }; // flip convention
@@ -553,7 +550,8 @@ private:
         FloatStorage res = dr::zeros<FloatStorage>(dataset.size() / dataset.shape(0));
 
         Float x = dr::cbrt(2 * dr::InvPi<Float> * eta);
-        constexpr dr::scalar_t<Float> coefs[SKY_CTRL_PTS] = {1, 5, 10, 10, 5, 1};
+              x = dr::minimum(x, dr::OneMinusEpsilon<Float>);
+        constexpr ScalarFloat coefs[SKY_CTRL_PTS] = {1, 5, 10, 10, 5, 1};
 
         Float x_pow = 1.f, x_pow_inv = dr::pow(1.f - x, SKY_CTRL_PTS - 1);
         Float x_pow_inv_scale = dr::rcp(1.f - x);
