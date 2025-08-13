@@ -93,7 +93,6 @@ Sun and sky emitter (:monosp:`sunsky`)
  * - sun_aperture
    - |float|
    - Aperture angle of the sun in degrees (Default: 0.5338, normal sun aperture).
-   - |exposed|
 
  * - to_world
    - |transform|
