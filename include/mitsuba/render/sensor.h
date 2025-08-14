@@ -87,6 +87,19 @@ public:
     sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
                        Mask active = true) const override;
 
+    /**
+     * \brief Evaluate the probability density of the wavelength sampling
+     * method implemented by \ref sample_wavelengths().
+     *
+     * \param wavelengths
+     *    The sampled wavelengths.
+     *
+     * \return
+     *    The corresponding sampling density per wavelength (units of 1/nm).
+     */
+    Spectrum pdf_wavelengths(const Spectrum &wavelengths,
+                                     Mask active = true) const override;
+
     //! @}
     // =============================================================
 

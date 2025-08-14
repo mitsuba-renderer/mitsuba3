@@ -113,6 +113,26 @@ Sensor<Float, Spectrum>::sample_wavelengths(const SurfaceInteraction3f& /*si*/, 
     return sample_wavelength<Float, Spectrum>(sample);
 }
 
+MI_VARIANT Spectrum Sensor<Float, Spectrum>::pdf_wavelengths(
+    const Spectrum &wavelengths, Mask active) const {
+
+    if constexpr (is_spectral_v<Spectrum>) {
+        if (m_srf != nullptr) {
+            SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+            si.wavelengths = wavelengths;
+
+            return m_srf->pdf_spectrum(si, active);
+        }
+
+        return pdf_rgb_spectrum<Spectrum>(wavelengths);
+
+    } else {
+        DRJIT_MARK_USED(wavelengths);
+        DRJIT_MARK_USED(active);
+        return 1.f;
+    }
+}
+
 // =============================================================================
 // ProjectiveCamera interface
 // =============================================================================
