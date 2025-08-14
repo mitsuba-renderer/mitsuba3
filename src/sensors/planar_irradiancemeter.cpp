@@ -68,7 +68,7 @@ public:
     }
 
     Float pdf_direction(const Interaction3f &, const DirectionSample3f &, Mask) const override {
-        return surface_area();
+        return dr::rcp(surface_area());
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
@@ -88,7 +88,7 @@ public:
             m_to_world.value() * Normal3f(0.f, 0.f, 1.f), // TODO no normal?
             sample,
             time,
-            1.f / surface_area(),
+            dr::rcp(surface_area()),
             false
         );
 
@@ -109,7 +109,11 @@ public:
     }
 
     std::string to_string() const override {
-        return "";
+        std::ostringstream oss;
+        oss << "PlanarIrradianceMeter["
+            << "\n\t to_world = " << m_to_world.scalar()
+        << "\n]";
+        return oss.str();
     }
 
 protected:
