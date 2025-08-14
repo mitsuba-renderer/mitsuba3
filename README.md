@@ -46,7 +46,7 @@ Please refer the [Mitsuba 3 documentation](https://mitsuba.readthedocs.io/en/lat
 When using misuka in academic projects, please cite:
 
 ```bibtex
-@article{Finnendahl2025,
+@article{finnendahl:2025:diff-acoustic-pt,
   title = {Differentiable Geometric Acoustic Path Tracing Using Time-Resolved Path Replay Backpropagation},
   author = {Finnendahl, Ugo and Worchel, Markus and J{\"u}terbock, Tobias and Wujecki, Daniel and Brinkmann, Fabian and Weinzierl, Stefan and Alexa, Marc},
   year = {2025},
