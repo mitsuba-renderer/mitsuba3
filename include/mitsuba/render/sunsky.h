@@ -308,11 +308,12 @@ public:
         const Point2f sun_angles = get_sun_angles(si.time);
         const Vector3f sun_dir = sph_to_dir(sun_angles.y(), sun_angles.x());
 
-        Vector3f local_wo = m_to_world.value().inverse() * (-si.wi);
+        Vector3f local_wo = dr::normalize(m_to_world.value().inverse() * -si.wi);
         Float cos_theta = Frame3f::cos_theta(local_wo),
-              gamma = dr::unit_angle(Vector3f(sun_dir), local_wo);
+              gamma = dr::unit_angle(sun_dir, local_wo);
 
-        active &= (cos_theta >= 0) && (sun_dir.y() < 0.5f * dr::Pi<Float>);
+        active &= (cos_theta >= 0.f) &&
+                    (Frame3f::cos_theta(sun_dir) >= 0.f);
         Mask hit_sun = active &
             (dr::dot(sun_dir, local_wo) >= dr::cos(m_sun_half_aperture));
 
