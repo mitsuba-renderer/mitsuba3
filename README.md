@@ -4,8 +4,8 @@
 
 # misuka
 
-[1]: https://dl.acm.org/doi/10.1145/3730900
-[2]: https://mitsuba.readthedocs.io/en/stable/
+[1]: https://dl.acm.org/doi/pdf/10.1145/3730900
+[2]: https://misuka.readthedocs.io/en/latest/
 
 ## Introduction
 
@@ -16,7 +16,7 @@ It is a fully compatible extension to [Mitsuba 3](https://github.com/mitsuba-ren
 
 ## Main Features
 
-- **Differentiation**: misuka is a differentiable renderer, meaning that it can compute derivatives of the entire simulation with respect to input parameters such as material properties, emitter and receiver positions, and scene geometry. It implements [Time-Resolved Path Replay Backpropagation](1) for efficient gradient estimation.
+- **Differentiation**: misuka is a differentiable renderer, meaning that it can compute derivatives of the entire simulation with respect to input parameters such as material properties, emitter and receiver positions, and scene geometry. It implements [Time-Resolved Path Replay Backpropagation][1]for efficient gradient estimation.
 
 - **Cross-platform**: misuka has been tested on Linux (``x86_64``), macOS (``arm64``), and Windows (``x86_64``).
 
