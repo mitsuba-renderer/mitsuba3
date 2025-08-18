@@ -16,14 +16,14 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /// Number of spectral channels in the skylight model
-static const constexpr size_t WAVELENGTH_COUNT = 11;
+static const constexpr uint32_t WAVELENGTH_COUNT = 11;
 /// Number of turbidity levels in the skylight model
-static const constexpr size_t TURBITDITY_LVLS = 10;
+static const constexpr uint32_t TURBITDITY_LVLS = 10;
 /// Number of albedo levels in the skylight model
-static const constexpr size_t ALBEDO_LVLS = 2;
+static const constexpr uint32_t ALBEDO_LVLS = 2;
 
 /// Distance between wavelengths in the skylight model
-static constexpr size_t WAVELENGTH_STEP = 40;
+static constexpr uint32_t WAVELENGTH_STEP = 40;
 /// Wavelengths used in the skylight model
 template <typename Float>
 static constexpr Float WAVELENGTHS[WAVELENGTH_COUNT] = {
@@ -928,8 +928,8 @@ protected:
         const FloatStorage& albedo, const Float& turbidity) const {
         using UInt32Storage = DynamicBuffer<UInt32>;
 
-        uint32_t bilinear_res_size = dataset.size() / (dataset.shape(0) * dataset.shape(1)),
-                 nb_params = bilinear_res_size / (dataset.shape(2) * dataset.shape(3));
+        uint32_t bilinear_res_size = (uint32_t) (dataset.size() / (dataset.shape(0) * dataset.shape(1))),
+                 nb_params = (uint32_t) (bilinear_res_size / (dataset.shape(2) * dataset.shape(3)));
 
         // Interpolate on turbidity
         TensorXf res = dr::take_interp(dataset, turbidity - 1.f);
