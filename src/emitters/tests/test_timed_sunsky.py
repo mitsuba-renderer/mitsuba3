@@ -76,7 +76,7 @@ def generate_average(plugin, render_res, time_res):
 
     return mi.TensorXf(dr.ravel(result), (*render_res, dr.size_v(mi.Spectrum)))
 
-def test01_average_of_average():
+def test01_average_of_average(variants_vec_backends_once):
     render_res = (64, 32)
 
     monthly_average = mi.load_dict({
