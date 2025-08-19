@@ -120,6 +120,9 @@ Timed sun and sky emitter (:monosp:`timed_sunsky`)
   render using the sunsky background emitter at a fixed point in time,
   please take a look at the :ref:`sunsky <Sunsky Emitter>` that is optimised and more efficient for that.
 
+  The local reference frame of this emitter is Z-up and X being towards the north direction.
+  This behaviour can be changed with the ``to_world`` parameter.
+
   The plugin works by dynamically computing the Hosek-Wilkie sun :cite:`HosekSun2013` and sky model
   :cite:`HosekSky2012` for the given time and direction of the ray/sample.
   The time parameter is controlled by the ``shutter_open`` and ``shutter_close``
@@ -403,8 +406,8 @@ private:
             320, 360, 400, 440, 480, 520, 560, 600, 640, 680, 720
         };
 
-        FloatStorage sky_irrad_data = dr::take_interp(m_sky_irrad_dataset, m_turbidity),
-                     sun_irrad_data = dr::take_interp(m_sun_irrad_dataset, m_turbidity);
+        FloatStorage sky_irrad_data = dr::take_interp(m_sky_irrad_dataset, m_turbidity).array(),
+                     sun_irrad_data = dr::take_interp(m_sun_irrad_dataset, m_turbidity).array();
 
         FullSpectrumStorage sky_irrad = dr::gather<FullSpectrumStorage>(sky_irrad_data, elevation_idx),
                             sun_irrad = dr::gather<FullSpectrumStorage>(sun_irrad_data, elevation_idx);

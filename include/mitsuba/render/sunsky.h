@@ -1073,13 +1073,8 @@ protected:
      */
     template <typename FileTensor>
     TensorXf load_field(const TensorFile& tensor_file, const std::string_view tensor_name) const {
-
-        const TensorFile::Field& field = tensor_file.field(tensor_name);
-        if (unlikely(field.dtype != struct_type_v<FileTensor>))
-            Throw("Incoherent type requested from field");
-
-        FileTensor ft = field.to<FileTensor>();
-        return TensorXf(ft);
+        FileTensor ft = tensor_file.field(tensor_name).to<FileTensor>();
+        return TensorXf(std::move(ft.array()), std::move(ft.shape()));
     }
 
     /**

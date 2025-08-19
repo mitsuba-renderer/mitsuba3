@@ -104,6 +104,9 @@ It uses the Hosek-Wilkie sun :cite:`HosekSun2013` and sky model
 :cite:`HosekSky2012` to generate strong approximations of the sky-dome without
 the cost of path tracing the atmosphere.
 
+The local reference frame of this emitter is Z-up and X being towards the north direction.
+This behaviour can be changed with the ``to_world`` parameter.
+
 Internally, this emitter does not compute a bitmap of the sky-dome like an
 environment map, but evaluates the spectral radiance whenever it is needed.
 Consequently, sampling is done through a Truncated Gaussian Mixture Model
@@ -555,7 +558,8 @@ private:
         Float x_pow = 1.f, x_pow_inv = dr::pow(1.f - x, SKY_CTRL_PTS - 1);
         Float x_pow_inv_scale = dr::rcp(1.f - x);
         for (uint32_t ctrl_pt = 0; ctrl_pt < SKY_CTRL_PTS; ++ctrl_pt) {
-            res += dr::take(dataset, ctrl_pt) * coefs[ctrl_pt] * x_pow * x_pow_inv;
+            FloatStorage data = dr::take(dataset, ctrl_pt).array();
+            res += coefs[ctrl_pt] * x_pow * x_pow_inv * data;
 
             x_pow *= x;
             x_pow_inv *= x_pow_inv_scale;

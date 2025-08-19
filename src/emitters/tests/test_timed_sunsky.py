@@ -77,6 +77,9 @@ def generate_average(plugin, render_res, time_res):
     return mi.TensorXf(dr.ravel(result), (*render_res, dr.size_v(mi.Spectrum)))
 
 def test01_average_of_average(variants_vec_backends_once):
+    if mi.is_polarized:
+        pytest.skip('Test must be adapted to polarized rendering.')
+
     render_res = (64, 32)
 
     monthly_average = mi.load_dict({
@@ -114,6 +117,9 @@ def test01_average_of_average(variants_vec_backends_once):
 
 @pytest.mark.parametrize("hour", [10.83, 14.3, 15.24])
 def test02_average_of_an_instant(variants_vec_backends_once, hour):
+    if mi.is_polarized:
+        pytest.skip('Test must be adapted to polarized rendering.')
+
     render_res = (512, 254)
 
     point_average = mi.load_dict({
@@ -141,7 +147,7 @@ def test02_average_of_an_instant(variants_vec_backends_once, hour):
     sky_res = sky.eval(rays)
 
     err = dr.mean(dr.abs(point_average_res - sky_res) / (dr.abs(sky_res) + 0.001), axis=None)
-    assert err < 0.00001, f"Top portion of the image does not match reference {err = }"
+    assert err < 0.00001, f"Point average does not match original sunsky emitter {err = }"
 
 
 @pytest.mark.slow
