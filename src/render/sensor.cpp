@@ -119,7 +119,7 @@ MI_VARIANT Spectrum Sensor<Float, Spectrum>::pdf_wavelengths(
     if constexpr (is_spectral_v<Spectrum>) {
         if (m_srf != nullptr) {
             SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
-            si.wavelengths = wavelengths;
+            si.wavelengths = unpolarized_spectrum(wavelengths);
 
             return m_srf->pdf_spectrum(si, active);
         }
