@@ -409,9 +409,11 @@ static ScalarVector3d parse_vector_from_string(const ParserState &state,
  */
 std::string file_location(const ParserState &state, const SceneNode &node) {
     // First check if we have a path from dictionary parsing
-    size_t node_idx = &node - &state.nodes[0];  // Get index of this node
-    if (node_idx < state.node_paths.size() && !state.node_paths[node_idx].empty())
-        return tfm::format("dictionary node \"%s\"", state.node_paths[node_idx]);
+    if (!state.nodes.empty()) {
+        size_t node_idx = &node - &state.nodes[0];  // Get index of this node
+        if (node_idx < state.node_paths.size() && !state.node_paths[node_idx].empty())
+            return tfm::format("dictionary node \"%s\"", state.node_paths[node_idx]);
+    }
 
     // Fall back to XML file location logic
     if (node.file_index >= state.files.size()) {
