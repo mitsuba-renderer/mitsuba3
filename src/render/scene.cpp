@@ -52,7 +52,7 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
                 mesh->set_scene(this);
         } else if (emitter) {
             // Surface emitters will be added to the list when attached to a shape
-            if (!has_flag(emitter->flags(), EmitterFlags::Surface))
+            if (!has_flag(emitter->flags(), EndpointFlags::Surface))
                 m_emitters.push_back(emitter);
 
             if (emitter->is_environment()) {

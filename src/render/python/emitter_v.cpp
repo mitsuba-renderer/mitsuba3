@@ -155,8 +155,8 @@ MI_PY_EXPORT(Emitter) {
     using PyEmitter = PyEmitter<Float, Spectrum>;
     using Properties = mitsuba::Properties;
 
-    m.def("has_flag", [](uint32_t flags, EmitterFlags f) {return has_flag(flags, f);});
-    m.def("has_flag", [](UInt32   flags, EmitterFlags f) {return has_flag(flags, f);});
+    m.def("has_flag", [](uint32_t flags, EndpointFlags f) {return has_flag(flags, f);});
+    m.def("has_flag", [](UInt32   flags, EndpointFlags f) {return has_flag(flags, f);});
 
     auto emitter = MI_PY_TRAMPOLINE_CLASS(PyEmitter, Emitter, Endpoint)
         .def(nb::init<const Properties&>(), "props"_a)

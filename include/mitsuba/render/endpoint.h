@@ -9,6 +9,47 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
+ * \brief This list of flags is used to classify the different types of endpoints.
+ */
+enum class EndpointFlags : uint32_t {
+    // =============================================================
+    //                      Emitter types
+    // =============================================================
+
+    /// No flags set (default value)
+    Empty                = 0x00000,
+
+    /// The endpoint lies at a single point in space
+    DeltaPosition        = 0x00001,
+
+    /// The endpoint emits light in a single direction
+    DeltaDirection       = 0x00002,
+
+    /// The endpoint is placed at infinity (e.g. environment maps)
+    Infinite             = 0x00004,
+
+    /// The endpoint is attached to a surface (e.g. area lights)
+    Surface              = 0x00008,
+
+    // =============================================================
+    //!                   Other lobe attributes
+    // =============================================================
+
+    /// The emission depends on the UV coordinates
+    SpatiallyVarying     = 0x00010,
+
+    // =============================================================
+    //!                 Compound lobe attributes
+    // =============================================================
+
+    /// Delta function in either position or direction
+    Delta        = DeltaPosition | DeltaDirection,
+};
+
+MI_DECLARE_ENUM_OPERATORS(EndpointFlags)
+
+
+/**
  * \brief Abstract interface subsuming emitters and sensors in Mitsuba.
  *
  * This class provides an abstract interface to emitters and sensors in

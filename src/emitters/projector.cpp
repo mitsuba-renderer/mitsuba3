@@ -130,7 +130,7 @@ public:
 
         parameters_changed();
 
-        m_flags = +EmitterFlags::DeltaPosition;
+        m_flags = +EndpointFlags::DeltaPosition;
     }
 
     void traverse(TraversalCallback *cb) override {

@@ -2541,23 +2541,22 @@ static const char *__doc_mitsuba_Emitter_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_7 = R"doc()doc";
 
-static const char *__doc_mitsuba_EmitterFlags =
-R"doc(This list of flags is used to classify the different types of
-emitters.)doc";
+static const char *__doc_mitsuba_EndpointFlags =
+R"doc(This list of flags is used to classify the different types of endpoints.)doc";
 
-static const char *__doc_mitsuba_EmitterFlags_Delta = R"doc(Delta function in either position or direction)doc";
+static const char *__doc_mitsuba_EndpointFlags_Delta = R"doc(Delta function in either position or direction)doc";
 
-static const char *__doc_mitsuba_EmitterFlags_DeltaDirection = R"doc(The emitter emits light in a single direction)doc";
+static const char *__doc_mitsuba_EndpointFlags_DeltaDirection = R"doc(The endpoint emits light in a single direction)doc";
 
-static const char *__doc_mitsuba_EmitterFlags_DeltaPosition = R"doc(The emitter lies at a single point in space)doc";
+static const char *__doc_mitsuba_EndpointFlags_DeltaPosition = R"doc(The endpoint lies at a single point in space)doc";
 
-static const char *__doc_mitsuba_EmitterFlags_Empty = R"doc(No flags set (default value))doc";
+static const char *__doc_mitsuba_EndpointFlags_Empty = R"doc(No flags set (default value))doc";
 
-static const char *__doc_mitsuba_EmitterFlags_Infinite = R"doc(The emitter is placed at infinity (e.g. environment maps))doc";
+static const char *__doc_mitsuba_EndpointFlags_Infinite = R"doc(The endpoint is placed at infinity (e.g. environment maps))doc";
 
-static const char *__doc_mitsuba_EmitterFlags_SpatiallyVarying = R"doc(The emission depends on the UV coordinates)doc";
+static const char *__doc_mitsuba_EndpointFlags_SpatiallyVarying = R"doc(The emission depends on the UV coordinates)doc";
 
-static const char *__doc_mitsuba_EmitterFlags_Surface = R"doc(The emitter is attached to a surface (e.g. area emitters))doc";
+static const char *__doc_mitsuba_EndpointFlags_Surface = R"doc(The endpoint is attached to a surface (e.g. area emitters))doc";
 
 static const char *__doc_mitsuba_Emitter_Emitter = R"doc(This is both a class and the base of various Mitsuba plugins)doc";
 

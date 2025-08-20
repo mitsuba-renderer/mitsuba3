@@ -232,7 +232,7 @@ public:
         m_scale = props.get<ScalarFloat>("scale", 1.f);
         m_warp = Warp(luminance_data.get(), res);
         m_d65 = Texture::D65(1.f);
-        m_flags = EmitterFlags::Infinite | EmitterFlags::SpatiallyVarying;
+        m_flags = EndpointFlags::Infinite | EndpointFlags::SpatiallyVarying;
     }
 
     void traverse(TraversalCallback *cb) override {

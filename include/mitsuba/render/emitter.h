@@ -9,46 +9,6 @@
 NAMESPACE_BEGIN(mitsuba)
 
 
-/**
- * \brief This list of flags is used to classify the different types of emitters.
- */
-enum class EmitterFlags : uint32_t {
-    // =============================================================
-    //                      Emitter types
-    // =============================================================
-
-    /// No flags set (default value)
-    Empty                = 0x00000,
-
-    /// The emitter lies at a single point in space
-    DeltaPosition        = 0x00001,
-
-    /// The emitter emits light in a single direction
-    DeltaDirection       = 0x00002,
-
-    /// The emitter is placed at infinity (e.g. environment maps)
-    Infinite             = 0x00004,
-
-    /// The emitter is attached to a surface (e.g. area emitters)
-    Surface              = 0x00008,
-
-    // =============================================================
-    //!                   Other lobe attributes
-    // =============================================================
-
-    /// The emission depends on the UV coordinates
-    SpatiallyVarying     = 0x00010,
-
-    // =============================================================
-    //!                 Compound lobe attributes
-    // =============================================================
-
-    /// Delta function in either position or direction
-    Delta        = DeltaPosition | DeltaDirection,
-};
-
-MI_DECLARE_ENUM_OPERATORS(EmitterFlags)
-
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Emitter : public Endpoint<Float, Spectrum> {
 public:
@@ -57,8 +17,8 @@ public:
 
     /// Is this an environment map light emitter?
     bool is_environment() const {
-        return has_flag(m_flags, EmitterFlags::Infinite) &&
-               !has_flag(m_flags, EmitterFlags::Delta);
+        return has_flag(m_flags, EndpointFlags::Infinite) &&
+               !has_flag(m_flags, EndpointFlags::Delta);
     }
 
     /// The emitter's sampling weight.

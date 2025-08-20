@@ -81,7 +81,7 @@ public:
             Throw("Expected a non-spatially varying intensity spectra!");
 
         m_needs_sample_3 = false;
-        m_flags = +EmitterFlags::DeltaPosition;
+        m_flags = +EndpointFlags::DeltaPosition;
     }
 
     void traverse(TraversalCallback *cb) override {

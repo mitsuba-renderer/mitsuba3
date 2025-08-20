@@ -33,7 +33,7 @@ def test02_trampoline(variants_vec_backends_once_rgb):
     class DummyEmitter(mi.Emitter):
         def __init__(self, props):
             mi.Emitter.__init__(self, props)
-            self.m_flags = mi.EmitterFlags.SpatiallyVarying
+            self.m_flags = mi.EndpointFlags.SpatiallyVarying
 
         def to_string(self):
             return f"DummyEmitter ({self.m_flags})"

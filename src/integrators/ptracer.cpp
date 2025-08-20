@@ -110,14 +110,14 @@ public:
             dr::gather<EmitterPtr>(scene->emitters_dr(), emitter_idx);
 
         // Don't connect delta emitters with sensor (both position and direction)
-        Mask active = !has_flag(emitter->flags(), EmitterFlags::Delta);
+        Mask active = !has_flag(emitter->flags(), EndpointFlags::Delta);
 
         // 3. Emitter position sampling
         Spectrum emitter_weight = dr::zeros<Spectrum>();
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
         // 3.a. Infinite emitters
-        Mask is_infinite = has_flag(emitter->flags(), EmitterFlags::Infinite),
+        Mask is_infinite = has_flag(emitter->flags(), EndpointFlags::Infinite),
              active_e = active && is_infinite;
         if (dr::any_or<true>(active_e)) {
             /* Sample a direction toward an envmap emitter starting

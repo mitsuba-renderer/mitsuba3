@@ -241,7 +241,7 @@ public:
         about the scene and default to the unit bounding sphere. */
         m_bsphere = BoundingSphere3f(ScalarPoint3f(0.f), 1.f);
 
-        m_flags = +EmitterFlags::Infinite | +EmitterFlags::SpatiallyVarying;
+        m_flags = +EndpointFlags::Infinite | +EndpointFlags::SpatiallyVarying;
     }
 
     void traverse(TraversalCallback *cb) override {

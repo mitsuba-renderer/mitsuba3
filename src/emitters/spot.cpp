@@ -88,7 +88,7 @@ public:
     MI_IMPORT_TYPES(Scene, Texture)
 
     SpotLight(const Properties &props) : Base(props) {
-        m_flags = +EmitterFlags::DeltaPosition;
+        m_flags = +EndpointFlags::DeltaPosition;
         m_intensity = props.get_emissive_texture<Texture>("intensity", 1.f);
         m_texture = props.get_texture<Texture>("texture", 1.f);
 
@@ -98,7 +98,7 @@ public:
         if (props.has_property("texture")) {
             if (!m_texture->is_spatially_varying())
                 Throw("The parameter 'texture' must be spatially varying (e.g. bitmap type)!");
-            m_flags |= +EmitterFlags::SpatiallyVarying;
+            m_flags |= +EndpointFlags::SpatiallyVarying;
         }
 
         ScalarFloat cutoff_angle = props.get<ScalarFloat>("cutoff_angle", 20.0f);

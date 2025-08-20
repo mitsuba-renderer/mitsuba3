@@ -68,9 +68,9 @@ public:
         m_radiance = props.get_emissive_texture<Texture>("radiance", 1.f);
         m_needs_sample_3 = false;
 
-        m_flags = EmitterFlags::Surface | EmitterFlags::DeltaDirection;
+        m_flags = EndpointFlags::Surface | EndpointFlags::DeltaDirection;
         if (m_radiance->is_spatially_varying())
-            m_flags |= +EmitterFlags::SpatiallyVarying;
+            m_flags |= +EndpointFlags::SpatiallyVarying;
     }
 
     void traverse(TraversalCallback *cb) override {

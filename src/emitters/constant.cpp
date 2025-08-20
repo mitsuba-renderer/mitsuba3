@@ -63,7 +63,7 @@ public:
         if (m_radiance->is_spatially_varying())
             Throw("Expected a non-spatially varying radiance spectra!");
 
-        m_flags = +EmitterFlags::Infinite;
+        m_flags = +EndpointFlags::Infinite;
     }
 
     void traverse(TraversalCallback *cb) override {

@@ -172,9 +172,9 @@ class DirectProjectiveIntegrator(PSIntegrator):
             # Re-compute some values with AD attached only in differentiable
             # phase
             if dr.hint(not primal, mode='scalar'):
-                is_surface = mi.has_flag(ds_em.emitter.flags(), mi.EmitterFlags.Surface)
-                is_infinite = mi.has_flag(ds_em.emitter.flags(), mi.EmitterFlags.Infinite)
-                is_spatially_varying = mi.has_flag(ds_em.emitter.flags(), mi.EmitterFlags.SpatiallyVarying)
+                is_surface = mi.has_flag(ds_em.emitter.flags(), mi.EndpointFlags.Surface)
+                is_infinite = mi.has_flag(ds_em.emitter.flags(), mi.EndpointFlags.Infinite)
+                is_spatially_varying = mi.has_flag(ds_em.emitter.flags(), mi.EndpointFlags.SpatiallyVarying)
 
                 # For textured area lights, we need to track UV changes on
                 # the emitter if it is moving

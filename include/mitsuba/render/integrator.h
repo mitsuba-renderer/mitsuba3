@@ -353,7 +353,7 @@ class MI_EXPORT_LIB SamplingIntegrator : public Integrator<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Integrator, should_stop, aov_names,
                     m_stop, m_timeout, m_render_timer, m_hide_emitters)
-    MI_IMPORT_TYPES(Scene, Sensor, Film, ImageBlock, Medium, Sampler)
+    MI_IMPORT_TYPES(Scene, Sensor, Film, ImageBlock, Medium, Sampler, EmitterPtr)
 
     /// Destructor
     ~SamplingIntegrator();

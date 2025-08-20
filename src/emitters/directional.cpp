@@ -86,7 +86,7 @@ public:
 
         m_needs_sample_3 = false;
 
-        m_flags      = EmitterFlags::Infinite | EmitterFlags::DeltaDirection;
+        m_flags      = EndpointFlags::Infinite | EndpointFlags::DeltaDirection;
     }
 
     void traverse(TraversalCallback *cb) override {
