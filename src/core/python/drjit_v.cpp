@@ -62,8 +62,9 @@ MI_PY_EXPORT(DrJit) {
         drjit_variant = drjit_variant.attr("ad");
 
     // Create basic type aliases to Dr.Jit (scalar + vectorized)
-    for (const char *name : { "Float32", "Float64", "Bool", "Int", "Int32",
-                              "Int64", "UInt", "UInt32", "UInt64" }) {
+    for (const char *name : { "Float16", "Float32", "Float64", "Bool",
+                              "Int8", "Int", "Int32", "Int64",
+                              "UInt8", "UInt", "UInt32", "UInt64" }) {
         m.attr(name) = drjit_variant.attr(name);
         m.attr((std::string("Scalar") + name).c_str()) =
             drjit_scalar.attr(name);
@@ -126,6 +127,7 @@ MI_PY_EXPORT(DrJit) {
     // Floating point suffix mappings depend on ScalarFloat type
     constexpr bool is_double_precision = std::is_same_v<double, ScalarFloat>;
     constexpr SuffixMapping float_mappings[] = {
+        { "f16", "f16" },
         { "f",   is_double_precision ? "f64" : "f" },
         { "f32", "f" },
         { "f16", "f16" },
@@ -136,8 +138,10 @@ MI_PY_EXPORT(DrJit) {
     // Integer and other type mappings are fixed
     constexpr SuffixMapping int_mappings[] = {
         { "i",   "i" },
+        { "i8",  "i8" },
         { "i32", "i" },
         { "i64", "i64" },
+        { "u8",  "u8" },
         { "u",   "u" },
         { "u32", "u" },
         { "u64", "u64" },
