@@ -621,11 +621,14 @@ def test28_parameter_substitution_warnings(variant_scalar_rgb):
     # Test multiple unused parameters - check exact error message format
     config = mi.parser.ParserConfig('scalar_rgb')
     config.unused_parameters = mi.LogLevel.Error
+
+    # Parameter keys are sorted by size. By using keys of different lengths,
+    # we can assert that the error message is always formatted in the same way.
     with pytest.raises(RuntimeError) as excinfo:
-        mi.parser.parse_string(config, xml, param1="value1", param2="value2", param3="value3")
+        mi.parser.parse_string(config, xml, param001="value1", param02="value2", param3="value3")
 
     # Check exact error message format
-    expected = "Found unused parameters:\n  - $param1=value1\n  - $param2=value2\n  - $param3=value3"
+    expected = "Found unused parameters:\n  - $param001=value1\n  - $param02=value2\n  - $param3=value3"
     assert error_string(excinfo.value) == expected
 
     # With config.unused_parameters=Debug, the operation should succeed
