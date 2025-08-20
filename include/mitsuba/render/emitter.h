@@ -12,7 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Emitter : public Endpoint<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Endpoint, m_shape)
+    MI_IMPORT_BASE(Endpoint, m_shape, m_flags)
     MI_IMPORT_TYPES()
 
     /// Is this an environment map light emitter?
@@ -23,9 +23,6 @@ public:
 
     /// The emitter's sampling weight.
     ScalarFloat sampling_weight() const { return m_sampling_weight; }
-
-    /// Flags for all components combined.
-    uint32_t flags(dr::mask_t<Float> /*active*/ = true) const { return m_flags; }
 
     void traverse(TraversalCallback *callback) override;
 
@@ -44,8 +41,6 @@ protected:
     Emitter(const Properties &props);
 
 protected:
-    /// Combined flags for all properties of this emitter.
-    uint32_t m_flags;
 
     /// Sampling weight
     ScalarFloat m_sampling_weight;

@@ -407,6 +407,9 @@ public:
     /// Set the medium that surrounds the emitter.
     virtual void set_medium(Medium *medium);
 
+    /// Flags for all components combined.
+    uint32_t flags(dr::mask_t<Float> /*active*/ = true) const { return m_flags; }
+
     /**
      * \brief Inform the emitter about the properties of the scene
      *
@@ -430,6 +433,9 @@ protected:
     Endpoint(const Properties &props, ObjectType type);
 
 protected:
+    /// Combined flags for all properties of this endpoint.
+    uint32_t m_flags = +EndpointFlags::Empty;
+
     field<AffineTransform4f, ScalarAffineTransform4f> m_to_world;
     ref<Medium> m_medium;
     Shape *m_shape = nullptr;

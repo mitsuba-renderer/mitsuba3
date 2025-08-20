@@ -7,7 +7,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT class PlanarIrradianceMeter final : public Sensor<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Sensor, m_film, sample_wavelengths, pdf_wavelengths, m_to_world)
+    MI_IMPORT_BASE(Sensor, m_film, sample_wavelengths, pdf_wavelengths, m_to_world, m_flags)
     MI_IMPORT_TYPES(Shape)
 
     PlanarIrradianceMeter(const Properties &props) : Base(props) {
@@ -26,6 +26,7 @@ public:
         m_inv_surface_area = dr::rcp(dr::norm(dr::cross(m_frame.s, m_frame.t)));
         dr::make_opaque(m_frame, m_inv_surface_area);
 
+        m_flags = +EndpointFlags::Empty;
     }
 
     std::pair<Ray3f, Spectrum>

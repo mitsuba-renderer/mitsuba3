@@ -151,6 +151,7 @@ MI_VARIANT ProjectiveCamera<Float, Spectrum>::ProjectiveCamera(const Properties 
     if (m_near_clip >= m_far_clip)
         Throw("The 'near_clip' parameter must be smaller than 'far_clip'.");
 
+    m_flags = +EndpointFlags::Delta;
 }
 
 MI_VARIANT ProjectiveCamera<Float, Spectrum>::~ProjectiveCamera() { }

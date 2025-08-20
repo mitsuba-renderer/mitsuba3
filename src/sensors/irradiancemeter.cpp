@@ -56,7 +56,7 @@ simply instantiate the desired sensor shape and specify an
 
 MI_VARIANT class IrradianceMeter final : public Sensor<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Sensor, m_film, m_shape, sample_wavelengths)
+    MI_IMPORT_BASE(Sensor, m_film, m_shape, sample_wavelengths, m_flags)
     MI_IMPORT_TYPES(Shape)
 
     IrradianceMeter(const Properties &props) : Base(props) {
@@ -68,6 +68,8 @@ public:
         if (m_film->rfilter()->radius() > .5f + math::RayEpsilon<Float>)
             Log(Warn, "This sensor should only be used with a reconstruction filter"
                "of radius 0.5 or lower (e.g. default 'box' filter)");
+
+        m_flags = +EndpointFlags::Surface;
     }
 
     std::pair<RayDifferential3f, Spectrum>

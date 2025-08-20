@@ -136,7 +136,7 @@ protected:
 template <typename Float, typename Spectrum, RayTargetType TargetType>
 class DistantSensorImpl final : public Sensor<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Sensor, m_to_world, m_film, sample_wavelengths)
+    MI_IMPORT_BASE(Sensor, m_to_world, m_film, sample_wavelengths, m_flags)
     MI_IMPORT_TYPES(Scene, Shape)
 
     DistantSensorImpl(const Properties &props) : Base(props) {
@@ -168,9 +168,12 @@ public:
         }
 
         // Set ray target if relevant
+        m_flags = +EndpointFlags::DeltaDirection;
         if constexpr (TargetType == RayTargetType::Point) {
             m_target_point = props.get<ScalarPoint3f>("target");
+            m_flags |= +EndpointFlags::DeltaPosition;
         } else if constexpr (TargetType == RayTargetType::Shape) {
+            m_flags |= +EndpointFlags::Surface;
             auto obj       = props.get<ref<Object>>("target");
             m_target_shape = dynamic_cast<Shape *>(obj.get());
 
@@ -178,6 +181,7 @@ public:
                 Throw(
                     "Invalid parameter target, must be a Point3f or a Shape.");
         } else {
+            m_flags |= +EndpointFlags::Infinite;
             Log(Debug, "No target specified.");
         }
     }

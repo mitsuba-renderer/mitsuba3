@@ -56,7 +56,7 @@ priority.
 MI_VARIANT class RadianceMeter final : public Sensor<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Sensor, m_film, m_to_world, m_needs_sample_2,
-                    m_needs_sample_3, sample_wavelengths)
+                    m_needs_sample_3, sample_wavelengths, m_flags)
     MI_IMPORT_TYPES()
 
     RadianceMeter(const Properties &props) : Base(props) {
@@ -93,6 +93,7 @@ public:
 
         m_needs_sample_2 = false;
         m_needs_sample_3 = false;
+        m_flags = +EndpointFlags::Delta;
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
