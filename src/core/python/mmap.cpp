@@ -73,9 +73,9 @@ MI_PY_EXPORT(MemoryMappedFile) {
 
             size_t size = 1;
             shape.reserve(f.shape.size());
-            for (size_t s : f.shape) {
-                size *= s;
-                shape.push_back(s);
+            for (size_t d : f.shape) {
+                size *= d;
+                shape.push_back(d);
             }
 
             const auto &s2 = nb::type_supplement<dr::ArraySupplement>(s.array);

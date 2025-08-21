@@ -2190,13 +2190,14 @@ def test62_transform_relocate(variant_scalar_rgb, tmp_path):
 def test63_resource_path_management(variant_scalar_rgb, tmp_path):
     """Test resource path management (<path> tag)"""
     import shutil
+    from mitsuba.test.util import find_resource
 
     # Create a data subdirectory in temp path
     data_dir = tmp_path / 'data'
     data_dir.mkdir()
 
     # Copy carrot.png to data/image_file.png
-    carrot_src = mi.file_resolver().resolve("resources/data/common/textures/carrot.png")
+    carrot_src = mi.file_resolver().resolve(find_resource("resources/data/common/textures/carrot.png"))
     image_file = data_dir / 'image_file.png'
     shutil.copy(str(carrot_src), str(image_file))
 
@@ -2219,7 +2220,7 @@ def test63_resource_path_management(variant_scalar_rgb, tmp_path):
     # This should fail because image_file.png can't be found during instantiation
     with pytest.raises(RuntimeError) as excinfo:
         scene = mi.parser.instantiate(config, state)
-    assert "No such file or directory" in str(excinfo.value)
+    assert "No such file or directory" in str(excinfo.value) or " does not exist!" in str(excinfo.value)
 
     # Test 2: With <path> tag pointing to data directory
     xml_with_path = '''<scene version="3.0.0">
