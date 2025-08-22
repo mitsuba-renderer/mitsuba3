@@ -79,6 +79,11 @@ public:
         return m_value;
     }
 
+    Color3f eval_3(const SurfaceInteraction3f & /*it*/, Mask active) const override {
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        return Color3f(m_value);
+    }
+
     Vector2f eval_1_grad(const SurfaceInteraction3f & /*it*/, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
         return 0.0;
