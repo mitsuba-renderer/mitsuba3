@@ -61,6 +61,9 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
+        if constexpr (dr::is_jit_v<Float>)
+            if (unlikely(m_value.size() != 1))
+                Throw("Updated the uniform spectrum with a float of size %d", m_value.size());
         dr::make_opaque(m_value);
     }
 
