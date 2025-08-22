@@ -297,28 +297,6 @@ public:
         #undef CHANGED
     }
 
-    std::pair<Wavelength, Spectrum>
-    sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
-                       Mask active) const override {
-        if constexpr (is_spectral_v<Spectrum>) {
-            Wavelength w_sample = math::sample_shifted<Wavelength>(sample);
-
-            Wavelength wavelengths;
-            Spectrum pdf;
-            std::tie(wavelengths, pdf) =
-                m_spectral_distr.sample_pdf(w_sample, active);
-
-            SurfaceInteraction3f si_query = si;
-            si_query.wavelengths = wavelengths;
-
-            return { si_query.wavelengths, Base::eval(si_query, active) / pdf };
-        } else {
-            DRJIT_MARK_USED(sample);
-
-            return { Wavelength(0.f), Base::eval(si, active) };
-        }
-    }
-
     std::string to_string() const override {
         std::string base_str = Base::to_string();
         std::ostringstream oss;
@@ -371,6 +349,24 @@ private:
                               idx_mod;
 
         return std::make_pair(gaussian_idx, temp_sample);
+    }
+
+    std::pair<Wavelength, Spectrum> sample_wlgth(const Float& sample, Mask active) const override {
+        if constexpr (is_spectral_v<Spectrum>) {
+            Wavelength w_sample = math::sample_shifted<Wavelength>(sample);
+
+            Spectrum pdf;
+            Wavelength wavelengths;
+            std::tie(wavelengths, pdf) =
+                m_spectral_distr.sample_pdf(w_sample, active);
+
+            return { wavelengths, dr::rcp(pdf) };
+        } else {
+            DRJIT_MARK_USED(sample);
+            DRJIT_MARK_USED(active);
+
+            NotImplementedError("sample_wavelengths")
+        }
     }
 
     // ================================================================================================

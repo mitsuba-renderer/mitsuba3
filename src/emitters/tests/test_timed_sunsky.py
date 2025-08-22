@@ -193,6 +193,7 @@ def test04_sun_and_sky_sampling(variants_vec_backends_once, turb, start_day):
         "start_day": start_day,
         # Increase the sun aperture to avoid errors with chi2's resolution
         "sun_aperture": 30.0,
+        "window_start_time": 9,
         "albedo": 0.5
     })
 

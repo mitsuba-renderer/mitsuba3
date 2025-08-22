@@ -266,29 +266,6 @@ public:
         m_sky_sampling_weights = compute_sky_sampling_weights();
     }
 
-    std::pair<Wavelength, Spectrum>
-    sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
-                       Mask active) const override {
-        if constexpr (!is_spectral_v<Spectrum>) {
-            DRJIT_MARK_USED(si);
-            DRJIT_MARK_USED(sample);
-            DRJIT_MARK_USED(active);
-            NotImplementedError("sample_wavelengths");
-        } else {
-            static constexpr ScalarFloat
-                    min_w = std::max(MI_CIE_MIN, WAVELENGTHS<ScalarFloat>[0]),
-                    max_w = std::min(MI_CIE_MAX, WAVELENGTHS<ScalarFloat>[WAVELENGTH_COUNT - 1]);
-
-            Wavelength w_sample = math::sample_shifted<Wavelength>(sample);
-                       w_sample = min_w + (max_w - min_w) * w_sample;
-
-            SurfaceInteraction3f new_si(si);
-            new_si.wavelengths = w_sample;
-
-            return { w_sample, Base::eval(new_si, active) * (max_w - min_w) };
-        }
-    }
-
     std::string to_string() const override {
         std::string base_str = Base::to_string();
         std::ostringstream oss;
@@ -382,6 +359,24 @@ private:
         }
 
         return std::make_pair(res_gaussian_idx, (sample - last_cdf) / (cdf - last_cdf));
+    }
+
+    std::pair<Wavelength, Spectrum> sample_wlgth(const Float& sample, Mask active) const override {
+        if constexpr (is_spectral_v<Spectrum>) {
+            static constexpr ScalarFloat
+                    min_w = std::max(MI_CIE_MIN, WAVELENGTHS<ScalarFloat>[0]),
+                    max_w = std::min(MI_CIE_MAX, WAVELENGTHS<ScalarFloat>[WAVELENGTH_COUNT - 1]);
+
+            Wavelength wavelengths = math::sample_shifted<Wavelength>(sample);
+            wavelengths = min_w + (max_w - min_w) * wavelengths;
+
+            return { wavelengths, /* 1/pdf = */ (max_w - min_w) };
+        } else {
+            DRJIT_MARK_USED(sample);
+            DRJIT_MARK_USED(active);
+
+            NotImplementedError("sample_wavelengths")
+        }
     }
 
     // ================================================================================================

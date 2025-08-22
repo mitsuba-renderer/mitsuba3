@@ -306,68 +306,9 @@ public:
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
         const Point2f sun_angles = get_sun_angles(si.time);
-        const Vector3f sun_dir = sph_to_dir(sun_angles.y(), sun_angles.x());
-
         Vector3f local_wo = dr::normalize(m_to_world.value().inverse() * -si.wi);
-        Float cos_theta = Frame3f::cos_theta(local_wo),
-              gamma = dr::unit_angle(sun_dir, local_wo);
 
-        active &= (cos_theta >= 0.f) &&
-                    (Frame3f::cos_theta(sun_dir) >= 0.f);
-        Mask hit_sun = active &
-            (dr::dot(sun_dir, local_wo) >= dr::cos(m_sun_half_aperture));
-
-        USpec res = 0.f;
-        if constexpr (!is_spectral_v<Spectrum>) {
-            USpecUInt32 idx = dr::zeros<USpecUInt32>();
-            if constexpr (is_rgb_v<Spectrum>)
-                idx = {0, 1, 2};
-            else
-                idx = USpecUInt32(0);
-
-            const auto [ sky_rad, sky_params ] = get_sky_datasets(sun_angles, idx, active);
-
-            res = m_sky_scale * eval_sky<USpec>(cos_theta, gamma, sky_params, sky_rad);
-            res += m_sun_scale * eval_sun<USpec>(idx, cos_theta, gamma, hit_sun) *
-                   get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
-
-            res *= MI_CIE_Y_NORMALIZATION;
-        } else {
-            Wavelength normalized_wavelengths =
-                (si.wavelengths - WAVELENGTHS<ScalarFloat>[0]) / WAVELENGTH_STEP;
-            USpecMask valid_idx = (0.f <= normalized_wavelengths) &
-                                 (normalized_wavelengths <= CHANNEL_COUNT - 1);
-
-            USpecUInt32 query_idx_low = dr::floor2int<USpecUInt32>(normalized_wavelengths);
-            USpecUInt32 query_idx_high = query_idx_low + 1;
-
-            Wavelength lerp_factor = normalized_wavelengths - query_idx_low;
-
-            const auto [ sky_rad_low, sky_params_low ] = get_sky_datasets(sun_angles, query_idx_low, active & valid_idx);
-            const auto [ sky_rad_high, sky_params_high ] = get_sky_datasets(sun_angles, query_idx_high, active & valid_idx);
-
-            // Linearly interpolate the sky's irradiance across the spectrum
-            res = m_sky_scale * dr::lerp(
-                eval_sky<USpec>(cos_theta, gamma, sky_params_low, sky_rad_low),
-                eval_sky<USpec>(cos_theta, gamma, sky_params_high, sky_rad_high),
-                lerp_factor);
-
-            // Linearly interpolate the sun's irradiance across the spectrum
-            USpec sun_rad_low = eval_sun<USpec>(
-                         query_idx_low, cos_theta, gamma, hit_sun & valid_idx);
-            USpec sun_rad_high = eval_sun<USpec>(
-                         query_idx_high, cos_theta, gamma, hit_sun & valid_idx);
-            USpec sun_rad = dr::lerp(sun_rad_low, sun_rad_high, lerp_factor);
-
-            USpec sun_ld = compute_sun_ld<USpec>(
-                query_idx_low, query_idx_high, lerp_factor, gamma,
-                hit_sun & valid_idx
-            );
-
-            res += m_sun_scale * sun_rad * sun_ld * get_area_ratio(m_sun_half_aperture);
-        }
-
-        return depolarizer<Spectrum>(res) & active;
+        return eval(local_wo, si.wavelengths, sun_angles, hit_sun(sun_angles, local_wo), active);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -376,6 +317,8 @@ public:
                                       Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
         const Point2f sun_angles = get_sun_angles(time);
+        active &= sun_angles.y() <= 0.5f * dr::Pi<Float>;
+
         const Float sky_sampling_w = get_sky_sampling_weight(sun_angles, active);
 
         // 1. Sample spatial component
@@ -392,22 +335,24 @@ public:
         // Unlike \ref sample_direction, ray goes from the envmap toward the scene
         Vector3f d_world = m_to_world.value() * (-d);
 
+        Mask sun_hit = !pick_sky || hit_sun(sun_angles, d);
+
         // 3. PDF
         Float sky_pdf, sun_pdf;
-        std::tie(sky_pdf, sun_pdf) = compute_pdfs(d, sun_angles, pick_sky, active);
+        std::tie(sky_pdf, sun_pdf) = compute_pdfs(d, sun_angles, sun_hit, active);
         Float pdf = dr::lerp(sun_pdf, sky_pdf, sky_sampling_w);
         // Apply pdf of the origin offset
         pdf *= dr::InvPi<Float> * dr::rcp(dr::square(m_bsphere.radius));
         active &= pdf > 0.f;
 
         // 4. Sample spectrum
-        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
-        si.wi = d_world;
-        si.time = time;
-        Wavelength wavelengths;
-        Spectrum weight;
-        std::tie(wavelengths, weight) =
-            this->sample_wavelengths(si, wavelength_sample, active);
+        Spectrum weight = 1.f;
+        Wavelength wavelengths = Wavelength(0.f);
+        if constexpr (is_spectral_v<Spectrum>)
+            std::tie(wavelengths, weight) =
+                this->sample_wlgth(wavelength_sample, active);
+
+        weight *= eval(d, wavelengths, sun_angles, sun_hit, active);
 
         // 5. Compute ray origin
         Vector3f perpendicular_offset =
@@ -420,12 +365,31 @@ public:
         return { Ray3f(origin, d_world, time, wavelengths), weight };
     }
 
+
+    std::pair<Wavelength, Spectrum>
+    sample_wavelengths(const SurfaceInteraction3f& si, Float wavelength_sample, Mask active) const override {
+        const Point2f sun_angles = get_sun_angles(si.time);
+        Vector3f local_wo = dr::normalize(m_to_world.value().inverse() * -si.wi);
+
+        Spectrum weights = 1.f;
+        Wavelength wavelengths = Wavelength(0.f);
+        if constexpr (is_spectral_v<Spectrum>)
+            std::tie(wavelengths, weights) =
+                this->sample_wlgth(wavelength_sample, active);
+
+        weights *= eval(local_wo, wavelengths, sun_angles, hit_sun(sun_angles, local_wo), active);
+
+        return { wavelengths, weights };
+    }
+
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &it, const Point2f &sample,
                      Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         const Point2f sun_angles = get_sun_angles(it.time);
+        active &= sun_angles.y() <= 0.5f * dr::Pi<Float>;
+
         const Float sky_sampling_w = get_sky_sampling_weight(sun_angles, active);
 
         Mask pick_sky = sample.x() < sky_sampling_w;
@@ -453,16 +417,13 @@ public:
         ds.d = d;
         ds.dist = dist;
 
-        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
-        si.wi = -d;
-        si.time = it.time;
-        si.wavelengths = it.wavelengths;
+        Float sun_hit = !pick_sky || hit_sun(sun_angles, sample_dir);
 
         Float sky_pdf, sun_pdf;
-        std::tie(sky_pdf, sun_pdf) = compute_pdfs(sample_dir, sun_angles, pick_sky, active);
+        std::tie(sky_pdf, sun_pdf) = compute_pdfs(sample_dir, sun_angles, sun_hit, active);
         ds.pdf = dr::lerp(sun_pdf, sky_pdf, sky_sampling_w);
 
-        Spectrum res = eval(si, active) / ds.pdf;
+        Spectrum res = eval(sample_dir, it.wavelengths, sun_angles, sun_hit, active) / ds.pdf;
                  res &= dr::isfinite(res);
         return { ds, res };
     }
@@ -473,9 +434,9 @@ public:
         const Point2f sun_angles = get_sun_angles(ds.time);
         const Float sky_sampling_w = get_sky_sampling_weight(sun_angles, active);
 
-        Vector3f local_dir = m_to_world.value().inverse() * ds.d;
+        Vector3f local_dir = dr::normalize(m_to_world.value().inverse() * ds.d);
         Float sky_pdf, sun_pdf;
-        std::tie(sky_pdf, sun_pdf) = compute_pdfs(local_dir, sun_angles, true, active);
+        std::tie(sky_pdf, sun_pdf) = compute_pdfs(local_dir, sun_angles, hit_sun(sun_angles, local_dir), active);
 
         Float combined_pdf = dr::lerp(sun_pdf, sky_pdf, sky_sampling_w);
         return dr::select(active, combined_pdf, 0.f);
@@ -549,6 +510,91 @@ protected:
      * @return The index of the chosen gaussian and the sample to be reused
      */
     virtual std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Point2f& sun_angles, const Mask &active) const = 0;
+
+    /**
+     * Samples wavelengths and evaluates the associated weights
+     * @param sample Floating point value in [0, 1] to sample the wavelengths
+     * @param active Indicates active lanes
+     * @return The chosen wavelengths and their inverse pdf
+     */
+    virtual std::pair<Wavelength, Spectrum>
+    sample_wlgth(const Float& sample, Mask active) const = 0;
+
+    /**
+     * This method should be used when the decision of hitting the sun was already made.
+     * This avoids transforming coordinates to world space and making that decision a second
+     * time since numerical precision can cause discrepencies between the two decisions.
+     * @param local_wo Shading direction in local space
+     * @param wavelengths Wavelengths to evaluate
+     * @param sun_angles Sun azimuth and elevation angles
+     * @param hit_sun Indicates if the sun was hit
+     * @param active Indicates active lanes
+     * @return The radiance for the given conditions
+     */
+    Spectrum eval(const Vector3f& local_wo, const Wavelength& wavelengths, const Point2f& sun_angles, Mask hit_sun, Mask active) const {
+        const Vector3f sun_dir = sph_to_dir(sun_angles.y(), sun_angles.x());
+
+        Float cos_theta = Frame3f::cos_theta(local_wo),
+              gamma = dr::unit_angle(sun_dir, local_wo);
+
+        active &= (cos_theta >= 0.f) &&
+                    (Frame3f::cos_theta(sun_dir) >= 0.f);
+
+        hit_sun &= active;
+
+        USpec res = 0.f;
+        if constexpr (!is_spectral_v<Spectrum>) {
+            DRJIT_MARK_USED(wavelengths);
+            USpecUInt32 idx = dr::zeros<USpecUInt32>();
+            if constexpr (is_rgb_v<Spectrum>)
+                idx = {0, 1, 2};
+            else
+                idx = USpecUInt32(0);
+
+            const auto [ sky_rad, sky_params ] = get_sky_datasets(sun_angles, idx, active);
+
+            res = m_sky_scale * eval_sky<USpec>(cos_theta, gamma, sky_params, sky_rad);
+            res += m_sun_scale * eval_sun<USpec>(idx, cos_theta, gamma, hit_sun) *
+                   get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
+
+            res *= MI_CIE_Y_NORMALIZATION;
+        } else {
+            Wavelength normalized_wavelengths =
+                (wavelengths - WAVELENGTHS<ScalarFloat>[0]) / WAVELENGTH_STEP;
+            USpecMask valid_idx = (0.f <= normalized_wavelengths) &
+                                 (normalized_wavelengths <= CHANNEL_COUNT - 1);
+
+            USpecUInt32 query_idx_low = dr::floor2int<USpecUInt32>(normalized_wavelengths);
+            USpecUInt32 query_idx_high = query_idx_low + 1;
+
+            Wavelength lerp_factor = normalized_wavelengths - query_idx_low;
+
+            const auto [ sky_rad_low, sky_params_low ] = get_sky_datasets(sun_angles, query_idx_low, active & valid_idx);
+            const auto [ sky_rad_high, sky_params_high ] = get_sky_datasets(sun_angles, query_idx_high, active & valid_idx);
+
+            // Linearly interpolate the sky's irradiance across the spectrum
+            res = m_sky_scale * dr::lerp(
+                eval_sky<USpec>(cos_theta, gamma, sky_params_low, sky_rad_low),
+                eval_sky<USpec>(cos_theta, gamma, sky_params_high, sky_rad_high),
+                lerp_factor);
+
+            // Linearly interpolate the sun's irradiance across the spectrum
+            USpec sun_rad_low = eval_sun<USpec>(
+                         query_idx_low, cos_theta, gamma, hit_sun & valid_idx);
+            USpec sun_rad_high = eval_sun<USpec>(
+                         query_idx_high, cos_theta, gamma, hit_sun & valid_idx);
+            USpec sun_rad = dr::lerp(sun_rad_low, sun_rad_high, lerp_factor);
+
+            USpec sun_ld = compute_sun_ld<USpec>(
+                query_idx_low, query_idx_high, lerp_factor, gamma,
+                hit_sun & valid_idx
+            );
+
+            res += m_sun_scale * sun_rad * sun_ld * get_area_ratio(m_sun_half_aperture);
+        }
+
+        return depolarizer<Spectrum>(res) & active;
+    }
 
     /**
      * \brief Evaluate the sky model for the given channel indices and angles
@@ -862,13 +908,13 @@ protected:
      *
      * \param local_dir Local direction in the sky
      * \param sun_angles Azimuth and elevation angles of the sun
-     * \param check_sun Indicates if the sun's intersection should be tested
+     * \param hit_sun Indicates if the sun's intersection should be tested
      * \param active Mask for the active lanes
      * \return The sky and sun PDFs
      */
     std::pair<Float, Float> compute_pdfs(const Vector3f &local_dir,
                                          const Point2f &sun_angles,
-                                         const Mask &check_sun,
+                                         const Mask &hit_sun,
                                          Mask active) const {
         // =========== SKY PDF ===========
         Float sin_theta = Frame3f::sin_theta(local_dir);
@@ -886,8 +932,7 @@ protected:
         Float cosine_cutoff = dr::cos(m_sun_half_aperture);
         Float sun_pdf = warp::square_to_uniform_cone_pdf(
             local_sun_frame.to_local(local_dir), cosine_cutoff);
-        Mask valid = (dr::dot(local_sun_frame.n, local_dir) >= cosine_cutoff);
-        sun_pdf = dr::select(!check_sun || valid, sun_pdf, 0.f);
+        sun_pdf = dr::select(hit_sun & active, sun_pdf, 0.f);
 
         return {sky_pdf, sun_pdf};
     }
@@ -895,6 +940,14 @@ protected:
     // ================================================================================================
     // ====================================== HELPER FUNCTIONS ========================================
     // ================================================================================================
+
+    MI_INLINE Mask hit_sun(const Point2f& sun_angles, const Vector3f& local_wo) const {
+        return hit_sun(sph_to_dir(sun_angles.y(), sun_angles.x()), local_wo);
+    }
+
+    MI_INLINE Mask hit_sun(const Vector3f& sun_dir, const Vector3f& local_wo) const {
+        return dr::dot(sun_dir, local_wo) >= dr::cos(m_sun_half_aperture);
+    }
 
     /**
      * Scaling factor to keep sun irradiance constant across aperture angles
