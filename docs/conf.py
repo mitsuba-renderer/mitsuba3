@@ -276,7 +276,7 @@ nbsphinx_prolog = """
             <button id="nb_btn">Download notebook</button>
         </a>
 
-        <a href="https://rgl.s3.eu-central-1.amazonaws.com/scenes/tutorials/scenes.zip" target="_blank">
+        <a href="https://d38rqfq1h7iukm.cloudfront.net/scenes/tutorials/scenes.zip" target="_blank">
             <button id="data_btn">Download data</button>
         </a>
     </div>
