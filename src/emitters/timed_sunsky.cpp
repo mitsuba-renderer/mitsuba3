@@ -468,6 +468,30 @@ private:
     TensorXf m_sky_irrad_dataset;
     TensorXf m_sun_irrad_dataset;
 
+    MI_TRAVERSE_CB(
+        Base,
+        Base::m_bsphere,
+        Base::m_turbidity,
+        Base::m_albedo_tex,
+        Base::m_albedo,
+        Base::m_sun_radiance,
+        Base::m_sky_rad_dataset,
+        Base::m_sky_params_dataset,
+        Base::m_sun_ld,
+        Base::m_sun_rad_dataset,
+        Base::m_tgmm_tables,
+        m_window_start_time,
+        m_window_end_time,
+        m_start_date,
+        m_end_date,
+        m_location,
+        m_nb_days,
+        m_sky_rad,
+        m_sky_params,
+        m_sky_sampling_weights,
+        m_sky_irrad_dataset,
+        m_sun_irrad_dataset
+    )
 };
 
 MI_EXPORT_PLUGIN(TimedSunskyEmitter)

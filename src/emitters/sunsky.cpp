@@ -224,7 +224,6 @@ public:
         std::tie(sampling_w, wav_dist) = estimate_sky_sun_ratio();
         m_sky_sampling_w = sampling_w;
         m_spectral_distr = wav_dist;
-
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -587,6 +586,28 @@ private:
     DiscreteDistribution<Float> m_gaussian_distr;
     ContinuousDistribution<Wavelength> m_spectral_distr;
 
+    MI_TRAVERSE_CB(
+        Base,
+        Base::m_bsphere,
+        Base::m_turbidity,
+        Base::m_albedo_tex,
+        Base::m_albedo,
+        Base::m_sun_radiance,
+        Base::m_sky_rad_dataset,
+        Base::m_sky_params_dataset,
+        Base::m_sun_ld,
+        Base::m_sun_rad_dataset,
+        Base::m_tgmm_tables,
+        m_sun_dir,
+        m_sun_angles,
+        m_time,
+        m_location,
+        m_sky_params,
+        m_sky_radiance,
+        m_sky_sampling_w,
+        m_gaussian_distr,
+        m_spectral_distr
+    )
 };
 
 MI_EXPORT_PLUGIN(SunskyEmitter)
