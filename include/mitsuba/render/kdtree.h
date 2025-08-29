@@ -684,7 +684,6 @@ protected:
     /// Helper data structure used during tree construction (shared by all threads)
     struct BuildContext {
         const Derived &derived;
-        ThreadEnvironment env;
         detail::ConcurrentVector<KDNode> node_storage;
         detail::ConcurrentVector<Index> index_storage;
         /* Keep some statistics about the build process */
@@ -1137,7 +1136,6 @@ protected:
 
         /// Run one iteration of min-max binning and spawn recursive tasks
         void execute() {
-            ScopedSetThreadEnvironment env(m_ctx.env);
             Size prim_count = Size(m_indices.size());
             const Derived &derived = m_ctx.derived;
             FTZGuard g;
@@ -2030,16 +2028,6 @@ protected:
     LogLevel m_log_level = Debug;
     BoundingBox m_bbox;
 };
-
-extern MI_EXPORT_LIB Class *__kdtree_class;
-
-template <typename BoundingBox, typename Index, typename CostModel, typename Derived>
-Class * TShapeKDTree<BoundingBox, Index, CostModel, Derived>::m_class = __kdtree_class;
-
-template <typename BoundingBox, typename Index, typename CostModel, typename Derived>
-const Class *TShapeKDTree<BoundingBox, Index, CostModel, Derived>::class_() const {
-    return m_class;
-}
 
 template <typename Float> class SurfaceAreaHeuristic3 {
 public:
