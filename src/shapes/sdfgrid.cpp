@@ -451,6 +451,7 @@ public:
         si.prim_index = pi.prim_index;
         si.shape    = this;
         si.instance = nullptr;
+        si.p_shadow = si.p;
 
         return si;
     }
