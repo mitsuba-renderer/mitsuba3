@@ -100,6 +100,9 @@ struct Interaction {
     /// Position of the interaction in world coordinates
     Point3f p;
 
+    /// Offset position to be used for shadow rays (equals to p for most shapes).
+    Point3f p_shadow;
+
     /// Geometric normal (only valid for \c SurfaceInteraction)
     Normal3f n;
 
@@ -113,7 +116,7 @@ struct Interaction {
     /// Constructor
     Interaction(Float t, Float time, const Wavelength &wavelengths,
                 const Point3f &p, const Normal3f &n = 0.f)
-        : t(t), time(time), wavelengths(wavelengths), p(p), n(n) { }
+        : t(t), time(time), wavelengths(wavelengths), p(p), p_shadow(p), n(n) { }
 
     /// Virtual destructor
     virtual ~Interaction() = default;
@@ -128,6 +131,7 @@ struct Interaction {
         time        = dr::zeros<Float>(size);
         wavelengths = dr::zeros<Wavelength>(size);
         p           = dr::zeros<Point3f>(size);
+        p_shadow    = dr::zeros<Point3f>(size);
         n           = dr::zeros<Normal3f>(size);
     }
 
@@ -138,12 +142,12 @@ struct Interaction {
 
     /// Spawn a semi-infinite ray towards the given direction
     Ray3f spawn_ray(const Vector3f &d) const {
-        return Ray3f(offset_p(d), d, dr::Largest<Float>, time, wavelengths);
+        return Ray3f(offset_p(p, d), d, dr::Largest<Float>, time, wavelengths);
     }
 
     /// Spawn a finite ray towards the given position
     Ray3f spawn_ray_to(const Point3f &t) const {
-        Point3f o = offset_p(t - p);
+        Point3f o = offset_p(p_shadow, t - p);
         Vector3f d = t - o;
         Float dist = dr::norm(d);
         d /= dist;
@@ -154,7 +158,7 @@ struct Interaction {
     //! @}
     // =============================================================
 
-    DRJIT_STRUCT(Interaction, t, time, wavelengths, p, n);
+    DRJIT_STRUCT(Interaction, t, time, wavelengths, p, n, p_shadow);
 
 private:
     /**
@@ -162,10 +166,10 @@ private:
      * interaction. When the interaction is on the surface of a shape, the
      * position is offset along the surface normal to prevent self intersection.
      */
-    Point3f offset_p(const Vector3f &d) const {
-        Float mag = (1.f + dr::max(dr::abs(p))) * math::RayEpsilon<Float>;
+    Point3f offset_p(const Vector3f &ref_p, const Vector3f &d) const {
+        Float mag = (1.f + dr::max(dr::abs(ref_p))) * math::RayEpsilon<Float>;
         mag = dr::detach(dr::mulsign(mag, dr::dot(n, d)));
-        return dr::fmadd(mag, dr::detach(n), p);
+        return dr::fmadd(mag, dr::detach(n), ref_p);
     }
 };
 
@@ -186,7 +190,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     using Spectrum = Spectrum_;
 
     // Make parent fields/functions visible
-    MI_IMPORT_BASE(Interaction, t, time, wavelengths, p, n, is_valid)
+    MI_IMPORT_BASE(Interaction, t, time, wavelengths, p, p_shadow, n, is_valid)
 
     MI_IMPORT_RENDER_BASIC_TYPES()
     MI_IMPORT_OBJECT_TYPES()
@@ -524,8 +528,8 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
-    DRJIT_STRUCT(SurfaceInteraction, t, time, wavelengths, p, n, shape, uv,
-                 sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
+    DRJIT_STRUCT(SurfaceInteraction, t, time, wavelengths, p, p_shadow, n,
+                 shape, uv, sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
                  duv_dy, wi, prim_index, instance)
 };
 
@@ -545,7 +549,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     using Index = typename CoreAliases::UInt32;
 
     // Make parent fields/functions visible
-    MI_IMPORT_BASE(Interaction, t, time, wavelengths, p, n, is_valid)
+    MI_IMPORT_BASE(Interaction, t, time, wavelengths, p, p_shadow, n, is_valid)
     //! @}
     // =============================================================
 
@@ -609,7 +613,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
-    DRJIT_STRUCT(MediumInteraction, t, time, wavelengths, p, n, medium,
+    DRJIT_STRUCT(MediumInteraction, t, time, wavelengths, p, p_shadow, n, medium,
                  sh_frame, wi, sigma_s, sigma_n, sigma_t,
                  combined_extinction, mint)
 };
