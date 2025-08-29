@@ -28,6 +28,7 @@ MI_VARIANT Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
        appearance. Default: ``false`` */
     m_face_normals = props.get<bool>("face_normals", false);
     m_flip_normals = props.get<bool>("flip_normals", false);
+    m_shadow_offset_scale = props.get<ScalarFloat>("shadow_offset_scale", 1.0f);
 
     m_discontinuity_types = (uint32_t) DiscontinuityFlags::PerimeterType;
 
@@ -1545,6 +1546,21 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         }
     } else {
         si.sh_frame.n = si.n;
+    }
+
+    if (has_vertex_normals() && (m_shadow_offset_scale > 0.f)) {
+        Vector3f tmp0 = si.p - p0,
+                 tmp1 = si.p - p1,
+                 tmp2 = si.p - p2;
+        Float dot0 = dr::minimum(dr::dot(tmp0, n0), 0.0f),
+              dot1 = dr::minimum(dr::dot(tmp1, n1), 0.0f),
+              dot2 = dr::minimum(dr::dot(tmp2, n2), 0.0f);
+        tmp0 -= dot0 * n0;
+        tmp1 -= dot1 * n1;
+        tmp2 -= dot2 * n2;
+        si.p_shadow = si.p + m_shadow_offset_scale * dr::fmadd(tmp0, b0, dr::fmadd(tmp1, b1, tmp2 * b2));
+    } else {
+        si.p_shadow = si.p;
     }
 
     if (m_flip_normals) {

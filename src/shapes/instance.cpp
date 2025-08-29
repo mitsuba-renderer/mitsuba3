@@ -190,6 +190,7 @@ public:
 
         // Hit point `si.p` is only attached to the surface motion
         si.p = to_world * si.p;
+        si.p_shadow = to_world * si.p_shadow;
         si.n = dr::normalize(dr::detach(to_world) * si.n);
         if (likely(has_flag(ray_flags, RayFlags::ShadingFrame)))
             si.sh_frame.n = dr::normalize(dr::detach(to_world) * si.sh_frame.n);

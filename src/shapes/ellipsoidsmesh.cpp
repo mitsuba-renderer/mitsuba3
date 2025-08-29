@@ -309,6 +309,7 @@ public:
 
         // Divide by the number of faces per Gaussians
         si.prim_index /= (uint32_t) m_shell_faces.size();
+        si.p_shadow = si.p;
 
         return si;
     }
