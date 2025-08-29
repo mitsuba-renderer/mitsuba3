@@ -230,3 +230,22 @@ protected:
 
 MI_EXTERN_CLASS(Texture)
 NAMESPACE_END(mitsuba)
+
+// -----------------------------------------------------------------------
+//! @{ \name Enables vectorized method calls on Dr.Jit arrays of Textures
+// -----------------------------------------------------------------------
+
+DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Texture)
+    DRJIT_CALL_METHOD(eval)
+    DRJIT_CALL_METHOD(sample_spectrum)
+    DRJIT_CALL_METHOD(pdf_spectrum)
+    DRJIT_CALL_METHOD(sample_position)
+    DRJIT_CALL_METHOD(pdf_position)
+    DRJIT_CALL_METHOD(eval_1)
+    DRJIT_CALL_METHOD(eval_1_grad)
+    DRJIT_CALL_METHOD(eval_3)
+    DRJIT_CALL_METHOD(mean)
+
+    DRJIT_CALL_GETTER(max)
+    DRJIT_CALL_GETTER(is_spatially_varying)
+DRJIT_CALL_END()
