@@ -6,6 +6,8 @@
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/texture.h>
 
+#include "normalmap_helpers.h"
+
 NAMESPACE_BEGIN(mitsuba)
 
 /**!
@@ -26,6 +28,20 @@ Normal map BSDF (:monosp:`normalmap`)
    - |bsdf|
    - A BSDF model that should be affected by the normal map
    - |exposed|, |differentiable|
+
+ * - flip_invalid_normals
+   - |bool|
+   - If enabled, the plugin will ensure that the perturbed normals are always
+     consistent with the geometric normal. This prevents visual artifacts and is
+     achieved by a simply flipping the shading normal, as described in
+     :cite:`Schuessler2017Microfacet`. (Default: true)
+   - |exposed|
+
+ * - use_shadowing_function
+   - |bool|
+   - If enabled, the plugin uses a Microfacet-based shadowing term
+     :cite:`Estevez2019` to smooth out transitions on shadow boundaries. (Default: true)
+   - |exposed|
 
 Normal mapping is a simple technique for cheaply adding surface detail to a rendering. This is done
 by perturbing the shading coordinate frame based on a normal map provided as a texture. This method
@@ -95,6 +111,9 @@ public:
         // TODO: How to assert this is actually a RGBDataTexture?
         m_normalmap = props.get_texture<Texture>("normalmap");
 
+        m_flip_invalid_normals = props.get<bool>("flip_invalid_normals", true);
+        m_use_shadowing_function = props.get<bool>("use_shadowing_function", true);
+
         // Add all nested components
         m_flags = (uint32_t) 0;
         for (size_t i = 0; i < m_nested_bsdf->component_count(); ++i) {
@@ -131,6 +150,8 @@ public:
         bs.pdf = dr::select(active, bs.pdf, 0.f);
         bs.wo = perturbed_wo;
 
+        if (m_use_shadowing_function)
+            weight *= eval_shadow_terminator(perturbed_frame_wrt_si.n, bs.wo);
         return { bs, weight & active };
     }
 
@@ -147,7 +168,11 @@ public:
         active &= Frame3f::cos_theta(wo) *
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
 
-        return m_nested_bsdf->eval(ctx, perturbed_si, perturbed_wo, active) & active;
+        Spectrum value = m_nested_bsdf->eval(ctx, perturbed_si, perturbed_wo, active);
+
+        if (m_use_shadowing_function)
+            value *= eval_shadow_terminator(perturbed_frame_wrt_si.n, wo);
+        return value & active;
     }
 
 
@@ -183,6 +208,9 @@ public:
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
 
         auto [value, pdf] = m_nested_bsdf->eval_pdf(ctx, perturbed_si, perturbed_wo, active);
+
+        if (m_use_shadowing_function)
+            value *= eval_shadow_terminator(perturbed_frame_wrt_si.n, wo);
         return { value & active, dr::select(active, pdf, 0.f) };
     }
 
@@ -191,6 +219,12 @@ public:
      */
     std::pair<Frame3f, Frame3f> frame(const SurfaceInteraction3f &si, Mask active) const {
         Normal3f n = dr::fmadd(m_normalmap->eval_3(si, active), 2, -1.f);
+
+        if (m_flip_invalid_normals) {
+            // Ensure that shading normals are always facing the incident direction.
+            Mask flip = Frame3f::cos_theta(si.wi) * dr::dot(si.wi, n) <= 0.0f;
+            n[flip] = Normal3f(-n.x(), -n.y(), n.z());
+        }
 
         Frame3f frame_wrt_si;
         frame_wrt_si.n = dr::normalize(n);
@@ -229,6 +263,9 @@ public:
 protected:
     ref<Base> m_nested_bsdf;
     ref<Texture> m_normalmap;
+
+    bool m_flip_invalid_normals;
+    bool m_use_shadowing_function;
 
     MI_TRAVERSE_CB(Base, m_nested_bsdf, m_normalmap)
 };
