@@ -56,7 +56,7 @@ class BasicVolumetricPrimitiveRadianceFieldIntegrator(RBIntegrator):
                 center  = mi.Point3f([data[i] for i in range(3)])
                 scale   = mi.Vector3f([data[i + 3] for i in range(3)])
                 quat    = mi.Quaternion4f([data[i + 6] for i in range(4)])
-                rot     = dr.quat_to_matrix(quat, size=3)
+                rot     = dr.quat_to_matrix(mi.Matrix3f, quat)
                 return center, scale, rot
             else:
                 return mi.Point3f(0), mi.Vector3f(0), mi.Matrix3f(0)
