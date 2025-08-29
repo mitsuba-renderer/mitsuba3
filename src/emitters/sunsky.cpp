@@ -433,8 +433,10 @@ private:
             dr::uint32_array_t<FullSpectrum> channel_idx;
             if constexpr (is_rgb_v<Spectrum>)
                 channel_idx = {0, 1, 2};
-            else
+            else if constexpr (is_spectral_v<Spectrum>)
                 channel_idx = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+            else
+                channel_idx = {0};
 
             const Vector3f local_sun_dir = sph_to_dir(m_sun_angles.y(), m_sun_angles.x());
             // Quadrature points and weights
@@ -495,7 +497,7 @@ private:
                     w_phi * w_cos_theta;
 
                 // Apply sun limb darkening if not already
-                if constexpr (!is_rgb_v<Spectrum>)
+                if constexpr (is_spectral_v<Spectrum>)
                     ray_radiance *= Base::template compute_sun_ld<FullSpectrum>(
                         channel_idx, channel_idx, 0.f, gamma, active);
 

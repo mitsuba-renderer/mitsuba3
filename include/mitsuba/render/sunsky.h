@@ -727,9 +727,9 @@ protected:
      */
     template <typename Spec>
     Spec compute_sun_ld(const dr::uint32_array_t<Spec> &channel_idx_low,
-                         const dr::uint32_array_t<Spec> &channel_idx_high,
-                         const wavelength_t<Spec> &lerp_f, const Float &gamma,
-                         const dr::mask_t<Spec> &active) const {
+                        const dr::uint32_array_t<Spec> &channel_idx_high,
+                        const wavelength_t<Spec> &lerp_f, const Float &gamma,
+                        const dr::mask_t<Spec> &active) const {
         using SpecLdArray = dr::Array<Spec, SUN_LD_PARAMS>;
 
         SpecLdArray sun_ld_low  = dr::gather<SpecLdArray>(m_sun_ld.array(), channel_idx_low, active),
