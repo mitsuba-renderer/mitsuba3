@@ -180,11 +180,11 @@ def test04_sun_radiance(variants_vec_spectral, turb, eta_ray, gamma):
         sun_theta = theta_ray + gamma
 
     plugin = make_emitter_angles(turb=turb,
-                          sun_phi=phi,
-                          sun_theta=sun_theta,
-                          albedo=0.0,
-                          sun_scale=1.0,
-                          sky_scale=0.0)
+                                 sun_phi=phi,
+                                 sun_theta=sun_theta,
+                                 albedo=0.0,
+                                 sun_scale=1.0,
+                                 sky_scale=0.0)
 
     # Generate rays
     si = dr.zeros(mi.SurfaceInteraction3f)
