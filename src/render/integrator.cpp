@@ -93,30 +93,33 @@ MI_VARIANT void Integrator<Float, Spectrum>::cancel() {
     m_stop = true;
 }
 
-MI_VARIANT typename Integrator<Float, Spectrum>::SurfaceInteraction3f
+MI_VARIANT typename Integrator<Float, Spectrum>::PreliminaryIntersection3f
 Integrator<Float, Spectrum>::skip_area_emitters(const Scene *scene,
                                                 const Ray3f &ray,
+                                                bool coherent,
                                                 Mask active) const {
     struct LoopState {
-        SurfaceInteraction3f si;
+        PreliminaryIntersection3f pi;
         Ray3f ray;
         Mask active;
 
-        DRJIT_STRUCT(LoopState, si, ray, active)
+        DRJIT_STRUCT(LoopState, pi, ray, active)
     };
 
-    LoopState ls{ dr::zeros<SurfaceInteraction3f>(), ray, active };
+    LoopState ls{ dr::zeros<PreliminaryIntersection3f>(), ray, active };
 
     dr::tie(ls) = dr::while_loop(
         dr::make_tuple(ls),
         [](const LoopState &ls) { return ls.active; },
-        [scene](LoopState &ls) {
-            ls.si = scene->ray_intersect(ls.ray, +RayFlags::Minimal);
-            ls.active &= ls.si.is_valid() && (ls.si.shape->emitter() != nullptr);
-            ls.ray = ls.si.spawn_ray(ls.ray.d);
+        [&scene, &ray, coherent](LoopState &ls) {
+            ls.pi = scene->ray_intersect_preliminary(ls.ray, coherent);
+            ls.active &= ls.pi.is_valid() && (ls.pi.shape->emitter() != nullptr);
+            SurfaceInteraction3f si = ls.pi.compute_surface_interaction(
+                ray, +RayFlags::Minimal, ls.active); // Note: Use original ray!
+            ls.ray = si.spawn_ray(ls.ray.d);
         });
 
-    return ls.si;
+    return ls.pi;
 }
 
 // -----------------------------------------------------------------------------

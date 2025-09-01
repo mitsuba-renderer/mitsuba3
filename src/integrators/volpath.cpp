@@ -310,13 +310,15 @@ public:
                     Mask skip_emitters = si.is_valid() &&
                                          (si.shape->emitter() != nullptr) &&
                                          (ls.depth == 0) &&
-                                         active_surface;
+                                         intersect;
 
                     if (dr::any_or<true>(skip_emitters)) {
                         Ray3f ray = si.spawn_ray(ls.ray.d);
-                        SurfaceInteraction3f next_si =
-                            Base::skip_area_emitters(scene, ray, skip_emitters);
-                        dr::masked(si, skip_emitters) = next_si;
+                        PreliminaryIntersection3f pi =
+                            Base::skip_area_emitters(scene, ray, true, skip_emitters);
+                        SurfaceInteraction3f si_after_skip =
+                            pi.compute_surface_interaction(ray, +RayFlags::All, skip_emitters);
+                        dr::masked(si, skip_emitters) = si_after_skip;
                     }
                 }
 

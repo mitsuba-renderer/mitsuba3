@@ -213,7 +213,6 @@ class PRBVolpathIntegrator(RBIntegrator):
                 intersect = active_surface & needs_intersection
                 si[intersect] = scene.ray_intersect(ray, intersect)
 
-
                 # ---------------------- Hide area emitters ----------------------
 
                 if dr.hint(self.hide_emitters, mode='scalar'):
@@ -223,12 +222,13 @@ class PRBVolpathIntegrator(RBIntegrator):
                         si.is_valid() &
                         (si.shape.emitter() != None) &
                         (depth == 0) &
-                        active_surface
+                        intersect
                     )
 
                     ray_skip = si.spawn_ray(ray.d)
-                    next_si = self.skip_area_emitters(scene, ray_skip, skip_emitters)
-                    si[skip_emitters] = next_si
+                    pi = self.skip_area_emitters(scene, ray_skip, True, skip_emitters)
+                    si_after_skip = pi.compute_surface_interaction(ray, mi.RayFlags.All, skip_emitters)
+                    si[skip_emitters] = si_after_skip
 
                 # ----------------- Intersection with emitters -----------------
 

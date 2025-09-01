@@ -108,6 +108,16 @@ class PRBIntegrator(RBIntegrator):
         bsdf_pdf_prev   = mi.Float(1.0)
         bsdf_delta_prev = mi.Bool(True)
 
+        # ---------------------- Hide area emitters ----------------------
+
+        if dr.hint(self.hide_emitters, mode='scalar'):
+            # Did we hit an area emitter? If so, skip all area emitters along this ray
+            skip_emitters = pi.is_valid() & (pi.shape.emitter() != None) & active
+            si_skip = pi.compute_surface_interaction(ray, mi.RayFlags.Minimal, skip_emitters)
+            ray_skip = si_skip.spawn_ray(ray.d)
+            pi_after_skip = self.skip_area_emitters(scene, ray_skip, True, skip_emitters)
+            pi[skip_emitters] = pi_after_skip
+
         while dr.hint(active,
                       max_iterations=self.max_depth,
                       label="Path Replay Backpropagation (%s)" % mode.name):
@@ -132,22 +142,6 @@ class PRBIntegrator(RBIntegrator):
 
             # Get the BSDF, potentially computes texture-space differentials
             bsdf = si.bsdf(ray)
-
-            # ---------------------- Hide area emitters ----------------------
-
-            if dr.hint(self.hide_emitters, mode='scalar'):
-                # Are we on the first segment and did we hit an area emitter?
-                # If so, skip all area emitters along this ray
-                skip_emitters = (
-                    si.is_valid() &
-                    (si.shape.emitter() != None) &
-                    (depth == 0) &
-                    active
-                )
-
-                ray_skip = si.spawn_ray(ray.d)
-                next_si = self.skip_area_emitters(scene, ray_skip, skip_emitters)
-                si[skip_emitters] = next_si
 
             # ---------------------- Direct emission ----------------------
 
