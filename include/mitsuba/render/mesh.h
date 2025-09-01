@@ -164,11 +164,21 @@ public:
         return dr::normalize(dr::cross(v[1] - v[0], v[2] - v[0]));
     }
 
-    /// Returns the opposite edge index associated with directed edge \c index
+    /**
+     * Returns the opposite edge index associated with directed edge \c index
+     *
+     * If the directed edge data structure is not initialized or outdated,
+     * the return value is undefined. Ensure that \ref build_directed_edges()
+     * is called before this method.
+     */
     template <typename Index>
     MI_INLINE auto opposite_dedge(Index index,
                                  dr::mask_t<Index> active = true) const {
         using Result = dr::uint32_array_t<Index>;
+
+        if (dr::width(m_E2E) == 0)
+            return Result((uint32_t) -1);
+
         return dr::gather<Result>(m_E2E, index, active);
     }
 

@@ -1383,3 +1383,30 @@ def test35_mesh_vcalls(variants_vec_rgb):
                       == sh.face_normal(idx_i))
         assert dr.all(dr.gather(type(opposite), opposite, i)
                       == sh.opposite_dedge(idx_i))
+
+
+@fresolver_append_path
+def test36_mesh_vcalls_with_directed_edges(variants_vec_rgb):
+    """
+    Test a special case where some meshes have their E2E data structure
+    initialized and others don't. Virtual function calls involving only
+    the initialized meshes should work.
+    """
+    scene = mi.load_dict({
+        "type": "scene",
+        "mesh1": {
+            "type": "ply",
+            "filename": "resources/data/tests/ply/cbox_smallbox.ply",
+        },
+        "mesh2": {
+            "type": "ply",
+            "filename": "resources/data/tests/ply/cbox_smallbox.ply",
+        },
+    })
+
+    # Second mesh will *not* have a valid E2E data structure.
+    mesh_ptr = dr.gather(mi.MeshPtr, scene.shapes_dr(), dr.zeros(mi.UInt32, 3))
+    mesh_ptr[0].build_directed_edges()
+
+    result = mesh_ptr.opposite_dedge(mi.UInt32([2, 3, 2]))
+    assert dr.all(result == mi.UInt32([3, 2, 3]))
