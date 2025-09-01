@@ -166,6 +166,30 @@ public:
                                                  /* reorder_hint_bits = */ 0,
                                                  ls.active);
 
+        // ---------------------- Hide area emitters ----------------------
+
+        /* dr::any_or() checks for active entries in the provided boolean
+           array. JIT/Megakernel modes can't do this test efficiently as
+           each Monte Carlo sample runs independently. In this case,
+           dr::any_or<..>() returns the template argument (true) which means
+           that the 'if' statement is always conservatively taken. */
+
+        if (m_hide_emitters && dr::any_or<true>(ls.depth == 0u)) {
+            // Did we hit an area emitter? If so, skip all area emitters along this ray
+            Mask skip_emitters = ls.pi.is_valid() &&
+                                 (ls.pi.shape->emitter() != nullptr) &&
+                                 ls.active;
+
+            if (dr::any_or<true>(skip_emitters)) {
+                SurfaceInteraction3f si = ls.pi.compute_surface_interaction(
+                    ls.ray, +RayFlags::Minimal, skip_emitters);
+                Ray3f ray = si.spawn_ray(ls.ray.d);
+                PreliminaryIntersection3f pi_after_skip =
+                    Base::skip_area_emitters(scene, ray, true, skip_emitters);
+                dr::masked(ls.pi, skip_emitters) = pi_after_skip;
+            }
+        }
+
         dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),
             [](const LoopState& ls) { return ls.active; },
             [this, scene, bsdf_ctx](LoopState& ls) {
@@ -176,29 +200,6 @@ public:
             // Fill out all information of the interaction
             SurfaceInteraction3f si =
                 ls.pi.compute_surface_interaction(ls.ray, +RayFlags::All);
-
-            // ---------------------- Hide area emitters ----------------------
-
-            /* dr::any_or() checks for active entries in the provided boolean
-               array. JIT/Megakernel modes can't do this test efficiently as
-               each Monte Carlo sample runs independently. In this case,
-               dr::any_or<..>() returns the template argument (true) which means
-               that the 'if' statement is always conservatively taken. */
-            if (m_hide_emitters && dr::any_or<true>(ls.depth == 0u)) {
-                // Are we on the first segment and did we hit an area emitter?
-                // If so, skip all area emitters along this ray
-                Mask skip_emitters = si.is_valid() &&
-                                     (si.shape->emitter() != nullptr) &&
-                                     (ls.depth == 0) &&
-                                     ls.active;
-
-                if (dr::any_or<true>(skip_emitters)) {
-                    Ray3f ray = si.spawn_ray(ls.ray.d);
-                    SurfaceInteraction3f next_si =
-                        Base::skip_area_emitters(scene, ray, skip_emitters);
-                    dr::masked(si, skip_emitters) = next_si;
-                }
-            }
 
             // ---------------------- Direct emission ----------------------
 

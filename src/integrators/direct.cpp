@@ -133,9 +133,11 @@ public:
 
             if (dr::any_or<true>(skip_emitters)) {
                 Ray3f ray_skip = si.spawn_ray(ray.d);
-                SurfaceInteraction3f next_si =
-                    Base::skip_area_emitters(scene, ray_skip, skip_emitters);
-                dr::masked(si, skip_emitters) = next_si;
+                PreliminaryIntersection3f pi =
+                    Base::skip_area_emitters(scene, ray_skip, true, skip_emitters);
+                SurfaceInteraction3f si_after_skip = pi.compute_surface_interaction(
+                        ray, +RayFlags::All, skip_emitters);
+                dr::masked(si, skip_emitters) = si_after_skip;
             }
         } else {
             EmitterPtr emitter_vis = si.emitter(scene, active);
