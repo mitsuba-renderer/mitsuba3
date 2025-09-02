@@ -64,6 +64,8 @@ MI_PY_DECLARE(DiscreteDistribution);
 MI_PY_DECLARE(DiscreteDistribution2D);
 MI_PY_DECLARE(ContinuousDistribution);
 MI_PY_DECLARE(IrregularContinuousDistribution);
+MI_PY_DECLARE(ConditionalIrregular1D);
+MI_PY_DECLARE(ConditionalRegular1D);
 MI_PY_DECLARE(Hierarchical2D);
 MI_PY_DECLARE(Marginal2D);
 MI_PY_DECLARE(math);
@@ -178,6 +180,8 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT(DiscreteDistribution2D);
     MI_PY_IMPORT(ContinuousDistribution);
     MI_PY_IMPORT(IrregularContinuousDistribution);
+    MI_PY_IMPORT(ConditionalIrregular1D);
+    MI_PY_IMPORT(ConditionalRegular1D);
     MI_PY_IMPORT_SUBMODULE(math);
     MI_PY_IMPORT(qmc);
     MI_PY_IMPORT(rfilter);
