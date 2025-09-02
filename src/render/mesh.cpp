@@ -392,7 +392,10 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
                           vertex_position(fi[1]),
                           vertex_position(fi[2]) };
 
-        Vector3f n = dr::normalize(dr::cross(v[1] - v[0], v[2] - v[0]));
+        Vector3f n = dr::cross(v[1] - v[0], v[2] - v[0]);
+        Float length_sqr = dr::squared_norm(n);
+        Mask valid = length_sqr > 0;
+        n *= dr::rsqrt(length_sqr);
 
         Vector3f normals = dr::zeros<Vector3f>(m_vertex_count);
         for (int i = 0; i < 3; ++i) {
@@ -403,7 +406,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
             Vector3f nn = n * face_angle;
 
             for (int j = 0; j < 3; ++j)
-                dr::scatter_reduce(ReduceOp::Add, normals[j], nn[j], fi[i]);
+                dr::scatter_reduce(ReduceOp::Add, normals[j], nn[j], fi[i], valid);
         }
 
         // --------------------- Kernel 2 starts here ---------------------
