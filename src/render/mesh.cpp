@@ -411,7 +411,10 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 
         // --------------------- Kernel 2 starts here ---------------------
 
-        normals = dr::normalize(normals);
+        // Normalize and fall back to dummy value in case of zero-length vector.
+        Float final_length_sqr = dr::squared_norm(normals);
+        normals = dr::select(final_length_sqr > 0, normals * dr::rsqrt(final_length_sqr),
+                             Vector3f(1.f, 0.f, 0.f));
 
         // Convert to 32-bit precision
         using JitInputNormal3f = Normal<dr::replace_scalar_t<Float, InputFloat>, 3>;
