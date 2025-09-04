@@ -612,7 +612,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_directed_edges() {
         tmp[0] = v2_idx;
         tmp[1] = dr::full<UInt32>(INVALID_DEDGE, dr::width(v2_idx));
 
-        UInt32 old_edge = dr::scatter_cas(V2E, INVALID_DEDGE, edge_id, dr::arange<UInt32>(m_vertex_count), !invalid_edges);
+        UInt32 old_edge = dr::scatter_cas(V2E, UInt32(INVALID_DEDGE), edge_id, dr::arange<UInt32>(m_vertex_count), !invalid_edges);
         Bool swapped = (old_edge == INVALID_DEDGE);
 
 
