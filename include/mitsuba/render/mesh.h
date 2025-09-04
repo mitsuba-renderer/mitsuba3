@@ -581,9 +581,6 @@ protected:
     mutable DynamicBuffer<UInt32> m_E2E;
     bool m_E2E_outdated = true;
 
-
-    constexpr static ScalarIndex m_invalid_dedge = (ScalarIndex) -1;
-
     /// Sampling density of silhouette (\ref build_indirect_silhouette_distribution)
     DiscreteDistribution<Float> m_sil_dedge_pmf;
 

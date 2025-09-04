@@ -482,102 +482,147 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
     }
 }
 
+constexpr static uint32_t INVALID_DEDGE = (uint32_t) -1;
+
 MI_VARIANT void Mesh<Float, Spectrum>::build_directed_edges() {
     std::lock_guard<std::mutex> lock(m_mutex);
 
     if (m_face_count == 0)
         Throw("Cannot create directed edges for an empty mesh: %s", to_string());
 
-    auto&& faces = dr::migrate(m_faces, AllocType::Host);
-    if constexpr (dr::is_array_v<Float>)
-        dr::sync_thread();
+    if constexpr (!dr::is_jit_v<Float>) {
+        // Use nanothread to make this parallel at least
+        std::vector<ScalarIndex> V2E(m_vertex_count, INVALID_DEDGE);
+        std::vector<ScalarIndex> E2E(m_face_count * 3, INVALID_DEDGE);
 
-    std::vector<ScalarIndex> V2E(m_vertex_count, m_invalid_dedge);
-    std::vector<ScalarIndex> E2E(m_face_count * 3, m_invalid_dedge);
+        /* For an edge e1 = (v1, v2), tmp is defined as:
+        /     tmp[e1].first  = v2,
+        /     tmp[e1].second = (next edge e_k that also starts from v1) or INVALID_DEDGE
+        */
+        std::vector<std::pair<ScalarIndex, ScalarIndex>> tmp(m_face_count * 3);
 
-    /* For an edge e1 = (v1, v2), tmp is defined as:
-    /     tmp[e1].first  = v2,
-    /     tmp[e1].second = (next edge e_k that also starts from v1) or (m_invalid_dedge)
-    */
-    std::vector<std::pair<ScalarIndex, ScalarIndex>> tmp(m_face_count * 3);
+        // 1. Fill `tmp` and `V2E`
+        const ScalarIndex *face_data = m_faces.data();
+        for (ScalarIndex f = 0; f < m_face_count; f++) {
+            ScalarPoint3u triangle_indices =
+                dr::load<ScalarPoint3u>(face_data + 3 * f);
+            for (ScalarIndex i = 0; i < 3; i++) {
+                ScalarIndex idx_cur = triangle_indices[i],
+                            idx_nxt = triangle_indices[(i + 1) % 3],
+                            edge_id = 3 * f + i;
+                if (idx_cur == idx_nxt)
+                    continue;
 
-    // 1. Fill `tmp` and `V2E`
-    const ScalarIndex *face_data = faces.data();
-    for (ScalarIndex f = 0; f < m_face_count; f++) {
-        ScalarPoint3u triangle_indices =
-            dr::load<ScalarPoint3u>(face_data + 3 * f);
-        for (ScalarIndex i = 0; i < 3; i++) {
-            ScalarIndex idx_cur = triangle_indices[i],
-                        idx_nxt = triangle_indices[(i + 1) % 3],
-                        edge_id = 3 * f + i;
-            if (idx_cur == idx_nxt)
-                continue;
+                tmp[edge_id] = std::make_pair(idx_nxt, INVALID_DEDGE);
+                if (V2E[idx_cur] != INVALID_DEDGE) {
+                    ScalarIndex last_edge_idx = V2E[idx_cur];
 
-            tmp[edge_id] = std::make_pair(idx_nxt, m_invalid_dedge);
-            if (V2E[idx_cur] != m_invalid_dedge) {
-                ScalarIndex last_edge_idx = V2E[idx_cur];
+                    while (tmp[last_edge_idx].second != INVALID_DEDGE)
+                        last_edge_idx = tmp[last_edge_idx].second;
 
-                while (tmp[last_edge_idx].second != m_invalid_dedge)
-                    last_edge_idx = tmp[last_edge_idx].second;
-
-                if (tmp[last_edge_idx].second == m_invalid_dedge)
-                    tmp[last_edge_idx].second = edge_id;
-            } else {
-                V2E[idx_cur] = edge_id;
-            }
-        }
-    }
-
-    // 2. Manifold check & assign `E2E`
-    std::vector<bool> non_manifold(m_vertex_count, false);
-    for (ScalarIndex f = 0; f < m_face_count; f++) {
-        ScalarPoint3u tri = dr::load<ScalarPoint3u>(face_data + 3 * f);
-        for (ScalarIndex i = 0; i < 3; i++) {
-            ScalarIndex idx_cur = tri[i],
-                        idx_nxt = tri[(i + 1) % 3],
-                        edge_id_cur = 3 * f + i;
-            if (idx_cur == idx_nxt)
-                continue;
-
-            ScalarIndex it = V2E[idx_nxt], edge_id_opp = m_invalid_dedge;
-            while (it != m_invalid_dedge) {
-                if (tmp[it].first == idx_cur) {
-                    if (edge_id_opp == m_invalid_dedge) {
-                        edge_id_opp = it;
-                    } else {
-                        non_manifold[idx_cur] = true;
-                        non_manifold[idx_nxt] = true;
-                        edge_id_opp           = m_invalid_dedge;
-                        break;
-                    }
+                    if (tmp[last_edge_idx].second == INVALID_DEDGE)
+                        tmp[last_edge_idx].second = edge_id;
+                } else {
+                    V2E[idx_cur] = edge_id;
                 }
-                it = tmp[it].second;
-            }
-
-            if (edge_id_opp != m_invalid_dedge && edge_id_cur < edge_id_opp) {
-                E2E[edge_id_cur] = edge_id_opp;
-                E2E[edge_id_opp] = edge_id_cur;
             }
         }
-    }
 
-    // 3. Log
-    ScalarIndex non_manifold_count = 0;
-    std::vector<bool> boundary(m_vertex_count, false);
-    for (ScalarIndex i = 0; i < m_vertex_count; i++) {
-        if (non_manifold[i]) {
-            non_manifold_count++;
-            continue;
+        // 2. Manifold check & assign `E2E`
+        std::vector<bool> non_manifold(m_vertex_count, false);
+        for (ScalarIndex f = 0; f < m_face_count; f++) {
+            ScalarPoint3u tri = dr::load<ScalarPoint3u>(face_data + 3 * f);
+            for (ScalarIndex i = 0; i < 3; i++) {
+                ScalarIndex idx_cur = tri[i],
+                            idx_nxt = tri[(i + 1) % 3],
+                            edge_id = 3 * f + i;
+                if (idx_cur == idx_nxt)
+                    continue;
+
+                ScalarIndex it = V2E[idx_nxt], edge_id_opp = INVALID_DEDGE;
+                while (it != INVALID_DEDGE) {
+                    if (tmp[it].first == idx_cur) {
+                        if (edge_id_opp == INVALID_DEDGE) {
+                            edge_id_opp = it;
+                        } else {
+                            non_manifold[idx_cur] = true;
+                            non_manifold[idx_nxt] = true;
+                            edge_id_opp           = INVALID_DEDGE;
+                            break;
+                        }
+                    }
+                    it = tmp[it].second;
+                }
+
+                if (edge_id_opp != INVALID_DEDGE && edge_id < edge_id_opp) {
+                    E2E[edge_id] = edge_id_opp;
+                    E2E[edge_id_opp] = edge_id;
+                }
+            }
         }
+
+        // 3. Log
+        ScalarIndex non_manifold_count = 0;
+        std::vector<bool> boundary(m_vertex_count, false);
+        for (ScalarIndex i = 0; i < m_vertex_count; i++) {
+            if (non_manifold[i]) {
+                non_manifold_count++;
+                continue;
+            }
+        }
+
+        if (non_manifold_count > 0)
+            Log(Warn,
+                "Mesh::build_directed_edges(): there are %d non-manifold vertices in the "
+                "following mesh: %s",
+                non_manifold_count, to_string());
+
+        m_E2E = dr::load<DynamicBuffer<UInt32>>(E2E.data(), m_face_count * 3);
+    } else {
+        //FIXME document v2e & tmp outside of `constexpr` 
+        UInt32 V2E = dr::full<UInt32>(INVALID_DEDGE, m_vertex_count);
+        m_E2E = dr::zeros<UInt32>(m_face_count * 3);
+
+        /* For an edge e1 = (v1, v2), tmp is defined as:
+              tmp[e1].first  = v2,
+              tmp[e1].second = (next edge e_k that also starts from v1) or INVALID_DEDGE
+        */
+        Vector2u tmp = dr::zeros<Vector2u>(m_face_count * 3);
+
+        //// 1. Fill `tmp` and `V2E`
+        Vector3u triangle_indices = dr::unravel<Vector3u>(m_faces);
+        for (uint32_t i = 0; i < 3u; i++) {
+            UInt32 idx_cur = triangle_indices[i];
+            UInt32 idx_nxt = triangle_indices[(i + 1) % 3];
+            Bool invalid_edges = (idx_cur == idx_nxt);
+            UInt32 edge_id = 3u * dr::arange<UInt32>(m_face_count) + i;
+
+            tmp[0] = idx_nxt;
+            tmp[1] = INVALID_DEDGE;
+        }
+
+
+        UInt32 v1 = m_faces;
+        UInt32 face_idx = dr::arange<UInt32>(m_face_count) / 3;
+        UInt32 v2_idx = face_idx * 3 + ((dr::arange<UInt32>(m_face_count) + 1) % 3);
+        UInt32 v2 = dr::gather<UInt32>(m_faces, v2_idx);
+        Bool invalid_edges = (v1 == v2);
+        UInt32 edge_id = dr::arange<UInt32>(m_face_count * 3);
+
+        tmp[0] = v2_idx;
+        tmp[1] = dr::full<UInt32>(INVALID_DEDGE, dr::width(v2_idx));
+
+        UInt32 old_edge = dr::scatter_cas(V2E, INVALID_DEDGE, edge_id, dr::arange<UInt32>(m_vertex_count), !invalid_edges);
+        Bool swapped = (old_edge == INVALID_DEDGE);
+
+
+        //if (!atomicCompareAndExchange(&V2E[idx_cur], edge_id, INVALID)) {
+        //    uint32_t idx = V2E[idx_cur];
+        //    while (!atomicCompareAndExchange(&tmp[idx].second, edge_id, INVALID))
+        //        idx = tmp[idx].second;
+        //}
     }
 
-    if (non_manifold_count > 0)
-        Log(Warn,
-            "Mesh::build_directed_edges(): there are %d non-manifold vertices in the "
-            "following mesh: %s",
-            non_manifold_count, to_string());
-
-    m_E2E = dr::load<DynamicBuffer<UInt32>>(E2E.data(), m_face_count * 3);
     m_E2E_outdated = false;
 }
 
@@ -601,7 +646,7 @@ MI_VARIANT void
 Mesh<Float, Spectrum>::build_indirect_silhouette_distribution() {
     UInt32 dedge = dr::arange<UInt32>(m_face_count * 3),
            dedge_oppo = opposite_dedge(dedge);
-    Mask boundary = (dedge_oppo == m_invalid_dedge);
+    Mask boundary = (dedge_oppo == INVALID_DEDGE);
     // One edge can be represented by two dedge indices, we use the smaller index
     Mask valid = (dedge_oppo > dedge) & !boundary;
 
@@ -896,7 +941,7 @@ Mesh<Float, Spectrum>::sample_silhouette(const Point3f &sample_,
 
     UInt32 dedge_oppo = opposite_dedge(dedge, active);
     UInt32 face_idx_oppo = dr::idiv(dedge_oppo, 3u);
-    Mask has_opposite = (dedge_oppo != m_invalid_dedge) & active;
+    Mask has_opposite = (dedge_oppo != INVALID_DEDGE) & active;
     Normal3f n_oppo = face_normal(face_idx_oppo, has_opposite);
 
     bool is_lune = has_flag(flags, DiscontinuityFlags::DirectionLune);
@@ -976,7 +1021,7 @@ Mesh<Float, Spectrum>::invert_silhouette_sample(const SilhouetteSample3f &ss,
     dr::masked(dedge_curr, swap) = dedge_oppo;
     dr::masked(dedge_oppo, swap) = dedge_curr_tmp;
 
-    Mask has_opposite = (dedge_oppo != m_invalid_dedge) && active;
+    Mask has_opposite = (dedge_oppo != INVALID_DEDGE) && active;
     Normal3f n_curr = face_normal(dr::idiv(dedge_curr, 3u), active),
              n_oppo = face_normal(dr::idiv(dedge_oppo, 3u), has_opposite);
 
@@ -1075,9 +1120,9 @@ Mesh<Float, Spectrum>::primitive_silhouette_projection(const Point3f &viewpoint,
     UInt32 dedge_oppo_0 = opposite_dedge(si.prim_index * 3u     , active),
            dedge_oppo_1 = opposite_dedge(si.prim_index * 3u + 1u, active),
            dedge_oppo_2 = opposite_dedge(si.prim_index * 3u + 2u, active);
-    Mask boundary_0 = active && (dedge_oppo_0 == m_invalid_dedge),
-         boundary_1 = active && (dedge_oppo_1 == m_invalid_dedge),
-         boundary_2 = active && (dedge_oppo_2 == m_invalid_dedge);
+    Mask boundary_0 = active && (dedge_oppo_0 == INVALID_DEDGE),
+         boundary_1 = active && (dedge_oppo_1 == INVALID_DEDGE),
+         boundary_2 = active && (dedge_oppo_2 == INVALID_DEDGE);
     UInt32 prim_idx_0 = dr::select(boundary_0, si.prim_index, dr::idiv(dedge_oppo_0, 3u)),
            prim_idx_1 = dr::select(boundary_1, si.prim_index, dr::idiv(dedge_oppo_1, 3u)),
            prim_idx_2 = dr::select(boundary_2, si.prim_index, dr::idiv(dedge_oppo_2, 3u));
@@ -1237,7 +1282,7 @@ Mesh<Float, Spectrum>::precompute_silhouette(
                     dr::load<ScalarIndex>(E2E_data + dedge_curr);
                 bool valid = false;
 
-                if (dedge_oppo == m_invalid_dedge) {
+                if (dedge_oppo == INVALID_DEDGE) {
                     valid = true;
                 } else if (dedge_oppo > dedge_curr) {
                     ScalarIndex face_index_oppo = dr::idiv(dedge_oppo, 3u);
@@ -1295,7 +1340,7 @@ Mesh<Float, Spectrum>::precompute_silhouette(
         Float weight = unit_angle(to_p0, to_p1);
 
         UInt32 dedge_oppo = opposite_dedge(dedge_curr);
-        Mask has_opposite = (dedge_oppo != m_invalid_dedge);
+        Mask has_opposite = (dedge_oppo != INVALID_DEDGE);
 
         auto face_idx_oppo = dr::idiv(dedge_oppo, 3u);
         Normal3f n_oppo = face_normal(face_idx_oppo, has_opposite);
