@@ -93,6 +93,7 @@ public:
     using Sensor::m_needs_sample_2;
     using Sensor::m_needs_sample_3;
     using Sensor::m_film;
+    using Sensor::m_to_world;
 
     DR_TRAMPOLINE_TRAVERSE_CB(Sensor)
 };
@@ -177,7 +178,8 @@ MI_PY_EXPORT(Sensor) {
         .def("sampler", nb::overload_cast<>(&Sensor::sampler, nb::const_), D(Sensor, sampler))
         .def_field(PySensor, m_needs_sample_2, D(Endpoint, m_needs_sample_3))
         .def_field(PySensor, m_needs_sample_3, D(Endpoint, m_needs_sample_3))
-        .def_field(PySensor, m_film);
+        .def_field(PySensor, m_film)
+        .def_field(PySensor, m_to_world);
 
     drjit::bind_traverse(sensor);
 
