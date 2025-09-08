@@ -28,6 +28,7 @@ MI_VARIANT Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
        appearance. Default: ``false`` */
     m_face_normals = props.get<bool>("face_normals", false);
     m_flip_normals = props.get<bool>("flip_normals", false);
+    m_ray_offset_scale = props.get<ScalarFloat>("ray_offset_scale", 1.0f);
 
     m_discontinuity_types = (uint32_t) DiscontinuityFlags::PerimeterType;
 
@@ -1551,6 +1552,22 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         }
     } else {
         si.sh_frame.n = si.n;
+    }
+
+    if (has_vertex_normals() &&
+        likely(has_flag(ray_flags, RayFlags::ShadingFrame) ||
+               has_flag(ray_flags, RayFlags::dNSdUV)) &&
+        (m_ray_offset_scale > 0.f)) {
+        // Implements "Hacking the shadow terminator" by Johannes Hanika (2021).
+        // The code matches the original implementation, but was slightly
+        // simplified since b0 * p0 + b1 * p1 + b2 * p2 = si.p, and b0 + b1 + b2 = 1.
+        Vector3f tmp0 = p0 - si.p, tmp1 = p1 - si.p, tmp2 = p2 - si.p;
+        Float dot0 = dr::maximum(dr::dot(tmp0, n0), 0.f),
+              dot1 = dr::maximum(dr::dot(tmp1, n1), 0.f),
+              dot2 = dr::maximum(dr::dot(tmp2, n2), 0.f);
+        si.ray_offset =
+            m_ray_offset_scale *
+            dr::detach(dr::fmadd(b0, dot0 * n0, dr::fmadd(b1, dot1 * n1, b2 * dot2 * n2)));
     }
 
     if (m_flip_normals) {

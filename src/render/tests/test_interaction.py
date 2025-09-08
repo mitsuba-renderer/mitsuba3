@@ -42,6 +42,7 @@ def test02_intersection_construction(variant_scalar_rgb):
   time=2,
   wavelengths=[],
   p=[1, 2, 3],
+  ray_offset=[0, 0, 0],
   n=[4, 5, 6],
   shape=0x0,
   uv=[7, 8],

@@ -100,6 +100,9 @@ struct Interaction {
     /// Position of the interaction in world coordinates
     Point3f p;
 
+    /// (Optional) offset to be used to spawn rays from this interaction
+    Vector3f ray_offset;
+
     /// Geometric normal (only valid for \c SurfaceInteraction)
     Normal3f n;
 
@@ -113,7 +116,7 @@ struct Interaction {
     /// Constructor
     Interaction(Float t, Float time, const Wavelength &wavelengths,
                 const Point3f &p, const Normal3f &n = 0.f)
-        : t(t), time(time), wavelengths(wavelengths), p(p), n(n) { }
+        : t(t), time(time), wavelengths(wavelengths), p(p), ray_offset(0.f), n(n) { }
 
     /// Virtual destructor
     virtual ~Interaction() = default;
@@ -124,11 +127,12 @@ struct Interaction {
      * field should be set to an infinite value to mark invalid intersection records.
      */
     virtual void zero_(size_t size = 1) {
-        t           = dr::full<Float>(dr::Infinity<Float>, size);
-        time        = dr::zeros<Float>(size);
-        wavelengths = dr::zeros<Wavelength>(size);
-        p           = dr::zeros<Point3f>(size);
-        n           = dr::zeros<Normal3f>(size);
+        t             = dr::full<Float>(dr::Infinity<Float>, size);
+        time          = dr::zeros<Float>(size);
+        wavelengths   = dr::zeros<Wavelength>(size);
+        p             = dr::zeros<Point3f>(size);
+        ray_offset    = dr::zeros<Vector3f>(size);
+        n             = dr::zeros<Normal3f>(size);
     }
 
     /// Is the current interaction valid?
@@ -154,7 +158,7 @@ struct Interaction {
     //! @}
     // =============================================================
 
-    DRJIT_STRUCT(Interaction, t, time, wavelengths, p, n);
+    DRJIT_STRUCT(Interaction, t, time, wavelengths, p, ray_offset, n);
 
 private:
     /**
@@ -165,7 +169,7 @@ private:
     Point3f offset_p(const Vector3f &d) const {
         Float mag = (1.f + dr::max(dr::abs(p))) * math::RayEpsilon<Float>;
         mag = dr::detach(dr::mulsign(mag, dr::dot(n, d)));
-        return dr::fmadd(mag, dr::detach(n), p);
+        return dr::fmadd(mag, dr::detach(n), p + dr::detach(ray_offset));
     }
 };
 
@@ -186,7 +190,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     using Spectrum = Spectrum_;
 
     // Make parent fields/functions visible
-    MI_IMPORT_BASE(Interaction, t, time, wavelengths, p, n, is_valid)
+    MI_IMPORT_BASE(Interaction, t, time, wavelengths, p, ray_offset, n, is_valid)
 
     MI_IMPORT_RENDER_BASIC_TYPES()
     MI_IMPORT_OBJECT_TYPES()
@@ -524,8 +528,8 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
-    DRJIT_STRUCT(SurfaceInteraction, t, time, wavelengths, p, n, shape, uv,
-                 sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
+    DRJIT_STRUCT(SurfaceInteraction, t, time, wavelengths, p, ray_offset, n,
+                 shape, uv, sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
                  duv_dy, wi, prim_index, instance)
 };
 
@@ -545,7 +549,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     using Index = typename CoreAliases::UInt32;
 
     // Make parent fields/functions visible
-    MI_IMPORT_BASE(Interaction, t, time, wavelengths, p, n, is_valid)
+    MI_IMPORT_BASE(Interaction, t, time, wavelengths, p, ray_offset, n, is_valid)
     //! @}
     // =============================================================
 
@@ -609,7 +613,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
-    DRJIT_STRUCT(MediumInteraction, t, time, wavelengths, p, n, medium,
+    DRJIT_STRUCT(MediumInteraction, t, time, wavelengths, p, ray_offset, n, medium,
                  sh_frame, wi, sigma_s, sigma_n, sigma_t,
                  combined_extinction, mint)
 };
@@ -755,7 +759,9 @@ std::ostream &operator<<(std::ostream &os, const Interaction<Float, Spectrum> &i
            << "  t = " << it.t << "," << std::endl
            << "  time = " << it.time << "," << std::endl
            << "  wavelengths = " << it.wavelengths << "," << std::endl
-           << "  p = " << string::indent(it.p, 6) << std::endl
+           << "  p = " << string::indent(it.p, 6) << "," << std::endl
+           << "  ray_offset = " << string::indent(it.ray_offset, 15) << "," << std::endl
+           << "  n = " << string::indent(it.n, 6) << std::endl
            << "]";
     }
     return os;
