@@ -190,11 +190,12 @@ class SunskyEmitter final: public BaseSunskyEmitter<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BaseSunskyEmitter,
         m_turbidity, m_sky_scale, m_sun_scale, m_albedo, m_bsphere,
-        m_sun_half_aperture, m_sky_rad_dataset, m_tgmm_tables,
+        m_sun_half_aperture, m_sky_rad_dataset,
         m_sky_params_dataset, CHANNEL_COUNT, m_to_world
     )
     using typename Base::FloatStorage;
 
+    using typename Base::Gaussian;
     using typename Base::SkyRadData;
     using typename Base::SkyParamsData;
 
@@ -260,7 +261,11 @@ public:
         TensorXf temp_sky_radiance = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
         m_sky_radiance = bezier_interp(temp_sky_radiance, sun_eta);
 
-        m_gaussian_distr = build_tgmm_distribution(m_tgmm_tables);
+        const TensorFile tgmm_dataset(
+            file_resolver()->resolve(DATABASE_PATH + "tgmm_tables.bin")
+        );
+        m_tgmm_datasets = Base::template load_field<TensorXf32>(tgmm_dataset, "tgmm_tables");
+        std::tie(m_tgmm_tables, m_gaussian_distr) = build_tgmm_distribution(m_turbidity, sun_eta);
 
         // ================= AVERAGE RADIANCE =================
         Float sampling_w;
@@ -327,7 +332,7 @@ public:
 
         // Update TGMM (no dependence on albedo)
         if (changed_sun_dir || CHANGED("turbidity"))
-            m_gaussian_distr = build_tgmm_distribution(m_tgmm_tables);
+            std::tie(m_tgmm_tables, m_gaussian_distr) = build_tgmm_distribution(m_turbidity, eta);
 
         // Update sky-sun ratio and radiance distribution
         Float sampling_w;
@@ -374,24 +379,83 @@ private:
         return m_sky_sampling_w;
     }
 
-    std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Point2f &, const Mask &active) const override {
-        const auto [ idx, temp_sample ] = m_gaussian_distr.sample_reuse(sample, active);
-        const auto [ idx_div, idx_mod ] = dr::idivmod(idx, TGMM_COMPONENTS);
+    Vector3f sample_sky(Point2f sample, const Point2f& sun_angles, const Mask& active) const override {
+        // Sample a gaussian from the mixture
+        const auto [ gaussian_idx, temp_sample ] = m_gaussian_distr.sample_reuse(sample.x(), active);
 
-        Float sun_eta = 0.5f * dr::Pi<Float> - m_sun_angles.y();
-        sun_eta = dr::rad_to_deg(sun_eta);
+        // {mu_phi, mu_theta, sigma_phi, sigma_theta, weight}
+        Gaussian gaussian = dr::gather<Gaussian>(m_tgmm_tables, gaussian_idx, active);
 
-        UInt32 eta_idx_low = dr::floor2int<UInt32>(dr::clip((sun_eta - 2) / 3, 0, ELEVATION_CTRL_PTS - 1)),
-               t_idx_low   = dr::floor2int<UInt32>(dr::clip(m_turbidity - 2, 0, (TURBITDITY_LVLS - 1) - 1));
+        ScalarPoint2f a = { 0.f,                    0.f },
+                      b = { dr::TwoPi<ScalarFloat>, 0.5f * dr::Pi<ScalarFloat> };
 
-        constexpr uint32_t t_block_size = Base::GAUSSIAN_NB / (TURBITDITY_LVLS - 1),
-                 result_size  = t_block_size / ELEVATION_CTRL_PTS;
+        Point2f mu    = { gaussian[0], gaussian[1] },
+                sigma = { gaussian[2], gaussian[3] };
 
-        UInt32 gaussian_idx = (t_idx_low + ((idx_div >> 1) & 1)) * t_block_size +
-                              (eta_idx_low + (idx_div & 1)) * result_size +
-                              idx_mod;
+        Point2f cdf_a = Base::gaussian_cdf(mu, sigma, a),
+                cdf_b = Base::gaussian_cdf(mu, sigma, b);
 
-        return std::make_pair(gaussian_idx, temp_sample);
+        sample = dr::lerp(cdf_a, cdf_b, Point2f{temp_sample, sample.y()});
+        // Clamp to erfinv's domain of definition
+        sample = dr::clip(sample, dr::Epsilon<Float>, dr::OneMinusEpsilon<Float>);
+
+        Point2f angles = dr::SqrtTwo<Float> * dr::erfinv(2 * sample - 1) * sigma + mu;
+
+        // From fixed reference frame where sun_phi = pi/2 to local frame
+        angles.x() += sun_angles.x() - 0.5f * dr::Pi<Float>;
+        // Clamp theta to avoid negative z-axis values (FP errors)
+        angles.y() = dr::minimum(angles.y(), 0.5f * dr::Pi<Float> - dr::Epsilon<Float>);
+
+        return dr::sphdir(angles.y(), angles.x());
+    }
+
+    Float sky_pdf(const Vector3f& local_dir, const Point2f& sun_angles, Mask active) const override {
+        Float sin_theta = Frame3f::sin_theta(local_dir);
+        active &= (Frame3f::cos_theta(local_dir) >= 0.f) && (sin_theta != 0.f);
+
+        sin_theta = dr::maximum(sin_theta, dr::Epsilon<Float>);
+        Point2f angles = dir_to_sph(local_dir);
+                angles = { angles.y(), angles.x() }; // flip convention
+
+        // From local frame to reference frame where sun_phi = pi/2 and phi is in [0, 2pi]
+        angles.x() -= sun_angles.x() - 0.5f * dr::Pi<Float>;
+        angles.x() = dr::select(angles.x() < 0, angles.x() + dr::TwoPi<Float>, angles.x());
+        angles.x() = dr::select(angles.x() > dr::TwoPi<Float>, angles.x() - dr::TwoPi<Float>, angles.x());
+
+        // Bounds check for theta
+        active &= (angles.y() >= 0.f) && (angles.y() <= 0.5f * dr::Pi<Float>);
+
+        if (dr::none_or<false>(active))
+            return 0.f;
+
+        // Bounding points of the truncated gaussian mixture
+        ScalarPoint2f a = { 0.f,                    0.f },
+                      b = { dr::TwoPi<ScalarFloat>, 0.5f * dr::Pi<ScalarFloat> };
+
+        // Evaluate gaussian mixture
+        Float pdf = 0.f;
+        for (uint32_t gaussian_idx = 0; gaussian_idx < 4 * TGMM_COMPONENTS * TGMM_GAUSSIAN_PARAMS; gaussian_idx += TGMM_GAUSSIAN_PARAMS) {
+
+            // {mu_phi, mu_theta}, {sigma_phi, sigma_theta}
+            Point2f mu    = { m_tgmm_tables[gaussian_idx + 0], m_tgmm_tables[gaussian_idx + 1] },
+                    sigma = { m_tgmm_tables[gaussian_idx + 2], m_tgmm_tables[gaussian_idx + 3] };
+
+            Point2f cdf_a = Base::gaussian_cdf(mu, sigma, a),
+                    cdf_b = Base::gaussian_cdf(mu, sigma, b);
+
+            Float volume = (cdf_b.x() - cdf_a.x()) *
+                           (cdf_b.y() - cdf_a.y()) *
+                           (sigma.x() * sigma.y());
+
+            Point2f sample = (angles - mu) / sigma;
+            Float gaussian_pdf = warp::square_to_std_normal_pdf(sample);
+
+            pdf += m_tgmm_tables[gaussian_idx + 4] * gaussian_pdf / volume;
+
+        }
+
+
+        return dr::select(active, pdf / sin_theta, 0.f);
     }
 
     std::pair<Wavelength, Spectrum> sample_wlgth(const Float& sample, Mask active) const override {
@@ -422,32 +486,78 @@ private:
      * to combine them and adjust the weights based on the elevation and
      * turbidity linear interpolation parameters.
      *
-     * \param tgmm_tables
-     *      Dataset for the Gaussian Mixture Models
+     * \param turbidity
+     *      Turbidity used for the skylight model
+     * \param eta
+     *      Elevation of the sun
      * \return
      *      The new distribution parameters and the mixture weights
      */
-    DiscreteDistribution<Float> build_tgmm_distribution(const FloatStorage &tgmm_tables) const {
+    std::pair<FloatStorage, DiscreteDistribution<Float>>
+    build_tgmm_distribution(Float turbidity, Float eta) {
         using UInt32Storage = DynamicBuffer<UInt32>;
 
         // ============== EXTRACT INDEXES AND LERP WEIGHTS ==============
-        const auto [ lerp_w, tgmm_idx ] = Base::get_tgmm_data(m_sun_angles);
+
+        eta = dr::rad_to_deg(eta);
+        Float eta_idx_f = dr::clip((eta - 2) / 3, 0, ELEVATION_CTRL_PTS - 1),
+              t_idx_f = dr::clip(turbidity - 2, 0, (TURBITDITY_LVLS - 1) - 1);
+
+        UInt32 eta_idx_low = dr::floor2int<UInt32>(eta_idx_f),
+               t_idx_low = dr::floor2int<UInt32>(t_idx_f);
+
+        UInt32 eta_idx_high = dr::minimum(eta_idx_low + 1, ELEVATION_CTRL_PTS - 1),
+               t_idx_high = dr::minimum(t_idx_low + 1, (TURBITDITY_LVLS - 1) - 1);
+
+        Float eta_rem = eta_idx_f - eta_idx_low,
+              t_rem = t_idx_f - t_idx_low;
+
+        uint32_t t_block_size = m_tgmm_datasets.size() / (TURBITDITY_LVLS - 1),
+                 result_size  = t_block_size / ELEVATION_CTRL_PTS;
+
+        UInt32 indices[4] = {
+            t_idx_low * t_block_size + eta_idx_low * result_size,
+            t_idx_low * t_block_size + eta_idx_high * result_size,
+            t_idx_high * t_block_size + eta_idx_low * result_size,
+            t_idx_high * t_block_size + eta_idx_high * result_size
+        };
+
+        Float lerp_factors[4] = {
+            (1 - t_rem) * (1 - eta_rem),
+            (1 - t_rem) * eta_rem,
+            t_rem * (1 - eta_rem),
+            t_rem * eta_rem
+        };
 
         // ==================== EXTRACT PARAMETERS AND APPLY LERP WEIGHT ====================
-        FloatStorage gaussian_weights = dr::zeros<FloatStorage>(4 * TGMM_COMPONENTS);
-        UInt32Storage write_weight_idx = dr::arange<UInt32Storage>(TGMM_COMPONENTS);
-        UInt32Storage read_weight_idx = TGMM_GAUSSIAN_PARAMS * write_weight_idx + (TGMM_GAUSSIAN_PARAMS - 1);
-
+        FloatStorage distrib_params = dr::zeros<FloatStorage>(4 * result_size);
+        UInt32Storage param_indices = dr::arange<UInt32Storage>(result_size);
         for (ScalarUInt32 mixture_idx = 0; mixture_idx < 4; ++mixture_idx) {
 
-            // Extract gaussian weights for the given mixture
-            FloatStorage tgmm_weights = dr::gather<FloatStorage>(tgmm_tables, TGMM_GAUSSIAN_PARAMS * tgmm_idx[mixture_idx] + read_weight_idx);
+            // Gather gaussian weights and parameters
+            FloatStorage params = dr::gather<FloatStorage>(m_tgmm_datasets.array(), indices[mixture_idx] + param_indices);
 
-            // Scatter back the weights for the current mixture
-            dr::scatter(gaussian_weights, lerp_w[mixture_idx] * tgmm_weights, mixture_idx * TGMM_COMPONENTS + write_weight_idx);
+            // Apply lerp factor to gaussian weights
+            for (ScalarUInt32 weight_idx = 0; weight_idx < TGMM_COMPONENTS; ++weight_idx) {
+                ScalarUInt32 gaussian_weight_idx = weight_idx * TGMM_GAUSSIAN_PARAMS + (TGMM_GAUSSIAN_PARAMS - 1);
+                dr::scatter(params, params[gaussian_weight_idx] * lerp_factors[mixture_idx], (UInt32) gaussian_weight_idx);
+            }
+
+            // Scatter back the parameters in the final gaussian mixture buffer
+            dr::scatter(distrib_params, params, mixture_idx * result_size + param_indices);
         }
 
-        return DiscreteDistribution<Float>(gaussian_weights);
+        // Extract gaussian weights
+        UInt32Storage mis_weight_idx =
+            TGMM_GAUSSIAN_PARAMS * dr::arange<UInt32Storage>(4 * TGMM_COMPONENTS) +
+            (TGMM_GAUSSIAN_PARAMS - 1);
+        FloatStorage mis_weights =
+            dr::gather<FloatStorage>(distrib_params, mis_weight_idx);
+
+        return std::make_pair(
+            distrib_params,
+            DiscreteDistribution<Float>(mis_weights)
+        );
     }
 
     /**
@@ -612,6 +722,8 @@ private:
     // ================================================================================================
     // ========================================= ATTRIBUTES ===========================================
     // ================================================================================================
+    static constexpr uint32_t GAUSSIAN_NB =
+            (TURBITDITY_LVLS - 1) * ELEVATION_CTRL_PTS * TGMM_COMPONENTS;
 
     /// Sun direction in world coordinates
     Vector3f m_sun_dir;
@@ -632,6 +744,9 @@ private:
     DiscreteDistribution<Float> m_gaussian_distr;
     ContinuousDistribution<Wavelength> m_spectral_distr;
 
+    TensorXf m_tgmm_datasets;
+    FloatStorage m_tgmm_tables;
+
     MI_TRAVERSE_CB(
         Base,
         Base::m_bsphere,
@@ -643,7 +758,6 @@ private:
         Base::m_sky_params_dataset,
         Base::m_sun_ld,
         Base::m_sun_rad_dataset,
-        Base::m_tgmm_tables,
         m_sun_dir,
         m_sun_angles,
         m_time,
@@ -652,7 +766,8 @@ private:
         m_sky_radiance,
         m_sky_sampling_w,
         m_gaussian_distr,
-        m_spectral_distr
+        m_spectral_distr,
+        m_tgmm_tables
     )
 };
 

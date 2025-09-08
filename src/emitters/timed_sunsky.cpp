@@ -179,7 +179,7 @@ class TimedSunskyEmitter final: public BaseSunskyEmitter<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BaseSunskyEmitter,
         m_turbidity, m_sky_scale, m_sun_scale, m_albedo,
-        m_sun_half_aperture, m_sky_rad_dataset, m_tgmm_tables,
+        m_sun_half_aperture, m_sky_rad_dataset,
         m_sky_params_dataset, m_sun_radiance,
         CHANNEL_COUNT, m_to_world
     )
@@ -353,33 +353,11 @@ private:
         return dr::select(res == 0.f, 1.f, res);
     }
 
-    std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Point2f& sun_angles, const Mask& active) const override {
-        const auto [ lerp_w, tgmm_idx ] = Base::get_tgmm_data(sun_angles);
-
-        Mask active_loop = active;
-        Float last_cdf = 0.f, cdf = 0.f;
-        UInt32 res_gaussian_idx = 0;
-        for (uint32_t mixture_idx = 0; mixture_idx < 4; ++mixture_idx) {
-            for (uint32_t gaussian_idx = 0; gaussian_idx < TGMM_COMPONENTS; ++gaussian_idx) {
-                dr::masked(last_cdf, active_loop) = cdf;
-
-                dr::masked(res_gaussian_idx, active_loop) =
-                    tgmm_idx[mixture_idx] + gaussian_idx;
-
-                Float gaussian_w = lerp_w[mixture_idx] * dr::gather<Float>(m_tgmm_tables,
-                    res_gaussian_idx * TGMM_GAUSSIAN_PARAMS + (TGMM_GAUSSIAN_PARAMS - 1),
-                    active_loop
-                );
-
-                // Gathered weight is 0 if inactive
-                cdf += gaussian_w;
-
-                active_loop &= cdf < sample;
-
-            }
-        }
-
-        return std::make_pair(res_gaussian_idx, (sample - last_cdf) / (cdf - last_cdf));
+    Vector3f sample_sky(Point2f sample, const Point2f&, const Mask&) const override {
+        return warp::square_to_uniform_hemisphere(sample);
+    }
+    Float sky_pdf(const Vector3f& local_dir, const Point2f&, Mask) const override {
+        return warp::square_to_uniform_hemisphere_pdf</* test_domain = */true>(local_dir);
     }
 
     std::pair<Wavelength, Spectrum> sample_wlgth(const Float& sample, Mask active) const override {
@@ -500,7 +478,6 @@ private:
         Base::m_sky_params_dataset,
         Base::m_sun_ld,
         Base::m_sun_rad_dataset,
-        Base::m_tgmm_tables,
         m_window_start_time,
         m_window_end_time,
         m_start_date,
