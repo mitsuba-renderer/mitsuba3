@@ -42,6 +42,8 @@ struct field<DeviceType, HostType,
     field() {}
     field(const DeviceType &v) : m_scalar(v) { }
     field(DeviceType &&v) : m_scalar(v) { }
+    field(const field& f) = default;
+
     const DeviceType& value()  const { return m_scalar; }
     DeviceType& value() { return m_scalar; }
     const DeviceType& scalar() const { return m_scalar; }
@@ -78,6 +80,8 @@ struct field<DeviceType, HostType,
     field() {}
     field(const HostType &v) : m_value(v), m_scalar(v) { }
     field(HostType &&v) : m_value(v), m_scalar(v) { }
+    field(const field& f) = default;
+
     const DeviceType& value()  const { return m_value; }
     DeviceType& value()  { return m_value; }
     const HostType& scalar() const { return m_scalar; }

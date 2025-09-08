@@ -20,23 +20,20 @@ void bind_field(nb::module_ &m, const char *name) {
         return;
     }
 
-    auto cls =
-        nb::class_<Field>(m, name,
-                          "Wrapper for a host and/or device-side field.")
-            .def(nb::init<>(),
-                 "Default constructor: creates an uninitialized field.")
-            .def(nb::init<const HostType &>(),
-                 "Constructs from a host-side value.")
-            .def_prop_rw(
-                "value", [](Field &f) -> DeviceType & { return f.value(); },
-                [](Field &f, const DeviceType &v) { f = v; },
-                nb::rv_policy::reference_internal,
-                "Access the JIT-compiled device-side representation of the "
-                "field.")
-            .def_prop_ro("scalar", &Field::scalar,
-                         nb::rv_policy::reference_internal,
-                         "Access the host-side representation of the field.")
-            .def_repr(Field);
+    nb::class_<Field>(m, name, "Wrapper for a host and/or device-side field.")
+        .def(nb::init<>(),
+             "Default constructor: creates an uninitialized field.")
+        .def(nb::init<const HostType &>(), "Constructs from a host-side value.")
+        .def_prop_rw(
+            "value", [](Field &f) -> DeviceType & { return f.value(); },
+            [](Field &f, const DeviceType &v) { f = v; },
+            nb::rv_policy::reference_internal,
+            "Access the JIT-compiled device-side representation of the "
+            "field.")
+        .def_prop_ro("scalar", &Field::scalar,
+                     nb::rv_policy::reference_internal,
+                     "Access the host-side representation of the field.")
+        .def_repr(Field);
 }
 
 MI_PY_EXPORT(Field) {
