@@ -490,7 +490,12 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_directed_edges() {
     if (m_face_count == 0)
         Throw("Cannot create directed edges for an empty mesh: %s", to_string());
 
+    //if constexpr (true) {
     if constexpr (!dr::is_jit_v<Float>) {
+        auto&& faces = dr::migrate(m_faces, AllocType::Host);
+        if constexpr (dr::is_array_v<Float>)
+            dr::sync_thread();
+
         // Use nanothread to make this parallel at least
         std::vector<ScalarIndex> V2E(m_vertex_count, INVALID_DEDGE);
         std::vector<ScalarIndex> E2E(m_face_count * 3, INVALID_DEDGE);
@@ -502,7 +507,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_directed_edges() {
         std::vector<std::pair<ScalarIndex, ScalarIndex>> tmp(m_face_count * 3);
 
         // 1. Fill `tmp` and `V2E`
-        const ScalarIndex *face_data = m_faces.data();
+        const ScalarIndex *face_data = faces.data();
         for (ScalarIndex f = 0; f < m_face_count; f++) {
             ScalarPoint3u triangle_indices =
                 dr::load<ScalarPoint3u>(face_data + 3 * f);
@@ -590,21 +595,9 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_directed_edges() {
         Vector2u tmp = dr::zeros<Vector2u>(m_face_count * 3);
 
         //// 1. Fill `tmp` and `V2E`
-        Vector3u triangle_indices = dr::unravel<Vector3u>(m_faces);
-        for (uint32_t i = 0; i < 3u; i++) {
-            UInt32 idx_cur = triangle_indices[i];
-            UInt32 idx_nxt = triangle_indices[(i + 1) % 3];
-            Bool invalid_edges = (idx_cur == idx_nxt);
-            UInt32 edge_id = 3u * dr::arange<UInt32>(m_face_count) + i;
-
-            tmp[0] = idx_nxt;
-            tmp[1] = INVALID_DEDGE;
-        }
-
-
         UInt32 v1 = m_faces;
-        UInt32 face_idx = dr::arange<UInt32>(m_face_count) / 3;
-        UInt32 v2_idx = face_idx * 3 + ((dr::arange<UInt32>(m_face_count) + 1) % 3);
+        UInt32 face_idx = dr::repeat(dr::arange<UInt32>(m_face_count), 3);
+        UInt32 v2_idx = face_idx * 3 + ((dr::arange<UInt32>(m_face_count * 3) + 1) % 3);
         UInt32 v2 = dr::gather<UInt32>(m_faces, v2_idx);
         Bool invalid_edges = (v1 == v2);
         UInt32 edge_id = dr::arange<UInt32>(m_face_count * 3);
@@ -612,15 +605,34 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_directed_edges() {
         tmp[0] = v2_idx;
         tmp[1] = dr::full<UInt32>(INVALID_DEDGE, dr::width(v2_idx));
 
-        UInt32 old_edge = dr::scatter_cas(V2E, UInt32(INVALID_DEDGE), edge_id, dr::arange<UInt32>(m_vertex_count), !invalid_edges);
-        Bool swapped = (old_edge == INVALID_DEDGE);
+        //if (!atomicCompareAndExchange(&V2E[idx_cur], edge_id, INVALID)) {
+        auto [_, swapped] = dr::scatter_cas(V2E, UInt32(INVALID_DEDGE), edge_id,
+                                            v1, !invalid_edges);
+        UInt32 next_edge_id = dr::gather<UInt32>(V2E, v1, !swapped);
 
+        //struct LoopState {
+        //    UInt32 next_edge_id;
+        //    Mask active;
+        //    DRJIT_STRUCT(LoopState, next_edge_id, active)
+        //};
+        //LoopState ls{ next_edge_id, swapped };
+
+        //dr::tie(ls) = dr::while_loop(
+        //    dr::make_tuple(ls),
+        //    [](const LoopState &ls) { return ls.active; },
+        //    [](LoopState &ls) {
+        //        UInt32 last_edges_id = dr::gather<UInt32>(tmp[1], last_edges_id);
+        //        UInt32 prev_e_k = dr::scatter_cas(tmp[1], UInt32(INVALID_DEDGE), edge_id, dr::arange<UInt32>(m_vertex_count), !invalid_edges);
+        //        Bool last_e_k = (prev_e_k == INVALID_DEDGE);
+        //    }
+        //);
 
         //if (!atomicCompareAndExchange(&V2E[idx_cur], edge_id, INVALID)) {
         //    uint32_t idx = V2E[idx_cur];
         //    while (!atomicCompareAndExchange(&tmp[idx].second, edge_id, INVALID))
         //        idx = tmp[idx].second;
         //}
+
     }
 
     m_E2E_outdated = false;
