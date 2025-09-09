@@ -169,7 +169,8 @@ private:
     Point3f offset_p(const Vector3f &d) const {
         Float mag = (1.f + dr::max(dr::abs(p))) * math::RayEpsilon<Float>;
         mag = dr::detach(dr::mulsign(mag, dr::dot(n, d)));
-        return dr::fmadd(mag, dr::detach(n), p + dr::detach(ray_offset));
+        Vector3f shading_offset = dr::select(mag > 0.f, dr::detach(ray_offset), 0.f);
+        return dr::fmadd(mag, dr::detach(n), p + shading_offset);
     }
 };
 
