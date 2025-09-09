@@ -86,3 +86,5 @@ def test03_trampoline(variants_vec_backends_once_rgb):
     params = mi.traverse(sensor)
     assert dr.allclose(params['to_world'].matrix,
                        transform.matrix)
+    assert dr.allclose(sensor.world_transform().matrix,
+                       transform.matrix)
