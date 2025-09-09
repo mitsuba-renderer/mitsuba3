@@ -5,7 +5,6 @@ set(CORE_PY_V_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/distr_1d_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/distr_2d_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/frame_v.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/field_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/math_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/object_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/qmc_v.cpp

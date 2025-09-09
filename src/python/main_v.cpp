@@ -58,7 +58,6 @@ MI_PY_DECLARE(DrJit);
 MI_PY_DECLARE(Object);
 MI_PY_DECLARE(BoundingBox);
 MI_PY_DECLARE(BoundingSphere);
-MI_PY_DECLARE(Field);
 MI_PY_DECLARE(Frame);
 MI_PY_DECLARE(Ray);
 MI_PY_DECLARE(DiscreteDistribution);
@@ -174,7 +173,6 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT(Ray);
     MI_PY_IMPORT(BoundingBox);
     MI_PY_IMPORT(BoundingSphere);
-    MI_PY_IMPORT(Field);
     MI_PY_IMPORT(Frame);
     MI_PY_IMPORT(DiscreteDistribution);
     MI_PY_IMPORT(DiscreteDistribution2D);

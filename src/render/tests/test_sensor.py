@@ -65,7 +65,7 @@ def test03_trampoline(variants_vec_backends_once_rgb):
 
         def traverse(self, callback):
             super().traverse(callback)
-            callback.put('to_world', self.m_to_world.value,
+            callback.put('to_world', self.m_to_world,
                          mi.ParamFlags.NonDifferentiable)
 
         def to_string(self):
