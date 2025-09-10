@@ -232,6 +232,9 @@ public:
         m_sun_irrad_dataset = Base::template load_field<TensorXf32>(sampling_datasets, "sun_irradiance");
 
         m_sky_sampling_weights = compute_sky_sampling_weights();
+        dr::eval(m_sky_rad, m_sky_params, m_nb_days, m_sun_irrad_dataset, m_sun_irrad_dataset,
+                 m_turbidity, m_albedo, m_sun_radiance, m_sky_rad_dataset, m_sky_params_dataset,
+                 this->m_sun_ld, this->m_sun_rad_dataset, m_tgmm_tables);
     }
 
     void traverse(TraversalCallback *cb) override {
