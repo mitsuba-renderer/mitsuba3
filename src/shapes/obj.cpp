@@ -20,7 +20,7 @@ Wavefront OBJ mesh loader (:monosp:`obj`)
 -----------------------------------------
 
 .. pluginparameters::
- :extra-rows: 5
+ :extra-rows: 6
 
  * - filename
    - |string|
@@ -40,6 +40,15 @@ Wavefront OBJ mesh loader (:monosp:`obj`)
    - |bool|
    - Is the mesh inverted, i.e. should the normal vectors be flipped? (Default:|false|, i.e.
      the normals point outside)
+
+ * - ray_offset_scale
+   - |float|
+   - Scale factor used to offset ray origins when tracing secondary rays
+     (e.g., shadow rays) to avoid self-intersections. Rays are offset
+     according to the mismatch between geometric and shading normals, following
+     :cite:`Hanika2021`. This offset can be reduced by using a factor < 1,
+     and disabled entirely by setting it to 0 (e.g., to prevent light leaks).
+     (Default: 1.0)
 
  * - to_world
    - |transform|

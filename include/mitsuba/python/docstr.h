@@ -4476,6 +4476,8 @@ static const char *__doc_mitsuba_Interaction_operator_assign_2 = R"doc(//! @})do
 
 static const char *__doc_mitsuba_Interaction_p = R"doc(Position of the interaction in world coordinates)doc";
 
+static const char *__doc_mitsuba_Interaction_ray_offset = R"doc((Optional) offset to be used to spawn rays from this interaction)doc";
+
 static const char *__doc_mitsuba_Interaction_spawn_ray = R"doc(Spawn a semi-infinite ray towards the given direction)doc";
 
 static const char *__doc_mitsuba_Interaction_spawn_ray_to = R"doc(Spawn a finite ray towards the given position)doc";

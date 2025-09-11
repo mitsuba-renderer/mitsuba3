@@ -1410,3 +1410,29 @@ def test36_mesh_vcalls_with_directed_edges(variants_vec_rgb):
 
     result = mesh_ptr.opposite_dedge(mi.UInt32([2, 3, 2]))
     assert dr.all(result == mi.UInt32([3, 2, 3]))
+
+
+@pytest.mark.parametrize("ray_offset_scale", [0.0, 1.0])
+def test37_mesh_ray_offset(variants_vec_rgb, ray_offset_scale):
+    props = mi.Properties()
+    props["ray_offset_scale"] = ray_offset_scale
+    mesh = mi.Mesh(props)
+    params = mi.traverse(mesh)
+    params['vertex_positions'] = [-1, -1, 0, 1, -1, 0, 0,  1, 0]
+    params['faces'] = [0, 1, 2]
+    params.update()
+    params['vertex_normals'] = dr.ravel(dr.normalize(
+        mi.Vector3f([-1, 1, 0], [-1, -1, 1], [1, 1, 1])))
+    params.update()
+    scene = mi.load_dict({
+        "type": "scene",
+        "mesh": mesh,
+    })
+    si = scene.ray_intersect(mi.Ray3f([0, 0, 1], [0, 0, -1]))
+    ray = si.spawn_ray(dr.normalize(mi.Vector3f(1, -2, 3)))
+    if ray_offset_scale == 0.0:
+        assert dr.allclose(si.ray_offset, 0.0)
+        assert dr.allclose(ray.o.z, 0.0, atol=1e-4)
+    else:
+        assert dr.allclose(si.ray_offset.x, 0.0) # Due to symmetry, x offset is 0.
+        assert ray.o.z > 0.5 # Offset along z axis should be significant.
