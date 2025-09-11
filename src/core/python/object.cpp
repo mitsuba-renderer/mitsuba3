@@ -43,11 +43,17 @@ MI_PY_EXPORT(Object) {
              "Get the ObjectType of a plugin by name");
 
     nb::class_<Object, drjit::TraversableBase>(
-            m, "Object",
-            nb::intrusive_ptr<Object>(
-                [](Object *o, PyObject *po) noexcept { o->set_self_py(po); }),
-            D(Object)
-        )
+        m, "Object",
+        nb::intrusive_ptr<Object>([](Object *o, PyObject *po) noexcept {
+            PyObject *other = o->self_py();
+            if (!other) {
+                o->set_self_py(po);
+            } else {
+                nb::detail::keep_alive(po, other);
+                nb::detail::nb_inst_set_state(po, true, false);
+            }
+        }),
+        D(Object))
         .def(nb::init<>(), D(Object, Object))
         .def(nb::init<const Object &>(), D(Object, Object, 2))
         .def_method(Object, id)
