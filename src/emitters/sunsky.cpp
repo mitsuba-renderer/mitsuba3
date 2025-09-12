@@ -9,7 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
 .. _emitter-sunsky:
 
 Sun and sky emitter (:monosp:`sunsky`)
--------------------------------------------------
+--------------------------------------
 
 .. pluginparameters::
 
@@ -112,19 +112,62 @@ environment map, but evaluates the spectral radiance whenever it is needed.
 Consequently, sampling is done through a Truncated Gaussian Mixture Model
 pre-fitted to the given parameters :cite:`vitsas2021tgmm`.
 
-Users should be aware that given certain parameters, the sun's radiance is
-ill-represented by the linear sRGB color space. Whether Mitsuba is rendering in
-spectral or RGB mode, if the final output is an sRGB image, it can happen that
-it contains negative pixel values or be over-saturated. These results are left
-un-clamped to let the user post-process the image to their liking, without
-losing information.
+**Parameters:**
 
-Note that attaching a ``sunsky`` emitter to the scene introduces physical units
-into the rendering process of Mitsuba 3, which is ordinarily a unitless system.
-Specifically, the evaluated spectral radiance has units of power (:math:`W`) per
-unit area (:math:`m^{-2}`) per steradian (:math:`sr^{-1}`) per unit wavelength
-(:math:`nm^{-1}`). As a consequence, your scene should be modeled in meters for
-this plugin to work properly.
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/render/emitter_alb_fisheye_3_0_10_0.png
+   :caption: Sky only `albedo=0`
+.. subfigure:: ../../resources/data/docs/images/render/emitter_alb_fisheye_3_1_10_0.png
+   :caption: Sky only `albedo=20% green`
+.. subfigure:: ../../resources/data/docs/images/render/emitter_alb_fisheye_3_10_10_0.png
+   :caption: Sky only `albedo=1`
+.. subfigend::
+   :label: fig-sunsky-alb
+
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/emitter/emitter_sunsky_time_docs.svg
+   :scale: 250%
+   :caption: Default sky under different times
+.. subfigend::
+   :label: fig-sunsky-time
+
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/emitter/emitter_sunsky_turb_docs.svg
+   :scale: 250%
+   :caption: Default sky under different turbidites
+.. subfigend::
+   :label: fig-sunsky-turb
+
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/render/emitter_sky.jpg
+   :caption: Sky only `sun_scale=0`
+.. subfigure:: ../../resources/data/docs/images/render/emitter_sun.jpg
+   :caption: Sun only `sky_scale=0`
+.. subfigure:: ../../resources/data/docs/images/render/emitter_sunsky.jpg
+   :caption: Sun and sky combined (default parameters)
+.. subfigend::
+   :label: fig-sunsky
+
+.. warning::
+
+    - Note that attaching a ``sunsky`` emitter to the scene introduces physical units
+      into the rendering process of Mitsuba 3, which is ordinarily a unitless system.
+      Specifically, the evaluated spectral radiance has units of power (:math:`W`) per
+      unit area (:math:`m^{-2}`) per steradian (:math:`sr^{-1}`) per unit wavelength
+      (:math:`nm^{-1}`). As a consequence, your scene should be modeled in meters for
+      this plugin to work properly.
+
+    - The sun is an intense light source that subtends a tiny solid angle. This can
+      be a problem for certain rendering techniques (e.g. path tracing), which produce
+      high variance output (i.e. noise in renderings) when the scene also contains
+      specular or glossy or materials.
+
+    - Please be aware that given certain parameters, the sun's radiance is
+      ill-represented by the linear sRGB color space. Whether Mitsuba is rendering in
+      spectral or RGB mode, if the final output is an sRGB image, it can happen that
+      it contains negative pixel values or be over-saturated. These results are left
+      un-clamped to let the user post-process the image to their liking, without
+      losing information.
 
 .. tabs::
     .. code-tab:: xml
