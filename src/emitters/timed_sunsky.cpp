@@ -7,7 +7,7 @@ NAMESPACE_BEGIN(mitsuba)
 .. _emitter-timed_sunsky:
 
 Timed sun and sky emitter (:monosp:`timed_sunsky`)
--------------------------------------------------
+--------------------------------------------------
 
 .. pluginparameters::
 
@@ -75,10 +75,10 @@ Timed sun and sky emitter (:monosp:`timed_sunsky`)
    - Month of the end of the average (Default: start_month).
    - |exposed|
 
-* - end_day
-  - |int|
-  - Day of the end of the average (Default: start_day).
-  - |exposed|
+ * - end_day
+   - |int|
+   - Day of the end of the average (Default: start_day).
+   - |exposed|
 
  * - sun_scale
    - |float|
@@ -96,7 +96,7 @@ Timed sun and sky emitter (:monosp:`timed_sunsky`)
    - |float|
    - Aperture angle of the sun in degrees (Default: 0.5338, normal sun aperture).
 
-* - shutter_open
+ * - shutter_open
    - |float|
    - Shutter opening time (Default: 0).
      Used to vary sunsky appearance
@@ -112,28 +112,27 @@ Timed sun and sky emitter (:monosp:`timed_sunsky`)
    - |exposed|
 
 
-  This emitter represents a sun and sky environment emitter for a dynamic time interval
-  (where time is passed as attribute of the various query records).
-  It is particularly useful for applications like architectural visualization or horticultural studies,
-  where the goal is to simulate the lighting conditions over multiple days, months, years, or
-  even longer, rather than the lighting at a specific instant. If the goal is to
-  render using the sunsky background emitter at a fixed point in time,
-  please take a look at the :ref:`sunsky <Sunsky Emitter>` that is optimised and more efficient for that.
+This emitter represents a sun and sky environment emitter for a dynamic time interval
+(where time is passed as attribute of the various query records).
+It is particularly useful for applications like architectural visualization or horticultural studies,
+where the goal is to simulate the lighting conditions over multiple days, months, years, or
+even longer, rather than the lighting at a specific instant. If the goal is to
+render using the sunsky background emitter at a fixed point in time,
+please take a look at the :ref:`sunsky <Sunsky Emitter>` that is optimised and more efficient for that.
 
-  The local reference frame of this emitter is Z-up and X being towards the north direction.
-  This behaviour can be changed with the ``to_world`` parameter.
+The local reference frame of this emitter is Z-up and X being towards the north direction.
+This behaviour can be changed with the ``to_world`` parameter.
 
-  The plugin works by dynamically computing the Hosek-Wilkie sun :cite:`HosekSun2013` and sky model
-  :cite:`HosekSky2012` for the given time and direction of the ray/sample.
-  The time parameter is controlled by the ``shutter_open`` and ``shutter_close``
-  parameters that should thus be the same as the sensor's.
+The plugin works by dynamically computing the Hosek-Wilkie sun :cite:`HosekSun2013` and sky model
+:cite:`HosekSky2012` for the given time and direction of the ray/sample.
+The time parameter is controlled by the ``shutter_open`` and ``shutter_close``
+parameters that should thus be the same as the sensor's.
 
-  Note that attaching a ``timed_sunsky`` emitter to the scene introduces physical units
-  into the rendering process of Mitsuba 3, which is ordinarily a unitless system.
-  Specifically, the evaluated spectral radiance has units of power (:math:`W`) per
-  unit area (:math:`m^{-2}`) per steradian (:math:`sr^{-1}`) per unit wavelength
-  (:math:`nm^{-1}`). As a consequence, your scene should be modeled in meters for
-  this plugin to work properly.
+**Render with default settings and HDR film yielding an average over a year:**
+
+.. image:: https://d38rqfq1h7iukm.cloudfront.net/media/uploads/wjakob/2025/09/15/sunsky/emitter_timed_sunsky.jpg
+   :width: 80%
+
 
 .. tabs::
     .. code-tab:: xml
@@ -150,10 +149,29 @@ Timed sun and sky emitter (:monosp:`timed_sunsky`)
 
 .. warning::
 
+    - Note that attaching a ``timed_sunsky`` emitter to the scene introduces physical units
+      into the rendering process of Mitsuba 3, which is ordinarily a unitless system.
+      Specifically, the evaluated spectral radiance has units of power (:math:`W`) per
+      unit area (:math:`m^{-2}`) per steradian (:math:`sr^{-1}`) per unit wavelength
+      (:math:`nm^{-1}`). As a consequence, your scene should be modeled in meters for
+      this plugin to work properly.
+
+    - The sun is an intense light source that subtends a tiny solid angle. This can
+      be a problem for certain rendering techniques (e.g. path tracing), which produce
+      high variance output (i.e. noise in renderings) when the scene also contains
+      specular or glossy or materials.
+
+    - Please be aware that given certain parameters, the sun's radiance is
+      ill-represented by the linear sRGB color space. Whether Mitsuba is rendering in
+      spectral or RGB mode, if the final output is an sRGB image, it can happen that
+      it contains negative pixel values or be over-saturated. These results are left
+      un-clamped to let the user post-process the image to their liking, without
+      losing information.
+
     - Note that this emitter is dependent on a valid sensor shutter open and close
-    time. The sensor's defaults being 0 and 0 respectively,
-    this emitter will not see the time vary. Please set a valid shutter
-    open and close time and pass the same time parameters to this plugin.
+      time. The sensor's defaults being 0 and 0 respectively,
+      this emitter will not see the time vary. Please set a valid shutter
+      open and close time and pass the same time parameters to this plugin.
 
 */
 template <typename Float, typename Spectrum>

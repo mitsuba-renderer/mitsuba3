@@ -685,9 +685,13 @@
 
 .. py:class:: mitsuba.ArrayXi64
 
+.. py:class:: mitsuba.ArrayXi8
+
 .. py:class:: mitsuba.ArrayXu
 
 .. py:class:: mitsuba.ArrayXu64
+
+.. py:class:: mitsuba.ArrayXu8
 
 .. py:class:: mitsuba.BSDF
 
@@ -4651,6 +4655,8 @@
 
 .. py:class:: mitsuba.Float
 
+.. py:class:: mitsuba.Float16
+
 .. py:class:: mitsuba.Float64
 
 .. py:class:: mitsuba.Formatter
@@ -5528,6 +5534,8 @@
 
 .. py:class:: mitsuba.Int64
 
+.. py:class:: mitsuba.Int8
+
 .. py:class:: mitsuba.Integrator
 
     Base class: :py:obj:`mitsuba.Object`
@@ -5630,6 +5638,40 @@
 
         Returns → bool:
             *no description available*
+
+    .. py:method:: mitsuba.Integrator.skip_area_emitters(self, arg0, arg1, arg2, arg3)
+
+        Traces a ray in the scene and returns the first intersection that is
+        not an area emitter.
+
+        This is a helper method for when the `hide_emitters` flag is set.
+
+        Parameter ``scene``:
+            The scene that the ray will intersect.
+
+        Parameter ``ray``:
+            The ray that determines the direction in which to trace new rays
+
+        Parameter ``active``:
+            A mask that indicates which SIMD lanes are active. Typically, this
+            should be set to ``True`` for any lane where the current depth is
+            0 (for ``hide_emitters``).
+
+        Parameter ``arg0`` (:py:obj:`mitsuba.Scene`):
+            *no description available*
+
+        Parameter ``arg1`` (:py:obj:`mitsuba.Ray3f`):
+            *no description available*
+
+        Parameter ``arg2`` (bool):
+            *no description available*
+
+        Parameter ``arg3`` (drjit.llvm.ad.Bool, /):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.PreliminaryIntersection3f`:
+            The first intersection that is not an area emitter anlong the
+            ``ray``.
 
 .. py:class:: mitsuba.Interaction3f
 
@@ -17184,9 +17226,13 @@
 
 .. py:class:: mitsuba.TensorXi64
 
+.. py:class:: mitsuba.TensorXi8
+
 .. py:class:: mitsuba.TensorXu
 
 .. py:class:: mitsuba.TensorXu64
+
+.. py:class:: mitsuba.TensorXu8
 
 .. py:class:: mitsuba.Texture
 
@@ -20126,6 +20172,186 @@
         Returns → drjit.WrapMode:
             *no description available*
 
+.. py:class:: mitsuba.TexturePtr
+
+    .. py:method:: mitsuba.TexturePtr.eval(self, si, active=True)
+
+        Evaluate the texture at the given surface interaction
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            An unpolarized spectral power distribution or reflectance value
+
+    .. py:method:: mitsuba.TexturePtr.eval_1(self, si, active=True)
+
+        Monochromatic evaluation of the texture at the given surface
+        interaction
+
+        This function differs from eval() in that it provided raw access to
+        scalar intensity/reflectance values without any color processing (e.g.
+        spectral upsampling). This is useful in parts of the renderer that
+        encode scalar quantities using textures, e.g. a height field.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.llvm.ad.Float:
+            An scalar intensity or reflectance value
+
+    .. py:method:: mitsuba.TexturePtr.eval_1_grad(self, si, active=True)
+
+        Monochromatic evaluation of the texture gradient at the given surface
+        interaction
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Vector2f`:
+            A (u,v) pair of intensity or reflectance value gradients
+
+    .. py:method:: mitsuba.TexturePtr.eval_3(self, si, active=True)
+
+        Trichromatic evaluation of the texture at the given surface
+        interaction
+
+        This function differs from eval() in that it provided raw access to
+        RGB intensity/reflectance values without any additional color
+        processing (e.g. RGB-to-spectral upsampling). This is useful in parts
+        of the renderer that encode 3D quantities using textures, e.g. a
+        normal map.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            An trichromatic intensity or reflectance value
+
+    .. py:method:: mitsuba.TexturePtr.is_spatially_varying()
+
+        Does this texture evaluation depend on the UV coordinates
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.TexturePtr.max()
+
+        Return the maximum value of the spectrum
+
+        Not every implementation necessarily provides this function. The
+        default implementation throws an exception.
+
+        Even if the operation is provided, it may only return an
+        approximation.
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.TexturePtr.mean()
+
+        Return the mean value of the spectrum over the support
+        (MI_WAVELENGTH_MIN..MI_WAVELENGTH_MAX)
+
+        Not every implementation necessarily provides this function. The
+        default implementation throws an exception.
+
+        Even if the operation is provided, it may only return an
+        approximation.
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.TexturePtr.pdf_position(self, p, active=True)
+
+        Returns the probability per unit area of sample_position()
+
+        Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.TexturePtr.pdf_spectrum(self, si, active=True)
+
+        Evaluate the density function of the sample_spectrum() method as a
+        probability per unit wavelength (in units of 1/nm).
+
+        Not every implementation necessarily overrides this function. The
+        default implementation throws an exception.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color0f`:
+            A density value for each wavelength in ``si.wavelengths`` (hence
+            the Wavelength type).
+
+    .. py:method:: mitsuba.TexturePtr.sample_position(self, sample, active=True)
+
+        Importance sample a surface position proportional to the overall
+        spectral reflectance or intensity of the texture
+
+        This function assumes that the texture is implemented as a mapping
+        from 2D UV positions to texture values, which is not necessarily true
+        for all textures (e.g. 3D noise functions, mesh attributes, etc.). For
+        this reason, not every will plugin provide a specialized
+        implementation, and the default implementation simply return the input
+        sample (i.e. uniform sampling is used).
+
+        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+            A 2D vector of uniform variates
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+            1. A texture-space position in the range :math:`[0, 1]^2`
+
+        2. The associated probability per unit area in UV space
+
+    .. py:method:: mitsuba.TexturePtr.sample_spectrum(self, si, sample, active=True)
+
+        Importance sample a set of wavelengths proportional to the spectrum
+        defined at the given surface position
+
+        Not every implementation necessarily provides this function, and it is
+        a no-op when compiling non-spectral variants of Mitsuba. The default
+        implementation throws an exception.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``sample`` (:py:obj:`mitsuba.Color0f`):
+            A uniform variate for each desired wavelength.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[:py:obj:`mitsuba.Color0f`, :py:obj:`mitsuba.Color3f`]:
+            1. Set of sampled wavelengths specified in nanometers
+
+        2. The Monte Carlo importance weight (Spectral power distribution
+        value divided by the sampling density)
+
 .. py:class:: mitsuba.Thread
 
     Base class: :py:obj:`mitsuba.Object`
@@ -20269,6 +20495,8 @@
 .. py:class:: mitsuba.UInt
 
 .. py:class:: mitsuba.UInt64
+
+.. py:class:: mitsuba.UInt8
 
 .. py:class:: mitsuba.Vector0d
 
@@ -24152,7 +24380,7 @@
     Parameter ``scene`` (``mi.Scene``):
         Reference to the scene being rendered in a differentiable manner.
 
-    Parameter ``params`` (~typing.Any | None):
+    Parameter ``params`` (~typing.Any):
        An optional container of scene parameters that should receive gradients.
        This argument isn't optional when computing forward mode derivatives. It
        should be an instance of type ``mi.SceneParameters`` obtained via
@@ -24204,7 +24432,7 @@
     Parameter ``sensor`` (int | ~:py:obj:`mitsuba.Sensor`):
         *no description available*
 
-    Parameter ``integrator`` (~:py:obj:`mitsuba.Integrator` | None):
+    Parameter ``integrator`` (~:py:obj:`mitsuba.Integrator`):
         *no description available*
 
     Parameter ``seed`` (~drjit.llvm.ad.UInt):
@@ -24282,9 +24510,8 @@
     Returns → int:
         A uniformly distributed 64-bit integer
 
-.. py:function:: mitsuba.sample_tea_float
+.. py:function:: mitsuba.sample_tea_float(overloaded)
 
-    sample_tea_float32(v0: int, v1: int, rounds: int = 4) -> float
     sample_tea_float32(v0: drjit.llvm.ad.UInt, v1: drjit.llvm.ad.UInt, rounds: int = 4) -> drjit.llvm.ad.Float
 
     Generate fast and reasonably good pseudorandom numbers using the Tiny
@@ -25153,21 +25380,7 @@
     Returns → :py:obj:`mitsuba.Color3f`:
         *no description available*
 
-.. py:function:: mitsuba.util.Any()
-
-    Special type indicating an unconstrained type.
-
-    - Any is compatible with every type.
-    - Any assumed to have all methods.
-    - All values assumed to be instances of Any.
-
-    Note that all the above statements are true from the point of view of
-    static type checkers. At runtime, Any should not be used with instance
-    or class checks.
-
 .. py:function:: mitsuba.util.Optional()
-
-    Optional type.
 
     Optional[X] is equivalent to Union[X, None].
 
@@ -25175,25 +25388,29 @@
 
     Union type; Union[X, Y] means either X or Y.
 
-    To define a union, use e.g. Union[int, str].  Details:
+    On Python 3.10 and higher, the | operator
+    can also be used to denote unions;
+    X | Y means the same thing to the type checker as Union[X, Y].
+
+    To define a union, use e.g. Union[int, str]. Details:
     - The arguments must be types and there must be at least one.
     - None as an argument is a special case and is replaced by
       type(None).
     - Unions of unions are flattened, e.g.::
 
-        Union[Union[int, str], float] == Union[int, str, float]
+        assert Union[Union[int, str], float] == Union[int, str, float]
 
     - Unions of a single argument vanish, e.g.::
 
-        Union[int] == int  # The constructor actually returns int
+        assert Union[int] == int  # The constructor actually returns int
 
     - Redundant arguments are skipped, e.g.::
 
-        Union[int, str, int] == Union[int, str]
+        assert Union[int, str, int] == Union[int, str]
 
     - When comparing unions, the argument order is ignored, e.g.::
 
-        Union[int, str] == Union[str, int]
+        assert Union[int, str] == Union[str, int]
 
     - You cannot subclass or instantiate a union.
     - You can use Optional[X] as a shorthand for Union[X, None].
