@@ -268,6 +268,9 @@ public:
         std::tie(sampling_w, wav_dist) = estimate_sky_sun_ratio();
         m_sky_sampling_w = sampling_w;
         m_spectral_distr = wav_dist;
+
+        dr::eval(m_sky_params, m_sky_radiance, m_sky_sampling_w,
+                 m_gaussian_distr, m_spectral_distr, m_tgmm_tables);
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -337,6 +340,8 @@ public:
         m_sky_sampling_w = sampling_w;
         m_spectral_distr = wav_dist;
 
+        dr::eval(m_sky_params, m_sky_radiance, m_sky_sampling_w,
+                 m_gaussian_distr, m_spectral_distr, m_tgmm_tables);
         #undef CHANGED
     }
 
