@@ -8,7 +8,10 @@
 #include <mitsuba/core/fstream.h>
 #include <mitsuba/core/profiler.h>
 #include <unordered_map>
+#include <algorithm>
 #include <atomic>
+#include <cmath>
+#include <string>
 #include <thread>
 
 #include <nanothread/nanothread.h>
@@ -175,8 +178,12 @@ void Bitmap::rebuild_struct(size_t channel_count, const std::vector<std::string>
         case PixelFormat::XYZA:  channels = { "X", "Y", "Z", "A"};      break;
         case PixelFormat::MultiChannel:
             if (channel_names.size() == 0) {
+                // Compute number of digits required for channel count - 1 to prepend zeros and ensure
+                // alphanumerical ordering of channel names
+                int num_digits = std::floor(std::log10(std::max<size_t>(1, channel_count - 1))) + 1;
+                std::string channel_format = tfm::format("ch%%0%dd", num_digits);
                 for (size_t i = 0; i < channel_count; ++i)
-                    channels.push_back(tfm::format("ch%i", i));
+                    channels.push_back(tfm::format(channel_format.c_str(), i));
             } else {
                 if (channel_names.size() != channel_count)
                     Throw("Bitmap::rebuild_struct(): expected %u channel "
