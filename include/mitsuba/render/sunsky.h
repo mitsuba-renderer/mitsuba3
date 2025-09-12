@@ -236,6 +236,9 @@ public:
         about the scene and default to the unit bounding sphere. */
         m_bsphere = BoundingSphere3f(ScalarPoint3f(0.f), 1.f);
 
+        dr::eval(m_albedo_tex, m_albedo, m_sun_radiance, m_sky_rad_dataset,
+                 m_sky_params_dataset, m_sun_ld, m_sun_rad_dataset);
+
         m_flags = +EmitterFlags::Infinite | +EmitterFlags::SpatiallyVarying;
     }
 
@@ -546,7 +549,7 @@ protected:
             res += m_sun_scale * eval_sun<USpec>(idx, cos_theta, gamma, hit_sun) *
                    get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
 
-            res *= MI_CIE_Y_NORMALIZATION;
+            res *= Float(MI_CIE_Y_NORMALIZATION);
         } else {
             Wavelength normalized_wavelengths =
                 (wavelengths - WAVELENGTHS<ScalarFloat>[0]) / WAVELENGTH_STEP;
