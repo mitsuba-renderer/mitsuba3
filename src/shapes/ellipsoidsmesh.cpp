@@ -22,7 +22,7 @@ extern std::vector<dr::Array<uint32_t, 3>> box_faces,    uv_sphere_72_faces,    
 .. _shape-EllipsoidsMesh:
 
 Mesh ellipsoids (:monosp:`ellipsoidsmesh`)
------------------------------------------
+------------------------------------------
 
 .. pluginparameters::
 
