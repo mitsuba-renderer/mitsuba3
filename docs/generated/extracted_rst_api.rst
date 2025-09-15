@@ -685,9 +685,13 @@
 
 .. py:class:: mitsuba.ArrayXi64
 
+.. py:class:: mitsuba.ArrayXi8
+
 .. py:class:: mitsuba.ArrayXu
 
 .. py:class:: mitsuba.ArrayXu64
+
+.. py:class:: mitsuba.ArrayXu8
 
 .. py:class:: mitsuba.BSDF
 
@@ -2943,6 +2947,312 @@
 
 .. py:class:: mitsuba.Complex2f64
 
+.. py:class:: mitsuba.ConditionalIrregular1D
+
+
+    .. py:method:: ``__init__()
+
+        Conditional 1D irregular distribution
+
+        Similar to the irregular 1D distribution, but this class represents an
+        N-Dimensional irregular one (with the extra conditional dimensions
+        being also irregular).
+
+        As an example, assume you have a 3D distribution P(x,y,z), with
+        leading dimension X. This class would allow you to obtain the linear
+        interpolated value of the PDF for ``x`` given ``y`` and ``z``.
+        Additionally, it allows you to sample from the distribution
+        P(x|Y=y,Z=z) for a given ``y`` and ``z``.
+
+        It assumes every conditioned PDF has the same size.
+
+        This distribution can be used in the context of spectral rendering,
+        where each wavelength conditions the underlying distribution.
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, nodes, pdf, nodes_cond, enable_sampling=True, nearest=False)
+
+        Construct a conditional irregular 1D distribution
+
+        Parameter ``nodes`` (drjit.llvm.ad.Float):
+            Points where the leading dimension N is defined
+
+        Parameter ``pdf`` (drjit.llvm.ad.Float):
+            Flattened array of shape [D1, D2, ..., Dn, N], containing the PDFs
+
+        Parameter ``nodes_cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Arrays containing points where each conditional dimension is
+            evaluated
+
+        Parameter ``enable_sampling`` (bool):
+            Enable sampling of the distribution
+
+        Parameter ``nearest`` (bool):
+            If true, the distribution will return the nearest neighbor
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.empty()
+
+        Is the distribution object empty/uninitialized?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.eval_pdf(self, x, cond, active=True)
+
+        Evaluate the unnormalized probability density function (PDF) at
+        position ``pos``, conditioned on ``cond``
+
+        Parameter ``pos``:
+            Position where the PDF is evaluated
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            Array of values where the conditionals are evaluated
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask of active lanes
+
+        Parameter ``x`` (:py:obj:`mitsuba.Color3f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            The value of the PDF at position ``pos``, conditioned on ``cond``
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.eval_pdf_normalized(self, x, cond, active=True)
+
+        Evaluate the normalized probability density function (PDF) at position
+        ``pos``, conditioned on ``cond``
+
+        Parameter ``pos``:
+            Position where the PDF is evaluated
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            Array of values where the conditionals are evaluated
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask of active lanes
+
+        Parameter ``x`` (:py:obj:`mitsuba.Color3f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            The value of the normalized PDF at position ``pos``, conditioned
+            on ``cond``
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.integral(self, cond)
+
+        Return the integral of the distribution conditioned on ``cond``
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            Conditionals that define the distribution
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            The integral of the distribution
+
+    .. py:property:: mitsuba.ConditionalIrregular1D.m_cdf
+
+        (self) -> drjit.llvm.ad.Float
+
+    .. py:property:: mitsuba.ConditionalIrregular1D.m_integral
+
+        (self) -> drjit.llvm.ad.Float
+
+    .. py:property:: mitsuba.ConditionalIrregular1D.m_nodes
+
+        (self) -> drjit.llvm.ad.Float
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.max()
+
+        Return the maximum value of the distribution
+
+        Returns → float:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.sample_pdf(self, u, cond, active=True)
+
+        Sample the distribution given a uniform sample ``u``, conditioned on
+        ``cond``
+
+        Parameter ``u`` (:py:obj:`mitsuba.Color3f`):
+            Uniform sample
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            Conditionals where the PDF is sampled
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask of active lanes
+
+        Returns → tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
+            A pair where the first element is the sampled position and the
+            second element the value of the normalized PDF at that position
+            conditioned on ``cond``
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.tensor()
+
+        Return the underlying tensor storing the distribution values
+
+        Returns → drjit.llvm.ad.TensorXf:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.update()
+
+        Update the internal state. Must be invoked when changing the pdf.
+
+        Returns → None:
+            *no description available*
+
+.. py:class:: mitsuba.ConditionalRegular1D
+
+
+    .. py:method:: ``__init__()
+
+        Conditional 1D regular distribution
+
+        Similar to the regular 1D distribution, but this class represents an
+        N-Dimensional regular one (with the extra conditional dimensions being
+        also regular).
+
+        As an example, assume you have a 3D distribution P(x,y,z), with
+        leading dimension X. This class would allow you to obtain the linear
+        interpolated value of the PDF for ``x`` given ``y`` and ``z``.
+        Additionally, it allows you to sample from the distribution
+        P(x|Y=y,Z=z) for a given ``y`` and ``z``.
+
+        It assumes every conditioned PDF has the same size.
+
+        This distribution can be used in the context of spectral rendering,
+        where each wavelength conditions the underlying distribution.
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, pdf, range, range_cond, size_cond, enable_sampling=True, nearest=False)
+
+        Construct a conditional regular 1D distribution
+
+        Parameter ``pdf`` (drjit.llvm.ad.Float):
+            Flattened array of shape [D1, D2, ..., Dn, N] containing the PDFs
+
+        Parameter ``range`` (:py:obj:`mitsuba.ScalarVector2f`):
+            Range where the leading dimension N is defined
+
+        Parameter ``range_cond`` (collections.abc.Sequence[:py:obj:`mitsuba.ScalarVector2f`]):
+            Array of ranges where the dimensional conditionals are defined
+
+        Parameter ``size_cond`` (collections.abc.Sequence[int]):
+            Array with the size of each conditional dimension
+
+        Parameter ``enable_sampling`` (bool):
+            Enable sampling of the distribution
+
+        Parameter ``nearest`` (bool):
+            If true, the sampling will return the nearest neighbor
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1D.empty()
+
+        Is the distribution object empty/uninitialized?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1D.eval_pdf(self, x, cond, active=True)
+
+        Evaluate the unnormalized probability density function (PDF) at
+        position ``x``, conditioned on ``cond``
+
+        Parameter ``x`` (:py:obj:`mitsuba.Color3f`):
+            Position where the PDF is evaluated
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            Conditionals where the PDF is evaluated
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask of active lanes
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1D.eval_pdf_normalized(self, x, cond, active=True)
+
+        Evaluate the normalized probability density function (PDF) at position
+        ``x``, conditioned on ``cond``
+
+        Parameter ``x`` (:py:obj:`mitsuba.Color3f`):
+            Position where the PDF is evaluated
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            Conditionals where the PDF is evaluated
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask of active lanes
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1D.integral(self, cond)
+
+        Return the integral of the distribution conditioned on ``cond``
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            *no description available*
+
+    .. py:property:: mitsuba.ConditionalRegular1D.m_cdf
+
+        (self) -> drjit.llvm.ad.Float
+
+    .. py:property:: mitsuba.ConditionalRegular1D.m_integral
+
+        (self) -> drjit.llvm.ad.Float
+
+    .. py:method:: mitsuba.ConditionalRegular1D.max()
+
+        Return the maximum value of the distribution
+
+        Returns → float:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1D.sample_pdf(self, u, cond, active=True)
+
+        Sample the distribution given a uniform sample ``u``, conditioned on
+        ``cond``
+
+        Parameter ``u`` (:py:obj:`mitsuba.Color3f`):
+            Uniform sample
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            Conditionals where the PDF is sampled
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask of active lanes
+
+        Returns → tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1D.tensor()
+
+        Return the underlying tensor storing the distribution values
+
+        Returns → drjit.llvm.ad.TensorXf:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1D.update()
+
+        Update the internal state. Must be invoked when changing the
+        distribution.
+
+        Returns → None:
+            *no description available*
+
 .. py:class:: mitsuba.ContinuousDistribution
 
     Continuous 1D probability distribution defined in terms of a regularly
@@ -3141,7 +3451,7 @@
 
 .. py:data:: mitsuba.DEBUG
     :type: bool
-    :value: False
+    :value: True
 
 .. py:class:: mitsuba.DefaultFormatter
 
@@ -4651,6 +4961,8 @@
 
 .. py:class:: mitsuba.Float
 
+.. py:class:: mitsuba.Float16
+
 .. py:class:: mitsuba.Float64
 
 .. py:class:: mitsuba.Formatter
@@ -5528,6 +5840,8 @@
 
 .. py:class:: mitsuba.Int64
 
+.. py:class:: mitsuba.Int8
+
 .. py:class:: mitsuba.Integrator
 
     Base class: :py:obj:`mitsuba.Object`
@@ -5630,6 +5944,47 @@
 
         Returns → bool:
             *no description available*
+
+    .. py:method:: mitsuba.Integrator.skip_area_emitters(self, arg0, arg1, arg2, arg3)
+
+        Traces a ray in the scene and returns the first intersection that is
+        not an area emitter.
+
+        This is a helper method for when the `hide_emitters` flag is set.
+
+        Parameter ``scene``:
+            The scene that the ray will intersect.
+
+        Parameter ``ray``:
+            The ray that determines the direction in which to trace new rays
+
+        Parameter ``coherent``:
+            Setting this flag to ``True`` can noticeably improve performance
+            when ``ray`` contains a coherent set of rays (e.g. primary camera
+            rays), and when using ``llvm_*`` variants of the renderer along
+            with Embree. It has no effect in scalar or CUDA/OptiX variants.
+            (Default: False)
+
+        Parameter ``active``:
+            A mask that indicates which lanes are active. Typically, this
+            should be set to ``True`` for any lane where the current depth is
+            0 (for ``hide_emitters``). (Default: True)
+
+        Parameter ``arg0`` (:py:obj:`mitsuba.Scene`):
+            *no description available*
+
+        Parameter ``arg1`` (:py:obj:`mitsuba.Ray3f`):
+            *no description available*
+
+        Parameter ``arg2`` (bool):
+            *no description available*
+
+        Parameter ``arg3`` (drjit.llvm.ad.Bool, /):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.PreliminaryIntersection3f`:
+            The first intersection that is not an area emitter anlong the
+            ``ray``.
 
 .. py:class:: mitsuba.Interaction3f
 
@@ -7798,6 +8153,10 @@
         Returns the opposite edge index associated with directed edge
         ``index``
 
+        If the directed edge data structure is not initialized or outdated,
+        the return value is undefined. Ensure that build_directed_edges() is
+        called before this method.
+
         Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
@@ -8018,6 +8377,10 @@
 
         Returns the opposite edge index associated with directed edge
         ``index``
+
+        If the directed edge data structure is not initialized or outdated,
+        the return value is undefined. Ensure that build_directed_edges() is
+        called before this method.
 
         Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
@@ -14018,6 +14381,10 @@
 
         (self) -> bool
 
+    .. py:property:: mitsuba.Sensor.m_to_world
+
+        (self) -> :py:obj:`mitsuba.AffineTransform4f`
+
     .. py:method:: mitsuba.Sensor.needs_aperture_sample()
 
         Does the sampling technique require a sample for the aperture
@@ -17184,9 +17551,13 @@
 
 .. py:class:: mitsuba.TensorXi64
 
+.. py:class:: mitsuba.TensorXi8
+
 .. py:class:: mitsuba.TensorXu
 
 .. py:class:: mitsuba.TensorXu64
+
+.. py:class:: mitsuba.TensorXu8
 
 .. py:class:: mitsuba.Texture
 
@@ -20126,6 +20497,186 @@
         Returns → drjit.WrapMode:
             *no description available*
 
+.. py:class:: mitsuba.TexturePtr
+
+    .. py:method:: mitsuba.TexturePtr.eval(self, si, active=True)
+
+        Evaluate the texture at the given surface interaction
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            An unpolarized spectral power distribution or reflectance value
+
+    .. py:method:: mitsuba.TexturePtr.eval_1(self, si, active=True)
+
+        Monochromatic evaluation of the texture at the given surface
+        interaction
+
+        This function differs from eval() in that it provided raw access to
+        scalar intensity/reflectance values without any color processing (e.g.
+        spectral upsampling). This is useful in parts of the renderer that
+        encode scalar quantities using textures, e.g. a height field.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.llvm.ad.Float:
+            An scalar intensity or reflectance value
+
+    .. py:method:: mitsuba.TexturePtr.eval_1_grad(self, si, active=True)
+
+        Monochromatic evaluation of the texture gradient at the given surface
+        interaction
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Vector2f`:
+            A (u,v) pair of intensity or reflectance value gradients
+
+    .. py:method:: mitsuba.TexturePtr.eval_3(self, si, active=True)
+
+        Trichromatic evaluation of the texture at the given surface
+        interaction
+
+        This function differs from eval() in that it provided raw access to
+        RGB intensity/reflectance values without any additional color
+        processing (e.g. RGB-to-spectral upsampling). This is useful in parts
+        of the renderer that encode 3D quantities using textures, e.g. a
+        normal map.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            An trichromatic intensity or reflectance value
+
+    .. py:method:: mitsuba.TexturePtr.is_spatially_varying()
+
+        Does this texture evaluation depend on the UV coordinates
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.TexturePtr.max()
+
+        Return the maximum value of the spectrum
+
+        Not every implementation necessarily provides this function. The
+        default implementation throws an exception.
+
+        Even if the operation is provided, it may only return an
+        approximation.
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.TexturePtr.mean()
+
+        Return the mean value of the spectrum over the support
+        (MI_WAVELENGTH_MIN..MI_WAVELENGTH_MAX)
+
+        Not every implementation necessarily provides this function. The
+        default implementation throws an exception.
+
+        Even if the operation is provided, it may only return an
+        approximation.
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.TexturePtr.pdf_position(self, p, active=True)
+
+        Returns the probability per unit area of sample_position()
+
+        Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.TexturePtr.pdf_spectrum(self, si, active=True)
+
+        Evaluate the density function of the sample_spectrum() method as a
+        probability per unit wavelength (in units of 1/nm).
+
+        Not every implementation necessarily overrides this function. The
+        default implementation throws an exception.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color0f`:
+            A density value for each wavelength in ``si.wavelengths`` (hence
+            the Wavelength type).
+
+    .. py:method:: mitsuba.TexturePtr.sample_position(self, sample, active=True)
+
+        Importance sample a surface position proportional to the overall
+        spectral reflectance or intensity of the texture
+
+        This function assumes that the texture is implemented as a mapping
+        from 2D UV positions to texture values, which is not necessarily true
+        for all textures (e.g. 3D noise functions, mesh attributes, etc.). For
+        this reason, not every will plugin provide a specialized
+        implementation, and the default implementation simply return the input
+        sample (i.e. uniform sampling is used).
+
+        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+            A 2D vector of uniform variates
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+            1. A texture-space position in the range :math:`[0, 1]^2`
+
+        2. The associated probability per unit area in UV space
+
+    .. py:method:: mitsuba.TexturePtr.sample_spectrum(self, si, sample, active=True)
+
+        Importance sample a set of wavelengths proportional to the spectrum
+        defined at the given surface position
+
+        Not every implementation necessarily provides this function, and it is
+        a no-op when compiling non-spectral variants of Mitsuba. The default
+        implementation throws an exception.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``sample`` (:py:obj:`mitsuba.Color0f`):
+            A uniform variate for each desired wavelength.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[:py:obj:`mitsuba.Color0f`, :py:obj:`mitsuba.Color3f`]:
+            1. Set of sampled wavelengths specified in nanometers
+
+        2. The Monte Carlo importance weight (Spectral power distribution
+        value divided by the sampling density)
+
 .. py:class:: mitsuba.Thread
 
     Base class: :py:obj:`mitsuba.Object`
@@ -20269,6 +20820,8 @@
 .. py:class:: mitsuba.UInt
 
 .. py:class:: mitsuba.UInt64
+
+.. py:class:: mitsuba.UInt8
 
 .. py:class:: mitsuba.Vector0d
 
