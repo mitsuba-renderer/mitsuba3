@@ -53,10 +53,10 @@ def test04_conditional_irregular_eval(variants_vec_backends_once_spectral):
 
     x, pdf = d.sample_pdf(mi.Float([0, 0.5, 1]), [mi.Float(1.1), mi.Float(3.98)])
     dx = (dr.sqrt(10) - 2) / 2
-    assert dr.allclose(x, mi.Spectrum(mi.Float([2, 2 + dx, 3])))
+    assert dr.allclose(x, mi.UnpolarizedSpectrum(mi.Float([2, 2 + dx, 3])))
     assert dr.allclose(
         pdf,
-        mi.Spectrum(mi.Float([2.0 / 3.0, (4 * dx + 2 * (1 - dx)) / 3.0, 4.0 / 3.0])),
+        mi.UnpolarizedSpectrum(mi.Float([2.0 / 3.0, (4 * dx + 2 * (1 - dx)) / 3.0, 4.0 / 3.0])),
     )
 
 
@@ -344,13 +344,13 @@ def test14_conditional_chi2_sampling(variants_vec_backends_once_spectral):
 
     def DistrAdapter(distr):
         def sample_functor(sample, *args):
-            input = mi.Spectrum(sample[0])
+            input = mi.UnpolarizedSpectrum(sample[0])
             cond = [mi.Float(1.5), mi.Float(3.7)]
             res = distr.sample_pdf(input, cond, active=True)
             return mi.Vector1f(res[0][0])
 
         def pdf_functor(values, *args):
-            input = mi.Spectrum(values)
+            input = mi.UnpolarizedSpectrum(values)
             cond = [mi.Float(1.5), mi.Float(3.7)]
             res = distr.eval_pdf_normalized(input, cond, active=True)
             return res[0]

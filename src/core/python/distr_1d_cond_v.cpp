@@ -11,7 +11,7 @@
 MI_PY_EXPORT(ConditionalIrregular1D) {
     MI_PY_IMPORT_TYPES()
 
-    using TYPE                   = Spectrum;
+    using TYPE                   = UnpolarizedSpectrum;
     using ConditionalIrregular1D = mitsuba::ConditionalIrregular1D<TYPE>;
     using FloatStorage           = DynamicBuffer<Float>;
 
@@ -63,7 +63,7 @@ MI_PY_EXPORT(ConditionalIrregular1D) {
 MI_PY_EXPORT(ConditionalRegular1D) {
     MI_PY_IMPORT_TYPES()
 
-    using TYPE                 = Spectrum;
+    using TYPE                 = UnpolarizedSpectrum;
     using ConditionalRegular1D = mitsuba::ConditionalRegular1D<TYPE>;
     using FloatStorage         = DynamicBuffer<Float>;
 
