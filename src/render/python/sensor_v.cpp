@@ -90,6 +90,10 @@ public:
         NB_OVERRIDE(parameters_changed, keys);
     }
 
+    Float kappa() const override {
+        NB_OVERRIDE(kappa);
+    }
+
     using Sensor::m_needs_sample_2;
     using Sensor::m_needs_sample_3;
     using Sensor::m_film;
@@ -175,9 +179,11 @@ MI_PY_EXPORT(Sensor) {
         .def_method(Sensor, needs_aperture_sample)
         .def("film", nb::overload_cast<>(&Sensor::film, nb::const_), D(Sensor, film))
         .def("sampler", nb::overload_cast<>(&Sensor::sampler, nb::const_), D(Sensor, sampler))
+        .def("kappa", nb::overload_cast<>(&Sensor::kappa, nb::const_), D(Sensor, kappa))
         .def_field(PySensor, m_needs_sample_2, D(Endpoint, m_needs_sample_3))
         .def_field(PySensor, m_needs_sample_3, D(Endpoint, m_needs_sample_3))
         .def_field(PySensor, m_film);
+        
 
     drjit::bind_traverse(sensor);
 

@@ -8268,6 +8268,9 @@ static const char *__doc_mitsuba_Sensor_variant_name = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape = R"doc(Forward declaration for `SilhouetteSample`)doc";
 
+static const char *__doc_mitsuba_Sensor_kappa =
+R"doc(Get kappa value of the sensor's Mises-Fisher distribution.)doc";
+
 static const char *__doc_mitsuba_Shape_2 = R"doc(Forward declaration for `SilhouetteSample`)doc";
 
 static const char *__doc_mitsuba_Shape_3 = R"doc()doc";

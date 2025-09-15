@@ -110,7 +110,7 @@ endif()
 # ----------------------------------------------------------
 
 if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf)
-  set(MI_DEFAULT_VARIANTS "scalar_rgb,scalar_spectral,cuda_ad_rgb,llvm_ad_rgb,llvm_ad_spectral" CACHE STRING "Default Mitsuba variants that should be included if no mitsuba.conf file exists")
+  set(MI_DEFAULT_VARIANTS "scalar_rgb,scalar_acoustic,cuda_ad_rgb,cuda_ad_acoustic,llvm_ad_rgb,llvm_ad_acoustic" CACHE STRING "Default Mitsuba variants that should be included if no mitsuba.conf file exists")
   string(REPLACE "," ";" MI_DEFAULT_VARIANTS "${MI_DEFAULT_VARIANTS}")
   message(STATUS "MI_DEFAULT_VARIANTS: ${MI_DEFAULT_VARIANTS}")
   mark_as_advanced(MI_DEFAULT_VARIANTS)
@@ -365,9 +365,9 @@ if (MSVC)
   # Ensure source and execution charset is encoded as UTF-8
   add_compile_options(/utf-8)
 
-  # Workaround to avoid a particular crash due to MS VC++ runtime library binary 
-  # incompatibility. In general the runtime version needs to be at least as new 
-  # as toolset version but this define provides one such "escape hatch" if that 
+  # Workaround to avoid a particular crash due to MS VC++ runtime library binary
+  # incompatibility. In general the runtime version needs to be at least as new
+  # as toolset version but this define provides one such "escape hatch" if that
   # strictly isn't the case to combat against a commonly encountered reported crash
   add_compile_options(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 endif()

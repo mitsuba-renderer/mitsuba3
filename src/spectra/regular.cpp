@@ -14,7 +14,7 @@ Regular spectrum (:monosp:`regular`)
 ------------------------------------
 
 .. pluginparameters::
- :extra-rows: 3
+ :extra-rows: 5
 
  * - wavelength_min
    - |float|
@@ -24,6 +24,14 @@ Regular spectrum (:monosp:`regular`)
    - |float|
    - Maximum wavelength of the spectral range in nanometers.
 
+ * - frequency_min
+   - |float|
+   - Minimum frequency of the spectral range in Hz (alternative to wavelength parameters for acoustic rendering).
+
+ * - frequency_max
+   - |float|
+   - Maximum frequency of the spectral range in Hz (alternative to wavelength parameters for acoustic rendering).
+
  * - values
    - |string|
    - Values of the spectral function at spectral range extremities.
@@ -31,11 +39,11 @@ Regular spectrum (:monosp:`regular`)
 
  * - range
    - |string|
-   - Spectral emission range.
+   - Spectral emission range (wavelengths or frequencies).
    - |exposed|, |differentiable|
 
 This spectrum returns linearly interpolated reflectance or emission values from *regularly*
-placed samples.
+placed samples. You can specify either wavelengths or frequencies as the domain.
 
 .. tabs::
     .. code-tab:: xml
@@ -51,6 +59,14 @@ placed samples.
         'type': 'regular',
         'wavelength_min': 400,
         'wavelength_max': 700,
+        'values': '0.1, 0.2'
+
+    .. code-tab:: python Python (acoustic)
+        :name: regular-acoustic
+
+        'type': 'regular',
+        'frequency_min': 250,
+        'frequency_max': 500,
         'values': '0.1, 0.2'
  */
 

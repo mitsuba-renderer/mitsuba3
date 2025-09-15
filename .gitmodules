@@ -45,3 +45,11 @@
 [submodule "ext/nanobind"]
 	path = ext/nanobind
 	url = https://github.com/wjakob/nanobind.git
+[submodule "resources/data_acoustic"]
+	path = resources/data_acoustic
+	url = https://github.com/misuka-renderer/misuka-data
+    shallow = true
+[submodule "tutorials_acoustic"]
+	path = tutorials_acoustic
+	url = https://github.com/misuka-renderer/misuka-tutorials
+    shallow = true

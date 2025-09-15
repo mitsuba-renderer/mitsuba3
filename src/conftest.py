@@ -91,7 +91,7 @@ for variant in mi.variants():
 v = VariantFilter(available)
 
 # Generate all possible variant names for fixture creation
-suffixes = ["_mono", "_mono_polarized", "_rgb", "_spectral", "_spectral_polarized"]
+suffixes = ["_mono", "_mono_polarized", "_rgb", "_spectral", "_spectral_polarized", "_acoustic"]
 suffix_variants = [a + b for a in suffixes for b in ["", "_double"]]
 all_possible_variants = ["scalar" + s for s in suffix_variants] + [
     a + b + c for a in ["llvm", "cuda"] for b in ["", "_ad"] for c in suffix_variants]
@@ -109,17 +109,18 @@ variant_groups = {
     "all_scalar": v.all("scalar"),
     "all_rgb": v.all("rgb"),
     "all_spectral": v.all("spectral"),
-    "all_backends_once": v.all("scalar").one()
-    + v.all("llvm").one()
-    + v.all("cuda").one(),
+    "all_acoustic": v.all("acoustic"),
+    "all_backends_once": v.all("scalar").one() + v.all("llvm").one() + v.all("cuda").one(),
     "vec_backends_once": v.all("llvm").one() + v.all("cuda").one(),
     "vec_backends_once_rgb": v.all("llvm", "rgb").one() + v.all("cuda", "rgb").one(),
-    "vec_backends_once_spectral": v.all("llvm", "spectral").one()
-    + v.all("cuda", "spectral").one(),
+    "vec_backends_once_spectral": v.all("llvm", "spectral").one() + v.all("cuda", "spectral").one(),
+    "vec_backends_once_acoustic": v.all("llvm", "acoustic").one() + v.all("cuda", "acoustic").one(),
     "vec_rgb": v.all("rgb").exclude("scalar"),
     "vec_spectral": v.all("spectral").exclude("scalar"),
+    "vec_acoustic": v.all("acoustic").exclude("scalar"),
     "all_ad_rgb": v.all("ad", "rgb"),
     "all_ad_spectral": v.all("ad", "spectral"),
+    "all_ad_acoustic": v.all("ad", "acoustic"),
 }
 
 # Create parameterized group fixtures (only for non-empty groups)

@@ -145,6 +145,13 @@ public:
         Base::parameters_changed(keys);
     }
 
+    /**
+     * \brief Return the kappa parameter of the sensor
+     *
+     * This method will only be implemented in acoustic films.
+     */
+    virtual Float kappa() const;
+
     /// This is both a class and the base of various Mitsuba plugins
     MI_DECLARE_PLUGIN_BASE_CLASS(Sensor)
 
@@ -330,4 +337,5 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Sensor)
     DRJIT_CALL_GETTER(flags)
     DRJIT_CALL_GETTER(shape)
     DRJIT_CALL_GETTER(medium)
+    DRJIT_CALL_GETTER(kappa)
 DRJIT_CALL_END()

@@ -14,6 +14,8 @@ NAMESPACE_BEGIN(mitsuba)
 MI_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props, ObjectType::Sensor) {
     m_shutter_open      = props.get<ScalarFloat>("shutter_open", 0.f);
     m_shutter_open_time = props.get<ScalarFloat>("shutter_close", 0.f) - m_shutter_open;
+    Log(Debug, "line %d: Setting up %s.", __LINE__, __FUNCTION__);
+
 
     if (m_shutter_open_time < 0)
         Throw("Shutter opening time must be less than or equal to the shutter "
@@ -111,6 +113,10 @@ Sensor<Float, Spectrum>::sample_wavelengths(const SurfaceInteraction3f& /*si*/, 
     }
 
     return sample_wavelength<Float, Spectrum>(sample);
+}
+
+MI_VARIANT Float Sensor<Float, Spectrum>::kappa() const {
+    NotImplementedError();
 }
 
 // =============================================================================

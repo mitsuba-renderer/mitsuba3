@@ -19,13 +19,18 @@ Irregular spectrum (:monosp:`irregular`)
    - Wavelength values where the function is defined.
    - |exposed|, |differentiable|
 
+ * - frequencies
+   - |string|
+   - Frequency values where the function is defined (alternative to wavelengths for acoustic rendering).
+   - |exposed|, |differentiable|
+
  * - values
    - |string|
-   - Values of the spectral function at the specified wavelengths.
+   - Values of the spectral function at the specified wavelengths or frequencies.
    - |exposed|, |differentiable|
 
 This spectrum returns linearly interpolated reflectance or emission values from *irregularly*
-placed samples.
+placed samples. You can specify either wavelengths or frequencies as the domain.
 
 .. tabs::
     .. code-tab:: xml
@@ -40,6 +45,21 @@ placed samples.
 
         'type': 'irregular',
         'wavelengths': '400, 700',
+        'values': '0.1, 0.2'
+
+    .. code-tab:: xml XML (acoustic)
+        :name: irregular-acoustic
+
+        <spectrum type="irregular">
+            <string name="frequencies" value="250, 500">
+            <string name="values" value="0.1, 0.2">
+        </spectrum>
+
+    .. code-tab:: python Python (acoustic)
+        :name: irregular-acoustic
+
+        'type': 'irregular',
+        'frequencies': '250, 500',
         'values': '0.1, 0.2'
  */
 
