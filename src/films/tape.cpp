@@ -27,7 +27,7 @@ public:
         // This is semantically inconsistent but no problem if we use frequencies everywhere consistently.
         if (props.type("frequencies") == Properties::Type::String) {
             std::vector<std::string> frequencies_str =
-                string::tokenize(props.string("frequencies"), " ,");
+                string::tokenize(props.get<std::string_view>("frequencies"), " ,");
 
             std::vector<ScalarFloat> frequencies;
             frequencies.reserve(frequencies_str.size());
@@ -64,11 +64,11 @@ public:
         m_count = props.get<bool>("count", false);
 
         std::string file_format = string::to_lower(
-            props.string("file_format", "openexr"));
+            props.get<std::string_view>("file_format", "openexr"));
         std::string pixel_format = string::to_lower(
-            props.string("pixel_format", "MultiChannel"));
+            props.get<std::string_view>("pixel_format", "MultiChannel"));
         std::string component_format = string::to_lower(
-            props.string("component_format", "float16"));
+            props.get<std::string_view>("component_format", "float16"));
 
         if (file_format == "openexr" || file_format == "exr")
             m_file_format = Bitmap::FileFormat::OpenEXR;
@@ -287,6 +287,5 @@ protected:
     bool m_count;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Tape, Film)
-MI_EXPORT_PLUGIN(Tape, "Tape")
+MI_EXPORT_PLUGIN(Tape)
 NAMESPACE_END(mitsuba)

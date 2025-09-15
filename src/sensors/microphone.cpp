@@ -34,7 +34,7 @@ public:
                 ScalarPoint3f target = origin + direction;
                 auto [up, unused] = coordinate_system(dr::normalize(direction));
 
-                m_to_world = ScalarTransform4f::look_at(origin, target, up);
+                m_to_world = ScalarAffineTransform4f::look_at(origin, target, up);
                 dr::make_opaque(m_to_world);
             }
         }
@@ -106,8 +106,8 @@ public:
     sample_direction(const Interaction3f &it, const Point2f &, Mask /* active */) const override {
         Log(Debug, "line %d: Running %s().", __LINE__, __FUNCTION__);
 
-        Transform4f trafo     = m_to_world.value();
-        Transform4f trafo_inv = trafo.inverse();
+        AffineTransform4f trafo     = m_to_world.value();
+        AffineTransform4f trafo_inv = trafo.inverse();
 
         DirectionSample3f ds = dr::zeros<PositionSample3f>();
         ds.p                 = trafo.translation();
@@ -154,6 +154,5 @@ protected:
     Float m_kappa;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Microphone, Sensor)
-MI_EXPORT_PLUGIN(Microphone, "Microphone");
+MI_EXPORT_PLUGIN(Microphone);
 NAMESPACE_END(mitsuba)
