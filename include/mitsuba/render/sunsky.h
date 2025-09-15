@@ -554,11 +554,15 @@ protected:
             else
                 idx = USpecUInt32(0);
 
-            const auto [ sky_rad, sky_params ] = get_sky_datasets(sun_angles, idx, active);
+            if (m_sky_scale > 0.f) {
+                const auto [ sky_rad, sky_params ] = get_sky_datasets(sun_angles, idx, active);
+                res = m_sky_scale * eval_sky<USpec>(cos_theta, gamma, sky_params, sky_rad);
+            }
 
-            res = m_sky_scale * eval_sky<USpec>(cos_theta, gamma, sky_params, sky_rad);
-            res += m_sun_scale * eval_sun<USpec>(idx, cos_theta, gamma, hit_sun) *
-                   get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
+            if (m_sun_scale > 0.f) {
+                res += m_sun_scale * eval_sun<USpec>(idx, cos_theta, gamma, hit_sun) *
+                       get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
+            }
 
             res *= Float(MI_CIE_Y_NORMALIZATION);
         } else {
@@ -572,28 +576,32 @@ protected:
 
             Wavelength lerp_factor = normalized_wavelengths - query_idx_low;
 
-            const auto [ sky_rad_low, sky_params_low ] = get_sky_datasets(sun_angles, query_idx_low, active & valid_idx);
-            const auto [ sky_rad_high, sky_params_high ] = get_sky_datasets(sun_angles, query_idx_high, active & valid_idx);
+            if (m_sky_scale > 0.f) {
+                const auto [ sky_rad_low, sky_params_low ] = get_sky_datasets(sun_angles, query_idx_low, active & valid_idx);
+                const auto [ sky_rad_high, sky_params_high ] = get_sky_datasets(sun_angles, query_idx_high, active & valid_idx);
 
-            // Linearly interpolate the sky's irradiance across the spectrum
-            res = m_sky_scale * dr::lerp(
-                eval_sky<USpec>(cos_theta, gamma, sky_params_low, sky_rad_low),
-                eval_sky<USpec>(cos_theta, gamma, sky_params_high, sky_rad_high),
-                lerp_factor);
+                // Linearly interpolate the sky's irradiance across the spectrum
+                res = m_sky_scale * dr::lerp(
+                    eval_sky<USpec>(cos_theta, gamma, sky_params_low, sky_rad_low),
+                    eval_sky<USpec>(cos_theta, gamma, sky_params_high, sky_rad_high),
+                    lerp_factor);
+            }
 
-            // Linearly interpolate the sun's irradiance across the spectrum
-            USpec sun_rad_low = eval_sun<USpec>(
-                         query_idx_low, cos_theta, gamma, hit_sun & valid_idx);
-            USpec sun_rad_high = eval_sun<USpec>(
-                         query_idx_high, cos_theta, gamma, hit_sun & valid_idx);
-            USpec sun_rad = dr::lerp(sun_rad_low, sun_rad_high, lerp_factor);
+            if (m_sun_scale > 0.f) {
+                // Linearly interpolate the sun's irradiance across the spectrum
+                USpec sun_rad_low = eval_sun<USpec>(
+                             query_idx_low, cos_theta, gamma, hit_sun & valid_idx);
+                USpec sun_rad_high = eval_sun<USpec>(
+                             query_idx_high, cos_theta, gamma, hit_sun & valid_idx);
+                USpec sun_rad = dr::lerp(sun_rad_low, sun_rad_high, lerp_factor);
 
-            USpec sun_ld = compute_sun_ld<USpec>(
-                query_idx_low, query_idx_high, lerp_factor, gamma,
-                hit_sun & valid_idx
-            );
+                USpec sun_ld = compute_sun_ld<USpec>(
+                    query_idx_low, query_idx_high, lerp_factor, gamma,
+                    hit_sun & valid_idx
+                );
 
-            res += m_sun_scale * sun_rad * sun_ld * get_area_ratio(m_sun_half_aperture);
+                res += m_sun_scale * sun_rad * sun_ld * get_area_ratio(m_sun_half_aperture);
+            }
         }
 
         return depolarizer<Spectrum>(res) & active;
@@ -686,20 +694,31 @@ protected:
                     dr::gather<Spec>(m_sun_radiance, global_idx + k, active);
         } else {
             // Reproduces the spectral computation for RGB, however, in this case,
-            // limb darkening is baked into the dataset, hence the two for-loops
-            Float cos_psi = sun_cos_psi(gamma);
-            SpecUInt32 global_idx = pos * (3 * SUN_CTRL_PTS * SUN_LD_PARAMS) +
-                                    channel_idx * (SUN_CTRL_PTS * SUN_LD_PARAMS);
+            // limb darkening is baked into the dataset, hence the extra work
 
-            for (uint8_t k = 0; k < SUN_CTRL_PTS; ++k) {
-                for (uint8_t j = 0; j < SUN_LD_PARAMS; ++j) {
-                    SpecUInt32 idx = global_idx + k * SUN_LD_PARAMS + j;
-                    solar_radiance +=
-                        dr::pow(x, k) *
-                        dr::pow(cos_psi, j) *
-                        dr::gather<Spec>(m_sun_radiance, idx, active);
+            Float cos_psi = sun_cos_psi(gamma);
+
+            static constexpr uint8_t VEC_SIZE = 8;
+            UInt32 global_idx = pos * 3 * SUN_CTRL_PTS * SUN_LD_PARAMS / VEC_SIZE;
+            for (uint32_t packet_idx = 0; packet_idx < 9; ++packet_idx) {
+
+                const auto data = dr::gather<dr::Array<Float, VEC_SIZE>>(
+                    m_sun_radiance, global_idx + packet_idx, dr::any(active)
+                );
+
+                for (uint32_t data_idx = 0; data_idx < VEC_SIZE; ++data_idx) {
+                    const uint32_t idx = packet_idx * VEC_SIZE + data_idx;
+                    uint32_t j_idx = idx % SUN_LD_PARAMS,
+                             k_idx = ((idx - j_idx) / SUN_LD_PARAMS) % SUN_CTRL_PTS,
+                             c_idx = (idx - j_idx - SUN_LD_PARAMS * k_idx) / (SUN_LD_PARAMS * SUN_CTRL_PTS);
+
+                    solar_radiance[c_idx] +=
+                        dr::pow(x, k_idx) *
+                        dr::pow(cos_psi, j_idx) *
+                        data[data_idx];
                 }
             }
+
         }
 
         return dr::select(active, solar_radiance, 0.f);
