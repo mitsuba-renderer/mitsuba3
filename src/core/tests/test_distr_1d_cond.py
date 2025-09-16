@@ -2,10 +2,28 @@ import pytest
 import drjit as dr
 import mitsuba as mi
 
+@pytest.fixture(params=['Float', 'UnpolarizedSpectrum'])
+def type_str(request):
+    '''
+    Provides a fixture that generates tests for each type for testing
+    '''
+    yield request.param
 
-def test01_conditional_irregular_empty(variants_vec_backends_once_spectral):
+def get_types(type_str, type_distr):
+    '''
+    Helper function to get the Mitsuba types based on the string provided by the fixture
+    '''
+    base = mi.Float if type_str == 'Float' else mi.UnpolarizedSpectrum
+    distr_name = f'Conditional{type_distr}1D' + ('Spectrum' if type_str == 'UnpolarizedSpectrum' else '')
+    if not hasattr(mi, distr_name):
+        pytest.skip(f"{distr_name} not supported in this Mitsuba build")
+    distr = getattr(mi, distr_name)
+    return base, distr
+
+def test01_conditional_irregular_empty(variants_vec_backends_once_spectral, type_str):
+    _, distr_irregular = get_types(type_str, 'Irregular')
     # Test that operations involving the empty distribution throw
-    d = mi.ConditionalIrregular1D()
+    d = distr_irregular()
     assert d.empty()
 
     with pytest.raises(RuntimeError) as excinfo:
@@ -13,10 +31,11 @@ def test01_conditional_irregular_empty(variants_vec_backends_once_spectral):
     assert "needs at least two entries" in str(excinfo.value)
 
 
-def test02_conditional_irregular_zero_prob(variants_vec_backends_once_spectral):
+def test02_conditional_irregular_zero_prob(variants_vec_backends_once_spectral, type_str):
+    _, distr_irregular = get_types(type_str, 'Irregular')
     # Test that operations involving zero probability mass throw
     with pytest.raises(RuntimeError) as excinfo:
-        mi.ConditionalIrregular1D(
+        distr_irregular(
             mi.Float([1, 2, 3, 4]),
             mi.Float([0, 0, 0, 0]),
             [mi.Float(0), mi.Float(1)],
@@ -24,10 +43,11 @@ def test02_conditional_irregular_zero_prob(variants_vec_backends_once_spectral):
     assert "no probability mass found" in str(excinfo.value)
 
 
-def test03_conditional_irregular_neg_prob(variants_vec_backends_once_spectral):
+def test03_conditional_irregular_neg_prob(variants_vec_backends_once_spectral, type_str):
+    _, distr_irregular = get_types(type_str, 'Irregular')
     # Test that operations involving negative probability mass throw
     with pytest.raises(RuntimeError) as excinfo:
-        mi.ConditionalIrregular1D(
+        distr_irregular(
             mi.Float([1, 2, 3, 4]),
             mi.Float([0, -1, 0, 0]),
             [mi.Float(0), mi.Float(1)],
@@ -35,8 +55,9 @@ def test03_conditional_irregular_neg_prob(variants_vec_backends_once_spectral):
     assert "entries must be non-negative" in str(excinfo.value)
 
 
-def test04_conditional_irregular_eval(variants_vec_backends_once_spectral):
-    d = mi.ConditionalIrregular1D(
+def test04_conditional_irregular_eval(variants_vec_backends_once_spectral, type_str):
+    Type, distr_irregular = get_types(type_str, 'Irregular')
+    d = distr_irregular(
         mi.Float(2, 3),
         dr.tile(mi.Float([1, 2]), 4),
         [mi.Float(1, 2), mi.Float(3, 4)],
@@ -47,27 +68,28 @@ def test04_conditional_irregular_eval(variants_vec_backends_once_spectral):
     assert dr.allclose(d.m_integral, dr.tile(3.0 / 2.0, 4))
 
     assert dr.allclose(
-        d.eval_pdf_normalized(mi.Float([2, 2.5, 3]), [mi.Float(1.1), mi.Float(3.98)]),
-        mi.Float([2.0 / 3.0, 1.0, 4.0 / 3.0]),
+        d.eval_pdf_normalized(Type(mi.Float(2, 2.5, 3)), [Type(1.1), Type(3.98)]),
+        Type(mi.Float(2.0 / 3.0, 1.0, 4.0 / 3.0)),
     )
 
-    x, pdf = d.sample_pdf(mi.Float([0, 0.5, 1]), [mi.Float(1.1), mi.Float(3.98)])
+    x, pdf = d.sample_pdf(Type(mi.Float(0, 0.5, 1)), [Type(1.1), Type(3.98)])
     dx = (dr.sqrt(10) - 2) / 2
-    assert dr.allclose(x, mi.UnpolarizedSpectrum(mi.Float([2, 2 + dx, 3])))
+    assert dr.allclose(x, Type(mi.Float(2, 2 + dx, 3)))
     assert dr.allclose(
         pdf,
-        mi.UnpolarizedSpectrum(mi.Float([2.0 / 3.0, (4 * dx + 2 * (1 - dx)) / 3.0, 4.0 / 3.0])),
+        Type(mi.Float(2.0 / 3.0, (4 * dx + 2 * (1 - dx)) / 3.0, 4.0 / 3.0)),
     )
 
 
-def test05_conditional_irregular_func(variants_vec_backends_once_spectral):
+def test05_conditional_irregular_func(variants_vec_backends_once_spectral, type_str):
     import numpy as np
+    Type, distr_irregular = get_types(type_str, 'Irregular')
 
     # Test continuous 1D distribution integral against analytic result
     x = dr.linspace(mi.Float, -2, 2, 513)
     y = dr.exp(-dr.square(x))
 
-    d = mi.ConditionalIrregular1D(x, dr.tile(y, 4), [mi.Float(1, 2), mi.Float(3, 4)])
+    d = distr_irregular(x, dr.tile(y, 4), [mi.Float(1, 2), mi.Float(3, 4)])
     assert dr.allclose(d.max(), 1.0)
 
     cdf_y = np.cumsum(
@@ -79,20 +101,21 @@ def test05_conditional_irregular_func(variants_vec_backends_once_spectral):
     assert dr.allclose(d.m_integral, dr.tile(dr.sqrt(dr.pi) * dr.erf(2.0), 4))
     assert dr.allclose(
         d.eval_pdf(
-            mi.Float([-1.34, 1, 1.78]), [mi.Float([1, 1.5, 2]), mi.Float([3, 3.25, 4])]
+            Type(mi.Float(-1.34, 1, 1.78)), [Type(mi.Float(1, 1.5, 2)), Type(mi.Float(3, 3.25, 4))]
         ),
-        mi.Float([dr.exp(-dr.square(-1.34)), dr.exp(-1), dr.exp(-dr.square(1.78))]),
+        Type(mi.Float(dr.exp(-dr.square(-1.34)), dr.exp(-1), dr.exp(-dr.square(1.78)))),
     )
     assert dr.allclose(
         d.sample_pdf(
-            mi.Float([0, 0.5, 1]), [mi.Float([1, 1.25, 2]), mi.Float([3, 3.5, 4])]
+            Type(mi.Float(0, 0.5, 1)), [Type(mi.Float(1, 1.25, 2)), Type(mi.Float(3, 3.5, 4))]
         )[0],
-        mi.Float([-2, 0, 2]),
+        Type(mi.Float([-2, 0, 2])),
     )
 
 
-def test06_conditional_irregular_multiFunc(variants_vec_backends_once_spectral):
+def test06_conditional_irregular_multiFunc(variants_vec_backends_once_spectral, type_str):
     import numpy as np
+    Type, distr_irregular = get_types(type_str, 'Irregular')
 
     # This test generates random numbers to test the distribution doing interpolation
     rng = np.random.default_rng(seed=0xBADCAFE)
@@ -103,7 +126,7 @@ def test06_conditional_irregular_multiFunc(variants_vec_backends_once_spectral):
     x = np.linspace(0, 10, SIZE, endpoint=True)
     y = rng.random(size=SIZE * total_conditionals) * 1000.0
 
-    d = mi.ConditionalIrregular1D(x, y, [mi.Float(0, 1, 2, 3, 4)])
+    d = distr_irregular(x, y, [mi.Float(0, 1, 2, 3, 4)])
 
     # Launch an evaluation and compare
     u = rng.random(size=10)
@@ -127,23 +150,24 @@ def test06_conditional_irregular_multiFunc(variants_vec_backends_once_spectral):
         )
 
         assert dr.allclose(
-            d.eval_pdf(query_x, [mi.Float(query_dims[i])]), d_ref.eval_pdf(query_x)
+            d.eval_pdf(Type(query_x), [Type(mi.Float(query_dims[i]))]), d_ref.eval_pdf(query_x)
         )
 
         assert dr.allclose(
-            d.eval_pdf_normalized(query_x, [mi.Float(query_dims[i])]),
+            d.eval_pdf_normalized(Type(query_x), [Type(mi.Float(query_dims[i]))]),
             d_ref.eval_pdf_normalized(query_x),
         )
 
-        x_d, pdf_d = d.sample_pdf(u, [mi.Float(query_dims[i])])
+        x_d, pdf_d = d.sample_pdf(Type(u), [Type(mi.Float(query_dims[i]))])
         x_ref, pdf_ref = d_ref.sample_pdf(u)
         assert dr.allclose(x_d, x_ref)
         assert dr.allclose(pdf_d, pdf_ref)
 
 
-def test07_conditional_regular_empty(variants_vec_backends_once_spectral):
+def test07_conditional_regular_empty(variants_vec_backends_once_spectral, type_str):
+    _ , distr_regular = get_types(type_str, 'Regular')
     # Test that operations involving the empty distribution throw
-    d = mi.ConditionalRegular1D()
+    d = distr_regular()
     assert d.empty()
 
     with pytest.raises(RuntimeError) as excinfo:
@@ -151,10 +175,11 @@ def test07_conditional_regular_empty(variants_vec_backends_once_spectral):
     assert "needs at least two entries" in str(excinfo.value)
 
 
-def test08_conditional_regular_zero_prob(variants_vec_backends_once_spectral):
+def test08_conditional_regular_zero_prob(variants_vec_backends_once_spectral, type_str):
+    _ , distr_regular = get_types(type_str, 'Regular')
     # Test that operations involving zero probability mass throw
     with pytest.raises(RuntimeError) as excinfo:
-        mi.ConditionalRegular1D(
+        distr_regular(
             mi.Float([0, 0, 0, 0]),
             mi.ScalarVector2f(3, 8),
             [mi.ScalarVector2f(3, 4)],
@@ -163,10 +188,11 @@ def test08_conditional_regular_zero_prob(variants_vec_backends_once_spectral):
     assert "no probability mass found" in str(excinfo.value)
 
 
-def test09_conditional_regular_neg_prob(variants_vec_backends_once_spectral):
+def test09_conditional_regular_neg_prob(variants_vec_backends_once_spectral, type_str):
+    _ , distr_regular = get_types(type_str, 'Regular')
     # Test that operations involving negative probability mass throw
     with pytest.raises(RuntimeError) as excinfo:
-        mi.ConditionalRegular1D(
+        distr_regular(
             mi.Float([2, -3, 1, 8]),
             mi.ScalarVector2f(3, 8),
             [mi.ScalarVector2f(3, 4)],
@@ -175,8 +201,9 @@ def test09_conditional_regular_neg_prob(variants_vec_backends_once_spectral):
     assert "entries must be non-negative" in str(excinfo.value)
 
 
-def test10_conditional_regular_eval(variants_vec_backends_once_spectral):
-    d = mi.ConditionalRegular1D(
+def test10_conditional_regular_eval(variants_vec_backends_once_spectral, type_str):
+    Type, distr_regular = get_types(type_str, 'Regular')
+    d = distr_regular(
         dr.tile(mi.Float([1, 2]), 2),
         mi.ScalarVector2f(2, 3),
         [mi.ScalarVector2f(3, 4)],
@@ -188,26 +215,27 @@ def test10_conditional_regular_eval(variants_vec_backends_once_spectral):
     assert dr.allclose(d.m_integral, dr.tile(3.0 / 2.0, 2))
 
     assert dr.allclose(
-        d.eval_pdf_normalized(mi.Float([2, 2.5, 3]), [mi.Float(3.98)]),
-        mi.Float([2.0 / 3.0, 1.0, 4.0 / 3.0]),
+        d.eval_pdf_normalized(Type(mi.Float([2, 2.5, 3])), [Type(mi.Float(3.98))]),
+        Type(mi.Float([2.0 / 3.0, 1.0, 4.0 / 3.0])),
     )
 
-    x, pdf = d.sample_pdf(mi.Float([0, 0.5, 1]), [mi.Float(3.98)])
+    x, pdf = d.sample_pdf(Type(mi.Float([0, 0.5, 1])), [Type(mi.Float(3.98))])
     dx = (dr.sqrt(10) - 2) / 2
-    assert dr.allclose(x, mi.Float([2, 2 + dx, 3]))
+    assert dr.allclose(x, Type(mi.Float([2, 2 + dx, 3])))
     assert dr.allclose(
-        pdf, mi.Float([2.0 / 3.0, (4 * dx + 2 * (1 - dx)) / 3.0, 4.0 / 3.0])
+        pdf, Type(mi.Float([2.0 / 3.0, (4 * dx + 2 * (1 - dx)) / 3.0, 4.0 / 3.0]))
     )
 
 
-def test11_conditional_regular_func(variants_vec_backends_once_spectral):
+def test11_conditional_regular_func(variants_vec_backends_once_spectral, type_str):
     import numpy as np
+    Type , distr_regular = get_types(type_str, 'Regular')
 
     SIZE_X = 513
     x = dr.linspace(mi.Float, -2, 2, SIZE_X)
     y = dr.exp(-dr.square(x))
 
-    d = mi.ConditionalRegular1D(
+    d = distr_regular(
         dr.tile(y, 2),
         mi.ScalarVector2f(-2, 2),
         [mi.ScalarVector2f(1, 5)],
@@ -228,17 +256,18 @@ def test11_conditional_regular_func(variants_vec_backends_once_spectral):
     assert dr.allclose(d.m_integral, dr.tile(dr.sqrt(dr.pi) * dr.erf(2.0), 2))
 
     assert dr.allclose(
-        d.eval_pdf(mi.Float([-1.34, 1, 1.78]), [mi.Float([1, 1.5, 2])]),
-        mi.Float([dr.exp(-dr.square(-1.34)), dr.exp(-1), dr.exp(-dr.square(1.78))]),
+        d.eval_pdf(Type(mi.Float([-1.34, 1, 1.78])), [Type(mi.Float([1, 1.5, 2]))]),
+        Type(mi.Float([dr.exp(-dr.square(-1.34)), dr.exp(-1), dr.exp(-dr.square(1.78))])),
     )
     assert dr.allclose(
-        d.sample_pdf(mi.Float([0, 0.5, 1]), [mi.Float([1, 1.25, 2])])[0],
-        mi.Float([-2, 0, 2]),
+        d.sample_pdf(Type(mi.Float([0, 0.5, 1])), [Type(mi.Float([1, 1.25, 2]))])[0],
+        Type(mi.Float([-2, 0, 2])),
     )
 
 
-def test12_conditional_regular_multiFunc(variants_vec_backends_once_spectral):
+def test12_conditional_regular_multiFunc(variants_vec_backends_once_spectral, type_str):
     import numpy as np
+    Type , distr_regular = get_types(type_str, 'Regular')
 
     # This test generates random numbers to test the distribution doing interpolation
     rng = np.random.default_rng(seed=0xBADCAFE)
@@ -249,7 +278,7 @@ def test12_conditional_regular_multiFunc(variants_vec_backends_once_spectral):
     x = np.linspace(0, 10, SIZE, endpoint=True)
     y = rng.random(size=SIZE * total_conditionals) * 1000.0
 
-    d = mi.ConditionalRegular1D(
+    d = distr_regular(
         mi.Float(y),
         mi.ScalarVector2f(0, 10),
         [mi.ScalarVector2f(0, 4)],
@@ -276,22 +305,24 @@ def test12_conditional_regular_multiFunc(variants_vec_backends_once_spectral):
         )
 
         assert dr.allclose(
-            d.eval_pdf(query_x, [mi.Float(query_dims[i])]), d_ref.eval_pdf(query_x)
+            d.eval_pdf(Type(query_x), [Type(mi.Float(query_dims[i]))]), d_ref.eval_pdf(query_x)
         )
 
         assert dr.allclose(
-            d.eval_pdf_normalized(query_x, [mi.Float(query_dims[i])]),
+            d.eval_pdf_normalized(Type(query_x), [Type(mi.Float(query_dims[i]))]),
             d_ref.eval_pdf_normalized(query_x),
         )
 
-        x_d, pdf_d = d.sample_pdf(u, mi.Float(query_dims[i]))
+        x_d, pdf_d = d.sample_pdf(Type(u), [Type(mi.Float(query_dims[i]))])
         x_ref, pdf_ref = d_ref.sample_pdf(u)
         assert dr.allclose(x_d, x_ref)
         assert dr.allclose(pdf_d, pdf_ref)
 
 
-def test13_conditional_regular_irregular_same(variants_vec_backends_once_spectral):
+def test13_conditional_regular_irregular_same(variants_vec_backends_once_spectral, type_str):
     import numpy as np
+    Type , distr_regular = get_types(type_str, 'Regular')
+    _ , distr_irregular = get_types(type_str, 'Irregular')
 
     # Test that the regular and irregular versions of the distribution yield the same results
     rng = np.random.default_rng(seed=0xBADCAFE)
@@ -302,13 +333,13 @@ def test13_conditional_regular_irregular_same(variants_vec_backends_once_spectra
     x = np.linspace(0, 10, SIZE, endpoint=True)
     y = rng.random(size=SIZE * total_conditionals) * 1000.0
 
-    d_regular = mi.ConditionalRegular1D(
+    d_regular = distr_regular(
         y, mi.ScalarVector2f(0, 10), [mi.ScalarVector2f(0, 4)], n_conditional
     )
-    d_irregular = mi.ConditionalIrregular1D(x, y, [mi.Float(0, 1, 2, 3, 4)])
+    d_irregular = distr_irregular(x, y, [mi.Float(0, 1, 2, 3, 4)])
 
-    conds = [dr.linspace(mi.Float, 0, 4, 10)]
-    x = dr.linspace(mi.Float, 1, 4, 10)
+    conds = [Type(dr.linspace(mi.Float, 0, 4, 10))]
+    x = Type(dr.linspace(mi.Float, 1, 4, 10))
 
     assert dr.allclose(
         d_irregular.eval_pdf_normalized(x, conds),
@@ -333,9 +364,11 @@ def test13_conditional_regular_irregular_same(variants_vec_backends_once_spectra
     assert dr.allclose(d_irregular.max(), d_regular.max())
 
 
-def test14_conditional_chi2_sampling(variants_vec_backends_once_spectral):
+def test14_conditional_chi2_sampling(variants_vec_backends_once_spectral, type_str):
     from mitsuba.chi2 import ChiSquareTest, LineDomain
     import numpy as np
+    Type , distr_regular = get_types(type_str, 'Regular')
+    _ , distr_irregular = get_types(type_str, 'Irregular')
 
     def gaussian_pdf(x, mu=0.0, sigma=1.0):
         return (1.0 / (sigma * np.sqrt(2 * np.pi))) * np.exp(
@@ -344,16 +377,20 @@ def test14_conditional_chi2_sampling(variants_vec_backends_once_spectral):
 
     def DistrAdapter(distr):
         def sample_functor(sample, *args):
-            input = mi.UnpolarizedSpectrum(sample[0])
-            cond = [mi.Float(1.5), mi.Float(3.7)]
-            res = distr.sample_pdf(input, cond, active=True)
-            return mi.Vector1f(res[0][0])
+            input = Type(mi.Float(sample[0]))
+            cond = [Type(mi.Float(1.5)), Type(mi.Float(3.7))]
+            res = distr.sample_pdf(input, cond, active=True)[0]
+            if dr.depth_v(res) > 1:
+                res = res[0]
+            return mi.Vector1f(res)
 
         def pdf_functor(values, *args):
-            input = mi.UnpolarizedSpectrum(values)
-            cond = [mi.Float(1.5), mi.Float(3.7)]
+            input = Type(mi.Float(values))
+            cond = [Type(mi.Float(1.5)), Type(mi.Float(3.7))]
             res = distr.eval_pdf_normalized(input, cond, active=True)
-            return res[0]
+            if dr.depth_v(res) > 1:
+                res = res[0]
+            return res
 
         return sample_functor, pdf_functor
 
@@ -371,7 +408,7 @@ def test14_conditional_chi2_sampling(variants_vec_backends_once_spectral):
     y = np.tile(y, n_conditional[1])
     assert y.shape[0] == SIZE * total_conditionals
 
-    d_regular = mi.ConditionalRegular1D(
+    d_regular = distr_regular(
         y,
         mi.ScalarVector2f(0, 10),
         [mi.ScalarVector2f(0, 4) for _ in range(len(n_conditional))],
@@ -388,7 +425,7 @@ def test14_conditional_chi2_sampling(variants_vec_backends_once_spectral):
     )
     assert test.run()
 
-    d_irregular = mi.ConditionalIrregular1D(
+    d_irregular = distr_irregular(
         x,
         y,
         [mi.Float(0, 1, 2, 3, 4) for _ in range(len(n_conditional))],
@@ -406,8 +443,72 @@ def test14_conditional_chi2_sampling(variants_vec_backends_once_spectral):
     )
     assert test.run()
 
+def test15_integral_irregular(variants_vec_backends_once_spectral, type_str):
+    import numpy as np
+    Type , distr_irregular = get_types(type_str, 'Irregular')
 
-def test15_neareast_irregular(variants_vec_backends_once_spectral):
+    SIZE = 10
+    C = 5
+
+    x = dr.arange(mi.Float, SIZE)
+    y = dr.arange(mi.Float, SIZE * C)
+
+    d = distr_irregular(
+        x, y, [mi.Float(0, 1, 2, 3, 4)], enable_sampling=True
+    )
+
+    # Test integral for perfect conditional
+    INDEX = 2
+    value = d.integral([Type(dr.gather(mi.Float, x, mi.UInt32(INDEX), True))])
+    ref = np.trapz(y.numpy()[SIZE*INDEX:SIZE*(INDEX+1)], x.numpy())
+    assert dr.allclose(value, ref)
+
+    # Test integral for interpolated conditional
+    INDEX = 2.87
+    value = d.integral([Type(mi.Float(INDEX))])
+    l_i = np.floor(INDEX).astype(int)
+    w_i = INDEX - l_i
+    ref = (
+        (1.0 - w_i) * np.trapz(y=y.numpy()[SIZE*l_i:SIZE*(l_i+1)], x=x.numpy()) +
+        w_i * np.trapz(y=y.numpy()[SIZE*(l_i+1):SIZE*(l_i+2)], x=x.numpy())
+    )
+    assert dr.allclose(value, ref)
+
+def test16_integral_regular(variants_vec_backends_once_spectral, type_str):
+    import numpy as np
+    Type , distr_regular = get_types(type_str, 'Regular')
+
+    SIZE = 10
+    C = 5
+
+    y = dr.arange(mi.Float, SIZE * C)
+
+    d = distr_regular(
+        y,
+        mi.ScalarVector2f(0, SIZE - 1),
+        [mi.ScalarVector2f(0, C - 1)],
+        [C],
+        enable_sampling=True,
+    )
+
+    # Test integral for perfect conditional
+    INDEX = 2
+    value = d.integral([Type(dr.gather(mi.Float, dr.linspace(mi.Float, 0, C-1, C), mi.UInt32(INDEX), True))])
+    ref = np.trapz(y.numpy()[SIZE*INDEX:SIZE*(INDEX+1)], np.linspace(0, SIZE-1, SIZE))
+    assert dr.allclose(value, ref)
+
+    # Test integral for interpolated conditional
+    INDEX = 2.87
+    value = d.integral([Type(mi.Float(INDEX))])
+    l_i = np.floor(INDEX).astype(int)
+    w_i = INDEX - l_i
+    ref = (
+        (1.0 - w_i) * np.trapz(y=y.numpy()[SIZE*l_i:SIZE*(l_i+1)], x=np.linspace(0, SIZE-1, SIZE)) +
+        w_i * np.trapz(y=y.numpy()[SIZE*(l_i+1):SIZE*(l_i+2)], x=np.linspace(0, SIZE-1, SIZE))
+    )
+    assert dr.allclose(value, ref)
+
+def test17_neareast_irregular(variants_vec_backends_once_spectral, type_str):
     import numpy as np
 
     SIZE = 10
@@ -425,7 +526,7 @@ def test15_neareast_irregular(variants_vec_backends_once_spectral):
     assert dr.allclose(value, ref)
 
 
-def test16_neareast_regular(variants_vec_backends_once_spectral):
+def test18_neareast_regular(variants_vec_backends_once_spectral, type_str):
     import numpy as np
 
     SIZE = 10
@@ -444,67 +545,4 @@ def test16_neareast_regular(variants_vec_backends_once_spectral):
     value = d.eval_pdf(mi.Float(np.arange(0, 4, 0.33)), [mi.Float(0.45)])
 
     ref = mi.Float(0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4)
-    assert dr.allclose(value, ref)
-
-def test17_integral_irregular(variants_vec_backends_once_spectral):
-    import numpy as np
-
-    SIZE = 10
-    C = 5
-
-    x = dr.arange(mi.Float, SIZE)
-    y = dr.arange(mi.Float, SIZE * C)
-
-    d = mi.ConditionalIrregular1D(
-        x, y, [mi.Float(0, 1, 2, 3, 4)], enable_sampling=True
-    )
-
-    # Test integral for perfect conditional
-    INDEX = 2
-    value = d.integral([dr.gather(mi.Float, x, mi.UInt32(INDEX), True)])
-    ref = np.trapz(y.numpy()[SIZE*INDEX:SIZE*(INDEX+1)], x.numpy())
-    assert dr.allclose(value, ref)
-
-    # Test integral for interpolated conditional
-    INDEX = 2.87
-    value = d.integral([mi.Float(INDEX)])
-    l_i = np.floor(INDEX).astype(int)
-    w_i = INDEX - l_i
-    ref = (
-        (1.0 - w_i) * np.trapz(y=y.numpy()[SIZE*l_i:SIZE*(l_i+1)], x=x.numpy()) +
-        w_i * np.trapz(y=y.numpy()[SIZE*(l_i+1):SIZE*(l_i+2)], x=x.numpy())
-    )
-    assert dr.allclose(value, ref)
-
-def test18_integral_regular(variants_vec_backends_once_spectral):
-    import numpy as np
-
-    SIZE = 10
-    C = 5
-
-    y = dr.arange(mi.Float, SIZE * C)
-
-    d = mi.ConditionalRegular1D(
-        y,
-        mi.ScalarVector2f(0, SIZE - 1),
-        [mi.ScalarVector2f(0, C - 1)],
-        [C],
-        enable_sampling=True,
-    )
-
-    # Test integral for perfect conditional
-    INDEX = 2
-    value = d.integral([dr.gather(mi.Float, dr.linspace(mi.Float, 0, C-1, C), mi.UInt32(INDEX), True)])
-    ref = np.trapz(y.numpy()[SIZE*INDEX:SIZE*(INDEX+1)], np.linspace(0, SIZE-1, SIZE))
-    assert dr.allclose(value, ref)
-
-    # Test integral for interpolated conditional
-    INDEX = 2.87
-    value = d.integral([mi.Float(INDEX)])
-    l_i = np.floor(INDEX).astype(int)
-    w_i = INDEX - l_i
-    ref = (
-        (1.0 - w_i) * np.trapz(y=y.numpy()[SIZE*l_i:SIZE*(l_i+1)], x=np.linspace(0, SIZE-1, SIZE)) +
-        w_i * np.trapz(y=y.numpy()[SIZE*(l_i+1):SIZE*(l_i+2)], x=np.linspace(0, SIZE-1, SIZE))
-    )
     assert dr.allclose(value, ref)
