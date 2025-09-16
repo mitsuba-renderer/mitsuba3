@@ -301,7 +301,7 @@ private:
             Value b0 = dr::gather<Value>(*data, bin_index, active);
             Value b1 = dr::gather<Value>(*data, bin_index + 1, active);
             w1       = dr::clip((cond - b0) * dr::rcp(b1 - b0), 0.f, 1.f);
-            w0       = 1.0 - w1;
+            w0       = 1.0f - w1;
         } else {
             w0 = 1.f;
             w1 = 0.f;
@@ -393,7 +393,7 @@ private:
             Value b1 = dr::gather<Value>(*data, bin_index + 1,
                                          active & (weight_ > 0.f));
             w1       = dr::clip((cond - b0) / (b1 - b0), 0.f, 1.f);
-            w0       = 1.0 - w1;
+            w0       = 1.0f - w1;
         } else {
             w0 = 1.f;
             w1 = 0.f;
@@ -549,7 +549,7 @@ private:
 
     void compute_cdf_scalar(const ScalarFloat *nodes, size_t size_nodes,
                             const ScalarFloat *pdf, size_t size_pdf) {
-        size_t size_cond = 1.0;
+        size_t size_cond = 1;
         for (size_t i = 0; i < m_nodes_cond.size(); i++)
             size_cond *= dr::width(m_nodes_cond[i]);
 
@@ -692,7 +692,7 @@ public:
           m_enable_sampling(enable_sampling), m_nearest(nearest) {
         // Update tensor with the information
         std::vector<size_t> shape;
-        size_t total_size_cond = 1.0;
+        size_t total_size_cond = 1;
         for (size_t i = 0; i < m_size_cond.size(); i++) {
             size_t s = m_size_cond[i];
             shape.push_back(s);
@@ -735,7 +735,7 @@ public:
 
         // Update tensor with the information
         std::vector<size_t> shape;
-        size_t total_size_cond = 1.0;
+        size_t total_size_cond = 1;
         for (size_t i = 0; i < m_size_cond.size(); i++) {
             size_t s = m_size_cond[i];
             shape.push_back(s);
@@ -1144,7 +1144,7 @@ private:
     }
 
     void compute_cdf_scalar(const ScalarFloat *pdf, size_t size_pdf) {
-        size_t size_cond = 1.0;
+        size_t size_cond = 1;
         for (size_t i = 0; i < m_size_cond.size(); i++)
             size_cond *= m_size_cond[i];
 
