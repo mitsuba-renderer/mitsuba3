@@ -5,6 +5,7 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/vector.h>
+#include <drjit/traversable_base.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -30,7 +31,8 @@ NAMESPACE_BEGIN(mitsuba)
  * each wavelength conditions the underlying distribution.
  *
  */
-template <typename Value> class ConditionalIrregular1D {
+template <typename Value>
+class ConditionalIrregular1D : drjit::TraversableBase {
     using Float        = std::conditional_t<dr::is_static_array_v<Value>,
                                             dr::value_t<Value>, Value>;
     using FloatStorage = DynamicBuffer<Float>;
@@ -489,11 +491,13 @@ private:
     void compute_cdf() {
         if (m_pdf.array().size() < 2)
             Throw("ConditionalIrregular1D: needs at least two entries!");
+#ifndef NDEBUG
         if (!dr::all(m_pdf.array() >= 0.f))
             Throw("ConditionalIrregular1D: entries must be "
                   "non-negative!");
         if (!dr::any(m_pdf.array() > 0.f))
             Throw("ConditionalIrregular1D: no probability mass found!");
+#endif
 
         const size_t size_nodes = dr::width(m_nodes);
         const size_t size_pdf   = dr::width(m_pdf.array());
@@ -502,7 +506,9 @@ private:
             size_cond *= dr::width(m_nodes_cond[i]);
 
         if (size_pdf != size_nodes * size_cond)
-            Log(Error, "%f (size_pdf) != %f (size_nodes) * %f (size_cond)",
+            Log(Error,
+                "ConditionalIrregular1D: %f (size_pdf) != %f (size_nodes) * %f "
+                "(size_cond)",
                 size_pdf, size_nodes, size_cond);
 
         m_max = dr::slice(dr::max(m_pdf.array()));
@@ -538,6 +544,9 @@ private:
 
     void compute_cdf_scalar(const ScalarFloat *nodes, size_t size_nodes,
                             const ScalarFloat *pdf, size_t size_pdf) {
+        if (unlikely(empty()))
+            return;
+
         size_t size_cond = 1;
         for (size_t i = 0; i < m_nodes_cond.size(); i++)
             size_cond *= dr::width(m_nodes_cond[i]);
@@ -547,7 +556,8 @@ private:
         std::vector<ScalarFloat> integral(size_cond, 0.f);
 
         if (size_pdf != size_nodes * size_cond)
-            Log(Error, "size_pdf != size_nodes * size_cond");
+            Log(Error,
+                "ConditionalIrregular1D: size_pdf != size_nodes * size_cond");
 
         ScalarFloat integral_val = 0.0;
 
@@ -560,14 +570,15 @@ private:
                 ScalarFloat x1 = nodes[j + 1];
 
                 if (x0 <= x1)
-                    Log(Error, "Nodes must be strictly increasing");
+                    Log(Error, "ConditionalIrregular1D: Nodes must be strictly "
+                               "increasing");
 
                 ScalarFloat y0 = pdf[i * size_nodes + j];
                 ScalarFloat y1 = pdf[i * size_nodes + j + 1];
 
                 if (y0 < 0.f || y1 < 0.f)
-                    Log(Error, "Entries of the conditioned PDFs must be "
-                               "non-negative!");
+                    Log(Error, "ConditionalIrregular1D: Entries of the "
+                               "conditioned PDFs must be non-negative!");
 
                 m_max = dr::maximum(m_max, (ScalarFloat) y1);
 
@@ -587,7 +598,8 @@ private:
             }
 
             if (dr::any(valid == (uint32_t) -1))
-                Log(Error, "No probability mass found for one conditioned PDF");
+                Log(Error, "ConditionalIrregular1D: No probability mass found "
+                           "for one conditioned PDF");
 
             integral[i] = integral_val;
         }
@@ -603,6 +615,9 @@ private:
     FloatStorage m_cdf;
     FloatStorage m_integral;
     ScalarFloat m_max = 0.f;
+
+    MI_TRAVERSE_CB(drjit::TraversableBase, m_nodes, m_pdf, m_nodes_cond, m_cdf,
+                   m_integral)
 };
 
 template <typename Value>
@@ -634,7 +649,7 @@ std::ostream &operator<<(std::ostream &os,
  * each wavelength conditions the underlying distribution.
  *
  */
-template <typename Value> class ConditionalRegular1D {
+template <typename Value> class ConditionalRegular1D : drjit::TraversableBase {
     using Float        = std::conditional_t<dr::is_static_array_v<Value>,
                                             dr::value_t<Value>, Value>;
     using FloatStorage = DynamicBuffer<Float>;
@@ -762,8 +777,7 @@ public:
         if (m_size_nodes < 2)
             Log(Error,
                 "The number of the leading dimension should have at least size "
-                "2 "
-                "instead of %u",
+                "2 instead of %u",
                 m_size_nodes);
 
         m_pdf = TensorXf(dr::load<FloatStorage>(pdf, size_pdf), shape.size(),
@@ -1113,11 +1127,13 @@ private:
     void compute_cdf() {
         if (m_pdf.array().size() < 2)
             Throw("ConditionalRegular1D: needs at least two entries!");
+#ifndef NDEBUG
         if (!dr::all(m_pdf.array() >= 0.f))
             Throw("ConditionalRegular1D: entries must be "
                   "non-negative!");
         if (!dr::any(m_pdf.array() > 0.f))
             Throw("ConditionalRegular1D: no probability mass found!");
+#endif
 
         const size_t size_nodes = m_size_nodes;
         const size_t size_pdf   = dr::width(m_pdf.array());
@@ -1126,7 +1142,9 @@ private:
             size_cond *= m_size_cond[i];
 
         if (size_pdf != size_nodes * size_cond)
-            Log(Error, "%f (size_pdf) != %f (size_nodes) * %f (size_cond)",
+            Log(Error,
+                "ConditionalRegular1D: %f (size_pdf) != %f (size_nodes) * %f "
+                "(size_cond)",
                 size_pdf, size_nodes, size_cond);
 
         m_max = dr::slice(dr::max(m_pdf.array()));
@@ -1159,6 +1177,9 @@ private:
     }
 
     void compute_cdf_scalar(const ScalarFloat *pdf, size_t size_pdf) {
+        if (unlikely(empty()))
+            return;
+
         size_t size_cond = 1;
         for (size_t i = 0; i < m_size_cond.size(); i++)
             size_cond *= m_size_cond[i];
@@ -1168,7 +1189,8 @@ private:
         std::vector<ScalarFloat> integral(size_cond, 0.f);
 
         if (size_pdf != m_size_nodes * size_cond)
-            Log(Error, "size_pdf != size_nodes * size_cond");
+            Log(Error,
+                "ConditionalRegular1D: size_pdf != size_nodes * size_cond");
 
         ScalarFloat integral_val = 0.0;
         ScalarFloat range = ScalarFloat(m_range.y()) - ScalarFloat(m_range.x()),
@@ -1183,8 +1205,8 @@ private:
                 ScalarFloat y1 = pdf[i * m_size_nodes + j + 1];
 
                 if (y0 < 0.f || y1 < 0.f)
-                    Log(Error, "Entries of the conditioned PDFs must be "
-                               "non-negative!");
+                    Log(Error, "ConditionalRegular1D: Entries of the "
+                               "conditioned PDFs must be non-negative!");
 
                 m_max = dr::maximum(m_max, (ScalarFloat) y1);
 
@@ -1204,7 +1226,8 @@ private:
             }
 
             if (dr::any(valid == (uint32_t) -1))
-                Log(Error, "No probability mass found for one conditioned PDF");
+                Log(Error, "ConditionalRegular1D: No probability mass found "
+                           "for one conditioned PDF");
 
             integral[i] = integral_val;
         }
@@ -1226,6 +1249,9 @@ private:
     FloatStorage m_cdf;
     FloatStorage m_integral;
     ScalarFloat m_max = 0.f;
+
+    MI_TRAVERSE_CB(drjit::TraversableBase, m_interval, m_inv_interval, m_pdf,
+                   m_inv_interval_cond, m_cdf, m_integral)
 };
 
 template <typename Value>
