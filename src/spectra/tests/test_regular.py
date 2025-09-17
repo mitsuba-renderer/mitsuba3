@@ -14,7 +14,7 @@ def obj():
         "wavelength_max" : 600,
         "values" : "1, 2"
     })
-    
+
 @pytest.fixture()
 def obj_acoustic():
     return mi.load_dict({
@@ -52,8 +52,15 @@ def test02_sample_spectrum(variant_scalar_spectral, obj):
         [500 + 100 * (dr.sqrt(10) / 2 - 1), 150]
     )
 
+def test_03_no_nodes(variant_scalar_acoustic):
+    with pytest.raises(RuntimeError) as excinfo:
+        mi.load_dict({
+            "type": "regular",
+            "values": "1, 2, 3"
+        })
+    assert "Either 'wavelength_min/max' or 'frequency_min/max'" in str(excinfo.value)
 
-def test_03_initialization(variant_scalar_acoustic):
+def test_04_frequency_and_wavelengths_initialization(variant_scalar_acoustic):
     with pytest.raises(RuntimeError) as excinfo:
         mi.load_dict({
             "type": "regular",
@@ -63,12 +70,12 @@ def test_03_initialization(variant_scalar_acoustic):
             "wavelength_max": 600,
             "values": "1, 2, 3"
         })
-    assert 'Only one of' in str(excinfo.value)
+    assert 'Please specify either' in str(excinfo.value)
 
 
 def test04_acoustic_equivalence(variant_scalar_acoustic, obj, obj_acoustic):
     "make sure that spectra are equivalent when using frequencies vs wavelengths"
-    
+
     si = mi.SurfaceInteraction3f()
 
     for i in range(5):

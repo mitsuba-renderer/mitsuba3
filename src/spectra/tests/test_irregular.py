@@ -13,7 +13,7 @@ def obj():
         "wavelengths" : "500, 600, 650",
         "values" : "1, 2, .5"
     })
-    
+
 @pytest.fixture()
 def obj_acoustic():
     return mi.load_dict({
@@ -50,17 +50,28 @@ def test02_sample_spectrum(variant_scalar_spectral, obj):
         [576.777, 212.5]
     )
 
-def test_03_acoustic_initialization(variant_scalar_acoustic):
+def test_03_no_nodes(variant_scalar_acoustic):
     with pytest.raises(RuntimeError) as excinfo:
         mi.load_dict({
             "type" : "irregular",
-            "frequencies" : "500, 600, 650",
-            "wavelengths" : "500, 600, 650",
+            # "frequencies" : "500, 600, 650",
+            # "wavelengths" : "500, 600, 650",
             "values" : "1, 2, .5"
         })
-    assert 'Only one of' in str(excinfo.value)
+    assert "Either 'wavelengths' or 'frequencies'" in str(excinfo.value)
 
-def test03_acoustic_compatibility(variant_scalar_acoustic, obj, obj_acoustic):
+def test_04_frequency_and_wavelengths_initialization(variant_scalar_acoustic):
+    with pytest.raises(RuntimeError) as excinfo:
+        mi.load_dict({
+            "type" : "irregular",
+            "wavelengths" : "500, 600, 650",
+            "frequencies" : "500, 600, 650",
+            "values" : "1, 2, .5"
+        })
+    assert 'Please specify either' in str(excinfo.value)
+
+
+def test05_acoustic_compatibility(variant_scalar_acoustic, obj, obj_acoustic):
     "make sure that spectra are equivalent when using frequencies vs wavelengths"
 
     si = mi.SurfaceInteraction3f()

@@ -87,12 +87,27 @@ public:
 
             init(*spec);
         } else {
-            Properties::Spectrum spec(
-                props.get<std::string_view>("values"),
-                props.get<double>("wavelength_min"),
-                props.get<double>("wavelength_max")
-            );
-            init(spec);
+            bool has_wavelengths = props.has_property("wavelength_min") && props.has_property("wavelength_max");
+            bool has_frequencies = props.has_property("frequency_min") && props.has_property("frequency_max");
+            if (has_wavelengths && has_frequencies) {
+                Throw("Please specify either 'wavelength_min'/'wavelength_max' (for light rendering) or 'frequency_min'/'frequency_max' (for acoustic rendering), but not both.");
+            } else if (has_wavelengths) {
+                Properties::Spectrum spec(
+                    props.get<std::string_view>("values"),
+                    props.get<double>("wavelength_min"),
+                    props.get<double>("wavelength_max")
+                );
+                init(spec);
+            } else if (has_frequencies) {
+                Properties::Spectrum spec(
+                    props.get<std::string_view>("values"),
+                    props.get<double>("frequency_min"),
+                    props.get<double>("frequency_max")
+                );
+                init(spec);
+            } else {
+                Throw("Either 'wavelength_min/max' or 'frequency_min/max' property must be specified.");
+            }
         }
     }
 

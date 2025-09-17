@@ -77,12 +77,24 @@ public:
 
             init(*spec);
         } else {
-            // Construct spectrum from separate wavelength and value strings
-            Properties::Spectrum spec(
-                props.get<std::string_view>("wavelengths"),
-                props.get<std::string_view>("values")
-            );
-            init(spec);
+            // Construct spectrum from separate frequency/wavelength and value strings
+            if (props.has_property("wavelengths") && props.has_property("frequencies")) {
+                Throw("Please specify either 'wavelengths' (for light rendering) or 'frequencies' (for acoustic rendering), but not both.");
+            } else if (props.has_property("wavelengths")) {
+                Properties::Spectrum spec(
+                    props.get<std::string_view>("wavelengths"),
+                    props.get<std::string_view>("values")
+                );
+                init(spec);
+            } else if (props.has_property("frequencies")) {
+                Properties::Spectrum spec(
+                    props.get<std::string_view>("frequencies"),
+                    props.get<std::string_view>("values")
+                );
+                init(spec);
+            } else {
+                Throw("Either 'wavelengths' or 'frequencies' property must be specified.");
+            }
         }
     }
 
