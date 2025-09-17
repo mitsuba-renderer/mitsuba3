@@ -2,44 +2,44 @@ Core
 ----
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24355
-  :end-line: 24451
+  :start-line: 24374
+  :end-line: 24470
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24617
-  :end-line: 24624
+  :start-line: 24637
+  :end-line: 24644
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25426
-  :end-line: 25430
+  :start-line: 25456
+  :end-line: 25460
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25361
-  :end-line: 25373
+  :start-line: 25381
+  :end-line: 25393
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13888
-  :end-line: 13973
+  :start-line: 13903
+  :end-line: 13988
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25439
-  :end-line: 25443
+  :start-line: 25469
+  :end-line: 25473
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24599
-  :end-line: 24608
+  :start-line: 24619
+  :end-line: 24628
 
 ------------
 
@@ -68,26 +68,26 @@ Core
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 7631
-  :end-line: 7670
+  :start-line: 7638
+  :end-line: 7677
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 16057
-  :end-line: 16539
+  :start-line: 16076
+  :end-line: 16558
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 16540
-  :end-line: 16571
+  :start-line: 16559
+  :end-line: 16590
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20816
-  :end-line: 20847
+  :start-line: 20835
+  :end-line: 20866
 
 ------------
 
@@ -104,212 +104,212 @@ Core
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 5968
-  :end-line: 5978
+  :start-line: 5975
+  :end-line: 5985
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 7558
-  :end-line: 7630
+  :start-line: 7565
+  :end-line: 7637
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9201
-  :end-line: 9227
+  :start-line: 9216
+  :end-line: 9242
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9520
-  :end-line: 9563
+  :start-line: 9535
+  :end-line: 9578
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 15998
-  :end-line: 16056
+  :start-line: 16017
+  :end-line: 16075
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 16572
-  :end-line: 16826
+  :start-line: 16591
+  :end-line: 16845
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 16827
-  :end-line: 16923
+  :start-line: 16846
+  :end-line: 16942
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20354
-  :end-line: 20367
+  :start-line: 20373
+  :end-line: 20386
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20368
-  :end-line: 20395
+  :start-line: 20387
+  :end-line: 20414
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22437
-  :end-line: 22450
+  :start-line: 22456
+  :end-line: 22469
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22451
-  :end-line: 22463
+  :start-line: 22470
+  :end-line: 22482
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22464
-  :end-line: 22476
+  :start-line: 22483
+  :end-line: 22495
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22477
-  :end-line: 22483
+  :start-line: 22496
+  :end-line: 22502
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22484
-  :end-line: 22498
+  :start-line: 22503
+  :end-line: 22517
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22499
-  :end-line: 22508
+  :start-line: 22518
+  :end-line: 22527
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22509
-  :end-line: 22520
+  :start-line: 22528
+  :end-line: 22539
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22521
-  :end-line: 22530
+  :start-line: 22540
+  :end-line: 22549
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22531
-  :end-line: 22541
+  :start-line: 22550
+  :end-line: 22560
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22542
-  :end-line: 22647
+  :start-line: 22561
+  :end-line: 22666
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22648
-  :end-line: 22651
+  :start-line: 22667
+  :end-line: 22670
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22652
-  :end-line: 22662
+  :start-line: 22671
+  :end-line: 22681
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22663
-  :end-line: 22677
+  :start-line: 22682
+  :end-line: 22696
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22778
-  :end-line: 22788
+  :start-line: 22797
+  :end-line: 22807
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24212
-  :end-line: 24224
+  :start-line: 24231
+  :end-line: 24243
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24225
-  :end-line: 24237
+  :start-line: 24244
+  :end-line: 24256
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24238
-  :end-line: 24250
+  :start-line: 24257
+  :end-line: 24269
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24251
-  :end-line: 24263
+  :start-line: 24270
+  :end-line: 24282
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24264
-  :end-line: 24276
+  :start-line: 24283
+  :end-line: 24295
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24277
-  :end-line: 24289
+  :start-line: 24296
+  :end-line: 24308
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24290
-  :end-line: 24302
+  :start-line: 24309
+  :end-line: 24321
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24303
-  :end-line: 24315
+  :start-line: 24322
+  :end-line: 24334
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24316
-  :end-line: 24328
+  :start-line: 24335
+  :end-line: 24347
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24329
-  :end-line: 24341
+  :start-line: 24348
+  :end-line: 24360
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24342
-  :end-line: 24354
+  :start-line: 24361
+  :end-line: 24373
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20411
-  :end-line: 20493
+  :start-line: 20430
+  :end-line: 20512
 
 ------------
 
@@ -317,20 +317,20 @@ Parsing
 -------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22816
-  :end-line: 22831
+  :start-line: 22835
+  :end-line: 22850
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22832
-  :end-line: 22853
-
-------------
-
-.. include:: generated/extracted_rst_api.rst
-  :start-line: 22854
+  :start-line: 22851
   :end-line: 22872
+
+------------
+
+.. include:: generated/extracted_rst_api.rst
+  :start-line: 22873
+  :end-line: 22891
 
 ------------
 
@@ -338,14 +338,14 @@ Object
 ------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 8341
-  :end-line: 8468
+  :start-line: 8356
+  :end-line: 8483
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 8469
-  :end-line: 8537
+  :start-line: 8484
+  :end-line: 8552
 
 ------------
 
@@ -353,8 +353,8 @@ Properties
 ----------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 10257
-  :end-line: 10597
+  :start-line: 10272
+  :end-line: 10612
 
 ------------
 
@@ -374,8 +374,8 @@ Bitmap
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 11090
-  :end-line: 11204
+  :start-line: 11105
+  :end-line: 11219
 
 ------------
 
@@ -383,151 +383,133 @@ Warp
 ----
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25444
-  :end-line: 25456
+  :start-line: 25474
+  :end-line: 25486
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25457
-  :end-line: 25478
+  :start-line: 25487
+  :end-line: 25508
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25479
-  :end-line: 25488
+  :start-line: 25509
+  :end-line: 25518
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25489
-  :end-line: 25509
+  :start-line: 25519
+  :end-line: 25539
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25510
-  :end-line: 25529
+  :start-line: 25540
+  :end-line: 25559
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25530
-  :end-line: 25543
+  :start-line: 25560
+  :end-line: 25573
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25544
-  :end-line: 25553
+  :start-line: 25574
+  :end-line: 25583
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25554
-  :end-line: 25569
+  :start-line: 25584
+  :end-line: 25599
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25570
-  :end-line: 25582
+  :start-line: 25600
+  :end-line: 25612
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25583
-  :end-line: 25595
+  :start-line: 25613
+  :end-line: 25625
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25596
-  :end-line: 25629
+  :start-line: 25626
+  :end-line: 25659
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25630
-  :end-line: 25649
+  :start-line: 25660
+  :end-line: 25679
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25650
-  :end-line: 25660
-
-------------
-
-.. include:: generated/extracted_rst_api.rst
-  :start-line: 25661
-  :end-line: 25670
-
-------------
-
-.. include:: generated/extracted_rst_api.rst
-  :start-line: 25671
+  :start-line: 25680
   :end-line: 25690
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
   :start-line: 25691
-  :end-line: 25709
+  :end-line: 25700
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25710
+  :start-line: 25701
   :end-line: 25720
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
   :start-line: 25721
-  :end-line: 25728
+  :end-line: 25739
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25729
-  :end-line: 25738
+  :start-line: 25740
+  :end-line: 25750
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25739
-  :end-line: 25748
+  :start-line: 25751
+  :end-line: 25758
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25749
-  :end-line: 25765
+  :start-line: 25759
+  :end-line: 25768
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25766
+  :start-line: 25769
   :end-line: 25778
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
   :start-line: 25779
-  :end-line: 25788
+  :end-line: 25795
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25789
-  :end-line: 25798
-
-------------
-
-.. include:: generated/extracted_rst_api.rst
-  :start-line: 25799
+  :start-line: 25796
   :end-line: 25808
 
 ------------
@@ -540,108 +522,108 @@ Warp
 
 .. include:: generated/extracted_rst_api.rst
   :start-line: 25819
-  :end-line: 25829
+  :end-line: 25828
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25830
-  :end-line: 25839
+  :start-line: 25829
+  :end-line: 25838
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25840
-  :end-line: 25850
+  :start-line: 25839
+  :end-line: 25848
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25851
-  :end-line: 25860
+  :start-line: 25849
+  :end-line: 25859
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25861
-  :end-line: 25878
+  :start-line: 25860
+  :end-line: 25869
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25879
-  :end-line: 25894
+  :start-line: 25870
+  :end-line: 25880
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25895
-  :end-line: 25905
+  :start-line: 25881
+  :end-line: 25890
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25906
-  :end-line: 25916
+  :start-line: 25891
+  :end-line: 25908
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25917
-  :end-line: 25926
+  :start-line: 25909
+  :end-line: 25924
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25927
-  :end-line: 25940
+  :start-line: 25925
+  :end-line: 25935
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25941
-  :end-line: 25953
+  :start-line: 25936
+  :end-line: 25946
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25954
-  :end-line: 25966
+  :start-line: 25947
+  :end-line: 25956
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25967
-  :end-line: 25976
+  :start-line: 25957
+  :end-line: 25970
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25977
-  :end-line: 25986
+  :start-line: 25971
+  :end-line: 25983
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25987
-  :end-line: 25999
+  :start-line: 25984
+  :end-line: 25996
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 26000
-  :end-line: 26009
+  :start-line: 25997
+  :end-line: 26006
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 26010
-  :end-line: 26019
+  :start-line: 26007
+  :end-line: 26016
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 26020
+  :start-line: 26017
   :end-line: 26029
 
 ------------
@@ -654,19 +636,37 @@ Warp
 
 .. include:: generated/extracted_rst_api.rst
   :start-line: 26040
-  :end-line: 26055
+  :end-line: 26049
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 26056
-  :end-line: 26065
+  :start-line: 26050
+  :end-line: 26059
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 26066
-  :end-line: 26078
+  :start-line: 26060
+  :end-line: 26069
+
+------------
+
+.. include:: generated/extracted_rst_api.rst
+  :start-line: 26070
+  :end-line: 26085
+
+------------
+
+.. include:: generated/extracted_rst_api.rst
+  :start-line: 26086
+  :end-line: 26095
+
+------------
+
+.. include:: generated/extracted_rst_api.rst
+  :start-line: 26096
+  :end-line: 26108
 
 ------------
 
@@ -692,14 +692,14 @@ Distributions
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 5771
-  :end-line: 5967
+  :start-line: 5778
+  :end-line: 5974
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 8132
-  :end-line: 8310
+  :start-line: 8147
+  :end-line: 8325
 
 ------------
 
@@ -728,50 +728,50 @@ Distributions
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 6207
-  :end-line: 6331
+  :start-line: 6214
+  :end-line: 6338
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 6332
-  :end-line: 6456
+  :start-line: 6339
+  :end-line: 6463
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 6457
-  :end-line: 6581
+  :start-line: 6464
+  :end-line: 6588
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 6582
-  :end-line: 6706
+  :start-line: 6589
+  :end-line: 6713
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 6707
-  :end-line: 6831
+  :start-line: 6714
+  :end-line: 6838
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 6832
-  :end-line: 6956
+  :start-line: 6839
+  :end-line: 6963
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 6957
-  :end-line: 7081
+  :start-line: 6964
+  :end-line: 7088
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 7082
-  :end-line: 7206
+  :start-line: 7089
+  :end-line: 7213
 
 ------------
 
@@ -779,254 +779,254 @@ Math
 ----
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22915
-  :end-line: 22918
+  :start-line: 22934
+  :end-line: 22937
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22919
-  :end-line: 22922
+  :start-line: 22938
+  :end-line: 22941
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22923
-  :end-line: 22926
+  :start-line: 22942
+  :end-line: 22945
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22927
-  :end-line: 22960
+  :start-line: 22946
+  :end-line: 22979
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22961
-  :end-line: 23002
+  :start-line: 22980
+  :end-line: 23021
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23003
-  :end-line: 23012
+  :start-line: 23022
+  :end-line: 23031
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23013
-  :end-line: 23025
+  :start-line: 23032
+  :end-line: 23044
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23026
-  :end-line: 23039
+  :start-line: 23045
+  :end-line: 23058
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23040
-  :end-line: 23052
+  :start-line: 23059
+  :end-line: 23071
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23053
-  :end-line: 23062
+  :start-line: 23072
+  :end-line: 23081
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23063
-  :end-line: 23070
+  :start-line: 23082
+  :end-line: 23089
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23071
-  :end-line: 23078
+  :start-line: 23090
+  :end-line: 23097
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23079
-  :end-line: 23086
+  :start-line: 23098
+  :end-line: 23105
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23087
-  :end-line: 23094
+  :start-line: 23106
+  :end-line: 23113
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23095
-  :end-line: 23104
+  :start-line: 23114
+  :end-line: 23123
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23105
-  :end-line: 23120
+  :start-line: 23124
+  :end-line: 23139
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23121
-  :end-line: 23130
+  :start-line: 23140
+  :end-line: 23149
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23131
-  :end-line: 23144
+  :start-line: 23150
+  :end-line: 23163
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24773
-  :end-line: 24857
+  :start-line: 24793
+  :end-line: 24877
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24858
-  :end-line: 24908
+  :start-line: 24878
+  :end-line: 24928
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24909
-  :end-line: 24932
+  :start-line: 24929
+  :end-line: 24952
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24933
-  :end-line: 24956
+  :start-line: 24953
+  :end-line: 24976
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24957
-  :end-line: 24980
+  :start-line: 24977
+  :end-line: 25000
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24981
-  :end-line: 25061
+  :start-line: 25001
+  :end-line: 25081
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25062
-  :end-line: 25127
+  :start-line: 25082
+  :end-line: 25147
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25128
-  :end-line: 25187
+  :start-line: 25148
+  :end-line: 25207
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25188
-  :end-line: 25258
+  :start-line: 25208
+  :end-line: 25278
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24055
-  :end-line: 24067
+  :start-line: 24074
+  :end-line: 24086
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24068
-  :end-line: 24085
+  :start-line: 24087
+  :end-line: 24104
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24086
-  :end-line: 24103
+  :start-line: 24105
+  :end-line: 24122
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24104
-  :end-line: 24125
+  :start-line: 24123
+  :end-line: 24144
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24126
-  :end-line: 24149
+  :start-line: 24145
+  :end-line: 24168
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 10604
-  :end-line: 10693
+  :start-line: 10619
+  :end-line: 10708
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24150
-  :end-line: 24162
+  :start-line: 24169
+  :end-line: 24181
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22349
-  :end-line: 22358
+  :start-line: 22368
+  :end-line: 22377
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24163
-  :end-line: 24180
+  :start-line: 24182
+  :end-line: 24199
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24181
-  :end-line: 24211
+  :start-line: 24200
+  :end-line: 24230
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22678
-  :end-line: 22705
+  :start-line: 22697
+  :end-line: 22724
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22706
-  :end-line: 22726
+  :start-line: 22725
+  :end-line: 22745
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22727
-  :end-line: 22740
+  :start-line: 22746
+  :end-line: 22759
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22741
-  :end-line: 22777
+  :start-line: 22760
+  :end-line: 22796
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24029
-  :end-line: 24054
+  :start-line: 24048
+  :end-line: 24073
 
 ------------
 
@@ -1034,56 +1034,56 @@ Random
 ------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24468
-  :end-line: 24489
+  :start-line: 24487
+  :end-line: 24508
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24490
-  :end-line: 24511
+  :start-line: 24509
+  :end-line: 24530
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24512
-  :end-line: 24536
+  :start-line: 24531
+  :end-line: 24556
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24537
-  :end-line: 24559
+  :start-line: 24557
+  :end-line: 24579
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24560
-  :end-line: 24582
+  :start-line: 24580
+  :end-line: 24602
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 8680
-  :end-line: 9200
+  :start-line: 8695
+  :end-line: 9215
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23964
-  :end-line: 23992
+  :start-line: 23983
+  :end-line: 24011
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23993
-  :end-line: 24028
+  :start-line: 24012
+  :end-line: 24047
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24685
-  :end-line: 24697
+  :start-line: 24705
+  :end-line: 24717
 
 ------------
 
@@ -1091,14 +1091,14 @@ Log
 ---
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 5979
-  :end-line: 6004
+  :start-line: 5986
+  :end-line: 6011
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 6005
-  :end-line: 6154
+  :start-line: 6012
+  :end-line: 6161
 
 ------------
 
@@ -1112,356 +1112,356 @@ Types
 -----
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 11543
-  :end-line: 11655
+  :start-line: 11558
+  :end-line: 11670
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 11656
-  :end-line: 11768
+  :start-line: 11671
+  :end-line: 11783
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 11769
-  :end-line: 11881
+  :start-line: 11784
+  :end-line: 11896
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 11882
-  :end-line: 11994
+  :start-line: 11897
+  :end-line: 12009
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 11995
-  :end-line: 12265
+  :start-line: 12010
+  :end-line: 12280
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12266
-  :end-line: 12556
+  :start-line: 12281
+  :end-line: 12571
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12557
-  :end-line: 12632
+  :start-line: 12572
+  :end-line: 12647
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12633
-  :end-line: 12634
+  :start-line: 12648
+  :end-line: 12649
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12635
-  :end-line: 12636
+  :start-line: 12650
+  :end-line: 12651
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12637
-  :end-line: 12638
+  :start-line: 12652
+  :end-line: 12653
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12639
-  :end-line: 12640
+  :start-line: 12654
+  :end-line: 12655
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12641
-  :end-line: 12642
+  :start-line: 12656
+  :end-line: 12657
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12643
-  :end-line: 12644
+  :start-line: 12658
+  :end-line: 12659
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12645
-  :end-line: 12646
+  :start-line: 12660
+  :end-line: 12661
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12647
-  :end-line: 12648
+  :start-line: 12662
+  :end-line: 12663
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12649
-  :end-line: 12650
+  :start-line: 12664
+  :end-line: 12665
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12651
-  :end-line: 12652
+  :start-line: 12666
+  :end-line: 12667
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12653
-  :end-line: 12654
+  :start-line: 12668
+  :end-line: 12669
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12655
-  :end-line: 12656
+  :start-line: 12670
+  :end-line: 12671
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12657
-  :end-line: 12658
+  :start-line: 12672
+  :end-line: 12673
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12659
-  :end-line: 12660
+  :start-line: 12674
+  :end-line: 12675
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12661
-  :end-line: 12662
+  :start-line: 12676
+  :end-line: 12677
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12663
-  :end-line: 12664
+  :start-line: 12678
+  :end-line: 12679
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12665
-  :end-line: 12666
+  :start-line: 12680
+  :end-line: 12681
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12667
-  :end-line: 12668
+  :start-line: 12682
+  :end-line: 12683
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12669
-  :end-line: 12670
+  :start-line: 12684
+  :end-line: 12685
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12671
-  :end-line: 12672
+  :start-line: 12686
+  :end-line: 12687
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12673
-  :end-line: 12674
+  :start-line: 12688
+  :end-line: 12689
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12675
-  :end-line: 12676
+  :start-line: 12690
+  :end-line: 12691
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12677
-  :end-line: 12678
+  :start-line: 12692
+  :end-line: 12693
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12679
-  :end-line: 12680
+  :start-line: 12694
+  :end-line: 12695
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12681
-  :end-line: 12682
+  :start-line: 12696
+  :end-line: 12697
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12683
-  :end-line: 12684
+  :start-line: 12698
+  :end-line: 12699
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12685
-  :end-line: 12686
+  :start-line: 12700
+  :end-line: 12701
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12687
-  :end-line: 12688
+  :start-line: 12702
+  :end-line: 12703
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12689
-  :end-line: 12794
+  :start-line: 12704
+  :end-line: 12809
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12795
-  :end-line: 12900
+  :start-line: 12810
+  :end-line: 12915
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 12901
-  :end-line: 13006
+  :start-line: 12916
+  :end-line: 13021
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13007
-  :end-line: 13112
+  :start-line: 13022
+  :end-line: 13127
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13113
-  :end-line: 13114
+  :start-line: 13128
+  :end-line: 13129
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13115
-  :end-line: 13116
+  :start-line: 13130
+  :end-line: 13131
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13117
-  :end-line: 13118
+  :start-line: 13132
+  :end-line: 13133
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13119
-  :end-line: 13120
+  :start-line: 13134
+  :end-line: 13135
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13121
-  :end-line: 13122
+  :start-line: 13136
+  :end-line: 13137
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13123
-  :end-line: 13124
+  :start-line: 13138
+  :end-line: 13139
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13125
-  :end-line: 13126
+  :start-line: 13140
+  :end-line: 13141
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13127
-  :end-line: 13128
+  :start-line: 13142
+  :end-line: 13143
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13129
-  :end-line: 13130
+  :start-line: 13144
+  :end-line: 13145
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13131
-  :end-line: 13132
+  :start-line: 13146
+  :end-line: 13147
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13133
-  :end-line: 13134
+  :start-line: 13148
+  :end-line: 13149
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13135
-  :end-line: 13136
+  :start-line: 13150
+  :end-line: 13151
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13137
-  :end-line: 13138
+  :start-line: 13152
+  :end-line: 13153
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13139
-  :end-line: 13140
+  :start-line: 13154
+  :end-line: 13155
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13141
-  :end-line: 13142
+  :start-line: 13156
+  :end-line: 13157
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13143
-  :end-line: 13144
+  :start-line: 13158
+  :end-line: 13159
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13145
-  :end-line: 13146
+  :start-line: 13160
+  :end-line: 13161
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13147
-  :end-line: 13148
+  :start-line: 13162
+  :end-line: 13163
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13149
-  :end-line: 13150
+  :start-line: 13164
+  :end-line: 13165
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13151
-  :end-line: 13152
+  :start-line: 13166
+  :end-line: 13167
 
 ------------
 
@@ -1472,20 +1472,20 @@ Types
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20494
-  :end-line: 20495
+  :start-line: 20513
+  :end-line: 20514
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20496
-  :end-line: 20497
+  :start-line: 20515
+  :end-line: 20516
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20498
-  :end-line: 20499
+  :start-line: 20517
+  :end-line: 20518
 
 ------------
 
@@ -1509,13 +1509,13 @@ Types
 
 .. include:: generated/extracted_rst_api.rst
   :start-line: 5538
-  :end-line: 5674
+  :end-line: 5681
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 5675
-  :end-line: 5770
+  :start-line: 5682
+  :end-line: 5777
 
 ------------
 
@@ -1538,452 +1538,452 @@ Types
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 17192
-  :end-line: 17215
+  :start-line: 17211
+  :end-line: 17234
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 17216
-  :end-line: 17217
+  :start-line: 17235
+  :end-line: 17236
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 17218
-  :end-line: 17219
+  :start-line: 17237
+  :end-line: 17238
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 17220
-  :end-line: 17221
+  :start-line: 17239
+  :end-line: 17240
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 17222
-  :end-line: 17223
+  :start-line: 17241
+  :end-line: 17242
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 17224
-  :end-line: 17225
+  :start-line: 17243
+  :end-line: 17244
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 17226
-  :end-line: 17227
+  :start-line: 17245
+  :end-line: 17246
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 17228
-  :end-line: 17229
+  :start-line: 17247
+  :end-line: 17248
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 17230
-  :end-line: 17231
+  :start-line: 17249
+  :end-line: 17250
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 17232
-  :end-line: 17233
+  :start-line: 17251
+  :end-line: 17252
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 17234
-  :end-line: 17235
+  :start-line: 17253
+  :end-line: 17254
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20500
-  :end-line: 20501
+  :start-line: 20519
+  :end-line: 20520
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20502
-  :end-line: 20503
+  :start-line: 20521
+  :end-line: 20522
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20504
-  :end-line: 20505
+  :start-line: 20523
+  :end-line: 20524
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20506
-  :end-line: 20507
+  :start-line: 20525
+  :end-line: 20526
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20508
-  :end-line: 20509
+  :start-line: 20527
+  :end-line: 20528
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20510
-  :end-line: 20511
+  :start-line: 20529
+  :end-line: 20530
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20512
-  :end-line: 20513
+  :start-line: 20531
+  :end-line: 20532
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20514
-  :end-line: 20515
+  :start-line: 20533
+  :end-line: 20534
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20516
-  :end-line: 20517
+  :start-line: 20535
+  :end-line: 20536
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20518
-  :end-line: 20519
+  :start-line: 20537
+  :end-line: 20538
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20520
-  :end-line: 20521
+  :start-line: 20539
+  :end-line: 20540
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20522
-  :end-line: 20523
+  :start-line: 20541
+  :end-line: 20542
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20524
-  :end-line: 20525
+  :start-line: 20543
+  :end-line: 20544
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20526
-  :end-line: 20527
+  :start-line: 20545
+  :end-line: 20546
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20528
-  :end-line: 20529
+  :start-line: 20547
+  :end-line: 20548
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20530
-  :end-line: 20531
+  :start-line: 20549
+  :end-line: 20550
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20532
-  :end-line: 20533
+  :start-line: 20551
+  :end-line: 20552
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20534
-  :end-line: 20535
+  :start-line: 20553
+  :end-line: 20554
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20536
-  :end-line: 20537
+  :start-line: 20555
+  :end-line: 20556
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20538
-  :end-line: 20539
+  :start-line: 20557
+  :end-line: 20558
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9564
-  :end-line: 9565
+  :start-line: 9579
+  :end-line: 9580
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9566
-  :end-line: 9567
+  :start-line: 9581
+  :end-line: 9582
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9568
-  :end-line: 9569
+  :start-line: 9583
+  :end-line: 9584
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9570
-  :end-line: 9571
+  :start-line: 9585
+  :end-line: 9586
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9572
-  :end-line: 9573
+  :start-line: 9587
+  :end-line: 9588
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9574
-  :end-line: 9575
+  :start-line: 9589
+  :end-line: 9590
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9576
-  :end-line: 9577
+  :start-line: 9591
+  :end-line: 9592
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9578
-  :end-line: 9579
+  :start-line: 9593
+  :end-line: 9594
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9580
-  :end-line: 9581
+  :start-line: 9595
+  :end-line: 9596
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9582
-  :end-line: 9583
+  :start-line: 9597
+  :end-line: 9598
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9584
-  :end-line: 9585
+  :start-line: 9599
+  :end-line: 9600
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9586
-  :end-line: 9587
+  :start-line: 9601
+  :end-line: 9602
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9588
-  :end-line: 9589
+  :start-line: 9603
+  :end-line: 9604
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9590
-  :end-line: 9591
+  :start-line: 9605
+  :end-line: 9606
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9592
-  :end-line: 9593
+  :start-line: 9607
+  :end-line: 9608
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9594
-  :end-line: 9595
+  :start-line: 9609
+  :end-line: 9610
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9596
-  :end-line: 9597
+  :start-line: 9611
+  :end-line: 9612
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9598
-  :end-line: 9599
+  :start-line: 9613
+  :end-line: 9614
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9600
-  :end-line: 9601
+  :start-line: 9615
+  :end-line: 9616
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9602
-  :end-line: 9603
+  :start-line: 9617
+  :end-line: 9618
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 8337
-  :end-line: 8338
+  :start-line: 8352
+  :end-line: 8353
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 8339
-  :end-line: 8340
+  :start-line: 8354
+  :end-line: 8355
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 7207
-  :end-line: 7208
+  :start-line: 7214
+  :end-line: 7215
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 7209
-  :end-line: 7210
+  :start-line: 7216
+  :end-line: 7217
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 7211
-  :end-line: 7212
+  :start-line: 7218
+  :end-line: 7219
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 7213
-  :end-line: 7214
+  :start-line: 7220
+  :end-line: 7221
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 7215
-  :end-line: 7216
+  :start-line: 7222
+  :end-line: 7223
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 7217
-  :end-line: 7218
+  :start-line: 7224
+  :end-line: 7225
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 7219
-  :end-line: 7220
+  :start-line: 7226
+  :end-line: 7227
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 7221
-  :end-line: 7222
+  :start-line: 7228
+  :end-line: 7229
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 7223
-  :end-line: 7224
+  :start-line: 7230
+  :end-line: 7231
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 10598
-  :end-line: 10599
+  :start-line: 10613
+  :end-line: 10614
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 10600
-  :end-line: 10601
+  :start-line: 10615
+  :end-line: 10616
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 10602
-  :end-line: 10603
+  :start-line: 10617
+  :end-line: 10618
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 17465
-  :end-line: 17765
+  :start-line: 17484
+  :end-line: 17784
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 17766
-  :end-line: 18066
+  :start-line: 17785
+  :end-line: 18085
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 18067
-  :end-line: 18367
+  :start-line: 18086
+  :end-line: 18386
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 18368
-  :end-line: 18668
+  :start-line: 18387
+  :end-line: 18687
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 18669
-  :end-line: 18969
+  :start-line: 18688
+  :end-line: 18988
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 18970
-  :end-line: 19270
+  :start-line: 18989
+  :end-line: 19289
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 19271
-  :end-line: 19571
+  :start-line: 19290
+  :end-line: 19590
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 19572
-  :end-line: 19872
+  :start-line: 19591
+  :end-line: 19891
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 19873
-  :end-line: 20173
+  :start-line: 19892
+  :end-line: 20192
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20174
-  :end-line: 20353
+  :start-line: 20193
+  :end-line: 20372
 
 ------------
 
@@ -2048,32 +2048,32 @@ Types
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 10694
-  :end-line: 10764
+  :start-line: 10709
+  :end-line: 10779
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 10765
-  :end-line: 10835
+  :start-line: 10780
+  :end-line: 10850
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 10836
-  :end-line: 10906
+  :start-line: 10851
+  :end-line: 10921
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 10907
-  :end-line: 10971
+  :start-line: 10922
+  :end-line: 10986
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 10972
-  :end-line: 11026
+  :start-line: 10987
+  :end-line: 11041
 
 ------------
 
@@ -2081,104 +2081,104 @@ Constants
 ---------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 6155
-  :end-line: 6158
+  :start-line: 6162
+  :end-line: 6165
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 6159
-  :end-line: 6162
+  :start-line: 6166
+  :end-line: 6169
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 6163
-  :end-line: 6166
+  :start-line: 6170
+  :end-line: 6173
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 6167
-  :end-line: 6170
+  :start-line: 6174
+  :end-line: 6177
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 6171
-  :end-line: 6174
+  :start-line: 6178
+  :end-line: 6181
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 6175
-  :end-line: 6178
+  :start-line: 6182
+  :end-line: 6185
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 6179
-  :end-line: 6182
+  :start-line: 6186
+  :end-line: 6189
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 6183
-  :end-line: 6186
+  :start-line: 6190
+  :end-line: 6193
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 6187
-  :end-line: 6190
+  :start-line: 6194
+  :end-line: 6197
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 6191
-  :end-line: 6194
+  :start-line: 6198
+  :end-line: 6201
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 6195
-  :end-line: 6198
+  :start-line: 6202
+  :end-line: 6205
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 6199
-  :end-line: 6202
+  :start-line: 6206
+  :end-line: 6209
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 6203
-  :end-line: 6206
+  :start-line: 6210
+  :end-line: 6213
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22789
-  :end-line: 22792
+  :start-line: 22808
+  :end-line: 22811
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22793
-  :end-line: 22796
+  :start-line: 22812
+  :end-line: 22815
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22797
-  :end-line: 22800
+  :start-line: 22816
+  :end-line: 22819
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22801
-  :end-line: 22804
+  :start-line: 22820
+  :end-line: 22823
 
 ------------
 
@@ -2192,8 +2192,8 @@ Denoiser
 --------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 8538
-  :end-line: 8679
+  :start-line: 8553
+  :end-line: 8694
 
 ------------
 
@@ -2231,20 +2231,20 @@ BSDF
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20396
-  :end-line: 20410
+  :start-line: 20415
+  :end-line: 20429
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 8132
-  :end-line: 8310
+  :start-line: 8147
+  :end-line: 8325
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 8311
-  :end-line: 8324
+  :start-line: 8326
+  :end-line: 8339
 
 ------------
 
@@ -2265,43 +2265,43 @@ Integrator
 
 .. include:: generated/extracted_rst_api.rst
   :start-line: 5538
-  :end-line: 5674
+  :end-line: 5681
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 8325
-  :end-line: 8336
+  :start-line: 8340
+  :end-line: 8351
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 11431
-  :end-line: 11542
+  :start-line: 11446
+  :end-line: 11557
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 21182
-  :end-line: 21470
+  :start-line: 21201
+  :end-line: 21489
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 21471
-  :end-line: 21753
+  :start-line: 21490
+  :end-line: 21772
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 21754
-  :end-line: 21905
+  :start-line: 21773
+  :end-line: 21924
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 21941
-  :end-line: 22058
+  :start-line: 21960
+  :end-line: 22077
 
 ------------
 
@@ -2339,26 +2339,26 @@ Sensor
 ------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13974
-  :end-line: 14309
+  :start-line: 13989
+  :end-line: 14328
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 14310
-  :end-line: 14590
+  :start-line: 14329
+  :end-line: 14609
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9770
-  :end-line: 9812
+  :start-line: 9785
+  :end-line: 9827
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23527
-  :end-line: 23539
+  :start-line: 23546
+  :end-line: 23558
 
 ------------
 
@@ -2366,38 +2366,38 @@ Medium
 ------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 7225
-  :end-line: 7357
+  :start-line: 7232
+  :end-line: 7364
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 7358
-  :end-line: 7438
+  :start-line: 7365
+  :end-line: 7445
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 7439
-  :end-line: 7557
+  :start-line: 7446
+  :end-line: 7564
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9360
-  :end-line: 9389
+  :start-line: 9375
+  :end-line: 9404
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9390
-  :end-line: 9416
+  :start-line: 9405
+  :end-line: 9431
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9417
-  :end-line: 9519
+  :start-line: 9432
+  :end-line: 9534
 
 ------------
 
@@ -2405,32 +2405,32 @@ Shape
 -----
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 14591
-  :end-line: 15285
+  :start-line: 14610
+  :end-line: 15304
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 15286
-  :end-line: 15842
+  :start-line: 15305
+  :end-line: 15861
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 15843
-  :end-line: 15892
+  :start-line: 15862
+  :end-line: 15911
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 7671
-  :end-line: 7970
+  :start-line: 7678
+  :end-line: 7981
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 7971
-  :end-line: 8131
+  :start-line: 7982
+  :end-line: 8146
 
 ------------
 
@@ -2438,8 +2438,8 @@ Texture
 -------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 17236
-  :end-line: 17464
+  :start-line: 17255
+  :end-line: 17483
 
 ------------
 
@@ -2447,14 +2447,14 @@ Volume
 ------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20554
-  :end-line: 20696
+  :start-line: 20573
+  :end-line: 20715
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20697
-  :end-line: 20815
+  :start-line: 20716
+  :end-line: 20834
 
 ------------
 
@@ -2462,26 +2462,26 @@ PhaseFunction
 -------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9228
-  :end-line: 9359
+  :start-line: 9243
+  :end-line: 9374
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9360
-  :end-line: 9389
+  :start-line: 9375
+  :end-line: 9404
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9390
-  :end-line: 9416
+  :start-line: 9405
+  :end-line: 9431
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9417
-  :end-line: 9519
+  :start-line: 9432
+  :end-line: 9534
 
 ------------
 
@@ -2522,8 +2522,8 @@ Filter
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 11027
-  :end-line: 11089
+  :start-line: 11042
+  :end-line: 11104
 
 ------------
 
@@ -2531,8 +2531,8 @@ Sampler
 -------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 11257
-  :end-line: 11430
+  :start-line: 11272
+  :end-line: 11445
 
 ------------
 
@@ -2540,14 +2540,14 @@ Scene
 -----
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 13153
-  :end-line: 13887
+  :start-line: 13168
+  :end-line: 13902
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22359
-  :end-line: 22362
+  :start-line: 22378
+  :end-line: 22381
 
 ------------
 
@@ -2555,8 +2555,8 @@ Record
 ------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9604
-  :end-line: 9674
+  :start-line: 9619
+  :end-line: 9689
 
 ------------
 
@@ -2567,20 +2567,20 @@ Record
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 7358
-  :end-line: 7438
+  :start-line: 7365
+  :end-line: 7445
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 16924
-  :end-line: 17191
+  :start-line: 16943
+  :end-line: 17210
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9675
-  :end-line: 9769
+  :start-line: 9690
+  :end-line: 9784
 
 ------------
 
@@ -2588,98 +2588,98 @@ Spectrum
 --------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24698
-  :end-line: 24721
+  :start-line: 24718
+  :end-line: 24741
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24722
-  :end-line: 24738
+  :start-line: 24742
+  :end-line: 24758
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24739
-  :end-line: 24759
+  :start-line: 24759
+  :end-line: 24779
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25259
-  :end-line: 25269
+  :start-line: 25279
+  :end-line: 25289
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25270
-  :end-line: 25282
+  :start-line: 25290
+  :end-line: 25302
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25283
-  :end-line: 25290
+  :start-line: 25303
+  :end-line: 25310
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25291
-  :end-line: 25303
+  :start-line: 25311
+  :end-line: 25323
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22315
-  :end-line: 22325
+  :start-line: 22334
+  :end-line: 22344
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22326
-  :end-line: 22336
+  :start-line: 22345
+  :end-line: 22355
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22337
-  :end-line: 22348
+  :start-line: 22356
+  :end-line: 22367
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 26469
-  :end-line: 26482
+  :start-line: 26499
+  :end-line: 26512
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23951
-  :end-line: 23963
+  :start-line: 23970
+  :end-line: 23982
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22901
-  :end-line: 22914
+  :start-line: 22920
+  :end-line: 22933
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22412
-  :end-line: 22431
+  :start-line: 22431
+  :end-line: 22450
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22805
-  :end-line: 22815
+  :start-line: 22824
+  :end-line: 22834
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24452
-  :end-line: 24467
+  :start-line: 24471
+  :end-line: 24486
 
 ------------
 
@@ -2687,116 +2687,116 @@ Polarization
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23191
-  :end-line: 23200
+  :start-line: 23210
+  :end-line: 23219
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23201
-  :end-line: 23210
+  :start-line: 23220
+  :end-line: 23229
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23211
-  :end-line: 23225
+  :start-line: 23230
+  :end-line: 23244
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23226
-  :end-line: 23234
+  :start-line: 23245
+  :end-line: 23253
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23235
-  :end-line: 23248
-
-------------
-
-.. include:: generated/extracted_rst_api.rst
-  :start-line: 23249
+  :start-line: 23254
   :end-line: 23267
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
   :start-line: 23268
-  :end-line: 23276
+  :end-line: 23286
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23277
-  :end-line: 23316
+  :start-line: 23287
+  :end-line: 23295
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23317
-  :end-line: 23345
+  :start-line: 23296
+  :end-line: 23335
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23346
-  :end-line: 23375
+  :start-line: 23336
+  :end-line: 23364
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23376
-  :end-line: 23405
+  :start-line: 23365
+  :end-line: 23394
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23406
-  :end-line: 23419
+  :start-line: 23395
+  :end-line: 23424
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23420
+  :start-line: 23425
   :end-line: 23438
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
   :start-line: 23439
-  :end-line: 23455
+  :end-line: 23457
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23456
-  :end-line: 23472
+  :start-line: 23458
+  :end-line: 23474
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23473
-  :end-line: 23492
+  :start-line: 23475
+  :end-line: 23491
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23493
-  :end-line: 23503
+  :start-line: 23492
+  :end-line: 23511
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22363
-  :end-line: 22370
+  :start-line: 23512
+  :end-line: 23522
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25374
-  :end-line: 25381
+  :start-line: 22382
+  :end-line: 22389
+
+------------
+
+.. include:: generated/extracted_rst_api.rst
+  :start-line: 25394
+  :end-line: 25401
 
 ------------
 
@@ -2804,26 +2804,32 @@ Util
 ----
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25382
-  :end-line: 25385
+  :start-line: 25402
+  :end-line: 25413
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25386
-  :end-line: 25416
+  :start-line: 25414
+  :end-line: 25419
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25417
-  :end-line: 25421
+  :start-line: 25420
+  :end-line: 25446
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25422
-  :end-line: 25425
+  :start-line: 25447
+  :end-line: 25451
+
+------------
+
+.. include:: generated/extracted_rst_api.rst
+  :start-line: 25452
+  :end-line: 25455
 
 ------------
 
@@ -2831,56 +2837,56 @@ Chi2
 ----
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22150
-  :end-line: 22163
+  :start-line: 22169
+  :end-line: 22182
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22164
-  :end-line: 22267
+  :start-line: 22183
+  :end-line: 22286
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22268
-  :end-line: 22278
+  :start-line: 22287
+  :end-line: 22297
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22279
-  :end-line: 22282
-
-------------
-
-.. include:: generated/extracted_rst_api.rst
-  :start-line: 22283
-  :end-line: 22287
-
-------------
-
-.. include:: generated/extracted_rst_api.rst
-  :start-line: 22288
+  :start-line: 22298
   :end-line: 22301
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
   :start-line: 22302
-  :end-line: 22305
+  :end-line: 22306
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22306
-  :end-line: 22310
+  :start-line: 22307
+  :end-line: 22320
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22311
-  :end-line: 22314
+  :start-line: 22321
+  :end-line: 22324
+
+------------
+
+.. include:: generated/extracted_rst_api.rst
+  :start-line: 22325
+  :end-line: 22329
+
+------------
+
+.. include:: generated/extracted_rst_api.rst
+  :start-line: 22330
+  :end-line: 22333
 
 ------------
 
@@ -2888,44 +2894,44 @@ Autodiff
 --------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20848
-  :end-line: 20854
+  :start-line: 20867
+  :end-line: 20873
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20855
-  :end-line: 20893
+  :start-line: 20874
+  :end-line: 20912
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20894
-  :end-line: 20958
+  :start-line: 20913
+  :end-line: 20977
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20959
-  :end-line: 20961
+  :start-line: 20978
+  :end-line: 20980
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20962
-  :end-line: 21022
+  :start-line: 20981
+  :end-line: 21041
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 21023
-  :end-line: 21172
+  :start-line: 21042
+  :end-line: 21191
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 21173
-  :end-line: 21181
+  :start-line: 21192
+  :end-line: 21200
 
 ------------
 
@@ -3035,362 +3041,362 @@ Other
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9813
-  :end-line: 9923
+  :start-line: 9828
+  :end-line: 9938
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 9924
-  :end-line: 10034
+  :start-line: 9939
+  :end-line: 10049
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 10035
-  :end-line: 10145
+  :start-line: 10050
+  :end-line: 10160
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 10146
-  :end-line: 10256
+  :start-line: 10161
+  :end-line: 10271
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 11205
-  :end-line: 11256
+  :start-line: 11220
+  :end-line: 11271
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 15893
-  :end-line: 15997
+  :start-line: 15912
+  :end-line: 16016
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 20540
-  :end-line: 20553
+  :start-line: 20559
+  :end-line: 20572
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 21906
-  :end-line: 21910
+  :start-line: 21925
+  :end-line: 21929
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 21911
-  :end-line: 21940
+  :start-line: 21930
+  :end-line: 21959
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22059
-  :end-line: 22144
+  :start-line: 22078
+  :end-line: 22163
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22145
-  :end-line: 22149
+  :start-line: 22164
+  :end-line: 22168
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22371
-  :end-line: 22378
+  :start-line: 22390
+  :end-line: 22397
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22379
-  :end-line: 22386
+  :start-line: 22398
+  :end-line: 22405
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22387
-  :end-line: 22391
+  :start-line: 22406
+  :end-line: 22410
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22392
-  :end-line: 22393
+  :start-line: 22411
+  :end-line: 22412
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22394
-  :end-line: 22401
+  :start-line: 22413
+  :end-line: 22420
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22402
-  :end-line: 22411
+  :start-line: 22421
+  :end-line: 22430
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22432
-  :end-line: 22436
+  :start-line: 22451
+  :end-line: 22455
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22873
-  :end-line: 22879
+  :start-line: 22892
+  :end-line: 22898
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22880
-  :end-line: 22884
+  :start-line: 22899
+  :end-line: 22903
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 22885
-  :end-line: 22900
+  :start-line: 22904
+  :end-line: 22919
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23145
-  :end-line: 23148
+  :start-line: 23164
+  :end-line: 23167
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23149
-  :end-line: 23155
+  :start-line: 23168
+  :end-line: 23174
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23156
-  :end-line: 23168
+  :start-line: 23175
+  :end-line: 23187
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23169
-  :end-line: 23182
+  :start-line: 23188
+  :end-line: 23201
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23183
-  :end-line: 23190
+  :start-line: 23202
+  :end-line: 23209
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23504
-  :end-line: 23526
+  :start-line: 23523
+  :end-line: 23545
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23540
-  :end-line: 23571
+  :start-line: 23559
+  :end-line: 23590
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23572
-  :end-line: 23614
+  :start-line: 23591
+  :end-line: 23633
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23615
-  :end-line: 23649
+  :start-line: 23634
+  :end-line: 23668
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23650
-  :end-line: 23749
+  :start-line: 23669
+  :end-line: 23768
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23750
-  :end-line: 23762
+  :start-line: 23769
+  :end-line: 23781
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23763
-  :end-line: 23775
+  :start-line: 23782
+  :end-line: 23794
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23776
-  :end-line: 23788
+  :start-line: 23795
+  :end-line: 23807
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23789
-  :end-line: 23801
+  :start-line: 23808
+  :end-line: 23820
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23802
-  :end-line: 23814
+  :start-line: 23821
+  :end-line: 23833
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23815
-  :end-line: 23827
+  :start-line: 23834
+  :end-line: 23846
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23828
-  :end-line: 23840
+  :start-line: 23847
+  :end-line: 23859
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23841
-  :end-line: 23853
+  :start-line: 23860
+  :end-line: 23872
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23854
-  :end-line: 23869
+  :start-line: 23873
+  :end-line: 23888
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23870
-  :end-line: 23882
+  :start-line: 23889
+  :end-line: 23901
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23883
-  :end-line: 23895
+  :start-line: 23902
+  :end-line: 23914
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23896
-  :end-line: 23908
+  :start-line: 23915
+  :end-line: 23927
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23909
-  :end-line: 23921
+  :start-line: 23928
+  :end-line: 23940
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23922
-  :end-line: 23937
+  :start-line: 23941
+  :end-line: 23956
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 23938
-  :end-line: 23950
+  :start-line: 23957
+  :end-line: 23969
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24583
-  :end-line: 24590
+  :start-line: 24603
+  :end-line: 24610
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24591
-  :end-line: 24598
+  :start-line: 24611
+  :end-line: 24618
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24609
-  :end-line: 24616
+  :start-line: 24629
+  :end-line: 24636
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24625
-  :end-line: 24641
+  :start-line: 24645
+  :end-line: 24661
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24642
-  :end-line: 24657
+  :start-line: 24662
+  :end-line: 24677
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24658
-  :end-line: 24684
+  :start-line: 24678
+  :end-line: 24704
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 24760
-  :end-line: 24772
+  :start-line: 24780
+  :end-line: 24792
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25304
-  :end-line: 25305
+  :start-line: 25324
+  :end-line: 25325
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25306
-  :end-line: 25307
+  :start-line: 25326
+  :end-line: 25327
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25308
-  :end-line: 25309
+  :start-line: 25328
+  :end-line: 25329
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25310
-  :end-line: 25358
+  :start-line: 25330
+  :end-line: 25378
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25359
-  :end-line: 25360
+  :start-line: 25379
+  :end-line: 25380
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 25431
-  :end-line: 25438
+  :start-line: 25461
+  :end-line: 25468
 
 ------------
 
 .. include:: generated/extracted_rst_api.rst
-  :start-line: 26079
-  :end-line: 26468
+  :start-line: 26109
+  :end-line: 26498
 
 ------------
 

@@ -1044,6 +1044,8 @@
 
 .. autofunction:: mitsuba.unpolarized_spectrum
 
+.. autofunction:: mitsuba.util.Any
+
 .. autofunction:: mitsuba.util.Optional
 
 .. autofunction:: mitsuba.util.Union

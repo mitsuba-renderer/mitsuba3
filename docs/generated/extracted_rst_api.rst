@@ -5652,10 +5652,17 @@
         Parameter ``ray``:
             The ray that determines the direction in which to trace new rays
 
+        Parameter ``coherent``:
+            Setting this flag to ``True`` can noticeably improve performance
+            when ``ray`` contains a coherent set of rays (e.g. primary camera
+            rays), and when using ``llvm_*`` variants of the renderer along
+            with Embree. It has no effect in scalar or CUDA/OptiX variants.
+            (Default: False)
+
         Parameter ``active``:
-            A mask that indicates which SIMD lanes are active. Typically, this
+            A mask that indicates which lanes are active. Typically, this
             should be set to ``True`` for any lane where the current depth is
-            0 (for ``hide_emitters``).
+            0 (for ``hide_emitters``). (Default: True)
 
         Parameter ``arg0`` (:py:obj:`mitsuba.Scene`):
             *no description available*
@@ -7840,6 +7847,10 @@
         Returns the opposite edge index associated with directed edge
         ``index``
 
+        If the directed edge data structure is not initialized or outdated,
+        the return value is undefined. Ensure that build_directed_edges() is
+        called before this method.
+
         Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
@@ -8060,6 +8071,10 @@
 
         Returns the opposite edge index associated with directed edge
         ``index``
+
+        If the directed edge data structure is not initialized or outdated,
+        the return value is undefined. Ensure that build_directed_edges() is
+        called before this method.
 
         Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
@@ -14059,6 +14074,10 @@
     .. py:property:: mitsuba.Sensor.m_needs_sample_3
 
         (self) -> bool
+
+    .. py:property:: mitsuba.Sensor.m_to_world
+
+        (self) -> :py:obj:`mitsuba.AffineTransform4f`
 
     .. py:method:: mitsuba.Sensor.needs_aperture_sample()
 
@@ -24380,7 +24399,7 @@
     Parameter ``scene`` (``mi.Scene``):
         Reference to the scene being rendered in a differentiable manner.
 
-    Parameter ``params`` (~typing.Any):
+    Parameter ``params`` (~typing.Any | None):
        An optional container of scene parameters that should receive gradients.
        This argument isn't optional when computing forward mode derivatives. It
        should be an instance of type ``mi.SceneParameters`` obtained via
@@ -24432,7 +24451,7 @@
     Parameter ``sensor`` (int | ~:py:obj:`mitsuba.Sensor`):
         *no description available*
 
-    Parameter ``integrator`` (~:py:obj:`mitsuba.Integrator`):
+    Parameter ``integrator`` (~:py:obj:`mitsuba.Integrator` | None):
         *no description available*
 
     Parameter ``seed`` (~drjit.llvm.ad.UInt):
@@ -24510,8 +24529,9 @@
     Returns → int:
         A uniformly distributed 64-bit integer
 
-.. py:function:: mitsuba.sample_tea_float(overloaded)
+.. py:function:: mitsuba.sample_tea_float
 
+    sample_tea_float32(v0: int, v1: int, rounds: int = 4) -> float
     sample_tea_float32(v0: drjit.llvm.ad.UInt, v1: drjit.llvm.ad.UInt, rounds: int = 4) -> drjit.llvm.ad.Float
 
     Generate fast and reasonably good pseudorandom numbers using the Tiny
@@ -25380,7 +25400,21 @@
     Returns → :py:obj:`mitsuba.Color3f`:
         *no description available*
 
+.. py:function:: mitsuba.util.Any()
+
+    Special type indicating an unconstrained type.
+
+    - Any is compatible with every type.
+    - Any assumed to have all methods.
+    - All values assumed to be instances of Any.
+
+    Note that all the above statements are true from the point of view of
+    static type checkers. At runtime, Any should not be used with instance
+    or class checks.
+
 .. py:function:: mitsuba.util.Optional()
+
+    Optional type.
 
     Optional[X] is equivalent to Union[X, None].
 
@@ -25388,29 +25422,25 @@
 
     Union type; Union[X, Y] means either X or Y.
 
-    On Python 3.10 and higher, the | operator
-    can also be used to denote unions;
-    X | Y means the same thing to the type checker as Union[X, Y].
-
-    To define a union, use e.g. Union[int, str]. Details:
+    To define a union, use e.g. Union[int, str].  Details:
     - The arguments must be types and there must be at least one.
     - None as an argument is a special case and is replaced by
       type(None).
     - Unions of unions are flattened, e.g.::
 
-        assert Union[Union[int, str], float] == Union[int, str, float]
+        Union[Union[int, str], float] == Union[int, str, float]
 
     - Unions of a single argument vanish, e.g.::
 
-        assert Union[int] == int  # The constructor actually returns int
+        Union[int] == int  # The constructor actually returns int
 
     - Redundant arguments are skipped, e.g.::
 
-        assert Union[int, str, int] == Union[int, str]
+        Union[int, str, int] == Union[int, str]
 
     - When comparing unions, the argument order is ignored, e.g.::
 
-        assert Union[int, str] == Union[str, int]
+        Union[int, str] == Union[str, int]
 
     - You cannot subclass or instantiate a union.
     - You can use Optional[X] as a shorthand for Union[X, None].
