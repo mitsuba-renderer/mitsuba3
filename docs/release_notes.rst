@@ -5,6 +5,76 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`__ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
+Upcoming release
+----------------
+
+- Upgrade Dr.Jit to version `1.2.0
+  <https://github.com/mitsuba-renderer/drjit/releases/tag/v1.2.0>`__. This
+  release brings several important improvements and several bug fixes:
+
+  - **Event API** for fine-grained GPU kernel timing and synchronization,
+    enabling better performance profiling.
+  - **Enhanced CUDA-OpenGL interoperability** with simplified APIs for
+    efficient data sharing between CUDA and OpenGL.
+  - **Register spilling to shared memory** on CUDA backend, improving
+    performance for complex kernels with high register pressure.
+  - **Memory view support** for zero-copy data access from Python.
+
+  The remainder lists Mitsuba-specific additions.
+
+- **Improvements**:
+
+  - Improved bump and normal mapping with two important fixes for more robust
+    and artifact-free rendering. Both the ``bumpmap`` and ``normalmap`` BSDFs now
+    include: (1) **Invalid normal flipping** - ensures perturbed normals are always
+    consistent with the geometric normal by flipping shading normals when needed,
+    following the approach in Schüssler et al. 2017 :cite:`Schuessler2017Microfacet`.
+    (2) **Microfacet-based shadowing** - smooths shadow terminator artifacts using
+    the shadowing function from Estevez et al. 2019 :cite:`Estevez2019`. Both
+    features are enabled by default but can be disabled via the
+    ``flip_invalid_normals`` and ``use_shadowing_function`` parameters for
+    backwards compatibility. (commit `e32d71807
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/e32d71807>`__,
+    contributed by `Delio Vicini <https://github.com/dvicini>`__).
+  - Improved sunsky documentation. (PR `#1743
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1743>`__,
+    contributed by `Mattéo Santini <https://github.com/matttsss>`__).
+  - Added support for vcalls of Texture. (commit `6b1603c77
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/6b1603c77>`__).
+  - Added Python bindings for ``field<T>`` types. (PR `#1736
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1736>`__,
+    contributed by `Delio Vicini <https://github.com/dvicini>`__).
+  - Allow multiple Python objects to refer to the same ``Object*``. (PR `#1740
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1740>`__).
+
+- **Bug fixes**:
+
+  - Fixed bug with unintentional reordering of channels when serializing and
+    deserializing a Bitmap with more than 10 channels. (commit `e84b18f
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/e84b18f01>`__,
+    contributed by `Sebastian Winberg <https://github.com/winbergs>`__).
+  - Fixed ``hide_emitters`` behavior for ``area`` emitters in ``path``
+    integrator and all other integrators. (commits `3c3bf14c
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/3c3bf14c1>`__,
+    `0755134e0 <https://github.com/mitsuba-renderer/mitsuba3/commit/0755134e0>`__,
+    `c967a0a24 <https://github.com/mitsuba-renderer/mitsuba3/commit/c967a0a24>`__).
+  - Fixed KDTree reference counting and shutdown procedure. (commit `14c8c9763
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/14c8c9763>`__).
+  - Fixed compilation issues of the KDTree. (commit `65b38126b
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/65b38126b>`__).
+  - Prevent NaN values for normals of triangles with zero area. (PR `#1733
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1733>`__,
+    contributed by `Delio Vicini <https://github.com/dvicini>`__).
+  - Prevent users updating the ``UniformSpectrum`` with a float of size
+    different than 1. (PR `#1722 <https://github.com/mitsuba-renderer/mitsuba3/pull/1722>`__,
+    contributed by `Mattéo Santini <https://github.com/matttsss>`__).
+  - Added Image manipulation tutorial back in the "How-to Guides". (commit `465609174
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/465609174>`__,
+    contributed by `Baptiste Nicolet <https://github.com/bathal1>`__).
+  - Add support for JIT-freeting to the sunsky classes. (commit
+    `f07f26c5e <https://github.com/mitsuba-renderer/mitsuba3/commit/f07f26c5e>`__).
+
+
 Mitsuba 3.7.0
 -------------
 *August 7, 2025*
@@ -12,15 +82,15 @@ Mitsuba 3.7.0
 - Upgrade Dr.Jit to version `1.1.0
   <https://github.com/mitsuba-renderer/drjit/releases/tag/v1.1.0>`__. The
   following list summarizes major new features added to Dr.Jit. See the `Dr.Jit
-  release notes <https://drjit.readthedocs.io/en/latest/changelog.html>`__ for
+  release notes <https://drjit.readthedocs.io/en/v1.1.0/changelog.html>`__ for
   additional detail and various smaller features that are not listed here.
 
   - **Cooperative vectors** and a **neural network library**: Dr.Jit now
     supports efficient `matrix-vector arithmetic
-    <https://drjit.readthedocs.io/en/latest/coop_vec.html>`__ that compiles to
+    <https://drjit.readthedocs.io/en/v1.1.0/coop_vec.html>`__ that compiles to
     tensor core machine instructions on NVIDIA GPUs and packet instructions
     (e.g., AVX512) on the LLVM backend. A modular `neural network library
-    <https://drjit.readthedocs.io/en/latest/nn.html>`__ facilitates evaluating
+    <https://drjit.readthedocs.io/en/v1.1.0/nn.html>`__ facilitates evaluating
     and optimizing fully fused MLPs in rendering code. (Dr.Jit PR `#384
     <https://github.com/mitsuba-renderer/drjit/pull/384>`__, Dr.Jit-Core PR
     `#141 <https://github.com/mitsuba-renderer/drjit-core/pull/141>`__).
@@ -35,7 +105,7 @@ Mitsuba 3.7.0
   - **Function freezing**: The :py:func:`@drjit.freeze <drjit.freeze>`
     decorator eliminates repeated tracing overhead by `caching and replaying
     JIT-compiled kernels
-    <https://drjit.readthedocs.io/en/latest/freeze.html>`__, which can dramatically
+    <https://drjit.readthedocs.io/en/v1.1.0/freeze.html>`__, which can dramatically
     accelerate programs with repeated computations.
     (Dr.Jit PR `#336 <https://github.com/mitsuba-renderer/drjit/pull/336>`__,
     Dr.Jit-Core PR `#107 <https://github.com/mitsuba-renderer/drjit-core/pull/107>`__,
@@ -227,7 +297,6 @@ Mitsuba 3.7.0
   `#1678 <https://github.com/mitsuba-renderer/mitsuba3/pull/1678>`__,
   `#1696 <https://github.com/mitsuba-renderer/mitsuba3/pull/1696>`__, and
   `#1702 <https://github.com/mitsuba-renderer/mitsuba3/pull/1702>`__).
-
 
 Mitsuba 3.6.4
 -------------
