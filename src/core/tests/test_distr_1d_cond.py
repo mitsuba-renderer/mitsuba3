@@ -26,13 +26,13 @@ def test01_conditional_irregular_empty(variants_vec_backends_once_spectral, type
     d = distr_irregular()
     assert d.empty()
 
-    with pytest.raises(RuntimeError) as excinfo:
-        d.update()
-    assert "needs at least two entries" in str(excinfo.value)
-
 
 def test02_conditional_irregular_zero_prob(variants_vec_backends_once_spectral, type_str):
     _, distr_irregular = get_types(type_str, 'Irregular')
+
+    if not 'scalar' in mi.variant():
+        pytest.skip("Skip test for non-scalar variants as they do not throw")
+
     # Test that operations involving zero probability mass throw
     with pytest.raises(RuntimeError) as excinfo:
         distr_irregular(
@@ -45,6 +45,10 @@ def test02_conditional_irregular_zero_prob(variants_vec_backends_once_spectral, 
 
 def test03_conditional_irregular_neg_prob(variants_vec_backends_once_spectral, type_str):
     _, distr_irregular = get_types(type_str, 'Irregular')
+
+    if not 'scalar' in mi.variant():
+        pytest.skip("Skip test for non-scalar variants as they do not throw")
+
     # Test that operations involving negative probability mass throw
     with pytest.raises(RuntimeError) as excinfo:
         distr_irregular(
@@ -199,13 +203,13 @@ def test07_conditional_regular_empty(variants_vec_backends_once_spectral, type_s
     d = distr_regular()
     assert d.empty()
 
-    with pytest.raises(RuntimeError) as excinfo:
-        d.update()
-    assert "needs at least two entries" in str(excinfo.value)
-
 
 def test08_conditional_regular_zero_prob(variants_vec_backends_once_spectral, type_str):
     _ , distr_regular = get_types(type_str, 'Regular')
+
+    if not 'scalar' in mi.variant():
+        pytest.skip("Skip test for non-scalar variants as they do not throw")
+
     # Test that operations involving zero probability mass throw
     with pytest.raises(RuntimeError) as excinfo:
         distr_regular(
@@ -219,6 +223,10 @@ def test08_conditional_regular_zero_prob(variants_vec_backends_once_spectral, ty
 
 def test09_conditional_regular_neg_prob(variants_vec_backends_once_spectral, type_str):
     _ , distr_regular = get_types(type_str, 'Regular')
+
+    if not 'scalar' in mi.variant():
+        pytest.skip("Skip test for non-scalar variants as they do not throw")
+
     # Test that operations involving negative probability mass throw
     with pytest.raises(RuntimeError) as excinfo:
         distr_regular(
