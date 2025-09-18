@@ -309,6 +309,38 @@ public:
      */
     virtual std::vector<std::string> aov_names() const;
 
+    /**
+     * \brief Traces a ray in the scene and returns the first intersection that
+     * is not an area emitter.
+     *
+     * This is a helper method for when the `hide_emitters` flag is set.
+     *
+     * \param scene
+     *    The scene that the ray will intersect.
+     *
+     * \param ray
+     *    The ray that determines the direction in which to trace new rays
+     *
+     * \param coherent
+     *    Setting this flag to \c true can noticeably improve performance when
+     *    \c ray contains a coherent set of rays (e.g. primary camera rays),
+     *    and when using <tt>llvm_*</tt> variants of the renderer along with
+     *    Embree. It has no effect in scalar or CUDA/OptiX variants.
+     *    (Default: False)
+     *
+     * \param active
+     *    A mask that indicates which lanes are active. Typically, this should
+     *    be set to ``True`` for any lane where the current depth is 0 (for
+     *    ``hide_emitters``). (Default: True)
+     *
+     * \return
+     *    The first intersection that is not an area emitter anlong the ``ray``.
+     */
+    PreliminaryIntersection3f skip_area_emitters(const Scene *scene,
+                                                 const Ray3f &ray,
+                                                 bool coherent = false,
+                                                 Mask active = true) const;
+
     MI_DECLARE_PLUGIN_BASE_CLASS(Integrator)
 
 protected:

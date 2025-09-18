@@ -30,11 +30,15 @@
 
 .. autoclass:: mitsuba.ArrayXi64
 
+.. autoclass:: mitsuba.ArrayXi8
+
 .. autoclass:: mitsuba.ArrayXu
 
 .. autoclass:: mitsuba.ArrayXu32
 
 .. autoclass:: mitsuba.ArrayXu64
+
+.. autoclass:: mitsuba.ArrayXu8
 
 .. autoclass:: mitsuba.BSDF
 
@@ -116,6 +120,8 @@
 
 .. autoclass:: mitsuba.Float
 
+.. autoclass:: mitsuba.Float16
+
 .. autoclass:: mitsuba.Float32
 
 .. autoclass:: mitsuba.Float64
@@ -139,6 +145,8 @@
 .. autoclass:: mitsuba.Int32
 
 .. autoclass:: mitsuba.Int64
+
+.. autoclass:: mitsuba.Int8
 
 .. autoclass:: mitsuba.Integrator
 
@@ -534,11 +542,15 @@
 
 .. autoclass:: mitsuba.TensorXi64
 
+.. autoclass:: mitsuba.TensorXi8
+
 .. autoclass:: mitsuba.TensorXu
 
 .. autoclass:: mitsuba.TensorXu32
 
 .. autoclass:: mitsuba.TensorXu64
+
+.. autoclass:: mitsuba.TensorXu8
 
 .. autoclass:: mitsuba.Texture
 
@@ -572,6 +584,8 @@
 
 .. autoclass:: mitsuba.Texture3f64
 
+.. autoclass:: mitsuba.TexturePtr
+
 .. autoclass:: mitsuba.Thread
 
 .. autoclass:: mitsuba.Timer
@@ -593,6 +607,8 @@
 .. autoclass:: mitsuba.UInt32
 
 .. autoclass:: mitsuba.UInt64
+
+.. autoclass:: mitsuba.UInt8
 
 .. autoclass:: mitsuba.UnpolarizedSpectrum
 

@@ -63,6 +63,21 @@ def test_read_write_complex_exr(variant_scalar_rgb, tmpdir):
     assert str(b3) != str(b1)
 
 
+@pytest.mark.parametrize('num_channels', [1, 3, 4, 9, 10, 11])
+def test_read_write_unnamed_multichannel_exr(variant_scalar_rgb, tmpdir, num_channels):
+    # Tests reading and writing of images with unnamed channels to/from exr
+    ref = np.zeros((16, 16, num_channels), dtype=np.float32)
+    for i in range(num_channels):
+        ref[..., i] = i
+
+    tmp_file = os.path.join(str(tmpdir), f"out_{num_channels}.exr")
+    b = mi.Bitmap(ref)
+    b.write(tmp_file)
+    b = mi.Bitmap(tmp_file)
+    os.remove(tmp_file)
+    assert np.allclose(np.array(b), ref)
+
+
 def test_convert_rgb_y(variant_scalar_rgb, tmpdir):
     # Tests RGBA(float64) -> Y (float32) conversion
     b1 = mi.Bitmap(mi.Bitmap.PixelFormat.RGBA, mi.Struct.Type.Float64, [3, 1])

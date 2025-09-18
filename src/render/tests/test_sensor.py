@@ -63,6 +63,11 @@ def test03_trampoline(variants_vec_backends_once_rgb):
             mi.Sensor.__init__(self, props)
             self.m_needs_sample_2 = True
 
+        def traverse(self, callback):
+            super().traverse(callback)
+            callback.put('to_world', self.m_to_world,
+                         mi.ParamFlags.NonDifferentiable)
+
         def to_string(self):
             return f"DummySensor ({self.m_needs_sample_2})"
 
@@ -72,3 +77,14 @@ def test03_trampoline(variants_vec_backends_once_rgb):
     })
 
     assert str(sensor) == "DummySensor (True)"
+
+    params = mi.traverse(sensor)
+    assert 'to_world' in params
+    transform = mi.ScalarTransform4f.translate([1, 2, 3]).rotate([0, 1, 0], 45)
+    params['to_world'] = transform
+    params.update()
+    params = mi.traverse(sensor)
+    assert dr.allclose(params['to_world'].matrix,
+                       transform.matrix)
+    assert dr.allclose(sensor.world_transform().matrix,
+                       transform.matrix)

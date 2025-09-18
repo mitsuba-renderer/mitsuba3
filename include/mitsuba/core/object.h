@@ -272,6 +272,7 @@ inline constexpr const char* object_type_name(ObjectType ot) {
  * The derived class must provide:
  * - `static constexpr const char *Variant`: variant name string
  * - `static constexpr ObjectType Type`: object type enumeration value
+ * - `static constexpr const char *Domain`: string that represents the plugin category
  * - `using UInt32 = ...`: type that indicates whether this is a JIT variant
  *
  * The `MI_DECLARE_PLUGIN_BASE_CLASS()` macro ensures that these attributes are present.

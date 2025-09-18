@@ -409,9 +409,11 @@ static ScalarVector3d parse_vector_from_string(const ParserState &state,
  */
 std::string file_location(const ParserState &state, const SceneNode &node) {
     // First check if we have a path from dictionary parsing
-    size_t node_idx = &node - &state.nodes[0];  // Get index of this node
-    if (node_idx < state.node_paths.size() && !state.node_paths[node_idx].empty())
-        return tfm::format("dictionary node \"%s\"", state.node_paths[node_idx]);
+    if (!state.nodes.empty()) {
+        size_t node_idx = &node - &state.nodes[0];  // Get index of this node
+        if (node_idx < state.node_paths.size() && !state.node_paths[node_idx].empty())
+            return tfm::format("dictionary node \"%s\"", state.node_paths[node_idx]);
+    }
 
     // Fall back to XML file location logic
     if (node.file_index >= state.files.size()) {
@@ -1170,12 +1172,12 @@ static std::string camel_to_underscore_case(std::string_view input) {
 
         if (i > 0 && std::islower(input[i-1]) && std::isupper(c)) {
             result += '_';
-            result += std::tolower(c);
+            result += (char) std::tolower(c);
 
             // Convert any subsequent uppercase letters to lowercase
             while (i + 1 < input.length() && std::isupper(input[i + 1])) {
                 i++;
-                result += std::tolower(input[i]);
+                result += (char) std::tolower(input[i]);
             }
         } else {
             result += c;
@@ -1877,7 +1879,7 @@ static bool decompose_transform(const ScalarAffineTransform4d &transform,
     ScalarVector3d euler = dr::quat_to_euler(quat) * (180.0 / dr::Pi<double>);
 
     // Reject operations that require too many rotations
-    int rotation_count = dr::count(dr::abs(euler) > eps);
+    int rotation_count = (int) dr::count(dr::abs(euler) > eps);
     if (rotation_count > 1) {
         // For sensors without scale, try to use a lookat representation
         if (is_sensor && !has_scale) {
@@ -2067,10 +2069,10 @@ static void write_node_to_xml(WriterState &writer_state,
         }
 
         // Get the tag name from property_type_name
-        std::string_view tag_name = property_type_name(prop_type);
+        std::string_view type_name = property_type_name(prop_type);
 
         // Create the property node and add name attribute first
-        prop_node = xml_node.append_child(tag_name);
+        prop_node = xml_node.append_child(type_name);
         prop_node.append_attribute("name").set_value(key);
 
         // Now add the value-specific attributes
@@ -2122,7 +2124,6 @@ static void write_node_to_xml(WriterState &writer_state,
                         prop_node.append_attribute("value").set_value(tfm::format("%.17g", spec.values[0]));
                 } else {
                     // Wavelength-value pairs
-                    std::string value_str;
                     for (size_t i = 0; i < spec.wavelengths.size(); ++i) {
                         if (i > 0)
                             value_str += ", ";
@@ -2164,7 +2165,7 @@ static void write_node_to_xml(WriterState &writer_state,
                 break;
 
             default:
-                Log(Error, "Encountered property \"%s\" with unsupported type \"%s\"", key, tag_name);
+                Log(Error, "Encountered property \"%s\" with unsupported type \"%s\"", key, type_name);
         }
 
         // For properties with name/value attributes, check if this should be a default

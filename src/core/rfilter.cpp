@@ -5,7 +5,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT ReconstructionFilter<Float, Spectrum>::ReconstructionFilter(const Properties &props)
-    : JitObject<ReconstructionFilter>(props.id()) { }
+    : JitObject<ReconstructionFilter<Float, Spectrum>>(props.id()) { }
 MI_VARIANT ReconstructionFilter<Float, Spectrum>::~ReconstructionFilter() { }
 
 MI_VARIANT void ReconstructionFilter<Float, Spectrum>::init_discretization() {

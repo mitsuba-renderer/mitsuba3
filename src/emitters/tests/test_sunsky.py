@@ -77,7 +77,7 @@ def render_and_compare(plugin, ref_path, rtol):
     sp, cp = dr.sincos(phis)
     st, ct = dr.sincos(thetas)
 
-    si = mi.SurfaceInteraction3f()
+    si = dr.zeros(mi.SurfaceInteraction3f)
     si.wi = mi.Vector3f(cp*st, sp*st, ct)
 
     rendered_scene = mi.TensorXf(dr.ravel(mi.unpolarized_spectrum(plugin.eval(si))), (*render_res, 3)) if mi.is_rgb \
@@ -180,14 +180,14 @@ def test04_sun_radiance(variants_vec_spectral, turb, eta_ray, gamma):
         sun_theta = theta_ray + gamma
 
     plugin = make_emitter_angles(turb=turb,
-                          sun_phi=phi,
-                          sun_theta=sun_theta,
-                          albedo=0.0,
-                          sun_scale=1.0,
-                          sky_scale=0.0)
+                                 sun_phi=phi,
+                                 sun_theta=sun_theta,
+                                 albedo=0.0,
+                                 sun_scale=1.0,
+                                 sky_scale=0.0)
 
     # Generate rays
-    si = mi.SurfaceInteraction3f()
+    si = dr.zeros(mi.SurfaceInteraction3f)
     si.wavelengths = mi.Float(wavelengths)
 
     sp, cp = dr.sincos(phi)

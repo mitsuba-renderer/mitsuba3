@@ -140,7 +140,7 @@ MI_PY_EXPORT(Properties) {
 
         // Getters & setters: used as if it were a simple map
         .SET_ITEM_BINDING(bool)
-        .SET_ITEM_BINDING(long)
+        .SET_ITEM_BINDING(int64_t)
         .SET_ITEM_BINDING(double)
         .SET_ITEM_BINDING(std::string)
         .SET_ITEM_BINDING(ScalarArray3d)

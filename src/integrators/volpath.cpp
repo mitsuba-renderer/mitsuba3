@@ -303,12 +303,31 @@ public:
                 dr::masked(si, intersect) = scene->ray_intersect(ray, intersect);
 
             if (dr::any_or<true>(active_surface)) {
+                // ---------------------- Hide area emitters ----------------------
+                if (m_hide_emitters && dr::any_or<true>(ls.depth == 0u)) {
+                    // Are we on the first segment and did we hit an area emitter?
+                    // If so, skip all area emitters along this ray
+                    Mask skip_emitters = si.is_valid() &&
+                                         (si.shape->emitter() != nullptr) &&
+                                         (ls.depth == 0) &&
+                                         intersect;
+
+                    if (dr::any_or<true>(skip_emitters)) {
+                        Ray3f ray = si.spawn_ray(ls.ray.d);
+                        PreliminaryIntersection3f pi =
+                            Base::skip_area_emitters(scene, ray, true, skip_emitters);
+                        SurfaceInteraction3f si_after_skip =
+                            pi.compute_surface_interaction(ray, +RayFlags::All, skip_emitters);
+                        dr::masked(si, skip_emitters) = si_after_skip;
+                    }
+                }
+
                 // ---------------- Intersection with emitters ----------------
                 Mask ray_from_camera = active_surface && (depth == 0u);
                 Mask count_direct = ray_from_camera || specular_chain;
                 EmitterPtr emitter = si.emitter(scene);
-                Mask active_e = active_surface && emitter != nullptr
-                                && !((depth == 0u) && m_hide_emitters);
+                Mask active_e = active_surface && (emitter != nullptr) &&
+                                !((depth == 0u) && m_hide_emitters);
                 if (dr::any_or<true>(active_e)) {
                     Float emitter_pdf = 1.0f;
                     if (dr::any_or<true>(active_e && !count_direct)) {

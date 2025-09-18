@@ -334,7 +334,7 @@ public:
                     fail("reference to invalid vertex %i!", vert_index);
 
                 Key vert_key;
-                if (smooth_face || m_face_normals) {
+                if (smooth_face && !m_face_normals) {
                     if (version <= Version(3, 0, 0)) {
                         // Blender 2.xx - 3.0
                         const short *no = verts_old_2[vert_index].no;

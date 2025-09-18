@@ -4,6 +4,8 @@
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/texture.h>
 
+#include "normalmap_helpers.h"
+
 NAMESPACE_BEGIN(mitsuba)
 
 /**!
@@ -27,6 +29,20 @@ Bump map BSDF adapter (:monosp:`bumpmap`)
  * - scale
    - |float|
    - Bump map gradient multiplier. (Default: 1.0)
+   - |exposed|
+
+ * - flip_invalid_normals
+   - |bool|
+   - If enabled, the plugin will ensure that the perturbed normals are always
+     consistent with the geometric normal. This prevents visual artifacts and is
+     achieved by a simply flipping the shading normal, as described in
+     :cite:`Schuessler2017Microfacet`. (Default: true)
+   - |exposed|
+
+ * - use_shadowing_function
+   - |bool|
+   - If enabled, the plugin uses a Microfacet-based shadowing term
+     :cite:`Estevez2019` to smooth out transitions on shadow boundaries. (Default: true)
    - |exposed|
 
 Bump mapping is a simple technique for cheaply adding surface detail to a rendering. This is done
@@ -102,6 +118,9 @@ public:
 
         m_scale = props.get<ScalarFloat>("scale", 1.f);
 
+        m_flip_invalid_normals = props.get<bool>("flip_invalid_normals", true);
+        m_use_shadowing_function = props.get<bool>("use_shadowing_function", true);
+
         // Add all nested components
         m_components.clear();
         for (size_t i = 0; i < m_nested_bsdf->component_count(); ++i)
@@ -136,6 +155,9 @@ public:
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
         bs.wo = perturbed_wo;
 
+        if (m_use_shadowing_function)
+            weight *= eval_shadow_terminator(perturbed_si.sh_frame.n, bs.wo);
+
         return { bs, weight & active };
     }
 
@@ -152,7 +174,12 @@ public:
         active &= Frame3f::cos_theta(wo) *
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
 
-        return dr::select(active, m_nested_bsdf->eval(ctx, perturbed_si, perturbed_wo, active), 0.f);
+        Spectrum value = m_nested_bsdf->eval(ctx, perturbed_si, perturbed_wo, active);
+
+        if (m_use_shadowing_function)
+            value *= eval_shadow_terminator(perturbed_si.sh_frame.n, wo);
+
+        return value & active;
     }
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -187,6 +214,10 @@ public:
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
 
         auto [value, pdf] = m_nested_bsdf->eval_pdf(ctx, perturbed_si, perturbed_wo, active);
+
+        if (m_use_shadowing_function)
+            value *= eval_shadow_terminator(perturbed_si.sh_frame.n, wo);
+
         return { value & active, dr::select(active, pdf, 0.f) };
     }
 
@@ -207,6 +238,12 @@ public:
 
         // Convert to small rotation from original shading frame
         result.n = si.to_local(result.n);
+
+        if (m_flip_invalid_normals) {
+            // Ensure that shading normals are always facing the incident direction.
+            Mask flip = Frame3f::cos_theta(si.wi) * dr::dot(si.wi, result.n) <= 0.0f;
+            result.n[flip] = Normal3f(-result.n.x(), -result.n.y(), result.n.z());
+        }
 
         // Gram-schmidt orthogonalization to compute local shading frame
         result.s = dr::normalize(dr::fnmadd(result.n, dr::dot(result.n, si.dp_du), si.dp_du));
@@ -239,6 +276,9 @@ protected:
     ScalarFloat m_scale;
     ref<Texture> m_nested_texture;
     ref<Base> m_nested_bsdf;
+
+    bool m_flip_invalid_normals;
+    bool m_use_shadowing_function;
 
     MI_TRAVERSE_CB(Base, m_nested_texture, m_nested_bsdf)
 };

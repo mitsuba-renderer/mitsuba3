@@ -101,19 +101,19 @@ and animations.
 .. raw:: html
 
     <video style="max-width:48%;" loop autoplay muted
-        src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/horizontal.mp4"></video>
+        src="https://d38rqfq1h7iukm.cloudfront.net/media/uploads/tzeltner/2021/06/17/horizontal.mp4"></video>
     <video style="max-width:48%;" loop autoplay muted
-        src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/vertical.mp4"></video>
+        src="https://d38rqfq1h7iukm.cloudfront.net/media/uploads/tzeltner/2021/06/17/vertical.mp4"></video>
 
     <video style="max-width:48%;" loop autoplay muted
-        src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/diag_pos.mp4"></video>
+        src="https://d38rqfq1h7iukm.cloudfront.net/media/uploads/tzeltner/2021/06/17/diag_pos.mp4"></video>
     <video style="max-width:48%;" loop autoplay muted
-        src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/diag_neg.mp4"></video>
+        src="https://d38rqfq1h7iukm.cloudfront.net/media/uploads/tzeltner/2021/06/17/diag_neg.mp4"></video>
 
     <video style="max-width:48%;" loop autoplay muted
-        src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/circ_right.mp4"></video>
+        src="https://d38rqfq1h7iukm.cloudfront.net/media/uploads/tzeltner/2021/06/17/circ_right.mp4"></video>
     <video style="max-width:48%;" loop autoplay muted
-        src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/circ_left.mp4"></video>
+        src="https://d38rqfq1h7iukm.cloudfront.net/media/uploads/tzeltner/2021/06/17/circ_left.mp4"></video>
 
 
 Reference frames
@@ -125,7 +125,7 @@ As illustrated in :ref:`Figure 1 <stokes_components>`, these definitions above a
 
     <center>
         <video style="max-width:80%;" loop autoplay muted
-            src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/wave_ref_frame.mp4"></video>
+            src="https://d38rqfq1h7iukm.cloudfront.net/media/uploads/tzeltner/2021/06/17/wave_ref_frame.mp4"></video>
     </center>
 
 Note how we take the point of view of the "receiver" and look into the direction of the "source" of the beam to describe the Stokes vector.
@@ -256,7 +256,7 @@ Here is another visualization of this process. Again, note how the polarization 
 
     <center>
         <video style="max-width:80%;" loop autoplay muted
-            src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/rotator.mp4"></video>
+            src="https://d38rqfq1h7iukm.cloudfront.net/media/uploads/tzeltner/2021/06/17/rotator.mp4"></video>
     </center>
 
 Rotation of Mueller matrix frames
@@ -383,7 +383,7 @@ Consider a beam of unpolarized light (purple) that interacts with two linear pol
 
     <center>
         <video style="max-width:80%;" loop autoplay muted
-            src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/malus.mp4"></video>
+            src="https://d38rqfq1h7iukm.cloudfront.net/media/uploads/tzeltner/2021/06/17/malus.mp4"></video>
     </center>
 
 The first polarizer transforms the beam into fully horizontally polarized light (middle) before traveling through a second polarizer at an angle :math:`\theta`. It is clear that a horizontal orientation (:math:`\theta=0˚`) will allow all of the light to transmit as both polarizers are aligned with each other. Similarly, at an orthogonal configuration (:math:`\theta=90˚`), all light will be absorbed. For intermediate angles, only a fraction of the light is transmitted in form of linearly polarized light. Under such a setting, the total intensities (first component of the Stokes vector) before and after interacting with the two polarizers, :math:`\mathbf{s}_0, \mathbf{s}_0'`, follow *Malus' law* [[5]_]:
@@ -447,7 +447,7 @@ We can also use Mueller-Stokes calculus to understand a common physical setup to
 
     <center>
         <video style="max-width:80%;" loop autoplay muted
-            src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/qwp_circular.mp4"></video>
+            src="https://d38rqfq1h7iukm.cloudfront.net/media/uploads/tzeltner/2021/06/17/qwp_circular.mp4"></video>
     </center>
 
 Any type of light (e.g. unpolarized, visualized in purple) is linearly polarized at a 45˚ angle by the first filter (left) and then hits a quarter-wave plate (green) that has its "fast axis" in a horizontal configuration. The wave plate introduces a quarter wavelength phase shift that slows down the vertical component (red). As a result, the two wave components are no longer aligned and the light beam is (perfectly) left-circularly polarized.
@@ -518,9 +518,9 @@ Modern formulations of the Fresnel equations are based on electromagnetic theory
 .. raw:: html
 
     <video style="max-width:48%;" loop autoplay muted
-        src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/s_wave.mp4"></video>
+        src="https://d38rqfq1h7iukm.cloudfront.net/media/uploads/tzeltner/2021/06/17/s_wave.mp4"></video>
     <video style="max-width:48%;" loop autoplay muted
-        src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/p_wave.mp4"></video>
+        src="https://d38rqfq1h7iukm.cloudfront.net/media/uploads/tzeltner/2021/06/17/p_wave.mp4"></video>
 
 To describe these fields, we have to make some choices regarding coordinate systems. In particular: in which directions should the electric fields be pointing before and after interacting with the interface? Given the electric field direction :math:`E` and the propagation direction of the beam :math:`\mathbf{z}`, the orientation of the magnetic field :math:`H` is always clearly defined by a right-handed coordinate system :math:`E \times H = \alpha \cdot \mathbf{z}` for some constant :math:`\alpha` (Poynting's theorem). The orientation of the electric field itself is however somewhat arbitrary. Incident and reflected field could for instance point in the same or opposite directions of each other.
 
@@ -1133,7 +1133,7 @@ Both the sample and the analyzer module are mounted such that they can rotate in
 
     <center>
         <video style="max-width:95%;" controls loop autoplay muted
-            src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/azzam_lab_setup_video.mp4"></video>
+            src="https://d38rqfq1h7iukm.cloudfront.net/media/uploads/tzeltner/2021/06/17/azzam_lab_setup_video.mp4"></video>
     </center>
 
 As part of the system calibration we first perform a measurement without any sample, effectively capturing the air and any potential inaccuracies of the device. As demonstrated in the following plot, the measured signal follows closely the expected curve from theory and hence the reconstructed Mueller matrix :math:`\mathbf{M}^{\text{air}}` is very close to the identity:
@@ -1194,7 +1194,7 @@ In both the conductor and dielectric case we observe excellent agreement between
 
     <center>
         <video style="max-width:60%;" loop autoplay muted
-            src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/drr_gold_m03.mp4"></video>
+            src="https://d38rqfq1h7iukm.cloudfront.net/media/uploads/tzeltner/2021/06/17/drr_gold_m03.mp4"></video>
     </center>
 
 .. image:: ../../../resources/data/docs/images/polarization/drr_gold_m03_lab.svg
@@ -1209,7 +1209,7 @@ In both the conductor and dielectric case we observe excellent agreement between
 
     <center>
         <video style="max-width:60%;" loop autoplay muted
-            src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/drr_schott_ng1.mp4"></video>
+            src="https://d38rqfq1h7iukm.cloudfront.net/media/uploads/tzeltner/2021/06/17/drr_schott_ng1.mp4"></video>
     </center>
 
 .. image:: ../../../resources/data/docs/images/polarization/drr_schott_ng1_lab.svg
@@ -1958,7 +1958,7 @@ Another simple but effective way to make the effects visible is to place a (rota
 
     <center>
         <video style="max-width:60%; border: 2px solid #000; display: block; margin: 0 auto;" loop autoplay muted
-            src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/cbox_rotating_filter.mp4"></video>
+            src="https://d38rqfq1h7iukm.cloudfront.net/media/uploads/tzeltner/2021/06/17/cbox_rotating_filter.mp4"></video>
     </center>
 
 Stokes vector output

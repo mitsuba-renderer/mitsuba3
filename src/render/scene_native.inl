@@ -11,7 +11,7 @@ struct NativeState {
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &props) {
     ShapeKDTree *kdtree = new ShapeKDTree(props);
-    kdtree->inc_ref();
+    inc_ref(kdtree);
 
     if constexpr (dr::is_llvm_v<Float>) {
         m_accel = new NativeState<Float, Spectrum>();
@@ -56,13 +56,13 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
     ScopedPhase phase(ProfilerPhase::InitAccel);
     kdtree->build();
 
-    /* Set up a callback on the handle variable to release the Embree
-       acceleration data structure (IAS) when this variable is freed. This
-       ensures that the lifetime of the IAS goes beyond the one of the Scene
-       instance if there are still some pending ray tracing calls (e.g. non
-       evaluated variables depending on a ray tracing call). */
+    /* Set up a callback on the handle variable to release the acceleration
+       data structure (AS) when this variable is freed. This ensures that the
+       lifetime of the AS goes beyond the one of the Scene instance if there
+       are still some pending ray tracing calls (e.g. non evaluated variables
+       depending on a ray tracing call). */
     if constexpr (dr::is_llvm_v<Float>) {
-        // Prevents the IAS to be released when updating the scene parameters
+        // Prevents the AS to be released when updating the scene parameters
         if (m_accel_handle.index())
             jit_var_set_callback(m_accel_handle.index(), nullptr, nullptr);
         m_accel_handle = UInt64::map_(m_accel, 1, false);
@@ -70,16 +70,18 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
             m_accel_handle.index(),
             [](uint32_t /* index */, int free, void *payload) {
                 if (free) {
-                    // Free KDTree on another thread to avoid deadlock with Dr.Jit mutex
-                    Task *task = dr::do_async([payload](){
-                        Log(Debug, "Free KDTree..");
-                        NativeState<Float, Spectrum> *s =
-                            (NativeState<Float, Spectrum> *) payload;
-                        s->accel->clear();
-                        s->accel->dec_ref();
-                        delete s;
-                    });
-                    Thread::register_task(task);
+                    jit_enqueue_host_func(
+                        JitBackend::LLVM,
+                        [](void *p) {
+                            Log(Debug, "Free KDTree..");
+                            NativeState<Float, Spectrum> *s =
+                                (NativeState<Float, Spectrum> *) p;
+                            s->accel->clear();
+                            s->accel->dec_ref();
+                            delete s;
+                        },
+                        payload
+                    );
                 }
             },
             (void *) m_accel
@@ -116,11 +118,11 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
         dr::sync_thread();
 
         /* Decrease the reference count of the handle variable. This will
-           trigger the release of the Embree acceleration data structure if no
+           trigger the release of the acceleration data structure if no
            ray tracing calls are pending. */
         m_accel_handle = 0;
     } else {
-        ((ShapeKDTree *) m_accel)->dec_ref();
+        dec_ref((ShapeKDTree *) m_accel);
     }
 
     m_accel = nullptr;

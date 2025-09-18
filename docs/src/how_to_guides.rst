@@ -21,5 +21,6 @@ Guides
     :glob:
 
     how_to_guides/transformation_toolbox
+    how_to_guides/image_io_and_manipulation
     how_to_guides/mesh_io_and_manipulation
     how_to_guides/use_optimizers

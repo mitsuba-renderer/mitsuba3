@@ -99,7 +99,7 @@ public:
             m_flags = m_flags | m_components.back();
         }
 
-        if (has_flag(m_flags, BSDFFlags::Transmission))
+        if (!props.get<bool>("allow_transmission", false) && has_flag(m_flags, BSDFFlags::Transmission))
             Throw("Only materials without a transmission component can be nested!");
     }
 
@@ -255,6 +255,30 @@ public:
         }
 
         return { value, pdf };
+    }
+
+    Spectrum eval_null_transmission(const SurfaceInteraction3f &si_, Mask active) const override {
+        SurfaceInteraction3f si(si_);
+
+        if (m_brdf[0] == m_brdf[1]) {
+            si.wi.z() = dr::abs(si.wi.z());
+            return m_brdf[0]->eval_null_transmission(si, active);
+        } else {
+            Spectrum result = 0.f;
+            Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active,
+                 back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
+
+            if (dr::any_or<true>(front_side))
+                result = m_brdf[0]->eval_null_transmission(si, front_side);
+
+            if (dr::any_or<true>(back_side)) {
+                si.wi.z() *= -1.f;
+                dr::masked(result, back_side) =
+                    m_brdf[1]->eval_null_transmission(si, back_side);
+            }
+
+            return result;
+        }
     }
 
     Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si_,

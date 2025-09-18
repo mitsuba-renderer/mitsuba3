@@ -685,9 +685,13 @@
 
 .. py:class:: mitsuba.ArrayXi64
 
+.. py:class:: mitsuba.ArrayXi8
+
 .. py:class:: mitsuba.ArrayXu
 
 .. py:class:: mitsuba.ArrayXu64
+
+.. py:class:: mitsuba.ArrayXu8
 
 .. py:class:: mitsuba.BSDF
 
@@ -4651,6 +4655,8 @@
 
 .. py:class:: mitsuba.Float
 
+.. py:class:: mitsuba.Float16
+
 .. py:class:: mitsuba.Float64
 
 .. py:class:: mitsuba.Formatter
@@ -5528,6 +5534,8 @@
 
 .. py:class:: mitsuba.Int64
 
+.. py:class:: mitsuba.Int8
+
 .. py:class:: mitsuba.Integrator
 
     Base class: :py:obj:`mitsuba.Object`
@@ -5630,6 +5638,47 @@
 
         Returns → bool:
             *no description available*
+
+    .. py:method:: mitsuba.Integrator.skip_area_emitters(self, arg0, arg1, arg2, arg3)
+
+        Traces a ray in the scene and returns the first intersection that is
+        not an area emitter.
+
+        This is a helper method for when the `hide_emitters` flag is set.
+
+        Parameter ``scene``:
+            The scene that the ray will intersect.
+
+        Parameter ``ray``:
+            The ray that determines the direction in which to trace new rays
+
+        Parameter ``coherent``:
+            Setting this flag to ``True`` can noticeably improve performance
+            when ``ray`` contains a coherent set of rays (e.g. primary camera
+            rays), and when using ``llvm_*`` variants of the renderer along
+            with Embree. It has no effect in scalar or CUDA/OptiX variants.
+            (Default: False)
+
+        Parameter ``active``:
+            A mask that indicates which lanes are active. Typically, this
+            should be set to ``True`` for any lane where the current depth is
+            0 (for ``hide_emitters``). (Default: True)
+
+        Parameter ``arg0`` (:py:obj:`mitsuba.Scene`):
+            *no description available*
+
+        Parameter ``arg1`` (:py:obj:`mitsuba.Ray3f`):
+            *no description available*
+
+        Parameter ``arg2`` (bool):
+            *no description available*
+
+        Parameter ``arg3`` (drjit.llvm.ad.Bool, /):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.PreliminaryIntersection3f`:
+            The first intersection that is not an area emitter anlong the
+            ``ray``.
 
 .. py:class:: mitsuba.Interaction3f
 
@@ -6145,7 +6194,7 @@
 
 .. py:data:: mitsuba.MI_VERSION
     :type: str
-    :value: 3.7.0
+    :value: 3.7.1
 
 .. py:data:: mitsuba.MI_VERSION_MAJOR
     :type: int
@@ -6157,7 +6206,7 @@
 
 .. py:data:: mitsuba.MI_VERSION_PATCH
     :type: int
-    :value: 0
+    :value: 1
 
 .. py:data:: mitsuba.MI_YEAR
     :type: str
@@ -7798,6 +7847,10 @@
         Returns the opposite edge index associated with directed edge
         ``index``
 
+        If the directed edge data structure is not initialized or outdated,
+        the return value is undefined. Ensure that build_directed_edges() is
+        called before this method.
+
         Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
@@ -8018,6 +8071,10 @@
 
         Returns the opposite edge index associated with directed edge
         ``index``
+
+        If the directed edge data structure is not initialized or outdated,
+        the return value is undefined. Ensure that build_directed_edges() is
+        called before this method.
 
         Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
@@ -14018,6 +14075,10 @@
 
         (self) -> bool
 
+    .. py:property:: mitsuba.Sensor.m_to_world
+
+        (self) -> :py:obj:`mitsuba.AffineTransform4f`
+
     .. py:method:: mitsuba.Sensor.needs_aperture_sample()
 
         Does the sampling technique require a sample for the aperture
@@ -17184,9 +17245,13 @@
 
 .. py:class:: mitsuba.TensorXi64
 
+.. py:class:: mitsuba.TensorXi8
+
 .. py:class:: mitsuba.TensorXu
 
 .. py:class:: mitsuba.TensorXu64
+
+.. py:class:: mitsuba.TensorXu8
 
 .. py:class:: mitsuba.Texture
 
@@ -20126,6 +20191,186 @@
         Returns → drjit.WrapMode:
             *no description available*
 
+.. py:class:: mitsuba.TexturePtr
+
+    .. py:method:: mitsuba.TexturePtr.eval(self, si, active=True)
+
+        Evaluate the texture at the given surface interaction
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            An unpolarized spectral power distribution or reflectance value
+
+    .. py:method:: mitsuba.TexturePtr.eval_1(self, si, active=True)
+
+        Monochromatic evaluation of the texture at the given surface
+        interaction
+
+        This function differs from eval() in that it provided raw access to
+        scalar intensity/reflectance values without any color processing (e.g.
+        spectral upsampling). This is useful in parts of the renderer that
+        encode scalar quantities using textures, e.g. a height field.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.llvm.ad.Float:
+            An scalar intensity or reflectance value
+
+    .. py:method:: mitsuba.TexturePtr.eval_1_grad(self, si, active=True)
+
+        Monochromatic evaluation of the texture gradient at the given surface
+        interaction
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Vector2f`:
+            A (u,v) pair of intensity or reflectance value gradients
+
+    .. py:method:: mitsuba.TexturePtr.eval_3(self, si, active=True)
+
+        Trichromatic evaluation of the texture at the given surface
+        interaction
+
+        This function differs from eval() in that it provided raw access to
+        RGB intensity/reflectance values without any additional color
+        processing (e.g. RGB-to-spectral upsampling). This is useful in parts
+        of the renderer that encode 3D quantities using textures, e.g. a
+        normal map.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            An trichromatic intensity or reflectance value
+
+    .. py:method:: mitsuba.TexturePtr.is_spatially_varying()
+
+        Does this texture evaluation depend on the UV coordinates
+
+        Returns → drjit.llvm.ad.Bool:
+            *no description available*
+
+    .. py:method:: mitsuba.TexturePtr.max()
+
+        Return the maximum value of the spectrum
+
+        Not every implementation necessarily provides this function. The
+        default implementation throws an exception.
+
+        Even if the operation is provided, it may only return an
+        approximation.
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.TexturePtr.mean()
+
+        Return the mean value of the spectrum over the support
+        (MI_WAVELENGTH_MIN..MI_WAVELENGTH_MAX)
+
+        Not every implementation necessarily provides this function. The
+        default implementation throws an exception.
+
+        Even if the operation is provided, it may only return an
+        approximation.
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.TexturePtr.pdf_position(self, p, active=True)
+
+        Returns the probability per unit area of sample_position()
+
+        Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.TexturePtr.pdf_spectrum(self, si, active=True)
+
+        Evaluate the density function of the sample_spectrum() method as a
+        probability per unit wavelength (in units of 1/nm).
+
+        Not every implementation necessarily overrides this function. The
+        default implementation throws an exception.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color0f`:
+            A density value for each wavelength in ``si.wavelengths`` (hence
+            the Wavelength type).
+
+    .. py:method:: mitsuba.TexturePtr.sample_position(self, sample, active=True)
+
+        Importance sample a surface position proportional to the overall
+        spectral reflectance or intensity of the texture
+
+        This function assumes that the texture is implemented as a mapping
+        from 2D UV positions to texture values, which is not necessarily true
+        for all textures (e.g. 3D noise functions, mesh attributes, etc.). For
+        this reason, not every will plugin provide a specialized
+        implementation, and the default implementation simply return the input
+        sample (i.e. uniform sampling is used).
+
+        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+            A 2D vector of uniform variates
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+            1. A texture-space position in the range :math:`[0, 1]^2`
+
+        2. The associated probability per unit area in UV space
+
+    .. py:method:: mitsuba.TexturePtr.sample_spectrum(self, si, sample, active=True)
+
+        Importance sample a set of wavelengths proportional to the spectrum
+        defined at the given surface position
+
+        Not every implementation necessarily provides this function, and it is
+        a no-op when compiling non-spectral variants of Mitsuba. The default
+        implementation throws an exception.
+
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            An interaction record describing the associated surface position
+
+        Parameter ``sample`` (:py:obj:`mitsuba.Color0f`):
+            A uniform variate for each desired wavelength.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[:py:obj:`mitsuba.Color0f`, :py:obj:`mitsuba.Color3f`]:
+            1. Set of sampled wavelengths specified in nanometers
+
+        2. The Monte Carlo importance weight (Spectral power distribution
+        value divided by the sampling density)
+
 .. py:class:: mitsuba.Thread
 
     Base class: :py:obj:`mitsuba.Object`
@@ -20269,6 +20514,8 @@
 .. py:class:: mitsuba.UInt
 
 .. py:class:: mitsuba.UInt64
+
+.. py:class:: mitsuba.UInt8
 
 .. py:class:: mitsuba.Vector0d
 
