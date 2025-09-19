@@ -7,7 +7,7 @@ strive to document breaking API changes in the release notes below.
 
 Mitsuba 3.7.1
 -------------
-*October 17, 2025*
+*September 17, 2025*
 
 - Upgrade Dr.Jit to version `1.2.0
   <https://github.com/mitsuba-renderer/drjit/releases/tag/v1.2.0>`__. This
@@ -313,7 +313,6 @@ Mitsuba 3.6.3
 
 - Release was retracted
 
-
 Mitsuba 3.6.2
 -------------
 *January 16, 2025*
@@ -340,7 +339,6 @@ Mitsuba 3.6.1
 
 Mitsuba 3.6.0
 -------------
-
 *November 25, 2024*
 
 This release comes with a major overhaul of some of the internal components of
@@ -381,7 +379,6 @@ and new features. Here's a non-exhaustive list:
 
 Mitsuba 3.5.2
 -------------
-
 *June 5, 2024*
 
 Most likely the last release which uses `pybind11 <https://pybind11.readthedocs.io>`__.
@@ -391,7 +388,6 @@ Most likely the last release which uses `pybind11 <https://pybind11.readthedocs.
 
 Mitsuba 3.5.1
 -------------
-
 *June 5, 2024*
 
 - Upgrade Dr.Jit to `[v0.4.6] <https://github.com/mitsuba-renderer/drjit/releases/tag/v0.4.6>`__
@@ -427,7 +423,6 @@ Mitsuba 3.5.0
 
 Mitsuba 3.4.1
 -------------
-
 *December 11, 2023*
 
 - Upgrade Dr.Jit to `[v0.4.4] <https://github.com/mitsuba-renderer/drjit/releases/tag/v0.4.4>`__
@@ -459,7 +454,6 @@ Mitsuba 3.4.1
 
 Mitsuba 3.4.0
 -------------
-
 *August 29, 2023*
 
 - Upgrade Dr.Jit to v0.4.3
@@ -494,10 +488,8 @@ Mitsuba 3.4.0
 - Many missing Python bindings were added
 - Other various minor bug fixes
 
-
 Mitsuba 3.3.0
 -------------
-
 *April 25, 2023*
 
 - Upgrade Dr.Jit to v0.4.2
@@ -525,10 +517,8 @@ Mitsuba 3.3.0
 - New ``bsplinecurve`` and ``linearcurve`` shapes
   `[e4c847f] <https://github.com/mitsuba-renderer/mitsuba3/commit/e4c847fedf9005f80bda58a9f6bcfd05581b884c>`__ .. `[79eb026] <https://github.com/mitsuba-renderer/mitsuba3/commit/79eb026d6d594076994dba2c44de81c63b7806f4>`__
 
-
 Mitsuba 3.2.1
 -------------
-
 *February 22, 2023*
 
 - Upgrade Dr.Jit to v0.4.1
@@ -542,10 +532,8 @@ Mitsuba 3.2.1
   `[93bb99b] <https://github.com/mitsuba-renderer/mitsuba3/commit/93bb99b1ed20a3263b2fd82f1d5ab3a333afc002>`__
 - Various minor bug fixes
 
-
 Mitsuba 3.2.0
 -------------
-
 *January 6, 2023*
 
 - Upgrade Dr.Jit to v0.4.0
@@ -568,10 +556,8 @@ Mitsuba 3.2.0
 - Expose ``PhaseFunction`` of ``Medium`` objects through ``mi.traverse()``
   `[cca5791] <https://github.com/mitsuba-renderer/mitsuba3/commit/cca5791aac22cdf7b3b12cd7a69f7a6800fc715b>`__
 
-
 Mitsuba 3.1.1
 -------------
-
 *November 25, 2022*
 
 - Fixed maximum limits for OptiX kernel launches
@@ -630,10 +616,8 @@ Other improvements
 - Minor improvements to the documentation
 - Various other minor fixes
 
-
 Mitsuba 3.0.2
 -------------
-
 *September 13, 2022*
 
 - Change behavior of ``<spectrum ..>`` and ``<rgb ..>`` tag at scene loading for better consistency between ``*_rgb`` and ``*_spectral`` variants
@@ -654,10 +638,8 @@ Mitsuba 3.0.2
 - Minor improvements to the documentation
 - Various other minor fixes
 
-
 Mitsuba 3.0.1
 -------------
-
 *July 27, 2022*
 
 - Various minor fixes in documentation
@@ -674,7 +656,6 @@ Mitsuba 3.0.1
 
 Mitsuba 3.0.0
 -------------
-
 *July 20, 2022*
 
 - Initial release
