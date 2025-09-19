@@ -113,10 +113,8 @@ public:
                     (uint32_t) m_nested_phase[0]->component_count();
             else
                 weight = 1.f - weight;
-            auto [wo, w, pdf] = m_nested_phase[sample_first ? 0 : 1]->sample(
+            return m_nested_phase[sample_first ? 0 : 1]->sample(
                 ctx2, mi, sample1, sample2, active);
-            pdf *= weight;
-            return { wo, w * weight, pdf };
         }
 
         Vector3f wo = dr::zeros<Vector3f>();
@@ -129,17 +127,25 @@ public:
         if (dr::any_or<true>(m0)) {
             auto [wo0, w0, pdf0] = m_nested_phase[0]->sample(
                 ctx, mi, (sample1 - weight) / (1 - weight), sample2, m0);
+            auto [eval1, pdf1] = m_nested_phase[1]->eval_pdf(ctx, mi, wo0, m0);
+            auto pdf_weighted = weight * pdf1 + (1.f - weight) * pdf0;
+            auto w_weighted = (weight * eval1 + (1.f - weight) * w0 * pdf0) 
+                                * dr::select(pdf_weighted > 0.f, dr::rcp(pdf_weighted), 0.f);
             dr::masked(wo, m0)  = wo0;
-            dr::masked(w, m0)   = w0;
-            dr::masked(pdf, m0) = pdf0;
+            dr::masked(w, m0)   = w_weighted;
+            dr::masked(pdf, m0) = pdf_weighted;
         }
 
         if (dr::any_or<true>(m1)) {
             auto [wo1, w1, pdf1] = m_nested_phase[1]->sample(
                 ctx, mi, sample1 / weight, sample2, m1);
+            auto [eval0, pdf0] = m_nested_phase[0]->eval_pdf(ctx, mi, wo1, m1);
+            auto pdf_weighted = weight * pdf1 + (1.f - weight) * pdf0;
+            auto w_weighted = (weight * w1 * pdf1 + (1.f - weight) * eval0) 
+                                * dr::select(pdf_weighted > 0.f, dr::rcp(pdf_weighted), 0.f);
             dr::masked(wo, m1)  = wo1;
-            dr::masked(w, m1)   = w1;
-            dr::masked(pdf, m1) = pdf1;
+            dr::masked(w, m1)   = w_weighted;
+            dr::masked(pdf, m1) = pdf_weighted;
         }
 
         return { wo, w, pdf };
@@ -165,11 +171,7 @@ public:
             if (!sample_first)
                 ctx2.component -=
                     (uint32_t) m_nested_phase[0]->component_count();
-            else
-                weight = 1.f - weight;
-             auto [val, pdf] = m_nested_phase[sample_first ? 0 : 1]->eval_pdf(ctx2, mi, wo, active);
-
-             return { weight * val, weight * pdf };
+            return m_nested_phase[sample_first ? 0 : 1]->eval_pdf(ctx2, mi, wo, active);
         } else {
             auto [val_0, pdf_0] = m_nested_phase[0]->eval_pdf(ctx, mi, wo, active);
             auto [val_1, pdf_1] = m_nested_phase[1]->eval_pdf(ctx, mi, wo, active);

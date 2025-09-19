@@ -118,11 +118,7 @@ public:
             BSDFContext ctx2(ctx);
             if (!sample_first)
                 ctx2.component -= (uint32_t) m_nested_bsdf[0]->component_count();
-            else
-                weight = 1.f - weight;
-            auto [bs, result] = m_nested_bsdf[sample_first ? 0 : 1]->sample(ctx2, si, sample1, sample2, active);
-            result *= weight;
-            return { bs, result };
+            return m_nested_bsdf[sample_first ? 0 : 1]->sample(ctx2, si, sample1, sample2, active);
         }
 
         BSDFSample3f bs = dr::zeros<BSDFSample3f>();
@@ -134,16 +130,27 @@ public:
         if (dr::any_or<true>(m0)) {
             auto [bs0, result0] = m_nested_bsdf[0]->sample(
                 ctx, si, (sample1 - weight) / (1 - weight), sample2, m0);
+            auto [eval1, pdf1] = m_nested_bsdf[1]->eval_pdf(ctx, si, bs0.wo, m0);
+            auto pdf_weighted = weight * pdf1 + (1.f - weight) * bs0.pdf;
+            auto result_weighted = (weight * eval1 + (1.f - weight) * result0 * bs0.pdf) 
+                                    * dr::select(pdf_weighted > 0.f, dr::rcp(pdf_weighted), 0.f);
+            bs0.pdf = pdf_weighted;
             dr::masked(bs, m0) = bs0;
-            dr::masked(result, m0) = result0;
+            dr::masked(result, m0) = result_weighted;
         }
 
         if (dr::any_or<true>(m1)) {
             auto [bs1, result1] = m_nested_bsdf[1]->sample(
                 ctx, si, sample1 / weight, sample2, m1);
+            auto [eval0, pdf0] = m_nested_bsdf[0]->eval_pdf(ctx, si, bs1.wo, m1);
+            auto pdf_weighted = weight * bs1.pdf + (1.f - weight) * pdf0;
+            auto result_weighted = (weight * result1 * bs1.pdf + (1.f - weight) * eval0) 
+                                    * dr::select(pdf_weighted > 0.f, dr::rcp(pdf_weighted), 0.f);
+            bs1.pdf = pdf_weighted;
             dr::masked(bs, m1) = bs1;
-            dr::masked(result, m1) = result1;
+            dr::masked(result, m1) = result_weighted;
         }
+
 
         return { bs, result };
     }
@@ -158,9 +165,7 @@ public:
             BSDFContext ctx2(ctx);
             if (!sample_first)
                 ctx2.component -= (uint32_t) m_nested_bsdf[0]->component_count();
-            else
-                weight = 1.f - weight;
-            return weight * m_nested_bsdf[sample_first ? 0 : 1]->eval(ctx2, si, wo, active);
+            return m_nested_bsdf[sample_first ? 0 : 1]->eval(ctx2, si, wo, active);
         }
 
         return m_nested_bsdf[0]->eval(ctx, si, wo, active) * (1 - weight) +
@@ -196,11 +201,7 @@ public:
             BSDFContext ctx2(ctx);
             if (!sample_first)
                 ctx2.component -= (uint32_t) m_nested_bsdf[0]->component_count();
-            else
-                weight = 1.f - weight;
-
-            auto [val, pdf] = m_nested_bsdf[sample_first ? 0 : 1]->eval_pdf(ctx2, si, wo, active);
-            return { weight * val, pdf };
+            return m_nested_bsdf[sample_first ? 0 : 1]->eval_pdf(ctx2, si, wo, active);
         }
 
         auto [val_0, pdf_0] = m_nested_bsdf[0]->eval_pdf(ctx, si, wo, active);
@@ -219,6 +220,16 @@ public:
         Float weight = eval_weight(si, active);
         return m_nested_bsdf[0]->eval_diffuse_reflectance(si, active) * (1 - weight) +
                m_nested_bsdf[1]->eval_diffuse_reflectance(si, active) * weight;
+    }
+
+    Spectrum eval_null_transmission(const SurfaceInteraction3f &si,
+                                    Mask active) const override {
+        if (likely(!has_flag(m_flags, BSDFFlags::Null)))
+            return 0.f;
+        // Evaluate the null transmission of the nested BSDFs
+        Float weight = eval_weight(si, active);
+        return m_nested_bsdf[0]->eval_null_transmission(si, active) * (1 - weight) +
+               m_nested_bsdf[1]->eval_null_transmission(si, active) * weight;
     }
 
     std::string to_string() const override {
