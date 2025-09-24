@@ -581,9 +581,6 @@ protected:
     mutable DynamicBuffer<UInt32> m_E2E;
     bool m_E2E_outdated = true;
 
-
-    constexpr static ScalarIndex m_invalid_dedge = (ScalarIndex) -1;
-
     /// Sampling density of silhouette (\ref build_indirect_silhouette_distribution)
     DiscreteDistribution<Float> m_sil_dedge_pmf;
 
@@ -604,6 +601,8 @@ protected:
     /// Flag that can be set by the user to disable loading/computation of vertex normals
     bool m_face_normals = false;
     bool m_flip_normals = false;
+
+    bool m_scalar_dedge = true;
 
     /* Surface area distribution -- generated on demand when \ref
        prepare_area_pmf() is first called. */
