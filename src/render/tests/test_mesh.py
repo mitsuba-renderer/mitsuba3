@@ -1410,3 +1410,16 @@ def test36_mesh_vcalls_with_directed_edges(variants_vec_rgb):
 
     result = mesh_ptr.opposite_dedge(mi.UInt32([2, 3, 2]))
     assert dr.all(result == mi.UInt32([3, 2, 3]))
+
+
+def test37_create_mesh_with_properties(variant_scalar_rgb):
+    m = mi.Mesh(mi.Properties())
+    assert str(m) == """Mesh[
+  name = "",
+  bbox = BoundingBox3f[invalid],
+  vertex_count = 0,
+  vertices = [0 B of vertex data],
+  face_count = 0,
+  faces = [0 B of face data],
+  face_normals = 0
+]"""
