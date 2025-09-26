@@ -65,6 +65,7 @@ def read(filename):
 
 def write(filename, align=8, **kwargs):
     import numpy as np
+    assert isinstance(align, int), "Alignment must be an integer, make sure to unpack the tensor dictionary using **"
 
     with open(filename, 'wb') as f:
         # Identifier
