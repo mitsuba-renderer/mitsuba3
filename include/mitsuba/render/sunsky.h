@@ -573,11 +573,11 @@ protected:
 
             if (m_sky_scale > 0.f) {
                 const auto [ sky_rad, sky_params ] = get_sky_datasets(sun_angles, idx, active);
-                res = m_sky_scale * eval_sky<USpec>(cos_theta, gamma, sky_params, sky_rad);
+                res = m_sky_scale * eval_sky(cos_theta, gamma, sky_params, sky_rad);
             }
 
             if (m_sun_scale > 0.f) {
-                res += m_sun_scale * eval_sun<USpec>(idx, cos_theta, gamma, hit_sun) *
+                res += m_sun_scale * eval_sun(idx, cos_theta, gamma, hit_sun) *
                        get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
             }
 
@@ -599,22 +599,19 @@ protected:
 
                 // Linearly interpolate the sky's irradiance across the spectrum
                 res = m_sky_scale * dr::lerp(
-                    eval_sky<USpec>(cos_theta, gamma, sky_params_low, sky_rad_low),
-                    eval_sky<USpec>(cos_theta, gamma, sky_params_high, sky_rad_high),
+                    eval_sky(cos_theta, gamma, sky_params_low, sky_rad_low),
+                    eval_sky(cos_theta, gamma, sky_params_high, sky_rad_high),
                     lerp_factor);
             }
 
             if (m_sun_scale > 0.f) {
                 // Linearly interpolate the sun's irradiance across the spectrum
-                USpec sun_rad_low = eval_sun<USpec>(
-                             query_idx_low, cos_theta, gamma, hit_sun & valid_idx);
-                USpec sun_rad_high = eval_sun<USpec>(
-                             query_idx_high, cos_theta, gamma, hit_sun & valid_idx);
+                USpec sun_rad_low = eval_sun(query_idx_low, cos_theta, gamma, hit_sun & valid_idx);
+                USpec sun_rad_high = eval_sun(query_idx_high, cos_theta, gamma, hit_sun & valid_idx);
                 USpec sun_rad = dr::lerp(sun_rad_low, sun_rad_high, lerp_factor);
 
-                USpec sun_ld = compute_sun_ld<USpec>(
-                    query_idx_low, query_idx_high, lerp_factor, gamma,
-                    hit_sun & valid_idx
+                USpec sun_ld = compute_sun_ld(query_idx_low, query_idx_high, lerp_factor,
+                    gamma, hit_sun & valid_idx
                 );
 
                 res += m_sun_scale * sun_rad * sun_ld * get_area_ratio(m_sun_half_aperture);
@@ -630,11 +627,8 @@ protected:
      * Based on the Hosek-Wilkie skylight model
      * https://cgg.mff.cuni.cz/projects/SkylightModelling/HosekWilkie_SkylightModel_SIGGRAPH2012_Preprint_lowres.pdf
      *
-     * @tparam Spec
-     *      Spectral type to render (adapts the number of channels)
      * @param cos_theta
-     *      Cosine of the angle between the z-axis (up) and the viewing
-     * direction
+     *      Cosine of the angle between the z-axis (up) and the viewing direction
      * @param gamma
      *      Angle between the sun and the viewing direction
      * @param sky_params
@@ -643,17 +637,16 @@ protected:
      *      Sky radiance for the model
      * @return Indirect sun illumination
      */
-    template <typename Spec, typename SkyParamsData, typename SkyRadData>
-    Spec eval_sky(const Float &cos_theta, const Float &gamma,
+    USpec eval_sky(const Float &cos_theta, const Float &gamma,
                   const SkyParamsData &sky_params, const SkyRadData &sky_radiance) const {
 
         Float cos_gamma = dr::cos(gamma),
               cos_gamma_sqr = dr::square(cos_gamma);
 
-        Spec c1 = 1 + sky_params[0] * dr::exp(sky_params[1] / (cos_theta + 0.01f));
-        Spec chi = (1 + cos_gamma_sqr) /
+        USpec c1 = 1 + sky_params[0] * dr::exp(sky_params[1] / (cos_theta + 0.01f));
+        USpec chi = (1 + cos_gamma_sqr) /
                     dr::pow(1 + dr::square(sky_params[8]) - 2 * sky_params[8] * cos_gamma, 1.5f);
-        Spec c2 = sky_params[2] + sky_params[3] * dr::exp(sky_params[4] * gamma) +
+        USpec c2 = sky_params[2] + sky_params[3] * dr::exp(sky_params[4] * gamma) +
                     sky_params[5] * cos_gamma_sqr + sky_params[6] * chi +
                     sky_params[7] * dr::safe_sqrt(cos_theta);
 
@@ -669,8 +662,6 @@ protected:
      * Based on the Hosek-Wilkie sun model
      * https://cgg.mff.cuni.cz/publications/adding-a-solar-radiance-function-to-the-hosek-wilkie-skylight-model/
      *
-     * \tparam Spec
-     *       Spectral type to render (adapts the number of channels)
      * \param channel_idx
      *       Indices of the channels to render
      * \param cos_theta
@@ -681,11 +672,9 @@ protected:
      *       Mask for the active lanes and channel indices
      * \return Direct sun illumination
      */
-    template <typename Spec>
-    Spec eval_sun(const dr::uint32_array_t<Spec> &channel_idx,
+    USpec eval_sun(const USpecUInt32 &channel_idx,
                    const Float &cos_theta, const Float &gamma,
-                   const dr::mask_t<Spec> &active = true) const {
-        using SpecUInt32 = dr::uint32_array_t<Spec>;
+                   const USpecMask &active = true) const {
 
         // Angles computation
         Float elevation = 0.5f * dr::Pi<Float> - dr::acos(cos_theta);
@@ -699,16 +688,16 @@ protected:
             0.5f * dr::Pi<Float> * dr::pow((Float) pos / SUN_SEGMENTS, 3.f);
         Float x = elevation - break_x;
 
-        Spec solar_radiance = 0.f;
+        USpec solar_radiance = 0.f;
         if constexpr (!is_rgb_v<Spectrum>) {
             DRJIT_MARK_USED(gamma);
             // Compute sun radiance
-            SpecUInt32 global_idx = pos * WAVELENGTH_COUNT * SUN_CTRL_PTS +
+            USpecUInt32 global_idx = pos * WAVELENGTH_COUNT * SUN_CTRL_PTS +
                                     channel_idx * SUN_CTRL_PTS;
             for (uint8_t k = 0; k < SUN_CTRL_PTS; ++k)
                 solar_radiance +=
                     dr::pow(x, k) *
-                    dr::gather<Spec>(m_sun_radiance, global_idx + k, active);
+                    dr::gather<USpec>(m_sun_radiance, global_idx + k, active);
         } else {
             // Reproduces the spectral computation for RGB, however, in this case,
             // limb darkening is baked into the dataset, hence the extra work
@@ -764,12 +753,11 @@ protected:
      *      The spectral values of limb darkening to apply to the sun's
      *      radiance by multiplication
      */
-    template <typename Spec>
-    Spec compute_sun_ld(const dr::uint32_array_t<Spec> &channel_idx_low,
-                        const dr::uint32_array_t<Spec> &channel_idx_high,
-                        const wavelength_t<Spec> &lerp_f, const Float &gamma,
-                        const dr::mask_t<Spec> &active) const {
-        using SpecLdArray = dr::Array<Spec, SUN_LD_PARAMS>;
+    USpec compute_sun_ld(const USpecUInt32 &channel_idx_low,
+                        const USpecUInt32 &channel_idx_high,
+                        const wavelength_t<USpec> &lerp_f, const Float &gamma,
+                        const USpecMask &active) const {
+        using SpecLdArray = dr::Array<USpec, SUN_LD_PARAMS>;
 
         SpecLdArray sun_ld_low  = dr::gather<SpecLdArray>(m_sun_ld.array(), channel_idx_low, active),
                     sun_ld_high = dr::gather<SpecLdArray>(m_sun_ld.array(), channel_idx_high, active),
@@ -777,7 +765,7 @@ protected:
 
         Float cos_psi = sun_cos_psi(gamma);
 
-        Spec sun_ld = 0.f;
+        USpec sun_ld = 0.f;
         for (uint8_t j = 0; j < SUN_LD_PARAMS; ++j)
             sun_ld += dr::pow(cos_psi, j) * sun_ld_coefs[j];
 
