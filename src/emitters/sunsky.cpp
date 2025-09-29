@@ -358,23 +358,23 @@ private:
     }
 
     std::pair<SkyRadData, SkyParamsData>
-    get_sky_datasets(const Point2f& /* sun_angles */, const USpecUInt32& channel_idx, const USpecMask& active) const override {
+    get_sky_datasets(const Float& /* sun_theta */, const USpecUInt32& channel_idx, const USpecMask& active) const override {
         SkyRadData mean_rad = dr::gather<SkyRadData>(m_sky_radiance, channel_idx, active);
         SkyParamsData coefs = dr::gather<SkyParamsData>(m_sky_params, channel_idx, active);
 
         return std::make_pair(mean_rad, coefs);
     }
 
-    Float get_sky_sampling_weight(const Point2f& /* sun_angles */, const Mask& /* active */) const override {
+    Float get_sky_sampling_weight(const Float& /* sun_theta */, const Mask& /* active */) const override {
         return m_sky_sampling_w;
     }
 
-    USpec get_sun_irradiance(const Point2f& /* sun_angles */, const USpecUInt32& channel_idx, const Mask& active) const override {
+    USpec get_sun_irradiance(const Float& /* sun_theta */, const USpecUInt32& channel_idx, const USpecMask& active) const override {
         return dr::gather<USpec>(m_sun_irrad, channel_idx, active);
     }
 
 
-    std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Point2f& /* sun_angles */, const Mask& active) const override {
+    std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Float& /* sun_theta */, const Mask& active) const override {
         const auto [ idx, temp_sample ] = m_gaussian_distr.sample_reuse(sample, active);
         const auto [ idx_div, idx_mod ] = dr::idivmod(idx, TGMM_COMPONENTS);
 
@@ -431,7 +431,7 @@ private:
         using UInt32Storage = DynamicBuffer<UInt32>;
 
         // ============== EXTRACT INDEXES AND LERP WEIGHTS ==============
-        const auto [ lerp_w, tgmm_idx ] = Base::get_tgmm_data(m_sun_angles);
+        const auto [ lerp_w, tgmm_idx ] = Base::get_tgmm_data(m_sun_angles.y());
 
         // ==================== EXTRACT PARAMETERS AND APPLY LERP WEIGHT ====================
         FloatStorage gaussian_weights = dr::zeros<FloatStorage>(4 * TGMM_COMPONENTS);
