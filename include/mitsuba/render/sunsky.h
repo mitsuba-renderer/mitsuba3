@@ -222,12 +222,18 @@ public:
         const TensorFile tgmm_dataset(
             file_resolver()->resolve(DATABASE_PATH + "tgmm_tables.bin")
         );
+        const TensorFile irrad_dataset {
+            file_resolver()->resolve(DATABASE_PATH + "sampling_data.bin")
+        };
 
         m_sky_params_dataset = load_field<TensorXf64>(datasets, "sky_params" + dataset_type);
         m_sky_rad_dataset = load_field<TensorXf64>(datasets, "sky_rad" + dataset_type);
         m_sun_rad_dataset = load_field<TensorXf64>(datasets, "sun_rad" + dataset_type);
 
         m_tgmm_tables = load_field<TensorXf32>(tgmm_dataset, "tgmm_tables");
+
+        m_sky_irrad_dataset = load_field<TensorXf32>(irrad_dataset, "sky_irradiance");
+        m_sun_irrad_dataset = load_field<TensorXf32>(irrad_dataset, "sun_irradiance");
 
         // Only used in spectral mode since limb darkening is baked in the RGB dataset
         if constexpr (!is_rgb_v<Spectrum>) {
@@ -242,7 +248,8 @@ public:
         m_bsphere = BoundingSphere3f(ScalarPoint3f(0.f), 1.f);
 
         dr::eval(m_albedo_tex, m_albedo, m_sun_radiance, m_sky_rad_dataset,
-                 m_sky_params_dataset, m_sun_ld, m_sun_rad_dataset);
+                 m_sky_params_dataset, m_sun_ld, m_sun_rad_dataset,
+                 m_sky_irrad_dataset, m_sun_irrad_dataset, m_tgmm_tables);
 
         m_flags = +EmitterFlags::Infinite | +EmitterFlags::SpatiallyVarying;
     }
@@ -1216,6 +1223,11 @@ protected:
     TensorXf m_sky_params_dataset;
     TensorXf m_sun_ld; // Not initialized in RGB mode
     TensorXf m_sun_rad_dataset;
+
+    // Contains irradiance values for the 10 turbidites,
+    // 30 elevations and 11 wavelengths
+    TensorXf m_sky_irrad_dataset;
+    TensorXf m_sun_irrad_dataset;
 
     FloatStorage m_tgmm_tables;
 };

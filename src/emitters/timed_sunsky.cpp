@@ -181,7 +181,7 @@ public:
         m_turbidity, m_sky_scale, m_sun_scale, m_albedo,
         m_sun_half_aperture, m_sky_rad_dataset, m_tgmm_tables,
         m_sky_params_dataset, m_sun_radiance,
-        CHANNEL_COUNT, m_to_world
+        CHANNEL_COUNT, m_to_world, m_sky_irrad_dataset, m_sun_irrad_dataset
     )
 
     using typename Base::FloatStorage;
@@ -482,12 +482,6 @@ private:
     /// Sampling weights (sun vs sky) for each elevation
     FloatStorage m_sky_sampling_weights;
 
-    // ========= Irradiance datasets loaded from file =========
-    // Contains irradiance values for the 10 turbidites,
-    // 30 elevations and 11 wavelengths
-    TensorXf m_sky_irrad_dataset;
-    TensorXf m_sun_irrad_dataset;
-
     MI_TRAVERSE_CB(
         Base,
         Base::m_bsphere,
@@ -499,6 +493,8 @@ private:
         Base::m_sky_params_dataset,
         Base::m_sun_ld,
         Base::m_sun_rad_dataset,
+        Base::m_sky_irrad_dataset,
+        Base::m_sun_irrad_dataset,
         Base::m_tgmm_tables,
         m_window_start_time,
         m_window_end_time,
@@ -508,9 +504,7 @@ private:
         m_nb_days,
         m_sky_rad,
         m_sky_params,
-        m_sky_sampling_weights,
-        m_sky_irrad_dataset,
-        m_sun_irrad_dataset
+        m_sky_sampling_weights
     )
 };
 

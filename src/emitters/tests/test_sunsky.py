@@ -286,7 +286,8 @@ def test07_sun_and_sky_sampling(variants_vec_backends_once, turb, sun_theta):
         "type": "sunsky",
         "sun_direction": [cp_sun * st, sp_sun * st, ct],
         "turbidity": turb,
-        # Increase the sun aperture to avoid errors with chi2's resolution
+        # Increase the sun aperture and scale to avoid errors with chi2's resolution
+        "sun_scale": 1.25,
         "sun_aperture": 30.0,
         "albedo": 0.5
     }
