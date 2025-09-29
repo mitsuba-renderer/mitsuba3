@@ -324,8 +324,8 @@ private:
     }
 
     std::pair<SkyRadData, SkyParamsData>
-    get_sky_datasets(const Point2f& sun_angles, const USpecUInt32& channel_idx, const USpecMask& active) const override {
-        const Float sun_eta = 0.5f * dr::Pi<Float> - sun_angles.y();
+    get_sky_datasets(const Float& sun_theta, const USpecUInt32& channel_idx, const USpecMask& active) const override {
+        const Float sun_eta = 0.5f * dr::Pi<Float> - sun_theta;
         USpecMask active_dataset = active & (sun_eta >= 0.f);
 
         return std::make_pair(
@@ -334,9 +334,9 @@ private:
         );
     }
 
-    Float get_sky_sampling_weight(const Point2f& sun_angles, const Mask& active) const override {
-        Mask valid_elevation = active & (sun_angles.y() <= 0.5f * dr::Pi<Float>);
-        Float sun_idx = 0.5f * dr::Pi<Float> - sun_angles.y();
+    Float get_sky_sampling_weight(const Float& sun_theta, const Mask& active) const override {
+        Mask valid_elevation = active & (sun_theta <= 0.5f * dr::Pi<Float>);
+        Float sun_idx = 0.5f * dr::Pi<Float> - sun_theta;
               sun_idx = (sun_idx - 2.f) / 3.f;
               sun_idx /= ELEVATION_CTRL_PTS;
 
@@ -347,14 +347,14 @@ private:
     }
 
 
-    USpec get_sun_irradiance(const Point2f& sun_angles, const USpecUInt32& channel_idx, const Mask& active) const override {
-        Mask valid_elevation = active & (sun_angles.y() <= 0.5f * dr::Pi<Float>);
-        Float sun_idx = 0.5f * dr::Pi<Float> - sun_angles.y();
+    USpec get_sun_irradiance(const Float& sun_theta, const USpecUInt32& channel_idx, const USpecMask& active) const override {
+        USpecMask valid_elevation = active & (sun_theta <= 0.5f * dr::Pi<Float>);
+        Float sun_idx = 0.5f * dr::Pi<Float> - sun_theta;
               sun_idx = (sun_idx - 2.f) / 3.f;
               sun_idx /= ELEVATION_CTRL_PTS;
 
         Float res[CHANNEL_COUNT] = { 0.f };
-        m_sun_irrad_tex->eval(dr::Array<Float, 1>(sun_idx), res, valid_elevation);
+        m_sun_irrad_tex->eval(dr::Array<Float, 1>(sun_idx), res, dr::any(valid_elevation));
 
         USpec irradiance = 0.f;
         for (uint32_t channel = 0; channel < CHANNEL_COUNT; ++channel)
@@ -363,8 +363,8 @@ private:
         return irradiance;
     }
 
-    std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Point2f& sun_angles, const Mask& active) const override {
-        const auto [ lerp_w, tgmm_idx ] = Base::get_tgmm_data(sun_angles);
+    std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Float& sun_theta, const Mask& active) const override {
+        const auto [ lerp_w, tgmm_idx ] = Base::get_tgmm_data(sun_theta);
 
         Mask active_loop = active;
         Float last_cdf = 0.f, cdf = 0.f;

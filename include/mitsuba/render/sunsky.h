@@ -330,7 +330,7 @@ public:
         const Point2f sun_angles = get_sun_angles(time);
         active &= sun_angles.y() <= 0.5f * dr::Pi<Float>;
 
-        const Float sky_sampling_w = get_sky_sampling_weight(sun_angles, active);
+        const Float sky_sampling_w = get_sky_sampling_weight(sun_angles.y(), active);
 
         // 1. Sample spatial component
         Point2f offset = warp::square_to_uniform_disk_concentric(sample2);
@@ -401,7 +401,7 @@ public:
         const Point2f sun_angles = get_sun_angles(it.time);
         active &= sun_angles.y() <= 0.5f * dr::Pi<Float>;
 
-        const Float sky_sampling_w = get_sky_sampling_weight(sun_angles, active);
+        const Float sky_sampling_w = get_sky_sampling_weight(sun_angles.y(), active);
 
         Mask pick_sky = sample.x() < sky_sampling_w;
 
@@ -443,7 +443,7 @@ public:
                     Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
         const Point2f sun_angles = get_sun_angles(ds.time);
-        const Float sky_sampling_w = get_sky_sampling_weight(sun_angles, active);
+        const Float sky_sampling_w = get_sky_sampling_weight(sun_angles.y(), active);
 
         Vector3f local_dir = dr::normalize(m_to_world.value().inverse() * ds.d);
         Float sky_pdf, sun_pdf;
@@ -496,40 +496,40 @@ protected:
 
     /**
      * Getter sky radiance datasets for the given wavelengths and sun angles
-     * @param sun_angles Sun angles in local (emitter) space
+     * @param sun_theta The angle between the sun's direction and the z axis
      * @param channel_idx Indices of the queried channels
      * @param active Indicates which channels are valid indices
      * @return The sky mean radiance dataset and the sky parameters
      *         for the Wilkie-Hosek 2012 sky model
      */
     virtual std::pair<SkyRadData, SkyParamsData>
-    get_sky_datasets(const Point2f& sun_angles, const USpecUInt32& channel_idx, const USpecMask& active) const = 0;
+    get_sky_datasets(const Float& sun_theta, const USpecUInt32& channel_idx, const USpecMask& active) const = 0;
 
     /**
      * Getter fot the probability of sampling the sky for a given sun position
-     * @param sun_angles The sun azimuth and elevation angles
+     * @param sun_theta The angle between the sun's direction and the z axis
      * @param active Indicates active lanes
      * @return The probability of sampling the sky over the sun
      */
-    virtual Float get_sky_sampling_weight(const Point2f& sun_angles, const Mask& active) const = 0;
+    virtual Float get_sky_sampling_weight(const Float& sun_theta, const Mask& active) const = 0;
 
     /**
      * Getter for the sun's irradiance at a given sun elevation and wavelengths
-     * @param sun_angles The azimuth and elevation angles of the sun
+     * @param sun_theta The angle between the sun's direction and the z axis
      * @param channel_idx The indices of the queried channels
      * @param active Indicates active lanes
      * @return The sun irradiance for the given conditions
      */
-    virtual USpec get_sun_irradiance(const Point2f& sun_angles, const USpecUInt32& channel_idx, const Mask& active) const = 0;
+    virtual USpec get_sun_irradiance(const Float& sun_theta, const USpecUInt32& channel_idx, const USpecMask& active) const = 0;
 
     /**
      * Samples a gaussian from the Truncated Gaussian mixture
      * @param sample Sample in [0, 1]
-     * @param sun_angles Sun azimuth and elevation angles
+     * @param sun_theta The angle between the sun's direction and the z axis
      * @param active Indicates active lanes
      * @return The index of the chosen gaussian and the sample to be reused
      */
-    virtual std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Point2f& sun_angles, const Mask &active) const = 0;
+    virtual std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Float& sun_theta, const Mask &active) const = 0;
 
     /**
      * Samples wavelengths and evaluates the associated weights
@@ -572,7 +572,7 @@ protected:
                 idx = USpecUInt32(0);
 
             if (m_sky_scale > 0.f) {
-                const auto [ sky_rad, sky_params ] = get_sky_datasets(sun_angles, idx, active);
+                const auto [ sky_rad, sky_params ] = get_sky_datasets(sun_angles.y(), idx, active);
                 res = m_sky_scale * eval_sky(cos_theta, gamma, sky_params, sky_rad);
             }
 
@@ -594,8 +594,8 @@ protected:
             Wavelength lerp_factor = normalized_wavelengths - query_idx_low;
 
             if (m_sky_scale > 0.f) {
-                const auto [ sky_rad_low, sky_params_low ] = get_sky_datasets(sun_angles, query_idx_low, active & valid_idx);
-                const auto [ sky_rad_high, sky_params_high ] = get_sky_datasets(sun_angles, query_idx_high, active & valid_idx);
+                const auto [ sky_rad_low, sky_params_low ] = get_sky_datasets(sun_angles.y(), query_idx_low, active & valid_idx);
+                const auto [ sky_rad_high, sky_params_high ] = get_sky_datasets(sun_angles.y(), query_idx_high, active & valid_idx);
 
                 // Linearly interpolate the sky's irradiance across the spectrum
                 res = m_sky_scale * dr::lerp(
@@ -779,12 +779,12 @@ protected:
     /**
      * \brief Getter for the 4 interpolation points on turbidity and elevation
      * of the Truncated Gaussian Mixtures
-     * \param sun_angles Azimuth and elevation angles of the sun
+     * @param sun_theta The angle between the sun's direction and the z axis
      * @return The 4 interpolation weights and
      *          the 4 indices corresponding to the start of the TGMMs in memory
      */
-    std::pair<Vector4f, Vector4u> get_tgmm_data(const Point2f& sun_angles) const {
-        Float sun_eta = 0.5f * dr::Pi<Float> - sun_angles.y();
+    std::pair<Vector4f, Vector4u> get_tgmm_data(const Float& sun_theta) const {
+        Float sun_eta = 0.5f * dr::Pi<Float> - sun_theta;
               sun_eta = dr::rad_to_deg(sun_eta);
 
         Float eta_idx_f = dr::clip((sun_eta - 2) / 3, 0, ELEVATION_CTRL_PTS - 1),
@@ -832,7 +832,7 @@ protected:
      */
     Vector3f sample_sky(Point2f sample, const Point2f& sun_angles, const Mask& active) const {
         // Sample a gaussian from the mixture
-        const auto [ gaussian_idx, temp_sample ] = sample_reuse_tgmm(sample.x(), sun_angles, active);
+        const auto [ gaussian_idx, temp_sample ] = sample_reuse_tgmm(sample.x(), sun_angles.y(), active);
 
         // {mu_phi, mu_theta, sigma_phi, sigma_theta, weight}
         Gaussian gaussian = dr::gather<Gaussian>(m_tgmm_tables, gaussian_idx, active);
@@ -869,7 +869,7 @@ protected:
      * \return The PDF of the sky for the given angles with no sin(theta) factor
      */
     Float tgmm_pdf(Point2f angles, const Point2f& sun_angles, Mask active) const {
-        const auto [ lerp_w, tgmm_idx ] = get_tgmm_data(sun_angles);
+        const auto [ lerp_w, tgmm_idx ] = get_tgmm_data(sun_angles.y());
 
         // From local frame to reference frame where sun_phi = pi/2 and phi is in [0, 2pi]
         angles.x() -= sun_angles.x() - 0.5f * dr::Pi<Float>;
