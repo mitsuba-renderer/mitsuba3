@@ -185,6 +185,7 @@ public:
 
     using SkyRadData    = USpec;
     using SkyParamsData = dr::Array<SkyRadData, SKY_PARAMS>;
+    using FullSpectrum  = unpolarized_spectrum_t<mitsuba::Spectrum<Float, WAVELENGTH_COUNT>>;
 
     BaseSunskyEmitter(const Properties &props) : Base(props) {
         if constexpr (!(is_rgb_v<Spectrum> || is_spectral_v<Spectrum>))
@@ -511,6 +512,15 @@ protected:
      * @return The probability of sampling the sky over the sun
      */
     virtual Float get_sky_sampling_weight(const Point2f& sun_angles, const Mask& active) const = 0;
+
+    /**
+     * Getter for the sun's irradiance at a given sun elevation and wavelengths
+     * @param sun_angles The azimuth and elevation angles of the sun
+     * @param channel_idx The indices of the queried channels
+     * @param active Indicates active lanes
+     * @return The sun irradiance for the given conditions
+     */
+    virtual USpec get_sun_irradiance(const Point2f& sun_angles, const USpecUInt32& channel_idx, const Mask& active) const = 0;
 
     /**
      * Samples a gaussian from the Truncated Gaussian mixture

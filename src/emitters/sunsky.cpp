@@ -204,12 +204,9 @@ public:
     using typename Base::USpecUInt32;
     using typename Base::USpecMask;
 
-    MI_IMPORT_TYPES(Scene, Texture)
+    using typename Base::FullSpectrum;
 
-    using FullSpectrum = std::conditional_t<
-        is_spectral_v<Spectrum>,
-        unpolarized_spectrum_t<mitsuba::Spectrum<Float, WAVELENGTH_COUNT>>,
-        unpolarized_spectrum_t<Spectrum>>;
+    MI_IMPORT_TYPES(Scene, Texture)
 
     SunskyEmitter(const Properties &props) : Base(props) {
         if (props.has_property("sun_direction")) {
@@ -372,6 +369,11 @@ private:
         return m_sky_sampling_w;
     }
 
+    USpec get_sun_irradiance(const Point2f& /* sun_angles */, const USpecUInt32& channel_idx, const Mask& active) const override {
+        return dr::gather<USpec>(m_sun_irrad, channel_idx, active);
+    }
+
+
     std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Point2f& /* sun_angles */, const Mask& active) const override {
         const auto [ idx, temp_sample ] = m_gaussian_distr.sample_reuse(sample, active);
         const auto [ idx_div, idx_mod ] = dr::idivmod(idx, TGMM_COMPONENTS);
@@ -490,13 +492,12 @@ private:
         FloatStorage spec_sun_irrad = sun_irrad;
         Float sky_lum = m_sky_scale, sun_lum = m_sun_scale;
         {
-            using FullSpec = mitsuba::Spectrum<Float, WAVELENGTH_COUNT>;
 
-            FullSpec sky_irrad_spec = dr::gather<FullSpec>(sky_irrad, UInt32(0)),
-                     sun_irrad_spec = dr::gather<FullSpec>(sun_irrad, UInt32(0));
+            FullSpectrum sky_irrad_spec = dr::gather<FullSpectrum>(sky_irrad, UInt32(0)),
+                         sun_irrad_spec = dr::gather<FullSpectrum>(sun_irrad, UInt32(0));
 
-            FullSpec wavelengths = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-                     wavelengths = WAVELENGTH_STEP * wavelengths + WAVELENGTHS<ScalarFloat>[0];
+            FullSpectrum wavelengths = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+                         wavelengths = WAVELENGTH_STEP * wavelengths + WAVELENGTHS<ScalarFloat>[0];
 
             sky_lum *= luminance(sky_irrad_spec, wavelengths);
             sun_lum *= luminance(sun_irrad_spec, wavelengths) *
