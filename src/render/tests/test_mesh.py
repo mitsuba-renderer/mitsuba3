@@ -1440,3 +1440,18 @@ def test38_ray_intersect_triangle(variants_all_rgb):
     pi = mesh.ray_intersect_triangle(mi.UInt32(0), ray)
     assert dr.all(dr.abs(pi.t - 1) <= 1e-12)
     assert dr.all(pi.prim_index == 0)
+
+def test39_custom_vertex_normals(variants_vec_rgb):
+    m = mi.Mesh(mi.Properties())
+    normals = dr.linspace(mi.Float, -1, 1, 12)
+    params = mi.traverse(m)
+    params['vertex_positions'] = [0.0, 0.0, 0.0,
+                                  1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0]
+    params['faces'] = [0, 1, 2, 1, 2, 3]
+    params['vertex_normals'] = normals
+    params.update()
+    assert m.has_vertex_normals()
+    params = mi.traverse(m)
+
+    # The custom vertex normals should not have been modified.
+    assert dr.allclose(params['vertex_normals'], normals)

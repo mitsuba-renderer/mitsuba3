@@ -128,7 +128,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std:
     if (keys.empty() || string::contains(keys, "vertex_positions") || mesh_attributes_changed) {
         recompute_bbox();
 
-        if (has_vertex_normals())
+        if (has_vertex_normals() && !string::contains(keys, "vertex_normals"))
             recompute_vertex_normals();
 
         if (!m_area_pmf.empty() || m_emitter || m_sensor)
