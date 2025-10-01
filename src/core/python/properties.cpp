@@ -151,6 +151,8 @@ MI_PY_EXPORT(Properties) {
         .SET_ITEM_BINDING(ScalarAffineTransform4f)
         .SET_ITEM_BINDING(ScalarAffineTransform4d)
         .SET_ITEM_BINDING(Properties::Spectrum)
+        .SET_ITEM_BINDING(Properties::ResolvedReference)
+        .SET_ITEM_BINDING(Properties::Reference)
         .def("__setitem__",
             [](Properties &p, std::string_view key, const fs::path &value) {
                 p.set(key, value.string(), false);
