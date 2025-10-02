@@ -73,7 +73,7 @@ NAMESPACE_BEGIN(mitsuba)
  */
 
 template <typename Float_, size_t Dimension_ = 0>
-class DiscreteDistribution2D : drjit::TraversableBase{
+class DiscreteDistribution2D : drjit::TraversableBase {
 public:
     using Float                       = Float_;
     using UInt32                      = dr::uint32_array_t<Float>;

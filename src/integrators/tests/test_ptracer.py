@@ -30,8 +30,6 @@ def create_test_scene(max_depth=4, emitter='area',
             'film': {
                 'type': 'hdrfilm',
                 'width': 8, 'height': 8,
-                #'width': 1, 'height': 1,
-                #'width': 128, 'height': 128,
                 'rfilter': {'type': 'box'}
             },
         }
