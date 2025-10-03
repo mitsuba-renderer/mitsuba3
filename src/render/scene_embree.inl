@@ -237,8 +237,13 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
            trigger the release of the Embree acceleration data structure if no
            ray tracing calls are pending. */
         m_accel_handle = 0;
-        m_accel = nullptr;
+    } else {    
+        // Immediately release Embree structures in non-JIT modes.
+        EmbreeState<Float> *s = (EmbreeState<Float> *) m_accel;
+        rtcReleaseScene(s->accel);
+        delete s;
     }
+    m_accel = nullptr;
 }
 
 MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
