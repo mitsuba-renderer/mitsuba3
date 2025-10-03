@@ -890,7 +890,7 @@ template <typename T> T Properties::get(size_t index) const {
     } else {
         // Handle Transform4f -> Transform3f conversion
         if constexpr (detail::is_transform_3<T>::value)
-            return static_cast<T>(value.extract());
+            return T(value.matrix, value.inverse_transpose);
         else
             return static_cast<T>(value);
     }

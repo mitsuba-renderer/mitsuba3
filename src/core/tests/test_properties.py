@@ -207,7 +207,8 @@ def test10_transforms3(variant_scalar_rgb):
     p = mi.Properties()
     p["transform"] = mi.ScalarTransform3d().translate([2,4])
 
-    assert type(p["transform"] is mi.ScalarTransform3d)
+    # In Python, transforms are always returned as 4x4
+    assert type(p["transform"]) is mi.ScalarTransform4d
 
 
 def test11_tensor(variant_scalar_rgb):
