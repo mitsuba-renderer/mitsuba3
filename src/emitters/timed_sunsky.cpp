@@ -337,7 +337,7 @@ private:
     Float get_sky_sampling_weight(const Float& sun_theta, const Mask& active) const override {
         Mask valid_elevation = active & (sun_theta <= 0.5f * dr::Pi<Float>);
         Float sun_idx = 0.5f * dr::Pi<Float> - sun_theta;
-              sun_idx = (sun_idx - 2.f) / 3.f;
+              sun_idx = (dr::rad_to_deg(sun_idx) - 2.f) / 3.f;
               sun_idx /= ELEVATION_CTRL_PTS;
 
         Float res;
@@ -350,7 +350,7 @@ private:
     USpec get_sun_irradiance(const Float& sun_theta, const USpecUInt32& channel_idx, const USpecMask& active) const override {
         USpecMask valid_elevation = active & (sun_theta <= 0.5f * dr::Pi<Float>);
         Float sun_idx = 0.5f * dr::Pi<Float> - sun_theta;
-              sun_idx = (sun_idx - 2.f) / 3.f;
+              sun_idx = (dr::rad_to_deg(sun_idx) - 2.f) / 3.f;
               sun_idx /= ELEVATION_CTRL_PTS;
 
         Float res[CHANNEL_COUNT] = { 0.f };
@@ -466,7 +466,7 @@ private:
                          sun_lum = m_sun_scale * luminance(sun_irrad, wavelengths),
                          sampling_weigths = sky_lum / (sky_lum + sun_lum);
 
-            dr::masked(sampling_weigths, dr::isfinite(sampling_weigths)) = 0.f;
+            dr::masked(sampling_weigths, !dr::isfinite(sampling_weigths)) = 0.f;
 
             const size_t shape[2] = { ELEVATION_CTRL_PTS, 1 };
             TensorXf temp = TensorXf(sampling_weigths, 2, shape);
@@ -478,7 +478,7 @@ private:
         {
             // Convert to RGB if needed
             if constexpr (is_rgb_v<Spectrum>) {
-                Color3fStorage rgb_sun_irrad = spectrum_to_srgb(sun_irrad, wavelengths);
+                Color3fStorage rgb_sun_irrad = spectrum_to_srgb(sun_irrad, wavelengths) / ScalarFloat(MI_CIE_Y_NORMALIZATION);
                 sun_irrad_data = dr::ravel(rgb_sun_irrad);
             }
 

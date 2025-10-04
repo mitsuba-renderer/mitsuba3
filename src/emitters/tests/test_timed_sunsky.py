@@ -74,7 +74,7 @@ def generate_average(plugin, render_res, time_res):
         dr.scatter_add(result, color, pixel_idx_wav, active)
 
 
-    return mi.TensorXf(dr.ravel(result), (*render_res, dr.size_v(mi.Spectrum)))
+    return mi.TensorXf(dr.ravel(result), (*render_res[::-1], dr.size_v(mi.Spectrum)))
 
 def test01_average_of_average(variants_vec_backends_once):
     if mi.is_polarized:
@@ -206,7 +206,8 @@ def test04_sun_and_sky_sampling(variants_vec_backends_once, turb, start_day):
             sample_dim=2,
             sample_count=400_000,
             res=101,
-            ires=32
+            ires=32,
+            seed=5
         )
 
         assert test.run(), f"Chi2 test failed at {time=}"

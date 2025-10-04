@@ -50,7 +50,7 @@ static const constexpr uint32_t TGMM_COMPONENTS = 5;
 static const constexpr uint32_t TGMM_GAUSSIAN_PARAMS = 5;
 
 /// Sun half aperture angle in radians
-#define SUN_HALF_APERTURE (dr::deg_to_rad(0.5358/2.0))
+static const constexpr double SUN_HALF_APERTURE = dr::Pi<double> * (0.5 * 0.5358) / 180;
 /// Mean radius of the Earth
 static const constexpr double EARTH_MEAN_RADIUS = 6371.01;   // In km
 /// Astronomical unit
@@ -209,6 +209,8 @@ public:
         if (m_sun_half_aperture <= 0.f || 0.5f * dr::Pi<Float> <= m_sun_half_aperture)
             Log(Error, "Invalid sun aperture angle: %f, must be in ]0, 90[ degrees!", dr::rad_to_deg(2 * m_sun_half_aperture));
 
+        m_complex_sun = props.get<bool>("complex_sun", false);
+
         m_albedo_tex = props.get_texture<Texture>("albedo", 0.3f);
         if (m_albedo_tex->is_spatially_varying())
             Log(Error, "Expected a non-spatially varying radiance spectra!");
@@ -290,11 +292,12 @@ public:
 
     std::string to_string() const override {
         std::ostringstream oss;
-        oss << "\n\tTurbiodity = " << m_turbidity
+        oss << "\n\tTurbidity = " << m_turbidity
             << "\n\tAlbedo = " << m_albedo
             << "\n\tSun scale = " << m_sun_scale
             << "\n\tSky scale = " << m_sky_scale
-            << "\n\tSun aperture = " << dr::rad_to_deg(2 * m_sun_half_aperture);
+            << "\n\tSun aperture = " << dr::rad_to_deg(2 * m_sun_half_aperture)
+            << "\n\tComplex sun model = " << (m_complex_sun ? "true" : "false");
         return oss.str();
     }
 
@@ -577,7 +580,7 @@ protected:
             }
 
             if (m_sun_scale > 0.f) {
-                res += m_sun_scale * eval_sun(idx, cos_theta, gamma, hit_sun) *
+                res += m_sun_scale * eval_sun(idx, sun_angles.y(), cos_theta, gamma, hit_sun) *
                        get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
             }
 
@@ -606,13 +609,14 @@ protected:
 
             if (m_sun_scale > 0.f) {
                 // Linearly interpolate the sun's irradiance across the spectrum
-                USpec sun_rad_low = eval_sun(query_idx_low, cos_theta, gamma, hit_sun & valid_idx);
-                USpec sun_rad_high = eval_sun(query_idx_high, cos_theta, gamma, hit_sun & valid_idx);
+                USpec sun_rad_low = eval_sun(query_idx_low, sun_angles.y(), cos_theta, gamma, hit_sun & valid_idx);
+                USpec sun_rad_high = eval_sun(query_idx_high, sun_angles.y(), cos_theta, gamma, hit_sun & valid_idx);
                 USpec sun_rad = dr::lerp(sun_rad_low, sun_rad_high, lerp_factor);
 
-                USpec sun_ld = compute_sun_ld(query_idx_low, query_idx_high, lerp_factor,
-                    gamma, hit_sun & valid_idx
-                );
+                USpec sun_ld = 1.f;
+                if (m_complex_sun)
+                    sun_ld = compute_sun_ld(query_idx_low, query_idx_high, lerp_factor,
+                                gamma, hit_sun & valid_idx);
 
                 res += m_sun_scale * sun_rad * sun_ld * get_area_ratio(m_sun_half_aperture);
             }
@@ -664,6 +668,8 @@ protected:
      *
      * \param channel_idx
      *       Indices of the channels to render
+     * \param sun_theta
+     *       Elevation angle of the sun
      * \param cos_theta
      *       Cosine of the angle between the z-axis (up) and the viewing direction
      * \param gamma
@@ -673,8 +679,15 @@ protected:
      * \return Direct sun illumination
      */
     USpec eval_sun(const USpecUInt32 &channel_idx,
+                   const Float &sun_theta,
                    const Float &cos_theta, const Float &gamma,
                    const USpecMask &active = true) const {
+
+
+        if (!m_complex_sun)
+            // Get mean radiance by dividing irradiance by the solid angle of the sun
+            return get_sun_irradiance(sun_theta, channel_idx, active)
+                        / (dr::TwoPi<Float> * (1.f - dr::cos(ScalarFloat(SUN_HALF_APERTURE))));
 
         // Angles computation
         Float elevation = 0.5f * dr::Pi<Float> - dr::acos(cos_theta);
@@ -982,8 +995,8 @@ protected:
      * @return The appropriate scaling factor
      */
     MI_INLINE Float get_area_ratio(const Float &custom_half_aperture) const {
-        return (1 - Float(dr::cos(SUN_HALF_APERTURE))) /
-               (1 - dr::cos(custom_half_aperture));
+        return (1.f - dr::cos(ScalarFloat(SUN_HALF_APERTURE))) /
+               (1.f - dr::cos(custom_half_aperture));
     }
 
     /**
@@ -1201,6 +1214,7 @@ protected:
     static constexpr uint32_t GAUSSIAN_NB =
         (TURBITDITY_LVLS - 1) * ELEVATION_CTRL_PTS * TGMM_COMPONENTS;
 
+    ScalarBool m_complex_sun;
     BoundingSphere3f m_bsphere;
 
     // ========= Common parameters =========
