@@ -209,6 +209,8 @@ public:
         if (m_sun_half_aperture <= 0.f || 0.5f * dr::Pi<Float> <= m_sun_half_aperture)
             Log(Error, "Invalid sun aperture angle: %f, must be in ]0, 90[ degrees!", dr::rad_to_deg(2 * m_sun_half_aperture));
 
+        m_complex_sun = props.get<bool>("complex_sun", false);
+
         m_albedo_tex = props.get_texture<Texture>("albedo", 0.3f);
         if (m_albedo_tex->is_spatially_varying())
             Log(Error, "Expected a non-spatially varying radiance spectra!");
@@ -610,9 +612,10 @@ protected:
                 USpec sun_rad_high = eval_sun(query_idx_high, cos_theta, gamma, hit_sun & valid_idx);
                 USpec sun_rad = dr::lerp(sun_rad_low, sun_rad_high, lerp_factor);
 
-                USpec sun_ld = compute_sun_ld(query_idx_low, query_idx_high, lerp_factor,
-                    gamma, hit_sun & valid_idx
-                );
+                USpec sun_ld = 1.f;
+                if (m_complex_sun)
+                    sun_ld = compute_sun_ld(query_idx_low, query_idx_high, lerp_factor,
+                                gamma, hit_sun & valid_idx);
 
                 res += m_sun_scale * sun_rad * sun_ld * get_area_ratio(m_sun_half_aperture);
             }
@@ -677,7 +680,12 @@ protected:
                    const USpecMask &active = true) const {
 
         // Angles computation
-        Float elevation = 0.5f * dr::Pi<Float> - dr::acos(cos_theta);
+        Float theta = dr::acos(cos_theta);
+
+        if (!m_complex_sun)
+            return get_sun_irradiance(theta, channel_idx, active);
+
+        Float elevation = 0.5f * dr::Pi<Float> - theta;
 
         // Find the segment of the piecewise function we are in
         UInt32 pos = dr::floor2int<UInt32>(
@@ -982,8 +990,11 @@ protected:
      * @return The appropriate scaling factor
      */
     MI_INLINE Float get_area_ratio(const Float &custom_half_aperture) const {
-        return (1 - Float(dr::cos(SUN_HALF_APERTURE))) /
-               (1 - dr::cos(custom_half_aperture));
+        if (m_complex_sun)
+            return (1 - Float(dr::cos(SUN_HALF_APERTURE))) /
+                   (1 - dr::cos(custom_half_aperture));
+        else
+            return dr::rcp(dr::TwoPi<Float> * (1.f - dr::cos(custom_half_aperture)));
     }
 
     /**
@@ -1201,6 +1212,7 @@ protected:
     static constexpr uint32_t GAUSSIAN_NB =
         (TURBITDITY_LVLS - 1) * ELEVATION_CTRL_PTS * TGMM_COMPONENTS;
 
+    ScalarBool m_complex_sun;
     BoundingSphere3f m_bsphere;
 
     // ========= Common parameters =========
