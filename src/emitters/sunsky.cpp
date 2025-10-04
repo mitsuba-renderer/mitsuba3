@@ -280,9 +280,10 @@ public:
             cb->put("hour",      m_time.hour,          ParamFlags::NonDifferentiable);
             cb->put("minute",    m_time.minute,        ParamFlags::NonDifferentiable);
             cb->put("second",    m_time.second,        ParamFlags::NonDifferentiable);
-        } else {
-            cb->put("sun_direction", m_sun_dir, ParamFlags::Differentiable);
         }
+
+        cb->put("sun_direction", m_sun_dir, m_active_record ? ParamFlags::ReadOnly : ParamFlags::Differentiable);
+
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -504,7 +505,7 @@ private:
                             Base::get_area_ratio(m_sun_half_aperture);
 
             if constexpr (is_rgb_v<Spectrum>)
-                spec_sun_irrad = dr::ravel(spectrum_to_srgb(sun_irrad_spec, wavelengths));
+                spec_sun_irrad = dr::ravel(spectrum_to_srgb(sun_irrad_spec, wavelengths)) / ScalarFloat(MI_CIE_Y_NORMALIZATION);
 
         }
 
