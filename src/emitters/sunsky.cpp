@@ -1,4 +1,5 @@
 #include <mitsuba/core/quad.h>
+#include <mitsuba/render/srgb.h>
 #include <mitsuba/render/sunsky.h>
 
 
@@ -93,6 +94,12 @@ Sun and sky emitter (:monosp:`sunsky`)
  * - sun_aperture
    - |float|
    - Aperture angle of the sun in degrees (Default: 0.5338, normal sun aperture).
+
+ * - complex_sun
+   - |bool|
+   - Use a more complex sun model that adds gradients to the sun disk (Default: false).
+     This is more expensive to evaluate, but produces a more realistic sun appearance.
+     Both implementations integrate to the same total power.
 
  * - to_world
    - |transform|
@@ -191,7 +198,8 @@ public:
     MI_IMPORT_BASE(BaseSunskyEmitter,
         m_turbidity, m_sky_scale, m_sun_scale, m_albedo, m_bsphere,
         m_sun_half_aperture, m_sky_rad_dataset, m_tgmm_tables,
-        m_sky_params_dataset, CHANNEL_COUNT, m_to_world
+        m_sky_params_dataset, CHANNEL_COUNT, m_to_world,
+        m_sky_irrad_dataset, m_sun_irrad_dataset
     )
     using typename Base::FloatStorage;
 
@@ -202,12 +210,9 @@ public:
     using typename Base::USpecUInt32;
     using typename Base::USpecMask;
 
-    MI_IMPORT_TYPES(Scene, Texture)
+    using typename Base::FullSpectrum;
 
-    using FullSpectrum = std::conditional_t<
-        is_spectral_v<Spectrum>,
-        unpolarized_spectrum_t<mitsuba::Spectrum<Float, WAVELENGTH_COUNT>>,
-        unpolarized_spectrum_t<Spectrum>>;
+    MI_IMPORT_TYPES(Scene, Texture)
 
     SunskyEmitter(const Properties &props) : Base(props) {
         if (props.has_property("sun_direction")) {
@@ -262,12 +267,11 @@ public:
 
         m_gaussian_distr = build_tgmm_distribution(m_tgmm_tables);
 
-        // ================= AVERAGE RADIANCE =================
-        Float sampling_w;
-        ContinuousDistribution<Wavelength> wav_dist;
-        std::tie(sampling_w, wav_dist) = estimate_sky_sun_ratio();
-        m_sky_sampling_w = sampling_w;
-        m_spectral_distr = wav_dist;
+        // =============== Get irradiance data ================
+        std::tie(m_sky_sampling_w, m_spectral_distr, m_sun_irrad) = update_irradiance_data();
+
+        dr::eval(m_sky_params, m_sky_radiance, m_sky_sampling_w,
+                 m_gaussian_distr, m_spectral_distr, m_sun_irrad);
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -282,9 +286,10 @@ public:
             cb->put("hour",      m_time.hour,          ParamFlags::NonDifferentiable);
             cb->put("minute",    m_time.minute,        ParamFlags::NonDifferentiable);
             cb->put("second",    m_time.second,        ParamFlags::NonDifferentiable);
-        } else {
-            cb->put("sun_direction", m_sun_dir, ParamFlags::Differentiable);
         }
+
+        cb->put("sun_direction", m_sun_dir, m_active_record ? ParamFlags::ReadOnly : ParamFlags::Differentiable);
+
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -330,13 +335,10 @@ public:
             m_gaussian_distr = build_tgmm_distribution(m_tgmm_tables);
 
         // Update sky-sun ratio and radiance distribution
-        Float sampling_w;
-        ContinuousDistribution<Wavelength> wav_dist;
-        std::tie(sampling_w, wav_dist) = estimate_sky_sun_ratio();
+        std::tie(m_sky_sampling_w, m_spectral_distr, m_sun_irrad) = update_irradiance_data();
 
-        m_sky_sampling_w = sampling_w;
-        m_spectral_distr = wav_dist;
-
+        dr::eval(m_sky_params, m_sky_radiance, m_sky_sampling_w,
+                 m_gaussian_distr, m_spectral_distr, m_sun_irrad);
         #undef CHANGED
     }
 
@@ -363,18 +365,23 @@ private:
     }
 
     std::pair<SkyRadData, SkyParamsData>
-    get_sky_datasets(const Point2f&, const USpecUInt32& channel_idx, const USpecMask& active) const override {
+    get_sky_datasets(const Float& /* sun_theta */, const USpecUInt32& channel_idx, const USpecMask& active) const override {
         SkyRadData mean_rad = dr::gather<SkyRadData>(m_sky_radiance, channel_idx, active);
         SkyParamsData coefs = dr::gather<SkyParamsData>(m_sky_params, channel_idx, active);
 
         return std::make_pair(mean_rad, coefs);
     }
 
-    Float get_sky_sampling_weight(const Point2f&, const Mask&) const override {
+    Float get_sky_sampling_weight(const Float& /* sun_theta */, const Mask& /* active */) const override {
         return m_sky_sampling_w;
     }
 
-    std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Point2f &, const Mask &active) const override {
+    USpec get_sun_irradiance(const Float& /* sun_theta */, const USpecUInt32& channel_idx, const USpecMask& active) const override {
+        return dr::gather<USpec>(m_sun_irrad, channel_idx, active);
+    }
+
+
+    std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Float& /* sun_theta */, const Mask& active) const override {
         const auto [ idx, temp_sample ] = m_gaussian_distr.sample_reuse(sample, active);
         const auto [ idx_div, idx_mod ] = dr::idivmod(idx, TGMM_COMPONENTS);
 
@@ -431,7 +438,7 @@ private:
         using UInt32Storage = DynamicBuffer<UInt32>;
 
         // ============== EXTRACT INDEXES AND LERP WEIGHTS ==============
-        const auto [ lerp_w, tgmm_idx ] = Base::get_tgmm_data(m_sun_angles);
+        const auto [ lerp_w, tgmm_idx ] = Base::get_tgmm_data(m_sun_angles.y());
 
         // ==================== EXTRACT PARAMETERS AND APPLY LERP WEIGHT ====================
         FloatStorage gaussian_weights = dr::zeros<FloatStorage>(4 * TGMM_COMPONENTS);
@@ -448,141 +455,6 @@ private:
         }
 
         return DiscreteDistribution<Float>(gaussian_weights);
-    }
-
-    /**
-     * \brief Estimates the ratio of sky to sun luminance over the hemisphere,
-     * can be used to estimate the sampling weight of the sun and sky.
-     *
-     * \return The sky's ratio of luminance, in [0, 1] <br>
-     *         The continuous distribution of the sky-dome's integrated radiance
-     */
-    std::pair<Float, ContinuousDistribution<Wavelength>> estimate_sky_sun_ratio() const {
-        ScalarVector2f range = {
-            WAVELENGTHS<ScalarFloat>[1],
-            WAVELENGTHS<ScalarFloat>[WAVELENGTH_COUNT - 1]
-        };
-
-        if constexpr (!dr::is_array_v<Float>) {
-            // Mean ratio over the range of parameters (turbidity, sun angle)
-            // And uniform spectral sampling
-            ScalarFloat distribution[2] = {1.f, 1.f};
-            Float sky_weight = m_sky_scale / (m_sky_scale + m_sun_scale);
-                  sky_weight = dr::select(dr::isnan(sky_weight), 0.f, sky_weight);
-            return { sky_weight, ContinuousDistribution<Wavelength>(range, distribution, 2) };
-        } else {
-            FullSpectrum sky_radiance = dr::zeros<FullSpectrum>(),
-                         sun_radiance = dr::zeros<FullSpectrum>();
-
-            dr::uint32_array_t<FullSpectrum> channel_idx;
-            if constexpr (is_rgb_v<Spectrum>)
-                channel_idx = {0, 1, 2};
-            else if constexpr (is_spectral_v<Spectrum>)
-                channel_idx = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-            else
-                channel_idx = {0};
-
-            const Vector3f local_sun_dir = sph_to_dir(m_sun_angles.y(), m_sun_angles.x());
-            // Quadrature points and weights
-            const auto [x, w_x] = quad::gauss_legendre<Float>(200);
-
-            // Compute sky radiance over hemisphere
-            {
-                // Mapping for [-1, 1] x [-1, 1] -> [0, 2pi] x [0, 1]
-                Float J = 0.5f * dr::Pi<Float>;
-                Float phi = dr::Pi<Float> * (x + 1),
-                      cos_theta = 0.5f * (x + 1);
-
-                std::tie(phi, cos_theta) = dr::meshgrid(phi, cos_theta);
-                const auto [w_phi, w_cos_theta] = dr::meshgrid(w_x, w_x);
-
-                const auto [sin_phi, cos_phi] = dr::sincos(phi);
-                const auto sin_theta = dr::safe_sqrt(1 - dr::square(cos_theta));
-
-                Vector3f sky_wo {sin_theta * cos_phi, sin_theta * sin_phi, cos_theta};
-                Float gamma = dr::unit_angle(local_sun_dir, sky_wo);
-
-                using FullSpecSkyParams = dr::Array<FullSpectrum, SKY_PARAMS>;
-                FullSpectrum mean_rad   = dr::gather<FullSpectrum>(m_sky_radiance, channel_idx, true);
-                FullSpecSkyParams coefs = dr::gather<FullSpecSkyParams>(m_sky_params, channel_idx, true);
-
-                FullSpectrum ray_radiance =
-                    Base::template eval_sky<FullSpectrum>(cos_theta, gamma, coefs, mean_rad) * w_phi * w_cos_theta;
-                sky_radiance = dr::sum_inner(ray_radiance) * J;
-            }
-
-            // Compute sun radiance over hemisphere
-            {
-                ScalarFloat cosine_cutoff = dr::cos(m_sun_half_aperture);
-
-                // Mapping for [-1, 1] x [-1, 1] -> [0, 2pi] x [cos(alpha/2), 1]
-                Float J = 0.5f * dr::Pi<ScalarFloat> * (1 - cosine_cutoff);
-                Float phi = dr::Pi<Float> * (x + 1),
-                      cos_gamma = 0.5f * ((1 - cosine_cutoff) * x + (1 + cosine_cutoff));
-
-                std::tie(phi, cos_gamma) = dr::meshgrid(phi, cos_gamma);
-                const auto [w_phi, w_cos_theta] = dr::meshgrid(w_x, w_x);
-
-                const auto sin_gamma = dr::safe_sqrt(1 - dr::square(cos_gamma));
-                const auto [sin_phi, cos_phi] = dr::sincos(phi);
-
-                // View ray in local sun coordinates
-                Vector3f sun_wo {sin_gamma * cos_phi, sin_gamma * sin_phi, cos_gamma};
-                Float gamma = dr::unit_angle_z(sun_wo);
-
-                // View ray in local emitter coordinates
-                sun_wo = Frame3f(local_sun_dir).to_world(sun_wo);
-
-                Float cos_theta = Frame3f::cos_theta(sun_wo);
-
-                Mask active = cos_theta >= 0;
-                FullSpectrum ray_radiance =
-                    Base::template eval_sun<FullSpectrum>(channel_idx, cos_theta, gamma, active) *
-                    w_phi * w_cos_theta;
-
-                // Apply sun limb darkening if not already
-                if constexpr (is_spectral_v<Spectrum>)
-                    ray_radiance *= Base::template compute_sun_ld<FullSpectrum>(
-                        channel_idx, channel_idx, 0.f, gamma, active);
-
-                sun_radiance = dr::sum_inner(ray_radiance) * J;
-            }
-
-            // Extract luminance
-            Float sky_lum = m_sky_scale, sun_lum = m_sun_scale;
-            if constexpr (is_rgb_v<Spectrum>) {
-                sky_lum *= luminance(sky_radiance);
-                sun_lum *= luminance(sun_radiance) * Base::get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
-            } else {
-                FullSpectrum wavelengths = WAVELENGTH_STEP * channel_idx + WAVELENGTHS<ScalarFloat>[0];
-
-                sky_lum *= luminance(sky_radiance, wavelengths);
-                sun_lum *= luminance(sun_radiance, wavelengths) * Base::get_area_ratio(m_sun_half_aperture);
-            }
-
-            // Normalize quantities for valid distribution
-            Float res = sky_lum / (sky_lum + sun_lum);
-                  res = dr::select(dr::isnan(res), 0.f, res);
-
-            if constexpr (is_spectral_v<Spectrum>) {
-                // Compute spectrum distribution
-                FullSpectrum avg_spec = sun_radiance + sky_radiance;
-                FloatStorage spectrum = dr::zeros<FloatStorage>(CHANNEL_COUNT - 1);
-
-                // Skip first spectral value since 320nm is not
-                // currently supported in Mitsuba
-                for (ScalarUInt32 i = 0; i < CHANNEL_COUNT - 1; ++i)
-                    dr::scatter(spectrum, avg_spec[i + 1], (UInt32) i);
-
-                if (dr::all(spectrum == 0.f))
-                    spectrum += 1.f; // Prevent error in the distribution
-
-                return { res, ContinuousDistribution<Wavelength>(range, spectrum) };
-            } else {
-                (void) range;
-                return { res, ContinuousDistribution<Wavelength>() };
-            }
-        }
     }
 
     // ================================================================================================
@@ -609,6 +481,69 @@ private:
         return res;
     }
 
+    /**
+     * \brief Updates the sky sampling data and sun irradiance values
+     * based on the current parameters.
+     */
+    std::tuple<Float, ContinuousDistribution<Wavelength>, FloatStorage> update_irradiance_data() const {
+        Float angle = 0.5f * dr::Pi<Float> - m_sun_angles.y();
+              angle = dr::clip((dr::rad_to_deg(angle) - 2.f) / 3.f,
+                            0.f, ELEVATION_CTRL_PTS - dr::OneMinusEpsilon<ScalarFloat>);
+
+        // Interpolate on turbidity and sun angle
+        constexpr auto bilinear_interp = [](const TensorXf& dataset, const Float& turb, const Float& angle) {
+            TensorXf tmp = dr::take_interp(dataset, turb - 1.f);
+            return dr::take_interp(tmp, angle).array();
+        };
+
+        FloatStorage sky_irrad = bilinear_interp(m_sky_irrad_dataset, m_turbidity, angle),
+                     sun_irrad = bilinear_interp(m_sun_irrad_dataset, m_turbidity, angle);
+
+        // Extract luminance and downsample sun irradiance to RGB
+        FloatStorage spec_sun_irrad = sun_irrad;
+        Float sky_lum = m_sky_scale, sun_lum = m_sun_scale;
+        {
+
+            FullSpectrum sky_irrad_spec = dr::gather<FullSpectrum>(sky_irrad, UInt32(0)),
+                         sun_irrad_spec = dr::gather<FullSpectrum>(sun_irrad, UInt32(0));
+
+            FullSpectrum wavelengths = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+                         wavelengths = WAVELENGTH_STEP * wavelengths + WAVELENGTHS<ScalarFloat>[0];
+
+            sky_lum *= luminance(sky_irrad_spec, wavelengths);
+            sun_lum *= luminance(sun_irrad_spec, wavelengths) *
+                            Base::get_area_ratio(m_sun_half_aperture);
+
+            if constexpr (is_rgb_v<Spectrum>)
+                // Cancel out the CIE Y normalization factor since it will be multiplied later
+                spec_sun_irrad = dr::ravel(spectrum_to_srgb(sun_irrad_spec, wavelengths) / ScalarFloat(MI_CIE_Y_NORMALIZATION));
+
+        }
+
+        // Sky sampling weight
+        Float sky_weight = sky_lum / (sky_lum + sun_lum);
+              sky_weight = dr::select(dr::isnan(sky_weight), 0.f, sky_weight);
+
+        // Spectral sampling
+        ScalarVector2f range = {
+            WAVELENGTHS<ScalarFloat>[0],
+            WAVELENGTHS<ScalarFloat>[WAVELENGTH_COUNT - 1]
+        };
+        ContinuousDistribution<Wavelength> wav_dist;
+        if constexpr (is_spectral_v<Spectrum>) {
+            FloatStorage avg_spec = sun_irrad + sky_irrad;
+            if (dr::all(avg_spec == 0.f))
+                avg_spec += 1.f; // Prevent error in the distribution
+
+            wav_dist = { range, avg_spec };
+        } else {
+            ScalarFloat pdf[2] = { 1.f, 1.f };
+            wav_dist = { range, pdf, 2 };
+        }
+
+        return std::make_tuple(sky_weight, wav_dist, spec_sun_irrad);
+    }
+
     // ================================================================================================
     // ========================================= ATTRIBUTES ===========================================
     // ================================================================================================
@@ -627,8 +562,11 @@ private:
     FloatStorage m_sky_params;
     FloatStorage m_sky_radiance;
 
-    // ========= Sampling parameters =========
+    // Irradiance data
     Float m_sky_sampling_w;
+    FloatStorage m_sun_irrad;
+
+    // ========= Sampling parameters =========
     DiscreteDistribution<Float> m_gaussian_distr;
     ContinuousDistribution<Wavelength> m_spectral_distr;
 
@@ -644,6 +582,8 @@ private:
         Base::m_sun_ld,
         Base::m_sun_rad_dataset,
         Base::m_tgmm_tables,
+        Base::m_sky_irrad_dataset,
+        Base::m_sun_irrad_dataset,
         m_sun_dir,
         m_sun_angles,
         m_time,
@@ -651,6 +591,7 @@ private:
         m_sky_params,
         m_sky_radiance,
         m_sky_sampling_w,
+        m_sun_irrad,
         m_gaussian_distr,
         m_spectral_distr
     )
