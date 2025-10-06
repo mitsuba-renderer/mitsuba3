@@ -211,3 +211,57 @@ def test04_sun_and_sky_sampling(variants_vec_backends_once, turb, start_day):
         )
 
         assert test.run(), f"Chi2 test failed at {time=}"
+
+@pytest.mark.parametrize("turb", [2.0, 4.0, 6.0])
+@pytest.mark.parametrize("hour", [10, 12])
+@pytest.mark.parametrize("sun_aperture", [0.5358, 5.0])
+def test05_complex_sun(variants_vec_spectral,  turb, hour, sun_aperture):
+    """
+    Compare the irradiance of the classic sunsky with the sun gradients
+    and the timed_sunsky with the simplified sun model. This test has quite a large tolerance
+    since aligning the sun direction of both models is not perfect.
+    """
+    if mi.is_polarized:
+        pytest.skip('Test must be adapted to polarized rendering.')
+
+    from .test_sunsky import sun_integrand
+
+    sun_cos_cutoff = dr.cos(dr.deg2rad(sun_aperture / 2))
+
+    sunsky = mi.load_dict({
+        "type": "sunsky",
+        "year": 2025,
+        "month": 1,
+        "day": 1,
+        "hour": hour,
+        "sky_scale": 0.0,
+        "complex_sun": True,
+        "turbidity": turb,
+
+        "sun_aperture": sun_aperture
+    })
+    sunsky_params = mi.traverse(sunsky)
+
+    timed_sunsky = mi.load_dict({
+        "type": "timed_sunsky",
+        "start_year": 2025,
+        "start_month": 1,
+        "start_day": 1,
+        "end_year": 2025,
+        "end_month": 1,
+        "end_day": 1,
+        "window_start_time": hour,
+        "window_end_time": hour,
+        "turbidity": turb,
+
+        "sky_scale": 0,
+        "sun_aperture": sun_aperture
+    })
+    points, weights = mi.quad.gauss_legendre(200)
+    sunsky_irrad = sun_integrand(sunsky, points, weights, sunsky_params["sun_direction"], sun_cos_cutoff)
+    sunsky_irrad = dr.sum(sunsky_irrad, axis=1)
+
+    timed_irrad = sun_integrand(timed_sunsky, points, weights, sunsky_params["sun_direction"], sun_cos_cutoff)
+    timed_irrad = dr.sum(timed_irrad, axis=1)
+
+    assert np.allclose(sunsky_irrad, timed_irrad, rtol=0.2)
