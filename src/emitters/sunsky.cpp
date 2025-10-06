@@ -95,6 +95,12 @@ Sun and sky emitter (:monosp:`sunsky`)
    - |float|
    - Aperture angle of the sun in degrees (Default: 0.5338, normal sun aperture).
 
+ * - complex_sun
+   - |bool|
+   - Use a more complex sun model that adds gradients to the sun disk (Default: false).
+     This is more expensive to evaluate, but produces a more realistic sun appearance.
+     Both implementations integrate to the same total power.
+
  * - to_world
    - |transform|
    - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
@@ -475,6 +481,10 @@ private:
         return res;
     }
 
+    /**
+     * \brief Updates the sky sampling data and sun irradiance values
+     * based on the current parameters.
+     */
     std::tuple<Float, ContinuousDistribution<Wavelength>, FloatStorage> update_irradiance_data() const {
         Float angle = 0.5f * dr::Pi<Float> - m_sun_angles.y();
               angle = dr::clip((dr::rad_to_deg(angle) - 2.f) / 3.f,
@@ -505,7 +515,8 @@ private:
                             Base::get_area_ratio(m_sun_half_aperture);
 
             if constexpr (is_rgb_v<Spectrum>)
-                spec_sun_irrad = dr::ravel(spectrum_to_srgb(sun_irrad_spec, wavelengths)) / ScalarFloat(MI_CIE_Y_NORMALIZATION);
+                // Cancel out the CIE Y normalization factor since it will be multiplied later
+                spec_sun_irrad = dr::ravel(spectrum_to_srgb(sun_irrad_spec, wavelengths) / ScalarFloat(MI_CIE_Y_NORMALIZATION));
 
         }
 
