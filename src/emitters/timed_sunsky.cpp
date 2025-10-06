@@ -107,6 +107,12 @@ Timed sun and sky emitter (:monosp:`timed_sunsky`)
    - Shutter closing time (Default: 1).
      Used to vary sunsky appearance
 
+ * - complex_sun
+   - |bool|
+   - Use a more complex sun model that adds gradients to the sun disk (Default: false).
+     This is more expensive to evaluate, but produces a more realistic sun appearance.
+     Both implementations integrate to the same total power.
+
  * - to_world
    - |transform|
    - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
@@ -439,6 +445,10 @@ private:
         return res;
     }
 
+    /**
+     * Updates the textures used for importance sampling the sun and sky as
+     * well as the sun's irradiance dataset.
+     */
     std::pair<ref<SamplingTexture>, ref<SunIrradTexture>> update_irradiance_data() const {
         using UInt32Storage = dr::uint32_array_t<FloatStorage>;
         using Color3fStorage = mitsuba::Color<FloatStorage, 3>;
@@ -478,6 +488,7 @@ private:
         {
             // Convert to RGB if needed
             if constexpr (is_rgb_v<Spectrum>) {
+                // Cancel out the CIE Y normalization factor since it will be multiplied later
                 Color3fStorage rgb_sun_irrad = spectrum_to_srgb(sun_irrad, wavelengths) / ScalarFloat(MI_CIE_Y_NORMALIZATION);
                 sun_irrad_data = dr::ravel(rgb_sun_irrad);
             }
