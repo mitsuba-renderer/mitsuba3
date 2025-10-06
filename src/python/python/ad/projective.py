@@ -400,7 +400,6 @@ class ProjectiveDetail():
 
         self.guiding_distr = mi.ad.OcSpaceDistr(
             parent.octree_max_depth,
-            parent.octree_max_leaf_cnt,
             parent.octree_extra_leaf_sample,
             eval_indirect_integrand_handle,
             parent.octree_construction_mean_mult,
@@ -515,17 +514,19 @@ class ProjectiveDetail():
 
         self.guiding_distr.mass_contruction_thres = parent.octree_contruction_thres
 
-        try:
-            self.guiding_distr.set_points(sample_3, value, seed, mi.log_level() == mi.LogLevel.Debug)
-        except Exception as e:
-            mi.Log(mi.LogLevel.Warn,
-                   "Failed to build the Octree guiding distribution! No "
-                   "guiding distibution for indirect visibility "
-                   "discontinuities will be used.\n"
-                   "The original error message from the octree construction:\n"
-                   f"{e}")
-            self.guiding_distr = None
-            return
+        #try:
+        print(f"{value.state=}")
+        #breakpoint()
+        self.guiding_distr.set_points(sample_3, value, seed, mi.log_level() == mi.LogLevel.Debug)
+        #except Exception as e:
+        #    mi.Log(mi.LogLevel.Warn,
+        #           "Failed to build the Octree guiding distribution! No "
+        #           "guiding distibution for indirect visibility "
+        #           "discontinuities will be used.\n"
+        #           "The original error message from the octree construction:\n"
+        #           f"{e}")
+        #    self.guiding_distr = None
+        #    return
 
         del sample_3, sampler, active_guide, value
 

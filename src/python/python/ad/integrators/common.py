@@ -848,11 +848,8 @@ class PSIntegrator(ADIntegrator):
         self.proj_mesh_max_jump = 2
 
         ##### OCTREE #####
-        # Maximum depth of the octree
-        self.octree_max_depth = 9
-
-        # Maximum number of leaves in the octree (~16.8 million)
-        self.octree_max_leaf_cnt = 2 ** 24
+        # Maximum depth of the octree (~16.8 million leaves)
+        self.octree_max_depth = 8
 
         # Number of extra samples per leaf
         self.octree_extra_leaf_sample = 256
