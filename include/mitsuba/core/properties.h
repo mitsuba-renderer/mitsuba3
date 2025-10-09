@@ -332,6 +332,8 @@ public:
         // Avoid implicit float->double conversion warning
         if constexpr (std::is_same_v<std::decay_t<T>, float>)
             set_impl<T2>(index, (T2) value);
+        else if constexpr (detail::is_transform_3<std::decay_t<T>>::value)
+            set_impl<AffineTransform<Point<double, 3>>>(index, AffineTransform<Point<double, 3>>(value));
         else
             set_impl<T2>(index, std::forward<T>(value));
     }
@@ -941,6 +943,14 @@ ref<T> Properties::get_volume(std::string_view name, Float def_val) const {
     }
     return get_volume<T>(name);
 }
+
+template<> MI_EXPORT_LIB void
+Properties::set_impl<AffineTransform<Point<double, 3>>>(
+    size_t, const AffineTransform<Point<double, 3>> &);
+
+template<> MI_EXPORT_LIB void
+Properties::set_impl<AffineTransform<Point<double, 3>>>(
+    size_t, AffineTransform<Point<double, 3>> &&);
 
 #define MI_EXPORT_PROP(Mode, ...)                                              \
     Mode template MI_EXPORT_LIB const __VA_ARGS__ *                            \
