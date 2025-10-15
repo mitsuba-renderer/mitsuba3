@@ -402,3 +402,29 @@ def test09_complex_sun(variants_vec_rgb, turb, theta, sun_aperture):
     simple_irradiance = dr.sum(simple_sun_integrand, axis=1)
 
     assert np.allclose(complex_irradiance, simple_irradiance, rtol=0.01)
+
+
+def test10_invalid_sun_angles(variants_vec_backends_once_spectral):
+    """
+    Validates that invalid sun angles are correctly clamped and does not throw errors
+    """
+
+    if mi.is_polarized:
+        pytest.skip('Test must be adapted to polarized rendering.')
+
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.wi = mi.Vector3f(0, 0, -1)
+
+    # Use `sun_direction` constructor
+    plugin = make_emitter_angles(
+        turb=2.0, sun_phi=0, sun_theta=dr.deg2rad(-5),
+        albedo=0.5, sun_scale=1.0, sky_scale=1.0,
+        complex_sun=True)
+    assert dr.all(plugin.eval(si) == 0.0, axis=None)
+
+    # Use `time` and `position` constructor
+    plugin = make_emitter_hour(
+        turb=2.0, hour=0.0,
+        albedo=0.5, sun_scale=1.0, sky_scale=1.0,
+        complex_sun=True)
+    assert dr.all(plugin.eval(si) == 0.0, axis=None)
