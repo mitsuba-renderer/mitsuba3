@@ -385,8 +385,8 @@ private:
     std::pair<Wavelength, Spectrum> sample_wlgth(const Float& sample, Mask active) const override {
         if constexpr (is_spectral_v<Spectrum>) {
             static constexpr ScalarFloat
-                    min_w = std::max(MI_CIE_MIN, WAVELENGTHS<ScalarFloat>[0]),
-                    max_w = std::min(MI_CIE_MAX, WAVELENGTHS<ScalarFloat>[WAVELENGTH_COUNT - 1]);
+                    min_w = std::max(ScalarFloat(MI_CIE_MIN), WAVELENGTHS<ScalarFloat>[0]),
+                    max_w = std::min(ScalarFloat(MI_CIE_MAX), WAVELENGTHS<ScalarFloat>[WAVELENGTH_COUNT - 1]);
 
             Wavelength wavelengths = math::sample_shifted<Wavelength>(sample);
             wavelengths = min_w + (max_w - min_w) * wavelengths;
