@@ -584,7 +584,8 @@ protected:
                        get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
             }
 
-            res *= Float(MI_CIE_Y_NORMALIZATION);
+            res *= ScalarFloat(MI_CIE_Y_NORMALIZATION);
+
         } else {
             Wavelength normalized_wavelengths =
                 (wavelengths - WAVELENGTHS<ScalarFloat>[0]) / WAVELENGTH_STEP;
