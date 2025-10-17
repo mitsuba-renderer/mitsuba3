@@ -1423,3 +1423,19 @@ def test37_create_mesh_with_properties(variant_scalar_rgb):
   faces = [0 B of face data],
   face_normals = 0
 ]"""
+
+
+def test38_custom_vertex_normals(variants_vec_rgb):
+    m = mi.Mesh(mi.Properties())
+    normals = dr.linspace(mi.Float, -1, 1, 12)
+    params = mi.traverse(m)
+    params['vertex_positions'] = [0.0, 0.0, 0.0,
+                                  1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0]
+    params['faces'] = [0, 1, 2, 1, 2, 3]
+    params['vertex_normals'] = normals
+    params.update()
+    assert m.has_vertex_normals()
+    params = mi.traverse(m)
+
+    # The custom vertex normals should not have been modified.
+    assert dr.allclose(params['vertex_normals'], normals)
