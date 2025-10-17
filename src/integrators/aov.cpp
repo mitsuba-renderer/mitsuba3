@@ -318,6 +318,7 @@ public:
                     break;
 
                 case AOVType::dUVdy:
+                    si.compute_uv_partials(ray);
                     *aovs++ = si.duv_dy.x();
                     *aovs++ = si.duv_dy.y();
                     break;
