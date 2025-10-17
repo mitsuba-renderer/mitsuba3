@@ -50,7 +50,7 @@ static const constexpr uint32_t TGMM_COMPONENTS = 5;
 static const constexpr uint32_t TGMM_GAUSSIAN_PARAMS = 5;
 
 /// Sun half aperture angle in radians
-#define SUN_HALF_APERTURE (dr::deg_to_rad(0.5358/2.0))
+static const constexpr double SUN_HALF_APERTURE = dr::Pi<double> * (0.5 * 0.5358) / 180;
 /// Mean radius of the Earth
 static const constexpr double EARTH_MEAN_RADIUS = 6371.01;   // In km
 /// Astronomical unit
@@ -185,6 +185,7 @@ public:
 
     using SkyRadData    = USpec;
     using SkyParamsData = dr::Array<SkyRadData, SKY_PARAMS>;
+    using FullSpectrum  = unpolarized_spectrum_t<mitsuba::Spectrum<Float, WAVELENGTH_COUNT>>;
 
     BaseSunskyEmitter(const Properties &props) : Base(props) {
         if constexpr (!(is_rgb_v<Spectrum> || is_spectral_v<Spectrum>))
@@ -208,6 +209,8 @@ public:
         if (m_sun_half_aperture <= 0.f || 0.5f * dr::Pi<Float> <= m_sun_half_aperture)
             Log(Error, "Invalid sun aperture angle: %f, must be in ]0, 90[ degrees!", dr::rad_to_deg(2 * m_sun_half_aperture));
 
+        m_complex_sun = props.get<bool>("complex_sun", false);
+
         m_albedo_tex = props.get_texture<Texture>("albedo", 0.3f);
         if (m_albedo_tex->is_spatially_varying())
             Log(Error, "Expected a non-spatially varying radiance spectra!");
@@ -222,12 +225,18 @@ public:
         const TensorFile tgmm_dataset(
             file_resolver()->resolve(DATABASE_PATH + "tgmm_tables.bin")
         );
+        const TensorFile irrad_dataset {
+            file_resolver()->resolve(DATABASE_PATH + "sampling_data.bin")
+        };
 
         m_sky_params_dataset = load_field<TensorXf64>(datasets, "sky_params" + dataset_type);
         m_sky_rad_dataset = load_field<TensorXf64>(datasets, "sky_rad" + dataset_type);
         m_sun_rad_dataset = load_field<TensorXf64>(datasets, "sun_rad" + dataset_type);
 
         m_tgmm_tables = load_field<TensorXf32>(tgmm_dataset, "tgmm_tables");
+
+        m_sky_irrad_dataset = load_field<TensorXf32>(irrad_dataset, "sky_irradiance");
+        m_sun_irrad_dataset = load_field<TensorXf32>(irrad_dataset, "sun_irradiance");
 
         // Only used in spectral mode since limb darkening is baked in the RGB dataset
         if constexpr (!is_rgb_v<Spectrum>) {
@@ -240,6 +249,10 @@ public:
         /* Until `set_scene` is called, we have no information
         about the scene and default to the unit bounding sphere. */
         m_bsphere = BoundingSphere3f(ScalarPoint3f(0.f), 1.f);
+
+        dr::eval(m_albedo_tex, m_albedo, m_sun_radiance, m_sky_rad_dataset,
+                 m_sky_params_dataset, m_sun_ld, m_sun_rad_dataset,
+                 m_sky_irrad_dataset, m_sun_irrad_dataset, m_tgmm_tables);
 
         m_flags = +EmitterFlags::Infinite | +EmitterFlags::SpatiallyVarying;
     }
@@ -279,11 +292,12 @@ public:
 
     std::string to_string() const override {
         std::ostringstream oss;
-        oss << "\n\tTurbiodity = " << m_turbidity
+        oss << "\n\tTurbidity = " << m_turbidity
             << "\n\tAlbedo = " << m_albedo
             << "\n\tSun scale = " << m_sun_scale
             << "\n\tSky scale = " << m_sky_scale
-            << "\n\tSun aperture = " << dr::rad_to_deg(2 * m_sun_half_aperture);
+            << "\n\tSun aperture = " << dr::rad_to_deg(2 * m_sun_half_aperture)
+            << "\n\tComplex sun model = " << (m_complex_sun ? "true" : "false");
         return oss.str();
     }
 
@@ -319,7 +333,7 @@ public:
         const Point2f sun_angles = get_sun_angles(time);
         active &= sun_angles.y() <= 0.5f * dr::Pi<Float>;
 
-        const Float sky_sampling_w = get_sky_sampling_weight(sun_angles, active);
+        const Float sky_sampling_w = get_sky_sampling_weight(sun_angles.y(), active);
 
         // 1. Sample spatial component
         Point2f offset = warp::square_to_uniform_disk_concentric(sample2);
@@ -390,7 +404,7 @@ public:
         const Point2f sun_angles = get_sun_angles(it.time);
         active &= sun_angles.y() <= 0.5f * dr::Pi<Float>;
 
-        const Float sky_sampling_w = get_sky_sampling_weight(sun_angles, active);
+        const Float sky_sampling_w = get_sky_sampling_weight(sun_angles.y(), active);
 
         Mask pick_sky = sample.x() < sky_sampling_w;
 
@@ -432,7 +446,7 @@ public:
                     Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
         const Point2f sun_angles = get_sun_angles(ds.time);
-        const Float sky_sampling_w = get_sky_sampling_weight(sun_angles, active);
+        const Float sky_sampling_w = get_sky_sampling_weight(sun_angles.y(), active);
 
         Vector3f local_dir = dr::normalize(m_to_world.value().inverse() * ds.d);
         Float sky_pdf, sun_pdf;
@@ -485,31 +499,40 @@ protected:
 
     /**
      * Getter sky radiance datasets for the given wavelengths and sun angles
-     * @param sun_angles Sun angles in local (emitter) space
+     * @param sun_theta The angle between the sun's direction and the z axis
      * @param channel_idx Indices of the queried channels
      * @param active Indicates which channels are valid indices
      * @return The sky mean radiance dataset and the sky parameters
      *         for the Wilkie-Hosek 2012 sky model
      */
     virtual std::pair<SkyRadData, SkyParamsData>
-    get_sky_datasets(const Point2f& sun_angles, const USpecUInt32& channel_idx, const USpecMask& active) const = 0;
+    get_sky_datasets(const Float& sun_theta, const USpecUInt32& channel_idx, const USpecMask& active) const = 0;
 
     /**
      * Getter fot the probability of sampling the sky for a given sun position
-     * @param sun_angles The sun azimuth and elevation angles
+     * @param sun_theta The angle between the sun's direction and the z axis
      * @param active Indicates active lanes
      * @return The probability of sampling the sky over the sun
      */
-    virtual Float get_sky_sampling_weight(const Point2f& sun_angles, const Mask& active) const = 0;
+    virtual Float get_sky_sampling_weight(const Float& sun_theta, const Mask& active) const = 0;
+
+    /**
+     * Getter for the sun's irradiance at a given sun elevation and wavelengths
+     * @param sun_theta The angle between the sun's direction and the z axis
+     * @param channel_idx The indices of the queried channels
+     * @param active Indicates active lanes
+     * @return The sun irradiance for the given conditions
+     */
+    virtual USpec get_sun_irradiance(const Float& sun_theta, const USpecUInt32& channel_idx, const USpecMask& active) const = 0;
 
     /**
      * Samples a gaussian from the Truncated Gaussian mixture
      * @param sample Sample in [0, 1]
-     * @param sun_angles Sun azimuth and elevation angles
+     * @param sun_theta The angle between the sun's direction and the z axis
      * @param active Indicates active lanes
      * @return The index of the chosen gaussian and the sample to be reused
      */
-    virtual std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Point2f& sun_angles, const Mask &active) const = 0;
+    virtual std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Float& sun_theta, const Mask &active) const = 0;
 
     /**
      * Samples wavelengths and evaluates the associated weights
@@ -551,13 +574,18 @@ protected:
             else
                 idx = USpecUInt32(0);
 
-            const auto [ sky_rad, sky_params ] = get_sky_datasets(sun_angles, idx, active);
+            if (m_sky_scale > 0.f) {
+                const auto [ sky_rad, sky_params ] = get_sky_datasets(sun_angles.y(), idx, active);
+                res = m_sky_scale * eval_sky(cos_theta, gamma, sky_params, sky_rad);
+            }
 
-            res = m_sky_scale * eval_sky<USpec>(cos_theta, gamma, sky_params, sky_rad);
-            res += m_sun_scale * eval_sun<USpec>(idx, cos_theta, gamma, hit_sun) *
-                   get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
+            if (m_sun_scale > 0.f) {
+                res += m_sun_scale * eval_sun(idx, sun_angles.y(), cos_theta, gamma, hit_sun) *
+                       get_area_ratio(m_sun_half_aperture) * SPEC_TO_RGB_SUN_CONV;
+            }
 
-            res *= MI_CIE_Y_NORMALIZATION;
+            res *= ScalarFloat(MI_CIE_Y_NORMALIZATION);
+
         } else {
             Wavelength normalized_wavelengths =
                 (wavelengths - WAVELENGTHS<ScalarFloat>[0]) / WAVELENGTH_STEP;
@@ -569,28 +597,30 @@ protected:
 
             Wavelength lerp_factor = normalized_wavelengths - query_idx_low;
 
-            const auto [ sky_rad_low, sky_params_low ] = get_sky_datasets(sun_angles, query_idx_low, active & valid_idx);
-            const auto [ sky_rad_high, sky_params_high ] = get_sky_datasets(sun_angles, query_idx_high, active & valid_idx);
+            if (m_sky_scale > 0.f) {
+                const auto [ sky_rad_low, sky_params_low ] = get_sky_datasets(sun_angles.y(), query_idx_low, active & valid_idx);
+                const auto [ sky_rad_high, sky_params_high ] = get_sky_datasets(sun_angles.y(), query_idx_high, active & valid_idx);
 
-            // Linearly interpolate the sky's irradiance across the spectrum
-            res = m_sky_scale * dr::lerp(
-                eval_sky<USpec>(cos_theta, gamma, sky_params_low, sky_rad_low),
-                eval_sky<USpec>(cos_theta, gamma, sky_params_high, sky_rad_high),
-                lerp_factor);
+                // Linearly interpolate the sky's irradiance across the spectrum
+                res = m_sky_scale * dr::lerp(
+                    eval_sky(cos_theta, gamma, sky_params_low, sky_rad_low),
+                    eval_sky(cos_theta, gamma, sky_params_high, sky_rad_high),
+                    lerp_factor);
+            }
 
-            // Linearly interpolate the sun's irradiance across the spectrum
-            USpec sun_rad_low = eval_sun<USpec>(
-                         query_idx_low, cos_theta, gamma, hit_sun & valid_idx);
-            USpec sun_rad_high = eval_sun<USpec>(
-                         query_idx_high, cos_theta, gamma, hit_sun & valid_idx);
-            USpec sun_rad = dr::lerp(sun_rad_low, sun_rad_high, lerp_factor);
+            if (m_sun_scale > 0.f) {
+                // Linearly interpolate the sun's irradiance across the spectrum
+                USpec sun_rad_low = eval_sun(query_idx_low, sun_angles.y(), cos_theta, gamma, hit_sun & valid_idx);
+                USpec sun_rad_high = eval_sun(query_idx_high, sun_angles.y(), cos_theta, gamma, hit_sun & valid_idx);
+                USpec sun_rad = dr::lerp(sun_rad_low, sun_rad_high, lerp_factor);
 
-            USpec sun_ld = compute_sun_ld<USpec>(
-                query_idx_low, query_idx_high, lerp_factor, gamma,
-                hit_sun & valid_idx
-            );
+                USpec sun_ld = 1.f;
+                if (m_complex_sun)
+                    sun_ld = compute_sun_ld(query_idx_low, query_idx_high, lerp_factor,
+                                gamma, hit_sun & valid_idx);
 
-            res += m_sun_scale * sun_rad * sun_ld * get_area_ratio(m_sun_half_aperture);
+                res += m_sun_scale * sun_rad * sun_ld * get_area_ratio(m_sun_half_aperture);
+            }
         }
 
         return depolarizer<Spectrum>(res) & active;
@@ -602,11 +632,8 @@ protected:
      * Based on the Hosek-Wilkie skylight model
      * https://cgg.mff.cuni.cz/projects/SkylightModelling/HosekWilkie_SkylightModel_SIGGRAPH2012_Preprint_lowres.pdf
      *
-     * @tparam Spec
-     *      Spectral type to render (adapts the number of channels)
      * @param cos_theta
-     *      Cosine of the angle between the z-axis (up) and the viewing
-     * direction
+     *      Cosine of the angle between the z-axis (up) and the viewing direction
      * @param gamma
      *      Angle between the sun and the viewing direction
      * @param sky_params
@@ -615,17 +642,16 @@ protected:
      *      Sky radiance for the model
      * @return Indirect sun illumination
      */
-    template <typename Spec, typename SkyParamsData, typename SkyRadData>
-    Spec eval_sky(const Float &cos_theta, const Float &gamma,
+    USpec eval_sky(const Float &cos_theta, const Float &gamma,
                   const SkyParamsData &sky_params, const SkyRadData &sky_radiance) const {
 
         Float cos_gamma = dr::cos(gamma),
               cos_gamma_sqr = dr::square(cos_gamma);
 
-        Spec c1 = 1 + sky_params[0] * dr::exp(sky_params[1] / (cos_theta + 0.01f));
-        Spec chi = (1 + cos_gamma_sqr) /
+        USpec c1 = 1 + sky_params[0] * dr::exp(sky_params[1] / (cos_theta + 0.01f));
+        USpec chi = (1 + cos_gamma_sqr) /
                     dr::pow(1 + dr::square(sky_params[8]) - 2 * sky_params[8] * cos_gamma, 1.5f);
-        Spec c2 = sky_params[2] + sky_params[3] * dr::exp(sky_params[4] * gamma) +
+        USpec c2 = sky_params[2] + sky_params[3] * dr::exp(sky_params[4] * gamma) +
                     sky_params[5] * cos_gamma_sqr + sky_params[6] * chi +
                     sky_params[7] * dr::safe_sqrt(cos_theta);
 
@@ -641,10 +667,10 @@ protected:
      * Based on the Hosek-Wilkie sun model
      * https://cgg.mff.cuni.cz/publications/adding-a-solar-radiance-function-to-the-hosek-wilkie-skylight-model/
      *
-     * \tparam Spec
-     *       Spectral type to render (adapts the number of channels)
      * \param channel_idx
      *       Indices of the channels to render
+     * \param sun_theta
+     *       Elevation angle of the sun
      * \param cos_theta
      *       Cosine of the angle between the z-axis (up) and the viewing direction
      * \param gamma
@@ -653,11 +679,16 @@ protected:
      *       Mask for the active lanes and channel indices
      * \return Direct sun illumination
      */
-    template <typename Spec>
-    Spec eval_sun(const dr::uint32_array_t<Spec> &channel_idx,
+    USpec eval_sun(const USpecUInt32 &channel_idx,
+                   const Float &sun_theta,
                    const Float &cos_theta, const Float &gamma,
-                   const dr::mask_t<Spec> &active = true) const {
-        using SpecUInt32 = dr::uint32_array_t<Spec>;
+                   const USpecMask &active = true) const {
+
+
+        if (!m_complex_sun)
+            // Get mean radiance by dividing irradiance by the solid angle of the sun
+            return get_sun_irradiance(sun_theta, channel_idx, active)
+                        / (dr::TwoPi<Float> * (1.f - dr::cos(ScalarFloat(SUN_HALF_APERTURE))));
 
         // Angles computation
         Float elevation = 0.5f * dr::Pi<Float> - dr::acos(cos_theta);
@@ -671,32 +702,43 @@ protected:
             0.5f * dr::Pi<Float> * dr::pow((Float) pos / SUN_SEGMENTS, 3.f);
         Float x = elevation - break_x;
 
-        Spec solar_radiance = 0.f;
+        USpec solar_radiance = 0.f;
         if constexpr (!is_rgb_v<Spectrum>) {
             DRJIT_MARK_USED(gamma);
             // Compute sun radiance
-            SpecUInt32 global_idx = pos * WAVELENGTH_COUNT * SUN_CTRL_PTS +
+            USpecUInt32 global_idx = pos * WAVELENGTH_COUNT * SUN_CTRL_PTS +
                                     channel_idx * SUN_CTRL_PTS;
             for (uint8_t k = 0; k < SUN_CTRL_PTS; ++k)
                 solar_radiance +=
                     dr::pow(x, k) *
-                    dr::gather<Spec>(m_sun_radiance, global_idx + k, active);
+                    dr::gather<USpec>(m_sun_radiance, global_idx + k, active);
         } else {
             // Reproduces the spectral computation for RGB, however, in this case,
-            // limb darkening is baked into the dataset, hence the two for-loops
-            Float cos_psi = sun_cos_psi(gamma);
-            SpecUInt32 global_idx = pos * (3 * SUN_CTRL_PTS * SUN_LD_PARAMS) +
-                                    channel_idx * (SUN_CTRL_PTS * SUN_LD_PARAMS);
+            // limb darkening is baked into the dataset, hence the extra work
 
-            for (uint8_t k = 0; k < SUN_CTRL_PTS; ++k) {
-                for (uint8_t j = 0; j < SUN_LD_PARAMS; ++j) {
-                    SpecUInt32 idx = global_idx + k * SUN_LD_PARAMS + j;
-                    solar_radiance +=
-                        dr::pow(x, k) *
-                        dr::pow(cos_psi, j) *
-                        dr::gather<Spec>(m_sun_radiance, idx, active);
+            Float cos_psi = sun_cos_psi(gamma);
+
+            static constexpr uint8_t VEC_SIZE = 8;
+            UInt32 global_idx = pos * 3 * SUN_CTRL_PTS * SUN_LD_PARAMS / VEC_SIZE;
+            for (uint32_t packet_idx = 0; packet_idx < 9; ++packet_idx) {
+
+                const auto data = dr::gather<dr::Array<Float, VEC_SIZE>>(
+                    m_sun_radiance, global_idx + packet_idx, dr::any(active)
+                );
+
+                for (uint32_t data_idx = 0; data_idx < VEC_SIZE; ++data_idx) {
+                    const uint32_t idx = packet_idx * VEC_SIZE + data_idx;
+                    uint32_t j_idx = idx % SUN_LD_PARAMS,
+                             k_idx = ((idx - j_idx) / SUN_LD_PARAMS) % SUN_CTRL_PTS,
+                             c_idx = (idx - j_idx - SUN_LD_PARAMS * k_idx) / (SUN_LD_PARAMS * SUN_CTRL_PTS);
+
+                    solar_radiance[c_idx] +=
+                        dr::pow(x, k_idx) *
+                        dr::pow(cos_psi, j_idx) *
+                        data[data_idx];
                 }
             }
+
         }
 
         return dr::select(active, solar_radiance, 0.f);
@@ -725,12 +767,11 @@ protected:
      *      The spectral values of limb darkening to apply to the sun's
      *      radiance by multiplication
      */
-    template <typename Spec>
-    Spec compute_sun_ld(const dr::uint32_array_t<Spec> &channel_idx_low,
-                        const dr::uint32_array_t<Spec> &channel_idx_high,
-                        const wavelength_t<Spec> &lerp_f, const Float &gamma,
-                        const dr::mask_t<Spec> &active) const {
-        using SpecLdArray = dr::Array<Spec, SUN_LD_PARAMS>;
+    USpec compute_sun_ld(const USpecUInt32 &channel_idx_low,
+                        const USpecUInt32 &channel_idx_high,
+                        const wavelength_t<USpec> &lerp_f, const Float &gamma,
+                        const USpecMask &active) const {
+        using SpecLdArray = dr::Array<USpec, SUN_LD_PARAMS>;
 
         SpecLdArray sun_ld_low  = dr::gather<SpecLdArray>(m_sun_ld.array(), channel_idx_low, active),
                     sun_ld_high = dr::gather<SpecLdArray>(m_sun_ld.array(), channel_idx_high, active),
@@ -738,7 +779,7 @@ protected:
 
         Float cos_psi = sun_cos_psi(gamma);
 
-        Spec sun_ld = 0.f;
+        USpec sun_ld = 0.f;
         for (uint8_t j = 0; j < SUN_LD_PARAMS; ++j)
             sun_ld += dr::pow(cos_psi, j) * sun_ld_coefs[j];
 
@@ -752,12 +793,12 @@ protected:
     /**
      * \brief Getter for the 4 interpolation points on turbidity and elevation
      * of the Truncated Gaussian Mixtures
-     * \param sun_angles Azimuth and elevation angles of the sun
+     * @param sun_theta The angle between the sun's direction and the z axis
      * @return The 4 interpolation weights and
      *          the 4 indices corresponding to the start of the TGMMs in memory
      */
-    std::pair<Vector4f, Vector4u> get_tgmm_data(const Point2f& sun_angles) const {
-        Float sun_eta = 0.5f * dr::Pi<Float> - sun_angles.y();
+    std::pair<Vector4f, Vector4u> get_tgmm_data(const Float& sun_theta) const {
+        Float sun_eta = 0.5f * dr::Pi<Float> - sun_theta;
               sun_eta = dr::rad_to_deg(sun_eta);
 
         Float eta_idx_f = dr::clip((sun_eta - 2) / 3, 0, ELEVATION_CTRL_PTS - 1),
@@ -805,7 +846,7 @@ protected:
      */
     Vector3f sample_sky(Point2f sample, const Point2f& sun_angles, const Mask& active) const {
         // Sample a gaussian from the mixture
-        const auto [ gaussian_idx, temp_sample ] = sample_reuse_tgmm(sample.x(), sun_angles, active);
+        const auto [ gaussian_idx, temp_sample ] = sample_reuse_tgmm(sample.x(), sun_angles.y(), active);
 
         // {mu_phi, mu_theta, sigma_phi, sigma_theta, weight}
         Gaussian gaussian = dr::gather<Gaussian>(m_tgmm_tables, gaussian_idx, active);
@@ -842,7 +883,7 @@ protected:
      * \return The PDF of the sky for the given angles with no sin(theta) factor
      */
     Float tgmm_pdf(Point2f angles, const Point2f& sun_angles, Mask active) const {
-        const auto [ lerp_w, tgmm_idx ] = get_tgmm_data(sun_angles);
+        const auto [ lerp_w, tgmm_idx ] = get_tgmm_data(sun_angles.y());
 
         // From local frame to reference frame where sun_phi = pi/2 and phi is in [0, 2pi]
         angles.x() -= sun_angles.x() - 0.5f * dr::Pi<Float>;
@@ -955,8 +996,8 @@ protected:
      * @return The appropriate scaling factor
      */
     MI_INLINE Float get_area_ratio(const Float &custom_half_aperture) const {
-        return (1 - Float(dr::cos(SUN_HALF_APERTURE))) /
-               (1 - dr::cos(custom_half_aperture));
+        return (1.f - dr::cos(ScalarFloat(SUN_HALF_APERTURE))) /
+               (1.f - dr::cos(custom_half_aperture));
     }
 
     /**
@@ -1174,6 +1215,7 @@ protected:
     static constexpr uint32_t GAUSSIAN_NB =
         (TURBITDITY_LVLS - 1) * ELEVATION_CTRL_PTS * TGMM_COMPONENTS;
 
+    ScalarBool m_complex_sun;
     BoundingSphere3f m_bsphere;
 
     // ========= Common parameters =========
@@ -1194,6 +1236,11 @@ protected:
     TensorXf m_sky_params_dataset;
     TensorXf m_sun_ld; // Not initialized in RGB mode
     TensorXf m_sun_rad_dataset;
+
+    // Contains irradiance values for the 10 turbidites,
+    // 30 elevations and 11 wavelengths
+    TensorXf m_sky_irrad_dataset;
+    TensorXf m_sun_irrad_dataset;
 
     FloatStorage m_tgmm_tables;
 };

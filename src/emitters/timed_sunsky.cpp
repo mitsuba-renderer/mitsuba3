@@ -1,4 +1,5 @@
 #include <mitsuba/render/sunsky.h>
+#include <drjit/texture.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -106,6 +107,12 @@ Timed sun and sky emitter (:monosp:`timed_sunsky`)
    - Shutter closing time (Default: 1).
      Used to vary sunsky appearance
 
+ * - complex_sun
+   - |bool|
+   - Use a more complex sun model that adds gradients to the sun disk (Default: false).
+     This is more expensive to evaluate, but produces a more realistic sun appearance.
+     Both implementations integrate to the same total power.
+
  * - to_world
    - |transform|
    - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
@@ -181,7 +188,7 @@ public:
         m_turbidity, m_sky_scale, m_sun_scale, m_albedo,
         m_sun_half_aperture, m_sky_rad_dataset, m_tgmm_tables,
         m_sky_params_dataset, m_sun_radiance,
-        CHANNEL_COUNT, m_to_world
+        CHANNEL_COUNT, m_to_world, m_sky_irrad_dataset, m_sun_irrad_dataset
     )
 
     using typename Base::FloatStorage;
@@ -192,8 +199,10 @@ public:
     using typename Base::USpec;
     using typename Base::USpecUInt32;
     using typename Base::USpecMask;
+    using typename Base::FullSpectrum;
 
-    using FullSpectrum = unpolarized_spectrum_t<mitsuba::Spectrum<Float, WAVELENGTH_COUNT>>;
+    using SamplingTexture = dr::Texture<Float, 1>;
+    using SunIrradTexture = dr::Texture<Float, 1>;
 
     MI_IMPORT_TYPES()
 
@@ -242,17 +251,9 @@ public:
         m_sky_rad = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
         m_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
 
-        const TensorFile sampling_datasets(
-            file_resolver()->resolve(DATABASE_PATH + "sampling_data.bin")
-        );
+        std::tie(m_sky_sampling_weight_tex, m_sun_irrad_tex) = update_irradiance_data();
 
-        m_sky_irrad_dataset = Base::template load_field<TensorXf32>(sampling_datasets, "sky_irradiance");
-        m_sun_irrad_dataset = Base::template load_field<TensorXf32>(sampling_datasets, "sun_irradiance");
-
-        m_sky_sampling_weights = compute_sky_sampling_weights();
-        dr::eval(m_sky_rad, m_sky_params, m_nb_days, m_sun_irrad_dataset, m_sun_irrad_dataset,
-                 m_turbidity, m_albedo, m_sun_radiance, m_sky_rad_dataset, m_sky_params_dataset,
-                 this->m_sun_ld, this->m_sun_rad_dataset, m_tgmm_tables);
+        dr::eval(m_nb_days, m_sky_rad, m_sky_params, m_sky_sampling_weight_tex, m_sun_irrad_tex);
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -284,7 +285,10 @@ public:
         m_sky_rad = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
         m_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
 
-        m_sky_sampling_weights = compute_sky_sampling_weights();
+        std::tie(m_sky_sampling_weight_tex, m_sun_irrad_tex) = update_irradiance_data();
+
+        dr::eval(m_nb_days, m_sky_rad, m_sky_params,
+            m_sky_sampling_weight_tex, m_sun_irrad_tex);
     }
 
     std::string to_string() const override {
@@ -326,8 +330,8 @@ private:
     }
 
     std::pair<SkyRadData, SkyParamsData>
-    get_sky_datasets(const Point2f& sun_angles, const USpecUInt32& channel_idx, const USpecMask& active) const override {
-        const Float sun_eta = 0.5f * dr::Pi<Float> - sun_angles.y();
+    get_sky_datasets(const Float& sun_theta, const USpecUInt32& channel_idx, const USpecMask& active) const override {
+        const Float sun_eta = 0.5f * dr::Pi<Float> - sun_theta;
         USpecMask active_dataset = active & (sun_eta >= 0.f);
 
         return std::make_pair(
@@ -336,25 +340,37 @@ private:
         );
     }
 
-    Float get_sky_sampling_weight(const Point2f& sun_angles, const Mask& active) const override {
-        Mask valid_elevation = active & (sun_angles.y() <= 0.5f * dr::Pi<Float>);
-        Float sun_idx = 0.5f * dr::Pi<Float> - sun_angles.y();
-              sun_idx = (sun_idx - 2.f) / 3.f;
-              sun_idx = dr::clip(sun_idx, 0.f, ELEVATION_CTRL_PTS - 1.f - dr::Epsilon<Float>);
+    Float get_sky_sampling_weight(const Float& sun_theta, const Mask& active) const override {
+        Mask valid_elevation = active & (sun_theta <= 0.5f * dr::Pi<Float>);
+        Float sun_idx = 0.5f * dr::Pi<Float> - sun_theta;
+              sun_idx = (dr::rad_to_deg(sun_idx) - 2.f) / 3.f;
+              sun_idx /= ELEVATION_CTRL_PTS;
 
-        UInt32 sun_idx_low = dr::floor2int<UInt32>(sun_idx),
-               sun_idx_high = sun_idx_low + 1;
-
-        Float low_weight = dr::gather<Float>(m_sky_sampling_weights, sun_idx_low, valid_elevation),
-              high_weight = dr::gather<Float>(m_sky_sampling_weights, sun_idx_high, valid_elevation);
-
-        Float res = dr::lerp(low_weight, high_weight, sun_idx - sun_idx_low);
+        Float res;
+        m_sky_sampling_weight_tex->eval(dr::Array<Float, 1>(sun_idx), &res, valid_elevation);
 
         return dr::select(res == 0.f, 1.f, res);
     }
 
-    std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Point2f& sun_angles, const Mask& active) const override {
-        const auto [ lerp_w, tgmm_idx ] = Base::get_tgmm_data(sun_angles);
+
+    USpec get_sun_irradiance(const Float& sun_theta, const USpecUInt32& channel_idx, const USpecMask& active) const override {
+        USpecMask valid_elevation = active & (sun_theta <= 0.5f * dr::Pi<Float>);
+        Float sun_idx = 0.5f * dr::Pi<Float> - sun_theta;
+              sun_idx = (dr::rad_to_deg(sun_idx) - 2.f) / 3.f;
+              sun_idx /= ELEVATION_CTRL_PTS;
+
+        Float res[CHANNEL_COUNT] = { 0.f };
+        m_sun_irrad_tex->eval(dr::Array<Float, 1>(sun_idx), res, dr::any(valid_elevation));
+
+        USpec irradiance = 0.f;
+        for (uint32_t channel = 0; channel < CHANNEL_COUNT; ++channel)
+            dr::masked(irradiance, channel_idx == channel) = res[channel];
+
+        return irradiance;
+    }
+
+    std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Float& sun_theta, const Mask& active) const override {
+        const auto [ lerp_w, tgmm_idx ] = Base::get_tgmm_data(sun_theta);
 
         Mask active_loop = active;
         Float last_cdf = 0.f, cdf = 0.f;
@@ -401,40 +417,6 @@ private:
     }
 
     // ================================================================================================
-    // ===================================== SAMPLING FUNCTIONS =======================================
-    // ================================================================================================
-
-    /**
-     * \brief Computed the probabilities of sampling the sky over the sun for 30
-     *      different angles
-     * @return 30 different weights for sun angles ranging from 2 degrees to 89
-     * degrees
-     */
-    FloatStorage compute_sky_sampling_weights() const {
-        using UInt32Storage = dr::uint32_array_t<FloatStorage>;
-        using FullSpectrumStorage = unpolarized_spectrum_t<
-            mitsuba::Spectrum<FloatStorage, WAVELENGTH_COUNT>
-        >;
-
-        UInt32Storage elevation_idx = dr::arange<UInt32Storage>(ELEVATION_CTRL_PTS);
-
-        FullSpectrumStorage wavelengths = {
-            320, 360, 400, 440, 480, 520, 560, 600, 640, 680, 720
-        };
-
-        FloatStorage sky_irrad_data = dr::take_interp(m_sky_irrad_dataset, m_turbidity).array(),
-                     sun_irrad_data = dr::take_interp(m_sun_irrad_dataset, m_turbidity).array();
-
-        FullSpectrumStorage sky_irrad = dr::gather<FullSpectrumStorage>(sky_irrad_data, elevation_idx),
-                            sun_irrad = dr::gather<FullSpectrumStorage>(sun_irrad_data, elevation_idx);
-
-        FloatStorage sky_lum = m_sky_scale * luminance(sky_irrad, wavelengths),
-                     sun_lum = m_sun_scale * luminance(sun_irrad, wavelengths);
-
-        return sky_lum / (sky_lum + sun_lum);
-    }
-
-    // ================================================================================================
     // ====================================== HELPER FUNCTIONS ========================================
     // ================================================================================================
 
@@ -463,6 +445,63 @@ private:
         return res;
     }
 
+    /**
+     * Updates the textures used for importance sampling the sun and sky as
+     * well as the sun's irradiance dataset.
+     */
+    std::pair<ref<SamplingTexture>, ref<SunIrradTexture>> update_irradiance_data() const {
+        using UInt32Storage = dr::uint32_array_t<FloatStorage>;
+        using Color3fStorage = mitsuba::Color<FloatStorage, 3>;
+        using FullSpectrumStorage = unpolarized_spectrum_t<
+            mitsuba::Spectrum<FloatStorage, WAVELENGTH_COUNT>
+        >;
+
+        ref<SamplingTexture> sky_weight_tex;
+        ref<SunIrradTexture> sun_irrad_tex;
+
+        UInt32Storage elevation_idx = dr::arange<UInt32Storage>(ELEVATION_CTRL_PTS);
+        FullSpectrumStorage wavelengths = {
+            320, 360, 400, 440, 480, 520, 560, 600, 640, 680, 720
+        };
+
+        FloatStorage sky_irrad_data = dr::take_interp(m_sky_irrad_dataset, m_turbidity - 1.f).array(),
+                     sun_irrad_data = dr::take_interp(m_sun_irrad_dataset, m_turbidity - 1.f).array();
+
+        FullSpectrumStorage sky_irrad = dr::gather<FullSpectrumStorage>(sky_irrad_data, elevation_idx),
+                            sun_irrad = dr::gather<FullSpectrumStorage>(sun_irrad_data, elevation_idx);
+
+        // Sampling weights
+        {
+            FloatStorage sky_lum = m_sky_scale * luminance(sky_irrad, wavelengths),
+                         sun_lum = m_sun_scale * luminance(sun_irrad, wavelengths),
+                         sampling_weigths = sky_lum / (sky_lum + sun_lum);
+
+            dr::masked(sampling_weigths, !dr::isfinite(sampling_weigths)) = 0.f;
+
+            const size_t shape[2] = { ELEVATION_CTRL_PTS, 1 };
+            TensorXf temp = TensorXf(sampling_weigths, 2, shape);
+
+            sky_weight_tex = new SamplingTexture(temp, true, true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
+        }
+
+        // Sun irradiance
+        {
+            // Convert to RGB if needed
+            if constexpr (is_rgb_v<Spectrum>) {
+                // Cancel out the CIE Y normalization factor since it will be multiplied later
+                Color3fStorage rgb_sun_irrad = spectrum_to_srgb(sun_irrad, wavelengths) / ScalarFloat(MI_CIE_Y_NORMALIZATION);
+                sun_irrad_data = dr::ravel(rgb_sun_irrad);
+            }
+
+            const size_t shape[2] = { ELEVATION_CTRL_PTS, CHANNEL_COUNT };
+            TensorXf temp = TensorXf(sun_irrad_data, 2, shape);
+
+            sun_irrad_tex = new SunIrradTexture(temp, true, true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
+        }
+
+        return std::make_pair(sky_weight_tex, sun_irrad_tex);
+    }
+
     // ================================================================================================
     // ========================================= ATTRIBUTES ===========================================
     // ================================================================================================
@@ -481,13 +520,8 @@ private:
 
     // ========= Sampling parameters =========
     /// Sampling weights (sun vs sky) for each elevation
-    FloatStorage m_sky_sampling_weights;
-
-    // ========= Irradiance datasets loaded from file =========
-    // Contains irradiance values for the 10 turbidites,
-    // 30 elevations and 11 wavelengths
-    TensorXf m_sky_irrad_dataset;
-    TensorXf m_sun_irrad_dataset;
+    ref<SamplingTexture> m_sky_sampling_weight_tex;
+    ref<SunIrradTexture> m_sun_irrad_tex;
 
     MI_TRAVERSE_CB(
         Base,
@@ -500,6 +534,8 @@ private:
         Base::m_sky_params_dataset,
         Base::m_sun_ld,
         Base::m_sun_rad_dataset,
+        Base::m_sky_irrad_dataset,
+        Base::m_sun_irrad_dataset,
         Base::m_tgmm_tables,
         m_window_start_time,
         m_window_end_time,
@@ -509,9 +545,8 @@ private:
         m_nb_days,
         m_sky_rad,
         m_sky_params,
-        m_sky_sampling_weights,
-        m_sky_irrad_dataset,
-        m_sun_irrad_dataset
+        m_sky_sampling_weight_tex,
+        m_sun_irrad_tex
     )
 };
 
