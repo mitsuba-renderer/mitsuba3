@@ -1423,3 +1423,20 @@ def test37_create_mesh_with_properties(variant_scalar_rgb):
   faces = [0 B of face data],
   face_normals = 0
 ]"""
+
+def test38_ray_intersect_triangle(variants_all_rgb):
+    mesh = mi.Mesh(name='', vertex_count=3, face_count=1)
+    params = mi.traverse(mesh)
+    params['vertex_positions'] = [
+        0.0, 0.0, 0.0, 
+        1.0, 0.0, 0.0,
+        0.5, 1.0, 0.0,
+    ]
+    params['faces'] = [0, 1, 2]
+    params.update()
+
+    ray = mi.Ray3f([0.5, 0.5, 1.0], [0.0, 0.0, -1.0])
+
+    pi = mesh.ray_intersect_triangle(mi.UInt32(0), ray)
+    assert dr.all(dr.abs(pi.t - 1) <= 1e-12)
+    assert dr.all(pi.prim_index == 0)
