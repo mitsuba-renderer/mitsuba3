@@ -15,18 +15,20 @@ Uniform spectrum (:monosp:`uniform`)
 
  * - wavelength_min
    - |float|
-   - Minimum wavelength of the spectral range in nanometers.
+   - Lower bound of the wavelength sampling range in nanometers. Default: 360 nm
 
  * - wavelength_max
    - |float|
-   - Maximum wavelength of the spectral range in nanometers.
+   - Upper bound of the wavelength sampling range in nanometers. Default: 830 nm
 
  * - value
    - |float|
    - Value of the spectral function across the specified spectral range.
    - |exposed|, |differentiable|
 
-This spectrum returns a constant reflectance or emission value between 360 and 830nm.
+This spectrum returns a constant reflectance or emission value over the spectral
+dimension. It implements a uniform sampling method on a finite spectral range
+controlled by the ``wavelength_min`` and ``wavelength_max`` parameters.
 
 .. tabs::
     .. code-tab:: xml
@@ -54,11 +56,14 @@ public:
                                  props.get<ScalarFloat>("wavelength_max", MI_CIE_MAX));
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("value", m_value, +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("value", m_value, ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
+        if constexpr (dr::is_jit_v<Float>)
+            if (unlikely(m_value.size() != 1))
+                Throw("Updated the uniform spectrum with a float of size %d", m_value.size());
         dr::make_opaque(m_value);
     }
 
@@ -75,6 +80,11 @@ public:
     Float eval_1(const SurfaceInteraction3f & /*it*/, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
         return m_value;
+    }
+
+    Color3f eval_3(const SurfaceInteraction3f & /*it*/, Mask active) const override {
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        return Color3f(m_value);
     }
 
     Vector2f eval_1_grad(const SurfaceInteraction3f & /*it*/, Mask active) const override {
@@ -117,12 +127,13 @@ public:
         return tfm::format("UniformSpectrum[value=%f]", m_value);
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(UniformSpectrum)
 private:
     Float m_value;
     ScalarVector2f m_range;
+
+    MI_TRAVERSE_CB(Texture, m_value)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(UniformSpectrum, Texture)
-MI_EXPORT_PLUGIN(UniformSpectrum, "Uniform spectrum")
+MI_EXPORT_PLUGIN(UniformSpectrum)
 NAMESPACE_END(mitsuba)

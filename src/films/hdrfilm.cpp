@@ -19,11 +19,11 @@ High dynamic range film (:monosp:`hdrfilm`)
 -------------------------------------------
 
 .. pluginparameters::
- :extra-rows: 7
+ :extra-rows: 8
 
  * - width, height
    - |int|
-   - Width and height of the camera sensor in pixels. Default: 768, 576)
+   - Width and height of the camera sensor in pixels. (Default: 768, 576)
 
  * - file_format
    - |string|
@@ -39,7 +39,7 @@ High dynamic range film (:monosp:`hdrfilm`)
 
  * - component_format
    - |string|
-   - Specifies the desired floating  point component format of output images (when saving to disk).
+   - Specifies the desired floating point component format of output images (when saving to disk).
      The options are :monosp:`float16`, :monosp:`float32`, or :monosp:`uint32`.
      (Default: :monosp:`float16`)
 
@@ -140,11 +140,11 @@ public:
 
     HDRFilm(const Properties &props) : Base(props) {
         std::string file_format = string::to_lower(
-            props.string("file_format", "openexr"));
+            props.get<std::string_view>("file_format", "openexr"));
         std::string pixel_format = string::to_lower(
-            props.string("pixel_format", "rgb"));
+            props.get<std::string_view>("pixel_format", "rgb"));
         std::string component_format = string::to_lower(
-            props.string("component_format", "float16"));
+            props.get<std::string_view>("component_format", "float16"));
 
         if (file_format == "openexr" || file_format == "exr")
             m_file_format = Bitmap::FileFormat::OpenEXR;
@@ -604,7 +604,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(HDRFilm)
 protected:
     Bitmap::FileFormat m_file_format;
     Bitmap::PixelFormat m_pixel_format;
@@ -613,8 +613,9 @@ protected:
     ref<ImageBlock> m_storage;
     mutable std::mutex m_mutex;
     std::vector<std::string> m_channels;
+
+    MI_TRAVERSE_CB(Base, m_storage)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(HDRFilm, Film)
-MI_EXPORT_PLUGIN(HDRFilm, "HDR Film")
+MI_EXPORT_PLUGIN(HDRFilm)
 NAMESPACE_END(mitsuba)

@@ -9,9 +9,9 @@ def test01_traverse_flags(variants_vec_backends_once_rgb):
             self.tex1 = props["texture1"]
             self.tex2 = props["texture2"]
 
-        def traverse(self, callback):
-            callback.put_object("bsdf_tex_diff", self.tex1, mi.ParamFlags.Differentiable)
-            callback.put_object("bsdf_tex_nondiff", self.tex2, mi.ParamFlags.NonDifferentiable)
+        def traverse(self, cb):
+            cb.put("bsdf_tex_diff", self.tex1, mi.ParamFlags.Differentiable)
+            cb.put("bsdf_tex_nondiff", self.tex2, mi.ParamFlags.NonDifferentiable)
 
         def sample(self, *args, **kwargs):
             return (dr.zeros(mi.BSDFSample3f), dr.zeros(mi.Color3f))
@@ -32,9 +32,9 @@ def test01_traverse_flags(variants_vec_backends_once_rgb):
         def __init__(self, props):
             mi.Texture.__init__(self, props)
 
-        def traverse(self, callback):
-            callback.put_parameter("tex_param_diff", 0.1, mi.ParamFlags.Differentiable)
-            callback.put_parameter(
+        def traverse(self, cb):
+            cb.put("tex_param_diff", 0.1, mi.ParamFlags.Differentiable)
+            cb.put(
                 "tex_param_disc",
                 0.1,
                 mi.ParamFlags.Differentiable | mi.ParamFlags.Discontinuous
@@ -62,7 +62,7 @@ def test01_traverse_flags(variants_vec_backends_once_rgb):
         "type": "mybsdf",
         "texture1": {"type": "mytexture"},
         "texture2": {"type": "mytexture"},
-    })
+    }, optimize=False)
 
     params = mi.traverse(bsdf)
 
@@ -95,8 +95,8 @@ def test02_traverse_update(variants_all_ad_rgb):
             self.tex1 = props["texture1"]
             self.tex2 = props["texture2"]
 
-        def traverse(self, callback):
-            callback.put_object("bsdf_tex_diff", self.tex1, mi.ParamFlags.Differentiable)
+        def traverse(self, cb):
+            cb.put("bsdf_tex_diff", self.tex1, mi.ParamFlags.Differentiable)
 
         def parameters_changed(self, keys):
             MyBSDF.update_keys = keys
@@ -123,10 +123,10 @@ def test02_traverse_update(variants_all_ad_rgb):
             mi.Texture.__init__(self, props)
             self.tex_param_nondiff = mi.Float(3)
 
-        def traverse(self, callback):
-            callback.put_parameter("tex_param_diff", mi.Point3f(1, 1, 1), mi.ParamFlags.Differentiable)
-            callback.put_parameter("tex_param_scalar", mi.ScalarFloat(2), mi.ParamFlags.NonDifferentiable)
-            callback.put_parameter("tex_param_nondiff", self.tex_param_nondiff, mi.ParamFlags.NonDifferentiable)
+        def traverse(self, cb):
+            cb.put("tex_param_diff", mi.Point3f(1, 1, 1), mi.ParamFlags.Differentiable)
+            cb.put("tex_param_scalar", mi.ScalarFloat(2), mi.ParamFlags.NonDifferentiable)
+            cb.put("tex_param_nondiff", self.tex_param_nondiff, mi.ParamFlags.NonDifferentiable)
 
         def parameters_changed(self, keys):
             MyTexture.update_keys = keys
@@ -220,9 +220,9 @@ def test02_traverse_update(variants_all_ad_rgb):
     ), "Updates should be triggered when enabling gradients!"
     reset_update_keys()
 
-    def inplace_update(value: mi.Point3f):
+    def update_inplace(value: mi.Point3f):
         value += 0.2
-    inplace_update(params["bsdf_tex_diff.tex_param_diff"])
+    update_inplace(params["bsdf_tex_diff.tex_param_diff"])
     params.update()
     assert (
         MyTexture.update_keys == ['tex_param_diff'] and
@@ -232,7 +232,7 @@ def test02_traverse_update(variants_all_ad_rgb):
 
 
     # Gradients on non-diff params warning
-    logger = mi.Thread.thread().logger()
+    logger = mi.logger()
     l = logger.error_level()
     try:
         logger.set_error_level(mi.LogLevel.Warn)

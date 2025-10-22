@@ -100,6 +100,35 @@ void from_cpu_dlpack(Bitmap *b, ContigCpuNdArray data,
         memcpy(b->data(), data.data(), b->buffer_size());
 }
 
+char *base64_encode(char * MI_RESTRICT p, const uint8_t * MI_RESTRICT src, size_t size) {
+    const char *map = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const size_t triplets = size / 3, remain = size - triplets * 3;
+
+    for (size_t i = 0; i < triplets; ++i) {
+        uint8_t c0 = src[0], c1 = src[1], c2 = src[2];
+        *p++ = map[c0 >> 2];
+        *p++ = map[((c0 & 0x3) << 4) + (c1 >> 4)];
+        *p++ = map[((c1 & 0xf) << 2) + (c2 >> 6)];
+        *p++ = map[c2 & 0x3f];
+        src += 3;
+    }
+
+    if (remain) {
+        uint8_t c0 = src[0];
+        *p++ = map[c0 >> 2];
+        if(remain == 1) {
+            *p++ = map[(c0 & 0x3) << 4];
+            *p++ = '=';
+        } else {
+            uint8_t c1 = src[1];
+            *p++ = map[((c0 & 0x3) << 4) + (c1 >> 4)];
+            *p++ = map[(c1 & 0xf) << 2];
+        }
+        *p++ = '=';
+    }
+    return p;
+}
+
 MI_PY_EXPORT(Bitmap) {
     using Float = typename Bitmap::Float;
     MI_IMPORT_CORE_TYPES()
@@ -158,10 +187,9 @@ MI_PY_EXPORT(Bitmap) {
         .def_method(Bitmap, premultiplied_alpha)
         .def_method(Bitmap, set_premultiplied_alpha)
         .def_method(Bitmap, clear)
-        .def("metadata", [](const Bitmap& b) {
-                return PropertiesV<Float>(b.metadata());
-            }, D(Bitmap, metadata), 
-            nb::sig("def metadata(self) -> mitsuba.scalar_rgb.Properties"))
+        .def("metadata", [](Bitmap& b) -> Properties& { return b.metadata(); }, D(Bitmap, metadata),
+            nb::sig("def metadata(self) -> mitsuba.scalar_rgb.Properties"),
+            nb::rv_policy::reference_internal)
         .def("resample", nb::overload_cast<Bitmap *, const ReconstructionFilter *,
             const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &,
             const std::pair<ScalarFloat, ScalarFloat> &, Bitmap *>(&Bitmap::resample, nb::const_),
@@ -403,29 +431,34 @@ MI_PY_EXPORT(Bitmap) {
         "Initialize a Bitmap from any array that implements the buffer or "
         "DLPack protocol.");
 
-    bitmap.def("_repr_html_", [](const Bitmap &_bitmap) -> nb::object {
-        if (_bitmap.pixel_format() == Bitmap::PixelFormat::MultiChannel)
+    bitmap.def("_repr_html_", [](const Bitmap *b) -> nb::object {
+        if (b->pixel_format() == Bitmap::PixelFormat::MultiChannel)
             return nb::none();
 
-        ref<Bitmap> bitmap = _bitmap.convert(Bitmap::PixelFormat::RGB,
-                                             Struct::Type::UInt16, true);
+        ref<const Bitmap> bitmap = b;
+
+        if (bitmap->pixel_format() != Bitmap::PixelFormat::RGB ||
+            bitmap->component_format() != Struct::Type::UInt8)
+            bitmap = bitmap->convert(Bitmap::PixelFormat::RGB,
+                                     Struct::Type::UInt8, true);
+
         ref<MemoryStream> s = new MemoryStream(bitmap->buffer_size());
-        bitmap->write(s, Bitmap::FileFormat::PNG);
-        s->seek(0);
-        std::unique_ptr<char> tmp(new char[s->size()]);
-        s->read((void *) tmp.get(), s->size());
+        bitmap->write(s, Bitmap::FileFormat::JPEG, 99);
 
-        auto base64 = nb::module_::import_("base64");
-        auto bytes = base64.attr("b64encode")(nb::bytes(tmp.get(), s->size()));
-        std::stringstream s_bytes;
-        s_bytes << nb::str(bytes).c_str();
+        const char *prefix = "<img src=\"data:image/jpeg;base64, ",
+                   *suffix = "\">";
 
-        std::stringstream out;
-        out << "<img src=\"data:image/png;base64, ";
-        out << s_bytes.str().substr(2, s_bytes.str().size() - 3) << "\"";
-        out << "width=\"250vm\"";
-        out << " />";
+        size_t prefix_size = strlen(prefix),
+               suffix_size = strlen(suffix);
 
-        return nb::str(out.str().c_str());
+        std::unique_ptr<char[]> result(
+            new char[((s->size() + 2) / 3) * 4 + prefix_size + suffix_size]);
+
+        char *p = result.get();
+        memcpy(p, prefix, prefix_size); p += prefix_size;
+        p = base64_encode(p, s->raw_buffer(), s->size());
+        memcpy(p, suffix, suffix_size); p += suffix_size;
+
+        return nb::str(result.get(), p - result.get());
     });
 }

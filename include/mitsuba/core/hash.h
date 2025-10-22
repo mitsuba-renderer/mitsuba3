@@ -1,8 +1,6 @@
 #pragma once
 
 #include <mitsuba/core/object.h>
-#include <functional>
-#include <iostream>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -25,6 +23,21 @@ struct tuple_hasher {
     size_t operator()(const Tuple &t) const {
         return hash_combine(hash(std::get<Index>(t)),
                             tuple_hasher<Tuple, Index - 1>()(t));
+    }
+};
+
+struct pair_hasher {
+    template <typename Pair>
+    size_t operator()(const Pair &t) const {
+        return hash_combine(hash(t.first), hash(t.second));
+    }
+};
+
+struct pair_eq {
+    using is_transparent = std::true_type;
+    template <typename Pair1, typename Pair2>
+    bool operator()(const Pair1 &p1, const Pair2 &p2) const {
+        return p1.first == p2.first && p1.second == p2.second;
     }
 };
 

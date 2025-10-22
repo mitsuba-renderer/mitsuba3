@@ -58,7 +58,7 @@ using the lookat tag, e.g.:
     .. code-tab:: python
 
         'type': 'spot',
-        'to_world': mi.ScalarTransform4f.look_at(
+        'to_world': mi.ScalarTransform4f().look_at(
             origin=[1, 1, 1],
             target=[1, 2, 1],
             up=[0, 0, 1]
@@ -89,8 +89,8 @@ public:
 
     SpotLight(const Properties &props) : Base(props) {
         m_flags = +EmitterFlags::DeltaPosition;
-        m_intensity = props.texture_d65<Texture>("intensity", 1.f);
-        m_texture = props.texture_d65<Texture>("texture", 1.f);
+        m_intensity = props.get_emissive_texture<Texture>("intensity", 1.f);
+        m_texture = props.get_texture<Texture>("texture", 1.f);
 
         if (m_intensity->is_spatially_varying())
             Throw("The parameter 'intensity' cannot be spatially varying (e.g. bitmap type)!");
@@ -116,11 +116,11 @@ public:
                         m_inv_transition_width);
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_object("intensity",    m_intensity.get(), +ParamFlags::Differentiable);
-        callback->put_object("texture",      m_texture.get(),   +ParamFlags::Differentiable);
-        callback->put_parameter("to_world", *m_to_world.ptr(),  +ParamFlags::NonDifferentiable);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("intensity", m_intensity,  ParamFlags::Differentiable);
+        cb->put("texture",   m_texture,    ParamFlags::Differentiable);
+        cb->put("to_world",  m_to_world,   ParamFlags::NonDifferentiable);
     }
 
     /**
@@ -197,7 +197,6 @@ public:
         active &= falloff > 0.f;  // Avoid invalid texture lookups
 
         SurfaceInteraction3f si      = dr::zeros<SurfaceInteraction3f>();
-        si.t                         = 0.f;
         si.time                      = it.time;
         si.wavelengths               = it.wavelengths;
         si.p                         = ds.p;
@@ -249,6 +248,30 @@ public:
         return { wav, weight };
     }
 
+    Spectrum eval_direction(const Interaction3f &it,
+                            const DirectionSample3f &ds,
+                            Mask active) const override {
+        Float inv_dist = dr::rcp(ds.dist);
+        Vector3f local_d = m_to_world.value().inverse() * -ds.d;
+
+        // Evaluate emitted radiance & falloff profile
+        Float falloff = falloff_curve(local_d, active);
+        active &= falloff > 0.f;  // Avoid invalid texture lookups
+
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        si.time                 = it.time;
+        si.wavelengths          = it.wavelengths;
+        si.p                    = ds.p;
+
+        UnpolarizedSpectrum radiance = m_intensity->eval(si, active);
+        if (m_texture->is_spatially_varying()) {
+            si.uv = direction_to_uv(local_d);
+            radiance *= m_texture->eval(si, active);
+        }
+
+        return depolarizer<Spectrum>(radiance & active) * (falloff * dr::square(inv_dist));
+    }
+
     Spectrum eval(const SurfaceInteraction3f &, Mask) const override {
         return 0.f;
     }
@@ -271,15 +294,17 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(SpotLight)
 private:
     ref<Texture> m_intensity;
     ref<Texture> m_texture;
     Float m_beam_width, m_cutoff_angle, m_uv_factor;
     Float m_cos_beam_width, m_cos_cutoff_angle, m_inv_transition_width;
+
+    MI_TRAVERSE_CB(Base, m_intensity, m_texture, m_beam_width, m_cutoff_angle,
+                   m_uv_factor, m_cos_beam_width, m_cos_cutoff_angle,
+                   m_inv_transition_width)
 };
 
-
-MI_IMPLEMENT_CLASS_VARIANT(SpotLight, Emitter)
-MI_EXPORT_PLUGIN(SpotLight, "Spot emitter")
+MI_EXPORT_PLUGIN(SpotLight)
 NAMESPACE_END(mitsuba)

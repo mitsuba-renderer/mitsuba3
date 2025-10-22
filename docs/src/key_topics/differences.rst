@@ -13,9 +13,9 @@ scene compatibility with Mitsuba 2.
 Enoki → Dr.Jit
 ^^^^^^^^^^^^^^^
 
-One of the biggest change is the replacement of the Enoki backend with Dr.Jit.
+One of the biggest changes is the replacement of the Enoki backend with Dr.Jit.
 To account for this in your code, simply replace the namespace definition and
-aliases as follow:
+aliases as follows:
 
 .. tabs::
     .. code-tab:: c++
@@ -74,11 +74,9 @@ different set of goals.
 Missing features
 ^^^^^^^^^^^^^^^^
 
-A number of Mitsuba 0.6 features are missing in Mitsuba 2. We plan to port some
+A number of Mitsuba 0.6 features are missing in Mitsuba 3. We plan to port some
 of these features in the future and discard others. The following list provides
-an overview:
-
-In the following, we list the main missing features:
+an overview of the main missing features:
 
 - **Shapes**: the basic shapes (PLY/OBJ/Serialized triangle meshes, rectangles, spheres, cylinders) are all supported. However, instancing and assemblies of
   hair fibers are still missing.

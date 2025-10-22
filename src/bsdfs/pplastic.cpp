@@ -150,10 +150,10 @@ public:
     MI_IMPORT_TYPES(Texture, MicrofacetDistribution)
 
     PolarizedPlastic(const Properties &props) : Base(props) {
-        m_diffuse_reflectance  = props.texture<Texture>("diffuse_reflectance",  .5f);
+        m_diffuse_reflectance  = props.get_texture<Texture>("diffuse_reflectance",  .5f);
 
         if (props.has_property("specular_reflectance"))
-            m_specular_reflectance = props.texture<Texture>("specular_reflectance", 1.f);
+            m_specular_reflectance = props.get_texture<Texture>("specular_reflectance", 1.f);
 
         /// Specifies the internal index of refraction at the interface
         ScalarFloat int_ior = lookup_ior(props, "int_ior", "polypropylene");
@@ -185,17 +185,18 @@ public:
         parameters_changed();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("diffuse_reflectance", m_diffuse_reflectance.get(), +ParamFlags::Differentiable);
-        callback->put_parameter("eta",              m_eta,                       ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("diffuse_reflectance", m_diffuse_reflectance, ParamFlags::Differentiable);
+        cb->put("eta",                 m_eta,                 ParamFlags::Differentiable | ParamFlags::Discontinuous);
 
         if (m_specular_reflectance)
-            callback->put_object("specular_reflectance", m_specular_reflectance.get(), +ParamFlags::Differentiable);
-        if (!has_flag(m_flags, BSDFFlags::Anisotropic))
-            callback->put_parameter("alpha",             m_alpha_u,                    ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        else {
-            callback->put_parameter("alpha_u",           m_alpha_u,                    ParamFlags::Differentiable | ParamFlags::Discontinuous);
-            callback->put_parameter("alpha_v",           m_alpha_v,                    ParamFlags::Differentiable | ParamFlags::Discontinuous);
+            cb->put("specular_reflectance", m_specular_reflectance, ParamFlags::Differentiable);
+
+        if (!has_flag(m_flags, BSDFFlags::Anisotropic)) {
+            cb->put("alpha",   m_alpha_u, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        } else {
+            cb->put("alpha_u", m_alpha_u, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+            cb->put("alpha_v", m_alpha_v, ParamFlags::Differentiable | ParamFlags::Discontinuous);
         }
     }
 
@@ -320,7 +321,7 @@ public:
             }
 
             if (has_diffuse) {
-                /* Diffuse scattering is modeled a a sequence of events:
+                /* Diffuse scattering is modeled as a sequence of events:
                    1) Specular refraction inside
                    2) Subsurface scattering
                    3) Specular refraction outside again
@@ -384,7 +385,7 @@ public:
 
             if (has_diffuse) {
                 UnpolarizedSpectrum diff = m_diffuse_reflectance->eval(si, active);
-                /* Diffuse scattering is modeled a a sequence of events:
+                /* Diffuse scattering is modeled as a sequence of events:
                    1) Specular refraction inside
                    2) Subsurface scattering
                    3) Specular refraction outside again
@@ -451,7 +452,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(PolarizedPlastic)
 private:
     /// Diffuse reflectance component
     ref<Texture> m_diffuse_reflectance;
@@ -470,8 +471,10 @@ private:
 
     /// Sampling weight for specular component
     Float m_specular_sampling_weight;
+
+    MI_TRAVERSE_CB(Base, m_diffuse_reflectance, m_specular_reflectance,
+                   m_alpha_u, m_alpha_v, m_eta, m_specular_sampling_weight)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(PolarizedPlastic, BSDF)
-MI_EXPORT_PLUGIN(PolarizedPlastic, "Polarized plastic")
+MI_EXPORT_PLUGIN(PolarizedPlastic)
 NAMESPACE_END(mitsuba)

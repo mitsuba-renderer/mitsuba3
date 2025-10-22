@@ -58,7 +58,7 @@ public:
      */
     static ref<MemoryMappedFile> create_temporary(size_t size);
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(MemoryMappedFile)
 protected:
     /// Internal constructor
     MemoryMappedFile();

@@ -39,11 +39,11 @@ NAMESPACE_BEGIN(string)
  * Throws an exception if the conversion is unsuccessful.
  */
 template <typename T>
-T parse_float(const char *start, const char *end, char **endptr);
+T parse_float(const char *start, const char *end, char **endptr) noexcept;
 extern template MI_EXPORT_LIB float parse_float<float>(
-    const char *start, const char *end, char **endptr);
+    const char *start, const char *end, char **endptr) noexcept;
 extern template MI_EXPORT_LIB double parse_float<double>(
-    const char *start, const char *end, char **endptr);
+    const char *start, const char *end, char **endptr) noexcept;
 
 
 /**
@@ -53,10 +53,10 @@ extern template MI_EXPORT_LIB double parse_float<double>(
  * Throws an exception if the conversion is unsuccessful, or if the portion of
  * the string following the parsed number contains non-whitespace characters.
  */
-template <typename T> T stof(const std::string &s);
+template <typename T> T stof(std::string_view s);
 
-extern template MI_EXPORT_LIB float  stof<float>(const std::string &str);
-extern template MI_EXPORT_LIB double stof<double>(const std::string &str);
+extern template MI_EXPORT_LIB float  stof<float>(std::string_view str);
+extern template MI_EXPORT_LIB double stof<double>(std::string_view str);
 
 /**
  * \brief Locale-independent string to floating point conversion analogous
@@ -69,21 +69,21 @@ template <typename T> T strtof(const char *s, char **endptr) {
 }
 
 /// Check if the given string starts with a specified prefix
-inline bool starts_with(const std::string &string, const std::string &prefix) {
+inline bool starts_with(std::string_view string, std::string_view prefix) {
     if (prefix.size() > string.size())
         return false;
     return std::equal(prefix.begin(), prefix.end(), string.begin());
 }
 
 /// Check if the given string ends with a specified suffix
-inline bool ends_with(const std::string &string, const std::string &suffix) {
+inline bool ends_with(std::string_view string, std::string_view suffix) {
     if (suffix.size() > string.size())
         return false;
     return std::equal(suffix.rbegin(), suffix.rend(), string.rbegin());
 }
 
 /// Return a lower-case version of the given string (warning: not unicode compliant)
-inline std::string to_lower(const std::string &s) {
+inline std::string to_lower(std::string_view s) {
     std::string result;
     result.resize(s.length());
     for (size_t i = 0; i < s.length(); ++i)
@@ -92,7 +92,7 @@ inline std::string to_lower(const std::string &s) {
 }
 
 /// Return a upper-case version of the given string (warning: not unicode compliant)
-inline std::string to_upper(const std::string &s) {
+inline std::string to_upper(std::string_view s) {
     std::string result;
     result.resize(s.length());
     for (size_t i = 0; i < s.length(); ++i)
@@ -100,16 +100,27 @@ inline std::string to_upper(const std::string &s) {
     return result;
 }
 
+/// Case-insensitive comparison of two string_views (warning: not unicode compliant)
+inline bool iequals(std::string_view a, std::string_view b) {
+    if (a.size() != b.size())
+        return false;
+    for (size_t i = 0; i < a.size(); ++i) {
+        if (std::tolower(a[i]) != std::tolower(b[i]))
+            return false;
+    }
+    return true;
+}
+
 /// Chop up the string given a set of delimiters (warning: not unicode compliant)
-extern MI_EXPORT_LIB std::vector<std::string> tokenize(const std::string &string,
-                                                         const std::string &delim = ", ",
-                                                         bool include_empty = false);
+extern MI_EXPORT_LIB std::vector<std::string> tokenize(std::string_view string,
+                                                       std::string_view delim = ", ",
+                                                       bool include_empty = false);
 
 /// Indent every line of a string by some number of spaces
-extern MI_EXPORT_LIB std::string indent(const std::string &string, size_t amount = 2);
+extern MI_EXPORT_LIB std::string indent(std::string_view string, size_t amount = 2);
 
 /// Turn a type into a string representation and indent every line by some number of spaces
-template <typename T>
+template <typename T, std::enable_if_t<!std::is_convertible_v<T, std::string_view>, int> = 0>
 inline std::string indent(const T &value, size_t amount = 2) {
     std::ostringstream oss;
     oss << value;
@@ -124,8 +135,8 @@ std::string indent(const T *value, size_t amount = 2) {
     return indent((const T2 *) value, amount);
 }
 
-inline bool replace_inplace(std::string &str, const std::string &source,
-                            const std::string &target) {
+inline bool replace_inplace(std::string &str, std::string_view source,
+                            std::string_view target) {
     size_t pos = 0;
     bool found = false;
     while ((pos = str.find(source, pos)) != std::string::npos) {
@@ -137,11 +148,11 @@ inline bool replace_inplace(std::string &str, const std::string &source,
 }
 
 /// Remove leading and trailing characters
-extern MI_EXPORT_LIB std::string trim(const std::string &s,
-                                      const std::string &whitespace = " \t");
+extern MI_EXPORT_LIB std::string trim(std::string_view s,
+                                      std::string_view whitespace = " \t");
 
 /// Check if a list of keys contains a specific key
-extern MI_EXPORT_LIB bool contains(const std::vector<std::string> &keys, const std::string &key);
+extern MI_EXPORT_LIB bool contains(const std::vector<std::string> &keys, std::string_view key);
 
 NAMESPACE_END(string)
 NAMESPACE_END(mitsuba)

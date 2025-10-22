@@ -1,10 +1,13 @@
 #include <nanobind/nanobind.h> // Needs to be first, to get `ref<T>` caster
 #include <mitsuba/render/sensor.h>
+#include <mitsuba/render/emitter.h> // Has to be included, so that Emitter::CallSupport::Variant is instantiated here
 #include <mitsuba/core/properties.h>
 #include <mitsuba/python/python.h>
+#include <mitsuba/python/field.h> // Provides field<...> type caster.
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/pair.h>
+#include <nanobind/stl/vector.h>
 #include <drjit/python.h>
 
 /// Trampoline for derived types implemented in Python
@@ -91,6 +94,9 @@ public:
     using Sensor::m_needs_sample_2;
     using Sensor::m_needs_sample_3;
     using Sensor::m_film;
+    using Sensor::m_to_world;
+
+    DR_TRAMPOLINE_TRAVERSE_CB(Sensor)
 };
 
 template <typename Ptr, typename Cls> void bind_sensor_generic(Cls &cls) {
@@ -162,7 +168,7 @@ template <typename Ptr, typename Cls> void bind_sensor_generic(Cls &cls) {
 MI_PY_EXPORT(Sensor) {
     MI_PY_IMPORT_TYPES(Sensor, ProjectiveCamera, Endpoint)
     using PySensor = PySensor<Float, Spectrum>;
-    using Properties = PropertiesV<Float>;
+    using Properties = mitsuba::Properties;
 
     auto sensor = MI_PY_TRAMPOLINE_CLASS(PySensor, Sensor, Endpoint)
         .def(nb::init<const Properties&>())
@@ -173,7 +179,10 @@ MI_PY_EXPORT(Sensor) {
         .def("sampler", nb::overload_cast<>(&Sensor::sampler, nb::const_), D(Sensor, sampler))
         .def_field(PySensor, m_needs_sample_2, D(Endpoint, m_needs_sample_3))
         .def_field(PySensor, m_needs_sample_3, D(Endpoint, m_needs_sample_3))
-        .def_field(PySensor, m_film);
+        .def_field(PySensor, m_film)
+        .def_field(PySensor, m_to_world);
+
+    drjit::bind_traverse(sensor);
 
     bind_sensor_generic<Sensor *>(sensor);
 
@@ -183,18 +192,19 @@ MI_PY_EXPORT(Sensor) {
         bind_sensor_generic<SensorPtr>(sensor_ptr);
     }
 
-    MI_PY_REGISTER_OBJECT("register_sensor", Sensor)
 
     MI_PY_CLASS(ProjectiveCamera, Sensor)
         .def_method(ProjectiveCamera, near_clip)
         .def_method(ProjectiveCamera, far_clip)
-        .def_method(ProjectiveCamera, focus_distance);
+        .def_method(ProjectiveCamera, focus_distance)
+        .def("projection_transform", &ProjectiveCamera::projection_transform);
 
     m.def("perspective_projection", &perspective_projection<Float>,
           "film_size"_a, "crop_size"_a, "crop_offset"_a, "fov_x"_a, "near_clip"_a, "far_clip"_a,
           D(perspective_projection));
-
     m.def("orthographic_projection", &orthographic_projection<Float>,
           "film_size"_a, "crop_size"_a, "crop_offset"_a, "near_clip"_a, "far_clip"_a,
           D(orthographic_projection));
+
+    dr::bind_traverse(sensor);
 }

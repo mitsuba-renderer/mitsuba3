@@ -82,11 +82,10 @@ public:
         return tfm::format("MitchellNetravaliFilter[radius=%f, B=%f, C=%f]", m_radius, m_b, m_c);
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(MitchellNetravaliFilter)
 protected:
     ScalarFloat m_b, m_c;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(MitchellNetravaliFilter, ReconstructionFilter)
-MI_EXPORT_PLUGIN(MitchellNetravaliFilter, "Mitchell-Netravali filter");
+MI_EXPORT_PLUGIN(MitchellNetravaliFilter)
 NAMESPACE_END(mitsuba)

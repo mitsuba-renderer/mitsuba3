@@ -139,7 +139,7 @@ std::string FileStream::read_line() {
 std::string FileStream::to_string() const {
     std::ostringstream oss;
 
-    oss << class_()->name() << "[" << std::endl;
+    oss << class_name() << "[" << std::endl;
     if (is_closed()) {
         oss << "  closed" << std::endl;
     } else {
@@ -158,7 +158,5 @@ std::string FileStream::to_string() const {
 
     return oss.str();
 }
-
-MI_IMPLEMENT_CLASS(FileStream, Stream)
 
 NAMESPACE_END(mitsuba)

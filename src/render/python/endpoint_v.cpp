@@ -8,10 +8,11 @@
 #include <mitsuba/render/shape.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/stl/pair.h>
+#include <drjit/python.h>
 
 MI_PY_EXPORT(Endpoint) {
     MI_PY_IMPORT_TYPES()
-    MI_PY_CLASS(Endpoint, Object)
+    auto endpoint = MI_PY_CLASS(Endpoint, Object)
         .def_method(Endpoint, sample_ray, "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true)
         .def_method(Endpoint, sample_direction, "it"_a, "sample"_a, "active"_a = true)
         .def_method(Endpoint, pdf_direction, "it"_a, "ds"_a, "active"_a = true)
@@ -29,4 +30,6 @@ MI_PY_EXPORT(Endpoint) {
         .def_method(Endpoint, set_medium, "medium"_a)
         .def_method(Endpoint, set_scene, "scene"_a)
         .def_method(Endpoint, bbox);
+
+    drjit::bind_traverse(endpoint);
 }

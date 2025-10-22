@@ -13,6 +13,7 @@
 #include <mitsuba/core/util.h>
 #include <drjit/dynamic.h>
 #include <array>
+#include <drjit/traversable_base.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -47,7 +48,7 @@ NAMESPACE_BEGIN(mitsuba)
  * play an important role in certain applications. In particular:
  *
  * \c Hierarchical2D generates samples using hierarchical sample warping, which
- * is essentially a course-to-fine traversal of a MIP map. It generates a
+ * is essentially a coarse-to-fine traversal of a MIP map. It generates a
  * mapping with very little shear/distortion, but it has numerous
  * discontinuities that can be problematic for some applications.
  *
@@ -72,7 +73,7 @@ NAMESPACE_BEGIN(mitsuba)
  */
 
 template <typename Float_, size_t Dimension_ = 0>
-class DiscreteDistribution2D {
+class DiscreteDistribution2D : drjit::TraversableBase {
 public:
     using Float                       = Float_;
     using UInt32                      = dr::uint32_array_t<Float>;
@@ -201,10 +202,14 @@ protected:
 
     Float m_inv_normalization;
     Float m_normalization;
+
+    MI_TRAVERSE_CB(drjit::TraversableBase, m_data, m_marg_cdf, m_cond_cdf,
+                   m_inv_normalization, m_normalization)
 };
 
 /// Base class of Hierarchical2D and Marginal2D with common functionality
-template <typename Float_, size_t Dimension_ = 0> class Distribution2D {
+template <typename Float_, size_t Dimension_ = 0>
+class Distribution2D : drjit::TraversableBase {
 public:
     static constexpr size_t Dimension = Dimension_;
     using Float                       = Float_;
@@ -308,6 +313,28 @@ protected:
 
     /// Total number of slices (in case Dimension > 1)
     uint32_t m_slices;
+
+public:
+    void
+    traverse_1_cb_ro(void *payload,
+                     drjit::detail::traverse_callback_ro fn) const override {
+        if constexpr (!std ::is_same_v<drjit ::TraversableBase,
+                                       drjit ::TraversableBase>)
+            drjit ::TraversableBase ::traverse_1_cb_ro(payload, fn);
+        for (const auto &param_value : m_param_values) {
+            drjit ::traverse_1_fn_ro(param_value, payload, fn);
+        }
+    }
+    void traverse_1_cb_rw(void *payload,
+                          drjit::detail::traverse_callback_rw fn) override {
+        if constexpr (!std ::is_same_v<drjit ::TraversableBase,
+                                       drjit ::TraversableBase>)
+            drjit ::TraversableBase ::traverse_1_cb_rw(payload, fn);
+
+        for (auto &param_value : m_param_values) {
+            drjit ::traverse_1_fn_rw(param_value, payload, fn);
+        }
+    }
 };
 
 /**
@@ -760,7 +787,7 @@ protected:
          * \brief Convert from 2D pixel coordinates to an index indicating how the
          * data is laid out in memory.
          *
-         * The implementation stores 2x2 patches contigously in memory to
+         * The implementation stores 2x2 patches contiguously in memory to
          * improve cache locality during hierarchical traversals
          */
         template <typename Point2u>
@@ -788,6 +815,8 @@ protected:
                 return dr::gather<Float>(data, i0, active);
             }
         }
+
+        DRJIT_STRUCT_NODEF(Level, data)
     };
 
     /// MIP hierarchy over linearly interpolated patches
@@ -795,6 +824,8 @@ protected:
 
     /// Number of bilinear patches in the X/Y dimension - 1
     ScalarVector2u m_max_patch_index;
+
+    MI_TRAVERSE_CB(Base, m_levels)
 };
 
 /**
@@ -1454,6 +1485,8 @@ protected:
 
     /// Are the probability values normalized?
     bool m_normalized;
+
+    MI_TRAVERSE_CB(Base, m_data, m_marg_cdf, m_cond_cdf)
 };
 
 //! @}

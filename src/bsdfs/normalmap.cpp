@@ -6,6 +6,8 @@
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/texture.h>
 
+#include "normalmap_helpers.h"
+
 NAMESPACE_BEGIN(mitsuba)
 
 /**!
@@ -27,6 +29,20 @@ Normal map BSDF (:monosp:`normalmap`)
    - A BSDF model that should be affected by the normal map
    - |exposed|, |differentiable|
 
+ * - flip_invalid_normals
+   - |bool|
+   - If enabled, the plugin will ensure that the perturbed normals are always
+     consistent with the geometric normal. This prevents visual artifacts and is
+     achieved by a simply flipping the shading normal, as described in
+     :cite:`Schuessler2017Microfacet`. (Default: true)
+   - |exposed|
+
+ * - use_shadowing_function
+   - |bool|
+   - If enabled, the plugin uses a Microfacet-based shadowing term
+     :cite:`Estevez2019` to smooth out transitions on shadow boundaries. (Default: true)
+   - |exposed|
+
 Normal mapping is a simple technique for cheaply adding surface detail to a rendering. This is done
 by perturbing the shading coordinate frame based on a normal map provided as a texture. This method
 can lend objects a highly realistic and detailed appearance (e.g. wrinkled or covered by scratches
@@ -46,7 +62,7 @@ normal map with a value of :math:`(0,0,1)` everywhere causes no changes to the s
 3D normal directions into (nonnegative) color values suitable for this plugin, the mapping
 :math:`x \mapsto (x+1)/2` must be applied to each component.
 
-The following XML snippet describes a smooth mirror material affected by a normal map. Note the we set the
+The following XML snippet describes a smooth mirror material affected by a normal map. Note that we set the
 ``raw`` properties of the normal map ``bitmap`` object to ``true`` in order to disable the
 transformation from sRGB to linear encoding:
 
@@ -82,21 +98,21 @@ public:
     MI_IMPORT_TYPES(Texture)
 
     NormalMap(const Properties &props) : Base(props) {
-        for (auto &[name, obj] : props.objects(false)) {
-            auto bsdf = dynamic_cast<Base *>(obj.get());
-
-            if (bsdf) {
+        for (auto &prop : props.objects()) {
+            if (Base *bsdf = prop.try_get<Base>()) {
                 if (m_nested_bsdf)
                     Throw("Only a single BSDF child object can be specified.");
                 m_nested_bsdf = bsdf;
-                props.mark_queried(name);
             }
         }
         if (!m_nested_bsdf)
             Throw("Exactly one BSDF child object must be specified.");
 
         // TODO: How to assert this is actually a RGBDataTexture?
-        m_normalmap = props.texture<Texture>("normalmap");
+        m_normalmap = props.get_texture<Texture>("normalmap");
+
+        m_flip_invalid_normals = props.get<bool>("flip_invalid_normals", true);
+        m_use_shadowing_function = props.get<bool>("use_shadowing_function", true);
 
         // Add all nested components
         m_flags = (uint32_t) 0;
@@ -106,9 +122,9 @@ public:
         }
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("nested_bsdf", m_nested_bsdf.get(), +ParamFlags::Differentiable);
-        callback->put_object("normalmap",   m_normalmap.get(),   ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("nested_bsdf", m_nested_bsdf, ParamFlags::Differentiable);
+        cb->put("normalmap",   m_normalmap,   ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -117,9 +133,10 @@ public:
                                              const Point2f &sample2,
                                              Mask active) const override {
         // Sample nested BSDF with perturbed shading frame
+        auto [ perturbed_frame_wrt_si, perturbed_frame_wrt_world ] = frame(si, active);
         SurfaceInteraction3f perturbed_si(si);
-        perturbed_si.sh_frame = frame(si, active);
-        perturbed_si.wi = perturbed_si.to_local(si.wi);
+        perturbed_si.sh_frame = perturbed_frame_wrt_world;
+        perturbed_si.wi       = perturbed_frame_wrt_si.to_local(si.wi);
         auto [bs, weight] = m_nested_bsdf->sample(ctx, perturbed_si,
                                                   sample1, sample2, active);
         active &= dr::any(unpolarized_spectrum(weight) != 0.f);
@@ -127,11 +144,14 @@ public:
             return { bs, 0.f };
 
         // Transform sampled 'wo' back to original frame and check orientation
-        Vector3f perturbed_wo = perturbed_si.to_world(bs.wo);
+        Vector3f perturbed_wo = perturbed_frame_wrt_si.to_world(bs.wo);
         active &= Frame3f::cos_theta(bs.wo) *
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
+        bs.pdf = dr::select(active, bs.pdf, 0.f);
         bs.wo = perturbed_wo;
 
+        if (m_use_shadowing_function)
+            weight *= eval_shadow_terminator(perturbed_frame_wrt_si.n, bs.wo);
         return { bs, weight & active };
     }
 
@@ -139,25 +159,31 @@ public:
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                   const Vector3f &wo, Mask active) const override {
         // Evaluate nested BSDF with perturbed shading frame
+        auto [ perturbed_frame_wrt_si, perturbed_frame_wrt_world ] = frame(si, active);
         SurfaceInteraction3f perturbed_si(si);
-        perturbed_si.sh_frame = frame(si, active);
-        perturbed_si.wi       = perturbed_si.to_local(si.wi);
-        Vector3f perturbed_wo = perturbed_si.to_local(wo);
+        perturbed_si.sh_frame = perturbed_frame_wrt_world;
+        perturbed_si.wi       = perturbed_frame_wrt_si.to_local(si.wi);
+        Vector3f perturbed_wo = perturbed_frame_wrt_si.to_local(wo);
 
         active &= Frame3f::cos_theta(wo) *
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
 
-        return m_nested_bsdf->eval(ctx, perturbed_si, perturbed_wo, active) & active;
+        Spectrum value = m_nested_bsdf->eval(ctx, perturbed_si, perturbed_wo, active);
+
+        if (m_use_shadowing_function)
+            value *= eval_shadow_terminator(perturbed_frame_wrt_si.n, wo);
+        return value & active;
     }
 
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
               const Vector3f &wo, Mask active) const override {
         // Evaluate nested BSDF with perturbed shading frame
+        auto [ perturbed_frame_wrt_si, perturbed_frame_wrt_world ] = frame(si, active);
         SurfaceInteraction3f perturbed_si(si);
-        perturbed_si.sh_frame = frame(si, active);
-        perturbed_si.wi       = perturbed_si.to_local(si.wi);
-        Vector3f perturbed_wo = perturbed_si.to_local(wo);
+        perturbed_si.sh_frame = perturbed_frame_wrt_world;
+        perturbed_si.wi       = perturbed_frame_wrt_si.to_local(si.wi);
+        Vector3f perturbed_wo = perturbed_frame_wrt_si.to_local(wo);
 
         active &= Frame3f::cos_theta(wo) *
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
@@ -172,26 +198,49 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         // Evaluate nested BSDF with perturbed shading frame
+        auto [ perturbed_frame_wrt_si, perturbed_frame_wrt_world ] = frame(si, active);
         SurfaceInteraction3f perturbed_si(si);
-        perturbed_si.sh_frame = frame(si, active);
-        perturbed_si.wi       = perturbed_si.to_local(si.wi);
-        Vector3f perturbed_wo = perturbed_si.to_local(wo);
+        perturbed_si.sh_frame = perturbed_frame_wrt_world;
+        perturbed_si.wi       = perturbed_frame_wrt_si.to_local(si.wi);
+        Vector3f perturbed_wo = perturbed_frame_wrt_si.to_local(wo);
 
         active &= Frame3f::cos_theta(wo) *
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
 
         auto [value, pdf] = m_nested_bsdf->eval_pdf(ctx, perturbed_si, perturbed_wo, active);
+
+        if (m_use_shadowing_function)
+            value *= eval_shadow_terminator(perturbed_frame_wrt_si.n, wo);
         return { value & active, dr::select(active, pdf, 0.f) };
     }
 
-    Frame3f frame(const SurfaceInteraction3f &si, Mask active) const {
+    /** \brief Compute the perturbation due to the normal map relative to \c si.sh_frame,
+     * as well as the full \c sh_frame of the perturbation in the world coordinate system.
+     */
+    std::pair<Frame3f, Frame3f> frame(const SurfaceInteraction3f &si, Mask active) const {
         Normal3f n = dr::fmadd(m_normalmap->eval_3(si, active), 2, -1.f);
 
-        Frame3f result;
-        result.n = dr::normalize(n);
-        result.s = dr::normalize(dr::fnmadd(result.n, dr::dot(result.n, si.dp_du), si.dp_du));
-        result.t = dr::cross(result.n, result.s);
-        return result;
+        if (m_flip_invalid_normals) {
+            // Ensure that shading normals are always facing the incident direction.
+            Mask flip = Frame3f::cos_theta(si.wi) * dr::dot(si.wi, n) <= 0.0f;
+            n[flip] = Normal3f(-n.x(), -n.y(), n.z());
+        }
+
+        Frame3f frame_wrt_si;
+        frame_wrt_si.n = dr::normalize(n);
+        frame_wrt_si.s = dr::normalize(dr::fnmadd(frame_wrt_si.n, frame_wrt_si.n.x(), Vector3f(1, 0, 0)));
+        frame_wrt_si.t = dr::cross(frame_wrt_si.n, frame_wrt_si.s);
+
+        Frame3f frame_wrt_world;
+        frame_wrt_world.n = si.to_world(frame_wrt_si.n);
+        frame_wrt_world.s = si.to_world(frame_wrt_si.s);
+        frame_wrt_world.t = si.to_world(frame_wrt_si.t);
+
+        return { frame_wrt_si, frame_wrt_world };
+    }
+
+    Frame3f sh_frame(const SurfaceInteraction3f &si, Mask active) const override {
+        return frame(si, active).second;
     }
 
     Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
@@ -210,12 +259,16 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(NormalMap)
 protected:
     ref<Base> m_nested_bsdf;
     ref<Texture> m_normalmap;
+
+    bool m_flip_invalid_normals;
+    bool m_use_shadowing_function;
+
+    MI_TRAVERSE_CB(Base, m_nested_bsdf, m_normalmap)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(NormalMap, BSDF)
-MI_EXPORT_PLUGIN(NormalMap, "Normal map material adapter");
+MI_EXPORT_PLUGIN(NormalMap);
 NAMESPACE_END(mitsuba)

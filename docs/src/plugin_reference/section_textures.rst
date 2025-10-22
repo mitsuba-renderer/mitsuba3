@@ -12,12 +12,12 @@ as supporting the :paramtype:`texture` type. See the last sections about
 Textures take an (optional) ``<transform>`` called :paramtype:`to_uv` which can
 be used to translate, scale, or rotate the lookup into the texture accordingly.
 
-An example in XML looks the following:
+An example in XML looks as follows:
 
 .. tabs::
     .. code-tab:: xml
 
-        <scene version=3.0.0>
+        <scene version="3.0.0">
             <!-- Create a BSDF that supports textured parameters -->
             <bsdf type=".. BSDF type .." id="my_textured_material">
                 <texture type=".. texture type .." name=".. parameter name ..">
@@ -45,7 +45,7 @@ An example in XML looks the following:
         'my_textured_material': {
             'type': '<bsdf_type>',
             '<parameter_name>' : {
-                'type': '<texture_type>':
+                'type': '<texture_type>',
                 # .. texture parameters ..
                 'to_uv': mi.scalar_rgb.ScalarTransform4f.scale([2, 2, 0]).translate([0.5, 1.0, 0]) # Third dimension is ignored
             }
@@ -53,14 +53,14 @@ An example in XML looks the following:
             # .. non-spatially varying BSDF parameters ..
         }
 
-Similar to BSDFs, named textures can alternatively defined at the top level of the scene
+Similar to BSDFs, named textures can alternatively be defined at the top level of the scene
 and later referenced. This is particularly useful if the same texture would be loaded
 many times otherwise.
 
 .. tabs::
     .. code-tab:: xml
 
-        <scene version=3.0.0>
+        <scene version="3.0.0">
             <!-- Create a named texture at the top level -->
             <texture type=".. texture type .." id="my_named_texture">
                 <!-- .. Texture parameters go here .. -->
@@ -82,7 +82,7 @@ many times otherwise.
         # .. scene contents ..
 
         'texture_id': {
-            'type': '<texture_type>':
+            'type': '<texture_type>',
             # .. texture parameters ..
         },
 

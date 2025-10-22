@@ -17,8 +17,8 @@ struct SGGXPhaseFunctionParams {
 
     /**
      * \brief Construct from a pair of 3D vectors [S_xx, S_yy, S_zz] and 
-     * [S_xy, S_xz, S_yz] that correspond to the entries of a symmetric positive
-     * definite 3x3 matrix.
+     * [S_xy, S_xz, S_yz] that correspond to the entries of a symmetric positive-definite
+     * 3x3 matrix.
      */
     SGGXPhaseFunctionParams(const dr::Array<Float, 3>& diag, 
                             const dr::Array<Float, 3>& off_diag) :

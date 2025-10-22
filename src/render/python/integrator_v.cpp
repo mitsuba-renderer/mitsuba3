@@ -7,6 +7,8 @@
 #include <nanobind/stl/tuple.h>
 #include <nanobind/stl/vector.h>
 #include "signal.h"
+#include <drjit/traversable_base.h>
+#include <drjit/python.h>
 
 #if defined(__APPLE__) || defined(__linux__)
 #  define MI_HANDLE_SIGINT 1
@@ -69,7 +71,7 @@ public:
 
     TensorXf render(Scene *scene,
                     Sensor *sensor,
-                    uint32_t seed,
+                    UInt32 seed,
                     uint32_t spp,
                     bool develop,
                     bool evaluate) override {
@@ -79,7 +81,7 @@ public:
     TensorXf render_forward(Scene* scene,
                             void* params,
                             Sensor *sensor,
-                            uint32_t seed = 0,
+                            UInt32 seed = 0,
                             uint32_t spp = 0) override {
         NB_OVERRIDE(render_forward, scene, params, sensor, seed, spp);
     }
@@ -88,7 +90,7 @@ public:
                          void* params,
                          const TensorXf& grad_in,
                          Sensor* sensor,
-                         uint32_t seed = 0,
+                         UInt32 seed = 0,
                          uint32_t spp = 0) override {
         NB_OVERRIDE(render_backward, scene, params, grad_in, sensor, seed, spp);
     }
@@ -117,6 +119,16 @@ public:
     std::string to_string() const override {
         NB_OVERRIDE(to_string);
     }
+
+    void traverse(TraversalCallback *cb) override {
+        NB_OVERRIDE(traverse, cb);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        NB_OVERRIDE(parameters_changed, keys);
+    }
+
+    DR_TRAMPOLINE_TRAVERSE_CB(SamplingIntegrator)
 };
 
 /// Trampoline for derived types implemented in Python
@@ -135,7 +147,7 @@ public:
 
     TensorXf render(Scene *scene,
                     Sensor *sensor,
-                    uint32_t seed,
+                    UInt32 seed,
                     uint32_t spp,
                     bool develop,
                     bool evaluate) override {
@@ -154,6 +166,8 @@ public:
     std::string to_string() const override {
         NB_OVERRIDE(to_string);
     }
+
+    DR_TRAMPOLINE_TRAVERSE_CB(AdjointIntegrator)
 };
 
 /**
@@ -171,10 +185,7 @@ protected:
 
     CppADIntegrator(const Properties &props) : Base(props) {}
 
-    MI_DECLARE_CLASS()
 };
-
-MI_IMPLEMENT_CLASS_VARIANT(CppADIntegrator, SamplingIntegrator)
 
 template class CppADIntegrator<MI_VARIANT_FLOAT, MI_VARIANT_SPECTRUM>;
 
@@ -194,7 +205,7 @@ public:
 
     TensorXf render(Scene *scene,
                     Sensor *sensor,
-                    uint32_t seed,
+                    UInt32 seed,
                     uint32_t spp,
                     bool develop,
                     bool evaluate) override {
@@ -204,7 +215,7 @@ public:
     TensorXf render_forward(Scene* scene,
                             void* params,
                             Sensor *sensor,
-                            uint32_t seed = 0,
+                            UInt32 seed = 0,
                             uint32_t spp = 0) override {
         nanobind::detail::ticket nb_ticket(nb_trampoline, "render_forward", false);
         if (nb_ticket.key.is_valid())
@@ -219,7 +230,7 @@ public:
                          void* params,
                          const TensorXf& grad_in,
                          Sensor* sensor,
-                         uint32_t seed = 0,
+                         UInt32 seed = 0,
                          uint32_t spp = 0) override {
         nanobind::detail::ticket nb_ticket(nb_trampoline, "render_backward", false);
         if (nb_ticket.key.is_valid())
@@ -267,6 +278,8 @@ public:
     }
 
     using Base::m_hide_emitters;
+
+    DR_TRAMPOLINE_TRAVERSE_CB(Base)
 };
 
 MI_PY_EXPORT(Integrator) {
@@ -275,13 +288,13 @@ MI_PY_EXPORT(Integrator) {
     using PyAdjointIntegrator = PyAdjointIntegrator<Float, Spectrum>;
     using CppADIntegrator = CppADIntegrator<Float, Spectrum>;
     using PyADIntegrator = PyADIntegrator<Float, Spectrum>;
-    using Properties = PropertiesV<Float>;
+    using Properties = mitsuba::Properties;
 
-    MI_PY_CLASS(Integrator, Object)
+    auto cls = MI_PY_CLASS(Integrator, Object)
         .def(
             "render",
             [&](Integrator *integrator, Scene *scene, Sensor *sensor,
-                uint32_t seed, uint32_t spp, bool develop, bool evaluate) {
+                UInt32 seed, uint32_t spp, bool develop, bool evaluate) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
                 return integrator->render(scene, sensor, seed, spp, develop,
@@ -293,7 +306,7 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "render",
             [&](Integrator *integrator, Scene *scene, uint32_t sensor,
-                uint32_t seed, uint32_t spp, bool develop, bool evaluate) {
+                UInt32 seed, uint32_t spp, bool develop, bool evaluate) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
                 return integrator->render(scene, sensor, seed, spp,
@@ -303,9 +316,12 @@ MI_PY_EXPORT(Integrator) {
             "seed"_a = 0, "spp"_a = 0, "develop"_a = true, "evaluate"_a = true)
         .def_method(Integrator, cancel)
         .def_method(Integrator, should_stop)
-        .def_method(Integrator, aov_names);
+        .def_method(Integrator, aov_names)
+        .def_method(Integrator, skip_area_emitters);
 
-    MI_PY_TRAMPOLINE_CLASS(PySamplingIntegrator, SamplingIntegrator, Integrator)
+    drjit::bind_traverse(cls);
+
+    auto sampling_integrator = MI_PY_TRAMPOLINE_CLASS(PySamplingIntegrator, SamplingIntegrator, Integrator)
         .def(nb::init<const Properties &>())
         .def(
             "sample",
@@ -323,7 +339,7 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "render_forward",
             [](SamplingIntegrator *integrator, Scene *scene, nb::object* params,
-                Sensor* sensor, uint32_t seed, uint32_t spp) {
+                Sensor* sensor, UInt32 seed, uint32_t spp) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
                 return integrator->render_forward(scene, params, sensor, seed, spp);
@@ -332,7 +348,7 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "render_forward",
             [](SamplingIntegrator *integrator, Scene *scene, nb::object* params,
-                uint32_t sensor, uint32_t seed, uint32_t spp) {
+                uint32_t sensor, UInt32 seed, uint32_t spp) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
                 return integrator->render_forward(scene, params, sensor, seed, spp);
@@ -341,7 +357,7 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "render_backward",
             [](SamplingIntegrator *integrator, Scene *scene, nb::object* params,
-                const TensorXf& grad_in, Sensor* sensor, uint32_t seed,
+                const TensorXf& grad_in, Sensor* sensor, UInt32 seed,
                 uint32_t spp) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
@@ -353,7 +369,7 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "render_backward",
             [](SamplingIntegrator *integrator, Scene *scene, nb::object* params,
-                const TensorXf& grad_in, uint32_t sensor, uint32_t seed,
+                const TensorXf& grad_in, uint32_t sensor, UInt32 seed,
                 uint32_t spp) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
@@ -364,20 +380,22 @@ MI_PY_EXPORT(Integrator) {
             "spp"_a = 0)
         .def_rw("hide_emitters", &PySamplingIntegrator::m_hide_emitters);
 
-    MI_PY_REGISTER_OBJECT("register_integrator", Integrator)
+    drjit::bind_traverse(sampling_integrator);
 
     MI_PY_CLASS(MonteCarloIntegrator, SamplingIntegrator);
 
-    nb::class_<CppADIntegrator, SamplingIntegrator, PyADIntegrator>(
+    auto cpp_ad_integrator = nb::class_<CppADIntegrator, SamplingIntegrator, PyADIntegrator>(
         m, "CppADIntegrator")
         .def(nb::init<const Properties &>());
 
-    MI_PY_TRAMPOLINE_CLASS(PyAdjointIntegrator, AdjointIntegrator, Integrator)
+    drjit::bind_traverse(cpp_ad_integrator);
+
+    auto adjoint_integrator = MI_PY_TRAMPOLINE_CLASS(PyAdjointIntegrator, AdjointIntegrator, Integrator)
         .def(nb::init<const Properties &>())
         .def(
             "render_forward",
             [](AdjointIntegrator *integrator, Scene *scene, nb::object* params,
-                Sensor* sensor, uint32_t seed, uint32_t spp) {
+                Sensor* sensor, UInt32 seed, uint32_t spp) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
                 return integrator->render_forward(scene, params, sensor, seed, spp);
@@ -386,7 +404,7 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "render_forward",
             [](AdjointIntegrator *integrator, Scene *scene, nb::object* params,
-                uint32_t sensor, uint32_t seed, uint32_t spp) {
+                uint32_t sensor, UInt32 seed, uint32_t spp) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
                 return integrator->render_forward(scene, params, sensor, seed, spp);
@@ -395,7 +413,7 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "render_backward",
             [](AdjointIntegrator *integrator, Scene *scene, nb::object* params,
-                const TensorXf& grad_in, Sensor* sensor, uint32_t seed,
+                const TensorXf& grad_in, Sensor* sensor, UInt32 seed,
                 uint32_t spp) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
@@ -407,7 +425,7 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "render_backward",
             [](AdjointIntegrator *integrator, Scene *scene, nb::object* params,
-                const TensorXf& grad_in, uint32_t sensor, uint32_t seed,
+                const TensorXf& grad_in, uint32_t sensor, UInt32 seed,
                 uint32_t spp) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
@@ -418,4 +436,6 @@ MI_PY_EXPORT(Integrator) {
             "spp"_a = 0)
         .def_method(AdjointIntegrator, sample, "scene"_a, "sensor"_a,
                     "sampler"_a, "block"_a, "sample_scale"_a);
+
+    drjit::bind_traverse(adjoint_integrator);
 }

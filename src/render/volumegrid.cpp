@@ -140,7 +140,6 @@ std::string VolumeGrid<Float, Spectrum>::to_string() const {
     return oss.str();
 }
 
-MI_IMPLEMENT_CLASS_VARIANT(VolumeGrid, Object)
 MI_INSTANTIATE_CLASS(VolumeGrid)
 
 NAMESPACE_END(mitsuba)

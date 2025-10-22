@@ -25,11 +25,11 @@ Spectral film (:monosp:`specfilm`)
 
  * - width, height
    - |int|
-   - Width and height of the camera sensor in pixels Default: 768, 576)
+   - Width and height of the camera sensor in pixels. (Default: 768, 576)
 
  * - component_format
    - |string|
-   - Specifies the desired floating  point component format of output images. The options are
+   - Specifies the desired floating point component format of output images. The options are
      :monosp:`float16`, :monosp:`float32`, or :monosp:`uint32`. (Default: :monosp:`float16`)
 
  * - crop_offset_x, crop_offset_y, crop_width, crop_height
@@ -155,12 +155,13 @@ public:
                        "perform a spectral simulation.");
 
         // Load all SRF and store both name and data
-        for (auto &[name, obj] : props.objects(false)) {
-            Texture *srf = dynamic_cast<Texture *>(obj.get());
-            if (srf != nullptr) {
+        for (auto &prop : props) {
+            if (prop.type() == Properties::Type::Spectrum) {
+                m_srfs.push_back(props.get_texture<Texture>(prop.name()));
+                m_names.push_back(std::string(prop.name()));
+            } else if (Texture *srf = prop.try_get<Texture>()) {
                 m_srfs.push_back(srf);
-                m_names.push_back(name);
-                props.mark_queried(name);
+                m_names.push_back(std::string(prop.name()));
             }
         }
 
@@ -168,7 +169,7 @@ public:
             Log(Error, "At least one SRF should be defined");
 
         std::string component_format = string::to_lower(
-            props.string("component_format", "float16"));
+            props.get<std::string_view>("component_format", "float16"));
 
         // The resulting bitmap is always OpenEXR MultiChannel
         m_file_format = Bitmap::FileFormat::OpenEXR;
@@ -192,10 +193,10 @@ public:
         compute_srf_sampling();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
         for (size_t i=0; i<m_srfs.size(); ++i)
-            callback->put_object(m_names[i], m_srfs[i].get(), +ParamFlags::NonDifferentiable);
+            cb->put(m_names[i], m_srfs[i], ParamFlags::NonDifferentiable);
     }
 
     void compute_srf_sampling() {
@@ -239,12 +240,16 @@ public:
         if constexpr (dr::is_jit_v<Float>)
             dr::sync_thread();
 
-        // Create new spectrum with the sampling information
-        auto props = Properties("regular");
-        props.set_pointer("values", storage.data());
-        props.set_long("size", n_points);
-        props.set_float("wavelength_min", (double) m_range.x());
-        props.set_float("wavelength_max", (double) m_range.y());
+        // Pass spectrum data using Properties::Spectrum
+        std::vector<double> storage_vec(storage.size());
+        for (size_t i = 0; i < storage.size(); ++i)
+            storage_vec[i] = storage[i];
+
+        Properties props("regular");
+        props.set("value", Properties::Spectrum(std::move(storage_vec),
+                                                (double) m_range.x(),
+                                                (double) m_range.y()));
+
         m_srf = PluginManager::instance()->create_object<Texture>(props);
     }
 
@@ -317,7 +322,7 @@ public:
         std::lock_guard<std::mutex> lock(m_mutex);
         m_storage->put_block(block);
     }
-    
+
     void clear() override {
         if (m_storage)
             m_storage->clear();
@@ -479,7 +484,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(SpecFilm)
 protected:
     Bitmap::FileFormat m_file_format;
     Bitmap::PixelFormat m_pixel_format;
@@ -493,6 +498,5 @@ protected:
     ScalarVector2f m_range { dr::Infinity<ScalarFloat>, -dr::Infinity<ScalarFloat> };
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SpecFilm, Film)
-MI_EXPORT_PLUGIN(SpecFilm, "Spectral Bands Film")
+MI_EXPORT_PLUGIN(SpecFilm)
 NAMESPACE_END(mitsuba)

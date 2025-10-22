@@ -89,3 +89,24 @@ def check_deep_copy_sampler_wavefront(sampler1, factor=16):
     for i in range(10):
         assert dr.all(sampler1.next_1d() == sampler2.next_1d())
         assert dr.all(sampler1.next_2d() == sampler2.next_2d(), axis=None)
+
+def check_sampler_kernel_hash_wavefront(t, sampler):
+    """
+    Checks wether re-seeding the sampler causes recompilation of the kernel, sampling from it.
+    """
+    with dr.scoped_set_flag(dr.JitFlag.KernelHistory, True):
+        kernel_hash = None
+        for i in range(4):
+            seed = t(i)
+
+            sampler.seed(seed, 64)
+            
+            dr.eval(sampler.next_1d())
+
+            history = dr.kernel_history([dr.KernelType.JIT])
+            if kernel_hash is None:
+                kernel_hash = history[-1]["hash"]
+            else:
+                assert kernel_hash ==  history[-1]["hash"]
+            
+            

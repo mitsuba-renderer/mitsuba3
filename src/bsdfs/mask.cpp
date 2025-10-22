@@ -92,15 +92,13 @@ public:
 
     MaskBSDF(const Properties &props) : Base(props) {
         // Scalar-typed opacity texture
-        m_opacity = props.texture<Texture>("opacity", 0.5f);
+        m_opacity = props.get_texture<Texture>("opacity", .5f);
 
-        for (auto &[name, obj] : props.objects(false)) {
-            auto *bsdf = dynamic_cast<Base *>(obj.get());
-            if (bsdf) {
+        for (auto &prop : props.objects()) {
+            if (Base *bsdf = prop.try_get<Base>()) {
                 if (m_nested_bsdf)
                     Throw("Cannot specify more than one child BSDF");
                 m_nested_bsdf = bsdf;
-                props.mark_queried(name);
             }
         }
         if (!m_nested_bsdf)
@@ -115,9 +113,9 @@ public:
         m_flags = m_nested_bsdf->flags() | m_components.back();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("opacity",     m_opacity.get(),     ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_object("nested_bsdf", m_nested_bsdf.get(), +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("opacity", m_opacity, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("nested_bsdf", m_nested_bsdf, ParamFlags::Differentiable);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -242,12 +240,13 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(MaskBSDF)
 private:
     ref<Texture> m_opacity;
     ref<Base> m_nested_bsdf;
+
+    MI_TRAVERSE_CB(Base, m_opacity, m_nested_bsdf)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(MaskBSDF, BSDF)
-MI_EXPORT_PLUGIN(MaskBSDF, "Mask material")
+MI_EXPORT_PLUGIN(MaskBSDF)
 NAMESPACE_END(mitsuba)

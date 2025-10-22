@@ -94,6 +94,22 @@ template <typename Value_, size_t Size_> struct Matrix {
         }
         printf("]\n");
     }
+
+    DEVICE Vector3f prod(const Vector3f &v) const {
+        Vector3f result(0.f);
+        for (size_t i = 0; i < 3; ++i)
+            for (size_t j = 0; j < 3; ++j)
+                result = ::fmaf(v[j], m[j][i], result[i]);
+        return result;
+    }
+
+    DEVICE Vector3f transposed_prod(const Vector3f &v) const {
+        Vector3f result = m[0];
+        result *= v.x();
+        for (size_t i = 1; i < 3; ++i)
+            result = fmaf(v[i], m[i], result);
+        return result;
+    }
 #endif
 
     Row m[Size];
@@ -111,7 +127,7 @@ struct Transform4f {
     Transform4f() = default;
 
     template <typename T>
-    Transform4f(const mitsuba::Transform<mitsuba::Point<T, 4>> &t)
+    Transform4f(const mitsuba::AffineTransform<mitsuba::Point<T, 4>> &t)
         : matrix((Matrix4f) t.matrix),
           inverse_transpose((Matrix4f) t.inverse_transpose) {}
 #else

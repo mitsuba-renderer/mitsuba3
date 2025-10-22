@@ -58,11 +58,10 @@ public:
         return tfm::format("TentFilter[radius=%f]", m_radius);
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(TentFilter)
 private:
     ScalarFloat m_inv_radius;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(TentFilter, ReconstructionFilter)
-MI_EXPORT_PLUGIN(TentFilter, "Tent filter");
+MI_EXPORT_PLUGIN(TentFilter)
 NAMESPACE_END(mitsuba)

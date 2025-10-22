@@ -5,9 +5,11 @@
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/string_view.h>
 #include <nanobind/stl/vector.h>
 #include <nanobind/stl/tuple.h>
 #include <drjit/python.h>
+#include <drjit/traversable_base.h>
 
 MI_PY_EXPORT(BSDFSample) {
     MI_PY_IMPORT_TYPES()
@@ -105,6 +107,8 @@ public:
 
     using BSDF::m_flags;
     using BSDF::m_components;
+
+    DR_TRAMPOLINE_TRAVERSE_CB(BSDF);
 };
 
 template <typename Ptr, typename Cls> void bind_bsdf_generic(Cls &cls) {
@@ -178,17 +182,18 @@ template <typename Ptr, typename Cls> void bind_bsdf_generic(Cls &cls) {
 MI_PY_EXPORT(BSDF) {
     MI_PY_IMPORT_TYPES(BSDF, BSDFPtr)
     using PyBSDF = PyBSDF<Float, Spectrum>;
-    using Properties = PropertiesV<Float>;
+    using Properties = mitsuba::Properties;
 
     auto bsdf = MI_PY_TRAMPOLINE_CLASS(PyBSDF, BSDF, Object)
         .def(nb::init<const Properties&>(), "props"_a)
         .def("flags", nb::overload_cast<size_t, Mask>(&BSDF::flags, nb::const_),
             "index"_a, "active"_a = true, D(BSDF, flags, 2))
         .def_method(BSDF, component_count, "active"_a = true)
-        .def_method(BSDF, id)
         .def_field(PyBSDF, m_flags, D(BSDF, m_flags))
         .def_field(PyBSDF, m_components, D(BSDF, m_components))
         .def("__repr__", &BSDF::to_string, D(BSDF, to_string));
+
+    drjit::bind_traverse(bsdf);
 
     bind_bsdf_generic<BSDF *>(bsdf);
 
@@ -198,5 +203,4 @@ MI_PY_EXPORT(BSDF) {
         bind_bsdf_generic<BSDFPtr>(bsdf_ptr);
     }
 
-    MI_PY_REGISTER_OBJECT("register_bsdf", BSDF)
 }

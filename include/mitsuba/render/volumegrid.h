@@ -17,15 +17,15 @@ NAMESPACE_BEGIN(mitsuba)
  * Please see the documentation of gridvolume (grid3d.cpp) for the file format
  * specification.
  */
-MI_VARIANT
+template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB VolumeGrid : public Object {
 public:
     MI_IMPORT_CORE_TYPES()
 
     /// Estimates the transformation from a unit axis-aligned bounding box to the given one.
-    ScalarTransform4f bbox_transform() const {
-        auto scale_transf = ScalarTransform4f::scale(dr::rcp(m_bbox.extents()));
-        auto translation  = ScalarTransform4f::translate(-m_bbox.min);
+    ScalarAffineTransform4f bbox_transform() const {
+        auto scale_transf = ScalarAffineTransform4f::scale(dr::rcp(m_bbox.extents()));
+        auto translation  = ScalarAffineTransform4f::translate(-m_bbox.min);
         return scale_transf * translation;
     }
 
@@ -107,7 +107,7 @@ public:
     /// Return a human-readable summary of this volume grid
     virtual std::string to_string() const override;
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(VolumeGrid)
 
 protected:
     void read(Stream *stream);
@@ -120,6 +120,8 @@ protected:
     ScalarBoundingBox3f m_bbox;
     ScalarFloat m_max;
     std::vector<ScalarFloat> m_max_per_channel;
+
+    MI_TRAVERSE_CB(Object)
 };
 
 MI_EXTERN_CLASS(VolumeGrid)

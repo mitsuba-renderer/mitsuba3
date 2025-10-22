@@ -94,7 +94,7 @@ if __name__ == '__main__':
         nvidia_driver_version = run_and_match(get_nvidia_smi(), r'Driver Version: (.*?) ')
 
     cuda_version = run_and_match('nvcc --version', r'release .+ V(.*)')
-    llvm_version = dr.llvm_version()
+    llvm_version = dr.detail.llvm_version()
 
     cpu_info = get_cpu_info()
     gpu_info = get_gpu_info()
@@ -130,7 +130,7 @@ if __name__ == '__main__':
     check_print('CUDA', cuda_version)
     check_print('LLVM', llvm_version)
     print(f'')
-    check_print('Dr.Jit', dr.__version__ + (' (DEBUG)' if dr.DEBUG else ''))
+    check_print('Dr.Jit', dr.__version__)
     check_print('Mitsuba', mi.MI_VERSION + (' (DEBUG)' if mi.DEBUG else ''))
     print(f"     Is custom build? {is_mitsuba_custom_build}")
     print(f"     Compiled with: {mitsuba_compiler}")

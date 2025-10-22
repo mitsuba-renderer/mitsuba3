@@ -4,6 +4,8 @@
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/texture.h>
 
+#include "normalmap_helpers.h"
+
 NAMESPACE_BEGIN(mitsuba)
 
 /**!
@@ -29,6 +31,20 @@ Bump map BSDF adapter (:monosp:`bumpmap`)
    - Bump map gradient multiplier. (Default: 1.0)
    - |exposed|
 
+ * - flip_invalid_normals
+   - |bool|
+   - If enabled, the plugin will ensure that the perturbed normals are always
+     consistent with the geometric normal. This prevents visual artifacts and is
+     achieved by a simply flipping the shading normal, as described in
+     :cite:`Schuessler2017Microfacet`. (Default: true)
+   - |exposed|
+
+ * - use_shadowing_function
+   - |bool|
+   - If enabled, the plugin uses a Microfacet-based shadowing term
+     :cite:`Estevez2019` to smooth out transitions on shadow boundaries. (Default: true)
+   - |exposed|
+
 Bump mapping is a simple technique for cheaply adding surface detail to a rendering. This is done
 by perturbing the shading coordinate frame based on a displacement height field provided as a
 texture. This method can lend objects a highly realistic and detailed appearance (e.g. wrinkled
@@ -50,7 +66,7 @@ Note that the magnitude of the height field variations influences the scale of t
 
 
 The following XML snippet describes a rough plastic material affected by a bump
-map. Note the we set the ``raw`` properties of the bump map ``bitmap`` object to
+map. Note that we set the ``raw`` properties of the bump map ``bitmap`` object to
 ``true`` in order to disable the transformation from sRGB to linear encoding:
 
 .. tabs::
@@ -84,20 +100,15 @@ public:
     MI_IMPORT_TYPES(Texture)
 
     BumpMap(const Properties &props) : Base(props) {
-        for (auto &[name, obj] : props.objects(false)) {
-            auto bsdf = dynamic_cast<Base *>(obj.get());
-            if (bsdf) {
+        for (auto &prop : props.objects()) {
+            if (Base *bsdf = prop.try_get<Base>()) {
                 if (m_nested_bsdf)
                     Throw("Only a single BSDF child object can be specified.");
                 m_nested_bsdf = bsdf;
-                props.mark_queried(name);
-            }
-            auto texture = dynamic_cast<Texture *>(obj.get());
-            if (texture) {
+            } else if (Texture *texture = prop.try_get<Texture>()) {
                 if (m_nested_texture)
                     Throw("Only a single Texture child object can be specified.");
                 m_nested_texture = texture;
-                props.mark_queried(name);
             }
         }
         if (!m_nested_bsdf)
@@ -107,6 +118,9 @@ public:
 
         m_scale = props.get<ScalarFloat>("scale", 1.f);
 
+        m_flip_invalid_normals = props.get<bool>("flip_invalid_normals", true);
+        m_use_shadowing_function = props.get<bool>("use_shadowing_function", true);
+
         // Add all nested components
         m_components.clear();
         for (size_t i = 0; i < m_nested_bsdf->component_count(); ++i)
@@ -114,10 +128,10 @@ public:
         m_flags = m_nested_bsdf->flags();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("nested_bsdf",     m_nested_bsdf.get(),    ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_object("nested_texture",  m_nested_texture.get(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_parameter("scale",        m_scale,                +ParamFlags::NonDifferentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("nested_bsdf",    m_nested_bsdf,    ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("nested_texture", m_nested_texture, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("scale",          m_scale,          ParamFlags::NonDifferentiable);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -141,6 +155,9 @@ public:
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
         bs.wo = perturbed_wo;
 
+        if (m_use_shadowing_function)
+            weight *= eval_shadow_terminator(perturbed_si.sh_frame.n, bs.wo);
+
         return { bs, weight & active };
     }
 
@@ -157,7 +174,12 @@ public:
         active &= Frame3f::cos_theta(wo) *
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
 
-        return dr::select(active, m_nested_bsdf->eval(ctx, perturbed_si, perturbed_wo, active), 0.f);
+        Spectrum value = m_nested_bsdf->eval(ctx, perturbed_si, perturbed_wo, active);
+
+        if (m_use_shadowing_function)
+            value *= eval_shadow_terminator(perturbed_si.sh_frame.n, wo);
+
+        return value & active;
     }
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -192,6 +214,10 @@ public:
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
 
         auto [value, pdf] = m_nested_bsdf->eval_pdf(ctx, perturbed_si, perturbed_wo, active);
+
+        if (m_use_shadowing_function)
+            value *= eval_shadow_terminator(perturbed_si.sh_frame.n, wo);
+
         return { value & active, dr::select(active, pdf, 0.f) };
     }
 
@@ -213,11 +239,21 @@ public:
         // Convert to small rotation from original shading frame
         result.n = si.to_local(result.n);
 
+        if (m_flip_invalid_normals) {
+            // Ensure that shading normals are always facing the incident direction.
+            Mask flip = Frame3f::cos_theta(si.wi) * dr::dot(si.wi, result.n) <= 0.0f;
+            result.n[flip] = Normal3f(-result.n.x(), -result.n.y(), result.n.z());
+        }
+
         // Gram-schmidt orthogonalization to compute local shading frame
         result.s = dr::normalize(dr::fnmadd(result.n, dr::dot(result.n, si.dp_du), si.dp_du));
         result.t = dr::cross(result.n, result.s);
 
         return result;
+    }
+
+    Frame3f sh_frame(const SurfaceInteraction3f &si, Mask active) const override {
+        return frame(si, active);
     }
 
     Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
@@ -235,13 +271,17 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(BumpMap)
 protected:
     ScalarFloat m_scale;
     ref<Texture> m_nested_texture;
     ref<Base> m_nested_bsdf;
+
+    bool m_flip_invalid_normals;
+    bool m_use_shadowing_function;
+
+    MI_TRAVERSE_CB(Base, m_nested_texture, m_nested_bsdf)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(BumpMap, BSDF)
-MI_EXPORT_PLUGIN(BumpMap, "Bump map material adapter")
+MI_EXPORT_PLUGIN(BumpMap)
 NAMESPACE_END(mitsuba)

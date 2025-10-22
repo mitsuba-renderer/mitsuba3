@@ -15,11 +15,9 @@
 
 #include <mitsuba/python/python.h>
 
-
 #define PY_TRY_CAST(Type)                                                      \
-    if (Type* tmp = dynamic_cast<Type *>(o); tmp) {                            \
-            return nb::cast(tmp);                                              \
-    }
+    if (Type *tmp = dynamic_cast<Type *>(o); tmp)                              \
+        return nb::cast(tmp);
 
 /// Helper routine to cast Mitsuba plugins to their underlying interfaces
 static nb::object caster(Object *o) {
@@ -70,7 +68,6 @@ MI_PY_DECLARE(Hierarchical2D);
 MI_PY_DECLARE(Marginal2D);
 MI_PY_DECLARE(math);
 MI_PY_DECLARE(qmc);
-MI_PY_DECLARE(Properties);
 MI_PY_DECLARE(rfilter);
 MI_PY_DECLARE(sample_tea);
 MI_PY_DECLARE(spline);
@@ -79,7 +76,6 @@ MI_PY_DECLARE(Transform);
 // MI_PY_DECLARE(AnimatedTransform);
 MI_PY_DECLARE(vector);
 MI_PY_DECLARE(warp);
-MI_PY_DECLARE(xml);
 MI_PY_DECLARE(quad);
 
 // render
@@ -120,6 +116,22 @@ using Caster = nb::object(*)(mitsuba::Object *);
 Caster cast_object = nullptr;
 
 NB_MODULE(MI_VARIANT_NAME, m) {
+    bool is_stub_gen = std::getenv("MI_STUB_GENERATION");
+
+    /* scoped */ {
+        // Before loading everything in and creating a lot of references to
+        // various objects, we ensure that this backend can be initialized
+        // without issues by creating a simple variable.
+        // If initialization fails, an exception will be raised, which the user
+        // can catch and handle if desired.
+        // Leaving initialization to fail later would lead to reference leaks.
+        // For stub generation, we **always** want the module to load
+        // successfully.
+        if (!is_stub_gen) {
+            DRJIT_MARK_USED(MI_VARIANT_FLOAT(0));
+        }
+    }
+
     m.attr("__name__") = "mitsuba";
 
     // Create sub-modules
@@ -157,10 +169,6 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     m.attr("is_spectral") = is_spectral_v<Spectrum>;
     m.attr("is_polarized") = is_polarized_v<Spectrum>;
 
-    color_management_static_initialization(dr::is_cuda_v<Float>,
-                                           dr::is_llvm_v<Float>);
-    Scene::static_accel_initialization();
-
     MI_PY_IMPORT(Object);
     MI_PY_IMPORT(Ray);
     MI_PY_IMPORT(BoundingBox);
@@ -172,7 +180,6 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT(IrregularContinuousDistribution);
     MI_PY_IMPORT_SUBMODULE(math);
     MI_PY_IMPORT(qmc);
-    MI_PY_IMPORT(Properties);
     MI_PY_IMPORT(rfilter);
     MI_PY_IMPORT(sample_tea);
     MI_PY_IMPORT_SUBMODULE(spline);
@@ -184,7 +191,6 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT(vector);
     MI_PY_IMPORT_SUBMODULE(quad);
     MI_PY_IMPORT_SUBMODULE(warp);
-    MI_PY_IMPORT(xml);
 
     MI_PY_IMPORT(Scene);
     MI_PY_IMPORT(Shape);
@@ -245,4 +251,10 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     paths.append(nb::str(mi_dir));
     paths.append(nb::str(mi_py_dir));
     m.attr("__path__") = paths;
+
+    if (!is_stub_gen) {
+        color_management_static_initialization(dr::is_cuda_v<Float>,
+                                               dr::is_llvm_v<Float>);
+        Scene::static_accel_initialization();
+    }
 }

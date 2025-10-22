@@ -112,9 +112,7 @@ See :py:class:`mitsuba.ParamFlags` for their documentation.
 Scene-wide attributes
 ---------------------
 
-The Scene object exposes scene-wide attributes. Currently, this functionality is
-only used to configure Embree's BVH. In the future, additional settings for the
-BVH behavior might be exposed.
+The Scene object exposes scene-wide attributes.
 
 **Embree BVH mode:** We expose a scene-level flag to enable Embree's "robust"
 mode. Enabling this flag makes Embree use slightly slower but more robust ray
@@ -124,11 +122,26 @@ Enabling the robust intersection mode fixes that in most cases. Note that Embree
 cannot guarantee that all intersections are reported for rays that exactly hit a
 vertex, which is a known limitation.
 
+**Thread reordering:** Ray intersection methods on the scene can take a
+`reorder` argument to specifiy whether or not threads should be shuffled into
+coherent groups after the intersection (shader execution reordering). Both this
+flag and the one passed to the method must be set in order for the reordering to
+take place. By splitting this responsability, we allow users to indiciate if
+rendering the scene benefits from SER without having to modify the ray
+intersection call site. This feature is only relevant for the CUDA backend and
+has no effect in scalar or LLVM variants.
+
+
 .. pluginparameters::
 
  * - embree_use_robust_intersection
    - :paramtype:`bool`
    - Whether Embree uses the robust mode flag `RTC_SCENE_FLAG_ROBUST` (Default: |false|).
+ * - allow_thread_reordering
+   - :paramtype:`bool`
+   - Whether or not to reorder threads into coherent groups after a ray
+     intersection if requested (Default: |true|).
+   - |exposed|
 
 When creating a scene, the scene-wide attributes can be specified as follows:
 
@@ -144,4 +157,5 @@ When creating a scene, the scene-wide attributes can be specified as follows:
         {
             'type': 'scene',
             'embree_use_robust_intersection': True,
+            'allow_thread_reordering': True,
         }

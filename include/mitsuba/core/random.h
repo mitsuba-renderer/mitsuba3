@@ -165,9 +165,9 @@ dr::float64_array_t<UInt32> sample_tea_float64(UInt32 v0, UInt32 v1, int rounds 
 
 
 /// Alias to \ref sample_tea_float32 or \ref sample_tea_float64 based given type size
-template <typename UInt>
-auto sample_tea_float(UInt v0, UInt v1, int rounds = 4) {
-    if constexpr(std::is_same_v<dr::scalar_t<UInt>, uint32_t>)
+template <typename Float, typename UInt32>
+auto sample_tea_float(UInt32 v0, UInt32 v1, int rounds = 4) {
+    if constexpr(std::is_same_v<dr::scalar_t<Float>, float>)
         return sample_tea_float32(v0, v1, rounds);
     else
         return sample_tea_float64(v0, v1, rounds);

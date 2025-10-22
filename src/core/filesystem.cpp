@@ -16,6 +16,12 @@
 #else
 #  include <unistd.h>
 #  include <sys/stat.h>
+#  include <fcntl.h>
+#  if defined(__linux__)
+#    include <sys/sendfile.h>
+#  elif defined(__APPLE__)
+#    include <sys/socket.h>
+#  endif
 #endif
 
 #if defined(__linux__)
@@ -34,39 +40,35 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(filesystem)
 
-inline string_type to_native(const std::string &str) {
+inline string_type to_native(std::string_view str) {
 #if defined(_WIN32)
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-    return converter.from_bytes(str);
+    return converter.from_bytes(str.data(), str.data() + str.size());
 #else
-    return str;
+    return string_type(str);
 #endif
 }
 
-inline std::string from_native(const string_type &str) {
+inline std::string from_native(string_view_type str) {
 #if defined(_WIN32)
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-    return converter.to_bytes(str);
+    return converter.to_bytes(str.data(), str.data() + str.size());
 #else
-    return str;
+    return std::string(str);
 #endif
 }
-
-#if defined(_WIN32)
-path::path(const std::string &string) { set(to_native(string)); }
-#endif
 
 path current_path() {
 #if !defined(_WIN32)
     char temp[PATH_MAX];
-    if (::getcwd(temp, PATH_MAX) == NULL)
+    if (!getcwd(temp, PATH_MAX))
         throw std::runtime_error("Internal error in filesystem::current_path(): " + std::string(strerror(errno)));
     return path(temp);
 #else
-    std::wstring temp(MAX_PATH, '\0');
-    if (!_wgetcwd(&temp[0], MAX_PATH))
+    wchar_t temp[MAX_PATH];
+    if (!_wgetcwd(temp, MAX_PATH))
         throw std::runtime_error("Internal error in filesystem::current_path(): " + std::to_string(GetLastError()));
-    return path(temp.c_str());
+    return path(temp);
 #endif
 }
 
@@ -205,17 +207,81 @@ bool rename(const path& src, const path &dst) {
 #endif
 }
 
+bool copy_file(const path& src, const path &dst) {
+    // Create parent directory if it doesn't exist
+    path parent = dst.parent_path();
+    if (!parent.empty() && !exists(parent)) {
+        if (!create_directory(parent))
+            return false;
+    }
+
+#if !defined(_WIN32)
+    // Unix-like systems - use sendfile
+    int src_fd = open(src.native().c_str(), O_RDONLY);
+    if (src_fd == -1) return false;
+
+    int dst_fd = open(dst.native().c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (dst_fd == -1) {
+        close(src_fd);
+        return false;
+    }
+
+    struct stat stat_buf;
+    if (fstat(src_fd, &stat_buf) == -1) {
+        close(src_fd);
+        close(dst_fd);
+        return false;
+    }
+
+    #if defined(__linux__)
+        // Linux sendfile: sendfile(out_fd, in_fd, offset, count)
+        ssize_t bytes_copied = sendfile(dst_fd, src_fd, nullptr, stat_buf.st_size);
+        bool success = bytes_copied == stat_buf.st_size;
+    #else
+        char buffer[8192];
+        ssize_t total_copied = 0;
+        bool success = true;
+
+        while (total_copied < stat_buf.st_size) {
+            ssize_t bytes_read = read(src_fd, buffer, sizeof(buffer));
+            if (bytes_read <= 0) {
+                success = false;
+                break;
+            }
+
+            ssize_t bytes_written = write(dst_fd, buffer, bytes_read);
+            if (bytes_written != bytes_read) {
+                success = false;
+                break;
+            }
+
+            total_copied += bytes_written;
+        }
+
+        success = success && (total_copied == stat_buf.st_size);
+    #endif
+
+    close(src_fd);
+    close(dst_fd);
+
+    return success;
+#else
+    // Windows implementation
+    return CopyFileW(src.native().c_str(), dst.native().c_str(), FALSE) != 0;
+#endif
+}
+
 // -----------------------------------------------------------------------------
 
 fs::path path::extension() const {
     if (empty() || m_path.back() == NSTR(".") || m_path.back() == NSTR(".."))
-        return NSTR("");
+        return path();
 
-    const string_type &name = filename();
+    string_type name = filename();
     size_t pos = name.find_last_of(NSTR("."));
     if (pos == string_type::npos)
-        return "";
-    return name.substr(pos);  // Including the . character!
+        return path();
+    return fs::path(name.substr(pos));  // Including the . character!
 }
 
 path& path::replace_extension(const fs::path &replacement_) {
@@ -243,7 +309,7 @@ path& path::replace_extension(const fs::path &replacement_) {
 
 path path::filename() const {
     if (empty())
-        return path(NSTR(""));
+        return path();
     return path(m_path.back());
 }
 
@@ -297,9 +363,9 @@ path & path::operator=(path &&path) {
 }
 
 #if defined(_WIN32)
-path & path::operator=(const std::string &str) {
+path & path::operator=(std::string_view str) {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-    set(converter.from_bytes(str));
+    set(converter.from_bytes(str.data(), str.data() + str.size()));
     return *this;
 }
 #endif
@@ -321,7 +387,7 @@ string_type path::str() const {
     return oss.str();
 }
 
-void path::set(const string_type &str) {
+void path::set(string_view_type str) {
     if (str.empty()) {
         clear();
         return;
@@ -336,15 +402,21 @@ void path::set(const string_type &str) {
 #endif
 }
 
-std::vector<string_type> path::tokenize(const string_type &string,
-                                        const string_type &delim) {
+#if defined(_WIN32)
+void path::set(std::string_view str) {
+    set(to_native(str));
+}
+#endif
+
+std::vector<string_type> path::tokenize(string_view_type string,
+                                        string_view_type delim) {
     string_type::size_type last_pos = 0,
                            pos = string.find_first_of(delim, last_pos);
     std::vector<string_type> tokens;
 
     while (last_pos != string_type::npos) {
         if (pos != last_pos)
-            tokens.push_back(string.substr(last_pos, pos - last_pos));
+            tokens.push_back(string_type(string.substr(last_pos, pos - last_pos)));
         last_pos = pos;
         if (last_pos == string_type::npos || last_pos + 1 == string.length())
             break;

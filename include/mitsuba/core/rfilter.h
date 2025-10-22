@@ -46,7 +46,8 @@ enum class FilterBoundaryCondition {
  * representation, whose resolution given by \ref MI_FILTER_RESOLUTION.
  */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB ReconstructionFilter : public Object {
+class MI_EXPORT_LIB ReconstructionFilter
+    : public JitObject<ReconstructionFilter<Float, Spectrum>> {
 public:
     MI_IMPORT_CORE_TYPES()
 
@@ -77,7 +78,7 @@ public:
         }
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_PLUGIN_BASE_CLASS(ReconstructionFilter)
 protected:
     /// Create a new reconstruction filter
     ReconstructionFilter(const Properties &props);
@@ -107,7 +108,7 @@ template <typename Scalar_> struct Resampler {
      *
      * This constructor precomputes all information needed to efficiently perform the
      * desired resampling operation. For that reason, it is most efficient if it can
-     * be used over and over again (e.g. to resample the equal-sized rows of a bitmap)
+     * be used repeatedly (e.g. to resample the equal-sized rows of a bitmap)
      *
      * \param source_res
      *      Source resolution

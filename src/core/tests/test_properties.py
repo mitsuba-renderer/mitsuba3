@@ -40,6 +40,14 @@ def test02_type_is_preserved(variant_scalar_rgb):
     assert type(p['prop_5']) is Array3f64
     assert type(p['prop_6']) is mi.ScalarColor3d
 
+    assert p.type('prop_1') == mi.Properties.Type.Integer
+    assert p.type('prop_2') == mi.Properties.Type.String
+    assert p.type('prop_3') == mi.Properties.Type.Bool
+    assert p.type('prop_4') == mi.Properties.Type.Float
+    assert p.type('prop_5') == mi.Properties.Type.Vector
+    assert p.type('prop_6') == mi.Properties.Type.Color
+    assert p.type('prop_7') == mi.Properties.Type.Object
+
     assert p['prop_1'] == 1
     assert p['prop_2'] == '1'
     assert p['prop_3'] == False
@@ -61,18 +69,31 @@ def test03_management_of_properties(variant_scalar_rgb):
     fill_properties(p)
     # Existence
     assert 'prop_1' in p
-    assert p.has_property('prop_1')
-    assert not p.has_property('random_unset_property')
+    # Test deprecated method (with warning suppression)
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        assert p.has_property('prop_1')
+        assert not p.has_property('random_unset_property')
 
-    # Removal
-    assert p.remove_property('prop_2')
-    assert not p.has_property('prop_2')
+    # Removal - test both old and new ways
+    # Old way (deprecated)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        assert p.remove_property('prop_2')
+        assert not p.has_property('prop_2')
+
+    # New way (Pythonic)
+    p['prop_2'] = 'restored'  # Restore for next test
+    assert 'prop_2' in p
+    del p['prop_2']
+    assert 'prop_2' not in p
 
     # Update
     p['prop_1'] = 42
-    assert p.has_property('prop_1')
+    assert 'prop_1' in p
     del p['prop_1']
-    assert not p.has_property('prop_1')
+    assert 'prop_1' not in p
 
 
 def test04_queried_properties(variant_scalar_rgb):
@@ -177,24 +198,10 @@ def test09_create_object(variants_all_rgb):
 
     it = mi.PluginManager.instance().create_object(props)
 
-    assert mi.variant() == it.class_().variant()
-    assert it.class_().name() == 'PathIntegrator'
+    assert mi.variant() == it.variant_name()
+    assert 'PathIntegrator' in str(it)
     assert 'max_depth = 4' in str(it)
 
-
-@pytest.mark.skip("TODO fix AnimatedTransform")
-def test10_animated_transforms(variant_scalar_rgb):
-    """An AnimatedTransform can be built from a given Transform."""
-    p = mi.Properties()
-    p["trafo"] = mi.Transform4f().translate([1, 2, 3])
-
-    atrafo = mi.AnimatedTransform()
-    atrafo.append(0, mi.Transform4f().translate([-1, -1, -2]))
-    atrafo.append(1, mi.Transform4f().translate([4, 3, 2]))
-    p["atrafo"] = atrafo
-
-    assert type(p["trafo"]) is mi.Transform4d
-    assert type(p["atrafo"]) is mi.AnimatedTransform
 
 def test10_transforms3(variant_scalar_rgb):
     p = mi.Properties()
@@ -212,44 +219,162 @@ def test11_tensor(variant_scalar_rgb):
     a = None
     assert props['foo'].shape == (30, 30, 30)
 
-    # Check temporary can be set
-    props['moo'] =  dr.zeros(mi.TensorXf, shape = [30, 30, 30])
-    assert props['moo'].shape == (30, 30, 30)
+def test12_nanobind_object_storage(variant_scalar_rgb):
+    """Test storing and retrieving nanobind-bound C++ objects via Any"""
+    props = mi.Properties()
 
-    # Check numpy
+    # Test with TensorXf - this should use our catch-all setter since there's no specific TensorXf setter
     import numpy as np
-    props['goo'] = mi.TensorXf(np.zeros((2, 3, 4)))
-    assert props['goo'].shape == (2, 3, 4)
+    tensor = mi.TensorXf(np.array([[1, 2], [3, 4]], dtype=np.float32))
+    props['tensor'] = tensor
+
+    # Verify this is stored as 'any' type since TensorXf doesn't have a specific property type
+    assert props.type('tensor') == mi.Properties.Type.Any
+
+    # Verify we can retrieve the same object
+    retrieved_tensor = props['tensor']
+    assert type(retrieved_tensor) is mi.TensorXf
+    assert np.array_equal(np.array(retrieved_tensor), np.array([[1, 2], [3, 4]]))
+
+    # Test that non-nanobind objects are rejected
+    with pytest.raises(RuntimeError, match="could not assign an object of type 'dict' to key 'invalid', as the value was not convertible any of the supported property types"):
+        props['invalid'] = {'key': 'value'}  # Python dict
 
 
-def test11_tensor_cuda(variant_cuda_ad_rgb):
+def test13_object_identity_preservation(variant_scalar_rgb):
+    """Test that Object-derived objects preserve identity when stored/retrieved"""
     props = mi.Properties()
 
-    ### Check PyTorch
-    torch = pytest.importorskip("torch")
-    props['goo'] = mi.TensorXf(torch.zeros(2, 3, 4))
-    assert props['goo'].shape == (2, 3, 4)
+    # Test with a BSDF (Object-derived class)
+    bsdf = mi.load_dict({'type': 'diffuse', 'reflectance': 0.5})
+    props['bsdf'] = bsdf
 
-def test12_large_integer_keys(variant_scalar_rgb):
-    key1 = '5c930abab5cb692464249420000000000000000000000004'
-    key2 = '5c930abab5cb692464249420000000000000000000000001'
+    # Verify it's stored as Object type
+    assert props.type('bsdf') == mi.Properties.Type.Object
 
+    # Verify identity preservation - should be the same Python object
+    retrieved_bsdf = props['bsdf']
+    assert retrieved_bsdf is bsdf
+
+
+def test14_invalid_object_type_assignment(variant_scalar_rgb):
+    """Test that assigning wrong object types produces useful error messages"""
+
+    # Test case: BSDF expects a Texture for reflectance, but we give it another BSDF
+    other_bsdf = mi.load_dict({'type': 'diffuse', 'reflectance': 0.5})
+
+    with pytest.raises(RuntimeError, match=r"incompatible object type.*expected Texture.*got BSDF"):
+        mi.load_dict({
+            'type': 'diffuse',
+            'reflectance': other_bsdf  # Should be a texture, not a BSDF
+        })
+
+
+def test15_plugin_manager_plugin_type(variant_scalar_rgb):
+    """Test PluginManager.plugin_type() method functionality"""
+    pmgr = mi.PluginManager.instance()
+    # Test known plugin types
+    assert pmgr.plugin_type('diffuse') == mi.ObjectType.BSDF
+    assert pmgr.plugin_type('path') == mi.ObjectType.Integrator
+    assert pmgr.plugin_type('area') == mi.ObjectType.Emitter
+    assert pmgr.plugin_type('perspective') == mi.ObjectType.Sensor
+    assert pmgr.plugin_type('independent') == mi.ObjectType.Sampler
+    assert pmgr.plugin_type('sphere') == mi.ObjectType.Shape
+    assert pmgr.plugin_type('bitmap') == mi.ObjectType.Texture
+    assert pmgr.plugin_type('hdrfilm') == mi.ObjectType.Film
+    assert pmgr.plugin_type('box') == mi.ObjectType.ReconstructionFilter
+    # Test unknown/non-existent plugin types
+    assert pmgr.plugin_type('nonexistent_plugin') == mi.ObjectType.Unknown
+    assert pmgr.plugin_type('') == mi.ObjectType.Unknown
+    # Test special case: scene
+    assert pmgr.plugin_type('scene') == mi.ObjectType.Scene
+
+
+def test16_dictionary_like_interface(variant_scalar_rgb):
+    """Test new dictionary-like methods and deprecation warnings"""
+    from drjit.scalar import Array3f
+    import warnings
+
+    p = mi.Properties()
+    p['name'] = 'test'
+    p['value'] = 42
+    p['vector'] = Array3f(1, 2, 3)
+    p['flag'] = True
+
+    # Test keys() method
+    keys = p.keys()
+    expected_keys = ['name', 'value', 'vector', 'flag']
+    assert set(keys) == set(expected_keys)
+    assert len(keys) == 4
+
+    # Test items() method
+    items = p.items()
+    assert len(items) == 4
+
+    # Verify items are tuples of (key, value)
+    items_dict = dict(items)
+    assert items_dict['name'] == 'test'
+    assert items_dict['value'] == 42
+    assert dr.all(items_dict['vector'] == Array3f(1, 2, 3))
+    assert items_dict['flag'] == True
+
+    # Test iteration over items
+    for key, value in p.items():
+        assert key in expected_keys
+        assert dr.all(p[key] == value)
+
+    # Test that deprecated methods show warnings
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+
+        # These should trigger deprecation warnings
+        _ = p.has_property('name')
+        _ = p.property_names()
+        p.remove_property('flag')
+
+        # Verify we got deprecation warnings
+        assert len(w) == 3
+        assert all(issubclass(warning.category, DeprecationWarning) for warning in w)
+        assert 'has_property() is deprecated' in str(w[0].message)
+        assert 'property_names() is deprecated' in str(w[1].message)
+        assert 'remove_property() is deprecated' in str(w[2].message)
+
+def test17_insertion_order_with_deletion():
+    """Test that Properties maintains insertion order even after deletion"""
     props = mi.Properties()
-    props[key1] = 4.0
-    props[key2] = 8.0
+    props.set_plugin_name("test")
 
-    assert len(props.property_names()) == 2
-    assert props[key1] == 4.0
-    assert props[key2] == 8.0
+    # Add properties in a specific order
+    props["first"] = 1.0
+    props["second"] = "hello"
+    props["third"] = mi.ScalarVector3f(1, 2, 3)
+    props["fourth"] = True
+    props["fifth"] = 42
 
-def test13_trailing_zeros_keys(variant_scalar_rgb):
-    key1 = 'aa_1'
-    key2 = 'aa_0001'
+    # Verify insertion order
+    keys = list(props.keys())
+    assert keys == ["first", "second", "third", "fourth", "fifth"]
 
-    props = mi.Properties()
-    props[key1] = 4.0
-    props[key2] = 8.0
+    # Delete a property in the middle
+    del props["third"]
 
-    assert len(props.property_names()) == 2
-    assert props[key1] == 4.0
-    assert props[key2] == 8.0
+    # Verify remaining properties maintain insertion order
+    keys = list(props.keys())
+    assert keys == ["first", "second", "fourth", "fifth"]
+
+    # Verify values are still correct
+    assert props["first"] == 1.0
+    assert props["second"] == "hello"
+    assert props["fourth"] == True
+    assert props["fifth"] == 42
+
+    # Add a new property and verify it's added at the end
+    props["sixth"] = mi.ScalarColor3f(0.5, 0.5, 0.5)
+    keys = list(props.keys())
+    assert keys == ["first", "second", "fourth", "fifth", "sixth"]
+
+
+def test18_range(variant_scalar_rgb):
+    with pytest.raises(RuntimeError, match=r'Property "bsdf_samples": value -3 is out of bounds, must be in the range \[0, 18446744073709551615\]'):
+        mi.load_dict({'type': 'direct', 'bsdf_samples': -3})
+    mi.load_dict({'type': 'direct', 'bsdf_samples': 10})

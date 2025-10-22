@@ -4,6 +4,7 @@
 #include <mitsuba/core/properties.h>
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 #include <drjit/python.h>
 
 /// Trampoline for derived types implemented in Python
@@ -16,11 +17,9 @@ public:
 
     ref<Sampler> fork() override { NB_OVERRIDE_PURE(fork); }
 
-    ref<Sampler> clone() override {
-        NB_OVERRIDE_PURE(fork);
-    }
+    ref<Sampler> clone() override { NB_OVERRIDE_PURE(clone); }
 
-    void seed(uint32_t seed, uint32_t wavefront_size = (uint32_t) -1) override {
+    void seed(UInt32 seed, uint32_t wavefront_size = (uint32_t) -1) override {
         NB_OVERRIDE(seed, seed, wavefront_size);
     }
 
@@ -45,12 +44,22 @@ public:
     std::string to_string() const override {
         NB_OVERRIDE(to_string);
     }
+
+    void traverse(TraversalCallback *cb) override {
+        NB_OVERRIDE(traverse, cb);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        NB_OVERRIDE(parameters_changed, keys);
+    }
+
+    DR_TRAMPOLINE_TRAVERSE_CB(Sampler);
 };
 
 MI_PY_EXPORT(Sampler) {
     MI_PY_IMPORT_TYPES(Sampler)
     using PySampler = PySampler<Float, Spectrum>;
-    using Properties = PropertiesV<Float>;
+    using Properties = mitsuba::Properties;
 
     auto sampler = MI_PY_TRAMPOLINE_CLASS(PySampler, Sampler, Object)
         .def(nb::init<const Properties&>(), "props"_a)
@@ -67,6 +76,4 @@ MI_PY_EXPORT(Sampler) {
         .def_method(Sampler, next_2d, "active"_a = true);
 
     dr::bind_traverse(sampler);
-
-    MI_PY_REGISTER_OBJECT("register_sampler", Sampler)
 }

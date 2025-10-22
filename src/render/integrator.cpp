@@ -1,4 +1,5 @@
 #include <mutex>
+#include <atomic>
 
 #include <drjit/morton.h>
 #include <mitsuba/core/fwd.h>
@@ -8,6 +9,7 @@
 #include <mitsuba/core/timer.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/fstream.h>
+#include <nanothread/nanothread.h>
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/sampler.h>
@@ -19,8 +21,8 @@ NAMESPACE_BEGIN(mitsuba)
 
 // -----------------------------------------------------------------------------
 
-MI_VARIANT Integrator<Float, Spectrum>::Integrator(const Properties & props)
-    : m_stop(false), m_id(props.id()) {
+MI_VARIANT Integrator<Float, Spectrum>::Integrator(const Properties &props)
+    : JitObject<Integrator>(props.id()), m_stop(false) {
     m_timeout = props.get<ScalarFloat>("timeout", -1.f);
 
     // Disable direct visibility of emitters if needed
@@ -30,7 +32,7 @@ MI_VARIANT Integrator<Float, Spectrum>::Integrator(const Properties & props)
 MI_VARIANT typename Integrator<Float, Spectrum>::TensorXf
 Integrator<Float, Spectrum>::render(Scene *scene,
                                     uint32_t sensor_index,
-                                    uint32_t seed,
+                                    UInt32 seed,
                                     uint32_t spp,
                                     bool develop,
                                     bool evaluate) {
@@ -45,7 +47,7 @@ MI_VARIANT typename Integrator<Float, Spectrum>::TensorXf
 Integrator<Float, Spectrum>::render_forward(Scene* scene,
                                             void* /*params*/,
                                             Sensor *sensor,
-                                            uint32_t seed,
+                                            UInt32 seed,
                                             uint32_t spp) {
     auto forward_gradients = [&]() -> TensorXf {
         auto image = render(scene, sensor, seed, spp, true, false);
@@ -67,7 +69,7 @@ Integrator<Float, Spectrum>::render_backward(Scene* scene,
                                              void* /*params */,
                                              const TensorXf& grad_in,
                                              Sensor* sensor,
-                                             uint32_t seed,
+                                             UInt32 seed,
                                              uint32_t spp) {
     auto backward_gradients = [&]() -> void {
         auto image = render(scene, sensor, seed, spp, true, false);
@@ -89,6 +91,35 @@ MI_VARIANT std::vector<std::string> Integrator<Float, Spectrum>::aov_names() con
 
 MI_VARIANT void Integrator<Float, Spectrum>::cancel() {
     m_stop = true;
+}
+
+MI_VARIANT typename Integrator<Float, Spectrum>::PreliminaryIntersection3f
+Integrator<Float, Spectrum>::skip_area_emitters(const Scene *scene,
+                                                const Ray3f &ray,
+                                                bool coherent,
+                                                Mask active) const {
+    struct LoopState {
+        PreliminaryIntersection3f pi;
+        Ray3f ray;
+        Mask active;
+
+        DRJIT_STRUCT(LoopState, pi, ray, active)
+    };
+
+    LoopState ls{ dr::zeros<PreliminaryIntersection3f>(), ray, active };
+
+    dr::tie(ls) = dr::while_loop(
+        dr::make_tuple(ls),
+        [](const LoopState &ls) { return ls.active; },
+        [&scene, coherent](LoopState &ls) {
+            ls.pi = scene->ray_intersect_preliminary(ls.ray, coherent);
+            ls.active &= ls.pi.is_valid() && (ls.pi.shape->emitter() != nullptr);
+            SurfaceInteraction3f si = ls.pi.compute_surface_interaction(
+                ls.ray, +RayFlags::Minimal, ls.active);
+            ls.ray = si.spawn_ray(ls.ray.d);
+        });
+
+    return ls.pi;
 }
 
 // -----------------------------------------------------------------------------
@@ -120,7 +151,7 @@ MI_VARIANT SamplingIntegrator<Float, Spectrum>::~SamplingIntegrator() { }
 MI_VARIANT typename SamplingIntegrator<Float, Spectrum>::TensorXf
 SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                                             Sensor *sensor,
-                                            uint32_t seed,
+                                            UInt32 seed,
                                             uint32_t spp,
                                             bool develop,
                                             bool evaluate) {
@@ -158,7 +189,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
     TensorXf result;
     if constexpr (!dr::is_jit_v<Float>) {
         // Render on the CPU using a spiral pattern
-        uint32_t n_threads = (uint32_t) Thread::thread_count();
+        uint32_t n_threads = (uint32_t) (pool_size() + 1);
 
         Log(Info, "Starting render job (%ux%u, %u sample%s,%s %u thread%s)",
             film_size.x(), film_size.y(), spp, spp == 1 ? "" : "s",
@@ -185,7 +216,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
 
         std::mutex mutex;
         ref<ProgressReporter> progress;
-        Logger* logger = mitsuba::Thread::thread()->logger();
+        Logger* logger = mitsuba::logger();
         if (logger && Info >= logger->log_level())
             progress = new ProgressReporter("Rendering");
 
@@ -199,11 +230,9 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         // Avoid overlaps in RNG seeding RNG when a seed is manually specified
         seed *= dr::prod(film_size);
 
-        ThreadEnvironment env;
         dr::parallel_for(
             dr::blocked_range<uint32_t>(0, total_blocks, grain_size),
             [&](const dr::blocked_range<uint32_t> &range) {
-                ScopedSetThreadEnvironment set_env(env);
                 // Fork a non-overlapping sampler for the current worker
                 ref<Sampler> sampler = sensor->sampler()->fork();
 
@@ -372,7 +401,7 @@ MI_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *s
                                                                    ImageBlock *block,
                                                                    Float *aovs,
                                                                    uint32_t sample_count,
-                                                                   uint32_t seed,
+                                                                   UInt32 seed,
                                                                    uint32_t block_id,
                                                                    uint32_t block_size) const {
 
@@ -544,7 +573,7 @@ MI_VARIANT AdjointIntegrator<Float, Spectrum>::~AdjointIntegrator() { }
 MI_VARIANT typename AdjointIntegrator<Float, Spectrum>::TensorXf
 AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
                                            Sensor *sensor,
-                                           uint32_t seed,
+                                           UInt32 seed,
                                            uint32_t spp,
                                            bool develop,
                                            bool evaluate) {
@@ -598,7 +627,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
 
     TensorXf result;
     if constexpr (!dr::is_jit_v<Float>) {
-        size_t n_threads = Thread::thread_count();
+        size_t n_threads = pool_size() + 1;
 
         Log(Info, "Starting render job (%ux%u, %u sample%s,%s %u thread%s)",
             crop_size.x(), crop_size.y(), spp, spp == 1 ? "" : "s",
@@ -623,11 +652,9 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
         // Start the render timer (used for timeouts & log messages)
         m_render_timer.reset();
 
-        ThreadEnvironment env;
         dr::parallel_for(
             dr::blocked_range<size_t>(0, total_samples, grain_size),
             [&](const dr::blocked_range<size_t> &range) {
-                ScopedSetThreadEnvironment set_env(env);
 
                 // Fork a non-overlapping sampler for the current worker
                 ref<Sampler> sampler = sensor->sampler()->clone();
@@ -761,11 +788,6 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
 }
 
 // -----------------------------------------------------------------------------
-
-MI_IMPLEMENT_CLASS_VARIANT(Integrator, Object, "integrator")
-MI_IMPLEMENT_CLASS_VARIANT(SamplingIntegrator, Integrator)
-MI_IMPLEMENT_CLASS_VARIANT(MonteCarloIntegrator, SamplingIntegrator)
-MI_IMPLEMENT_CLASS_VARIANT(AdjointIntegrator, Integrator)
 
 MI_INSTANTIATE_CLASS(Integrator)
 MI_INSTANTIATE_CLASS(SamplingIntegrator)

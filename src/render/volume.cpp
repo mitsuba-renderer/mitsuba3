@@ -7,11 +7,12 @@
 NAMESPACE_BEGIN(mitsuba)
 
 // =======================================================================
-//! @{ \name Volume implementations
+//! Volume base implementation
 // =======================================================================
 
-MI_VARIANT Volume<Float, Spectrum>::Volume(const Properties &props) {
-    m_to_local = props.get<ScalarTransform4f>("to_world", ScalarTransform4f()).inverse();
+MI_VARIANT Volume<Float, Spectrum>::Volume(const Properties &props)
+    : JitObject<Volume>(props.id()) {
+    m_to_local = props.get<ScalarAffineTransform4f>("to_world", ScalarAffineTransform4f()).inverse();
     m_channel_count = 0;
     update_bbox();
 }
@@ -43,7 +44,7 @@ Volume<Float, Spectrum>::eval_n(const Interaction3f & /*it*/,
 }
 
 MI_VARIANT std::pair<typename Volume<Float, Spectrum>::UnpolarizedSpectrum,
-                      typename Volume<Float, Spectrum>::Vector3f>
+                     typename Volume<Float, Spectrum>::Vector3f>
 Volume<Float, Spectrum>::eval_gradient(const Interaction3f & /*it*/, Mask /*active*/) const {
     NotImplementedError("eval_gradient");
 }
@@ -61,10 +62,7 @@ Volume<Float, Spectrum>::resolution() const {
     return ScalarVector3i(1, 1, 1);
 }
 
-//! @}
 // =======================================================================
-
-MI_IMPLEMENT_CLASS_VARIANT(Volume, Object, "volume")
 
 MI_INSTANTIATE_CLASS(Volume)
 NAMESPACE_END(mitsuba)

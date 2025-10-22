@@ -70,18 +70,16 @@ public:
     BlendPhaseFunction(const Properties &props) : Base(props) {
         int phase_index = 0;
 
-        for (auto &[name, obj] : props.objects(false)) {
-            auto *phase = dynamic_cast<Base *>(obj.get());
-            if (phase) {
+        for (auto &prop : props.objects()) {
+            if (Base *phase = prop.try_get<Base>()) {
                 if (phase_index == 2)
                     Throw("BlendPhase: Cannot specify more than two child "
                           "phase functions");
                 m_nested_phase[phase_index++] = phase;
-                props.mark_queried(name);
             }
         }
 
-        m_weight = props.volume<Volume>("weight");
+        m_weight = props.get_volume<Volume>("weight");
         if (phase_index != 2)
             Throw("BlendPhase: Two child phase functions must be specified!");
 
@@ -93,10 +91,10 @@ public:
         m_flags = m_nested_phase[0]->flags() | m_nested_phase[1]->flags();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("weight",  m_weight.get(),          +ParamFlags::Differentiable);
-        callback->put_object("phase_0", m_nested_phase[0].get(), +ParamFlags::Differentiable);
-        callback->put_object("phase_1", m_nested_phase[1].get(), +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("weight", m_weight, ParamFlags::Differentiable);
+        cb->put("phase_0", m_nested_phase[0], ParamFlags::Differentiable);
+        cb->put("phase_1", m_nested_phase[1], ParamFlags::Differentiable);
     }
 
     std::tuple<Vector3f, Spectrum, Float> sample(const PhaseFunctionContext &ctx,
@@ -131,17 +129,25 @@ public:
         if (dr::any_or<true>(m0)) {
             auto [wo0, w0, pdf0] = m_nested_phase[0]->sample(
                 ctx, mi, (sample1 - weight) / (1 - weight), sample2, m0);
+            auto [eval1, pdf1] = m_nested_phase[1]->eval_pdf(ctx, mi, wo0, m0);
+            auto pdf_weighted = weight * pdf1 + (1.f - weight) * pdf0;
+            auto w_weighted = (weight * eval1 + (1.f - weight) * w0 * pdf0) 
+                                * dr::select(pdf_weighted > 0.f, dr::rcp(pdf_weighted), 0.f);
             dr::masked(wo, m0)  = wo0;
-            dr::masked(w, m0)   = w0;
-            dr::masked(pdf, m0) = pdf0;
+            dr::masked(w, m0)   = w_weighted;
+            dr::masked(pdf, m0) = pdf_weighted;
         }
 
         if (dr::any_or<true>(m1)) {
             auto [wo1, w1, pdf1] = m_nested_phase[1]->sample(
                 ctx, mi, sample1 / weight, sample2, m1);
+            auto [eval0, pdf0] = m_nested_phase[0]->eval_pdf(ctx, mi, wo1, m1);
+            auto pdf_weighted = weight * pdf1 + (1.f - weight) * pdf0;
+            auto w_weighted = (weight * w1 * pdf1 + (1.f - weight) * eval0) 
+                                * dr::select(pdf_weighted > 0.f, dr::rcp(pdf_weighted), 0.f);
             dr::masked(wo, m1)  = wo1;
-            dr::masked(w, m1)   = w1;
-            dr::masked(pdf, m1) = pdf1;
+            dr::masked(w, m1)   = w_weighted;
+            dr::masked(pdf, m1) = pdf_weighted;
         }
 
         return { wo, w, pdf };
@@ -195,12 +201,11 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(BlendPhaseFunction)
 protected:
     ref<Volume> m_weight;
     ref<Base> m_nested_phase[2];
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(BlendPhaseFunction, PhaseFunction)
-MI_EXPORT_PLUGIN(BlendPhaseFunction, "Blended phase function")
+MI_EXPORT_PLUGIN(BlendPhaseFunction)
 NAMESPACE_END(mitsuba)

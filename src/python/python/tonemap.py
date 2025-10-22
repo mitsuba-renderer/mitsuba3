@@ -6,21 +6,19 @@ if __name__ == '__main__':
     mi.set_variant('scalar_rgb')
 
     mi.set_log_level(mi.LogLevel.Info)
-    te = mi.ThreadEnvironment()
 
     def tonemap(fname, scale):
-        with mi.ScopedSetThreadEnvironment(te):
-            try:
-                img_in = mi.Bitmap(fname)
-                if scale != 1:
-                    img_in = mi.Bitmap(mi.TensorXf(img_in) * scale)
-                img_out = img_in.convert(mi.Bitmap.PixelFormat.RGB, mi.Struct.Type.UInt8, True)
-                fname_out = fname.replace('.exr', '.png')
-                img_out.write(fname_out)
-                mi.Log(mi.LogLevel.Info, 'Wrote "%s".' % fname_out)
-            except Exception as e:
-                sys.stderr.write('Could not tonemap image "%s": %s!\n' %
-                    (fname, str(e)))
+        try:
+            img_in = mi.Bitmap(fname)
+            if scale != 1:
+                img_in = mi.Bitmap(mi.TensorXf(img_in) * scale)
+            img_out = img_in.convert(mi.Bitmap.PixelFormat.RGB, mi.Struct.Type.UInt8, True)
+            fname_out = fname.replace('.exr', '.png')
+            img_out.write(fname_out)
+            mi.Log(mi.LogLevel.Info, 'Wrote "%s".' % fname_out)
+        except Exception as e:
+            sys.stderr.write('Could not tonemap image "%s": %s!\n' %
+                (fname, str(e)))
 
     class MyParser(argparse.ArgumentParser):
         def error(self, message):

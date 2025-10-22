@@ -5,11 +5,13 @@ struct NativeState {
     MI_IMPORT_CORE_TYPES()
     ShapeKDTree<Float, Spectrum> *accel;
     DynamicBuffer<UInt32> shapes_registry_ids;
+    void *func_ptr = nullptr;
+    UInt64 func_handle;
 };
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &props) {
     ShapeKDTree *kdtree = new ShapeKDTree(props);
-    kdtree->inc_ref();
+    inc_ref(kdtree);
 
     if constexpr (dr::is_llvm_v<Float>) {
         m_accel = new NativeState<Float, Spectrum>();
@@ -33,6 +35,10 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &props) 
     accel_parameters_changed_cpu();
 }
 
+template <typename Float, typename Spectrum, bool ShadowRay, size_t Width>
+void kdtree_trace_func_wrapper(const int *valid, void *ptr,
+                               void* /* context */, uint8_t *args);
+
 MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
     // Ensure all ray tracing kernels are terminated before releasing the scene
     if constexpr (dr::is_llvm_v<Float>)
@@ -50,34 +56,57 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
     ScopedPhase phase(ProfilerPhase::InitAccel);
     kdtree->build();
 
-    /* Set up a callback on the handle variable to release the Embree
-       acceleration data structure (IAS) when this variable is freed. This
-       ensures that the lifetime of the IAS goes beyond the one of the Scene
-       instance if there are still some pending ray tracing calls (e.g. non
-       evaluated variables depending on a ray tracing call). */
+    /* Set up a callback on the handle variable to release the acceleration
+       data structure (AS) when this variable is freed. This ensures that the
+       lifetime of the AS goes beyond the one of the Scene instance if there
+       are still some pending ray tracing calls (e.g. non evaluated variables
+       depending on a ray tracing call). */
     if constexpr (dr::is_llvm_v<Float>) {
-        // Prevents the IAS to be released when updating the scene parameters
+        // Prevents the AS to be released when updating the scene parameters
         if (m_accel_handle.index())
             jit_var_set_callback(m_accel_handle.index(), nullptr, nullptr);
-        m_accel_handle = dr::opaque<UInt64>(kdtree);
+        m_accel_handle = UInt64::map_(m_accel, 1, false);
         jit_var_set_callback(
             m_accel_handle.index(),
             [](uint32_t /* index */, int free, void *payload) {
                 if (free) {
-                    // Free KDTree on another thread to avoid deadlock with Dr.Jit mutex
-                    Task *task = dr::do_async([payload](){
-                        Log(Debug, "Free KDTree..");
-                        NativeState<Float, Spectrum> *s =
-                            (NativeState<Float, Spectrum> *) payload;
-                        s->accel->clear();
-                        s->accel->dec_ref();
-                        delete s;
-                    });
-                    Thread::register_task(task);
+                    jit_enqueue_host_func(
+                        JitBackend::LLVM,
+                        [](void *p) {
+                            Log(Debug, "Free KDTree..");
+                            NativeState<Float, Spectrum> *s =
+                                (NativeState<Float, Spectrum> *) p;
+                            s->accel->clear();
+                            s->accel->dec_ref();
+                            delete s;
+                        },
+                        payload
+                    );
                 }
             },
             (void *) m_accel
         );
+
+        NativeState<Float, Spectrum> &s = *(NativeState<Float, Spectrum> *) m_accel;
+        // To support frozen functions the func_ptr has to exist as a variable
+        // when the scene is traversed.
+        // Since the LLVM vector width should not change over the lifetime of
+        // the scene, we determine the intersection function here.
+        int jit_width  = jit_llvm_vector_width();
+        void *func_ptr = nullptr;
+        switch (jit_width) {
+            case 1:  func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, false, 1>; break;
+            case 4:  func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, false, 4>; break;
+            case 8:  func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, false, 8>; break;
+            case 16: func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, false, 16>; break;
+            default:
+                Throw("ray_intersect_preliminary_cpu(): Dr.Jit is "
+                      "configured for vectors of width %u, which is not "
+                      "supported by the kd-tree ray tracing backend!", jit_width);
+        }
+
+        s.func_ptr    = func_ptr;
+        s.func_handle = UInt64::map_(func_ptr, 1, false);
     }
 
     clear_shapes_dirty();
@@ -89,11 +118,11 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
         dr::sync_thread();
 
         /* Decrease the reference count of the handle variable. This will
-           trigger the release of the Embree acceleration data structure if no
+           trigger the release of the acceleration data structure if no
            ray tracing calls are pending. */
         m_accel_handle = 0;
     } else {
-        ((ShapeKDTree *) m_accel)->dec_ref();
+        dec_ref((ShapeKDTree *) m_accel);
     }
 
     m_accel = nullptr;
@@ -181,26 +210,14 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
         const ShapeKDTree *kdtree = (const ShapeKDTree *) m_accel;
         return kdtree->template ray_intersect_preliminary<false>(ray, active);
     } else {
-        NativeState<Float, Spectrum> *s = (NativeState<Float, Spectrum> *) m_accel;
-        void *func_ptr = nullptr,
+        NativeState<Float, Spectrum> &s = *(NativeState<Float, Spectrum> *) m_accel;
+        void *func_ptr = s.func_ptr,
              *scene_ptr = m_accel;
 
-        int jit_width = jit_llvm_vector_width();
-        switch (jit_width) {
-            case 1:  func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, false, 1>; break;
-            case 4:  func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, false, 4>; break;
-            case 8:  func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, false, 8>; break;
-            case 16: func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, false, 16>; break;
-            default:
-                Throw("ray_intersect_preliminary_cpu(): Dr.Jit is "
-                      "configured for vectors of width %u, which is not "
-                      "supported by the kd-tree ray tracing backend!", jit_width);
-        }
-
         UInt64 func_v = UInt64::steal(
-                   jit_var_pointer(JitBackend::LLVM, func_ptr, m_accel_handle.index(), 0)),
+                   jit_var_pointer(JitBackend::LLVM, func_ptr, s.func_handle.index(), 0)),
                scene_v = UInt64::steal(
-                   jit_var_pointer(JitBackend::LLVM, scene_ptr, 0, 0));
+                   jit_var_pointer(JitBackend::LLVM, scene_ptr, m_accel_handle.index(), 0));
 
         UInt32 zero = dr::zeros<UInt32>();
         Float ray_mint = dr::zeros<Float>();
@@ -236,7 +253,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
         Mask hit_inst = hit && (inst_index != ((uint32_t)-1));
         UInt32 index = dr::select(hit_inst, inst_index, pi.shape_index);
 
-        ShapePtr shape = dr::gather<UInt32>(s->shapes_registry_ids, index, hit);
+        ShapePtr shape = dr::gather<UInt32>(s.shapes_registry_ids, index, hit);
 
         pi.instance = shape & hit_inst;
         pi.shape    = shape & !hit_inst;
@@ -269,24 +286,14 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray,
         const ShapeKDTree *kdtree = (const ShapeKDTree *) m_accel;
         return kdtree->template ray_intersect_preliminary<true>(ray, active).is_valid();
     } else {
-        void *func_ptr = nullptr, *scene_ptr = m_accel;
-
-        int jit_width = jit_llvm_vector_width();
-        switch (jit_width) {
-            case 1:  func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, true, 1>; break;
-            case 4:  func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, true, 4>; break;
-            case 8:  func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, true, 8>; break;
-            case 16: func_ptr = (void *) kdtree_trace_func_wrapper<Float, Spectrum, true, 16>; break;
-            default:
-                Throw("ray_test_cpu(): Dr.Jit is configured for vectors of "
-                      "width %u, which is not supported by the kd-tree ray "
-                      "tracing backend!", jit_width);
-        }
+        NativeState<Float, Spectrum> &s = *(NativeState<Float, Spectrum> *) m_accel;
+        void *func_ptr = s.func_ptr,
+             *scene_ptr = m_accel;
 
         UInt64 func_v = UInt64::steal(
-                   jit_var_pointer(JitBackend::LLVM, func_ptr, m_accel_handle.index(), 0)),
+                   jit_var_pointer(JitBackend::LLVM, func_ptr, s.func_handle.index(), 0)),
                scene_v = UInt64::steal(
-                   jit_var_pointer(JitBackend::LLVM, scene_ptr, 0, 0));
+                   jit_var_pointer(JitBackend::LLVM, scene_ptr, m_accel_handle.index(), 0));
 
         UInt32 zero = dr::zeros<UInt32>();
         Float ray_mint = dr::zeros<Float>();
@@ -318,6 +325,28 @@ Scene<Float, Spectrum>::ray_intersect_naive_cpu(const Ray3f &ray, Mask active) c
         kdtree->template ray_intersect_naive<false>(ray, active);
 
     return pi.compute_surface_interaction(ray, +RayFlags::All, active);
+}
+
+MI_VARIANT void Scene<Float, Spectrum>::traverse_1_cb_ro_cpu(
+    void *payload, drjit::detail::traverse_callback_ro fn) const {
+
+    if constexpr (dr::is_llvm_v<Float>) {
+        NativeState<Float, Spectrum> &s =
+            *(NativeState<Float, Spectrum> *) m_accel;
+        drjit ::traverse_1_fn_ro(s.shapes_registry_ids, payload, fn);
+        drjit ::traverse_1_fn_ro(s.func_handle, payload, fn);
+    }
+}
+
+MI_VARIANT void Scene<Float, Spectrum>::traverse_1_cb_rw_cpu(
+    void *payload, drjit::detail::traverse_callback_rw fn) {
+
+    if constexpr (dr::is_llvm_v<Float>) {
+        NativeState<Float, Spectrum> &s =
+            *(NativeState<Float, Spectrum> *) m_accel;
+        drjit ::traverse_1_fn_rw(s.shapes_registry_ids, payload, fn);
+        drjit ::traverse_1_fn_rw(s.func_handle, payload, fn);
+    }
 }
 
 NAMESPACE_END(mitsuba)

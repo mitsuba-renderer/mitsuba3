@@ -9,6 +9,7 @@ namespace optix {
 struct Ray3f {
     Vector3f o;         /// Ray origin
     Vector3f d;         /// Ray direction
+    float mint;         /// Minimum position on the ray segment
     float maxt;         /// Maximum position on the ray segment
     float time;         /// Time value associated with this ray
 
@@ -25,13 +26,10 @@ struct Ray3f {
 /// Returns the current ray in instance space (based on the current instance transformation)
 DEVICE Ray3f get_ray() {
     Ray3f ray;
-    ray.o = make_vector3f(optixTransformPointFromWorldToObjectSpace(optixGetWorldRayOrigin()));
-    ray.d = make_vector3f(optixTransformVectorFromWorldToObjectSpace(optixGetWorldRayDirection()));
-
-    float mint = optixGetRayTmin();
-    ray.maxt = optixGetRayTmax() - mint;
-    ray.o += ray.d * mint;
-
+    ray.o = make_vector3f(optixGetObjectRayOrigin());
+    ray.d = make_vector3f(optixGetObjectRayDirection());
+    ray.mint = 0.0f; // Rays cast by Mitsuba always have mint==0.
+    ray.maxt = optixGetRayTmax();
     ray.time = optixGetRayTime();
     return ray;
 }

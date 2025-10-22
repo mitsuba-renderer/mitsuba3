@@ -56,21 +56,21 @@ public:
     MI_IMPORT_TYPES(Texture)
 
     Checkerboard(const Properties &props) : Texture(props) {
-        m_color0 = props.texture<Texture>("color0", .4f);
-        m_color1 = props.texture<Texture>("color1", .2f);
-        m_transform = props.get<ScalarTransform3f>("to_uv", ScalarTransform3f());
+        m_color0 = props.get_texture<Texture>("color0", .4f);
+        m_color1 = props.get_texture<Texture>("color1", .2f);
+        m_transform = props.get<ScalarAffineTransform3f>("to_uv", ScalarAffineTransform3f());
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("to_uv", m_transform,    +ParamFlags::NonDifferentiable);
-        callback->put_object("color0",   m_color0.get(), +ParamFlags::Differentiable);
-        callback->put_object("color1",   m_color1.get(), +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("to_uv",  m_transform, ParamFlags::NonDifferentiable);
+        cb->put("color0", m_color0,    ParamFlags::Differentiable);
+        cb->put("color1", m_color1,    ParamFlags::Differentiable);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &it, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
-        Point2f uv = m_transform.transform_affine(it.uv);
+        Point2f uv = m_transform * it.uv;
         dr::mask_t<Point2f> mask = uv - dr::floor(uv) > .5f;
         UnpolarizedSpectrum result = dr::zeros<UnpolarizedSpectrum>();
 
@@ -91,7 +91,7 @@ public:
     Float eval_1(const SurfaceInteraction3f &it, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
-        Point2f uv = m_transform.transform_affine(it.uv);
+        Point2f uv = m_transform * it.uv;
         dr::mask_t<Point2f> mask = (uv - dr::floor(uv)) > .5f;
         Float result = 0.f;
 
@@ -118,20 +118,21 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Checkerboard[" << std::endl
-            << "  color0 = " << string::indent(m_color0) << std::endl
-            << "  color1 = " << string::indent(m_color1) << std::endl
+            << "  color0 = " << string::indent(m_color0) << "," << std::endl
+            << "  color1 = " << string::indent(m_color1) << "," << std::endl
             << "  transform = " << string::indent(m_transform) << std::endl
             << "]";
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Checkerboard)
 protected:
     ref<Texture> m_color0;
     ref<Texture> m_color1;
-    ScalarTransform3f m_transform;
+    ScalarAffineTransform3f m_transform;
+
+    MI_TRAVERSE_CB(Texture, m_color0, m_color1)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Checkerboard, Texture)
-MI_EXPORT_PLUGIN(Checkerboard, "Checkerboard texture")
+MI_EXPORT_PLUGIN(Checkerboard)
 NAMESPACE_END(mitsuba)

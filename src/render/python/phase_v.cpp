@@ -4,9 +4,11 @@
 #include <mitsuba/python/python.h>
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/string_view.h>
 #include <nanobind/stl/tuple.h>
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/list.h>
+#include <nanobind/stl/vector.h>
 #include <drjit/python.h>
 
 /// Trampoline for derived types implemented in Python
@@ -55,6 +57,8 @@ public:
 
     using PhaseFunction::m_flags;
     using PhaseFunction::m_components;
+
+    DR_TRAMPOLINE_TRAVERSE_CB(PhaseFunction)
 };
 
 template <typename Ptr, typename Cls> void bind_phase_generic(Cls &cls) {
@@ -89,7 +93,7 @@ template <typename Ptr, typename Cls> void bind_phase_generic(Cls &cls) {
 MI_PY_EXPORT(PhaseFunction) {
     MI_PY_IMPORT_TYPES(PhaseFunction, PhaseFunctionContext, PhaseFunctionPtr)
     using PyPhaseFunction = PyPhaseFunction<Float, Spectrum>;
-    using Properties = PropertiesV<Float>;
+    using Properties = mitsuba::Properties;
 
     m.def("has_flag", [](uint32_t flags, PhaseFunctionFlags f) { return has_flag(flags, f); });
     m.def("has_flag", [](UInt32   flags, PhaseFunctionFlags f) { return has_flag(flags, f); });
@@ -109,9 +113,10 @@ MI_PY_EXPORT(PhaseFunction) {
             .def(nb::init<const Properties &>())
             .def("flags", nb::overload_cast<size_t, Mask>(&PhaseFunction::flags, nb::const_),
                  "index"_a, "active"_a = true, D(PhaseFunction, flags, 2))
-            .def_method(PhaseFunction, id)
             .def_field(PyPhaseFunction, m_flags, D(PhaseFunction, m_flags))
             .def("__repr__", &PhaseFunction::to_string);
+
+    drjit::bind_traverse(phase);
 
     bind_phase_generic<PhaseFunction *>(phase);
 
@@ -121,5 +126,4 @@ MI_PY_EXPORT(PhaseFunction) {
         bind_phase_generic<PhaseFunctionPtr>(phase_ptr);
     }
 
-    MI_PY_REGISTER_OBJECT("register_phasefunction", PhaseFunction)
 }

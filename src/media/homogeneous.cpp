@@ -136,18 +136,18 @@ public:
 
     HomogeneousMedium(const Properties &props) : Base(props) {
         m_is_homogeneous = true;
-        m_albedo = props.volume<Volume>("albedo", 0.75f);
-        m_sigmat = props.volume<Volume>("sigma_t", 1.f);
+        m_albedo = props.get_volume<Volume>("albedo", 0.75f);
+        m_sigmat = props.get_volume<Volume>("sigma_t", 1.0f);
 
         m_scale = props.get<ScalarFloat>("scale", 1.0f);
         m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("scale", m_scale,        +ParamFlags::NonDifferentiable);
-        callback->put_object("albedo",   m_albedo.get(), +ParamFlags::Differentiable);
-        callback->put_object("sigma_t",  m_sigmat.get(), +ParamFlags::Differentiable);
-        Base::traverse(callback);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("scale",   m_scale,  ParamFlags::NonDifferentiable);
+        cb->put("albedo",  m_albedo, ParamFlags::Differentiable);
+        cb->put("sigma_t", m_sigmat, ParamFlags::Differentiable);
+        Base::traverse(cb);
     }
 
     MI_INLINE auto eval_sigmat(const MediumInteraction3f &mi, Mask active) const {
@@ -190,12 +190,13 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(HomogeneousMedium)
 private:
     ref<Volume> m_sigmat, m_albedo;
     ScalarFloat m_scale;
+
+    MI_TRAVERSE_CB(Base, m_sigmat, m_albedo, m_scale)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(HomogeneousMedium, Medium)
-MI_EXPORT_PLUGIN(HomogeneousMedium, "Homogeneous Medium")
+MI_EXPORT_PLUGIN(HomogeneousMedium)
 NAMESPACE_END(mitsuba)

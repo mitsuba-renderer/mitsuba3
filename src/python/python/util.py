@@ -2,21 +2,17 @@ from __future__ import annotations as __annotations__ # Delayed parsing of type 
 
 import contextlib
 from collections.abc import Mapping
+from typing import Any, Optional, Union
 
 import drjit as dr
 import mitsuba as mi
-
-import typing
-if typing.TYPE_CHECKING:
-    from typing import Any, Optional, Union
 
 class SceneParameters(Mapping):
     """
     Dictionary-like object that references various parameters used in a Mitsuba
     scene graph. Parameters can be read and written using standard syntax
     (``parameter_map[key]``). The class exposes several non-standard functions,
-    specifically :py:meth:`~mitsuba.SceneParameters.torch()`,
-    :py:meth:`~mitsuba.SceneParameters.update()`, and
+    specifically :py:meth:`~mitsuba.SceneParameters.update()`, and
     :py:meth:`~mitsuba.SceneParameters.keep()`.
     """
 
@@ -58,7 +54,10 @@ class SceneParameters(Mapping):
         return value
 
     def __setitem__(self, key: str, value):
-        cur, value_type, node, _ = self.properties[key]
+        cur, value_type, node, flags = self.properties[key]
+
+        if (flags & mi.ParamFlags.ReadOnly) != 0:
+            raise Exception(f'{key} is a Read-Only parameter!')
 
         cur_value = cur
         if value_type is not None:
@@ -110,12 +109,14 @@ class SceneParameters(Mapping):
                 value = self.get_property(value, value_type, node)
 
             flags_str = ''
-            if (flags & mi.ParamFlags.NonDifferentiable) == 0:
+            if (flags & mi.ParamFlags.NonDifferentiable) == 0 and (flags & mi.ParamFlags.ReadOnly) == 0:
                 flags_str += '∂'
+            if (flags & mi.ParamFlags.ReadOnly) != 0:
+                flags_str += 'R'
             if (flags & mi.ParamFlags.Discontinuous) != 0:
                 flags_str += ', D'
 
-            param_list += f'  {k:{name_length}}  {flags_str:7}  {type(value).__name__:{type_length}} {node.class_().name()}\n'
+            param_list += f'  {k:{name_length}}  {flags_str:7}  {type(value).__name__:{type_length}} {node.class_name()}\n'
         return f'SceneParameters[{param_list}]'
 
     def __iter__(self):
@@ -183,7 +184,7 @@ class SceneParameters(Mapping):
 
         return self.properties[key]
 
-    def update(self, values: dict = None) -> list[tuple[Any, set]]:
+    def update(self, values: Optional[Mapping] = None) -> list[tuple[Any, set]]:
         """
         This function should be called at the end of a sequence of writes
         to the dictionary. It automatically notifies all modified Mitsuba
@@ -296,7 +297,15 @@ def traverse(node: mi.Object) -> SceneParameters:
             self.hierarchy[node] = (parent, depth)
             self.flags = flags
 
-        def put_parameter(self, name, ptr, flags, cpptype=None):
+        def put(self, name, value, flags, cpptype=None):
+            """Unified method to register both objects and values with the traversal callback."""
+            # Import Object locally to avoid circular import
+            if isinstance(value, mi.Object):
+                self.put_object(name, value, flags)
+            else:
+                self.put_value(name, value, flags, cpptype)
+
+        def put_value(self, name, ptr, flags, cpptype):
             name = name if self.name is None else self.name + '.' + name
 
             flags = self.flags | flags
@@ -306,11 +315,11 @@ def traverse(node: mi.Object) -> SceneParameters:
 
             self.properties[name] = (ptr, cpptype, self.node, self.flags | flags)
 
-        def put_object(self, name, node, flags):
-            if node is None or node in self.hierarchy:
+        def put_object(self, name, obj, flags):
+            if obj is None or obj in self.hierarchy:
                 return
             cb = SceneTraversal(
-                node=node,
+                node=obj,
                 parent=self.node,
                 properties=self.properties,
                 hierarchy=self.hierarchy,
@@ -319,7 +328,7 @@ def traverse(node: mi.Object) -> SceneParameters:
                 depth=self.depth + 1,
                 flags=self.flags | flags
             )
-            node.traverse(cb)
+            obj.traverse(cb)
 
     cb = SceneTraversal(node)
     node.traverse(cb)
@@ -354,7 +363,7 @@ class _RenderOp(dr.CustomOp):
         self.spp = spp
 
         with dr.suspend_grad():
-            return self.integrator.render(
+            res = self.integrator.render(
                 scene=self.scene,
                 sensor=sensor,
                 seed=seed[0],
@@ -362,6 +371,13 @@ class _RenderOp(dr.CustomOp):
                 develop=True,
                 evaluate=False
             )
+            # After rendering an image, the sampler state is dependent on the
+            # rendering loop. When a frozen function is recorded, the sampler
+            # might be evaluated, which causes parts of the rendering loop to
+            # be re-evaluated. To prevent this overhead, we reset the state
+            # of the sampler, by re-seeding it.
+            sensor.sampler().seed(0, 1)
+            return res
 
     def forward(self):
         self.set_grad_out(
@@ -379,7 +395,7 @@ def render(scene: mi.Scene,
            params: Any = None,
            sensor: Union[int, mi.Sensor] = 0,
            integrator: mi.Integrator = None,
-           seed: int = 0,
+           seed: mi.UInt32 = 0,
            seed_grad: int = 0,
            spp: int = 0,
            spp_grad: int = 0) -> mi.TensorXf:
@@ -433,14 +449,14 @@ def render(scene: mi.Scene,
         default, the integrator specified in the original scene description will
         be used.
 
-    Parameter ``seed`` (``int``)
+    Parameter ``seed`` (``mi.UInt32``)
         This parameter controls the initialization of the random number
         generator during the primal rendering step. It is crucial that you
         specify different seeds (e.g., an increasing sequence) if subsequent
         calls should produce statistically independent images (e.g. to
         de-correlate gradient-based optimization steps).
 
-    Parameter ``seed_grad`` (``int``)
+    Parameter ``seed_grad`` (``mi.UInt32``)
         This parameter is analogous to the ``seed`` parameter but targets the
         differential simulation phase. If not specified, the implementation will
         automatically compute a suitable value from the primal ``seed``.
@@ -592,24 +608,21 @@ def cornell_box():
             'type': 'diffuse',
             'reflectance': {
                 'type': 'rgb',
-                #'value': mi.ScalarColor3f([0.885809, 0.698859, 0.666422]),
-                'value': mi.ScalarColor3d(0.885809, 0.698859, 0.666422),
+                'value': [0.885809, 0.698859, 0.666422],
             }
         },
         'green': {
             'type': 'diffuse',
             'reflectance': {
                 'type': 'rgb',
-                #'value': [0.105421, 0.37798, 0.076425],
-                'value': mi.ScalarColor3d(0.105421, 0.37798, 0.076425),
+                'value': [0.105421, 0.37798, 0.076425],
             }
         },
         'red': {
             'type': 'diffuse',
             'reflectance': {
                 'type': 'rgb',
-                #'value': [0.570068, 0.0430135, 0.0443706],
-                'value': mi.ScalarColor3d(0.570068, 0.0430135, 0.0443706),
+                'value': [0.570068, 0.0430135, 0.0443706],
             }
         },
         # -------------------- Light --------------------
@@ -624,8 +637,7 @@ def cornell_box():
                 'type': 'area',
                 'radiance': {
                     'type': 'rgb',
-                    #'value': [18.387, 13.9873, 6.75357],
-                    'value': mi.ScalarColor3d(18.387, 13.9873, 6.75357),
+                    'value': [18.387, 13.9873, 6.75357],
                 }
             }
         },
@@ -704,3 +716,5 @@ def variant_context(*args) -> None:
         raise
     finally:
         mi.set_variant(old_variant)
+
+scoped_set_variant = variant_context

@@ -1,6 +1,5 @@
 #include <mitsuba/core/object.h>
-#include <cstdlib>
-#include <cstdio>
+#include <mitsuba/core/properties.h>
 #include <sstream>
 #include <nanobind/intrusive/counter.inl>
 
@@ -12,13 +11,9 @@ void Object::traverse(TraversalCallback * /*callback*/) { }
 
 void Object::parameters_changed(const std::vector<std::string> &/*keys*/) { }
 
-std::string Object::id() const { return std::string(); }
-
-void Object::set_id(const std::string&/*id*/) { }
-
 std::string Object::to_string() const {
     std::ostringstream oss;
-    oss << class_()->name() << "[" << (void *) this << "]";
+    oss << class_name() << "[" << (void *) this << "]";
     return oss.str();
 }
 
@@ -27,5 +22,23 @@ std::ostream& operator<<(std::ostream &os, const Object *object) {
     return os;
 }
 
-MI_IMPLEMENT_CLASS(Object,)
+ObjectType Object::type() const {
+    return ObjectType::Unknown;
+}
+
+std::string_view Object::variant_name() const {
+    return "";
+}
+
+std::string_view Object::id() const {
+    return "";
+}
+
+void Object::set_id(std::string_view /*id*/) {
+    // The base Object class does not hold a unique ID - do nothing.
+}
+
+std::string_view Object::class_name() const {
+    return "Object";
+}
 NAMESPACE_END(mitsuba)

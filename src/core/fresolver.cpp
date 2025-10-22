@@ -43,6 +43,9 @@ std::string FileResolver::to_string() const {
     return oss.str();
 }
 
-MI_IMPLEMENT_CLASS(FileResolver, Object)
+static ref<FileResolver> __static_file_resolver;
+
+void set_file_resolver(FileResolver *file_resolver) { __static_file_resolver = file_resolver; }
+FileResolver *file_resolver() { return __static_file_resolver.get(); }
 
 NAMESPACE_END(mitsuba)

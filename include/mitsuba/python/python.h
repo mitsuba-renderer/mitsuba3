@@ -15,8 +15,6 @@
 
 #include "docstr.h"
 
-//PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
-
 #define D(...) DOC(mitsuba, __VA_ARGS__)
 
 /// Shorthand notation for defining a data structure
@@ -51,44 +49,8 @@
 #define def_repr(Class) \
     def("__repr__", [](const Class &c) { std::ostringstream oss; oss << c; return oss.str(); } )
 
-/// Shorthand notation for defining object registration routine for trampoline objects
-#define MI_PY_REGISTER_OBJECT(Function, Name)                                  \
-    m.def(                                                                     \
-        Function,                                                              \
-        [](const std::string &name,                                            \
-           std::function<nb::object(const Properties&)> &constructor) {        \
-            auto variant = ::mitsuba::detail::get_variant<Float, Spectrum>();  \
-            (void) new Class(                                                  \
-                name, #Name, variant,                                          \
-                [=](const Properties &p) -> ref<Object> {                      \
-                    nb::gil_scoped_acquire gil;                                \
-                                                                               \
-                    nb::object o;                                              \
-                    {                                                          \
-                        nb::gil_scoped_release release;                        \
-                        PropertiesV p_v(p);                                    \
-                        o = constructor(p_v);                                  \
-                    }                                                          \
-                                                                               \
-                    Name* ptr = nb::cast<Name*>(o);                            \
-                    o.release();                                               \
-                    /* At this point `ptr` has a reference count of 1. By
-                     * creating at `ref<>` of if it will increase to 2. So we
-                     * manually decrease the reference count to compensate. */ \
-                    ref<Object> out(ptr);                                      \
-                    ptr->dec_ref();                                            \
-                                                                               \
-                    return ptr;                                                \
-                },                                                             \
-                nullptr);                                                      \
-            PluginManager::instance()->register_python_plugin(name, variant);  \
-        }                                                                      \
-    );
-
 using namespace mitsuba;
-
 namespace nb = nanobind;
-
 using namespace nb::literals;
 
 template <typename T>
@@ -120,18 +82,6 @@ nb::handle type_of() {
                 type = dr::select(mask, value, type);                          \
             });
 
-//template <typename Source, typename Target> void pybind11_type_alias() {
-//    auto &types = pybind11::detail::get_internals().registered_types_cpp;
-//    auto it = types.find(std::type_index(typeid(Source)));
-//    if (it == types.end())
-//        throw std::runtime_error("pybind11_type_alias(): source type not found!");
-//    types[std::type_index(typeid(Target))] = it->second;
-//}
-//
-//template <typename Type> pybind11::handle get_type_handle() {
-//    return pybind11::detail::get_type_handle(typeid(Type), false);
-//}
-
 #define MI_PY_DECLARE(Name) extern void python_export_##Name(nb::module_ &m)
 /// We forward bindings code to a templated to ensure that branches not taken
 /// of ``if constexpr`` do not get instantiated by the compiler.
@@ -156,122 +106,6 @@ inline nb::module_ create_submodule(nb::module_ &m, const char *name) {
     m.attr(name) = module;
     return module;
 }
-
-//template <typename Array> void bind_drjit_ptr_array(nb::class_<Array> &cls) {
-//    using Type = std::decay_t<std::remove_pointer_t<dr::value_t<Array>>>;
-//    using UInt32 = dr::uint32_array_t<Array>;
-//    using Mask = dr::mask_t<UInt32>;
-//
-//    cls.attr("eq_") = nb::none();
-//    cls.attr("neq_") = nb::none();
-//    cls.attr("gather_") = nb::none();
-//    cls.attr("scatter_") = nb::none();
-//    cls.attr("select_") = nb::none();
-//    cls.attr("set_label_") = nb::none();
-//    cls.attr("label_") = nb::none();
-//    cls.attr("index") = nb::none();
-//    cls.attr("assign") = nb::none();
-//
-//    cls.def(py::init<>())
-//       .def(py::init<Type *>())
-//       .def("assign", [](Array &a, const Array &b) {
-//           if (&a != &b)
-//               a = b;
-//       })
-//       .def("entry_", [](const Array &a, size_t i) { return a.entry(i); })
-//       .def("eq_", &Array::eq_)
-//       .def("neq_", &Array::neq_)
-//       .def("__setitem__", [](Array &a, const dr::mask_t<Array> &m, const Array &b) {
-//           a[m] = b;
-//       })
-//       .def("__len__", [](Array a) { return a.size(); });
-//
-//    cls.attr("zero_") = py::cpp_function(&Array::zero_);
-//    cls.attr("Type") = VarType::Pointer;
-//    cls.attr("Value") = py::type::of<Type>();
-//    cls.attr("MaskType") = py::type::of<Mask>();
-//    cls.attr("IsScalar") = false;
-//    cls.attr("IsJIT") = dr::is_jit_v<Array>;
-//    cls.attr("IsLLVM") = dr::is_llvm_v<Array>;
-//    cls.attr("IsCUDA") = dr::is_cuda_v<Array>;
-//    cls.attr("Depth") = dr::array_depth_v<Array>;
-//    cls.attr("Size")  = dr::size_v<Array>;
-//    cls.attr("IsDiff") = false;
-//    cls.attr("IsQuaternion") = false;
-//    cls.attr("IsComplex") = false;
-//    cls.attr("IsMatrix") = false;
-//    cls.attr("IsTensor") = false;
-//    cls.attr("IsDrJit") = true;
-//    cls.attr("Prefix") = "Array";
-//    cls.attr("Shape") = py::make_tuple(dr::Dynamic);
-//
-//    if constexpr (dr::is_jit_v<Array>) {
-//        cls.def_property_readonly("index", &Array::index);
-//        cls.def("label_", [](const Array &a) { return a.label_(); });
-//        cls.def("set_label_", [](Array &a, const char *label) { a.set_label_(label); });
-//        cls.def("set_index_", [](Array &a, uint32_t index) { *dr::detach(a).index_ptr() = index; });
-//    }
-//
-//    cls.def_static("gather_", [](const Array &source, const UInt32 &index,
-//                                 const Mask &mask, bool permute) {
-//        if (permute)
-//            return dr::gather<Array, true>(source, index, mask);
-//        else
-//            return dr::gather<Array, false>(source, index, mask);
-//    }, "source"_a, "index"_a, "mask"_a, "permute"_a=false);
-//
-//    cls.def("scatter_", [](const Array &self, Array &target, const UInt32 &index,
-//                           const Mask &mask, bool permute) {
-//        if (permute)
-//            return dr::scatter<true>(target, self, index, mask);
-//        else
-//            return dr::scatter<false>(target, self, index, mask);
-//    }, "target"_a, "index"_a, "mask"_a, "permute"_a = false);
-//
-//    cls.def_static("select_",
-//                   [](const Mask &m, const Array &t, const Array &f) {
-//                       return dr::select(m, t, f);
-//                   });
-//
-//    cls.def_static("reinterpret_array_",
-//                   [](const dr::uint32_array_t<Array> &a) {
-//                       return dr::reinterpret_array<Array>(a);
-//                   });
-//
-//    if constexpr (dr::is_jit_v<Array>) {
-//        py::module module = py::module::import("drjit");
-//        if constexpr (dr::is_cuda_v<Array>)
-//            module = module.attr("cuda");
-//        else
-//            module = module.attr("llvm");
-//        if constexpr (dr::is_diff_v<Array>)
-//            module = module.attr("ad");
-//        using UInt32 = dr::uint32_array_t<Array>;
-//        py::class_<UInt32> uint32_obj = py::class_<UInt32>(module.attr("UInt32"));
-//        uint32_obj.def_static("reinterpret_array_",
-//                [](const Array &a) {
-//                    return dr::reinterpret_array<UInt32>(a);
-//                });
-//    }
-//
-//    if constexpr (dr::is_jit_v<Array>) {
-//        cls.def_static("registry_get_max_", []() {
-//            return jit_registry_get_max(dr::backend_v<Array>, Array::CallSupport::Domain);
-//        });
-//
-//        cls.def_static("registry_get_ptr_", [](uint32_t i) -> py::object {
-//            void *ptr = jit_registry_get_ptr(dr::backend_v<Array>, Array::CallSupport::Domain, i);
-//            if (ptr) {
-//                py::object mitsuba_ext = py::module::import("mitsuba.mitsuba_ext");
-//                using Caster = py::object(*)(mitsuba::Object *);
-//                Caster cast_object = (Caster) (void *)((py::capsule) mitsuba_ext.attr("cast_object"));
-//                return cast_object((mitsuba::Object *) ptr);
-//            } else {
-//                return py::none();
-//            }
-//        });
-//    }
-//}
 
 #define MI_PY_CHECK_ALIAS(Type, Name)                 \
     if (auto h = nb::type<Type>(); h) {               \

@@ -19,12 +19,16 @@ are subsequently compiled using a single unified build system. This dramatically
 reduces the number steps needed to set up the renderer compared to previous
 versions of Mitsuba.
 
+Most of Mitsuba's active development happens on the ``master`` Git branch. We
+therefore recommend using the ``stable`` branch which points to the most recent
+release.
+
 For all of this to work out properly, you will have to specify the
 ``--recursive`` flag when cloning the repository:
 
 .. code-block:: bash
 
-    git clone --recursive https://github.com/mitsuba-renderer/mitsuba3
+    git clone -b stable --recursive https://github.com/mitsuba-renderer/mitsuba3
 
 If you already cloned the repository and forgot to specify this flag, it's
 possible to fix the repository in retrospect using the following command:
@@ -64,13 +68,14 @@ declaration of the enabled variants (around line 86):
 .. code-block:: text
 
     "enabled": [
-        "scalar_rgb", "scalar_spectral", "cuda_ad_rgb", "llvm_ad_rgb"
+        "scalar_rgb", "scalar_spectral", "cuda_ad_rgb", "llvm_ad_rgb", "llvm_ad_spectral"
     ],
 
 The default file specifies two scalar variants that you may wish to extend
 according to your requirements and the explanations given above. Note that
 ``scalar_spectral`` can be removed, but ``scalar_rgb`` *must* currently be part
-of the list as some core components of Mitsuba depend on it. If Mitsuba is
+of the list as some core components of Mitsuba depend on it. In addition,
+at least one ``ad``-enabled variant must also be compiled. If Mitsuba is
 launched from the command line without any specific mode parameter, the first
 variant of the list below will be used.
 
@@ -93,10 +98,20 @@ TLDR: If you plan to use Mitsuba from Python, we recommend adding one of
 
     Note that compilation time and compilation memory usage is roughly
     proportional to the number of enabled variants, hence including many of them
-    (more than five) may not be advisable. Mitsuba 3 developers will typically
-    want to restrict themselves to 1-2 variants used by their current experiment
-    to minimize edit-recompile times. Also note that the ``scalar_rgb`` variant
-    is mandatory.
+    (more than five) may not be advisable. Also note that the ``scalar_rgb``
+    and *at least one AD variant* is mandatory.
+
+.. warning::
+
+    Mitsuba 3 also generates corresponding
+    `Python stub files <https://typing.readthedocs.io/en/latest/spec/distributing.html#stub-files>`_
+    during compilation. The process involves selecting one of the available variants
+    to extract the relevant type information. However, these stub files have to
+    be variant-agnostic and hence certain combinations of variants won't be allowed.
+    For example, including just `scalar_rgb`, `scalar_spectral` and `llvm_ad_rgb`
+    creates ambiguity as to which variant we should select to generate the Python stubs.
+    In short, if a disallowed combination of variants is selected, a compilation
+    error will report what variant should be added to remove any ambiguity.
 
 Linux
 -----
@@ -116,8 +131,8 @@ To fetch all dependencies and Clang, enter the following commands on Ubuntu:
 
 .. code-block:: bash
 
-    # Install recent versions build tools, including Clang and libc++ (Clang's C++ library)
-    sudo apt install clang-10 libc++-10-dev libc++abi-10-dev cmake ninja-build
+    # Install recent versions build tools, including Clang
+    sudo apt install clang-17 cmake ninja-build
 
     # Install libraries for image I/O
     sudo apt install libpng-dev libjpeg-dev
@@ -141,7 +156,7 @@ CMake will always use the correct compiler.
 
 .. code-block:: bash
 
-    export CC=clang-10 export CXX=clang++-10
+    export CC=clang-17 export CXX=clang++-17
 
 If you installed another version of Clang, the version suffix of course has to
 be adjusted. Now, compilation should be as simple as running the following from
@@ -152,22 +167,28 @@ inside the :monosp:`mitsuba3` root directory:
     # Create a directory where build products are stored
     mkdir build
     cd build
-    cmake -GNinja .. 
+    cmake -GNinja ..
     ninja
 
 
-**Tested version**
+**Tested versions**
 
 The above procedure will likely work on many different flavors of Linux (with
 slight adjustments for the package manager and package names). We have mainly
-worked with software environment listed below, and our instructions should work
-without modifications in that case.
+worked with software environments listed below, and our instructions should work
+without modifications in those cases.
 
-* Ubuntu 20.04
-* clang 10.0.0
-* cmake 3.16.3
-* ninja 1.10.0
-* python 3.8.2
+.. tabularcolumns:: |p{0.33\width}|p{0.33\width}|p{0.33\width}|
+
++--------------------------+--------------------------+--------------------------+
+| **Focal**                | **Jammy**                | **Noble**                |
+|                          |                          |                          |
+| - Ubuntu 20.04           | - Ubuntu 22.04           | - Ubuntu 24.04           |
+| - g++ 9.4.0              | - clang 17.0.6           | - g++ 13.2.0             |
+| - cmake 3.16.3           | - cmake 3.22.1           | - cmake 3.28.3           |
+| - ninja 1.10.0           | - ninja 1.10.1           | - ninja 1.11.1           |
+| - python 3.8.10          | - python 3.10.12         | - python 3.12.3          |
++--------------------------+--------------------------+--------------------------+
 
 Windows
 -------
@@ -201,10 +222,11 @@ command:
 **Tested version**
 
 * Windows 10
-* Visual Studio 2022 (Community Edition) Version 16.4.5
-* cmake 3.22.2 (64bit)
+* Visual Studio 17 2022 (Community Edition)
+* MSVC 19.41.34123.0
+* cmake 3.28.1 (64bit)
 * git 2.34.1 (64bit)
-* Python 3.10.1 (64bit)
+* Python 3.11.1 (64bit)
 
 
 macOS
@@ -228,15 +250,16 @@ Now, compilation should be as simple as running the following from inside the
 
 .. code-block:: bash
 
-    mkdir build 
-    cd build 
-    cmake -GNinja .. 
+    mkdir build
+    cd build
+    cmake -GNinja ..
     ninja
 
 
 **Tested version**
 
 * macOS Big Sur 11.5.2
+* AppleClang 13.2.0.0.1.1638488800
 * Xcode 12.0.5
 * cmake 3.24.2
 * Python 3.9.5
@@ -286,7 +309,7 @@ libraries from your system. There is no need to manually install any specific
 version of CUDA.
 
 Make sure to have an up-to-date GPU driver if the framework fails to compile
-the GPU variants of Mitsuba. The minimum requirement is currently v495.89.
+the GPU variants of Mitsuba. The minimum requirement is currently v535.
 
 By default, Mitsuba is also able to resolve the OptiX API itself, and therefore
 does not rely on the ``optix.h`` header file. The ``MI_USE_OPTIX_HEADERS`` CMake

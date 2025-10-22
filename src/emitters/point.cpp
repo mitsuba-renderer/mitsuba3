@@ -75,7 +75,7 @@ public:
 
         dr::make_opaque(m_position);
 
-        m_intensity = props.texture_d65<Texture>("intensity", 1.f);
+        m_intensity = props.get_emissive_texture<Texture>("intensity", 1.f);
 
         if (m_intensity->is_spatially_varying())
             Throw("Expected a non-spatially varying intensity spectra!");
@@ -84,10 +84,10 @@ public:
         m_flags = +EmitterFlags::DeltaPosition;
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_parameter("position", (Point3f &) m_position.value(), +ParamFlags::NonDifferentiable);
-        callback->put_object("intensity", m_intensity.get(), +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("position",  m_position,  ParamFlags::NonDifferentiable);
+        cb->put("intensity", m_intensity, ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -202,13 +202,14 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(PointLight)
 private:
     ref<Texture> m_intensity;
     field<Point3f> m_position;
+
+    MI_TRAVERSE_CB(Base, m_intensity, m_position)
 };
 
 
-MI_IMPLEMENT_CLASS_VARIANT(PointLight, Emitter)
-MI_EXPORT_PLUGIN(PointLight, "Point emitter")
+MI_EXPORT_PLUGIN(PointLight)
 NAMESPACE_END(mitsuba)

@@ -13,13 +13,14 @@ def mixed_shapes_scene():
             "filename" : "resources/data/tests/ply/rectangle_uv.ply",
         },
         "shape2": {
-            "type" : "rectangle",
+            "type" : "sphere",
         },
         "shape3": {
             "type" : "ply",
             "filename" : "resources/data/tests/ply/rectangle_uv.ply",
+            "flip_normals": True,
         },
-    }, parallel=False)
+    }, parallel=False, optimize=False)
 
 
 
@@ -222,7 +223,7 @@ def test07_ply_stored_attribute(variant_scalar_rgb):
 ]"""
 
 
-def test08_mesh_add_attribute(variant_scalar_rgb):
+def test08_mesh_manage_attributes(variant_scalar_rgb):
     m = mi.Mesh("MyMesh", 3, 2)
 
     params = mi.traverse(m)
@@ -247,6 +248,12 @@ def test08_mesh_add_attribute(variant_scalar_rgb):
     vertex_color: 3 floats
   ]
 ]"""
+
+    with pytest.raises(Exception, match='Attribute "vertex_wrong" not found.'):
+        m.remove_attribute("vertex_wrong")
+
+    m.remove_attribute("vertex_color")
+    assert not m.has_attribute("vertex_color")
 
 
 @fresolver_append_path
@@ -504,7 +511,7 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
     params = mi.traverse(scene)
     shape_param_key = 'rect.vertex_positions'
     positions_buf = params[shape_param_key]
-    positions_initial = dr.unravel(mi.Point3f, positions_buf)
+    positions_initial = dr.unravel(mi.Point3f, mi.Float(positions_buf))
 
     # Create differential parameter to be optimized
     diff_vector = mi.Vector3f(0.0)
@@ -720,7 +727,7 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
     params = mi.traverse(scene)
     shape_param_key = 'rect.vertex_positions'
     positions_buf = params[shape_param_key]
-    positions_initial = dr.unravel(mi.Point3f, positions_buf)
+    positions_initial = dr.unravel(mi.Point3f, mi.Float(positions_buf))
 
     # Create differential parameter to be optimized
     diff_vector = mi.Vector3f(0.0)
@@ -812,7 +819,7 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, res, wall, jit_flags):
     dr.set_label(theta, 'theta')
 
     # Attach object vertices to differential parameter
-    positions_initial = dr.unravel(mi.Point3f, params[key])
+    positions_initial = dr.unravel(mi.Point3f, mi.Float(params[key]))
     transform = mi.Transform4f().translate(mi.Vector3f(0.0, theta, 0.0))
     positions_new = transform @ positions_initial
     positions_new = dr.ravel(positions_new)
@@ -863,7 +870,7 @@ def test19_update_geometry(variants_vec_rgb):
 
     params = mi.traverse(scene)
 
-    init_vertex_pos = dr.unravel(mi.Point3f, params['rect.vertex_positions'])
+    init_vertex_pos = dr.unravel(mi.Point3f, mi.Float(params['rect.vertex_positions']))
 
     def translate(v):
         transform = mi.Transform4f().translate(mi.Vector3f(v))
@@ -959,21 +966,54 @@ def test23_texture_attributes(variants_all_rgb):
         "type": "bitmap",
         "filename" : "resources/data/common/textures/flower.bmp",
     })
-
-    mesh = mi.load_dict({
-        "type" : "obj",
-        "id" : "rect",
-        "filename" : "resources/data/common/meshes/rectangle.obj",
-        "attribute_1": texture
+    texture2 = mi.load_dict({
+        "type": "bitmap",
+        "filter_type": "nearest",
+        "data" : dr.full(mi.TensorXf, 0.3, [1, 1, 3])
     })
 
-    assert dr.all(mesh.has_attribute('attribute_1'))
-    assert not dr.any(mesh.has_attribute('foo'))
+    # Texture attributes are supported by shapes in general, not only meshes.
+    shapes = [
+        mi.load_dict({
+            "type" : "obj",
+            "filename" : "resources/data/common/meshes/rectangle.obj",
+            "attribute_1": texture
+        }),
+        mi.load_dict({
+            "type" : "sphere",
+            "attribute_1": texture
+        }),
+    ]
 
-    si = mi.SurfaceInteraction3f()
-    si.uv = mi.Point2f(0.5)
+    for shape in shapes:
+        # --- Texture attribute registered at creation
+        assert dr.all(shape.has_attribute('attribute_1'))
+        assert not dr.any(shape.has_attribute('foo'))
 
-    assert dr.allclose(mesh.eval_attribute('attribute_1', si), texture.eval(si))
+        si = mi.SurfaceInteraction3f()
+        si.uv = mi.Point2f(0.5)
+        assert dr.allclose(shape.eval_attribute('attribute_1', si), texture.eval(si))
+
+        # --- Texture attribute registered later
+        shape.add_texture_attribute('attribute_2', texture2)
+        assert dr.all(shape.has_attribute('attribute_2'))
+
+        # --- Texture attribute replacement
+        shape.add_texture_attribute('attribute_2', texture)
+        assert shape.texture_attribute('attribute_2') == texture
+        shape.add_texture_attribute('attribute_2', texture2)
+
+        # --- Texture attribute deletion
+        shape.remove_attribute('attribute_1')
+        assert not dr.any(shape.has_attribute('attribute_1'))
+        with pytest.raises(RuntimeError, match='Attribute "attribute_1" not found'):
+            shape.remove_attribute('attribute_1')
+
+        # --- Constant-valued texture attribute
+        for p in (0.0, 1.0):
+            si.uv = mi.Point2f(p)
+            assert dr.allclose(shape.eval_attribute_3('attribute_2', si), mi.Color3f(0.3))
+
 
 
 @fresolver_append_path
@@ -1165,7 +1205,7 @@ def test30_differential_motion(variants_vec_rgb):
     theta = mi.Point3f(0.0)
     dr.enable_grad(theta)
     key = 'vertex_positions'
-    positions = dr.unravel(mi.Point3f, params[key])
+    positions = dr.unravel(mi.Point3f, mi.Float(params[key]))
     translation = mi.Transform4f().translate([theta.x, 2 * theta.y, 3 * theta.z])
     positions = translation @ positions
     params[key] = dr.ravel(positions)
@@ -1211,7 +1251,7 @@ def test31_primitive_silhouette_projection(variants_vec_rgb):
 
     mesh_ptr = mi.ShapePtr(mesh)
     assert dr.all((dr.reinterpret_array(mi.UInt32, ss.shape) ==
-                    dr.reinterpret_array(mi.UInt32, mesh_ptr)))
+                   dr.reinterpret_array(mi.UInt32, mesh_ptr)))
 
 
 @fresolver_append_path
@@ -1241,7 +1281,7 @@ def test33_rebuild_area_pmf(variants_vec_rgb):
     params = mi.traverse(mesh)
     key = 'vertex_positions'
 
-    vertices = dr.unravel(mi.Point3f, params[key])
+    vertices = dr.unravel(mi.Point3f, mi.Float(params[key]))
     new_vertices = mi.Transform4f().scale(2) @ vertices
     params[key] = dr.ravel(new_vertices)
     params.update()
@@ -1273,6 +1313,17 @@ def test34_mesh_ptr(variants_vec_rgb):
     is_nnz = dr.reinterpret_array(mi.UInt32, meshes) != 0
     assert dr.all(is_nnz == (True, False, True))
 
+    # It should be possible to construct an empty MeshPtr.
+    assert dr.width(mi.ShapePtr()) == 0
+    assert dr.width(mi.MeshPtr()) == 0
+    assert dr.width(dr.zeros(mi.MeshPtr, 0)) == 0
+    assert dr.width(dr.empty(mi.MeshPtr, 0)) == 0
+
+    # It should be possible to reshape down to zero elements.
+    a = dr.zeros(mi.MeshPtr, 4)
+    b = dr.reshape(mi.MeshPtr, a, 0, shrink=True)
+    assert dr.width(b) == 0
+
 
 @fresolver_append_path
 def test35_mesh_vcalls(variants_vec_rgb):
@@ -1298,6 +1349,7 @@ def test35_mesh_vcalls(variants_vec_rgb):
     assert dr.all(meshes.has_vertex_texcoords() == active)
     assert not dr.any(meshes.has_mesh_attributes())
     assert not dr.any(meshes.has_face_normals())
+    assert dr.all(meshes.has_flipped_normals() == [False, False, True])
 
     idx = mi.UInt32([0, 99, 1])
     face_idx = meshes.face_indices(idx, active=active)
@@ -1331,3 +1383,43 @@ def test35_mesh_vcalls(variants_vec_rgb):
                       == sh.face_normal(idx_i))
         assert dr.all(dr.gather(type(opposite), opposite, i)
                       == sh.opposite_dedge(idx_i))
+
+
+@fresolver_append_path
+def test36_mesh_vcalls_with_directed_edges(variants_vec_rgb):
+    """
+    Test a special case where some meshes have their E2E data structure
+    initialized and others don't. Virtual function calls involving only
+    the initialized meshes should work.
+    """
+    scene = mi.load_dict({
+        "type": "scene",
+        "mesh1": {
+            "type": "ply",
+            "filename": "resources/data/tests/ply/cbox_smallbox.ply",
+        },
+        "mesh2": {
+            "type": "ply",
+            "filename": "resources/data/tests/ply/cbox_smallbox.ply",
+        },
+    })
+
+    # Second mesh will *not* have a valid E2E data structure.
+    mesh_ptr = dr.gather(mi.MeshPtr, scene.shapes_dr(), dr.zeros(mi.UInt32, 3))
+    mesh_ptr[0].build_directed_edges()
+
+    result = mesh_ptr.opposite_dedge(mi.UInt32([2, 3, 2]))
+    assert dr.all(result == mi.UInt32([3, 2, 3]))
+
+
+def test37_create_mesh_with_properties(variant_scalar_rgb):
+    m = mi.Mesh(mi.Properties())
+    assert str(m) == """Mesh[
+  name = "",
+  bbox = BoundingBox3f[invalid],
+  vertex_count = 0,
+  vertices = [0 B of vertex data],
+  face_count = 0,
+  faces = [0 B of face data],
+  face_normals = 0
+]"""

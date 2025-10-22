@@ -4,59 +4,44 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
-    m_id = props.id();
+MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props)
+    : Shape<Float, Spectrum>(props) {
+    // ID is now stored in base class JitObject
 
 #if !defined(MI_ENABLE_EMBREE)
     if constexpr (!dr::is_cuda_v<Float>)
         m_kdtree = new ShapeKDTree(props);
 #endif
-    m_has_meshes = false;
-    m_has_others = false;
-    m_has_bspline_curves = false;
-    m_has_linear_curves = false;
+    m_shape_types = 0;
+    Base::m_shape_type = ShapeType::ShapeGroup;
 
     // Add children to the underlying data structure
-    for (auto &kv : props.objects()) {
-        const Class *c_class = kv.second->class_();
-        if (c_class->name() == "Instance") {
+    for (auto &prop : props.objects()) {
+        Base *shape = prop.try_get<Base>();
+        if (!shape)
+            Throw("Tried to add an unsupported object of type \"%s\"", prop.get<ref<Object>>().get());
+        if (shape->is_shape_group())
+            Throw("Nested ShapeGroup is not permitted");
+        if (shape->is_emitter())
+            Throw("Instancing of emitters is not supported");
+        if (shape->is_instance())
             Throw("Nested instancing is not permitted");
-        } else if (c_class->derives_from(MI_CLASS(Base))) {
-            Base *shape = static_cast<Base *>(kv.second.get());
-            ShapeGroup *shapegroup = dynamic_cast<ShapeGroup *>(kv.second.get());
-            if (shapegroup)
-                Throw("Nested ShapeGroup is not permitted");
-            if (shape->is_emitter())
-                Throw("Instancing of emitters is not supported");
-            if (shape->is_sensor())
-                Throw("Instancing of sensors is not supported");
-            else {
-                m_shapes.push_back(shape);
-                shape->mark_as_instance();
+        if (shape->is_sensor())
+            Throw("Instancing of sensors is not supported");
+        else {
+            m_shapes.push_back(shape);
+            shape->mark_as_instance();
 
 #if defined(MI_ENABLE_EMBREE) || defined(MI_ENABLE_CUDA)
-                m_bbox.expand(shape->bbox());
+            m_bbox.expand(shape->bbox());
 #endif
 
 #if !defined(MI_ENABLE_EMBREE)
-                if constexpr (!dr::is_cuda_v<Float>)
-                    m_kdtree->add_shape(shape);
+            if constexpr (!dr::is_cuda_v<Float>)
+                m_kdtree->add_shape(shape);
 #endif
-                uint32_t type = shape->shape_type();
-                bool is_mesh = (type == +ShapeType::Mesh);
-                m_has_meshes |= is_mesh;
-
-                bool is_bspline = (type == +ShapeType::BSplineCurve);
-                m_has_bspline_curves |= is_bspline;
-
-                bool is_linear = (type == +ShapeType::LinearCurve);
-                m_has_linear_curves |= is_linear;
-
-                bool is_other = !is_mesh && !is_bspline && !is_linear;
-                m_has_others |= is_other;
-            }
-        } else {
-            Throw("Tried to add an unsupported object of type \"%s\"", kv.second);
+            uint32_t type = shape->shape_type();
+            m_shape_types |= type;
         }
     }
 #if !defined(MI_ENABLE_EMBREE)
@@ -78,9 +63,6 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
             dr::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
     }
 #endif
-
-    if constexpr (dr::is_jit_v<Float>)
-        jit_registry_put(dr::backend_v<Float>, "mitsuba::ShapeGroup", this);
 }
 
 MI_VARIANT ShapeGroup<Float, Spectrum>::~ShapeGroup() {
@@ -95,12 +77,13 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::~ShapeGroup() {
 #endif
 }
 
-MI_VARIANT void ShapeGroup<Float, Spectrum>::traverse(TraversalCallback *callback) {
+MI_VARIANT void ShapeGroup<Float, Spectrum>::traverse(TraversalCallback *cb) {
     for (auto s : m_shapes) {
-        std::string id = s->id();
+        std::string_view id = s->id();
         if (id.empty() || string::starts_with(id, "_unnamed_"))
-            id = s->class_()->name();
-        callback->put_object(id, s.get(), +ParamFlags::Differentiable);
+            cb->put("shape", s, ParamFlags::Differentiable);
+        else
+            cb->put(std::string(id), s, ParamFlags::Differentiable);
     }
 }
 
@@ -160,14 +143,15 @@ ShapeGroup<Float, Spectrum>::primitive_count() const {
 #if defined(MI_ENABLE_CUDA)
 MI_VARIANT void ShapeGroup<Float, Spectrum>::optix_prepare_ias(
     const OptixDeviceContext &context, std::vector<OptixInstance> &instances,
-    uint32_t instance_id, const ScalarTransform4f &transf) {
+    uint32_t instance_id, const ScalarAffineTransform4f &transf) {
     prepare_ias(context, m_shapes, m_sbt_offset, m_accel, instance_id, transf, instances);
 }
 
 MI_VARIANT void ShapeGroup<Float, Spectrum>::optix_fill_hitgroup_records(std::vector<HitGroupSbtRecord> &hitgroup_records,
-                                                                         const OptixProgramGroup *program_groups) {
+                                                                         const OptixProgramGroup *pg,
+                                                                         const OptixProgramGroupMapping &pg_mapping) {
     m_sbt_offset = (uint32_t) hitgroup_records.size();
-    fill_hitgroup_records(m_shapes, hitgroup_records, program_groups);
+    fill_hitgroup_records(m_shapes, hitgroup_records, pg, pg_mapping);
 }
 
 MI_VARIANT void ShapeGroup<Float, Spectrum>::optix_prepare_geometry() { }
@@ -177,6 +161,12 @@ MI_VARIANT void ShapeGroup<Float, Spectrum>::optix_build_gas(const OptixDeviceCo
         build_gas(context, m_shapes, m_accel);
         for (auto &s : m_shapes)
             s->m_dirty = false;
+
+        m_accel_handles.clear();
+        m_accel_handles.push_back(dr::opaque<UInt64>(m_accel.meshes.handle));
+        m_accel_handles.push_back(dr::opaque<UInt64>(m_accel.bspline_curves.handle));
+        m_accel_handles.push_back(dr::opaque<UInt64>(m_accel.linear_curves.handle));
+        m_accel_handles.push_back(dr::opaque<UInt64>(m_accel.custom_shapes.handle));
     }
 }
 #endif
@@ -249,12 +239,12 @@ MI_VARIANT bool ShapeGroup<Float, Spectrum>::parameters_grad_enabled() const {
 MI_VARIANT std::string ShapeGroup<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
         oss << "ShapeGroup[" << std::endl
-            << "  name = \"" << m_id << "\"," << std::endl
+            << "  name = \"" << this->id() << "\"," << std::endl
             << "  prim_count = " << primitive_count() << std::endl
             << "]";
     return oss.str();
 }
 
-MI_IMPLEMENT_CLASS_VARIANT(ShapeGroup, Shape)
+MI_IMPLEMENT_TRAVERSE_CB(ShapeGroup, Base)
 MI_INSTANTIATE_CLASS(ShapeGroup)
 NAMESPACE_END(mitsuba)

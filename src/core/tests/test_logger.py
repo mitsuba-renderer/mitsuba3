@@ -7,8 +7,9 @@ def test01_custom(variant_scalar_rgb):
     # Install a custom formatter and appender and process a log message
     messages = []
 
-    logger = mi.Thread.thread().logger()
+    logger = mi.logger()
     formatter = logger.formatter()
+
     appenders = []
     while logger.appender_count() > 0:
         app = logger.appender(0)
@@ -17,9 +18,9 @@ def test01_custom(variant_scalar_rgb):
 
     try:
         class MyFormatter(mi.Formatter):
-            def format(self, level, theClass, thread, filename, line, msg):
-                return "%i: class=%s, thread=%s, text=%s, filename=%s, ' \
-                    'line=%i" % (level, str(theClass), thread.name(), msg,
+            def format(self, level, cname, filename, line, msg):
+                return "%i: class=%s, text=%s, filename=%s, ' \
+                    'line=%i" % (level, str(cname) if cname else "None", msg,
                                  filename, line)
 
         class MyAppender(mi.Appender):
@@ -32,7 +33,7 @@ def test01_custom(variant_scalar_rgb):
         mi.Log(mi.LogLevel.Warn, "This is a test message")
         assert len(messages) == 1
         assert messages[0].startswith(
-                '300: class=None, thread=main, text=test01_custom(): This is a'
+                '300: class=None, text=test01_custom(): This is a'
                 ' test message, filename=')
     finally:
         logger.clear_appenders()

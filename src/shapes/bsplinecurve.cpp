@@ -115,16 +115,9 @@ points and increasing radii::
 
         'curves': {
             'type': 'bsplinecurve',
-            'to_world': mi.ScalarTransform4f.translate([1, 0, 0]).scale([2, 2, 2]),
+            'to_world': mi.ScalarAffineTransform4f().translate([1, 0, 0]).scale([2, 2, 2]),
             'filename': 'curves.txt'
-        },
-
-.. note:: The backfaces of the curves are culled. It is therefore impossible to
-          intersect a curve with a ray, whose origin lies inside the curve.
-          In addition, prior to the NVIDIA v531.18 drivers for Windows and
-          v530.30.02 drivers for Linux, `important inconsistencies <https://forums.developer.nvidia.com/t/orthographic-camera-with-b-spline-curves/238650>`_
-          in the ray intersection code have been identified.
-          We recommend updating to newer drivers.
+        }
  */
 
 template <typename Float, typename Spectrum>
@@ -151,8 +144,8 @@ public:
                   "variants!");
 #endif
 
-        auto fs = Thread::thread()->file_resolver();
-        fs::path file_path = fs->resolve(props.string("filename"));
+        auto fs = file_resolver();
+        fs::path file_path = fs->resolve(props.get<std::string_view>("filename"));
         std::string m_name = file_path.filename().string();
 
         // used for throwing an error later
@@ -234,7 +227,7 @@ public:
                 p[i] = string::strtof<InputFloat>(cur, (char **) &cur);
                 parse_error |= cur == orig;
             }
-            p = m_to_world.scalar().transform_affine(p);
+            p = m_to_world.scalar() * p;
 
             // Vertex radius
             InputFloat r;
@@ -332,11 +325,11 @@ public:
         initialize();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_parameter("control_point_count", m_control_point_count, +ParamFlags::NonDifferentiable);
-        callback->put_parameter("segment_indices",     m_indices,             +ParamFlags::NonDifferentiable);
-        callback->put_parameter("control_points",      m_control_points,       ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("control_point_count", m_control_point_count, ParamFlags::NonDifferentiable);
+        cb->put("segment_indices",     m_indices,             ParamFlags::NonDifferentiable);
+        cb->put("control_points",      m_control_points,      ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -725,15 +718,15 @@ public:
                  active_loop = Mask(success);
             UInt32 cnt = 0u;
 
-            std::tie(u_lower, u_upper, f_lower, f_upper, cnt, 
+            std::tie(u_lower, u_upper, f_lower, f_upper, cnt,
                 active_loop) = dr::while_loop(
-                std::make_tuple(u_lower, u_upper, f_lower, f_upper, cnt, 
+                std::make_tuple(u_lower, u_upper, f_lower, f_upper, cnt,
                 active_loop),
-            [](const Float&, const Float&, const Float&, const Float&, 
+            [](const Float&, const Float&, const Float&, const Float&,
                 const UInt32&, const Mask& active_loop) {
                 return active_loop;
             },
-            [normal_eq](Float& u_lower, Float& u_upper, Float& f_lower, 
+            [normal_eq](Float& u_lower, Float& u_upper, Float& f_lower,
                 Float& f_upper, UInt32& cnt, Mask& active_loop) {
 
                 Float u_middle = 0.5f * (u_lower + u_upper);
@@ -1010,6 +1003,7 @@ public:
             }
         }
 
+        si.prim_index = pi.prim_index;
         si.shape = this;
         si.instance = nullptr;
 
@@ -1021,7 +1015,6 @@ public:
 
 #if defined(MI_ENABLE_EMBREE)
     RTCGeometry embree_geometry(RTCDevice device) override {
-        dr::eval(m_control_points); // Make sure the buffer is evaluated
         RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
         rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4,
                                    m_control_points.data(), 0, 4 * sizeof(InputFloat),
@@ -1038,10 +1031,8 @@ public:
     void optix_prepare_geometry() override { }
 
     void optix_build_input(OptixBuildInput &build_input) const override {
-        dr::eval(m_control_points); // Make sure the buffer is evaluated
         m_vertex_buffer_ptr = (CUdeviceptr*) m_control_points.data();
         m_radius_buffer_ptr = (CUdeviceptr*) (m_control_points.data() + 3);
-        m_index_buffer_ptr  = (CUdeviceptr*) m_indices.data();
 
         build_input.type                            = OPTIX_BUILD_INPUT_TYPE_CURVES;
         build_input.curveArray.curveType            = OPTIX_PRIMITIVE_TYPE_ROUND_CUBIC_BSPLINE;
@@ -1054,12 +1045,12 @@ public:
         build_input.curveArray.widthBuffers         = (CUdeviceptr*) &m_radius_buffer_ptr;
         build_input.curveArray.widthStrideInBytes   = sizeof( InputFloat ) * 4;
 
-        build_input.curveArray.indexBuffer          = (CUdeviceptr) m_index_buffer_ptr;
+        build_input.curveArray.indexBuffer          = (CUdeviceptr) m_indices.data();
         build_input.curveArray.indexStrideInBytes   = sizeof( ScalarIndex );
 
         build_input.curveArray.normalBuffers        = 0;
         build_input.curveArray.normalStrideInBytes  = 0;
-        build_input.curveArray.flag                 = OPTIX_GEOMETRY_FLAG_NONE;
+        build_input.curveArray.flag                 = OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT;
         build_input.curveArray.primitiveIndexOffset = 0;
         build_input.curveArray.endcapFlags          = OPTIX_CURVE_ENDCAP_DEFAULT;
     }
@@ -1079,7 +1070,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(BSplineCurve)
 
 private:
     template <bool Negate, size_t N>
@@ -1308,10 +1299,10 @@ private:
     // For OptiX build input
     mutable CUdeviceptr* m_vertex_buffer_ptr = nullptr;
     mutable CUdeviceptr* m_radius_buffer_ptr = nullptr;
-    mutable CUdeviceptr* m_index_buffer_ptr = nullptr;
 #endif
+
+    MI_TRAVERSE_CB(Base, m_curves_prim_idx, m_indices, m_control_points)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(BSplineCurve, Shape)
-MI_EXPORT_PLUGIN(BSplineCurve, "B-spline curve intersection primitive");
+MI_EXPORT_PLUGIN(BSplineCurve);
 NAMESPACE_END(mitsuba)

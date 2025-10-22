@@ -28,15 +28,11 @@ extern "C" __global__ void __intersection__sphere() {
     Vector3f l = ray.o - sphere->center;
     Vector3f d = ray.d;
     float plane_t = dot(-l, d) / norm(d);
-
-    // Ray is perpendicular to plane
-    if (plane_t == 0 && ray.o != sphere->center)
-        return;
-
     Vector3f plane_p = ray(plane_t);
 
-    // Intersection with plane outside of the sphere
-    if (norm(plane_p - sphere->center) > sphere->radius)
+    // Ray is perpendicular to the origin-center segment,
+    // and intersection with plane is outside of the sphere
+    if (plane_t == 0.f && norm(plane_p - sphere->center) > sphere->radius)
         return;
 
     Vector3f o = plane_p - sphere->center;
@@ -48,6 +44,7 @@ extern "C" __global__ void __intersection__sphere() {
     float near_t, far_t;
     bool solution_found = solve_quadratic(A, B, C, near_t, far_t);
 
+    // Adjust distances for plane intersection
     near_t += plane_t;
     far_t += plane_t;
 
@@ -55,17 +52,11 @@ extern "C" __global__ void __intersection__sphere() {
     bool out_bounds = !(near_t <= ray.maxt && far_t >= 0.f); // NaN-aware conditionals
 
     // Sphere fully contains the segment of the ray
-    bool in_bounds = near_t < 0.f && far_t > ray.maxt;
+    bool in_bounds = near_t < ray.mint && far_t > ray.maxt;
 
     float t = (near_t < 0.f ? far_t: near_t);
 
     if (solution_found && !out_bounds && !in_bounds)
         optixReportIntersection(t, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
-}
-
-extern "C" __global__ void __closesthit__sphere() {
-    const OptixHitGroupData *sbt_data = (OptixHitGroupData *) optixGetSbtDataPointer();
-    set_preliminary_intersection_to_payload(
-        optixGetRayTmax(), Vector2f(), 0, sbt_data->shape_registry_id);
 }
 #endif

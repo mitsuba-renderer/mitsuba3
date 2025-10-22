@@ -135,3 +135,23 @@ def test04_parameters_changed(variants_all):
 
     params = mi.traverse(emitter)
     assert dr.allclose(params['data'], 1)
+
+def test05_parameters_check_invalid_update(variants_vec_backends_once_rgb):
+    import numpy as np
+
+    n_channels = dr.size_v(mi.Spectrum)
+    bitmap = mi.Bitmap(np.zeros((191, 23, n_channels), dtype=np.float32))
+    emitter = mi.load_dict({
+        "type" : "envmap",
+        "bitmap" : bitmap
+    })
+
+    with pytest.raises(RuntimeError) as excinfo:
+        params = mi.traverse(emitter)
+        shape = dr.shape(params['data'])
+        params['data'] = dr.ones(mi.TensorXf, shape=(191, 23, n_channels + 1))
+        params.update()
+    assert (
+        f"Environment map data has {n_channels + 1} channels, expected {n_channels}"
+        in str(excinfo.value)
+    )

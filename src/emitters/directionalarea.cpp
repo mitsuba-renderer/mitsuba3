@@ -65,7 +65,7 @@ public:
                   "The area light inherits this transformation from its parent "
                   "shape.");
 
-        m_radiance = props.texture_d65<Texture>("radiance", 1.f);
+        m_radiance = props.get_emissive_texture<Texture>("radiance", 1.f);
         m_needs_sample_3 = false;
 
         m_flags = EmitterFlags::Surface | EmitterFlags::DeltaDirection;
@@ -73,9 +73,9 @@ public:
             m_flags |= +EmitterFlags::SpatiallyVarying;
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_object("radiance", m_radiance.get(), +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("radiance", m_radiance, ParamFlags::Differentiable);
     }
 
     void set_shape(Shape *shape) override {
@@ -186,12 +186,13 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(DirectionalArea)
 private:
     ref<Texture> m_radiance;
     Float m_area = 0.f;
+
+    MI_TRAVERSE_CB(Base, m_radiance, m_area)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(DirectionalArea, Emitter)
-MI_EXPORT_PLUGIN(DirectionalArea, "Directional area emitter");
+MI_EXPORT_PLUGIN(DirectionalArea)
 NAMESPACE_END(mitsuba)

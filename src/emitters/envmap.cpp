@@ -119,14 +119,14 @@ public:
             if (props.has_property("filename"))
                 Throw("Cannot specify both \"bitmap\" and \"filename\".");
             // Note: ref-counted, so we don't have to worry about lifetime
-            ref<Object> other = props.object("bitmap");
+            ref<Object> other = props.get<ref<Object>>("bitmap");
             Bitmap *b = dynamic_cast<Bitmap *>(other.get());
             if (!b)
                 Throw("Property \"bitmap\" must be a Bitmap instance.");
             bitmap = b;
         } else {
-            FileResolver *fs = Thread::thread()->file_resolver();
-            fs::path file_path = fs->resolve(props.string("filename"));
+            FileResolver *fs = file_resolver();
+            fs::path file_path = fs->resolve(props.get<std::string_view>("filename"));
             m_filename = file_path.filename().string();
             bitmap = new Bitmap(file_path);
         }
@@ -149,11 +149,11 @@ public:
                                           bitmap->component_format(), res);
 
         // Luminance image used for importance sampling
-        std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[dr::prod(res)]);
+        std::unique_ptr<ScalarFloat[]> luminance_data(new ScalarFloat[dr::prod(res)]);
 
         ScalarFloat *in_ptr  = (ScalarFloat *) bitmap->data(),
                     *out_ptr = (ScalarFloat *) bitmap_2->data(),
-                    *lum_ptr = (ScalarFloat *) luminance.get();
+                    *lum_ptr = (ScalarFloat *) luminance_data.get();
 
         ScalarFloat theta_scale = 1.f / (bitmap->size().y() - 1) * dr::Pi<Float>;
 
@@ -168,7 +168,7 @@ public:
             for (size_t y = 0; y < bitmap->size().y(); ++y) {
                 for (size_t x = 0; x < bitmap->size().x(); ++x) {
                     ScalarColor3f rgb = dr::load<ScalarVector3f>(in_ptr);
-                    ScalarFloat lum = mitsuba::luminance(rgb);
+                    ScalarFloat lum = luminance(rgb);
                     min_lum = dr::minimum(min_lum, lum);
                     lum_accum_d += (double) lum;
                     in_ptr += 4;
@@ -191,7 +191,7 @@ public:
             for (size_t x = 0; x < bitmap->size().x(); ++x) {
                 ScalarColor3f rgb = dr::load<ScalarVector3f>(in_ptr);
 
-                ScalarFloat lum = mitsuba::luminance(rgb);
+                ScalarFloat lum = luminance(rgb);
 
                 ScalarPixelData coeff;
                 if constexpr (is_monochromatic_v<Spectrum>) {
@@ -230,20 +230,30 @@ public:
         m_data = TensorXf(bitmap_2->data(), 3, shape);
 
         m_scale = props.get<ScalarFloat>("scale", 1.f);
-        m_warp = Warp(luminance.get(), res);
+        m_warp = Warp(luminance_data.get(), res);
         m_d65 = Texture::D65(1.f);
         m_flags = EmitterFlags::Infinite | EmitterFlags::SpatiallyVarying;
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_parameter("scale",     m_scale,          +ParamFlags::Differentiable);
-        callback->put_parameter("data",      m_data,            ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("scale",     m_scale,     ParamFlags::Differentiable);
+        cb->put("data",      m_data,      ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("to_world",  m_to_world,  ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
         if (keys.empty() || string::contains(keys, "data")) {
+            if (m_data.ndim() != 3)
+                    Throw("Environment map data has dimension %lu, expected 3", m_data.ndim());
+
+            if constexpr (is_spectral_v<Spectrum>) {
+                if (m_data.shape(2) != 4)
+                    Throw("Environment map data has %lu channels, expected 4", m_data.shape(2));
+            } else {
+                if (m_data.shape(2) != 3)
+                    Throw("Environment map data has %lu channels, expected 3", m_data.shape(2));
+            }
 
             ScalarVector2u res = { m_data.shape(1), m_data.shape(0) };
 
@@ -262,11 +272,11 @@ public:
             if constexpr (dr::is_jit_v<Float>)
                 dr::sync_thread();
 
-            std::unique_ptr<ScalarFloat[]> luminance(
+            std::unique_ptr<ScalarFloat[]> luminance_data(
                 new ScalarFloat[dr::prod(res)]);
 
             ScalarFloat *ptr     = (ScalarFloat *) data.data(),
-                        *lum_ptr = (ScalarFloat *) luminance.get();
+                        *lum_ptr = (ScalarFloat *) luminance_data.get();
 
             size_t pixel_width = is_spectral_v<Spectrum> ? 4 : 3;
             constexpr bool is_aligned = ScalarPixelData::Size == 4;
@@ -308,7 +318,7 @@ public:
                     if constexpr (is_monochromatic_v<Spectrum>) {
                         lum = coeff.x();
                     } else if constexpr (is_rgb_v<Spectrum>) {
-                        lum = mitsuba::luminance(ScalarColor3f(coeff));
+                        lum = luminance(ScalarColor3f(coeff));
                     } else {
                         static_assert(is_spectral_v<Spectrum>);
                         lum = srgb_model_mean(dr::head<3>(coeff)) * coeff.w();
@@ -319,7 +329,7 @@ public:
                 }
             }
 
-            m_warp = Warp(luminance.get(), res);
+            m_warp = Warp(luminance_data.get(), res);
         }
         Base::parameters_changed(keys);
     }
@@ -343,7 +353,7 @@ public:
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        Vector3f v = m_to_world.value().inverse().transform_affine(-si.wi);
+        Vector3f v = m_to_world.value().inverse() * (-si.wi);
 
         // Convert to latitude-longitude texture coordinates
         Point2f uv = Point2f(dr::atan2(v.x(), -v.z()) * dr::InvTwoPi<Float>,
@@ -377,7 +387,7 @@ public:
         pdf *= inv_sin_theta * dr::InvTwoPi<Float> * dr::InvPi<Float>;
 
         // Unlike \ref sample_direction, ray goes from the envmap toward the scene
-        Vector3f d_global = m_to_world.value().transform_affine(-d);
+        Vector3f d_global = m_to_world.value() * -d;
 
         // Compute ray origin
         Vector3f perpendicular_offset =
@@ -423,7 +433,7 @@ public:
         Float inv_sin_theta = dr::safe_rsqrt(dr::maximum(
             dr::square(d.x()) + dr::square(d.z()), dr::square(dr::Epsilon<Float>)));
 
-        d = m_to_world.value().transform_affine(d);
+        d = m_to_world.value() * d;
 
         DirectionSample3f ds;
         ds.p       = it.p + d * dist;
@@ -451,7 +461,7 @@ public:
                         Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        Vector3f d = m_to_world.value().inverse().transform_affine(ds.d);
+        Vector3f d = m_to_world.value().inverse() * ds.d;
 
         // Convert to latitude-longitude texture coordinates
         Point2f uv = Point2f(dr::atan2(d.x(), -d.z()) * dr::InvTwoPi<Float>,
@@ -575,7 +585,7 @@ protected:
         }
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(EnvironmentMapEmitter)
 protected:
     std::string m_filename;
     BoundingSphere3f m_bsphere;
@@ -583,8 +593,9 @@ protected:
     Warp m_warp;
     ref<Texture> m_d65;
     Float m_scale;
+
+    MI_TRAVERSE_CB(Base, m_bsphere, m_data, m_warp, m_d65, m_scale)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(EnvironmentMapEmitter, Emitter)
-MI_EXPORT_PLUGIN(EnvironmentMapEmitter, "Environment map emitter")
+MI_EXPORT_PLUGIN(EnvironmentMapEmitter)
 NAMESPACE_END(mitsuba)

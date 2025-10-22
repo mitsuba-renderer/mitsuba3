@@ -4,99 +4,90 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/fresolver.h>
+#include <mitsuba/core/hash.h>
+#include <mitsuba/core/config.h>
+#include <mitsuba/render/scene.h>
+#include <tsl/robin_map.h>
 #include <mutex>
-#include <unordered_map>
-#include <unordered_set>
 
 #if !defined(_WIN32)
-# include <dlfcn.h>
+#  include <dlfcn.h>
 #else
-# include <windows.h>
+#  include <windows.h>
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
 
-class Plugin {
-public:
-    Plugin(const fs::path &path) : m_path(path) {
-        #if defined(_WIN32)
-            m_handle = LoadLibraryW(path.native().c_str());
-            if (!m_handle)
-                Throw("Error while loading plugin \"%s\": %s", path.string(),
-                      util::last_error());
-        #else
-            #if defined(__clang__) && !defined(__APPLE__)
-                if (std::getenv("DRJIT_NO_RTLD_DEEPBIND"))
-                    m_handle = dlopen(path.native().c_str(), RTLD_LAZY | RTLD_LOCAL);
-                else
-                    m_handle = dlopen(path.native().c_str(), RTLD_LAZY | RTLD_LOCAL | RTLD_DEEPBIND);
-            #else
-                m_handle = dlopen(path.native().c_str(), RTLD_LAZY | RTLD_LOCAL);
-            #endif
-            if (!m_handle)
-                Throw("Error while loading plugin \"%s\": %s", path.string(),
-                      dlerror());
-        #endif
+// Record for plugin modules (dynamically loaded shared libraries)
+struct ModuleInfo {
+    // Opaque module handle
+    void *handle;
 
-        try {
-            using StringFunc = const char *(*)();
-            plugin_name  = ((StringFunc) symbol("plugin_name"))();
-            plugin_descr = ((StringFunc) symbol("plugin_descr"))();
-        } catch (...) {
-            this->~Plugin();
-            throw;
+    // Entry function to register plugin variant
+    PluginEntryFn entry;
+};
+
+// Record for plugin variants (specific entry points)
+struct PluginInfo {
+    // Instantiate a plugin with specified properties
+    PluginInstantiateFn instantiate;
+
+    // Release all resources of the plugin
+    PluginReleaseFn release;
+
+    // Opaque payload to be passed to the callbacks above
+    void *payload;
+
+    // Object type of the plugin
+    ObjectType type;
+};
+
+/// Plugin name -> plugin module information
+using ModuleMap = tsl::robin_map<std::string, ModuleInfo,
+                                 std::hash<std::string_view>,
+                                 std::equal_to<>>;
+
+/// (name, variant) -> plugin variant information
+using PluginMap = tsl::robin_map<
+    std::pair<std::string, std::string>,
+    PluginInfo, pair_hasher, pair_eq>;
+
+ref<PluginManager> PluginManager::m_instance = new PluginManager();
+
+struct PluginManager::PluginManagerPrivate {
+    std::mutex mutex;
+    PluginMap plugins;
+    ModuleMap modules;
+
+    ~PluginManagerPrivate() {
+        release_all();
+        unload_all();
+    }
+
+    void release_all() {
+        for (auto& [_, plugin] : plugins) {
+            if (plugin.release)
+                plugin.release(plugin.payload);
+        }
+        plugins.clear();
+    }
+
+    void unload_all() {
+        for (auto& [_, module] : modules) {
+            #if defined(_WIN32)
+                FreeLibrary((HMODULE) module.handle);
+            #else
+                dlclose(module.handle);
+            #endif
         }
     }
 
-    ~Plugin() {
-        #if defined(_WIN32)
-            FreeLibrary(m_handle);
-        #else
-            dlclose(m_handle);
-        #endif
-    }
-
-private:
-    void *symbol(const std::string &name) const {
-        #if defined(_WIN32)
-            void *ptr = GetProcAddress(m_handle, name.c_str());
-            if (!ptr)
-                Throw("Could not resolve symbol \"%s\" in \"%s\": %s", name,
-                      m_path.string(), util::last_error());
-        #else
-            void *ptr = dlsym(m_handle, name.c_str());
-            if (!ptr)
-                Throw("Could not resolve symbol \"%s\" in \"%s\": %s", name,
-                      m_path.string(), dlerror());
-        #endif
-        return ptr;
-    }
-
-public:
-    const char *plugin_name  = nullptr;
-    const char *plugin_descr = nullptr;
-
-private:
-    #if defined(_WIN32)
-        HMODULE m_handle;
-    #else
-        void *m_handle;
-    #endif
-    fs::path m_path;
-};
-
-struct PluginManager::PluginManagerPrivate {
-    std::unordered_map<std::string, Plugin *> m_plugins;
-    std::unordered_set<std::string> m_python_plugins;
-    std::mutex m_mutex;
-
-    Plugin *plugin(const std::string &name) {
-        std::lock_guard<std::mutex> guard(m_mutex);
-
-        // Plugin already loaded?
-        auto it = m_plugins.find(name);
-        if (it != m_plugins.end())
+    ModuleInfo load_module(std::string_view name) {
+        ModuleMap::iterator it = modules.find(name);
+        if (it != modules.end())
             return it->second;
+
+        ModuleInfo module;
 
         // Build the full plugin file name
         fs::path filename = fs::path("plugins") / name;
@@ -109,82 +100,169 @@ struct PluginManager::PluginManagerPrivate {
             filename.replace_extension(".so");
         #endif
 
-        const FileResolver *resolver = Thread::thread()->file_resolver();
-        fs::path resolved = resolver->resolve(filename);
+        const FileResolver *resolver = file_resolver();
+        fs::path path = resolver->resolve(filename);
 
-        if (fs::exists(resolved)) {
-            Log(Debug, "Loading plugin \"%s\" ..", filename.string());
-            Plugin *plugin = new Plugin(resolved);
-            // New classes must be registered within the class hierarchy
-            Class::static_initialization();
-            // Statistics::instance()->log_plugin(shortName, description()); XXX
-            m_plugins[name] = plugin;
-            return plugin;
+        if (!fs::exists(path))
+            Throw("Plugin \"%s\" not found!", name);
+
+        Log(Debug, "Loading plugin \"%s\" ..", filename.string());
+
+#if defined(_WIN32)
+        module.handle = LoadLibraryW(path.native().c_str());
+        if (!module.handle)
+            Throw("Error while loading plugin \"%s\": %s", path.string(),
+                  util::last_error());
+
+        module.entry = (PluginEntryFn) GetProcAddress((HMODULE) module.handle, "init_plugin");
+
+        if (!module.entry) {
+            FreeLibrary((HMODULE) module.handle);
+            Throw("Could not resolve the entry point of plugin \"%s\": %s",
+                  path.string(), util::last_error());
         }
 
-        // Plugin not found!
-        Throw("Plugin \"%s\" not found!", name.c_str());
+#else
+        int flags = RTLD_LAZY | RTLD_LOCAL;
+
+#if defined(__clang__) && !defined(__APPLE__)
+        // When Mitsuba is built with libc++ and subsequently loaded into a
+        // Python process containing extensions that previously imported
+        // libstdc++ (with RTLD_GLOBAL), there is a possibility of ABI
+        // violations (i.e. segfaults) resulting from symbol
+        // cross-contamination. We can avoid this by forcing deep-bind linking.
+
+        if (!std::getenv("DRJIT_NO_RTLD_DEEPBIND"))
+            flags |= RTLD_DEEPBIND;
+#endif
+
+        module.handle = dlopen(path.native().c_str(), flags);
+        if (!module.handle)
+            Throw("Error while loading plugin \"%s\": %s", path.string(),
+                  dlerror());
+        module.entry = (PluginEntryFn) dlsym(module.handle, "init_plugin");
+
+        if (!module.entry) {
+            dlclose(module.handle);
+            Throw("Could not resolve the entry point of plugin \"%s\": %s",
+                  path.string(), dlerror());
+        }
+
+#endif
+
+        modules[std::string(name)] = module;
+        return module;
+    }
+
+    void register_plugin(std::string_view name, std::string_view variant,
+                         ObjectType type, PluginInstantiateFn instantiate,
+                         PluginReleaseFn release, void *payload) {
+        std::pair<std::string, std::string> key(name, variant);
+        PluginMap::iterator it = plugins.find(key);
+        if (it != plugins.end()) {
+            PluginInfo info = it->second;
+            if (info.release)
+                info.release(info.payload);
+        }
+
+        plugins[std::move(key)] = PluginInfo{ instantiate, release, payload, type };
+    }
+
+    PluginInfo load_plugin_impl(std::string_view name, std::string_view variant) {
+        PluginMap::iterator it = plugins.find(std::make_pair(name, variant));
+
+        if (it == plugins.end()) {
+            ModuleInfo info = load_module(name);
+
+            PluginRegisterFn register_fn = [](std::string_view name_,
+                                              std::string_view variant_,
+                                              ObjectType type,
+                                              PluginInstantiateFn instantiate) {
+                m_instance->d->register_plugin(name_, variant_, type, instantiate,
+                                               nullptr, nullptr);
+            };
+
+            info.entry(name, register_fn);
+            it = plugins.find(std::make_pair(name, variant));
+
+            if (it == plugins.end())
+                Throw("Plugin \"%s\" (variant \"%s\") could not be found!", name, variant);
+        }
+
+        return it->second;
+    }
+
+    PluginInfo load_plugin(std::string_view name, std::string_view variant) {
+        std::lock_guard<std::mutex> guard(mutex);
+        return load_plugin_impl(name, variant);
     }
 };
 
-ref<PluginManager> PluginManager::m_instance = new PluginManager();
-
 PluginManager::PluginManager() : d(new PluginManagerPrivate()) { }
+PluginManager::~PluginManager() { }
 
-PluginManager::~PluginManager() {
-    std::lock_guard<std::mutex> guard(d->m_mutex);
-    for (auto &pair: d->m_plugins)
-        delete pair.second;
+void PluginManager::release_all() {
+    std::lock_guard<std::mutex> guard(d->mutex);
+    d->release_all();
 }
 
-void PluginManager::ensure_plugin_loaded(const std::string &name) {
-    (void) d->plugin(name);
+void PluginManager::register_plugin(std::string_view name, std::string_view variant,
+                                    ObjectType type, PluginInstantiateFn instantiate,
+                                    PluginReleaseFn release, void *payload) {
+    std::lock_guard<std::mutex> guard(d->mutex);
+    d->register_plugin(name, variant, type, instantiate, release, payload);
 }
 
-const Class *PluginManager::get_plugin_class(const std::string &name,
-                                             const std::string &variant) {
-    const Class *plugin_class;
-
-    auto it = std::find(d->m_python_plugins.begin(), d->m_python_plugins.end(),
-                        name + "@" + variant);
-    if (it != d->m_python_plugins.end()) {
-        plugin_class = Class::for_name(name, variant);
-    } else {
-        const Plugin *plugin = d->plugin(name);
-        plugin_class = Class::for_name(plugin->plugin_name, variant);
+std::string_view plugin_type_name(ObjectType ot) {
+    switch (ot) {
+        case ObjectType::Unknown: return "unknown";
+        case ObjectType::Scene: return "scene";
+        case ObjectType::Sensor: return "sensor";
+        case ObjectType::Film: return "film";
+        case ObjectType::Emitter: return "emitter";
+        case ObjectType::Sampler: return "sampler";
+        case ObjectType::Shape: return "shape";
+        case ObjectType::Texture: return "texture";
+        case ObjectType::Volume: return "volume";
+        case ObjectType::Medium: return "medium";
+        case ObjectType::BSDF: return "bsdf";
+        case ObjectType::Integrator: return "integrator";
+        case ObjectType::PhaseFunction: return "phase";
+        case ObjectType::ReconstructionFilter: return "rfilter";
     }
-
-    return plugin_class;
+    return "invalid"; // (to avoid a compiler warning; this should never happen)
 }
 
-std::vector<std::string> PluginManager::loaded_plugins() const {
-    std::vector<std::string> list;
-    std::lock_guard<std::mutex> guard(d->m_mutex);
-    for (auto const &pair: d->m_plugins)
-        list.push_back(pair.first);
-    return list;
-}
-
-void PluginManager::register_python_plugin(const std::string &plugin_name,
-                                           const std::string &variant) {
-    d->m_python_plugins.insert(plugin_name + "@" + variant);
-    Class::static_initialization();
+namespace {
+    template <typename Float, typename Spectrum>
+    ref<Object> instantiate_scene(const Properties &props) {
+        return new Scene<Float, Spectrum>(props);
+    }
 }
 
 ref<Object> PluginManager::create_object(const Properties &props,
-                                         const Class *class_) {
-    Assert(class_ != nullptr);
-    if (class_->name() == "Scene")
-       return class_->construct(props);
+                                         std::string_view variant,
+                                         ObjectType type) {
+    std::string_view name = props.plugin_name();
 
-    std::string variant = class_->variant();
-    const Class *plugin_class = get_plugin_class(props.plugin_name(), variant);
+    ref<Object> object;
+    if (name.empty())
+        Throw("A plugin name must be specified!");
 
-    /* Construct each plugin in its own scope to isolate them from each other.
-     * This is important when plugins are created in parallel. */
+    // Special handling for Scene objects
+    if (type == ObjectType::Scene || name == "scene") {
+        object = MI_INVOKE_VARIANT(variant, instantiate_scene, props);
+    } else {
+        PluginInfo info = d->load_plugin(name, variant);
+        object = info.instantiate(info.payload, props);
+    }
 
-    Assert(plugin_class != nullptr);
-    ref<Object> object = plugin_class->construct(props);
+    ObjectType actual_type = object->type();
+    if (type != actual_type && type != ObjectType::Unknown)
+        Throw("Type mismatch: the instantiated plugin \"%s\" is of type \"%s\", "
+              "which does not match the expected type \"%s\".",
+              props.plugin_name(), plugin_type_name(actual_type),
+              plugin_type_name(type));
 
 #if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
     // Ensures queued side effects are consistently compiled into cacheable kernels
@@ -193,20 +271,32 @@ ref<Object> PluginManager::create_object(const Properties &props,
         dr::eval();
 #endif
 
-    if (!object->class_()->derives_from(class_)) {
-        const Class *oc = object->class_();
-        if (oc->parent())
-            oc = oc->parent();
-
-        Throw("Type mismatch when loading plugin \"%s\": Expected an instance "
-              "of type \"%s\" (variant \"%s\"), got an instance of type \"%s\" "
-              "(variant \"%s\")", props.plugin_name(), class_->name(),
-              class_->variant(), oc->name(), oc->variant());
-    }
-
-   return object;
+    return object;
 }
 
-MI_IMPLEMENT_CLASS(PluginManager, Object)
+ObjectType PluginManager::plugin_type(std::string_view name) {
+    if (name.empty())
+        return ObjectType::Unknown;
+
+    // Special handling for Scene objects
+    if (name == "scene")
+        return ObjectType::Scene;
+
+    std::lock_guard<std::mutex> guard(d->mutex);
+
+    // Try to find an already loaded variant using direct hash table lookup
+    std::pair<std::string, std::string> key(name, MI_DEFAULT_VARIANT);
+    auto it = d->plugins.find(key);
+    if (it != d->plugins.end())
+        return it->second.type;
+
+    // If not found with default variant, try to load it
+    try {
+        PluginInfo info = d->load_plugin_impl(name, MI_DEFAULT_VARIANT);
+        return info.type;
+    } catch (...) {
+        return ObjectType::Unknown;
+    }
+}
 
 NAMESPACE_END(mitsuba)

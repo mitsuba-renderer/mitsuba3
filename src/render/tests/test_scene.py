@@ -264,7 +264,7 @@ def test10_test_scene_bbox_update(variant_scalar_rgb):
     assert expected == scene.bbox()
 
 
-def test11_sample_silhouette_bijective(variants_vec_rgb):
+def test11_sample_silhouette_bijective(variants_all_ad_rgb):
     scene = mi.load_dict({
         'type': 'scene',
         'sphere' : {
@@ -317,7 +317,7 @@ def test11_sample_silhouette_bijective(variants_vec_rgb):
     assert dr.allclose(valid_samples, valid_out, atol=1e-6)
 
 
-def test_enable_embree_robust_flag(variants_any_llvm):
+def test12_enable_embree_robust_flag(variants_any_llvm):
 
     # We intersect rays against two adjacent triangles. The rays hit exactly
     # the edge between two triangles, which Embree will not count as an
@@ -344,3 +344,24 @@ def test_enable_embree_robust_flag(variants_any_llvm):
     scene = mi.load_dict({'type': 'scene', 'mesh': mesh,
                           'embree_use_robust_intersections': True})
     assert dr.all(scene.ray_intersect(ray).is_valid())
+
+
+@fresolver_append_path
+def test13_mitsuba_object_multiple_python_repr(variants_vec_rgb):
+    """Tests that a Object* can be accesed throught multiple Python objects of
+    different types."""
+
+    scene = mi.load_dict({
+        "type" : "scene",
+        "box" :  {
+            "type" : "obj",
+            "filename" : "resources/data/tests/obj/cbox_smallbox.obj"
+        },
+    })
+
+    box_as_shape = scene.shapes_dr()[0]
+    box_as_mesh = scene.shapes()[0]
+
+    assert type(box_as_mesh) == mi.Mesh
+    assert type(box_as_shape) == mi.Shape
+

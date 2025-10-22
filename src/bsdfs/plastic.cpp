@@ -167,10 +167,10 @@ public:
 
         m_eta = int_ior / ext_ior;
 
-        m_diffuse_reflectance  = props.texture<Texture>("diffuse_reflectance", .5f);
+        m_diffuse_reflectance  = props.get_texture<Texture>("diffuse_reflectance", .5f);
 
         if (props.has_property("specular_reflectance"))
-            m_specular_reflectance = props.texture<Texture>("specular_reflectance", 1.f);
+            m_specular_reflectance = props.get_texture<Texture>("specular_reflectance", 1.f);
 
         m_nonlinear = props.get<bool>("nonlinear", false);
 
@@ -181,12 +181,12 @@ public:
         parameters_changed();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("eta",              m_eta,                       +ParamFlags::NonDifferentiable);
-        callback->put_object("diffuse_reflectance", m_diffuse_reflectance.get(), +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("eta", m_eta, ParamFlags::NonDifferentiable);
+        cb->put("diffuse_reflectance", m_diffuse_reflectance, ParamFlags::Differentiable);
 
         if (m_specular_reflectance)
-            callback->put_object("specular_reflectance", m_specular_reflectance.get(), +ParamFlags::Differentiable);
+            cb->put("specular_reflectance", m_specular_reflectance, ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
@@ -380,7 +380,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(SmoothPlastic)
 private:
     ref<Texture> m_diffuse_reflectance;
     ref<Texture> m_specular_reflectance;
@@ -390,8 +390,10 @@ private:
     ScalarFloat m_fdr_ext;
     Float m_specular_sampling_weight;
     bool m_nonlinear;
+
+    MI_TRAVERSE_CB(Base, m_diffuse_reflectance, m_specular_reflectance,
+                   m_specular_sampling_weight)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SmoothPlastic, BSDF)
-MI_EXPORT_PLUGIN(SmoothPlastic, "Smooth plastic")
+MI_EXPORT_PLUGIN(SmoothPlastic)
 NAMESPACE_END(mitsuba)

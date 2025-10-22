@@ -58,7 +58,7 @@ public:
         m_bsphere = BoundingSphere3f(ScalarPoint3f(0.f), 1.f);
         m_surface_area = 4.f * dr::Pi<ScalarFloat>;
 
-        m_radiance = props.texture_d65<Texture>("radiance", 1.f);
+        m_radiance = props.get_emissive_texture<Texture>("radiance", 1.f);
 
         if (m_radiance->is_spatially_varying())
             Throw("Expected a non-spatially varying radiance spectra!");
@@ -66,9 +66,9 @@ public:
         m_flags = +EmitterFlags::Infinite;
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_object("radiance", m_radiance.get(), +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("radiance", m_radiance, ParamFlags::Differentiable);
     }
 
     void set_scene(const Scene *scene) override {
@@ -197,15 +197,16 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(ConstantBackgroundEmitter)
 protected:
     ref<Texture> m_radiance;
     BoundingSphere3f m_bsphere;
 
     /// Surface area of the bounding sphere
     Float m_surface_area;
+
+    MI_TRAVERSE_CB(Base, m_radiance, m_bsphere, m_surface_area)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(ConstantBackgroundEmitter, Emitter)
-MI_EXPORT_PLUGIN(ConstantBackgroundEmitter, "Constant background emitter")
+MI_EXPORT_PLUGIN(ConstantBackgroundEmitter)
 NAMESPACE_END(mitsuba)

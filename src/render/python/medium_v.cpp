@@ -5,8 +5,10 @@
 #include <mitsuba/python/python.h>
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/string_view.h>
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/tuple.h>
+#include <nanobind/stl/vector.h>
 #include <drjit/python.h>
 
 /// Trampoline for derived types implemented in Python
@@ -45,6 +47,8 @@ public:
     using Medium::m_sample_emitters;
     using Medium::m_is_homogeneous;
     using Medium::m_has_spectral_extinction;
+
+    DR_TRAMPOLINE_TRAVERSE_CB(Medium)
 };
 
 template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
@@ -95,16 +99,16 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
 MI_PY_EXPORT(Medium) {
     MI_PY_IMPORT_TYPES(Medium, MediumPtr, Scene, Sampler)
     using PyMedium = PyMedium<Float, Spectrum>;
-    using Properties = PropertiesV<Float>;
+    using Properties = mitsuba::Properties;
 
     auto medium = MI_PY_TRAMPOLINE_CLASS(PyMedium, Medium, Object)
         .def(nb::init<const Properties &>(), "props"_a)
-        .def_method(Medium, id)
-        .def_method(Medium, set_id)
         .def_field(PyMedium, m_sample_emitters, D(Medium, m_sample_emitters))
         .def_field(PyMedium, m_is_homogeneous, D(Medium, m_is_homogeneous))
         .def_field(PyMedium, m_has_spectral_extinction, D(Medium, m_has_spectral_extinction))
         .def("__repr__", &Medium::to_string, D(Medium, to_string));
+
+    drjit::bind_traverse(medium);
 
     bind_medium_generic<Medium *>(medium);
 
@@ -114,5 +118,4 @@ MI_PY_EXPORT(Medium) {
         bind_medium_generic<MediumPtr>(medium_ptr);
     }
 
-    MI_PY_REGISTER_OBJECT("register_medium", Medium)
 }

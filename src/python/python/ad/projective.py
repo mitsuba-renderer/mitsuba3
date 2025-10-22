@@ -32,6 +32,11 @@ class ProjectiveDetail():
         Precompute the silhouette of the scene as seen from the sensor and store
         the result in this python class.
         """
+        if dr.flag(dr.JitFlag.FreezingScope):
+            raise RuntimeError(
+                "Initializing the primary visible silhouette inside a frozen"
+                "function is not yet supported."
+            )
         self.primary_indices = []
         self.primary_distributions = []
 
@@ -97,49 +102,48 @@ class ProjectiveDetail():
             viewpoint, sample2, shape_pmf, active
         )
 
-    def perspective_sensor_jacobian(self,
-                                    sensor: mi.Sensor,
-                                    ss: mi.SilhouetteSample3f):
+    def sensor_jacobian(self,
+                        sensor: mi.Sensor,
+                        ss: mi.SilhouetteSample3f) -> mi.Float:
         """
         The silhouette sample `ss` stores (1) the sampling density in the scene
         space, and (2) the motion of the silhouette point in the scene space.
         This Jacobian corrects both quantities to the camera sample space.
         """
-        if not sensor.__repr__().startswith('PerspectiveCamera'):
-            raise Exception("Only perspective cameras are supported")
 
+        # Get transformation matrices
         to_world = sensor.world_transform()
-        near_clip = sensor.near_clip()
-        sensor_center = to_world @ mi.Point3f(0)
-        sensor_lookat_dir = to_world @ mi.Vector3f(0, 0, 1)
-        x_fov = mi.traverse(sensor)["x_fov"][0]
-        film = sensor.film()
+        to_local = to_world.inverse()
+        to_film = sensor.projection_transform()
 
-        camera_to_sample = mi.perspective_projection(
-            film.size(),
-            film.crop_size(),
-            film.crop_offset(),
-            x_fov,
-            near_clip,
-            sensor.far_clip()
+        with dr.resume_grad():
+            eps1 = mi.Float(0)
+            eps2 = mi.Float(0)
+            dr.enable_grad(eps1, eps2)
+            p1 = ss.p + ss.silhouette_d * eps1
+            p2 = ss.p + ss.n * eps2
+
+            def get_projected_point(point):
+                point_NDC = to_film @ (to_local @ mi.Point3f(point))
+                return mi.Point2f(point_NDC[0], point_NDC[1])
+
+            p1_proj = get_projected_point(p1)
+            p2_proj = get_projected_point(p2)
+
+            dr.set_grad(eps1, 1.0)
+            dr.set_grad(eps2, 1.0)
+            dr.enqueue(dr.ADMode.Forward, eps1)
+            dr.enqueue(dr.ADMode.Forward, eps2)
+            dr.traverse(dr.ADMode.Forward)
+
+            partial1 = dr.grad(p1_proj)
+            partial2 = dr.grad(p2_proj)
+
+        jacobian_det = dr.abs(
+            partial1[1] * partial2[0] - partial1[0] * partial2[1]
         )
 
-        sample_to_camera = camera_to_sample.inverse()
-        p_min = sample_to_camera @ mi.Point3f(0, 0, 0)
-        multiplier = dr.square(near_clip) / dr.abs(p_min[0] * p_min[1] * 4.0)
-
-        # Frame
-        frame_t = dr.normalize(sensor_center - ss.p)
-        frame_n = ss.n
-        frame_s = dr.cross(frame_t, frame_n)
-
-        J_num = dr.norm(dr.cross(frame_n, sensor_lookat_dir)) * \
-                dr.norm(dr.cross(frame_s, sensor_lookat_dir)) * \
-                dr.abs(dr.dot(frame_s, ss.silhouette_d))
-        J_den = dr.square(dr.square(dr.dot(frame_t, sensor_lookat_dir))) * \
-                dr.squared_norm(ss.p - sensor_center)
-
-        return J_num / J_den * multiplier
+        return jacobian_det
 
     def eval_primary_silhouette_radiance_difference(self,
                                                     scene,
@@ -158,7 +162,7 @@ class ProjectiveDetail():
             to_world = sensor.world_transform()
             sensor_center = to_world @ mi.Point3f(0)
 
-            # Is the boundary point visible or is occluded ?
+            # Is the boundary point visible or is occluded?
             ss_invert = mi.SilhouetteSample3f(ss)
             ss_invert.d = -ss_invert.d
             ray_test = ss_invert.spawn_ray()
@@ -167,17 +171,24 @@ class ProjectiveDetail():
             ray_test.maxt = dist * (1 - mi.math.ShadowEpsilon)
             visible = ~scene.ray_test(ray_test, active) & active
 
-            # Is the boundary point within the view frustum ?
+            # Is the boundary point within the view frustum?
             it = dr.zeros(mi.Interaction3f)
             it.p = ss.p
             ds, _ = sensor.sample_direction(it, mi.Point2f(0), active)
             visible &= ds.pdf != 0
 
+            # Sample wavelengths
+            wavelength_sample = 0
+            if mi.is_spectral:
+                wavelength_sample = sampler.next_1d()
+            wavelengths, weight = sensor.sample_wavelengths(
+                dr.zeros(mi.SurfaceInteraction3f),  wavelength_sample, active)
+
             # Estimate the radiance difference along that path
             radiance_diff, _ = self.parent.sample_radiance_difference(
-                scene, ss, 0, sampler, visible)
+                scene, ss, 0, sampler, wavelengths, visible)
 
-        return radiance_diff
+        return radiance_diff * weight, wavelengths
 
     #####################################################################
     ##               Indirect discontinuous derivatives                ##
@@ -240,7 +251,7 @@ class ProjectiveDetail():
     def init_indirect_silhouette(self,
                                  scene: mi.Scene,
                                  sensor: mi.Sensor,
-                                 seed: int):
+                                 seed: mi.UInt32):
         """
         Initialize the guiding structure for indirect discontinuous derivatives
         based on the guiding mode. The result is stored in this python class.
@@ -269,12 +280,6 @@ class ProjectiveDetail():
         elif parent.guiding == 'octree':
             self.init_indirect_silhouette_octree(scene, sensor, seed)
 
-        # After cleaning up, only necessary guiding distribution storage should
-        # exist in the device memory. This usually occupies dozens of MBs for
-        # octree, and ~0.75GB for grid based guiding with default settings.
-        gc.collect()
-        gc.collect()
-        # TODO this should happen automatically
 
     @dr.syntax
     def init_indirect_silhouette_grid_unif(self, scene, sensor, seed):
@@ -307,7 +312,7 @@ class ProjectiveDetail():
             # GridGuiding - Sample uniform points in [0, 1]^3
             sample_3 = self.guiding_distr.random_cell_sample(sampler)
             # GridGuiding - Evaluate point contribution
-            value, _ = self.eval_indirect_integrand(
+            value, _, _ = self.eval_indirect_integrand(
                 scene, sensor, sample_3, sampler, preprocess=True)
             value = dr.max(value)  # dr.max over channels
             res += value
@@ -355,7 +360,7 @@ class ProjectiveDetail():
             idx = self.guiding_distr.sample_to_cell_idx(sample_3, active_seed)
 
             # GridGuiding - Evaluate point contribution
-            value, _ = self.eval_indirect_integrand(
+            value, _, _ = self.eval_indirect_integrand(
                 scene, sensor, sample_3, sampler, preprocess=True, active=active_seed)
             value = dr.max(value)  # dr.max over channels
 
@@ -454,9 +459,9 @@ class ProjectiveDetail():
             active_guide = mi.Mask(True)
 
         # OctreeGuiding - Evaluate point contribution
-        value, _ = self.eval_indirect_integrand(
+        value, _, _ = self.eval_indirect_integrand(
             scene, sensor, sample_3, sampler, preprocess=True, active=active_guide)
-        value[dr.isinf(value)] = 0
+        value = dr.select(dr.isinf(value), mi.Spectrum(0), value)
         value = dr.max(value)
 
         # Estimate mass threshold for the current scene once
@@ -543,6 +548,10 @@ class ProjectiveDetail():
         Output ``result`` (``mi.Spectrum``):
             The integrand of the indirect discontinuous derivatives.
 
+        Output ``wavelengths`` (``mi.Wavelength``):
+            Set of wavelength used by this sample. (Only relevant in spectral
+            variants)
+
         Output ``sensor_uv`` (``mi.Point2f``):
             The UV coordinates on the sensor film to splat the result to. If
             ``preprocess`` is false, this coordinate is not used.
@@ -561,24 +570,31 @@ class ProjectiveDetail():
             ss = scene.sample_silhouette(sample, self.discontinuity_flags, active)
             active &= ss.is_valid()
 
+            # Sample wavelengths
+            wavelength_sample = 0
+            if mi.is_spectral:
+                wavelength_sample = sampler.next_1d()
+            wavelengths, weight = sensor.sample_wavelengths(
+                dr.zeros(mi.SurfaceInteraction3f),  wavelength_sample, active)
+
             # Estimate the importance
-            fS, sensor_uv, sensor_depth, shading_p, active_i = parent.sample_importance(
-                scene, sensor, ss, parent.max_depth, sampler, preprocess, active)
+            fS, sensor_uv, sensor_depth, active_i = parent.sample_importance(
+                scene, sensor, ss, parent.max_depth, sampler, wavelengths, active)
             active &= active_i
 
             # Estimate the radiance difference
             fE, active_e = parent.sample_radiance_difference(
-                scene, ss, sensor_depth - 1, sampler, active)
+                scene, ss, sensor_depth - 1, sampler, wavelengths, active)
             active &= active_e
 
             # Local boundary term without the local speed term
             fB = ss.foreshortening
 
-            result = dr.select(active, fS * fB * fE * dr.rcp(ss.pdf), 0)
+            result = dr.select(active, weight * fS * fB * fE * dr.rcp(ss.pdf), 0)
 
         # Compute the motion of the boundary segment if this is not a preprocess
-        if preprocess: # TODO cleanup
-            return dr.abs(result), mi.Point2f(0)
+        if preprocess:
+            return dr.abs(result), wavelengths, mi.Point2f(0)
         else:
             si = dr.zeros(mi.SurfaceInteraction3f)
             si.p = ss.p
@@ -586,9 +602,9 @@ class ProjectiveDetail():
             si.uv = ss.uv
             x_b_follow = ss.shape.differential_motion(dr.detach(si), active)
 
-            motion = dr.dot(dr.detach(ss.n), (x_b_follow - shading_p))
+            motion = dr.dot(dr.detach(ss.n), x_b_follow)
             result = dr.select(active, result * motion, 0)
-            return result, sensor_uv
+            return result, wavelengths, sensor_uv
 
 
     #####################################################################
@@ -611,15 +627,11 @@ class ProjectiveDetail():
 
         @dr.syntax
         def mesh_walk(self,
-                      si_: mi.SurfaceInteraction3f,
+                      si: mi.SurfaceInteraction3f,
                       viewpoint: mi.Point3f,
                       state: mi.UInt64,
                       active: mi.Bool,
                       max_move: int):
-            # TODO: This copy is necessary for "Dr.Jit reasons". Should be fixed
-            # when Dr.Jit uses nanobind
-            si = mi.SurfaceInteraction3f(si_)
-
             ss = dr.zeros(mi.SilhouetteSample3f)
             sampler = mi.PCG32(dr.width(si), state)
 
@@ -648,15 +660,11 @@ class ProjectiveDetail():
         @dr.syntax
         def mesh_jump(self,
                       scene: mi.Scene,
-                      si_: mi.SurfaceInteraction3f,
+                      si: mi.SurfaceInteraction3f,
                       viewpoint: mi.Point3f,
                       state: mi.UInt64,
                       active: mi.Bool,
                       max_jump: int):
-            # TODO: This copy is necessary for "Dr.Jit reasons". Should be fixed
-            # when Dr.Jit uses nanobind
-            si = mi.SurfaceInteraction3f(si_)
-
             shape = si.shape
             sampler = mi.PCG32(dr.width(si), state)
 
@@ -830,26 +838,41 @@ class ProjectiveDetail():
             shape's projection algorithm.
             """
             #TODO pass discontinuity flags as an option
-            def noop(*args,**kwargs):
+            def noop(*args, **kwargs):
                 return dr.zeros(mi.SilhouetteSample3f)
 
-            max_idx = mi.ShapeType.Other.value
-            projection_funcs = [noop] * max_idx
+            scene_shape_types = scene.shape_types()
+            funcs = []
 
-            projection_funcs[mi.ShapeType.Mesh.value] = self.project_mesh
-            projection_funcs[mi.ShapeType.BSplineCurve.value] = self.project_curve
-            projection_funcs[mi.ShapeType.Cylinder.value] = self.project_cylinder
-            projection_funcs[mi.ShapeType.Disk.value] = self.project_disk
-            projection_funcs[mi.ShapeType.Rectangle.value] = self.project_rectangle
-            projection_funcs[mi.ShapeType.SDFGrid.value] = self.project_sdf
-            projection_funcs[mi.ShapeType.Sphere.value] = self.project_sphere
+            # Map ShapeType values (which are bit flags) to contiguous indices
+            def compute_index(shape_type):
+                # Some shapes (e.g. rectangle) have multiple bits set. Use
+                # lzcnt to detect the most significant one
+                return 31 - dr.lzcnt(shape_type)
+
+            # Register a shape type
+            def put(shape_type, cb):
+                index = compute_index(shape_type)
+                while index >= len(funcs):
+                    funcs.append(noop)
+                # Ignore shapes that aren't present in the scene
+                if scene_shape_types & shape_type == shape_type:
+                    funcs[index] = cb
+
+            put(mi.ShapeType.Mesh, self.project_mesh)
+            put(mi.ShapeType.Rectangle, self.project_rectangle)
+            put(mi.ShapeType.BSplineCurve, self.project_curve)
+            put(mi.ShapeType.Cylinder, self.project_cylinder)
+            put(mi.ShapeType.Disk, self.project_disk)
+            put(mi.ShapeType.SDFGrid, self.project_sdf)
+            put(mi.ShapeType.Sphere, self.project_sphere)
 
             shape_types = si_guide.shape.shape_type()
             state = mi.UInt64(sampler.next_1d() * mi.UInt64(0xFFFFFFFFFFFFFFFF))
 
             ss = dr.switch(
-                shape_types,
-                projection_funcs,
+                compute_index(shape_types),
+                funcs,
                 scene, ray_guide, si_guide, state, active
             )
             active &= ss.is_valid()

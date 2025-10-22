@@ -7,22 +7,19 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MI_VARIANT Medium<Float, Spectrum>::Medium() : 
-    m_is_homogeneous(false), 
-    m_has_spectral_extinction(true) {
-
-    if constexpr (dr::is_jit_v<Float>)
-        jit_registry_put(dr::backend_v<Float>, "mitsuba::Medium", this);
+MI_VARIANT Medium<Float, Spectrum>::Medium()
+    : JitObject<Medium>(""),
+      m_is_homogeneous(false),
+      m_has_spectral_extinction(true) {
 }
 
-MI_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props.id()) {
-    for (auto &[name, obj] : props.objects(false)) {
-        auto *phase = dynamic_cast<PhaseFunction *>(obj.get());
-        if (phase) {
+MI_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props)
+    : JitObject<Medium>(props.id()) {
+    for (auto &prop : props.objects()) {
+        if (PhaseFunction *phase = prop.try_get<PhaseFunction>()) {
             if (m_phase_function)
                 Throw("Only a single phase function can be specified per medium");
             m_phase_function = phase;
-            props.mark_queried(name);
         }
     }
     if (!m_phase_function) {
@@ -32,18 +29,12 @@ MI_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props
     }
 
     m_sample_emitters = props.get<bool>("sample_emitters", true);
-
-    if constexpr (dr::is_jit_v<Float>)
-        jit_registry_put(dr::backend_v<Float>, "mitsuba::Medium", this);
 }
 
-MI_VARIANT Medium<Float, Spectrum>::~Medium() {
-    if constexpr (dr::is_jit_v<Float>)
-        jit_registry_remove(this);
-}
+MI_VARIANT Medium<Float, Spectrum>::~Medium() { }
 
-MI_VARIANT void Medium<Float, Spectrum>::traverse(TraversalCallback *callback) {
-    callback->put_object("phase_function", m_phase_function.get(), +ParamFlags::Differentiable);
+MI_VARIANT void Medium<Float, Spectrum>::traverse(TraversalCallback *cb) {
+    cb->put("phase_function", m_phase_function, ParamFlags::Differentiable);
 }
 
 MI_VARIANT
@@ -104,6 +95,6 @@ Medium<Float, Spectrum>::transmittance_eval_pdf(const MediumInteraction3f &mi,
     return { tr, pdf };
 }
 
-MI_IMPLEMENT_CLASS_VARIANT(Medium, Object, "medium")
+MI_IMPLEMENT_TRAVERSE_CB(Medium, Object)
 MI_INSTANTIATE_CLASS(Medium)
 NAMESPACE_END(mitsuba)

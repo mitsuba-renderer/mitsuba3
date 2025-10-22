@@ -82,17 +82,17 @@ public:
     MI_IMPORT_TYPES(Texture)
 
     LinearPolarizer(const Properties &props) : Base(props) {
-        m_theta = props.texture<Texture>("theta", 0.f);
-        m_transmittance = props.texture<Texture>("transmittance", 1.f);
+        m_theta = props.get_unbounded_texture<Texture>("theta", 0.f);
+        m_transmittance = props.get_texture<Texture>("transmittance", 1.f);
         m_polarizing = props.get<bool>("polarizing", true);
 
         m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null;
         m_components.push_back(m_flags);
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("theta",         m_theta.get(),         ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_object("transmittance", m_transmittance.get(), +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("theta", m_theta, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("transmittance", m_transmittance, ParamFlags::Differentiable);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -213,13 +213,14 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(LinearPolarizer)
 private:
     bool m_polarizing;
     ref<Texture> m_theta;
     ref<Texture> m_transmittance;
+
+    MI_TRAVERSE_CB(Base, m_theta, m_transmittance)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(LinearPolarizer, BSDF)
-MI_EXPORT_PLUGIN(LinearPolarizer, "Linear polarizer material")
+MI_EXPORT_PLUGIN(LinearPolarizer)
 NAMESPACE_END(mitsuba)

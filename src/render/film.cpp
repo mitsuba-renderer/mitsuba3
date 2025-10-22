@@ -4,7 +4,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MI_VARIANT Film<Float, Spectrum>::Film(const Properties &props) : Object() {
+MI_VARIANT Film<Float, Spectrum>::Film(const Properties &props)
+    : JitObject<Film>(props.id()) {
     bool is_m_film = string::to_lower(props.plugin_name()) == "mfilm";
 
     // Horizontal and vertical film resolution in pixels
@@ -32,14 +33,12 @@ MI_VARIANT Film<Float, Spectrum>::Film(const Properties &props) : Object() {
     m_sample_border = props.get<bool>("sample_border", false);
 
     // Use the provided reconstruction filter, if any.
-    for (auto &[name, obj] : props.objects(false)) {
-        auto *rfilter = dynamic_cast<ReconstructionFilter *>(obj.get());
-        if (rfilter) {
+    for (auto &prop : props.objects()) {
+        if (ReconstructionFilter *rfilter = prop.try_get<ReconstructionFilter>()) {
             if (m_filter)
                 Throw("A film can only have one reconstruction filter.");
 
             m_filter = rfilter;
-            props.mark_queried(name);
         }
     }
 
@@ -52,10 +51,10 @@ MI_VARIANT Film<Float, Spectrum>::Film(const Properties &props) : Object() {
 
 MI_VARIANT Film<Float, Spectrum>::~Film() { }
 
-MI_VARIANT void Film<Float, Spectrum>::traverse(TraversalCallback *callback) {
-    callback->put_parameter("size", m_size, +ParamFlags::NonDifferentiable);
-    callback->put_parameter("crop_size", m_crop_size, +ParamFlags::NonDifferentiable);
-    callback->put_parameter("crop_offset", m_crop_offset, +ParamFlags::NonDifferentiable);
+MI_VARIANT void Film<Float, Spectrum>::traverse(TraversalCallback *cb) {
+    cb->put("size",        m_size,        ParamFlags::NonDifferentiable);
+    cb->put("crop_size",   m_crop_size,   ParamFlags::NonDifferentiable);
+    cb->put("crop_offset", m_crop_offset, ParamFlags::NonDifferentiable);
 }
 
 MI_VARIANT void Film<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
@@ -89,7 +88,7 @@ Film<Float, Spectrum>::sensor_response_function() {
 }
 
 MI_VARIANT void Film<Float, Spectrum>::set_crop_window(const ScalarPoint2u &crop_offset,
-                                                        const ScalarVector2u &crop_size) {
+                                                       const ScalarVector2u &crop_size) {
     if (dr::any(crop_offset + crop_size > m_size))
         Throw("Invalid crop window specification: crop_offset(%u, %u) + "
               "crop_size(%u, %u) > size(%u, %u)", crop_offset.x(), crop_offset.y(),
@@ -108,16 +107,15 @@ MI_VARIANT void Film<Float, Spectrum>::set_size(const ScalarPoint2u &size) {
 MI_VARIANT std::string Film<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
     oss << "Film[" << std::endl
-        << "  size = "        << m_size        << "," << std::endl
-        << "  crop_size = "   << m_crop_size   << "," << std::endl
-        << "  crop_offset = " << m_crop_offset << "," << std::endl
+        << "  size = "          << m_size          << "," << std::endl
+        << "  crop_size = "     << m_crop_size     << "," << std::endl
+        << "  crop_offset = "   << m_crop_offset   << "," << std::endl
         << "  sample_border = " << m_sample_border << "," << std::endl
-        << "  m_filter = " << m_filter << std::endl
+        << "  m_filter = "      << m_filter        << std::endl
         << "]";
     return oss.str();
 }
 
-
-MI_IMPLEMENT_CLASS_VARIANT(Film, Object, "film")
+MI_IMPLEMENT_TRAVERSE_CB(Film, Object)
 MI_INSTANTIATE_CLASS(Film)
 NAMESPACE_END(mitsuba)

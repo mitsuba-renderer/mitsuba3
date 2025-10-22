@@ -55,9 +55,6 @@ public:
     MI_IMPORT_BASE(Endpoint, m_shape)
     MI_IMPORT_TYPES()
 
-    /// Destructor
-    ~Emitter();
-
     /// Is this an environment map light emitter?
     bool is_environment() const {
         return has_flag(m_flags, EmitterFlags::Infinite) &&
@@ -80,7 +77,8 @@ public:
     /// Modify the emitter's "dirty" flag
     void set_dirty(bool dirty) { m_dirty = dirty; }
 
-    MI_DECLARE_CLASS()
+    /// This is both a class and the base of various Mitsuba plugins
+    MI_DECLARE_PLUGIN_BASE_CLASS(Emitter)
 
 protected:
     Emitter(const Properties &props);
@@ -92,15 +90,17 @@ protected:
     /// Sampling weight
     ScalarFloat m_sampling_weight;
 
-    /// True if the emitters's parameters have changed
+    /// True if the emitter's parameters have changed
     bool m_dirty = false;
+
+    MI_TRAVERSE_CB(Base)
 };
 
 MI_EXTERN_CLASS(Emitter)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Dr.Jit support for vectorized function calls
+//! @{ \name Enables vectorized method calls on Dr.Jit arrays of emitters
 // -----------------------------------------------------------------------
 
 DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Emitter)
@@ -117,7 +117,7 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Emitter)
     DRJIT_CALL_GETTER(shape)
     DRJIT_CALL_GETTER(medium)
     DRJIT_CALL_GETTER(sampling_weight)
-DRJIT_CALL_END(mitsuba::Emitter)
+DRJIT_CALL_END()
 
 //! @}
 // -----------------------------------------------------------------------

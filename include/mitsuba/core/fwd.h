@@ -20,9 +20,10 @@ namespace dr = drjit;
 // =============================================================
 
 class Object;
-class Class;
 
-// class AnimatedTransform;
+/// Forward declaration of field template
+template <typename DeviceType, typename HostType, typename SFINAE> struct field;
+
 class AnnotatedStream;
 class Appender;
 class ArgParser;
@@ -37,7 +38,6 @@ class MemoryStream;
 class Mutex;
 class PluginManager;
 class Properties;
-class ScopedThreadEnvironment;
 class Stream;
 class StreamAppender;
 class Struct;
@@ -46,8 +46,7 @@ class Thread;
 class TraversalCallback;
 class ZStream;
 enum LogLevel : int;
-
-template <typename> class AtomicFloat;
+enum class ObjectType : uint32_t;
 
 //! @}
 // =============================================================
@@ -61,7 +60,9 @@ template <typename Value, size_t Size>          struct Point;
 template <typename Value, size_t Size>          struct Normal;
 template <typename Value, size_t Size>          struct Color;
 template <typename Value, size_t Size>          struct Spectrum;
-template <typename Point>                       struct Transform;
+template <typename Point, bool Affine>          struct Transform;
+template <typename Point>                       using AffineTransform = Transform<Point, true>;
+template <typename Point>                       using ProjectiveTransform = Transform<Point, false>;
 template <typename Point, typename Spectrum>    struct Ray;
 template <typename Point, typename Spectrum>    struct RayDifferential;
 template <typename Point>                       struct BoundingBox;
@@ -171,10 +172,15 @@ template <typename Float_> struct CoreAliases {
     using BoundingSphere4f = BoundingSphere<Point4f>;
 
     using Frame3f     = Frame<Float>;
-    using Transform3f = Transform<Point3f>;
-    using Transform4f = Transform<Point4f>;
-    using Transform3d = Transform<Point3d>;
-    using Transform4d = Transform<Point4d>;
+
+    using AffineTransform3f = AffineTransform<Point3f>;
+    using AffineTransform4f = AffineTransform<Point4f>;
+    using AffineTransform3d = AffineTransform<Point3d>;
+    using AffineTransform4d = AffineTransform<Point4d>;
+    using ProjectiveTransform3f = ProjectiveTransform<Point3f>;
+    using ProjectiveTransform4f = ProjectiveTransform<Point4f>;
+    using ProjectiveTransform3d = ProjectiveTransform<Point3d>;
+    using ProjectiveTransform4d = ProjectiveTransform<Point4d>;
 
     using Color1f = Color<Float, 1>;
     using Color3f = Color<Float, 3>;
@@ -271,10 +277,18 @@ template <typename Float_> struct CoreAliases {
     using prefix ## BoundingSphere3f     = typename prefix ## CoreAliases::BoundingSphere3f;       \
     using prefix ## BoundingSphere4f     = typename prefix ## CoreAliases::BoundingSphere4f;       \
     using prefix ## Frame3f              = typename prefix ## CoreAliases::Frame3f;                \
-    using prefix ## Transform3f          = typename prefix ## CoreAliases::Transform3f;            \
-    using prefix ## Transform4f          = typename prefix ## CoreAliases::Transform4f;            \
-    using prefix ## Transform3d          = typename prefix ## CoreAliases::Transform3d;            \
-    using prefix ## Transform4d          = typename prefix ## CoreAliases::Transform4d;            \
+    using prefix ## Transform3f [[deprecated]] = typename prefix ## CoreAliases::AffineTransform3f;\
+    using prefix ## Transform4f [[deprecated]] = typename prefix ## CoreAliases::AffineTransform4f;\
+    using prefix ## Transform3d [[deprecated]] = typename prefix ## CoreAliases::AffineTransform3d;\
+    using prefix ## Transform4d [[deprecated]] = typename prefix ## CoreAliases::AffineTransform4d;\
+    using prefix ## AffineTransform3f    = typename prefix ## CoreAliases::AffineTransform3f;      \
+    using prefix ## AffineTransform4f    = typename prefix ## CoreAliases::AffineTransform4f;      \
+    using prefix ## AffineTransform3d    = typename prefix ## CoreAliases::AffineTransform3d;      \
+    using prefix ## AffineTransform4d    = typename prefix ## CoreAliases::AffineTransform4d;      \
+    using prefix ## ProjectiveTransform3f = typename prefix ## CoreAliases::ProjectiveTransform3f; \
+    using prefix ## ProjectiveTransform4f = typename prefix ## CoreAliases::ProjectiveTransform4f; \
+    using prefix ## ProjectiveTransform3d = typename prefix ## CoreAliases::ProjectiveTransform3d; \
+    using prefix ## ProjectiveTransform4d = typename prefix ## CoreAliases::ProjectiveTransform4d; \
     using prefix ## Color1f              = typename prefix ## CoreAliases::Color1f;                \
     using prefix ## Color3f              = typename prefix ## CoreAliases::Color3f;                \
     using prefix ## Color1d              = typename prefix ## CoreAliases::Color1d;                \
@@ -299,8 +313,8 @@ template <typename Float_> struct CoreAliases {
 #define MI_USING_MEMBERS(...) DRJIT_MAP(__MI_USING_MEMBERS_MACRO__, __VA_ARGS__)
 
 #define MI_IMPORT_CORE_TYPES()                                                 \
-    MI_IMPORT_CORE_TYPES_PREFIX(Float, )                                       \
     using ScalarFloat = dr::scalar_t<Float>;                                   \
+    MI_IMPORT_CORE_TYPES_PREFIX(Float, )                                       \
     MI_IMPORT_CORE_TYPES_PREFIX(ScalarFloat, Scalar)
 
 #define MI_MASK_ARGUMENT(mask)                                                 \
@@ -320,15 +334,19 @@ NAMESPACE_END(filesystem)
 
 namespace fs = filesystem;
 
-NAMESPACE_END(mitsuba)
-
-extern "C" {
 #if defined(MI_ENABLE_EMBREE)
-    // Forward declarations for Embree
+extern "C" {
+    // Forward declarations for Embree (we import Embree into mitsuba's namespace
+    // to avoid name clashes with other libraries).
     typedef struct RTCDeviceTy* RTCDevice;
     typedef struct RTCSceneTy* RTCScene;
     typedef struct RTCGeometryTy* RTCGeometry;
+}
 #endif
+
+NAMESPACE_END(mitsuba)
+
+extern "C" {
 
 // =============================================================
 //! @{ \name Helper macros
@@ -367,6 +385,153 @@ extern "C" {
                                 return a != b;                                 \
                             })
 #endif
+
+/**
+ * \brief Macro, generating the implementation of the ``traverse_1_cb_ro``
+ *     method.
+ *
+ * The first argument should be the base class, from which the current class
+ * inherits. The other arguments should list all members of that class, which
+ * are supposed to be read only traversable.
+ */
+#define MI_TRAVERSE_CB_RO(Base, ...)                                           \
+        void traverse_1_cb_ro(void *payload,                                   \
+                              drjit::detail::traverse_callback_ro fn)          \
+            const override {                                                   \
+            static_assert(std::is_base_of<                                     \
+                          drjit::TraversableBase,                              \
+                          std::remove_pointer_t<decltype(this)>>::value);      \
+            /*                                                                 \
+             * Only traverse the scene for frozen functions, since             \
+             * accidentally traversing the scene in loops or vcalls can cause  \
+             * errors with variable size mismatches, and backpropagation of    \
+             * gradients.                                                      \
+             */                                                                \
+            if (!jit_flag(JitFlag::EnableObjectTraversal))                     \
+                return;                                                        \
+            if constexpr (!std::is_same_v<Base, drjit::TraversableBase>)       \
+                Base::traverse_1_cb_ro(payload, fn);                           \
+            DRJIT_MAP(DR_TRAVERSE_MEMBER_RO, __VA_ARGS__)                      \
+        }
+
+/**
+ * \breif Macro, generating the implementation of the ``traverse_1_cb_rw``
+ *     method.
+ *
+ * The first argument should be the base class, from which the current class
+ * inherits. The other arguments should list all members of that class, which
+ * are supposed to be read and write traversable.
+ */
+#define MI_TRAVERSE_CB_RW(Base, ...)                                           \
+        void traverse_1_cb_rw(                                                 \
+            void *payload, drjit::detail::traverse_callback_rw fn) override {  \
+            static_assert(std::is_base_of<                                     \
+                          drjit::TraversableBase,                              \
+                          std::remove_pointer_t<decltype(this)>>::value);      \
+            /*                                                                 \
+             * Only traverse the scene for frozen functions, since             \
+             * accidentally traversing the scene in loops or vcalls can cause  \
+             * errors with variable size mismatches, and backpropagation of    \
+             * gradients.                                                      \
+             */                                                                \
+            if (!jit_flag(JitFlag::EnableObjectTraversal))                     \
+                return;                                                        \
+            if constexpr (!std::is_same_v<Base, drjit::TraversableBase>)       \
+                Base::traverse_1_cb_rw(payload, fn);                           \
+            DRJIT_MAP(DR_TRAVERSE_MEMBER_RW, __VA_ARGS__)                      \
+        }
+
+/**
+ * \brief Macro, generating the both the implementations of the
+ *     ``traverse_1_cb_ro`` and ``traverse_1_cb_rw`` methods.
+ *
+ * The first argument should be the base class, from which the current class
+ * inherits. The other arguments should list all members of that class, which
+ * are supposed to be read and write traversable.
+ *
+ * This macro differs to ``DR_TRAVERSE_CB`` in that the functions it generates
+ * do not traverse the object if the flag ``JitFlag::EnableObjectTraversal``
+ * is not set. This is required, to circumvent issues where scene variables would
+ * accidentally be added to loop states, and dispatch arguments.
+ */
+#define MI_TRAVERSE_CB(Base, ...)                                              \
+public:                                                                        \
+    MI_TRAVERSE_CB_RO(Base, __VA_ARGS__)                                       \
+    MI_TRAVERSE_CB_RW(Base, __VA_ARGS__)
+
+/**
+ * \brief Macro, generating the both the implementations of the
+ *     ``traverse_1_cb_ro`` and ``traverse_1_cb_rw`` methods.
+ *
+ * In contrast to ``MI_TRAVERSE_CB``, this macro only declares the functions and
+ * ``MI_IMPLEMENT_TRAVERSE_CB`` implements them. Use this macro if the class is
+ * declared in a header file and implemented in a source file.
+ */
+#define MI_DECLARE_TRAVERSE_CB(...)                                            \
+        DRJIT_INLINE auto traverse_1_cb_fields_() {                            \
+            return drjit::tie(__VA_ARGS__);                                    \
+        }                                                                      \
+        DRJIT_INLINE auto traverse_1_cb_fields_() const {                      \
+            return drjit::tie(__VA_ARGS__);                                    \
+        }                                                                      \
+                                                                               \
+    public:                                                                    \
+        void traverse_1_cb_ro(void *payload,                                   \
+                              drjit::detail::traverse_callback_ro fn)          \
+            const override;                                                    \
+        void traverse_1_cb_rw(                                                 \
+            void *payload, drjit::detail::traverse_callback_rw fn) override;
+
+/**
+ * \brief Macro, generating the both the implementations of the
+ *     ``traverse_1_cb_ro`` and ``traverse_1_cb_rw`` methods.
+ *
+ * In contrast to ``MI_TRAVERSE_CB``, this macro generates the function implementation,
+ * for the functions declared by ``MI_DECLARE_TRAVERSE_CB``. Use this macro if
+ * the class is declared in a header file and implemented in a source file.
+ */
+#define MI_IMPLEMENT_TRAVERSE_CB(Type, Base)                                   \
+        MI_VARIANT                                                             \
+        void Type<Float, Spectrum>::traverse_1_cb_ro(                          \
+            void *payload, drjit::detail::traverse_callback_ro fn) const {     \
+                                                                               \
+            /*                                                                 \
+             * Only traverse the scene for frozen functions, since             \
+             * accidentally traversing the scene in loops or vcalls can cause  \
+             * errors with variable size mismatches, and backpropagation of    \
+             * gradients.                                                      \
+             */                                                                \
+            if (!jit_flag(JitFlag::EnableObjectTraversal))                     \
+                return;                                                        \
+                                                                               \
+            if constexpr (!std ::is_same_v<Base, drjit ::TraversableBase>)     \
+                Base::traverse_1_cb_ro(payload, fn);                           \
+                                                                               \
+            drjit::traverse_1(this->traverse_1_cb_fields_(),                   \
+                              [payload, fn](auto &x) {                         \
+                                  drjit::traverse_1_fn_ro(x, payload, fn);     \
+                              });                                              \
+        }                                                                      \
+        MI_VARIANT                                                             \
+        void Type<Float, Spectrum>::traverse_1_cb_rw(                          \
+            void *payload, drjit::detail::traverse_callback_rw fn) {           \
+                                                                               \
+            /*                                                                 \
+             * Only traverse the scene for frozen functions, since             \
+             * accidentally traversing the scene in loops or vcalls can cause  \
+             * errors with variable size mismatches, and backpropagation of    \
+             * gradients.                                                      \
+             */                                                                \
+            if (!jit_flag(JitFlag::EnableObjectTraversal))                     \
+                return;                                                        \
+                                                                               \
+            if constexpr (!std ::is_same_v<Base, drjit ::TraversableBase>)     \
+                Base::traverse_1_cb_rw(payload, fn);                           \
+            drjit::traverse_1(this->traverse_1_cb_fields_(),                   \
+                              [payload, fn](auto &x) {                         \
+                                  drjit::traverse_1_fn_rw(x, payload, fn);     \
+                              });                                              \
+        }
 
 //! @}
 // =============================================================

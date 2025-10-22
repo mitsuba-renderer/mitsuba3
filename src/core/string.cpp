@@ -11,7 +11,7 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(string)
 
-template <typename T> T parse_float(const char *s, const char *end, char **endptr) {
+template <typename T> T parse_float(const char *s, const char *end, char **endptr) noexcept {
     const char *p = s;
 
     // Skip leading space
@@ -27,39 +27,36 @@ template <typename T> T parse_float(const char *s, const char *end, char **endpt
     if (*p == '+')
         ++p;
 
-    T result;
+    T result = 0;
     fast_float::from_chars_result status =
         fast_float::from_chars(p, end, result);
 
-    bool success = status.ec == std::errc();
-
-    if (likely(success)) {
-        if (endptr)
-            *endptr = (char *) status.ptr;
-        p = status.ptr;
-    } else {
-        Throw("Floating point number \"%s\" could not be parsed!", s);
-    }
+    *endptr = (char *) (status.ec == std::errc() ? status.ptr : s);
 
     return result;
 }
 
-template <typename T> T stof(const std::string &s) {
-    char *p = (char *) s.c_str();
-    T result = parse_float<T>(p, p + s.length(), &p);
+template <typename T> T stof(std::string_view s) {
+    const char *start = s.data(),
+               *end   = start + s.length();
+
+    char *p = nullptr;
+    T result = parse_float<T>(start, end, &p);
     bool success = false;
 
     // Skip trailing space
-    do {
+    while (p < end) {
         char c = *p;
-
         if (c == ' ' || c == '\t') {
             ++p;
-        } else  {
-            success = c == '\0';
+        } else {
+            success = false;
             break;
         }
-    } while (true);
+    }
+
+    if (p == end)
+        success = true;
 
     if (unlikely(!success))
         Throw("Floating point number \"%s\" could not be parsed!", s);
@@ -67,19 +64,19 @@ template <typename T> T stof(const std::string &s) {
     return result;
 }
 
-template MI_EXPORT_LIB float  stof<float>(const std::string &);
-template MI_EXPORT_LIB double stof<double>(const std::string &);
-template MI_EXPORT_LIB float  parse_float<float>(const char *, const char *, char **);
-template MI_EXPORT_LIB double parse_float<double>(const char *, const char *, char **);
+template MI_EXPORT_LIB float  stof<float>(std::string_view);
+template MI_EXPORT_LIB double stof<double>(std::string_view);
+template MI_EXPORT_LIB float  parse_float<float>(const char *, const char *, char **) noexcept;
+template MI_EXPORT_LIB double parse_float<double>(const char *, const char *, char **) noexcept;
 
-std::vector<std::string> tokenize(const std::string &string,
-                                  const std::string &delim,
+std::vector<std::string> tokenize(std::string_view string,
+                                  std::string_view delim,
                                   bool include_empty) {
-    std::string::size_type last_pos = 0, pos = string.find_first_of(delim, last_pos);
+    std::string_view::size_type last_pos = 0, pos = string.find_first_of(delim, last_pos);
     std::vector<std::string> tokens;
 
     while (last_pos != std::string::npos) {
-        std::string substr = string.substr(last_pos, pos - last_pos);
+        std::string substr(string.substr(last_pos, pos - last_pos));
         if (!substr.empty() || include_empty)
             tokens.push_back(std::move(substr));
         last_pos = pos;
@@ -92,7 +89,7 @@ std::vector<std::string> tokenize(const std::string &string,
     return tokens;
 }
 
-std::string indent(const std::string &string, size_t amount) {
+std::string indent(std::string_view string, size_t amount) {
     std::string result;
     result.reserve(string.size());
     for (size_t i = 0; i < string.length(); ++i) {
@@ -112,15 +109,15 @@ std::string indent(const Object *value, size_t amount) {
     return indent(string, amount);
 }
 
-std::string trim(const std::string &s, const std::string &whitespace) {
+std::string trim(std::string_view s, std::string_view whitespace) {
     auto it1 = s.find_first_not_of(whitespace);
     if (it1 == std::string::npos)
         return "";
     auto it2 = s.find_last_not_of(whitespace);
-    return s.substr(it1, it2 - it1 + 1);
+    return std::string(s.substr(it1, it2 - it1 + 1));
 }
 
-bool contains(const std::vector<std::string> &keys, const std::string &key) {
+bool contains(const std::vector<std::string> &keys, std::string_view key) {
     for (auto& k: keys)
         if (k == key)
             return true;

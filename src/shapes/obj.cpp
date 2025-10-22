@@ -150,8 +150,8 @@ public:
            Enabled by default, for consistency with the Mitsuba 1 behavior. */
         bool flip_tex_coords = props.get<bool>("flip_tex_coords", true);
 
-        auto fr = Thread::thread()->file_resolver();
-        fs::path file_path = fr->resolve(props.string("filename"));
+        auto fr = file_resolver();
+        fs::path file_path = fr->resolve(props.get<std::string_view>("filename"));
         m_name = file_path.filename().string();
 
 
@@ -234,7 +234,7 @@ public:
                     p[i] = string::strtof<InputFloat>(cur, (char **) &cur);
                     parse_error |= cur == orig;
                 }
-                p = m_to_world.scalar().transform_affine(p);
+                p = m_to_world.scalar() * p;
                 if (unlikely(!all(dr::isfinite(p))))
                     fail("mesh contains invalid vertex position data");
                 m_bbox.expand(p);
@@ -249,7 +249,7 @@ public:
                         n[i] = string::strtof<InputFloat>(cur, (char **) &cur);
                         parse_error |= cur == orig;
                     }
-                    n = dr::normalize(m_to_world.scalar().transform_affine(n));
+                    n = dr::normalize(m_to_world.scalar() * n);
                     if (unlikely(!all(dr::isfinite(n))))
                         fail("mesh contains invalid vertex normal data");
                     normals.push_back(n);
@@ -408,9 +408,10 @@ public:
         initialize();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(OBJMesh)
+
+    MI_TRAVERSE_CB(Base)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(OBJMesh, Mesh)
-MI_EXPORT_PLUGIN(OBJMesh, "OBJ Mesh")
+MI_EXPORT_PLUGIN(OBJMesh)
 NAMESPACE_END(mitsuba)

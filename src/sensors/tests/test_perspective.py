@@ -70,7 +70,7 @@ def test02_sample_ray(variants_vec_spectral, origin, direction):
     wav, spec = mi.sample_rgb_spectrum(mi.sample_shifted(wav_sample))
 
     assert dr.allclose(ray.wavelengths, wav)
-    assert dr.allclose(spec_weight, spec)
+    assert dr.allclose(mi.unpolarized_spectrum(spec_weight), spec)
     assert dr.allclose(ray.time, time)
 
     inv_z = dr.rcp((camera.world_transform().inverse() @ ray.d).z)
@@ -101,7 +101,7 @@ def test03_sample_ray_differential(variants_vec_spectral, origin, direction):
     wav, spec = mi.sample_rgb_spectrum(mi.sample_shifted(wav_sample))
 
     assert dr.allclose(ray.wavelengths, wav)
-    assert dr.allclose(spec_weight, spec)
+    assert dr.allclose(mi.unpolarized_spectrum(spec_weight), spec)
     assert dr.allclose(ray.time, time)
 
     inv_z = dr.rcp((camera.world_transform().inverse() @ ray.d).z)

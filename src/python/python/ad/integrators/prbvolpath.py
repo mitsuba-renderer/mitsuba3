@@ -138,7 +138,6 @@ class PRBVolpathIntegrator(RBIntegrator):
             channel = mi.UInt32(dr.minimum(n_channels * sampler.next_1d(active), n_channels - 1))
 
         while dr.hint(active,
-                      max_iterations=self.max_depth,
                       label=f"Path Replay Backpropagation ({mode.name})"):
             active &= dr.any(throughput != 0.0)
 
@@ -178,7 +177,7 @@ class PRBVolpathIntegrator(RBIntegrator):
 
                 # Handle null and real scatter events
                 if dr.hint(self.handle_null_scattering, mode='scalar'):
-                    scatter_prob = index_spectrum(mei.sigma_t, channel) / index_spectrum(mei.combined_extinction, channel)
+                    scatter_prob = dr.mean(mei.sigma_t / mei.combined_extinction)
                     act_null_scatter = (sampler.next_1d(active_medium) >= scatter_prob) & active_medium
                     act_medium_scatter = ~act_null_scatter & active_medium
                     weight[act_null_scatter] *= mei.sigma_n / dr.detach(1 - scatter_prob)
@@ -213,6 +212,23 @@ class PRBVolpathIntegrator(RBIntegrator):
                 active_surface |= escaped_medium
                 intersect = active_surface & needs_intersection
                 si[intersect] = scene.ray_intersect(ray, intersect)
+
+                # ---------------------- Hide area emitters ----------------------
+
+                if dr.hint(self.hide_emitters, mode='scalar'):
+                    # Are we on the first segment and did we hit an area emitter?
+                    # If so, skip all area emitters along this ray
+                    skip_emitters = (
+                        si.is_valid() &
+                        (si.shape.emitter() != None) &
+                        (depth == 0) &
+                        intersect
+                    )
+
+                    ray_skip = si.spawn_ray(ray.d)
+                    pi = self.skip_area_emitters(scene, ray_skip, True, skip_emitters)
+                    si_after_skip = pi.compute_surface_interaction(ray, mi.RayFlags.All, skip_emitters)
+                    si[skip_emitters] = si_after_skip
 
                 # ----------------- Intersection with emitters -----------------
 
@@ -425,7 +441,7 @@ class PRBVolpathIntegrator(RBIntegrator):
             has_medium_trans = active_surface & si.is_medium_transition()
             medium[has_medium_trans] = si.target_medium(ray.d)
 
-        return emitter_val * transmittance, ds
+        return emitter_val * dr.detach(transmittance), ds
 
     def to_string(self):
         return f'PRBVolpathIntegrator[max_depth = {self.max_depth}]'

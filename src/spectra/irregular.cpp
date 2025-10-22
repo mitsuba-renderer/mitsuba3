@@ -50,58 +50,41 @@ public:
 
 public:
     IrregularSpectrum(const Properties &props) : Texture(props) {
-        if (props.type("values") == Properties::Type::String) {
-            std::vector<std::string> wavelengths_str =
-                string::tokenize(props.string("wavelengths"), " ,");
-            std::vector<std::string> entry_str, values_str =
-                string::tokenize(props.string("values"), " ,");
+        if (props.has_property("value")) {
+            const Properties::Spectrum *spec = props.try_get<Properties::Spectrum>("value");
+            if (!spec)
+                Throw("Failed to retrieve 'value' property as Properties::Spectrum");
 
-            if (values_str.size() != wavelengths_str.size())
-                Throw("IrregularSpectrum: 'wavelengths' and 'values' parameters must have the same size!");
-
-            std::vector<ScalarFloat> values, wavelengths;
-            values.reserve(values_str.size());
-            wavelengths.reserve(values_str.size());
-
-            for (size_t i = 0; i < values_str.size(); ++i) {
-                try {
-                    wavelengths.push_back(string::stof<ScalarFloat>(wavelengths_str[i]));
-                } catch (...) {
-                    Throw("Could not parse floating point value '%s'", wavelengths_str[i]);
-                }
-                try {
-                    values.push_back(string::stof<ScalarFloat>(values_str[i]));
-                } catch (...) {
-                    Throw("Could not parse floating point value '%s'", values_str[i]);
-                }
-            }
-
-            m_distr = IrregularContinuousDistribution<Wavelength>(
-                wavelengths.data(), values.data(), values.size()
-            );
+            init(*spec);
         } else {
-            // Scene/property parsing is in double precision, cast to single precision depending on variant.
-            size_t size = props.get<size_t>("size");
-            const double *whl = static_cast<const double*>(props.pointer("wavelengths"));
-            const double *ptr = static_cast<const double*>(props.pointer("values"));
-
-            if constexpr (std::is_same_v<ScalarFloat, double>) {
-                m_distr = IrregularContinuousDistribution<Wavelength>(whl, ptr, size);
-            } else {
-                std::vector<ScalarFloat> values(size), wavelengths(size);
-                for (size_t i=0; i < size; ++i) {
-                    values[i] = (ScalarFloat) ptr[i];
-                    wavelengths[i] = (ScalarFloat) whl[i];
-                }
-                m_distr = IrregularContinuousDistribution<Wavelength>(
-                    wavelengths.data(), values.data(), size);
-            }
+            // Construct spectrum from separate wavelength and value strings
+            Properties::Spectrum spec(
+                props.get<std::string_view>("wavelengths"),
+                props.get<std::string_view>("values")
+            );
+            init(spec);
         }
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("wavelengths", m_distr.nodes(), +ParamFlags::Differentiable);
-        callback->put_parameter("values",      m_distr.pdf(),   +ParamFlags::Differentiable);
+    void init(const Properties::Spectrum &spec) {
+        if constexpr (std::is_same_v<ScalarFloat, double>) {
+            m_distr = IrregularContinuousDistribution<Wavelength>(
+                spec.wavelengths.data(), spec.values.data(), spec.values.size());
+        } else {
+            std::vector<ScalarFloat> values(spec.values.size()),
+                                     wavelengths(spec.wavelengths.size());
+            for (size_t i = 0; i < spec.values.size(); ++i) {
+                values[i] = (ScalarFloat) spec.values[i];
+                wavelengths[i] = (ScalarFloat) spec.wavelengths[i];
+            }
+            m_distr = IrregularContinuousDistribution<Wavelength>(
+                wavelengths.data(), values.data(), values.size());
+        }
+    }
+
+    void traverse(TraversalCallback *cb) override {
+        cb->put("wavelengths", m_distr.nodes(), ParamFlags::Differentiable);
+        cb->put("values",      m_distr.pdf(),   ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/) override {
@@ -168,11 +151,12 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(IrregularSpectrum)
 private:
     IrregularContinuousDistribution<Wavelength> m_distr;
+
+    MI_TRAVERSE_CB(Texture, m_distr)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(IrregularSpectrum, Texture)
-MI_EXPORT_PLUGIN(IrregularSpectrum, "Irregular interpolated spectrum")
+MI_EXPORT_PLUGIN(IrregularSpectrum)
 NAMESPACE_END(mitsuba)

@@ -88,13 +88,13 @@ public:
     MI_IMPORT_TYPES(Texture)
 
     SmoothDiffuse(const Properties &props) : Base(props) {
-        m_reflectance = props.texture<Texture>("reflectance", .5f);
+        m_reflectance = props.get_texture<Texture>("reflectance", .5f);
         m_flags = BSDFFlags::DiffuseReflection | BSDFFlags::FrontSide;
         m_components.push_back(m_flags);
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("reflectance", m_reflectance.get(), +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("reflectance", m_reflectance, ParamFlags::Differentiable);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -191,11 +191,12 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(SmoothDiffuse)
 private:
     ref<Texture> m_reflectance;
+
+    MI_TRAVERSE_CB(Base, m_reflectance)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SmoothDiffuse, BSDF)
-MI_EXPORT_PLUGIN(SmoothDiffuse, "Smooth diffuse material")
+MI_EXPORT_PLUGIN(SmoothDiffuse)
 NAMESPACE_END(mitsuba)

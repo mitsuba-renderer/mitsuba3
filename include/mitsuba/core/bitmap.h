@@ -172,10 +172,10 @@ public:
         /// No transformation (default)
         Empty,
 
-        // Premultiply channels by alpha
+        /// Premultiply alpha channel
         Premultiply,
 
-        // Unpremultiply (divide) channels by alpha
+        /// Unpremultiply alpha channel
         Unpremultiply
     };
 
@@ -493,7 +493,7 @@ public:
      * values, etc.)
      *
      * Note that the alpha channel is assumed to be linear in both
-     * the source and target bitmap, hence it won't be affected by
+     * the source and target bitmap, therefore it won't be affected by
      * any gamma-related transformations.
      *
      * \remark This <tt>convert()</tt> variant usually returns a new
@@ -593,7 +593,7 @@ public:
     /// Free the resources used by static_initialization()
     static void static_shutdown();
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Bitmap)
  protected:
      /// Rebuild the 'm_struct' field based on the pixel format etc.
      void rebuild_struct(size_t channel_count = 0, const std::vector<std::string> &channel_names = {});
@@ -652,6 +652,8 @@ public:
      bool m_premultiplied_alpha;
      bool m_owns_data;
      Properties m_metadata;
+
+    MI_TRAVERSE_CB(Object, m_size)
 };
 
 

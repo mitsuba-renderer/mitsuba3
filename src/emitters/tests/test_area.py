@@ -86,7 +86,7 @@ def test03_sample_ray(variants_vec_spectral, spectrum_key):
     # Sample a position on the shape
     ps = shape.sample_position(time, pos_sample)
 
-    assert dr.allclose(res, spec * shape.surface_area() * dr.pi)
+    assert dr.allclose(mi.unpolarized_spectrum(res), spec * shape.surface_area() * dr.pi)
     assert dr.allclose(ray.time, time)
     assert dr.allclose(ray.wavelengths, wav)
     assert dr.allclose(ray.o, ps.p, atol=1e-3)

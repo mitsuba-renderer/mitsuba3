@@ -6,12 +6,14 @@
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/pair.h>
+#include <nanobind/stl/vector.h>
+#include <drjit/python.h>
 
 /// Trampoline for derived types implemented in Python
 MI_VARIANT class PyTexture : public Texture<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Texture)
-    NB_TRAMPOLINE(Texture, 14);
+    NB_TRAMPOLINE(Texture, 17);
 
     PyTexture(const Properties &props) : Texture(props) {}
 
@@ -61,6 +63,10 @@ public:
         NB_OVERRIDE_PURE(mean);
     }
 
+    ScalarFloat max() const override {
+        NB_OVERRIDE_PURE(max);
+    }
+
     ScalarVector2i resolution() const override {
         NB_OVERRIDE(resolution);
     }
@@ -80,31 +86,93 @@ public:
     std::string to_string() const override {
         NB_OVERRIDE(to_string);
     }
+
+    void traverse(TraversalCallback *cb) override {
+        NB_OVERRIDE(traverse, cb);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        NB_OVERRIDE(parameters_changed, keys);
+    }
+
+    DR_TRAMPOLINE_TRAVERSE_CB(Texture)
 };
 
-MI_PY_EXPORT(Texture) {
-    MI_PY_IMPORT_TYPES(Texture)
-    using PyTexture = PyTexture<Float, Spectrum>;
-    using Properties = PropertiesV<Float>;
+template <typename Ptr, typename Cls> void bind_texture_generic(Cls &cls) {
+    MI_PY_IMPORT_TYPES()
 
-    MI_PY_TRAMPOLINE_CLASS(PyTexture, Texture, Object)
+    cls.def("eval",
+            [](Ptr texture, const SurfaceInteraction3f &si,
+               Mask active) { return texture->eval(si, active); },
+            "si"_a, "active"_a = true, D(Texture, eval))
+        .def("eval_1",
+             [](Ptr texture, const SurfaceInteraction3f &si,
+                Mask active) { return texture->eval_1(si, active); },
+             "si"_a, "active"_a = true, D(Texture, eval_1))
+        .def("eval_3",
+             [](Ptr texture, const SurfaceInteraction3f &si,
+                Mask active) { return texture->eval_3(si, active); },
+             "si"_a, "active"_a = true, D(Texture, eval_3))
+        .def("sample_spectrum",
+             [](Ptr texture, const SurfaceInteraction3f &si,
+                const Wavelength &sample,
+                Mask active) {
+                 return texture->sample_spectrum(si, sample, active);
+             }, "si"_a, "sample"_a, "active"_a = true,
+             D(Texture, sample_spectrum))
+        .def("pdf_spectrum",
+             [](Ptr texture, const SurfaceInteraction3f &si,
+                Mask active) {
+                 return texture->pdf_spectrum(si, active);
+             }, "si"_a, "active"_a = true,
+             D(Texture, pdf_spectrum))
+        .def("sample_position",
+             [](Ptr texture, const Point2f &sample,
+                Mask active) {
+                 return texture->sample_position(sample, active);
+             }, "sample"_a, "active"_a = true,
+             D(Texture, sample_position))
+        .def("pdf_position",
+             [](Ptr texture, const Point2f &p,
+                Mask active) {
+                 return texture->pdf_position(p, active);
+             }, "p"_a, "active"_a = true,
+             D(Texture, pdf_position))
+        .def("eval_1_grad",
+             [](Ptr texture, const SurfaceInteraction3f &si,
+                Mask active) { return texture->eval_1_grad(si, active); },
+             "si"_a, "active"_a = true, D(Texture, eval_1_grad))
+        .def("mean",
+             [](Ptr texture) { return texture->mean(); },
+             D(Texture, mean))
+        .def("max",
+             [](Ptr texture) { return texture->max(); },
+             D(Texture, max))
+        .def("is_spatially_varying",
+             [](Ptr texture) { return texture->is_spatially_varying(); },
+             D(Texture, is_spatially_varying));
+}
+
+MI_PY_EXPORT(Texture) {
+    MI_PY_IMPORT_TYPES(Texture, TexturePtr)
+    using PyTexture = PyTexture<Float, Spectrum>;
+    using Properties = mitsuba::Properties;
+
+    auto texture = MI_PY_TRAMPOLINE_CLASS(PyTexture, Texture, Object)
         .def(nb::init<const Properties &>(), "props"_a)
         .def_static("D65", nb::overload_cast<ScalarFloat>(&Texture::D65), "scale"_a = 1.f)
-        .def_method(Texture, mean, D(Texture, mean))
-        .def_method(Texture, max, D(Texture, max))
-        .def_method(Texture, is_spatially_varying)
-        .def_method(Texture, eval, "si"_a, "active"_a = true)
-        .def_method(Texture, eval_1, "si"_a, "active"_a = true)
-        .def_method(Texture, eval_1_grad, "si"_a, "active"_a = true)
-        .def_method(Texture, eval_3, "si"_a, "active"_a = true)
-        .def_method(Texture, sample_spectrum, "si"_a, "sample"_a,
-                    "active"_a = true)
         .def_method(Texture, resolution)
-        .def_method(Texture, pdf_spectrum, "si"_a, "active"_a = true)
-        .def_method(Texture, sample_position, "sample"_a, "active"_a = true)
-        .def_method(Texture, pdf_position, "p"_a, "active"_a = true)
         .def_method(Texture, spectral_resolution)
-        .def_method(Texture, wavelength_range);
+        .def_method(Texture, wavelength_range)
+        .def("__repr__", &Texture::to_string);
 
-    MI_PY_REGISTER_OBJECT("register_texture", Texture)
+    bind_texture_generic<Texture *>(texture);
+
+    if constexpr (dr::is_array_v<TexturePtr>) {
+        dr::ArrayBinding b;
+        auto texture_ptr = dr::bind_array_t<TexturePtr>(b, m, "TexturePtr");
+        bind_texture_generic<TexturePtr>(texture_ptr);
+    }
+
+    drjit::bind_traverse(texture);
 }

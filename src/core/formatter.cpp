@@ -1,8 +1,7 @@
 #include <mitsuba/core/formatter.h>
 #include <mitsuba/core/logger.h>
-#include <mitsuba/core/filesystem.h>
 #include <ctime>
-#include <sstream>
+#include <cstring>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -10,62 +9,64 @@ DefaultFormatter::DefaultFormatter()
     : m_has_date(true), m_has_log_level(true), m_has_thread(true),
       m_has_class(true) { }
 
-std::string DefaultFormatter::format(mitsuba::LogLevel level, const Class *class_,
-                                     const Thread *thread, const char *file, int line,
-                                     const std::string &msg) {
-    std::ostringstream oss;
-    std::istringstream iss(msg);
-    char buffer[128];
-    std::string msg_line;
-    time_t time_ = std::time(nullptr);
-    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S ", std::localtime(&time_));
-    int line_idx = 0;
+std::string DefaultFormatter::format(mitsuba::LogLevel level,
+                                     const char *class_name, const char *file,
+                                     int line, std::string_view msg) {
+    std::string result;
+    result.reserve(256); // Pre-allocate to avoid reallocations
 
-    while (std::getline(iss, msg_line) || line_idx == 0) {
-        if (line_idx > 0)
-            oss << '\n';
-
-        /* Date/Time */
-        if (m_has_date)
-            oss << buffer;
-
-        /* Log level */
-        if (m_has_log_level) {
-            switch (level) {
-                case Trace: oss << "TRACE "; break;
-                case Debug: oss << "DEBUG "; break;
-                case Info:  oss << "INFO  "; break;
-                case Warn:  oss << "WARN  "; break;
-                case Error: oss << "ERROR "; break;
-                default:     oss << "CUSTM "; break;
-            }
-        }
-
-        /* Thread */
-        if (thread && m_has_thread) {
-            oss << thread->name();
-
-            for (int i=0; i<(6 - (int) thread->name().size()); i++)
-                oss << ' ';
-        }
-
-        /* Class */
-        if (m_has_class) {
-            if (class_)
-                oss << "[" << class_->name() << "] ";
-            else if (line != -1 && file)
-                oss << "[" << fs::path(file).filename() << ":" << line << "] ";
-        }
-
-        /* Message */
-        oss << msg_line;
-        line_idx++;
+    // Date/Time
+    if (m_has_date) {
+        time_t time_ = std::time(nullptr);
+        char time_buffer[128];
+        strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%d %H:%M:%S ", std::localtime(&time_));
+        result.append(time_buffer);
     }
 
-    return oss.str();
-}
+    // Log level
+    if (m_has_log_level) {
+        const char *level_str;
+        switch (level) {
+            case Trace: level_str = "TRACE "; break;
+            case Debug: level_str = "DEBUG "; break;
+            case Info:  level_str = "INFO  "; break;
+            case Warn:  level_str = "WARN  "; break;
+            case Error: level_str = "ERROR "; break;
+            default:    level_str = "CUSTM "; break;
+        }
+        result.append(level_str);
+    }
 
-MI_IMPLEMENT_CLASS(Formatter, Object)
-MI_IMPLEMENT_CLASS(DefaultFormatter, Formatter)
+    // Class/File info
+    if (m_has_class) {
+        if (class_name) {
+            result.push_back('[');
+            result.append(class_name);
+            result.append("] ");
+        } else if (line != -1 && file) {
+            // Extract filename without heap allocation
+            const char *filename = file;
+            const char *last_sep = strrchr(file, '/');
+            #ifdef _WIN32
+                const char *last_sep_win = strrchr(file, '\\');
+                if (last_sep_win && (!last_sep || last_sep_win > last_sep))
+                    last_sep = last_sep_win;
+            #endif
+            if (last_sep)
+                filename = last_sep + 1;
+
+            result.push_back('[');
+            result.append(filename);
+            result.push_back(':');
+            result.append(std::to_string(line));
+            result.append("] ");
+        }
+    }
+
+    // Message
+    result.append(msg);
+
+    return result;
+}
 
 NAMESPACE_END(mitsuba)
