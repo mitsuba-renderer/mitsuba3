@@ -20,7 +20,7 @@ Serialized mesh loader (:monosp:`serialized`)
 
  * - filename
    - |string|
-   - Filename of the OBJ file that should be loaded
+   - Filename of the serialized file that should be loaded
 
  * - shape_index
    - |int|
@@ -239,8 +239,8 @@ public:
             Throw("Error while loading serialized file \"%s\": %s!", m_name, descr);
         };
 
-        auto fs = Thread::thread()->file_resolver();
-        fs::path file_path = fs->resolve(props.string("filename"));
+        auto fs = file_resolver();
+        fs::path file_path = fs->resolve(props.get<std::string_view>("filename"));
         m_name = file_path.filename().string();
 
         Log(Debug, "Loading mesh from \"%s\" ..", m_name);
@@ -359,15 +359,14 @@ public:
         InputFloat* position_ptr = vertex_positions.get();
         InputFloat* normal_ptr   = vertex_normals.get();
         for (ScalarSize i = 0; i < m_vertex_count; ++i) {
-            InputPoint3f p = m_to_world.scalar().transform_affine(
-                dr::load<InputPoint3f>(position_ptr));
+            InputPoint3f p = m_to_world.scalar() * dr::load<InputPoint3f>(position_ptr);
             dr::store(position_ptr, p);
             position_ptr += 3;
             m_bbox.expand(p);
 
             if (has_normals) {
                 InputNormal3f n = dr::load<InputNormal3f>(normal_ptr);
-                n = dr::normalize(m_to_world.scalar().transform_affine(n));
+                n = dr::normalize(m_to_world.scalar() * n);
                 dr::store(normal_ptr, n);
                 normal_ptr += 3;
             }
@@ -431,9 +430,8 @@ public:
         }
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(SerializedMesh)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SerializedMesh, Mesh)
-MI_EXPORT_PLUGIN(SerializedMesh, "Serialized mesh file")
+MI_EXPORT_PLUGIN(SerializedMesh)
 NAMESPACE_END(mitsuba)

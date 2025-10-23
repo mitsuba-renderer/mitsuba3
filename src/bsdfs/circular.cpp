@@ -62,15 +62,15 @@ public:
     MI_IMPORT_TYPES(Texture)
 
     CircularPolarizer(const Properties &props) : Base(props) {
-        m_transmittance = props.texture<Texture>("transmittance", 1.f);
+        m_transmittance = props.get_texture<Texture>("transmittance", 1.f);
         m_left_handed = props.get<bool>("left_handed", false);
 
         m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null;
         m_components.push_back(m_flags);
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("transmittance",   m_transmittance.get(),  +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("transmittance", m_transmittance, ParamFlags::Differentiable);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -162,12 +162,13 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(CircularPolarizer)
 private:
     ref<Texture> m_transmittance;
     bool m_left_handed;
+
+    MI_TRAVERSE_CB(Base, m_transmittance)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(CircularPolarizer, BSDF)
-MI_EXPORT_PLUGIN(CircularPolarizer, "Circular polarizer material")
+MI_EXPORT_PLUGIN(CircularPolarizer)
 NAMESPACE_END(mitsuba)

@@ -4,6 +4,6 @@
 # * named 'build'.
 # ***************************************************************
 
-$env:MITSUBA_DIR = Get-Location
+$env:MITSUBA_DIR = $PSScriptRoot
 $env:PATH = $env:MITSUBA_DIR + ";" + $env:PATH
 $env:PYTHONPATH = $env:MITSUBA_DIR + "\python" + ";" + $env:PYTHONPATH

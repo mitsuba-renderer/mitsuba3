@@ -112,9 +112,9 @@ public:
         }
 
         // Get Blender version, this is used to determine the right data layout
-        Version version(props.string("version").c_str());
+        Version version(props.get<std::string>("version").c_str());
 
-        m_name = props.string("name");
+        m_name = props.get<std::string>("name");
         short mat_nr = (short) props.get<int>("mat_nr");
         size_t vertex_count = props.get<int>("vert_count");
         size_t loop_tri_count = props.get<int>("loop_tri_count");
@@ -147,7 +147,8 @@ public:
 
         bool has_cols = false;
         std::vector<std::pair<std::string, const blender::MLoopCol *>> cols;
-        for (std::string &s : props.property_names()){
+        for (auto &key : props){
+            std::string s(key.name());
             if (s.rfind("vertex_", 0) == 0){
                 cols.push_back({s, reinterpret_cast<const blender::MLoopCol *>(props.get<int64_t>(s))});
                 has_cols = true;
@@ -309,7 +310,7 @@ public:
                 // Flat shading, use per face normals (only if the mesh is not globally flat)
                 const InputVector3f e1 = face_points[1] - face_points[0];
                 const InputVector3f e2 = face_points[2] - face_points[0];
-                normal = m_to_world.scalar().transform_affine(dr::cross(e1, e2));
+                normal = m_to_world.scalar() * dr::cross(e1, e2);
                 if(unlikely(dr::all(normal == 0.f)))
                     continue; // Degenerate triangle, ignore it
                 else
@@ -333,16 +334,16 @@ public:
                     fail("reference to invalid vertex %i!", vert_index);
 
                 Key vert_key;
-                if (smooth_face || m_face_normals) {
+                if (smooth_face && !m_face_normals) {
                     if (version <= Version(3, 0, 0)) {
                         // Blender 2.xx - 3.0
                         const short *no = verts_old_2[vert_index].no;
                         // Store per vertex normals if the face is smooth or if the mesh is globally flat
-                        normal = m_to_world.scalar().transform_affine(InputNormal3f(no[0], no[1], no[2]));
+                        normal = m_to_world.scalar() * InputNormal3f(no[0], no[1], no[2]);
                     } else {
                         const float *no = normals[vert_index];
                         // Store per vertex normals if the face is smooth or if the mesh is globally flat
-                        normal = m_to_world.scalar().transform_affine(InputNormal3f(no[0], no[1], no[2]));
+                        normal = m_to_world.scalar() * InputNormal3f(no[0], no[1], no[2]);
                     }
 
                     if(unlikely(dr::all(normal == 0.f)))
@@ -392,7 +393,7 @@ public:
                     map_entry->value   = vert_id;
                     map_entry->is_init = true;
                     // Add stuff to the temporary buffers
-                    InputPoint3f pt = m_to_world.scalar().transform_affine(face_points[i]);
+                    InputPoint3f pt = m_to_world.scalar() * face_points[i];
                     tmp_vertices.push_back({pt.x(), pt.y(), pt.z()});
                     if (!m_face_normals)
                         tmp_normals.push_back({normal.x(), normal.y(), normal.z()});
@@ -436,9 +437,8 @@ public:
         initialize();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(BlenderMesh)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(BlenderMesh, Mesh)
-MI_EXPORT_PLUGIN(BlenderMesh, "Blender Mesh")
+MI_EXPORT_PLUGIN(BlenderMesh)
 NAMESPACE_END(mitsuba)

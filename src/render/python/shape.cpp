@@ -14,12 +14,14 @@ MI_PY_EXPORT(DiscontinuityFlags) {
 
     auto shape_types = nb::enum_<ShapeType>(m, "ShapeType", nb::is_arithmetic(), D(ShapeType))
         .def_value(ShapeType, Mesh)
+        .def_value(ShapeType, Rectangle)
         .def_value(ShapeType, BSplineCurve)
         .def_value(ShapeType, Cylinder)
         .def_value(ShapeType, Disk)
         .def_value(ShapeType, LinearCurve)
-        .def_value(ShapeType, Rectangle)
         .def_value(ShapeType, SDFGrid)
         .def_value(ShapeType, Sphere)
-        .def_value(ShapeType, Other);
+        .def_value(ShapeType, Ellipsoids)
+        .def_value(ShapeType, EllipsoidsMesh)
+        .def_value(ShapeType, Invalid);
 }

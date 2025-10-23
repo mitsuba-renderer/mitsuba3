@@ -4,7 +4,7 @@ Spectra
 =======
 
 This section describes the plugins behind spectral reflectance or emission used
-in 3. On an implementation level, these behave very similarly to the
+in Mitsuba 3. On an implementation level, these behave very similarly to the
 :ref:`texture plugins <sec-textures>` described earlier (but lacking their
 spatially varying property) and can thus be used similarly as either BSDF or
 emitter parameters:
@@ -12,7 +12,7 @@ emitter parameters:
 .. tabs::
     .. code-tab:: xml
 
-        <scene version=3.0.0>
+        <scene version="3.0.0">
             <bsdf type=".. BSDF type ..">
                 <!-- Explicitly add a uniform spectrum plugin -->
                 <spectrum type=".. spectrum type .." name=".. parameter name ..">
@@ -35,7 +35,7 @@ emitter parameters:
 
 In practice, it is however discouraged to instantiate plugins in this explicit way
 and the XML scene description parser directly parses a number of common (shorter)
-``<spectrum>`` and ``<rgb>`` tags See the corresponding section about the
+``<spectrum>`` and ``<rgb>`` tags. See the corresponding section about the
 :ref:`scene file format <sec-file-format>` for details.
 
 The following two tables summarize which underlying plugins get instantiated
@@ -120,6 +120,6 @@ and the BSDF reflectance (here using a :ref:`diffuse <bsdf-diffuse>` BSDF).
     While it is possible to define unbounded RGB properties (such as the ``eta``
     value for a :ref:`conductor BSDF <bsdf-conductor>`) using ``<rgb name=".." value=".."/>``
     tag, it is highly recommended to directly define a spectrum curve (or use a
-    material from :num:`conductor-ior-list>`) as the spectral uplifting algorithm
+    material from :numref:`conductor-ior-list`) as the spectral uplifting algorithm
     implemented in Mitsuba won't be able to guarantee that the produced spectrum
     will behave consistently in both RGB and spectral modes.

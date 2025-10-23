@@ -79,17 +79,15 @@ public:
 
     BlendBSDF(const Properties &props) : Base(props) {
         int bsdf_index = 0;
-        for (auto &[name, obj] : props.objects(false)) {
-            auto *bsdf = dynamic_cast<Base *>(obj.get());
-            if (bsdf) {
+        for (auto &prop : props.objects()) {
+            if (Base *bsdf = prop.try_get<Base>()) {
                 if (bsdf_index == 2)
                     Throw("BlendBSDF: Cannot specify more than two child BSDFs");
                 m_nested_bsdf[bsdf_index++] = bsdf;
-                props.mark_queried(name);
             }
         }
 
-        m_weight = props.texture<Texture>("weight");
+        m_weight = props.get_texture<Texture>("weight");
         if (bsdf_index != 2)
             Throw("BlendBSDF: Two child BSDFs must be specified!");
 
@@ -101,10 +99,10 @@ public:
         m_flags = m_nested_bsdf[0]->flags() | m_nested_bsdf[1]->flags();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("weight", m_weight.get(),          +ParamFlags::Differentiable);
-        callback->put_object("bsdf_0", m_nested_bsdf[0].get(),  +ParamFlags::Differentiable);
-        callback->put_object("bsdf_1", m_nested_bsdf[1].get(),  +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("weight", m_weight,         ParamFlags::Differentiable);
+        cb->put("bsdf_0", m_nested_bsdf[0], ParamFlags::Differentiable);
+        cb->put("bsdf_1", m_nested_bsdf[1], ParamFlags::Differentiable);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -136,16 +134,27 @@ public:
         if (dr::any_or<true>(m0)) {
             auto [bs0, result0] = m_nested_bsdf[0]->sample(
                 ctx, si, (sample1 - weight) / (1 - weight), sample2, m0);
+            auto [eval1, pdf1] = m_nested_bsdf[1]->eval_pdf(ctx, si, bs0.wo, m0);
+            auto pdf_weighted = weight * pdf1 + (1.f - weight) * bs0.pdf;
+            auto result_weighted = (weight * eval1 + (1.f - weight) * result0 * bs0.pdf) 
+                                    * dr::select(pdf_weighted > 0.f, dr::rcp(pdf_weighted), 0.f);
+            bs0.pdf = pdf_weighted;
             dr::masked(bs, m0) = bs0;
-            dr::masked(result, m0) = result0;
+            dr::masked(result, m0) = result_weighted;
         }
 
         if (dr::any_or<true>(m1)) {
             auto [bs1, result1] = m_nested_bsdf[1]->sample(
                 ctx, si, sample1 / weight, sample2, m1);
+            auto [eval0, pdf0] = m_nested_bsdf[0]->eval_pdf(ctx, si, bs1.wo, m1);
+            auto pdf_weighted = weight * bs1.pdf + (1.f - weight) * pdf0;
+            auto result_weighted = (weight * result1 * bs1.pdf + (1.f - weight) * eval0) 
+                                    * dr::select(pdf_weighted > 0.f, dr::rcp(pdf_weighted), 0.f);
+            bs1.pdf = pdf_weighted;
             dr::masked(bs, m1) = bs1;
-            dr::masked(result, m1) = result1;
+            dr::masked(result, m1) = result_weighted;
         }
+
 
         return { bs, result };
     }
@@ -223,6 +232,16 @@ public:
                m_nested_bsdf[1]->eval_diffuse_reflectance(si, active) * weight;
     }
 
+    Spectrum eval_null_transmission(const SurfaceInteraction3f &si,
+                                    Mask active) const override {
+        if (likely(!has_flag(m_flags, BSDFFlags::Null)))
+            return 0.f;
+        // Evaluate the null transmission of the nested BSDFs
+        Float weight = eval_weight(si, active);
+        return m_nested_bsdf[0]->eval_null_transmission(si, active) * (1 - weight) +
+               m_nested_bsdf[1]->eval_null_transmission(si, active) * weight;
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "BlendBSDF[" << std::endl
@@ -233,12 +252,13 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(BlendBSDF)
 protected:
     ref<Texture> m_weight;
     ref<Base> m_nested_bsdf[2];
+
+    MI_TRAVERSE_CB(Base, m_weight, m_nested_bsdf[0], m_nested_bsdf[1])
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(BlendBSDF, BSDF)
-MI_EXPORT_PLUGIN(BlendBSDF, "BlendBSDF material")
+MI_EXPORT_PLUGIN(BlendBSDF)
 NAMESPACE_END(mitsuba)

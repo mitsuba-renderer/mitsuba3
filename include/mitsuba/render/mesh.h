@@ -10,13 +10,14 @@
 #include <unordered_map>
 #include <mutex>
 #include <drjit/dynamic.h>
+#include <drjit/array_traverse.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Mesh : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES()
+    MI_IMPORT_TYPES(BSDF)
     MI_IMPORT_BASE(Shape, m_to_world, mark_dirty, m_emitter, m_sensor, m_bsdf,
                    m_interior_medium, m_exterior_medium, m_is_instance,
                    m_discontinuity_types, m_shape_type, m_initialized)
@@ -46,6 +47,9 @@ public:
          ScalarSize face_count, const Properties &props = Properties(),
          bool has_vertex_normals = false, bool has_vertex_texcoords = false);
 
+    // Creates an empty mesh.
+    Mesh(const Properties &props);
+
     /// Destructor
     ~Mesh();
 
@@ -60,6 +64,9 @@ public:
     // =========================================================================
     //! @{ \name Accessors (vertices, faces, normals, etc)
     // =========================================================================
+
+    /// Set the shape's BSDF
+    void set_bsdf(BSDF *bsdf) override;
 
     /// Return the total number of vertices
     ScalarSize vertex_count() const { return m_vertex_count; }
@@ -87,16 +94,20 @@ public:
     const DynamicBuffer<UInt32>& faces_buffer() const { return m_faces; }
 
     /// Return the mesh attribute associated with \c name
-    FloatStorage& attribute_buffer(const std::string& name) {
-        auto attribute = m_mesh_attributes.find(name);
-        if (attribute == m_mesh_attributes.end())
-            Throw("attribute_buffer(): attribute %s doesn't exist.", name.c_str());
-        return attribute->second.buf;
-    }
+    FloatStorage& attribute_buffer(std::string_view name);
 
     /// Add an attribute buffer with the given \c name and \c dim
-    void add_attribute(const std::string &name, size_t dim,
+    void add_attribute(std::string_view name, size_t dim,
                        const std::vector<InputFloat> &buf);
+
+    /**
+     * Remove an attribute with the given \c name.
+     *
+     * Affects both mesh and texture attributes.
+     *
+     * Throws an exception if the attribute was not previously registered.
+     */
+    void remove_attribute(std::string_view name) override;
 
     /// Returns the vertex indices associated with triangle \c index
     template <typename Index>
@@ -156,11 +167,21 @@ public:
         return dr::normalize(dr::cross(v[1] - v[0], v[2] - v[0]));
     }
 
-    /// Returns the opposite edge index associated with directed edge \c index
+    /**
+     * Returns the opposite edge index associated with directed edge \c index
+     *
+     * If the directed edge data structure is not initialized or outdated,
+     * the return value is undefined. Ensure that \ref build_directed_edges()
+     * is called before this method.
+     */
     template <typename Index>
     MI_INLINE auto opposite_dedge(Index index,
                                  dr::mask_t<Index> active = true) const {
         using Result = dr::uint32_array_t<Index>;
+
+        if (dr::width(m_E2E) == 0)
+            return Result((uint32_t) -1);
+
         return dr::gather<Result>(m_E2E, index, active);
     }
 
@@ -175,6 +196,9 @@ public:
 
     /// Does this mesh use face normals?
     bool has_face_normals() const { return m_face_normals; }
+
+    /// Does this shape have flipped normals?
+    bool has_flipped_normals() const override { return m_flip_normals; }
 
     /// @}
     // =========================================================================
@@ -205,7 +229,7 @@ public:
     void recompute_bbox();
 
     /**
-     * /brief Build directed edge data structure to efficiently access adjacent
+     * \brief Build directed edge data structure to efficiently access adjacent
      * edges.
      *
      * This is an implementation of the technique described in:
@@ -243,17 +267,17 @@ public:
                                                      uint32_t recursion_depth = 0,
                                                      Mask active = true) const override;
 
-    Mask has_attribute(const std::string &name, Mask active = true) const override;
+    Mask has_attribute(std::string_view name, Mask active = true) const override;
 
-    UnpolarizedSpectrum eval_attribute(const std::string &name,
+    UnpolarizedSpectrum eval_attribute(std::string_view name,
                                        const SurfaceInteraction3f &si,
                                        Mask active = true) const override;
 
-    Float eval_attribute_1(const std::string &name,
+    Float eval_attribute_1(std::string_view name,
                            const SurfaceInteraction3f &si,
                            Mask active = true) const override;
 
-    Color3f eval_attribute_3(const std::string &name,
+    Color3f eval_attribute_3(std::string_view name,
                              const SurfaceInteraction3f &si,
                              Mask active = true) const override;
 
@@ -396,7 +420,6 @@ public:
     size_t face_data_bytes() const;
 
 protected:
-    Mesh(const Properties &);
     inline Mesh() {}
 
     /**
@@ -408,7 +431,7 @@ protected:
     void build_pmf();
 
     /**
-     * /brief Precompute the set of edges that could contribute to the indirect
+     * \brief Precompute the set of edges that could contribute to the indirect
      * discontinuous integral.
      *
      * This method filters out any concave edges or flat surfaces.
@@ -480,7 +503,7 @@ protected:
         return { t, { u, v }, active };
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Mesh)
 
 protected:
     enum MeshAttributeType {
@@ -495,6 +518,8 @@ protected:
         MeshAttribute migrate(AllocType at) const {
             return MeshAttribute { size, type, dr::migrate(buf, at) };
         }
+
+        DRJIT_STRUCT_NODEF(MeshAttribute, buf);
     };
 
     template <uint32_t Size, bool Raw>
@@ -558,9 +583,6 @@ protected:
     mutable DynamicBuffer<UInt32> m_E2E;
     bool m_E2E_outdated = true;
 
-
-    constexpr static ScalarIndex m_invalid_dedge = (ScalarIndex) -1;
-
     /// Sampling density of silhouette (\ref build_indirect_silhouette_distribution)
     DiscreteDistribution<Float> m_sil_dedge_pmf;
 
@@ -571,7 +593,8 @@ protected:
     uint32_t* m_faces_ptr;
 #endif
 
-    std::unordered_map<std::string, MeshAttribute> m_mesh_attributes;
+    tsl::robin_map<std::string, MeshAttribute, std::hash<std::string_view>,
+                   std::equal_to<>> m_mesh_attributes;
 
 #if defined(MI_ENABLE_CUDA)
     mutable void* m_vertex_buffer_ptr = nullptr;
@@ -591,6 +614,10 @@ protected:
 
     /// Pointer to the scene that owns this mesh
     Scene<Float, Spectrum>* m_scene = nullptr;
+
+    MI_DECLARE_TRAVERSE_CB(m_vertex_positions, m_vertex_normals,
+                           m_vertex_texcoords, m_faces, m_E2E, m_sil_dedge_pmf,
+                           m_mesh_attributes, m_area_pmf, m_parameterization)
 };
 
 MI_EXTERN_CLASS(Mesh)
@@ -617,7 +644,7 @@ DRJIT_CALL_TEMPLATE_INHERITED_BEGIN(mitsuba::Mesh, mitsuba::Shape)
     DRJIT_CALL_GETTER(has_vertex_texcoords)
     DRJIT_CALL_GETTER(has_mesh_attributes)
     DRJIT_CALL_GETTER(has_face_normals)
-DRJIT_CALL_INHERITED_END(mitsuba::Mesh)
+DRJIT_CALL_END()
 
 //! @}
 // -----------------------------------------------------------------------

@@ -129,7 +129,7 @@ def test05_ray_intersect_instancing(variants_all_ad_rgb):
             'type': 'shapegroup',
             'sdf': {
                 'type': 'sdfgrid',
-                'grid': default_sdf_grid()
+                'grid': mi.TensorXf(default_sdf_grid())
             }
         },
         'first_sdf': {
@@ -342,7 +342,7 @@ def test08_load_tensor(variants_all_ad_rgb):
             "sdf": {
                 "type" : "sdfgrid",
                 "to_world" : mi.ScalarTransform4f().translate(translate),
-                "grid" : sdf_grid
+                "grid" : mi.TensorXf(sdf_grid)
             }
         })
 

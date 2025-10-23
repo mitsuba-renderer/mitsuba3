@@ -20,12 +20,9 @@ NAMESPACE_BEGIN(mitsuba)
  * the underlying function it is not required to be smooth or even continuous.
  */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB Texture : public Object {
+class MI_EXPORT_LIB Texture : public JitObject<Texture<Float, Spectrum>> {
 public:
     MI_IMPORT_TYPES()
-
-    /// Destructor
-    ~Texture();
 
     // =============================================================
     //! @{ \name Standard sampling interface
@@ -223,20 +220,32 @@ public:
     /// standard D65 illuminant
     static ref<Texture> D65(ref<Texture> texture);
 
-    /// Return a string identifier
-    std::string id() const override { return m_id; }
-
-    /// Set a string identifier
-    void set_id(const std::string& id) override { m_id = id; };
-
-    MI_DECLARE_CLASS()
+    MI_DECLARE_PLUGIN_BASE_CLASS(Texture)
 
 protected:
     Texture(const Properties &);
 
-protected:
-    std::string m_id;
+    MI_TRAVERSE_CB(Object)
 };
 
 MI_EXTERN_CLASS(Texture)
 NAMESPACE_END(mitsuba)
+
+// -----------------------------------------------------------------------
+//! @{ \name Enables vectorized method calls on Dr.Jit arrays of Textures
+// -----------------------------------------------------------------------
+
+DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Texture)
+    DRJIT_CALL_METHOD(eval)
+    DRJIT_CALL_METHOD(sample_spectrum)
+    DRJIT_CALL_METHOD(pdf_spectrum)
+    DRJIT_CALL_METHOD(sample_position)
+    DRJIT_CALL_METHOD(pdf_position)
+    DRJIT_CALL_METHOD(eval_1)
+    DRJIT_CALL_METHOD(eval_1_grad)
+    DRJIT_CALL_METHOD(eval_3)
+    DRJIT_CALL_METHOD(mean)
+
+    DRJIT_CALL_GETTER(max)
+    DRJIT_CALL_GETTER(is_spatially_varying)
+DRJIT_CALL_END()

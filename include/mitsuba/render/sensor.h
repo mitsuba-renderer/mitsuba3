@@ -24,9 +24,6 @@ public:
     //! @{ \name Sensor-specific sampling functions
     // =============================================================
 
-    /// Destructor
-    ~Sensor();
-
     /**
      * \brief Importance sample a ray differential proportional to the sensor's
      * sensitivity profile.
@@ -35,7 +32,7 @@ public:
      * wavelength, surface position, and direction. This function takes a given
      * time value and five uniformly distributed samples on the interval [0, 1]
      * and warps them so that the returned ray the profile. Any
-     * discrepancies between ideal and actual sampled profile are absorbed into
+     * discrepancies between ideal and actual sampled profiles are absorbed into
      * a spectral importance weight that is returned along with the ray.
      *
      * In contrast to \ref Endpoint::sample_ray(), this function returns
@@ -115,34 +112,32 @@ public:
     /**
      * \brief Return the sensor's sample generator
      *
-     * This is the \a root sampler, which will later be forked a
-     * number of times to provide each participating worker thread
-     * with its own instance (see \ref Scene::sampler()).
-     * Therefore, this sampler should never be used for anything
-     * except creating forks.
+     * This is the \a root sampler, which will later be forked a number of times
+     * to provide each participating worker thread with its own instance (see
+     * \ref Scene::sampler()). Therefore, this sampler should never be used for
+     * anything except creating forks.
      */
     ref<Sampler> sampler() { return m_sampler; }
 
     /**
      * \brief Return the sensor's sampler (const version).
      *
-     * This is the \a root sampler, which will later be cloned a
-     * number of times to provide each participating worker thread
-     * with its own instance (see \ref Scene::sampler()).
-     * Therefore, this sampler should never be used for anything
-     * except creating clones.
+     * This is the \a root sampler, which will later be cloned a number of times
+     * to provide each participating worker thread with its own instance (see
+     * \ref Scene::sampler()). Therefore, this sampler should never be used for
+     * anything except creating clones.
      */
     ref<const Sampler> sampler() const { return m_sampler.get(); }
 
     //! @}
     // =============================================================
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_parameter("shutter_open",      m_shutter_open,      +ParamFlags::NonDifferentiable);
-        callback->put_parameter("shutter_open_time", m_shutter_open_time, +ParamFlags::NonDifferentiable);
-        callback->put_object("film",                 m_film.get(),        +ParamFlags::NonDifferentiable);
-        callback->put_object("sampler",              m_sampler.get(),     +ParamFlags::NonDifferentiable);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("shutter_open",      m_shutter_open,      ParamFlags::NonDifferentiable);
+        cb->put("shutter_open_time", m_shutter_open_time, ParamFlags::NonDifferentiable);
+        cb->put("film",              m_film,              ParamFlags::NonDifferentiable);
+        cb->put("sampler",           m_sampler,           ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
@@ -150,7 +145,8 @@ public:
         Base::parameters_changed(keys);
     }
 
-    MI_DECLARE_CLASS()
+    /// This is both a class and the base of various Mitsuba plugins
+    MI_DECLARE_PLUGIN_BASE_CLASS(Sensor)
 
 protected:
     Sensor(const Properties &props);
@@ -163,6 +159,8 @@ protected:
     ScalarFloat m_shutter_open_time;
     ref<const Texture> m_srf;
     bool m_alpha;
+
+    MI_TRAVERSE_CB(Base, m_film, m_sampler, m_srf)
 };
 
 //! @}
@@ -201,13 +199,17 @@ public:
     /// Return the distance to the focal plane
     Float focus_distance() const { return m_focus_distance; }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("near_clip",      m_near_clip,      +ParamFlags::NonDifferentiable);
-        callback->put_parameter("far_clip",       m_far_clip,       +ParamFlags::NonDifferentiable);
-        Base::traverse(callback);
+    /// Return the projection matrix of this sensor (camera space to sample
+    /// space transformation)
+    virtual ProjectiveTransform4f projection_transform() const = 0;
+
+    void traverse(TraversalCallback *cb) override {
+        cb->put("near_clip",      m_near_clip,      ParamFlags::NonDifferentiable);
+        cb->put("far_clip",       m_far_clip,       ParamFlags::NonDifferentiable);
+        Base::traverse(cb);
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(ProjectiveCamera)
 
 protected:
     ProjectiveCamera(const Properties &props);
@@ -216,6 +218,8 @@ protected:
     ScalarFloat m_near_clip;
     ScalarFloat m_far_clip;
     Float m_focus_distance;
+
+    MI_TRAVERSE_CB(Base, m_focus_distance)
 };
 
 // ========================================================================
@@ -226,7 +230,7 @@ protected:
 extern MI_EXPORT_LIB double parse_fov(const Properties &props, double aspect);
 
 /// Helper function to create a perspective projection transformation matrix
-template <typename Float> Transform<Point<Float, 4>>
+template <typename Float> ProjectiveTransform<Point<Float, 4>>
 perspective_projection(const Vector<int, 2> &film_size,
                        const Vector<int, 2> &crop_size,
                        const Vector<int, 2> &crop_offset,
@@ -235,7 +239,7 @@ perspective_projection(const Vector<int, 2> &film_size,
 
     using Vector2f = Vector<Float, 2>;
     using Vector3f = Vector<Float, 3>;
-    using Transform4f = Transform<Point<Float, 4>>;
+    using ProjectiveTransform4f = ProjectiveTransform<Point<Float, 4>>;
 
     Vector2f film_size_f = Vector2f(film_size),
              rel_size    = Vector2f(crop_size) / film_size_f,
@@ -255,17 +259,17 @@ perspective_projection(const Vector<int, 2> &film_size,
      * 4+5. Translate and scale the coordinates once more to account
      *     for a cropping window (if there is any)
      */
-    return Transform4f::scale(
+    return ProjectiveTransform4f::scale(
                Vector3f(1.f / rel_size.x(), 1.f / rel_size.y(), 1.f)) *
-           Transform4f::translate(
+           ProjectiveTransform4f::translate(
                Vector3f(-rel_offset.x(), -rel_offset.y(), 0.f)) *
-           Transform4f::scale(Vector3f(-0.5f, -0.5f * aspect, 1.f)) *
-           Transform4f::translate(Vector3f(-1.f, -1.f / aspect, 0.f)) *
-           Transform4f::perspective(fov_x, near_clip, far_clip);
+           ProjectiveTransform4f::scale(Vector3f(-0.5f, -0.5f * aspect, 1.f)) *
+           ProjectiveTransform4f::translate(Vector3f(-1.f, -1.f / aspect, 0.f)) *
+           ProjectiveTransform4f::perspective(fov_x, near_clip, far_clip);
 }
 
 /// Helper function to create a orthographic projection transformation matrix
-template <typename Float> Transform<Point<Float, 4>>
+template <typename Float> AffineTransform<Point<Float, 4>>
 orthographic_projection(const Vector<int, 2> &film_size,
                         const Vector<int, 2> &crop_size,
                         const Vector<int, 2> &crop_offset,
@@ -273,7 +277,7 @@ orthographic_projection(const Vector<int, 2> &film_size,
 
     using Vector2f = Vector<Float, 2>;
     using Vector3f = Vector<Float, 3>;
-    using Transform4f = Transform<Point<Float, 4>>;
+    using AffineTransform4f = AffineTransform<Point<Float, 4>>;
 
     Vector2f film_size_f = Vector2f(film_size),
              rel_size    = Vector2f(crop_size) / film_size_f,
@@ -293,13 +297,13 @@ orthographic_projection(const Vector<int, 2> &film_size,
      * 4+5. Translate and scale the coordinates once more to account
      *     for a cropping window (if there is any)
      */
-    return Transform4f::scale(
+    return AffineTransform4f::scale(
                Vector3f(1.f / rel_size.x(), 1.f / rel_size.y(), 1.f)) *
-           Transform4f::translate(
+           AffineTransform4f::translate(
                Vector3f(-rel_offset.x(), -rel_offset.y(), 0.f)) *
-           Transform4f::scale(Vector3f(-0.5f, -0.5f * aspect, 1.f)) *
-           Transform4f::translate(Vector3f(-1.f, -1.f / aspect, 0.f)) *
-           Transform4f::orthographic(near_clip, far_clip);
+           AffineTransform4f::scale(Vector3f(-0.5f, -0.5f * aspect, 1.f)) *
+           AffineTransform4f::translate(Vector3f(-1.f, -1.f / aspect, 0.f)) *
+           AffineTransform4f::orthographic(near_clip, far_clip);
 }
 
 //! @}
@@ -310,7 +314,7 @@ MI_EXTERN_CLASS(ProjectiveCamera)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Dr.Jit support for vectorized function calls
+//! @{ \name Enables vectorized method calls on Dr.Jit arrays of sensors
 // -----------------------------------------------------------------------
 
 DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Sensor)
@@ -326,4 +330,4 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Sensor)
     DRJIT_CALL_GETTER(flags)
     DRJIT_CALL_GETTER(shape)
     DRJIT_CALL_GETTER(medium)
-DRJIT_CALL_END(mitsuba::Sensor)
+DRJIT_CALL_END()

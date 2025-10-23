@@ -1,20 +1,18 @@
 // TODO: check which of these includes are needed
 //       (This is effectively a "simplified" version of spot.cpp
 //        so it shouldnt need all the extra headers?)
-#include <mitsuba/core/properties.h>
-#include <mitsuba/core/warp.h>
-#include <mitsuba/core/plugin.h>
-#include <mitsuba/render/emitter.h>
-#include <mitsuba/render/medium.h>
-#include <mitsuba/render/texture.h>
 #include <mitsuba/core/fstream.h>
 #include <mitsuba/core/fresolver.h>
-#include <mitsuba/core/fresolver.h>
+#include <mitsuba/core/plugin.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/core/warp.h>
+#include <mitsuba/render/emitter.h>
+#include <mitsuba/render/medium.h>
 #include <mitsuba/render/srgb.h>
+#include <mitsuba/render/texture.h>
 #include <mitsuba/render/volume.h>
 #include <mitsuba/render/volumegrid.h>
 #include <drjit/dynamic.h>
@@ -87,11 +85,11 @@ template <typename Float, typename Spectrum>
 class PhotonEmitter final : public Emitter<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Emitter, m_flags, m_medium, m_to_world)
-    MI_IMPORT_TYPES(Scene, Texture,VolumeGrid)
+    MI_IMPORT_TYPES(Scene, Texture, VolumeGrid)
 
     PhotonEmitter(const Properties &props) : Base(props) {
         m_flags = +EmitterFlags::DeltaPosition;
-        m_intensity = props.texture_d65<Texture>("intensity", 1.f);
+        m_intensity = props.get_emissive_texture<Texture>("intensity", 1.f);
 
         // Declare arrays for origin and target coordinates
         Float float_origin_x, float_origin_y, float_origin_z, float_target_x, float_target_y, float_target_z;
@@ -104,11 +102,11 @@ public:
             if (props.has_property("filename")) {
                 // If filename has been specified it needs to be resolved otherwise there will be a RuntimeError
                 FileResolver *fs = Thread::thread()->file_resolver();
-                fs::path file_path = fs->resolve(props.string("filename"));
+                fs::path file_path = fs->resolve(props.get<std::string>("filename"));
                 Log(Info, "The parameters 'filename' and 'photon_list' were both specified; ignoring 'filename'.");
             }
 
-            ref<Object> other = props.object("photon_list");
+            ref<Object> other = props.get<ref<Object>>("photon_list");
             VolumeGrid *volume_grid = dynamic_cast<VolumeGrid *>(other.get());
             float *ptr = volume_grid->data();
             count = ptr[0];
@@ -135,7 +133,7 @@ public:
         } else if (props.has_property("filename")) {
             // Read the file
             FileResolver *fs = Thread::thread()->file_resolver();
-            fs::path file_path = fs->resolve(props.string("filename"));
+            fs::path file_path = fs->resolve(props.get<std::string>("filename"));
             m_filename = file_path.filename().string();
             ref<FileStream> binaryStream = new FileStream(file_path, FileStream::ERead);
             binaryStream -> set_byte_order(Stream::ELittleEndian);
@@ -182,8 +180,8 @@ public:
         Point3f origin(float_origin_x, float_origin_y, float_origin_z);
         Point3f target(float_target_x, float_target_y, float_target_z);
         Vector3f up(0, 0, 1);
-        Transform4f camera_coord = Transform4f::look_at(origin, target, up);
-        // Get the matrix Matrix4f from the Transform4f
+        AffineTransform4f camera_coord = AffineTransform4f::look_at(origin, target, up);
+        // Get the matrix Matrix4f from the AffineTransform4f
         m_transforms = camera_coord.matrix;
 
         if (m_intensity->is_spatially_varying())
@@ -206,12 +204,12 @@ public:
         UInt32 index =  dr::arange<UInt32>(dr::width(wavelength_sample)) % dr::width(m_transforms);
         Matrix4f transforms = dr::gather<Matrix4f>(m_transforms, index);
         // Create the direction vector
-        Vector3f new_dir = Transform4f(transforms).transform_affine(local_dir);
+        Vector3f new_dir = AffineTransform4f(transforms) * local_dir;
 
         // 2. Sample spectrum
         auto si = dr::zeros<SurfaceInteraction3f>();
         si.time = time;
-        si.p    = Transform4f(transforms).translation();
+        si.p    = AffineTransform4f(transforms).translation();
         si.uv   = Point2f(0.5f,0.5f);
         // generate a set of random wavelengths and the corresponding spectral weight
         auto [wavelengths, spec_weight] =
@@ -229,7 +227,7 @@ public:
         UInt32 index =  dr::arange<UInt32>(dr::width(sample)) % dr::width(m_transforms);
         Matrix4f transforms = dr::gather<Matrix4f>(m_transforms, index);
         DirectionSample3f ds;
-        ds.p        = Transform4f(transforms).translation();
+        ds.p        = AffineTransform4f(transforms).translation();
         ds.n        = 0.f;
         ds.uv       = 0.f;
         ds.pdf      = 1.f;
@@ -302,14 +300,16 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(PhotonEmitter)
 private:
     Matrix4f m_transforms;
     std::string m_filename;
     ref<Texture> m_intensity;
+
+    MI_TRAVERSE_CB(Base, m_transforms, m_filename, m_intensity)
 };
 
 
-MI_IMPLEMENT_CLASS_VARIANT(PhotonEmitter, Emitter)
-MI_EXPORT_PLUGIN(PhotonEmitter, "Photon emitter")
+// MI_IMPLEMENT_CLASS_VARIANT(PhotonEmitter, Emitter)
+MI_EXPORT_PLUGIN(PhotonEmitter)
 NAMESPACE_END(mitsuba)

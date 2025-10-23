@@ -124,7 +124,7 @@ MI_DECLARE_ENUM_OPERATORS(BSDFFlags)
  * BSDF models in Mitsuba can be queried and sampled using a variety of
  * different modes -- for instance, a rendering algorithm can indicate whether
  * radiance or importance is being transported, and it can also restrict
- * evaluation and sampling to a subset of lobes in a a multi-lobe BSDF model.
+ * evaluation and sampling to a subset of lobes in a multi-lobe BSDF model.
  *
  * The \ref BSDFContext data structure encodes these preferences and is
  * supplied to most \ref BSDF methods.
@@ -165,7 +165,7 @@ struct MI_EXPORT_LIB BSDFContext {
     }
 
     /**
-     * Checks whether a given BSDF component type and BSDF component index are
+     * Checks whether a given BSDF component type and index are
      * enabled in this context.
      */
     bool is_enabled(BSDFFlags type_, uint32_t component_ = 0) const {
@@ -263,12 +263,9 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
  * \sa mitsuba.BSDFSample3f
  */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB BSDF : public Object {
+class MI_EXPORT_LIB BSDF : public JitObject<BSDF<Float, Spectrum>> {
 public:
     MI_IMPORT_TYPES(Texture)
-
-    /// Destructor
-    ~BSDF();
 
     /**
      * \brief Importance sample the BSDF model
@@ -327,7 +324,7 @@ public:
      *
      * Based on the information in the supplied query context \c ctx, this
      * method will either evaluate the entire BSDF or query individual
-     * components (e.g. the diffuse lobe). Only smooth (i.e. non Dirac-delta)
+     * components (e.g. the diffuse lobe). Only smooth (i.e. non-Dirac-delta)
      * components are supported: calling ``eval()`` on a perfectly specular
      * material will return zero.
      *
@@ -389,7 +386,7 @@ public:
      *
      * Based on the information in the supplied query context \c ctx, this
      * method will either evaluate the entire BSDF or query individual
-     * components (e.g. the diffuse lobe). Only smooth (i.e. non Dirac-delta)
+     * components (e.g. the diffuse lobe). Only smooth (i.e. non-Dirac-delta)
      * components are supported: calling ``eval()`` on a perfectly specular
      * material will return zero.
      *
@@ -426,7 +423,7 @@ public:
      * the BSDF model.
      *
      * This is simply a wrapper around two separate function calls to eval_pdf()
-     * and sample(). The function exists to perform a smaller number of virtual
+     * and sample(). This function exists to reduce the number of virtual
      * function calls, which has some performance benefits on highly vectorized
      * JIT variants of the renderer. (A ~20% performance improvement for the
      * basic path tracer on CUDA)
@@ -566,12 +563,6 @@ public:
         return m_components.size();
     }
 
-    /// Return a string identifier
-    std::string id() const override { return m_id; }
-
-    /// Set a string identifier
-    void set_id(const std::string& id) override { m_id = id; };
-
     /**
      * \brief Evaluate the diffuse reflectance
      *
@@ -589,13 +580,28 @@ public:
     virtual Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
                                               Mask active = true) const;
 
+    /**
+     * \brief Returns the shading frame accounting for any pertubations that may 
+     * performed by the BSDF during evaluation.
+     *
+     * \param si
+     *     Surface interaction associated with the query
+     *
+     * \return
+     *     The perturbed shading frame. By default simply returns the surface
+     *     interaction shading frame.
+     */
+    virtual Frame3f sh_frame(const SurfaceInteraction3f &si, Mask /*active*/) const {
+        return si.sh_frame;
+    }
+
     /// Return a human-readable representation of the BSDF
     std::string to_string() const override = 0;
 
     //! @}
     // -----------------------------------------------------------------------
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_PLUGIN_BASE_CLASS(BSDF)
 
 protected:
     BSDF(const Properties &props);
@@ -607,8 +613,7 @@ protected:
     /// Flags for each component of this BSDF.
     std::vector<uint32_t> m_components;
 
-    /// Identifier (if available)
-    std::string m_id;
+    MI_TRAVERSE_CB(Object)
 };
 
 // -----------------------------------------------------------------------
@@ -651,7 +656,7 @@ MI_EXTERN_CLASS(BSDF)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Dr.Jit support for vectorized function calls
+//! @{ \name Enables vectorized method calls on Dr.Jit arrays of BSDFs
 // -----------------------------------------------------------------------
 
 DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::BSDF)
@@ -666,11 +671,10 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::BSDF)
     DRJIT_CALL_METHOD(eval_attribute)
     DRJIT_CALL_METHOD(eval_attribute_1)
     DRJIT_CALL_METHOD(eval_attribute_3)
+    DRJIT_CALL_METHOD(sh_frame)
     DRJIT_CALL_GETTER(flags)
-    auto needs_differentials() const {
-        return has_flag(flags(), mitsuba::BSDFFlags::NeedsDifferentials);
-    }
-DRJIT_CALL_END(mitsuba::BSDF)
+    auto needs_differentials() const { return has_flag(flags(), mitsuba::BSDFFlags::NeedsDifferentials); }
+DRJIT_CALL_END()
 
 //! @}
 // -----------------------------------------------------------------------

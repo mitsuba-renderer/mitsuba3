@@ -11,7 +11,6 @@ set(INC_DIR "../../include/mitsuba/core")
 
 add_library(mitsuba-core OBJECT
   ${INC_DIR}/../mitsuba.h
-  ${INC_DIR}/atomic.h
   ${INC_DIR}/frame.h
   ${INC_DIR}/fwd.h
   ${INC_DIR}/hash.h
@@ -19,7 +18,6 @@ add_library(mitsuba-core OBJECT
   ${INC_DIR}/jit.h
   ${INC_DIR}/simd.h
   ${INC_DIR}/platform.h
-  ${INC_DIR}/variant.h
 
   string.cpp        ${INC_DIR}/string.h
   appender.cpp      ${INC_DIR}/appender.h
@@ -27,7 +25,6 @@ add_library(mitsuba-core OBJECT
                     ${INC_DIR}/bbox.h
   bitmap.cpp        ${INC_DIR}/bitmap.h
                     ${INC_DIR}/bsphere.h
-  class.cpp         ${INC_DIR}/class.h
                     ${INC_DIR}/distr_1d.h
                     ${INC_DIR}/distr_2d.h
   dstream.cpp       ${INC_DIR}/dstream.h
@@ -55,12 +52,12 @@ add_library(mitsuba-core OBJECT
   struct.cpp        ${INC_DIR}/struct.h
   thread.cpp        ${INC_DIR}/thread.h
                     ${INC_DIR}/timer.h
-  transform.cpp     ${INC_DIR}/transform.h
+                    ${INC_DIR}/transform.h
                     ${INC_DIR}/traits.h
   util.cpp          ${INC_DIR}/util.h
                     ${INC_DIR}/vector.h
                     ${INC_DIR}/warp.h
-  xml.cpp           ${INC_DIR}/xml.h
+  parser.cpp        ${INC_DIR}/parser.h
   zstream.cpp       ${INC_DIR}/zstream.h
                     ${INC_DIR}/quad.h
 
@@ -83,8 +80,7 @@ set_target_properties(mitsuba-core PROPERTIES
   POSITION_INDEPENDENT_CODE ON)
 
 target_link_libraries(mitsuba-core PRIVATE
-  # Link to libpng and zlib (either the system version or a version built via cmake)
-  ${PNG_LIBRARIES}
+  # Link to zlib (either the system version or a version built via cmake)
   ${ZLIB_LIBRARY}
   nanothread
   # Link pugixml parser

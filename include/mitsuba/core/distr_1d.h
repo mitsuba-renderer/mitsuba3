@@ -4,6 +4,7 @@
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/math.h>
 #include <drjit/dynamic.h>
+#include <drjit/traversable_base.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -17,7 +18,7 @@ NAMESPACE_BEGIN(mitsuba)
  * initialization. The associated scale factor can be retrieved using the
  * function \ref normalization().
  */
-template <typename Value> struct DiscreteDistribution {
+template <typename Value> struct DiscreteDistribution: drjit::TraversableBase {
     using Float = std::conditional_t<dr::is_static_array_v<Value>,
                                      dr::value_t<Value>, Value>;
     using FloatStorage   = DynamicBuffer<Float>;
@@ -104,7 +105,7 @@ public:
     }
 
     /**
-     * \brief %Transform a uniformly distributed sample to the stored
+     * \brief Transform a uniformly distributed sample to the stored
      * distribution
      *
      * \param sample
@@ -134,7 +135,7 @@ public:
     }
 
     /**
-     * \brief %Transform a uniformly distributed sample to the stored
+     * \brief Transform a uniformly distributed sample to the stored
      * distribution
      *
      * \param value
@@ -154,7 +155,7 @@ public:
     }
 
     /**
-     * \brief %Transform a uniformly distributed sample to the stored
+     * \brief Transform a uniformly distributed sample to the stored
      * distribution
      *
      * The original sample is value adjusted so that it can be reused as a
@@ -182,7 +183,7 @@ public:
     }
 
     /**
-     * \brief %Transform a uniformly distributed sample to the stored
+     * \brief Transform a uniformly distributed sample to the stored
      * distribution.
      *
      * The original sample is value adjusted so that it can be reused as a
@@ -218,13 +219,15 @@ private:
     void compute_cdf() {
         if (m_pmf.empty())
             Throw("DiscreteDistribution: empty distribution!");
+#if !defined(NDEBUG)
         if (!dr::all(m_pmf >= 0.f))
             Throw("DiscreteDistribution: entries must be non-negative!");
         if (!dr::any(m_pmf > 0.f))
             Throw("DiscreteDistribution: no probability mass found!");
+#endif
 
         m_cdf = dr::prefix_sum(m_pmf, false);
-        m_valid = Vector2u(0, m_pmf.size() - 1);
+        m_valid = Vector2u(0, (uint32_t) m_pmf.size() - 1);
         m_sum = dr::gather<Float>(m_cdf, m_valid.y());
         m_normalization = dr::rcp(m_sum);
         dr::make_opaque(m_valid, m_sum, m_normalization);
@@ -269,6 +272,9 @@ private:
     Float m_sum = 0.f;
     Float m_normalization = 0.f;
     Vector2u m_valid;
+
+    MI_TRAVERSE_CB(drjit::TraversableBase, m_pmf, m_cdf, m_sum, m_normalization,
+                   m_valid)
 };
 
 /**
@@ -283,7 +289,7 @@ private:
  * initialization. The associated scale factor can be retrieved using the
  * function \ref normalization().
  */
-template <typename Value> struct ContinuousDistribution {
+template <typename Value> struct ContinuousDistribution: drjit::TraversableBase {
     using Float = std::conditional_t<dr::is_static_array_v<Value>,
                                      dr::value_t<Value>, Value>;
     using FloatStorage = DynamicBuffer<Float>;
@@ -411,7 +417,7 @@ public:
     }
 
     /**
-     * \brief %Transform a uniformly distributed sample to the stored
+     * \brief Transform a uniformly distributed sample to the stored
      * distribution
      *
      * \param sample
@@ -453,7 +459,7 @@ public:
     }
 
     /**
-     * \brief %Transform a uniformly distributed sample to the stored
+     * \brief Transform a uniformly distributed sample to the stored
      * distribution
      *
      * \param sample 
@@ -601,6 +607,10 @@ private:
     ScalarVector2f m_range { 0.f, 0.f };
     Vector2u m_valid;
     ScalarFloat m_max = 0.f;
+
+    MI_TRAVERSE_CB(drjit::TraversableBase, m_pdf, m_cdf, m_integral,
+                   m_normalization, m_interval_size, m_inv_interval_size,
+                   m_valid)
 };
 
 /**
@@ -615,7 +625,7 @@ private:
  * initialization. The associated scale factor can be retrieved using the
  * function \ref normalization().
  */
-template <typename Value> struct IrregularContinuousDistribution {
+template <typename Value> struct IrregularContinuousDistribution : public drjit::TraversableBase{
     using Float = std::conditional_t<dr::is_static_array_v<Value>,
                                      dr::value_t<Value>, Value>;
     using FloatStorage = DynamicBuffer<Float>;
@@ -767,7 +777,7 @@ public:
     }
 
     /**
-     * \brief %Transform a uniformly distributed sample to the stored
+     * \brief Transform a uniformly distributed sample to the stored
      * distribution
      *
      * \param sample
@@ -812,7 +822,7 @@ public:
     }
 
     /**
-     * \brief %Transform a uniformly distributed sample to the stored
+     * \brief Transform a uniformly distributed sample to the stored
      * distribution
      *
      * \param sample
@@ -973,6 +983,9 @@ private:
     Vector2u m_valid;
     ScalarFloat m_interval_size = 0.f;
     ScalarFloat m_max = 0.f;
+
+    MI_TRAVERSE_CB(drjit::TraversableBase, m_nodes, m_pdf, m_cdf, m_integral,
+                   m_normalization, m_valid)
 };
 
 template <typename Value>

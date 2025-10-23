@@ -125,7 +125,7 @@ public:
     //! @}
     // =========================================================================
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(FileStream)
 
 private:
     EMode m_mode;

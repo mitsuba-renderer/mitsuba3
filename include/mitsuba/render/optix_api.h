@@ -28,6 +28,13 @@ using OptixDeviceContext     = void*;
 using OptixTask              = void*;
 using OptixDenoiserStructPtr = void*;
 
+using OptixDisplacementMicromapArrayIndexingMode  = int;
+using OptixDisplacementMicromapDirectionFormat    = int;
+using OptixDisplacementMicromapBiasAndScaleFormat = int;
+using OptixDisplacementMicromapFormat             = int;
+using OptixOpacityMicromapFormat                  = int;
+using OptixOpacityMicromapArrayIndexingMode       = int;
+
 // =====================================================
 //            Commonly used OptiX constants
 // =====================================================
@@ -38,8 +45,8 @@ using OptixDenoiserStructPtr = void*;
 #define OPTIX_BUILD_INPUT_TYPE_CURVES            0x2145
 #define OPTIX_BUILD_OPERATION_BUILD              0x2161
 
-#define OPTIX_GEOMETRY_FLAG_NONE           0
-#define OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT 1
+#define OPTIX_GEOMETRY_FLAG_NONE                          0
+#define OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT                (1 << 0)
 
 #define OPTIX_INDICES_FORMAT_UNSIGNED_INT3 0x2103
 #define OPTIX_VERTEX_FORMAT_FLOAT3         0x2121
@@ -62,8 +69,6 @@ using OptixDenoiserStructPtr = void*;
 #define OPTIX_EXCEPTION_FLAG_NONE           0
 #define OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW 1
 #define OPTIX_EXCEPTION_FLAG_TRACE_DEPTH    2
-#define OPTIX_EXCEPTION_FLAG_USER           4
-#define OPTIX_EXCEPTION_FLAG_DEBUG          8
 
 #define OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY 0
 #define OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS 1
@@ -83,12 +88,14 @@ using OptixDenoiserStructPtr = void*;
 #define OPTIX_PROGRAM_GROUP_KIND_MISS      0x2422
 #define OPTIX_PROGRAM_GROUP_KIND_HITGROUP  0x2424
 
-#define OPTIX_INSTANCE_FLAG_NONE              0
-#define OPTIX_INSTANCE_FLAG_DISABLE_TRANSFORM (1u << 6)
+#define OPTIX_INSTANCE_FLAG_NONE                           0
+#define OPTIX_INSTANCE_FLAG_DISABLE_TRIANGLE_FACE_CULLING  (1u << 0)
 
-#define OPTIX_RAY_FLAG_NONE                   0
-#define OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT (1u << 2)
-#define OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT     (1u << 3)
+#define OPTIX_RAY_FLAG_NONE                       0
+#define OPTIX_RAY_FLAG_DISABLE_ANYHIT             (1u << 0)
+#define OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT     (1u << 2)
+#define OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT         (1u << 3)
+#define OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES (1u << 4)
 
 #define OPTIX_MODULE_COMPILE_STATE_COMPLETED 0x2364
 
@@ -116,6 +123,48 @@ struct OptixAccelBufferSizes {
     size_t tempUpdateSizeInBytes;
 };
 
+struct OptixOpacityMicromapUsageCount {
+    unsigned int count;
+    unsigned int subdivisionLevel;
+    OptixOpacityMicromapFormat format;
+};
+
+struct OptixBuildInputOpacityMicromap {
+    OptixOpacityMicromapArrayIndexingMode indexingMode;
+    CUdeviceptr opacityMicromapArray;
+    CUdeviceptr indexBuffer;
+    unsigned int indexSizeInBytes;
+    unsigned int indexStrideInBytes;
+    unsigned int indexOffset;
+    unsigned int numMicromapUsageCounts;
+    const OptixOpacityMicromapUsageCount* micromapUsageCounts;
+};
+
+struct OptixDisplacementMicromapUsageCount {
+    unsigned int count;
+    unsigned int subdivisionLevel;
+    OptixDisplacementMicromapFormat format;
+};
+
+struct OptixBuildInputDisplacementMicromap {
+    OptixDisplacementMicromapArrayIndexingMode indexingMode;
+    CUdeviceptr displacementMicromapArray;
+    CUdeviceptr displacementMicromapIndexBuffer;
+    CUdeviceptr vertexDirectionsBuffer;
+    CUdeviceptr vertexBiasAndScaleBuffer;
+    CUdeviceptr triangleFlagsBuffer;
+    unsigned int displacementMicromapIndexOffset;
+    unsigned int displacementMicromapIndexStrideInBytes;
+    unsigned int displacementMicromapIndexSizeInBytes;
+    OptixDisplacementMicromapDirectionFormat vertexDirectionFormat;
+    unsigned int vertexDirectionStrideInBytes;
+    OptixDisplacementMicromapBiasAndScaleFormat vertexBiasAndScaleFormat;
+    unsigned int vertexBiasAndScaleStrideInBytes;
+    unsigned int triangleFlagsStrideInBytes;
+    unsigned int numDisplacementMicromapUsageCounts;
+    const OptixDisplacementMicromapUsageCount* displacementMicromapUsageCounts;
+};
+
 struct OptixBuildInputTriangleArray {
     const CUdeviceptr* vertexBuffers;
     unsigned int numVertices;
@@ -133,6 +182,8 @@ struct OptixBuildInputTriangleArray {
     unsigned int sbtIndexOffsetStrideInBytes;
     unsigned int primitiveIndexOffset;
     OptixTransformFormat transformFormat;
+    OptixBuildInputOpacityMicromap opacityMicromap;
+    OptixBuildInputDisplacementMicromap displacementMicromap;
 };
 
 struct OptixBuildInputCustomPrimitiveArray {
@@ -150,6 +201,7 @@ struct OptixBuildInputCustomPrimitiveArray {
 struct OptixBuildInputInstanceArray {
     CUdeviceptr instances;
     unsigned int numInstances;
+    unsigned int instanceStride;
 };
 
 struct OptixBuildInputCurveArray {
@@ -169,13 +221,29 @@ struct OptixBuildInputCurveArray {
     unsigned int endcapFlags;
 };
 
+struct OptixBuildInputSphereArray {
+  const CUdeviceptr* vertexBuffers;
+  unsigned int vertexStrideInBytes;
+  unsigned int numVertices;
+  const CUdeviceptr* radiusBuffers;
+  unsigned int radiusStrideInBytes;
+  int singleRadius;
+  const unsigned int* flags;
+  unsigned int numSbtRecords;
+  CUdeviceptr sbtIndexOffsetBuffer;
+  unsigned int sbtIndexOffsetSizeInBytes;
+  unsigned int sbtIndexOffsetStrideInBytes;
+  unsigned int primitiveIndexOffset;
+};
+
 struct OptixBuildInput {
     OptixBuildInputType type;
     union {
         OptixBuildInputTriangleArray triangleArray;
+        OptixBuildInputCurveArray curveArray;
+        OptixBuildInputSphereArray sphereArray;
         OptixBuildInputCustomPrimitiveArray customPrimitiveArray;
         OptixBuildInputInstanceArray instanceArray;
-        OptixBuildInputCurveArray curveArray;
         char pad[1024];
     };
 };
@@ -206,10 +274,10 @@ struct OptixModuleCompileOptions {
     int maxRegisterCount;
     int optLevel;
     int debugLevel;
-    const void *boundValues;
+    const void* boundValues;
     unsigned int numBoundValues;
     unsigned int numPayloadTypes;
-    OptixPayloadType *payloadTypes;
+    const OptixPayloadType* payloadTypes;
 };
 
 struct OptixPipelineCompileOptions {
@@ -220,6 +288,8 @@ struct OptixPipelineCompileOptions {
     unsigned int exceptionFlags;
     const char* pipelineLaunchParamsVariableName;
     unsigned int usesPrimitiveTypeFlags;
+    int allowOpacityMicromaps;
+    int allowClusteredGeometry; // OptiX 9.0 ABI
 };
 
 struct OptixAccelEmitDesc {
@@ -241,6 +311,13 @@ struct OptixProgramGroupHitgroup {
     const char* entryFunctionNameIS;
 };
 
+struct OptixProgramGroupCallables {
+    OptixModule moduleDC;
+    const char* entryFunctionNameDC;
+    OptixModule moduleCC;
+    const char* entryFunctionNameCC;
+};
+
 struct OptixProgramGroupDesc {
     OptixProgramGroupKind kind;
     unsigned int flags;
@@ -248,12 +325,13 @@ struct OptixProgramGroupDesc {
         OptixProgramGroupSingleModule raygen;
         OptixProgramGroupSingleModule miss;
         OptixProgramGroupSingleModule exception;
+        OptixProgramGroupCallables callables;
         OptixProgramGroupHitgroup hitgroup;
     };
 };
 
 struct OptixProgramGroupOptions {
-    OptixPayloadType *payloadType;
+    const OptixPayloadType* payloadType;
 };
 
 struct OptixShaderBindingTable {
@@ -295,9 +373,15 @@ enum OptixDenoiserModelKind {
     OPTIX_DENOISER_MODEL_KIND_TEMPORAL = 0x2325
 };
 
+enum OptixDenoiserAlphaMode {
+    OPTIX_DENOISER_ALPHA_MODE_COPY = 0,
+    OPTIX_DENOISER_ALPHA_MODE_DENOISE = 1
+};
+
 struct OptixDenoiserOptions {
     unsigned int guideAlbedo;
     unsigned int guideNormal;
+    OptixDenoiserAlphaMode denoiseAlpha;
 };
 
 struct OptixDenoiserSizes {
@@ -305,25 +389,41 @@ struct OptixDenoiserSizes {
     size_t withOverlapScratchSizeInBytes;
     size_t withoutOverlapScratchSizeInBytes;
     unsigned int overlapWindowSizeInPixels;
+    size_t computeAverageColorSizeInBytes;
+    size_t computeIntensitySizeInBytes;
+    size_t internalGuideLayerPixelSizeInBytes;
 };
 
 struct OptixDenoiserParams {
-    unsigned int denoiseAlpha;
     CUdeviceptr hdrIntensity;
     float blendFactor;
     CUdeviceptr hdrAverageColor;
+    unsigned int temporalModeUsePreviousLayers;
 };
 
 struct OptixDenoiserGuideLayer {
     OptixImage2D albedo;
     OptixImage2D normal;
     OptixImage2D flow;
+    OptixImage2D previousOutputInternalGuideLayer;
+    OptixImage2D outputInternalGuideLayer;
+    OptixImage2D flowTrustworthiness;
+};
+
+enum OptixDenoiserAOVType {
+    OPTIX_DENOISER_AOV_TYPE_NONE       = 0,
+    OPTIX_DENOISER_AOV_TYPE_BEAUTY     = 0x7000,
+    OPTIX_DENOISER_AOV_TYPE_SPECULAR   = 0x7001,
+    OPTIX_DENOISER_AOV_TYPE_REFLECTION = 0x7002,
+    OPTIX_DENOISER_AOV_TYPE_REFRACTION = 0x7003,
+    OPTIX_DENOISER_AOV_TYPE_DIFFUSE    = 0x7004
 };
 
 struct OptixDenoiserLayer {
     OptixImage2D input;
     OptixImage2D previousOutput;
     OptixImage2D output;
+    OptixDenoiserAOVType type;
 };
 
 // =====================================================
@@ -345,7 +445,7 @@ D(optixAccelBuild, OptixDeviceContext, CUstream, const OptixAccelBuildOptions *,
 D(optixBuiltinISModuleGet, OptixDeviceContext,
   const OptixModuleCompileOptions *, const OptixPipelineCompileOptions *,
   const OptixBuiltinISOptions *, OptixModule *);
-D(optixModuleCreateFromPTXWithTasks, OptixDeviceContext,
+D(optixModuleCreateWithTasks, OptixDeviceContext,
   const OptixModuleCompileOptions *, const OptixPipelineCompileOptions *,
   const char *, size_t, char *, size_t *, OptixModule *, OptixTask *);
 D(optixModuleGetCompilationState, OptixModule, int *);
@@ -368,7 +468,7 @@ D(optixDenoiserInvoke, OptixDenoiserStructPtr, CUstream,
   const OptixDenoiserGuideLayer *, const OptixDenoiserLayer *, unsigned int,
   unsigned int, unsigned int, CUdeviceptr, size_t);
 D(optixDenoiserComputeIntensity, OptixDenoiserStructPtr, CUstream,
-  const OptixImage2D *inputImage, CUdeviceptr, CUdeviceptr, size_t);
+  const OptixImage2D *, CUdeviceptr, CUdeviceptr, size_t);
 
 #undef D
 

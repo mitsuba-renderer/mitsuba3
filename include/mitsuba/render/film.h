@@ -11,7 +11,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-
 /**
  * \brief This list of flags is used to classify the different types of films.
  */
@@ -47,7 +46,7 @@ MI_DECLARE_ENUM_OPERATORS(FilmFlags)
  * is then committed to the film using the \ref put() method.
  */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB Film : public Object {
+class MI_EXPORT_LIB Film : public JitObject<Film<Float, Spectrum>> {
 public:
     MI_IMPORT_TYPES(ImageBlock, ReconstructionFilter, Texture)
 
@@ -55,12 +54,12 @@ public:
     ~Film();
 
     /**
-     * Configure the film for rendering a specified set of extra channels (AOVS).
+     * Configure the film for rendering a specified set of extra channels (AOVs).
      * Returns the total number of channels that the film will store
      */
     virtual size_t prepare(const std::vector<std::string> &aovs) = 0;
 
-    /// Return the number of channels for the developed image (excluding AOVS)
+    /// Return the number of channels for the developed image (excluding AOVs)
     virtual size_t base_channels_count() const = 0;
 
     /// Merge an image block into the film. This methods should be thread-safe.
@@ -209,7 +208,7 @@ public:
 
     std::string to_string() const override;
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_PLUGIN_BASE_CLASS(Film)
 protected:
     /// Create a film
     Film(const Properties &props);
@@ -224,6 +223,8 @@ protected:
     bool m_sample_border;
     ref<ReconstructionFilter> m_filter;
     ref<Texture> m_srf;
+
+    MI_DECLARE_TRAVERSE_CB(m_srf)
 };
 
 MI_EXTERN_CLASS(Film)

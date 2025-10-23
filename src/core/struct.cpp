@@ -4,12 +4,13 @@
 #include <mitsuba/core/stream.h>
 #include <mitsuba/core/hash.h>
 #include <mitsuba/core/jit.h>
+#include <drjit-core/half.h>
 #include <drjit/array.h>
 #include <drjit/color.h>
-#include <drjit-core/half.h>
-#include <unordered_map>
-#include <ostream>
+#include <cmath>
 #include <map>
+#include <ostream>
+#include <unordered_map>
 
 /// Set this to '1' to view generated conversion code
 #if !defined(MI_JIT_LOG_ASSEMBLY)
@@ -1883,6 +1884,4 @@ std::string StructConverter::to_string() const {
     return oss.str();
 }
 
-MI_IMPLEMENT_CLASS(Struct, Object)
-MI_IMPLEMENT_CLASS(StructConverter, Object)
 NAMESPACE_END(mitsuba)

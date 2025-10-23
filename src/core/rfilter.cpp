@@ -1,9 +1,11 @@
 #include <mitsuba/core/rfilter.h>
 #include <mitsuba/core/config.h>
+#include <mitsuba/core/properties.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
-MI_VARIANT ReconstructionFilter<Float, Spectrum>::ReconstructionFilter(const Properties &/*props*/) { }
+MI_VARIANT ReconstructionFilter<Float, Spectrum>::ReconstructionFilter(const Properties &props)
+    : JitObject<ReconstructionFilter<Float, Spectrum>>(props.id()) { }
 MI_VARIANT ReconstructionFilter<Float, Spectrum>::~ReconstructionFilter() { }
 
 MI_VARIANT void ReconstructionFilter<Float, Spectrum>::init_discretization() {
@@ -41,6 +43,5 @@ std::ostream &operator<<(std::ostream &os, const FilterBoundaryCondition &value)
     return os;
 }
 
-MI_IMPLEMENT_CLASS_VARIANT(ReconstructionFilter, Object, "rfilter")
 MI_INSTANTIATE_CLASS(ReconstructionFilter)
 NAMESPACE_END(mitsuba)

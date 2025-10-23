@@ -85,8 +85,8 @@ struct MI_EXPORT_LIB PhaseFunctionContext {
     void reverse() { mode = (TransportMode)(1 - (int) mode); }
 
     /**
-     * Checks whether a given phase function component type and phase function
-     * component index are enabled in this context.
+     * Checks whether a given phase function component type and index are
+     * enabled in this context.
      */
     bool is_enabled(PhaseFunctionFlags type_, uint32_t component_ = 0) const {
         uint32_t type = (uint32_t) type_;
@@ -102,13 +102,10 @@ struct MI_EXPORT_LIB PhaseFunctionContext {
  * Mitsuba. It exposes functions for evaluating and sampling the model.
  */
 
-MI_VARIANT
-class MI_EXPORT_LIB PhaseFunction : public Object {
+template <typename Float, typename Spectrum>
+class MI_EXPORT_LIB PhaseFunction : public JitObject<PhaseFunction<Float, Spectrum>> {
 public:
     MI_IMPORT_TYPES(PhaseFunctionContext);
-
-    /// Destructor
-    ~PhaseFunction();
 
     /**
      * \brief Importance sample the phase function model
@@ -198,12 +195,6 @@ public:
         return m_components.size();
     }
 
-    /// Return a string identifier
-    std::string id() const override { return m_id; }
-
-    /// Set a string identifier
-    void set_id(const std::string& id) override { m_id = id; };
-
     /// Return a human-readable representation of the phase function
     std::string to_string() const override = 0;
 
@@ -216,7 +207,7 @@ public:
     //! @}
     // -----------------------------------------------------------------------
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_PLUGIN_BASE_CLASS(PhaseFunction)
 
 protected:
     PhaseFunction(const Properties &props);
@@ -227,9 +218,6 @@ protected:
 
     /// Flags for each component of this phase function.
     std::vector<uint32_t> m_components;
-
-    /// Identifier (if available)
-    std::string m_id;
 };
 
 MI_VARIANT
@@ -248,11 +236,12 @@ std::ostream &operator<<(std::ostream &os, const PhaseFunctionContext<Float, Spe
 
 //! @}
 // -----------------------------------------------------------------------
+
 MI_EXTERN_CLASS(PhaseFunction)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Dr.Jit support for vectorized function calls
+//! @{ \name Enables vectorized calls on Dr.Jit arrays of phase functions
 // -----------------------------------------------------------------------
 
 DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::PhaseFunction)
@@ -262,7 +251,7 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::PhaseFunction)
     DRJIT_CALL_METHOD(max_projected_area)
     DRJIT_CALL_GETTER(flags)
     DRJIT_CALL_GETTER(component_count)
-DRJIT_CALL_END(mitsuba::PhaseFunction)
+DRJIT_CALL_END()
 
 //! @}
 // -----------------------------------------------------------------------

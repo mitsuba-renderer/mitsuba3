@@ -57,7 +57,7 @@ def test02_sample_ray(variants_vec_spectral, spectrum_key):
     it = dr.zeros(mi.SurfaceInteraction3f, 3)
     wav, spec = spectrum.sample_spectrum(it, mi.sample_shifted(wavelength_sample))
 
-    assert dr.allclose(res, spec * 4 * dr.pi * dr.pi)
+    assert dr.allclose(mi.unpolarized_spectrum(res), spec * 4 * dr.pi * dr.pi)
     assert dr.allclose(ray.time, time)
     assert dr.allclose(ray.wavelengths, wav)
     assert dr.allclose(ray.o, mi.warp.square_to_uniform_sphere(pos_sample))

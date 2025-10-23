@@ -52,9 +52,12 @@ NAMESPACE_BEGIN(mitsuba)
  * these redundancies and remove them retroactively.
  */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB Endpoint : public Object {
+class MI_EXPORT_LIB Endpoint : public JitObject<Endpoint<Float, Spectrum>> {
 public:
     MI_IMPORT_TYPES(Medium, Scene, Shape)
+    static constexpr const char *Variant = detail::variant<Float, Spectrum>::name;
+    static constexpr const char *Domain = "Endpoint";
+    static constexpr ObjectType Type = ObjectType::Unknown; // Endpoint is not a concrete type
 
     // =============================================================
     //! @{ \name Wavelength sampling interface
@@ -314,7 +317,7 @@ public:
 
 
     /// Return the local space to world space transformation
-    Transform4f world_transform() const {
+    AffineTransform4f world_transform() const {
         return m_to_world.value();
     }
 
@@ -339,10 +342,10 @@ public:
     //! @{ \name Miscellaneous
     // =============================================================
 
-    /// Return the shape, to which the emitter is currently attached
+    /// Return the shape to which the emitter is currently attached
     Shape *shape() { return m_shape; }
 
-    /// Return the shape, to which the emitter is currently attached (const version)
+    /// Return the shape to which the emitter is currently attached (const version)
     const Shape *shape() const { return m_shape; }
 
     /// Return a pointer to the medium that surrounds the emitter
@@ -372,12 +375,6 @@ public:
      */
     virtual void set_scene(const Scene *scene);
 
-    /// Return a string identifier
-    std::string id() const override { return m_id; }
-
-    /// Set a string identifier
-    void set_id(const std::string& id) override { m_id = id; };
-
     //! @}
     // =============================================================
 
@@ -385,18 +382,20 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override;
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Endpoint)
 
 protected:
     Endpoint(const Properties &props);
+    Endpoint(const Properties &props, ObjectType type);
 
 protected:
-    field<Transform4f, ScalarTransform4f> m_to_world;
+    field<AffineTransform4f, ScalarAffineTransform4f> m_to_world;
     ref<Medium> m_medium;
     Shape *m_shape = nullptr;
     bool m_needs_sample_2 = true;
     bool m_needs_sample_3 = true;
-    std::string m_id;
+
+    MI_DECLARE_TRAVERSE_CB(m_to_world, m_medium)
 };
 
 MI_EXTERN_CLASS(Endpoint)

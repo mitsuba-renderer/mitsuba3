@@ -70,5 +70,4 @@ std::tuple<Spiral::Vector2i, Spiral::Vector2u, uint32_t> Spiral::next_block() {
     return { offset + m_offset, size, block_id };
 }
 
-MI_IMPLEMENT_CLASS(Spiral, Object)
 NAMESPACE_END(mitsuba)

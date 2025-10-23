@@ -16,9 +16,14 @@ static OptixImage2D optixImage2DfromTensor(
              pixel_format };
 }
 
-MI_VARIANT OptixDenoiser<Float, Spectrum>::OptixDenoiser(
-    const ScalarVector2u &input_size, bool albedo, bool normals, bool temporal)
-    : m_input_size(input_size), m_options({ albedo, normals }),
+MI_VARIANT
+OptixDenoiser<Float, Spectrum>::OptixDenoiser(const ScalarVector2u &input_size,
+                                              bool albedo, bool normals,
+                                              bool temporal, bool denoise_alpha)
+    : m_input_size(input_size),
+      m_options({ albedo, normals,
+                  denoise_alpha ? OPTIX_DENOISER_ALPHA_MODE_DENOISE
+                                : OPTIX_DENOISER_ALPHA_MODE_COPY }),
       m_temporal(temporal) {
     if constexpr (!dr::is_cuda_v<Float>)
         Throw("OptixDenoiser is only available in CUDA mode!");
@@ -64,8 +69,8 @@ MI_VARIANT OptixDenoiser<Float, Spectrum>::~OptixDenoiser() {
 MI_VARIANT
 typename OptixDenoiser<Float, Spectrum>::TensorXf
 OptixDenoiser<Float, Spectrum>::operator()(
-    const TensorXf &noisy, bool denoise_alpha, const TensorXf &albedo,
-    const TensorXf &normals, const Transform4f &to_sensor, const TensorXf &flow,
+    const TensorXf &noisy, const TensorXf &albedo,
+    const TensorXf &normals, const AffineTransform4f &to_sensor, const TensorXf &flow,
     const TensorXf &previous_denoised) const {
     using TensorArray = typename TensorXf::Array;
 
@@ -89,7 +94,6 @@ OptixDenoiser<Float, Spectrum>::operator()(
     OptixDenoiserParams params = {};
     params.blendFactor = 0.0f;
     params.hdrAverageColor = nullptr;
-    params.denoiseAlpha = denoise_alpha;
     params.hdrIntensity = m_hdr_intensity;
     jit_optix_check(optixDenoiserComputeIntensity(
         m_denoiser, stream, &layers.input, m_hdr_intensity, m_scratch,
@@ -152,15 +156,15 @@ OptixDenoiser<Float, Spectrum>::operator()(
 
 MI_VARIANT
 ref<Bitmap> OptixDenoiser<Float, Spectrum>::operator()(
-    const ref<Bitmap> &noisy, bool denoise_alpha, const std::string &albedo_ch,
-    const std::string &normals_ch, const Transform4f &to_sensor,
+    const ref<Bitmap> &noisy, const std::string &albedo_ch,
+    const std::string &normals_ch, const AffineTransform4f &to_sensor,
     const std::string &flow_ch, const std::string &previous_denoised_ch,
     const std::string &noisy_ch) const {
     if (noisy->pixel_format() != Bitmap::PixelFormat::MultiChannel) {
         size_t noisy_tensor_shape[3] = { noisy->height(), noisy->width(),
                                          noisy->channel_count() };
         TensorXf noisy_tensor(noisy->data(), 3, noisy_tensor_shape);
-        TensorXf denoised = (*this)(noisy_tensor, denoise_alpha);
+        TensorXf denoised = (*this)(noisy_tensor);
 
         void *denoised_data =
             jit_malloc_migrate(denoised.data(), AllocType::Host, false);
@@ -247,9 +251,8 @@ ref<Bitmap> OptixDenoiser<Float, Spectrum>::operator()(
         setup_tensor(prev_denoised_bmp, noisy_channel_count);
 
     // Generate output
-    TensorXf denoised =
-        (*this) (noisy_tensor, denoise_alpha, albedo_tensor, normals_tensor,
-                 to_sensor, flow_tensor, prev_denoised_tensor);
+    TensorXf denoised = (*this)(noisy_tensor, albedo_tensor, normals_tensor,
+                                to_sensor, flow_tensor, prev_denoised_tensor);
 
     void *denoised_data =
         jit_malloc_migrate(denoised.data(), AllocType::Host, false);
@@ -320,7 +323,6 @@ void OptixDenoiser<Float, Spectrum>::validate_input(
               "channels as the noisy input!");
 }
 
-MI_IMPLEMENT_CLASS_VARIANT(OptixDenoiser, Object, "denoiser")
 MI_INSTANTIATE_CLASS(OptixDenoiser)
 
 NAMESPACE_END(mitsuba)

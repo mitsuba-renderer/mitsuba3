@@ -9,7 +9,7 @@ instance replace the representation of color to support monochromatic, RGB,
 spectral, or even polarized illumination. Similarly, the numerical
 representation underlying the simulation can be exchanged to perform renderings
 using a higher amount of precision, process many light paths at once on the GPU,
-or it can be mathematically differentiated to to solve inverse problems. All
+or it can be mathematically differentiated to solve inverse problems. All
 variants are automatically created from a single generic codebase. Each variant
 is associated with an identifying name that is composed of several parts:
 
@@ -92,8 +92,17 @@ those variants will be installed.
 
     - :monosp:`scalar_rgb`
     - :monosp:`scalar_spectral`
-    - :monosp:`cuda_ad_rgb`
+    - :monosp:`scalar_spectral_polarized`
     - :monosp:`llvm_ad_rgb`
+    - :monosp:`llvm_ad_mono`
+    - :monosp:`llvm_ad_mono_polarized`
+    - :monosp:`llvm_ad_spectral`
+    - :monosp:`llvm_ad_spectral_polarized`
+    - :monosp:`cuda_ad_rgb`
+    - :monosp:`cuda_ad_mono`
+    - :monosp:`cuda_ad_mono_polarized`
+    - :monosp:`cuda_ad_spectral`
+    - :monosp:`cuda_ad_spectral_polarized`
 
 This is to avoid the burden of downloading massive binaries, but those should be
 enough to get you started with Mitsuba 3. For advanced applications that require

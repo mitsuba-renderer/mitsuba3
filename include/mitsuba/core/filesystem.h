@@ -17,9 +17,10 @@
 #include <mitsuba/core/fwd.h>
 #include <iosfwd>
 #include <string>
+#include <string_view>
+#include <vector>
 
 NAMESPACE_BEGIN(mitsuba)
-
 NAMESPACE_BEGIN(filesystem)
 
 /** Type of characters used on the system (in particular, type of characters
@@ -28,9 +29,11 @@ NAMESPACE_BEGIN(filesystem)
 #if defined(_WIN32)
     using value_type = wchar_t;
     using string_type = std::wstring;
+    using string_view_type = std::wstring_view;
 #else
     using value_type = char;
     using string_type = std::string;
+    using string_view_type = std::string_view;
 #endif
 
 /// System-specific separator used to write paths.
@@ -51,36 +54,43 @@ public:
     path() : m_absolute(false) { }
 
     /// Copy constructor.
-    path(const path &path)
-        : m_path(path.m_path), m_absolute(path.m_absolute) {}
+    path(const path &path) = default;
 
     /// Move constructor.
-    path(path &&path)
-        : m_path(std::move(path.m_path)), m_absolute(path.m_absolute) {}
+    path(path &&path) noexcept = default;
+
+    /** \brief Construct a path from a string view with native type.
+     * On Windows, the path can use both '/' or '\\' as a delimiter.
+     */
+    path(string_view_type string) { set(string); }
 
     /** \brief Construct a path from a string with native type.
      * On Windows, the path can use both '/' or '\\' as a delimiter.
      */
     path(const string_type &string) { set(string); }
 
-    /** \brief Construct a path from a string with native type.
-     * On Windows, the path can use both '/' or '\\' as a delimiter.
+    /** \brief Construct a path from a native C-style string.
+     * On Windows, this accepts wide strings (wchar_t*).
+     * On other platforms, this accepts regular strings (char*).
      */
     path(const value_type *string) { set(string); }
 
 #if defined(_WIN32)
-    /** \brief Constructs a path from an std::string, even if it's not the
-     * native string type. Assumes the string is UTF-8 encoded to carry
-     * conversion to native type.
+    /** \brief Constructs a path from an std::string,_view even if it's not the
+     * native string type. Assumes the string is UTF-8 encoded.
      */
-    path(const std::string &string);
+    path(std::string_view string) { set(string); }
 
-    /**
-     * \brief Constructs a path from an char array, even if it's not the
-     * native string type. Assumes the string is UTF-8 encoded to carry
-     * conversion to native type.
+    /** \brief Constructs a path from an std::string, even if it's not the
+     * native string type. Assumes the string is UTF-8 encoded.
      */
-    path(const char *string) : path(std::string(string)) { }
+    path(const std::string &string) { set(string); }
+
+    /** \brief Construct a path from a UTF-8 encoded C-style string.
+     * This constructor is only available on Windows to handle char* strings
+     * which are assumed to be UTF-8 encoded.
+     */
+    path(const char *string) { set(string); }
 #endif
 
     /// Makes the path an empty path. An empty path is considered relative.
@@ -149,14 +159,14 @@ public:
     /** \brief Assignment from the system's native string type. Acts similarly
      * to the string constructor.
      */
-    path& operator=(const string_type &str) { set(str); return *this; }
+    path& operator=(string_view_type str) { set(str); return *this; }
 
 #if defined(_WIN32)
     /** \brief Constructs a path from an std::string, even if it's not the
      * native string type. Assumes the string is UTF-8 encoded to carry
      * conversion to native type.
      */
-    path& operator=(const std::string &str);
+    path& operator=(std::string_view str);
 #endif
 
     /// Prints the path as it would be returned by <tt>string()</tt>.
@@ -175,16 +185,21 @@ protected:
     string_type str() const;
 
     /// Builds a path from the passed string.
-    void set(const string_type &str);
+    void set(string_view_type str);
+
+#if defined(_WIN32)
+    /// Overload for const char* on Windows to handle UTF-8 to wchar_t conversion
+    void set(std::string_view str);
+#endif
 
     /** \brief Splits a string into tokens delimited by any of the characters
      * passed in <tt>delim</tt>. */
-    static std::vector<string_type> tokenize(const string_type &string,
-                                             const string_type &delim);
+    static std::vector<string_type> tokenize(string_view_type string,
+                                             string_view_type delim);
 
 protected:
     std::vector<string_type> m_path;
-    bool m_absolute;
+    bool m_absolute = false;
 };
 
 /// Returns the current working directory (equivalent to getcwd)
@@ -237,6 +252,11 @@ extern MI_EXPORT_LIB bool remove(const path& p);
  */
 extern MI_EXPORT_LIB bool rename(const path& src, const path &dst);
 
-NAMESPACE_END(filesystem)
+/** \brief Copies a file from source to destination. Returns true if copying was
+ * successful, false if there was an error (e.g. the source file did not exist).
+ * Creates intermediate directories if necessary.
+ */
+extern MI_EXPORT_LIB bool copy_file(const path& src, const path &dst);
 
+NAMESPACE_END(filesystem)
 NAMESPACE_END(mitsuba)

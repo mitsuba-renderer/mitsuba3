@@ -9,10 +9,12 @@
 #include <mitsuba/core/thread.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/vector.h>
-#include <mitsuba/core/xml.h>
+#include <mitsuba/core/parser.h>
+#include <nanothread/nanothread.h>
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/scene.h>
+#include <functional>
 
 #if !defined(_WIN32)
 #  include <signal.h>
@@ -55,10 +57,6 @@ Options:
         Index of the sensor to render with (following the declaration order
         in the scene file). Default value: 0.
 
-    -u, --update
-        When specified, Mitsuba will update the scene's XML description
-        to the latest version.
-
     -a <path1>;<path2>;.., --append <path1>;<path2>
         Add one or more entries to the resource search path.
 
@@ -91,8 +89,11 @@ Options:
 )";
 }
 
-std::function<void(void)> develop_callback;
-std::mutex develop_callback_mutex;
+static std::function<void()> develop_callback_fn = nullptr;
+static void develop_callback() {
+    if (develop_callback_fn)
+        develop_callback_fn();
+}
 
 template <typename Float, typename Spectrum>
 void scene_static_accel_initialization() {
@@ -119,10 +120,7 @@ void render(Object *scene_, size_t sensor_i, fs::path filename) {
     if (!integrator)
         Throw("No integrator specified for scene: %s", scene);
 
-    /* critical section */ {
-        std::lock_guard<std::mutex> guard(develop_callback_mutex);
-        develop_callback = [&]() { film->write(filename); };
-    }
+    develop_callback_fn = [film]() { film->develop(); };
 
     integrator->render(scene, (uint32_t) sensor_i,
                        0 /* seed */,
@@ -130,10 +128,7 @@ void render(Object *scene_, size_t sensor_i, fs::path filename) {
                        false /* develop */,
                        true /* evaluate */);
 
-    /* critical section */ {
-        std::lock_guard<std::mutex> guard(develop_callback_mutex);
-        develop_callback = nullptr;
-    }
+    develop_callback_fn = nullptr;
 
     film->write(filename);
 }
@@ -143,15 +138,12 @@ void render(Object *scene_, size_t sensor_i, fs::path filename) {
 void hup_signal_handler(int signal) {
     if (signal != SIGHUP)
         return;
-    std::lock_guard<std::mutex> guard(develop_callback_mutex);
-    if (develop_callback)
-        develop_callback();
+    develop_callback();
 }
 #endif
 
 int main(int argc, char *argv[]) {
     Jit::static_initialization();
-    Class::static_initialization();
     Thread::static_initialization();
     Logger::static_initialization();
     Bitmap::static_initialization();
@@ -166,7 +158,6 @@ int main(int argc, char *argv[]) {
     auto arg_define    = parser.add(StringVec{ "-D", "--define" }, true);
     auto arg_sensor_i  = parser.add(StringVec{ "-s", "--sensor" }, true);
     auto arg_output    = parser.add(StringVec{ "-o", "--output" }, true);
-    auto arg_update    = parser.add(StringVec{ "-u", "--update" }, false);
     auto arg_help      = parser.add(StringVec{ "-h", "--help" });
     auto arg_mode      = parser.add(StringVec{ "-m", "--mode" }, true);
     auto arg_paths     = parser.add(StringVec{ "-a" }, true);
@@ -178,7 +169,7 @@ int main(int argc, char *argv[]) {
     auto arg_source    = parser.add(StringVec{ "-S" });
     auto arg_vec_width = parser.add(StringVec{ "-V" }, true);
 
-    xml::ParameterList params;
+    parser::ParameterList params;
     std::string error_msg, mode;
 
 #if !defined(_WIN32)
@@ -229,7 +220,7 @@ int main(int argc, char *argv[]) {
 #endif
 
         // Initialize nanothread with the requested number of threads
-        size_t thread_count = Thread::thread_count();
+        uint32_t thread_count = pool_size() + 1;
         if (*arg_threads) {
             thread_count = arg_threads->as_int();
             if (thread_count < 1) {
@@ -238,14 +229,14 @@ int main(int argc, char *argv[]) {
                 thread_count = 1;
             }
         }
-        Thread::set_thread_count(thread_count);
+        pool_set_size(nullptr, thread_count - 1);
 
         while (arg_define && *arg_define) {
             std::string value = arg_define->as_string();
             auto sep = value.find('=');
             if (sep == std::string::npos)
                 Throw("-D/--define: expect key=value pair!");
-            params.emplace_back(value.substr(0, sep), value.substr(sep+1), false);
+            params.emplace_back(value.substr(0, sep), value.substr(sep+1));
             arg_define = arg_define->next();
         }
         mode = (*arg_mode ? arg_mode->as_string() : MI_DEFAULT_VARIANT);
@@ -314,7 +305,7 @@ int main(int argc, char *argv[]) {
 
         // Append the mitsuba directory to the FileResolver search path list
         ref<Thread> thread = Thread::thread();
-        ref<FileResolver> fr = thread->file_resolver();
+        ref<FileResolver> fr = file_resolver();
         fs::path base_path = util::library_path().parent_path();
         if (!fr->contains(base_path))
             fr->append(base_path);
@@ -329,9 +320,9 @@ int main(int argc, char *argv[]) {
         }
 
         if (!*arg_extra || *arg_help) {
-            help((int) Thread::thread_count());
+            help(pool_size() + 1);
         } else {
-            Log(Info, "%s", util::info_build((int) Thread::thread_count()));
+            Log(Info, "%s", util::info_build(pool_size() + 1));
             Log(Info, "%s", util::info_copyright());
             Log(Info, "%s", util::info_features());
 
@@ -340,10 +331,12 @@ int main(int argc, char *argv[]) {
 #endif
         }
 
+        parser::ParserConfig config(mode);
+
         while (arg_extra && *arg_extra) {
             fs::path filename(arg_extra->as_string());
             ref<FileResolver> fr2 = new FileResolver(*fr);
-            thread->set_file_resolver(fr2);
+            set_file_resolver(fr2);
 
             // Add the scene file's directory to the search path.
             fs::path scene_dir = filename.parent_path();
@@ -351,18 +344,24 @@ int main(int argc, char *argv[]) {
                 fr2->append(scene_dir);
 
             if (*arg_output)
-                filename = arg_output->as_string();
+                filename = fs::path(arg_output->as_string());
 
-            // Try and parse a scene from the passed file.
-            std::vector<ref<Object>> parsed =
-                xml::load_file(arg_extra->as_string(), mode, params,
-                               *arg_update, false);
+            // Parse the XML file
+            parser::ParserState state = parser::parse_file(
+                config, arg_extra->as_string(), params);
 
-            if (parsed.size() != 1)
+            // Resolve references an optimize the scene representation
+            parser::transform_all(config, state);
+
+            // Instantiate scene objects in parallel
+            std::vector<ref<Object>> objects =
+                parser::instantiate(config, state);
+
+            if (objects.size() != 1)
                 Throw("Root element of the input file is expanded into "
                       "multiple objects, only a single object is expected!");
 
-            MI_INVOKE_VARIANT(mode, render, parsed[0].get(), sensor_i, filename);
+            MI_INVOKE_VARIANT(mode, render, objects[0].get(), sensor_i, filename);
             arg_extra = arg_extra->next();
         }
     } catch (const std::exception &e) {
@@ -372,16 +371,6 @@ int main(int argc, char *argv[]) {
     }
 
     if (!error_msg.empty()) {
-        /* Strip zero-width spaces from the message (Mitsuba uses these
-           to properly format chains of multiple exceptions) */
-        const std::string zerowidth_space = "\xe2\x80\x8b";
-        while (true) {
-            auto it = error_msg.find(zerowidth_space);
-            if (it == std::string::npos)
-                break;
-            error_msg = error_msg.substr(0, it) + error_msg.substr(it + 3);
-        }
-
 #if defined(_WIN32)
         HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
         CONSOLE_SCREEN_BUFFER_INFO console_info;
@@ -405,7 +394,6 @@ int main(int argc, char *argv[]) {
     StructConverter::static_shutdown();
     Logger::static_shutdown();
     Thread::static_shutdown();
-    Class::static_shutdown();
     Jit::static_shutdown();
 
 

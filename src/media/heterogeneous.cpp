@@ -154,8 +154,8 @@ public:
 
     HeterogeneousMedium(const Properties &props) : Base(props) {
         m_is_homogeneous = false;
-        m_albedo = props.volume<Volume>("albedo", 0.75f);
-        m_sigmat = props.volume<Volume>("sigma_t", 1.f);
+        m_albedo = props.get_volume<Volume>("albedo", 0.75f);
+        m_sigmat = props.get_volume<Volume>("sigma_t", 1.0f);
 
         m_scale = props.get<ScalarFloat>("scale", 1.0f);
         m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);
@@ -163,11 +163,11 @@ public:
         m_max_density = dr::opaque<Float>(m_scale * m_sigmat->max());
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("scale", m_scale,        +ParamFlags::NonDifferentiable);
-        callback->put_object("albedo",   m_albedo.get(), +ParamFlags::Differentiable);
-        callback->put_object("sigma_t",  m_sigmat.get(), +ParamFlags::Differentiable);
-        Base::traverse(callback);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("scale",   m_scale,  ParamFlags::NonDifferentiable);
+        cb->put("albedo",  m_albedo, ParamFlags::Differentiable);
+        cb->put("sigma_t", m_sigmat, ParamFlags::Differentiable);
+        Base::traverse(cb);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
@@ -210,14 +210,14 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(HeterogeneousMedium)
 private:
     ref<Volume> m_sigmat, m_albedo;
     ScalarFloat m_scale;
-
     Float m_max_density;
+
+    MI_TRAVERSE_CB(Base, m_sigmat, m_albedo, m_max_density)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(HeterogeneousMedium, Medium)
-MI_EXPORT_PLUGIN(HeterogeneousMedium, "Heterogeneous Medium")
+MI_EXPORT_PLUGIN(HeterogeneousMedium)
 NAMESPACE_END(mitsuba)

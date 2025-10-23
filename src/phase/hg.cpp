@@ -57,9 +57,8 @@ public:
         m_components.push_back(m_flags); // TODO: check
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("g", m_g, ParamFlags::Differentiable |
-                                          ParamFlags::Discontinuous);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("g", m_g, ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     MI_INLINE Float eval_hg(Float cos_theta) const {
@@ -107,11 +106,10 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(HGPhaseFunction)
 private:
     Float m_g;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(HGPhaseFunction, PhaseFunction)
-MI_EXPORT_PLUGIN(HGPhaseFunction, "Henyey-Greenstein phase function")
+MI_EXPORT_PLUGIN(HGPhaseFunction)
 NAMESPACE_END(mitsuba)

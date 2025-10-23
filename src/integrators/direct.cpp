@@ -121,17 +121,31 @@ public:
 
         SurfaceInteraction3f si = scene->ray_intersect(
             ray, +RayFlags::All, /* coherent = */ true, active);
-        Mask valid_ray = active && si.is_valid();
 
         Spectrum result(0.f);
 
         // ----------------------- Visible emitters -----------------------
 
-        if (!m_hide_emitters) {
+        if (m_hide_emitters) {
+            // Skip all area emitters along this ray
+            Mask skip_emitters =
+                si.is_valid() && (si.shape->emitter() != nullptr) && active;
+
+            if (dr::any_or<true>(skip_emitters)) {
+                Ray3f ray_skip = si.spawn_ray(ray.d);
+                PreliminaryIntersection3f pi =
+                    Base::skip_area_emitters(scene, ray_skip, true, skip_emitters);
+                SurfaceInteraction3f si_after_skip = pi.compute_surface_interaction(
+                        ray, +RayFlags::All, skip_emitters);
+                dr::masked(si, skip_emitters) = si_after_skip;
+            }
+        } else {
             EmitterPtr emitter_vis = si.emitter(scene, active);
             if (dr::any_or<true>(emitter_vis != nullptr))
                 result += emitter_vis->eval(si, active);
         }
+
+        Mask valid_ray = active && si.is_valid();
 
         active &= si.is_valid();
         if (dr::none_or<false>(active))
@@ -223,14 +237,15 @@ public:
         return dr::select(dr::isfinite(w), w, 0.f);
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(DirectIntegrator)
 private:
     size_t m_emitter_samples;
     size_t m_bsdf_samples;
     ScalarFloat m_frac_bsdf, m_frac_lum;
     ScalarFloat m_weight_bsdf, m_weight_lum;
+
+    MI_TRAVERSE_CB(Base, m_frac_bsdf, m_frac_lum, m_weight_bsdf, m_weight_lum)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(DirectIntegrator, SamplingIntegrator)
-MI_EXPORT_PLUGIN(DirectIntegrator, "Direct integrator");
+MI_EXPORT_PLUGIN(DirectIntegrator)
 NAMESPACE_END(mitsuba)

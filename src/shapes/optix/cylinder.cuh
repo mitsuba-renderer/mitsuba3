@@ -36,28 +36,22 @@ extern "C" __global__ void __intersection__cylinder() {
     bool solution_found = solve_quadratic(A, B, C, near_t, far_t);
 
     // Cylinder doesn't intersect with the segment on the ray
-    bool out_bounds = !(near_t <= ray.maxt && far_t >= 0.f); // NaN-aware conditionals
+    bool out_bounds = !(near_t <= ray.maxt && far_t >= ray.mint); // NaN-aware conditionals
 
     float z_pos_near = oz + dz * near_t,
           z_pos_far  = oz + dz * far_t;
 
     // Cylinder fully contains the segment of the ray
-    bool in_bounds = near_t < 0.f && far_t > ray.maxt;
+    bool in_bounds = near_t < ray.mint && far_t > ray.maxt;
 
     bool valid_intersection =
         solution_found && !out_bounds && !in_bounds &&
-        ((z_pos_near >= 0.f && z_pos_near <= cylinder->length && near_t >= 0.f) ||
-         (z_pos_far  >= 0.f && z_pos_far  <= cylinder->length && far_t <= ray.maxt));
+        ((z_pos_near >= 0.f && z_pos_near <= cylinder->length && near_t > ray.mint) ||
+         (z_pos_far  >= 0.f && z_pos_far  <= cylinder->length && far_t < ray.maxt));
 
     float t = (z_pos_near >= 0 && z_pos_near <= cylinder->length && near_t >= 0.f ? near_t : far_t);
 
     if (valid_intersection)
         optixReportIntersection(t, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
-}
-
-extern "C" __global__ void __closesthit__cylinder() {
-    const OptixHitGroupData *sbt_data = (OptixHitGroupData *) optixGetSbtDataPointer();
-    set_preliminary_intersection_to_payload(optixGetRayTmax(), Vector2f(), 0,
-                                            sbt_data->shape_registry_id);
 }
 #endif

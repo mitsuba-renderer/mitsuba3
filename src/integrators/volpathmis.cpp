@@ -88,7 +88,7 @@ public:
             result = (Object *) new Impl<false>(m_props);
         return { result };
     }
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(VolumetricMisPathIntegrator)
 
 protected:
     Properties m_props;
@@ -232,7 +232,7 @@ public:
 
             // Russian roulette: try to keep path weights equal to one, while accounting for the
             // solid angle compression at refractive index boundaries. Stop with at least some
-            // probability to avoid  getting stuck (e.g. due to total internal reflection)
+            // probability to avoid getting stuck (e.g. due to total internal reflection)
             Spectrum mis_throughput = mis_weight(p_over_f);
             Float q = dr::minimum(dr::max(unpolarized_spectrum(mis_throughput)) * dr::square(eta), .95f);
             Mask perform_rr = active && !last_event_was_null && (depth > (uint32_t) m_rr_depth);
@@ -282,7 +282,8 @@ public:
             }
 
             if (dr::any_or<true>(active_medium)) {
-                Mask null_scatter = sampler->next_1d(active_medium) >= index_spectrum(mei.sigma_t, channel) / index_spectrum(mei.combined_extinction, channel);
+                Float null_scatter_prob = dr::mean(mei.sigma_n / mei.combined_extinction);
+                Mask null_scatter = sampler->next_1d(active_medium) < null_scatter_prob;
                 act_null_scatter |= null_scatter && active_medium;
                 act_medium_scatter |= !act_null_scatter && active_medium;
                 last_event_was_null = act_null_scatter;
@@ -299,12 +300,12 @@ public:
 
                 if (dr::any_or<true>(act_null_scatter)) {
                     if (dr::any_or<true>(is_spectral)) {
-                        update_weights(p_over_f, mei.sigma_n / mei.combined_extinction, mei.sigma_n, channel, is_spectral && act_null_scatter);
+                        update_weights(p_over_f, null_scatter_prob, mei.sigma_n, channel, is_spectral && act_null_scatter);
                         update_weights(p_over_f_nee, 1.0f, mei.sigma_n, channel, is_spectral && act_null_scatter);
                     }
                     if (dr::any_or<true>(not_spectral)) {
                        update_weights(p_over_f, mei.sigma_n, mei.sigma_n, channel, not_spectral && act_null_scatter);
-                       update_weights(p_over_f_nee, 1.0f, mei.sigma_n / mei.combined_extinction, channel, not_spectral && act_null_scatter);
+                       update_weights(p_over_f_nee, 1.0f, null_scatter_prob, channel, not_spectral && act_null_scatter);
                     }
 
                     dr::masked(ray.o, act_null_scatter) = mei.p;
@@ -313,7 +314,7 @@ public:
 
                 if (dr::any_or<true>(act_medium_scatter)) {
                     if (dr::any_or<true>(is_spectral))
-                        update_weights(p_over_f, mei.sigma_t / mei.combined_extinction, mei.sigma_s, channel, is_spectral && act_medium_scatter);
+                        update_weights(p_over_f, 1.0f - null_scatter_prob, mei.sigma_s, channel, is_spectral && act_medium_scatter);
                     if (dr::any_or<true>(not_spectral))
                         update_weights(p_over_f, mei.sigma_t, mei.sigma_s, channel, not_spectral && act_medium_scatter);
 
@@ -352,20 +353,38 @@ public:
                 }
             }
 
-
             // --------------------- Surface Interactions ---------------------
             active_surface |= escaped_medium;
             Mask intersect = active_surface && needs_intersection;
             if (dr::any_or<true>(intersect))
                 dr::masked(si, intersect) = scene->ray_intersect(ray, intersect);
 
-
             if (dr::any_or<true>(active_surface)) {
+                // ---------------------- Hide area emitters ----------------------
+                if (m_hide_emitters && dr::any_or<true>(ls.depth == 0u)) {
+                    // Are we on the first segment and did we hit an area emitter?
+                    // If so, skip all area emitters along this ray
+                    Mask skip_emitters = si.is_valid() &&
+                                         (si.shape->emitter() != nullptr) &&
+                                         (ls.depth == 0) &&
+                                         intersect;
+
+                    if (dr::any_or<true>(skip_emitters)) {
+                        Ray3f ray = si.spawn_ray(ls.ray.d);
+                        PreliminaryIntersection3f pi =
+                            Base::skip_area_emitters(scene, ray, true, skip_emitters);
+                        SurfaceInteraction3f si_after_skip =
+                            pi.compute_surface_interaction(ray, +RayFlags::All, skip_emitters);
+                        dr::masked(si, skip_emitters) = si_after_skip;
+                    }
+                }
+
                 // ---------------- Intersection with emitters ----------------
                 Mask ray_from_camera = active_surface && (depth == 0u);
                 Mask count_direct = ray_from_camera || specular_chain;
                 EmitterPtr emitter = si.emitter(scene);
-                Mask active_e = active_surface && (emitter != nullptr) && !((depth == 0u) && m_hide_emitters);
+                Mask active_e = active_surface && (emitter != nullptr) &&
+                                !((depth == 0u) && m_hide_emitters);
                 if (dr::any_or<true>(active_e)) {
                     if (dr::any_or<true>(active_e && !count_direct)) {
                         // Get the PDF of sampling this emitter using next event estimation
@@ -549,7 +568,7 @@ public:
                     dr::masked(si.t, active_medium) = si.t - mei.t;
                     if (dr::any_or<true>(is_spectral)) {
                         update_weights(p_over_f_nee, 1.f, mei.sigma_n, channel, is_spectral);
-                        update_weights(p_over_f_uni, mei.sigma_n / mei.combined_extinction, mei.sigma_n, channel, is_spectral);
+                        update_weights(p_over_f_uni, dr::mean(mei.sigma_n / mei.combined_extinction), mei.sigma_n, channel, is_spectral);
                     }
                     if (dr::any_or<true>(not_spectral)) {
                         update_weights(p_over_f_nee, 1.f, mei.sigma_n / mei.combined_extinction, channel, not_spectral);
@@ -662,11 +681,10 @@ public:
                            m_max_depth, m_rr_depth);
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(VolpathMisIntegratorImpl)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(VolumetricMisPathIntegrator, MonteCarloIntegrator);
-MI_EXPORT_PLUGIN(VolumetricMisPathIntegrator, "Volumetric Path Tracer integrator");
+MI_EXPORT_PLUGIN(VolumetricMisPathIntegrator)
 
 NAMESPACE_BEGIN(detail)
 template <bool SpectralMis>
@@ -679,14 +697,5 @@ constexpr const char * volpath_class_name() {
 }
 NAMESPACE_END(detail)
 
-template <typename Float, typename Spectrum, bool SpectralMis>
-Class *VolpathMisIntegratorImpl<Float, Spectrum, SpectralMis>::m_class
-    = new Class(detail::volpath_class_name<SpectralMis>(), "MonteCarloIntegrator",
-                ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
-
-template <typename Float, typename Spectrum, bool SpectralMis>
-const Class* VolpathMisIntegratorImpl<Float, Spectrum, SpectralMis>::class_() const {
-    return m_class;
-}
 
 NAMESPACE_END(mitsuba)

@@ -19,7 +19,7 @@ assume the exterior medium (e.g., air) to not influence the light transport.
 .. tabs::
     .. code-tab:: xml
 
-        <scene version=3.0.0>
+        <scene version="3.0.0">
             <shape type=".. shape type ..">
                 .. shape parameters ..
 
@@ -62,7 +62,7 @@ the referencing mechanism:
 .. tabs::
     .. code-tab:: xml
 
-        <scene version=3.0.0>
+        <scene version="3.0.0">
             <!-- .. scene contents .. -->
 
             <medium type="homogeneous" id="fog">

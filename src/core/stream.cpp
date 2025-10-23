@@ -39,7 +39,7 @@ void Stream::set_byte_order(EByteOrder value) {
 std::string Stream::to_string() const {
     std::ostringstream oss;
 
-    oss << class_()->name() << "[" << std::endl;
+    oss << class_name() << "[" << std::endl;
     if (is_closed()) {
         oss << "  closed" << std::endl;
     } else {
@@ -119,7 +119,5 @@ std::string Stream::read_token() {
 void Stream::skip(size_t amount) {
     seek(tell() + amount);
 }
-
-MI_IMPLEMENT_CLASS(Stream, Object)
 
 NAMESPACE_END(mitsuba)

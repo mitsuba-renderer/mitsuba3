@@ -7,7 +7,7 @@ Emitters
         :width: 70%
         :align: center
 
-    Schematic overview of the emitters in 3. The arrows indicate
+    Schematic overview of the emitters in Mitsuba 3. The arrows indicate
     the directional distribution of light.
 
 Mitsuba 3 supports a number of different emitters/light sources, which can be
@@ -19,7 +19,7 @@ the following snippet instantiates a point light emitter that illuminates a sphe
 .. tabs::
     .. code-tab:: xml
 
-        <scene version=3.0.0>
+        <scene version="3.0.0">
             <!-- .. scene contents .. -->
 
             <emitter type="point">
@@ -37,7 +37,7 @@ the following snippet instantiates a point light emitter that illuminates a sphe
         # .. scene contents ..
 
         'emitter_id': {
-            'type': 'point'
+            'type': 'point',
             'position': [0, 0, -2],
             'intensity': {
                 'type': 'spectrum',
@@ -55,7 +55,7 @@ These are specified as children of the corresponding ``<shape>`` element:
 .. tabs::
     .. code-tab:: xml
 
-        <scene version=3.0.0>
+        <scene version="3.0.0">
             <!-- .. scene contents .. -->
 
             <shape type="sphere">
@@ -71,12 +71,14 @@ These are specified as children of the corresponding ``<shape>`` element:
 
         # .. scene contents ..
 
-        'type': 'sphere',
-        'emitter': {
-            'type': 'area',
-            'radiance': {
-                'type': 'rgb',
-                'value': 1.0,
+        'shape_id': {
+            'type': 'sphere',
+            'emitter': {
+                'type': 'area',
+                'radiance': {
+                    'type': 'rgb',
+                    'value': 1.0,
+                }
             }
         }
 

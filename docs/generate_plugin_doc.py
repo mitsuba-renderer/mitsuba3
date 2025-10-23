@@ -12,17 +12,18 @@ SHAPE_ORDERING = [
     'obj',
     'ply',
     'serialized',
-    'cube'
+    'cube',
     'sphere',
+    'rectangle',
     'disk',
     'cylinder',
     'bsplinecurve',
     'linearcurve',
-    'rectangle',
-    'cube',
     'sdfgrid',
     'shapegroup',
-    'instance'
+    'instance',
+    'ellipsoids',
+    'ellipsoidsmesh'
 ]
 
 BSDF_ORDERING = [
@@ -54,8 +55,11 @@ EMITTER_ORDERING = [
     'point',
     'constant',
     'envmap',
+    'sunsky',
     'spot',
     'projector'
+    'directional',
+    'directionalarea',
 ]
 
 SENSOR_ORDERING = [
@@ -78,6 +82,7 @@ SPECTRUM_ORDERING = [
     'srgb',
     'd65',
     'blackbody'
+    'rawconstant'
 ]
 
 SAMPLER_ORDERING = [

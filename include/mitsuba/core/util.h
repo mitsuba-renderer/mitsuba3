@@ -58,7 +58,7 @@ struct Version {
     Version(int major, int minor, int patch)
         : major_version(major), minor_version(minor), patch_version(patch) { }
 
-    Version(const char *value) {
+    Version(std::string_view value) {
         auto list = string::tokenize(value, " .");
         if (list.size() != 3)
             Throw("Version number must consist of three period-separated parts!");
@@ -95,6 +95,10 @@ struct Version {
     bool operator>=(const Version &v) const {
         return std::tie(major_version, minor_version, patch_version) >=
                std::tie(v.major_version, v.minor_version, v.patch_version);
+    }
+
+    std::string to_string() const {
+        return tfm::format("%d.%d.%d", major_version, minor_version, patch_version);
     }
 
     friend std::ostream &operator<<(std::ostream &os, const Version &v) {

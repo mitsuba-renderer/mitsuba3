@@ -46,14 +46,14 @@ mitsuba.__prefix__:
 
     _UnpolarizedSpectrumCp: TypeAlias = Union['UnpolarizedSpectrum', 'drjit.auto.ad._FloatCp', 'drjit.scalar._ArrayXfCp', 'drjit.auto._ArrayXfCp', 'drjit.auto.ad._ArrayXf16Cp']
 
-    _Spectrum_vtCp: TypeAlias = Union['Spectrum_vt', '_UnpolarizedSpectrumCp', 'drjit.scalar._ArrayXfCp', 'drjit.auto._ArrayXfCp', 'drjit.auto.ad._ArrayXf16Cp']
+    _SpectrumEntryCp: TypeAlias = Union['SpectrumEntry', '_UnpolarizedSpectrumCp', 'drjit.scalar._ArrayXfCp', 'drjit.auto._ArrayXfCp', 'drjit.auto.ad._ArrayXf16Cp']
 
-    _SpectrumCp: TypeAlias = Union['Spectrum', '_Spectrum_vtCp', 'drjit.scalar._ArrayXfCp', 'drjit.auto._ArrayXfCp', 'drjit.auto.ad._ArrayXf16Cp']
+    _SpectrumCp: TypeAlias = Union['Spectrum', '_SpectrumEntryCp', 'drjit.scalar._ArrayXfCp', 'drjit.auto._ArrayXfCp', 'drjit.auto.ad._ArrayXf16Cp']
 
-    class Spectrum_vt(drjit.ArrayBase['Spectrum_vt', '_Spectrum_vtCp', UnpolarizedSpectrum, '_UnpolarizedSpectrumCp', UnpolarizedSpectrum, 'Spectrum_vt', drjit.auto.ad.ArrayXb]):
+    class SpectrumEntry(drjit.ArrayBase['SpectrumEntry', '_SpectrumEntryCp', UnpolarizedSpectrum, '_UnpolarizedSpectrumCp', UnpolarizedSpectrum, 'SpectrumEntry', drjit.auto.ad.ArrayXb]):
         pass
 
-    class Spectrum(drjit.ArrayBase['Spectrum', '_SpectrumCp', Spectrum_vt, '_Spectrum_vtCp', Spectrum_vt, drjit.auto.ad.ArrayXf, drjit.auto.ad.ArrayXb]):
+    class Spectrum(drjit.ArrayBase['Spectrum', '_SpectrumCp', SpectrumEntry, '_SpectrumEntryCp', SpectrumEntry, drjit.auto.ad.ArrayXf, drjit.auto.ad.ArrayXb]):
         pass
 
     class UnpolarizedSpectrum(drjit.ArrayBase['UnpolarizedSpectrum', '_UnpolarizedSpectrumCp', drjit.auto.ad.Float, 'drjit.auto.ad._FloatCp', drjit.auto.ad.Float, 'UnpolarizedSpectrum', drjit.auto.ad.ArrayXb]):
@@ -138,4 +138,4 @@ UnpolarizedSpectrum:
 Spectrum:
 _UnpolarizedSpectrumCp:
 _SpectrumCp:
-_Spectrum_vtCp:
+_SpectrumEntryCp:

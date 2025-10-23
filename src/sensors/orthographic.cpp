@@ -48,7 +48,7 @@ the XY-plane facing along the positive Z direction. Transformed versions
 can be instantiated e.g. as follows:
 
 The exact camera position and orientation is most easily expressed using the
-:monosp:`look_at` tag, i.e.:
+:monosp:`lookat` tag, i.e.:
 
 .. tabs::
     .. code-tab:: xml
@@ -60,18 +60,18 @@ The exact camera position and orientation is most easily expressed using the
 
                 <!-- Move and rotate the camera so that looks from (1, 1, 1) to (1, 2, 1)
                     and the direction (0, 0, 1) points "up" in the output image -->
-                <look_at origin="1, 1, 1" target="1, 2, 1" up="0, 0, 1"/>
+                <lookat origin="1, 1, 1" target="1, 2, 1" up="0, 0, 1"/>
             </transform>
         </sensor>
 
     .. code-tab:: python
 
         'type': 'orthographic',
-        'to_world': mi.ScalarTransform4f.look_at(
+        'to_world': mi.ScalarAffineTransform4f().look_at(
             origin=[1, 1, 1],
             target=[1, 2, 1],
             up=[0, 0, 1]
-        ) @ mi.ScalarTransform4f.scale([10, 10, 1])
+        ) @ mi.ScalarAffineTransform4f().scale([10, 10, 1])
 
  */
 
@@ -89,9 +89,9 @@ public:
         m_needs_sample_3 = false;
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_parameter("to_world", *m_to_world.ptr(), +ParamFlags::NonDifferentiable);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("to_world", m_to_world, ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -100,11 +100,9 @@ public:
     }
 
     void update_camera_transforms() {
-        m_camera_to_sample = orthographic_projection(
+        m_sample_to_camera = orthographic_projection(
             m_film->size(), m_film->crop_size(), m_film->crop_offset(),
-            Float(m_near_clip), Float(m_far_clip));
-
-        m_sample_to_camera = m_camera_to_sample.inverse();
+            Float(m_near_clip), Float(m_far_clip)).inverse();
 
         // Position differentials on the near plane
         m_dx = m_sample_to_camera * Point3f(1.f / m_resolution.x(), 0.f, 0.f) -
@@ -113,7 +111,7 @@ public:
              - m_sample_to_camera * Point3f(0.f);
 
         m_normalization = 1.f / m_image_rect.volume();
-        dr::make_opaque(m_camera_to_sample, m_sample_to_camera, m_dx, m_dy, m_normalization);
+        dr::make_opaque(m_sample_to_camera, m_dx, m_dy, m_normalization);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -170,6 +168,11 @@ public:
         return { ray, wav_weight };
     }
 
+    ProjectiveTransform4f projection_transform() const override {
+        auto camera_to_sample = m_sample_to_camera.inverse();
+        return ProjectiveTransform4f(camera_to_sample.matrix);
+    }
+
     ScalarBoundingBox3f bbox() const override {
         ScalarPoint3f p = m_to_world.scalar() * ScalarPoint3f(0.f);
         return ScalarBoundingBox3f(p, p);
@@ -192,15 +195,13 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(OrthographicCamera)
 private:
-    Transform4f m_camera_to_sample;
-    Transform4f m_sample_to_camera;
+    AffineTransform4f m_sample_to_camera;
     BoundingBox2f m_image_rect;
     Float m_normalization;
     Vector3f m_dx, m_dy;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(OrthographicCamera, ProjectiveCamera)
-MI_EXPORT_PLUGIN(OrthographicCamera, "Orthographic Camera");
+MI_EXPORT_PLUGIN(OrthographicCamera)
 NAMESPACE_END(mitsuba)

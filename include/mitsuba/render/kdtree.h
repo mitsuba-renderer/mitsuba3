@@ -190,6 +190,8 @@ private:
 template <typename Value>
 struct ConcurrentVector {
     ConcurrentVector() : m_size_and_capacity(0) { }
+    ConcurrentVector(const ConcurrentVector &) = delete;
+    ConcurrentVector(ConcurrentVector &&) = delete;
     ~ConcurrentVector() { release(); }
 
     void reserve(uint32_t size) {
@@ -286,8 +288,8 @@ struct ConcurrentVector {
         #endif
     }
 
-    uint64_t size() const {
-        return m_size_and_capacity.load(std::memory_order_acquire);
+    uint32_t size() const {
+        return (uint32_t) m_size_and_capacity.load(std::memory_order_acquire);
     }
 
     void release() {
@@ -472,7 +474,7 @@ public:
     const Derived& derived() const { return (Derived&) *this; }
     Derived& derived() { return (Derived&) *this; }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(TShapeKDTree)
 protected:
     /* ==================================================================== */
     /*                  Essential internal data structures                  */
@@ -682,7 +684,6 @@ protected:
     /// Helper data structure used during tree construction (shared by all threads)
     struct BuildContext {
         const Derived &derived;
-        ThreadEnvironment env;
         detail::ConcurrentVector<KDNode> node_storage;
         detail::ConcurrentVector<Index> index_storage;
         /* Keep some statistics about the build process */
@@ -1117,11 +1118,27 @@ protected:
             Assert(m_bbox.contains(tight_bbox));
         }
 
+        struct FTZGuard {
+            FTZGuard() {
+                #if defined(DRJIT_X86_64)
+                csr = _mm_getcsr();
+                _mm_setcsr(csr & ~(_MM_FLUSH_ZERO_ON | _MM_DENORMALS_ZERO_ON));
+                #endif
+            }
+
+            ~FTZGuard() {
+                #if defined(DRJIT_X86_64)
+                _mm_setcsr(csr);
+                #endif
+            }
+            int csr;
+        };
+
         /// Run one iteration of min-max binning and spawn recursive tasks
         void execute() {
-            ScopedSetThreadEnvironment env(m_ctx.env);
             Size prim_count = Size(m_indices.size());
             const Derived &derived = m_ctx.derived;
+            FTZGuard g;
 
             m_ctx.work_units++;
 
@@ -1130,7 +1147,7 @@ protected:
             /* ==================================================================== */
 
             if (prim_count <= derived.stop_primitives() ||
-                m_depth >= derived.max_depth() || m_tight_bbox.collapsed()) {
+                m_depth >= derived.max_depth() || dr::count(m_tight_bbox.max == m_tight_bbox.min) > 1) {
                 make_leaf(std::move(m_indices));
                 return;
             }
@@ -2012,14 +2029,6 @@ protected:
     BoundingBox m_bbox;
 };
 
-template <typename BoundingBox, typename Index, typename CostModel, typename Derived>
-Class * TShapeKDTree<BoundingBox, Index, CostModel, Derived>::m_class = new Class("TShapeKDTree", "Object", "", nullptr, nullptr);
-
-template <typename BoundingBox, typename Index, typename CostModel, typename Derived>
-const Class *TShapeKDTree<BoundingBox, Index, CostModel, Derived>::class_() const {
-    return m_class;
-}
-
 template <typename Float> class SurfaceAreaHeuristic3 {
 public:
     using Size          = uint32_t;
@@ -2450,7 +2459,7 @@ public:
     /// Return a human-readable string representation of the scene contents.
     virtual std::string to_string() const override;
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(ShapeKDTree)
 protected:
     /**
      * \brief Map an abstract \ref TShapeKDTree primitive index to a specific

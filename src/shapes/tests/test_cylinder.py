@@ -280,9 +280,9 @@ def test08_sample_silhouette_perimeter(variants_vec_rgb):
     cylinder = mi.load_dict({ 'type': 'cylinder' })
     cylinder_ptr = mi.ShapePtr(cylinder)
 
-    x = dr.linspace(Float, 1e-6, 1-1e-6, 10)
-    y = dr.linspace(Float, 1e-6, 1-1e-6, 10)
-    z = dr.linspace(Float, 1e-6, 1-1e-6, 10)
+    x = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    y = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
+    z = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
     samples = mi.Point3f(dr.meshgrid(x, y, z))
 
     ss = cylinder.sample_silhouette(samples, mi.DiscontinuityFlags.PerimeterType)

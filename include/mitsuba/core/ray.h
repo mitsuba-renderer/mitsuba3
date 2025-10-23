@@ -17,15 +17,16 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Point_, typename Spectrum_> struct Ray {
     static constexpr size_t Size = dr::size_v<Point_>;
 
-    using Point      = Point_;
+    using Point       = Point_;
     // TODO: need this because dr::value_t<MaskedArray<Point3f>> isn't a masked array
     using Float =
         std::conditional_t<dr::is_masked_array_v<Point>,
                            dr::detail::MaskedArray<dr::value_t<Point>>,
                            dr::value_t<Point>>;
-    using Vector     = mitsuba::Vector<Float, Size>;
-    using Spectrum   = Spectrum_;
-    using Wavelength = wavelength_t<Spectrum_>;
+    using ScalarFloat = dr::scalar_t<Float>;
+    using Vector      = mitsuba::Vector<Float, Size>;
+    using Spectrum    = Spectrum_;
+    using Wavelength  = wavelength_t<Spectrum_>;
 
     /// Ray origin
     Point o;
@@ -34,7 +35,7 @@ template <typename Point_, typename Spectrum_> struct Ray {
     /// Maximum position on the ray segment
     Float maxt = dr::Largest<Float>;
     /// Time value associated with this ray
-    Float time = 0.f;
+    Float time = (ScalarFloat) 0.f;
     /// Wavelength associated with the ray
     Wavelength wavelengths;
 
@@ -44,7 +45,7 @@ template <typename Point_, typename Spectrum_> struct Ray {
         : o(o), d(d), time(time), wavelengths(wavelengths) { }
 
     /// Construct a new ray (o, d) with time
-    Ray(const Point &o, const Vector &d, const Float &time=0.f)
+    Ray(const Point &o, const Vector &d, const Float &time = (ScalarFloat) 0.f)
         : o(o), d(d), time(time) { }
 
     /// Construct a new ray (o, d) with bounds
@@ -82,7 +83,7 @@ template <typename Point_, typename Spectrum_>
 struct RayDifferential : Ray<Point_, Spectrum_> {
     using Base = Ray<Point_, Spectrum_>;
 
-    MI_USING_TYPES(Float, Point, Vector, Wavelength)
+    MI_USING_TYPES(Float, ScalarFloat, Point, Vector, Wavelength)
     MI_USING_MEMBERS(o, d, maxt, time, wavelengths)
 
     Point o_x, o_y;
@@ -94,7 +95,7 @@ struct RayDifferential : Ray<Point_, Spectrum_> {
         : Base(ray), o_x(0), o_y(0), d_x(0), d_y(0), has_differentials(false) {}
 
     /// Construct a new ray (o, d) at time 'time'
-    RayDifferential(const Point &o_, const Vector &d_, Float time_ = 0.f,
+    RayDifferential(const Point &o_, const Vector &d_, Float time_ = (ScalarFloat) 0.f,
                     const Wavelength &wavelengths_ = Wavelength())
         : o_x(0), o_y(0), d_x(0), d_y(0), has_differentials(false) {
         o           = o_;

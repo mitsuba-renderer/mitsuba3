@@ -2,6 +2,18 @@
 #   Mitsuba python library
 # ----------------------------------------------------------
 
+  set(MI_DIST_FLAGS "")
+if (SKBUILD)
+  # Enable LTO only for release builds targeting PyPI (~5% binary size reduction)
+  set(MI_DIST_FLAGS LTO)
+
+  if (MI_STABLE_ABI)
+    list(APPEND MI_DIST_FLAGS STABLE_ABI)
+  endif()
+endif()
+
+set(MI_NB_DOMAIN drjit)
+
 include_directories(
   ${PNG_INCLUDE_DIRS}
   ${PUGIXML_INCLUDE_DIRS}
@@ -19,7 +31,9 @@ foreach (MI_VARIANT ${MI_VARIANTS})
   set(TARGET_NAME ${MI_VARIANT_NAME})
 
   nanobind_add_module(${TARGET_NAME}
-      NB_DOMAIN drjit
+      NB_DOMAIN ${MI_NB_DOMAIN}
+      NB_SHARED
+      ${MI_DIST_FLAGS}
       main_v.cpp
       ${CORE_PY_V_SRC}
       ${RENDER_PY_V_SRC}
@@ -46,15 +60,34 @@ foreach (MI_VARIANT ${MI_VARIANTS})
   )
 endforeach()
 
+set(nanobind_lib_name "nanobind")
+if (STABLE_ABI IN_LIST MI_DIST_FLAGS)
+    set(nanobind_lib_name "${nanobind_lib_name}-abi3")
+endif()
+set(nanobind_lib_name "${nanobind_lib_name}-${MI_NB_DOMAIN}") # Append domain name
+set_target_properties(${nanobind_lib_name}
+  PROPERTIES
+  LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
+  RUNTIME_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
+  FOLDER python
+)
+install(TARGETS ${nanobind_lib_name}
+  LIBRARY DESTINATION mitsuba
+)
+
 nanobind_add_module(mitsuba_ext
-  NB_DOMAIN drjit
+  NB_DOMAIN ${MI_NB_DOMAIN}
+  NB_SHARED
+  ${MI_DIST_FLAGS}
   main.cpp
   ${CORE_PY_SRC}
   ${RENDER_PY_SRC}
 )
 
 nanobind_add_module(mitsuba_alias
-  NB_DOMAIN drjit
+  NB_DOMAIN ${MI_NB_DOMAIN}
+  NB_SHARED
+  ${MI_DIST_FLAGS}
   alias.cpp
 )
 
@@ -85,7 +118,7 @@ set_target_properties(mitsuba_alias
 
 target_include_directories(mitsuba_alias
   PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/include 
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/include
   ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/ext/drjit-core/include)
 
 install(TARGETS mitsuba_alias
@@ -151,6 +184,7 @@ file(WRITE
   "[pytest]\n"
   "minversion = 3.0\n"
   "testpaths = \"${MI_TEST_BASE}\"\n"
+  "norecursedirs = \"${MI_TEST_BASE}/python\"\n"
 )
 
 if (MSVC)
@@ -201,8 +235,8 @@ set(STUB_ARGS
 # enabled.
 if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
 
-  set(MI_STUB_SUBMODULES "math" "quad" "spline" "mueller" "warp" "misc"
-                         "python.ad" "python.chi2" "python.math_py" "python.util" "python.xml")
+  set(MI_STUB_SUBMODULES "math" "quad" "spline" "mueller" "warp" "misc" "detail" "filesystem"
+                         "python.ad" "python.chi2" "python.math_py" "python.util" "parser")
 
   nanobind_add_stub(
     mitsuba-stub
@@ -249,6 +283,8 @@ if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
     ALL
     DEPENDS ${MI_STUB_TARGET_DEPS}
   )
+
+  install(FILES ${MI_STUB_TARGET_DEPS} DESTINATION mitsuba)
 
 endif()
 

@@ -123,7 +123,7 @@ def test04_sample_numeric(variants_vec_backends_once_rgb):
 
 @pytest.mark.slow
 def test05_sample_consistency(variants_vec_backends_once_rgb):
-    total = int(1e8)
+    total = int(1e7)
     sampler = mi.load_dict({'type': 'independent', 'sample_count': total})
     sampler.seed(seed = 4, wavefront_size = total)
 

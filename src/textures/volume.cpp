@@ -52,7 +52,7 @@ public:
     MI_IMPORT_TYPES(Texture, Volume)
 
     VolumeAdapter(const Properties &props) : Texture(props) {
-        m_volume = props.volume<Volume>("volume", 0.75f);
+        m_volume = props.get<ref<Volume>>("volume", nullptr);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &it,
@@ -72,9 +72,8 @@ public:
         return Color3f(ret.x(), ret.y(), ret.z());
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("volume", m_volume.get(),
-                             +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("volume", m_volume, ParamFlags::Differentiable);
     }
 
     bool is_spatially_varying() const override { return true; }
@@ -89,11 +88,12 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(VolumeAdapter)
 protected:
     ref<Volume> m_volume;
+
+    MI_TRAVERSE_CB(Texture, m_volume)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(VolumeAdapter, Texture)
-MI_EXPORT_PLUGIN(VolumeAdapter, "Volumetric texture")
+MI_EXPORT_PLUGIN(VolumeAdapter)
 NAMESPACE_END(mitsuba)

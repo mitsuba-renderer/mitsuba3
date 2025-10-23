@@ -384,8 +384,8 @@ class OcSpaceDistr(BaseGuidingDistr):
             if leaves_count_scalar + active_node_count * 8 > self.max_leaf_count:
                 raise RuntimeError(
                     "OcSpaceDistr: Number of leaf nodes exceeds "
-                    "'max_leaf_count'. Please increase 'max_leaf_count' or "
-                    "increase 'mass_contruction_thres'."
+                    "'max_leaf_count'. Please increase 'max_leaf_count', "
+                    "decrease 'max_depth', or increase 'mass_construction_thres'."
                 )
 
         if self.debug_logs:
@@ -421,7 +421,7 @@ class OcSpaceDistr(BaseGuidingDistr):
         query_point.y = dr.lerp(aabb_min_rep.y, aabb_max_rep.y, sampler_extra.next_1d())
         query_point.z = dr.lerp(aabb_min_rep.z, aabb_max_rep.z, sampler_extra.next_1d())
 
-        value, _ = self.eval_indirect_integrand_handle(query_point, sampler_extra)
+        value, _, _ = self.eval_indirect_integrand_handle(query_point, sampler_extra)
 
         mass = dr.zeros(mi.Float, leaf_count)
         scatter_idx = dr.arange(mi.UInt32, leaf_count)

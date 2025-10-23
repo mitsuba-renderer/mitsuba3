@@ -7,11 +7,7 @@
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/interaction.h>
-#include <mitsuba/render/shape.h>
-
-#if defined(MI_ENABLE_CUDA)
-    #include "optix/rectangle.cuh"
-#endif
+#include <mitsuba/render/mesh.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -79,82 +75,103 @@ The following XML snippet showcases a simple example of a textured rectangle:
             'type': 'diffuse',
             'reflectance': {
                 'type': 'checkerboard',
-                'to_uv': mi.ScalarTransform4f.scale([5, 5, 1])
+                'to_uv': mi.ScalarAffineTransform4f().scale([5, 5, 1])
             }
         }
 
  */
 
 template <typename Float, typename Spectrum>
-class Rectangle final : public Shape<Float, Spectrum> {
+class Rectangle final : public Mesh<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_to_object, m_is_instance,
-                   m_discontinuity_types, m_shape_type, initialize, mark_dirty,
-                   get_children_string, parameters_grad_enabled)
+    MI_IMPORT_BASE(Mesh, m_to_world, m_is_instance,
+                   m_discontinuity_types, m_shape_type, m_flip_normals, initialize,
+                   m_vertex_count, m_face_count, m_faces, m_vertex_positions,
+                   m_vertex_normals, m_vertex_texcoords, get_children_string)
+    using typename Base::FloatStorage;
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
+    using typename Base::InputPoint3f;
+    using typename Base::InputFloat;
+    using typename Base::InputVector2f;
+    using typename Base::InputNormal3f;
+
+    // Initialize vertices
+    inline static const ScalarIndex s_faces[6] {
+        1, 2, 0,
+        1, 3, 2
+    };
 
     Rectangle(const Properties &props) : Base(props) {
-        if (props.get<bool>("flip_normals", false))
-            m_to_world =
-                m_to_world.scalar() *
-                ScalarTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
-
-        m_discontinuity_types = (uint32_t) DiscontinuityFlags::PerimeterType;
-
+        m_vertex_count = 4;
+        m_face_count = 2;
         m_shape_type = ShapeType::Rectangle;
 
-        update();
         initialize();
     }
 
-    void update() {
-        m_to_object = m_to_world.value().inverse();
+    void initialize() override {
+        // Compute shading frame
+        Normal3f n     = dr::normalize(m_to_world.value() * Normal3f(0.f, 0.f, 1.f)),
+                 dp_du = m_to_world.value() * Vector3f(2.f, 0.f, 0.f),
+                 dp_dv = m_to_world.value() * Vector3f(0.f, 2.f, 0.f);
 
-        Vector3f dp_du = m_to_world.value() * Vector3f(2.f, 0.f, 0.f);
-        Vector3f dp_dv = m_to_world.value() * Vector3f(0.f, 2.f, 0.f);
-        Normal3f normal = dr::normalize(m_to_world.value() * Normal3f(0.f, 0.f, 1.f));
-        m_frame = Frame3f(dp_du, dp_dv, normal);
+        m_frame = Frame3f(dp_du, dp_dv, n);
         m_inv_surface_area = dr::rcp(surface_area());
-
         dr::make_opaque(m_frame, m_inv_surface_area);
-        mark_dirty();
-    }
 
-    ScalarBoundingBox3f bbox() const override {
-        ScalarBoundingBox3f bbox;
-        ScalarTransform4f to_world = m_to_world.scalar();
+        m_faces = dr::load<DynamicBuffer<UInt32>>(s_faces, 6);
 
-        bbox.expand(to_world.transform_affine(ScalarPoint3f(-1.f, -1.f, 0.f)));
-        bbox.expand(to_world.transform_affine(ScalarPoint3f(-1.f,  1.f, 0.f)));
-        bbox.expand(to_world.transform_affine(ScalarPoint3f( 1.f, -1.f, 0.f)));
-        bbox.expand(to_world.transform_affine(ScalarPoint3f( 1.f,  1.f, 0.f)));
+        if constexpr (dr::is_diff_v<Float>) {
+            // Differentiable case: launch kernels to generate coordinates
+            if (dr::grad_enabled(m_to_world.value())) {
+                UInt32 index = dr::arange<UInt32>(4);
+                Float xf = Float(index & 1),
+                      yf = Float((index & 2) >> 1);
 
-        return bbox;
-    }
+                Point3f p =
+                    m_to_world.value() * Point3f(dr::fmadd(xf, 2.f, -1.f),
+                                                 dr::fmadd(yf, 2.f, -1.f), 0.f);
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_parameter("to_world", *m_to_world.ptr(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
-    }
+                using Point3fi = dr::replace_scalar_t<Point3f, InputFloat>;
+                using Vector2fi = dr::replace_scalar_t<Vector2f, InputFloat>;
+                using Normal3fi = dr::replace_scalar_t<Normal3f, InputFloat>;
 
-    void parameters_changed(const std::vector<std::string> &keys) override {
-        if (keys.empty() || string::contains(keys, "to_world")) {
-            // Ensure previous ray-tracing operation are fully evaluated before
-            // modifying the scalar values of the fields in this class
-            if constexpr (dr::is_jit_v<Float>)
-                dr::sync_thread();
-            // Update the scalar value of the matrix
-            m_to_world = m_to_world.value();
-            update();
+                m_vertex_positions = dr::empty<FloatStorage>(4*3);
+                m_vertex_texcoords = dr::empty<FloatStorage>(4*2);
+                m_vertex_normals = dr::empty<FloatStorage>(4*3);
+
+                scatter(m_vertex_positions, Point3fi(p), index, true, ReduceMode::Permute);
+                scatter(m_vertex_texcoords, Vector2fi(xf, yf), index, true, ReduceMode::Permute);
+                scatter(m_vertex_normals, Normal3fi(n), index, true, ReduceMode::Permute);
+                Base::initialize();
+                return;
+            }
         }
-        Base::parameters_changed();
-    }
 
-    Float surface_area() const override {
-        return dr::norm(dr::cross(m_frame.s, m_frame.t));
+        // Non-differentiable/scalar case: compute coordinates on CPU, then upload
+        InputFloat vertex_positions[4*3], vertex_normals[4*3], vertex_texcoords[4*2];
+        for (uint32_t index = 0; index < 4; ++index) {
+            ScalarFloat xf = ScalarFloat(index & 1),
+                        yf = ScalarFloat((index & 2) >> 1);
+
+            ScalarPoint3f p = m_to_world.scalar() *
+                              ScalarPoint3f(dr::fmadd(xf, 2.f, -1.f),
+                                            dr::fmadd(yf, 2.f, -1.f), 0.f);
+            ScalarPoint3f ns =
+                normalize(m_to_world.scalar() * ScalarNormal3f(0.f, 0.f, 1.f));
+
+            dr::store(vertex_positions + index * 3, Point<InputFloat, 3>(p));
+            dr::store(vertex_normals   + index * 3, Normal<InputFloat, 3>(ns));
+            dr::store(vertex_texcoords + index * 2, Vector<InputFloat, 2>(xf, yf));
+        }
+
+        m_vertex_positions = dr::load<FloatStorage>(vertex_positions, 4*3);
+        m_vertex_normals   = dr::load<FloatStorage>(vertex_normals, 4*3);
+        m_vertex_texcoords = dr::load<FloatStorage>(vertex_texcoords, 4*2);
+        Base::initialize();
     }
 
     // =============================================================
@@ -166,13 +183,17 @@ public:
         MI_MASK_ARGUMENT(active);
 
         PositionSample3f ps = dr::zeros<PositionSample3f>();
-        ps.p = m_to_world.value().transform_affine(
-            Point3f(sample.x() * 2.f - 1.f, sample.y() * 2.f - 1.f, 0.f));
+        ps.p = m_to_world.value() *
+            Point3f(dr::fmadd(sample.x(), 2.f, -1.f),
+                    dr::fmadd(sample.y(), 2.f, -1.f), 0.f);
         ps.n    = m_frame.n;
         ps.pdf  = m_inv_surface_area;
         ps.uv   = sample;
         ps.time = time;
         ps.delta = false;
+
+        if (m_flip_normals)
+            ps.n = -ps.n;
 
         return ps;
     }
@@ -182,25 +203,68 @@ public:
         return m_inv_surface_area;
     }
 
-    SurfaceInteraction3f eval_parameterization(const Point2f &uv,
-                                               uint32_t ray_flags,
-                                               Mask active) const override {
-        Point3f p = m_to_world.value().transform_affine(
-            Point3f(uv.x() * 2.f - 1.f, uv.y() * 2.f - 1.f, 0.f));
+    Float surface_area() const override {
+        return dr::norm(dr::cross(m_frame.s, m_frame.t));
+    }
 
-        Ray3f ray(p + m_frame.n, -m_frame.n, 0, Wavelength(0));
+    ScalarBoundingBox3f bbox() const override {
+        ScalarBoundingBox3f bbox;
+        ScalarAffineTransform4f to_world = m_to_world.scalar();
 
-        PreliminaryIntersection3f pi = ray_intersect_preliminary(ray, 0, active);
-        active &= pi.is_valid();
+        bbox.expand(to_world * ScalarPoint3f(-1.f, -1.f, 0.f));
+        bbox.expand(to_world * ScalarPoint3f(-1.f,  1.f, 0.f));
+        bbox.expand(to_world * ScalarPoint3f( 1.f, -1.f, 0.f));
+        bbox.expand(to_world * ScalarPoint3f( 1.f,  1.f, 0.f));
 
-        if (dr::none_or<false>(active))
-            return dr::zeros<SurfaceInteraction3f>();
+        return bbox;
+    }
 
-        SurfaceInteraction3f si =
-            compute_surface_interaction(ray, pi, ray_flags, 0, active);
-        si.finalize_surface_interaction(pi, ray, ray_flags, active);
+    void traverse(TraversalCallback *cb) override {
+        Shape<Float, Spectrum>::traverse(cb); // mesh attributes not exposed
+        cb->put("to_world", m_to_world, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        if (keys.empty() || string::contains(keys, "to_world")) {
+            // Ensure previous ray-tracing operation are fully evaluated before
+            // modifying the scalar values of the fields in this class
+            if constexpr (dr::is_jit_v<Float>)
+                dr::sync_thread();
+
+            m_to_world = m_to_world.value().update();
+            initialize();
+        }
+        Base::parameters_changed(keys);
+    }
+
+    SurfaceInteraction3f eval_parameterization(const Point2f &uv, uint32_t, Mask active) const override {
+        SurfaceInteraction3f si{};
+        si.p = m_to_world.value() *
+            Point3f(dr::fmadd(uv.x(), 2.f, - 1.f),
+                    dr::fmadd(uv.y(), 2.f, - 1.f), 0.f);
+        si.sh_frame  = m_frame;
+        si.n         = m_frame.n;
+        si.dp_du     = m_frame.s;
+        si.dp_dv     = m_frame.t;
+        si.uv        = uv;
+        si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
+        si.shape    = this;
+        si.instance = nullptr;
+        si.t        = dr::select(active, 0, dr::Infinity<Float>);
+
+        /// Zero-initialize remaining fields
+        si.time        = 0.f;
+        si.wavelengths = Wavelength(0.f);
+        si.dn_du = si.dn_dv = si.wi = Vector3f(0);
+        si.duv_dx = si.duv_dy = 0;
+        si.prim_index = 0;
 
         return si;
+    }
+
+    bool parameters_grad_enabled() const override {
+        return dr::grad_enabled(m_frame) ||
+               dr::grad_enabled(m_to_world.value());
     }
 
     //! @}
@@ -219,7 +283,7 @@ public:
             return dr::zeros<SilhouetteSample3f>();
 
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
-        const Transform4f &to_world = m_to_world.value();
+        const AffineTransform4f &to_world = m_to_world.value();
 
         /// Sample a point on one of the edges
         Mask range = false;
@@ -251,7 +315,7 @@ public:
         Vector3f local(dr::fmsub(ss.uv.x(), 2.f, 1.f),
                        dr::fmsub(ss.uv.y(), 2.f, 1.f),
                        0.f);
-        ss.p = to_world.transform_affine(Point3f(local));
+        ss.p = to_world * Point3f(local);
 
         /// Sample a tangential direction at the point
         ss.d = warp::square_to_uniform_sphere(Point2f(dr::tail<2>(sample)));
@@ -260,14 +324,14 @@ public:
         ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
         ss.flags = flags;
 
-        Vector3f world_edge_dir = to_world.transform_affine(
-            Vector3f(edge_dir.x(), edge_dir.y(), 0.f));
+        Vector3f world_edge_dir = to_world *
+            Vector3f(edge_dir.x(), edge_dir.y(), 0.f);
         ss.silhouette_d = dr::normalize(world_edge_dir);
         Normal3f frame_n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
 
         // Normal direction `ss.n` must point outwards
         Vector3f inward_dir = -local;
-        inward_dir = to_world.transform_affine(inward_dir);
+        inward_dir = to_world * inward_dir;
         frame_n[dr::dot(inward_dir, frame_n) > 0.f] *= -1.f;
         ss.n = frame_n;
 
@@ -324,7 +388,7 @@ public:
 
             Point3f local(dr::fmadd(uv.x(), 2.f, -1.f),
                           dr::fmadd(uv.y(), 2.f, -1.f), 0.f);
-            Point3f p_diff = m_to_world.value().transform_affine(local);
+            Point3f p_diff = m_to_world.value() * local;
 
             return dr::replace_grad(si.p, p_diff);
         }
@@ -339,7 +403,7 @@ public:
             return dr::zeros<SilhouetteSample3f>();
 
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
-        const Transform4f &to_world = m_to_world.value();
+        const AffineTransform4f &to_world = m_to_world.value();
 
         // Project to nearest edge
         Mask top_right_triangle = si.uv.y() > 1 - si.uv.x();
@@ -371,14 +435,14 @@ public:
         dr::masked(edge_dir, left_edge) =   Point2f(0.f, 1.f);
         dr::masked(edge_dir, right_edge) =  Point2f(0.f, 1.f);
 
-        ss.p = to_world.transform_affine(Point3f(local));
+        ss.p = to_world * Point3f(local);
         ss.d            = dr::normalize(ss.p - viewpoint);
-        ss.silhouette_d = dr::normalize(to_world.transform_affine(
-            Vector3f(edge_dir.x(), edge_dir.y(), 0.f)));
+        ss.silhouette_d = dr::normalize(to_world *
+            Vector3f(edge_dir.x(), edge_dir.y(), 0.f));
 
         Vector3f frame_t = dr::normalize(viewpoint - ss.p);
         Normal3f frame_n = dr::normalize(dr::cross(frame_t, ss.silhouette_d));
-        Vector3f inward_dir = to_world.transform_affine(Vector3f(-local));
+        Vector3f inward_dir = to_world * Vector3f(-local);
         frame_n[dr::dot(inward_dir, frame_n) > 0.f] *= -1.f;
         ss.n = frame_n;
 
@@ -437,6 +501,7 @@ public:
     //! @}
     // =============================================================
 
+
     // =============================================================
     //! @{ \name Ray tracing routines
     // =============================================================
@@ -447,13 +512,16 @@ public:
     ray_intersect_preliminary_impl(const Ray3fP &ray_,
                                    ScalarIndex /*prim_index*/,
                                    dr::mask_t<FloatP> active) const {
-        Transform<Point<FloatP, 4>> to_object;
-        if constexpr (!dr::is_jit_v<FloatP>)
-            to_object = m_to_object.scalar();
-        else
-            to_object = m_to_object.value();
+        // Note: the outputs from this function will be post-processed into a
+        // SurfaceInteraction3f by `Mesh::compute_surface_interaction()`.
 
-        Ray3fP ray = to_object.transform_affine(ray_);
+        AffineTransform<Point<FloatP, 4>> to_object;
+        if constexpr (!dr::is_jit_v<FloatP>)
+            to_object = m_to_world.scalar().inverse();
+        else
+            to_object = m_to_world.value().inverse();
+
+        Ray3fP ray = to_object * ray_;
         FloatP t   = -ray.o.z() / ray.d.z();
         Point<FloatP, 3> local = ray(t);
 
@@ -463,8 +531,35 @@ public:
                         && dr::abs(local.x()) <= 1.f
                         && dr::abs(local.y()) <= 1.f;
 
+        // Which of the two triangles did we hit?
+        const auto local_xy = local.x() + local.y();
+        dr::uint32_array_t<FloatP> prim_index = dr::select(local_xy <= 0.f, 0, 1);
+
+        // Compute barycentric coordinates inside of the hit triangle (w.r.t. vertices 1 and 2).
+        // The final intersection position will be recomputed as:
+        //     si.p = p0 * (1 - b1 - b2) + p1 * b1 + p2 * b2;
+        // Expression of the barycentric coordinates:
+        //     b1 = ((local - p0) x (p2 - p0)) / ((p1 - p0) x (p2 - p0))
+        //     b2 = ((local - p0) x (p0 - p1)) / ((p1 - p0) x (p2 - p0))
+        // where `x` denotes the cross product.
+        // Given the hardcoded vertices for this rectangle, it simplifies to:
+        //     Triangle 0:
+        //         b1 = (local.y + 1) / 2
+        //         b2 = -(local.x + local.y) / 2
+        //     Triangle 1:
+        //         b1 = (local.x + local.y) / 2
+        //         b2 = (1 - local.x) / 2
+        Point<FloatP, 2> prim_uv = 0.5f * dr::select(
+            prim_index == 0,
+            Point<FloatP, 2>(local.y() + 1.f, -local_xy),
+            Point<FloatP, 2>(local_xy, 1.f - local.x())
+        );
+
+        // We don't technically need to mask the inactive lanes, but we do it
+        // nevertheless to match the behavior of `Scene::ray_intersect()`.
+        // Return: pi.t, pi.prim_uv, pi.shape_index, pi.prim_index
         return { dr::select(active, t, dr::Infinity<FloatP>),
-                 Point<FloatP, 2>(local.x(), local.y()), ((uint32_t) -1), 0 };
+                 prim_uv & active, ((uint32_t) -1), dr::select(active, prim_index, 0) };
     }
 
     template <typename FloatP, typename Ray3fP>
@@ -473,13 +568,13 @@ public:
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
-        Transform<Point<FloatP, 4>> to_object;
+        AffineTransform<Point<FloatP, 4>> to_object;
         if constexpr (!dr::is_jit_v<FloatP>)
-            to_object = m_to_object.scalar();
+            to_object = m_to_world.scalar().inverse();
         else
-            to_object = m_to_object.value();
+            to_object = m_to_world.value().inverse();
 
-        Ray3fP ray     = to_object.transform_affine(ray_);
+        Ray3fP ray     = to_object * ray_;
         FloatP t       = -ray.o.z() / ray.d.z();
         Point<FloatP, 3> local = ray(t);
 
@@ -492,98 +587,8 @@ public:
 
     MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
 
-    SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
-                                                     const PreliminaryIntersection3f &pi,
-                                                     uint32_t ray_flags,
-                                                     uint32_t recursion_depth,
-                                                     Mask active) const override {
-        MI_MASK_ARGUMENT(active);
-        constexpr bool IsDiff = dr::is_diff_v<Float>;
-
-        // Early exit when tracing isn't necessary
-        if (!m_is_instance && recursion_depth > 0)
-            return dr::zeros<SurfaceInteraction3f>();
-
-        bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
-        bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
-
-        Transform4f to_world = m_to_world.value();
-        Transform4f to_object = m_to_object.value();
-
-        dr::suspend_grad<Float> scope(detach_shape, to_world, to_object, m_frame);
-
-        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
-        Point2f prim_uv = pi.prim_uv;
-
-        if constexpr (IsDiff) {
-            if (follow_shape) {
-                /* FollowShape glues the interaction point with the shape.
-                   Therefore, to also account for a possible differential motion
-                   of the shape, we first compute a detached intersection point
-                   in local space and transform it back in world space to get a
-                   point rigidly attached to the shape's motion, including
-                   translation, scaling and rotation. */
-                Point3f local = to_object.transform_affine(ray(pi.t));
-                /* With FollowShape the local position should always be static as
-                   the intersection point follows any motion of the sphere. */
-                local = dr::detach(local);
-                si.p = to_world.transform_affine(local);
-                si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) / dr::squared_norm(ray.d));
-                prim_uv = dr::head<2>(local);
-            } else {
-                /* To ensure that the differential interaction point stays along
-                   the traced ray, we first recompute the intersection distance
-                   in a differentiable way (w.r.t. to the rectangle parameters)
-                   and then compute the corresponding point along the ray. */
-                PreliminaryIntersection3f pi_d = ray_intersect_preliminary(ray, 0, active);
-                si.t = dr::replace_grad(pi.t, pi_d.t);
-                si.p = ray(si.t);
-                prim_uv = dr::replace_grad(pi.prim_uv, pi_d.prim_uv);
-            }
-        } else {
-            si.t = pi.t;
-            // Re-project onto the rectangle to improve accuracy
-            Point3f p = ray(pi.t);
-            Float dist = dr::dot(to_world.translation() - p, m_frame.n);
-            si.p = p + dist * m_frame.n;
-        }
-
-        si.t = dr::select(active, si.t, dr::Infinity<Float>);
-
-        si.n          = m_frame.n;
-        si.sh_frame.n = m_frame.n;
-        si.dp_du      = m_frame.s;
-        si.dp_dv      = m_frame.t;
-        si.uv         = Point2f(dr::fmadd(prim_uv.x(), 0.5f, 0.5f),
-                                dr::fmadd(prim_uv.y(), 0.5f, 0.5f));
-
-        si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
-        si.shape    = this;
-        si.instance = nullptr;
-
-        return si;
-    }
-
-    bool parameters_grad_enabled() const override {
-        return dr::grad_enabled(m_frame) ||
-               dr::grad_enabled(m_to_world.value());
-    }
-
-#if defined(MI_ENABLE_CUDA)
-    using Base::m_optix_data_ptr;
-
-    void optix_prepare_geometry() override {
-        if constexpr (dr::is_cuda_v<Float>) {
-            if (!m_optix_data_ptr)
-                m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixRectangleData));
-
-            OptixRectangleData data = { bbox(), m_to_object.scalar() };
-
-            jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data,
-                       sizeof(OptixRectangleData));
-        }
-    }
-#endif
+    //! @}
+    // =============================================================
 
     std::string to_string() const override {
         std::ostringstream oss;
@@ -596,12 +601,13 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(Rectangle)
 private:
     Frame3f m_frame;
     Float m_inv_surface_area;
+
+    MI_TRAVERSE_CB(Base, m_frame, m_inv_surface_area)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(Rectangle, Shape)
-MI_EXPORT_PLUGIN(Rectangle, "Rectangle intersection primitive");
+MI_EXPORT_PLUGIN(Rectangle)
 NAMESPACE_END(mitsuba)

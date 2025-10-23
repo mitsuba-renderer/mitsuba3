@@ -156,7 +156,7 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
      * the density of a surface position with respect to a given reference
      * position.
      *
-     * Direction `s` is set so that it points from the reference surface to
+     * Direction 's' is set so that it points from the reference surface to
      * the intersected surface, as required when using e.g. the \ref Endpoint
      * interface to compute PDF values.
      *

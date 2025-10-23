@@ -44,9 +44,7 @@ def check_conversion(conv, src_fmt, dst_fmt, data_in,
         pytest.skip('half precision floats unsupported in Python < 3.6')
     src_data = struct.pack(src_fmt, *data_in)
     import binascii
-    print(binascii.hexlify(src_data).decode('utf8'))
     converted = conv.convert(src_data)
-    print(binascii.hexlify(converted).decode('utf8'))
     dst_data = struct.unpack(dst_fmt, converted)
     ref = data_out if data_out is not None else data_in
     for i in range(len(dst_data)):

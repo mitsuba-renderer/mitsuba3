@@ -52,11 +52,8 @@ void ProgressReporter::update(float progress) {
         memcpy((char *) m_line.data() + eta_pos, eta.data(), eta.length());
     }
 
-    Thread::thread()->logger()->log_progress(progress, m_label, m_line,
-                                             eta, m_payload);
+    logger()->log_progress(progress, m_label, m_line, eta, m_payload);
     m_last_update = elapsed;
 }
-
-MI_IMPLEMENT_CLASS(ProgressReporter, Object)
 
 NAMESPACE_END(mitsuba)

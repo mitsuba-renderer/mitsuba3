@@ -161,18 +161,18 @@ public:
     MI_IMPORT_TYPES(Texture, MicrofacetDistribution)
 
     RoughConductor(const Properties &props) : Base(props) {
-        std::string material = props.string("material", "none");
+        std::string_view material = props.get<std::string_view>("material", "none");
         if (props.has_property("eta") || material == "none") {
-            m_eta = props.texture<Texture>("eta", 0.f);
-            m_k   = props.texture<Texture>("k",   1.f);
+            m_eta = props.get_unbounded_texture<Texture>("eta", 0.f);
+            m_k   = props.get_unbounded_texture<Texture>("k",   1.f);
             if (material != "none")
                 Throw("Should specify either (eta, k) or material, not both.");
         } else {
-            std::tie(m_eta, m_k) = complex_ior_from_file<Spectrum, Texture>(props.string("material", "Cu"));
+            std::tie(m_eta, m_k) = complex_ior_from_file<Spectrum, Texture>(props.get<std::string_view>("material", "Cu"));
         }
 
         if (props.has_property("distribution")) {
-            std::string distr = string::to_lower(props.string("distribution"));
+            std::string distr = string::to_lower(props.get<std::string_view>("distribution"));
             if (distr == "beckmann")
                 m_type = MicrofacetType::Beckmann;
             else if (distr == "ggx")
@@ -192,14 +192,14 @@ public:
             if (props.has_property("alpha"))
                 Throw("Microfacet model: please specify"
                       "either 'alpha' or 'alpha_u'/'alpha_v'.");
-            m_alpha_u = props.texture<Texture>("alpha_u");
-            m_alpha_v = props.texture<Texture>("alpha_v");
+            m_alpha_u = props.get_unbounded_texture<Texture>("alpha_u");
+            m_alpha_v = props.get_unbounded_texture<Texture>("alpha_v");
         } else {
-            m_alpha_u = m_alpha_v = props.texture<Texture>("alpha", 0.1f);
+            m_alpha_u = m_alpha_v = props.get_unbounded_texture<Texture>("alpha", 0.1f);
         }
 
         if (props.has_property("specular_reflectance"))
-            m_specular_reflectance = props.texture<Texture>("specular_reflectance", 1.f);
+            m_specular_reflectance = props.get_texture<Texture>("specular_reflectance", 1.f);
 
         m_flags = BSDFFlags::GlossyReflection | BSDFFlags::FrontSide;
         if (m_alpha_u != m_alpha_v)
@@ -209,17 +209,19 @@ public:
         m_components.push_back(m_flags);
     }
 
-    void traverse(TraversalCallback *callback) override {
+    void traverse(TraversalCallback *cb) override {
         if (m_specular_reflectance)
-            callback->put_object("specular_reflectance", m_specular_reflectance.get(), +ParamFlags::Differentiable);
-        if (!has_flag(m_flags, BSDFFlags::Anisotropic))
-            callback->put_object("alpha",                m_alpha_u.get(),              ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        else {
-            callback->put_object("alpha_u",              m_alpha_u.get(),              ParamFlags::Differentiable | ParamFlags::Discontinuous);
-            callback->put_object("alpha_v",              m_alpha_v.get(),              ParamFlags::Differentiable | ParamFlags::Discontinuous);
+            cb->put("specular_reflectance", m_specular_reflectance, ParamFlags::Differentiable);
+
+        if (!has_flag(m_flags, BSDFFlags::Anisotropic)) {
+            cb->put("alpha",   m_alpha_u, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        } else {
+            cb->put("alpha_u", m_alpha_u, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+            cb->put("alpha_v", m_alpha_v, ParamFlags::Differentiable | ParamFlags::Discontinuous);
         }
-        callback->put_object("eta", m_eta.get(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_object("k",   m_k.get(),   ParamFlags::Differentiable | ParamFlags::Discontinuous);
+
+        cb->put("eta", m_eta, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("k",   m_k,   ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -530,7 +532,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(RoughConductor)
 private:
     /// Specifies the type of microfacet distribution
     MicrofacetType m_type;
@@ -544,8 +546,10 @@ private:
     ref<Texture> m_k;
     /// Specular reflectance component
     ref<Texture> m_specular_reflectance;
+
+    MI_TRAVERSE_CB(Base, m_alpha_u, m_alpha_v, m_eta, m_k,
+                   m_specular_reflectance)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(RoughConductor, BSDF)
-MI_EXPORT_PLUGIN(RoughConductor, "Rough conductor")
+MI_EXPORT_PLUGIN(RoughConductor)
 NAMESPACE_END(mitsuba)

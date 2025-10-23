@@ -67,13 +67,13 @@ template <typename Float, typename Spectrum>
 class StokesIntegrator final : public SamplingIntegrator<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(SamplingIntegrator)
-    MI_IMPORT_TYPES(Scene, Sampler, Medium)
+    MI_IMPORT_TYPES(Scene, Sensor, Sampler, Medium)
 
     StokesIntegrator(const Properties &props) : Base(props) {
         if constexpr (!is_polarized_v<Spectrum>)
             Throw("This integrator should only be used in polarized mode!");
-        for (auto &kv : props.objects()) {
-            Base *integrator = dynamic_cast<Base *>(kv.second.get());
+        for (auto &prop : props.objects()) {
+            Base *integrator = prop.try_get<Base>();
             if (!integrator)
                 Throw("Child objects must be of type 'SamplingIntegrator'!");
             if (m_integrator)
@@ -96,12 +96,16 @@ public:
         auto [spec, mask] = m_integrator->sample(scene, sampler, ray, medium, aovs + 12, active);
 
         if constexpr (is_polarized_v<Spectrum>) {
+            // Need sensor information
+            if (!m_sensor)
+                Throw("The `sample()` method for this integrator must "
+                      "exclusively be called through the `render()` method!");
+
             /* The Stokes vector that comes from the integrator is still aligned
                with the implicit Stokes frame used for the ray direction. Apply
                one last rotation here s.t. it aligns with the sensor's x-axis. */
-            auto sensor = scene->sensors()[0];
             Vector3f current_basis = mueller::stokes_basis(-ray.d);
-            Vector3f vertical = sensor->world_transform() * Vector3f(0.f, 1.f, 0.f);
+            Vector3f vertical = m_sensor->world_transform() * Vector3f(0.f, 1.f, 0.f);
             Vector3f target_basis = dr::cross(ray.d, vertical);
             spec = mueller::rotate_stokes_basis(-ray.d,
                                                  current_basis,
@@ -129,6 +133,18 @@ public:
         return { spec, mask };
     }
 
+    TensorXf render(Scene *scene,
+                    Sensor *sensor,
+                    UInt32 seed = 0,
+                    uint32_t spp = 0,
+                    bool develop = true,
+                    bool evaluate = true) override {
+        m_sensor = sensor;
+        TensorXf result = Base::render(scene, sensor, seed, spp, develop, evaluate);
+        m_sensor = nullptr;
+        return result;
+    }
+
     std::vector<std::string> aov_names() const override {
         std::vector<std::string> result = m_integrator->aov_names();
         for (int i = 0; i < 4; ++i)
@@ -137,15 +153,17 @@ public:
         return result;
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("integrator", m_integrator.get(), +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("integrator", m_integrator, ParamFlags::Differentiable);
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(StokesIntegrator)
 private:
+    Sensor *m_sensor;
     ref<Base> m_integrator;
+
+    MI_TRAVERSE_CB(Base, m_integrator)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(StokesIntegrator, SamplingIntegrator)
-MI_EXPORT_PLUGIN(StokesIntegrator, "Stokes integrator");
+MI_EXPORT_PLUGIN(StokesIntegrator)
 NAMESPACE_END(mitsuba)

@@ -10,7 +10,7 @@ template <typename Scalar>
 void spectrum_from_file(const fs::path &path, std::vector<Scalar> &wavelengths,
                         std::vector<Scalar> &values) {
 
-    auto fs = Thread::thread()->file_resolver();
+    auto fs = file_resolver();
     fs::path file_path = fs->resolve(path);
     if (!fs::exists(file_path))
         Log(Error, "\"%s\": file does not exist!", file_path);
@@ -47,6 +47,7 @@ void spectrum_from_file(const fs::path &path, std::vector<Scalar> &wavelengths,
                 current++;
             }
         }
+        Log(Info, "Parsed %zu wavelengths and %zu values from \"%s\"", wavelengths.size(), values.size(), file_path);
     } else {
         Log(Error, "You need to provide a valid extension like \".spd\" to read"
                    "the information from an ASCII file. You used \"%s\"", extension);
@@ -57,7 +58,7 @@ template <typename Scalar>
 void spectrum_to_file(const fs::path &path, const std::vector<Scalar> &wavelengths,
                       const std::vector<Scalar> &values) {
 
-    auto fs = Thread::thread()->file_resolver();
+    auto fs = file_resolver();
     fs::path file_path = fs->resolve(path);
 
     if (wavelengths.size() != values.size())
@@ -85,6 +86,11 @@ template <typename Scalar>
 Color<Scalar, 3> spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
                                        const std::vector<Scalar> &values,
                                        bool bounded, bool d65) {
+    if (wavelengths.empty() || values.empty())
+        Throw("spectrum_list_to_srgb(): wavelengths and values arrays cannot be empty!");
+    if (wavelengths.size() != values.size())
+        Throw("spectrum_list_to_srgb(): wavelengths and values arrays must have the same size!");
+
     Color<Scalar, 3> xyz = (Scalar) 0.f;
 
     const int steps = 1000;
@@ -114,7 +120,8 @@ Color<Scalar, 3> spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
     }
 
     // Last specified value repeats implicitly
-    xyz *= ((Scalar) MI_CIE_MAX - (Scalar) MI_CIE_MIN) / (Scalar) steps;
+    xyz *= ((Scalar) MI_CIE_MAX - (Scalar) MI_CIE_MIN) *
+           (Scalar) MI_CIE_Y_NORMALIZATION / (Scalar) steps;
     Color<Scalar, 3> rgb = xyz_to_srgb(xyz);
 
     if (bounded && dr::any(rgb < (Scalar) 0.f || rgb > (Scalar) 1.f)) {

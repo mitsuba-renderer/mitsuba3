@@ -2,14 +2,15 @@
 Adds subfigure functionality
 """
 
-import docutils
 from docutils import nodes
 import docutils.parsers.rst.directives as directives
-from docutils.parsers.rst import Directive, Parser
-from sphinx import addnodes
+from docutils.parsers.rst import Directive
 from docutils.parsers.rst.directives.images import Image
 from docutils.statemachine import ViewList
 from sphinx.util.nodes import nested_parse_with_titles
+
+import re
+class_re = re.compile("class=\"(.*?)\"")
 
 class subfig(nodes.General, nodes.Element):
     pass
@@ -34,7 +35,7 @@ def visit_subfig_html(self, node):
 
 def depart_subfig_html(self, node):
     figoutput = ''.join(self.body)
-    figoutput = figoutput.replace('class="', 'class="align-center subsubfigure" style="width: %g%%"' % (float(node['width']) * 100))
+    figoutput = re.sub(class_re, 'class="align-center subsubfigure" style="width: %g%%"' % (float(node['width']) * 100), figoutput)
     self.body = self.__body
     self.body.append(figoutput)
 

@@ -33,7 +33,7 @@ MI_PY_EXPORT(fresnel) {
     .def("lookup_ior",
          [](const Properties &props, const std::string& name, nb::object def) {
             if (nb::isinstance<nb::float_>(def))
-                return lookup_ior(props, name, (float) nb::cast<Properties::Float>(def));
+                return lookup_ior(props, name, (float) nb::cast<double>(def));
             return lookup_ior(props, name, nb::cast<std::string>(def));
          },
          "properties"_a, "name"_a, "default"_a,

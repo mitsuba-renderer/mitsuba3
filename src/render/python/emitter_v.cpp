@@ -2,6 +2,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/trampoline.h>
+#include <nanobind/stl/vector.h>
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/string.h>
 #include <drjit/python.h>
@@ -84,6 +85,8 @@ public:
     using Emitter::m_flags;
     using Emitter::m_needs_sample_2;
     using Emitter::m_needs_sample_3;
+
+    DR_TRAMPOLINE_TRAVERSE_CB(Emitter);
 };
 
 template <typename Ptr, typename Cls> void bind_emitter_generic(Cls &cls) {
@@ -150,7 +153,7 @@ template <typename Ptr, typename Cls> void bind_emitter_generic(Cls &cls) {
 MI_PY_EXPORT(Emitter) {
     MI_PY_IMPORT_TYPES(Emitter, EmitterPtr)
     using PyEmitter = PyEmitter<Float, Spectrum>;
-    using Properties = PropertiesV<Float>;
+    using Properties = mitsuba::Properties;
 
     m.def("has_flag", [](uint32_t flags, EmitterFlags f) {return has_flag(flags, f);});
     m.def("has_flag", [](UInt32   flags, EmitterFlags f) {return has_flag(flags, f);});
@@ -164,11 +167,12 @@ MI_PY_EXPORT(Emitter) {
         .def_field(PyEmitter, m_needs_sample_3, D(Endpoint, m_needs_sample_3))
         .def_field(PyEmitter, m_flags, D(Emitter, m_flags));
 
+    drjit::bind_traverse(emitter);
+
     if constexpr (dr::is_array_v<EmitterPtr>) {
         dr::ArrayBinding b;
         auto emitter_ptr = dr::bind_array_t<EmitterPtr>(b, m, "EmitterPtr");
         bind_emitter_generic<EmitterPtr>(emitter_ptr);
     }
 
-    MI_PY_REGISTER_OBJECT("register_emitter", Emitter)
 }

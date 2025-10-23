@@ -179,6 +179,22 @@ public:
         jit_set_flag(JitFlag::LoopRecord, true);
         jit_set_flag(JitFlag::VCallRecord, true);
         return { ray, ray_weight };
+
+        // // Choose a random emitter
+        // auto emitter_idx = sampler->next_1d() * scene->m_emitters.size();
+        // EmitterPtr emitter = scene->emitters()[emitter_idx];
+
+        // // Sample a point on the emitter
+        // Point2f u = sampler->next_2d();
+        // Interaction3f it = emitter->sample_position(0.f, u);
+
+        // // Compute direction towards the point on the emitter
+        // Vector3f d = normalize(it.p - sensor->position());
+
+        // // Create and return ray
+        // Ray3f ray(sensor->position(), d);
+        // Spectrum throughput = emitter->eval(it) / scene->emitter_pdf(emitter);
+        // return { ray, throughput };
     }
 
     /**
@@ -198,7 +214,6 @@ public:
     trace_light_ray(Ray3f ray, const Scene *scene, const Sensor *sensor,
                     Sampler *sampler, Spectrum throughput, ImageBlock *block,
                     ScalarFloat sample_scale, Mask active = true) const {
-
         // Tracks radiance scaling due to index of refraction changes
         Float eta(1.f);
 
@@ -206,36 +221,32 @@ public:
 
         /* ---------------------- Path construction ------------------------- */
         // First intersection from the emitter to the scene
-        SurfaceInteraction3f si = scene->ray_intersect(ray, active);
-        active &= si.is_valid();
+        PreliminaryIntersection3f pi = scene->ray_intersect_preliminary(ray, active);
+
+        active &= pi.is_valid();
         if (m_max_depth >= 0)
             active &= depth < m_max_depth;
 
         /* Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
            generates wavefront or megakernel renderer based on configuration).
            Register everything that changes as part of the loop here */
-        /* dr::Loop<Mask> loop("Particle Tracer Integrator", active, depth, ray,
-                            throughput, si, eta, sampler);
-
-        // Incrementally build light path using BSDF sampling.
-        while (loop(active)) { */
         struct LoopState {
             Bool active;
             Int32 depth;
             Ray3f ray;
             Spectrum throughput;
-            SurfaceInteraction3f si;
+            PreliminaryIntersection3f pi;
             Float eta;
             Sampler* sampler;
 
-            DRJIT_STRUCT(LoopState, active, depth, ray, throughput, si, eta,
+            DRJIT_STRUCT(LoopState, active, depth, ray, throughput, pi, eta,
                          sampler)
         } ls = {
             active,
             depth,
             ray,
             throughput,
-            si,
+            pi,
             eta,
             sampler
         };
@@ -243,15 +254,17 @@ public:
         // Incrementally build light path using BSDF sampling.
         dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),
             [](const LoopState& ls) { return ls.active; },
-            [this, scene, sensor, block, sample_scale](LoopState& ls) {        
-            
-            BSDFPtr bsdf = ls.si.bsdf(ls.ray);
+            [this, scene, sensor, block, sample_scale](LoopState& ls) {
+
+            SurfaceInteraction3f si = ls.pi.compute_surface_interaction(ls.ray, +RayFlags::All);
+
+            BSDFPtr bsdf = si.bsdf(ls.ray);
 
             /* Connect to sensor and splat if successful. Sample a direction
                from the sensor to the current surface point. */
             auto [sensor_ds, sensor_weight] =
-                sensor->sample_direction(ls.si, ls.sampler->next_2d(), ls.active);
-            connect_sensor(scene, ls.si, sensor_ds, bsdf,
+                sensor->sample_direction(si, ls.sampler->next_2d(), ls.active);
+            connect_sensor(scene, si, sensor_ds, bsdf,
                            ls.throughput * sensor_weight, block, sample_scale,
                            ls.active);
 
@@ -259,19 +272,19 @@ public:
             // Sample BSDF * cos(theta).
             BSDFContext ctx(TransportMode::Importance);
             auto [bs, bsdf_val] =
-                bsdf->sample(ctx, ls.si, ls.sampler->next_1d(ls.active),
+                bsdf->sample(ctx, si, ls.sampler->next_1d(ls.active),
                              ls.sampler->next_2d(ls.active), ls.active);
 
             // Using geometric normals (wo points to the camera)
-            Float wi_dot_geo_n = dr::dot(ls.si.n, -ls.ray.d),
-                  wo_dot_geo_n = dr::dot(ls.si.n, ls.si.to_world(bs.wo));
+            Float wi_dot_geo_n = dr::dot(si.n, -ls.ray.d),
+                  wo_dot_geo_n = dr::dot(si.n, si.to_world(bs.wo));
 
             // Prevent light leaks due to shading normals
-            ls.active &= (wi_dot_geo_n * Frame3f::cos_theta(ls.si.wi) > 0.f) &&
+            ls.active &= (wi_dot_geo_n * Frame3f::cos_theta(si.wi) > 0.f) &&
                          (wo_dot_geo_n * Frame3f::cos_theta(bs.wo) > 0.f);
 
             // Adjoint BSDF for shading normals -- [Veach, p. 155]
-            Float correction = dr::abs((Frame3f::cos_theta(ls.si.wi) * wo_dot_geo_n) /
+            Float correction = dr::abs((Frame3f::cos_theta(si.wi) * wo_dot_geo_n) /
                                        (Frame3f::cos_theta(bs.wo) * wi_dot_geo_n));
             ls.throughput *= bsdf_val * correction;
             ls.eta *= bs.eta;
@@ -279,23 +292,33 @@ public:
             ls.active &= dr::any(unpolarized_spectrum(ls.throughput) != 0.f);
             if (dr::none_or<false>(ls.active))
                 return;
-            // Intersect the BSDF ray against scene geometry (next vertex).
-            ls.ray = ls.si.spawn_ray(ls.si.to_world(bs.wo));
-            ls.si = scene->ray_intersect(ls.ray, ls.active);
 
             ls.depth++;
             if (m_max_depth >= 0)
                 ls.active &= ls.depth < m_max_depth;
-            ls.active &= ls.si.is_valid();
 
             // Russian Roulette
             Mask use_rr = ls.depth > m_rr_depth;
             if (dr::any_or<true>(use_rr)) {
                 Float q = dr::minimum(
-                    dr::max(unpolarized_spectrum(ls.throughput)) * dr::square(ls.eta), 0.95f);
+                    dr::max(unpolarized_spectrum(ls.throughput)) * dr::square(ls.eta),
+                    0.95f
+                );
                 dr::masked(ls.active, use_rr) &= ls.sampler->next_1d(ls.active) < q;
                 dr::masked(ls.throughput, use_rr) *= dr::rcp(q);
             }
+
+            // Intersect the BSDF ray against scene geometry (next vertex).
+            ls.ray = si.spawn_ray(si.to_world(bs.wo));
+            // Reorder threads based on the shape they hit
+            ls.pi = scene->ray_intersect_preliminary(ls.ray,
+                                                     /* coherent = */ false,
+                                                     /* reorder = */ jit_flag(JitFlag::LoopRecord),
+                                                     /* reorder_hint = */ 0,
+                                                     /* reorder_hint_bits = */ 0,
+                                                     ls.active);
+
+            ls.active &= ls.pi.is_valid();
         },
         "Custom Particle Tracer Integrator");
 
@@ -399,10 +422,9 @@ public:
                            m_max_depth, m_rr_depth);
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(ParticleTracerIntegrator)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(ParticleTracerIntegrator, AdjointIntegrator);
-MI_EXPORT_PLUGIN(ParticleTracerIntegrator, "Particle Tracer integrator");
+MI_EXPORT_PLUGIN(ParticleTracerIntegrator)
 NAMESPACE_END(mitsuba)
 

@@ -225,23 +225,23 @@ public:
         m_flags = BSDFFlags::DeltaReflection | BSDFFlags::FrontSide;
         m_components.push_back(m_flags);
 
-        m_specular_reflectance = props.texture<Texture>("specular_reflectance", 1.f);
+        m_specular_reflectance = props.get_texture<Texture>("specular_reflectance", 1.f);
 
-        std::string material = props.string("material", "none");
+        std::string_view material = props.get<std::string_view>("material", "none");
         if (props.has_property("eta") || material == "none") {
-            m_eta = props.texture<Texture>("eta", 0.f);
-            m_k   = props.texture<Texture>("k",   1.f);
+            m_eta = props.get_unbounded_texture<Texture>("eta", 0.f);
+            m_k   = props.get_unbounded_texture<Texture>("k",   1.f);
             if (material != "none")
                 Throw("Should specify either (eta, k) or material, not both.");
         } else {
-            std::tie(m_eta, m_k) = complex_ior_from_file<Spectrum, Texture>(props.string("material", "Cu"));
+            std::tie(m_eta, m_k) = complex_ior_from_file<Spectrum, Texture>(props.get<std::string_view>("material", "Cu"));
         }
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("eta",                  m_eta.get(),                  ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_object("k",                    m_k.get(),                    ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_object("specular_reflectance", m_specular_reflectance.get(), +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("eta",                  m_eta,                  ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("k",                    m_k,                    ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("specular_reflectance", m_specular_reflectance, ParamFlags::Differentiable);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -326,12 +326,13 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(SmoothConductor)
 private:
     ref<Texture> m_specular_reflectance;
     ref<Texture> m_eta, m_k;
+
+    MI_TRAVERSE_CB(Base, m_specular_reflectance, m_eta, m_k)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SmoothConductor, BSDF)
-MI_EXPORT_PLUGIN(SmoothConductor, "Smooth conductor")
+MI_EXPORT_PLUGIN(SmoothConductor)
 NAMESPACE_END(mitsuba)

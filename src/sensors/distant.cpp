@@ -79,7 +79,7 @@ public:
 
         // Get target
         if (props.has_property("target")) {
-            if (props.type("target") == Properties::Type::Array3f) {
+            if (props.type("target") == Properties::Type::Vector) {
                 props.get<ScalarPoint3f>("target");
                 m_target_type = RayTargetType::Point;
             } else if (props.type("target") == Properties::Type::Object) {
@@ -126,7 +126,7 @@ public:
         return { result };
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(DistantSensor)
 
 protected:
     Properties m_props;
@@ -163,7 +163,7 @@ public:
 
             std::tie(std::ignore, up) = coordinate_system(direction);
 
-            m_to_world = ScalarTransform4f::look_at(
+            m_to_world = ScalarAffineTransform4f::look_at(
                 ScalarPoint3f(0.0f), ScalarPoint3f(direction), up);
         }
 
@@ -171,7 +171,7 @@ public:
         if constexpr (TargetType == RayTargetType::Point) {
             m_target_point = props.get<ScalarPoint3f>("target");
         } else if constexpr (TargetType == RayTargetType::Shape) {
-            auto obj       = props.object("target");
+            auto obj       = props.get<ref<Object>>("target");
             m_target_shape = dynamic_cast<Shape *>(obj.get());
 
             if (!m_target_shape)
@@ -209,7 +209,7 @@ public:
         Spectrum ray_weight = 0.f;
 
         // Set ray direction
-        ray.d = m_to_world.value().transform_affine(Vector3f{ 0.f, 0.f, 1.f });
+        ray.d = m_to_world.value() * Vector3f{ 0.f, 0.f, 1.f };
 
         // Sample target point and position ray origin
         if constexpr (TargetType == RayTargetType::Point) {
@@ -226,7 +226,7 @@ public:
             Point2f offset =
                 warp::square_to_uniform_disk_concentric(aperture_sample);
             Vector3f perp_offset =
-                m_to_world.value().transform_affine(Vector3f(offset.x(), offset.y(), 0.f));
+                m_to_world.value() * Vector3f(offset.x(), offset.y(), 0.f);
             ray.o = m_bsphere.center + perp_offset * m_bsphere.radius - ray.d * m_bsphere.radius;
             ray_weight = wav_weight;
         }
@@ -273,7 +273,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(DistantSensorImpl)
 
 protected:
     ScalarBoundingSphere3f m_bsphere;
@@ -281,8 +281,7 @@ protected:
     Point3f m_target_point;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(DistantSensor, Sensor)
-MI_EXPORT_PLUGIN(DistantSensor, "DistantSensor")
+MI_EXPORT_PLUGIN(DistantSensor)
 
 NAMESPACE_BEGIN(detail)
 template <RayTargetType TargetType>
@@ -297,14 +296,5 @@ constexpr const char *distant_sensor_class_name() {
 }
 NAMESPACE_END(detail)
 
-template <typename Float, typename Spectrum, RayTargetType TargetType>
-Class *DistantSensorImpl<Float, Spectrum, TargetType>::m_class = new Class(
-    detail::distant_sensor_class_name<TargetType>(), "Sensor",
-    ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
-
-template <typename Float, typename Spectrum, RayTargetType TargetType>
-const Class *DistantSensorImpl<Float, Spectrum, TargetType>::class_() const {
-    return m_class;
-}
 
 NAMESPACE_END(mitsuba)

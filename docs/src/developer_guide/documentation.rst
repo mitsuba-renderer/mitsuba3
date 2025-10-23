@@ -3,39 +3,49 @@
 Writing documentation
 =====================
 
-Additional packages are required to generate the HTML documentation which can
-be installed running the following command:
+Mitsuba uses a multi-stage documentation generation process that combines C++ docstring extraction, plugin documentation generation, and Sphinx-based HTML generation. This guide explains how the system works and how to build documentation.
+
+Prerequisites
+-------------
+
+Install required Python packages:
 
 .. code-block:: bash
 
     pip install -r docs/requirements.txt
 
-If not already done, run `cmake` in the build folder to generate the build
-targets related to the documentation:
+Documentation sources
+---------------------
+
+Documentation comes from several sources:
+
+1. **C++ headers** (``include/mitsuba/{core,render}/*.h``): API documentation extracted via docstrings
+2. **C++ plugin sources** (``src/{bsdfs,shapes,emitters,...}/*.cpp``): Plugin descriptions and parameters
+3. **RST files** (``docs/src/``): User guides, tutorials, and manual content
+4. **Jupyter notebooks** (``docs/tutorials/``): Interactive tutorials rendered with nbsphinx
+
+Build process overview
+----------------------
+
+The complete documentation build requires multiple steps in a specific order:
 
 .. code-block:: bash
 
-  cd build
-  cmake -GNinja ..
+    ninja docstrings    # Extract C++ docstrings → include/mitsuba/python/docstr.h
+    ninja               # Build main library and Python bindings
+    ninja mkdoc-api     # Generate API reference documentation
+    ninja mkdoc         # Build final HTML documentation
 
-To generate the HTML documentation, build the `mkdoc` target as follow:
+Detailed build steps
+--------------------
 
-.. code-block:: bash
+1. **Docstring extraction** (``ninja docstrings``): Parses C++ headers in ``include/mitsuba/`` using ``pybind11_mkdoc`` to generate ``include/mitsuba/python/docstr.h`` for Python bindings.
 
-    ninja mkdoc
+2. **Main build** (``ninja``): Compiles the C++ library, plugins, and Python bindings with embedded docstrings—required before generating API documentation.
 
-This process will generate the documentation HTML files into the `build/html`
-folder.
+3. **API documentation** (``ninja mkdoc-api``): Introspects Python modules to generate API reference in ``build/html_api/``.
 
-API references generation
--------------------------
-
-The API references need to be generated manually executing the following command:
-
-.. code-block:: bash
-
-    ninja mkdoc-api
-    ninja mkdoc # Rebuild the documentation to update the API references
+4. **Main documentation** (``ninja mkdoc``): Builds the complete documentation website in ``build/html/`` by running plugin extraction, processing notebooks, and combining all sources.
 
 Notebook tutorials
 ------------------

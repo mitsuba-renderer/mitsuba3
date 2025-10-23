@@ -81,7 +81,7 @@ inline float lookup_ior(const Properties &props, const std::string &param_name,
     if (props.has_property(param_name) && props.type(param_name) == Properties::Type::Float)
         return props.get<float>(param_name);
     else
-        return lookup_ior(props.string(param_name, default_value));
+        return lookup_ior(props.get<std::string>(param_name, default_value));
 }
 
 inline float lookup_ior(const Properties &props, const std::string &param_name,
@@ -90,7 +90,7 @@ inline float lookup_ior(const Properties &props, const std::string &param_name,
         if (props.type(param_name) == Properties::Type::Float)
             return props.get<float>(param_name);
         else
-            return lookup_ior(props.string(param_name));
+            return lookup_ior(props.get<std::string>(param_name));
     }
     else {
         return default_value;
@@ -98,48 +98,40 @@ inline float lookup_ior(const Properties &props, const std::string &param_name,
 }
 
 template <typename Spectrum, typename Texture>
-ref<Texture> ior_from_file(const std::string &filename) {
-    using Float = Properties::Float;
+ref<Texture> ior_from_file(std::string_view filename) {
+    using Float = double;
     std::vector<Float> wavelengths, values;
-    spectrum_from_file(filename, wavelengths, values);
+    spectrum_from_file(fs::path(filename), wavelengths, values);
 
-    Float unit_conversion = is_spectral_v<Spectrum> ? 1 : Float(MI_CIE_Y_NORMALIZATION);
-    for (size_t k = 0; k < wavelengths.size(); ++k)
-        values[k] *= unit_conversion;
-
+    ref<Texture> tex;
     Properties props;
-    props.set_plugin_name("irregular");
-    props.set_long("size", wavelengths.size());
-    props.set_pointer("wavelengths", wavelengths.data());
-    props.set_pointer("values", values.data());
 
-    ref<Texture> tex = PluginManager::instance()->create_object<Texture>(props);
-
-    if (!is_spectral_v<Spectrum>) {
+    if (is_spectral_v<Spectrum>) {
+        props.set_plugin_name("irregular");
+        props.set("value", Properties::Spectrum(std::move(wavelengths), std::move(values)));
+    } else {
         Color<Float, 3> color =
             spectrum_list_to_srgb(wavelengths, values, false, false);
 
-        Properties props2;
         if (is_monochromatic_v<Spectrum>) {
-            props2 = Properties("uniform");
-            props2.set_float("value", Float(luminance(color)));
+            props.set_plugin_name("uniform");
+            props.set("value", Float(luminance(color)));
         } else {
-            props2 = Properties("srgb");
-            props2.set_color("color", color);
-            props2.set_bool("unbounded", true);
+            props.set_plugin_name("srgb");
+            props.set("color", color);
+            props.set("unbounded", true);
         }
-
-        tex = PluginManager::instance()->create_object<Texture>(props2);
     }
 
-    return tex;
+    return PluginManager::instance()->create_object<Texture>(props);
 }
 
 template <typename Spectrum, typename Texture>
-std::pair<ref<Texture>, ref<Texture>> complex_ior_from_file(const std::string &material) {
-    auto eta = ior_from_file<Spectrum, Texture>("data/ior/" + material + ".eta.spd");
-    auto k   = ior_from_file<Spectrum, Texture>("data/ior/" + material + ".k.spd");
-    return { eta, k };
+std::pair<ref<Texture>, ref<Texture>> complex_ior_from_file(std::string_view material) {
+    return {
+        ior_from_file<Spectrum, Texture>(std::string("data/ior/") + std::string(material) + ".eta.spd"),
+        ior_from_file<Spectrum, Texture>(std::string("data/ior/") + std::string(material) + ".k.spd")
+    };
 }
 
 NAMESPACE_END(mitsuba)

@@ -181,10 +181,10 @@ public:
 
         m_eta = int_ior / ext_ior;
 
-        m_diffuse_reflectance  = props.texture<Texture>("diffuse_reflectance",  .5f);
+        m_diffuse_reflectance  = props.get_texture<Texture>("diffuse_reflectance",  .5f);
 
         if (props.has_property("specular_reflectance"))
-            m_specular_reflectance = props.texture<Texture>("specular_reflectance", 1.f);
+            m_specular_reflectance = props.get_texture<Texture>("specular_reflectance", 1.f);
 
         m_nonlinear = props.get<bool>("nonlinear", false);
 
@@ -205,12 +205,13 @@ public:
         parameters_changed();
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("diffuse_reflectance", m_diffuse_reflectance.get(), +ParamFlags::Differentiable);
-        callback->put_parameter("alpha",            m_alpha,                     ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        callback->put_parameter("eta",              m_eta,                       ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("diffuse_reflectance", m_diffuse_reflectance, ParamFlags::Differentiable);
+        cb->put("alpha",               m_alpha,               ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("eta",                 m_eta,                 ParamFlags::Differentiable | ParamFlags::Discontinuous);
+
         if (m_specular_reflectance)
-            callback->put_object("specular_reflectance", m_specular_reflectance.get(), +ParamFlags::Differentiable);
+            cb->put("specular_reflectance", m_specular_reflectance, ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
@@ -523,7 +524,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(RoughPlastic)
 private:
     ref<Texture> m_diffuse_reflectance;
     ref<Texture> m_specular_reflectance;
@@ -536,8 +537,11 @@ private:
     bool m_sample_visible;
     DynamicBuffer<Float> m_external_transmittance;
     Float m_internal_reflectance;
+
+    MI_TRAVERSE_CB(Base, m_diffuse_reflectance, m_specular_reflectance, m_eta,
+                   m_inv_eta_2, m_alpha, m_specular_sampling_weight,
+                   m_external_transmittance, m_internal_reflectance)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(RoughPlastic, BSDF);
-MI_EXPORT_PLUGIN(RoughPlastic, "Rough plastic");
+MI_EXPORT_PLUGIN(RoughPlastic)
 NAMESPACE_END(mitsuba)

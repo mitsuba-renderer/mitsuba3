@@ -10,6 +10,10 @@ table.docutils th {
     width:100%;
 }
 
+.sidebar-brand-text {
+	text-align: center;
+}
+
 .toggle .header {
     display: block;
     clear: both;
@@ -252,18 +256,6 @@ img {
 
 .theme-toggle-container {
     display: none;
-}
-
-/* sphinx-gallery thumbnails */
-.sphx-glr-thumbcontainer  {
-    border: 1px solid #ccc !important;
-}
-.sphx-glr-thumbcontainer .figure.align-center {
-    border: 0;
-}
-.sphx-glr-thumbcontainer img {
-    margin-top: 0;
-    margin-bottom: 0;
 }
 
 #plugin-reference .toctree-wrapper { column-count: 2; }

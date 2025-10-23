@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
 // =======================================================================
 
 MI_VARIANT Sampler<Float, Spectrum>::Sampler(const Properties &props)
-    : Object() {
+    : JitObject<Sampler>(props.id()) {
     m_sample_count = props.get<uint32_t>("sample_count", 4);
     m_base_seed = props.get<uint32_t>("seed", 0);
 
@@ -21,7 +21,7 @@ MI_VARIANT Sampler<Float, Spectrum>::Sampler(const Properties &props)
 }
 
 MI_VARIANT Sampler<Float, Spectrum>::Sampler(const Sampler &sampler)
-    : Object() {
+    : JitObject<Sampler>(sampler) {
     m_sample_count          = sampler.m_sample_count;
     m_base_seed             = sampler.m_base_seed;
     m_wavefront_size        = sampler.m_wavefront_size;
@@ -32,7 +32,23 @@ MI_VARIANT Sampler<Float, Spectrum>::Sampler(const Sampler &sampler)
 
 MI_VARIANT Sampler<Float, Spectrum>::~Sampler() { }
 
-MI_VARIANT void Sampler<Float, Spectrum>::seed(uint32_t /* seed */,
+MI_VARIANT void Sampler<Float, Spectrum>::traverse_1_cb_ro(void *payload, drjit::detail::traverse_callback_ro fn) const {
+    Object::traverse_1_cb_ro(payload, fn);
+    if (jit_flag(JitFlag::EnableObjectTraversal)) {
+        drjit::traverse_1_fn_ro(m_dimension_index, payload, fn);
+        drjit::traverse_1_fn_ro(m_sample_index, payload, fn);
+    }
+}
+
+MI_VARIANT void Sampler<Float, Spectrum>::traverse_1_cb_rw(void *payload, drjit::detail::traverse_callback_rw fn) {
+    Object::traverse_1_cb_rw(payload, fn);
+    if (jit_flag(JitFlag::EnableObjectTraversal)) {
+        drjit::traverse_1_fn_rw(m_dimension_index, payload, fn);
+        drjit::traverse_1_fn_rw(m_sample_index, payload, fn);
+    }
+}
+
+MI_VARIANT void Sampler<Float, Spectrum>::seed(UInt32 /* seed */,
                                                uint32_t wavefront_size) {
     if constexpr (dr::is_array_v<Float>) {
         // Only overwrite when specified
@@ -69,18 +85,6 @@ MI_VARIANT void Sampler<Float, Spectrum>::schedule_state() {
 }
 
 MI_VARIANT void
-Sampler<Float, Spectrum>::traverse_1_cb_ro(void * /*payload*/,
-                                           void (* /*fn*/)(void *, uint64_t)) const {
-    NotImplementedError("traverse_1_cb_ro");
-}
-
-MI_VARIANT void
-Sampler<Float, Spectrum>::traverse_1_cb_rw(void * /*payload*/,
-                                           uint64_t (* /*fn*/)(void *, uint64_t)) {
-    NotImplementedError("traverse_1_cb_rw");
-}
-
-MI_VARIANT void
 Sampler<Float, Spectrum>::set_samples_per_wavefront(uint32_t samples_per_wavefront) {
     if constexpr (!dr::is_array_v<Float>)
         Throw("set_samples_per_wavefront should not be used in scalar variants of the renderer.");
@@ -91,12 +95,14 @@ Sampler<Float, Spectrum>::set_samples_per_wavefront(uint32_t samples_per_wavefro
 }
 
 MI_VARIANT typename Sampler<Float, Spectrum>::UInt32
-Sampler<Float, Spectrum>::compute_per_sequence_seed(uint32_t seed) const {
+Sampler<Float, Spectrum>::compute_per_sequence_seed(UInt32 seed) const {
     UInt32 indices      = dr::arange<UInt32>(m_wavefront_size),
            sequence_idx = m_samples_per_wavefront * (indices / m_samples_per_wavefront);
 
+    dr::make_opaque(seed);
+
     return sample_tea_32(dr::opaque<UInt32>(m_base_seed, 1),
-                         sequence_idx + dr::opaque<UInt32>(seed, 1)).first;
+                         sequence_idx + seed).first;
 }
 
 MI_VARIANT typename Sampler<Float, Spectrum>::UInt32
@@ -120,24 +126,24 @@ Sampler<Float, Spectrum>::current_sample_index() const {
 MI_VARIANT PCG32Sampler<Float, Spectrum>::PCG32Sampler(const Properties &props)
     : Base(props) { }
 
-MI_VARIANT void PCG32Sampler<Float, Spectrum>::seed(uint32_t seed,
+MI_VARIANT void PCG32Sampler<Float, Spectrum>::seed(UInt32 seed,
                                                     uint32_t wavefront_size) {
     Base::seed(seed, wavefront_size);
 
-    uint32_t seed_value = m_base_seed + seed;
+    UInt32 seed_value = m_base_seed + seed;
 
     if constexpr (dr::is_array_v<Float>) {
-        UInt32 idx = dr::arange<UInt32>(m_wavefront_size),
-               tmp = dr::opaque<UInt32>(seed_value);
+        UInt32 idx = dr::arange<UInt32>(m_wavefront_size);
+        dr::make_opaque(seed_value);
 
         /* Scramble seed and stream index using the Tiny Encryption Algorithm.
            Just providing a linearly increasing sequence of integers as streams
            does not produce a sufficiently statistically independent set of RNGs */
-        auto [v0, v1] = sample_tea_32(tmp, idx);
+        auto [v0, v1] = sample_tea_32(seed_value, idx);
 
         m_rng.seed(v0, v1);
     } else {
-        m_rng.seed(seed_value, PCG32_DEFAULT_STREAM);
+        m_rng.seed(seed_value, PCG32::PCG32_DEFAULT_STREAM);
     }
 }
 
@@ -146,29 +152,24 @@ MI_VARIANT void PCG32Sampler<Float, Spectrum>::schedule_state() {
     dr::schedule(m_rng.inc, m_rng.state);
 }
 
-MI_VARIANT void
-PCG32Sampler<Float, Spectrum>::traverse_1_cb_ro(void *payload,
-                                                void (*fn)(void *, uint64_t)) const {
-    traverse_1_fn_ro(m_rng, payload, fn);
-}
-
-MI_VARIANT void
-PCG32Sampler<Float, Spectrum>::traverse_1_cb_rw(void *payload,
-                                                uint64_t (*fn)(void *, uint64_t)) {
-    traverse_1_fn_rw(m_rng, payload, fn);
-}
-
 MI_VARIANT
 PCG32Sampler<Float, Spectrum>::PCG32Sampler(const PCG32Sampler &sampler)
     : Base(sampler) {
     m_rng = sampler.m_rng;
 }
 
+MI_VARIANT void PCG32Sampler<Float, Spectrum>::traverse_1_cb_ro(void *payload, drjit::detail::traverse_callback_ro fn) const {
+    Base::traverse_1_cb_ro(payload, fn);
+    drjit::traverse_1_fn_ro(m_rng, payload, fn);
+}
+
+MI_VARIANT void PCG32Sampler<Float, Spectrum>::traverse_1_cb_rw(void *payload, drjit::detail::traverse_callback_rw fn) {
+    Base::traverse_1_cb_rw(payload, fn);
+    drjit::traverse_1_fn_rw(m_rng, payload, fn);
+}
+
 //! @}
 // =======================================================================
-
-MI_IMPLEMENT_CLASS_VARIANT(Sampler, Object, "sampler")
-MI_IMPLEMENT_CLASS_VARIANT(PCG32Sampler, Sampler, "PCG32 sampler")
 
 MI_INSTANTIATE_CLASS(Sampler)
 MI_INSTANTIATE_CLASS(PCG32Sampler)

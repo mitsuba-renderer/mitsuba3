@@ -162,7 +162,7 @@ public:
     MI_IMPORT_TYPES(VolumeGrid)
 
     GridVolume(const Properties &props) : Base(props) {
-        std::string filter_type_str = props.string("filter_type", "trilinear");
+        std::string_view filter_type_str = props.get<std::string_view>("filter_type", "trilinear");
         dr::FilterMode filter_mode;
         if (filter_type_str == "nearest")
             filter_mode = dr::FilterMode::Nearest;
@@ -172,7 +172,7 @@ public:
             Throw("Invalid filter type \"%s\", must be one of: \"nearest\" or "
                   "\"trilinear\"!", filter_type_str);
 
-        std::string wrap_mode_st = props.string("wrap_mode", "clamp");
+        std::string_view wrap_mode_st = props.get<std::string_view>("wrap_mode", "clamp");
         dr::WrapMode wrap_mode;
         if (wrap_mode_st == "repeat")
             wrap_mode = dr::WrapMode::Repeat;
@@ -201,14 +201,14 @@ public:
                     Throw("Cannot specify both \"grid\" and \"filename\".");
                 Log(Debug, "Loading volume grid from memory...");
                 // Note: ref-counted, so we don't have to worry about lifetime
-                ref<Object> other = props.object("grid");
+                ref<Object> other = props.get<ref<Object>>("grid");
                 volume_grid = dynamic_cast<VolumeGrid *>(other.get());
                 if (!volume_grid)
                     Throw("Property \"grid\" must be a VolumeGrid instance.");
                 res = volume_grid->size();
                 channel_count = (uint32_t) volume_grid->channel_count();
             } else if(props.has_property("data")) {
-                tensor = props.tensor<TensorXf>("data");
+                tensor = const_cast<TensorXf*>(&props.get_any<TensorXf>("data"));
                 if (tensor->ndim() != 3 && tensor->ndim() != 4)
                     Throw("Tensor->has %ul dimensions. Expected 3 or 4", tensor->ndim());
                 res = { (uint32_t) tensor->shape(2), (uint32_t) tensor->shape(1), (uint32_t) tensor->shape(0) };
@@ -218,8 +218,8 @@ public:
                     Throw("Tensor shape at index 3 is %lu invalid. Only volumes with 1, 3 or 6 "
                           "channels are supported!", to_string(), channel_count);
             } else {
-                FileResolver *fs = Thread::thread()->file_resolver();
-                fs::path file_path = fs->resolve(props.string("filename"));
+                FileResolver *fs = file_resolver();
+                fs::path file_path = fs->resolve(props.get<std::string_view>("filename"));
                 if (!fs::exists(file_path))
                     Log(Error, "\"%s\": file does not exist!", file_path);
                 volume_grid = new VolumeGrid(file_path);
@@ -306,9 +306,9 @@ public:
         }
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("data", m_texture.tensor(), +ParamFlags::Differentiable);
-        Base::traverse(callback);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("data", m_texture.tensor(), ParamFlags::Differentiable);
+        Base::traverse(cb);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -319,7 +319,7 @@ public:
                       "to have %d channels, only volumes with 1, 3 or 6 "
                       "channels are supported!", to_string(), channels);
 
-            m_texture.set_tensor(m_texture.tensor());
+            m_texture.update_inplace();
 
             if (!m_fixed_max)
                 m_max = (float) dr::max_nested(dr::detach(m_texture.value()));
@@ -451,7 +451,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(GridVolume)
 
 protected:
     /**
@@ -625,9 +625,9 @@ protected:
     bool m_fixed_max = false;
     ScalarFloat m_max;
     std::vector<ScalarFloat> m_max_per_channel;
+
+    MI_TRAVERSE_CB(Base, m_texture)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(GridVolume, Volume)
-MI_EXPORT_PLUGIN(GridVolume, "GridVolume texture")
-
+MI_EXPORT_PLUGIN(GridVolume)
 NAMESPACE_END(mitsuba)

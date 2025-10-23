@@ -123,7 +123,7 @@ The exact camera position and orientation is most easily expressed using the
 
         'type': 'thinlens',
         'fov': 45,
-        'to_world': mi.ScalarTransform4f.look_at(
+        'to_world': mi.ScalarAffineTransform4f().look_at(
             origin=[1, 1, 1],
             target=[1, 2, 1],
             up=[0, 0, 1]
@@ -168,12 +168,12 @@ public:
         m_needs_sample_3 = true;
     }
 
-    void traverse(TraversalCallback *callback) override {
-        Base::traverse(callback);
-        callback->put_parameter("aperture_radius", m_aperture_radius, +ParamFlags::NonDifferentiable);
-        callback->put_parameter("focus_distance",  m_focus_distance,  +ParamFlags::NonDifferentiable);
-        callback->put_parameter("x_fov",           m_x_fov,           +ParamFlags::NonDifferentiable);
-        callback->put_parameter("to_world",       *m_to_world.ptr(),  +ParamFlags::NonDifferentiable);
+    void traverse(TraversalCallback *cb) override {
+        Base::traverse(cb);
+        cb->put("aperture_radius", m_aperture_radius, ParamFlags::NonDifferentiable);
+        cb->put("focus_distance",  m_focus_distance,  ParamFlags::NonDifferentiable);
+        cb->put("x_fov",           m_x_fov,           ParamFlags::NonDifferentiable);
+        cb->put("to_world",        m_to_world,        ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -181,17 +181,16 @@ public:
         if (keys.empty() || string::contains(keys, "to_world")) {
             if (m_to_world.scalar().has_scale())
                 Throw("Scale factors in the camera-to-world transformation are not allowed!");
+            m_to_world = m_to_world.value().update();
         }
 
         update_camera_transforms();
     }
 
     void update_camera_transforms() {
-        m_camera_to_sample = perspective_projection(
+        m_sample_to_camera = perspective_projection(
             m_film->size(), m_film->crop_size(), m_film->crop_offset(),
-            m_x_fov, Float(m_near_clip), Float(m_far_clip));
-
-        m_sample_to_camera = m_camera_to_sample.inverse();
+            m_x_fov, Float(m_near_clip), Float(m_far_clip)).inverse();
 
         // Position differentials on the near plane
         m_dx = m_sample_to_camera * Point3f(1.f / m_resolution.x(), 0.f, 0.f)
@@ -209,8 +208,12 @@ public:
         m_image_rect.expand(Point2f(pmax.x(), pmax.y()) / pmax.z());
         m_normalization = 1.f / m_image_rect.volume();
 
-        dr::make_opaque(m_camera_to_sample, m_sample_to_camera, m_dx, m_dy,
+        dr::make_opaque(m_sample_to_camera, m_dx, m_dy,
                         m_x_fov, m_image_rect, m_normalization);
+    }
+
+    ProjectiveTransform4f projection_transform() const override {
+        return m_sample_to_camera.inverse();
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -241,7 +244,7 @@ public:
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
         Vector3f d = dr::normalize(Vector3f(focus_p - aperture_p));
 
-        ray.o = m_to_world.value().transform_affine(aperture_p);
+        ray.o = m_to_world.value() * aperture_p;
         ray.d = m_to_world.value() * d;
 
         Float inv_z = dr::rcp(d.z());
@@ -284,7 +287,7 @@ public:
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
         Vector3f d = dr::normalize(Vector3f(focus_p - aperture_p));
 
-        ray.o = m_to_world.value().transform_affine(aperture_p);
+        ray.o = m_to_world.value() * aperture_p;
         ray.d = m_to_world.value() * d;
 
         Float inv_z = dr::rcp(d.z());
@@ -306,8 +309,8 @@ public:
     sample_direction(const Interaction3f &it, const Point2f &sample,
                      Mask active) const override {
         // Transform the reference point into the local coordinate system
-        Transform4f trafo = m_to_world.value();
-        Point3f ref_p = trafo.inverse().transform_affine(it.p);
+        AffineTransform4f trafo = m_to_world.value();
+        Point3f ref_p = trafo.inverse() * it.p;
 
         // Check if it is outside of the clip range
         DirectionSample3f ds = dr::zeros<DirectionSample3f>();
@@ -329,8 +332,8 @@ public:
         // Compute importance value
         Float ct     = Frame3f::cos_theta(local_d),
               inv_ct = dr::rcp(ct);
-        Point3f scr = m_camera_to_sample.transform_affine(
-            aperture_p + local_d * (m_focus_distance * inv_ct));
+        Point3f scr = m_sample_to_camera.inverse() *
+            (aperture_p + local_d * (m_focus_distance * inv_ct));
         Mask valid = dr::all(scr >= 0.f) && dr::all(scr <= 1.f);
         Float value = dr::select(valid, m_normalization * inv_ct * inv_ct * inv_ct, 0.f);
 
@@ -338,7 +341,7 @@ public:
             return { ds, dr::zeros<Spectrum>() };
 
         ds.uv   = dr::head<2>(scr) * m_resolution;
-        ds.p    = trafo.transform_affine(aperture_p);
+        ds.p    = trafo * aperture_p;
         ds.d    = (ds.p - it.p) * inv_dist;
         ds.dist = dist;
         ds.n    = trafo * Vector3f(0.f, 0.f, 1.f);
@@ -374,10 +377,9 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(ThinLensCamera)
 private:
-    Transform4f m_camera_to_sample;
-    Transform4f m_sample_to_camera;
+    ProjectiveTransform4f m_sample_to_camera;
     BoundingBox2f m_image_rect;
     Float m_aperture_radius;
     Float m_normalization;
@@ -385,6 +387,5 @@ private:
     Vector3f m_dx, m_dy;
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(ThinLensCamera, ProjectiveCamera)
-MI_EXPORT_PLUGIN(ThinLensCamera, "Thin Lens Camera");
+MI_EXPORT_PLUGIN(ThinLensCamera)
 NAMESPACE_END(mitsuba)

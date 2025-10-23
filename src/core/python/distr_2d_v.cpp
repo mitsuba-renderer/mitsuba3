@@ -24,13 +24,12 @@ template <typename Warp> auto bind_warp(nb::module_ &m,
     using ScalarVector2u       = dr::Array<uint32_t, 2>;
     using Mask                 = dr::mask_t<Float>;
     using PyArray              = nb::ndarray<ScalarFloat, nb::c_contig,
-                                 nb::ndim<Warp::Dimension + 2>>;
+                                             nb::ndim<Warp::Dimension + 2>>;
 
     nb::object zero = nb::cast(dr::zeros<dr::Array<ScalarFloat, Warp::Dimension>>());
 
     auto constructor = [](Warp* t, const PyArray &data,
-                    const std::array<std::vector<ScalarFloat>, Warp::Dimension>
-                        &param_values_in,
+                          const std::array<std::vector<ScalarFloat>, Warp::Dimension> &param_values_in,
                     bool normalize, bool build_hierarchy) {
 
             std::array<uint32_t, Warp::Dimension> param_res;
@@ -46,7 +45,7 @@ template <typename Warp> auto bind_warp(nb::module_ &m,
 
             new (t) Warp(data.data(),
                 ScalarVector2u((uint32_t) data.shape(data.ndim() - 1),
-                           (uint32_t) data.shape(data.ndim() - 2)),
+                               (uint32_t) data.shape(data.ndim() - 2)),
                 param_res, param_values, normalize, build_hierarchy);
         };
 
@@ -64,22 +63,22 @@ template <typename Warp> auto bind_warp(nb::module_ &m,
 
         warp.def("sample",
                  [](const Warp *w, const Vector2f &sample,
-                              const dr::Array<Float, Warp::Dimension> &param,
-                              Mask active) {
+                    const dr::Array<Float, Warp::Dimension> &param,
+                    Mask active) {
                      return w->sample(sample, param.data(), active);
                  },
                  "sample"_a, "param"_a = zero, "active"_a = true, doc_sample)
             .def("invert",
                  [](const Warp *w, const Vector2f &sample,
-                              const dr::Array<Float, Warp::Dimension> &param,
-                              Mask active) {
+                    const dr::Array<Float, Warp::Dimension> &param,
+                    Mask active) {
                      return w->invert(sample, param.data(), active);
                  },
                  "sample"_a, "param"_a = zero, "active"_a = true, doc_invert)
             .def("eval",
                  [](const Warp *w, const Vector2f &pos,
-                              const dr::Array<Float, Warp::Dimension> &param,
-                              Mask active) {
+                    const dr::Array<Float, Warp::Dimension> &param,
+                    Mask active) {
                      return w->eval(pos, param.data(), active);
                  },
                  "pos"_a, "param"_a = zero, "active"_a = true, doc_eval)

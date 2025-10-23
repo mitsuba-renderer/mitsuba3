@@ -9,7 +9,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB Medium : public Object {
+class MI_EXPORT_LIB Medium : public JitObject<Medium<Float, Spectrum>> {
 public:
     MI_IMPORT_TYPES(PhaseFunction, Sampler, Scene, Texture);
 
@@ -91,16 +91,10 @@ public:
 
     void traverse(TraversalCallback *callback) override;
 
-    /// Return a string identifier
-    std::string id() const override { return m_id; }
-
-    /// Set a string identifier
-    void set_id(const std::string& id) override { m_id = id; };
-
     /// Return a human-readable representation of the Medium
     std::string to_string() const override = 0;
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_PLUGIN_BASE_CLASS(Medium)
 
 protected:
     Medium();
@@ -108,17 +102,18 @@ protected:
 
 protected:
     ref<PhaseFunction> m_phase_function;
-    bool m_sample_emitters, m_is_homogeneous, m_has_spectral_extinction;
+    bool m_sample_emitters;
+    bool m_is_homogeneous;
+    bool m_has_spectral_extinction;
 
-    /// Identifier (if available)
-    std::string m_id;
+    MI_DECLARE_TRAVERSE_CB(m_phase_function)
 };
 
 MI_EXTERN_CLASS(Medium)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Dr.Jit support for packets of Medium pointers
+//! @{ \name Enables vectorized method calls on Dr.Jit medium arrays
 // -----------------------------------------------------------------------
 
 DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Medium)
@@ -131,7 +126,7 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Medium)
     DRJIT_CALL_METHOD(sample_interaction)
     DRJIT_CALL_METHOD(transmittance_eval_pdf)
     DRJIT_CALL_METHOD(get_scattering_coefficients)
-DRJIT_CALL_END(mitsuba::Medium)
+DRJIT_CALL_END()
 
 //! @}
 // -----------------------------------------------------------------------

@@ -29,7 +29,7 @@ public:
     /// Update the progress to \c progress (which should be in the range [0, 1])
     void update(float progress);
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(ProgressReporter)
 
 protected:
     Timer m_timer;

@@ -495,7 +495,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      *      Flags specifying which information should be computed
      */
     void finalize_surface_interaction(
-        const PreliminaryIntersection<Float, Shape> &pi, const Ray3f &ray,
+        const PreliminaryIntersection<Float, Shape> & /*pi*/, const Ray3f &ray,
         uint32_t ray_flags, Mask active) {
         dr::masked(t, !active) = dr::Infinity<Float>;
         active &= is_valid();
@@ -503,7 +503,6 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         dr::masked(shape, !active)    = nullptr;
         dr::masked(instance, !active) = nullptr;
 
-        prim_index  = pi.prim_index;
         time        = ray.time;
         wavelengths = ray.wavelengths;
 
@@ -625,7 +624,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
  * given ray, and cache preliminary information about the intersection if that is the case.
  *
  * If the intersection is deemed relevant, detailed intersection information can later be
- * obtained via the  \ref create_surface_interaction() method.
+ * obtained via the  \ref compute_surface_interaction() method.
  */
 template <typename Float_, typename Shape_>
 struct PreliminaryIntersection {

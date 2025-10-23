@@ -85,7 +85,7 @@ def test02_sample_ray(variants_vec_spectral, s_open, s_time):
     wav, spec = mi.sample_rgb_spectrum(mi.sample_shifted(wav_sample))
 
     assert dr.allclose(ray.wavelengths, wav)
-    assert dr.allclose(spec_weight, spec)
+    assert dr.allclose(mi.unpolarized_spectrum(spec_weight), spec)
     assert dr.allclose(ray.time, time)
 
     inv_z0 = dr.rcp((camera0.world_transform().inverse() @ ray.d).z)
@@ -103,6 +103,4 @@ def test02_sample_ray(variants_vec_spectral, s_open, s_time):
     direction = dr.zeros(mi.Vector3f, 3)
     dr.scatter(direction, mi.Vector3f(directions[0]), mi.UInt32([0, 1]))
     dr.scatter(direction, mi.Vector3f(directions[1]), mi.UInt32([2]))
-    print(f"{ray.d=}")
-    print(f"{direction=}")
     assert dr.allclose(ray.d, direction, atol=1e-7)

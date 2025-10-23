@@ -180,3 +180,149 @@ def test05_check_aov_film(variants_all_rgb):
 
     # Make sure radiance is consistent
     assert(np.allclose(bitmap_aov.split()[0][1],bitmap_path.split()[0][1]))
+
+def test06_test_aov_ad_forward(variants_all_ad_rgb):
+    scene = mi.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'), res=32)
+
+    path_integrator = mi.load_dict({
+        'type': 'path',
+        'max_depth': 6
+    })
+
+    aov_integrator = mi.load_dict({
+        'type': 'aov',
+        'aovs': 'ab:albedo,dd.y:depth,nn:sh_normal',
+        'my_image': path_integrator
+    })
+
+    spp = 16
+
+    params = mi.traverse(scene)
+    params.keep('red.reflectance.value')
+    dr.enable_grad(params['red.reflectance.value'])
+    dr.set_grad(params['red.reflectance.value'], 1.0)
+    params.update()
+
+    image = mi.render(scene, params, integrator=path_integrator, spp=spp)
+    grad_image = dr.forward_to(image)
+    dr.eval(grad_image)
+
+    dr.set_grad(params['red.reflectance.value'], 1.0)
+    params.update()
+
+    aov_image = mi.render(scene, params, integrator=aov_integrator, spp=spp)
+    grad_aov_image = dr.forward_to(image)
+    dr.eval(grad_aov_image)
+
+    assert dr.allclose(grad_image, grad_aov_image[:,:,:3])
+
+def test06_test_aov_ad_backward(variants_all_ad_rgb):
+    scene = mi.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'), res=32)
+
+    path_integrator = mi.load_dict({
+        'type': 'path',
+        'max_depth': 6
+    })
+
+    aov_integrator = mi.load_dict({
+        'type': 'aov',
+        'aovs': 'ab:albedo,dd.y:depth,nn:sh_normal',
+        'my_image': path_integrator
+    })
+
+    spp = 16
+
+    params = mi.traverse(scene)
+    params.keep('red.reflectance.value')
+    dr.enable_grad(params['red.reflectance.value'])
+    dr.set_grad(params['red.reflectance.value'], 1.0)
+    params.update()
+
+    image = mi.render(scene, params, integrator=path_integrator, spp=spp)
+    dr.backward(image)
+    grad_image = dr.grad(params['red.reflectance.value'])
+    dr.eval(grad_image)
+
+    dr.set_grad(params['red.reflectance.value'], 1.0)
+    params.update()
+    aov_image = mi.render(scene, params, integrator=aov_integrator, spp=spp)
+    dr.backward_from(aov_image[:,:,:3])
+    grad_aov_image = dr.grad(params['red.reflectance.value'])
+    dr.eval(grad_aov_image)
+
+    assert dr.allclose(grad_image, grad_aov_image)
+
+
+def test07_test_aov_normalmap(variants_all_ad_rgb):
+    camera_offset = 1
+    plane_offset = -1
+    n = dr.normalize(mi.Float([0.0,0.5,1.0]))
+
+    plane = {
+        'type' : 'rectangle',
+        'material': {
+            'type': 'normalmap',
+            'normalmap' : {
+                'type': 'bitmap',
+                 # Normalmap expects data in domain [0,1] rather than [-1, 1]
+                'data': mi.TensorXf([[(n + 1) * 0.5]]),
+                'raw': True,
+                'filter_type': 'nearest'
+            },
+            'bsdf' : {
+                'type': 'diffuse',
+                'reflectance': {
+                    'type': 'rgb',
+                    'value': 0.4
+                }
+            }
+        },
+        'to_world' : mi.ScalarTransform4f().
+            scale([10.0, 10.0, 1.0]).
+            translate([0,0,plane_offset])
+    }
+
+    path_integrator = mi.load_dict({
+        'type': 'path',
+        'max_depth': 6
+    })
+
+    aov_integrator = mi.load_dict({
+        'type': 'aov',
+        'aovs': 'nn:sh_normal',
+        'my_image': path_integrator,
+    })
+
+    scene = mi.load_dict({
+        'type': 'scene',
+        'sensor': {
+            'type': 'orthographic',
+            'to_world': mi.ScalarTransform4f().look_at(
+                origin=(0, 0, camera_offset),
+                target=(0, 0, plane_offset),
+                up=(0, 1, 0),
+            ),
+            'sampler': {
+                'type': 'independent'
+            },
+            'film': {
+                'type': 'hdrfilm',
+                'width': 128, 'height': 128,
+                'rfilter': {'type': 'box'}
+            },
+        },
+        'emitter' : {
+            'type': 'constant',
+            'radiance': {
+                'type': 'rgb',
+                'value': 1.0,
+            }
+        },
+        'plane' : plane
+    })
+
+    image = aov_integrator.render(scene, seed=0, spp=4)
+
+    assert(dr.allclose(
+        image[:,:,3:6].array,
+        dr.tile(n, image.shape[0] * image.shape[1])))

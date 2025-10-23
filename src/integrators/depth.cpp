@@ -43,7 +43,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
         PreliminaryIntersection3f pi = scene->ray_intersect_preliminary(
-            ray, /* coherent = */ true, active);
+            ray, /* coherent = */ true, /* reorder = */ false, 0, 0, active);
 
         return {
             dr::select(pi.is_valid(), pi.t, 0.f),
@@ -51,9 +51,8 @@ public:
         };
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(DepthIntegrator)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(DepthIntegrator, SamplingIntegrator)
-MI_EXPORT_PLUGIN(DepthIntegrator, "Depth integrator");
+MI_EXPORT_PLUGIN(DepthIntegrator)
 NAMESPACE_END(mitsuba)

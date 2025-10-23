@@ -79,7 +79,7 @@ void MemoryStream::truncate(size_t size) {
 std::string MemoryStream::to_string() const {
     std::ostringstream oss;
 
-    oss << class_()->name() << "[" << std::endl;
+    oss << class_name() << "[" << std::endl;
     if (is_closed()) {
         oss << "  closed" << std::endl;
     } else {
@@ -97,7 +97,5 @@ std::string MemoryStream::to_string() const {
 
     return oss.str();
 }
-
-MI_IMPLEMENT_CLASS(MemoryStream, Stream)
 
 NAMESPACE_END(mitsuba)

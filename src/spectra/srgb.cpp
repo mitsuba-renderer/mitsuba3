@@ -66,8 +66,8 @@ public:
         dr::make_opaque(m_value);
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("value", m_value, +ParamFlags::Differentiable);
+    void traverse(TraversalCallback *cb) override {
+        cb->put("value", m_value, ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
@@ -136,7 +136,7 @@ public:
         return oss.str();
     }
 
-    MI_DECLARE_CLASS()
+    MI_DECLARE_CLASS(SRGBReflectanceSpectrum)
 protected:
     /**
      * Depending on the compiled variant, this plugin either stores coefficients
@@ -145,8 +145,9 @@ protected:
     static constexpr size_t ChannelCount = is_monochromatic_v<Spectrum> ? 1 : 3;
 
     Color<Float, ChannelCount> m_value;
+
+    MI_TRAVERSE_CB(Texture, m_value)
 };
 
-MI_IMPLEMENT_CLASS_VARIANT(SRGBReflectanceSpectrum, Texture)
-MI_EXPORT_PLUGIN(SRGBReflectanceSpectrum, "sRGB spectrum")
+MI_EXPORT_PLUGIN(SRGBReflectanceSpectrum)
 NAMESPACE_END(mitsuba)

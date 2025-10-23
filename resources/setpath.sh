@@ -42,27 +42,30 @@ if [ "$BASH_VERSION" ]; then
     }
     complete -F _mitsuba -o default mitsuba
 elif [ "$ZSH_VERSION" ]; then
-    _mitsuba() {
-        _arguments \
-            '-a[Add an entry to the search path]' \
-            '-h[Help]' \
-            '-m[Select the variant/mode (e.g. "llvm_rgb")]' \
-            '-o[Specify the output filename]' \
-            '-s[Sensor/camera index to use for rendering]' \
-            '-t[Override the number of threads]' \
-            '-u[Update the scene description to the latest version]' \
-            '-v[Be more verbose. Can be specified multiple times]' \
-            '-D[Define a constant that can be referenced in the scene]' \
-            '*: :->file'
+    # Check if shell is interactive and compdef is available
+    if [[ -o interactive ]] && (( $+functions[compdef] )); then
+        _mitsuba() {
+            _arguments \
+                '-a[Add an entry to the search path]' \
+                '-h[Help]' \
+                '-m[Select the variant/mode (e.g. "llvm_rgb")]' \
+                '-o[Specify the output filename]' \
+                '-s[Sensor/camera index to use for rendering]' \
+                '-t[Override the number of threads]' \
+                '-u[Update the scene description to the latest version]' \
+                '-v[Be more verbose. Can be specified multiple times]' \
+                '-D[Define a constant that can be referenced in the scene]' \
+                '*: :->file'
 
-        if [[ $state == '-' ]]; then
-            :
-        elif [[ $words[CURRENT-1] == '-m' ]]; then
-            compadd "$@" ${=MI_VARIANTS}
-        else
-            _files
-        fi
+            if [[ $state == '-' ]]; then
+                :
+            elif [[ $words[CURRENT-1] == '-m' ]]; then
+                compadd "$@" ${=MI_VARIANTS}
+            else
+                _files
+            fi
 
-    }
-    compdef _mitsuba mitsuba
+        }
+        compdef _mitsuba mitsuba
+    fi
 fi

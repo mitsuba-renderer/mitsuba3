@@ -95,6 +95,5 @@ MI_VARIANT std::string ShapeKDTree<Float, Spectrum>::to_string() const {
     return oss.str();
 }
 
-MI_IMPLEMENT_CLASS_VARIANT(ShapeKDTree, TShapeKDTree)
 MI_INSTANTIATE_CLASS(ShapeKDTree)
 NAMESPACE_END(mitsuba)

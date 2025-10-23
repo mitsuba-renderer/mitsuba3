@@ -17,7 +17,7 @@ dr::Array<float, 3> srgb_model_fetch(const Color<float, 3> &c) {
     if (unlikely(model == nullptr)) {
         std::lock_guard<std::mutex> lock(model_mutex);
         if (model == nullptr) {
-            FileResolver *fr = Thread::thread()->file_resolver();
+            FileResolver *fr = file_resolver();
             std::string fname = fr->resolve("data/srgb.coeff").string();
             Log(Info, "Loading spectral upsampling model \"data/srgb.coeff\" .. ");
             model = rgb2spec_load(fname.c_str());
