@@ -1,20 +1,18 @@
 // TODO: check which of these includes are needed
 //       (This is effectively a "simplified" version of spot.cpp
 //        so it shouldnt need all the extra headers?)
-#include <mitsuba/core/properties.h>
-#include <mitsuba/core/warp.h>
-#include <mitsuba/core/plugin.h>
-#include <mitsuba/render/emitter.h>
-#include <mitsuba/render/medium.h>
-#include <mitsuba/render/texture.h>
 #include <mitsuba/core/fstream.h>
 #include <mitsuba/core/fresolver.h>
-#include <mitsuba/core/fresolver.h>
+#include <mitsuba/core/plugin.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/core/warp.h>
+#include <mitsuba/render/emitter.h>
+#include <mitsuba/render/medium.h>
 #include <mitsuba/render/srgb.h>
+#include <mitsuba/render/texture.h>
 #include <mitsuba/render/volume.h>
 #include <mitsuba/render/volumegrid.h>
 #include <drjit/dynamic.h>
