@@ -282,6 +282,4 @@ def test08_to_uv(variant_scalar_rgb):
     })
 
     params = mi.traverse(bitmap)
-    print(f"{transform=}")
-    print(f"{params['to_uv']=}")
     assert params["to_uv"] == transform
