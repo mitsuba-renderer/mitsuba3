@@ -307,7 +307,6 @@ def test_split(variant_scalar_rgb):
         "multi": set(["X", "B", "A"]),
         "lum": set(["Y", "A"])
     }
-    #print(splits)
 
     assert len(splits) == len(fields.keys())
     assert set([split[0] for split in splits]) == set(fields.keys())

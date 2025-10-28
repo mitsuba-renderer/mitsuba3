@@ -60,7 +60,6 @@ def test02_type_is_preserved(variant_scalar_rgb):
     assert p['prop_2'] == 2
 
     p['prop_7'] = [1, 2, 3]
-    print()
     assert type(p['prop_7']) is Array3f64
 
 
