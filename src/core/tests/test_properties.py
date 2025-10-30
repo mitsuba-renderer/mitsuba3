@@ -378,3 +378,49 @@ def test18_range(variant_scalar_rgb):
     with pytest.raises(RuntimeError, match=r'Property "bsdf_samples": value -3 is out of bounds, must be in the range \[0, 18446744073709551615\]'):
         mi.load_dict({'type': 'direct', 'bsdf_samples': -3})
     mi.load_dict({'type': 'direct', 'bsdf_samples': 10})
+
+
+def test19_numpy_scalars(variant_scalar_rgb):
+    """Test that NumPy scalars are correctly converted without silent rounding"""
+    np = pytest.importorskip("numpy")
+
+    props = mi.Properties()
+
+    # float32
+    props['a'] = np.float32(1.5)
+    assert props['a'] == 1.5
+    assert props.type('a') == mi.Properties.Type.Float
+
+    # float64
+    props['c'] = np.float64(2.7)
+    assert props['c'] == 2.7
+    assert props.type('c') == mi.Properties.Type.Float
+
+    # int32
+    props['d'] = np.int32(42)
+    assert props['d'] == 42
+    assert props.type('d') == mi.Properties.Type.Integer
+
+    # int64
+    props['e'] = np.int64(-100)
+    assert props['e'] == -100
+    assert props.type('e') == mi.Properties.Type.Integer
+
+    # uint32
+    props['f'] = np.uint32(99)
+    assert props['f'] == 99
+    assert props.type('f') == mi.Properties.Type.Integer
+
+    # uint64
+    props['g'] = np.uint64(123)
+    assert props['g'] == 123
+    assert props.type('g') == mi.Properties.Type.Integer
+
+    # bool
+    props['g'] = np.bool_(True)
+    assert props['g'] == True
+    assert props.type('g') == mi.Properties.Type.Bool
+
+    # Test that complex types are rejected
+    with pytest.raises(RuntimeError, match=r"numpy scalars with a.*'c' data type are not supported"):
+        props['j'] = np.complex64(1 + 2j)
