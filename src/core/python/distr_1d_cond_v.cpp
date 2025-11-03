@@ -18,9 +18,13 @@ void bind_conditional_irregular_1d(nb::module_ &m, const char *name) {
         nb::class_<ConditionalIrregular1D>(m, name)
             .def(nb::init<>(), D(ConditionalIrregular1D))
             .def(nb::init<const FloatStorage &, const FloatStorage &,
-                          const std::vector<FloatStorage> &, bool, bool>(),
-                 "nodes"_a, "pdf"_a, "nodes_cond"_a, "enable_sampling"_a = true,
-                 "nearest"_a = false, D(ConditionalIrregular1D, ConditionalIrregular1D, 2))
+                          const std::vector<FloatStorage> &>(),
+                 "nodes"_a, "pdf"_a, "nodes_cond"_a,
+                 D(ConditionalIrregular1D, ConditionalIrregular1D, 2))
+            .def(nb::init<const FloatStorage &, const TensorXf &,
+                          const std::vector<FloatStorage> &>(),
+                 "nodes"_a, "pdf"_a, "nodes_cond"_a,
+                 D(ConditionalIrregular1D, ConditionalIrregular1D, 3))
             .def(
                 "eval_pdf",
                 [](const ConditionalIrregular1D *distr, Type x,
@@ -47,14 +51,29 @@ void bind_conditional_irregular_1d(nb::module_ &m, const char *name) {
                 [](const ConditionalIrregular1D *distr,
                    std::vector<Type> cond) { return distr->integral(cond); },
                 "cond"_a, D(ConditionalIrregular1D, integral))
-            .def("tensor", &ConditionalIrregular1D::tensor,
-                 nb::rv_policy::reference_internal, D(ConditionalIrregular1D, tensor))
             .def("update", &ConditionalIrregular1D::update, D(ConditionalIrregular1D, update))
             .def("empty", &ConditionalIrregular1D::empty, D(ConditionalIrregular1D, empty))
             .def("max", &ConditionalIrregular1D::max, D(ConditionalIrregular1D, max))
-            .def_field(ConditionalIrregular1D, m_cdf, D(ConditionalIrregular1D, m_cdf))
-            .def_field(ConditionalIrregular1D, m_integral, D(ConditionalIrregular1D, m_integral))
-            .def_field(ConditionalIrregular1D, m_nodes, D(ConditionalIrregular1D, m_nodes))
+            .def_prop_rw("pdf",
+              [](ConditionalIrregular1D &t) { return t.pdf(); },
+              [](ConditionalIrregular1D &t, TensorXf &value) { t.pdf() = value; },
+              D(ConditionalIrregular1D, pdf))
+            .def_prop_rw("nodes",
+              [](ConditionalIrregular1D &t) { return t.nodes(); },
+              [](ConditionalIrregular1D &t, FloatStorage &value) { t.nodes() = value; },
+              D(ConditionalIrregular1D, nodes))
+            .def_prop_rw("nodes_cond",
+              [](ConditionalIrregular1D &t) { return t.nodes_cond(); },
+              [](ConditionalIrregular1D &t, std::vector<FloatStorage> &value) { t.nodes_cond() = value; },
+              D(ConditionalIrregular1D, nodes_cond))
+            .def_prop_rw("cdf_array",
+              [](ConditionalIrregular1D &t) { return t.cdf_array(); },
+              [](ConditionalIrregular1D &t, FloatStorage &value) { t.cdf_array() = value; },
+              D(ConditionalIrregular1D, cdf_array))
+            .def_prop_rw("integral_array",
+              [](ConditionalIrregular1D &t) { return t.integral_array(); },
+              [](ConditionalIrregular1D &t, FloatStorage &value) { t.integral_array() = value; },
+              D(ConditionalIrregular1D, integral_array))
             .def_repr(ConditionalIrregular1D);
     }
 }
@@ -70,9 +89,13 @@ void bind_conditional_regular_1d(nb::module_ &m, const char *name) {
             .def(nb::init<>(), D(ConditionalRegular1D))
             .def(nb::init<const FloatStorage &, const ScalarVector2f &,
                           const std::vector<ScalarVector2f> &,
-                          const std::vector<ScalarUInt32> &, bool, bool>(),
+                          const std::vector<ScalarUInt32> &>(),
                  "pdf"_a, "range"_a, "range_cond"_a, "size_cond"_a,
-                 "enable_sampling"_a = true, "nearest"_a = false, D(ConditionalRegular1D, ConditionalRegular1D, 2))
+                 D(ConditionalRegular1D, ConditionalRegular1D, 2))
+            .def(nb::init<const TensorXf &, const ScalarVector2f &,
+                          const std::vector<ScalarVector2f> &>(),
+                 "pdf"_a, "range"_a, "range_cond"_a,
+                 D(ConditionalRegular1D, ConditionalRegular1D, 3))
             .def(
                 "eval_pdf",
                 [](const ConditionalRegular1D *distr, Type x,
@@ -100,13 +123,29 @@ void bind_conditional_regular_1d(nb::module_ &m, const char *name) {
                     return distr->integral(cond);
                 },
                 "cond"_a, D(ConditionalRegular1D, integral))
-            .def("tensor", &ConditionalRegular1D::tensor,
-                 nb::rv_policy::reference_internal, D(ConditionalRegular1D, tensor))
             .def("update", &ConditionalRegular1D::update, D(ConditionalRegular1D, update))
             .def("empty", &ConditionalRegular1D::empty, D(ConditionalRegular1D, empty))
             .def("max", &ConditionalRegular1D::max, D(ConditionalRegular1D, max))
-            .def_field(ConditionalRegular1D, m_integral, D(ConditionalRegular1D, m_integral))
-            .def_field(ConditionalRegular1D, m_cdf, D(ConditionalRegular1D, m_cdf))
+            .def_prop_rw("pdf",
+              [](ConditionalRegular1D &t) { return t.pdf(); },
+              [](ConditionalRegular1D &t, TensorXf &value) { t.pdf() = value; },
+              D(ConditionalRegular1D, pdf))
+            .def_prop_rw("range",
+              [](ConditionalRegular1D &t) { return t.range(); },
+              [](ConditionalRegular1D &t, ScalarVector2f value) { t.range() = value; },
+              D(ConditionalRegular1D, range))
+            .def_prop_rw("range_cond",
+              [](ConditionalRegular1D &t) { return t.range_cond(); },
+              [](ConditionalRegular1D &t, std::vector<ScalarVector2f> &value) { t.range_cond() = value; },
+              D(ConditionalRegular1D, range_cond))
+            .def_prop_rw("cdf_array",
+              [](ConditionalRegular1D &t) { return t.cdf_array(); },
+              [](ConditionalRegular1D &t, FloatStorage &value) { t.cdf_array() = value; },
+              D(ConditionalRegular1D, cdf_array))
+            .def_prop_rw("integral_array",
+              [](ConditionalRegular1D &t) { return t.integral_array(); },
+              [](ConditionalRegular1D &t, FloatStorage &value) { t.integral_array() = value; },
+              D(ConditionalRegular1D, integral_array))
             .def_repr(ConditionalRegular1D);
     }
 }

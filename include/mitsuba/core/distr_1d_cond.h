@@ -23,6 +23,8 @@ NAMESPACE_BEGIN(mitsuba)
  * sample from the distribution P(x|Y=y,Z=z) for a given \c y and \c z.
  *
  * It assumes every conditioned PDF has the same size.
+ * If the user requests a method that needs the integral, it will schedule its
+ * computation.
  *
  * This distribution can be used in the context of spectral rendering, where
  * each wavelength conditions the underlying distribution.
@@ -44,7 +46,7 @@ template <typename Value> class ConditionalIrregular1D {
     using ScalarUInt32   = dr::uint32_array_t<ScalarFloat>;
 
 public:
-    ConditionalIrregular1D() : m_enable_sampling(true) {};
+    ConditionalIrregular1D() {};
 
     /**
      * \brief Construct a conditional irregular 1D distribution
@@ -56,16 +58,10 @@ public:
      * \param nodes_cond
      *      Arrays containing points where each conditional dimension is
      * evaluated
-     * \param enable_sampling
-     *      Enable sampling of the distribution
-     * \param nearest
-     *      If true, the distribution will return the nearest neighbor
      */
     ConditionalIrregular1D(const FloatStorage &nodes, const FloatStorage &pdf,
-                           const std::vector<FloatStorage> &nodes_cond,
-                           bool enable_sampling = true, bool nearest = false)
-        : m_nodes(nodes), m_nodes_cond(nodes_cond), m_nearest(nearest),
-          m_enable_sampling(enable_sampling) {
+                           const std::vector<FloatStorage> &nodes_cond)
+        : m_nodes(nodes), m_nodes_cond(nodes_cond) {
 
         // Update tensor with the information
         std::vector<size_t> shape;
@@ -75,9 +71,23 @@ public:
 
         // Initialize tensor storing the distribution values
         m_pdf = TensorXf(pdf, shape.size(), shape.data());
-
-        update();
     }
+
+    /**
+     * \brief Construct a conditional irregular 1D distribution
+     *
+     * \param nodes
+     *      Points where the leading dimension N is defined
+     * \param pdf
+     *      Tensor containing the values of the PDF of shape [D1, D2, ..., Dn,
+     * N]
+     * \param nodes_cond
+     *      Arrays containing points where each conditional dimension is
+     * evaluated
+     */
+    ConditionalIrregular1D(const FloatStorage &nodes, const TensorXf &pdf,
+                           const std::vector<FloatStorage> &nodes_cond)
+        : m_nodes(nodes), m_pdf(pdf), m_nodes_cond(nodes_cond) {}
 
     /**
      * \brief Construct a conditional irregular 1D distribution
@@ -94,18 +104,12 @@ public:
      *    Arrays containing points where the conditional is evaluated
      * \param sizes_cond
      *    Array with the sizes of the conditional nodes arrays
-     * \param enable_sampling
-     *    Enable sampling of the distribution
-     * \param nearest
-     *    If true, the distribution will return the nearest neighbor
      */
     ConditionalIrregular1D(const ScalarFloat *nodes, const size_t size_nodes,
                            const ScalarFloat *pdf, const size_t size_pdf,
                            const std::vector<ScalarFloat *> &nodes_cond,
-                           const std::vector<size_t> &sizes_cond,
-                           bool enable_sampling = true, bool nearest = false)
-        : m_nodes(dr::load<FloatStorage>(nodes, size_nodes)),
-          m_enable_sampling(enable_sampling), m_nearest(nearest) {
+                           const std::vector<size_t> &sizes_cond)
+        : m_nodes(dr::load<FloatStorage>(nodes, size_nodes)) {
         for (size_t i = 0; i < m_nodes_cond.size(); i++) {
             m_nodes_cond.push_back(
                 dr::load<FloatStorage>(nodes_cond[i], sizes_cond[i]));
@@ -120,32 +124,19 @@ public:
         // Initialize tensor storing the distribution values
         m_pdf = TensorXf(dr::load<FloatStorage>(pdf, size_pdf), shape.size(),
                          shape.data());
-
-        update();
     }
 
     /**
      * \brief Update the internal state. Must be invoked when changing the pdf.
      */
     void update() {
-        if (m_enable_sampling) {
-            if constexpr (dr::is_jit_v<Float>) {
-                compute_cdf();
-            } else {
-                compute_cdf_scalar(m_nodes.data(), m_nodes.size(), m_pdf.data(),
-                                   m_pdf.size());
-            }
+        if constexpr (dr::is_jit_v<Float>) {
+            compute_cdf();
+        } else {
+            compute_cdf_scalar(m_nodes.data(), m_nodes.size(), m_pdf.data(),
+                               m_pdf.size());
         }
     }
-
-    /// Return the underlying tensor storing the distribution values
-    TensorXf &tensor() { return m_pdf; }
-
-    /// Return the nodes of the underlying discretization
-    FloatStorage &nodes() { return m_nodes; }
-
-    /// Return the nodes of the underlying discretization (const version)
-    const FloatStorage &nodes() const { return m_nodes; }
 
     /**
      * \brief Evaluate the unnormalized probability density function (PDF) at
@@ -190,13 +181,10 @@ public:
             Log(Error, "The number of conditionals should be %u instead of %u",
                 m_nodes_cond.size(), cond.size());
 
-        if (m_enable_sampling) {
-            auto [value, integral] = lookup(pos, cond, 0, 0, active);
-            return value * dr::rcp(integral);
-        } else {
-            Throw(
-                "You should enable sampling if the normalized pdf is required");
-        }
+        ensure_cdf_computed();
+
+        auto [value, integral] = lookup(pos, cond, 0, 0, active);
+        return value * dr::rcp(integral);
     }
 
     /**
@@ -220,26 +208,23 @@ public:
             Log(Error, "The number of conditionals should be %u instead of %u",
                 m_nodes_cond.size(), cond.size());
 
-        if (m_nearest)
-            Throw("Sampling with nearest neighbor not supported");
+        ensure_cdf_computed();
 
-        if (m_enable_sampling) {
-            std::vector<Index> indices(1 << m_nodes_cond.size());
-            std::vector<Value> weights(1 << m_nodes_cond.size());
+        std::vector<Index> indices(1 << m_nodes_cond.size());
+        std::vector<Value> weights(1 << m_nodes_cond.size());
 
-            lookup_fill(cond, 0, 1.f, indices, weights, 0, 0, active);
-            return lookup_sample(u, indices, weights, true, active);
-        } else {
-            Throw("For sampling this distribution, first enable it in the "
-                  "constructor.");
-        }
+        lookup_fill(cond, 0, 1.f, indices, weights, 0, 0, active);
+        return lookup_sample(u, indices, weights, true, active);
     }
 
     /// Is the distribution object empty/uninitialized?
     bool empty() const { return m_pdf.empty(); }
 
     /// Return the maximum value of the distribution
-    ScalarFloat max() const { return m_max; }
+    ScalarFloat max() const {
+        ensure_cdf_computed();
+        return m_max;
+    }
 
     /**
      * \brief Return the integral of the distribution conditioned on \c cond
@@ -250,16 +235,40 @@ public:
      *   The integral of the distribution
      */
     Value integral(std::vector<Value> &cond) const {
-        if (m_enable_sampling) {
-            const Value dummy_pos  = dr::gather<Value>(m_nodes, Index(0));
-            auto [value, integral] = lookup(dummy_pos, cond, 0, 0, true);
-            return integral;
-        } else {
-            Throw("You should enable sampling if the integral is needed");
+        ensure_cdf_computed();
+
+        const Value dummy_pos  = dr::gather<Value>(m_nodes, Index(0));
+        auto [value, integral] = lookup(dummy_pos, cond, 0, 0, true);
+        return integral;
+    }
+
+    /// Return the underlying tensor storing the distribution values
+    TensorXf &pdf() { return m_pdf; }
+    const TensorXf &pdf() const { return m_pdf; }
+
+    /// Return the nodes of the underlying discretization
+    FloatStorage &nodes() { return m_nodes; }
+    const FloatStorage &nodes() const { return m_nodes; }
+
+    /// Return the conditional nodes of the underlying discretization
+    std::vector<FloatStorage> &nodes_cond() { return m_nodes_cond; }
+    const std::vector<FloatStorage> &nodes_cond() const { return m_nodes_cond; }
+
+    /// Return the CDF
+    FloatStorage &cdf_array() { return m_cdf; }
+    const FloatStorage &cdf_array() const { return m_cdf; }
+
+    /// Return the integral array
+    FloatStorage &integral_array() { return m_integral; }
+    const FloatStorage &integral_array() const { return m_integral; }
+
+private:
+    DRJIT_INLINE void ensure_cdf_computed() const {
+        if (unlikely(m_cdf.empty())) {
+            const_cast<ConditionalIrregular1D *>(this)->update();
         }
     }
 
-private:
     std::pair<Value, Value> lookup(Value pos, std::vector<Value> &cond_,
                                    Index index_, ScalarUInt32 dim,
                                    Mask active) const {
@@ -317,32 +326,21 @@ private:
             index2 = index_ * length + bin_index + 1;
         }
 
-        // If only nearest neighbor, pick the closest index
-        if (m_nearest) {
-            auto w0_is_closer = w0 > w1;
-            index1            = dr::select(w0_is_closer, index1, index2);
-            w0                = 1.f;
-            w1                = 0.f;
-        }
-
         Value v0 = 0.f, v1 = 0.f, integral0 = 0.f, integral1 = 0.f;
-        if (length == 1 || m_nearest) {
-            auto data = lookup(pos, cond_, index1, dim + 1, active);
-            v0        = std::get<0>(data);
-            integral0 = std::get<1>(data);
-        } else {
-            auto data0 = lookup(pos, cond_, index1, dim + 1, active);
-            v0         = std::get<0>(data0);
-            integral0  = std::get<1>(data0);
+        auto data0 = lookup(pos, cond_, index1, dim + 1, active);
+        v0         = std::get<0>(data0);
+        integral0  = std::get<1>(data0);
+
+        if (length > 1) {
             auto data1 = lookup(pos, cond_, index2, dim + 1, active);
             v1         = std::get<0>(data1);
             integral1  = std::get<1>(data1);
         }
 
         // Final case : read from memory the integrals
-        if (m_enable_sampling && dim == (m_nodes_cond.size() - 1)) {
+        if (!m_integral.empty() && dim == (m_nodes_cond.size() - 1)) {
             integral0 = dr::gather<Value>(m_integral, index1, active);
-            if (length > 1 && !m_nearest)
+            if (length > 1)
                 integral1 = dr::gather<Value>(m_integral, index2, active);
         }
 
@@ -397,13 +395,6 @@ private:
         } else {
             w0 = 1.f;
             w1 = 0.f;
-        }
-
-        if (m_nearest) {
-            auto w0_is_closer = w0 > w1;
-            index1            = dr::select(w0_is_closer, index1, index2);
-            w0                = 1.f;
-            w1                = 0.f;
         }
 
         lookup_fill(cond_, index1, w0 * weight_, index_res_array_,
@@ -497,14 +488,12 @@ private:
 
     void compute_cdf() {
         if (m_pdf.array().size() < 2)
-            Throw(
-                "IrregularContinuousDistribution: needs at least two entries!");
+            Throw("ConditionalIrregular1D: needs at least two entries!");
         if (!dr::all(m_pdf.array() >= 0.f))
-            Throw("IrregularContinuousDistribution: entries must be "
+            Throw("ConditionalIrregular1D: entries must be "
                   "non-negative!");
         if (!dr::any(m_pdf.array() > 0.f))
-            Throw(
-                "IrregularContinuousDistribution: no probability mass found!");
+            Throw("ConditionalIrregular1D: no probability mass found!");
 
         const size_t size_nodes = dr::width(m_nodes);
         const size_t size_pdf   = dr::width(m_pdf.array());
@@ -607,24 +596,19 @@ private:
         m_integral = dr::load<FloatStorage>(integral.data(), integral.size());
     }
 
-public:
+private:
     FloatStorage m_nodes;
     TensorXf m_pdf;
     std::vector<FloatStorage> m_nodes_cond;
     FloatStorage m_cdf;
     FloatStorage m_integral;
     ScalarFloat m_max = 0.f;
-    bool m_nearest;
-    bool m_enable_sampling;
 };
 
 template <typename Value>
 std::ostream &operator<<(std::ostream &os,
-                         const ConditionalIrregular1D<Value> &distr) {
-    os << "ConditionalIrregular1D[" << std::endl;
-    os << "  enable_sampling = " << string::indent(distr.m_enable_sampling)
-       << std::endl;
-    os << "]";
+                         const ConditionalIrregular1D<Value> & /*distr*/) {
+    os << "ConditionalIrregular1D[]" << std::endl;
     return os;
 }
 
@@ -643,6 +627,8 @@ std::ostream &operator<<(std::ostream &os,
  * sample from the distribution P(x|Y=y,Z=z) for a given \c y and \c z.
  *
  * It assumes every conditioned PDF has the same size.
+ * If the user requests a method that needs the integral, it will schedule its
+ * computation.
  *
  * This distribution can be used in the context of spectral rendering, where
  * each wavelength conditions the underlying distribution.
@@ -666,7 +652,7 @@ template <typename Value> class ConditionalRegular1D {
     using Vector2f = Vector<Float, 2>;
 
 public:
-    ConditionalRegular1D() : m_enable_sampling(true) {};
+    ConditionalRegular1D() {};
 
     /**
      * \brief Construct a conditional regular 1D distribution
@@ -679,17 +665,11 @@ public:
      *  Array of ranges where the dimensional conditionals are defined
      * \param size_cond
      *  Array with the size of each conditional dimension
-     * \param enable_sampling
-     *  Enable sampling of the distribution
-     * \param nearest
-     *  If true, the sampling will return the nearest neighbor
      */
     ConditionalRegular1D(const FloatStorage &pdf, const ScalarVector2f &range,
                          const std::vector<ScalarVector2f> &range_cond,
-                         const std::vector<ScalarUInt32> &size_cond,
-                         bool enable_sampling = true, bool nearest = false)
-        : m_range(range), m_size_cond(size_cond), m_range_cond(range_cond),
-          m_enable_sampling(enable_sampling), m_nearest(nearest) {
+                         const std::vector<ScalarUInt32> &size_cond)
+        : m_range(range), m_size_cond(size_cond), m_range_cond(range_cond) {
         // Update tensor with the information
         std::vector<size_t> shape;
         size_t total_size_cond = 1;
@@ -710,20 +690,51 @@ public:
         if (m_size_nodes < 2)
             Log(Error,
                 "The number of the leading dimension should have at least size "
-                "2 "
-                "instead of %u",
+                "2 instead of %u",
                 m_size_nodes);
 
-        update();
+        prepare_distribution();
+    }
+
+    /**
+     * \brief Construct a conditional regular 1D distribution
+     *
+     * \param pdf
+     *  Tensor containing the values of the PDF of shape [D1, D2, ..., Dn, N]
+     * \param range
+     *  Range where the leading dimension N is defined
+     * \param range_cond
+     *  Array of ranges where the dimensional conditionals are defined
+     */
+    ConditionalRegular1D(const TensorXf &pdf, const ScalarVector2f &range,
+                         const std::vector<ScalarVector2f> &range_cond)
+        : m_range(range), m_pdf(pdf), m_range_cond(range_cond) {
+
+        m_size_cond.reserve(m_pdf.ndim() - 1);
+        for (size_t i = 0; i < m_pdf.ndim() - 1; i++) {
+            const size_t s = m_pdf.shape(i);
+            m_size_cond.push_back(s);
+            if (s < 2)
+                Log(Error,
+                    "Dimension %u should have at least size 2 instead of %u", i,
+                    s);
+        }
+
+        m_size_nodes = m_pdf.shape(m_pdf.ndim() - 1);
+        if (m_size_nodes < 2)
+            Log(Error,
+                "The number of the leading dimension should have at least size "
+                "2 instead of %u",
+                m_size_nodes);
+
+        prepare_distribution();
     }
 
     ConditionalRegular1D(const ScalarFloat *pdf, const size_t size_pdf,
                          const ScalarVector2f &range,
                          const std::vector<ScalarVector2f> &range_cond,
-                         const std::vector<size_t> &size_cond,
-                         bool enable_sampling = true, bool nearest = false)
-        : m_range(range), m_enable_sampling(enable_sampling),
-          m_nearest(nearest) {
+                         const std::vector<size_t> &size_cond)
+        : m_range(range) {
         for (size_t i = 0; i < size_cond.size(); i++) {
             m_size_cond.push_back(size_cond[i]);
             m_range_cond.push_back(range_cond[i]);
@@ -758,7 +769,7 @@ public:
         m_pdf = TensorXf(dr::load<FloatStorage>(pdf, size_pdf), shape.size(),
                          shape.data());
 
-        update();
+        prepare_distribution();
     }
 
     /**
@@ -766,35 +777,9 @@ public:
      * distribution.
      */
     void update() {
-        m_interval_scalar =
-            (m_range.y() - m_range.x()) / ScalarFloat(m_size_nodes - 1);
-
-        m_interval     = dr::opaque<Float>(m_interval_scalar);
-        m_inv_interval = dr::opaque<Float>(dr::rcp(m_interval_scalar));
-
-        for (size_t i = 0; i < m_range_cond.size(); i++) {
-            ScalarFloat tmp = (m_range_cond[i].y() - m_range_cond[i].x()) /
-                              ScalarFloat(m_size_cond[i] - 1);
-            m_inv_interval_cond.push_back(dr::opaque<Float>(dr::rcp(tmp)));
-        }
-
-        if (m_enable_sampling) {
-            if constexpr (dr::is_jit_v<Float>) {
-                compute_cdf();
-            } else {
-                compute_cdf_scalar(m_pdf.data(), m_pdf.size());
-            }
-        }
+        prepare_distribution();
+        prepare_cdf();
     }
-
-    /// Return the underlying tensor storing the distribution values
-    TensorXf &tensor() { return m_pdf; }
-
-    /// Return the range where the distribution is defined
-    ScalarVector2f range() { return m_range; }
-
-    /// Return the resolution of the distribution
-    ScalarFloat resolution() { return m_interval_scalar; }
 
     /**
      * \brief Evaluate the unnormalized probability density function (PDF) at
@@ -835,14 +820,12 @@ public:
         if (cond.size() != m_size_cond.size())
             Log(Error, "The number of conditionals should be %u instead of %u",
                 m_size_cond.size(), cond.size());
-        if (m_enable_sampling) {
-            Mask active2 = active && (x >= m_range.x()) && (x <= m_range.y());
-            auto [value, integral] = lookup(x, cond, 0, 0, active2);
-            return value * dr::rcp(integral);
-        } else {
-            Throw(
-                "You should enable sampling if the normalized pdf is required");
-        }
+
+        ensure_cdf_computed();
+
+        Mask active2 = active && (x >= m_range.x()) && (x <= m_range.y());
+        auto [value, integral] = lookup(x, cond, 0, 0, active2);
+        return value * dr::rcp(integral);
     }
 
     /**
@@ -862,40 +845,86 @@ public:
             Log(Error, "The number of conditionals should be %u instead of %u",
                 m_size_cond.size(), cond.size());
 
-        if (m_nearest)
-            Throw("Sampling with nearest neighbor not supported");
+        ensure_cdf_computed();
 
-        if (m_enable_sampling) {
-            std::vector<Index> indices(1 << m_size_cond.size());
-            std::vector<Value> weights(1 << m_size_cond.size());
+        std::vector<Index> indices(1 << m_size_cond.size());
+        std::vector<Value> weights(1 << m_size_cond.size());
 
-            lookup_fill(cond, 0, 1.f, indices, weights, 0, 0, active);
-            return lookup_sample(u, indices, weights, active);
-        } else {
-            Throw("For sampling this distribution, first enable it in the "
-                  "constructor.");
-        }
+        lookup_fill(cond, 0, 1.f, indices, weights, 0, 0, active);
+        return lookup_sample(u, indices, weights, active);
     }
 
     /// Is the distribution object empty/uninitialized?
     bool empty() const { return m_pdf.empty(); }
 
     /// Return the maximum value of the distribution
-    ScalarFloat max() const { return m_max; }
+    ScalarFloat max() const {
+        ensure_cdf_computed();
+        return m_max;
+    }
 
     /**
      * \brief Return the integral of the distribution conditioned on \c cond
      */
     Value integral(std::vector<Value> &cond) const {
-        if (m_enable_sampling) {
-            auto [value, integral] = lookup(m_range.x(), cond, 0, 0, true);
-            return integral;
-        } else {
-            Throw("You should enable sampling if the integral is needed");
+        ensure_cdf_computed();
+        auto [value, integral] = lookup(m_range.x(), cond, 0, 0, true);
+        return integral;
+    }
+
+    /// Return the underlying tensor storing the distribution values
+    TensorXf &pdf() { return m_pdf; }
+    const TensorXf &pdf() const { return m_pdf; }
+
+    /// Return the range where the distribution is defined
+    ScalarVector2f &range() { return m_range; }
+    const ScalarVector2f &range() const { return m_range; }
+
+    /// Return the conditional range where the distribution is defined
+    std::vector<ScalarVector2f> &range_cond() { return m_range_cond; }
+    const std::vector<ScalarVector2f> &range_cond() const {
+        return m_range_cond;
+    }
+
+    /// Return the cdf array of the distribution
+    FloatStorage &cdf_array() { return m_cdf; }
+    const FloatStorage &cdf_array() const { return m_cdf; }
+
+    /// Return the integral array of the distribution
+    FloatStorage &integral_array() { return m_integral; }
+    const FloatStorage &integral_array() const { return m_integral; }
+
+private:
+    DRJIT_INLINE void ensure_cdf_computed() const {
+        if (unlikely(m_cdf.empty())) {
+            const_cast<ConditionalRegular1D *>(this)->prepare_cdf();
         }
     }
 
-private:
+    DRJIT_INLINE void prepare_cdf() {
+        if constexpr (dr::is_jit_v<Float>) {
+            compute_cdf();
+        } else {
+            compute_cdf_scalar(m_pdf.data(), m_pdf.size());
+        }
+    }
+
+    DRJIT_INLINE void prepare_distribution() {
+        m_interval_scalar =
+            (m_range.y() - m_range.x()) / ScalarFloat(m_size_nodes - 1);
+
+        m_interval     = dr::opaque<Float>(m_interval_scalar);
+        m_inv_interval = dr::opaque<Float>(dr::rcp(m_interval_scalar));
+
+        m_inv_interval_cond.clear();
+        m_inv_interval_cond.reserve(m_range_cond.size());
+        for (size_t i = 0; i < m_range_cond.size(); i++) {
+            ScalarFloat tmp = (m_range_cond[i].y() - m_range_cond[i].x()) /
+                              ScalarFloat(m_size_cond[i] - 1);
+            m_inv_interval_cond.push_back(dr::opaque<Float>(dr::rcp(tmp)));
+        }
+    }
+
     std::pair<Value, Value> lookup(Value pos, std::vector<Value> &cond_,
                                    Index index_, ScalarUInt32 dim,
                                    Mask active) const {
@@ -928,7 +957,6 @@ private:
         Value new_x = (value - range_nodes.x()) * inv_interval;
         Index index =
             dr::clip(Index(dr::floor(new_x)), 0u, uint32_t(size_nodes - 2));
-
         w1 = new_x - Value(index);
         w0 = 1.f - w1;
 
@@ -948,28 +976,17 @@ private:
             index2 = index_ * length + bin_index + 1;
         }
 
-        // Change weights and index to the closest one
-        if (m_nearest) {
-            auto w0_is_closer = w0 > w1;
-            w0                = 1.f;
-            w1                = 0.f;
-            index1            = dr::select(w0_is_closer, index1, index2);
-        }
-
         Value v0 = 0.f, v1 = 0.f, integral0 = 0.f, integral1 = 0.f;
-        auto data = lookup(pos, cond_, index1, dim + 1, active);
-        v0        = std::get<0>(data);
-        integral0 = std::get<1>(data);
-        if (!m_nearest) {
-            auto data1 = lookup(pos, cond_, index2, dim + 1, active);
-            v1         = std::get<0>(data1);
-            integral1  = std::get<1>(data1);
-        }
+        auto data  = lookup(pos, cond_, index1, dim + 1, active);
+        v0         = std::get<0>(data);
+        integral0  = std::get<1>(data);
+        auto data1 = lookup(pos, cond_, index2, dim + 1, active);
+        v1         = std::get<0>(data1);
+        integral1  = std::get<1>(data1);
 
-        if (m_enable_sampling && dim == (m_range_cond.size() - 1)) {
+        if (!m_integral.empty() && dim == (m_range_cond.size() - 1)) {
             integral0 = dr::gather<Value>(m_integral, index1, active);
-            if (!m_nearest)
-                integral1 = dr::gather<Value>(m_integral, index2, active);
+            integral1 = dr::gather<Value>(m_integral, index2, active);
         }
 
         return { dr::fmadd(v1, w1, dr::fmadd(v0, -w1, v0)),
@@ -1095,14 +1112,12 @@ private:
 
     void compute_cdf() {
         if (m_pdf.array().size() < 2)
-            Throw(
-                "IrregularContinuousDistribution: needs at least two entries!");
+            Throw("ConditionalRegular1D: needs at least two entries!");
         if (!dr::all(m_pdf.array() >= 0.f))
-            Throw("IrregularContinuousDistribution: entries must be "
+            Throw("ConditionalRegular1D: entries must be "
                   "non-negative!");
         if (!dr::any(m_pdf.array() > 0.f))
-            Throw(
-                "IrregularContinuousDistribution: no probability mass found!");
+            Throw("ConditionalRegular1D: no probability mass found!");
 
         const size_t size_nodes = m_size_nodes;
         const size_t size_pdf   = dr::width(m_pdf.array());
@@ -1198,7 +1213,7 @@ private:
         m_integral = dr::load<FloatStorage>(integral.data(), integral.size());
     }
 
-public:
+private:
     ScalarVector2f m_range;
     ScalarUInt32 m_size_nodes;
     Float m_interval;
@@ -1211,8 +1226,6 @@ public:
     FloatStorage m_cdf;
     FloatStorage m_integral;
     ScalarFloat m_max = 0.f;
-    bool m_enable_sampling;
-    bool m_nearest;
 };
 
 template <typename Value>
