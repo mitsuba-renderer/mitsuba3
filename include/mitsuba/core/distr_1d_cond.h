@@ -112,7 +112,7 @@ public:
                            const std::vector<ScalarFloat *> &nodes_cond,
                            const std::vector<size_t> &sizes_cond)
         : m_nodes(dr::load<FloatStorage>(nodes, size_nodes)) {
-        for (size_t i = 0; i < m_nodes_cond.size(); i++) {
+        for (size_t i = 0; i < nodes_cond.size(); i++) {
             m_nodes_cond.push_back(
                 dr::load<FloatStorage>(nodes_cond[i], sizes_cond[i]));
         }
