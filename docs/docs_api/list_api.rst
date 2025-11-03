@@ -82,6 +82,14 @@
 
 .. autoclass:: mitsuba.Complex2f64
 
+.. autoclass:: mitsuba.ConditionalIrregular1D
+
+.. autoclass:: mitsuba.ConditionalIrregular1DSpectrum
+
+.. autoclass:: mitsuba.ConditionalRegular1D
+
+.. autoclass:: mitsuba.ConditionalRegular1DSpectrum
+
 .. autoclass:: mitsuba.ContinuousDistribution
 
 .. autoclass:: mitsuba.CppADIntegrator
@@ -1043,6 +1051,8 @@
 .. autofunction:: mitsuba.traverse
 
 .. autofunction:: mitsuba.unpolarized_spectrum
+
+.. autofunction:: mitsuba.util.Any
 
 .. autofunction:: mitsuba.util.Optional
 
