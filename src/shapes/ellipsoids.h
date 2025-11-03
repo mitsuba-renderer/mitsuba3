@@ -7,6 +7,7 @@
 #include <mitsuba/core/profiler.h>
 #include <drjit/tensor.h>
 #include <drjit/quaternion.h>
+#include <tsl/robin_map.h>
 
 #include "ply.h"
 
