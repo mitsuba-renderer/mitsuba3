@@ -2947,6 +2947,684 @@
 
 .. py:class:: mitsuba.Complex2f64
 
+.. py:class:: mitsuba.ConditionalIrregular1D
+
+
+    .. py:method:: ``__init__()
+
+        Conditional 1D irregular distribution
+
+        Similar to the irregular 1D distribution, but this class represents an
+        N-Dimensional irregular one (with the extra conditional dimensions
+        being also irregular).
+
+        As an example, assume you have a 3D distribution P(x,y,z), with
+        leading dimension X. This class would allow you to obtain the linear
+        interpolated value of the PDF for ``x`` given ``y`` and ``z``.
+        Additionally, it allows you to sample from the distribution
+        P(x|Y=y,Z=z) for a given ``y`` and ``z``.
+
+        It assumes every conditioned PDF has the same size. If the user
+        requests a method that needs the integral, it will schedule its
+        computation.
+
+        This distribution can be used in the context of spectral rendering,
+        where each wavelength conditions the underlying distribution.
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, nodes, pdf, nodes_cond)
+
+        Construct a conditional irregular 1D distribution
+
+        Parameter ``nodes`` (drjit.llvm.ad.Float):
+            Points where the leading dimension N is defined
+
+        Parameter ``pdf`` (drjit.llvm.ad.Float):
+            Flattened array of shape [D1, D2, ..., Dn, N], containing the PDFs
+
+        Parameter ``nodes_cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Arrays containing points where each conditional dimension is
+            evaluated
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, nodes, pdf, nodes_cond)
+
+        Construct a conditional irregular 1D distribution
+
+        Parameter ``nodes`` (drjit.llvm.ad.Float):
+            Points where the leading dimension N is defined
+
+        Parameter ``pdf`` (drjit.llvm.ad.TensorXf):
+            Tensor containing the values of the PDF of shape [D1, D2, ..., Dn,
+            N]
+
+        Parameter ``nodes_cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Arrays containing points where each conditional dimension is
+            evaluated
+
+        Returns → None``:
+            *no description available*
+
+    .. py:property:: mitsuba.ConditionalIrregular1D.cdf_array
+
+        Return the CDF
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.empty()
+
+        Is the distribution object empty/uninitialized?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.eval_pdf(self, x, cond, active=True)
+
+        Evaluate the unnormalized probability density function (PDF) at
+        position ``pos``, conditioned on ``cond``
+
+        Parameter ``pos``:
+            Position where the PDF is evaluated
+
+        Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Array of values where the conditionals are evaluated
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask of active lanes
+
+        Parameter ``x`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Float:
+            The value of the PDF at position ``pos``, conditioned on ``cond``
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.eval_pdf_normalized(self, x, cond, active=True)
+
+        Evaluate the normalized probability density function (PDF) at position
+        ``pos``, conditioned on ``cond``
+
+        Parameter ``pos``:
+            Position where the PDF is evaluated
+
+        Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Array of values where the conditionals are evaluated
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask of active lanes
+
+        Parameter ``x`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Float:
+            The value of the normalized PDF at position ``pos``, conditioned
+            on ``cond``
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.integral(self, cond)
+
+        Return the integral of the distribution conditioned on ``cond``
+
+        Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Conditionals that define the distribution
+
+        Returns → drjit.llvm.ad.Float:
+            The integral of the distribution
+
+    .. py:property:: mitsuba.ConditionalIrregular1D.integral_array
+
+        Return the integral array
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.max()
+
+        Return the maximum value of the distribution
+
+        Returns → float:
+            *no description available*
+
+    .. py:property:: mitsuba.ConditionalIrregular1D.nodes
+
+        Return the nodes of the underlying discretization
+
+    .. py:property:: mitsuba.ConditionalIrregular1D.nodes_cond
+
+        Return the conditional nodes of the underlying discretization
+
+    .. py:property:: mitsuba.ConditionalIrregular1D.pdf
+
+        Return the underlying tensor storing the distribution values
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.sample_pdf(self, u, cond, active=True)
+
+        Sample the distribution given a uniform sample ``u``, conditioned on
+        ``cond``
+
+        Parameter ``u`` (drjit.llvm.ad.Float):
+            Uniform sample
+
+        Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Conditionals where the PDF is sampled
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask of active lanes
+
+        Returns → tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
+            A pair where the first element is the sampled position and the
+            second element the value of the normalized PDF at that position
+            conditioned on ``cond``
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.update()
+
+        Update the internal state. Must be invoked when changing the pdf.
+
+        Returns → None:
+            *no description available*
+
+.. py:class:: mitsuba.ConditionalIrregular1DSpectrum
+
+
+    .. py:method:: ``__init__()
+
+        Conditional 1D irregular distribution
+
+        Similar to the irregular 1D distribution, but this class represents an
+        N-Dimensional irregular one (with the extra conditional dimensions
+        being also irregular).
+
+        As an example, assume you have a 3D distribution P(x,y,z), with
+        leading dimension X. This class would allow you to obtain the linear
+        interpolated value of the PDF for ``x`` given ``y`` and ``z``.
+        Additionally, it allows you to sample from the distribution
+        P(x|Y=y,Z=z) for a given ``y`` and ``z``.
+
+        It assumes every conditioned PDF has the same size. If the user
+        requests a method that needs the integral, it will schedule its
+        computation.
+
+        This distribution can be used in the context of spectral rendering,
+        where each wavelength conditions the underlying distribution.
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, nodes, pdf, nodes_cond)
+
+        Construct a conditional irregular 1D distribution
+
+        Parameter ``nodes`` (drjit.llvm.ad.Float):
+            Points where the leading dimension N is defined
+
+        Parameter ``pdf`` (drjit.llvm.ad.Float):
+            Flattened array of shape [D1, D2, ..., Dn, N], containing the PDFs
+
+        Parameter ``nodes_cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Arrays containing points where each conditional dimension is
+            evaluated
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, nodes, pdf, nodes_cond)
+
+        Construct a conditional irregular 1D distribution
+
+        Parameter ``nodes`` (drjit.llvm.ad.Float):
+            Points where the leading dimension N is defined
+
+        Parameter ``pdf`` (drjit.llvm.ad.TensorXf):
+            Tensor containing the values of the PDF of shape [D1, D2, ..., Dn,
+            N]
+
+        Parameter ``nodes_cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Arrays containing points where each conditional dimension is
+            evaluated
+
+        Returns → None``:
+            *no description available*
+
+    .. py:property:: mitsuba.ConditionalIrregular1DSpectrum.cdf_array
+
+        Return the CDF
+
+    .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.empty()
+
+        Is the distribution object empty/uninitialized?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.eval_pdf(self, x, cond, active=True)
+
+        Evaluate the unnormalized probability density function (PDF) at
+        position ``pos``, conditioned on ``cond``
+
+        Parameter ``pos``:
+            Position where the PDF is evaluated
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            Array of values where the conditionals are evaluated
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask of active lanes
+
+        Parameter ``x`` (:py:obj:`mitsuba.Color3f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            The value of the PDF at position ``pos``, conditioned on ``cond``
+
+    .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.eval_pdf_normalized(self, x, cond, active=True)
+
+        Evaluate the normalized probability density function (PDF) at position
+        ``pos``, conditioned on ``cond``
+
+        Parameter ``pos``:
+            Position where the PDF is evaluated
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            Array of values where the conditionals are evaluated
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask of active lanes
+
+        Parameter ``x`` (:py:obj:`mitsuba.Color3f`):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            The value of the normalized PDF at position ``pos``, conditioned
+            on ``cond``
+
+    .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.integral(self, cond)
+
+        Return the integral of the distribution conditioned on ``cond``
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            Conditionals that define the distribution
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            The integral of the distribution
+
+    .. py:property:: mitsuba.ConditionalIrregular1DSpectrum.integral_array
+
+        Return the integral array
+
+    .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.max()
+
+        Return the maximum value of the distribution
+
+        Returns → float:
+            *no description available*
+
+    .. py:property:: mitsuba.ConditionalIrregular1DSpectrum.nodes
+
+        Return the nodes of the underlying discretization
+
+    .. py:property:: mitsuba.ConditionalIrregular1DSpectrum.nodes_cond
+
+        Return the conditional nodes of the underlying discretization
+
+    .. py:property:: mitsuba.ConditionalIrregular1DSpectrum.pdf
+
+        Return the underlying tensor storing the distribution values
+
+    .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.sample_pdf(self, u, cond, active=True)
+
+        Sample the distribution given a uniform sample ``u``, conditioned on
+        ``cond``
+
+        Parameter ``u`` (:py:obj:`mitsuba.Color3f`):
+            Uniform sample
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            Conditionals where the PDF is sampled
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask of active lanes
+
+        Returns → tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
+            A pair where the first element is the sampled position and the
+            second element the value of the normalized PDF at that position
+            conditioned on ``cond``
+
+    .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.update()
+
+        Update the internal state. Must be invoked when changing the pdf.
+
+        Returns → None:
+            *no description available*
+
+.. py:class:: mitsuba.ConditionalRegular1D
+
+
+    .. py:method:: ``__init__()
+
+        Conditional 1D regular distribution
+
+        Similar to the regular 1D distribution, but this class represents an
+        N-Dimensional regular one (with the extra conditional dimensions being
+        also regular).
+
+        As an example, assume you have a 3D distribution P(x,y,z), with
+        leading dimension X. This class would allow you to obtain the linear
+        interpolated value of the PDF for ``x`` given ``y`` and ``z``.
+        Additionally, it allows you to sample from the distribution
+        P(x|Y=y,Z=z) for a given ``y`` and ``z``.
+
+        It assumes every conditioned PDF has the same size. If the user
+        requests a method that needs the integral, it will schedule its
+        computation.
+
+        This distribution can be used in the context of spectral rendering,
+        where each wavelength conditions the underlying distribution.
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, pdf, range, range_cond, size_cond)
+
+        Construct a conditional regular 1D distribution
+
+        Parameter ``pdf`` (drjit.llvm.ad.Float):
+            Flattened array of shape [D1, D2, ..., Dn, N] containing the PDFs
+
+        Parameter ``range`` (:py:obj:`mitsuba.ScalarVector2f`):
+            Range where the leading dimension N is defined
+
+        Parameter ``range_cond`` (collections.abc.Sequence[:py:obj:`mitsuba.ScalarVector2f`]):
+            Array of ranges where the dimensional conditionals are defined
+
+        Parameter ``size_cond`` (collections.abc.Sequence[int]):
+            Array with the size of each conditional dimension
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, pdf, range, range_cond)
+
+        Construct a conditional regular 1D distribution
+
+        Parameter ``pdf`` (drjit.llvm.ad.TensorXf):
+            Tensor containing the values of the PDF of shape [D1, D2, ..., Dn,
+            N]
+
+        Parameter ``range`` (:py:obj:`mitsuba.ScalarVector2f`):
+            Range where the leading dimension N is defined
+
+        Parameter ``range_cond`` (collections.abc.Sequence[:py:obj:`mitsuba.ScalarVector2f`]):
+            Array of ranges where the dimensional conditionals are defined
+
+        Returns → None``:
+            *no description available*
+
+    .. py:property:: mitsuba.ConditionalRegular1D.cdf_array
+
+        Return the cdf array of the distribution
+
+    .. py:method:: mitsuba.ConditionalRegular1D.empty()
+
+        Is the distribution object empty/uninitialized?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1D.eval_pdf(self, x, cond, active=True)
+
+        Evaluate the unnormalized probability density function (PDF) at
+        position ``x``, conditioned on ``cond``
+
+        Parameter ``x`` (drjit.llvm.ad.Float):
+            Position where the PDF is evaluated
+
+        Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Conditionals where the PDF is evaluated
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask of active lanes
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1D.eval_pdf_normalized(self, x, cond, active=True)
+
+        Evaluate the normalized probability density function (PDF) at position
+        ``x``, conditioned on ``cond``
+
+        Parameter ``x`` (drjit.llvm.ad.Float):
+            Position where the PDF is evaluated
+
+        Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Conditionals where the PDF is evaluated
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask of active lanes
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1D.integral(self, cond)
+
+        Return the integral of the distribution conditioned on ``cond``
+
+        Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:property:: mitsuba.ConditionalRegular1D.integral_array
+
+        Return the integral array of the distribution
+
+    .. py:method:: mitsuba.ConditionalRegular1D.max()
+
+        Return the maximum value of the distribution
+
+        Returns → float:
+            *no description available*
+
+    .. py:property:: mitsuba.ConditionalRegular1D.pdf
+
+        Return the underlying tensor storing the distribution values
+
+    .. py:property:: mitsuba.ConditionalRegular1D.range
+
+        Return the range where the distribution is defined
+
+    .. py:property:: mitsuba.ConditionalRegular1D.range_cond
+
+        Return the conditional range where the distribution is defined
+
+    .. py:method:: mitsuba.ConditionalRegular1D.sample_pdf(self, u, cond, active=True)
+
+        Sample the distribution given a uniform sample ``u``, conditioned on
+        ``cond``
+
+        Parameter ``u`` (drjit.llvm.ad.Float):
+            Uniform sample
+
+        Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Conditionals where the PDF is sampled
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask of active lanes
+
+        Returns → tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1D.update()
+
+        Update the internal state. Must be invoked when changing the
+        distribution.
+
+        Returns → None:
+            *no description available*
+
+.. py:class:: mitsuba.ConditionalRegular1DSpectrum
+
+
+    .. py:method:: ``__init__()
+
+        Conditional 1D regular distribution
+
+        Similar to the regular 1D distribution, but this class represents an
+        N-Dimensional regular one (with the extra conditional dimensions being
+        also regular).
+
+        As an example, assume you have a 3D distribution P(x,y,z), with
+        leading dimension X. This class would allow you to obtain the linear
+        interpolated value of the PDF for ``x`` given ``y`` and ``z``.
+        Additionally, it allows you to sample from the distribution
+        P(x|Y=y,Z=z) for a given ``y`` and ``z``.
+
+        It assumes every conditioned PDF has the same size. If the user
+        requests a method that needs the integral, it will schedule its
+        computation.
+
+        This distribution can be used in the context of spectral rendering,
+        where each wavelength conditions the underlying distribution.
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, pdf, range, range_cond, size_cond)
+
+        Construct a conditional regular 1D distribution
+
+        Parameter ``pdf`` (drjit.llvm.ad.Float):
+            Flattened array of shape [D1, D2, ..., Dn, N] containing the PDFs
+
+        Parameter ``range`` (:py:obj:`mitsuba.ScalarVector2f`):
+            Range where the leading dimension N is defined
+
+        Parameter ``range_cond`` (collections.abc.Sequence[:py:obj:`mitsuba.ScalarVector2f`]):
+            Array of ranges where the dimensional conditionals are defined
+
+        Parameter ``size_cond`` (collections.abc.Sequence[int]):
+            Array with the size of each conditional dimension
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, pdf, range, range_cond)
+
+        Construct a conditional regular 1D distribution
+
+        Parameter ``pdf`` (drjit.llvm.ad.TensorXf):
+            Tensor containing the values of the PDF of shape [D1, D2, ..., Dn,
+            N]
+
+        Parameter ``range`` (:py:obj:`mitsuba.ScalarVector2f`):
+            Range where the leading dimension N is defined
+
+        Parameter ``range_cond`` (collections.abc.Sequence[:py:obj:`mitsuba.ScalarVector2f`]):
+            Array of ranges where the dimensional conditionals are defined
+
+        Returns → None``:
+            *no description available*
+
+    .. py:property:: mitsuba.ConditionalRegular1DSpectrum.cdf_array
+
+        Return the cdf array of the distribution
+
+    .. py:method:: mitsuba.ConditionalRegular1DSpectrum.empty()
+
+        Is the distribution object empty/uninitialized?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1DSpectrum.eval_pdf(self, x, cond, active=True)
+
+        Evaluate the unnormalized probability density function (PDF) at
+        position ``x``, conditioned on ``cond``
+
+        Parameter ``x`` (:py:obj:`mitsuba.Color3f`):
+            Position where the PDF is evaluated
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            Conditionals where the PDF is evaluated
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask of active lanes
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1DSpectrum.eval_pdf_normalized(self, x, cond, active=True)
+
+        Evaluate the normalized probability density function (PDF) at position
+        ``x``, conditioned on ``cond``
+
+        Parameter ``x`` (:py:obj:`mitsuba.Color3f`):
+            Position where the PDF is evaluated
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            Conditionals where the PDF is evaluated
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask of active lanes
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1DSpectrum.integral(self, cond)
+
+        Return the integral of the distribution conditioned on ``cond``
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            *no description available*
+
+    .. py:property:: mitsuba.ConditionalRegular1DSpectrum.integral_array
+
+        Return the integral array of the distribution
+
+    .. py:method:: mitsuba.ConditionalRegular1DSpectrum.max()
+
+        Return the maximum value of the distribution
+
+        Returns → float:
+            *no description available*
+
+    .. py:property:: mitsuba.ConditionalRegular1DSpectrum.pdf
+
+        Return the underlying tensor storing the distribution values
+
+    .. py:property:: mitsuba.ConditionalRegular1DSpectrum.range
+
+        Return the range where the distribution is defined
+
+    .. py:property:: mitsuba.ConditionalRegular1DSpectrum.range_cond
+
+        Return the conditional range where the distribution is defined
+
+    .. py:method:: mitsuba.ConditionalRegular1DSpectrum.sample_pdf(self, u, cond, active=True)
+
+        Sample the distribution given a uniform sample ``u``, conditioned on
+        ``cond``
+
+        Parameter ``u`` (:py:obj:`mitsuba.Color3f`):
+            Uniform sample
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            Conditionals where the PDF is sampled
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask of active lanes
+
+        Returns → tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1DSpectrum.update()
+
+        Update the internal state. Must be invoked when changing the
+        distribution.
+
+        Returns → None:
+            *no description available*
+
 .. py:class:: mitsuba.ContinuousDistribution
 
     Continuous 1D probability distribution defined in terms of a regularly
@@ -3145,7 +3823,7 @@
 
 .. py:data:: mitsuba.DEBUG
     :type: bool
-    :value: False
+    :value: True
 
 .. py:class:: mitsuba.DefaultFormatter
 
@@ -7839,7 +8517,7 @@
         Parameter ``other`` (:py:obj:`mitsuba.Mesh`):
             *no description available*
 
-        Returns → ref<mitsuba::Mesh<drjit::DiffArray<(JitBackend)2, float>, mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul> > >:
+        Returns → ref<mitsuba::Mesh<drjit::DiffArray<(JitBackend)2, float>, mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>>>:
             *no description available*
 
     .. py:method:: mitsuba.Mesh.opposite_dedge(self, index, active=True)
@@ -7871,7 +8549,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → None:
+        Returns → :py:obj:`mitsuba.PreliminaryIntersection3f`:
             *no description available*
 
     .. py:method:: mitsuba.Mesh.recompute_bbox()
@@ -8096,7 +8774,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → None:
+        Returns → :py:obj:`mitsuba.PreliminaryIntersection3f`:
             *no description available*
 
     .. py:method:: mitsuba.MeshPtr.vertex_count()
@@ -24399,7 +25077,7 @@
     Parameter ``scene`` (``mi.Scene``):
         Reference to the scene being rendered in a differentiable manner.
 
-    Parameter ``params`` (~typing.Any):
+    Parameter ``params`` (~typing.Any | None):
        An optional container of scene parameters that should receive gradients.
        This argument isn't optional when computing forward mode derivatives. It
        should be an instance of type ``mi.SceneParameters`` obtained via
@@ -24451,7 +25129,7 @@
     Parameter ``sensor`` (int | ~:py:obj:`mitsuba.Sensor`):
         *no description available*
 
-    Parameter ``integrator`` (~:py:obj:`mitsuba.Integrator`):
+    Parameter ``integrator`` (~:py:obj:`mitsuba.Integrator` | None):
         *no description available*
 
     Parameter ``seed`` (~drjit.llvm.ad.UInt):
@@ -24529,8 +25207,9 @@
     Returns → int:
         A uniformly distributed 64-bit integer
 
-.. py:function:: mitsuba.sample_tea_float(overloaded)
+.. py:function:: mitsuba.sample_tea_float
 
+    sample_tea_float32(v0: int, v1: int, rounds: int = 4) -> float
     sample_tea_float32(v0: drjit.llvm.ad.UInt, v1: drjit.llvm.ad.UInt, rounds: int = 4) -> drjit.llvm.ad.Float
 
     Generate fast and reasonably good pseudorandom numbers using the Tiny
@@ -25399,7 +26078,21 @@
     Returns → :py:obj:`mitsuba.Color3f`:
         *no description available*
 
+.. py:function:: mitsuba.util.Any()
+
+    Special type indicating an unconstrained type.
+
+    - Any is compatible with every type.
+    - Any assumed to have all methods.
+    - All values assumed to be instances of Any.
+
+    Note that all the above statements are true from the point of view of
+    static type checkers. At runtime, Any should not be used with instance
+    or class checks.
+
 .. py:function:: mitsuba.util.Optional()
+
+    Optional type.
 
     Optional[X] is equivalent to Union[X, None].
 
@@ -25407,29 +26100,25 @@
 
     Union type; Union[X, Y] means either X or Y.
 
-    On Python 3.10 and higher, the | operator
-    can also be used to denote unions;
-    X | Y means the same thing to the type checker as Union[X, Y].
-
-    To define a union, use e.g. Union[int, str]. Details:
+    To define a union, use e.g. Union[int, str].  Details:
     - The arguments must be types and there must be at least one.
     - None as an argument is a special case and is replaced by
       type(None).
     - Unions of unions are flattened, e.g.::
 
-        assert Union[Union[int, str], float] == Union[int, str, float]
+        Union[Union[int, str], float] == Union[int, str, float]
 
     - Unions of a single argument vanish, e.g.::
 
-        assert Union[int] == int  # The constructor actually returns int
+        Union[int] == int  # The constructor actually returns int
 
     - Redundant arguments are skipped, e.g.::
 
-        assert Union[int, str, int] == Union[int, str]
+        Union[int, str, int] == Union[int, str]
 
     - When comparing unions, the argument order is ignored, e.g.::
 
-        assert Union[int, str] == Union[str, int]
+        Union[int, str] == Union[str, int]
 
     - You cannot subclass or instantiate a union.
     - You can use Optional[X] as a shorthand for Union[X, None].

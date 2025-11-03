@@ -541,8 +541,6 @@ static const char *__doc_mitsuba_AdjointIntegrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_AdjointIntegrator_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_AdjointIntegrator_AdjointIntegrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator_class_name = R"doc(//! @})doc";
@@ -804,8 +802,6 @@ static const char *__doc_mitsuba_BSDF_4 = R"doc()doc";
 static const char *__doc_mitsuba_BSDF_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDF_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFContext =
 R"doc(Context data structure for BSDF evaluation and sampling
@@ -1326,9 +1322,6 @@ Based on the Hosek-Wilkie skylight model https://cgg.mff.cuni.cz/proje
 cts/SkylightModelling/HosekWilkie_SkylightModel_SIGGRAPH2012_Preprint_
 lowres.pdf
 
-Template parameter ``Spec``:
-    Spectral type to render (adapts the number of channels)
-
 Parameter ``cos_theta``:
     Cosine of the angle between the z-axis (up) and the viewing
     direction
@@ -1355,11 +1348,11 @@ Based on the Hosek-Wilkie sun model
 https://cgg.mff.cuni.cz/publications/adding-a-solar-radiance-function-
 to-the-hosek-wilkie-skylight-model/
 
-Template parameter ``Spec``:
-    Spectral type to render (adapts the number of channels)
-
 Parameter ``channel_idx``:
     Indices of the channels to render
+
+Parameter ``sun_theta``:
+    Elevation angle of the sun
 
 Parameter ``cos_theta``:
     Cosine of the angle between the z-axis (up) and the viewing
@@ -1411,8 +1404,8 @@ Returns:
 static const char *__doc_mitsuba_BaseSunskyEmitter_get_sky_datasets =
 R"doc(Getter sky radiance datasets for the given wavelengths and sun angles
 
-Parameter ``sun_angles``:
-    Sun angles in local (emitter) space
+Parameter ``sun_theta``:
+    The angle between the sun's direction and the z axis
 
 Parameter ``channel_idx``:
     Indices of the queried channels
@@ -1428,8 +1421,8 @@ static const char *__doc_mitsuba_BaseSunskyEmitter_get_sky_sampling_weight =
 R"doc(Getter fot the probability of sampling the sky for a given sun
 position
 
-Parameter ``sun_angles``:
-    The sun azimuth and elevation angles
+Parameter ``sun_theta``:
+    The angle between the sun's direction and the z axis
 
 Parameter ``active``:
     Indicates active lanes
@@ -1446,12 +1439,28 @@ Parameter ``time``:
 Returns:
     The sun azimuth and elevation angle)doc";
 
+static const char *__doc_mitsuba_BaseSunskyEmitter_get_sun_irradiance =
+R"doc(Getter for the sun's irradiance at a given sun elevation and
+wavelengths
+
+Parameter ``sun_theta``:
+    The angle between the sun's direction and the z axis
+
+Parameter ``channel_idx``:
+    The indices of the queried channels
+
+Parameter ``active``:
+    Indicates active lanes
+
+Returns:
+    The sun irradiance for the given conditions)doc";
+
 static const char *__doc_mitsuba_BaseSunskyEmitter_get_tgmm_data =
 R"doc(Getter for the 4 interpolation points on turbidity and elevation of
 the Truncated Gaussian Mixtures
 
-Parameter ``sun_angles``:
-    Azimuth and elevation angles of the sun
+Parameter ``sun_theta``:
+    The angle between the sun's direction and the z axis
 
 Returns:
     The 4 interpolation weights and the 4 indices corresponding to the
@@ -1482,6 +1491,10 @@ static const char *__doc_mitsuba_BaseSunskyEmitter_m_albedo_tex = R"doc()doc";
 
 static const char *__doc_mitsuba_BaseSunskyEmitter_m_bsphere = R"doc()doc";
 
+static const char *__doc_mitsuba_BaseSunskyEmitter_m_complex_sun = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_m_sky_irrad_dataset = R"doc()doc";
+
 static const char *__doc_mitsuba_BaseSunskyEmitter_m_sky_params_dataset = R"doc()doc";
 
 static const char *__doc_mitsuba_BaseSunskyEmitter_m_sky_rad_dataset = R"doc()doc";
@@ -1489,6 +1502,8 @@ static const char *__doc_mitsuba_BaseSunskyEmitter_m_sky_rad_dataset = R"doc()do
 static const char *__doc_mitsuba_BaseSunskyEmitter_m_sky_scale = R"doc()doc";
 
 static const char *__doc_mitsuba_BaseSunskyEmitter_m_sun_half_aperture = R"doc()doc";
+
+static const char *__doc_mitsuba_BaseSunskyEmitter_m_sun_irrad_dataset = R"doc()doc";
 
 static const char *__doc_mitsuba_BaseSunskyEmitter_m_sun_ld = R"doc()doc";
 
@@ -1518,8 +1533,8 @@ R"doc(Samples a gaussian from the Truncated Gaussian mixture
 Parameter ``sample``:
     Sample in [0, 1]
 
-Parameter ``sun_angles``:
-    Sun azimuth and elevation angles
+Parameter ``sun_theta``:
+    The angle between the sun's direction and the z axis
 
 Parameter ``active``:
     Indicates active lanes
@@ -2351,8 +2366,6 @@ static const char *__doc_mitsuba_Color_r = R"doc()doc";
 
 static const char *__doc_mitsuba_Color_r_2 = R"doc()doc";
 
-<<<<<<< HEAD
-=======
 static const char *__doc_mitsuba_ConditionalIrregular1D =
 R"doc(Conditional 1D irregular distribution
 
@@ -2362,9 +2375,9 @@ being also irregular).
 
 As an example, assume you have a 3D distribution P(x,y,z), with
 leading dimension X. This class would allow you to obtain the linear
-interpolated value of the PDF for ``x`` given ``y`` and ``z.``
+interpolated value of the PDF for ``x`` given ``y`` and ``z``.
 Additionally, it allows you to sample from the distribution
-P(x|Y=y,Z=z) for a given ``y`` and ``z.``
+P(x|Y=y,Z=z) for a given ``y`` and ``z``.
 
 It assumes every conditioned PDF has the same size. If the user
 requests a method that needs the integral, it will schedule its
@@ -2437,7 +2450,7 @@ static const char *__doc_mitsuba_ConditionalIrregular1D_ensure_cdf_computed = R"
 
 static const char *__doc_mitsuba_ConditionalIrregular1D_eval_pdf =
 R"doc(Evaluate the unnormalized probability density function (PDF) at
-position ``pos,`` conditioned on ``cond``
+position ``pos``, conditioned on ``cond``
 
 Parameter ``pos``:
     Position where the PDF is evaluated
@@ -2449,11 +2462,11 @@ Parameter ``active``:
     Mask of active lanes
 
 Returns:
-    The value of the PDF at position ``pos,`` conditioned on ``cond``)doc";
+    The value of the PDF at position ``pos``, conditioned on ``cond``)doc";
 
 static const char *__doc_mitsuba_ConditionalIrregular1D_eval_pdf_normalized =
 R"doc(Evaluate the normalized probability density function (PDF) at position
-``pos,`` conditioned on ``cond``
+``pos``, conditioned on ``cond``
 
 Parameter ``pos``:
     Position where the PDF is evaluated
@@ -2465,7 +2478,7 @@ Parameter ``active``:
     Mask of active lanes
 
 Returns:
-    The value of the normalized PDF at position ``pos,`` conditioned
+    The value of the normalized PDF at position ``pos``, conditioned
     on ``cond``)doc";
 
 static const char *__doc_mitsuba_ConditionalIrregular1D_integral =
@@ -2514,7 +2527,7 @@ static const char *__doc_mitsuba_ConditionalIrregular1D_pdf = R"doc(Return the u
 static const char *__doc_mitsuba_ConditionalIrregular1D_pdf_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_ConditionalIrregular1D_sample_pdf =
-R"doc(Sample the distribution given a uniform sample ``u,`` conditioned on
+R"doc(Sample the distribution given a uniform sample ``u``, conditioned on
 ``cond``
 
 Parameter ``u``:
@@ -2531,6 +2544,10 @@ Returns:
     second element the value of the normalized PDF at that position
     conditioned on ``cond``)doc";
 
+static const char *__doc_mitsuba_ConditionalIrregular1D_traverse_1_cb_ro = R"doc()doc";
+
+static const char *__doc_mitsuba_ConditionalIrregular1D_traverse_1_cb_rw = R"doc()doc";
+
 static const char *__doc_mitsuba_ConditionalIrregular1D_update = R"doc(Update the internal state. Must be invoked when changing the pdf.)doc";
 
 static const char *__doc_mitsuba_ConditionalRegular1D =
@@ -2542,9 +2559,9 @@ also regular).
 
 As an example, assume you have a 3D distribution P(x,y,z), with
 leading dimension X. This class would allow you to obtain the linear
-interpolated value of the PDF for ``x`` given ``y`` and ``z.``
+interpolated value of the PDF for ``x`` given ``y`` and ``z``.
 Additionally, it allows you to sample from the distribution
-P(x|Y=y,Z=z) for a given ``y`` and ``z.``
+P(x|Y=y,Z=z) for a given ``y`` and ``z``.
 
 It assumes every conditioned PDF has the same size. If the user
 requests a method that needs the integral, it will schedule its
@@ -2599,7 +2616,7 @@ static const char *__doc_mitsuba_ConditionalRegular1D_ensure_cdf_computed = R"do
 
 static const char *__doc_mitsuba_ConditionalRegular1D_eval_pdf =
 R"doc(Evaluate the unnormalized probability density function (PDF) at
-position ``x,`` conditioned on ``cond``
+position ``x``, conditioned on ``cond``
 
 Parameter ``x``:
     Position where the PDF is evaluated
@@ -2612,7 +2629,7 @@ Parameter ``active``:
 
 static const char *__doc_mitsuba_ConditionalRegular1D_eval_pdf_normalized =
 R"doc(Evaluate the normalized probability density function (PDF) at position
-``x,`` conditioned on ``cond``
+``x``, conditioned on ``cond``
 
 Parameter ``x``:
     Position where the PDF is evaluated
@@ -2678,7 +2695,7 @@ static const char *__doc_mitsuba_ConditionalRegular1D_range_cond = R"doc(Return 
 static const char *__doc_mitsuba_ConditionalRegular1D_range_cond_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_ConditionalRegular1D_sample_pdf =
-R"doc(Sample the distribution given a uniform sample ``u,`` conditioned on
+R"doc(Sample the distribution given a uniform sample ``u``, conditioned on
 ``cond``
 
 Parameter ``u``:
@@ -2690,11 +2707,14 @@ Parameter ``cond``:
 Parameter ``active``:
     Mask of active lanes)doc";
 
+static const char *__doc_mitsuba_ConditionalRegular1D_traverse_1_cb_ro = R"doc()doc";
+
+static const char *__doc_mitsuba_ConditionalRegular1D_traverse_1_cb_rw = R"doc()doc";
+
 static const char *__doc_mitsuba_ConditionalRegular1D_update =
 R"doc(Update the internal state. Must be invoked when changing the
 distribution.)doc";
 
->>>>>>> 651411250 (Improvements including lazy computation of the CDF among others)
 static const char *__doc_mitsuba_ContinuousDistribution =
 R"doc(Continuous 1D probability distribution defined in terms of a regularly
 sampled linear interpolant
@@ -3300,8 +3320,6 @@ static const char *__doc_mitsuba_Emitter_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_Emitter_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_EmitterFlags =
 R"doc(This list of flags is used to classify the different types of
 emitters.)doc";
@@ -3406,8 +3424,6 @@ static const char *__doc_mitsuba_Endpoint_4 = R"doc()doc";
 static const char *__doc_mitsuba_Endpoint_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Endpoint_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_Endpoint = R"doc()doc";
 
@@ -3814,8 +3830,6 @@ static const char *__doc_mitsuba_Film_4 = R"doc()doc";
 static const char *__doc_mitsuba_Film_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Film_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_FilmFlags = R"doc(This list of flags is used to classify the different types of films.)doc";
 
@@ -4293,8 +4307,6 @@ static const char *__doc_mitsuba_ImageBlock_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_ImageBlock_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_ImageBlock_ImageBlock =
 R"doc(Construct a zero-initialized image block with the desired shape and
 channel count
@@ -4554,8 +4566,6 @@ static const char *__doc_mitsuba_Integrator_4 = R"doc()doc";
 static const char *__doc_mitsuba_Integrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Integrator_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_Integrator = R"doc(Create an integrator)doc";
 
@@ -5287,8 +5297,6 @@ static const char *__doc_mitsuba_Medium_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_Medium_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_MediumInteraction = R"doc(Stores information related to a medium scattering interaction)doc";
 
 static const char *__doc_mitsuba_MediumInteraction_MediumInteraction = R"doc(//! @})doc";
@@ -5571,8 +5579,6 @@ static const char *__doc_mitsuba_Mesh_4 = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_Mesh =
 R"doc(Creates a zero-initialized mesh with the given vertex and face counts
@@ -6112,8 +6118,6 @@ static const char *__doc_mitsuba_MonteCarloIntegrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_MonteCarloIntegrator_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_MonteCarloIntegrator_MonteCarloIntegrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_class_name = R"doc()doc";
@@ -6292,8 +6296,6 @@ static const char *__doc_mitsuba_OptixDenoiser_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_OptixDenoiser_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_OptixDenoiser_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_OptixDenoiser_OptixDenoiser =
 R"doc(Constructs an OptiX denoiser
 
@@ -6470,8 +6472,6 @@ static const char *__doc_mitsuba_PCG32Sampler_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_PCG32Sampler_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_PCG32Sampler_PCG32Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_PCG32Sampler_2 = R"doc(Copy state to a new PCG32Sampler object)doc";
@@ -6522,8 +6522,6 @@ static const char *__doc_mitsuba_PhaseFunction_4 = R"doc()doc";
 static const char *__doc_mitsuba_PhaseFunction_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunction_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_PhaseFunction_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunctionContext = R"doc()doc";
 
@@ -7011,8 +7009,6 @@ static const char *__doc_mitsuba_ProjectiveCamera_4 = R"doc()doc";
 static const char *__doc_mitsuba_ProjectiveCamera_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_ProjectiveCamera_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_ProjectiveCamera = R"doc()doc";
 
@@ -7811,8 +7807,6 @@ static const char *__doc_mitsuba_ReconstructionFilter_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_ReconstructionFilter_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_ReconstructionFilter_ReconstructionFilter = R"doc(Create a new reconstruction filter)doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_border_size = R"doc(Return the block border size required when rendering with this filter)doc";
@@ -8026,8 +8020,6 @@ static const char *__doc_mitsuba_Sampler_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_Sampler_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_Sampler_Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_Sampler_2 = R"doc(Copy state to a new sampler object)doc";
@@ -8131,8 +8123,6 @@ static const char *__doc_mitsuba_SamplingIntegrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_SamplingIntegrator_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_SamplingIntegrator_SamplingIntegrator = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_class_name = R"doc(//! @})doc";
@@ -8229,8 +8219,6 @@ static const char *__doc_mitsuba_Scene_4 = R"doc()doc";
 static const char *__doc_mitsuba_Scene_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Scene_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_Scene = R"doc(Instantiate a scene from a Properties object)doc";
 
@@ -8965,8 +8953,6 @@ static const char *__doc_mitsuba_Sensor_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_Sensor_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_Sensor_Sensor = R"doc(This is both a class and the base of various Mitsuba plugins)doc";
 
 static const char *__doc_mitsuba_Sensor_class_name = R"doc(This is both a class and the base of various Mitsuba plugins)doc";
@@ -9096,8 +9082,6 @@ static const char *__doc_mitsuba_Shape_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_7 = R"doc()doc";
 
-static const char *__doc_mitsuba_Shape_8 = R"doc()doc";
-
 static const char *__doc_mitsuba_ShapeGroup = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_2 = R"doc()doc";
@@ -9109,8 +9093,6 @@ static const char *__doc_mitsuba_ShapeGroup_4 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeGroup_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_ShapeGroup_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_ShapeGroup = R"doc()doc";
 
@@ -9185,8 +9167,6 @@ static const char *__doc_mitsuba_ShapeKDTree_4 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeKDTree_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_ShapeKDTree_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_ShapeKDTree =
 R"doc(Create an empty kd-tree and take build-related parameters from
@@ -11191,8 +11171,6 @@ static const char *__doc_mitsuba_Texture_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_Texture_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_Texture_D65 = R"doc(Convenience function returning the standard D65 illuminant)doc";
 
 static const char *__doc_mitsuba_Texture_D65_2 =
@@ -11426,6 +11404,8 @@ static const char *__doc_mitsuba_Transform_Transform_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_Transform_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Transform_expand = R"doc(Expand to a higher-dimensional (inverse of extract))doc";
+
 static const char *__doc_mitsuba_Transform_extract = R"doc(Extract a lower-dimensional submatrix (only for affine transforms))doc";
 
 static const char *__doc_mitsuba_Transform_fields = R"doc()doc";
@@ -11625,8 +11605,6 @@ static const char *__doc_mitsuba_Volume_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Volume_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_Volume_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_VolumeGrid =
 R"doc(Class to read and write 3D volume grids
 
@@ -11643,8 +11621,6 @@ static const char *__doc_mitsuba_VolumeGrid_4 = R"doc()doc";
 static const char *__doc_mitsuba_VolumeGrid_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_VolumeGrid_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_VolumeGrid =
 R"doc(Load a VolumeGrid from a given filename
@@ -12162,8 +12138,6 @@ static const char *__doc_mitsuba_detail_variant_4 = R"doc()doc";
 static const char *__doc_mitsuba_detail_variant_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_variant_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_detail_variant_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_dir_to_sph =
 R"doc(Converts a unit vector to its spherical coordinates parameterization
@@ -13074,29 +13048,29 @@ static const char *__doc_mitsuba_operator_lshift_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_8 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_9 = R"doc(Prints the canonical string representation of a field)doc";
+static const char *__doc_mitsuba_operator_lshift_9 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_10 = R"doc(Return a string representation of a frame)doc";
+static const char *__doc_mitsuba_operator_lshift_10 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_11 = R"doc(Prints the canonical string representation of an object instance)doc";
+static const char *__doc_mitsuba_operator_lshift_11 = R"doc(Prints the canonical string representation of a field)doc";
 
-static const char *__doc_mitsuba_operator_lshift_12 = R"doc(Prints the canonical string representation of an object instance)doc";
+static const char *__doc_mitsuba_operator_lshift_12 = R"doc(Return a string representation of a frame)doc";
 
-static const char *__doc_mitsuba_operator_lshift_13 = R"doc(Return a string representation of the ray)doc";
+static const char *__doc_mitsuba_operator_lshift_13 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_14 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_14 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_15 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_15 = R"doc(Return a string representation of the ray)doc";
 
 static const char *__doc_mitsuba_operator_lshift_16 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_17 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_18 = R"doc(//! @{ \name Misc implementations)doc";
+static const char *__doc_mitsuba_operator_lshift_18 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_19 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_20 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_20 = R"doc(//! @{ \name Misc implementations)doc";
 
 static const char *__doc_mitsuba_operator_lshift_21 = R"doc()doc";
 
@@ -13110,15 +13084,19 @@ static const char *__doc_mitsuba_operator_lshift_25 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_26 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_27 = R"doc(Return a string representation of SGGXPhaseFunction parameters)doc";
+static const char *__doc_mitsuba_operator_lshift_27 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_28 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_29 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_29 = R"doc(Return a string representation of SGGXPhaseFunction parameters)doc";
 
 static const char *__doc_mitsuba_operator_lshift_30 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_31 = R"doc(//! @{ \name Misc implementations)doc";
+static const char *__doc_mitsuba_operator_lshift_31 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_32 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_33 = R"doc(//! @{ \name Misc implementations)doc";
 
 static const char *__doc_mitsuba_operator_sub = R"doc(Subtracting two points should always yield a vector)doc";
 
@@ -13793,6 +13771,10 @@ context for the current scope.)doc";
 static const char *__doc_mitsuba_scoped_optix_context_scoped_optix_context = R"doc()doc";
 
 static const char *__doc_mitsuba_set_file_resolver = R"doc(Set the global file resolver instance (this is a process-wide setting))doc";
+
+static const char *__doc_mitsuba_set_impl = R"doc()doc";
+
+static const char *__doc_mitsuba_set_impl_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_set_logger = R"doc(Set the logger instance (this is a process-wide setting))doc";
 
