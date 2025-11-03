@@ -13,10 +13,9 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * \brief Conditional 1D irregular distribution
  *
- *
- * Similar to the irregular 1D distribution, but this class represents an
- * N-Dimensional irregular one (with the extra conditional dimensions being also
- * irregular).
+ * Similarly to the irregular 1D distribution, this class represents a
+ * 1-dimensional irregular distribution. It differs in the fact that it has N-1
+ * extra dimensions on which it is conditioned.
  *
  * As an example, assume you have a 3D distribution P(x,y,z), with leading
  * dimension X. This class would allow you to obtain the linear interpolated
@@ -24,12 +23,12 @@ NAMESPACE_BEGIN(mitsuba)
  * sample from the distribution P(x|Y=y,Z=z) for a given \c y and \c z.
  *
  * It assumes every conditioned PDF has the same size.
- * If the user requests a method that needs the integral, it will schedule its
- * computation.
+ *
+ * If the user requests a method that needs the integral, it will automatically
+ * schedule its computation on-the-fly.
  *
  * This distribution can be used in the context of spectral rendering, where
  * each wavelength conditions the underlying distribution.
- *
  */
 template <typename Value>
 class ConditionalIrregular1D : drjit::TraversableBase {
@@ -51,15 +50,17 @@ public:
     ConditionalIrregular1D() {};
 
     /**
-     * \brief Construct a conditional irregular 1D distribution
+     * \brief Construct a conditional irregular 1D distribution.
      *
      * \param nodes
-     *      Points where the leading dimension N is defined
+     *     Points where the leading dimension N is defined.
+     *
      * \param pdf
-     *      Flattened array of shape [D1, D2, ..., Dn, N], containing the PDFs
+     *     Flattened array of shape [D1, D2, ..., Dn, N], containing the PDFs.
+     *
      * \param nodes_cond
-     *      Arrays containing points where each conditional dimension is
-     * evaluated
+     *     Arrays containing points where each conditional dimension is
+     *     evaluated.
      */
     ConditionalIrregular1D(const FloatStorage &nodes, const FloatStorage &pdf,
                            const std::vector<FloatStorage> &nodes_cond)
@@ -76,16 +77,18 @@ public:
     }
 
     /**
-     * \brief Construct a conditional irregular 1D distribution
+     * \brief Construct a conditional irregular 1D distribution.
      *
      * \param nodes
-     *      Points where the leading dimension N is defined
+     *     Points where the leading dimension N is defined.
+     *
      * \param pdf
-     *      Tensor containing the values of the PDF of shape [D1, D2, ..., Dn,
-     * N]
+     *     Tensor containing the values of the PDF of shape [D1, D2, ..., Dn,
+     *     N].
+     *
      * \param nodes_cond
-     *      Arrays containing points where each conditional dimension is
-     * evaluated
+     *     Arrays containing points where each conditional dimension is
+     *     evaluated.
      */
     ConditionalIrregular1D(const FloatStorage &nodes, const TensorXf &pdf,
                            const std::vector<FloatStorage> &nodes_cond)
@@ -95,17 +98,22 @@ public:
      * \brief Construct a conditional irregular 1D distribution
      *
      * \param nodes
-     *    Points where the PDFs are evaluated
+     *     Points where the PDFs are evaluated.
+     *
      * \param size_nodes
-     *    Size of the nodes array
+     *     Size of the nodes array.
+     *
      * \param pdf
-     *    Flattened array of shape [D1, D2, ..., Dn, N], containing the PDFs
+     *     Flattened array of shape [D1, D2, ..., Dn, N], containing the PDFs.
+     *
      * \param size_pdf
-     *    Size of the pdf array
+     *     Size of the pdf array.
+     *
      * \param nodes_cond
-     *    Arrays containing points where the conditional is evaluated
+     *     Arrays containing points where the conditional is evaluated.
+     *
      * \param sizes_cond
-     *    Array with the sizes of the conditional nodes arrays
+     *     Array with the sizes of the conditional nodes arrays.
      */
     ConditionalIrregular1D(const ScalarFloat *nodes, const size_t size_nodes,
                            const ScalarFloat *pdf, const size_t size_pdf,
@@ -129,7 +137,9 @@ public:
     }
 
     /**
-     * \brief Update the internal state. Must be invoked when changing the pdf.
+     * \brief Update the internal state.
+     *
+     * Must be invoked when PDF is changed.
      */
     void update() {
         if constexpr (dr::is_jit_v<Float>) {
@@ -142,16 +152,16 @@ public:
 
     /**
      * \brief Evaluate the unnormalized probability density function (PDF) at
-     * position \c pos, conditioned on \c cond
+     * position \c pos, conditioned on \c cond.
      *
      * \param pos
-     *  Position where the PDF is evaluated
+     *     Position where the PDF is evaluated.
+     *
      * \param cond
-     *  Array of values where the conditionals are evaluated
-     * \param active
-     *  Mask of active lanes
+     *     Array of values where the conditionals are evaluated.
+     *
      * \return
-     *  The value of the PDF at position \c pos, conditioned on \c cond
+     *     The value of the PDF at position \c pos, conditioned on \c cond.
      */
     Value eval_pdf(Value pos, std::vector<Value> &cond,
                    Mask active = true) const {
@@ -165,17 +175,17 @@ public:
 
     /**
      * \brief Evaluate the normalized probability density function (PDF) at
-     * position \c pos, conditioned on \c cond
+     * position \c pos, conditioned on \c cond.
      *
      * \param pos
-     *  Position where the PDF is evaluated
+     *     Position where the PDF is evaluated.
+     *
      * \param cond
-     *  Array of values where the conditionals are evaluated
-     * \param active
-     *  Mask of active lanes
+     *     Array of values where the conditionals are evaluated.
+     *
      * \return
-     *  The value of the normalized PDF at position \c pos, conditioned
-     * on \c cond
+     *     The value of the normalized PDF at position \c pos, conditioned
+     *     on \c cond.
      */
     Value eval_pdf_normalized(Value pos, std::vector<Value> &cond,
                               Mask active = true) const {
@@ -191,18 +201,18 @@ public:
 
     /**
      * \brief Sample the distribution given a uniform sample \c u, conditioned
-     * on \c cond
+     * on \c cond.
      *
      * \param u
-     *  Uniform sample
+     *     Uniform sample.
+     *
      * \param cond
-     *  Conditionals where the PDF is sampled
-     * \param active
-     *  Mask of active lanes
+     *     Conditionals where the PDF is sampled.
+     *
      * \return
-     *  A pair where the first element is the sampled position and the
-     * second element the value of the normalized PDF at that position
-     * conditioned on \c cond
+     *     A pair where the first element is the sampled position and the
+     *     second element the value of the normalized PDF at that position
+     *     conditioned on \c cond.
      */
     std::pair<Value, Value> sample_pdf(Value u, std::vector<Value> &cond,
                                        Mask active) const {
@@ -229,12 +239,13 @@ public:
     }
 
     /**
-     * \brief Return the integral of the distribution conditioned on \c cond
+     * \brief Return the integral of the distribution conditioned on \c cond.
      *
      * \param cond
-     *   Conditionals that define the distribution
+     *     Conditionals that define the distribution.
+     *
      * \return
-     *   The integral of the distribution
+     *     The integral of the distribution.
      */
     Value integral(std::vector<Value> &cond) const {
         ensure_cdf_computed();
@@ -244,23 +255,23 @@ public:
         return integral;
     }
 
-    /// Return the underlying tensor storing the distribution values
+    /// Return the underlying tensor storing the distribution values.
     TensorXf &pdf() { return m_pdf; }
     const TensorXf &pdf() const { return m_pdf; }
 
-    /// Return the nodes of the underlying discretization
+    /// Return the nodes of the underlying discretization.
     FloatStorage &nodes() { return m_nodes; }
     const FloatStorage &nodes() const { return m_nodes; }
 
-    /// Return the conditional nodes of the underlying discretization
+    /// Return the conditional nodes of the underlying discretization.
     std::vector<FloatStorage> &nodes_cond() { return m_nodes_cond; }
     const std::vector<FloatStorage> &nodes_cond() const { return m_nodes_cond; }
 
-    /// Return the CDF
+    /// Return the CDF.
     FloatStorage &cdf_array() { return m_cdf; }
     const FloatStorage &cdf_array() const { return m_cdf; }
 
-    /// Return the integral array
+    /// Return the integral array.
     FloatStorage &integral_array() { return m_integral; }
     const FloatStorage &integral_array() const { return m_integral; }
 
@@ -629,7 +640,7 @@ std::ostream &operator<<(std::ostream &os,
 
 /**
  *
- * \brief Conditional 1D regular distribution
+ * \brief Conditional 1D regular distribution.
  *
  *
  * Similar to the regular 1D distribution, but this class represents an
@@ -673,13 +684,16 @@ public:
      * \brief Construct a conditional regular 1D distribution
      *
      * \param pdf
-     *  Flattened array of shape [D1, D2, ..., Dn, N] containing the PDFs
+     *     Flattened array of shape [D1, D2, ..., Dn, N] containing the PDFs.
+     *
      * \param range
-     *  Range where the leading dimension N is defined
+     *     Range where the leading dimension N is defined.
+     *
      * \param range_cond
-     *  Array of ranges where the dimensional conditionals are defined
+     *     Array of ranges where the dimensional conditionals are defined.
+     *
      * \param size_cond
-     *  Array with the size of each conditional dimension
+     *     Array with the size of each conditional dimension.
      */
     ConditionalRegular1D(const FloatStorage &pdf, const ScalarVector2f &range,
                          const std::vector<ScalarVector2f> &range_cond,
@@ -712,14 +726,16 @@ public:
     }
 
     /**
-     * \brief Construct a conditional regular 1D distribution
+     * \brief Construct a conditional regular 1D distribution.
      *
      * \param pdf
-     *  Tensor containing the values of the PDF of shape [D1, D2, ..., Dn, N]
+     *     Tensor containing the values of the PDF of shape [D1, D2, ..., Dn, N].
+     *
      * \param range
-     *  Range where the leading dimension N is defined
+     *     Range where the leading dimension N is defined.
+     *
      * \param range_cond
-     *  Array of ranges where the dimensional conditionals are defined
+     *     Array of ranges where the dimensional conditionals are defined.
      */
     ConditionalRegular1D(const TensorXf &pdf, const ScalarVector2f &range,
                          const std::vector<ScalarVector2f> &range_cond)
@@ -797,14 +813,13 @@ public:
 
     /**
      * \brief Evaluate the unnormalized probability density function (PDF) at
-     * position \c x, conditioned on \c cond
+     * position \c x, conditioned on \c cond.
      *
      * \param x
-     *  Position where the PDF is evaluated
+     *     Position where the PDF is evaluated.
+     *
      * \param cond
-     *  Conditionals where the PDF is evaluated
-     * \param active
-     *  Mask of active lanes
+     *     Conditionals where the PDF is evaluated.
      */
     Value eval_pdf(Value x, std::vector<Value> &cond,
                    Mask active = true) const {
@@ -820,14 +835,12 @@ public:
 
     /**
      * \brief Evaluate the normalized probability density function (PDF) at
-     * position \c x, conditioned on \c cond
+     * position \c x, conditioned on \c cond.
      *
      * \param x
-     *  Position where the PDF is evaluated
+     *     Position where the PDF is evaluated.
      * \param cond
-     *  Conditionals where the PDF is evaluated
-     * \param active
-     *  Mask of active lanes
+     *     Conditionals where the PDF is evaluated.
      */
     Value eval_pdf_normalized(Value x, std::vector<Value> &cond,
                               Mask active = true) const {
@@ -844,14 +857,13 @@ public:
 
     /**
      * \brief Sample the distribution given a uniform sample \c u, conditioned
-     * on \c cond
+     * on \c cond.
      *
      * \param u
-     *  Uniform sample
+     *     Uniform sample.
+     *
      * \param cond
-     *  Conditionals where the PDF is sampled
-     * \param active
-     *  Mask of active lanes
+     *     Conditionals where the PDF is sampled.
      */
     std::pair<Value, Value> sample_pdf(Value u, std::vector<Value> &cond,
                                        Mask active) const {
@@ -1109,7 +1121,7 @@ private:
                   (y0 -
                    dr::safe_sqrt(dr::fmadd(y0, y0, 2.f * sample * (y1 - y0)))) *
                   dr::rcp(y0 - y1),
-              t_const = sample * dr::rcp(y0),
+              t_const = sample / y0,
               t       = dr::select(y0 == y1, t_const, t_linear);
 
         Value integral = 0.0;
