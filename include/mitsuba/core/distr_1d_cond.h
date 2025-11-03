@@ -569,7 +569,7 @@ private:
                 ScalarFloat x0 = nodes[j];
                 ScalarFloat x1 = nodes[j + 1];
 
-                if (x0 <= x1)
+                if (x0 >= x1)
                     Log(Error, "ConditionalIrregular1D: Nodes must be strictly "
                                "increasing");
 
