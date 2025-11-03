@@ -442,14 +442,14 @@ extern "C" {
         }
 
 /**
- * \brief Macro, generating the both the implementations of the
- *     ``traverse_1_cb_ro`` and ``traverse_1_cb_rw`` methods.
+ * \brief Macro, generating the implementations of the ``traverse_1_cb_ro`` and
+ *     ``traverse_1_cb_rw`` methods.
  *
  * The first argument should be the base class, from which the current class
  * inherits. The other arguments should list all members of that class, which
  * are supposed to be read and write traversable.
  *
- * This macro differs to ``DR_TRAVERSE_CB`` in that the functions it generates
+ * This macro differs from ``DR_TRAVERSE_CB`` in that the functions it generates
  * do not traverse the object if the flag ``JitFlag::EnableObjectTraversal``
  * is not set. This is required, to circumvent issues where scene variables would
  * accidentally be added to loop states, and dispatch arguments.
@@ -460,8 +460,8 @@ public:                                                                        \
     MI_TRAVERSE_CB_RW(Base, __VA_ARGS__)
 
 /**
- * \brief Macro, generating the both the implementations of the
- *     ``traverse_1_cb_ro`` and ``traverse_1_cb_rw`` methods.
+ * \brief Macro, generating the implementations of the ``traverse_1_cb_ro`` and
+ *     ``traverse_1_cb_rw`` methods.
  *
  * In contrast to ``MI_TRAVERSE_CB``, this macro only declares the functions and
  * ``MI_IMPLEMENT_TRAVERSE_CB`` implements them. Use this macro if the class is
@@ -483,10 +483,10 @@ public:                                                                        \
             void *payload, drjit::detail::traverse_callback_rw fn) override;
 
 /**
- * \brief Macro, generating the both the implementations of the
- *     ``traverse_1_cb_ro`` and ``traverse_1_cb_rw`` methods.
+ * \brief Macro, generating the implementations of the ``traverse_1_cb_ro`` and
+ *     ``traverse_1_cb_rw`` methods.
  *
- * In contrast to ``MI_TRAVERSE_CB``, this macro generates the function implementation,
+ * In contrast to ``MI_TRAVERSE_CB``, this macro generates the implementations
  * for the functions declared by ``MI_DECLARE_TRAVERSE_CB``. Use this macro if
  * the class is declared in a header file and implemented in a source file.
  */
@@ -504,7 +504,7 @@ public:                                                                        \
             if (!jit_flag(JitFlag::EnableObjectTraversal))                     \
                 return;                                                        \
                                                                                \
-            if constexpr (!std ::is_same_v<Base, drjit ::TraversableBase>)     \
+            if constexpr (!std::is_same_v<Base, drjit::TraversableBase>)       \
                 Base::traverse_1_cb_ro(payload, fn);                           \
                                                                                \
             drjit::traverse_1(this->traverse_1_cb_fields_(),                   \
@@ -525,7 +525,7 @@ public:                                                                        \
             if (!jit_flag(JitFlag::EnableObjectTraversal))                     \
                 return;                                                        \
                                                                                \
-            if constexpr (!std ::is_same_v<Base, drjit ::TraversableBase>)     \
+            if constexpr (!std::is_same_v<Base, drjit::TraversableBase>)      \
                 Base::traverse_1_cb_rw(payload, fn);                           \
             drjit::traverse_1(this->traverse_1_cb_fields_(),                   \
                               [payload, fn](auto &x) {                         \
