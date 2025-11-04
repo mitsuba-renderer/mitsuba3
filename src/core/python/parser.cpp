@@ -156,8 +156,9 @@ static void parse_dict_impl(ParserState &state, const nb::dict &d,
             // specified. Otherwise, still set the key as 'id' in the Properties
             // object for convenience (to more easily identify scene objects).
             bool has_id = child_dict.contains("id");
-            std::string_view id =
-                has_id ? nb::cast<std::string_view>(child_dict["id"]) : path;
+            std::string_view id{};
+            if (has_id)
+                id = nb::cast<std::string_view>(child_dict["id"]);
 
             // Create child node
             size_t child_idx = state.nodes.size();
