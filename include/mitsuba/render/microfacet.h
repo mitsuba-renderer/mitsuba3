@@ -61,7 +61,7 @@ MI_INLINE std::ostream &operator<<(std::ostream &os, MicrofacetType tp) {
  *     by Eric Heitz
  */
 template <typename Float, typename Spectrum>
-class MicrofacetDistribution {
+class MicrofacetDistribution : drjit::TraversableBase {
 public:
     MI_IMPORT_TYPES()
 
@@ -442,6 +442,8 @@ protected:
     MicrofacetType m_type;
     Float m_alpha_u, m_alpha_v;
     bool  m_sample_visible;
+
+    MI_TRAVERSE_CB(drjit::TraversableBase, m_alpha_u, m_alpha_v)
 };
 
 template <typename Float, typename Spectrum>

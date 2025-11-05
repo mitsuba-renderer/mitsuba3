@@ -10,7 +10,7 @@ template <typename BSphere, typename Ray> auto bind_bsphere(nb::module_ &m, cons
         using Float = typename BSphere::Float;
 
         MI_PY_CHECK_ALIAS(BSphere, name) {
-        nb::class_<BSphere>(m, name, D(BoundingSphere))
+        nb::class_<BSphere, drjit::TraversableBase>(m, name, D(BoundingSphere))
             .def(nb::init<>(), D(BoundingSphere, BoundingSphere))
             .def(nb::init<Point, Float>(), D(BoundingSphere, BoundingSphere, 2))
             .def(nb::init<const BSphere &>())

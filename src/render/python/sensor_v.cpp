@@ -205,6 +205,4 @@ MI_PY_EXPORT(Sensor) {
     m.def("orthographic_projection", &orthographic_projection<Float>,
           "film_size"_a, "crop_size"_a, "crop_offset"_a, "near_clip"_a, "far_clip"_a,
           D(orthographic_projection));
-
-    dr::bind_traverse(sensor);
 }
