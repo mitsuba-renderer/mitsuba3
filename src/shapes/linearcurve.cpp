@@ -109,9 +109,9 @@ points and increasing radii::
             'filename': 'curves.txt'
         },
 
-.. note:: The backfaces of the curves are culled. It is therefore impossible to
-          intersect the curve with a ray that's origin is inside of the curve.
- */
+.. note:: The backfaces of curves are always culled. It is therefore impossible
+          to intersect the curve with a ray that's origin is inside of the curve.
+*/
 
 template <typename Float, typename Spectrum>
 class LinearCurve final : public Shape<Float, Spectrum> {
