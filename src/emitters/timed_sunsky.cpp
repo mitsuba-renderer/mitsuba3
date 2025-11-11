@@ -325,7 +325,7 @@ private:
 
         Float remaped_time = (time - m_shutter_open) * m_inv_shutter_open_time;
 
-        Float day = remaped_time * (m_nb_days - dr::Epsilon<Float>);
+        Float day = remaped_time * dr::maximum(m_nb_days - dr::Epsilon<Float>, 0.f);
         Int32 int_day = dr::floor2int<Int32>(day);
 
         date_time.day = m_start_date.day + int_day;
@@ -414,10 +414,10 @@ private:
 
 
     ref<SamplingTexture> extract_mpdf_weights(const TensorXf &sampling_weights_data) const {
-		Float turb_idx_f = dr::clip(m_turbidity - 1.f, 0.f, TURBIDITY_LVLS);
-		TensorXf res = dr::take_interp(sampling_weights_data, turb_idx_f, 1);
+        Float turb_idx_f = dr::clip(m_turbidity - 1.f, 0.f, TURBIDITY_LVLS);
+        TensorXf res = dr::take_interp(sampling_weights_data, turb_idx_f, 1);
 
-		return new SamplingTexture(res, true, true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
+        return new SamplingTexture(res, true, true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
     }
 
     template<typename Dataset>

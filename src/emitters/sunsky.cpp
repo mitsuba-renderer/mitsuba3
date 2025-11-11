@@ -265,8 +265,8 @@ public:
         TensorXf temp_sky_radiance = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
         m_sky_radiance = bezier_interp(temp_sky_radiance, sun_eta);
 	
-		// =============== Get sampling params ================
-		m_mpdf_weights = extract_mpdf_weights(sun_eta, m_sampling_params);
+        // =============== Get sampling params ================
+        m_mpdf_weights = extract_mpdf_weights(sun_eta, m_sampling_params);
 
         // =============== Get irradiance data ================
         std::tie(m_sky_sampling_w, m_spectral_distr, m_sun_irrad) = update_irradiance_data();
@@ -409,9 +409,9 @@ private:
 
     SamplingWeights extract_mpdf_weights(const Float& sun_eta, const TensorXf &sampling_weights_data) const {
 
-		Float eta_idx_f = dr::clip((sun_eta - MIN_SAMPLING_ETA) / (MAX_SAMPLING_ETA - MIN_SAMPLING_ETA),
-									0.f, MPDF_ELEVATION_COUNT);
-		Float turb_idx_f = dr::clip(m_turbidity - 1.f, 0.f, (TURBIDITY_LVLS - 1.f));
+		Float eta_idx_f = (MPDF_ELEVATION_COUNT - 1) * dr::clip((sun_eta - MIN_SAMPLING_ETA) / (MAX_SAMPLING_ETA - MIN_SAMPLING_ETA),
+									0.f, 1.f);
+		Float turb_idx_f = dr::clip(m_turbidity - 1.f, 0.f, TURBIDITY_LVLS - 1.f);
 
 		TensorXf res = dr::take_interp(sampling_weights_data, eta_idx_f);
 				 res = dr::take_interp(res, turb_idx_f);

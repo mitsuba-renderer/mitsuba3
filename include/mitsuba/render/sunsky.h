@@ -137,8 +137,7 @@ struct DateTimeRecord {
         if (dr::any(elapsed_jd_start > elapsed_jd_end))
             Throw("Start date is after end date");
 
-        // Add one to count the end
-        return dr::floor2int<Int32>(elapsed_jd_end - elapsed_jd_start);
+        return dr::maximum(dr::floor2int<Int32>(elapsed_jd_end - elapsed_jd_start), 1);
     }
 
     template<typename OtherFloat>
@@ -328,9 +327,9 @@ public:
                                       Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
         const Point2f sun_angles = get_sun_angles(time);
-        active &= sun_angles.y() <= 0.5f * dr::Pi<Float>;
+        active &= sun_angles.x() <= 0.5f * dr::Pi<Float>;
 
-        const Float sky_sampling_w = get_sky_sampling_weight(sun_angles.y(), active);
+        const Float sky_sampling_w = get_sky_sampling_weight(sun_angles.x(), active);
 
         // 1. Sample spatial component
         Point2f offset = warp::square_to_uniform_disk_concentric(sample2);
@@ -399,9 +398,9 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         const Point2f sun_angles = get_sun_angles(it.time);
-        active &= sun_angles.y() <= 0.5f * dr::Pi<Float>;
+        active &= sun_angles.x() <= 0.5f * dr::Pi<Float>;
 
-        const Float sky_sampling_w = get_sky_sampling_weight(sun_angles.y(), active);
+        const Float sky_sampling_w = get_sky_sampling_weight(sun_angles.x(), active);
 
         Mask pick_sky = sample.x() < sky_sampling_w;
 
@@ -443,7 +442,9 @@ public:
                     Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
         const Point2f sun_angles = get_sun_angles(ds.time);
-        const Float sky_sampling_w = get_sky_sampling_weight(sun_angles.y(), active);
+        active &= sun_angles.x() <= 0.5f * dr::Pi<Float>;
+
+        const Float sky_sampling_w = get_sky_sampling_weight(sun_angles.x(), active);
 
         Vector3f local_dir = dr::normalize(m_to_world.value().inverse() * ds.d);
         Float sky_pdf, sun_pdf;
@@ -801,7 +802,7 @@ protected:
         if (dr::any_or<true>((!sample_trunc_gaussian) & active)) {
             Float weight = weights[1];
 
-            Float phi = sample.y() * dr::TwoPi<Float>;
+            Float phi = (sample.y() - 0.5f) * dr::TwoPi<Float>;
 
             Float cos_theta = sample.x();
             Float denum = dr::fmadd(weight, weight, -1.f);
@@ -814,8 +815,8 @@ protected:
         }
 
         if (dr::any_or<true>(sample_trunc_gaussian & active)) {
-            ScalarPoint2f min = ScalarPoint2f(0.f, 0.f),
-                          max = ScalarPoint2f(1.f, dr::TwoPi<Float>);
+            ScalarPoint2f min = ScalarPoint2f(0.f, -dr::Pi<Float>),
+                          max = ScalarPoint2f(1.f, dr::Pi<Float>);
         
             Point2f mu = Point2f(weights[2], 0.f),
                     sigma = Point2f(weights[3], weights[4]);
@@ -851,15 +852,15 @@ protected:
             dr::cos(angles.x()), // cos_theta
             angles.y()  // phi
         };
-        
-        // Map from actual sun azimuth to phi_sun = 0 
-        uv.y() -= sun_angles.y();
-        dr::masked(uv.y(), uv.y() < 0) += dr::TwoPi<Float>;
-        dr::masked(uv.y(), uv.y() > dr::TwoPi<Float>) -= dr::TwoPi<Float>;
 
         active &= (0.f <= uv.x()) & (uv.x() <= 1.f);
 
         SamplingWeights weights = get_sampling_weights(sun_angles.x(), active);
+
+        // Map from actual sun azimuth to phi_sun = 0 
+        uv.y() -= sun_angles.y();
+        dr::masked(uv.y(), uv.y() < -dr::Pi<Float>) += dr::TwoPi<Float>;
+        dr::masked(uv.y(), uv.y() > dr::Pi<Float>) -= dr::TwoPi<Float>;
 
         Float warp_1_pdf = 0.f, warp_2_pdf = 0.f;
         {
@@ -872,8 +873,8 @@ protected:
         }
 
         {
-            ScalarPoint2f min = ScalarPoint2f(0.f, 0.f),
-                          max = ScalarPoint2f(1.f, dr::TwoPi<Float>);
+            ScalarPoint2f min = ScalarPoint2f(0.f, -dr::Pi<Float>),
+                          max = ScalarPoint2f(1.f, dr::Pi<Float>);
         
             Point2f mu = Point2f(weights[2], 0.f),
                     sigma = Point2f(weights[3], weights[4]);
@@ -928,7 +929,7 @@ protected:
         Float cosine_cutoff = dr::cos(m_sun_half_aperture);
         Float sun_pdf = warp::square_to_uniform_cone_pdf(
             local_sun_frame.to_local(local_dir), cosine_cutoff);
-        sun_pdf = dr::select(hit_sun & active, sun_pdf, 0.f);
+        dr::masked(sun_pdf, !(hit_sun & active)) = 0.f;
 
         return {sky_pdf, sun_pdf};
     }
