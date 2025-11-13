@@ -279,7 +279,7 @@ class OcSpaceDistr(BaseGuidingDistr):
         ) - 1)
         active = (points_idx != INVALID_IDX)
 
-        dr.eval(aabb_buffer, aabb_buffer_next, points_idx, leaves, active, leaves_count)
+        dr.eval(aabb_buffer, aabb_buffer_next, points_idx, leaves, active)
 
         if self.debug_logs:
             mi.Log(mi.LogLevel.Debug, "Building octree guiding distribution:")
@@ -306,9 +306,7 @@ class OcSpaceDistr(BaseGuidingDistr):
             y_offset = dr.select(points.y > aabb_middle_pt.y, 1, 0)
             z_offset = dr.select(points.z > aabb_middle_pt.z, 1, 0)
             offset = OcSpaceDistr.split_offset(x_offset, y_offset, z_offset)
-            active_node_count_opaque = dr.opaque(mi.UInt32, active_node_count)
-            points_idx[active] = mi.Int32(points_idx + offset * active_node_count_opaque)
-            points_idx = mi.UInt32(points_idx) #FIXME
+            points_idx[active] = points_idx + offset * active_node_count_opaque
 
             ####################################
             # Determine which nodes are leaves #
