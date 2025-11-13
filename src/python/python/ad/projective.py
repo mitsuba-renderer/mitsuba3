@@ -400,7 +400,6 @@ class ProjectiveDetail():
 
         self.guiding_distr = mi.ad.OcSpaceDistr(
             parent.octree_max_depth,
-            parent.octree_max_leaf_cnt,
             parent.octree_extra_leaf_sample,
             eval_indirect_integrand_handle,
             parent.octree_construction_mean_mult,

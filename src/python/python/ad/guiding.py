@@ -143,11 +143,11 @@ class OcSpaceDistr(BaseGuidingDistr):
     Octree space partitioned distribution.
     """
 
-    def __init__(self, max_depth, max_leaf_count, extra_spc, eval_indirect_integrand_handle,
+    def __init__(self, max_depth, extra_spc, eval_indirect_integrand_handle,
                  clamp_input_mass_thres, clamp_mass_thres, prepartition_x_slices,
                  scatter_inc=False, scale_mass=False, debug_logs=False) -> None:
         self.max_depth = max_depth
-        self.max_leaf_count = max_leaf_count
+        self.max_leaf_count = 8 ** max_depth
         self.extra_spc = extra_spc
         self.eval_indirect_integrand_handle = eval_indirect_integrand_handle
         self.prepartition_x_slices = prepartition_x_slices
@@ -380,13 +380,6 @@ class OcSpaceDistr(BaseGuidingDistr):
 
             if active_node_count == 0:
                 break
-
-            if leaves_count_scalar + active_node_count * 8 > self.max_leaf_count:
-                raise RuntimeError(
-                    "OcSpaceDistr: Number of leaf nodes exceeds "
-                    "'max_leaf_count'. Please increase 'max_leaf_count', "
-                    "decrease 'max_depth', or increase 'mass_construction_thres'."
-                )
 
         if self.debug_logs:
             mi.Log(mi.LogLevel.Debug, "Finished building octree.")
