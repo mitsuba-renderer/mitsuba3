@@ -322,10 +322,11 @@ class OcSpaceDistr(BaseGuidingDistr):
             #########################
             # Updates leaves buffer #
             #########################
-            new_leaf_count = dr.count(is_leaf)
-            new_leaf_count_scalar = dr.slice(new_leaf_count)
+            leaf_idx = dr.compress(is_leaf)
+            new_leaf_count_scalar = dr.width(leaf_idx)
+            new_leaf_count = dr.opaque(mi.UInt32, new_leaf_count_scalar)
+
             if new_leaf_count_scalar > 0:
-                leaf_idx = dr.compress(is_leaf)
                 leaf_aabb_min = dr.gather(mi.Point3f, aabb_buffer_next, leaf_idx * 2 + 0)
                 leaf_aabb_max = dr.gather(mi.Point3f, aabb_buffer_next, leaf_idx * 2 + 1)
 
@@ -333,7 +334,7 @@ class OcSpaceDistr(BaseGuidingDistr):
                 dr.scatter(leaves, leaf_aabb_min, leaves_count * 2 + idx * 2 + 0, mode=dr.ReduceMode.NoConflicts)
                 dr.scatter(leaves, leaf_aabb_max, leaves_count * 2 + idx * 2 + 1, mode=dr.ReduceMode.NoConflicts)
 
-                leaves_count += dr.opaque(mi.UInt32, new_leaf_count_scalar)
+                leaves_count += new_leaf_count
 
             #############################################
             # Update `aabb_buffer` (for next iteration) #
