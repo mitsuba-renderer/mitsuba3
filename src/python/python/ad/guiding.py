@@ -454,8 +454,6 @@ class OcSpaceDistr(BaseGuidingDistr):
 
             valid_idx = dr.compress(valid_mask)
             filtered_points = dr.gather(mi.Point3f, points, valid_idx)
-
-            del points, mass, valid_idx
         else:
             valid_mask = mass > self.mass_contruction_thres
             if self.debug_logs:
@@ -485,8 +483,6 @@ class OcSpaceDistr(BaseGuidingDistr):
                 filtered_points,
                 dr.arange(mi.UInt32, dr.minimum(counter, self.max_leaf_count))
             )
-
-            del points, mass, valid_mask, compact_idx
 
         if dr.width(filtered_points) == 0:
             raise RuntimeError(
@@ -540,12 +536,8 @@ class OcSpaceDistr(BaseGuidingDistr):
             upper = dr.gather(mi.Point3f, upper, valid_idx)
             box_mass = dr.gather(mi.Float, box_mass, valid_idx)
 
-            del valid_idx, valid_mask
-
         if self.scale_mass > 0:
             box_mass = dr.power(box_mass, 1.0 - self.scale_mass)
-
-        del vol, query_mass, filtered_points
 
         self.pmf = mi.DiscreteDistribution(box_mass)
         self.lower = lower
