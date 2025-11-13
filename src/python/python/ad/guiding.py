@@ -396,10 +396,9 @@ class OcSpaceDistr(BaseGuidingDistr):
         mass per leaf.
         """
         leaf_count = dr.width(aabb_min)
-        dr.make_opaque(leaf_count)
 
         samples_count = self.extra_spc
-        query_point = dr.zeros(mi.Point3f, leaf_count * samples_count)
+        query_point = dr.zeros(mi.Point3f)
         aabb_min_rep = dr.repeat(aabb_min, samples_count)
         aabb_max_rep = dr.repeat(aabb_max, samples_count)
 
@@ -411,10 +410,7 @@ class OcSpaceDistr(BaseGuidingDistr):
 
         value, _, _ = self.eval_indirect_integrand_handle(query_point, sampler_extra)
 
-        mass = dr.zeros(mi.Float, leaf_count)
-        scatter_idx = dr.arange(mi.UInt32, leaf_count)
-        scatter_idx = dr.repeat(scatter_idx, samples_count)
-        dr.scatter_reduce(dr.ReduceOp.Add, mass, dr.max(value), scatter_idx)
+        mass = dr.block_sum(dr.max(value), samples_count)
         mass /= float(samples_count)
 
         return mass
