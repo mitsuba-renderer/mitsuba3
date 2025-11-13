@@ -182,14 +182,15 @@ class OcSpaceDistr(BaseGuidingDistr):
             aabb_min: mi.Point3f,
             aabb_max: mi.Point3f,
             aabb_middle: mi.Point3f,
-            node_idx: mi.UInt32
+            node_idx: mi.UInt32,
+            node_idx_width: mi.UInt32
         ):
         """
         Splits an AABB into 8 sub-nodes. The results are written to `buffer`.
         """
 
         def write_aabb(aabb_min: mi.Point3f, aabb_max: mi.Point3f, offset: int):
-            buffer_offset = dr.opaque(mi.UInt32, dr.width(node_idx) * 6 * offset)
+            buffer_offset = node_idx_width * 6 * offset
 
             dr.scatter(buffer, aabb_min.x, node_idx * 6 + buffer_offset + 0, mode=dr.ReduceMode.NoConflicts)
             dr.scatter(buffer, aabb_min.y, node_idx * 6 + buffer_offset + 1, mode=dr.ReduceMode.NoConflicts)
@@ -291,10 +292,11 @@ class OcSpaceDistr(BaseGuidingDistr):
             # Split each node (`aabb_buffer`) into 8 sub-nodes (`aabb_buffer_next`) #
             #########################################################################
             idx = dr.arange(mi.UInt32, active_node_count)
+            active_node_count_opaque = dr.opaque(mi.UInt32, active_node_count)
             aabb_min, aabb_max = OcSpaceDistr.aabbs(aabb_buffer, idx)
             aabb_middle = (aabb_min + aabb_max) * 0.5
             OcSpaceDistr.split(
-                aabb_buffer_next, aabb_min, aabb_max, aabb_middle, idx)
+                aabb_buffer_next, aabb_min, aabb_max, aabb_middle, idx, active_node_count_opaque)
 
             #########################################
             # Update `points_idx` for new sub-nodes #
