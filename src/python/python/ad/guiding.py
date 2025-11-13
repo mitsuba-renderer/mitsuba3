@@ -396,14 +396,15 @@ class OcSpaceDistr(BaseGuidingDistr):
         mass per leaf.
         """
         leaf_count = dr.width(aabb_min)
-
         samples_count = self.extra_spc
-        query_point = dr.zeros(mi.Point3f)
+
         aabb_min_rep = dr.repeat(aabb_min, samples_count)
         aabb_max_rep = dr.repeat(aabb_max, samples_count)
 
         sampler_extra = mi.load_dict({"type": "independent"})
         sampler_extra.seed(0xffffffff ^ seed, leaf_count * samples_count)
+
+        query_point = dr.zeros(mi.Point3f)
         query_point.x = dr.lerp(aabb_min_rep.x, aabb_max_rep.x, sampler_extra.next_1d())
         query_point.y = dr.lerp(aabb_min_rep.y, aabb_max_rep.y, sampler_extra.next_1d())
         query_point.z = dr.lerp(aabb_min_rep.z, aabb_max_rep.z, sampler_extra.next_1d())
