@@ -191,20 +191,20 @@ class OcSpaceDistr(BaseGuidingDistr):
         def write_aabb(aabb_min: mi.Point3f, aabb_max: mi.Point3f, offset: int):
             buffer_offset = dr.opaque(mi.UInt32, dr.width(node_idx) * 6 * offset)
 
-            dr.scatter(buffer, aabb_min.x, node_idx * 6 + buffer_offset + 0)
-            dr.scatter(buffer, aabb_min.y, node_idx * 6 + buffer_offset + 1)
-            dr.scatter(buffer, aabb_min.z, node_idx * 6 + buffer_offset + 2)
+            dr.scatter(buffer, aabb_min.x, node_idx * 6 + buffer_offset + 0, mode=dr.ReduceMode.NoConflicts)
+            dr.scatter(buffer, aabb_min.y, node_idx * 6 + buffer_offset + 1, mode=dr.ReduceMode.NoConflicts)
+            dr.scatter(buffer, aabb_min.z, node_idx * 6 + buffer_offset + 2, mode=dr.ReduceMode.NoConflicts)
 
-            dr.scatter(buffer, aabb_max.x, node_idx * 6 + buffer_offset + 3)
-            dr.scatter(buffer, aabb_max.y, node_idx * 6 + buffer_offset + 4)
-            dr.scatter(buffer, aabb_max.z, node_idx * 6 + buffer_offset + 5)
+            dr.scatter(buffer, aabb_max.x, node_idx * 6 + buffer_offset + 3, mode=dr.ReduceMode.NoConflicts)
+            dr.scatter(buffer, aabb_max.y, node_idx * 6 + buffer_offset + 4, mode=dr.ReduceMode.NoConflicts)
+            dr.scatter(buffer, aabb_max.z, node_idx * 6 + buffer_offset + 5, mode=dr.ReduceMode.NoConflicts)
 
         x = [aabb_min.x, aabb_middle.x, aabb_max.x]
         y = [aabb_min.y, aabb_middle.y, aabb_max.y]
         z = [aabb_min.z, aabb_middle.z, aabb_max.z]
 
-        part_min = dr.zeros(mi.Vector3f, dr.width(node_idx))
-        part_max = dr.zeros(mi.Vector3f, dr.width(node_idx))
+        part_min = dr.zeros(mi.Vector3f)
+        part_max = dr.zeros(mi.Vector3f)
         for i in range(2):
             for j in range(2):
                 for k in range(2):
@@ -262,20 +262,20 @@ class OcSpaceDistr(BaseGuidingDistr):
         idx = dr.arange(mi.UInt32, active_node_count)
         zero_vec = dr.zeros(mi.Vector3f, active_node_count)
         one_vec = dr.ones(mi.Vector3f, active_node_count)
-        dr.scatter(aabb_buffer, zero_vec, idx * 2 + 0)
-        dr.scatter(aabb_buffer, one_vec,  idx * 2 + 1)
+        dr.scatter(aabb_buffer, zero_vec, idx * 2 + 0, mode=dr.ReduceMode.NoConflicts)
+        dr.scatter(aabb_buffer, one_vec,  idx * 2 + 1, mode=dr.ReduceMode.NoConflicts)
 
         x = dr.linspace(mi.Float, 0, 1, active_node_count + 1)
         idx_x_min = dr.arange(mi.UInt32, active_node_count) # Skip 0
         idx_x_max = dr.arange(mi.UInt32, 1, active_node_count + 1)
 
-        dr.scatter(aabb_buffer, dr.gather(mi.Float, x, idx_x_min), idx * 6 + 0)
-        dr.scatter(aabb_buffer, dr.gather(mi.Float, x, idx_x_max), idx * 6 + 3)
+        dr.scatter(aabb_buffer, dr.gather(mi.Float, x, idx_x_min), idx * 6 + 0, mode=dr.ReduceMode.NoConflicts)
+        dr.scatter(aabb_buffer, dr.gather(mi.Float, x, idx_x_max), idx * 6 + 3, mode=dr.ReduceMode.NoConflicts)
 
-        points_idx = dr.binary_search(
+        points_idx = mi.UInt32(dr.binary_search(
             0, active_node_count,
             lambda index: dr.gather(mi.Float, x, index) < points.x
-        ) - 1
+        ) - 1)
         active = (points_idx != INVALID_IDX)
 
         dr.eval(aabb_buffer, aabb_buffer_next, points_idx, leaves, active, leaves_count)
@@ -329,9 +329,9 @@ class OcSpaceDistr(BaseGuidingDistr):
                 leaf_aabb_min = dr.gather(mi.Point3f, aabb_buffer_next, leaf_idx * 2 + 0)
                 leaf_aabb_max = dr.gather(mi.Point3f, aabb_buffer_next, leaf_idx * 2 + 1)
 
-                idx = dr.arange(mi.UInt32, new_leaf_count_scalar)
-                dr.scatter(leaves, leaf_aabb_min, leaves_count * 2 + idx * 2 + 0)
-                dr.scatter(leaves, leaf_aabb_max, leaves_count * 2 + idx * 2 + 1)
+                idx = dr.arange(mi.UInt32, dr.width(leaf_aabb_min))
+                dr.scatter(leaves, leaf_aabb_min, leaves_count * 2 + idx * 2 + 0, mode=dr.ReduceMode.NoConflicts)
+                dr.scatter(leaves, leaf_aabb_max, leaves_count * 2 + idx * 2 + 1, mode=dr.ReduceMode.NoConflicts)
 
                 leaves_count += dr.opaque(mi.UInt32, new_leaf_count_scalar)
 
@@ -346,8 +346,8 @@ class OcSpaceDistr(BaseGuidingDistr):
                 aabb_next_max = dr.gather(mi.Point3f, aabb_buffer_next, idx * 2 + 1)
 
                 idx = dr.arange(mi.UInt32, new_active_node_count_scalar)
-                dr.scatter(aabb_buffer, aabb_next_min, idx * 2 + 0)
-                dr.scatter(aabb_buffer, aabb_next_max, idx * 2 + 1)
+                dr.scatter(aabb_buffer, aabb_next_min, idx * 2 + 0, mode=dr.ReduceMode.NoConflicts)
+                dr.scatter(aabb_buffer, aabb_next_max, idx * 2 + 1, mode=dr.ReduceMode.NoConflicts)
 
             ######################################
             # Update `points_idx` for new buffer #
