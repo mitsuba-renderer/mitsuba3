@@ -214,10 +214,12 @@ class OcSpaceDistr(BaseGuidingDistr):
                     offset = OcSpaceDistr.split_offset(i, j, k)
                     write_aabb(part_min, part_max, offset)
 
+    #@dr.freeze
     def construct_octree(self, points, log=False):
         """
         Octree construction/partitioning for the given `input` points.
         """
+        #breakpoint()
 
         ###### OVERVIEW ######
         # This method is made of 6 phases:
@@ -404,15 +406,35 @@ class OcSpaceDistr(BaseGuidingDistr):
         sampler_extra = mi.load_dict({"type": "independent"})
         sampler_extra.seed(0xffffffff ^ seed, leaf_count * samples_count)
 
+        #dr.eval()
+        #dr.sync_thread()
+        #end = time.time()
+        #total_runtime = (end - start)*1000
+        #print(f"esitimate_mass.init_sampler: {total_runtime:.3f}[ms]")
+
         query_point = dr.zeros(mi.Point3f)
         query_point.x = dr.lerp(aabb_min_rep.x, aabb_max_rep.x, sampler_extra.next_1d())
         query_point.y = dr.lerp(aabb_min_rep.y, aabb_max_rep.y, sampler_extra.next_1d())
         query_point.z = dr.lerp(aabb_min_rep.z, aabb_max_rep.z, sampler_extra.next_1d())
 
+        #import time
+        #dr.eval()
+        #dr.sync_thread()
+        #start = time.time()
         value, _, _ = self.eval_indirect_integrand_handle(query_point, sampler_extra)
+        #dr.eval(value)
+        #end = time.time()
+        #total_runtime = (end - start)*1000
+        #print(f"esitimate_mass.eval_indirect_integrand: {total_runtime:.3f}[ms]")
 
-        mass = dr.block_sum(dr.max(value), samples_count)
+        mass = dr.block_sum(mi.luminance(value), samples_count)
         mass /= float(samples_count)
+
+        #dr.eval(mass)
+        #end = time.time()
+        #total_runtime = (end - start)*1000
+        #print(f"esitimate_mass.block_sum: {total_runtime:.3f}[ms]")
+        #total_runtime = (end - first_start)*1000
 
         return mass
 
@@ -425,7 +447,13 @@ class OcSpaceDistr(BaseGuidingDistr):
         # Preprocess input points (+ optional mass clamping) #
         ######################################################
 
-        if not self.scatter_inc:
+        import time
+        dr.eval()
+        dr.sync_thread()
+        start = time.time()
+
+
+        if True:
             # Launch a kernel to evaluate the points and mass. The results are
             # stored in memory for preprocess and optional clamping.
             dr.schedule(points)
@@ -477,17 +505,40 @@ class OcSpaceDistr(BaseGuidingDistr):
                 "solve this problem."
             )
 
+        dr.eval(filtered_points)
+        dr.sync_thread()
+        end = time.time()
+        total_runtime = (end - start)*1000
+        print(f"\t\t\t\tfilter points: {total_runtime:.3f}[ms]")
+
         #######################
         # Octree construction #
         #######################
 
         lower, upper = self.construct_octree(filtered_points, log=log)
 
+        dr.eval(lower, upper)
+        dr.sync_thread()
+        end = time.time()
+        total_runtime = (end - start)*1000
+        print(f"\t\t\t\tconstruct_octree: {total_runtime:.3f}[ms]")
+
         ######################################################
         # Additional sampling per leaf (1D PMF construction) #
         ######################################################
 
+        #dr.eval()
+        #dr.sync_thread()
+        #start = time.time()
+
         query_mass = self.estimate_mass_in_leaves(lower, upper, seed, log=log)
+
+        dr.eval(query_mass)
+        dr.sync_thread()
+        end = time.time()
+        total_runtime = (end - start)*1000
+        print(f"\t\t\t\testimate mass: {total_runtime:.3f}[ms]")
+
 
         # Store a discrete distribution of the partitioned space
         vol = (upper.x - lower.x) * (upper.y - lower.y) * (upper.z - lower.z)
@@ -527,6 +578,12 @@ class OcSpaceDistr(BaseGuidingDistr):
         self.pmf = mi.DiscreteDistribution(box_mass)
         self.lower = lower
         self.upper = upper
+
+        dr.eval()
+        dr.sync_thread()
+        end = time.time()
+        total_runtime = (end - start)*1000
+        print(f"\t\t\t\tset_points: {total_runtime:.3f}[ms]")
 
     def sample(self, sampler):
         idx, prob = self.pmf.sample_pmf(sampler.next_1d())

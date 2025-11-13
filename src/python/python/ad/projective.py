@@ -162,6 +162,12 @@ class ProjectiveDetail():
             to_world = sensor.world_transform()
             sensor_center = to_world @ mi.Point3f(0)
 
+            # Is the boundary point within the view frustum?
+            it = dr.zeros(mi.Interaction3f)
+            it.p = ss.p
+            ds, _ = sensor.sample_direction(it, mi.Point2f(0), active)
+            visible = (ds.pdf != 0) & active
+
             # Is the boundary point visible or is occluded?
             ss_invert = mi.SilhouetteSample3f(ss)
             ss_invert.d = -ss_invert.d
@@ -169,13 +175,7 @@ class ProjectiveDetail():
 
             dist = dr.norm(sensor_center - ray_test.o)
             ray_test.maxt = dist * (1 - mi.math.ShadowEpsilon)
-            visible = ~scene.ray_test(ray_test, active) & active
-
-            # Is the boundary point within the view frustum?
-            it = dr.zeros(mi.Interaction3f)
-            it.p = ss.p
-            ds, _ = sensor.sample_direction(it, mi.Point2f(0), active)
-            visible &= ds.pdf != 0
+            visible &= ~scene.ray_test(ray_test, active & visible)
 
             # Sample wavelengths
             wavelength_sample = 0
@@ -185,8 +185,17 @@ class ProjectiveDetail():
                 dr.zeros(mi.SurfaceInteraction3f),  wavelength_sample, active)
 
             # Estimate the radiance difference along that path
+            import time
+            dr.eval()
+            dr.sync_thread()
+            start = time.time()
             radiance_diff, _ = self.parent.sample_radiance_difference(
                 scene, ss, 0, sampler, wavelengths, visible)
+            dr.eval(radiance_diff)
+            dr.sync_thread()
+            end = time.time()
+            total_runtime = (end - start)*1000
+            print(f"\t\t\t\tdirect_projective.sample_radiance_difference: {total_runtime:.3f}[ms]")
 
         return radiance_diff * weight, wavelengths
 
@@ -226,7 +235,7 @@ class ProjectiveDetail():
 
         # Get the intersection struct for the shape pointer
         flags = mi.RayFlags.All | mi.RayFlags.dNSdUV
-        si = scene.ray_intersect(ray_seed, ray_flags=flags, coherent=True, active=active)
+        si = scene.ray_intersect(ray_seed, ray_flags=flags, coherent=False, reorder=True, active=active)
         active &= si.is_valid()
 
         # Is the shape we hit being differentiated in this scene?
@@ -398,6 +407,12 @@ class ProjectiveDetail():
             return self.eval_indirect_integrand(
                 scene, sensor, point_3, sampler, preprocess=True)
 
+
+        import time
+        dr.eval()
+        dr.sync_thread()
+        start = time.time()
+
         self.guiding_distr = mi.ad.OcSpaceDistr(
             parent.octree_max_depth,
             parent.octree_extra_leaf_sample,
@@ -457,11 +472,26 @@ class ProjectiveDetail():
             sample_3 = mi.Point3f(sampler.next_1d(), sampler.next_1d(), sampler.next_1d())
             active_guide = mi.Mask(True)
 
+
+        dr.eval(sample_3)
+        dr.sync_thread()
+        end = time.time()
+        total_runtime = (end - start)*1000
+        print(f"\t\t\t\tinit_indirect_silhouette.get_projected_points: {total_runtime:.3f}[ms]")
+
         # OctreeGuiding - Evaluate point contribution
+
         value, _, _ = self.eval_indirect_integrand(
             scene, sensor, sample_3, sampler, preprocess=True, active=active_guide)
         value = dr.select(dr.isinf(value), mi.Spectrum(0), value)
-        value = dr.max(value)
+        value = mi.luminance(value)
+
+        dr.eval(value)
+        dr.sync_thread()
+        end = time.time()
+        total_runtime = (end - start)*1000
+        print(f"\t\t\t\tinit_indirect_silhouette.eval_indirect_integrand: {total_runtime:.3f}[ms]")
+
 
         # Estimate mass threshold for the current scene once
         if parent.octree_contruction_thres == 0:
@@ -485,6 +515,10 @@ class ProjectiveDetail():
             dr.scatter_reduce(dr.ReduceOp.Add,
                               value_sum, value, mi.UInt32(0), active_guide)
             count_nonzero = dr.count(value > 0)
+            print(f"{type(count_nonzero)=}")
+            print(f"{type(count_nonzero==0)=}")
+            print(f"{count_nonzero==0=}")
+            print(f"{count_nonzero=}")
 
             # If no valid samples are found, raise an exception
             if count_nonzero == 0:
@@ -514,17 +548,26 @@ class ProjectiveDetail():
 
         self.guiding_distr.mass_contruction_thres = parent.octree_contruction_thres
 
-        try:
-            self.guiding_distr.set_points(sample_3, value, seed, mi.log_level() == mi.LogLevel.Debug)
-        except Exception as e:
-            mi.Log(mi.LogLevel.Warn,
-                   "Failed to build the Octree guiding distribution! No "
-                   "guiding distibution for indirect visibility "
-                   "discontinuities will be used.\n"
-                   "The original error message from the octree construction:\n"
-                   f"{e}")
-            self.guiding_distr = None
-            return
+
+        #import time
+        #dr.eval()
+        #dr.sync_thread()
+        #start = time.time()
+        self.guiding_distr.set_points(sample_3, value, seed, mi.log_level() == mi.LogLevel.Debug)
+        #dr.eval()
+        #dr.sync_thread()
+        #end = time.time()
+        #total_runtime = (end - start)*1000
+        #print(f"set_points: {total_runtime:.3f}[ms]")
+        #except Exception as e:
+        #    mi.Log(mi.LogLevel.Warn,
+        #           "Failed to build the Octree guiding distribution! No "
+        #           "guiding distibution for indirect visibility "
+        #           "discontinuities will be used.\n"
+        #           "The original error message from the octree construction:\n"
+        #           f"{e}")
+        #    self.guiding_distr = None
+        #    return
 
         del sample_3, sampler, active_guide, value
 
@@ -556,6 +599,10 @@ class ProjectiveDetail():
             ``preprocess`` is false, this coordinate is not used.
         """
         parent = self.parent
+        import time
+        dr.eval()
+        dr.sync_thread()
+        start = time.time()
 
         with dr.suspend_grad():
             if parent.guiding == 'none':
@@ -574,7 +621,7 @@ class ProjectiveDetail():
             if mi.is_spectral:
                 wavelength_sample = sampler.next_1d()
             wavelengths, weight = sensor.sample_wavelengths(
-                dr.zeros(mi.SurfaceInteraction3f),  wavelength_sample, active)
+                dr.zeros(mi.SurfaceInteraction3f), wavelength_sample, active)
 
             # Estimate the importance
             fS, sensor_uv, sensor_depth, active_i = parent.sample_importance(
@@ -590,6 +637,12 @@ class ProjectiveDetail():
             fB = ss.foreshortening
 
             result = dr.select(active, weight * fS * fB * fE * dr.rcp(ss.pdf), 0)
+
+            dr.eval(result)
+            dr.sync_thread()
+            end = time.time()
+            total_runtime = (end - start)*1000
+            print(f"\t\t\t\t\teval_indirect_integranad: {total_runtime:.3f}[ms] {dr.width(sampler.next_1d())}")
 
         # Compute the motion of the boundary segment if this is not a preprocess
         if preprocess:

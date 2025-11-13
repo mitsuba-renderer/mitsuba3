@@ -956,19 +956,51 @@ class PSIntegrator(ADIntegrator):
 
         # Primarily visible discontinuous derivative
         if sppp > 0 and has_silhouettes:
+            import time
+            dr.eval()
+            dr.sync_thread()
+            start = time.time()
+
             with dr.suspend_grad():
                 self.proj_detail.init_primarily_visible_silhouette(scene, sensor)
+            dr.eval(result_img)
+            dr.sync_thread()
+            end = time.time()
+            total_runtime = (end - start)*1000
+            print(f"\t\t\trender_ad sppp init: {total_runtime:.3f}[ms]")
 
             sampler, spp = self.prepare(sensor, 0xffffffff ^ seed, sppp, aovs)
             result_img += self.render_primarily_visible_silhouette(scene, sensor, sampler, spp)
 
+            dr.eval(result_img)
+            dr.sync_thread()
+            end = time.time()
+            total_runtime = (end - start)*1000
+            print(f"\t\trender_ad sppp: {total_runtime:.3f}[ms]")
+
         # Indirect discontinuous derivative
         if sppi > 0 and has_silhouettes:
+            import time
+            dr.eval()
+            dr.sync_thread()
+            start = time.time()
+
             with dr.suspend_grad():
                 self.proj_detail.init_indirect_silhouette(scene, sensor, 0xafafafaf ^ seed)
+            dr.eval()
+            dr.sync_thread()
+            end = time.time()
+            total_runtime = (end - start)*1000
+            print(f"\t\t\trender_ad sppi init: {total_runtime:.3f}[ms]")
 
             sampler, spp = self.prepare(sensor, 0xaa00aa00 ^ seed, sppi, aovs)
             result_img += self.render_indirect_silhouette(scene, sensor, sampler, spp)
+
+            dr.eval(result_img)
+            dr.sync_thread()
+            end = time.time()
+            total_runtime = (end - start)*1000
+            print(f"\t\trender_ad sppi: {total_runtime:.3f}[ms]")
 
         ## Continuous derivative (only if radiative backpropagation is not used)
         if sppc > 0 and (not self.radiative_backprop):
@@ -1066,20 +1098,48 @@ class PSIntegrator(ADIntegrator):
 
         # Continuous derivative (if RB is used)
         if self.radiative_backprop and sppc > 0:
+            import time
+            dr.eval()
+            dr.sync_thread()
+            start = time.time()
+
             RBIntegrator.render_backward(
                 self, scene, None, grad_in, sensor, seed, sppc)
+
+            dr.eval()
+            dr.sync_thread()
+            end = time.time()
+            total_runtime = (end - start)*1000
+            print(f"\trender_bwd.rb_render_bwd: {total_runtime:.3f}[ms]")
+
 
         # Discontinuous derivative (and the non-RB continuous derivative)
         if sppp > 0 or sppi > 0 or \
            (sppc > 0 and not self.radiative_backprop):
+            import time
+            dr.eval()
+            dr.sync_thread()
+            start = time.time()
 
             # Compute an image with all derivatives attached
             ad_img = self.render_ad(
                 scene, sensor, seed, spp, dr.ADMode.Backward)
 
+            dr.eval(ad_img)
+            dr.sync_thread()
+            end = time.time()
+            total_runtime = (end - start)*1000
+            print(f"\t\trender_bwd.render_ad primal: {total_runtime:.3f}[ms]")
+
             dr.set_grad(ad_img, grad_in)
             dr.enqueue(dr.ADMode.Backward, ad_img)
             dr.traverse(dr.ADMode.Backward)
+
+            dr.eval()
+            dr.sync_thread()
+            end = time.time()
+            total_runtime = (end - start)*1000
+            print(f"\trender_bwd.render_ad adjoint: {total_runtime:.3f}[ms]")
 
         dr.eval()
 
@@ -1125,7 +1185,7 @@ class PSIntegrator(ADIntegrator):
         motion = dr.dot(p, ss.n)
 
         # Compute the derivative
-        derivative = ΔL * motion * dr.rcp(ss.pdf) * J
+        derivative = ΔL * motion * dr.rcp(ss.pdf) * J / spp
 
         # Prepare a new imageblock and compute splatting coordinates
         film.prepare(aovs)
@@ -1140,7 +1200,7 @@ class PSIntegrator(ADIntegrator):
         block.put(
             pos=sensor_ds.uv,
             wavelengths=wavelengths,
-            value=derivative * dr.rcp(mi.ScalarFloat(spp)),
+            value=derivative,
             weight=0,
             alpha=1,
             active=active
@@ -1252,7 +1312,7 @@ class PSIntegrator(ADIntegrator):
             active = dr.any(value != 0)
 
             # Account for the guiding sampling density and spp
-            value *= rcp_pdf_guiding * dr.rcp(spp)
+            value *= rcp_pdf_guiding / spp
 
             # Splat the result to the film
             block = film.create_block(normalize=True)
