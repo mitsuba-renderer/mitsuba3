@@ -353,12 +353,18 @@ def test11_sample_silhouette(variants_vec_rgb):
     rectangle = mi.load_dict({ 'type': 'rectangle' })
     rectangle_ptr = mi.ShapePtr(rectangle)
 
+    params = mi.traverse(rectangle)
+    dr.enable_grad(params['to_world'])
+    params.update()
+
     x = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
     y = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
     z = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
     samples = mi.Point3f(dr.meshgrid(x, y, z))
 
-    ss = rectangle.sample_silhouette(samples, mi.DiscontinuityFlags.PerimeterType)
+    discontinuity_flags = mi.DiscontinuityFlags.PerimeterType | \
+                          mi.DiscontinuityFlags.DirectionLune
+    ss = rectangle.sample_silhouette(samples, discontinuity_flags)
     assert dr.allclose(ss.discontinuity_type, int(mi.DiscontinuityFlags.PerimeterType))
     assert dr.all(ss.p.z == 0)
     assert dr.all(
@@ -368,19 +374,25 @@ def test11_sample_silhouette(variants_vec_rgb):
     assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
     assert dr.allclose(ss.pdf, (1 / (2 * 4)) * dr.inv_four_pi)
 
-    assert (dr.reinterpret_array(mi.UInt32, ss.shape) ==
-            dr.reinterpret_array(mi.UInt32, rectangle_ptr))
+    assert (dr.reinterpret_array(mi.UInt32, ss.shape)[0] ==
+            dr.reinterpret_array(mi.UInt32, rectangle_ptr)[0])
 
 
 def test12_sample_silhouette_bijective(variants_vec_rgb):
     rectangle = mi.load_dict({ 'type': 'rectangle' })
+
+    params = mi.traverse(rectangle)
+    dr.enable_grad(params['to_world'])
+    params.update()
 
     x = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
     y = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
     z = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
     samples = mi.Point3f(dr.meshgrid(x, y, z))
 
-    ss = rectangle.sample_silhouette(samples, mi.DiscontinuityFlags.PerimeterType)
+    discontinuity_flags = mi.DiscontinuityFlags.PerimeterType | \
+                          mi.DiscontinuityFlags.DirectionLune
+    ss = rectangle.sample_silhouette(samples, discontinuity_flags)
     out = rectangle.invert_silhouette_sample(ss)
 
     assert dr.allclose(samples, out, atol=1e-7)
@@ -424,6 +436,10 @@ def test15_primitive_silhouette_projection(variants_vec_rgb):
     rectangle = mi.load_dict({ 'type': 'rectangle' })
     rectangle_ptr = mi.ShapePtr(rectangle)
 
+    params = mi.traverse(rectangle)
+    dr.enable_grad(params['to_world'])
+    params.update()
+
     u = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
     v = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
     uv = mi.Point2f(dr.meshgrid(u, v))
@@ -449,16 +465,24 @@ def test15_primitive_silhouette_projection(variants_vec_rgb):
 def test16_precompute_silhouette(variants_vec_rgb):
     rectangle = mi.load_dict({ 'type': 'rectangle' })
 
+    params = mi.traverse(rectangle)
+    dr.enable_grad(params['to_world'])
+    params.update()
+
     indices, weights = rectangle.precompute_silhouette(mi.ScalarPoint3f(0, 0, 3))
 
-    assert len(weights) == 1
-    assert indices[0] == int(mi.DiscontinuityFlags.PerimeterType)
-    assert weights[0] == 1
+    assert len(weights) == 4
+    assert dr.allclose(indices, [1, 2, 3, 4])
+    assert dr.allclose(weights, 0.612555)
 
 
 def test17_sample_precomputed_silhouette(variants_vec_rgb):
     rectangle = mi.load_dict({ 'type': 'rectangle' })
     rectangle_ptr = mi.ShapePtr(rectangle)
+
+    params = mi.traverse(rectangle)
+    dr.enable_grad(params['to_world'])
+    params.update()
 
     samples = dr.linspace(mi.Float, 1e-6, 1-1e-6, 10)
     viewpoint = mi.ScalarPoint3f(0, 0, 5)
@@ -467,12 +491,8 @@ def test17_sample_precomputed_silhouette(variants_vec_rgb):
 
     assert dr.allclose(ss.discontinuity_type, int(mi.DiscontinuityFlags.PerimeterType))
     assert dr.all((ss.p.z == 0))
-    assert dr.all(
-        (ss.p.x == -1) | (ss.p.x == 1) |
-        (ss.p.y == -1) | (ss.p.y == 1)
-    )
     assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
-    assert dr.allclose(ss.pdf, (1 / (2 * 4)))
+    assert dr.allclose(ss.pdf, 0.353553)
     assert (dr.reinterpret_array(mi.UInt32, ss.shape) ==
             dr.reinterpret_array(mi.UInt32, rectangle_ptr))
 

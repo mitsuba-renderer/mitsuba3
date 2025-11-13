@@ -295,7 +295,9 @@ def test11_sample_silhouette_bijective(variants_all_ad_rgb):
     samples = mi.Point3f(dr.meshgrid(x, y, z))
 
     # Only interior
-    ss = scene.sample_silhouette(samples, mi.DiscontinuityFlags.InteriorType)
+    discontinuity_flags = mi.DiscontinuityFlags.InteriorType | \
+                          mi.DiscontinuityFlags.DirectionLune
+    ss = scene.sample_silhouette(samples, discontinuity_flags)
     out = scene.invert_silhouette_sample(ss)
     valid = ss.is_valid()
     valid_samples = dr.gather(mi.Point3f, samples, dr.arange(mi.UInt32, dr.width(ss)), valid)
@@ -303,7 +305,9 @@ def test11_sample_silhouette_bijective(variants_all_ad_rgb):
     assert dr.allclose(valid_samples, valid_out, atol=1e-6)
 
     ## Only perimeter
-    ss = scene.sample_silhouette(samples, mi.DiscontinuityFlags.PerimeterType)
+    discontinuity_flags = mi.DiscontinuityFlags.PerimeterType | \
+                          mi.DiscontinuityFlags.DirectionLune
+    ss = scene.sample_silhouette(samples, discontinuity_flags)
     out = scene.invert_silhouette_sample(ss)
     valid = ss.is_valid()
     valid_samples = dr.gather(mi.Point3f, samples, dr.arange(mi.UInt32, dr.width(ss)), valid)
@@ -311,7 +315,9 @@ def test11_sample_silhouette_bijective(variants_all_ad_rgb):
     assert dr.allclose(valid_samples, valid_out, atol=1e-6)
 
     # Both types
-    ss = scene.sample_silhouette(samples, mi.DiscontinuityFlags.AllTypes)
+    discontinuity_flags = mi.DiscontinuityFlags.AllTypes | \
+                          mi.DiscontinuityFlags.DirectionLune
+    ss = scene.sample_silhouette(samples, discontinuity_flags)
     out = scene.invert_silhouette_sample(ss)
     assert dr.all(ss.discontinuity_type != mi.DiscontinuityFlags.Empty.value)
     assert dr.allclose(valid_samples, valid_out, atol=1e-6)
