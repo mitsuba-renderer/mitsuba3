@@ -248,8 +248,8 @@ class OcSpaceDistr(BaseGuidingDistr):
         aabb_buffer_next = dr.zeros(mi.Float, self.max_leaf_count * 6)
 
         leaves = dr.zeros(mi.Float, self.max_leaf_count * 6)
-        leaves_count = mi.UInt32(0)
-        dr.make_opaque(leaves_count)
+        leaves_count = dr.opaque(mi.UInt32, 0)
+        leaves_count_scalar = 0
 
         # Magic value to mark invalidated points
         INVALID_IDX = mi.UInt32(0xffffffff)
@@ -335,18 +335,18 @@ class OcSpaceDistr(BaseGuidingDistr):
                 dr.scatter(leaves, leaf_aabb_max, leaves_count * 2 + idx * 2 + 1, mode=dr.ReduceMode.NoConflicts)
 
                 leaves_count += new_leaf_count
+                leaves_count_scalar += new_leaf_count_scalar
 
             #############################################
             # Update `aabb_buffer` (for next iteration) #
             #############################################
             new_active_node_count = active_node_count * 8 - new_leaf_count_scalar
-            new_active_node_count_scalar = dr.slice(new_active_node_count)
-            if new_active_node_count_scalar > 0:
+            if new_active_node_count > 0:
                 idx = dr.compress(~is_leaf)
                 aabb_next_min = dr.gather(mi.Point3f, aabb_buffer_next, idx * 2 + 0)
                 aabb_next_max = dr.gather(mi.Point3f, aabb_buffer_next, idx * 2 + 1)
 
-                idx = dr.arange(mi.UInt32, new_active_node_count_scalar)
+                idx = dr.arange(mi.UInt32, new_active_node_count)
                 dr.scatter(aabb_buffer, aabb_next_min, idx * 2 + 0, mode=dr.ReduceMode.NoConflicts)
                 dr.scatter(aabb_buffer, aabb_next_max, idx * 2 + 1, mode=dr.ReduceMode.NoConflicts)
 
@@ -370,8 +370,7 @@ class OcSpaceDistr(BaseGuidingDistr):
             ###########################
             # Early exit & evaluation #
             ###########################
-            dr.eval(aabb_buffer, aabb_buffer_next, points_idx, leaves, active, leaves_count)
-            leaves_count_scalar = dr.slice(leaves_count)
+            dr.eval(aabb_buffer, aabb_buffer_next, points_idx, leaves, leaves_count, active)
 
             if self.debug_logs:
                 mi.Log(mi.LogLevel.Debug,
@@ -391,11 +390,6 @@ class OcSpaceDistr(BaseGuidingDistr):
 
         if self.debug_logs:
             mi.Log(mi.LogLevel.Debug, "Finished building octree.")
-
-        # Finalize
-        del (aabb_buffer, aabb_buffer_next, points_idx, is_new_leaf_int,
-             cumulative_new_leaf_count, leaf_count_before_point_idx, point_in_leaf,
-             active, active_node_count, new_active_node_count, new_leaf_count)
 
         idx = dr.arange(mi.UInt32, leaves_count_scalar)
         aabb_min = dr.gather(mi.Point3f, leaves, idx * 2 + 0)
