@@ -253,7 +253,7 @@ public:
         m_sky_rad = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
         m_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
 
-		m_sampling_params_tex = extract_mpdf_weights(m_sampling_params);
+		m_sampling_params_tex = extract_mpdf_params(m_sampling_params);
 
         std::tie(m_sky_sampling_weight_tex, m_sun_irrad_tex) = update_irradiance_data();
 
@@ -289,7 +289,7 @@ public:
         m_sky_rad = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
         m_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
 
-		m_sampling_params_tex = extract_mpdf_weights(m_sampling_params);
+		m_sampling_params_tex = extract_mpdf_params(m_sampling_params);
 
         std::tie(m_sky_sampling_weight_tex, m_sun_irrad_tex) = update_irradiance_data();
 
@@ -413,8 +413,8 @@ private:
     // ================================================================================================
 
 
-    ref<SamplingTexture> extract_mpdf_weights(const TensorXf &sampling_weights_data) const {
-        Float turb_idx_f = dr::clip(m_turbidity - 1.f, 0.f, TURBIDITY_LVLS);
+    ref<SamplingTexture> extract_mpdf_params(const TensorXf &sampling_weights_data) const {
+        Float turb_idx_f = dr::clip(m_turbidity - 1.f, 0.f, TURBIDITY_LVLS - 1.f);
         TensorXf res = dr::take_interp(sampling_weights_data, turb_idx_f, 1);
 
         return new SamplingTexture(res, true, true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
@@ -424,7 +424,7 @@ private:
     Dataset bezier_interp(const TensorXf& dataset, const USpecUInt32& channel_idx, const Float& eta, const USpecMask& active) const {
         Dataset res = dr::zeros<Dataset>();
 
-        Float x = dr::cbrt(2 * dr::InvPi<Float> * eta);
+        Float x = dr::cbrt(2.f * dr::InvPi<Float> * eta);
               x = dr::minimum(x, dr::OneMinusEpsilon<Float>);
         constexpr ScalarFloat coefs[SKY_CTRL_PTS] = {1, 5, 10, 10, 5, 1};
 
@@ -522,7 +522,8 @@ private:
     /// Sampling weights (sun vs sky) for each elevation
     ref<SamplingTexture> m_sky_sampling_weight_tex;
     ref<SunIrradTexture> m_sun_irrad_tex;
-	ref<SamplingTexture> m_sampling_params_tex;
+    /// Sampling parameters for the mixture PDF
+    ref<SamplingTexture> m_sampling_params_tex;
 
     MI_TRAVERSE_CB(
         Base,

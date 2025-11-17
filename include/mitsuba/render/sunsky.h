@@ -853,7 +853,7 @@ protected:
             angles.y()  // phi
         };
 
-        active &= (0.f <= uv.x()) & (uv.x() <= 1.f);
+        active &= (0.f <= uv.x()) && (uv.x() <= 1.f);
 
         SamplingWeights weights = get_sampling_weights(sun_angles.x(), active);
 
