@@ -1338,6 +1338,8 @@ Parameter ``sky_radiance``:
 Returns:
     Indirect sun illumination)doc";
 
+static const char *__doc_mitsuba_BaseSunskyEmitter_eval_sky_pdf = R"doc()doc";
+
 static const char *__doc_mitsuba_BaseSunskyEmitter_eval_sun =
 R"doc(Evaluates the sun model for the given channel indices and angles
 
@@ -1401,6 +1403,19 @@ Parameter ``custom_half_aperture``:
 Returns:
     The appropriate scaling factor)doc";
 
+static const char *__doc_mitsuba_BaseSunskyEmitter_get_sampling_weights =
+R"doc(Extracts the sampling weights for the mixed pdf
+
+Parameter ``sun_theta``:
+    The angle between the sun's direction and the z axis
+
+Parameter ``active``:
+    Indicates active lanes
+
+Returns:
+    The parameters associated with the mixed pdf sampling of the given
+    elevation)doc";
+
 static const char *__doc_mitsuba_BaseSunskyEmitter_get_sky_datasets =
 R"doc(Getter sky radiance datasets for the given wavelengths and sun angles
 
@@ -1455,17 +1470,6 @@ Parameter ``active``:
 Returns:
     The sun irradiance for the given conditions)doc";
 
-static const char *__doc_mitsuba_BaseSunskyEmitter_get_tgmm_data =
-R"doc(Getter for the 4 interpolation points on turbidity and elevation of
-the Truncated Gaussian Mixtures
-
-Parameter ``sun_theta``:
-    The angle between the sun's direction and the z axis
-
-Returns:
-    The 4 interpolation weights and the 4 indices corresponding to the
-    start of the TGMMs in memory)doc";
-
 static const char *__doc_mitsuba_BaseSunskyEmitter_hit_sun = R"doc()doc";
 
 static const char *__doc_mitsuba_BaseSunskyEmitter_hit_sun_2 = R"doc()doc";
@@ -1493,6 +1497,8 @@ static const char *__doc_mitsuba_BaseSunskyEmitter_m_bsphere = R"doc()doc";
 
 static const char *__doc_mitsuba_BaseSunskyEmitter_m_complex_sun = R"doc()doc";
 
+static const char *__doc_mitsuba_BaseSunskyEmitter_m_sampling_params = R"doc()doc";
+
 static const char *__doc_mitsuba_BaseSunskyEmitter_m_sky_irrad_dataset = R"doc()doc";
 
 static const char *__doc_mitsuba_BaseSunskyEmitter_m_sky_params_dataset = R"doc()doc";
@@ -1513,8 +1519,6 @@ static const char *__doc_mitsuba_BaseSunskyEmitter_m_sun_radiance = R"doc()doc";
 
 static const char *__doc_mitsuba_BaseSunskyEmitter_m_sun_scale = R"doc()doc";
 
-static const char *__doc_mitsuba_BaseSunskyEmitter_m_tgmm_tables = R"doc()doc";
-
 static const char *__doc_mitsuba_BaseSunskyEmitter_m_turbidity = R"doc()doc";
 
 static const char *__doc_mitsuba_BaseSunskyEmitter_parameters_changed = R"doc()doc";
@@ -1527,40 +1531,7 @@ static const char *__doc_mitsuba_BaseSunskyEmitter_sample_position = R"doc()doc"
 
 static const char *__doc_mitsuba_BaseSunskyEmitter_sample_ray = R"doc()doc";
 
-static const char *__doc_mitsuba_BaseSunskyEmitter_sample_reuse_tgmm =
-R"doc(Samples a gaussian from the Truncated Gaussian mixture
-
-Parameter ``sample``:
-    Sample in [0, 1]
-
-Parameter ``sun_theta``:
-    The angle between the sun's direction and the z axis
-
-Parameter ``active``:
-    Indicates active lanes
-
-Returns:
-    The index of the chosen gaussian and the sample to be reused)doc";
-
-static const char *__doc_mitsuba_BaseSunskyEmitter_sample_sky =
-R"doc(Samples the sky from the truncated gaussian mixture with the given
-sample.
-
-Based on the Truncated Gaussian Mixture Model (TGMM) for sky dome by
-N. Vitsas and K. Vardis
-https://diglib.eg.org/items/b3f1efca-1d13-44d0-ad60-741c4abe3d21
-
-Parameter ``sample``:
-    Sample uniformly distributed in [0, 1]^2
-
-Parameter ``sun_angles``:
-    Azimuth and elevation angles of the sun
-
-Parameter ``active``:
-    Mask for the active lanes
-
-Returns:
-    The sampled direction in the sky)doc";
+static const char *__doc_mitsuba_BaseSunskyEmitter_sample_sky = R"doc()doc";
 
 static const char *__doc_mitsuba_BaseSunskyEmitter_sample_sun =
 R"doc(Samples the sun from a uniform cone with the given sample
@@ -1611,21 +1582,6 @@ Parameter ``gamma``:
 Returns:
     The cosine of the angle between the sun's radius and the viewing
     direction)doc";
-
-static const char *__doc_mitsuba_BaseSunskyEmitter_tgmm_pdf =
-R"doc(Computes the PDF from the TGMM for the given viewing angles
-
-Parameter ``angles``:
-    Angles of the view direction in local coordinates (phi, theta)
-
-Parameter ``sun_angles``:
-    Azimuth and elevation angles of the sun
-
-Parameter ``active``:
-    Mask for the active lanes and valid rays
-
-Returns:
-    The PDF of the sky for the given angles with no sin(theta) factor)doc";
 
 static const char *__doc_mitsuba_BaseSunskyEmitter_to_string = R"doc()doc";
 
@@ -2369,9 +2325,9 @@ static const char *__doc_mitsuba_Color_r_2 = R"doc()doc";
 static const char *__doc_mitsuba_ConditionalIrregular1D =
 R"doc(Conditional 1D irregular distribution
 
-Similar to the irregular 1D distribution, but this class represents an
-N-Dimensional irregular one (with the extra conditional dimensions
-being also irregular).
+Similarly to the irregular 1D distribution, this class represents a
+1-dimensional irregular distribution. It differs in the fact that it
+has N-1 extra dimensions on which it is conditioned.
 
 As an example, assume you have a 3D distribution P(x,y,z), with
 leading dimension X. This class would allow you to obtain the linear
@@ -2379,9 +2335,10 @@ interpolated value of the PDF for ``x`` given ``y`` and ``z``.
 Additionally, it allows you to sample from the distribution
 P(x|Y=y,Z=z) for a given ``y`` and ``z``.
 
-It assumes every conditioned PDF has the same size. If the user
-requests a method that needs the integral, it will schedule its
-computation.
+It assumes every conditioned PDF has the same size.
+
+If the user requests a method that needs the integral, it will
+automatically schedule its computation on-the-fly.
 
 This distribution can be used in the context of spectral rendering,
 where each wavelength conditions the underlying distribution.)doc";
@@ -2389,54 +2346,56 @@ where each wavelength conditions the underlying distribution.)doc";
 static const char *__doc_mitsuba_ConditionalIrregular1D_ConditionalIrregular1D = R"doc()doc";
 
 static const char *__doc_mitsuba_ConditionalIrregular1D_ConditionalIrregular1D_2 =
-R"doc(Construct a conditional irregular 1D distribution
+R"doc(Construct a conditional irregular 1D distribution.
 
 Parameter ``nodes``:
-    Points where the leading dimension N is defined
+    Points where the leading dimension N is defined.
 
 Parameter ``pdf``:
-    Flattened array of shape [D1, D2, ..., Dn, N], containing the PDFs
+    Flattened array of shape [D1, D2, ..., Dn, N], containing the
+    PDFs.
 
 Parameter ``nodes_cond``:
     Arrays containing points where each conditional dimension is
-    evaluated)doc";
+    evaluated.)doc";
 
 static const char *__doc_mitsuba_ConditionalIrregular1D_ConditionalIrregular1D_3 =
-R"doc(Construct a conditional irregular 1D distribution
+R"doc(Construct a conditional irregular 1D distribution.
 
 Parameter ``nodes``:
-    Points where the leading dimension N is defined
+    Points where the leading dimension N is defined.
 
 Parameter ``pdf``:
     Tensor containing the values of the PDF of shape [D1, D2, ..., Dn,
-    N]
+    N].
 
 Parameter ``nodes_cond``:
     Arrays containing points where each conditional dimension is
-    evaluated)doc";
+    evaluated.)doc";
 
 static const char *__doc_mitsuba_ConditionalIrregular1D_ConditionalIrregular1D_4 =
 R"doc(Construct a conditional irregular 1D distribution
 
 Parameter ``nodes``:
-    Points where the PDFs are evaluated
+    Points where the PDFs are evaluated.
 
 Parameter ``size_nodes``:
-    Size of the nodes array
+    Size of the nodes array.
 
 Parameter ``pdf``:
-    Flattened array of shape [D1, D2, ..., Dn, N], containing the PDFs
+    Flattened array of shape [D1, D2, ..., Dn, N], containing the
+    PDFs.
 
 Parameter ``size_pdf``:
-    Size of the pdf array
+    Size of the pdf array.
 
 Parameter ``nodes_cond``:
-    Arrays containing points where the conditional is evaluated
+    Arrays containing points where the conditional is evaluated.
 
 Parameter ``sizes_cond``:
-    Array with the sizes of the conditional nodes arrays)doc";
+    Array with the sizes of the conditional nodes arrays.)doc";
 
-static const char *__doc_mitsuba_ConditionalIrregular1D_cdf_array = R"doc(Return the CDF)doc";
+static const char *__doc_mitsuba_ConditionalIrregular1D_cdf_array = R"doc(Return the CDF.)doc";
 
 static const char *__doc_mitsuba_ConditionalIrregular1D_cdf_array_2 = R"doc()doc";
 
@@ -2450,47 +2409,41 @@ static const char *__doc_mitsuba_ConditionalIrregular1D_ensure_cdf_computed = R"
 
 static const char *__doc_mitsuba_ConditionalIrregular1D_eval_pdf =
 R"doc(Evaluate the unnormalized probability density function (PDF) at
-position ``pos``, conditioned on ``cond``
+position ``pos``, conditioned on ``cond``.
 
 Parameter ``pos``:
-    Position where the PDF is evaluated
+    Position where the PDF is evaluated.
 
 Parameter ``cond``:
-    Array of values where the conditionals are evaluated
-
-Parameter ``active``:
-    Mask of active lanes
+    Array of values where the conditionals are evaluated.
 
 Returns:
-    The value of the PDF at position ``pos``, conditioned on ``cond``)doc";
+    The value of the PDF at position ``pos``, conditioned on ``cond``.)doc";
 
 static const char *__doc_mitsuba_ConditionalIrregular1D_eval_pdf_normalized =
 R"doc(Evaluate the normalized probability density function (PDF) at position
-``pos``, conditioned on ``cond``
+``pos``, conditioned on ``cond``.
 
 Parameter ``pos``:
-    Position where the PDF is evaluated
+    Position where the PDF is evaluated.
 
 Parameter ``cond``:
-    Array of values where the conditionals are evaluated
-
-Parameter ``active``:
-    Mask of active lanes
+    Array of values where the conditionals are evaluated.
 
 Returns:
     The value of the normalized PDF at position ``pos``, conditioned
-    on ``cond``)doc";
+    on ``cond``.)doc";
 
 static const char *__doc_mitsuba_ConditionalIrregular1D_integral =
-R"doc(Return the integral of the distribution conditioned on ``cond``
+R"doc(Return the integral of the distribution conditioned on ``cond``.
 
 Parameter ``cond``:
-    Conditionals that define the distribution
+    Conditionals that define the distribution.
 
 Returns:
-    The integral of the distribution)doc";
+    The integral of the distribution.)doc";
 
-static const char *__doc_mitsuba_ConditionalIrregular1D_integral_array = R"doc(Return the integral array)doc";
+static const char *__doc_mitsuba_ConditionalIrregular1D_integral_array = R"doc(Return the integral array.)doc";
 
 static const char *__doc_mitsuba_ConditionalIrregular1D_integral_array_2 = R"doc()doc";
 
@@ -2514,44 +2467,44 @@ static const char *__doc_mitsuba_ConditionalIrregular1D_m_pdf = R"doc()doc";
 
 static const char *__doc_mitsuba_ConditionalIrregular1D_max = R"doc(Return the maximum value of the distribution)doc";
 
-static const char *__doc_mitsuba_ConditionalIrregular1D_nodes = R"doc(Return the nodes of the underlying discretization)doc";
+static const char *__doc_mitsuba_ConditionalIrregular1D_nodes = R"doc(Return the nodes of the underlying discretization.)doc";
 
 static const char *__doc_mitsuba_ConditionalIrregular1D_nodes_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_ConditionalIrregular1D_nodes_cond = R"doc(Return the conditional nodes of the underlying discretization)doc";
+static const char *__doc_mitsuba_ConditionalIrregular1D_nodes_cond = R"doc(Return the conditional nodes of the underlying discretization.)doc";
 
 static const char *__doc_mitsuba_ConditionalIrregular1D_nodes_cond_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_ConditionalIrregular1D_pdf = R"doc(Return the underlying tensor storing the distribution values)doc";
+static const char *__doc_mitsuba_ConditionalIrregular1D_pdf = R"doc(Return the underlying tensor storing the distribution values.)doc";
 
 static const char *__doc_mitsuba_ConditionalIrregular1D_pdf_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_ConditionalIrregular1D_sample_pdf =
 R"doc(Sample the distribution given a uniform sample ``u``, conditioned on
-``cond``
+``cond``.
 
 Parameter ``u``:
-    Uniform sample
+    Uniform sample.
 
 Parameter ``cond``:
-    Conditionals where the PDF is sampled
-
-Parameter ``active``:
-    Mask of active lanes
+    Conditionals where the PDF is sampled.
 
 Returns:
     A pair where the first element is the sampled position and the
     second element the value of the normalized PDF at that position
-    conditioned on ``cond``)doc";
+    conditioned on ``cond``.)doc";
 
 static const char *__doc_mitsuba_ConditionalIrregular1D_traverse_1_cb_ro = R"doc()doc";
 
 static const char *__doc_mitsuba_ConditionalIrregular1D_traverse_1_cb_rw = R"doc()doc";
 
-static const char *__doc_mitsuba_ConditionalIrregular1D_update = R"doc(Update the internal state. Must be invoked when changing the pdf.)doc";
+static const char *__doc_mitsuba_ConditionalIrregular1D_update =
+R"doc(Update the internal state.
+
+Must be invoked when PDF is changed.)doc";
 
 static const char *__doc_mitsuba_ConditionalRegular1D =
-R"doc(Conditional 1D regular distribution
+R"doc(Conditional 1D regular distribution.
 
 Similar to the regular 1D distribution, but this class represents an
 N-Dimensional regular one (with the extra conditional dimensions being
@@ -2576,29 +2529,29 @@ static const char *__doc_mitsuba_ConditionalRegular1D_ConditionalRegular1D_2 =
 R"doc(Construct a conditional regular 1D distribution
 
 Parameter ``pdf``:
-    Flattened array of shape [D1, D2, ..., Dn, N] containing the PDFs
+    Flattened array of shape [D1, D2, ..., Dn, N] containing the PDFs.
 
 Parameter ``range``:
-    Range where the leading dimension N is defined
+    Range where the leading dimension N is defined.
 
 Parameter ``range_cond``:
-    Array of ranges where the dimensional conditionals are defined
+    Array of ranges where the dimensional conditionals are defined.
 
 Parameter ``size_cond``:
-    Array with the size of each conditional dimension)doc";
+    Array with the size of each conditional dimension.)doc";
 
 static const char *__doc_mitsuba_ConditionalRegular1D_ConditionalRegular1D_3 =
-R"doc(Construct a conditional regular 1D distribution
+R"doc(Construct a conditional regular 1D distribution.
 
 Parameter ``pdf``:
     Tensor containing the values of the PDF of shape [D1, D2, ..., Dn,
-    N]
+    N].
 
 Parameter ``range``:
-    Range where the leading dimension N is defined
+    Range where the leading dimension N is defined.
 
 Parameter ``range_cond``:
-    Array of ranges where the dimensional conditionals are defined)doc";
+    Array of ranges where the dimensional conditionals are defined.)doc";
 
 static const char *__doc_mitsuba_ConditionalRegular1D_ConditionalRegular1D_4 = R"doc()doc";
 
@@ -2616,29 +2569,23 @@ static const char *__doc_mitsuba_ConditionalRegular1D_ensure_cdf_computed = R"do
 
 static const char *__doc_mitsuba_ConditionalRegular1D_eval_pdf =
 R"doc(Evaluate the unnormalized probability density function (PDF) at
-position ``x``, conditioned on ``cond``
+position ``x``, conditioned on ``cond``.
 
 Parameter ``x``:
-    Position where the PDF is evaluated
+    Position where the PDF is evaluated.
 
 Parameter ``cond``:
-    Conditionals where the PDF is evaluated
-
-Parameter ``active``:
-    Mask of active lanes)doc";
+    Conditionals where the PDF is evaluated.)doc";
 
 static const char *__doc_mitsuba_ConditionalRegular1D_eval_pdf_normalized =
 R"doc(Evaluate the normalized probability density function (PDF) at position
-``x``, conditioned on ``cond``
+``x``, conditioned on ``cond``.
 
 Parameter ``x``:
-    Position where the PDF is evaluated
+    Position where the PDF is evaluated.
 
 Parameter ``cond``:
-    Conditionals where the PDF is evaluated
-
-Parameter ``active``:
-    Mask of active lanes)doc";
+    Conditionals where the PDF is evaluated.)doc";
 
 static const char *__doc_mitsuba_ConditionalRegular1D_integral = R"doc(Return the integral of the distribution conditioned on ``cond``)doc";
 
@@ -2696,16 +2643,13 @@ static const char *__doc_mitsuba_ConditionalRegular1D_range_cond_2 = R"doc()doc"
 
 static const char *__doc_mitsuba_ConditionalRegular1D_sample_pdf =
 R"doc(Sample the distribution given a uniform sample ``u``, conditioned on
-``cond``
+``cond``.
 
 Parameter ``u``:
-    Uniform sample
+    Uniform sample.
 
 Parameter ``cond``:
-    Conditionals where the PDF is sampled
-
-Parameter ``active``:
-    Mask of active lanes)doc";
+    Conditionals where the PDF is sampled.)doc";
 
 static const char *__doc_mitsuba_ConditionalRegular1D_traverse_1_cb_ro = R"doc()doc";
 
@@ -6050,6 +5994,10 @@ Parameter ``v``:
 
 Parameter ``m``:
     The microfacet normal)doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_traverse_1_cb_ro = R"doc()doc";
+
+static const char *__doc_mitsuba_MicrofacetDistribution_traverse_1_cb_rw = R"doc()doc";
 
 static const char *__doc_mitsuba_MicrofacetDistribution_type = R"doc(Return the distribution type)doc";
 
