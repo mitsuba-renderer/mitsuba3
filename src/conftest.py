@@ -306,10 +306,6 @@ def pytest_collection_modifyitems(config, items):
 
     variant_items = []
     for item in items:
-        # Skip tests with empty variant groups
-        if 'NOTSET' in item.name:
-            continue
-
         # Try to extract variant from test name
         match = pattern.search(item.name)
         if match:
@@ -323,16 +319,11 @@ def pytest_collection_modifyitems(config, items):
                     break
 
         # Skip unavailable variants
-        if variant != "z" and variant not in v:
-            continue
-
+        if (variant != "z" and variant not in v) or 'NOTSET' in item.name:
+            skip_marker = pytest.mark.skip(
+                reason='Skipping test due to unavailable variant.')
+            item.add_marker(skip_marker)
         variant_items.append((variant, item.location, item))
 
     variant_items.sort()
-
-    if len(items) != len(variant_items):
-        print(
-            f"\033[93m-- Filtered tests with unavailable variants ({len(items)} →  {len(variant_items)})\033[0m"
-        )
-
     items[:] = [item[2] for item in variant_items]
