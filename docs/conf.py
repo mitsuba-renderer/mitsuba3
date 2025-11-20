@@ -547,5 +547,9 @@ def setup(app):
         raise Exception("Please run the documentation with the exact package "
                         "versions provided in `docs/requirements.txt`!")
     # Texinfo
+
+    import jinja2.utils
+    jinja2.utils.escape = lambda: breakpoint()
+
     app.connect("builder-inited", custom_step)
     app.add_css_file('theme_overrides.css')

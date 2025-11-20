@@ -606,10 +606,10 @@ class ProjectiveDetail():
 
         with dr.suspend_grad():
             if parent.guiding == 'none':
-                self.discontinuity_flags = mi.DiscontinuityFlags.AllTypes.value | \
+                self.discontinuity_flags = mi.DiscontinuityFlags.AllTypes | \
                                            mi.DiscontinuityFlags.DirectionLune
             else:
-                self.discontinuity_flags = mi.DiscontinuityFlags.AllTypes.value | \
+                self.discontinuity_flags = mi.DiscontinuityFlags.AllTypes | \
                                            mi.DiscontinuityFlags.DirectionSphere
 
             ## Sample a boundary segment
