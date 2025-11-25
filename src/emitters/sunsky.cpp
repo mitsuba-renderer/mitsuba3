@@ -1,4 +1,3 @@
-#include <mitsuba/core/quad.h>
 #include <mitsuba/render/srgb.h>
 #include <mitsuba/render/sunsky.h>
 
@@ -116,8 +115,8 @@ This behaviour can be changed with the ``to_world`` parameter.
 
 Internally, this emitter does not compute a bitmap of the sky-dome like an
 environment map, but evaluates the spectral radiance whenever it is needed.
-Consequently, sampling is done through a Truncated Gaussian Mixture Model
-pre-fitted to the given parameters :cite:`vitsas2021tgmm`.
+Consequently, sampling is done through a composition of a downwards warp (for the horizon) 
+and a truncated gaussian aligned on the sun's azimuth.
 
 Parameter influence
 ********************
@@ -197,11 +196,13 @@ class SunskyEmitter final: public BaseSunskyEmitter<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BaseSunskyEmitter,
         m_turbidity, m_sky_scale, m_sun_scale, m_albedo, m_bsphere,
-        m_sun_half_aperture, m_sky_rad_dataset, m_tgmm_tables,
-        m_sky_params_dataset, CHANNEL_COUNT, m_to_world,
-        m_sky_irrad_dataset, m_sun_irrad_dataset
+        m_sun_half_aperture, m_sky_rad_dataset, m_sampling_params,
+        m_sky_params_dataset, m_to_world,
+        m_sky_irrad_dataset, m_sun_irrad_dataset,
+		MIN_SAMPLING_ETA, MAX_SAMPLING_ETA, CHANNEL_COUNT
     )
     using typename Base::FloatStorage;
+	using typename Base::SamplingWeights;
 
     using typename Base::SkyRadData;
     using typename Base::SkyParamsData;
@@ -254,9 +255,7 @@ public:
             Log(Warn, "The sun is below the horizon at the specified time and location!");
 
         m_sun_angles = dir_to_sph(local_sun_dir);
-        m_sun_angles = { m_sun_angles.y(), m_sun_angles.x() }; // flip convention
-
-        Float sun_eta = 0.5f * dr::Pi<Float> - m_sun_angles.y();
+        Float sun_eta = 0.5f * dr::Pi<Float> - m_sun_angles.x();
 
         // ================= Compute datasets =================
         TensorXf temp_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
@@ -264,14 +263,15 @@ public:
 
         TensorXf temp_sky_radiance = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
         m_sky_radiance = bezier_interp(temp_sky_radiance, sun_eta);
-
-        m_gaussian_distr = build_tgmm_distribution(m_tgmm_tables);
+	
+        // =============== Get sampling params ================
+        m_mpdf_weights = extract_mpdf_params(sun_eta, m_sampling_params);
 
         // =============== Get irradiance data ================
         std::tie(m_sky_sampling_w, m_spectral_distr, m_sun_irrad) = update_irradiance_data();
 
         dr::eval(m_sky_params, m_sky_radiance, m_sky_sampling_w,
-                 m_gaussian_distr, m_spectral_distr, m_sun_irrad);
+                 m_mpdf_weights, m_spectral_distr, m_sun_irrad);
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -313,32 +313,31 @@ public:
         if (changed_time_record) {
             const auto [theta, phi] = Base::sun_coordinates(m_time, m_location);
             m_sun_dir = m_to_world.value() * sph_to_dir(theta, phi);
-            m_sun_angles = { phi, theta }; // flip convention
+            m_sun_angles = { theta, phi }; // flip convention
         } else if (changed_sun_dir) {
             m_sun_angles = dir_to_sph(m_to_world.value().inverse() * m_sun_dir);
-            m_sun_angles = { m_sun_angles.y(), m_sun_angles.x() }; // flip convention
         }
 
-        Float eta = 0.5f * dr::Pi<Float> - m_sun_angles.y();
+        Float sun_eta = 0.5f * dr::Pi<Float> - m_sun_angles.x();
 
         // Update sky
         if (changed_sun_dir || changed_atmosphere) {
             TensorXf temp_sky_params = Base::bilinear_interp(m_sky_params_dataset, m_albedo, m_turbidity);
-            m_sky_params = bezier_interp(temp_sky_params, eta);
+            m_sky_params = bezier_interp(temp_sky_params, sun_eta);
 
             TensorXf temp_sky_radiance = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
-            m_sky_radiance = bezier_interp(temp_sky_radiance, eta);
+            m_sky_radiance = bezier_interp(temp_sky_radiance, sun_eta);
         }
 
-        // Update TGMM (no dependence on albedo)
+        // Update sampling params (no dependence on albedo)
         if (changed_sun_dir || CHANGED("turbidity"))
-            m_gaussian_distr = build_tgmm_distribution(m_tgmm_tables);
+            m_mpdf_weights = extract_mpdf_params(sun_eta, m_sampling_params);
 
         // Update sky-sun ratio and radiance distribution
         std::tie(m_sky_sampling_w, m_spectral_distr, m_sun_irrad) = update_irradiance_data();
 
         dr::eval(m_sky_params, m_sky_radiance, m_sky_sampling_w,
-                 m_gaussian_distr, m_spectral_distr, m_sun_irrad);
+                 m_mpdf_weights, m_spectral_distr, m_sun_irrad);
         #undef CHANGED
     }
 
@@ -380,25 +379,8 @@ private:
         return dr::gather<USpec>(m_sun_irrad, channel_idx, active);
     }
 
-
-    std::pair<UInt32, Float> sample_reuse_tgmm(const Float& sample, const Float& /* sun_theta */, const Mask& active) const override {
-        const auto [ idx, temp_sample ] = m_gaussian_distr.sample_reuse(sample, active);
-        const auto [ idx_div, idx_mod ] = dr::idivmod(idx, TGMM_COMPONENTS);
-
-        Float sun_eta = 0.5f * dr::Pi<Float> - m_sun_angles.y();
-        sun_eta = dr::rad_to_deg(sun_eta);
-
-        UInt32 eta_idx_low = dr::floor2int<UInt32>(dr::clip((sun_eta - 2) / 3, 0, ELEVATION_CTRL_PTS - 1)),
-               t_idx_low   = dr::floor2int<UInt32>(dr::clip(m_turbidity - 2, 0, (TURBITDITY_LVLS - 1) - 1));
-
-        constexpr uint32_t t_block_size = Base::GAUSSIAN_NB / (TURBITDITY_LVLS - 1),
-                 result_size  = t_block_size / ELEVATION_CTRL_PTS;
-
-        UInt32 gaussian_idx = (t_idx_low + ((idx_div >> 1) & 1)) * t_block_size +
-                              (eta_idx_low + (idx_div & 1)) * result_size +
-                              idx_mod;
-
-        return std::make_pair(gaussian_idx, temp_sample);
+	SamplingWeights get_sampling_weights(const Float& /* sun_theta */, const Mask& /* active */) const override {
+    	return m_mpdf_weights;
     }
 
     std::pair<Wavelength, Spectrum> sample_wlgth(const Float& sample, Mask active) const override {
@@ -419,47 +401,22 @@ private:
         }
     }
 
-    // ================================================================================================
-    // ===================================== SAMPLING FUNCTIONS =======================================
-    // ================================================================================================
-
-    /**
-     * \brief Extracts the Gaussian Mixture Model parameters from the TGMM
-     * dataset The 4 * (5 gaussians) cannot be interpolated directly, so we need
-     * to combine them and adjust the weights based on the elevation and
-     * turbidity linear interpolation parameters.
-     *
-     * \param tgmm_tables
-     *      Dataset for the Gaussian Mixture Models
-     * \return
-     *      The new distribution parameters and the mixture weights
-     */
-    DiscreteDistribution<Float> build_tgmm_distribution(const FloatStorage &tgmm_tables) const {
-        using UInt32Storage = DynamicBuffer<UInt32>;
-
-        // ============== EXTRACT INDEXES AND LERP WEIGHTS ==============
-        const auto [ lerp_w, tgmm_idx ] = Base::get_tgmm_data(m_sun_angles.y());
-
-        // ==================== EXTRACT PARAMETERS AND APPLY LERP WEIGHT ====================
-        FloatStorage gaussian_weights = dr::zeros<FloatStorage>(4 * TGMM_COMPONENTS);
-        UInt32Storage write_weight_idx = dr::arange<UInt32Storage>(TGMM_COMPONENTS);
-        UInt32Storage read_weight_idx = TGMM_GAUSSIAN_PARAMS * write_weight_idx + (TGMM_GAUSSIAN_PARAMS - 1);
-
-        for (ScalarUInt32 mixture_idx = 0; mixture_idx < 4; ++mixture_idx) {
-
-            // Extract gaussian weights for the given mixture
-            FloatStorage tgmm_weights = dr::gather<FloatStorage>(tgmm_tables, TGMM_GAUSSIAN_PARAMS * tgmm_idx[mixture_idx] + read_weight_idx);
-
-            // Scatter back the weights for the current mixture
-            dr::scatter(gaussian_weights, lerp_w[mixture_idx] * tgmm_weights, mixture_idx * TGMM_COMPONENTS + write_weight_idx);
-        }
-
-        return DiscreteDistribution<Float>(gaussian_weights);
-    }
 
     // ================================================================================================
     // ====================================== HELPER FUNCTIONS ========================================
     // ================================================================================================
+
+	
+    SamplingWeights extract_mpdf_params(const Float& sun_eta, const TensorXf &sampling_weights_data) const {
+		Float eta_idx_f = (MPDF_ELEVATION_COUNT - 1) * dr::clip((sun_eta - MIN_SAMPLING_ETA) / (MAX_SAMPLING_ETA - MIN_SAMPLING_ETA), 0.f, 1.f);
+		Float turb_idx_f = dr::clip(m_turbidity - 1.f, 0.f, TURBIDITY_LVLS - 1.f);
+
+		TensorXf res = dr::take_interp(sampling_weights_data, eta_idx_f);
+				 res = dr::take_interp(res, turb_idx_f);
+
+		return dr::gather<SamplingWeights>(res.array(), UInt32(0));
+    }
+
 
     FloatStorage bezier_interp(const TensorXf& dataset, const Float& eta) const {
         FloatStorage res = dr::zeros<FloatStorage>(dataset.size() / dataset.shape(0));
@@ -486,9 +443,9 @@ private:
      * based on the current parameters.
      */
     std::tuple<Float, ContinuousDistribution<Wavelength>, FloatStorage> update_irradiance_data() const {
-        Float angle = 0.5f * dr::Pi<Float> - m_sun_angles.y();
+        Float angle = 0.5f * dr::Pi<Float> - m_sun_angles.x();
               angle = dr::clip((dr::rad_to_deg(angle) - 2.f) / 3.f,
-                            0.f, ELEVATION_CTRL_PTS - dr::OneMinusEpsilon<ScalarFloat>);
+                            0.f, MPDF_ELEVATION_COUNT - dr::OneMinusEpsilon<ScalarFloat>);
 
         // Interpolate on turbidity and sun angle
         constexpr auto bilinear_interp = [](const TensorXf& dataset, const Float& turb, const Float& angle) {
@@ -567,7 +524,7 @@ private:
     FloatStorage m_sun_irrad;
 
     // ========= Sampling parameters =========
-    DiscreteDistribution<Float> m_gaussian_distr;
+    SamplingWeights m_mpdf_weights;
     ContinuousDistribution<Wavelength> m_spectral_distr;
 
     MI_TRAVERSE_CB(
@@ -581,7 +538,7 @@ private:
         Base::m_sky_params_dataset,
         Base::m_sun_ld,
         Base::m_sun_rad_dataset,
-        Base::m_tgmm_tables,
+        Base::m_sampling_params,
         Base::m_sky_irrad_dataset,
         Base::m_sun_irrad_dataset,
         m_sun_dir,
@@ -592,7 +549,7 @@ private:
         m_sky_radiance,
         m_sky_sampling_w,
         m_sun_irrad,
-        m_gaussian_distr,
+        m_mpdf_weights,
         m_spectral_distr
     )
 };
