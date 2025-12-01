@@ -281,7 +281,7 @@ public:
         // Update sun
         if (keys.empty() || string::contains(keys, "turbidity"))
             m_sun_radiance = dr::take_interp(
-                m_sun_rad_dataset, 
+                m_sun_rad_dataset,
                 dr::clip(m_turbidity - 1.f, 0.f, (TURBIDITY_LVLS - 1.f)));
 
     }
@@ -790,7 +790,7 @@ protected:
 
     Vector3f sample_sky(Point2f sample, const Point2f& sun_angles, const Mask& active) const {
         SamplingWeights weights = get_sampling_weights(sun_angles.x(), active);
-        
+
         Mask sample_trunc_gaussian = sample.x() < weights[0];
         sample.x() = dr::select(
             sample_trunc_gaussian,
@@ -817,10 +817,10 @@ protected:
         if (dr::any_or<true>(sample_trunc_gaussian & active)) {
             ScalarPoint2f min = ScalarPoint2f(0.f, -dr::Pi<Float>),
                           max = ScalarPoint2f(1.f, dr::Pi<Float>);
-        
+
             Point2f mu = Point2f(weights[2], 0.f),
                     sigma = Point2f(weights[3], weights[4]);
-                              
+
             Point2f cdf_min = gaussian_cdf(mu, sigma, min);
             Point2f cdf_max = gaussian_cdf(mu, sigma, max);
 
@@ -857,7 +857,7 @@ protected:
 
         SamplingWeights weights = get_sampling_weights(sun_angles.x(), active);
 
-        // Map from actual sun azimuth to phi_sun = 0 
+        // Map from actual sun azimuth to phi_sun = 0
         uv.y() -= sun_angles.y();
         dr::masked(uv.y(), uv.y() < -dr::Pi<Float>) += dr::TwoPi<Float>;
         dr::masked(uv.y(), uv.y() > dr::Pi<Float>) -= dr::TwoPi<Float>;
@@ -875,17 +875,17 @@ protected:
         {
             ScalarPoint2f min = ScalarPoint2f(0.f, -dr::Pi<Float>),
                           max = ScalarPoint2f(1.f, dr::Pi<Float>);
-        
+
             Point2f mu = Point2f(weights[2], 0.f),
                     sigma = Point2f(weights[3], weights[4]);
-                              
+
             Point2f cdf_min = gaussian_cdf(mu, sigma, min);
             Point2f cdf_max = gaussian_cdf(mu, sigma, max);
 
             Float normalization = dr::prod(cdf_max - cdf_min) * dr::prod(sigma);
             warp_2_pdf = warp::square_to_std_normal_pdf(Point2f((uv - mu) / sigma)) / normalization;
         }
-        
+
         Float res_pdf = dr::lerp(warp_1_pdf, warp_2_pdf, weights[0]);
         return dr::select(active, res_pdf, 0.f);
     }

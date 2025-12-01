@@ -378,7 +378,7 @@ private:
     SamplingWeights get_sampling_weights(const Float& sun_theta, const Mask& active) const override {
         Float sun_eta_idx_f = 0.5f * dr::Pi<Float> - sun_theta;
             sun_eta_idx_f = (sun_eta_idx_f - MIN_SAMPLING_ETA) / (MAX_SAMPLING_ETA - MIN_SAMPLING_ETA);
-        
+
         Mask valid_elevation = active & (sun_theta <= 0.5f * dr::Pi<Float>);
         Float res[MPDF_CHANNELS] = { 0.f };
         m_sampling_params_tex->eval(dr::Array<Float, 1>(sun_eta_idx_f), res, dr::any(valid_elevation));

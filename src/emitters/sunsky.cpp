@@ -115,7 +115,7 @@ This behaviour can be changed with the ``to_world`` parameter.
 
 Internally, this emitter does not compute a bitmap of the sky-dome like an
 environment map, but evaluates the spectral radiance whenever it is needed.
-Consequently, sampling is done through a composition of a downwards warp (for the horizon) 
+Consequently, sampling is done through a composition of a downwards warp (for the horizon)
 and a truncated gaussian aligned on the sun's azimuth.
 
 Parameter influence
@@ -263,7 +263,7 @@ public:
 
         TensorXf temp_sky_radiance = Base::bilinear_interp(m_sky_rad_dataset, m_albedo, m_turbidity);
         m_sky_radiance = bezier_interp(temp_sky_radiance, sun_eta);
-	
+
         // =============== Get sampling params ================
         m_mpdf_weights = extract_mpdf_params(sun_eta, m_sampling_params);
 
@@ -406,7 +406,7 @@ private:
     // ====================================== HELPER FUNCTIONS ========================================
     // ================================================================================================
 
-	
+
     SamplingWeights extract_mpdf_params(const Float& sun_eta, const TensorXf &sampling_weights_data) const {
 		Float eta_idx_f = (MPDF_ELEVATION_COUNT - 1) * dr::clip((sun_eta - MIN_SAMPLING_ETA) / (MAX_SAMPLING_ETA - MIN_SAMPLING_ETA), 0.f, 1.f);
 		Float turb_idx_f = dr::clip(m_turbidity - 1.f, 0.f, TURBIDITY_LVLS - 1.f);
