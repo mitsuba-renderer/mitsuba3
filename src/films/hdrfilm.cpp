@@ -259,6 +259,7 @@ public:
 
         /* locked */ {
             std::lock_guard<std::mutex> lock(m_mutex);
+            jit_freeze_discard("Image Block was allocated");
             m_storage = new ImageBlock(m_crop_size, m_crop_offset,
                                        (uint32_t) channels.size());
             m_channels = channels;
