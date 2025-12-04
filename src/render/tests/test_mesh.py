@@ -45,7 +45,10 @@ def test01_create_mesh(variant_scalar_rgb):
   face_count = 2,
   faces = [24 B of face data],
   surface_area = 0.96,
-  face_normals = 0
+  face_normals = 0,
+  bsdf = SmoothDiffuse[
+    reflectance = UniformSpectrum[value=0.500000]
+  ]
 ]"""
 
 
@@ -219,6 +222,9 @@ def test07_ply_stored_attribute(variant_scalar_rgb):
   face_normals = 0,
   mesh attributes = [
     face_color: 3 floats
+  ],
+  bsdf = SmoothDiffuse[
+    reflectance = UniformSpectrum[value=0.500000]
   ]
 ]"""
 
@@ -246,6 +252,9 @@ def test08_mesh_manage_attributes(variant_scalar_rgb):
   face_normals = 0,
   mesh attributes = [
     vertex_color: 3 floats
+  ],
+  bsdf = SmoothDiffuse[
+    reflectance = UniformSpectrum[value=0.500000]
   ]
 ]"""
 
@@ -1421,7 +1430,10 @@ def test37_create_mesh_with_properties(variant_scalar_rgb):
   vertices = [0 B of vertex data],
   face_count = 0,
   faces = [0 B of face data],
-  face_normals = 0
+  face_normals = 0,
+  bsdf = SmoothDiffuse[
+    reflectance = UniformSpectrum[value=0.500000]
+  ]
 ]"""
 
 def test38_ray_intersect_triangle(variants_all_rgb):

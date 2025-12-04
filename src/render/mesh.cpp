@@ -1913,10 +1913,11 @@ MI_VARIANT std::string Mesh<Float, Spectrum>::to_string() const {
             oss << "    " << name << ": " << attribute.size
                 << (attribute.size == 1 ? " float" : " floats")
                 << (++i == m_mesh_attributes.size() ? "" : ",") << std::endl;
-        oss << "  ]" << std::endl;
-    } else {
-        oss << std::endl;
+        oss << "  ]";
     }
+
+    oss << "," << std::endl;
+    oss << "  " << string::indent(get_children_string()) << std::endl;
 
     oss << "]";
     return oss.str();
