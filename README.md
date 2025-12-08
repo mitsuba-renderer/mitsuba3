@@ -100,7 +100,7 @@ for details on this.
 
 ### Requirements
 
-- `Python >= 3.8`
+- `Python >= 3.9`
 - (optional) For computation on the GPU: `Nvidia driver >= 535`
 - (optional) For vectorized / parallel computation on the CPU: `LLVM >= 11.1`
 
