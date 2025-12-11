@@ -204,7 +204,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
                 inv_J = dr.select(J != 0, dr.rcp(J), 0)
                 emitter_val = (
                     emitter_val
-                    * dr.replace_grad(1, spec_em * inv_ds_em_pdf)
+                    * spec_em * inv_ds_em_pdf
                     * dr.replace_grad(1, J * dr.detach(inv_J))
                 )
 
