@@ -283,8 +283,7 @@ class PathProjectiveIntegrator(PSIntegrator):
                     inv_ds_pdf = dr.select(ds.pdf != 0, dr.rcp(ds.pdf), 0)
                     inv_J = dr.select(J != 0, dr.rcp(J), 0)
                     em_weight = (
-                        em_weight
-                        * dr.replace_grad(1, (em_val_diff * dr.detach(inv_ds_pdf)))
+                        dr.replace_grad(em_weight, (em_val_diff * dr.detach(inv_ds_pdf)))
                         * dr.replace_grad(1, (J * dr.detach(inv_J)))
                     )
 
