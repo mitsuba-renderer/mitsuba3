@@ -7,7 +7,7 @@ Cloning the repository
 ----------------------
 
 Compiling Mitsuba 3 from scratch requires recent versions of CMake (at least
-**3.9.0**) and Python (at least **3.8**). Further platform-specific dependencies
+**3.9.0**) and Python (at least **3.9**). Further platform-specific dependencies
 and compilation instructions are provided below for each operating system. Some
 additional steps are required for GPU-based backends that are described at the
 end of this section.
@@ -178,17 +178,17 @@ slight adjustments for the package manager and package names). We have mainly
 worked with software environments listed below, and our instructions should work
 without modifications in those cases.
 
-.. tabularcolumns:: |p{0.33\width}|p{0.33\width}|p{0.33\width}|
+.. tabularcolumns:: |p{0.33\width}|p{0.33\width}|
 
-+--------------------------+--------------------------+--------------------------+
-| **Focal**                | **Jammy**                | **Noble**                |
-|                          |                          |                          |
-| - Ubuntu 20.04           | - Ubuntu 22.04           | - Ubuntu 24.04           |
-| - g++ 9.4.0              | - clang 17.0.6           | - g++ 13.2.0             |
-| - cmake 3.16.3           | - cmake 3.22.1           | - cmake 3.28.3           |
-| - ninja 1.10.0           | - ninja 1.10.1           | - ninja 1.11.1           |
-| - python 3.8.10          | - python 3.10.12         | - python 3.12.3          |
-+--------------------------+--------------------------+--------------------------+
++--------------------------+--------------------------+
+| **Jammy**                | **Noble**                |
+|                          |                          |
+| - Ubuntu 22.04           | - Ubuntu 24.04           |
+| - clang 17.0.6           | - g++ 13.2.0             |
+| - cmake 3.22.1           | - cmake 3.28.3           |
+| - ninja 1.10.1           | - ninja 1.11.1           |
+| - python 3.10.12         | - python 3.12.3          |
++--------------------------+--------------------------+
 
 Windows
 -------
@@ -196,7 +196,7 @@ Windows
 On Windows, a recent version of `Visual Studio 2022
 <https://visualstudio.microsoft.com/vs/>`_ is required. Some tools such as git,
 CMake, or Python might need to be installed manually. Mitsuba's build system
-*requires* access to Python >= 3.8 even if you do not plan to use Mitsuba's
+*requires* access to Python >= 3.9 even if you do not plan to use Mitsuba's
 python interface.
 
 From the root `mitsuba3` directory, the build can be configured with:
@@ -241,7 +241,7 @@ once might be necessary:
     xcode-select --install
 
 Note that the default Python version installed with macOS is not compatible with
-Mitsuba 3, and a more recent version (at least 3.8) needs to be installed (e.g.
+Mitsuba 3, and a more recent version (at least 3.9) needs to be installed (e.g.
 via `Miniconda 3 <https://docs.conda.io/en/latest/miniconda.html>`_ or `Homebrew
 <https://brew.sh/>`_).
 
