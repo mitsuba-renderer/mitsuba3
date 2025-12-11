@@ -205,7 +205,7 @@ class PRBIntegrator(RBIntegrator):
                     # Given the detached emitter sample, *recompute* its
                     # contribution with AD to enable light source optimization
                     em_val_diff = scene.eval_emitter_direction(si, ds, active_em)
-                    inv_ds_pdf = dr.select(em_val_diff != 0, dr.rcp(ds.pdf), 0)
+                    inv_ds_pdf = dr.select(ds.pdf != 0, dr.rcp(ds.pdf), 0)
                     inv_J = dr.select(J != 0, dr.rcp(J), 0)
                     em_weight = (
                         em_weight
