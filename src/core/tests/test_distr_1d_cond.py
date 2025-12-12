@@ -1,6 +1,14 @@
 import pytest
 import drjit as dr
 import mitsuba as mi
+import numpy as np
+
+# Special case to support both NumPy 1.x and >= 2.4.
+if hasattr(np, 'trapezoid'):
+    trapezoid = np.trapezoid
+else:
+    trapezoid = np.trapz
+
 
 @pytest.fixture(params=['Float', 'UnpolarizedSpectrum'])
 def type_str(request):
@@ -101,7 +109,6 @@ def test04_conditional_irregular_eval(variants_vec_backends_once_spectral, type_
 
 
 def test05_conditional_irregular_func(variants_vec_backends_once_spectral, type_str):
-    import numpy as np
     Type, distr_irregular = get_types(type_str, 'Irregular')
 
     # Test continuous 1D distribution integral against analytic result
@@ -140,7 +147,6 @@ def test05_conditional_irregular_func(variants_vec_backends_once_spectral, type_
     execute_test(d_tensor)
 
 def test06_conditional_irregular_multiFunc(variants_vec_backends_once_spectral, type_str):
-    import numpy as np
     Type, distr_irregular = get_types(type_str, 'Irregular')
 
     # This test generates random numbers to test the distribution doing interpolation
@@ -278,7 +284,6 @@ def test10_conditional_regular_eval(variants_vec_backends_once_spectral, type_st
 
 
 def test11_conditional_regular_func(variants_vec_backends_once_spectral, type_str):
-    import numpy as np
     Type , distr_regular = get_types(type_str, 'Regular')
 
     SIZE_X = 513
@@ -324,7 +329,6 @@ def test11_conditional_regular_func(variants_vec_backends_once_spectral, type_st
     execute_test(d_tensor)
 
 def test12_conditional_regular_multiFunc(variants_vec_backends_once_spectral, type_str):
-    import numpy as np
     Type , distr_regular = get_types(type_str, 'Regular')
 
     # This test generates random numbers to test the distribution doing interpolation
@@ -386,7 +390,6 @@ def test12_conditional_regular_multiFunc(variants_vec_backends_once_spectral, ty
     execute_test(d_tensor)
 
 def test13_conditional_regular_irregular_same(variants_vec_backends_once_spectral, type_str):
-    import numpy as np
     Type , distr_regular = get_types(type_str, 'Regular')
     _ , distr_irregular = get_types(type_str, 'Irregular')
 
@@ -432,7 +435,6 @@ def test13_conditional_regular_irregular_same(variants_vec_backends_once_spectra
 
 def test14_conditional_chi2_sampling(variants_vec_backends_once_spectral, type_str):
     from mitsuba.chi2 import ChiSquareTest, LineDomain
-    import numpy as np
     Type , distr_regular = get_types(type_str, 'Regular')
     _ , distr_irregular = get_types(type_str, 'Irregular')
 
@@ -513,7 +515,6 @@ def test14_conditional_chi2_sampling(variants_vec_backends_once_spectral, type_s
     execute_test(d_irregular_tensor)
 
 def test15_integral_irregular(variants_vec_backends_once_spectral, type_str):
-    import numpy as np
     Type , distr_irregular = get_types(type_str, 'Irregular')
 
     SIZE = 10
@@ -533,7 +534,7 @@ def test15_integral_irregular(variants_vec_backends_once_spectral, type_str):
         # Test integral for perfect conditional
         INDEX = 2
         value = d.integral([Type(dr.gather(mi.Float, x, mi.UInt32(INDEX), True))])
-        ref = np.trapz(y.numpy()[SIZE*INDEX:SIZE*(INDEX+1)], x.numpy())
+        ref = trapezoid(y.numpy()[SIZE*INDEX:SIZE*(INDEX+1)], x.numpy())
         assert dr.allclose(value, ref)
 
         # Test integral for interpolated conditional
@@ -542,8 +543,8 @@ def test15_integral_irregular(variants_vec_backends_once_spectral, type_str):
         l_i = np.floor(INDEX).astype(int)
         w_i = INDEX - l_i
         ref = (
-            (1.0 - w_i) * np.trapz(y=y.numpy()[SIZE*l_i:SIZE*(l_i+1)], x=x.numpy()) +
-            w_i * np.trapz(y=y.numpy()[SIZE*(l_i+1):SIZE*(l_i+2)], x=x.numpy())
+            (1.0 - w_i) * trapezoid(y=y.numpy()[SIZE*l_i:SIZE*(l_i+1)], x=x.numpy()) +
+            w_i * trapezoid(y=y.numpy()[SIZE*(l_i+1):SIZE*(l_i+2)], x=x.numpy())
         )
         assert dr.allclose(value, ref)
 
@@ -551,7 +552,6 @@ def test15_integral_irregular(variants_vec_backends_once_spectral, type_str):
     execute_test(d_tensor)
 
 def test16_integral_regular(variants_vec_backends_once_spectral, type_str):
-    import numpy as np
     Type , distr_regular = get_types(type_str, 'Regular')
 
     SIZE = 10
@@ -575,7 +575,7 @@ def test16_integral_regular(variants_vec_backends_once_spectral, type_str):
         # Test integral for perfect conditional
         INDEX = 2
         value = d.integral([Type(dr.gather(mi.Float, dr.linspace(mi.Float, 0, C-1, C), mi.UInt32(INDEX), True))])
-        ref = np.trapz(y.numpy()[SIZE*INDEX:SIZE*(INDEX+1)], np.linspace(0, SIZE-1, SIZE))
+        ref = trapezoid(y.numpy()[SIZE*INDEX:SIZE*(INDEX+1)], np.linspace(0, SIZE-1, SIZE))
         assert dr.allclose(value, ref)
 
         # Test integral for interpolated conditional
@@ -584,8 +584,8 @@ def test16_integral_regular(variants_vec_backends_once_spectral, type_str):
         l_i = np.floor(INDEX).astype(int)
         w_i = INDEX - l_i
         ref = (
-            (1.0 - w_i) * np.trapz(y=y.numpy()[SIZE*l_i:SIZE*(l_i+1)], x=np.linspace(0, SIZE-1, SIZE)) +
-            w_i * np.trapz(y=y.numpy()[SIZE*(l_i+1):SIZE*(l_i+2)], x=np.linspace(0, SIZE-1, SIZE))
+            (1.0 - w_i) * trapezoid(y=y.numpy()[SIZE*l_i:SIZE*(l_i+1)], x=np.linspace(0, SIZE-1, SIZE)) +
+            w_i * trapezoid(y=y.numpy()[SIZE*(l_i+1):SIZE*(l_i+2)], x=np.linspace(0, SIZE-1, SIZE))
         )
         assert dr.allclose(value, ref)
 
