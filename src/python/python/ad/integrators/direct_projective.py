@@ -200,8 +200,12 @@ class DirectProjectiveIntegrator(PSIntegrator):
 
                 # Re-compute attached `emitter_val` to enable emitter optimization
                 spec_em = scene.eval_emitter_direction(si, ds_em, active_em)
-                emitter_val_diff = (spec_em / ds_em.pdf) * (J / dr.detach(J))
-                emitter_val = dr.replace_grad(emitter_val, emitter_val_diff)
+                inv_ds_em_pdf = dr.select(ds_em.pdf != 0, dr.rcp(ds_em.pdf), 0)
+                inv_J = dr.select(J != 0, dr.rcp(J), 0)
+                emitter_val = (
+                    dr.replace_grad(emitter_val, spec_em * inv_ds_em_pdf)
+                    * dr.replace_grad(1, J * dr.detach(inv_J))
+                )
 
             # Evaluate the BSDF (foreshortening term included)
             wo = si.to_local(ds_em.d)
@@ -245,9 +249,11 @@ class DirectProjectiveIntegrator(PSIntegrator):
                 wo = si.to_local(wo_world)
 
                 bsdf_val, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_bsdf)
+                inv_bsdf_pdf = dr.select(bsdf_pdf != 0, dr.rcp(bsdf_pdf), 0)
+                inv_J = dr.select(J != 0, dr.rcp(J), 0)
                 weight_bsdf = (
-                    (bsdf_val / dr.detach(bsdf_pdf)) *
-                    (J / dr.detach(J))
+                    (bsdf_val * dr.detach(inv_bsdf_pdf)) *
+                    dr.replace_grad(1, J * dr.detach(inv_J))
                 )
 
                 # Re-attach si_bsdf.wi if si.p was moving
