@@ -191,15 +191,9 @@ class BasicPRBIntegrator(RBIntegrator):
 
                     # Re-evaluate BSDF * cos(theta) differentiably
                     bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active_next)
-                    inv_bsdf_val = dr.select(bsdf_val != 0, dr.rcp(bsdf_val), 0)
-                    inv_J = dr.select(J != 0, dr.rcp(J), 0)
 
                     # Differentiable version of the reflected radiance.
-                    Lr = (
-                        L
-                        * dr.replace_grad(1, (bsdf_val * dr.detach(inv_bsdf_val)))
-                        * dr.replace_grad(1, (J * dr.detach(inv_J)))
-                    )
+                    Lr = L * dr.relative_grad(bsdf_val) * dr.relative_grad(J)
 
                     # Differentiable Monte Carlo estimate of all contributions
                     Lo = Le + Lr

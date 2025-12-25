@@ -281,10 +281,9 @@ class PathProjectiveIntegrator(PSIntegrator):
                     # contribution with AD to enable light source optimization
                     em_val_diff = scene.eval_emitter_direction(si, ds, active_em)
                     inv_ds_pdf = dr.select(ds.pdf != 0, dr.rcp(ds.pdf), 0)
-                    inv_J = dr.select(J != 0, dr.rcp(J), 0)
                     em_weight = (
                         dr.replace_grad(em_weight, (em_val_diff * dr.detach(inv_ds_pdf)))
-                        * dr.replace_grad(1, (J * dr.detach(inv_J)))
+                        * dr.relative_grad(J),
                     )
 
 
@@ -411,15 +410,9 @@ class PathProjectiveIntegrator(PSIntegrator):
 
                     # Re-evaluate BSDF * cos(theta) differentiably
                     bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active_next)
-                    inv_bsdf_val = dr.select(bsdf_val != 0, dr.rcp(bsdf_val), 0)
-                    inv_J = dr.select(J != 0, dr.rcp(J), 0)
 
                     # Differentiable version of the reflected radiance.
-                    Lr_ind = (
-                        L
-                        * dr.replace_grad(1, (bsdf_val * dr.detach(inv_bsdf_val)))
-                        * dr.replace_grad(1, (J * dr.detach(inv_J)))
-                    )
+                    Lr_ind = L * dr.relative_grad(bsdf_val) * dr.relative_grad(J)
 
                     # Differentiable Monte Carlo estimate of all contributions
                     Lo = Le + Lr_dir + Lr_ind
