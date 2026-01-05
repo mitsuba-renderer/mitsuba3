@@ -2954,9 +2954,9 @@
 
         Conditional 1D irregular distribution
 
-        Similar to the irregular 1D distribution, but this class represents an
-        N-Dimensional irregular one (with the extra conditional dimensions
-        being also irregular).
+        Similarly to the irregular 1D distribution, this class represents a
+        1-dimensional irregular distribution. It differs in the fact that it
+        has N-1 extra dimensions on which it is conditioned.
 
         As an example, assume you have a 3D distribution P(x,y,z), with
         leading dimension X. This class would allow you to obtain the linear
@@ -2964,9 +2964,10 @@
         Additionally, it allows you to sample from the distribution
         P(x|Y=y,Z=z) for a given ``y`` and ``z``.
 
-        It assumes every conditioned PDF has the same size. If the user
-        requests a method that needs the integral, it will schedule its
-        computation.
+        It assumes every conditioned PDF has the same size.
+
+        If the user requests a method that needs the integral, it will
+        automatically schedule its computation on-the-fly.
 
         This distribution can be used in the context of spectral rendering,
         where each wavelength conditions the underlying distribution.
@@ -2976,42 +2977,43 @@
 
     .. py:method:: ``__init__(self, nodes, pdf, nodes_cond)
 
-        Construct a conditional irregular 1D distribution
+        Construct a conditional irregular 1D distribution.
 
         Parameter ``nodes`` (drjit.llvm.ad.Float):
-            Points where the leading dimension N is defined
+            Points where the leading dimension N is defined.
 
         Parameter ``pdf`` (drjit.llvm.ad.Float):
-            Flattened array of shape [D1, D2, ..., Dn, N], containing the PDFs
+            Flattened array of shape [D1, D2, ..., Dn, N], containing the
+            PDFs.
 
         Parameter ``nodes_cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
             Arrays containing points where each conditional dimension is
-            evaluated
+            evaluated.
 
         Returns → None``:
             *no description available*
 
     .. py:method:: ``__init__(self, nodes, pdf, nodes_cond)
 
-        Construct a conditional irregular 1D distribution
+        Construct a conditional irregular 1D distribution.
 
         Parameter ``nodes`` (drjit.llvm.ad.Float):
-            Points where the leading dimension N is defined
+            Points where the leading dimension N is defined.
 
         Parameter ``pdf`` (drjit.llvm.ad.TensorXf):
             Tensor containing the values of the PDF of shape [D1, D2, ..., Dn,
-            N]
+            N].
 
         Parameter ``nodes_cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
             Arrays containing points where each conditional dimension is
-            evaluated
+            evaluated.
 
         Returns → None``:
             *no description available*
 
     .. py:property:: mitsuba.ConditionalIrregular1D.cdf_array
 
-        Return the CDF
+        Return the CDF.
 
     .. py:method:: mitsuba.ConditionalIrregular1D.empty()
 
@@ -3023,57 +3025,57 @@
     .. py:method:: mitsuba.ConditionalIrregular1D.eval_pdf(self, x, cond, active=True)
 
         Evaluate the unnormalized probability density function (PDF) at
-        position ``pos``, conditioned on ``cond``
+        position ``pos``, conditioned on ``cond``.
 
         Parameter ``pos``:
-            Position where the PDF is evaluated
+            Position where the PDF is evaluated.
 
         Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
-            Array of values where the conditionals are evaluated
-
-        Parameter ``active`` (drjit.llvm.ad.Bool):
-            Mask of active lanes
+            Array of values where the conditionals are evaluated.
 
         Parameter ``x`` (drjit.llvm.ad.Float):
             *no description available*
 
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
         Returns → drjit.llvm.ad.Float:
-            The value of the PDF at position ``pos``, conditioned on ``cond``
+            The value of the PDF at position ``pos``, conditioned on ``cond``.
 
     .. py:method:: mitsuba.ConditionalIrregular1D.eval_pdf_normalized(self, x, cond, active=True)
 
         Evaluate the normalized probability density function (PDF) at position
-        ``pos``, conditioned on ``cond``
+        ``pos``, conditioned on ``cond``.
 
         Parameter ``pos``:
-            Position where the PDF is evaluated
+            Position where the PDF is evaluated.
 
         Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
-            Array of values where the conditionals are evaluated
-
-        Parameter ``active`` (drjit.llvm.ad.Bool):
-            Mask of active lanes
+            Array of values where the conditionals are evaluated.
 
         Parameter ``x`` (drjit.llvm.ad.Float):
             *no description available*
 
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
         Returns → drjit.llvm.ad.Float:
             The value of the normalized PDF at position ``pos``, conditioned
-            on ``cond``
+            on ``cond``.
 
     .. py:method:: mitsuba.ConditionalIrregular1D.integral(self, cond)
 
-        Return the integral of the distribution conditioned on ``cond``
+        Return the integral of the distribution conditioned on ``cond``.
 
         Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
-            Conditionals that define the distribution
+            Conditionals that define the distribution.
 
         Returns → drjit.llvm.ad.Float:
-            The integral of the distribution
+            The integral of the distribution.
 
     .. py:property:: mitsuba.ConditionalIrregular1D.integral_array
 
-        Return the integral array
+        Return the integral array.
 
     .. py:method:: mitsuba.ConditionalIrregular1D.max()
 
@@ -3084,38 +3086,40 @@
 
     .. py:property:: mitsuba.ConditionalIrregular1D.nodes
 
-        Return the nodes of the underlying discretization
+        Return the nodes of the underlying discretization.
 
     .. py:property:: mitsuba.ConditionalIrregular1D.nodes_cond
 
-        Return the conditional nodes of the underlying discretization
+        Return the conditional nodes of the underlying discretization.
 
     .. py:property:: mitsuba.ConditionalIrregular1D.pdf
 
-        Return the underlying tensor storing the distribution values
+        Return the underlying tensor storing the distribution values.
 
     .. py:method:: mitsuba.ConditionalIrregular1D.sample_pdf(self, u, cond, active=True)
 
         Sample the distribution given a uniform sample ``u``, conditioned on
-        ``cond``
+        ``cond``.
 
         Parameter ``u`` (drjit.llvm.ad.Float):
-            Uniform sample
+            Uniform sample.
 
         Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
-            Conditionals where the PDF is sampled
+            Conditionals where the PDF is sampled.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
-            Mask of active lanes
+            Mask to specify active lanes.
 
         Returns → tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             A pair where the first element is the sampled position and the
             second element the value of the normalized PDF at that position
-            conditioned on ``cond``
+            conditioned on ``cond``.
 
     .. py:method:: mitsuba.ConditionalIrregular1D.update()
 
-        Update the internal state. Must be invoked when changing the pdf.
+        Update the internal state.
+
+        Must be invoked when PDF is changed.
 
         Returns → None:
             *no description available*
@@ -3127,9 +3131,9 @@
 
         Conditional 1D irregular distribution
 
-        Similar to the irregular 1D distribution, but this class represents an
-        N-Dimensional irregular one (with the extra conditional dimensions
-        being also irregular).
+        Similarly to the irregular 1D distribution, this class represents a
+        1-dimensional irregular distribution. It differs in the fact that it
+        has N-1 extra dimensions on which it is conditioned.
 
         As an example, assume you have a 3D distribution P(x,y,z), with
         leading dimension X. This class would allow you to obtain the linear
@@ -3137,9 +3141,10 @@
         Additionally, it allows you to sample from the distribution
         P(x|Y=y,Z=z) for a given ``y`` and ``z``.
 
-        It assumes every conditioned PDF has the same size. If the user
-        requests a method that needs the integral, it will schedule its
-        computation.
+        It assumes every conditioned PDF has the same size.
+
+        If the user requests a method that needs the integral, it will
+        automatically schedule its computation on-the-fly.
 
         This distribution can be used in the context of spectral rendering,
         where each wavelength conditions the underlying distribution.
@@ -3149,42 +3154,43 @@
 
     .. py:method:: ``__init__(self, nodes, pdf, nodes_cond)
 
-        Construct a conditional irregular 1D distribution
+        Construct a conditional irregular 1D distribution.
 
         Parameter ``nodes`` (drjit.llvm.ad.Float):
-            Points where the leading dimension N is defined
+            Points where the leading dimension N is defined.
 
         Parameter ``pdf`` (drjit.llvm.ad.Float):
-            Flattened array of shape [D1, D2, ..., Dn, N], containing the PDFs
+            Flattened array of shape [D1, D2, ..., Dn, N], containing the
+            PDFs.
 
         Parameter ``nodes_cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
             Arrays containing points where each conditional dimension is
-            evaluated
+            evaluated.
 
         Returns → None``:
             *no description available*
 
     .. py:method:: ``__init__(self, nodes, pdf, nodes_cond)
 
-        Construct a conditional irregular 1D distribution
+        Construct a conditional irregular 1D distribution.
 
         Parameter ``nodes`` (drjit.llvm.ad.Float):
-            Points where the leading dimension N is defined
+            Points where the leading dimension N is defined.
 
         Parameter ``pdf`` (drjit.llvm.ad.TensorXf):
             Tensor containing the values of the PDF of shape [D1, D2, ..., Dn,
-            N]
+            N].
 
         Parameter ``nodes_cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
             Arrays containing points where each conditional dimension is
-            evaluated
+            evaluated.
 
         Returns → None``:
             *no description available*
 
     .. py:property:: mitsuba.ConditionalIrregular1DSpectrum.cdf_array
 
-        Return the CDF
+        Return the CDF.
 
     .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.empty()
 
@@ -3196,57 +3202,57 @@
     .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.eval_pdf(self, x, cond, active=True)
 
         Evaluate the unnormalized probability density function (PDF) at
-        position ``pos``, conditioned on ``cond``
+        position ``pos``, conditioned on ``cond``.
 
         Parameter ``pos``:
-            Position where the PDF is evaluated
+            Position where the PDF is evaluated.
 
         Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
-            Array of values where the conditionals are evaluated
-
-        Parameter ``active`` (drjit.llvm.ad.Bool):
-            Mask of active lanes
+            Array of values where the conditionals are evaluated.
 
         Parameter ``x`` (:py:obj:`mitsuba.Color3f`):
             *no description available*
 
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
         Returns → :py:obj:`mitsuba.Color3f`:
-            The value of the PDF at position ``pos``, conditioned on ``cond``
+            The value of the PDF at position ``pos``, conditioned on ``cond``.
 
     .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.eval_pdf_normalized(self, x, cond, active=True)
 
         Evaluate the normalized probability density function (PDF) at position
-        ``pos``, conditioned on ``cond``
+        ``pos``, conditioned on ``cond``.
 
         Parameter ``pos``:
-            Position where the PDF is evaluated
+            Position where the PDF is evaluated.
 
         Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
-            Array of values where the conditionals are evaluated
-
-        Parameter ``active`` (drjit.llvm.ad.Bool):
-            Mask of active lanes
+            Array of values where the conditionals are evaluated.
 
         Parameter ``x`` (:py:obj:`mitsuba.Color3f`):
             *no description available*
 
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
         Returns → :py:obj:`mitsuba.Color3f`:
             The value of the normalized PDF at position ``pos``, conditioned
-            on ``cond``
+            on ``cond``.
 
     .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.integral(self, cond)
 
-        Return the integral of the distribution conditioned on ``cond``
+        Return the integral of the distribution conditioned on ``cond``.
 
         Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
-            Conditionals that define the distribution
+            Conditionals that define the distribution.
 
         Returns → :py:obj:`mitsuba.Color3f`:
-            The integral of the distribution
+            The integral of the distribution.
 
     .. py:property:: mitsuba.ConditionalIrregular1DSpectrum.integral_array
 
-        Return the integral array
+        Return the integral array.
 
     .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.max()
 
@@ -3257,38 +3263,40 @@
 
     .. py:property:: mitsuba.ConditionalIrregular1DSpectrum.nodes
 
-        Return the nodes of the underlying discretization
+        Return the nodes of the underlying discretization.
 
     .. py:property:: mitsuba.ConditionalIrregular1DSpectrum.nodes_cond
 
-        Return the conditional nodes of the underlying discretization
+        Return the conditional nodes of the underlying discretization.
 
     .. py:property:: mitsuba.ConditionalIrregular1DSpectrum.pdf
 
-        Return the underlying tensor storing the distribution values
+        Return the underlying tensor storing the distribution values.
 
     .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.sample_pdf(self, u, cond, active=True)
 
         Sample the distribution given a uniform sample ``u``, conditioned on
-        ``cond``
+        ``cond``.
 
         Parameter ``u`` (:py:obj:`mitsuba.Color3f`):
-            Uniform sample
+            Uniform sample.
 
         Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
-            Conditionals where the PDF is sampled
+            Conditionals where the PDF is sampled.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
-            Mask of active lanes
+            Mask to specify active lanes.
 
         Returns → tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
             A pair where the first element is the sampled position and the
             second element the value of the normalized PDF at that position
-            conditioned on ``cond``
+            conditioned on ``cond``.
 
     .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.update()
 
-        Update the internal state. Must be invoked when changing the pdf.
+        Update the internal state.
+
+        Must be invoked when PDF is changed.
 
         Returns → None:
             *no description available*
@@ -3298,7 +3306,7 @@
 
     .. py:method:: ``__init__()
 
-        Conditional 1D regular distribution
+        Conditional 1D regular distribution.
 
         Similar to the regular 1D distribution, but this class represents an
         N-Dimensional regular one (with the extra conditional dimensions being
@@ -3325,33 +3333,33 @@
         Construct a conditional regular 1D distribution
 
         Parameter ``pdf`` (drjit.llvm.ad.Float):
-            Flattened array of shape [D1, D2, ..., Dn, N] containing the PDFs
+            Flattened array of shape [D1, D2, ..., Dn, N] containing the PDFs.
 
         Parameter ``range`` (:py:obj:`mitsuba.ScalarVector2f`):
-            Range where the leading dimension N is defined
+            Range where the leading dimension N is defined.
 
         Parameter ``range_cond`` (collections.abc.Sequence[:py:obj:`mitsuba.ScalarVector2f`]):
-            Array of ranges where the dimensional conditionals are defined
+            Array of ranges where the dimensional conditionals are defined.
 
         Parameter ``size_cond`` (collections.abc.Sequence[int]):
-            Array with the size of each conditional dimension
+            Array with the size of each conditional dimension.
 
         Returns → None``:
             *no description available*
 
     .. py:method:: ``__init__(self, pdf, range, range_cond)
 
-        Construct a conditional regular 1D distribution
+        Construct a conditional regular 1D distribution.
 
         Parameter ``pdf`` (drjit.llvm.ad.TensorXf):
             Tensor containing the values of the PDF of shape [D1, D2, ..., Dn,
-            N]
+            N].
 
         Parameter ``range`` (:py:obj:`mitsuba.ScalarVector2f`):
-            Range where the leading dimension N is defined
+            Range where the leading dimension N is defined.
 
         Parameter ``range_cond`` (collections.abc.Sequence[:py:obj:`mitsuba.ScalarVector2f`]):
-            Array of ranges where the dimensional conditionals are defined
+            Array of ranges where the dimensional conditionals are defined.
 
         Returns → None``:
             *no description available*
@@ -3370,16 +3378,16 @@
     .. py:method:: mitsuba.ConditionalRegular1D.eval_pdf(self, x, cond, active=True)
 
         Evaluate the unnormalized probability density function (PDF) at
-        position ``x``, conditioned on ``cond``
+        position ``x``, conditioned on ``cond``.
 
         Parameter ``x`` (drjit.llvm.ad.Float):
-            Position where the PDF is evaluated
+            Position where the PDF is evaluated.
 
         Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
-            Conditionals where the PDF is evaluated
+            Conditionals where the PDF is evaluated.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
-            Mask of active lanes
+            Mask to specify active lanes.
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
@@ -3387,16 +3395,16 @@
     .. py:method:: mitsuba.ConditionalRegular1D.eval_pdf_normalized(self, x, cond, active=True)
 
         Evaluate the normalized probability density function (PDF) at position
-        ``x``, conditioned on ``cond``
+        ``x``, conditioned on ``cond``.
 
         Parameter ``x`` (drjit.llvm.ad.Float):
-            Position where the PDF is evaluated
+            Position where the PDF is evaluated.
 
         Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
-            Conditionals where the PDF is evaluated
+            Conditionals where the PDF is evaluated.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
-            Mask of active lanes
+            Mask to specify active lanes.
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
@@ -3437,16 +3445,16 @@
     .. py:method:: mitsuba.ConditionalRegular1D.sample_pdf(self, u, cond, active=True)
 
         Sample the distribution given a uniform sample ``u``, conditioned on
-        ``cond``
+        ``cond``.
 
         Parameter ``u`` (drjit.llvm.ad.Float):
-            Uniform sample
+            Uniform sample.
 
         Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
-            Conditionals where the PDF is sampled
+            Conditionals where the PDF is sampled.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
-            Mask of active lanes
+            Mask to specify active lanes.
 
         Returns → tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             *no description available*
@@ -3464,7 +3472,7 @@
 
     .. py:method:: ``__init__()
 
-        Conditional 1D regular distribution
+        Conditional 1D regular distribution.
 
         Similar to the regular 1D distribution, but this class represents an
         N-Dimensional regular one (with the extra conditional dimensions being
@@ -3491,33 +3499,33 @@
         Construct a conditional regular 1D distribution
 
         Parameter ``pdf`` (drjit.llvm.ad.Float):
-            Flattened array of shape [D1, D2, ..., Dn, N] containing the PDFs
+            Flattened array of shape [D1, D2, ..., Dn, N] containing the PDFs.
 
         Parameter ``range`` (:py:obj:`mitsuba.ScalarVector2f`):
-            Range where the leading dimension N is defined
+            Range where the leading dimension N is defined.
 
         Parameter ``range_cond`` (collections.abc.Sequence[:py:obj:`mitsuba.ScalarVector2f`]):
-            Array of ranges where the dimensional conditionals are defined
+            Array of ranges where the dimensional conditionals are defined.
 
         Parameter ``size_cond`` (collections.abc.Sequence[int]):
-            Array with the size of each conditional dimension
+            Array with the size of each conditional dimension.
 
         Returns → None``:
             *no description available*
 
     .. py:method:: ``__init__(self, pdf, range, range_cond)
 
-        Construct a conditional regular 1D distribution
+        Construct a conditional regular 1D distribution.
 
         Parameter ``pdf`` (drjit.llvm.ad.TensorXf):
             Tensor containing the values of the PDF of shape [D1, D2, ..., Dn,
-            N]
+            N].
 
         Parameter ``range`` (:py:obj:`mitsuba.ScalarVector2f`):
-            Range where the leading dimension N is defined
+            Range where the leading dimension N is defined.
 
         Parameter ``range_cond`` (collections.abc.Sequence[:py:obj:`mitsuba.ScalarVector2f`]):
-            Array of ranges where the dimensional conditionals are defined
+            Array of ranges where the dimensional conditionals are defined.
 
         Returns → None``:
             *no description available*
@@ -3536,16 +3544,16 @@
     .. py:method:: mitsuba.ConditionalRegular1DSpectrum.eval_pdf(self, x, cond, active=True)
 
         Evaluate the unnormalized probability density function (PDF) at
-        position ``x``, conditioned on ``cond``
+        position ``x``, conditioned on ``cond``.
 
         Parameter ``x`` (:py:obj:`mitsuba.Color3f`):
-            Position where the PDF is evaluated
+            Position where the PDF is evaluated.
 
         Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
-            Conditionals where the PDF is evaluated
+            Conditionals where the PDF is evaluated.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
-            Mask of active lanes
+            Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color3f`:
             *no description available*
@@ -3553,16 +3561,16 @@
     .. py:method:: mitsuba.ConditionalRegular1DSpectrum.eval_pdf_normalized(self, x, cond, active=True)
 
         Evaluate the normalized probability density function (PDF) at position
-        ``x``, conditioned on ``cond``
+        ``x``, conditioned on ``cond``.
 
         Parameter ``x`` (:py:obj:`mitsuba.Color3f`):
-            Position where the PDF is evaluated
+            Position where the PDF is evaluated.
 
         Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
-            Conditionals where the PDF is evaluated
+            Conditionals where the PDF is evaluated.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
-            Mask of active lanes
+            Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.Color3f`:
             *no description available*
@@ -3603,16 +3611,16 @@
     .. py:method:: mitsuba.ConditionalRegular1DSpectrum.sample_pdf(self, u, cond, active=True)
 
         Sample the distribution given a uniform sample ``u``, conditioned on
-        ``cond``
+        ``cond``.
 
         Parameter ``u`` (:py:obj:`mitsuba.Color3f`):
-            Uniform sample
+            Uniform sample.
 
         Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
-            Conditionals where the PDF is sampled
+            Conditionals where the PDF is sampled.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
-            Mask of active lanes
+            Mask to specify active lanes.
 
         Returns → tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
             *no description available*
