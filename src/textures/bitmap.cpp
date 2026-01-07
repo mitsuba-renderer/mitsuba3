@@ -93,7 +93,9 @@ Bitmap texture (:monosp:`bitmap`)
    - |bool|
    - Hardware acceleration features can be used in CUDA mode. These features can
      cause small differences as hardware interpolation methods typically have a
-     loss of precision (not exactly 32-bit arithmetic). (Default: true)
+     loss of precision (not exactly 32-bit arithmetic). In double precision
+     variants, unless the :paramtype:`format` parameter was set to ``fp16``,
+     hardware acceleration is disabled. (Default: true)
 
 This plugin provides a bitmap texture that performs interpolated lookups given
 a JPEG, PNG, OpenEXR, RGBE, TGA, or BMP input file.
@@ -136,6 +138,20 @@ template <typename Float, typename Spectrum>
 class BitmapTexture final : public Texture<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Texture)
+
+    /* Recap of numerical precision of lookup operations
+     *
+     * variant | format   | accel  | behavior
+     * ==================================================================
+     * float   | fp16     | true   | fp16 storage, fp16 interp, accel
+     * float   | variant  | true   | fp32 storage, fp32 interp, accel
+     * float   | fp16     | false  | fp16 storage, fp16 interp, no accel
+     * float   | variant  | false  | fp32 storage, fp32 interp, no accel
+     * double  | fp16     | true   | fp16 storage, fp16 interp, accel
+     * double  | variant  | true   | !!! fp64 storage, fp64 interp, no accel !!!
+     * double  | fp16     | false  | fp16 storage, fp16 interp, no accel
+     * double  | variant  | false  | fp64 storage, fp64 interp, no accel
+     */
 
     BitmapTexture(const Properties &props) : Texture(props) {
         m_transform = props.get<ScalarAffineTransform3f>("to_uv", ScalarAffineTransform3f());
@@ -312,6 +328,9 @@ protected:
         size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), channels };
         StoredTensorXf tensor = StoredTensorXf(m_bitmap->data(), 3, shape);
 
+        // Disable HW acceleration in double precision variants with double precision storage
+        bool accel = m_accel & !std::is_same_v<double, StoredScalar>;
+
         Properties props;
         return new BitmapTextureImpl<Float, Spectrum, StoredType>(
             props,
@@ -320,7 +339,7 @@ protected:
             m_filter_mode,
             m_wrap_mode,
             m_raw,
-            m_accel,
+            accel,
             std::move(tensor));
     }
 
@@ -744,11 +763,11 @@ protected:
 
             return dr::fmadd(w0.y(), c0, w1.y() * c1);
         } else {
-            Color3f out;
+            Color<StoredType, 3> out;
             if (m_accel)
-                m_texture.template eval<Float>(uv, out.data(), active);
+                m_texture.template eval<StoredType>(uv, out.data(), active);
             else
-                m_texture.template eval_nonaccel<Float>(uv, out.data(), active);
+                m_texture.template eval_nonaccel<StoredType>(uv, out.data(), active);
 
             return srgb_model_eval<UnpolarizedSpectrum>(out, si.wavelengths);
         }
@@ -766,11 +785,11 @@ protected:
 
         Point2f uv = m_transform * si.uv;
 
-        Float out;
+        StoredType out;
         if (m_accel)
-            m_texture.template eval<Float>(uv, &out, active);
+            m_texture.template eval<StoredType>(uv, &out, active);
         else
-            m_texture.template eval_nonaccel<Float>(uv, &out, active);
+            m_texture.template eval_nonaccel<StoredType>(uv, &out, active);
 
         return out;
     }
@@ -787,11 +806,11 @@ protected:
 
         Point2f uv = m_transform * si.uv;
 
-        Color3f out;
+        Color<StoredType, 3> out;
         if (m_accel)
-            m_texture.template eval<Float>(uv, out.data(), active);
+            m_texture.template eval<StoredType>(uv, out.data(), active);
         else
-            m_texture.template eval_nonaccel<Float>(uv, out.data(), active);
+            m_texture.template eval_nonaccel<StoredType>(uv, out.data(), active);
 
         return out;
     }
