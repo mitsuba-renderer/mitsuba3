@@ -93,9 +93,7 @@ Bitmap texture (:monosp:`bitmap`)
    - |bool|
    - Hardware acceleration features can be used in CUDA mode. These features can
      cause small differences as hardware interpolation methods typically have a
-     loss of precision (not exactly 32-bit arithmetic). In double precision
-     variants, unless the :paramtype:`format` parameter was set to ``fp16``,
-     hardware acceleration is disabled. (Default: true)
+     loss of precision (not exactly 32-bit arithmetic). (Default: true)
 
 This plugin provides a bitmap texture that performs interpolated lookups given
 a JPEG, PNG, OpenEXR, RGBE, TGA, or BMP input file.
@@ -328,9 +326,6 @@ protected:
         size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), channels };
         StoredTensorXf tensor = StoredTensorXf(m_bitmap->data(), 3, shape);
 
-        // Disable HW acceleration in double precision variants with double precision storage
-        bool accel = m_accel & !std::is_same_v<double, StoredScalar>;
-
         Properties props;
         return new BitmapTextureImpl<Float, Spectrum, StoredType>(
             props,
@@ -339,7 +334,7 @@ protected:
             m_filter_mode,
             m_wrap_mode,
             m_raw,
-            accel,
+            m_accel,
             std::move(tensor));
     }
 
