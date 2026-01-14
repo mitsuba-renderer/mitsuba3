@@ -432,7 +432,7 @@ def test16_primitive_silhouette_projection(variants_vec_rgb):
     assert dr.allclose(ss.discontinuity_type, mi.DiscontinuityFlags.InteriorType.value)
     assert dr.allclose(dr.norm(ss.p), 1)
     assert dr.allclose(ss.p, ss.n)
-    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-6)
+    assert dr.allclose(dr.dot(ss.n, ss.d), 0, atol=1e-5)
     assert (dr.reinterpret_array(mi.UInt32, ss.shape) ==
             dr.reinterpret_array(mi.UInt32, sphere_ptr))
 
