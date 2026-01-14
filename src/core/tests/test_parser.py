@@ -2406,3 +2406,102 @@ def test66_escaped_dollar_sign(variant_scalar_rgb):
     assert shape.props["price"] == "Cost: $100"
     # Mix of escaped and parameter substitution
     assert shape.props["mixed"] == "$50 for 10 items"
+
+
+def test67_dict_resource_path_management(variant_scalar_rgb, tmp_path):
+    """Test resource path management for dictionaries (type='resources')"""
+    import shutil
+    from mitsuba.test.util import find_resource
+
+    # Create a data subdirectory in temp path
+    data_dir = tmp_path / 'data_parser_67'
+    data_dir.mkdir()
+
+    # Copy carrot.png to data/image_file.png
+    carrot_src = mi.file_resolver().resolve(find_resource("resources/data/common/textures/carrot.png"))
+    image_file = data_dir / 'image_file_67.png'
+    shutil.copy(str(carrot_src), str(image_file))
+
+    # Test 1: Without 'resources' entry, image_file.png should not be found
+    with pytest.raises(RuntimeError) as excinfo:
+        mi.load_dict({
+            "type": "scene",
+            "tex": {
+                "type": "bitmap",
+                "filename": "image_file_67.png"
+            }
+        })
+    assert "No such file or directory" in str(excinfo.value) or "does not exist!" in str(excinfo.value)
+
+    # Test 2: With 'resources' entry pointing to data directory
+    scene = mi.load_dict({
+        "type": "scene",
+        "resource_path": {
+            "type": "resources",
+            "path": str(data_dir)
+        },
+        "tex": {
+            "type": "bitmap",
+            "filename": "image_file_67.png"
+        }
+    })
+    assert scene is not None
+
+    # Test 3: Multiple 'resources' entries
+    data2_dir = tmp_path / 'data_parser_67_2'
+    data2_dir.mkdir()
+    image_file2 = data2_dir / 'other_image_67.png'
+    shutil.copy(str(carrot_src), str(image_file2))
+
+    scene = mi.load_dict({
+        "type": "scene",
+        "resource_path1": {
+            "type": "resources",
+            "path": str(data_dir)
+        },
+        "resource_path2": {
+            "type": "resources",
+            "path": str(data2_dir)
+        },
+        "tex1": {
+            "type": "bitmap",
+            "filename": "image_file_67.png"
+        },
+        "tex2": {
+            "type": "bitmap",
+            "filename": "other_image_67.png"
+        }
+    })
+    assert scene is not None
+
+    # Test 4: 'resources' must be direct child of root
+    with pytest.raises(RuntimeError, match="Declarations of resource folders must be done at the root"):
+        mi.load_dict({
+            "type": "scene",
+            "shape": {
+                "type": "sphere",
+                "nested_resources": {
+                    "type": "resources",
+                    "path": str(data_dir)
+                }
+            }
+        })
+
+    # Test 5: 'resources' with non-existent directory
+    with pytest.raises(RuntimeError, match='Folder .* not found'):
+        mi.load_dict({
+            "type": "scene",
+            "resource_path": {
+                "type": "resources",
+                "path": str(tmp_path / "nonexistent_directory")
+            }
+        })
+
+    # Test 6: 'resources' without 'path' attribute
+    with pytest.raises(RuntimeError, match="missing 'path' attribute"):
+        mi.load_dict({
+            "type": "scene",
+            "resource_path": {
+                "type": "resources"
+            }
+        })
