@@ -156,7 +156,8 @@ def test04_eval_rgb(variants_vec_backends_once_rgb):
     # Grayscale image
     bitmap = mi.load_dict({
         'type' : 'bitmap',
-        'filename' : 'resources/data/common/textures/noise_02.png'
+        'filename' : 'resources/data/common/textures/noise_02.png',
+        'format' : 'variant'
     })
 
     x_res, y_res = bitmap.resolution()
