@@ -150,6 +150,26 @@ static void parse_dict_impl(ParserState &state, const nb::dict &d,
                 // Handle special "rgb" and "spectrum" dictionaries
                 parse_color_spectrum(state, parent_idx, key, child_dict, type, path);
                 continue;
+            } else if (type == "resources") {
+                // "resources" declarations must be direct children of the root dictionary
+                if (parent_idx != 0)
+                    Throw("[%s] Declarations of resource folders must be done "
+                          "at the root of the dictionary.", path);
+
+                if (!child_dict.contains("path"))
+                    Throw("[%s] Resource path is missing 'path' attribute", path);
+
+                ref<FileResolver> fs = mitsuba::file_resolver();
+                fs::path resource_path(nb::cast<std::string_view>(child_dict["path"]));
+
+                if (!resource_path.is_absolute() && !fs::exists(resource_path))
+                    resource_path = fs->resolve(resource_path);
+
+                if (!fs::exists(resource_path))
+                    Throw("[%s] Folder \"%s\" not found", path, resource_path);
+
+                fs->prepend(resource_path);
+                continue;
             }
 
             // Register the object for cross-referencing only when 'id' is
@@ -547,14 +567,25 @@ Parameter ``kwargs``:
             config.merge_equivalent = optimize;
             config.merge_meshes = optimize;
 
-            // Parse, transform, and instantiate
-            parser::ParserState state = parse_dict(config, dict);
+            ref<FileResolver> fs_backup = file_resolver();
+            ref<FileResolver> fs = new FileResolver(*fs_backup);
+            set_file_resolver(fs.get());
+
             std::vector<ref<Object>> objects;
-            {
-                nb::gil_scoped_release release;
-                parser::transform_all(config, state);
-                objects = parser::instantiate(config, state);
+            try {
+                // Parse, transform, and instantiate
+                parser::ParserState state = parse_dict(config, dict);
+                {
+                    nb::gil_scoped_release release;
+                    parser::transform_all(config, state);
+                    objects = parser::instantiate(config, state);
+                }
+            } catch(...) {
+                set_file_resolver(fs_backup.get());
+                throw;
             }
+
+            set_file_resolver(fs_backup.get());
 
             return single_object_or_list(objects);
         },
