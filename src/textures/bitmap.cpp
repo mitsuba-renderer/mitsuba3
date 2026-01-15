@@ -515,11 +515,7 @@ public:
                     fetch_values[1] = &f10;
                     fetch_values[2] = &f01;
                     fetch_values[3] = &f11;
-
-                    if (m_accel)
-                        m_texture.template eval_fetch<Float>(uv, fetch_values, active);
-                    else
-                        m_texture.template eval_fetch_nonaccel<Float>(uv, fetch_values, active);
+                    m_texture.template eval_fetch<Float>(uv, fetch_values, active);
                 } else { // 3 channels
                     Color3f v00, v10, v01, v11;
                     dr::Array<Float *, 4> fetch_values;
@@ -527,11 +523,7 @@ public:
                     fetch_values[1] = v10.data();
                     fetch_values[2] = v01.data();
                     fetch_values[3] = v11.data();
-
-                    if (m_accel)
-                        m_texture.template eval_fetch<Float>(uv, fetch_values, active);
-                    else
-                        m_texture.template eval_fetch_nonaccel<Float>(uv, fetch_values, active);
+                    m_texture.template eval_fetch<Float>(uv, fetch_values, active);
 
                     f00 = luminance(v00);
                     f10 = luminance(v10);
@@ -734,11 +726,7 @@ protected:
             fetch_values[1] = v10.data();
             fetch_values[2] = v01.data();
             fetch_values[3] = v11.data();
-
-            if (m_accel)
-                m_texture.template eval_fetch<Float>(uv, fetch_values, active);
-            else
-                m_texture.template eval_fetch_nonaccel<Float>(uv, fetch_values, active);
+            m_texture.template eval_fetch<Float>(uv, fetch_values, active);
 
             UnpolarizedSpectrum c00, c10, c01, c11, c0, c1;
             c00 = srgb_model_eval<UnpolarizedSpectrum>(v00, si.wavelengths);
@@ -759,10 +747,7 @@ protected:
             return dr::fmadd(w0.y(), c0, w1.y() * c1);
         } else {
             Color<StoredType, 3> out;
-            if (m_accel)
-                m_texture.template eval<StoredType>(uv, out.data(), active);
-            else
-                m_texture.template eval_nonaccel<StoredType>(uv, out.data(), active);
+            m_texture.template eval<StoredType>(uv, out.data(), active);
 
             return srgb_model_eval<UnpolarizedSpectrum>(out, si.wavelengths);
         }
@@ -781,10 +766,7 @@ protected:
         Point2f uv = m_transform * si.uv;
 
         StoredType out;
-        if (m_accel)
-            m_texture.template eval<StoredType>(uv, &out, active);
-        else
-            m_texture.template eval_nonaccel<StoredType>(uv, &out, active);
+        m_texture.template eval<StoredType>(uv, &out, active);
 
         return out;
     }
@@ -802,10 +784,7 @@ protected:
         Point2f uv = m_transform * si.uv;
 
         Color<StoredType, 3> out;
-        if (m_accel)
-            m_texture.template eval<StoredType>(uv, out.data(), active);
-        else
-            m_texture.template eval_nonaccel<StoredType>(uv, out.data(), active);
+        m_texture.template eval<StoredType>(uv, out.data(), active);
 
         return out;
     }
