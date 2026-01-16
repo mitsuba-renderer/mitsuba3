@@ -175,11 +175,12 @@ def test05_check_aov_film(variants_all_rgb):
     path_integrator.render(scene, seed=0, spp=spp)
     bitmap_path = film.bitmap(raw=False)
 
-    aovs_image = aov_integrator.render(scene, seed=0, spp=spp)
+    _ = aov_integrator.render(scene, seed=0, spp=spp)
     bitmap_aov = film.bitmap(raw=False)
 
     # Make sure radiance is consistent
     assert(np.allclose(bitmap_aov.split()[0][1],bitmap_path.split()[0][1]))
+
 
 def test06_test_aov_ad_forward(variants_all_ad_rgb):
     scene = mi.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'), res=32)
@@ -197,24 +198,24 @@ def test06_test_aov_ad_forward(variants_all_ad_rgb):
 
     spp = 16
 
+    key = 'red.reflectance.value'
     params = mi.traverse(scene)
-    params.keep('red.reflectance.value')
-    dr.enable_grad(params['red.reflectance.value'])
-    dr.set_grad(params['red.reflectance.value'], 1.0)
+
+    dr.enable_grad(params[key])
     params.update()
 
     image = mi.render(scene, params, integrator=path_integrator, spp=spp)
-    grad_image = dr.forward_to(image)
+    dr.forward(params[key])
+    grad_image = dr.grad(image)
     dr.eval(grad_image)
 
-    dr.set_grad(params['red.reflectance.value'], 1.0)
-    params.update()
-
     aov_image = mi.render(scene, params, integrator=aov_integrator, spp=spp)
-    grad_aov_image = dr.forward_to(image)
+    dr.forward(params[key])
+    grad_aov_image = dr.grad(aov_image)
     dr.eval(grad_aov_image)
 
     assert dr.allclose(grad_image, grad_aov_image[:,:,:3])
+
 
 def test06_test_aov_ad_backward(variants_all_ad_rgb):
     scene = mi.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'), res=32)
@@ -232,25 +233,26 @@ def test06_test_aov_ad_backward(variants_all_ad_rgb):
 
     spp = 16
 
+    key = 'red.reflectance.value'
     params = mi.traverse(scene)
-    params.keep('red.reflectance.value')
-    dr.enable_grad(params['red.reflectance.value'])
-    dr.set_grad(params['red.reflectance.value'], 1.0)
+
+    dr.enable_grad(params[key])
     params.update()
 
     image = mi.render(scene, params, integrator=path_integrator, spp=spp)
     dr.backward(image)
-    grad_image = dr.grad(params['red.reflectance.value'])
-    dr.eval(grad_image)
+    grad_path = dr.grad(params[key])
+    dr.eval(grad_path)
 
-    dr.set_grad(params['red.reflectance.value'], 1.0)
+    dr.set_grad(params[key], 0) # Reset to zero
     params.update()
+
     aov_image = mi.render(scene, params, integrator=aov_integrator, spp=spp)
     dr.backward_from(aov_image[:,:,:3])
-    grad_aov_image = dr.grad(params['red.reflectance.value'])
-    dr.eval(grad_aov_image)
+    grad_aov = dr.grad(params[key])
+    dr.eval(grad_aov)
 
-    assert dr.allclose(grad_image, grad_aov_image)
+    assert dr.allclose(grad_path, grad_aov)
 
 
 def test07_test_aov_normalmap(variants_all_ad_rgb):
