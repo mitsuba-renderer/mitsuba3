@@ -11,7 +11,7 @@ struct NativeState {
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &props) {
     ShapeKDTree *kdtree = new ShapeKDTree(props);
-    inc_ref(kdtree);
+    kdtree->inc_ref();
 
     if constexpr (dr::is_llvm_v<Float>) {
         m_accel = new NativeState<Float, Spectrum>();
@@ -122,7 +122,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
            ray tracing calls are pending. */
         m_accel_handle = 0;
     } else {
-        dec_ref((ShapeKDTree *) m_accel);
+        ((ShapeKDTree *) m_accel)->dec_ref();
     }
 
     m_accel = nullptr;
