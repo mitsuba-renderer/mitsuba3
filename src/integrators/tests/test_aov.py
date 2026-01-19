@@ -227,7 +227,7 @@ def test06_test_aov_ad_backward(variants_all_ad_rgb):
 
     aov_integrator = mi.load_dict({
         'type': 'aov',
-        'aovs': 'ab:albedo,dd.y:depth,nn:sh_normal',
+        'aovs': 'dd.y:depth,nn:sh_normal',
         'my_image': path_integrator
     })
 
