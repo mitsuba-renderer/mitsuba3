@@ -40,7 +40,7 @@ class EllipsoidsFactory:
 
 
 @pytest.mark.parametrize("shape_type", ['ellipsoids', 'ellipsoidsmesh'])
-def test01_render_span(variants_all_ad_rgb, regression_test_options, shape_type):
+def test01_render_span(variants_all_ad_rgb_unpolarized, regression_test_options, shape_type):
     if 'double' in mi.variant():
         pytest.skip("Test needs to be adapted for double precision variants")
 
@@ -102,7 +102,7 @@ def test01_render_span(variants_all_ad_rgb, regression_test_options, shape_type)
 
 
 @pytest.mark.parametrize("srgb_primitives", [True, False])
-def test02_render_stack(variants_all_ad_rgb, regression_test_options, srgb_primitives):
+def test02_render_stack(variants_all_ad_rgb_unpolarized, regression_test_options, srgb_primitives):
     if 'double' in mi.variant():
         pytest.skip("Test needs to be adapted for double precision variants")
 
@@ -167,7 +167,7 @@ def test02_render_stack(variants_all_ad_rgb, regression_test_options, srgb_primi
 
 
 @pytest.mark.parametrize("shape_type", ['ellipsoids', 'ellipsoidsmesh'])
-def test03_render_depth(variants_all_rgb, regression_test_options, shape_type):
+def test03_render_depth(variants_all_rgb_unpolarized, regression_test_options, shape_type):
     if 'double' in mi.variant():
         pytest.skip("Test needs to be adapted for double precision variants")
 

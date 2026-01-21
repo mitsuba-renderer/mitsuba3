@@ -108,6 +108,7 @@ variant_groups = {
     "all": v,
     "all_scalar": v.all("scalar"),
     "all_rgb": v.all("rgb"),
+    "all_rgb_unpolarized": v.all("rgb").exclude("polarized"),
     "all_spectral": v.all("spectral"),
     "all_backends_once": v.all("scalar").one()
     + v.all("llvm").one()
@@ -119,6 +120,7 @@ variant_groups = {
     "vec_rgb": v.all("rgb").exclude("scalar"),
     "vec_spectral": v.all("spectral").exclude("scalar"),
     "all_ad_rgb": v.all("ad", "rgb"),
+    "all_ad_rgb_unpolarized": v.all("ad", "rgb").exclude("polarized"),
     "all_ad_spectral": v.all("ad", "spectral"),
 }
 
