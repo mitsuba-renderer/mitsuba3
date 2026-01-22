@@ -139,16 +139,36 @@ public:
 
     /* Recap of numerical precision of lookup operations
      *
-     * variant | format   | accel  | behavior
+     * backend | variant | format   | accel  | behavior
      * ==================================================================
-     * float   | fp16     | true   | fp16 storage, fp16 interp, accel
-     * float   | variant  | true   | fp32 storage, fp32 interp, accel
-     * float   | fp16     | false  | fp16 storage, fp16 interp, no accel
-     * float   | variant  | false  | fp32 storage, fp32 interp, no accel
-     * double  | fp16     | true   | fp16 storage, fp16 interp, accel
-     * double  | variant  | true   | !!! fp64 storage, fp64 interp, no accel !!!
-     * double  | fp16     | false  | fp16 storage, fp16 interp, no accel
-     * double  | variant  | false  | fp64 storage, fp64 interp, no accel
+     * CUDA    | float   | fp16     | true   | fp16 storage, fp32* interp, accel
+     * CUDA    | float   | variant  | true   | fp32 storage, fp32* interp, accel
+     *
+     * CUDA    | float   | fp16     | false  | fp16 storage, fp32 interp, no accel
+     * CUDA    | float   | variant  | false  | fp32 storage, fp32 interp, no accel
+     *
+     * CUDA    | double  | fp16     | true   | fp16 storage, fp32* interp, accel
+     * CUDA    | double  | variant  | true   | fp64 storage, fp64  interp, no accel
+     *
+     * CUDA    | double  | fp16     | false  | fp16 storage, fp64 interp, no accel
+     * CUDA    | double  | variant  | false  | fp64 storage, fp64 interp, no accel
+     *
+     * \* Hardware-accelerated lookups are not exactly fp32 see:
+     *    https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#linear-filtering
+     *
+     * ------------------------------------------------------------------------
+     *
+     * CPU     | float   | fp16     | true   | fp16 storage, fp32 interp, no accel
+     * CPU     | float   | variant  | true   | fp32 storage, fp32 interp, no accel
+     *
+     * CPU     | float   | fp16     | false  | fp16 storage, fp32 interp, no accel
+     * CPU     | float   | variant  | false  | fp32 storage, fp32 interp, no accel
+     *
+     * CPU     | double  | fp16     | true   | fp16 storage, fp64 interp, no accel
+     * CPU     | double  | variant  | true   | fp64 storage, fp64 interp, no accel
+     *
+     * CPU     | double  | fp16     | false  | fp16 storage, fp64 interp, no accel
+     * CPU     | double  | variant  | false  | fp64 storage, fp64 interp, no accel
      */
 
     BitmapTexture(const Properties &props) : Texture(props) {
@@ -746,8 +766,8 @@ protected:
 
             return dr::fmadd(w0.y(), c0, w1.y() * c1);
         } else {
-            Color<StoredType, 3> out;
-            m_texture.template eval<StoredType>(uv, out.data(), active);
+            Color3f out;
+            m_texture.template eval<Float>(uv, out.data(), active);
 
             return srgb_model_eval<UnpolarizedSpectrum>(out, si.wavelengths);
         }
@@ -765,8 +785,8 @@ protected:
 
         Point2f uv = m_transform * si.uv;
 
-        StoredType out;
-        m_texture.template eval<StoredType>(uv, &out, active);
+        Float out;
+        m_texture.template eval<Float>(uv, &out, active);
 
         return out;
     }
@@ -783,8 +803,8 @@ protected:
 
         Point2f uv = m_transform * si.uv;
 
-        Color<StoredType, 3> out;
-        m_texture.template eval<StoredType>(uv, out.data(), active);
+        Color3f out;
+        m_texture.template eval<Float>(uv, out.data(), active);
 
         return out;
     }

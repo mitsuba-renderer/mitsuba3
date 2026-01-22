@@ -376,8 +376,8 @@ public:
                  * the interaction point is not "glued" to the shape. */
 
                 // Capture gradients of `m_grid_texture`
-                InputFloat sdf_value;
-                m_grid_texture.template eval<InputFloat>(rescale_point(local_p), &sdf_value);
+                Float sdf_value;
+                m_grid_texture.template eval<Float>(rescale_point(local_p), &sdf_value);
                 Point3f local_motion =
                     sdf_value * (-local_n) / dr::dot(local_n, local_grad);
                 local_p = dr::replace_grad(local_p, local_motion);
@@ -405,8 +405,8 @@ public:
 
                 /// Differentiable tangent plane point
                 // Capture gradients of `m_grid_texture`
-                InputFloat sdf_value;
-                m_grid_texture.template eval<InputFloat>(rescale_point(local_p), &sdf_value);
+                Float sdf_value;
+                m_grid_texture.template eval<Float>(rescale_point(local_p), &sdf_value);
 
                 Float t_diff =
                     sdf_value / dr::dot(dr::detach(local_n), -local_ray.d);
@@ -867,15 +867,12 @@ private:
      * the middle of the pixel. For a 3D grid, this means that values are not
      * at the corners, but in the middle of the voxels.
      */
-    MI_INLINE InputPoint3f rescale_point(const Point3f &p) const {
-        Point3f rescaled(
+    MI_INLINE Point3f rescale_point(const Point3f &p) const {
+        return {
             p[0] * (1 - m_inv_shape[0]) +  (m_inv_shape[0] / 2.f),
             p[1] * (1 - m_inv_shape[1]) +  (m_inv_shape[1] / 2.f),
             p[2] * (1 - m_inv_shape[2]) +  (m_inv_shape[2] / 2.f)
-        );
-
-        return InputPoint3f(InputFloat(rescaled.x()), InputFloat(rescaled.y()),
-                            InputFloat(rescaled.z()));
+        };
     }
 
     /* \brief Given the voxel position, returns tight bounding box around the
@@ -1066,26 +1063,26 @@ private:
 
     /// Computes the SDF gradient for a given point and its containing voxel
     Vector3f voxel_grad(const Point3f &p, const Point3i &voxel_index) const {
-        InputFloat f[6];
+        Float f[6];
         Point3f query;
 
         Point3f voxel_size = m_voxel_size.value();
         Point3f p000 = Point3f(voxel_index) * voxel_size;
 
         query = rescale_point(Point3f(p000[0] + voxel_size[0], p[1], p[2]));
-        m_grid_texture.template eval<InputFloat>(query, &f[0]);
+        m_grid_texture.template eval<Float>(query, &f[0]);
         query = rescale_point(Point3f(p000[0], p[1], p[2]));
-        m_grid_texture.template eval<InputFloat>(query, &f[1]);
+        m_grid_texture.template eval<Float>(query, &f[1]);
 
         query = rescale_point(Point3f(p[0], p000[1] + voxel_size[1], p[2]));
-        m_grid_texture.template eval<InputFloat>(query, &f[2]);
+        m_grid_texture.template eval<Float>(query, &f[2]);
         query = rescale_point(Point3f(p[0], p000[1], p[2]));
-        m_grid_texture.template eval<InputFloat>(query, &f[3]);
+        m_grid_texture.template eval<Float>(query, &f[3]);
 
         query = rescale_point(Point3f(p[0], p[1], p000[2] + voxel_size[2]));
-        m_grid_texture.template eval<InputFloat>(query, &f[4]);
+        m_grid_texture.template eval<Float>(query, &f[4]);
         query = rescale_point(Point3f(p[0], p[1], p000[2] ));
-        m_grid_texture.template eval<InputFloat>(query, &f[5]);
+        m_grid_texture.template eval<Float>(query, &f[5]);
 
         Float dx = (Float(f[0]) - Float(f[1])) / voxel_size.x(); // f(1, y, z) - f(0, y, z)
         Float dy = (Float(f[2]) - Float(f[3])) / voxel_size.y(); // f(x, 1, z) - f(x, 0, z)
