@@ -281,9 +281,8 @@ class PathProjectiveIntegrator(PSIntegrator):
                     # contribution with AD to enable light source optimization
                     em_val_diff = scene.eval_emitter_direction(si, ds, active_em)
                     inv_ds_pdf = dr.select(ds.pdf != 0, dr.rcp(ds.pdf), 0)
-                    em_weight = dr.replace_grad(
-                        em_weight, (em_val_diff * dr.detach(inv_ds_pdf))
-                    ) * dr.relative_grad(J)
+                    em_weight = dr.replace_grad(em_weight, em_val_diff * dr.detach(inv_ds_pdf))
+                    em_weight *= dr.relative_grad(J)
 
 
                 # Evaluate BSDF * cos(theta) differentiably
