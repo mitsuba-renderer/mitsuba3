@@ -100,7 +100,11 @@ private:
 
     std::vector<UInt64> m_accel_handles;
 
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
     MI_DECLARE_TRAVERSE_CB(m_shapes, m_shapes_registry_ids, m_accel_handles)
+#else
+    MI_DECLARE_TRAVERSE_CB(m_shapes, m_accel_handles)
+#endif
 };
 
 MI_EXTERN_CLASS(ShapeGroup)
