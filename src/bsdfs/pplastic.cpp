@@ -48,7 +48,7 @@ Polarized plastic material (:monosp:`pplastic`)
        distribution.
 
  * - alpha
-   - |float|
+   - |float| or |texture|
    - Specifies the roughness of the unresolved surface micro-geometry along the tangent and
      bitangent directions. When the Beckmann distribution is used, this parameter is equal to the
      **root mean square** (RMS) slope of the microfacets. (Default: 0.1)
@@ -61,7 +61,7 @@ Polarized plastic material (:monosp:`pplastic`)
      reducing variance in some cases. (Default: |true|, i.e. use visible normal sampling)
 
  * - eta
-   - |float|
+   - |float| or |texture|
    - Relative index of refraction from the exterior to the interior
    - |exposed|, |differentiable|, |discontinuous|
 
@@ -150,29 +150,56 @@ public:
     MI_IMPORT_TYPES(Texture, MicrofacetDistribution)
 
     PolarizedPlastic(const Properties &props) : Base(props) {
-        m_diffuse_reflectance  = props.get_texture<Texture>("diffuse_reflectance",  .5f);
+        m_diffuse_reflectance = props.get_texture<Texture>("diffuse_reflectance", .5f);
 
         if (props.has_property("specular_reflectance"))
             m_specular_reflectance = props.get_texture<Texture>("specular_reflectance", 1.f);
 
-        /// Specifies the internal index of refraction at the interface
-        ScalarFloat int_ior = lookup_ior(props, "int_ior", "polypropylene");
+        if (props.has_property("eta")) {
+            m_eta = props.get_texture<Texture>("eta", 0.f);
+            if (props.has_property("int_ior") || props.has_property("ext_iot"))
+                Throw("Should specify either eta or int_ior and ext_ior, not both.");
+        }
+        else {
+            /// Specifies the internal index of refraction at the interface
+            ScalarFloat int_ior = lookup_ior(props, "int_ior", "polypropylene");
 
-        /// Specifies the external index of refraction at the interface
-        ScalarFloat ext_ior = lookup_ior(props, "ext_ior", "air");
+            /// Specifies the external index of refraction at the interface
+            ScalarFloat ext_ior = lookup_ior(props, "ext_ior", "air");
 
-        if (int_ior < 0.f || ext_ior < 0.f || int_ior == ext_ior)
-            Throw("The interior and exterior indices of "
-                  "refraction must be positive and differ!");
+            if (int_ior < 0.f || ext_ior < 0.f || int_ior == ext_ior)
+                Throw("The interior and exterior indices of "
+                      "refraction must be positive and differ!");
 
-        m_eta = int_ior / ext_ior;
+            m_eta = props.get_texture<Texture>("eta", int_ior / ext_ior);
+        }
 
-        mitsuba::MicrofacetDistribution<ScalarFloat, Spectrum> distr(props);
-        m_type = distr.type();
-        m_sample_visible = distr.sample_visible();
+        if (props.has_property("distribution")) {
+            std::string distr = string::to_lower(props.as_string("distribution"));
+            if (distr == "beckmann")
+                m_type = MicrofacetType::Beckmann;
+            else if (distr == "ggx")
+                m_type = MicrofacetType::GGX;
+            else
+                Throw("Specified an invalid distribution \"%s\", must be "
+                      "\"beckmann\" or \"ggx\"!", distr.c_str());
+        } else {
+            m_type = MicrofacetType::Beckmann;
+        }
 
-        m_alpha_u = distr.alpha_u();
-        m_alpha_v = distr.alpha_v();
+        m_sample_visible = props.get<bool>("sample_visible", true);
+
+        if (props.has_property("alpha_u") || props.has_property("alpha_v")) {
+            if (!props.has_property("alpha_u") || !props.has_property("alpha_v"))
+                Throw("Microfacet model: both 'alpha_u' and 'alpha_v' must be specified.");
+            if (props.has_property("alpha"))
+                Throw("Microfacet model: please specify"
+                      "either 'alpha' or 'alpha_u'/'alpha_v'.");
+            m_alpha_u = props.get_texture<Texture>("alpha_u", 0.1f);
+            m_alpha_v = props.get_texture<Texture>("alpha_v", 0.1f);
+        } else {
+            m_alpha_u = m_alpha_v = props.get_texture<Texture>("alpha", 0.1f);
+        }
 
         m_flags = BSDFFlags::GlossyReflection | BSDFFlags::DiffuseReflection;
         if (dr::all(m_alpha_u != m_alpha_v))
@@ -241,7 +268,10 @@ public:
         bs.eta = 1.f;
 
         if (dr::any_or<true>(sample_specular)) {
-            MicrofacetDistribution distr(m_type, m_alpha_u, m_alpha_v, m_sample_visible);
+            MicrofacetDistribution distr(m_type,
+                                         m_alpha_u->eval_1(si, active),
+                                         m_alpha_v->eval_1(si, active),
+                                         m_sample_visible);
             Normal3f m = std::get<0>(distr.sample(si.wi, sample2));
 
             dr::masked(bs.wo, sample_specular) = reflect(si.wi, m);
@@ -287,12 +317,15 @@ public:
                      wi_hat = ctx.mode == TransportMode::Radiance ? si.wi : wo;
 
             if (has_specular) {
-                MicrofacetDistribution distr(m_type, m_alpha_u, m_alpha_v, m_sample_visible);
+                MicrofacetDistribution distr(m_type,
+                                             m_alpha_u->eval_1(si, active),
+                                             m_alpha_v->eval_1(si, active),
+                                             m_sample_visible);
                 Vector3f H = dr::normalize(wo + si.wi);
                 Float D = distr.eval(H);
 
                 // Mueller matrix for specular reflection.
-                Spectrum F = mueller::specular_reflection(dot(wo_hat, H), m_eta);
+                Spectrum F = mueller::specular_reflection(dot(wo_hat, H), m_eta->eval_1(si, active));
 
                 /* The Stokes reference frame vector of this matrix lies perpendicular
                    to the plane of reflection. */
@@ -329,16 +362,16 @@ public:
                    The refraction to the outside will introduce some polarization. */
 
                 // Refract inside
-                Spectrum To = mueller::specular_transmission(dr::abs(Frame3f::cos_theta(wo_hat)), m_eta);
+                Spectrum To = mueller::specular_transmission(dr::abs(Frame3f::cos_theta(wo_hat)), m_eta->eval_1(si, active));
 
                 // Diffuse subsurface scattering that acts as a depolarizer.
                 Spectrum diff = depolarizer<Spectrum>(m_diffuse_reflectance->eval(si, active));
 
                 // Refract outside
                 Normal3f n(0.f, 0.f, 1.f);
-                Float inv_eta = dr::rcp(m_eta);
+                Float inv_eta = dr::rcp(m_eta->eval_1(si, active));
                 Float cos_theta_i_hat = ctx.mode == TransportMode::Radiance ? cos_theta_i : cos_theta_o;
-                Float cos_theta_t_i = std::get<1>(fresnel(cos_theta_i_hat, m_eta));
+                Float cos_theta_t_i = std::get<1>(fresnel(cos_theta_i_hat, m_eta->eval_1(si, active)));
                 Vector3f wi_hat_p = -refract(wi_hat, cos_theta_t_i, inv_eta);
                 Spectrum Ti = mueller::specular_transmission(dr::abs(Frame3f::cos_theta(wi_hat_p)), inv_eta);
 
@@ -370,11 +403,14 @@ public:
             }
         } else {
             if (has_specular) {
-                MicrofacetDistribution distr(m_type, m_alpha_u, m_alpha_v, m_sample_visible);
+                MicrofacetDistribution distr(m_type,
+                                             m_alpha_u->eval_1(si, active),
+                                             m_alpha_v->eval_1(si, active),
+                                             m_sample_visible);
                 Vector3f H = dr::normalize(wo + si.wi);
                 Float D = distr.eval(H);
 
-                Spectrum F = std::get<0>(fresnel(dot(si.wi, H), m_eta));
+                Spectrum F = std::get<0>(fresnel(dot(si.wi, H), m_eta->eval_1(si, active)));
                 Float G = distr.G(si.wi, wo, H);
                 Float value = D * G / (4.f * cos_theta_i);
 
@@ -390,8 +426,8 @@ public:
                    2) Subsurface scattering
                    3) Specular refraction outside again
                    where both refractions reduce the energy of the diffuse component. */
-                UnpolarizedSpectrum r_i = std::get<0>(fresnel(cos_theta_i, m_eta)),
-                                    r_o = std::get<0>(fresnel(cos_theta_o, m_eta));
+                UnpolarizedSpectrum r_i = std::get<0>(fresnel(cos_theta_i, m_eta->eval_1(si, active))),
+                                    r_o = std::get<0>(fresnel(cos_theta_o, m_eta->eval_1(si, active)));
                 diff = (1.f - r_o) * diff * (1.f - r_i);
                 result += diff * dr::InvPi<Float> * cos_theta_o;
             }
@@ -422,7 +458,10 @@ public:
 
         // Specular component
         Vector3f H = dr::normalize(wo + si.wi);
-        MicrofacetDistribution distr(m_type, m_alpha_u, m_alpha_v, m_sample_visible);
+        MicrofacetDistribution distr(m_type,
+                                     m_alpha_u->eval_1(si, active),
+                                     m_alpha_v->eval_1(si, active),
+                                     m_sample_visible);
 
         Float p_specular;
         if (m_sample_visible)
@@ -463,11 +502,11 @@ private:
     MicrofacetType m_type;
     /// Importance sample the distribution of visible normals?
     bool m_sample_visible;
-    /// Roughness value
-    Float m_alpha_u, m_alpha_v;
+    /// Roughness values
+    ref<Texture> m_alpha_u, m_alpha_v;
 
     /// Relative refractive index
-    Float m_eta;
+    ref<Texture> m_eta;
 
     /// Sampling weight for specular component
     Float m_specular_sampling_weight;
