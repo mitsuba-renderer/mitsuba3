@@ -100,6 +100,10 @@ private:
 
     std::vector<UInt64> m_accel_handles;
 
+    // Cache for parameters_grad_enabled() to avoid repeated iteration
+    mutable bool m_parameters_grad_enabled_cache = false;
+    mutable bool m_parameters_grad_enabled_dirty = true;
+
 #if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
     MI_DECLARE_TRAVERSE_CB(m_shapes, m_shapes_registry_ids, m_accel_handles)
 #else

@@ -63,6 +63,16 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props)
             dr::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
     }
 #endif
+
+    // Initialize gradient enabled cache
+    m_parameters_grad_enabled_cache = false;
+    for (auto s : m_shapes) {
+        if (s->parameters_grad_enabled()) {
+            m_parameters_grad_enabled_cache = true;
+            break;
+        }
+    }
+    m_parameters_grad_enabled_dirty = false;
 }
 
 MI_VARIANT ShapeGroup<Float, Spectrum>::~ShapeGroup() {
@@ -94,6 +104,9 @@ MI_VARIANT void ShapeGroup<Float, Spectrum>::parameters_changed(const std::vecto
             break;
         }
     }
+
+    // Mark gradient cache as dirty since parameters may have changed
+    m_parameters_grad_enabled_dirty = true;
 
     Base::parameters_changed();
 }
@@ -230,10 +243,18 @@ bool ShapeGroup<Float, Spectrum>::ray_test_scalar(const ScalarRay3f &ray) const 
 #endif
 
 MI_VARIANT bool ShapeGroup<Float, Spectrum>::parameters_grad_enabled() const {
-    for (auto s : m_shapes)
-        if (s->parameters_grad_enabled())
-            return true;
-    return false;
+    // Recompute cache if dirty
+    if (m_parameters_grad_enabled_dirty) {
+        m_parameters_grad_enabled_cache = false;
+        for (auto s : m_shapes) {
+            if (s->parameters_grad_enabled()) {
+                m_parameters_grad_enabled_cache = true;
+                break;
+            }
+        }
+        m_parameters_grad_enabled_dirty = false;
+    }
+    return m_parameters_grad_enabled_cache;
 }
 
 MI_VARIANT std::string ShapeGroup<Float, Spectrum>::to_string() const {

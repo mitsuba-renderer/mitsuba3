@@ -1251,7 +1251,11 @@ void transform_upgrade(const ParserConfig &/*config*/, ParserState &state) {
 
 // Helper function to detect circular references using DFS
 static void check_cycles(const ParserState &state, size_t node_idx,
-                         std::vector<size_t> &path) {
+                         std::vector<size_t> &path, std::vector<bool> &visited) {
+    // If already visited, skip (optimization for shared subgraphs)
+    if (visited[node_idx])
+        return;
+
     // Check if current node is already in the path (cycle detected)
     auto it = std::find(path.begin(), path.end(), node_idx);
     if (it != path.end()) {
@@ -1272,8 +1276,11 @@ static void check_cycles(const ParserState &state, size_t node_idx,
     // Add current node to path and recurse
     path.push_back(node_idx);
     for (const auto &prop : state[node_idx].props.filter(Properties::Type::ResolvedReference))
-        check_cycles(state, prop.get<Properties::ResolvedReference>().index(), path);
+        check_cycles(state, prop.get<Properties::ResolvedReference>().index(), path, visited);
     path.pop_back();
+
+    // Mark node as visited after processing
+    visited[node_idx] = true;
 }
 
 void transform_resolve(const ParserConfig &/*config*/, ParserState &state) {
@@ -1298,8 +1305,9 @@ void transform_resolve(const ParserConfig &/*config*/, ParserState &state) {
 
     // Second pass: detect circular references
     std::vector<size_t> path;
+    std::vector<bool> visited(state.size(), false);
     for (size_t i = 0; i < state.size(); ++i)
-        check_cycles(state, i, path);
+        check_cycles(state, i, path, visited);
 }
 
 void transform_merge_equivalent(const ParserConfig &/*config*/, ParserState &state) {
