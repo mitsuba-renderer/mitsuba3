@@ -493,60 +493,99 @@ private:
 
     /// Helper routine to recompute the bounding boxes of all ellipsoids.
     void recompute_bbox() {
+        Timer timer;
         size_t ellipsoid_count = primitive_count();
-        auto&& data = dr::migrate(m_ellipsoids.data(), AllocType::Host);
-        auto&& extents = dr::migrate(m_ellipsoids.extents_data(), AllocType::Host);
 
-        Log(Debug, "Recomputing bounding boxes for \"%s\" ellipsoid ellipsoids", ellipsoid_count);
-        if constexpr (dr::is_jit_v<Float>)
-            dr::sync_thread();
+        Log(Debug, "Recomputing bounding boxes for \"%s\" ellipsoids", ellipsoid_count);
 
-        const float *ptr = data.data();
-        const float *ptr_extents = extents.data();
+        if constexpr (dr::is_jit_v<Float>) {
+            UInt32 idx = dr::arange<UInt32>(m_ellipsoids.count());
+            auto ellipsoid = m_ellipsoids.template get_ellipsoid<Float>(idx);
+            ellipsoid.scale *= m_ellipsoids.extents_data();
+            auto rot = dr::quat_to_matrix<Matrix3f>(ellipsoid.quat);
 
-        BoundingBoxType *host_aabbs = (BoundingBoxType *) jit_malloc(
-            AllocType::Host, sizeof(BoundingBoxType) * ellipsoid_count);
-
-        m_bbox.reset();
-
-        for (size_t i = 0; i < ellipsoid_count; ++i) {
-            size_t idx = i * EllipsoidStructSize;
-            ScalarPoint3f center(ptr[idx + 0], ptr[idx + 1], ptr[idx + 2]);
-            ScalarVector3f scale(ptr[idx + 3], ptr[idx + 4], ptr[idx + 5]);
-            ScalarQuaternion4f quat(ptr[idx + 6], ptr[idx + 7], ptr[idx + 8], ptr[idx + 9]);
-            scale *= ptr_extents[i];
-            auto rot = dr::quat_to_matrix<ScalarMatrix3f>(quat);
-
-            // Derivation here https://tavianator.com/2014/ellipsoid_bounding_boxes.html
-            ScalarVector3f delta = ScalarVector3f(
-                dr::norm(rot[0] * scale),
-                dr::norm(rot[1] * scale),
-                dr::norm(rot[2] * scale)
+            Vector3f delta = Vector3f(
+                dr::norm(rot[0] * ellipsoid.scale),
+                dr::norm(rot[1] * ellipsoid.scale),
+                dr::norm(rot[2] * ellipsoid.scale)
             );
 
-            auto prim_bbox = ScalarBoundingBox3f(center - delta, center + delta);
+            auto bbox = BoundingBox3f(ellipsoid.center - delta, ellipsoid.center + delta);
+            dr::eval(bbox);
 
-            // Append the ellipsoid bounding box to the list
-            host_aabbs[i] = BoundingBoxType(prim_bbox);
+            uint32_t size = (uint32_t) sizeof(BoundingBoxType) / sizeof(ScalarFloat);
+            uint32_t stride = (uint32_t) offsetof(BoundingBoxType, max) / sizeof(ScalarFloat);
 
-            // Expand the shape's bounding box
-            m_bbox.expand(prim_bbox);
+            Float data = dr::empty<Float>(ellipsoid_count * size);
+            for (int i = 0; i < 3; i++) {
+                dr::scatter(data, bbox.min[i], idx * size + i);
+                dr::scatter(data, bbox.max[i], idx * size + i + stride);
+            }
+
+            if constexpr (dr::is_cuda_v<Float>) {
+                jit_free(m_device_bboxes);
+                m_device_bboxes = jit_malloc(AllocType::Device, sizeof(BoundingBoxType) * ellipsoid_count);
+                jit_memcpy(JitBackend::CUDA, m_device_bboxes, data.data(),
+                           sizeof(BoundingBoxType) * ellipsoid_count);
+            }
+
+            if constexpr (dr::is_llvm_v<Float>) {
+                jit_free(m_host_bboxes);
+                m_host_bboxes = jit_malloc(AllocType::Host, sizeof(BoundingBoxType) * ellipsoid_count);
+                jit_memcpy(JitBackend::LLVM, m_host_bboxes, data.data(),
+                           sizeof(BoundingBoxType) * ellipsoid_count);
+            }
+
+            m_bbox = ScalarBoundingBox3f(
+                ScalarVector3f(
+                    dr::slice<ScalarFloat>(dr::min(bbox.min[0])),
+                    dr::slice<ScalarFloat>(dr::min(bbox.min[1])),
+                    dr::slice<ScalarFloat>(dr::min(bbox.min[2]))
+                ),
+                ScalarVector3f(
+                    dr::slice<ScalarFloat>(dr::max(bbox.max[0])),
+                    dr::slice<ScalarFloat>(dr::max(bbox.max[1])),
+                    dr::slice<ScalarFloat>(dr::max(bbox.max[2]))
+                )
+            );
+        } else {
+            const float *ptr = m_ellipsoids.data().data();
+            const float *ptr_extents = m_ellipsoids.extents_data().data();
+
+            BoundingBoxType *host_bboxes = (BoundingBoxType *) jit_malloc(
+                AllocType::Host, sizeof(BoundingBoxType) * ellipsoid_count);
+
+            m_bbox.reset();
+
+            for (size_t i = 0; i < ellipsoid_count; ++i) {
+                size_t idx = i * EllipsoidStructSize;
+                ScalarPoint3f center(ptr[idx + 0], ptr[idx + 1], ptr[idx + 2]);
+                ScalarVector3f scale(ptr[idx + 3], ptr[idx + 4], ptr[idx + 5]);
+                ScalarQuaternion4f quat(ptr[idx + 6], ptr[idx + 7], ptr[idx + 8], ptr[idx + 9]);
+                scale *= ptr_extents[i];
+                auto rot = dr::quat_to_matrix<ScalarMatrix3f>(quat);
+
+                ScalarVector3f delta = ScalarVector3f(
+                    dr::norm(rot[0] * scale),
+                    dr::norm(rot[1] * scale),
+                    dr::norm(rot[2] * scale)
+                );
+                auto prim_bbox = ScalarBoundingBox3f(center - delta, center + delta);
+
+                // Append the ellipsoid bounding box to the list
+                host_bboxes[i] = BoundingBoxType(prim_bbox);
+
+                // Expand the shape's bounding box
+                m_bbox.expand(prim_bbox);
+            }
+
+            jit_free(m_host_bboxes);
+            m_host_bboxes = host_bboxes;
         }
 
-        Log(Debug, "Finished recomputing bounding boxes");
-
-        if constexpr (dr::is_cuda_v<Float>) {
-            jit_free(m_device_bboxes);
-            void *device_aabbs = jit_malloc(
-                AllocType::Device, sizeof(BoundingBoxType) * ellipsoid_count);
-            jit_memcpy_async(JitBackend::CUDA, device_aabbs, host_aabbs,
-                             sizeof(BoundingBoxType) * ellipsoid_count);
-            m_device_bboxes = device_aabbs;
-        }
-
-        jit_free(m_host_bboxes);
-        m_host_bboxes = host_aabbs;
+        Log(Debug, "Finished recomputing bounding boxes in %s", util::time_string((float) timer.value()));
     }
+
 
 private:
     /// Object holding the ellipsoids data and attributes
