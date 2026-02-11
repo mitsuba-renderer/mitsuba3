@@ -175,7 +175,7 @@ public:
         }
 
         if (props.has_property("distribution")) {
-            std::string distr = string::to_lower(props.as_string("distribution"));
+            std::string distr = string::to_lower(props.get<std::string_view>("distribution"));
             if (distr == "beckmann")
                 m_type = MicrofacetType::Beckmann;
             else if (distr == "ggx")
