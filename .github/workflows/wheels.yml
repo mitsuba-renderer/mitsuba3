@@ -7,6 +7,9 @@ on:
         required: true
         default: '0'
 
+env:
+  VARIANTS: "scalar_rgb,scalar_spectral,scalar_spectral_polarized,llvm_ad_rgb,llvm_ad_mono,llvm_ad_mono_polarized,llvm_ad_spectral,llvm_ad_spectral_polarized,cuda_ad_rgb,cuda_ad_mono,cuda_ad_mono_polarized,cuda_ad_spectral,cuda_ad_spectral_polarized"
+
 jobs:
   build_wheels:
     strategy:
@@ -57,34 +60,39 @@ jobs:
       ################################################################
       # Set up envvars to build the correct wheel (stable ABI or not)
       ################################################################
-
-
-
       - name: Prepare cibuildwheel environment (UNIX)
         if: ${{ ! endsWith(matrix.python, '_stable') && runner.os != 'Windows' }}
         run: |
-          echo "CIBW_BUILD=${{ matrix.python }}-*" >> $GITHUB_ENV &&
-          echo "CIBW_CONFIG_SETTINGS=\"cmake.args=-DMI_DEFAULT_VARIANTS=\"scalar_rgb,scalar_spectral,scalar_spectral_polarized,llvm_ad_rgb,llvm_ad_mono,llvm_ad_mono_polarized,llvm_ad_spectral,llvm_ad_spectral_polarized,cuda_ad_rgb,cuda_ad_mono,cuda_ad_mono_polarized,cuda_ad_spectral,cuda_ad_spectral_polarized\"\"" >> $GITHUB_ENV
+          echo "CIBW_BUILD=${{ matrix.python }}-*" >> $GITHUB_ENV
+          echo "CIBW_CONFIG_SETTINGS=\"cmake.args=-DMI_DEFAULT_VARIANTS=\"${{ env.VARIANTS }}\"\"" >> $GITHUB_ENV
 
       - name: Prepare cibuildwheel environment (Windows)
         if: ${{ ! endsWith(matrix.python, '_stable') && runner.os == 'Windows' }}
         run: |
           echo "CIBW_BUILD=${{ matrix.python }}-*" >> $env:GITHUB_ENV
-          echo "CIBW_CONFIG_SETTINGS=cmake.args='-DMI_DEFAULT_VARIANTS='scalar_rgb,scalar_spectral,scalar_spectral_polarized,llvm_ad_rgb,llvm_ad_mono,llvm_ad_mono_polarized,llvm_ad_spectral,llvm_ad_spectral_polarized,cuda_ad_rgb,cuda_ad_mono,cuda_ad_mono_polarized,cuda_ad_spectral,cuda_ad_spectral_polarized''" >> $env:GITHUB_ENV
+          echo "CIBW_CONFIG_SETTINGS=cmake.args='-DMI_DEFAULT_VARIANTS='${{ env.VARIANTS }}''" >> $env:GITHUB_ENV
 
       - name: Prepare cibuildwheel environment for stable ABI wheel (UNIX)
         if: ${{ endsWith(matrix.python, '_stable') && runner.os != 'Windows' }}
         run: |
-          stable_cp=$(echo ${{ matrix.python }} | cut -d_ -f1) &&
-          echo "CIBW_BUILD=${stable_cp}-*" >> $GITHUB_ENV &&
-          echo "CIBW_CONFIG_SETTINGS=\"wheel.py-api=cp312\" \"cmake.args=-DDRJIT_STABLE_ABI=ON -DMI_STABLE_ABI=ON -DMI_DEFAULT_VARIANTS=\"scalar_rgb,scalar_spectral,scalar_spectral_polarized,llvm_ad_rgb,llvm_ad_mono,llvm_ad_mono_polarized,llvm_ad_spectral,llvm_ad_spectral_polarized,cuda_ad_rgb,cuda_ad_mono,cuda_ad_mono_polarized,cuda_ad_spectral,cuda_ad_spectral_polarized\"\"" >> $GITHUB_ENV
+          stable_cp=$(echo ${{ matrix.python }} | cut -d_ -f1)
+          echo "CIBW_BUILD=${stable_cp}-*" >> $GITHUB_ENV
+          echo "CIBW_ENVIRONMENT=SKBUILD_WHEEL_PY_API=cp312" >> $GITHUB_ENV
+          echo "CIBW_BUILD_FRONTEND=pip; args: --no-build-isolation" >> $GITHUB_ENV
+          echo "CIBW_BEFORE_BUILD=python {project}/.github/install_build_deps_abi3.py" >> $GITHUB_ENV
+          echo "CIBW_BEFORE_TEST=python {project}/.github/install_build_deps_abi3.py --drjit-only" >> $GITHUB_ENV
+          echo "CIBW_CONFIG_SETTINGS=\"cmake.build-type=Debug\" \"cmake.args=-DDRJIT_STABLE_ABI=ON;-DMI_STABLE_ABI=ON;-DMI_DEFAULT_VARIANTS=${{ env.VARIANTS }}\"" >> $GITHUB_ENV
 
       - name: Prepare cibuildwheel environment for stable ABI wheel (Windows)
         if: ${{ endsWith(matrix.python, '_stable') && runner.os == 'Windows' }}
         run: |
           $stable_cp = '${{ matrix.python }}' -split '_'
           echo "CIBW_BUILD=$($stable_cp[0])-*" >> $env:GITHUB_ENV
-          echo "CIBW_CONFIG_SETTINGS=wheel.py-api=cp312 cmake.args='-DDRJIT_STABLE_ABI=ON -DMI_STABLE_ABI=ON -DMI_DEFAULT_VARIANTS='scalar_rgb,scalar_spectral,scalar_spectral_polarized,llvm_ad_rgb,llvm_ad_mono,llvm_ad_mono_polarized,llvm_ad_spectral,llvm_ad_spectral_polarized,cuda_ad_rgb,cuda_ad_mono,cuda_ad_mono_polarized,cuda_ad_spectral,cuda_ad_spectral_polarized''" >> $env:GITHUB_ENV
+          echo "CIBW_ENVIRONMENT=SKBUILD_WHEEL_PY_API=cp312" >> $env:GITHUB_ENV
+          echo "CIBW_BUILD_FRONTEND=pip; args: --no-build-isolation" >> $env:GITHUB_ENV
+          echo "CIBW_BEFORE_BUILD=python {project}/.github/install_build_deps_abi3.py" >> $env:GITHUB_ENV
+          echo "CIBW_BEFORE_TEST=python {project}/.github/install_build_deps_abi3.py --drjit-only" >> $env:GITHUB_ENV
+          echo "CIBW_CONFIG_SETTINGS=cmake.build-type=Debug cmake.args='-DDRJIT_STABLE_ABI=ON;-DMI_STABLE_ABI=ON;-DMI_DEFAULT_VARIANTS=${{ env.VARIANTS }}'" >> $env:GITHUB_ENV
 
 
       #########################
