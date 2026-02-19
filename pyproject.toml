@@ -50,7 +50,7 @@ logging.level = "INFO"
 # Necessary to see build output from the actual compilation
 build-verbosity = 1
 
-build = ["cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*"]
+build = ["cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*", "cp314-*"]
 archs = ["auto64"]
 skip = "*-musllinux* pp*"
 
