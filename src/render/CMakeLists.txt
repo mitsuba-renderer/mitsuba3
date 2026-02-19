@@ -12,6 +12,7 @@ if (MI_ENABLE_CUDA)
 
   # Create command line for running bin2c cmake script
   set(bin2c_cmdline
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     -DOUTPUT_C=librender_ptx.cpp
     -DOUTPUT_H=librender_ptx.h
     "-DINPUT_FILES=${resources_string}"
