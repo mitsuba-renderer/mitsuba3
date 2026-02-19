@@ -207,7 +207,7 @@ static nb::object get_attr(nb::handle key) {
 
     // If no variant is set, inform the user
     if (curr_variant.is_none() && PyUnicode_Check(key.ptr())) {
-        const char* attr_name = PyUnicode_AsUTF8(key.ptr());
+        const char* attr_name = nb::borrow<nb::str>(key).c_str();
         if (attr_name) {
             return nb::steal(PyErr_Format(PyExc_AttributeError,
                 "Cannot access '%s' before setting a variant. "

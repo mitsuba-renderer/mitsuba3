@@ -105,7 +105,7 @@ static void parse_color_spectrum(ParserState &state, size_t parent_idx,
 static void parse_dict_impl(ParserState &state, const nb::dict &d,
                             size_t parent_idx, std::string_view parent_path) {
     for (auto [key_o, value] : d) {
-        if (!key_o.type().is(&PyUnicode_Type))
+        if (!nb::isinstance<nb::str>(key_o))
             Throw("[%s]: dictionary keys must be strings", parent_path);
 
         std::string_view key = nb::cast<std::string_view>(key_o);
@@ -125,10 +125,8 @@ static void parse_dict_impl(ParserState &state, const nb::dict &d,
         std::string path = is_root ? std::string(key)
                                    : std::string(parent_path) + "." + std::string(key);
 
-        nb::handle tp = value.type();
-
         // Check if value is a nested dictionary (child object)
-        if (tp.is(&PyDict_Type)) {
+        if (nb::isinstance<nb::dict>(value)) {
             nb::dict child_dict = nb::borrow<nb::dict>(value);
 
             if (!child_dict.contains("type"))
@@ -269,7 +267,7 @@ static ParserState parse_dict(const ParserConfig &, const nb::dict &d) {
 
     // Parse dictionary entries recursively, but first validate all top-level keys
     for (auto [key_o, value] : d) {
-        if (!key_o.type().is(&PyUnicode_Type))
+        if (!nb::isinstance<nb::str>(key_o))
             Throw("Dictionary keys must be strings");
 
         std::string_view key = nb::cast<std::string_view>(key_o);
