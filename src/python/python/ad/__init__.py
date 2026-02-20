@@ -1,3 +1,4 @@
+from .bsdfs import *
 from .largesteps import LargeSteps
 from .integrators import *
 from .optimizers import *
