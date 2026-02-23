@@ -9064,6 +9064,10 @@ static const char *__doc_mitsuba_ShapeGroup_m_embree_geometries = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeGroup_m_embree_scene = R"doc()doc";
 
+static const char *__doc_mitsuba_ShapeGroup_m_parameters_grad_enabled_cache = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeGroup_m_parameters_grad_enabled_dirty = R"doc()doc";
+
 static const char *__doc_mitsuba_ShapeGroup_m_sbt_offset = R"doc(OptiX hitgroup sbt offset)doc";
 
 static const char *__doc_mitsuba_ShapeGroup_m_shape_types = R"doc()doc";

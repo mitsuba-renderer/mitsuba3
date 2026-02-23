@@ -18247,6 +18247,10 @@
 
         Evaluate the linear interpolant represented by this texture.
 
+        When hardware-acceleration is not available, the numerical precision of the
+        interpolation is dictated by the floating point precision of the query
+        point type.
+
         Parameter ``pos`` (drjit.llvm.ad.Array1f):
             *no description available*
 
@@ -18276,13 +18280,16 @@
         calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
         direct evaluation of the B-Spline basis functions in that case.
 
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
         Parameter ``pos`` (drjit.llvm.ad.Array1f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool | None):
             Mask to specify active lanes.
 
-        Parameter ``force_nonaccel`` (bool):
+        Parameter ``force_nonaccel`` (bool | None):
             *no description available*
 
         Returns → list[drjit.llvm.ad.Float]:
@@ -18350,6 +18357,9 @@
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
+
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
 
         Parameter ``pos`` (drjit.llvm.ad.Array1f):
             *no description available*
@@ -18548,6 +18558,10 @@
 
         Evaluate the linear interpolant represented by this texture.
 
+        When hardware-acceleration is not available, the numerical precision of the
+        interpolation is dictated by the floating point precision of the query
+        point type.
+
         Parameter ``pos`` (drjit.llvm.ad.Array1f):
             *no description available*
 
@@ -18577,13 +18591,16 @@
         calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
         direct evaluation of the B-Spline basis functions in that case.
 
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
         Parameter ``pos`` (drjit.llvm.ad.Array1f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool | None):
             Mask to specify active lanes.
 
-        Parameter ``force_nonaccel`` (bool):
+        Parameter ``force_nonaccel`` (bool | None):
             *no description available*
 
         Returns → list[drjit.llvm.ad.Float]:
@@ -18651,6 +18668,9 @@
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
+
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
 
         Parameter ``pos`` (drjit.llvm.ad.Array1f):
             *no description available*
@@ -18849,6 +18869,10 @@
 
         Evaluate the linear interpolant represented by this texture.
 
+        When hardware-acceleration is not available, the numerical precision of the
+        interpolation is dictated by the floating point precision of the query
+        point type.
+
         Parameter ``pos`` (drjit.llvm.ad.Array1f):
             *no description available*
 
@@ -18878,13 +18902,16 @@
         calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
         direct evaluation of the B-Spline basis functions in that case.
 
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
         Parameter ``pos`` (drjit.llvm.ad.Array1f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool | None):
             Mask to specify active lanes.
 
-        Parameter ``force_nonaccel`` (bool):
+        Parameter ``force_nonaccel`` (bool | None):
             *no description available*
 
         Returns → list[drjit.llvm.ad.Float]:
@@ -18952,6 +18979,9 @@
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
+
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
 
         Parameter ``pos`` (drjit.llvm.ad.Array1f):
             *no description available*
@@ -19150,6 +19180,10 @@
 
         Evaluate the linear interpolant represented by this texture.
 
+        When hardware-acceleration is not available, the numerical precision of the
+        interpolation is dictated by the floating point precision of the query
+        point type.
+
         Parameter ``pos`` (drjit.llvm.ad.Array2f):
             *no description available*
 
@@ -19179,13 +19213,16 @@
         calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
         direct evaluation of the B-Spline basis functions in that case.
 
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
         Parameter ``pos`` (drjit.llvm.ad.Array2f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool | None):
             Mask to specify active lanes.
 
-        Parameter ``force_nonaccel`` (bool):
+        Parameter ``force_nonaccel`` (bool | None):
             *no description available*
 
         Returns → list[drjit.llvm.ad.Float]:
@@ -19253,6 +19290,9 @@
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
+
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
 
         Parameter ``pos`` (drjit.llvm.ad.Array2f):
             *no description available*
@@ -19451,6 +19491,10 @@
 
         Evaluate the linear interpolant represented by this texture.
 
+        When hardware-acceleration is not available, the numerical precision of the
+        interpolation is dictated by the floating point precision of the query
+        point type.
+
         Parameter ``pos`` (drjit.llvm.ad.Array2f):
             *no description available*
 
@@ -19480,13 +19524,16 @@
         calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
         direct evaluation of the B-Spline basis functions in that case.
 
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
         Parameter ``pos`` (drjit.llvm.ad.Array2f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool | None):
             Mask to specify active lanes.
 
-        Parameter ``force_nonaccel`` (bool):
+        Parameter ``force_nonaccel`` (bool | None):
             *no description available*
 
         Returns → list[drjit.llvm.ad.Float]:
@@ -19554,6 +19601,9 @@
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
+
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
 
         Parameter ``pos`` (drjit.llvm.ad.Array2f):
             *no description available*
@@ -19752,6 +19802,10 @@
 
         Evaluate the linear interpolant represented by this texture.
 
+        When hardware-acceleration is not available, the numerical precision of the
+        interpolation is dictated by the floating point precision of the query
+        point type.
+
         Parameter ``pos`` (drjit.llvm.ad.Array2f):
             *no description available*
 
@@ -19781,13 +19835,16 @@
         calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
         direct evaluation of the B-Spline basis functions in that case.
 
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
         Parameter ``pos`` (drjit.llvm.ad.Array2f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool | None):
             Mask to specify active lanes.
 
-        Parameter ``force_nonaccel`` (bool):
+        Parameter ``force_nonaccel`` (bool | None):
             *no description available*
 
         Returns → list[drjit.llvm.ad.Float]:
@@ -19855,6 +19912,9 @@
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
+
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
 
         Parameter ``pos`` (drjit.llvm.ad.Array2f):
             *no description available*
@@ -20053,6 +20113,10 @@
 
         Evaluate the linear interpolant represented by this texture.
 
+        When hardware-acceleration is not available, the numerical precision of the
+        interpolation is dictated by the floating point precision of the query
+        point type.
+
         Parameter ``pos`` (drjit.llvm.ad.Array3f):
             *no description available*
 
@@ -20082,13 +20146,16 @@
         calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
         direct evaluation of the B-Spline basis functions in that case.
 
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
         Parameter ``pos`` (drjit.llvm.ad.Array3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool | None):
             Mask to specify active lanes.
 
-        Parameter ``force_nonaccel`` (bool):
+        Parameter ``force_nonaccel`` (bool | None):
             *no description available*
 
         Returns → list[drjit.llvm.ad.Float]:
@@ -20156,6 +20223,9 @@
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
+
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
 
         Parameter ``pos`` (drjit.llvm.ad.Array3f):
             *no description available*
@@ -20354,6 +20424,10 @@
 
         Evaluate the linear interpolant represented by this texture.
 
+        When hardware-acceleration is not available, the numerical precision of the
+        interpolation is dictated by the floating point precision of the query
+        point type.
+
         Parameter ``pos`` (drjit.llvm.ad.Array3f):
             *no description available*
 
@@ -20383,13 +20457,16 @@
         calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
         direct evaluation of the B-Spline basis functions in that case.
 
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
         Parameter ``pos`` (drjit.llvm.ad.Array3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool | None):
             Mask to specify active lanes.
 
-        Parameter ``force_nonaccel`` (bool):
+        Parameter ``force_nonaccel`` (bool | None):
             *no description available*
 
         Returns → list[drjit.llvm.ad.Float]:
@@ -20457,6 +20534,9 @@
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
+
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
 
         Parameter ``pos`` (drjit.llvm.ad.Array3f):
             *no description available*
@@ -20655,6 +20735,10 @@
 
         Evaluate the linear interpolant represented by this texture.
 
+        When hardware-acceleration is not available, the numerical precision of the
+        interpolation is dictated by the floating point precision of the query
+        point type.
+
         Parameter ``pos`` (drjit.llvm.ad.Array3f):
             *no description available*
 
@@ -20684,13 +20768,16 @@
         calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
         direct evaluation of the B-Spline basis functions in that case.
 
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
         Parameter ``pos`` (drjit.llvm.ad.Array3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool | None):
             Mask to specify active lanes.
 
-        Parameter ``force_nonaccel`` (bool):
+        Parameter ``force_nonaccel`` (bool | None):
             *no description available*
 
         Returns → list[drjit.llvm.ad.Float]:
@@ -20758,6 +20845,9 @@
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
+
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
 
         Parameter ``pos`` (drjit.llvm.ad.Array3f):
             *no description available*
