@@ -510,16 +510,14 @@ private:
                 dr::norm(rot[2] * ellipsoid.scale)
             );
 
-            auto bbox = BoundingBox3f(ellipsoid.center - delta, ellipsoid.center + delta);
-            dr::eval(bbox);
+            uint32_t size = 6; // 6 floats per bbox
+            uint32_t stride = 3;
 
-            uint32_t size = (uint32_t) sizeof(BoundingBoxType) / sizeof(ScalarFloat);
-            uint32_t stride = (uint32_t) offsetof(BoundingBoxType, max) / sizeof(ScalarFloat);
-
+            BoundingBox3f bbox(ellipsoid.center - delta, ellipsoid.center + delta);
             Float data = dr::empty<Float>(ellipsoid_count * size);
             for (int i = 0; i < 3; i++) {
-                dr::scatter(data, bbox.min[i], idx * size + i);
-                dr::scatter(data, bbox.max[i], idx * size + i + stride);
+                dr::scatter(data, bbox.min[i], idx * size + i, true, ReduceMode::NoConflicts);
+                dr::scatter(data, bbox.max[i], idx * size + i + stride, true, ReduceMode::NoConflicts);
             }
 
             if constexpr (dr::is_cuda_v<Float>) {
@@ -585,7 +583,6 @@ private:
 
         Log(Debug, "Finished recomputing bounding boxes in %s", util::time_string((float) timer.value()));
     }
-
 
 private:
     /// Object holding the ellipsoids data and attributes
