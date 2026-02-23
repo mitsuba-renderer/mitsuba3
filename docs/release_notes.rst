@@ -5,8 +5,9 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`__ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
-Upcoming changes
-----------------
+Mitsuba 3.8.0
+-------------
+*February 23, 2026*
 
 - Upgrade Dr.Jit to version `1.3.1
   <https://github.com/mitsuba-renderer/drjit/releases/tag/v1.3.1>`__. This

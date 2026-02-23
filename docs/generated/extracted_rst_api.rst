@@ -3831,7 +3831,7 @@
 
 .. py:data:: mitsuba.DEBUG
     :type: bool
-    :value: True
+    :value: False
 
 .. py:class:: mitsuba.DefaultFormatter
 
@@ -6880,7 +6880,7 @@
 
 .. py:data:: mitsuba.MI_VERSION
     :type: str
-    :value: 3.7.1
+    :value: 3.8.0
 
 .. py:data:: mitsuba.MI_VERSION_MAJOR
     :type: int
@@ -6888,11 +6888,11 @@
 
 .. py:data:: mitsuba.MI_VERSION_MINOR
     :type: int
-    :value: 7
+    :value: 8
 
 .. py:data:: mitsuba.MI_VERSION_PATCH
     :type: int
-    :value: 1
+    :value: 0
 
 .. py:data:: mitsuba.MI_YEAR
     :type: str
