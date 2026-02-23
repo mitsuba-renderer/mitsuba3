@@ -510,10 +510,11 @@ private:
                 dr::norm(rot[2] * ellipsoid.scale)
             );
 
-            uint32_t size = 6; // 6 floats per bbox
-            uint32_t stride = 3;
-
             BoundingBox3f bbox(ellipsoid.center - delta, ellipsoid.center + delta);
+
+            uint32_t size = (uint32_t) sizeof(BoundingBoxType) / sizeof(ScalarFloat);
+            uint32_t stride = (uint32_t) offsetof(BoundingBoxType, max) / sizeof(ScalarFloat);
+
             Float data = dr::empty<Float>(ellipsoid_count * size);
             for (int i = 0; i < 3; i++) {
                 dr::scatter(data, bbox.min[i], idx * size + i, true, ReduceMode::NoConflicts);
