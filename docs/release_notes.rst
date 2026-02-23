@@ -5,6 +5,147 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`__ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
+Upcoming changes
+----------------
+
+- Upgrade Dr.Jit to version `1.3.1
+  <https://github.com/mitsuba-renderer/drjit/releases/tag/v1.3.1>`__. This
+  release brings several important improvements and bug fixes:
+
+  - **Atomic scatter operations**: New :py:func:`dr.scatter_cas()
+    <drjit.scatter_cas>` (atomic compare-and-swap) and
+    :py:func:`dr.scatter_exch() <drjit.scatter_exch>` (atomic exchange)
+    operations mapping to native PTX instructions on the CUDA backend.
+  - **AdamW optimizer**: New :py:class:`dr.opt.AdamW <drjit.opt.AdamW>`
+    optimizer with built-in weight decay, and **AMSGrad** support for both
+    Adam and AdamW.
+  - **Oklab color space conversion**: New
+    :py:func:`dr.linear_srgb_to_oklab() <drjit.linear_srgb_to_oklab>` and
+    :py:func:`dr.oklab_to_linear_srgb() <drjit.oklab_to_linear_srgb>` for
+    perceptually uniform color space conversion.
+
+  The remainder lists Mitsuba-specific additions.
+
+- **Improvements**:
+
+  - New **conditional 1D distributions** (``ConditionalRegular1D`` and
+    ``ConditionalIrregular1D``) for efficient conditional probability
+    computations, including lazy CDF computation and a traversable interface.
+    (PR `#1725
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1725>`__,
+    contributed by `Miguel Crespo <https://github.com/mcrescas>`__).
+  - The ``pplastic`` (polarized plastic) BSDF now supports **spatially varying
+    roughness and index of refraction** through texture parameters.
+    (PR `#1843
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1843>`__,
+    contributed by `Guillermo Enguita Lahoz <https://github.com/genguita>`__).
+  - Significant **sunsky emitter optimizations**: more efficient internal memory
+    reads and a faster importance sampling strategy.
+    (PRs `#1768 <https://github.com/mitsuba-renderer/mitsuba3/pull/1768>`__,
+    `#1800 <https://github.com/mitsuba-renderer/mitsuba3/pull/1800>`__,
+    contributed by `Mattéo Santini <https://github.com/matttsss>`__).
+  - Improved **function freezing support** across many Mitsuba components:
+    ``ellipsoids``/``ellipsoidsmesh`` shapes, ``batch`` sensor, ``hdrfilm``,
+    and 1D/2D distribution classes.
+    (PRs `#1791
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1791>`__,
+    `#1816 <https://github.com/mitsuba-renderer/mitsuba3/pull/1816>`__,
+    contributed).
+  - **Ellipsoids bounding box computation** can now be done on the JIT backend,
+    significantly speeding up scene setup.
+    (PR `#1838
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1838>`__,
+    contributed by `Sebastien Speierer <https://github.com/Speierers>`__).
+  - Added a JIT-enabled version of ``Mesh::build_directed_edges()``.
+    (PR `#1760
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1760>`__).
+  - Parser optimization: avoid re-checking visited nodes for cycles during
+    scene loading. (PR `#1842
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1842>`__,
+    contributed by `Vincent Leroy <https://github.com/leroyvn>`__).
+  - ``ShapeGroup`` now caches ``parameters_grad_enabled()`` to avoid repeated
+    checks. (commit `925f36ecb
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/925f36ecb>`__,
+    contributed by `Vincent Leroy <https://github.com/leroyvn>`__).
+  - Added wheels for **Python 3.14** and **Linux ARM** (``aarch64``).
+    (PR `#1807
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1807>`__,
+    contributed by `Merlin Nimier-David <https://merlin.nimierdavid.fr>`__).
+  - Updated minimum Python version to **3.9**.
+    (PR `#1814
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1814>`__,
+    contributed by `Delio Vicini <https://github.com/dvicini>`__).
+  - Include child properties in ``Mesh::to_string()`` output.
+    (PR `#1811
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1811>`__,
+    contributed by `OscarLin <https://github.com/dongclin>`__).
+
+- **Bug fixes**:
+
+This list is not exhaustive:
+  - Fixed multiple issues in the ``blendbsdf`` plugin: incorrect PDF in
+    ``sample()``, missing ``eval_null_transmission`` method, and incorrect
+    sampling weight in both ``blendbsdf`` and ``blendphase``.
+    (PR `#1681
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1681>`__,
+    contributed by `Baptiste Nicolet <https://github.com/bathal1>`__).
+  - Fixed Embree memory leak in scalar modes where acceleration data
+    structures were not properly cleaned up.
+    (PR `#1767
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1767>`__,
+    contributed by `Delio Vicini <https://github.com/dvicini>`__).
+  - Fixed ``ray_intersect_triangle`` in Python returning ``None`` instead of
+    the result from the C++ call.
+    (PR `#1780
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1780>`__,
+    contributed by `Jérémy Riviere <https://github.com/Poupine>`__).
+  - Fixed numerical issues in AD (PRB) integrators.
+    (PR `#1818
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1818>`__,
+    contributed by `Christian Döring <https://github.com/DoeringChristian>`__).
+  - Fixed ``bitmap`` textures evaluating to 0 in CUDA double-precision
+    variants, and similarly for ``sdfgrid``.
+    (commits `e18c1657
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/e18c16573>`__,
+    `54cc70eb
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/54cc70eb7>`__).
+  - Fixed ``hide_emitters`` to handle custom shapes.
+    (commit `3f968c544
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/3f968c544>`__).
+  - Restored ``resources`` feature in ``load_dict()``. (PR `#1829
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1829>`__).
+  - Fixed mesh not respecting explicitly provided normals (normals would be
+    recomputed unconditionally). (PR `#1762
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1762>`__,
+    contributed by `Delio Vicini <https://github.com/dvicini>`__).
+  - Added missing ``si.compute_uv_partials(ray)`` for AOV type ``duv_dy``.
+    (PR `#1772
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1772>`__,
+    contributed by `Sebastian Winberg <https://github.com/winbergs>`__).
+  - Fixed handling of 3x3 transforms in ``Properties``.
+    (PR `#1764
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1764>`__).
+  - Handle differentiation through ``aov`` when no AOVs carry gradients.
+    (commit `f235aa22
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/f235aa229>`__).
+  - Fixed ``KDTree`` builds on MSVC.
+    (commit `9e542b68
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/9e542b689>`__).
+  - Fixed ``shapegroup.h`` compilation when no vectorized backend is available.
+    (commit `85ae5712
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/85ae57124>`__).
+  - Handle numpy scalars in ``Properties``.
+    (PR `#1788
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1788>`__).
+  - Fixed ``__repr__`` for Python-created meshes.
+    (PR `#1753
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1753>`__,
+    contributed by `Delio Vicini <https://github.com/dvicini>`__).
+  - Fixed build compatibility with newer CMake versions.
+    (commit `eb65b90
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/eb65b90de>`__).
+
+
 Mitsuba 3.7.1
 -------------
 *September 17, 2025*
