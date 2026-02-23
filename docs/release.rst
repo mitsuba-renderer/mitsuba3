@@ -29,7 +29,8 @@ How to make a new release?
 
 10. Add release number and date to ``docs/release_notes.rst``.
 
-12. Update version number in ``README.md``'s ``bibtex``.
+12. Update version number in ``README.md``'s and ``docs/index.rst``'s ``bibtex``
+    citations.
 
 13. Regenerate the documentation again using the same command:
    ``ninja docstrings && ninja && ninja mkdoc-api mkdoc``.
