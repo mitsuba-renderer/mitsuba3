@@ -34,7 +34,8 @@ def test01_construct(variant_scalar_rgb):
 @pytest.mark.parametrize("normalize", [ False, True ])
 @pytest.mark.parametrize("coalesce", [ False, True ])
 @pytest.mark.parametrize("compensate", [ False, True ])
-def test02_put(variants_all, filter_name, border, offset, normalize, coalesce, compensate):
+@pytest.mark.parametrize("active", [ False, True ])
+def test02_put(variants_all, filter_name, border, offset, normalize, coalesce, compensate, active):
     # Checks the result of the ImageBlock::put() method
     # against a brute force reference
     scalar = 'scalar' in mi.variant()
@@ -61,7 +62,7 @@ def test02_put(variants_all, filter_name, border, offset, normalize, coalesce, c
                                   normalize=normalize,
                                   coalesce=coalesce)
 
-            block.put(pos=pos, values=[1])
+            block.put(pos=pos, values=[1], active=active)
 
             size += 2 * block.border_size()
             Array1f = mi.Float if not scalar else dr.scalar.ArrayXf
@@ -106,6 +107,11 @@ def test02_put(variants_all, filter_name, border, offset, normalize, coalesce, c
                 value = dr.sum(ref_norm, axis=None)
                 if dr.all(value > 0):
                     ref /= value
+
+            if not active:
+                ref *=0
+                ref_norm *= 0
+
             match = dr.allclose(block.tensor(), ref, atol=1e-5)
 
             if not match:
