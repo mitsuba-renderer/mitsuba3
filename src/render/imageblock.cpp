@@ -359,7 +359,8 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                         Float weight = weights_x[x] * weights_y[y];
 
                         if constexpr (!JIT) {
-                            DRJIT_MARK_USED(active_2);
+                            if (unlikely(!active_2))
+                                return;
                             ptr[index] = dr::fmadd(values[k], weight, ptr[index]);
                         } else {
                             accum(values[k] * weight, index, active_2);
