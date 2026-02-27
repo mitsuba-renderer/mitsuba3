@@ -259,7 +259,7 @@ public:
 
         /* locked */ {
             std::lock_guard<std::mutex> lock(m_mutex);
-            if (m_storage ==  nullptr)
+            if (dr::is_jit_v<Float> && m_storage == nullptr)
                 jit_freeze_discard(drjit::detail::backend<Float>::value, "Image Block was allocated");
             m_storage = new ImageBlock(m_crop_size, m_crop_offset,
                                        (uint32_t) channels.size());
