@@ -164,6 +164,8 @@ static void set_variant(nb::args args) {
         if (curr_variant.attr("startswith")(nb::make_tuple("llvm_", "cuda_"))) {
             nb::module_ mi_python = nb::module_::import_("mitsuba.python.ad.integrators");
             nb::steal(PyImport_ReloadModule(mi_python.ptr()));
+            mi_python = nb::module_::import_("mitsuba.python.ad.bsdfs");
+            nb::steal(PyImport_ReloadModule(mi_python.ptr()));
         }
 
         // Only invoke user-provided callbacks after Mitsuba plugins have reloaded,
