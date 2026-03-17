@@ -85,6 +85,7 @@ class BasicPRBIntegrator(RBIntegrator):
         active = mi.Bool(active)                         # Active SIMD lanes
         pi_prev = dr.zeros(mi.PreliminaryIntersection3f) # Interaction of the previous bounce
         pi = scene.ray_intersect_preliminary(ray,        # Current interaction
+                                             ray_flags=mi.RayFlags.All,
                                              coherent=True,
                                              reorder=False,
                                              active=active)
@@ -152,10 +153,11 @@ class BasicPRBIntegrator(RBIntegrator):
             β_max = dr.max(mi.unpolarized_spectrum(β))
             active_next &= (β_max != 0)
 
-            # ------------------ Find the next ineraction ------------------
+            # ------------------ Find the next interaction ------------------
 
             ray_next = si.spawn_ray(si.to_world(bsdf_sample.wo))
             pi_next = scene.ray_intersect_preliminary(ray_next,
+                                                      ray_flags=mi.RayFlags.All,
                                                       coherent=False,
                                                       reorder=False,
                                                       active=active_next)
