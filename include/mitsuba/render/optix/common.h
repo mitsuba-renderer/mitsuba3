@@ -13,6 +13,8 @@
 struct OptixHitGroupData {
     /// Shape id in Dr.Jit's pointer registry
     uint32_t shape_registry_id;
+    /// Shape type
+    uint32_t shape_type;
     /// Pointer to the memory region of Shape data (e.g. \c OptixSphereData )
     void* data;
 };
