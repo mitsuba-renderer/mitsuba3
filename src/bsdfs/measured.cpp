@@ -169,6 +169,8 @@ public:
             ScalarFloat *phi_i_data = (ScalarFloat *) phi_i.data;
             m_reduction = (int) std::rint((2 * dr::Pi<ScalarFloat>) /
                 (phi_i_data[phi_i.shape[0] - 1] - phi_i_data[0]));
+        } else {
+            m_reduction = 0;
         }
 
         // Construct NDF interpolant data structure
