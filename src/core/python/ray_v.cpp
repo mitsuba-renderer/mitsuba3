@@ -49,6 +49,7 @@ MI_PY_EXPORT(Ray) {
     MI_PY_IMPORT_TYPES()
 
     bind_ray<Ray<Point2f, Spectrum>>(m, "Ray2f");
+    bind_ray<Ray<Point2d, Spectrum>>(m, "Ray2d");
     bind_ray<Ray3f>(m, "Ray3f");
     bind_ray<Ray<Point3d, Spectrum>>(m, "Ray3d");
 
