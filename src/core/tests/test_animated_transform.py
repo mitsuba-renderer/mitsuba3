@@ -127,11 +127,7 @@ def test10_properties(variant_scalar_rgb):
     assert retrieved is not None
     assert props.type("to_world") == mi.Properties.Type.Object
 
-# TODO: Enable this once supported
-@pytest.mark.skip
 def test11_xml_loading(variant_scalar_rgb):
-    # To test XML loading without triggering "failed to instantiate" errors in existing plugins,
-    # we can use the parser to create a ParserState and inspect its properties.
     xml = """<scene version="3.0.0">
         <animation name="test_anim">
             <transform time="0">
@@ -143,15 +139,13 @@ def test11_xml_loading(variant_scalar_rgb):
         </animation>
     </scene>"""
 
-    # We use parse_string directly to get the state and check the root node's properties
-    config = mi.parser.ParserConfig()
-    state = mi.parser.parse_string(config, xml)
-
-    assert state is not None
-    props = state.root.props
-    assert "test_anim" in props
-    assert props.type("test_anim") == mi.Properties.Type.AnimatedTransform
-
-    anim = props["test_anim"]
-    assert anim.is_animated()
-    assert len(anim.keyframes()) == 2
+    obj = mi.load_string(xml)
+    assert obj is not None
+    assert str(obj) == """Scene[
+  children = [
+    AnimatedTransform[
+      0: Keyframe[S=[1, 1, 1], Q=1, T=[0, 0, 0]],
+      1: Keyframe[S=[1, 1, 1], Q=1, T=[1, 2, 3]],
+    ]
+  ]
+]"""
