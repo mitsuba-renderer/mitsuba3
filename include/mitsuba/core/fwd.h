@@ -61,6 +61,7 @@ template <typename Value, size_t Size>          struct Normal;
 template <typename Value, size_t Size>          struct Color;
 template <typename Value, size_t Size>          struct Spectrum;
 template <typename Point, bool Affine>          struct Transform;
+template <typename Float>                       struct AnimatedTransform;
 template <typename Point>                       using AffineTransform = Transform<Point, true>;
 template <typename Point>                       using ProjectiveTransform = Transform<Point, false>;
 template <typename Point, typename Spectrum>    struct Ray;
@@ -182,6 +183,9 @@ template <typename Float_> struct CoreAliases {
     using ProjectiveTransform3d = ProjectiveTransform<Point3d>;
     using ProjectiveTransform4d = ProjectiveTransform<Point4d>;
 
+    using AnimatedTransform4f = AnimatedTransform<Float>;
+    using AnimatedTransform4d = AnimatedTransform<Float64>;
+
     using Color1f = Color<Float, 1>;
     using Color3f = Color<Float, 3>;
     using Color1d = Color<Float64, 1>;
@@ -289,6 +293,8 @@ template <typename Float_> struct CoreAliases {
     using prefix ## ProjectiveTransform4f = typename prefix ## CoreAliases::ProjectiveTransform4f; \
     using prefix ## ProjectiveTransform3d = typename prefix ## CoreAliases::ProjectiveTransform3d; \
     using prefix ## ProjectiveTransform4d = typename prefix ## CoreAliases::ProjectiveTransform4d; \
+    using prefix ## AnimatedTransform4f    = typename prefix ## CoreAliases::AnimatedTransform4f;  \
+    using prefix ## AnimatedTransform4d    = typename prefix ## CoreAliases::AnimatedTransform4d;  \
     using prefix ## Color1f              = typename prefix ## CoreAliases::Color1f;                \
     using prefix ## Color3f              = typename prefix ## CoreAliases::Color3f;                \
     using prefix ## Color1d              = typename prefix ## CoreAliases::Color1d;                \
