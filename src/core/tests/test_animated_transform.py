@@ -114,8 +114,7 @@ def test09_no_keyframes_error(variant_scalar_rgb):
     with pytest.raises(RuntimeError):
         at.eval(mi.Float(0.5))
 
-@pytest.mark.skip
-def test10_dict_loading(variant_scalar_rgb):
+def test10_properties(variant_scalar_rgb):
     at = mi.AnimatedTransform4f()
     at.add_keyframe(0.0, mi.ScalarAffineTransform4f.translate([0, 0, 0]))
     at.add_keyframe(1.0, mi.ScalarAffineTransform4f.translate([1, 2, 3]))
@@ -126,7 +125,7 @@ def test10_dict_loading(variant_scalar_rgb):
     # Check that it's retrieved correctly and has same content
     retrieved = props["to_world"]
     assert retrieved is not None
-    assert props.type("to_world") == mi.Properties.Type.AnimatedTransform
+    assert props.type("to_world") == mi.Properties.Type.Object
 
 # TODO: Enable this once supported
 @pytest.mark.skip
