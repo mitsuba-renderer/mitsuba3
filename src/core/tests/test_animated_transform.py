@@ -38,6 +38,7 @@ def test03_rotation_interpolation(variant_scalar_rgb):
     mid = at.eval_scalar(0.5)
     expected = mi.ScalarAffineTransform4f.rotate([0, 0, 1], 45)
     assert dr.allclose(mid.matrix, expected.matrix)
+    assert dr.allclose(mid.inverse().matrix, expected.inverse().matrix)
 
 def test04_scaling_interpolation(variant_scalar_rgb):
     at = mi.AnimatedTransform4f()
@@ -47,6 +48,7 @@ def test04_scaling_interpolation(variant_scalar_rgb):
     mid = at.eval_scalar(0.5)
     expected = mi.ScalarAffineTransform4f.scale([1.5, 2.5, 4.5])
     assert dr.allclose(mid.matrix, expected.matrix)
+    assert dr.allclose(mid.inverse().matrix, expected.inverse().matrix)
 
 def test05_complex_interpolation(variant_scalar_rgb):
     at = mi.AnimatedTransform4f()
@@ -56,15 +58,16 @@ def test05_complex_interpolation(variant_scalar_rgb):
     at.add_keyframe(1.0, t1)
 
     # Keyframe evaluation
-    assert dr.allclose(at.eval_scalar(0.0).matrix, t0.matrix, atol=1e-6)
-    assert dr.allclose(at.eval_scalar(1.0).matrix, t1.matrix, atol=1e-6)
+    assert dr.allclose(at.eval_scalar(0.0).matrix, t0.matrix)
+    assert dr.allclose(at.eval_scalar(1.0).matrix, t1.matrix)
 
     # Midpoint manual composition
     expected_mid = mi.ScalarAffineTransform4f.translate([2.5, 3.5, 4.5]) @ \
                    mi.ScalarAffineTransform4f.rotate([0, 1, 0], 45) @ \
                    mi.ScalarAffineTransform4f.scale([1.5, 1.5, 1.5])
 
-    assert dr.allclose(at.eval_scalar(0.5).matrix, expected_mid.matrix, atol=1e-6)
+    assert dr.allclose(at.eval_scalar(0.5).matrix, expected_mid.matrix)
+    assert dr.allclose(at.eval_scalar(0.5).inverse().matrix, expected_mid.inverse().matrix)
 
 def test06_vectorized_eval(variants_vec_backends_once):
     at = mi.AnimatedTransform4f()
@@ -81,7 +84,8 @@ def test06_vectorized_eval(variants_vec_backends_once):
 
     times = mi.Float(times_list)
     trafos = at.eval(times)
-    assert dr.allclose(trafos.translation(), expected_translations, atol=1e-6)
+    assert dr.allclose(trafos.translation(), expected_translations)
+    assert dr.allclose(trafos.inverse().matrix, mi.AffineTransform4f.translate(expected_translations).inverse().matrix)
 
 def test07_scalar_eval(variant_scalar_rgb):
     at = mi.AnimatedTransform4f()

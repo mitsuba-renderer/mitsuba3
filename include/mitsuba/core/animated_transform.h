@@ -56,6 +56,7 @@ public:
     template <typename T, std::enable_if_t<std::is_same_v<T, Transform> ||
                                            std::is_same_v<T, ScalarTransform>, int> = 0>
     AnimatedTransform(const T &trafo) {
+        m_transform = trafo;
         if constexpr (std::is_same_v<T, ScalarTransform>) {
             add_keyframe(0.f, trafo);
         } else {
@@ -111,13 +112,7 @@ public:
         size_t width = dr::width(time);
 
         if (n_keyframes == 1) {
-            // Recompose from single keyframe
-            UInt32 index = dr::zeros<UInt32>(width);
-            return Transform(dr::transform_compose<Matrix>(
-                dr::diag(dr::gather<Vector3f>(m_scales, index)),
-                dr::gather<Quaternion4f>(m_rotations, index),
-                dr::gather<Vector3f>(m_translations, index)
-            ));
+            return m_transform;
         } else if (n_keyframes == 2) {
             // Fast path for 2 keyframes
             UInt32 i0 = dr::zeros<UInt32>(width);
@@ -134,11 +129,11 @@ public:
             Vector3f tr0 = dr::gather<Vector3f>(m_translations, i0);
             Vector3f tr1 = dr::gather<Vector3f>(m_translations, i1);
 
-            return Transform(dr::transform_compose<Matrix>(
-                dr::diag(dr::lerp(s0, s1, t)),
-                dr::slerp(q0, q1, t),
-                dr::lerp(tr0, tr1, t)
-            ));
+            Matrix3f s = dr::diag(dr::lerp(s0, s1, t));
+            Quaternion4f q = dr::slerp(q0, q1, t);
+            Vector3f tr = dr::lerp(tr0, tr1, t);
+            return Transform(dr::transform_compose<Matrix>(s, q, tr),
+                             dr::transpose(dr::transform_compose_inverse<Matrix>(s, q, tr)));
         } else {
             // General case with binary search
             auto pred = [&](UInt32 index) {
@@ -158,11 +153,11 @@ public:
             Vector3f tr0 = dr::gather<Vector3f>(m_translations, index);
             Vector3f tr1 = dr::gather<Vector3f>(m_translations, index + 1);
 
-            return Transform(dr::transform_compose<Matrix>(
-                dr::diag(dr::lerp(s0, s1, t)),
-                dr::slerp(q0, q1, t),
-                dr::lerp(tr0, tr1, t)
-            ));
+            Matrix3f s = dr::diag(dr::lerp(s0, s1, t));
+            Quaternion4f q = dr::slerp(q0, q1, t);
+            Vector3f tr = dr::lerp(tr0, tr1, t);
+            return Transform(dr::transform_compose<Matrix>(s, q, tr),
+                             dr::transpose(dr::transform_compose_inverse<Matrix>(s, q, tr)));
         }
     }
 
@@ -177,9 +172,9 @@ public:
 
         if (m_keyframes.size() == 1) {
             const auto &kf = m_keyframes.begin()->second;
-            return Transform(dr::transform_compose<Matrix>(
-                dr::diag(kf.S), kf.Q, kf.T
-            ));
+            Matrix3f s = dr::diag(kf.S);
+            return Transform(dr::transform_compose<Matrix>(s, kf.Q, kf.T),
+                             dr::transpose(dr::transform_compose_inverse<Matrix>(s, kf.Q, kf.T)));
         }
 
         auto it1 = m_keyframes.lower_bound(time);
@@ -196,9 +191,9 @@ public:
 
         if (it0 == it1) {
             const auto &kf = it0->second;
-            return Transform(dr::transform_compose<Matrix>(
-                dr::diag(kf.S), kf.Q, kf.T
-            ));
+            Matrix3f s = dr::diag(kf.S);
+            return Transform(dr::transform_compose<Matrix>(s, kf.Q, kf.T),
+                             dr::transpose(dr::transform_compose_inverse<Matrix>(s, kf.Q, kf.T)));
         }
 
         ScalarFloat t = std::clamp((time - it0->first) / (it1->first - it0->first),
@@ -206,11 +201,11 @@ public:
         const auto &kf0 = it0->second;
         const auto &kf1 = it1->second;
 
-        return Transform(dr::transform_compose<Matrix>(
-            dr::diag(dr::lerp(kf0.S, kf1.S, t)),
-            dr::slerp(kf0.Q, kf1.Q, t),
-            dr::lerp(kf0.T, kf1.T, t)
-        ));
+        Matrix3f s = dr::diag(dr::lerp(kf0.S, kf1.S, t));
+        Quaternion4f q = dr::slerp(kf0.Q, kf1.Q, t);
+        Vector3f tr = dr::lerp(kf0.T, kf1.T, t);
+        return Transform(dr::transform_compose<Matrix>(s, q, tr),
+                         dr::transpose(dr::transform_compose_inverse<Matrix>(s, q, tr)));
     }
 
     /// Check if the transformation is animated
@@ -296,6 +291,7 @@ private:
         m_need_flatten = false;
     }
 
+    Transform m_transform;
     std::map<ScalarFloat, Keyframe> m_keyframes;
     DynamicBuffer<Float> m_times;
     DynamicBuffer<Vector3f> m_scales;

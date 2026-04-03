@@ -1,5 +1,6 @@
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/core/properties.h>
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/bbox.h>
 
@@ -131,7 +132,7 @@ The exact camera position and orientation is most easily expressed using the
 template <typename Float, typename Spectrum>
 class PerspectiveCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(ProjectiveCamera, m_to_world, m_needs_sample_3,
+    MI_IMPORT_BASE(ProjectiveCamera, m_to_world, m_to_world_animated, m_needs_sample_3,
                    m_film, m_sampler, m_resolution, m_shutter_open,
                    m_shutter_open_time, m_near_clip, m_far_clip,
                    sample_wavelengths)
@@ -223,8 +224,9 @@ public:
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
         Vector3f d = dr::normalize(Vector3f(near_p));
 
-        ray.o = m_to_world.value().translation();
-        ray.d = m_to_world.value() * d;
+        AffineTransform4f to_world = m_to_world_animated->eval(time);
+        ray.o = to_world.translation();
+        ray.d = to_world * d;
 
         Float inv_z = dr::rcp(d.z());
         Float near_t = m_near_clip * inv_z,
@@ -260,8 +262,9 @@ public:
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
         Vector3f d = dr::normalize(Vector3f(near_p));
 
-        ray.o = m_to_world.value().translation();
-        ray.d = m_to_world.value() * d;
+        AffineTransform4f to_world = m_to_world_animated->eval(time);
+        ray.o = to_world.translation();
+        ray.d = to_world * d;
 
         Float inv_z = dr::rcp(d.z());
         Float near_t = m_near_clip * inv_z,
@@ -271,8 +274,8 @@ public:
 
         ray.o_x = ray.o_y = ray.o;
 
-        ray.d_x = m_to_world.value() * dr::normalize(Vector3f(near_p) + m_dx);
-        ray.d_y = m_to_world.value() * dr::normalize(Vector3f(near_p) + m_dy);
+        ray.d_x = to_world * dr::normalize(Vector3f(near_p) + m_dx);
+        ray.d_y = to_world * dr::normalize(Vector3f(near_p) + m_dy);
         ray.has_differentials = true;
 
         return { ray, wav_weight };
@@ -286,7 +289,7 @@ public:
     sample_direction(const Interaction3f &it, const Point2f & /*sample*/,
                      Mask active) const override {
         // Transform the reference point into the local coordinate system
-        AffineTransform4f trafo = m_to_world.value();
+        AffineTransform4f trafo = m_to_world_animated->eval(it.time);
         Point3f ref_p     = trafo.inverse() * it.p;
 
         // Check if it is outside of the clip range

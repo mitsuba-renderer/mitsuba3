@@ -1,5 +1,6 @@
 #include <mutex>
 
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/render/endpoint.h>
@@ -11,7 +12,11 @@ MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props)
     : JitObject<Endpoint>(props.id(), ObjectType::Unknown) {
     m_to_world = props.get<ScalarAffineTransform4f>("to_world", ScalarAffineTransform4f());
     dr::make_opaque(m_to_world);
-
+    if (props.has_property("to_world_animated")) {
+        m_to_world_animated = props.get<ref<AnimatedTransform4f>>("to_world_animated");
+    } else {
+        m_to_world_animated = new AnimatedTransform4f(m_to_world.value());
+    }
     for (auto &prop : props.objects()) {
         if (Medium *medium = prop.try_get<Medium>()) {
             if (m_medium)
@@ -25,7 +30,11 @@ MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props, ObjectTy
     : JitObject<Endpoint>(props.id(), type) {
     m_to_world = props.get<ScalarAffineTransform4f>("to_world", ScalarAffineTransform4f());
     dr::make_opaque(m_to_world);
-
+    if (props.has_property("to_world_animated")) {
+        m_to_world_animated = props.get<ref<AnimatedTransform4f>>("to_world_animated");
+    } else {
+        m_to_world_animated = new AnimatedTransform4f(m_to_world.value());
+    }
     for (auto &prop : props.objects()) {
         if (Medium *medium = prop.try_get<Medium>()) {
             if (m_medium)
