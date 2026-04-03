@@ -142,7 +142,7 @@ public:
         ScalarVector2i size = m_film->size();
         m_x_fov = (ScalarFloat) parse_fov(props, size.x() / (double) size.y());
 
-        if (m_to_world.scalar().has_scale())
+        if (m_to_world_animated->has_scale())
             Throw("Scale factors in the camera-to-world transformation are not allowed!");
 
         m_principal_point_offset = ScalarPoint2f(
@@ -164,7 +164,7 @@ public:
     void parameters_changed(const std::vector<std::string> &keys) override {
         Base::parameters_changed(keys);
         if (keys.empty() || string::contains(keys, "to_world")) {
-            if (m_to_world.scalar().has_scale())
+            if (m_to_world_animated->has_scale())
                 Throw("Scale factors in the camera-to-world transformation are not allowed!");
             m_to_world = m_to_world.value().update();
         }
@@ -327,8 +327,7 @@ public:
     }
 
     ScalarBoundingBox3f bbox() const override {
-        ScalarPoint3f p = m_to_world.scalar() * ScalarPoint3f(0.f);
-        return ScalarBoundingBox3f(p, p);
+        return m_to_world_animated->get_translation_bounds();
     }
 
     /**

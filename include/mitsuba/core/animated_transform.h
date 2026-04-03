@@ -15,6 +15,7 @@
 #include <mitsuba/core/hash.h>
 #include <mitsuba/core/math.h>
 #include <map>
+#include <mitsuba/core/bbox.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -240,6 +241,22 @@ public:
 
     // Internal methods needed for hashing and bindings
     const std::map<ScalarFloat, Keyframe>& keyframes() const { return m_keyframes; }
+
+    ScalarBoundingBox3f get_translation_bounds() const {
+        ScalarBoundingBox3f bbox;
+        for (auto const& [time, kf] : m_keyframes) {
+            bbox.expand(ScalarPoint3f(kf.T));
+        }
+        return bbox;
+    }
+
+    bool has_scale() const {
+        for (auto const& [time, kf] : m_keyframes) {
+            if (dr::any_nested(kf.S != ScalarVector3f(1.f)))
+                return true;
+        }
+        return false;
+    }
 
     std::string to_string() const override {
         std::ostringstream oss;

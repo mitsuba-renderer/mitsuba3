@@ -153,3 +153,26 @@ def test11_xml_loading(variant_scalar_rgb):
     ]
   ]
 ]"""
+
+
+def test12_translation_bounds(variant_scalar_rgb):
+    at = mi.AnimatedTransform4f()
+    at.add_keyframe(0.0, mi.ScalarAffineTransform4f.translate([1, -2, 3]))
+    at.add_keyframe(1.0, mi.ScalarAffineTransform4f.translate([-1, 5, 0]))
+    at.add_keyframe(2.0, mi.ScalarAffineTransform4f.translate([0, 2, 8]))
+
+    bbox = at.get_translation_bounds()
+    assert dr.allclose(bbox.min, [-1, -2, 0])
+    assert dr.allclose(bbox.max, [1, 5, 8])
+
+
+def test13_has_scale(variant_scalar_rgb):
+    at = mi.AnimatedTransform4f()
+    at.add_keyframe(0.0, mi.ScalarAffineTransform4f.translate([1, 2, 3]))
+    at.add_keyframe(1.0, mi.ScalarAffineTransform4f.translate([4, 5, 6]))
+    assert not at.has_scale()
+
+    at2 = mi.AnimatedTransform4f()
+    at2.add_keyframe(0.0, mi.ScalarAffineTransform4f.translate([1, 2, 3]))
+    at2.add_keyframe(1.0, mi.ScalarAffineTransform4f.scale([2, 1, 1]))
+    assert at2.has_scale()
