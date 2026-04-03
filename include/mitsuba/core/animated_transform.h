@@ -1,5 +1,13 @@
 #pragma once
 
+#if defined(__GNUG__)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wdouble-promotion"
+#elif defined(__clang__)
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wdouble-promotion"
+#endif
+
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/transform.h>
 #include <drjit/quaternion.h>
@@ -271,7 +279,7 @@ private:
             if constexpr (dr::is_jit_v<Float>) {
                 dr::scatter(m_times, time, i);
                 for (size_t j = 0; j < 3; ++j) {
-                    dr::scatter(m_scales, kf.S[j], i * 3 + j);  
+                    dr::scatter(m_scales, kf.S[j], i * 3 + j);
                     dr::scatter(m_translations, kf.T[j], i * 3 + j);
                 }
                 for (size_t j = 0; j < 4; ++j) {
@@ -295,5 +303,12 @@ private:
     DynamicBuffer<Vector3f> m_translations;
     bool m_need_flatten = true;
 };
+
+
+#if defined(__GNUG__)
+#  pragma GCC diagnostic pop
+#elif defined(__clang__)
+#  pragma clang diagnostic pop
+#endif
 
 NAMESPACE_END(mitsuba)
