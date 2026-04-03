@@ -6,6 +6,7 @@
 #include <drjit/tensor.h>
 #include <typeinfo>
 
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/properties.h>
@@ -450,6 +451,16 @@ size_t Properties::hash() const {
                 for (int i = 0; i < 4; ++i)
                     for (int j = 0; j < 4; ++j)
                         h = hash_combine(h, mitsuba::hash(t.matrix(i, j)));
+                return h;
+            }
+            size_t operator()(const AnimatedTransform<Float> &t) const {
+                size_t h = 0;
+                for (auto const& [time, kf] : t.keyframes()) {
+                    h = hash_combine(h, mitsuba::hash(time));
+                    for (size_t i = 0; i < 3; ++i) h = hash_combine(h, mitsuba::hash(kf.S.entry(i)));
+                    for (size_t i = 0; i < 4; ++i) h = hash_combine(h, mitsuba::hash(kf.Q.entry(i)));
+                    for (size_t i = 0; i < 3; ++i) h = hash_combine(h, mitsuba::hash(kf.T.entry(i)));
+                }
                 return h;
             }
             size_t operator()(const Reference &r) const {
