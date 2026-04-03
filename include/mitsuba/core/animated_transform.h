@@ -35,7 +35,9 @@ public:
         ScalarVector3f T;
 
         std::string to_string() const {
-            return tfm::format("Keyframe[S={}, Q={}, T={}]", S, Q, T);
+            std::ostringstream oss;
+            oss << "Keyframe[S=" << S << ", Q=" << Q << ", T=" << T << "]";
+            return oss.str();
         }
     };
 
