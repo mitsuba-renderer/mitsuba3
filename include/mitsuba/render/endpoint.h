@@ -390,6 +390,7 @@ protected:
 
 protected:
     field<AffineTransform4f, ScalarAffineTransform4f> m_to_world;
+    ref<AnimatedTransform4f> m_to_world_animated;
     ref<Medium> m_medium;
     Shape *m_shape = nullptr;
     bool m_needs_sample_2 = true;
