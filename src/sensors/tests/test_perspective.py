@@ -212,3 +212,23 @@ def test06_animated_transform(variant_scalar_rgb):
 
     ray, _ = camera.sample_ray(0.5, 0, [0.5, 0.5], 0)
     assert dr.allclose(ray.o, mi.Point3f(0, 0, 0.5), atol=0.01)
+
+def test07_animation_xml(variant_scalar_rgb):
+    xml = """
+    <scene version="2.0.0">
+        <sensor type="perspective">
+            <animation name="to_world_animated">
+                <transform time="0">
+                    <translate x="0" y="0" z="0"/>
+                </transform>
+                <transform time="1">
+                    <translate x="0" y="0" z="1"/>
+                </transform>
+            </animation>
+        </sensor>
+    </scene>
+    """
+    scene = mi.load_string(xml)
+    camera = scene.sensors()[0]
+    ray, _ = camera.sample_ray(0.5, 0, [0.5, 0.5], 0)
+    assert dr.allclose(ray.o, mi.Point3f(0, 0, 0.5), atol=0.01)

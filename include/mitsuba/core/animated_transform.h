@@ -78,7 +78,7 @@ public:
     template <typename Float2>
     AnimatedTransform(const AnimatedTransform<Float2> &other) {
         for (auto const& [time, kf] : other.keyframes()) {
-            m_keyframes[time] = kf;
+            m_keyframes[time] = {kf.S, kf.Q, kf.T};
         }
         m_need_flatten = true;
     }
