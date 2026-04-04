@@ -352,6 +352,7 @@ public:
     }
 
     MI_DECLARE_CLASS(AnimatedTransform)
+    MI_TRAVERSE_CB(Object, m_transform, m_times, m_scales, m_translations, m_rotations)
 
 private:
 
