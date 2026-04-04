@@ -63,6 +63,9 @@ public:
 
     /// Initialize from a map of keyframes
     AnimatedTransform(const std::map<ScalarFloat, ScalarTransform> &keyframes) {
+        if (keyframes.size() == 1) {
+            m_transform = Transform(keyframes.begin()->second);
+        }
         for (const auto &[time, trafo] : keyframes) {
             add_keyframe(time, trafo);
         }
@@ -276,15 +279,42 @@ public:
         }
 
         if (n == 1) {
-            if (keys.empty() || string::contains(keys, "transform")) {
-                m_transform = m_transform.value().update();
-                dr::make_opaque(m_transform);
+            if (m_keyframes.size() > 1) {
+                // Transition from N > 1 to N == 1: update from arrays
+                dr::eval(m_times, m_scales, m_translations, m_rotations);
+                Keyframe kf;
+                kf.S.x() = dr::slice(m_scales, 0);
+                kf.S.y() = dr::slice(m_scales, 1);
+                kf.S.z() = dr::slice(m_scales, 2);
+                kf.Q.w() = dr::slice(m_rotations, 0);
+                kf.Q.x() = dr::slice(m_rotations, 1);
+                kf.Q.y() = dr::slice(m_rotations, 2);
+                kf.Q.z() = dr::slice(m_rotations, 3);
+                kf.T.x() = dr::slice(m_translations, 0);
+                kf.T.y() = dr::slice(m_translations, 1);
+                kf.T.z() = dr::slice(m_translations, 2);
 
-                // Also update the single keyframe in the map
-                auto it = m_keyframes.begin();
-                ScalarTransform trafo = m_transform.scalar();
-                auto [S, Q, T] = dr::transform_decompose(trafo.matrix);
-                it->second = {dr::diag(S), Q, T};
+                m_keyframes.clear();
+                m_keyframes[dr::slice(m_times, 0)] = kf;
+
+                // Rebuild the single transform
+                ScalarMatrix3f s = dr::diag(kf.S);
+                ScalarMatrix mat = dr::transform_compose<ScalarMatrix>(s, kf.Q, kf.T);
+                ScalarMatrix inv = dr::transpose(dr::transform_compose_inverse<ScalarMatrix>(s, kf.Q, kf.T));
+                m_transform = ScalarTransform(mat, inv);
+                dr::make_opaque(m_transform);
+            } else {
+                // Was already size 1, check if "transform" changed
+                if (keys.empty() || string::contains(keys, "transform")) {
+                    m_transform = m_transform.value().update();
+                    dr::make_opaque(m_transform);
+
+                    // Also update the single keyframe in the map
+                    auto it = m_keyframes.begin();
+                    ScalarTransform trafo = m_transform.scalar();
+                    auto [S, Q, T] = dr::transform_decompose(trafo.matrix);
+                    it->second = {dr::diag(S), Q, T};
+                }
             }
         } else if (n > 1) {
             // Read back all data from device to keep host map in sync
