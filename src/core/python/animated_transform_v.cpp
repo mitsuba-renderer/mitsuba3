@@ -17,7 +17,9 @@ void bind_animated_transform(nb::module_ &m, const char *name) {
         .def("eval", &AnimatedTransform::eval, "time"_a, D(AnimatedTransform, eval))
         .def("eval_scalar", &AnimatedTransform::eval_scalar, "time"_a, D(AnimatedTransform, eval_scalar))
         .def("is_animated", &AnimatedTransform::is_animated, D(AnimatedTransform, is_animated))
+        .def("get_time_bounds", &AnimatedTransform::get_time_bounds, "Get time bounds")
         .def("get_translation_bounds", &AnimatedTransform::get_translation_bounds, "Get conservative translation bounds")
+        .def("get_spatial_bounds", &AnimatedTransform::get_spatial_bounds, "bbox"_a, "Get spatial bounds")
         .def("has_scale", &AnimatedTransform::has_scale, "Check if any keyframe has scale")
         .def(nb::self == nb::self)
         .def(nb::self != nb::self)
@@ -29,6 +31,6 @@ void bind_animated_transform(nb::module_ &m, const char *name) {
 
 MI_PY_EXPORT(AnimatedTransform) {
     MI_PY_IMPORT_TYPES()
-    
+
     bind_animated_transform<AnimatedTransform<Float>, Float>(m, "AnimatedTransform4f");
 }

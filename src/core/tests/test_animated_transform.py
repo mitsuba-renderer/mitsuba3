@@ -176,3 +176,23 @@ def test13_has_scale(variant_scalar_rgb):
     at2.add_keyframe(0.0, mi.ScalarAffineTransform4f.translate([1, 2, 3]))
     at2.add_keyframe(1.0, mi.ScalarAffineTransform4f.scale([2, 1, 1]))
     assert at2.has_scale()
+
+def test14_time_bounds(variant_scalar_rgb):
+    at = mi.AnimatedTransform4f()
+    at.add_keyframe(0.5, mi.ScalarAffineTransform4f.translate([1, 2, 3]))
+    at.add_keyframe(1.5, mi.ScalarAffineTransform4f.translate([4, 5, 6]))
+
+    bbox = at.get_time_bounds()
+    assert bbox.min == 0.5
+    assert bbox.max == 1.5
+
+def test15_spatial_bounds(variant_scalar_rgb):
+    at = mi.AnimatedTransform4f()
+    at.add_keyframe(0.0, mi.ScalarAffineTransform4f.translate([0, 0, 0]))
+    at.add_keyframe(1.0, mi.ScalarAffineTransform4f.translate([10, 0, 0]))
+
+    bbox = mi.ScalarBoundingBox3f([0, 0, 0], [1, 1, 1])
+    spatial_bounds = at.get_spatial_bounds(bbox)
+
+    assert dr.allclose(spatial_bounds.min, [0, 0, 0])
+    assert dr.allclose(spatial_bounds.max, [11, 1, 1])

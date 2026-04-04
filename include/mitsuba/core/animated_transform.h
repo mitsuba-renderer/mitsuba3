@@ -8,13 +8,13 @@
 #  pragma clang diagnostic ignored "-Wdouble-promotion"
 #endif
 
-#include <mitsuba/core/object.h>
-#include <mitsuba/core/transform.h>
+#include <map>
+
 #include <drjit/quaternion.h>
 #include <drjit/transform.h>
-#include <mitsuba/core/hash.h>
+#include <mitsuba/core/object.h>
+#include <mitsuba/core/transform.h>
 #include <mitsuba/core/math.h>
-#include <map>
 #include <mitsuba/core/bbox.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -167,20 +167,19 @@ public:
      *
      * This version is for use on the host (e.g., during AABB construction).
      */
-    Transform eval_scalar(ScalarFloat time) const {
+    ScalarTransform eval_scalar(ScalarFloat time) const {
         if (m_keyframes.empty())
             Throw("Animated transform requires at least one keyframe, found 0.");
 
         if (m_keyframes.size() == 1) {
             const auto &kf = m_keyframes.begin()->second;
-            Matrix3f s = dr::diag(kf.S);
-            return Transform(dr::transform_compose<Matrix>(s, kf.Q, kf.T),
-                             dr::transpose(dr::transform_compose_inverse<Matrix>(s, kf.Q, kf.T)));
+            ScalarMatrix3f s = dr::diag(kf.S);
+            return ScalarTransform(dr::transform_compose<ScalarMatrix>(s, kf.Q, kf.T),
+                             dr::transpose(dr::transform_compose_inverse<ScalarMatrix>(s, kf.Q, kf.T)));
         }
 
         auto it1 = m_keyframes.lower_bound(time);
         auto it0 = it1;
-
         if (it1 == m_keyframes.begin()) {
             it0 = it1;
         } else if (it1 == m_keyframes.end()) {
@@ -189,24 +188,21 @@ public:
         } else {
             it0 = std::prev(it1);
         }
-
         if (it0 == it1) {
             const auto &kf = it0->second;
-            Matrix3f s = dr::diag(kf.S);
-            return Transform(dr::transform_compose<Matrix>(s, kf.Q, kf.T),
-                             dr::transpose(dr::transform_compose_inverse<Matrix>(s, kf.Q, kf.T)));
+            ScalarMatrix3f s = dr::diag(kf.S);
+            return ScalarTransform(dr::transform_compose<ScalarMatrix>(s, kf.Q, kf.T),
+                             dr::transpose(dr::transform_compose_inverse<ScalarMatrix>(s, kf.Q, kf.T)));
         }
-
         ScalarFloat t = std::clamp((time - it0->first) / (it1->first - it0->first),
                                    ScalarFloat(0), ScalarFloat(1));
         const auto &kf0 = it0->second;
         const auto &kf1 = it1->second;
-
-        Matrix3f s = dr::diag(dr::lerp(kf0.S, kf1.S, t));
-        Quaternion4f q = dr::slerp(kf0.Q, kf1.Q, t);
-        Vector3f tr = dr::lerp(kf0.T, kf1.T, t);
-        return Transform(dr::transform_compose<Matrix>(s, q, tr),
-                         dr::transpose(dr::transform_compose_inverse<Matrix>(s, q, tr)));
+        ScalarMatrix3f s = dr::diag(dr::lerp(kf0.S, kf1.S, t));
+        ScalarQuaternion4f q = dr::slerp(kf0.Q, kf1.Q, t);
+        ScalarVector3f tr = dr::lerp(kf0.T, kf1.T, t);
+        return ScalarTransform(dr::transform_compose<ScalarMatrix>(s, q, tr),
+                         dr::transpose(dr::transform_compose_inverse<ScalarMatrix>(s, q, tr)));
     }
 
     /// Check if the transformation is animated
@@ -242,12 +238,45 @@ public:
     // Internal methods needed for hashing and bindings
     const std::map<ScalarFloat, Keyframe>& keyframes() const { return m_keyframes; }
 
+    // Returns the time bounds of the animated transform.
+    ScalarBoundingBox1f get_time_bounds() const {
+        if (m_keyframes.empty())
+            return {0.f, 0.f};
+        return {m_keyframes.begin()->first, m_keyframes.rbegin()->first};
+    }
+
+    // Returns the bounding box of the translation component of the animated transform.
     ScalarBoundingBox3f get_translation_bounds() const {
         ScalarBoundingBox3f bbox;
         for (auto const& [time, kf] : m_keyframes) {
             bbox.expand(ScalarPoint3f(kf.T));
         }
         return bbox;
+    }
+
+    // Evaluates the spatial bounds of the animated transform over the given bounding box.
+    // This is used to compute the AABB of animated objects.
+    ScalarBoundingBox3f get_spatial_bounds(const ScalarBoundingBox3f &bbox) const {
+        if (m_keyframes.empty()) {
+            return bbox;
+        }
+        ScalarBoundingBox3f res;
+        if (m_keyframes.size() <= 1) {
+            auto trafo = eval_scalar(m_keyframes.begin()->first);
+            for (int j = 0; j < 8; ++j)
+                res.expand(trafo * bbox.corner(j));
+        } else {
+            int n_steps = 100;
+            ScalarBoundingBox1f time_bounds = get_time_bounds();
+            ScalarFloat step = time_bounds.extents()[0] / (n_steps - 1);
+            for (int i = 0; i < n_steps; ++i) {
+                ScalarFloat t = time_bounds.min[0] + step * i;
+                ScalarTransform trafo = eval_scalar(t);
+                for (int j = 0; j < 8; ++j)
+                    res.expand(trafo * bbox.corner(j));
+            }
+        }
+        return res;
     }
 
     // Checks if any keyframe has a scale component different from 1.
@@ -257,6 +286,22 @@ public:
                 return true;
         }
         return false;
+    }
+
+    void traverse(TraversalCallback *cb) override {
+        if (m_keyframes.size() == 1) {
+            cb->put("transform",     m_transform,    ParamFlags::Differentiable);
+        } else {
+            cb->put("times",         m_times,        ParamFlags::Differentiable);
+            cb->put("scales",        m_scales,       ParamFlags::Differentiable);
+            cb->put("translations",  m_translations, ParamFlags::Differentiable);
+            cb->put("rotations",     m_rotations,    ParamFlags::Differentiable);
+        }
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        // TODO: This should ensure that host and device values remain in sync.
+        (void) keys;
     }
 
     std::string to_string() const override {
