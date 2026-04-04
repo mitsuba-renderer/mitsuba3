@@ -250,9 +250,10 @@ public:
         return bbox;
     }
 
+    // Checks if any keyframe has a scale component different from 1.
     bool has_scale() const {
         for (auto const& [time, kf] : m_keyframes) {
-            if (dr::any_nested(kf.S != ScalarVector3f(1.f)))
+            if (dr::any_nested(dr::abs(kf.S - ScalarVector3f(1.f)) > 1e-3f))
                 return true;
         }
         return false;
