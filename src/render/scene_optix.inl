@@ -97,11 +97,13 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types) {
         module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
     }
 
-    config.pipeline_compile_options.usesMotionBlur     = false;
+    config.pipeline_compile_options.usesMotionBlur     = (shape_types & (uint32_t) ShapeType::Instance) != 0;
     config.pipeline_compile_options.numPayloadValues   = 0;
     config.pipeline_compile_options.numAttributeValues = 2; // the minimum legal value
     config.pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
     config.pipeline_compile_options.traversableGraphFlags =
+        config.pipeline_compile_options.usesMotionBlur ?
+        OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY :
         OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
 
     if (jit_flag(JitFlag::Debug))
