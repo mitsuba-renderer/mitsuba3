@@ -159,6 +159,7 @@ public:
         cb->put("principal_point_offset_x", m_principal_point_offset.x(), ParamFlags::NonDifferentiable);
         cb->put("principal_point_offset_y", m_principal_point_offset.y(), ParamFlags::NonDifferentiable);
         cb->put("to_world",                 m_to_world,                   ParamFlags::NonDifferentiable);
+        cb->put("to_world_animated",        m_to_world_animated,          ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
