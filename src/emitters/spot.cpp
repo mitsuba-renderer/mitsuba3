@@ -256,8 +256,7 @@ public:
                             const DirectionSample3f &ds,
                             Mask active) const override {
         Float inv_dist = dr::rcp(ds.dist);
-        auto to_world = m_to_world->eval(it.time);
-        Vector3f local_d = to_world.inverse() * -ds.d;
+        Vector3f local_d = m_to_world->eval(it.time).inverse() * -ds.d;
 
         // Evaluate emitted radiance & falloff profile
         Float falloff = falloff_curve(local_d, active);
