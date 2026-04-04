@@ -129,7 +129,7 @@ install(TARGETS mitsuba_alias
 #   Copy & installation targets for files in 'src/python'
 # ----------------------------------------------------------
 
-file(GLOB_RECURSE MI_PYTHON_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.py)
+file(GLOB_RECURSE MI_PYTHON_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.py *.npy)
 
 set(MI_COPY_FILES "")
 foreach(file ${MI_PYTHON_FILES})
