@@ -354,8 +354,7 @@ public:
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        auto to_world = m_to_world->eval(si.time);
-        Vector3f v = to_world.inverse() * (-si.wi);
+        Vector3f v = m_to_world->eval(si.time).inverse() * (-si.wi);
 
         // Convert to latitude-longitude texture coordinates
         Point2f uv = Point2f(dr::atan2(v.x(), -v.z()) * dr::InvTwoPi<Float>,
@@ -435,8 +434,7 @@ public:
         Float inv_sin_theta = dr::safe_rsqrt(dr::maximum(
             dr::square(d.x()) + dr::square(d.z()), dr::square(dr::Epsilon<Float>)));
 
-        auto to_world = m_to_world->eval(it.time);
-        d = to_world * d;
+        d = m_to_world->eval(it.time) * d;
 
         DirectionSample3f ds;
         ds.p       = it.p + d * dist;
@@ -464,8 +462,7 @@ public:
                         Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        auto to_world = m_to_world->eval(ds.time);
-        Vector3f d = to_world.inverse() * ds.d;
+        Vector3f d = m_to_world->eval(ds.time).inverse() * ds.d;
 
         // Convert to latitude-longitude texture coordinates
         Point2f uv = Point2f(dr::atan2(d.x(), -d.z()) * dr::InvTwoPi<Float>,
