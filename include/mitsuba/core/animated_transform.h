@@ -55,24 +55,18 @@ public:
     AnimatedTransform() = default;
 
     /// Initialize from a constant transformation
-    template <typename T, std::enable_if_t<std::is_same_v<T, Transform> ||
-                                           std::is_same_v<T, ScalarTransform>, int> = 0>
-    AnimatedTransform(const T &trafo) {
-        m_transform = trafo;
-        if constexpr (std::is_same_v<T, ScalarTransform>) {
-            add_keyframe(0.f, trafo);
-        } else {
-            // If it's a JIT transform, we must convert it to scalar first for host-side storage
-            if constexpr (dr::is_jit_v<Float>) {
-                ScalarTransform scalar_trafo;
-                for (size_t i = 0; i < 4; ++i)
-                    for (size_t j = 0; j < 4; ++j)
-                        scalar_trafo.matrix(i, j) = dr::slice(trafo.matrix(i, j));
-                add_keyframe(0.f, scalar_trafo);
-            } else {
-                add_keyframe(0.f, (ScalarTransform) trafo);
-            }
+    AnimatedTransform(const ScalarTransform &trafo) {
+        m_transform = Transform(trafo);
+        add_keyframe(0.f, trafo);
+        initialize();
+    }
+
+    /// Initialize from a map of keyframes
+    AnimatedTransform(const std::map<ScalarFloat, ScalarTransform> &keyframes) {
+        for (const auto &[time, trafo] : keyframes) {
+            add_keyframe(time, trafo);
         }
+        initialize();
     }
 
     /// Conversion constructor from another AnimatedTransform variant
@@ -81,24 +75,7 @@ public:
         for (auto const& [time, kf] : other.keyframes()) {
             m_keyframes[time] = {kf.S, kf.Q, kf.T};
         }
-        m_need_flatten = true;
-    }
-
-    /**
-     * \brief Add a keyframe to the animated transformation
-     *
-     * This method decomposes the transformation and stores it in the keyframe list.
-     * Note that this is a host-side operation and should not be used in JIT-compiled kernels.
-     */
-    void add_keyframe(ScalarFloat time, const ScalarTransform &trafo) {
-        auto [S, Q, T] = dr::transform_decompose(trafo.matrix);
-
-        if (dr::abs(S[0][1]) > 1e-6f || dr::abs(S[0][2]) > 1e-6f || dr::abs(S[1][0]) > 1e-6f ||
-            dr::abs(S[1][2]) > 1e-6f || dr::abs(S[2][0]) > 1e-6f || dr::abs(S[2][1]) > 1e-6f)
-            Throw("AnimatedTransform: Transformation contains shear, which is not supported!");
-
-        m_keyframes[time] = {dr::diag(S), Q, T};
-        m_need_flatten = true;
+        initialize();
     }
 
     /**
@@ -107,23 +84,18 @@ public:
      * This method performs a vectorized interpolation between keyframes.
      */
     Transform eval(Float time) const {
-        if (m_need_flatten)
-            const_cast<AnimatedTransform*>(this)->flatten();
-
         size_t n_keyframes = m_times.size();
-        size_t width = dr::width(time);
+        if (n_keyframes == 0)
+            Throw("Animated transform requires at least one keyframe, found 0.");
 
         if (n_keyframes == 1) {
             return m_transform.value();
         } else if (n_keyframes == 2) {
             // Fast path for 2 keyframes
-            UInt32 i0 = dr::zeros<UInt32>(width);
-            UInt32 i1 = dr::full<UInt32>(1, width);
-
+            UInt32 i0 = 0, i1 = 1;
             Float t0 = dr::gather<Float>(m_times, i0);
             Float t1 = dr::gather<Float>(m_times, i1);
             Float t = dr::clip((time - t0) / (t1 - t0), 0.f, 1.f);
-
             Vector3f s0 = dr::gather<Vector3f>(m_scales, i0);
             Vector3f s1 = dr::gather<Vector3f>(m_scales, i1);
             Quaternion4f q0 = dr::gather<Quaternion4f>(m_rotations, i0);
@@ -147,7 +119,6 @@ public:
             Float t0 = dr::gather<Float>(m_times, index);
             Float t1 = dr::gather<Float>(m_times, index + 1);
             Float t = dr::clip((time - t0) / (t1 - t0), 0.f, 1.f);
-
             Vector3f s0 = dr::gather<Vector3f>(m_scales, index);
             Vector3f s1 = dr::gather<Vector3f>(m_scales, index + 1);
             Quaternion4f q0 = dr::gather<Quaternion4f>(m_rotations, index);
@@ -289,21 +260,51 @@ public:
     void traverse(TraversalCallback *cb) override {
         if (m_keyframes.size() == 1) {
             cb->put("transform",     m_transform,    ParamFlags::Differentiable);
-        } else {
-            cb->put("times",         m_times,        ParamFlags::Differentiable);
-            cb->put("scales",        m_scales,       ParamFlags::Differentiable);
-            cb->put("translations",  m_translations, ParamFlags::Differentiable);
-            cb->put("rotations",     m_rotations,    ParamFlags::Differentiable);
         }
+        cb->put("times",         m_times,        ParamFlags::Differentiable);
+        cb->put("scales",        m_scales,       ParamFlags::Differentiable);
+        cb->put("translations",  m_translations, ParamFlags::Differentiable);
+        cb->put("rotations",     m_rotations,    ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
-        // TODO: This should ensure that host and device values remain in sync.
-        (void) keys;
+        size_t n = dr::width(m_times);
+        if (dr::width(m_scales) != 3 * n ||
+            dr::width(m_translations) != 3 * n ||
+            dr::width(m_rotations) != 4 * n) {
+            Throw("Size of scales, translations, or rotations does not match the number of keyframes.");
+        }
 
-        if (keys.empty() || string::contains(keys, "transform")) {
-            m_transform = m_transform.value().update();
-            dr::make_opaque(m_transform);
+        if (n == 1) {
+            if (keys.empty() || string::contains(keys, "transform")) {
+                m_transform = m_transform.value().update();
+                dr::make_opaque(m_transform);
+
+                // Also update the single keyframe in the map
+                auto it = m_keyframes.begin();
+                ScalarTransform trafo = m_transform.scalar();
+                auto [S, Q, T] = dr::transform_decompose(trafo.matrix);
+                it->second = {dr::diag(S), Q, T};
+            }
+        } else if (n > 1) {
+            // Read back all data from device to keep host map in sync
+            dr::eval(m_times, m_scales, m_translations, m_rotations);
+            std::map<ScalarFloat, Keyframe> new_keyframes;
+            for (size_t i = 0; i < n; ++i) {
+                Keyframe kf;
+                kf.S.x() = dr::slice(m_scales, 3 * i + 0);
+                kf.S.y() = dr::slice(m_scales, 3 * i + 1);
+                kf.S.z() = dr::slice(m_scales, 3 * i + 2);
+                kf.Q.w() = dr::slice(m_rotations, 4 * i + 0);
+                kf.Q.x() = dr::slice(m_rotations, 4 * i + 1);
+                kf.Q.y() = dr::slice(m_rotations, 4 * i + 2);
+                kf.Q.z() = dr::slice(m_rotations, 4 * i + 3);
+                kf.T.x() = dr::slice(m_translations, 3 * i + 0);
+                kf.T.y() = dr::slice(m_translations, 3 * i + 1);
+                kf.T.z() = dr::slice(m_translations, 3 * i + 2);
+                new_keyframes[dr::slice(m_times, i)] = kf;
+            }
+            m_keyframes = std::move(new_keyframes);
         }
     }
 
@@ -324,7 +325,17 @@ public:
 
 private:
 
-    void flatten() {
+    void add_keyframe(ScalarFloat time, const ScalarTransform &trafo) {
+        auto [S, Q, T] = dr::transform_decompose(trafo.matrix);
+
+        if (dr::abs(S[0][1]) > 1e-6f || dr::abs(S[0][2]) > 1e-6f || dr::abs(S[1][0]) > 1e-6f ||
+            dr::abs(S[1][2]) > 1e-6f || dr::abs(S[2][0]) > 1e-6f || dr::abs(S[2][1]) > 1e-6f)
+            Throw("AnimatedTransform: Transformation contains shear, which is not supported!");
+
+        m_keyframes[time] = {dr::diag(S), Q, T};
+    }
+
+    void initialize() {
         if (m_keyframes.empty()) {
             Throw("Animated transform requires at least one keyframe, found 0.");
         }
@@ -354,7 +365,7 @@ private:
             }
             i++;
         }
-        m_need_flatten = false;
+        dr::eval(m_times, m_scales, m_translations, m_rotations);
     }
 
     field<Transform, ScalarTransform> m_transform;
@@ -363,7 +374,6 @@ private:
     DynamicBuffer<Vector3f> m_scales;
     DynamicBuffer<Quaternion4f> m_rotations;
     DynamicBuffer<Vector3f> m_translations;
-    bool m_need_flatten = true;
 };
 
 

@@ -909,7 +909,7 @@ static void parse_xml_node(const ParserConfig &config, ParserState &state,
         case TagType::Animation: {
             check_attributes(state, scene_node, node, {"!name"sv});
 
-            ref<AnimatedTransform<double>> anim = new AnimatedTransform<double>();
+            std::map<double, ScalarAffineTransform4d> keyframes;
             for (pugi::xml_node child : node.children()) {
                 if (child.type() == pugi::node_element) {
                     if (std::string_view(child.name()) != "transform")
@@ -928,9 +928,10 @@ static void parse_xml_node(const ParserConfig &config, ParserState &state,
                         if (op.type() == pugi::node_element)
                             parse_transform_node(state, op, scene_node, transform, params);
                     }
-                    anim->add_keyframe(time, transform);
+                    keyframes[time] = transform;
                 }
             }
+            ref<AnimatedTransform<double>> anim = new AnimatedTransform<double>(keyframes);
             state[parent_idx].props.set(name, ref<Object>(anim));
 
             return; // Don't process children again
