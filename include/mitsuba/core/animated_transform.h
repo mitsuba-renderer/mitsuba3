@@ -210,14 +210,14 @@ public:
     // Internal methods needed for hashing and bindings
     const std::map<ScalarFloat, Keyframe>& keyframes() const { return m_keyframes; }
 
-    // Returns the time bounds of the animated transform.
+    /// Returns the time bounds of the animated transform.
     ScalarBoundingBox1f get_time_bounds() const {
         if (m_keyframes.empty())
             return {0.f, 0.f};
         return {m_keyframes.begin()->first, m_keyframes.rbegin()->first};
     }
 
-    // Returns the bounding box of the translation component of the animated transform.
+    /// Returns the bounding box of the translation component of the animated transform.
     ScalarBoundingBox3f get_translation_bounds() const {
         ScalarBoundingBox3f bbox;
         for (auto const& [time, kf] : m_keyframes) {
@@ -226,8 +226,8 @@ public:
         return bbox;
     }
 
-    // Evaluates the spatial bounds of the animated transform over the given bounding box.
-    // This is used to compute the AABB of animated objects.
+    /// Evaluates the spatial bounds of the animated transform over the given bounding box.
+    /// This is used to compute the AABB of animated objects.
     ScalarBoundingBox3f get_spatial_bounds(const ScalarBoundingBox3f &bbox) const {
         if (m_keyframes.empty()) {
             return bbox;
@@ -251,7 +251,7 @@ public:
         return res;
     }
 
-    // Checks if any keyframe has a scale component different from 1.
+    /// Checks if any keyframe has a scale component different from 1.
     bool has_scale() const {
         for (auto const& [time, kf] : m_keyframes) {
             if (dr::any_nested(dr::abs(kf.S - ScalarVector3f(1.f)) > 1e-3f))

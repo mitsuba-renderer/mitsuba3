@@ -14633,6 +14633,14 @@ This version is for use on the host (e.g., during AABB construction).)doc";
 
 static const char *__doc_mitsuba_AnimatedTransform_is_animated = R"doc(Check if the transformation is animated)doc";
 
+static const char *__doc_mitsuba_AnimatedTransform_get_time_bounds = R"doc(Returns the time bounds of the animated transform.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_get_translation_bounds = R"doc(Returns the bounding box of the translation component of the animated transform.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_get_spatial_bounds = R"doc(Evaluates the spatial bounds of the animated transform over the given bounding box.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_has_scale = R"doc(Checks if any keyframe has a scale component different from 1.)doc";
+
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif
