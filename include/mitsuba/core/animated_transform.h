@@ -13,6 +13,7 @@
 #include <drjit/quaternion.h>
 #include <drjit/transform.h>
 #include <mitsuba/core/object.h>
+#include <mitsuba/core/field.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/bbox.h>
@@ -113,7 +114,7 @@ public:
         size_t width = dr::width(time);
 
         if (n_keyframes == 1) {
-            return m_transform;
+            return m_transform.value();
         } else if (n_keyframes == 2) {
             // Fast path for 2 keyframes
             UInt32 i0 = dr::zeros<UInt32>(width);
@@ -172,10 +173,7 @@ public:
             Throw("Animated transform requires at least one keyframe, found 0.");
 
         if (m_keyframes.size() == 1) {
-            const auto &kf = m_keyframes.begin()->second;
-            ScalarMatrix3f s = dr::diag(kf.S);
-            return ScalarTransform(dr::transform_compose<ScalarMatrix>(s, kf.Q, kf.T),
-                             dr::transpose(dr::transform_compose_inverse<ScalarMatrix>(s, kf.Q, kf.T)));
+            return m_transform.scalar();
         }
 
         auto it1 = m_keyframes.lower_bound(time);
@@ -302,6 +300,11 @@ public:
     void parameters_changed(const std::vector<std::string> &keys) override {
         // TODO: This should ensure that host and device values remain in sync.
         (void) keys;
+
+        if (keys.empty() || string::contains(keys, "transform")) {
+            m_transform = m_transform.value().update();
+            dr::make_opaque(m_transform);
+        }
     }
 
     std::string to_string() const override {
@@ -354,7 +357,7 @@ private:
         m_need_flatten = false;
     }
 
-    Transform m_transform;
+    field<Transform, ScalarTransform> m_transform;
     std::map<ScalarFloat, Keyframe> m_keyframes;
     DynamicBuffer<Float> m_times;
     DynamicBuffer<Vector3f> m_scales;
