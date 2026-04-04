@@ -210,9 +210,9 @@ def test16_parameters_changed(variants_vec_backends_once):
         0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
         1.0: mi.ScalarAffineTransform4f.translate([1, 0, 0])
     })
-    sensor = mi.load_dict({'type': 'perspective', 'to_world_animated': at})
+    sensor = mi.load_dict({'type': 'perspective', 'to_world': at})
     params = mi.traverse(sensor)
-    translations = params['to_world_animated.translations']
+    translations = params['to_world.translations']
     translations[3] = 2.5
     at.parameters_changed(["translations"])
     assert dr.allclose(at.eval_scalar(1.0).translation(), [2.5, 0, 0])

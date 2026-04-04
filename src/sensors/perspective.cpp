@@ -132,7 +132,7 @@ The exact camera position and orientation is most easily expressed using the
 template <typename Float, typename Spectrum>
 class PerspectiveCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(ProjectiveCamera, m_to_world, m_to_world_animated, m_needs_sample_3,
+    MI_IMPORT_BASE(ProjectiveCamera, m_to_world, m_needs_sample_3,
                    m_film, m_sampler, m_resolution, m_shutter_open,
                    m_shutter_open_time, m_near_clip, m_far_clip,
                    sample_wavelengths)
@@ -142,7 +142,7 @@ public:
         ScalarVector2i size = m_film->size();
         m_x_fov = (ScalarFloat) parse_fov(props, size.x() / (double) size.y());
 
-        if (m_to_world_animated->has_scale())
+        if (m_to_world->has_scale())
             Throw("Scale factors in the camera-to-world transformation are not allowed!");
 
         m_principal_point_offset = ScalarPoint2f(
@@ -159,12 +159,11 @@ public:
         cb->put("principal_point_offset_x", m_principal_point_offset.x(), ParamFlags::NonDifferentiable);
         cb->put("principal_point_offset_y", m_principal_point_offset.y(), ParamFlags::NonDifferentiable);
         cb->put("to_world",                 m_to_world,                   ParamFlags::NonDifferentiable);
-        cb->put("to_world_animated",        m_to_world_animated,          ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         Base::parameters_changed(keys);
-        if (m_to_world_animated->has_scale())
+        if (m_to_world->has_scale())
             Throw("Scale factors in the camera-to-world transformation are not allowed!");
         update_camera_transforms();
     }
@@ -221,7 +220,7 @@ public:
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
         Vector3f d = dr::normalize(Vector3f(near_p));
 
-        AffineTransform4f to_world = m_to_world_animated->eval(time);
+        AffineTransform4f to_world = m_to_world->eval(time);
         ray.o = to_world.translation();
         ray.d = to_world * d;
 
@@ -259,7 +258,7 @@ public:
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
         Vector3f d = dr::normalize(Vector3f(near_p));
 
-        AffineTransform4f to_world = m_to_world_animated->eval(time);
+        AffineTransform4f to_world = m_to_world->eval(time);
         ray.o = to_world.translation();
         ray.d = to_world * d;
 
@@ -286,7 +285,7 @@ public:
     sample_direction(const Interaction3f &it, const Point2f & /*sample*/,
                      Mask active) const override {
         // Transform the reference point into the local coordinate system
-        AffineTransform4f trafo = m_to_world_animated->eval(it.time);
+        AffineTransform4f trafo = m_to_world->eval(it.time);
         Point3f ref_p     = trafo.inverse() * it.p;
 
         // Check if it is outside of the clip range
@@ -324,7 +323,7 @@ public:
     }
 
     ScalarBoundingBox3f bbox() const override {
-        return m_to_world_animated->get_translation_bounds();
+        return m_to_world->get_translation_bounds();
     }
 
     /**

@@ -188,7 +188,7 @@ public:
         m_turbidity, m_sky_scale, m_sun_scale, m_albedo,
         m_sun_half_aperture, m_sky_rad_dataset, m_sampling_params,
         m_sky_params_dataset, m_sun_radiance,
-        m_to_world, m_to_world_animated, m_sky_irrad_dataset, m_sun_irrad_dataset,
+        m_to_world, m_sky_irrad_dataset, m_sun_irrad_dataset,
 		MIN_SAMPLING_ETA, MAX_SAMPLING_ETA, CHANNEL_COUNT
     )
 
