@@ -216,3 +216,29 @@ def test16_parameters_changed(variants_vec_backends_once):
     translations[3] = 2.5
     at.parameters_changed(["translations"])
     assert dr.allclose(at.eval_scalar(1.0).translation(), [2.5, 0, 0])
+
+
+def test17_change_frame_number(variants_vec_backends_once):
+    # Initialize with 1 keyframe
+    at = mi.AnimatedTransform4f(mi.ScalarAffineTransform4f.translate([1.0, 0.0, 0.0]))
+    assert dr.allclose(at.eval_scalar(0.0).translation(), [1.0, 0.0, 0.0])
+
+    # Modify to 2 keyframes
+    params = mi.traverse(at)
+    params['times'] = mi.Float([0.0, 1.0])
+    params['translations'] = mi.Float([1.0, 0.0, 0.0, 3.0, 0.0, 0.0])
+    params['scales'] = mi.Float([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+    params['rotations'] = mi.Float([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
+    at.parameters_changed(["times", "translations", "scales", "rotations"])
+    assert dr.allclose(at.eval_scalar(0.0).translation(), [1.0, 0.0, 0.0])
+    assert dr.allclose(at.eval_scalar(0.5).translation(), [2.0, 0.0, 0.0])
+    assert dr.allclose(at.eval_scalar(1.0).translation(), [3.0, 0.0, 0.0])
+
+    # Shrink back to 1 keyframe
+    params['times'] = mi.Float([0.5])
+    params['translations'] = mi.Float([5.0, 0.0, 0.0])
+    params['scales'] = mi.Float([1.0, 1.0, 1.0])
+    params['rotations'] = mi.Float([1.0, 0.0, 0.0, 0.0])
+    at.parameters_changed(["times", "translations", "scales", "rotations"])
+    assert dr.allclose(at.eval_scalar(0.0).translation(), [5.0, 0.0, 0.0])
+    assert dr.allclose(at.eval_scalar(1.0).translation(), [5.0, 0.0, 0.0])
