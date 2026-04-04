@@ -216,3 +216,47 @@ def test03_ray_intersect_instance(variants_all_rgb, width):
         assert 'instance=0x0' in str(pi)
     else:
         assert ('instance=[' + '0x0, ' * (width - 1) + '0x0]') in str(pi)
+
+
+def test04_animated_instance(variants_all_rgb):
+    from mitsuba import ScalarTransform4f as T
+    from mitsuba import AnimatedTransform4f as AT
+
+    scene = mi.load_dict({
+        'type' : 'scene',
+        'group_0' : {
+            'type' : 'shapegroup',
+            'shape' : {
+                'type' : 'sphere'
+            }
+        },
+        'instance' : {
+            'type' : 'instance',
+            "group" : {
+                "type" : "ref",
+                "id" : "group_0"
+            },
+            'animation' : AT({
+                0.0 : T().translate([0, 0, 0]),
+                1.0 : T().translate([0, 0, 1])
+            })
+        }
+    })
+
+    # Test at t=0
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=0.0, wavelengths=[])
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, -1])
+
+    # Test at t=1
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=1.0, wavelengths=[])
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, 0])
+
+    # Test at t=0.5
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=0.5, wavelengths=[])
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, -0.5])

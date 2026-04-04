@@ -3,6 +3,7 @@
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/shape.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/shapegroup.h>
@@ -63,6 +64,9 @@ public:
 
     Instance(const Properties &props) : Base(props) {
         for (auto &prop : props.objects()) {
+            if (prop.name() == "animation")
+                continue;
+
             ShapeGroup_ *shapegroup = prop.try_get<ShapeGroup_>();
             if (!shapegroup)
                 Throw("Only a shapegroup can be specified in an instance.");
@@ -75,6 +79,19 @@ public:
             Throw("A reference to a 'shapegroup' must be specified!");
 
         m_shape_type = ShapeType::Instance;
+
+        if (props.has_property("animation")) {
+            ref<Object> obj = props.get<ref<Object>>("animation");
+            if (auto *anim = dynamic_cast<AnimatedTransform4f *>(obj.get())) {
+                m_animated_to_world = anim;
+            } else if (auto *anim_d = dynamic_cast<AnimatedTransform<double> *>(obj.get())) {
+                m_animated_to_world = new AnimatedTransform4f(*anim_d);
+            } else {
+                Throw("Property 'animation' has incompatible type!");
+            }
+        } else {
+            m_animated_to_world = new AnimatedTransform4f(m_to_world.scalar());
+        }
 
         dr::make_opaque(m_to_world);
     }
@@ -98,10 +115,7 @@ public:
         if (!bbox.valid())
             return bbox;
 
-        ScalarBoundingBox3f result;
-        for (int i = 0; i < 8; ++i)
-            result.expand(m_to_world.scalar() * bbox.corner(i));
-        return result;
+        return m_animated_to_world->get_spatial_bounds(bbox);
     }
 
     ScalarSize primitive_count() const override { return 1; }
@@ -125,7 +139,7 @@ public:
                                    dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
         if constexpr (!dr::is_array_v<FloatP>) {
-            return m_shapegroup->ray_intersect_preliminary_scalar(m_to_world.scalar().inverse() * ray);
+            return m_shapegroup->ray_intersect_preliminary_scalar(m_animated_to_world->eval_scalar(ray.time).inverse() * ray);
         } else {
             Throw("Instance::ray_intersect_preliminary() should only be called with scalar types.");
         }
@@ -138,7 +152,7 @@ public:
         MI_MASK_ARGUMENT(active);
 
         if constexpr (!dr::is_array_v<FloatP>) {
-            return m_shapegroup->ray_test_scalar(m_to_world.scalar().inverse() * ray);
+            return m_shapegroup->ray_test_scalar(m_animated_to_world->eval_scalar(ray.time).inverse() * ray);
         } else {
             Throw("Instance::ray_test_impl() should only be called with scalar types.");
         }
@@ -153,8 +167,8 @@ public:
                                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
-        const AffineTransform4f& to_world  = m_to_world.value();
-        AffineTransform4f to_object = to_world.inverse();
+        auto to_world = m_animated_to_world->eval(ray.time);
+        auto to_object = to_world.inverse();
 
         constexpr bool IsDiff = dr::is_diff_v<Float>;
         bool grad_enabled = dr::grad_enabled(to_world);
@@ -259,9 +273,16 @@ public:
         DRJIT_MARK_USED(device);
         if constexpr (!dr::is_cuda_v<Float>) {
             RTCGeometry instance = m_shapegroup->embree_geometry(device);
-            rtcSetGeometryTimeStepCount(instance, 1);
-            dr::Matrix<ScalarFloat32, 4> matrix(dr::transpose(m_to_world.scalar().matrix));
-            rtcSetGeometryTransform(instance, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, matrix.data());
+            size_t n_keyframes = m_animated_to_world->keyframes().size();
+            rtcSetGeometryTimeStepCount(instance, (unsigned int) n_keyframes);
+
+            size_t i = 0;
+            for (const auto &[time, kf] : m_animated_to_world->keyframes()) {
+                auto trafo = m_animated_to_world->eval_scalar(time);
+                dr::Matrix<ScalarFloat32, 4> matrix(dr::transpose(trafo.matrix));
+                rtcSetGeometryTransform(instance, (unsigned int) i++, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, matrix.data());
+            }
+
             rtcCommitGeometry(instance);
             return instance;
         } else {
@@ -275,8 +296,13 @@ public:
                                    std::vector<OptixInstance>& out_instances,
                                    uint32_t instance_id,
                                    const ScalarAffineTransform4f& transf) override {
-        m_shapegroup->optix_prepare_ias(context, out_instances, instance_id,
-                                        transf * m_to_world.scalar());
+        if (m_animated_to_world->keyframes().size() > 1) {
+            m_shapegroup->optix_prepare_ias(context, out_instances, instance_id,
+                                            *m_animated_to_world);
+        } else {
+            m_shapegroup->optix_prepare_ias(context, out_instances, instance_id,
+                                            transf * m_animated_to_world->eval_scalar(0.0));
+        }
     }
 
     virtual void optix_fill_hitgroup_records(
@@ -292,6 +318,7 @@ public:
     MI_DECLARE_CLASS(Instance)
 private:
    ref<ShapeGroup_> m_shapegroup;
+   ref<AnimatedTransform4f> m_animated_to_world;
 
    MI_TRAVERSE_CB(Base, m_shapegroup)
 };
