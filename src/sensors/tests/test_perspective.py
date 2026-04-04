@@ -231,6 +231,6 @@ def test07_animation_xml(variant_scalar_rgb):
     </scene>
     """
     scene = mi.load_string(xml)
-    camera = scene.sensors()[0]
-    ray, _ = camera.sample_ray(0.5, 0, [0.5, 0.5], 0)
+    sensor = scene.sensors()[0]
+    ray, _ = sensor.sample_ray(0.5, 0, [0.5, 0.5], 0)
     assert dr.allclose(ray.o, mi.Point3f(0, 0, 0.5), atol=0.01)
