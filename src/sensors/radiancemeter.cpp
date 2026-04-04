@@ -1,6 +1,7 @@
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/sensor.h>
 
@@ -55,7 +56,7 @@ priority.
 
 MI_VARIANT class RadianceMeter final : public Sensor<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Sensor, m_film, m_to_world, m_needs_sample_2,
+    MI_IMPORT_BASE(Sensor, m_film, m_to_world, m_to_world_animated, m_needs_sample_2,
                     m_needs_sample_3, sample_wavelengths)
     MI_IMPORT_TYPES()
 
@@ -79,6 +80,7 @@ public:
                 auto [up, unused]        = coordinate_system(dr::normalize(direction));
 
                 m_to_world = ScalarAffineTransform4f::look_at(origin, target, up);
+                m_to_world_animated = new AnimatedTransform4f(m_to_world.scalar());
                 dr::make_opaque(m_to_world);
             }
         }
@@ -111,8 +113,9 @@ public:
         ray.wavelengths = wavelengths;
 
         // 2. Set ray origin and direction
-        ray.o = m_to_world.value() * Point3f(0.f, 0.f, 0.f);
-        ray.d = m_to_world.value() * Vector3f(0.f, 0.f, 1.f);
+        auto to_world = m_to_world_animated->eval(time);
+        ray.o = to_world * Point3f(0.f, 0.f, 0.f);
+        ray.d = to_world * Vector3f(0.f, 0.f, 1.f);
         ray.o += ray.d * math::RayEpsilon<Float>;
 
         return { ray, wav_weight };
@@ -136,8 +139,9 @@ public:
         ray.wavelengths = wavelengths;
 
         // 2. Set ray origin and direction
-        ray.o = m_to_world.value() * Point3f(0.f, 0.f, 0.f);
-        ray.d = m_to_world.value() * Vector3f(0.f, 0.f, 1.f);
+        auto to_world = m_to_world_animated->eval(time);
+        ray.o = to_world * Point3f(0.f, 0.f, 0.f);
+        ray.d = to_world * Vector3f(0.f, 0.f, 1.f);
         ray.o += ray.d * math::RayEpsilon<Float>;
 
         // 3. Set differentials; since the film size is always 1x1, we don't
