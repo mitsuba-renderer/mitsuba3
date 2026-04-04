@@ -1,4 +1,5 @@
 #include <mitsuba/core/bsphere.h>
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/emitter.h>
@@ -59,7 +60,7 @@ radiates in the direction of the positive Z axis, i.e. :math:`(0, 0, 1)`.
 
 MI_VARIANT class DirectionalEmitter final : public Emitter<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Emitter, m_flags, m_to_world, m_needs_sample_3)
+    MI_IMPORT_BASE(Emitter, m_flags, m_to_world, m_to_world_animated, m_needs_sample_3)
     MI_IMPORT_TYPES(Scene, Texture)
 
     DirectionalEmitter(const Properties &props) : Base(props) {
@@ -76,6 +77,7 @@ public:
             auto [up, unused] = coordinate_system(direction);
 
             m_to_world = ScalarAffineTransform4f::look_at(0.0f, ScalarPoint3f(direction), up);
+            m_to_world_animated = new AnimatedTransform4f(m_to_world.scalar());
             dr::make_opaque(m_to_world);
         }
 
@@ -122,11 +124,10 @@ public:
         Point2f offset =  warp::square_to_uniform_disk_concentric(spatial_sample);
 
         // 2. "Sample" directional component (fixed, no actual sampling required)
-        const auto trafo = m_to_world.value();
-        Vector3f d_global = trafo * Vector3f{ 0.f, 0.f, 1.f };
+        auto to_world = m_to_world_animated->eval(time);
+        Vector3f d_global = to_world * Vector3f{ 0.f, 0.f, 1.f };
 
-        Vector3f perp_offset =
-            trafo * Vector3f{ offset.x(), offset.y(), 0.f };
+        Vector3f perp_offset = to_world * Vector3f{ offset.x(), offset.y(), 0.f };
         Point3f origin = m_bsphere.center + (perp_offset - d_global) * m_bsphere.radius;
 
         // 3. Sample spectral component
@@ -150,7 +151,7 @@ public:
                      Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
-        Vector3f d = m_to_world.value() * Vector3f{ 0.f, 0.f, 1.f };
+        Vector3f d = m_to_world_animated->eval(it.time) * Vector3f{ 0.f, 0.f, 1.f };
         // Needed when the reference point is on the sensor, which is not part of the bbox
         Float radius = dr::maximum(m_bsphere.radius, dr::norm(it.p - m_bsphere.center));
         Float dist = 2.f * radius;

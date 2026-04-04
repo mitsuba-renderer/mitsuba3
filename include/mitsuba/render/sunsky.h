@@ -9,6 +9,7 @@
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/emitter.h>
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/tensor.h>
@@ -170,7 +171,7 @@ struct DateTimeRecord {
 MI_VARIANT
 class BaseSunskyEmitter: public Emitter<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Emitter, m_flags, m_to_world)
+    MI_IMPORT_BASE(Emitter, m_flags, m_to_world, m_to_world_animated)
     MI_IMPORT_TYPES(Scene, Texture)
 
     using FloatStorage    = DynamicBuffer<Float>;
@@ -316,7 +317,8 @@ public:
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
         const Point2f sun_angles = get_sun_angles(si.time);
-        Vector3f local_wo = dr::normalize(m_to_world.value().inverse() * -si.wi);
+        auto to_world = m_to_world_animated->eval(si.time);
+        Vector3f local_wo = dr::normalize(to_world.inverse() * -si.wi);
 
         return eval(local_wo, si.wavelengths, sun_angles, hit_sun(sun_angles, local_wo), active);
     }
@@ -343,7 +345,7 @@ public:
         );
         active &= Frame3f::cos_theta(d) >= 0.f;
         // Unlike \ref sample_direction, ray goes from the envmap toward the scene
-        Vector3f d_world = m_to_world.value() * (-d);
+        Vector3f d_world = m_to_world_animated->eval(time) * (-d);
 
         Mask sun_hit = !pick_sky || hit_sun(sun_angles, d);
 
@@ -379,7 +381,8 @@ public:
     std::pair<Wavelength, Spectrum>
     sample_wavelengths(const SurfaceInteraction3f& si, Float wavelength_sample, Mask active) const override {
         const Point2f sun_angles = get_sun_angles(si.time);
-        Vector3f local_wo = dr::normalize(m_to_world.value().inverse() * -si.wi);
+        auto to_world = m_to_world_animated->eval(si.time);
+        Vector3f local_wo = dr::normalize(to_world.inverse() * -si.wi);
 
         Spectrum weights = 1.f;
         Wavelength wavelengths = Wavelength(0.f);
@@ -416,7 +419,7 @@ public:
         Float radius = dr::maximum(m_bsphere.radius, dr::norm(it.p - m_bsphere.center)),
               dist   = 2.f * radius;
 
-        Vector3f d = m_to_world.value() * sample_dir;
+        Vector3f d = m_to_world_animated->eval(it.time) * sample_dir;
         DirectionSample3f ds = dr::zeros<DirectionSample3f>();
         ds.p = dr::fmadd(d, dist, it.p);
         ds.n = -d;
@@ -446,7 +449,8 @@ public:
 
         const Float sky_sampling_w = get_sky_sampling_weight(sun_angles.x(), active);
 
-        Vector3f local_dir = dr::normalize(m_to_world.value().inverse() * ds.d);
+        auto to_world = m_to_world_animated->eval(ds.time);
+        Vector3f local_dir = dr::normalize(to_world.inverse() * ds.d);
         Float sky_pdf, sun_pdf;
         std::tie(sky_pdf, sun_pdf) = compute_pdfs(local_dir, sun_angles, hit_sun(sun_angles, local_dir), active);
 
