@@ -17,7 +17,7 @@ MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props)
         } else if (auto *anim_d = dynamic_cast<AnimatedTransform<double> *>(obj.get())) {
             m_to_world = new AnimatedTransform4f(*anim_d);
         } else {
-            Throw("Property 'm_to_world' has incompatible type!");
+            Throw("Property 'to_world' has incompatible type!");
         }
     } else {
         ScalarAffineTransform4f to_world = props.get<ScalarAffineTransform4f>("to_world", ScalarAffineTransform4f());
@@ -41,7 +41,7 @@ MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props, ObjectTy
         } else if (auto *anim_d = dynamic_cast<AnimatedTransform<double> *>(obj.get())) {
             m_to_world = new AnimatedTransform4f(*anim_d);
         } else {
-            Throw("Property 'm_to_world' has incompatible type!");
+            Throw("Property 'to_world' has incompatible type!");
         }
     } else {
         ScalarAffineTransform4f to_world = props.get<ScalarAffineTransform4f>("to_world", ScalarAffineTransform4f());
