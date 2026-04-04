@@ -85,7 +85,7 @@ after which it remains at the maximum value. A projection texture may optionally
 template <typename Float, typename Spectrum>
 class SpotLight final : public Emitter<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Emitter, m_flags, m_medium, m_to_world, m_to_world_animated)
+    MI_IMPORT_BASE(Emitter, m_flags, m_medium, m_to_world)
     MI_IMPORT_TYPES(Scene, Texture)
 
     SpotLight(const Properties &props) : Base(props) {
@@ -163,7 +163,7 @@ public:
         // 2. Sample spectrum
         auto si = dr::zeros<SurfaceInteraction3f>();
         si.time = time;
-        auto to_world = m_to_world_animated->eval(time);
+        auto to_world = m_to_world->eval(time);
         si.p    = to_world.translation();
         si.uv   = direction_to_uv(local_dir);
         auto [wavelengths, spec_weight] =
@@ -181,7 +181,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         DirectionSample3f ds;
-        auto to_world = m_to_world_animated->eval(it.time);
+        auto to_world = m_to_world->eval(it.time);
         ds.p        = to_world.translation();
         ds.n        = 0.f;
         ds.uv       = 0.f;
@@ -222,7 +222,7 @@ public:
                     Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
 
-        auto to_world = m_to_world_animated->eval(time);
+        auto to_world = m_to_world->eval(time);
         Vector3f center_dir = to_world * ScalarVector3f(0.f, 0.f, 1.f);
         PositionSample3f ps(
             /* position */ to_world.translation(), center_dir,
@@ -256,7 +256,7 @@ public:
                             const DirectionSample3f &ds,
                             Mask active) const override {
         Float inv_dist = dr::rcp(ds.dist);
-        auto to_world = m_to_world_animated->eval(it.time);
+        auto to_world = m_to_world->eval(it.time);
         Vector3f local_d = to_world.inverse() * -ds.d;
 
         // Evaluate emitted radiance & falloff profile
@@ -282,7 +282,7 @@ public:
     }
 
     ScalarBoundingBox3f bbox() const override {
-        return m_to_world_animated->get_translation_bounds();
+        return m_to_world->get_translation_bounds();
     }
 
     std::string to_string() const override {

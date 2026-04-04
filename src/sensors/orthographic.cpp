@@ -79,7 +79,7 @@ The exact camera position and orientation is most easily expressed using the
 template <typename Float, typename Spectrum>
 class OrthographicCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(ProjectiveCamera, m_to_world, m_to_world_animated, m_needs_sample_3,
+    MI_IMPORT_BASE(ProjectiveCamera, m_to_world, m_needs_sample_3,
                     m_film, m_sampler, m_resolution, m_shutter_open,
                     m_shutter_open_time, m_near_clip, m_far_clip,
                     sample_wavelengths)
@@ -133,7 +133,7 @@ public:
         Point3f near_p = m_sample_to_camera *
                          Point3f(position_sample.x(), position_sample.y(), 0.f);
 
-        auto to_world = m_to_world_animated->eval(time);
+        auto to_world = m_to_world->eval(time);
         ray.o = to_world * near_p;
         ray.d = dr::normalize(to_world * Vector3f(0, 0, 1));
         ray.maxt = m_far_clip - m_near_clip;
@@ -158,7 +158,7 @@ public:
         Point3f near_p = m_sample_to_camera *
                          Point3f(position_sample.x(), position_sample.y(), 0.f);
 
-        auto to_world = m_to_world_animated->eval(time);
+        auto to_world = m_to_world->eval(time);
         ray.o = to_world * near_p;
         ray.d = dr::normalize(to_world * Vector3f(0, 0, 1));
         ray.maxt = m_far_clip - m_near_clip;
@@ -177,7 +177,7 @@ public:
     }
 
     ScalarBoundingBox3f bbox() const override {
-        return m_to_world_animated->get_translation_bounds();
+        return m_to_world->get_translation_bounds();
     }
 
     std::string to_string() const override {

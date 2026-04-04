@@ -79,12 +79,12 @@ def test03_trampoline(variants_vec_backends_once_rgb):
     assert str(sensor) == "DummySensor (True)"
 
     params = mi.traverse(sensor)
-    assert 'to_world' in params
+    assert 'to_world.transform' in params
     transform = mi.ScalarTransform4f.translate([1, 2, 3]).rotate([0, 1, 0], 45)
-    params['to_world'] = transform
+    params['to_world.transform'] = transform
     params.update()
     params = mi.traverse(sensor)
-    assert dr.allclose(params['to_world'].matrix,
+    assert dr.allclose(params['to_world.transform'].matrix,
                        transform.matrix)
     assert dr.allclose(sensor.world_transform().matrix,
                        transform.matrix)

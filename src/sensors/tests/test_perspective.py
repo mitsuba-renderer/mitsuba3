@@ -207,8 +207,7 @@ def test06_animated_transform(variant_scalar_rgb):
     })
     sensor = mi.load_dict({
         'type': 'perspective',
-        'to_world': mi.Transform4f().translate([0, 0, 0]),
-        'to_world_animated': t,
+        'to_world': t,
     })
 
     ray, _ = sensor.sample_ray(0.5, 0, [0.5, 0.5], 0)
@@ -217,9 +216,9 @@ def test06_animated_transform(variant_scalar_rgb):
 
 def test07_animation_xml(variant_scalar_rgb):
     xml = """
-    <scene version="2.0.0">
+    <scene version="3.0.0">
         <sensor type="perspective">
-            <animation name="to_world_animated">
+            <animation name="to_world">
                 <transform time="0">
                     <translate x="0" y="0" z="0"/>
                 </transform>

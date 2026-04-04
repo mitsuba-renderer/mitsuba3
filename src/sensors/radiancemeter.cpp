@@ -56,7 +56,7 @@ priority.
 
 MI_VARIANT class RadianceMeter final : public Sensor<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Sensor, m_film, m_to_world, m_to_world_animated, m_needs_sample_2,
+    MI_IMPORT_BASE(Sensor, m_film, m_to_world, m_needs_sample_2,
                     m_needs_sample_3, sample_wavelengths)
     MI_IMPORT_TYPES()
 
@@ -79,9 +79,8 @@ public:
                 ScalarPoint3f target     = origin + direction;
                 auto [up, unused]        = coordinate_system(dr::normalize(direction));
 
-                m_to_world = ScalarAffineTransform4f::look_at(origin, target, up);
-                m_to_world_animated = new AnimatedTransform4f(m_to_world.scalar());
-                dr::make_opaque(m_to_world);
+                ScalarAffineTransform4f to_world = ScalarAffineTransform4f::look_at(origin, target, up);
+                m_to_world = new AnimatedTransform4f(to_world);
             }
         }
 
@@ -113,7 +112,7 @@ public:
         ray.wavelengths = wavelengths;
 
         // 2. Set ray origin and direction
-        auto to_world = m_to_world_animated->eval(time);
+        auto to_world = m_to_world->eval(time);
         ray.o = to_world * Point3f(0.f, 0.f, 0.f);
         ray.d = to_world * Vector3f(0.f, 0.f, 1.f);
         ray.o += ray.d * math::RayEpsilon<Float>;
@@ -139,7 +138,7 @@ public:
         ray.wavelengths = wavelengths;
 
         // 2. Set ray origin and direction
-        auto to_world = m_to_world_animated->eval(time);
+        auto to_world = m_to_world->eval(time);
         ray.o = to_world * Point3f(0.f, 0.f, 0.f);
         ray.d = to_world * Vector3f(0.f, 0.f, 1.f);
         ray.o += ray.d * math::RayEpsilon<Float>;

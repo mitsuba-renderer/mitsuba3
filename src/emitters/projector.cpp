@@ -118,7 +118,7 @@ operation remains efficient even if only a single pixel is turned on.
 
 MI_VARIANT class Projector final : public Emitter<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Emitter, m_flags, m_to_world, m_to_world_animated, m_needs_sample_3)
+    MI_IMPORT_BASE(Emitter, m_flags, m_to_world, m_needs_sample_3)
     MI_IMPORT_TYPES(Texture)
 
     Projector(const Properties &props) : Base(props) {
@@ -178,7 +178,7 @@ public:
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.t                    = 0.f;
         si.time                 = time;
-        auto to_world = m_to_world_animated->eval(time);
+        auto to_world           = m_to_world->eval(time);
         si.p                    = to_world.translation();
         si.uv                   = uv;
         auto [wavelengths, weight] =
@@ -207,7 +207,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         // 1. Transform the reference point into the local coordinate system
-        auto to_world = m_to_world_animated->eval(it.time);
+        auto to_world    = m_to_world->eval(it.time);
         Point3f it_local = to_world.inverse() * it.p;
 
         // 2. Map to UV coordinates
@@ -251,7 +251,7 @@ public:
                     Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
 
-        auto to_world = m_to_world_animated->eval(time);
+        auto to_world = m_to_world->eval(time);
         Vector3f center_dir = to_world * ScalarVector3f(0.f, 0.f, 1.f);
         PositionSample3f ps(
             /* position */ to_world.translation(), center_dir,
@@ -278,7 +278,7 @@ public:
                             Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        Point3f it_local = m_to_world_animated->eval(it.time).inverse() * it.p;
+        Point3f it_local = m_to_world->eval(it.time).inverse() * it.p;
 
         SurfaceInteraction3f it_query = dr::zeros<SurfaceInteraction3f>();
         it_query.wavelengths = it.wavelengths;

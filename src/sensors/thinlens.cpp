@@ -145,7 +145,7 @@ The exact camera position and orientation is most easily expressed using the
 template <typename Float, typename Spectrum>
 class ThinLensCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(ProjectiveCamera, m_to_world, m_to_world_animated, m_needs_sample_3, m_film, m_sampler,
+    MI_IMPORT_BASE(ProjectiveCamera, m_to_world, m_needs_sample_3, m_film, m_sampler,
                     m_resolution, m_shutter_open, m_shutter_open_time, m_near_clip,
                     m_far_clip, m_focus_distance, sample_wavelengths)
     MI_IMPORT_TYPES()
@@ -161,7 +161,7 @@ public:
             m_aperture_radius = dr::Epsilon<Float>;
         }
 
-        if (m_to_world.scalar().has_scale())
+        if (m_to_world->has_scale())
             Throw("Scale factors in the camera-to-world transformation are not allowed!");
 
         update_camera_transforms();
@@ -179,12 +179,8 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         Base::parameters_changed(keys);
-        if (keys.empty() || string::contains(keys, "to_world")) {
-            if (m_to_world.scalar().has_scale())
-                Throw("Scale factors in the camera-to-world transformation are not allowed!");
-            m_to_world = m_to_world.value().update();
-        }
-
+        if (m_to_world->has_scale())
+            Throw("ThinLensCamera does not support scaling transforms!");
         update_camera_transforms();
     }
 
@@ -245,7 +241,7 @@ public:
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
         Vector3f d = dr::normalize(Vector3f(focus_p - aperture_p));
 
-        auto to_world = m_to_world_animated->eval(time);
+        auto to_world = m_to_world->eval(time);
         ray.o = to_world * aperture_p;
         ray.d = to_world * d;
 
@@ -289,7 +285,7 @@ public:
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
         Vector3f d = dr::normalize(Vector3f(focus_p - aperture_p));
 
-        auto to_world = m_to_world_animated->eval(time);
+        auto to_world = m_to_world->eval(time);
         ray.o = to_world * aperture_p;
         ray.d = to_world * d;
 
@@ -312,7 +308,7 @@ public:
     sample_direction(const Interaction3f &it, const Point2f &sample,
                      Mask active) const override {
         // Transform the reference point into the local coordinate system
-        AffineTransform4f trafo = m_to_world_animated->eval(it.time);
+        AffineTransform4f trafo = m_to_world->eval(it.time);
         Point3f ref_p = trafo.inverse() * it.p;
 
         // Check if it is outside of the clip range
@@ -357,7 +353,7 @@ public:
 
 
     ScalarBoundingBox3f bbox() const override {
-        return m_to_world_animated->get_translation_bounds();
+        return m_to_world->get_translation_bounds();
     }
 
     std::string to_string() const override {

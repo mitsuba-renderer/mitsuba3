@@ -98,7 +98,7 @@ High quality free light probes are available on
 template <typename Float, typename Spectrum>
 class EnvironmentMapEmitter final : public Emitter<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Emitter, m_flags, m_to_world, m_to_world_animated)
+    MI_IMPORT_BASE(Emitter, m_flags, m_to_world)
     MI_IMPORT_TYPES(Scene, Shape, Texture)
 
     using Warp = Hierarchical2D<Float, 0>;
@@ -354,7 +354,7 @@ public:
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        auto to_world = m_to_world_animated->eval(si.time);
+        auto to_world = m_to_world->eval(si.time);
         Vector3f v = to_world.inverse() * (-si.wi);
 
         // Convert to latitude-longitude texture coordinates
@@ -389,7 +389,7 @@ public:
         pdf *= inv_sin_theta * dr::InvTwoPi<Float> * dr::InvPi<Float>;
 
         // Unlike \ref sample_direction, ray goes from the envmap toward the scene
-        Vector3f d_global = m_to_world_animated->eval(time) * -d;
+        Vector3f d_global = m_to_world->eval(time) * -d;
 
         // Compute ray origin
         Vector3f perpendicular_offset =
@@ -435,7 +435,7 @@ public:
         Float inv_sin_theta = dr::safe_rsqrt(dr::maximum(
             dr::square(d.x()) + dr::square(d.z()), dr::square(dr::Epsilon<Float>)));
 
-        auto to_world = m_to_world_animated->eval(it.time);
+        auto to_world = m_to_world->eval(it.time);
         d = to_world * d;
 
         DirectionSample3f ds;
@@ -464,7 +464,7 @@ public:
                         Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        auto to_world = m_to_world_animated->eval(ds.time);
+        auto to_world = m_to_world->eval(ds.time);
         Vector3f d = to_world.inverse() * ds.d;
 
         // Convert to latitude-longitude texture coordinates
