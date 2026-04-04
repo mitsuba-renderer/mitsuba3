@@ -201,9 +201,10 @@ def test05_spectrum_sampling(variants_vec_spectral):
 
 
 def test06_animated_transform(variant_scalar_rgb):
-    t = mi.AnimatedTransform4f()
-    t.add_keyframe(0.0, mi.Transform4f().translate([0, 0, 0]))
-    t.add_keyframe(1.0, mi.Transform4f().translate([0, 0, 1]))
+    t = mi.AnimatedTransform4f({
+        0.0: mi.Transform4f().translate([0, 0, 0]),
+        1.0: mi.Transform4f().translate([0, 0, 1])
+    })
     sensor = mi.load_dict({
         'type': 'perspective',
         'to_world': mi.Transform4f().translate([0, 0, 0]),

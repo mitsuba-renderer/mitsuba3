@@ -16,9 +16,10 @@ def test02_basics(variant_scalar_rgb):
     assert dr.allclose(at.eval_scalar(0.5).matrix, trafo.matrix)
 
     # Test adding keyframes
-    at = mi.AnimatedTransform4f()
-    at.add_keyframe(0.0, mi.ScalarAffineTransform4f.translate([0, 0, 0]))
-    at.add_keyframe(1.0, mi.ScalarAffineTransform4f.translate([1, 2, 3]))
+    at = mi.AnimatedTransform4f({
+        0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
+        1.0: mi.ScalarAffineTransform4f.translate([1, 2, 3])
+    })
     assert at.is_animated()
 
     # Test evaluation at keyframes
@@ -30,9 +31,10 @@ def test02_basics(variant_scalar_rgb):
     assert dr.allclose(mid.matrix, mi.ScalarAffineTransform4f.translate([0.5, 1, 1.5]).matrix)
 
 def test03_rotation_interpolation(variant_scalar_rgb):
-    at = mi.AnimatedTransform4f()
-    at.add_keyframe(0.0, mi.ScalarAffineTransform4f.rotate([0, 0, 1], 0))
-    at.add_keyframe(1.0, mi.ScalarAffineTransform4f.rotate([0, 0, 1], 90))
+    at = mi.AnimatedTransform4f({
+        0.0: mi.ScalarAffineTransform4f.rotate([0, 0, 1], 0),
+        1.0: mi.ScalarAffineTransform4f.rotate([0, 0, 1], 90)
+    })
 
     # Halfway should be 45 degrees
     mid = at.eval_scalar(0.5)
@@ -41,9 +43,10 @@ def test03_rotation_interpolation(variant_scalar_rgb):
     assert dr.allclose(mid.inverse().matrix, expected.inverse().matrix)
 
 def test04_scaling_interpolation(variant_scalar_rgb):
-    at = mi.AnimatedTransform4f()
-    at.add_keyframe(0.0, mi.ScalarAffineTransform4f.scale([1, 1, 1]))
-    at.add_keyframe(1.0, mi.ScalarAffineTransform4f.scale([2, 4, 8]))
+    at = mi.AnimatedTransform4f({
+        0.0: mi.ScalarAffineTransform4f.scale([1, 1, 1]),
+        1.0: mi.ScalarAffineTransform4f.scale([2, 4, 8])
+    })
 
     mid = at.eval_scalar(0.5)
     expected = mi.ScalarAffineTransform4f.scale([1.5, 2.5, 4.5])
@@ -51,11 +54,9 @@ def test04_scaling_interpolation(variant_scalar_rgb):
     assert dr.allclose(mid.inverse().matrix, expected.inverse().matrix)
 
 def test05_complex_interpolation(variant_scalar_rgb):
-    at = mi.AnimatedTransform4f()
     t0 = mi.ScalarAffineTransform4f.translate([1, 2, 3]).rotate([0, 1, 0], 30).scale([1, 2, 1])
     t1 = mi.ScalarAffineTransform4f.translate([4, 5, 6]).rotate([0, 1, 0], 60).scale([2, 1, 2])
-    at.add_keyframe(0.0, t0)
-    at.add_keyframe(1.0, t1)
+    at = mi.AnimatedTransform4f({0.0: t0, 1.0: t1})
 
     # Keyframe evaluation
     assert dr.allclose(at.eval_scalar(0.0).matrix, t0.matrix)
@@ -70,9 +71,10 @@ def test05_complex_interpolation(variant_scalar_rgb):
     assert dr.allclose(at.eval_scalar(0.5).inverse().matrix, expected_mid.inverse().matrix)
 
 def test06_vectorized_eval(variants_vec_backends_once):
-    at = mi.AnimatedTransform4f()
-    at.add_keyframe(0.0, mi.ScalarAffineTransform4f.translate([0, 0, 0]))
-    at.add_keyframe(1.0, mi.ScalarAffineTransform4f.translate([1, 1, 1]))
+    at = mi.AnimatedTransform4f({
+        0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
+        1.0: mi.ScalarAffineTransform4f.translate([1, 1, 1])
+    })
 
     times_list = [0.0, 0.25, 0.5, 0.75, 1.0]
     expected_translations = np.array([
@@ -88,9 +90,10 @@ def test06_vectorized_eval(variants_vec_backends_once):
     assert dr.allclose(trafos.inverse().matrix, mi.AffineTransform4f.translate(expected_translations).inverse().matrix)
 
 def test07_scalar_eval(variant_scalar_rgb):
-    at = mi.AnimatedTransform4f()
-    at.add_keyframe(0.0, mi.ScalarAffineTransform4f.translate([0, 0, 0]))
-    at.add_keyframe(1.0, mi.ScalarAffineTransform4f.translate([1, 1, 1]))
+    at = mi.AnimatedTransform4f({
+        0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
+        1.0: mi.ScalarAffineTransform4f.translate([1, 1, 1])
+    })
     times_list = [0.0, 0.25, 0.5, 0.75, 1.0]
     expected_translations = np.array([
         [0.0, 0.25, 0.5, 0.75, 1.0],
@@ -102,13 +105,11 @@ def test07_scalar_eval(variant_scalar_rgb):
         assert dr.allclose(trafo.translation(), expected_translations[:, i])
 
 def test08_shear_error(variant_scalar_rgb):
-    at = mi.AnimatedTransform4f()
     m = mi.Matrix4f(1)
     m[0, 1] = 1.0
     trafo = mi.ScalarAffineTransform4f(m)
-
     with pytest.raises(RuntimeError, match="Transformation contains shear"):
-        at.add_keyframe(0.0, trafo)
+        mi.AnimatedTransform4f({0.0: trafo})
 
 def test09_no_keyframes_error(variant_scalar_rgb):
     at = mi.AnimatedTransform4f()
@@ -119,9 +120,10 @@ def test09_no_keyframes_error(variant_scalar_rgb):
         at.eval(mi.Float(0.5))
 
 def test10_properties(variant_scalar_rgb):
-    at = mi.AnimatedTransform4f()
-    at.add_keyframe(0.0, mi.ScalarAffineTransform4f.translate([0, 0, 0]))
-    at.add_keyframe(1.0, mi.ScalarAffineTransform4f.translate([1, 2, 3]))
+    at = mi.AnimatedTransform4f({
+        0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
+        1.0: mi.ScalarAffineTransform4f.translate([1, 2, 3])
+    })
 
     props = mi.Properties()
     props["to_world"] = at
@@ -156,10 +158,11 @@ def test11_xml_loading(variant_scalar_rgb):
 
 
 def test12_translation_bounds(variant_scalar_rgb):
-    at = mi.AnimatedTransform4f()
-    at.add_keyframe(0.0, mi.ScalarAffineTransform4f.translate([1, -2, 3]))
-    at.add_keyframe(1.0, mi.ScalarAffineTransform4f.translate([-1, 5, 0]))
-    at.add_keyframe(2.0, mi.ScalarAffineTransform4f.translate([0, 2, 8]))
+    at = mi.AnimatedTransform4f({
+        0.0: mi.ScalarAffineTransform4f.translate([1, -2, 3]),
+        1.0: mi.ScalarAffineTransform4f.translate([-1, 5, 0]),
+        2.0: mi.ScalarAffineTransform4f.translate([0, 2, 8])
+    })
 
     bbox = at.get_translation_bounds()
     assert dr.allclose(bbox.min, [-1, -2, 0])
@@ -167,32 +170,49 @@ def test12_translation_bounds(variant_scalar_rgb):
 
 
 def test13_has_scale(variant_scalar_rgb):
-    at = mi.AnimatedTransform4f()
-    at.add_keyframe(0.0, mi.ScalarAffineTransform4f.translate([1, 2, 3]))
-    at.add_keyframe(1.0, mi.ScalarAffineTransform4f.translate([4, 5, 6]))
+    at = mi.AnimatedTransform4f({
+        0.0: mi.ScalarAffineTransform4f.translate([1, 2, 3]),
+        1.0: mi.ScalarAffineTransform4f.translate([4, 5, 6])
+    })
     assert not at.has_scale()
 
-    at2 = mi.AnimatedTransform4f()
-    at2.add_keyframe(0.0, mi.ScalarAffineTransform4f.translate([1, 2, 3]))
-    at2.add_keyframe(1.0, mi.ScalarAffineTransform4f.scale([2, 1, 1]))
+    at2 = mi.AnimatedTransform4f({
+        0.0: mi.ScalarAffineTransform4f.translate([1, 2, 3]),
+        1.0: mi.ScalarAffineTransform4f.scale([2, 1, 1])
+    })
     assert at2.has_scale()
 
 def test14_time_bounds(variant_scalar_rgb):
-    at = mi.AnimatedTransform4f()
-    at.add_keyframe(0.5, mi.ScalarAffineTransform4f.translate([1, 2, 3]))
-    at.add_keyframe(1.5, mi.ScalarAffineTransform4f.translate([4, 5, 6]))
+    at = mi.AnimatedTransform4f({
+        0.5: mi.ScalarAffineTransform4f.translate([1, 2, 3]),
+        1.5: mi.ScalarAffineTransform4f.translate([4, 5, 6])
+    })
 
     bbox = at.get_time_bounds()
     assert bbox.min == 0.5
     assert bbox.max == 1.5
 
 def test15_spatial_bounds(variant_scalar_rgb):
-    at = mi.AnimatedTransform4f()
-    at.add_keyframe(0.0, mi.ScalarAffineTransform4f.translate([0, 0, 0]))
-    at.add_keyframe(1.0, mi.ScalarAffineTransform4f.translate([10, 0, 0]))
+    at = mi.AnimatedTransform4f({
+        0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
+        1.0: mi.ScalarAffineTransform4f.translate([10, 0, 0])
+    })
 
     bbox = mi.ScalarBoundingBox3f([0, 0, 0], [1, 1, 1])
     spatial_bounds = at.get_spatial_bounds(bbox)
 
     assert dr.allclose(spatial_bounds.min, [0, 0, 0])
     assert dr.allclose(spatial_bounds.max, [11, 1, 1])
+
+
+def test16_parameters_changed(variants_vec_backends_once):
+    at = mi.AnimatedTransform4f({
+        0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
+        1.0: mi.ScalarAffineTransform4f.translate([1, 0, 0])
+    })
+    sensor = mi.load_dict({'type': 'perspective', 'to_world_animated': at})
+    params = mi.traverse(sensor)
+    translations = params['to_world_animated.translations']
+    translations[3] = 2.5
+    at.parameters_changed(["translations"])
+    assert dr.allclose(at.eval_scalar(1.0).translation(), [2.5, 0, 0])

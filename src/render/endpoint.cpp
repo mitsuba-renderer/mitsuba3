@@ -22,7 +22,7 @@ MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props)
             Throw("Property 'to_world_animated' has incompatible type!");
         }
     } else {
-        m_to_world_animated = new AnimatedTransform4f(m_to_world.value());
+        m_to_world_animated = new AnimatedTransform4f(m_to_world.scalar());
     }
     for (auto &prop : props.objects()) {
         if (Medium *medium = prop.try_get<Medium>()) {
@@ -47,7 +47,7 @@ MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props, ObjectTy
             Throw("Property 'to_world_animated' has incompatible type!");
         }
     } else {
-        m_to_world_animated = new AnimatedTransform4f(m_to_world.value());
+        m_to_world_animated = new AnimatedTransform4f(m_to_world.scalar());
     }
     for (auto &prop : props.objects()) {
         if (Medium *medium = prop.try_get<Medium>()) {
