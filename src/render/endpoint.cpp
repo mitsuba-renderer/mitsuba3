@@ -12,9 +12,9 @@ MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props)
     : JitObject<Endpoint>(props.id(), ObjectType::Unknown) {
     if (props.has_property("to_world") && props.type("to_world") == Properties::Type::Object) {
         ref<Object> obj = props.get<ref<Object>>("to_world");
-        if (auto *anim = dynamic_cast<AnimatedTransform4f *>(obj.get())) {
+        if (auto *anim = dynamic_cast<AnimatedTransform4f*>(obj.get())) {
             m_to_world = anim;
-        } else if (auto *anim_d = dynamic_cast<AnimatedTransform<double> *>(obj.get())) {
+        } else if (auto *anim_d = dynamic_cast<AnimatedTransform4d*>(obj.get())) {
             m_to_world = new AnimatedTransform4f(*anim_d);
         } else {
             Throw("Property 'to_world' has incompatible type!");
@@ -36,9 +36,9 @@ MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props, ObjectTy
     : JitObject<Endpoint>(props.id(), type) {
     if (props.has_property("to_world") && props.type("to_world") == Properties::Type::Object) {
         ref<Object> obj = props.get<ref<Object>>("to_world");
-        if (auto *anim = dynamic_cast<AnimatedTransform4f *>(obj.get())) {
+        if (auto *anim = dynamic_cast<AnimatedTransform4f*>(obj.get())) {
             m_to_world = anim;
-        } else if (auto *anim_d = dynamic_cast<AnimatedTransform<double> *>(obj.get())) {
+        } else if (auto *anim_d = dynamic_cast<AnimatedTransform4d*>(obj.get())) {
             m_to_world = new AnimatedTransform4f(*anim_d);
         } else {
             Throw("Property 'to_world' has incompatible type!");
