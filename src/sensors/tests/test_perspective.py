@@ -198,3 +198,38 @@ def test05_spectrum_sampling(variants_vec_spectral):
                 }
             }
         })
+
+
+def test06_animated_transform(variant_scalar_rgb):
+    t = mi.AnimatedTransform4f({
+        0.0: mi.Transform4f().translate([0, 0, 0]),
+        1.0: mi.Transform4f().translate([0, 0, 1])
+    })
+    sensor = mi.load_dict({
+        'type': 'perspective',
+        'to_world': t,
+    })
+
+    ray, _ = sensor.sample_ray(0.5, 0, [0.5, 0.5], 0)
+    assert dr.allclose(ray.o, mi.Point3f(0, 0, 0.5), atol=0.01)
+
+
+def test07_animation_xml(variant_scalar_rgb):
+    xml = """
+    <scene version="3.0.0">
+        <sensor type="perspective">
+            <animation name="to_world">
+                <transform time="0">
+                    <translate x="0" y="0" z="0"/>
+                </transform>
+                <transform time="1">
+                    <translate x="0" y="0" z="1"/>
+                </transform>
+            </animation>
+        </sensor>
+    </scene>
+    """
+    scene = mi.load_string(xml)
+    sensor = scene.sensors()[0]
+    ray, _ = sensor.sample_ray(0.5, 0, [0.5, 0.5], 0)
+    assert dr.allclose(ray.o, mi.Point3f(0, 0, 0.5), atol=0.01)

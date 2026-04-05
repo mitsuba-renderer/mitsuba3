@@ -1,4 +1,5 @@
 #include <mitsuba/core/properties.h>
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/sensor.h>
@@ -177,7 +178,8 @@ public:
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.t                    = 0.f;
         si.time                 = time;
-        si.p                    = m_to_world.value().translation();
+        auto to_world           = m_to_world->eval(time);
+        si.p                    = to_world.translation();
         si.uv                   = uv;
         auto [wavelengths, weight] =
             sample_wavelengths(si, wavelength_sample, active);
@@ -191,7 +193,7 @@ public:
         ray.time = time;
         ray.wavelengths = wavelengths;
         ray.o = si.p;
-        ray.d = m_to_world.value() * near_dir;
+        ray.d = to_world * near_dir;
 
         // Scaling factor to match \ref sample_direction.
         weight *= dr::Pi<ScalarFloat> * m_sensor_area;
@@ -205,7 +207,8 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         // 1. Transform the reference point into the local coordinate system
-        Point3f it_local = m_to_world.value().inverse() * it.p;
+        auto to_world    = m_to_world->eval(it.time);
+        Point3f it_local = to_world.inverse() * it.p;
 
         // 2. Map to UV coordinates
         Point2f uv = dr::head<2>(m_sample_to_camera.inverse() * it_local);
@@ -219,8 +222,8 @@ public:
 
         // 4. Prepare DirectionSample record for caller (MIS, etc.)
         DirectionSample3f ds;
-        ds.p       = m_to_world.value().translation();
-        ds.n       = m_to_world.value() * ScalarVector3f(0, 0, 1);
+        ds.p       = to_world.translation();
+        ds.n       = to_world * ScalarVector3f(0, 0, 1);
         ds.uv      = uv;
         ds.time    = it.time;
         ds.pdf     = dr::select(active, 1.f, 0.f);
@@ -248,9 +251,10 @@ public:
                     Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
 
-        Vector3f center_dir = m_to_world.value() * ScalarVector3f(0.f, 0.f, 1.f);
+        auto to_world = m_to_world->eval(time);
+        Vector3f center_dir = to_world * ScalarVector3f(0.f, 0.f, 1.f);
         PositionSample3f ps(
-            /* position */ m_to_world.value().translation(), center_dir,
+            /* position */ to_world.translation(), center_dir,
             /*uv*/ Point2f(0.5f), time, /*pdf*/ 1.f, /*delta*/ true
         );
         return { ps, Float(1.f) };
@@ -274,7 +278,7 @@ public:
                             Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        Point3f it_local = m_to_world.value().inverse() * it.p;
+        Point3f it_local = m_to_world->eval(it.time).inverse() * it.p;
 
         SurfaceInteraction3f it_query = dr::zeros<SurfaceInteraction3f>();
         it_query.wavelengths = it.wavelengths;

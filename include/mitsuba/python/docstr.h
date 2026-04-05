@@ -14612,6 +14612,35 @@ static const char *__doc_mitsuba_xyz_to_srgb = R"doc(Convert XYZ tristimulus val
 
 static const char *__doc_operator_lshift = R"doc(Turns a vector of elements into a human-readable representation)doc";
 
+static const char *__doc_mitsuba_AnimatedTransform = R"doc(Animated transformation
+
+This class stores a sequence of transformations and interpolates between them
+using a combination of linear interpolation (for translation and scaling)
+and spherical linear interpolation (for rotation).)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_add_keyframe = R"doc(Add a keyframe to the animated transformation
+
+This method decomposes the transformation and stores it in the keyframe list.
+Note that this is a host-side operation and should not be used in JIT-compiled kernels.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_eval = R"doc(Evaluate the transformation at a specific time
+
+This method performs a vectorized interpolation between keyframes.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_eval_scalar = R"doc(Scalar evaluation of the transformation
+
+This version is for use on the host (e.g., during AABB construction).)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_is_animated = R"doc(Check if the transformation is animated)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_get_time_bounds = R"doc(Returns the time bounds of the animated transform.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_get_translation_bounds = R"doc(Returns the bounding box of the translation component of the animated transform.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_get_spatial_bounds = R"doc(Evaluates the spatial bounds of the animated transform over the given bounding box.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_has_scale = R"doc(Checks if any keyframe has a scale component different from 1.)doc";
+
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif

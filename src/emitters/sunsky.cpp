@@ -245,11 +245,11 @@ public:
             dr::make_opaque(m_location, m_time);
 
             const auto [theta, phi] = Base::sun_coordinates(m_time, m_location);
-            m_sun_dir = m_to_world.value() * sph_to_dir(theta, phi);
+            m_sun_dir = m_to_world->eval(0.f) * sph_to_dir(theta, phi);
         }
 
         // ================= UPDATE ANGLES =================
-        Vector3f local_sun_dir = m_to_world.value().inverse() * m_sun_dir;
+        Vector3f local_sun_dir = m_to_world->eval(0.f).inverse() * m_sun_dir;
 
         if (dr::any(local_sun_dir.z() < 0.f))
             Log(Warn, "The sun is below the horizon at the specified time and location!");
@@ -312,10 +312,10 @@ public:
         // Update sun angles
         if (changed_time_record) {
             const auto [theta, phi] = Base::sun_coordinates(m_time, m_location);
-            m_sun_dir = m_to_world.value() * sph_to_dir(theta, phi);
+            m_sun_dir = m_to_world->eval(0.f) * sph_to_dir(theta, phi);
             m_sun_angles = { theta, phi }; // flip convention
         } else if (changed_sun_dir) {
-            m_sun_angles = dir_to_sph(m_to_world.value().inverse() * m_sun_dir);
+            m_sun_angles = dir_to_sph(m_to_world->eval(0.f).inverse() * m_sun_dir);
         }
 
         Float sun_eta = 0.5f * dr::Pi<Float> - m_sun_angles.x();

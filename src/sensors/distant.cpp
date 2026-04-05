@@ -3,6 +3,7 @@
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
@@ -163,8 +164,9 @@ public:
 
             std::tie(std::ignore, up) = coordinate_system(direction);
 
-            m_to_world = ScalarAffineTransform4f::look_at(
+            ScalarAffineTransform4f to_world = ScalarAffineTransform4f::look_at(
                 ScalarPoint3f(0.0f), ScalarPoint3f(direction), up);
+            m_to_world = new AnimatedTransform4f(to_world);
         }
 
         // Set ray target if relevant
@@ -209,7 +211,7 @@ public:
         Spectrum ray_weight = 0.f;
 
         // Set ray direction
-        ray.d = m_to_world.value() * Vector3f{ 0.f, 0.f, 1.f };
+        ray.d = m_to_world->eval(time) * Vector3f{ 0.f, 0.f, 1.f };
 
         // Sample target point and position ray origin
         if constexpr (TargetType == RayTargetType::Point) {
@@ -226,7 +228,7 @@ public:
             Point2f offset =
                 warp::square_to_uniform_disk_concentric(aperture_sample);
             Vector3f perp_offset =
-                m_to_world.value() * Vector3f(offset.x(), offset.y(), 0.f);
+                m_to_world->eval(time) * Vector3f(offset.x(), offset.y(), 0.f);
             ray.o = m_bsphere.center + perp_offset * m_bsphere.radius - ray.d * m_bsphere.radius;
             ray_weight = wav_weight;
         }

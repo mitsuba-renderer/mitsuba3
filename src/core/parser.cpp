@@ -8,6 +8,7 @@
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/formatter.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/frame.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/mitsuba.h>
@@ -37,7 +38,7 @@ using ScalarAffineTransform4d = AffineTransform<ScalarPoint4d>;
 enum class TagType {
     Boolean, Integer, Float, String, Point, Vector, Spectrum, RGB,
     Transform, Translate, Matrix, Rotate, Scale, LookAt, Object,
-    NamedReference, Include, Alias, Default, Resource, Invalid
+    NamedReference, Include, Alias, Default, Resource, Animation, Invalid
 };
 
 /**
@@ -132,6 +133,7 @@ static std::pair<TagType, ObjectType> interpret_tag(std::string_view str) {
     switch (str[0]) {
         case 'a':
             if (str == "alias") return {TagType::Alias, ObjectType::Unknown};
+            if (str == "animation") return {TagType::Animation, ObjectType::Unknown};
             break;
         case 'b':
             if (str == "boolean") return {TagType::Boolean, ObjectType::Unknown};
@@ -900,6 +902,37 @@ static void parse_xml_node(const ParserConfig &config, ParserState &state,
 
             // Store the accumulated transform
             state[parent_idx].props.set(name, transform);
+
+            return; // Don't process children again
+        }
+
+        case TagType::Animation: {
+            check_attributes(state, scene_node, node, {"!name"sv});
+
+            std::map<double, ScalarAffineTransform4d> keyframes;
+            for (pugi::xml_node child : node.children()) {
+                if (child.type() == pugi::node_element) {
+                    if (std::string_view(child.name()) != "transform")
+                         fail(state, scene_node, "unexpected <%s> element inside <animation>", child.name());
+
+                    check_attributes(state, scene_node, child, {"!time"sv});
+                    std::string_view time_str = child.attribute("time").value();
+                    double time = 0.0;
+                    try {
+                        time = string::stof<double>(time_str);
+                    } catch (...) {
+                        fail(state, scene_node, "could not parse time value \"%s\"", time_str);
+                    }
+                    ScalarAffineTransform4d transform;
+                    for (pugi::xml_node op : child.children()) {
+                        if (op.type() == pugi::node_element)
+                            parse_transform_node(state, op, scene_node, transform, params);
+                    }
+                    keyframes[time] = transform;
+                }
+            }
+            ref<AnimatedTransform<double>> anim = new AnimatedTransform<double>(keyframes);
+            state[parent_idx].props.set(name, ref<Object>(anim));
 
             return; // Don't process children again
         }

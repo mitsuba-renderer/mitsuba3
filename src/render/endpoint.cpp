@@ -1,5 +1,6 @@
 #include <mutex>
 
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/render/endpoint.h>
@@ -9,9 +10,19 @@ NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props)
     : JitObject<Endpoint>(props.id(), ObjectType::Unknown) {
-    m_to_world = props.get<ScalarAffineTransform4f>("to_world", ScalarAffineTransform4f());
-    dr::make_opaque(m_to_world);
-
+    if (props.has_property("to_world") && props.type("to_world") == Properties::Type::Object) {
+        ref<Object> obj = props.get<ref<Object>>("to_world");
+        if (auto *anim = dynamic_cast<AnimatedTransform4f*>(obj.get())) {
+            m_to_world = anim;
+        } else if (auto *anim_d = dynamic_cast<AnimatedTransform4d*>(obj.get())) {
+            m_to_world = new AnimatedTransform4f(*anim_d);
+        } else {
+            Throw("Property 'to_world' has incompatible type!");
+        }
+    } else {
+        ScalarAffineTransform4f to_world = props.get<ScalarAffineTransform4f>("to_world", ScalarAffineTransform4f());
+        m_to_world = new AnimatedTransform4f(to_world);
+    }
     for (auto &prop : props.objects()) {
         if (Medium *medium = prop.try_get<Medium>()) {
             if (m_medium)
@@ -23,9 +34,19 @@ MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props)
 
 MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props, ObjectType type)
     : JitObject<Endpoint>(props.id(), type) {
-    m_to_world = props.get<ScalarAffineTransform4f>("to_world", ScalarAffineTransform4f());
-    dr::make_opaque(m_to_world);
-
+    if (props.has_property("to_world") && props.type("to_world") == Properties::Type::Object) {
+        ref<Object> obj = props.get<ref<Object>>("to_world");
+        if (auto *anim = dynamic_cast<AnimatedTransform4f*>(obj.get())) {
+            m_to_world = anim;
+        } else if (auto *anim_d = dynamic_cast<AnimatedTransform4d*>(obj.get())) {
+            m_to_world = new AnimatedTransform4f(*anim_d);
+        } else {
+            Throw("Property 'to_world' has incompatible type!");
+        }
+    } else {
+        ScalarAffineTransform4f to_world = props.get<ScalarAffineTransform4f>("to_world", ScalarAffineTransform4f());
+        m_to_world = new AnimatedTransform4f(to_world);
+    }
     for (auto &prop : props.objects()) {
         if (Medium *medium = prop.try_get<Medium>()) {
             if (m_medium)
@@ -123,8 +144,7 @@ MI_VARIANT void Endpoint<Float, Spectrum>::traverse(TraversalCallback *cb) {
 
 MI_VARIANT void Endpoint<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
     if (keys.empty() || string::contains(keys, "to_world")) {
-        m_to_world = m_to_world.value().update();
-        dr::make_opaque(m_to_world);
+        m_to_world->parameters_changed(keys);
     }
 }
 
