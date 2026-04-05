@@ -310,6 +310,7 @@ void prepare_ias(const OptixDeviceContext &context,
                  uint32_t instance_id,
                  const AnimatedTransform<Float>& transf,
                  std::vector<OptixInstance> &out_instances) {
+    (void) shapes;
     unsigned int sbt_offset = base_sbt_offset;
     size_t n_keyframes = transf.keyframes().size();
 
