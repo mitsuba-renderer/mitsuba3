@@ -25,8 +25,8 @@ Distant directional emitter (:monosp:`directional`)
    - |exposed|, |differentiable|
 
  * - to_world
-   - |transform|
-   - Emitter-to-world transformation matrix.
+   - |animation|
+   - Emitter-to-world transformation matrix (can be animated).
    - |exposed|
 
  * - direction

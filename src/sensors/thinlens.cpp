@@ -18,8 +18,8 @@ Perspective camera with a thin lens (:monosp:`thinlens`)
  :extra-rows: 8
 
  * - to_world
-   - |transform|
-   - Specifies an optional camera-to-world transformation.
+   - |animation|
+   - Specifies an optional camera-to-world transformation (can be animated).
      (Default: none (i.e. camera space = world space))
    - |exposed|
 

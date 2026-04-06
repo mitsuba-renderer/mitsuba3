@@ -17,8 +17,8 @@ Perspective pinhole camera (:monosp:`perspective`)
  :extra-rows: 7
 
  * - to_world
-   - |transform|
-   - Specifies an optional camera-to-world transformation.
+   - |animation|
+   - Specifies an optional camera-to-world transformation (can be animated).
      (Default: none (i.e. camera space = world space))
    - |exposed|, |differentiable|, |discontinuous|
 

@@ -40,8 +40,8 @@ Environment emitter (:monosp:`envmap`)
    - |exposed|, |differentiable|
 
  * - to_world
-   - |transform|
-   - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
+   - |animation|
+   - Specifies an optional emitter-to-world transformation (can be animated).  (Default: none, i.e. emitter space = world space)
    - |exposed|
 
  * - mis_compensation
