@@ -77,7 +77,7 @@ public:
             auto [up, unused] = coordinate_system(direction);
 
             ScalarAffineTransform4f to_world = ScalarAffineTransform4f::look_at(0.0f, ScalarPoint3f(direction), up);
-            m_to_world = new AnimatedTransform4f(to_world);
+            m_to_world = new AnimatedTransform<Float, Spectrum>(to_world);
         }
 
         m_irradiance = props.get_emissive_texture<Texture>("irradiance", 1.f);

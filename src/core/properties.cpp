@@ -453,16 +453,6 @@ size_t Properties::hash() const {
                         h = hash_combine(h, mitsuba::hash(t.matrix(i, j)));
                 return h;
             }
-            size_t operator()(const AnimatedTransform<Float> &t) const {
-                size_t h = 0;
-                for (auto const& [time, kf] : t.keyframes()) {
-                    h = hash_combine(h, mitsuba::hash(time));
-                    for (size_t i = 0; i < 3; ++i) h = hash_combine(h, mitsuba::hash(kf.S.entry(i)));
-                    for (size_t i = 0; i < 4; ++i) h = hash_combine(h, mitsuba::hash(kf.Q.entry(i)));
-                    for (size_t i = 0; i < 3; ++i) h = hash_combine(h, mitsuba::hash(kf.T.entry(i)));
-                }
-                return h;
-            }
             size_t operator()(const Reference &r) const {
                 return mitsuba::hash(r.id());
             }

@@ -1,8 +1,8 @@
-#include <drjit/python.h>
 #include <mitsuba/core/animated_transform.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/stl/map.h>
 #include <nanobind/stl/string.h>
+#include <drjit/python.h>
 
 template <typename AnimatedTransform, typename Float>
 void bind_animated_transform(nb::module_ &m, const char *name) {
@@ -35,8 +35,6 @@ void bind_animated_transform(nb::module_ &m, const char *name) {
 MI_PY_EXPORT(AnimatedTransform) {
     MI_PY_IMPORT_TYPES()
 
-    bind_animated_transform<AnimatedTransform<Float>, Float>(
+    bind_animated_transform<AnimatedTransform<Float, Spectrum>, Float>(
         m, "AnimatedTransform4f");
-    bind_animated_transform<AnimatedTransform<Float64>, Float64>(
-        m, "AnimatedTransform4d");
 }

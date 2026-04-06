@@ -70,7 +70,7 @@ public:
                       "can be specified at the same time!'");
 
             ScalarPoint3f position = props.get<ScalarPoint3f>("position");
-            m_to_world = new AnimatedTransform4f(ScalarAffineTransform4f::translate(ScalarVector3f(position)));
+            m_to_world = new AnimatedTransform<Float, Spectrum>(ScalarAffineTransform4f::translate(ScalarVector3f(position)));
         }
 
         m_intensity = props.get_emissive_texture<Texture>("intensity", 1.f);

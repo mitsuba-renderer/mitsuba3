@@ -80,7 +80,7 @@ public:
                 auto [up, unused]        = coordinate_system(dr::normalize(direction));
 
                 ScalarAffineTransform4f to_world = ScalarAffineTransform4f::look_at(origin, target, up);
-                m_to_world = new AnimatedTransform4f(to_world);
+                m_to_world = new AnimatedTransform<Float, Spectrum>(to_world);
             }
         }
 

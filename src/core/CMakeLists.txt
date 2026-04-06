@@ -19,6 +19,7 @@ add_library(mitsuba-core OBJECT
   ${INC_DIR}/simd.h
   ${INC_DIR}/platform.h
 
+  animated_transform.cpp ${INC_DIR}/animated_transform.h
   string.cpp        ${INC_DIR}/string.h
   appender.cpp      ${INC_DIR}/appender.h
   argparser.cpp     ${INC_DIR}/argparser.h

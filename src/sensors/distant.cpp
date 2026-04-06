@@ -166,7 +166,7 @@ public:
 
             ScalarAffineTransform4f to_world = ScalarAffineTransform4f::look_at(
                 ScalarPoint3f(0.0f), ScalarPoint3f(direction), up);
-            m_to_world = new AnimatedTransform4f(to_world);
+            m_to_world = new AnimatedTransform<Float, Spectrum>(to_world);
         }
 
         // Set ray target if relevant

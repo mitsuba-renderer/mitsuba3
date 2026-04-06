@@ -57,6 +57,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
 
     using Ray3f                     = Ray<Point<Float, 3>, Spectrum>;
     using RayDifferential3f         = RayDifferential<Point<Float, 3>, Spectrum>;
+    using AnimatedTransform4f       = AnimatedTransform<Float, Spectrum>;
 
     using PositionSample3f          = PositionSample<Float, Spectrum>;
     using DirectionSample3f         = DirectionSample<Float, Spectrum>;
@@ -139,7 +140,8 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using StokesVector4f       = typename RenderAliases::StokesVector4f;                           \
     using MuellerMatrix4f      = typename RenderAliases::MuellerMatrix4f;                          \
     using Ray3f                = typename RenderAliases::Ray3f;                                    \
-    using RayDifferential3f    = typename RenderAliases::RayDifferential3f;
+    using RayDifferential3f    = typename RenderAliases::RayDifferential3f;                        \
+    using AnimatedTransform4f    = typename RenderAliases::AnimatedTransform4f;
 
 #define MI_IMPORT_TYPES_MACRO(x) using x = typename RenderAliases::x;
 

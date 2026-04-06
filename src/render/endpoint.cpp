@@ -1,4 +1,5 @@
 #include <mutex>
+#include <typeinfo>
 
 #include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/properties.h>
@@ -14,8 +15,6 @@ MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props)
         ref<Object> obj = props.get<ref<Object>>("to_world");
         if (auto *anim = dynamic_cast<AnimatedTransform4f*>(obj.get())) {
             m_to_world = anim;
-        } else if (auto *anim_d = dynamic_cast<AnimatedTransform4d*>(obj.get())) {
-            m_to_world = new AnimatedTransform4f(*anim_d);
         } else {
             Throw("Property 'to_world' has incompatible type!");
         }
@@ -38,8 +37,6 @@ MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props, ObjectTy
         ref<Object> obj = props.get<ref<Object>>("to_world");
         if (auto *anim = dynamic_cast<AnimatedTransform4f*>(obj.get())) {
             m_to_world = anim;
-        } else if (auto *anim_d = dynamic_cast<AnimatedTransform4d*>(obj.get())) {
-            m_to_world = new AnimatedTransform4f(*anim_d);
         } else {
             Throw("Property 'to_world' has incompatible type!");
         }
