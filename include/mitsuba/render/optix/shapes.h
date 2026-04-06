@@ -306,10 +306,11 @@ template <typename Float, typename Spectrum>
 void prepare_ias(const OptixDeviceContext &context,
                  std::vector<ref<Shape<Float, Spectrum>>> &shapes,
                  uint32_t base_sbt_offset,
-                 MiOptixAccelData &accel,
+                 const MiOptixAccelData &accel,
                  uint32_t instance_id,
                  const AnimatedTransform<Float, Spectrum>& transf,
-                 std::vector<OptixInstance> &out_instances) {
+                 std::vector<OptixInstance> &out_instances,
+                 std::vector<void*> &out_motion_transforms) {
     (void) shapes;
     unsigned int sbt_offset = base_sbt_offset;
     size_t n_keyframes = transf.keyframes().size();
@@ -339,10 +340,9 @@ void prepare_ias(const OptixDeviceContext &context,
                 k++;
             }
 
-            // Migrate to device
+            // Move memory to device (frees host memory)
             void* device_ptr = jit_malloc_migrate(host_ptr, AllocType::Device, 1);
-
-            accel.motion_transforms.push_back(device_ptr);
+            out_motion_transforms.push_back(device_ptr);
 
             // Convert to traversable handle
             OptixTraversableHandle motion_handle;
