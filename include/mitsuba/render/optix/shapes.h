@@ -318,25 +318,37 @@ void prepare_ias(const OptixDeviceContext &context,
     auto build_optix_motion_instance = [&](const MiOptixAccelData::HandleData &handle,
                                             bool disable_face_culling = true) {
         if (handle.handle) {
-            // Allocate memory for motion transform on host (pinned)
-            size_t size = sizeof(OptixMatrixMotionTransform) + (n_keyframes - 1) * 12 * sizeof(float);
+            // Allocate memory for motion transform on host. See
+            // https://raytracing-docs.nvidia.com/optix7/api/struct_optix_s_r_t_motion_transform.html
+            // for API details, in particular the use of (n_keyframes - 2) for the allocation size.
+            size_t size = sizeof(OptixSRTMotionTransform) + (n_keyframes - 2) * sizeof(OptixSRTData);
             void* host_ptr = jit_malloc(AllocType::HostPinned, size);
 
-            OptixMatrixMotionTransform* mt = (OptixMatrixMotionTransform*) host_ptr;
+            OptixSRTMotionTransform* mt = (OptixSRTMotionTransform*) host_ptr;
             mt->child = handle.handle;
             mt->motionOptions.numKeys = (unsigned short) n_keyframes;
             mt->motionOptions.flags = 0;
             mt->motionOptions.timeBegin = transf.get_time_bounds().min[0];
             mt->motionOptions.timeEnd = transf.get_time_bounds().max[0];
-
             int k = 0;
             for (const auto &[time, kf] : transf.keyframes()) {
-                auto trafo = transf.eval_scalar(time);
-                float* target_transform = (float*)(host_ptr) + offsetof(OptixMatrixMotionTransform, transform) / sizeof(float) + k * 12;
-
-                for (int i = 0; i < 3; ++i)
-                    for (int j = 0; j < 4; ++j)
-                        target_transform[i * 4 + j] = (float) trafo.matrix(i, j);
+                OptixSRTData* srt_data = &mt->srtData[k];
+                srt_data->sx = kf.S.x();
+                srt_data->sy = kf.S.y();
+                srt_data->sz = kf.S.z();
+                srt_data->a = 0.0f;
+                srt_data->b = 0.0f;
+                srt_data->c = 0.0f;
+                srt_data->pvx = 0.0f;
+                srt_data->pvy = 0.0f;
+                srt_data->pvz = 0.0f;
+                srt_data->qx = kf.Q.x();
+                srt_data->qy = kf.Q.y();
+                srt_data->qz = kf.Q.z();
+                srt_data->qw = kf.Q.w();
+                srt_data->tx = kf.T.x();
+                srt_data->ty = kf.T.y();
+                srt_data->tz = kf.T.z();
                 k++;
             }
 
@@ -346,7 +358,8 @@ void prepare_ias(const OptixDeviceContext &context,
 
             // Convert to traversable handle
             OptixTraversableHandle motion_handle;
-            OptixResult res = optixConvertPointerToTraversableHandle(context, device_ptr, OPTIX_TRAVERSABLE_TYPE_MATRIX_MOTION_TRANSFORM, &motion_handle);
+            OptixTraversableType type = OPTIX_TRAVERSABLE_TYPE_SRT_MOTION_TRANSFORM;
+            OptixResult res = optixConvertPointerToTraversableHandle(context, device_ptr, type, &motion_handle);
             if ((int)res != 0)
                 Throw("optixConvertPointerToTraversableHandle failed with error code %d", (int)res);
 

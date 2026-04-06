@@ -278,6 +278,21 @@ struct OptixMatrixMotionTransform {
     float transform[12];
 };
 
+struct OptixSRTData {
+    float sx, a, b, pvx;
+    float sy, c, pvy;
+    float sz, pvz;
+    float qx, qy, qz, qw;
+    float tx, ty, tz;
+};
+
+struct OptixSRTMotionTransform {
+    OptixTraversableHandle child;
+    OptixMotionOptions motionOptions;
+    unsigned int pad[3];
+    OptixSRTData srtData[2];
+};
+
 struct OptixPayloadType {
     unsigned int numPayloadValues;
     const unsigned int *payloadSemantics;
