@@ -94,6 +94,13 @@ public:
         dr::make_opaque(m_to_world);
     }
 
+    ~Instance() {
+#if defined(MI_ENABLE_CUDA)
+        for (void* p : m_motion_transforms)
+            jit_free(p);
+#endif
+    }
+
     void traverse(TraversalCallback *cb) override {
         cb->put("to_world", m_to_world, ParamFlags::NonDifferentiable);
     }
@@ -300,7 +307,7 @@ public:
                                    const ScalarAffineTransform4f& transf) override {
         if (m_animated_to_world->keyframes().size() > 1) {
             m_shapegroup->optix_prepare_ias(context, out_instances, instance_id,
-                                            *m_animated_to_world);
+                                            *m_animated_to_world, m_motion_transforms);
         } else {
             m_shapegroup->optix_prepare_ias(context, out_instances, instance_id,
                                             transf * m_animated_to_world->eval_scalar(0.0));
@@ -321,6 +328,9 @@ public:
 private:
    ref<ShapeGroup_> m_shapegroup;
    ref<AnimatedTransform<Float, Spectrum>> m_animated_to_world;
+#if defined(MI_ENABLE_CUDA)
+   std::vector<void*> m_motion_transforms;
+#endif
 
    MI_TRAVERSE_CB(Base, m_shapegroup)
 };
