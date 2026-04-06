@@ -102,6 +102,9 @@ public:
     /// Checks if any keyframe has a scale component different from 1.
     bool has_scale() const;
 
+    /// Checks if all keyframes are uniformly spaced in time.
+    void ensure_uniform_keyframes() const;
+
     void traverse(TraversalCallback *cb) override;
 
     void parameters_changed(const std::vector<std::string> &keys) override;

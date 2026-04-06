@@ -291,6 +291,25 @@ MI_VARIANT bool AnimatedTransform<Float, Spectrum>::has_scale() const {
     return false;
 }
 
+MI_VARIANT void AnimatedTransform<Float, Spectrum>::ensure_uniform_keyframes() const {
+    if (m_keyframes.size() <= 2)
+        return;
+
+    ScalarFloat start = m_keyframes.begin()->first;
+    ScalarFloat end   = m_keyframes.rbegin()->first;
+    ScalarFloat step    = (end - start) / (m_keyframes.size() - 1);
+    size_t i            = 0;
+    for (auto const &[time, kf] : m_keyframes) {
+        ScalarFloat expected_time = start + i * step;
+        if (std::abs(time - expected_time) > 1e-5f) {
+            Throw("Expected a uniform range of keyframes, but keyframe %d was "
+                  "at time %f, expected %f",
+                  i, time, expected_time);
+        }
+        ++i;
+    }
+}
+
 MI_VARIANT std::string AnimatedTransform<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
     oss << class_name() << "[";

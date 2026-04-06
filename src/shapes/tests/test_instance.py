@@ -260,3 +260,29 @@ def test04_animated_instance(variants_all_rgb):
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
     assert dr.allclose(si.p, [0, 0, -0.5])
+
+def test_non_uniform_animation_error(variants_vec_backends_once):
+    from mitsuba import ScalarTransform4f as T
+
+    with pytest.raises(RuntimeError):
+        mi.load_dict({
+            'type' : 'scene',
+            'group_0' : {
+                'type' : 'shapegroup',
+                'shape' : {
+                    'type' : 'sphere'
+                }
+            },
+            'instance' : {
+                'type' : 'instance',
+                "group" : {
+                    "type" : "ref",
+                    "id" : "group_0"
+                },
+                'animation' : mi.AnimatedTransform4f({
+                    0.0 : T().translate([0, 0, 0]),
+                    0.3 : T().translate([0, 0, 1]),
+                    1.0 : T().translate([0, 0, 2])
+                })
+            }
+        })

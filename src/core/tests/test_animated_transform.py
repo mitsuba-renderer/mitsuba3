@@ -242,3 +242,31 @@ def test17_change_frame_number(variants_vec_backends_once):
     at.parameters_changed(["times", "translations", "scales", "rotations"])
     assert dr.allclose(at.eval_scalar(0.0).translation(), [5.0, 0.0, 0.0])
     assert dr.allclose(at.eval_scalar(1.0).translation(), [5.0, 0.0, 0.0])
+
+def test18_ensure_uniform_keyframes(variant_scalar_rgb):
+    # Uniform keyframes
+    at = mi.AnimatedTransform4f({
+        0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
+        0.5: mi.ScalarAffineTransform4f.translate([1, 0, 0]),
+        1.0: mi.ScalarAffineTransform4f.translate([2, 0, 0])
+    })
+    at.ensure_uniform_keyframes()  # Should not raise
+
+    # 1 or 2 keyframes should always pass
+    at2 = mi.AnimatedTransform4f(mi.ScalarAffineTransform4f.translate([0, 0, 0]))
+    at2.ensure_uniform_keyframes()
+
+    at3 = mi.AnimatedTransform4f({
+        0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
+        1.0: mi.ScalarAffineTransform4f.translate([1, 0, 0])
+    })
+    at3.ensure_uniform_keyframes()
+
+    # Non-uniform keyframes
+    at4 = mi.AnimatedTransform4f({
+        0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
+        0.3: mi.ScalarAffineTransform4f.translate([1, 0, 0]),
+        1.0: mi.ScalarAffineTransform4f.translate([2, 0, 0])
+    })
+    with pytest.raises(RuntimeError, match="Keyframe 1 was at time 0.3"):
+        at4.ensure_uniform_keyframes()

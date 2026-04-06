@@ -24,6 +24,7 @@ void bind_animated_transform(nb::module_ &m, const char *name) {
                 .def_method(AnimatedTransform, get_translation_bounds)
                 .def_method(AnimatedTransform, get_spatial_bounds, "bbox"_a)
                 .def_method(AnimatedTransform, has_scale)
+                .def_method(AnimatedTransform, ensure_uniform_keyframes)
                 .def(nb::self == nb::self)
                 .def(nb::self != nb::self);
 

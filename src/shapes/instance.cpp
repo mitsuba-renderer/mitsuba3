@@ -90,7 +90,7 @@ public:
         } else {
             m_animated_to_world = new AnimatedTransform<Float, Spectrum>(m_to_world.scalar());
         }
-
+        m_animated_to_world->ensure_uniform_keyframes();
         dr::make_opaque(m_to_world);
     }
 
@@ -103,6 +103,7 @@ public:
             m_to_world = m_to_world.value().update();
             mark_dirty();
         }
+        m_animated_to_world->ensure_uniform_keyframes();
         Base::parameters_changed();
     }
 

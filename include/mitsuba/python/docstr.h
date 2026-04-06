@@ -14641,6 +14641,8 @@ static const char *__doc_mitsuba_AnimatedTransform_get_spatial_bounds = R"doc(Ev
 
 static const char *__doc_mitsuba_AnimatedTransform_has_scale = R"doc(Checks if any keyframe has a scale component different from 1.)doc";
 
+static const char *__doc_mitsuba_AnimatedTransform_ensure_uniform_keyframes = R"doc(Checks if all keyframes are uniformly spaced in time. Throws an error if not.)doc";
+
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif
