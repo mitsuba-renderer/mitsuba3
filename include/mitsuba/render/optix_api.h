@@ -271,13 +271,6 @@ struct OptixInstance {
     unsigned int pad[2];
 };
 
-struct OptixMatrixMotionTransform {
-    OptixTraversableHandle child;
-    OptixMotionOptions motionOptions;
-    unsigned int pad[3];
-    float transform[12];
-};
-
 struct OptixSRTData {
     float sx, a, b, pvx;
     float sy, c, pvy;
