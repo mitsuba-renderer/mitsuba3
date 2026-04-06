@@ -349,6 +349,28 @@ left-multiplied onto the current one. The following choices are available:
 
       <lookat origin="10, 50, -800" target="0, 0, 0" up="0, 1, 0"/>
 
+Animated Transformations
+************************
+
+Animations are specified using the ``<animation>`` tag instead of the ``<transform>`` tag. The ``<animation>`` tag contains multiple ``<transform>`` tags, each with a ``time`` attribute specifying the keyframe time.
+
+.. code-block:: xml
+
+    <animation name="to_world">
+        <transform time="0.0">
+            <translate value="0, 0, 0"/>
+        </transform>
+        <transform time="1.0">
+            <translate value="1, 0, 0"/>
+        </transform>
+    </animation>
+
+Mathematically, rotations are interpolated using spherical linear interpolation (Slerp), and translations and scales are interpolated linearly.
+
+.. note::
+
+    Animation of shapes requires evenly spaced keyframes due to constraints in the OptiX and Embree APIs/implementations.
+
 References
 ----------
 

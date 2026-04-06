@@ -29,9 +29,9 @@ Point light source (:monosp:`point`)
      :monosp:`position` can be used at a time.
 
  * - to_world
-   - |transform|
-   - Specifies an optional emitter-to-world transformation.  (Default: none,
-     i.e. emitter space = world space)
+   - |animation|
+   - Specifies an optional emitter-to-world transformation (can be animated).
+     (Default: none, i.e. emitter space = world space)
    - |exposed|
 
 This emitter plugin implements a simple point light source, which

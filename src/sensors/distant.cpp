@@ -27,8 +27,8 @@ Distant radiancemeter sensor (:monosp:`distant`)
 .. pluginparameters::
 
  * - to_world
-   - |transform|
-   - Sensor-to-world transformation matrix.
+   - |animation|
+   - Sensor-to-world transformation matrix (can be animated).
 
  * - direction
    - |vector|

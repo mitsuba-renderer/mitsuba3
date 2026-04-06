@@ -36,8 +36,8 @@ Spot light source (:monosp:`spot`)
    - |exposed|, |differentiable|
 
  * - to_world
-   - |transform|
-   - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
+   - |animation|
+   - Specifies an optional emitter-to-world transformation (can be animated).  (Default: none, i.e. emitter space = world space)
    - |exposed|
 
 This plugin provides a spot light with a linear falloff. In its local coordinate system, the spot light is
