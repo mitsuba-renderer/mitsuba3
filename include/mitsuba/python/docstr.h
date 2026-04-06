@@ -14637,7 +14637,10 @@ static const char *__doc_mitsuba_AnimatedTransform_get_time_bounds = R"doc(Retur
 
 static const char *__doc_mitsuba_AnimatedTransform_get_translation_bounds = R"doc(Returns the bounding box of the translation component of the animated transform.)doc";
 
-static const char *__doc_mitsuba_AnimatedTransform_get_spatial_bounds = R"doc(Evaluates the spatial bounds of the animated transform over the given bounding box.)doc";
+static const char *__doc_mitsuba_AnimatedTransform_get_spatial_bounds = R"doc(Evaluates the spatial bounds of the animated transform over the given bounding box.
+
+Note: This is an approximation computed by sampling the transformation at regular
+intervals. It may not be perfectly conservative for highly non-linear motion.)doc";
 
 static const char *__doc_mitsuba_AnimatedTransform_has_scale = R"doc(Checks if any keyframe has a scale component different from 1.)doc";
 
