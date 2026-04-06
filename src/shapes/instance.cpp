@@ -315,6 +315,11 @@ public:
                                    uint32_t instance_id,
                                    const ScalarAffineTransform4f& transf) override {
         if (m_animated_to_world->keyframes().size() > 1) {
+            // Clean up any previously used transforms.
+            for (void* p : m_motion_transforms) {
+                jit_free(p);
+            }
+            m_motion_transforms.clear();
             m_shapegroup->optix_prepare_ias(context, out_instances, instance_id,
                                             *m_animated_to_world, m_motion_transforms);
         } else {
