@@ -574,7 +574,7 @@ namespace {
     template <typename Float, typename Spectrum>
     ref<Object> instantiate_animated_transform(const std::map<double, ScalarAffineTransform4d> &keyframes) {
         using ScalarFloat = dr::scalar_t<Float>;
-        using ScalarTransform = typename AnimatedTransform<Float, Spectrum>::ScalarTransform;
+        using ScalarTransform = mitsuba::Transform<mitsuba::Point<ScalarFloat, 4>, true>;
         std::map<ScalarFloat, ScalarTransform> kf;
         for (const auto& [time, trafo] : keyframes) {
             kf[ScalarFloat(time)] = ScalarTransform(trafo);

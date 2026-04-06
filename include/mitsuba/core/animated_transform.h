@@ -24,11 +24,6 @@ struct MI_EXPORT_LIB AnimatedTransform : public Object {
 public:
     MI_IMPORT_CORE_TYPES()
 
-    using Transform = mitsuba::Transform<Point4f, true>;
-    using Matrix    = typename Transform::Matrix;
-
-    using ScalarTransform = mitsuba::Transform<Point<ScalarFloat, 4>, true>;
-    using ScalarMatrix    = typename ScalarTransform::Matrix;
     using FloatStorage = DynamicBuffer<Float>;
 
     struct Keyframe {
@@ -47,10 +42,10 @@ public:
     AnimatedTransform() = default;
 
     /// Initialize from a constant transformation
-    AnimatedTransform(const ScalarTransform &trafo);
+    AnimatedTransform(const ScalarAffineTransform4f &trafo);
 
     /// Initialize from a map of keyframes
-    AnimatedTransform(const std::map<ScalarFloat, ScalarTransform> &keyframes);
+    AnimatedTransform(const std::map<ScalarFloat, ScalarAffineTransform4f> &keyframes);
 
     /// Conversion constructor from another AnimatedTransform variant
     template <typename Float2, typename Spectrum2>
@@ -66,14 +61,14 @@ public:
      *
      * This method performs a vectorized interpolation between keyframes.
      */
-    Transform eval(Float time) const;
+    AffineTransform4f eval(Float time) const;
 
     /**
      * \brief Scalar evaluation of the transformation
      *
      * This version is for use on the host (e.g., during AABB construction).
      */
-    ScalarTransform eval_scalar(ScalarFloat time) const;
+    ScalarAffineTransform4f eval_scalar(ScalarFloat time) const;
 
     /// Check if the transformation is animated
     bool is_animated() const { return m_keyframes.size() > 1; }
@@ -119,10 +114,10 @@ protected:
     MI_TRAVERSE_CB(Object, m_transform, m_times, m_scales, m_translations, m_rotations)
 
 private:
-    void add_keyframe(ScalarFloat time, const ScalarTransform &trafo);
+    void add_keyframe(ScalarFloat time, const ScalarAffineTransform4f &trafo);
     void initialize();
 
-    field<Transform, ScalarTransform> m_transform;
+    field<AffineTransform4f, ScalarAffineTransform4f> m_transform;
     std::map<ScalarFloat, Keyframe> m_keyframes;
     DynamicBuffer<Float> m_times;
     DynamicBuffer<Vector3f> m_scales;
