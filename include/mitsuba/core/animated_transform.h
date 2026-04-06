@@ -4,20 +4,20 @@
 
 #include <drjit/quaternion.h>
 #include <drjit/transform.h>
-#include <mitsuba/core/object.h>
-#include <mitsuba/core/field.h>
-#include <mitsuba/core/transform.h>
-#include <mitsuba/core/math.h>
 #include <mitsuba/core/bbox.h>
+#include <mitsuba/core/field.h>
+#include <mitsuba/core/math.h>
+#include <mitsuba/core/object.h>
+#include <mitsuba/core/transform.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
 /**
  * \brief Animated transformation
  *
- * This struct stores a sequence of transformations and interpolates between them
- * using a combination of linear interpolation (for translation and scaling)
- * and spherical linear interpolation (for rotation).
+ * This struct stores a sequence of transformations and interpolates between
+ * them using a combination of linear interpolation (for translation and
+ * scaling) and spherical linear interpolation (for rotation).
  */
 MI_VARIANT
 struct MI_EXPORT_LIB AnimatedTransform : public Object {
@@ -26,6 +26,7 @@ public:
 
     using FloatStorage = DynamicBuffer<Float>;
 
+    /// Helper struct to store indivdiual, decomposed key frames.
     struct Keyframe {
         ScalarVector3f S;
         ScalarQuaternion4f Q;
@@ -45,13 +46,14 @@ public:
     AnimatedTransform(const ScalarAffineTransform4f &trafo);
 
     /// Initialize from a map of keyframes
-    AnimatedTransform(const std::map<ScalarFloat, ScalarAffineTransform4f> &keyframes);
+    AnimatedTransform(
+        const std::map<ScalarFloat, ScalarAffineTransform4f> &keyframes);
 
     /// Conversion constructor from another AnimatedTransform variant
     template <typename Float2, typename Spectrum2>
     AnimatedTransform(const AnimatedTransform<Float2, Spectrum2> &other) {
-        for (auto const& [time, kf] : other.keyframes()) {
-            m_keyframes[time] = {kf.S, kf.Q, kf.T};
+        for (auto const &[time, kf] : other.keyframes()) {
+            m_keyframes[time] = { kf.S, kf.Q, kf.T };
         }
         initialize();
     }
@@ -81,25 +83,31 @@ public:
         return !operator==(other);
     }
 
-    // Internal methods needed for hashing and bindings
-    const std::map<ScalarFloat, Keyframe>& keyframes() const { return m_keyframes; }
+    /// Returns the host-allocated keyframes of the animated transform.
+    const std::map<ScalarFloat, Keyframe> &keyframes() const {
+        return m_keyframes;
+    }
 
     /// Returns the time bounds of the animated transform.
     ScalarBoundingBox1f get_time_bounds() const;
 
-    /// Returns the bounding box of the translation component of the animated transform.
+    /// Returns the bounding box of the translation component of the animated
+    /// transform.
     ScalarBoundingBox3f get_translation_bounds() const;
 
-    /// Evaluates the spatial bounds of the animated transform over the given bounding box.
-    /// This is used to compute the AABB of animated objects.
-    /// Note: This is an approximation computed by sampling the transformation at regular
-    /// intervals. It may not be perfectly conservative for highly non-linear motion.
-    ScalarBoundingBox3f get_spatial_bounds(const ScalarBoundingBox3f &bbox) const;
+    /// Evaluates the spatial bounds of the animated transform over the given
+    /// bounding box. This is used to compute the AABB of animated objects.
+    /// Note: This is an approximation computed by sampling the transformation
+    /// at regular intervals. It may not be perfectly conservative for highly
+    /// non-linear motion.
+    ScalarBoundingBox3f
+    get_spatial_bounds(const ScalarBoundingBox3f &bbox) const;
 
     /// Checks if any keyframe has a scale component different from 1.
     bool has_scale() const;
 
-    /// Checks if all keyframes are uniformly spaced in time.
+    /// Checks if all keyframes are uniformly spaced in time. Raises an
+    /// exception if this is not the case.
     void ensure_uniform_keyframes() const;
 
     void traverse(TraversalCallback *cb) override;
@@ -111,10 +119,13 @@ public:
     MI_DECLARE_CLASS(AnimatedTransform)
 
 protected:
-    MI_TRAVERSE_CB(Object, m_transform, m_times, m_scales, m_translations, m_rotations)
+    MI_TRAVERSE_CB(Object, m_transform, m_times, m_scales, m_translations,
+                   m_rotations)
 
 private:
     void add_keyframe(ScalarFloat time, const ScalarAffineTransform4f &trafo);
+
+    /// One-time initialization call that is used by constructors.
     void initialize();
 
     field<AffineTransform4f, ScalarAffineTransform4f> m_transform;

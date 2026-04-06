@@ -201,9 +201,9 @@ MI_VARIANT void AnimatedTransform<Float, Spectrum>::add_keyframe(
     ScalarFloat time, const ScalarAffineTransform4f &trafo) {
     auto [S, Q, T] = dr::transform_decompose(trafo.matrix);
 
-    if (dr::abs(S[0][1]) > 1e-6 || dr::abs(S[0][2]) > 1e-6 ||
-        dr::abs(S[1][0]) > 1e-6 || dr::abs(S[1][2]) > 1e-6 ||
-        dr::abs(S[2][0]) > 1e-6 || dr::abs(S[2][1]) > 1e-6)
+    if (dr::abs(S[0][1]) > 1e-6f || dr::abs(S[0][2]) > 1e-6f ||
+        dr::abs(S[1][0]) > 1e-6f || dr::abs(S[1][2]) > 1e-6f ||
+        dr::abs(S[2][0]) > 1e-6f || dr::abs(S[2][1]) > 1e-6f)
         Throw("AnimatedTransform: Transformation contains shear, which is not "
               "supported!");
 
