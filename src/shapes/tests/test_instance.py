@@ -218,8 +218,14 @@ def test03_ray_intersect_instance(variants_all_rgb, width):
         assert ('instance=[' + '0x0, ' * (width - 1) + '0x0]') in str(pi)
 
 
-def test04_animated_instance(variants_all_rgb):
+@pytest.mark.parametrize("num_keyframes", [2, 3, 5])
+def test04_animated_instance(variants_all_rgb, num_keyframes):
     from mitsuba import ScalarTransform4f as T
+
+    keyframes = {}
+    for i in range(num_keyframes):
+        t = 10.0 * i / (num_keyframes - 1)
+        keyframes[t] = T().translate([0, 0, t / 10.0])
 
     scene = mi.load_dict({
         'type' : 'scene',
@@ -235,10 +241,7 @@ def test04_animated_instance(variants_all_rgb):
                 "type" : "ref",
                 "id" : "group_0"
             },
-            'animation' : mi.AnimatedTransform4f({
-                0.0 : T().translate([0, 0, 0]),
-                10.0 : T().translate([0, 0, 1])
-            })
+            'animation' : mi.AnimatedTransform4f(keyframes)
         }
     })
 
