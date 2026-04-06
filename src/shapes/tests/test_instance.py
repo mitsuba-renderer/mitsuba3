@@ -238,7 +238,7 @@ def test04_animated_instance(variants_all_rgb):
             },
             'animation' : AT({
                 0.0 : T().translate([0, 0, 0]),
-                1.0 : T().translate([0, 0, 1])
+                10.0 : T().translate([0, 0, 1])
             })
         }
     })
@@ -250,13 +250,13 @@ def test04_animated_instance(variants_all_rgb):
     assert dr.allclose(si.p, [0, 0, -1])
 
     # Test at t=1
-    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=1.0, wavelengths=[])
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=10.0, wavelengths=[])
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
     assert dr.allclose(si.p, [0, 0, 0])
 
     # Test at t=0.5
-    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=0.5, wavelengths=[])
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=5.0, wavelengths=[])
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
     assert dr.allclose(si.p, [0, 0, -0.5])
