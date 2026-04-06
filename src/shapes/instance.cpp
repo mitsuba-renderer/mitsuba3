@@ -82,10 +82,8 @@ public:
 
         if (props.has_property("animation")) {
             ref<Object> obj = props.get<ref<Object>>("animation");
-            if (auto *anim = dynamic_cast<AnimatedTransform<Float, Spectrum> *>(obj.get())) {
+            if (auto *anim = dynamic_cast<AnimatedTransform4f *>(obj.get())) {
                 m_animated_to_world = anim;
-            } else if (auto *anim_d = dynamic_cast<AnimatedTransform<double, void> *>(obj.get())) {
-                m_animated_to_world = new AnimatedTransform<Float, Spectrum>(*anim_d);
             } else {
                 Throw("Property 'animation' has incompatible type!");
             }
@@ -275,6 +273,9 @@ public:
             RTCGeometry instance = m_shapegroup->embree_geometry(device);
             size_t n_keyframes = m_animated_to_world->keyframes().size();
             rtcSetGeometryTimeStepCount(instance, (unsigned int) n_keyframes);
+
+            ScalarBoundingBox1f time_bounds = m_animated_to_world->get_time_bounds();
+            rtcSetGeometryTimeRange(instance, time_bounds.min[0], time_bounds.max[0]);
 
             size_t i = 0;
             for (const auto &[time, kf] : m_animated_to_world->keyframes()) {
