@@ -97,6 +97,8 @@ public:
 
     /// Evaluates the spatial bounds of the animated transform over the given bounding box.
     /// This is used to compute the AABB of animated objects.
+    /// Note: This is an approximation computed by sampling the transformation at regular
+    /// intervals. It may not be perfectly conservative for highly non-linear motion.
     ScalarBoundingBox3f get_spatial_bounds(const ScalarBoundingBox3f &bbox) const;
 
     /// Checks if any keyframe has a scale component different from 1.
