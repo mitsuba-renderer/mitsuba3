@@ -27,8 +27,8 @@ NAMESPACE_BEGIN(mitsuba)
  * using a combination of linear interpolation (for translation and scaling)
  * and spherical linear interpolation (for rotation).
  */
-template <typename Float>
-struct AnimatedTransform : public Object {
+MI_VARIANT
+struct MI_EXPORT_LIB AnimatedTransform : public Object {
 public:
     MI_IMPORT_CORE_TYPES()
 
@@ -55,26 +55,14 @@ public:
     AnimatedTransform() = default;
 
     /// Initialize from a constant transformation
-    AnimatedTransform(const ScalarTransform &trafo) {
-        m_transform = Transform(trafo);
-        add_keyframe(0.f, trafo);
-        initialize();
-    }
+    AnimatedTransform(const ScalarTransform &trafo);
 
     /// Initialize from a map of keyframes
-    AnimatedTransform(const std::map<ScalarFloat, ScalarTransform> &keyframes) {
-        if (keyframes.size() == 1) {
-            m_transform = Transform(keyframes.begin()->second);
-        }
-        for (const auto &[time, trafo] : keyframes) {
-            add_keyframe(time, trafo);
-        }
-        initialize();
-    }
+    AnimatedTransform(const std::map<ScalarFloat, ScalarTransform> &keyframes);
 
     /// Conversion constructor from another AnimatedTransform variant
-    template <typename Float2>
-    AnimatedTransform(const AnimatedTransform<Float2> &other) {
+    template <typename Float2, typename Spectrum2>
+    AnimatedTransform(const AnimatedTransform<Float2, Spectrum2> &other) {
         for (auto const& [time, kf] : other.keyframes()) {
             m_keyframes[time] = {kf.S, kf.Q, kf.T};
         }
@@ -86,96 +74,14 @@ public:
      *
      * This method performs a vectorized interpolation between keyframes.
      */
-    Transform eval(Float time) const {
-        size_t n_keyframes = m_times.size();
-        if (n_keyframes == 0)
-            Throw("Animated transform requires at least one keyframe, found 0.");
-
-        if (n_keyframes == 1) {
-            return m_transform.value();
-        } else if (n_keyframes == 2) {
-            // Fast path for 2 keyframes
-            UInt32 i0 = 0, i1 = 1;
-            Float t0 = dr::gather<Float>(m_times, i0);
-            Float t1 = dr::gather<Float>(m_times, i1);
-            Float t = dr::clip((time - t0) / (t1 - t0), 0.f, 1.f);
-            Vector3f s0 = dr::gather<Vector3f>(m_scales, i0);
-            Vector3f s1 = dr::gather<Vector3f>(m_scales, i1);
-            Quaternion4f q0 = dr::gather<Quaternion4f>(m_rotations, i0);
-            Quaternion4f q1 = dr::gather<Quaternion4f>(m_rotations, i1);
-            Vector3f tr0 = dr::gather<Vector3f>(m_translations, i0);
-            Vector3f tr1 = dr::gather<Vector3f>(m_translations, i1);
-
-            Matrix3f s = dr::diag(dr::lerp(s0, s1, t));
-            Quaternion4f q = dr::slerp(q0, q1, t);
-            Vector3f tr = dr::lerp(tr0, tr1, t);
-            return Transform(dr::transform_compose<Matrix>(s, q, tr),
-                             dr::transpose(dr::transform_compose_inverse<Matrix>(s, q, tr)));
-        } else {
-            // General case with binary search
-            auto pred = [&](UInt32 index) {
-                return dr::gather<Float>(m_times, index) <= time;
-            };
-
-            UInt32 index = math::find_interval<UInt32>((uint32_t) n_keyframes, pred);
-
-            Float t0 = dr::gather<Float>(m_times, index);
-            Float t1 = dr::gather<Float>(m_times, index + 1);
-            Float t = dr::clip((time - t0) / (t1 - t0), 0.f, 1.f);
-            Vector3f s0 = dr::gather<Vector3f>(m_scales, index);
-            Vector3f s1 = dr::gather<Vector3f>(m_scales, index + 1);
-            Quaternion4f q0 = dr::gather<Quaternion4f>(m_rotations, index);
-            Quaternion4f q1 = dr::gather<Quaternion4f>(m_rotations, index + 1);
-            Vector3f tr0 = dr::gather<Vector3f>(m_translations, index);
-            Vector3f tr1 = dr::gather<Vector3f>(m_translations, index + 1);
-
-            Matrix3f s = dr::diag(dr::lerp(s0, s1, t));
-            Quaternion4f q = dr::slerp(q0, q1, t);
-            Vector3f tr = dr::lerp(tr0, tr1, t);
-            return Transform(dr::transform_compose<Matrix>(s, q, tr),
-                             dr::transpose(dr::transform_compose_inverse<Matrix>(s, q, tr)));
-        }
-    }
+    Transform eval(Float time) const;
 
     /**
      * \brief Scalar evaluation of the transformation
      *
      * This version is for use on the host (e.g., during AABB construction).
      */
-    ScalarTransform eval_scalar(ScalarFloat time) const {
-        if (m_keyframes.empty())
-            Throw("Animated transform requires at least one keyframe, found 0.");
-
-        if (m_keyframes.size() == 1) {
-            return m_transform.scalar();
-        }
-
-        auto it1 = m_keyframes.lower_bound(time);
-        auto it0 = it1;
-        if (it1 == m_keyframes.begin()) {
-            it0 = it1;
-        } else if (it1 == m_keyframes.end()) {
-            it1 = std::prev(it1);
-            it0 = it1;
-        } else {
-            it0 = std::prev(it1);
-        }
-        if (it0 == it1) {
-            const auto &kf = it0->second;
-            ScalarMatrix3f s = dr::diag(kf.S);
-            return ScalarTransform(dr::transform_compose<ScalarMatrix>(s, kf.Q, kf.T),
-                             dr::transpose(dr::transform_compose_inverse<ScalarMatrix>(s, kf.Q, kf.T)));
-        }
-        ScalarFloat t = std::clamp((time - it0->first) / (it1->first - it0->first),
-                                   ScalarFloat(0), ScalarFloat(1));
-        const auto &kf0 = it0->second;
-        const auto &kf1 = it1->second;
-        ScalarMatrix3f s = dr::diag(dr::lerp(kf0.S, kf1.S, t));
-        ScalarQuaternion4f q = dr::slerp(kf0.Q, kf1.Q, t);
-        ScalarVector3f tr = dr::lerp(kf0.T, kf1.T, t);
-        return ScalarTransform(dr::transform_compose<ScalarMatrix>(s, q, tr),
-                         dr::transpose(dr::transform_compose_inverse<ScalarMatrix>(s, q, tr)));
-    }
+    ScalarTransform eval_scalar(ScalarFloat time) const;
 
     /// Check if the transformation is animated
     bool is_animated() const {
@@ -270,73 +176,7 @@ public:
         cb->put("rotations",     m_rotations,    ParamFlags::Differentiable);
     }
 
-    void parameters_changed(const std::vector<std::string> &keys) override {
-        size_t n = dr::width(m_times);
-        if (dr::width(m_scales) != 3 * n ||
-            dr::width(m_translations) != 3 * n ||
-            dr::width(m_rotations) != 4 * n) {
-            Throw("Size of scales, translations, or rotations does not match the number of keyframes.");
-        }
-
-        if (n == 1) {
-            if (m_keyframes.size() > 1) {
-                // Transition from N > 1 to N == 1: update from arrays
-                dr::eval(m_times, m_scales, m_translations, m_rotations);
-                Keyframe kf;
-                kf.S.x() = dr::slice(m_scales, 0);
-                kf.S.y() = dr::slice(m_scales, 1);
-                kf.S.z() = dr::slice(m_scales, 2);
-                kf.Q.w() = dr::slice(m_rotations, 0);
-                kf.Q.x() = dr::slice(m_rotations, 1);
-                kf.Q.y() = dr::slice(m_rotations, 2);
-                kf.Q.z() = dr::slice(m_rotations, 3);
-                kf.T.x() = dr::slice(m_translations, 0);
-                kf.T.y() = dr::slice(m_translations, 1);
-                kf.T.z() = dr::slice(m_translations, 2);
-
-                m_keyframes.clear();
-                m_keyframes[dr::slice(m_times, 0)] = kf;
-
-                // Rebuild the single transform
-                ScalarMatrix3f s = dr::diag(kf.S);
-                ScalarMatrix mat = dr::transform_compose<ScalarMatrix>(s, kf.Q, kf.T);
-                ScalarMatrix inv = dr::transpose(dr::transform_compose_inverse<ScalarMatrix>(s, kf.Q, kf.T));
-                m_transform = ScalarTransform(mat, inv);
-                dr::make_opaque(m_transform);
-            } else {
-                // Was already size 1, check if "transform" changed
-                if (keys.empty() || string::contains(keys, "transform")) {
-                    m_transform = m_transform.value().update();
-                    dr::make_opaque(m_transform);
-
-                    // Also update the single keyframe in the map
-                    auto it = m_keyframes.begin();
-                    ScalarTransform trafo = m_transform.scalar();
-                    auto [S, Q, T] = dr::transform_decompose(trafo.matrix);
-                    it->second = {dr::diag(S), Q, T};
-                }
-            }
-        } else if (n > 1) {
-            // Read back all data from device to keep host map in sync
-            dr::eval(m_times, m_scales, m_translations, m_rotations);
-            std::map<ScalarFloat, Keyframe> new_keyframes;
-            for (size_t i = 0; i < n; ++i) {
-                Keyframe kf;
-                kf.S.x() = dr::slice(m_scales, 3 * i + 0);
-                kf.S.y() = dr::slice(m_scales, 3 * i + 1);
-                kf.S.z() = dr::slice(m_scales, 3 * i + 2);
-                kf.Q.w() = dr::slice(m_rotations, 4 * i + 0);
-                kf.Q.x() = dr::slice(m_rotations, 4 * i + 1);
-                kf.Q.y() = dr::slice(m_rotations, 4 * i + 2);
-                kf.Q.z() = dr::slice(m_rotations, 4 * i + 3);
-                kf.T.x() = dr::slice(m_translations, 3 * i + 0);
-                kf.T.y() = dr::slice(m_translations, 3 * i + 1);
-                kf.T.z() = dr::slice(m_translations, 3 * i + 2);
-                new_keyframes[dr::slice(m_times, i)] = kf;
-            }
-            m_keyframes = std::move(new_keyframes);
-        }
-    }
+    void parameters_changed(const std::vector<std::string> &keys) override;
 
     std::string to_string() const override {
         std::ostringstream oss;
@@ -352,52 +192,14 @@ public:
     }
 
     MI_DECLARE_CLASS(AnimatedTransform)
+
+protected:
     MI_TRAVERSE_CB(Object, m_transform, m_times, m_scales, m_translations, m_rotations)
 
 private:
 
-    void add_keyframe(ScalarFloat time, const ScalarTransform &trafo) {
-        auto [S, Q, T] = dr::transform_decompose(trafo.matrix);
-
-        if (dr::abs(S[0][1]) > 1e-6f || dr::abs(S[0][2]) > 1e-6f || dr::abs(S[1][0]) > 1e-6f ||
-            dr::abs(S[1][2]) > 1e-6f || dr::abs(S[2][0]) > 1e-6f || dr::abs(S[2][1]) > 1e-6f)
-            Throw("AnimatedTransform: Transformation contains shear, which is not supported!");
-
-        m_keyframes[time] = {dr::diag(S), Q, T};
-    }
-
-    void initialize() {
-        if (m_keyframes.empty()) {
-            Throw("Animated transform requires at least one keyframe, found 0.");
-        }
-
-        size_t n = m_keyframes.size();
-        m_times = dr::zeros<FloatStorage>(n);
-        m_scales = dr::zeros<FloatStorage>(3 * n);
-        m_translations = dr::zeros<FloatStorage>(3 * n);
-        m_rotations = dr::zeros<FloatStorage>(4 * n);
-
-        size_t i = 0;
-        for (auto const& [time, kf] : m_keyframes) {
-            if constexpr (dr::is_jit_v<Float>) {
-                dr::scatter(m_times, time, i);
-                for (size_t j = 0; j < 3; ++j) {
-                    dr::scatter(m_scales, kf.S[j], i * 3 + j);
-                    dr::scatter(m_translations, kf.T[j], i * 3 + j);
-                }
-                for (size_t j = 0; j < 4; ++j) {
-                    dr::scatter(m_rotations, kf.Q[j], i * 4 + j);
-                }
-            } else {
-                dr::store(m_times.data() + i, time);
-                dr::store(m_scales.data() + 3 * i, kf.S);
-                dr::store(m_translations.data() + 3 * i, kf.T);
-                dr::store(m_rotations.data() + 4 * i, kf.Q);
-            }
-            i++;
-        }
-        dr::eval(m_times, m_scales, m_translations, m_rotations);
-    }
+    void add_keyframe(ScalarFloat time, const ScalarTransform &trafo);
+    void initialize();
 
     field<Transform, ScalarTransform> m_transform;
     std::map<ScalarFloat, Keyframe> m_keyframes;
@@ -407,11 +209,11 @@ private:
     DynamicBuffer<Vector3f> m_translations;
 };
 
+MI_EXTERN_STRUCT(AnimatedTransform)
+NAMESPACE_END(mitsuba)
 
 #if defined(__GNUG__)
 #  pragma GCC diagnostic pop
 #elif defined(__clang__)
 #  pragma clang diagnostic pop
 #endif
-
-NAMESPACE_END(mitsuba)

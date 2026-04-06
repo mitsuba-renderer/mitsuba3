@@ -390,7 +390,7 @@ protected:
     Endpoint(const Properties &props, ObjectType type);
 
 protected:
-    ref<AnimatedTransform4f> m_to_world;
+    ref<AnimatedTransform<Float, Spectrum>> m_to_world;
     ref<Medium> m_medium;
     Shape *m_shape = nullptr;
     bool m_needs_sample_2 = true;

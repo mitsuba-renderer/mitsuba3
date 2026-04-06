@@ -569,6 +569,20 @@ static void parse_transform_node(const ParserState &state, pugi::xml_node node,
     }
 }
 
+namespace {
+    /// Instantiates an animated transform given Float/Spectrum types.
+    template <typename Float, typename Spectrum>
+    ref<Object> instantiate_animated_transform(const std::map<double, ScalarAffineTransform4d> &keyframes) {
+        using ScalarFloat = dr::scalar_t<Float>;
+        using ScalarTransform = typename AnimatedTransform<Float, Spectrum>::ScalarTransform;
+        std::map<ScalarFloat, ScalarTransform> kf;
+        for (const auto& [time, trafo] : keyframes) {
+            kf[ScalarFloat(time)] = ScalarTransform(trafo);
+        }
+        return new AnimatedTransform<Float, Spectrum>(kf);
+    }
+}
+
 // Helper function to parse XML nodes recursively
 static void parse_xml_node(const ParserConfig &config, ParserState &state,
                           pugi::xml_node node, size_t parent_idx,
@@ -931,8 +945,8 @@ static void parse_xml_node(const ParserConfig &config, ParserState &state,
                     keyframes[time] = transform;
                 }
             }
-            ref<AnimatedTransform<double>> anim = new AnimatedTransform<double>(keyframes);
-            state[parent_idx].props.set(name, ref<Object>(anim));
+            ref<Object> anim = MI_INVOKE_VARIANT(config.variant, instantiate_animated_transform, keyframes);
+            state[parent_idx].props.set(name, anim);
 
             return; // Don't process children again
         }

@@ -82,15 +82,15 @@ public:
 
         if (props.has_property("animation")) {
             ref<Object> obj = props.get<ref<Object>>("animation");
-            if (auto *anim = dynamic_cast<AnimatedTransform4f *>(obj.get())) {
+            if (auto *anim = dynamic_cast<AnimatedTransform<Float, Spectrum> *>(obj.get())) {
                 m_animated_to_world = anim;
-            } else if (auto *anim_d = dynamic_cast<AnimatedTransform<double> *>(obj.get())) {
-                m_animated_to_world = new AnimatedTransform4f(*anim_d);
+            } else if (auto *anim_d = dynamic_cast<AnimatedTransform<double, void> *>(obj.get())) {
+                m_animated_to_world = new AnimatedTransform<Float, Spectrum>(*anim_d);
             } else {
                 Throw("Property 'animation' has incompatible type!");
             }
         } else {
-            m_animated_to_world = new AnimatedTransform4f(m_to_world.scalar());
+            m_animated_to_world = new AnimatedTransform<Float, Spectrum>(m_to_world.scalar());
         }
 
         dr::make_opaque(m_to_world);
@@ -318,7 +318,7 @@ public:
     MI_DECLARE_CLASS(Instance)
 private:
    ref<ShapeGroup_> m_shapegroup;
-   ref<AnimatedTransform4f> m_animated_to_world;
+   ref<AnimatedTransform<Float, Spectrum>> m_animated_to_world;
 
    MI_TRAVERSE_CB(Base, m_shapegroup)
 };
