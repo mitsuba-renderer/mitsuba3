@@ -32,8 +32,8 @@ AnimatedTransform<Float, Spectrum>::AnimatedTransform(
     initialize();
 }
 
-MI_VARIANT auto AnimatedTransform<Float, Spectrum>::eval(Float time) const
-    -> AffineTransform4f {
+MI_VARIANT typename AnimatedTransform<Float, Spectrum>::AffineTransform4f
+AnimatedTransform<Float, Spectrum>::eval(Float time) const {
     size_t n_keyframes = m_times.size();
     if (n_keyframes == 0)
         Throw("Animated transform requires at least one keyframe, found 0.");
@@ -87,9 +87,8 @@ MI_VARIANT auto AnimatedTransform<Float, Spectrum>::eval(Float time) const
     }
 }
 
-MI_VARIANT auto
-AnimatedTransform<Float, Spectrum>::eval_scalar(ScalarFloat time) const
-    -> ScalarAffineTransform4f {
+MI_VARIANT typename AnimatedTransform<Float, Spectrum>::ScalarAffineTransform4f
+AnimatedTransform<Float, Spectrum>::eval_scalar(ScalarFloat time) const {
     if (m_keyframes.empty())
         Throw("Animated transform requires at least one keyframe, found 0.");
 
@@ -244,8 +243,8 @@ MI_VARIANT void AnimatedTransform<Float, Spectrum>::initialize() {
     dr::eval(m_times, m_scales, m_translations, m_rotations);
 }
 
-MI_VARIANT auto AnimatedTransform<Float, Spectrum>::get_time_bounds() const
-    -> ScalarBoundingBox1f {
+MI_VARIANT typename AnimatedTransform<Float, Spectrum>::ScalarBoundingBox1f
+AnimatedTransform<Float, Spectrum>::get_time_bounds() const {
     if (m_keyframes.empty())
         return { 0.f, 0.f };
     return { m_keyframes.begin()->first, m_keyframes.rbegin()->first };
@@ -270,9 +269,8 @@ MI_VARIANT bool AnimatedTransform<Float, Spectrum>::operator==(
     return true;
 }
 
-MI_VARIANT auto
-AnimatedTransform<Float, Spectrum>::get_translation_bounds() const
-    -> ScalarBoundingBox3f {
+MI_VARIANT typename AnimatedTransform<Float, Spectrum>::ScalarBoundingBox3f
+AnimatedTransform<Float, Spectrum>::get_translation_bounds() const {
     ScalarBoundingBox3f bbox;
     for (auto const &[time, kf] : m_keyframes) {
         bbox.expand(ScalarPoint3f(kf.T));
@@ -280,8 +278,9 @@ AnimatedTransform<Float, Spectrum>::get_translation_bounds() const
     return bbox;
 }
 
-MI_VARIANT auto AnimatedTransform<Float, Spectrum>::get_spatial_bounds(
-    const ScalarBoundingBox3f &bbox) const -> ScalarBoundingBox3f {
+MI_VARIANT typename AnimatedTransform<Float, Spectrum>::ScalarBoundingBox3f
+AnimatedTransform<Float, Spectrum>::get_spatial_bounds(
+    const ScalarBoundingBox3f &bbox) const {
     if (m_keyframes.empty()) {
         return bbox;
     }
