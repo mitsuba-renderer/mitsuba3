@@ -8,14 +8,13 @@ template <typename AnimatedTransform, typename Float>
 void bind_animated_transform(nb::module_ &m, const char *name) {
     MI_PY_CHECK_ALIAS(AnimatedTransform, name) {
         MI_IMPORT_CORE_TYPES()
-        using ScalarTransform = typename AnimatedTransform::ScalarTransform;
-        using Transform       = typename AnimatedTransform::Transform;
         auto animated_transform =
             nb::class_<AnimatedTransform, Object>(m, name, D(AnimatedTransform))
                 .def(nb::init<>(), "Create an empty animated transformation")
-                .def(nb::init<const ScalarTransform &>(),
+                .def(nb::init<const ScalarAffineTransform4f &>(),
                      "Initialize from a constant scalar transformation")
-                .def(nb::init<const std::map<ScalarFloat, ScalarTransform> &>(),
+                .def(nb::init<const std::map<ScalarFloat,
+                                             ScalarAffineTransform4f> &>(),
                      "Initialize from a map of keyframes")
                 .def_method(AnimatedTransform, eval, "time"_a)
                 .def_method(AnimatedTransform, eval_scalar, "time"_a)
@@ -29,7 +28,8 @@ void bind_animated_transform(nb::module_ &m, const char *name) {
                 .def(nb::self != nb::self);
 
         drjit::bind_traverse(animated_transform);
-        nb::implicitly_convertible<ScalarTransform, AnimatedTransform>();
+        nb::implicitly_convertible<ScalarAffineTransform4f,
+                                   AnimatedTransform>();
     }
 }
 
