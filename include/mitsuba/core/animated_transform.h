@@ -49,15 +49,6 @@ public:
     AnimatedTransform(
         const std::map<ScalarFloat, ScalarAffineTransform4f> &keyframes);
 
-    /// Conversion constructor from another AnimatedTransform variant
-    template <typename Float2, typename Spectrum2>
-    AnimatedTransform(const AnimatedTransform<Float2, Spectrum2> &other) {
-        for (auto const &[time, kf] : other.keyframes()) {
-            m_keyframes[time] = { kf.S, kf.Q, kf.T };
-        }
-        initialize();
-    }
-
     /**
      * \brief Evaluate the transformation at a specific time
      *
