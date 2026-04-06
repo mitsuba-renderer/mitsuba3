@@ -280,18 +280,27 @@ public:
         if constexpr (!dr::is_cuda_v<Float>) {
             RTCGeometry instance = m_shapegroup->embree_geometry(device);
             size_t n_keyframes = m_animated_to_world->keyframes().size();
-            rtcSetGeometryTimeStepCount(instance, (unsigned int) n_keyframes);
-
-            ScalarBoundingBox1f time_bounds = m_animated_to_world->get_time_bounds();
-            rtcSetGeometryTimeRange(instance, time_bounds.min[0], time_bounds.max[0]);
-
-            size_t i = 0;
-            for (const auto &[time, kf] : m_animated_to_world->keyframes()) {
-                auto trafo = m_animated_to_world->eval_scalar(time);
+            if (n_keyframes > 1) {
+                rtcSetGeometryTimeStepCount(instance, (unsigned int) n_keyframes);
+                ScalarBoundingBox1f time_bounds = m_animated_to_world->get_time_bounds();
+                rtcSetGeometryTimeRange(instance, time_bounds.min[0], time_bounds.max[0]);
+                unsigned int i = 0;
+                for (const auto &[time, kf] : m_animated_to_world->keyframes()) {
+                    RTCQuaternionDecomposition rtc_decomp;
+                    rtcInitQuaternionDecomposition(&rtc_decomp);
+                    rtcQuaternionDecompositionSetQuaternion(
+                        &rtc_decomp, kf.Q.w(), kf.Q.x(), kf.Q.y(), kf.Q.z());
+                    rtcQuaternionDecompositionSetScale(
+                        &rtc_decomp, kf.S.x(), kf.S.y(), kf.S.z());
+                    rtcQuaternionDecompositionSetTranslation(
+                        &rtc_decomp, kf.T.x(), kf.T.y(), kf.T.z());
+                    rtcSetGeometryTransformQuaternion(instance, i++, &rtc_decomp);
+                }
+            } else {
+                auto trafo = m_animated_to_world->eval_scalar(0.0);
                 dr::Matrix<ScalarFloat32, 4> matrix(dr::transpose(trafo.matrix));
-                rtcSetGeometryTransform(instance, (unsigned int) i++, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, matrix.data());
+                rtcSetGeometryTransform(instance, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, matrix.data());
             }
-
             rtcCommitGeometry(instance);
             return instance;
         } else {
