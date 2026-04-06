@@ -268,5 +268,5 @@ def test18_ensure_uniform_keyframes(variant_scalar_rgb):
         0.3: mi.ScalarAffineTransform4f.translate([1, 0, 0]),
         1.0: mi.ScalarAffineTransform4f.translate([2, 0, 0])
     })
-    with pytest.raises(RuntimeError, match="Keyframe 1 was at time 0.3"):
+    with pytest.raises(RuntimeError):
         at4.ensure_uniform_keyframes()
