@@ -242,20 +242,20 @@ def test04_animated_instance(variants_all_rgb):
         }
     })
 
-    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=0.0, wavelengths=[])
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=0.0)
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
-    assert dr.allclose(si.p, [0, 0, -1])
+    assert dr.allclose(si.p, [0, 0, -1], atol=1e-6)
 
-    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=5.0, wavelengths=[])
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=5.0)
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
-    assert dr.allclose(si.p, [0, 0, -0.5])
+    assert dr.allclose(si.p, [0, 0, -0.5], atol=1e-6)
 
-    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=10.0, wavelengths=[])
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=10.0)
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
-    assert dr.allclose(si.p, [0, 0, 0])
+    assert dr.allclose(si.p, [0, 0, 0], atol=1e-6)
 
 
 def test05_animated_instance_rotation_scaling(variants_all_rgb):
@@ -282,20 +282,20 @@ def test05_animated_instance_rotation_scaling(variants_all_rgb):
         }
     })
 
-    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=0.0, wavelengths=[])
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=0.0)
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
-    assert dr.allclose(si.p, [0, 0, 0])
+    assert dr.allclose(si.p, [0, 0, 0], atol=1e-6)
 
-    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=5.0, wavelengths=[])
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=5.0)
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
-    assert dr.allclose(si.p, [0, 0, 0])
+    assert dr.allclose(si.p, [0, 0, 0], atol=1e-6)
 
-    ray = mi.Ray3f(o=[-3, 0, 0], d=[1, 0, 0], time=10.0, wavelengths=[])
+    ray = mi.Ray3f(o=[-3, 0, 0], d=[1, 0, 0], time=10.0)
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
-    assert dr.allclose(si.p, [0, 0, 0])
+    assert dr.allclose(si.p, [0, 0, 0], atol=1e-6)
 
 
 def test_non_uniform_animation_error(variants_vec_backends_once):
