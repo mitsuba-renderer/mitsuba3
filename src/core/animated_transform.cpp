@@ -1,5 +1,14 @@
 #include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/config.h>
+#include <sstream>
+
+#if defined(__GNUG__)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wdouble-promotion"
+#elif defined(__clang__)
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wdouble-promotion"
+#endif
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -217,6 +226,100 @@ MI_VARIANT void AnimatedTransform<Float, Spectrum>::initialize() {
     }
     dr::eval(m_times, m_scales, m_translations, m_rotations);
 }
+
+MI_VARIANT auto AnimatedTransform<Float, Spectrum>::get_time_bounds() const -> ScalarBoundingBox1f {
+    if (m_keyframes.empty())
+        return {0.f, 0.f};
+    return {m_keyframes.begin()->first, m_keyframes.rbegin()->first};
+}
+
+MI_VARIANT bool AnimatedTransform<Float, Spectrum>::operator==(const AnimatedTransform &other) const {
+    if (m_keyframes.size() != other.m_keyframes.size())
+        return false;
+
+    auto it1 = m_keyframes.begin();
+    auto it2 = other.m_keyframes.begin();
+    for (; it1 != m_keyframes.end(); ++it1, ++it2) {
+        if (it1->first != it2->first)
+            return false;
+        const auto &kf1 = it1->second;
+        const auto &kf2 = it2->second;
+        if (dr::any_nested(kf1.S != kf2.S) ||
+            dr::any_nested(kf1.Q != kf2.Q) ||
+            dr::any_nested(kf1.T != kf2.T))
+            return false;
+    }
+    return true;
+}
+
+MI_VARIANT auto AnimatedTransform<Float, Spectrum>::get_translation_bounds() const -> ScalarBoundingBox3f {
+    ScalarBoundingBox3f bbox;
+    for (auto const& [time, kf] : m_keyframes) {
+        bbox.expand(ScalarPoint3f(kf.T));
+    }
+    return bbox;
+}
+
+MI_VARIANT auto AnimatedTransform<Float, Spectrum>::get_spatial_bounds(const ScalarBoundingBox3f &bbox) const -> ScalarBoundingBox3f {
+    if (m_keyframes.empty()) {
+        return bbox;
+    }
+    ScalarBoundingBox3f res;
+    if (m_keyframes.size() <= 1) {
+        auto trafo = eval_scalar(m_keyframes.begin()->first);
+        for (int j = 0; j < 8; ++j)
+            res.expand(trafo * bbox.corner(j));
+    } else {
+        int n_steps = 100;
+        ScalarBoundingBox1f time_bounds = get_time_bounds();
+        ScalarFloat step = time_bounds.extents()[0] / (n_steps - 1);
+        for (int i = 0; i < n_steps; ++i) {
+            ScalarFloat t = time_bounds.min[0] + step * i;
+            ScalarTransform trafo = eval_scalar(t);
+            for (int j = 0; j < 8; ++j)
+                res.expand(trafo * bbox.corner(j));
+        }
+    }
+    return res;
+}
+
+MI_VARIANT bool AnimatedTransform<Float, Spectrum>::has_scale() const {
+    for (auto const& [time, kf] : m_keyframes) {
+        if (dr::any_nested(dr::abs(kf.S - ScalarVector3f(1.f)) > 1e-3f))
+            return true;
+    }
+    return false;
+}
+
+MI_VARIANT std::string AnimatedTransform<Float, Spectrum>::to_string() const {
+    std::ostringstream oss;
+    oss << class_name() << "[";
+    if (!m_keyframes.empty()) {
+        oss << std::endl;
+    }
+    for (auto const& [time, kf] : m_keyframes) {
+        oss << "  " << time << ": " << kf.to_string() << "," << std::endl;
+    }
+    oss << "]";
+    return oss.str();
+}
+
+MI_VARIANT void AnimatedTransform<Float, Spectrum>::traverse(TraversalCallback *cb) {
+    if (m_keyframes.size() == 1) {
+        cb->put("transform",     m_transform,    ParamFlags::Differentiable);
+    }
+    cb->put("times",         m_times,        ParamFlags::Differentiable);
+    cb->put("scales",        m_scales,       ParamFlags::Differentiable);
+    cb->put("translations",  m_translations, ParamFlags::Differentiable);
+    cb->put("rotations",     m_rotations,    ParamFlags::Differentiable);
+}
+
+#if defined(__GNUG__)
+#  pragma GCC diagnostic pop
+#elif defined(__clang__)
+#  pragma clang diagnostic pop
+#endif
+
 
 MI_INSTANTIATE_STRUCT(AnimatedTransform)
 NAMESPACE_END(mitsuba)
