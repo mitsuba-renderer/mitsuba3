@@ -26,8 +26,6 @@ void dr_bind_vp_impl(nb::module_ &m, const std::string &prefix) {
         suffix += "f";
     else if constexpr (std::is_signed_v<dr::scalar_t<Type>>)
         suffix += "i";
-    else if constexpr (std::is_signed_v<dr::scalar_t<Type>>)
-        suffix += "i";
     else
         suffix += "u";
 

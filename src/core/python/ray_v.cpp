@@ -41,7 +41,10 @@ void bind_ray(nb::module_ &m, const char *name) {
             .def_field(Ray, time,        D(Ray, time))
             .def_field(Ray, wavelengths, D(Ray, wavelengths))
             .def_repr(Ray);
-        MI_PY_DRJIT_STRUCT(ray, Ray, o, d, maxt, time, wavelengths)
+
+        if constexpr (dr::is_jit_v<RayFloat>) {
+            MI_PY_DRJIT_STRUCT(ray, Ray, o, d, maxt, time, wavelengths);
+        }
     }
 }
 
@@ -52,6 +55,12 @@ MI_PY_EXPORT(Ray) {
     bind_ray<Ray<Point2d, Spectrum>>(m, "Ray2d");
     bind_ray<Ray3f>(m, "Ray3f");
     bind_ray<Ray<Point3d, Spectrum>>(m, "Ray3d");
+
+    using ScalarSpectrum = scalar_spectrum_t<Spectrum>;
+    bind_ray<Ray<ScalarPoint2f, ScalarSpectrum>>(m, "ScalarRay2f");
+    bind_ray<Ray<ScalarPoint2d, ScalarSpectrum>>(m, "ScalarRay2d");
+    bind_ray<Ray<ScalarPoint3f, ScalarSpectrum>>(m, "ScalarRay3f");
+    bind_ray<Ray<ScalarPoint3d, ScalarSpectrum>>(m, "ScalarRay3d");
 
     {
         auto raydiff = nb::class_<RayDifferential3f, Ray3f>(m, "RayDifferential3f", D(RayDifferential))

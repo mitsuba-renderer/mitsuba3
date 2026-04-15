@@ -114,7 +114,7 @@ public:
     template <typename Index>
     MI_INLINE auto face_indices(Index index,
                                 dr::mask_t<Index> active = true) const {
-        using Result = dr::Array<dr::uint32_array_t<Index>, 3>;
+        using Result = Vector<dr::uint32_array_t<Index>, 3>;
         return dr::gather<Result>(m_faces, index, active);
     }
 
@@ -126,7 +126,7 @@ public:
     MI_INLINE auto edge_indices(Index tri_index, Index edge_index,
                                 dr::mask_t<Index> active = true) const {
         using UInt32 = dr::uint32_array_t<Index>;
-        return dr::Array<UInt32, 2>(
+        return Vector<UInt32, 2>(
             dr::gather<UInt32>(m_faces, 3 * tri_index + edge_index, active),
             dr::gather<UInt32>(m_faces, 3 * tri_index + (edge_index + 1) % 3, active)
         );
