@@ -52,17 +52,17 @@ mitsuba.__prefix__:
     def set_log_level(level: LogLevel) -> None: ...
     def log_level() -> LogLevel: ...
 
-    _BoolCp: TypeAlias = Union[bool, 'Bool', 'drjit.auto.Bool', 'drjit.auto.ad.Bool', Sequence[bool]]
-    _IntCp: TypeAlias = Union[int, 'Int', 'drjit.auto.Int', 'drjit.auto.ad.Int', Sequence[int]]
-    _Int32Cp: TypeAlias = Union[int, 'Int32', 'drjit.auto.Int32', 'drjit.auto.ad.Int32', Sequence[int]]
-    _Int64Cp: TypeAlias = Union[int, 'Int64', 'drjit.auto.Int64', 'drjit.auto.ad.Int64', Sequence[int]]
-    _UIntCp: TypeAlias = Union[int, 'UInt', 'drjit.auto.UInt', 'drjit.auto.ad.UInt', Sequence[int]]
-    _UInt32Cp: TypeAlias = Union[int, 'UInt32', 'drjit.auto.UInt32', 'drjit.auto.ad.UInt32', Sequence[int]]
-    _UInt64Cp: TypeAlias = Union[int, 'UInt64', 'drjit.auto.UInt64', 'drjit.auto.ad.UInt64', Sequence[int]]
-    _FloatCp: TypeAlias = Union[float, 'Float', 'drjit.auto.Float', 'drjit.auto.ad.Float', Sequence[float]]
-    _Float16Cp: TypeAlias = Union[float, 'Float16', 'drjit.auto.Float16', 'drjit.auto.ad.Float16', Sequence[float]]
-    _Float32Cp: TypeAlias = Union[float, 'Float32', 'drjit.auto.Float32', 'drjit.auto.ad.Float32', Sequence[float]]
-    _Float64Cp: TypeAlias = Union[float, 'Float64', 'drjit.auto.Float64', 'drjit.auto.ad.Float64', Sequence[float]]
+    _BoolCp: TypeAlias = Union[bool, 'Bool', 'drjit.auto.Bool', 'drjit.auto.ad.Bool', Annotated[NDArray[numpy.bool_], dict(shape=("*",), order='C', device='cpu')], Sequence[bool]]
+    _IntCp: TypeAlias = Union[int, 'Int', 'drjit.auto.Int', 'drjit.auto.ad.Int', Annotated[NDArray[numpy.int32], dict(shape=("*",), order='C', device='cpu')], Sequence[int]]
+    _Int32Cp: TypeAlias = Union[int, 'Int32', 'drjit.auto.Int32', 'drjit.auto.ad.Int32', Annotated[NDArray[numpy.int32], dict(shape=("*",), order='C', device='cpu')], Sequence[int]]
+    _Int64Cp: TypeAlias = Union[int, 'Int64', 'drjit.auto.Int64', 'drjit.auto.ad.Int64', Annotated[NDArray[numpy.int64], dict(shape=("*",), order='C', device='cpu')], Sequence[int]]
+    _UIntCp: TypeAlias = Union[int, 'UInt', 'drjit.auto.UInt', 'drjit.auto.ad.UInt', Annotated[NDArray[numpy.uint32], dict(shape=("*",), order='C', device='cpu')], Sequence[int]]
+    _UInt32Cp: TypeAlias = Union[int, 'UInt32', 'drjit.auto.UInt32', 'drjit.auto.ad.UInt32', Annotated[NDArray[numpy.uint32], dict(shape=("*",), order='C', device='cpu')], Sequence[int]]
+    _UInt64Cp: TypeAlias = Union[int, 'UInt64', 'drjit.auto.UInt64', 'drjit.auto.ad.UInt64', Annotated[NDArray[numpy.uint64], dict(shape=("*",), order='C', device='cpu')], Sequence[int]]
+    _FloatCp: TypeAlias = Union[float, 'Float', 'drjit.auto.Float', 'drjit.auto.ad.Float', Annotated[NDArray[numpy.float32], dict(shape=("*",), order='C', device='cpu')], Sequence[float]]
+    _Float16Cp: TypeAlias = Union[float, 'Float16', 'drjit.auto.Float16', 'drjit.auto.ad.Float16', Annotated[NDArray[numpy.float16], dict(shape=("*",), order='C', device='cpu')], Sequence[float]]
+    _Float32Cp: TypeAlias = Union[float, 'Float32', 'drjit.auto.Float32', 'drjit.auto.ad.Float32', Annotated[NDArray[numpy.float32], dict(shape=("*",), order='C', device='cpu')], Sequence[float]]
+    _Float64Cp: TypeAlias = Union[float, 'Float64', 'drjit.auto.Float64', 'drjit.auto.ad.Float64', Annotated[NDArray[numpy.float64], dict(shape=("*",), order='C', device='cpu')], Sequence[float]]
 
     _Matrix2fCp: TypeAlias = Union['Matrix2f', 'drjit.auto.ad.Matrix2f', 'drjit.scalar.Matrix2f', Annotated[NDArray[numpy.float32], dict(shape=(2, 2), order='C', device='cpu')], Sequence[Sequence[float]]]
     _Matrix3fCp: TypeAlias = Union['Matrix3f', 'drjit.auto.ad.Matrix3f', 'drjit.scalar.Matrix3f', Annotated[NDArray[numpy.float32], dict(shape=(3, 3), order='C', device='cpu')], Sequence[Sequence[float]]]
@@ -74,6 +74,14 @@ mitsuba.__prefix__:
     _UnpolarizedSpectrumCp: TypeAlias = Union['UnpolarizedSpectrum', 'drjit.auto.ad._FloatCp', 'drjit.scalar._ArrayXfCp', 'drjit.auto._ArrayXfCp', 'drjit.auto.ad._ArrayXf16Cp']
     _SpectrumEntryCp: TypeAlias = Union['SpectrumEntry', '_UnpolarizedSpectrumCp', 'drjit.scalar._ArrayXfCp', 'drjit.auto._ArrayXfCp', 'drjit.auto.ad._ArrayXf16Cp']
     _SpectrumCp: TypeAlias = Union['Spectrum', '_SpectrumEntryCp', 'drjit.scalar._ArrayXfCp', 'drjit.auto._ArrayXfCp', 'drjit.auto.ad._ArrayXf16Cp']
+
+    _TensorXfCp: TypeAlias = Union['TensorXf', float, 'drjit.auto.ad.TensorXf', Annotated[NDArray[numpy.float32], dict(shape=("*",), order='C', device='cpu')], Sequence[float]]
+    _TensorXf16Cp: TypeAlias = Union['TensorXf16', float, 'drjit.auto.ad.TensorXf16', Annotated[NDArray[numpy.float16], dict(shape=("*",), order='C', device='cpu')], Sequence[float]]
+    _TensorXf32Cp: TypeAlias = Union['TensorXf32', float, 'drjit.auto.ad.TensorXf32', Annotated[NDArray[numpy.float32], dict(shape=("*",), order='C', device='cpu')], Sequence[float]]
+    
+    FloatStorage: TypeAlias = _FloatCp
+    UInt32Storage: TypeAlias = _UInt32Cp
+    Int32Storage: TypeAlias = _Int32Cp
 
     class Bool(drjit.ArrayBase['Bool', '_BoolCp', bool, bool, 'Bool', 'Bool', 'Bool']): pass
     class Int(drjit.ArrayBase['Int', '_IntCp', int, int, 'Int', 'Int', 'Bool']): pass
@@ -98,6 +106,48 @@ mitsuba.__prefix__:
     class Matrix3f64(drjit.ArrayBase['Matrix3f64', '_Matrix3f64Cp', float, float, 'Matrix3f64', 'Matrix3f64', 'Bool']): pass
     class Matrix4f64(drjit.ArrayBase['Matrix4f64', '_Matrix4f64Cp', float, float, 'Matrix4f64', 'Matrix4f64', 'Bool']): pass
 
+    class TensorXf(drjit.ArrayBase['TensorXf', '_TensorXfCp', 'TensorXf', '_TensorXfCp', 'TensorXf', 'Float', 'Bool']):
+        @overload
+        def __init__(self) -> None: ...
+        @overload
+        def __init__(self, arg: _TensorXfCp, /) -> None: ...
+        @overload
+        def __init__(self, array: _FloatCp, shape: tuple[int, ...]) -> None: ...
+        @property
+        def shape(self) -> tuple[int, ...]: ...
+        @property
+        def array(self) -> Float: ...
+        @property
+        def ndim(self) -> int: ...
+
+    class TensorXf16(drjit.ArrayBase['TensorXf16', '_TensorXf16Cp', 'TensorXf16', '_TensorXf16Cp', 'TensorXf16', 'Float16', 'Bool']):
+        @overload
+        def __init__(self) -> None: ...
+        @overload
+        def __init__(self, arg: _TensorXf16Cp, /) -> None: ...
+        @overload
+        def __init__(self, array: _Float16Cp, shape: tuple[int, ...]) -> None: ...
+        @property
+        def shape(self) -> tuple[int, ...]: ...
+        @property
+        def array(self) -> Float16: ...
+        @property
+        def ndim(self) -> int: ...
+
+    class TensorXf32(drjit.ArrayBase['TensorXf32', '_TensorXf32Cp', 'TensorXf32', '_TensorXf32Cp', 'TensorXf32', 'Float32', 'Bool']):
+        @overload
+        def __init__(self) -> None: ...
+        @overload
+        def __init__(self, arg: _TensorXf32Cp, /) -> None: ...
+        @overload
+        def __init__(self, array: _Float32Cp, shape: tuple[int, ...]) -> None: ...
+        @property
+        def shape(self) -> tuple[int, ...]: ...
+        @property
+        def array(self) -> Float32: ...
+        @property
+        def ndim(self) -> int: ...
+
 Bitmap.__eq__:
 Bitmap.__ne__:
 
@@ -110,7 +160,38 @@ BoundingBox3f.__ne__:
 BoundingSphere3f.__eq__:
 BoundingSphere3f.__ne__:
 
-DirectionSample3f.__setitem__:
+DiscreteDistribution.__init__:
+    @overload
+    def __init__(self) -> None:
+        \doc
+    @overload
+    def __init__(self, arg: 'DiscreteDistribution', /) -> None:
+        \doc
+    @overload
+    def __init__(self, pmf: FloatStorage, /) -> None:
+        \doc
+
+ContinuousDistribution.__init__:
+    @overload
+    def __init__(self) -> None:
+        \doc
+    @overload
+    def __init__(self, arg: 'ContinuousDistribution', /) -> None:
+        \doc
+    @overload
+    def __init__(self, range: _ScalarVector2fCp, pdf: FloatStorage, /) -> None:
+        \doc
+
+IrregularContinuousDistribution.__init__:
+    @overload
+    def __init__(self) -> None:
+        \doc
+    @overload
+    def __init__(self, arg: 'IrregularContinuousDistribution', /) -> None:
+        \doc
+    @overload
+    def __init__(self, nodes: FloatStorage, pdf: FloatStorage, /) -> None:
+        \doc
 
 Field.*.__eq__:
 Field.*.__ne__:
@@ -118,22 +199,11 @@ Field.*.__ne__:
 Frame.*.__eq__:
 Frame.*.__ne__:
 
-Interaction3f.assign:
-Interaction3f.__setitem__:
-
-MediumInteraction.*.assign:
-
-PositionSample3f.assign:
-PositionSample3f.__setitem__:
-
 Properties.__eq__:
 Properties.__ne__:
 
 Ray.*.__eq__:
 Ray.*.__ne__:
-Ray.*.assign:
-
-RayDifferential.*.__setitem__:
 
 ScalarTransform.*.__eq__:
 ScalarTransform.*.__ne__:
@@ -145,27 +215,22 @@ SurfaceInteraction.*.__eq__:
 SurfaceInteraction.*.__ne__:
 
 ScalarPoint.*.__getitem__:
-ScalarPoint.*.__setitem__:
 ScalarPoint.*.__delitem__:
 
 ScalarColor.*.__getitem__:
-ScalarColor.*.__setitem__:
 ScalarColor.*.__delitem__:
 
 ScalarNormal.*.__getitem__:
-ScalarNormal.*.__setitem__:
 ScalarNormal.*.__delitem__:
 
 Transform.*.__eq__:
 Transform.*.__ne__:
 
 Vector.*.__getitem__:
-Vector.*.__setitem__:
 Vector.*.__delitem__:
 
 .*Ptr.Domain:
 .*Ptr.__getitem__:
-.*Ptr.__setitem__:
 .*Ptr.__delitem__:
 
 # Specific to variant we used to generate stub
@@ -206,16 +271,20 @@ Version.__init__:
     @overload
     def __init__(self, value: str) -> None: ...
 
-.*\.sensors_dr:
+Scene.sensors_dr:
     def sensors_dr(self) -> list['Sensor']:
         \doc
 
-.*\.emitters_dr:
+Scene.emitters_dr:
     def emitters_dr(self) -> list['Emitter']:
         \doc
 
-.*\.shapes_dr:
+Scene.shapes_dr:
     def shapes_dr(self) -> list['Shape']:
+        \doc
+
+Scene.integrator:
+    def integrator(self) -> 'Integrator':
         \doc
 
 .eval_reflectance:
