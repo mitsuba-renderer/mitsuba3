@@ -18,6 +18,12 @@ NAMESPACE_BEGIN(mitsuba)
  * This struct stores a sequence of transformations and interpolates between
  * them using a combination of linear interpolation (for translation and
  * scaling) and spherical linear interpolation (for rotation).
+ *
+ * Internally, keyframes are packed into a single DynamicBuffer `m_data` with a
+ * stride of 12 floats per keyframe to optimize vectorized loads. The layout per
+ * keyframe is:
+ * `[time, scale.x, scale.y, scale.z, quat.w, quat.x, quat.y, quat.z, trans.x,
+ * trans.y, trans.z, unused]`
  */
 MI_VARIANT
 struct MI_EXPORT_LIB AnimatedTransform : public Object {
@@ -110,8 +116,7 @@ public:
     MI_DECLARE_CLASS(AnimatedTransform)
 
 protected:
-    MI_TRAVERSE_CB(Object, m_transform, m_times, m_scales, m_translations,
-                   m_rotations)
+    MI_TRAVERSE_CB(Object, m_transform, m_data)
 
 private:
     void add_keyframe(ScalarFloat time, const ScalarAffineTransform4f &trafo);
@@ -121,10 +126,7 @@ private:
 
     field<AffineTransform4f, ScalarAffineTransform4f> m_transform;
     std::vector<std::pair<ScalarFloat, Keyframe>> m_keyframes;
-    DynamicBuffer<Float> m_times;
-    DynamicBuffer<Vector3f> m_scales;
-    DynamicBuffer<Quaternion4f> m_rotations;
-    DynamicBuffer<Vector3f> m_translations;
+    DynamicBuffer<Float> m_data;
 };
 
 MI_EXTERN_STRUCT(AnimatedTransform)
