@@ -201,7 +201,7 @@ def test06_denoiser_denoise_multichannel_bitmap(variant_cuda_ad_rgb):
     multichannel = sensor.film().bitmap()
 
     denoiser = mi.OptixDenoiser(multichannel.size(), True, True)
-    denoised = denoiser(multichannel, "albedo", "sh_normal", sensor.world_transform().inverse())
+    denoised = denoiser(multichannel, "albedo", "sh_normal", sensor.world_transform().eval(0.0).inverse())
 
     ref_tensor = mi.TensorXf(ref)[...,:3]
     denoised_tensor = mi.TensorXf(denoised)
@@ -226,7 +226,7 @@ def test07_denoiser_denoise_multichannel_bitmap_runs(variant_cuda_ad_rgb):
     multichannel = sensor.film().bitmap()
 
     denoiser = mi.OptixDenoiser(multichannel.size(), True, True)
-    denoised = denoiser(multichannel, "albedo", "sh_normal", sensor.world_transform().inverse())
+    denoised = denoiser(multichannel, "albedo", "sh_normal", sensor.world_transform().eval(0.0).inverse())
     denoised = mi.TensorXf(denoised.convert(component_format=mi.Struct.Type.Float32))
     dr.eval(denoised)
 

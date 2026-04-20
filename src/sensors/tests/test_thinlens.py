@@ -50,7 +50,7 @@ def test01_create(variant_scalar_rgb, origin, direction, s_open, s_time):
     assert dr.allclose(camera.shutter_open_time(), s_time)
     assert camera.needs_aperture_sample()
     assert camera.bbox() == mi.BoundingBox3f(origin, origin)
-    assert dr.allclose(camera.world_transform().matrix,
+    assert dr.allclose(camera.world_transform().eval(0.0).matrix,
                        mi.Transform4f().look_at(origin, mi.Vector3f(origin) + direction, [0, 1, 0]).matrix)
 
 
@@ -79,7 +79,7 @@ def test02_sample_ray(variants_vec_spectral, origin, direction, aperture_rad, fo
     assert dr.allclose(mi.unpolarized_spectrum(spec_weight), spec)
     assert dr.allclose(ray.time, time)
 
-    inv_z = dr.rcp((cam.world_transform().inverse() @ ray.d).z)
+    inv_z = dr.rcp((cam.world_transform().eval(0.0).inverse() @ ray.d).z)
     o = mi.Point3f(origin) + near_clip * inv_z * mi.Vector3f(ray.d)
     assert dr.allclose(ray.o, o, atol=1e-4)
 
@@ -103,9 +103,9 @@ def test02_sample_ray(variants_vec_spectral, origin, direction, aperture_rad, fo
     tmp = aperture_rad * mi.warp.square_to_uniform_disk_concentric(aperture_sample)
     aperture_v = trafo @ mi.Vector3f(tmp.x, tmp.y, 0)
 
-    inv_z_centered = dr.rcp((cam.world_transform().inverse() @ ray_centered.d).z)
+    inv_z_centered = dr.rcp((cam.world_transform().eval(0.0).inverse() @ ray_centered.d).z)
     o_centered = ray_centered.o - near_clip * inv_z_centered * mi.Vector3f(ray_centered.d)
-    inv_z = dr.rcp((cam.world_transform().inverse() @ ray.d).z)
+    inv_z = dr.rcp((cam.world_transform().eval(0.0).inverse() @ ray.d).z)
     o = o_centered + aperture_v + near_clip * inv_z * mi.Vector3f(ray.d)
     assert dr.allclose(ray.o, o, atol=1e-4)
     assert dr.allclose(ray.d, dr.normalize(ray_centered.d * focus_dist - aperture_v), atol=1e-4)
@@ -136,7 +136,7 @@ def test03_sample_ray_diff(variants_vec_spectral, origin, direction, aperture_ra
     assert dr.allclose(mi.unpolarized_spectrum(spec_weight), spec)
     assert dr.allclose(ray.time, time)
 
-    inv_z = dr.rcp((cam.world_transform().inverse() @ ray.d).z)
+    inv_z = dr.rcp((cam.world_transform().eval(0.0).inverse() @ ray.d).z)
     o = mi.Point3f(origin) + near_clip * inv_z * mi.Vector3f(ray.d)
     assert dr.allclose(ray.o, o, atol=1e-4)
 
@@ -181,9 +181,9 @@ def test03_sample_ray_diff(variants_vec_spectral, origin, direction, aperture_ra
     tmp = mi.warp.square_to_uniform_disk_concentric(aperture_sample)
     aperture_v = trafo @ (aperture_rad * mi.Vector3f(tmp.x, tmp.y, 0))
 
-    inv_z_centered = dr.rcp((cam.world_transform().inverse() @ ray_centered.d).z)
+    inv_z_centered = dr.rcp((cam.world_transform().eval(0.0).inverse() @ ray_centered.d).z)
     o_centered = ray_centered.o - near_clip * inv_z_centered * mi.Vector3f(ray_centered.d)
-    inv_z = dr.rcp((cam.world_transform().inverse() @ ray.d).z)
+    inv_z = dr.rcp((cam.world_transform().eval(0.0).inverse() @ ray.d).z)
     o = o_centered + aperture_v + near_clip * inv_z * mi.Vector3f(ray.d)
     assert dr.allclose(ray.o, o, atol=1e-4)
     assert dr.allclose(ray.d, dr.normalize(ray_centered.d * focus_dist - aperture_v), atol=1e-4)

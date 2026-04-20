@@ -1105,7 +1105,7 @@ class PSIntegrator(ADIntegrator):
         # Explicit sampling to handle the primarily visible discontinuous derivative
         with dr.suspend_grad():
             # Get the viewpoint
-            sensor_center = sensor.world_transform() @ mi.Point3f(0)
+            sensor_center = sensor.world_transform().eval(0.0) @ mi.Point3f(0)
 
             # Sample silhouette point
             ss = self.proj_detail.sample_primarily_visible_silhouette(

@@ -48,7 +48,7 @@ def test01_create(variant_scalar_rgb, origin, direction, s_open, s_time):
     assert dr.allclose(camera.shutter_open_time(), s_time)
     assert not camera.needs_aperture_sample()
     assert camera.bbox() == mi.BoundingBox3f(origin, origin)
-    assert dr.allclose(camera.world_transform().matrix,
+    assert dr.allclose(camera.world_transform().eval(0.0).matrix,
                        mi.Transform4f().look_at(origin, mi.Vector3f(origin) + direction, [0, 1, 0]).matrix)
 
 
@@ -73,7 +73,7 @@ def test02_sample_ray(variants_vec_spectral, origin, direction):
     assert dr.allclose(mi.unpolarized_spectrum(spec_weight), spec)
     assert dr.allclose(ray.time, time)
 
-    inv_z = dr.rcp((camera.world_transform().inverse() @ ray.d).z)
+    inv_z = dr.rcp((camera.world_transform().eval(0.0).inverse() @ ray.d).z)
     o = mi.Point3f(origin) + near_clip * inv_z * mi.Vector3f(ray.d)
     assert dr.allclose(ray.o, o, atol=1e-4)
 
@@ -104,7 +104,7 @@ def test03_sample_ray_differential(variants_vec_spectral, origin, direction):
     assert dr.allclose(mi.unpolarized_spectrum(spec_weight), spec)
     assert dr.allclose(ray.time, time)
 
-    inv_z = dr.rcp((camera.world_transform().inverse() @ ray.d).z)
+    inv_z = dr.rcp((camera.world_transform().eval(0.0).inverse() @ ray.d).z)
     o = mi.Point3f(origin) + near_clip * inv_z * mi.Vector3f(ray.d)
     assert dr.allclose(ray.o, o, atol=1e-4)
 
