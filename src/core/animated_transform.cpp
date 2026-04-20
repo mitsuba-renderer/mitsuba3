@@ -14,6 +14,18 @@ NAMESPACE_BEGIN(mitsuba)
 
 constexpr uint32_t stride = 12;
 
+template <typename Transform, typename Scalar = typename Transform::Float>
+Transform compose(const Vector<Scalar, 3> &s, const dr::Quaternion<Scalar> &q,
+                  const Vector<Scalar, 3> &t) {
+    using Matrix3f     = dr::Matrix<Scalar, 3>;
+    using Matrix4f     = dr::Matrix<Scalar, 4>;
+    using Quaternion4f = dr::Quaternion<Scalar>;
+    Matrix3f s_mat     = dr::diag(s);
+    return Transform(
+        dr::transform_compose<Matrix4f>(s_mat, q, t),
+        dr::transpose(dr::transform_compose_inverse<Matrix4f>(s_mat, q, t)));
+}
+
 MI_VARIANT
 AnimatedTransform<Float, Spectrum>::AnimatedTransform(
     const ScalarAffineTransform4f &trafo) {
@@ -24,7 +36,8 @@ AnimatedTransform<Float, Spectrum>::AnimatedTransform(
 
 MI_VARIANT
 AnimatedTransform<Float, Spectrum>::AnimatedTransform(
-    const std::vector<std::pair<ScalarFloat, ScalarAffineTransform4f>> &keyframes) {
+    const std::vector<std::pair<ScalarFloat, ScalarAffineTransform4f>>
+        &keyframes) {
     if (keyframes.size() == 1) {
         m_transform = AffineTransform4f(keyframes.begin()->second);
     }
@@ -53,7 +66,8 @@ AnimatedTransform<Float, Spectrum>::eval(Float time) const {
         auto pred = [&](UInt32 idx) {
             return dr::gather<Float>(m_data, idx * stride) <= time;
         };
-        UInt32 index = math::find_interval<UInt32>((uint32_t) n_keyframes, pred);
+        UInt32 index =
+            math::find_interval<UInt32>((uint32_t) n_keyframes, pred);
         v_idx0 = index * 3;
         v_idx1 = (index + 1) * 3;
     }
@@ -74,13 +88,9 @@ AnimatedTransform<Float, Spectrum>::eval(Float time) const {
     Quaternion4f q1 = chunk1_1;
     Vector3f tr1(chunk1_2.x(), chunk1_2.y(), chunk1_2.z());
 
-    Float t         = dr::clip((time - t0) / (t1 - t0), 0.f, 1.f);
-    Matrix3f s     = dr::diag(dr::lerp(s0, s1, t));
-    Quaternion4f q = dr::slerp(q0, q1, t);
-    Vector3f tr    = dr::lerp(tr0, tr1, t);
-    return AffineTransform4f(
-        dr::transform_compose<Matrix4f>(s, q, tr),
-        dr::transpose(dr::transform_compose_inverse<Matrix4f>(s, q, tr)));
+    Float t = dr::clip((time - t0) / (t1 - t0), 0.f, 1.f);
+    return compose<AffineTransform4f>(dr::lerp(s0, s1, t), dr::slerp(q0, q1, t),
+                                      dr::lerp(tr0, tr1, t));
 }
 
 MI_VARIANT typename AnimatedTransform<Float, Spectrum>::ScalarAffineTransform4f
@@ -93,9 +103,8 @@ AnimatedTransform<Float, Spectrum>::eval_scalar(ScalarFloat time) const {
     }
 
     auto it1 = std::lower_bound(m_keyframes.begin(), m_keyframes.end(), time,
-        [](const std::pair<ScalarFloat, Keyframe> &a, ScalarFloat b) {
-            return a.first < b;
-        });
+                                [](const std::pair<ScalarFloat, Keyframe> &a,
+                                   ScalarFloat b) { return a.first < b; });
     auto it0 = it1;
     if (it1 == m_keyframes.begin()) {
         it0 = it1;
@@ -106,23 +115,15 @@ AnimatedTransform<Float, Spectrum>::eval_scalar(ScalarFloat time) const {
         it0 = std::prev(it1);
     }
     if (it0 == it1) {
-        const auto &kf   = it0->second;
-        ScalarMatrix3f s = dr::diag(kf.S);
-        return ScalarAffineTransform4f(
-            dr::transform_compose<ScalarMatrix4f>(s, kf.Q, kf.T),
-            dr::transpose(
-                dr::transform_compose_inverse<ScalarMatrix4f>(s, kf.Q, kf.T)));
+        const Keyframe &kf = it0->second;
+        return compose<ScalarAffineTransform4f>(kf.S, kf.Q, kf.T);
     }
-    ScalarFloat t = std::clamp((time - it0->first) / (it1->first - it0->first),
-                               ScalarFloat(0), ScalarFloat(1));
-    const auto &kf0      = it0->second;
-    const auto &kf1      = it1->second;
-    ScalarMatrix3f s     = dr::diag(dr::lerp(kf0.S, kf1.S, t));
-    ScalarQuaternion4f q = dr::slerp(kf0.Q, kf1.Q, t);
-    ScalarVector3f tr    = dr::lerp(kf0.T, kf1.T, t);
-    return ScalarAffineTransform4f(
-        dr::transform_compose<ScalarMatrix4f>(s, q, tr),
-        dr::transpose(dr::transform_compose_inverse<ScalarMatrix4f>(s, q, tr)));
+    ScalarFloat t = std::clamp((time - it0->first) / (it1->first - it0->first), 0.f, 1.f);
+    const Keyframe &kf0 = it0->second;
+    const Keyframe &kf1 = it1->second;
+    return compose<ScalarAffineTransform4f>(dr::lerp(kf0.S, kf1.S, t),
+                                            dr::slerp(kf0.Q, kf1.Q, t),
+                                            dr::lerp(kf0.T, kf1.T, t));
 }
 
 MI_VARIANT void AnimatedTransform<Float, Spectrum>::parameters_changed(
@@ -132,35 +133,23 @@ MI_VARIANT void AnimatedTransform<Float, Spectrum>::parameters_changed(
     if (dr::width(m_data) % stride != 0) {
         Throw("Size of m_data is not a multiple of stride (= 12).");
     }
-
     dr::eval(m_data);
-    size_t num_floats = dr::width(m_data);
-    std::vector<ScalarFloat> host_data(num_floats);
-    // TODO: This can likely be simplfieid.
-    if constexpr (dr::is_jit_v<Float>) {
-        jit_memcpy(dr::backend_v<Float>, host_data.data(), m_data.data(),
-                   num_floats * sizeof(ScalarFloat));
-    } else {
-        std::copy(m_data.data(), m_data.data() + num_floats, host_data.data());
-    }
-
-    bool was_animated = m_keyframes.size() > 1;
+    auto &&packed_data = dr::migrate(m_data, AllocType::Host);
+    if constexpr (dr::is_jit_v<Float>)
+        dr::sync_thread();
+    const ScalarFloat *data_ptr = packed_data.data();
+    bool was_animated           = m_keyframes.size() > 1;
     std::vector<std::pair<ScalarFloat, Keyframe>> new_keyframes;
     new_keyframes.reserve(n);
     for (size_t i = 0; i < n; ++i) {
-        ScalarFloat time = host_data[i * stride + 0];
-        Keyframe kf;
-        kf.S.x() = host_data[i * stride + 1];
-        kf.S.y() = host_data[i * stride + 2];
-        kf.S.z() = host_data[i * stride + 3];
-        kf.Q.w() = host_data[i * stride + 4];
-        kf.Q.x() = host_data[i * stride + 5];
-        kf.Q.y() = host_data[i * stride + 6];
-        kf.Q.z() = host_data[i * stride + 7];
-        kf.T.x() = host_data[i * stride + 8];
-        kf.T.y() = host_data[i * stride + 9];
-        kf.T.z() = host_data[i * stride + 10];
-        new_keyframes.push_back({ time, kf });
+        Keyframe kf{ .S = { data_ptr[i * stride + 1], data_ptr[i * stride + 2],
+                            data_ptr[i * stride + 3] },
+                     .Q = { data_ptr[i * stride + 4], data_ptr[i * stride + 5],
+                            data_ptr[i * stride + 6],
+                            data_ptr[i * stride + 7] },
+                     .T = { data_ptr[i * stride + 8], data_ptr[i * stride + 9],
+                            data_ptr[i * stride + 10] } };
+        new_keyframes.push_back({ data_ptr[i * stride + 0], kf });
     }
 
     m_keyframes = std::move(new_keyframes);
@@ -170,20 +159,14 @@ MI_VARIANT void AnimatedTransform<Float, Spectrum>::parameters_changed(
         const auto &kf = m_keyframes[0].second;
         if (was_animated) {
             // Transition from N > 1 to N == 1: rebuild single transform
-            ScalarMatrix3f s = dr::diag(kf.S);
-            ScalarMatrix4f mat =
-                dr::transform_compose<ScalarMatrix4f>(s, kf.Q, kf.T);
-            ScalarMatrix4f inv = dr::transpose(
-                dr::transform_compose_inverse<ScalarMatrix4f>(s, kf.Q, kf.T));
-            m_transform = ScalarAffineTransform4f(mat, inv);
+            m_transform = compose<ScalarAffineTransform4f>(kf.S, kf.Q, kf.T);
             dr::make_opaque(m_transform);
         } else {
             // Was already size 1, check if "transform" changed
             if (keys.empty() || string::contains(keys, "transform")) {
                 m_transform = m_transform.value().update();
                 dr::make_opaque(m_transform);
-
-                // Update keyframe from m_transform
+                // Update keyframe from m_transform.
                 ScalarAffineTransform4f trafo = m_transform.scalar();
                 auto [S, Q, T]        = dr::transform_decompose(trafo.matrix);
                 m_keyframes[0].second = { dr::diag(S), Q, T };
@@ -202,7 +185,7 @@ MI_VARIANT void AnimatedTransform<Float, Spectrum>::add_keyframe(
         Throw("AnimatedTransform: Transformation contains shear, which is not "
               "supported!");
 
-    m_keyframes.push_back({time, { dr::diag(S), Q, T }});
+    m_keyframes.push_back({ time, { dr::diag(S), Q, T } });
 }
 
 MI_VARIANT void AnimatedTransform<Float, Spectrum>::initialize() {
