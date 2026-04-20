@@ -100,7 +100,7 @@ public:
 
     ~Instance() {
 #if defined(MI_ENABLE_CUDA)
-        for (void* p : m_motion_transforms)
+        for (OptixSRTMotionTransform* p : m_motion_transforms)
             jit_free(p);
 #endif
     }
@@ -320,7 +320,7 @@ public:
                                    const ScalarAffineTransform4f& transf) override {
         if (m_animated_to_world->keyframes().size() > 1) {
             // Clean up any previously used transforms.
-            for (void* p : m_motion_transforms) {
+            for (OptixSRTMotionTransform* p : m_motion_transforms) {
                 jit_free(p);
             }
             m_motion_transforms.clear();
@@ -347,7 +347,7 @@ private:
    ref<ShapeGroup_> m_shapegroup;
    ref<AnimatedTransform<Float, Spectrum>> m_animated_to_world;
 #if defined(MI_ENABLE_CUDA)
-   std::vector<void*> m_motion_transforms;
+   std::vector<OptixSRTMotionTransform*> m_motion_transforms;
 #endif
 
    MI_TRAVERSE_CB(Base, m_shapegroup)

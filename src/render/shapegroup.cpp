@@ -163,7 +163,7 @@ MI_VARIANT void ShapeGroup<Float, Spectrum>::optix_prepare_ias(
 MI_VARIANT void ShapeGroup<Float, Spectrum>::optix_prepare_ias(
     const OptixDeviceContext &context, std::vector<OptixInstance> &instances,
     uint32_t instance_id, const AnimatedTransform4f &transf,
-    std::vector<void*> &out_motion_transforms) {
+    std::vector<OptixSRTMotionTransform*> &out_motion_transforms) {
     prepare_ias(context, m_shapes, m_sbt_offset, m_accel, instance_id, transf, instances, out_motion_transforms);
 }
 

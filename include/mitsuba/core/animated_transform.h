@@ -1,6 +1,6 @@
 #pragma once
 
-#include <map>
+#include <vector>
 
 #include <drjit/quaternion.h>
 #include <drjit/transform.h>
@@ -47,7 +47,7 @@ public:
 
     /// Initialize from a map of keyframes
     AnimatedTransform(
-        const std::map<ScalarFloat, ScalarAffineTransform4f> &keyframes);
+        const std::vector<std::pair<ScalarFloat, ScalarAffineTransform4f>> &keyframes);
 
     /**
      * \brief Evaluate the transformation at a specific time
@@ -75,7 +75,7 @@ public:
     }
 
     /// Returns the host-allocated keyframes of the animated transform.
-    const std::map<ScalarFloat, Keyframe> &keyframes() const {
+    const std::vector<std::pair<ScalarFloat, Keyframe>> &keyframes() const {
         return m_keyframes;
     }
 
@@ -120,7 +120,7 @@ private:
     void initialize();
 
     field<AffineTransform4f, ScalarAffineTransform4f> m_transform;
-    std::map<ScalarFloat, Keyframe> m_keyframes;
+    std::vector<std::pair<ScalarFloat, Keyframe>> m_keyframes;
     DynamicBuffer<Float> m_times;
     DynamicBuffer<Vector3f> m_scales;
     DynamicBuffer<Quaternion4f> m_rotations;

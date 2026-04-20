@@ -569,18 +569,17 @@ static void parse_transform_node(const ParserState &state, pugi::xml_node node,
     }
 }
 
-namespace {
-    /// Instantiates an animated transform given Float/Spectrum types.
-    template <typename Float, typename Spectrum>
-    ref<Object> instantiate_animated_transform(const std::map<double, ScalarAffineTransform4d> &keyframes) {
-        using ScalarFloat = dr::scalar_t<Float>;
-        using ScalarTransform = mitsuba::Transform<mitsuba::Point<ScalarFloat, 4>, true>;
-        std::map<ScalarFloat, ScalarTransform> kf;
-        for (const auto& [time, trafo] : keyframes) {
-            kf[ScalarFloat(time)] = ScalarTransform(trafo);
-        }
-        return new AnimatedTransform<Float, Spectrum>(kf);
+/// Instantiates an animated transform given Float/Spectrum types.
+template <typename Float, typename Spectrum>
+ref<Object> instantiate_animated_transform(
+    const std::vector<std::pair<double, ScalarAffineTransform4d>> &keyframes) {
+    using ScalarFloat = dr::scalar_t<Float>;
+    using ScalarTransform = mitsuba::Transform<mitsuba::Point<ScalarFloat, 4>, true>;
+    std::vector<std::pair<ScalarFloat, ScalarTransform>> kf;
+    for (const auto &[time, trafo] : keyframes) {
+        kf.push_back({ ScalarFloat(time), ScalarTransform(trafo) });
     }
+    return new AnimatedTransform<Float, Spectrum>(kf);
 }
 
 // Helper function to parse XML nodes recursively
@@ -923,7 +922,7 @@ static void parse_xml_node(const ParserConfig &config, ParserState &state,
         case TagType::Animation: {
             check_attributes(state, scene_node, node, {"!name"sv});
 
-            std::map<double, ScalarAffineTransform4d> keyframes;
+            std::vector<std::pair<double, ScalarAffineTransform4d>> keyframes;
             for (pugi::xml_node child : node.children()) {
                 if (child.type() == pugi::node_element) {
                     if (std::string_view(child.name()) != "transform")
@@ -942,7 +941,7 @@ static void parse_xml_node(const ParserConfig &config, ParserState &state,
                         if (op.type() == pugi::node_element)
                             parse_transform_node(state, op, scene_node, transform, params);
                     }
-                    keyframes[time] = transform;
+                    keyframes.push_back({time, transform});
                 }
             }
             ref<Object> anim = MI_INVOKE_VARIANT(config.variant, instantiate_animated_transform, keyframes);
