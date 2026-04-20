@@ -12,6 +12,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+constexpr uint32_t stride = 12;
+
 MI_VARIANT
 AnimatedTransform<Float, Spectrum>::AnimatedTransform(
     const ScalarAffineTransform4f &trafo) {
@@ -34,25 +36,30 @@ AnimatedTransform<Float, Spectrum>::AnimatedTransform(
 
 MI_VARIANT typename AnimatedTransform<Float, Spectrum>::AffineTransform4f
 AnimatedTransform<Float, Spectrum>::eval(Float time) const {
-    size_t n_keyframes = m_times.size();
+    size_t n_keyframes = dr::width(m_data) / stride;
     if (n_keyframes == 0)
         Throw("Animated transform requires at least one keyframe, found 0.");
 
     if (n_keyframes == 1) {
         return m_transform.value();
     } else if (n_keyframes == 2) {
-        // Fast path for 2 keyframes
-        UInt32 i0 = 0, i1 = 1;
-        Float t0        = dr::gather<Float>(m_times, i0);
-        Float t1        = dr::gather<Float>(m_times, i1);
-        Float t         = dr::clip((time - t0) / (t1 - t0), 0.f, 1.f);
-        Vector3f s0     = dr::gather<Vector3f>(m_scales, i0);
-        Vector3f s1     = dr::gather<Vector3f>(m_scales, i1);
-        Quaternion4f q0 = dr::gather<Quaternion4f>(m_rotations, i0);
-        Quaternion4f q1 = dr::gather<Quaternion4f>(m_rotations, i1);
-        Vector3f tr0    = dr::gather<Vector3f>(m_translations, i0);
-        Vector3f tr1    = dr::gather<Vector3f>(m_translations, i1);
+        Vector4f chunk0_0 = dr::gather<Vector4f>(m_data, UInt32(0));
+        Vector4f chunk0_1 = dr::gather<Vector4f>(m_data, UInt32(1));
+        Vector4f chunk0_2 = dr::gather<Vector4f>(m_data, UInt32(2));
+        Vector4f chunk1_0 = dr::gather<Vector4f>(m_data, UInt32(3));
+        Vector4f chunk1_1 = dr::gather<Vector4f>(m_data, UInt32(4));
+        Vector4f chunk1_2 = dr::gather<Vector4f>(m_data, UInt32(5));
 
+        Float t0 = chunk0_0.x();
+        Vector3f s0(chunk0_0.y(), chunk0_0.z(), chunk0_0.w());
+        Quaternion4f q0 = chunk0_1;
+        Vector3f tr0(chunk0_2.x(), chunk0_2.y(), chunk0_2.z());
+        Float t1 = chunk1_0.x();
+        Vector3f s1(chunk1_0.y(), chunk1_0.z(), chunk1_0.w());
+        Quaternion4f q1 = chunk1_1;
+        Vector3f tr1(chunk1_2.x(), chunk1_2.y(), chunk1_2.z());
+
+        Float t         = dr::clip((time - t0) / (t1 - t0), 0.f, 1.f);
         Matrix3f s     = dr::diag(dr::lerp(s0, s1, t));
         Quaternion4f q = dr::slerp(q0, q1, t);
         Vector3f tr    = dr::lerp(tr0, tr1, t);
@@ -61,23 +68,32 @@ AnimatedTransform<Float, Spectrum>::eval(Float time) const {
             dr::transpose(dr::transform_compose_inverse<Matrix4f>(s, q, tr)));
     } else {
         // General case with binary search
-        auto pred = [&](UInt32 index) {
-            return dr::gather<Float>(m_times, index) <= time;
+        auto pred = [&](UInt32 idx) {
+            return dr::gather<Float>(m_data, idx * stride) <= time;
         };
 
         UInt32 index =
             math::find_interval<UInt32>((uint32_t) n_keyframes, pred);
 
-        Float t0        = dr::gather<Float>(m_times, index);
-        Float t1        = dr::gather<Float>(m_times, index + 1);
-        Float t         = dr::clip((time - t0) / (t1 - t0), 0.f, 1.f);
-        Vector3f s0     = dr::gather<Vector3f>(m_scales, index);
-        Vector3f s1     = dr::gather<Vector3f>(m_scales, index + 1);
-        Quaternion4f q0 = dr::gather<Quaternion4f>(m_rotations, index);
-        Quaternion4f q1 = dr::gather<Quaternion4f>(m_rotations, index + 1);
-        Vector3f tr0    = dr::gather<Vector3f>(m_translations, index);
-        Vector3f tr1    = dr::gather<Vector3f>(m_translations, index + 1);
+        UInt32 v_idx0 = index * 3;
+        UInt32 v_idx1 = (index + 1) * 3;
+        Vector4f chunk0_0 = dr::gather<Vector4f>(m_data, v_idx0 + 0);
+        Vector4f chunk0_1 = dr::gather<Vector4f>(m_data, v_idx0 + 1);
+        Vector4f chunk0_2 = dr::gather<Vector4f>(m_data, v_idx0 + 2);
+        Vector4f chunk1_0 = dr::gather<Vector4f>(m_data, v_idx1 + 0);
+        Vector4f chunk1_1 = dr::gather<Vector4f>(m_data, v_idx1 + 1);
+        Vector4f chunk1_2 = dr::gather<Vector4f>(m_data, v_idx1 + 2);
 
+        Float t0 = chunk0_0.x();
+        Vector3f s0(chunk0_0.y(), chunk0_0.z(), chunk0_0.w());
+        Quaternion4f q0 = chunk0_1;
+        Vector3f tr0(chunk0_2.x(), chunk0_2.y(), chunk0_2.z());
+        Float t1 = chunk1_0.x();
+        Vector3f s1(chunk1_0.y(), chunk1_0.z(), chunk1_0.w());
+        Quaternion4f q1 = chunk1_1;
+        Vector3f tr1(chunk1_2.x(), chunk1_2.y(), chunk1_2.z());
+
+        Float t         = dr::clip((time - t0) / (t1 - t0), 0.f, 1.f);
         Matrix3f s     = dr::diag(dr::lerp(s0, s1, t));
         Quaternion4f q = dr::slerp(q0, q1, t);
         Vector3f tr    = dr::lerp(tr0, tr1, t);
@@ -131,33 +147,49 @@ AnimatedTransform<Float, Spectrum>::eval_scalar(ScalarFloat time) const {
 
 MI_VARIANT void AnimatedTransform<Float, Spectrum>::parameters_changed(
     const std::vector<std::string> &keys) {
-    size_t n = dr::width(m_times);
-    if (dr::width(m_scales) != 3 * n || dr::width(m_translations) != 3 * n ||
-        dr::width(m_rotations) != 4 * n) {
-        Throw("Size of scales, translations, or rotations does not match the "
-              "number of keyframes.");
+
+    size_t n = dr::width(m_data) / stride;
+    if (dr::width(m_data) % stride != 0) {
+        Throw("Size of m_data is not a multiple of stride (= 12).");
     }
 
+    dr::eval(m_data);
+    size_t num_floats = dr::width(m_data);
+    std::vector<ScalarFloat> host_data(num_floats);
+    // TODO: This can likely be simplfieid.
+    if constexpr (dr::is_jit_v<Float>) {
+        jit_memcpy(dr::backend_v<Float>, host_data.data(), m_data.data(),
+                   num_floats * sizeof(ScalarFloat));
+    } else {
+        std::copy(m_data.data(), m_data.data() + num_floats, host_data.data());
+    }
+
+    bool was_animated = m_keyframes.size() > 1;
+    std::vector<std::pair<ScalarFloat, Keyframe>> new_keyframes;
+    new_keyframes.reserve(n);
+    for (size_t i = 0; i < n; ++i) {
+        ScalarFloat time = host_data[i * stride + 0];
+        Keyframe kf;
+        kf.S.x() = host_data[i * stride + 1];
+        kf.S.y() = host_data[i * stride + 2];
+        kf.S.z() = host_data[i * stride + 3];
+        kf.Q.w() = host_data[i * stride + 4];
+        kf.Q.x() = host_data[i * stride + 5];
+        kf.Q.y() = host_data[i * stride + 6];
+        kf.Q.z() = host_data[i * stride + 7];
+        kf.T.x() = host_data[i * stride + 8];
+        kf.T.y() = host_data[i * stride + 9];
+        kf.T.z() = host_data[i * stride + 10];
+        new_keyframes.push_back({ time, kf });
+    }
+
+    m_keyframes = std::move(new_keyframes);
+
+    // Handles the non-animated case of n == 1 transforms being used.
     if (n == 1) {
-        if (m_keyframes.size() > 1) {
-            // Transition from N > 1 to N == 1: update from arrays
-            dr::eval(m_times, m_scales, m_translations, m_rotations);
-            Keyframe kf;
-            kf.S.x() = dr::slice(m_scales, 0);
-            kf.S.y() = dr::slice(m_scales, 1);
-            kf.S.z() = dr::slice(m_scales, 2);
-            kf.Q.w() = dr::slice(m_rotations, 0);
-            kf.Q.x() = dr::slice(m_rotations, 1);
-            kf.Q.y() = dr::slice(m_rotations, 2);
-            kf.Q.z() = dr::slice(m_rotations, 3);
-            kf.T.x() = dr::slice(m_translations, 0);
-            kf.T.y() = dr::slice(m_translations, 1);
-            kf.T.z() = dr::slice(m_translations, 2);
-
-            m_keyframes.clear();
-            m_keyframes.push_back({dr::slice(m_times, 0), kf});
-
-            // Rebuild the single transform
+        const auto &kf = m_keyframes[0].second;
+        if (was_animated) {
+            // Transition from N > 1 to N == 1: rebuild single transform
             ScalarMatrix3f s = dr::diag(kf.S);
             ScalarMatrix4f mat =
                 dr::transform_compose<ScalarMatrix4f>(s, kf.Q, kf.T);
@@ -171,32 +203,12 @@ MI_VARIANT void AnimatedTransform<Float, Spectrum>::parameters_changed(
                 m_transform = m_transform.value().update();
                 dr::make_opaque(m_transform);
 
-                // Also update the single keyframe in the map
-                auto it                       = m_keyframes.begin();
+                // Update keyframe from m_transform
                 ScalarAffineTransform4f trafo = m_transform.scalar();
-                auto [S, Q, T] = dr::transform_decompose(trafo.matrix);
-                it->second     = { dr::diag(S), Q, T };
+                auto [S, Q, T]        = dr::transform_decompose(trafo.matrix);
+                m_keyframes[0].second = { dr::diag(S), Q, T };
             }
         }
-    } else if (n > 1) {
-        // Read back all data from device to keep host map in sync
-        dr::eval(m_times, m_scales, m_translations, m_rotations);
-        std::vector<std::pair<ScalarFloat, Keyframe>> new_keyframes;
-        for (size_t i = 0; i < n; ++i) {
-            Keyframe kf;
-            kf.S.x() = dr::slice(m_scales, 3 * i + 0);
-            kf.S.y() = dr::slice(m_scales, 3 * i + 1);
-            kf.S.z() = dr::slice(m_scales, 3 * i + 2);
-            kf.Q.w() = dr::slice(m_rotations, 4 * i + 0);
-            kf.Q.x() = dr::slice(m_rotations, 4 * i + 1);
-            kf.Q.y() = dr::slice(m_rotations, 4 * i + 2);
-            kf.Q.z() = dr::slice(m_rotations, 4 * i + 3);
-            kf.T.x() = dr::slice(m_translations, 3 * i + 0);
-            kf.T.y() = dr::slice(m_translations, 3 * i + 1);
-            kf.T.z() = dr::slice(m_translations, 3 * i + 2);
-            new_keyframes.push_back({dr::slice(m_times, i), kf});
-        }
-        m_keyframes = std::move(new_keyframes);
     }
 }
 
@@ -220,36 +232,36 @@ MI_VARIANT void AnimatedTransform<Float, Spectrum>::initialize() {
 
     // Ensure keyframes are sorted by time
     std::sort(m_keyframes.begin(), m_keyframes.end(),
-        [](const std::pair<ScalarFloat, Keyframe> &a, const std::pair<ScalarFloat, Keyframe> &b) {
-            return a.first < b.first;
-        });
+              [](const std::pair<ScalarFloat, Keyframe> &a,
+                 const std::pair<ScalarFloat, Keyframe> &b) {
+                  return a.first < b.first;
+              });
 
-    size_t n       = m_keyframes.size();
-    m_times        = dr::zeros<FloatStorage>(n);
-    m_scales       = dr::zeros<FloatStorage>(3 * n);
-    m_translations = dr::zeros<FloatStorage>(3 * n);
-    m_rotations    = dr::zeros<FloatStorage>(4 * n);
+    size_t n = m_keyframes.size();
+    m_data   = dr::zeros<FloatStorage>(stride * n);
 
     size_t i = 0;
     for (auto const &[time, kf] : m_keyframes) {
         if constexpr (dr::is_jit_v<Float>) {
-            dr::scatter(m_times, time, i);
-            for (size_t j = 0; j < 3; ++j) {
-                dr::scatter(m_scales, kf.S[j], i * 3 + j);
-                dr::scatter(m_translations, kf.T[j], i * 3 + j);
-            }
+            dr::scatter(m_data, time, i * stride + 0);
+            dr::scatter(m_data, kf.S.x(), i * stride + 1);
+            dr::scatter(m_data, kf.S.y(), i * stride + 2);
+            dr::scatter(m_data, kf.S.z(), i * stride + 3);
             for (size_t j = 0; j < 4; ++j) {
-                dr::scatter(m_rotations, kf.Q[j], i * 4 + j);
+                dr::scatter(m_data, kf.Q[j], i * stride + 4 + j);
             }
+            dr::scatter(m_data, kf.T.x(), i * stride + 8);
+            dr::scatter(m_data, kf.T.y(), i * stride + 9);
+            dr::scatter(m_data, kf.T.z(), i * stride + 10);
         } else {
-            dr::store(m_times.data() + i, time);
-            dr::store(m_scales.data() + 3 * i, kf.S);
-            dr::store(m_translations.data() + 3 * i, kf.T);
-            dr::store(m_rotations.data() + 4 * i, kf.Q);
+            dr::store(m_data.data() + i * stride + 0, time);
+            dr::store(m_data.data() + i * stride + 1, kf.S);
+            dr::store(m_data.data() + i * stride + 4, kf.Q);
+            dr::store(m_data.data() + i * stride + 8, kf.T);
         }
         i++;
     }
-    dr::eval(m_times, m_scales, m_translations, m_rotations);
+    dr::eval(m_data);
 }
 
 MI_VARIANT typename AnimatedTransform<Float, Spectrum>::ScalarBoundingBox1f
@@ -358,10 +370,7 @@ AnimatedTransform<Float, Spectrum>::traverse(TraversalCallback *cb) {
     if (m_keyframes.size() == 1) {
         cb->put("transform", m_transform, ParamFlags::Differentiable);
     }
-    cb->put("times", m_times, ParamFlags::Differentiable);
-    cb->put("scales", m_scales, ParamFlags::Differentiable);
-    cb->put("translations", m_translations, ParamFlags::Differentiable);
-    cb->put("rotations", m_rotations, ParamFlags::Differentiable);
+    cb->put("data", m_data, ParamFlags::Differentiable);
 }
 
 #if defined(__GNUG__)

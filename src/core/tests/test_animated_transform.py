@@ -212,9 +212,9 @@ def test16_parameters_changed(variants_vec_backends_once):
     })
     sensor = mi.load_dict({'type': 'perspective', 'to_world': at})
     params = mi.traverse(sensor)
-    translations = params['to_world.translations']
-    translations[3] = 2.5
-    at.parameters_changed(["translations"])
+    data = params['to_world.data']
+    data[20] = 2.5
+    at.parameters_changed(["data"])
     assert dr.allclose(at.eval_scalar(1.0).translation(), [2.5, 0, 0])
 
 
@@ -225,21 +225,20 @@ def test17_change_frame_number(variants_vec_backends_once):
 
     # Modify to 2 keyframes
     params = mi.traverse(at)
-    params['times'] = mi.Float([0.0, 1.0])
-    params['translations'] = mi.Float([1.0, 0.0, 0.0, 3.0, 0.0, 0.0])
-    params['scales'] = mi.Float([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-    params['rotations'] = mi.Float([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
-    at.parameters_changed(["times", "translations", "scales", "rotations"])
+    params['data'] = mi.Float([
+        0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
+        1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 3.0, 0.0, 0.0, 0.0
+    ])
+    at.parameters_changed(["data"])
     assert dr.allclose(at.eval_scalar(0.0).translation(), [1.0, 0.0, 0.0])
     assert dr.allclose(at.eval_scalar(0.5).translation(), [2.0, 0.0, 0.0])
     assert dr.allclose(at.eval_scalar(1.0).translation(), [3.0, 0.0, 0.0])
 
     # Shrink back to 1 keyframe
-    params['times'] = mi.Float([0.5])
-    params['translations'] = mi.Float([5.0, 0.0, 0.0])
-    params['scales'] = mi.Float([1.0, 1.0, 1.0])
-    params['rotations'] = mi.Float([1.0, 0.0, 0.0, 0.0])
-    at.parameters_changed(["times", "translations", "scales", "rotations"])
+    params['data'] = mi.Float([
+        0.5, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 5.0, 0.0, 0.0, 0.0
+    ])
+    at.parameters_changed(["data"])
     assert dr.allclose(at.eval_scalar(0.0).translation(), [5.0, 0.0, 0.0])
     assert dr.allclose(at.eval_scalar(1.0).translation(), [5.0, 0.0, 0.0])
 
