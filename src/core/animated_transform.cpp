@@ -42,65 +42,45 @@ AnimatedTransform<Float, Spectrum>::eval(Float time) const {
 
     if (n_keyframes == 1) {
         return m_transform.value();
-    } else if (n_keyframes == 2) {
-        Vector4f chunk0_0 = dr::gather<Vector4f>(m_data, UInt32(0));
-        Vector4f chunk0_1 = dr::gather<Vector4f>(m_data, UInt32(1));
-        Vector4f chunk0_2 = dr::gather<Vector4f>(m_data, UInt32(2));
-        Vector4f chunk1_0 = dr::gather<Vector4f>(m_data, UInt32(3));
-        Vector4f chunk1_1 = dr::gather<Vector4f>(m_data, UInt32(4));
-        Vector4f chunk1_2 = dr::gather<Vector4f>(m_data, UInt32(5));
+    }
 
-        Float t0 = chunk0_0.x();
-        Vector3f s0(chunk0_0.y(), chunk0_0.z(), chunk0_0.w());
-        Quaternion4f q0 = chunk0_1;
-        Vector3f tr0(chunk0_2.x(), chunk0_2.y(), chunk0_2.z());
-        Float t1 = chunk1_0.x();
-        Vector3f s1(chunk1_0.y(), chunk1_0.z(), chunk1_0.w());
-        Quaternion4f q1 = chunk1_1;
-        Vector3f tr1(chunk1_2.x(), chunk1_2.y(), chunk1_2.z());
-
-        Float t         = dr::clip((time - t0) / (t1 - t0), 0.f, 1.f);
-        Matrix3f s     = dr::diag(dr::lerp(s0, s1, t));
-        Quaternion4f q = dr::slerp(q0, q1, t);
-        Vector3f tr    = dr::lerp(tr0, tr1, t);
-        return AffineTransform4f(
-            dr::transform_compose<Matrix4f>(s, q, tr),
-            dr::transpose(dr::transform_compose_inverse<Matrix4f>(s, q, tr)));
+    UInt32 v_idx0, v_idx1;
+    if (n_keyframes == 2) {
+        v_idx0 = 0;
+        v_idx1 = 3;
     } else {
         // General case with binary search
         auto pred = [&](UInt32 idx) {
             return dr::gather<Float>(m_data, idx * stride) <= time;
         };
-
-        UInt32 index =
-            math::find_interval<UInt32>((uint32_t) n_keyframes, pred);
-
-        UInt32 v_idx0 = index * 3;
-        UInt32 v_idx1 = (index + 1) * 3;
-        Vector4f chunk0_0 = dr::gather<Vector4f>(m_data, v_idx0 + 0);
-        Vector4f chunk0_1 = dr::gather<Vector4f>(m_data, v_idx0 + 1);
-        Vector4f chunk0_2 = dr::gather<Vector4f>(m_data, v_idx0 + 2);
-        Vector4f chunk1_0 = dr::gather<Vector4f>(m_data, v_idx1 + 0);
-        Vector4f chunk1_1 = dr::gather<Vector4f>(m_data, v_idx1 + 1);
-        Vector4f chunk1_2 = dr::gather<Vector4f>(m_data, v_idx1 + 2);
-
-        Float t0 = chunk0_0.x();
-        Vector3f s0(chunk0_0.y(), chunk0_0.z(), chunk0_0.w());
-        Quaternion4f q0 = chunk0_1;
-        Vector3f tr0(chunk0_2.x(), chunk0_2.y(), chunk0_2.z());
-        Float t1 = chunk1_0.x();
-        Vector3f s1(chunk1_0.y(), chunk1_0.z(), chunk1_0.w());
-        Quaternion4f q1 = chunk1_1;
-        Vector3f tr1(chunk1_2.x(), chunk1_2.y(), chunk1_2.z());
-
-        Float t         = dr::clip((time - t0) / (t1 - t0), 0.f, 1.f);
-        Matrix3f s     = dr::diag(dr::lerp(s0, s1, t));
-        Quaternion4f q = dr::slerp(q0, q1, t);
-        Vector3f tr    = dr::lerp(tr0, tr1, t);
-        return AffineTransform4f(
-            dr::transform_compose<Matrix4f>(s, q, tr),
-            dr::transpose(dr::transform_compose_inverse<Matrix4f>(s, q, tr)));
+        UInt32 index = math::find_interval<UInt32>((uint32_t) n_keyframes, pred);
+        v_idx0 = index * 3;
+        v_idx1 = (index + 1) * 3;
     }
+
+    Vector4f chunk0_0 = dr::gather<Vector4f>(m_data, v_idx0 + 0);
+    Vector4f chunk0_1 = dr::gather<Vector4f>(m_data, v_idx0 + 1);
+    Vector4f chunk0_2 = dr::gather<Vector4f>(m_data, v_idx0 + 2);
+    Vector4f chunk1_0 = dr::gather<Vector4f>(m_data, v_idx1 + 0);
+    Vector4f chunk1_1 = dr::gather<Vector4f>(m_data, v_idx1 + 1);
+    Vector4f chunk1_2 = dr::gather<Vector4f>(m_data, v_idx1 + 2);
+
+    Float t0 = chunk0_0.x();
+    Vector3f s0(chunk0_0.y(), chunk0_0.z(), chunk0_0.w());
+    Quaternion4f q0 = chunk0_1;
+    Vector3f tr0(chunk0_2.x(), chunk0_2.y(), chunk0_2.z());
+    Float t1 = chunk1_0.x();
+    Vector3f s1(chunk1_0.y(), chunk1_0.z(), chunk1_0.w());
+    Quaternion4f q1 = chunk1_1;
+    Vector3f tr1(chunk1_2.x(), chunk1_2.y(), chunk1_2.z());
+
+    Float t         = dr::clip((time - t0) / (t1 - t0), 0.f, 1.f);
+    Matrix3f s     = dr::diag(dr::lerp(s0, s1, t));
+    Quaternion4f q = dr::slerp(q0, q1, t);
+    Vector3f tr    = dr::lerp(tr0, tr1, t);
+    return AffineTransform4f(
+        dr::transform_compose<Matrix4f>(s, q, tr),
+        dr::transpose(dr::transform_compose_inverse<Matrix4f>(s, q, tr)));
 }
 
 MI_VARIANT typename AnimatedTransform<Float, Spectrum>::ScalarAffineTransform4f
