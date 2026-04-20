@@ -22,7 +22,7 @@ AnimatedTransform<Float, Spectrum>::AnimatedTransform(
 
 MI_VARIANT
 AnimatedTransform<Float, Spectrum>::AnimatedTransform(
-    const std::map<ScalarFloat, ScalarAffineTransform4f> &keyframes) {
+    const std::vector<std::pair<ScalarFloat, ScalarAffineTransform4f>> &keyframes) {
     if (keyframes.size() == 1) {
         m_transform = AffineTransform4f(keyframes.begin()->second);
     }
@@ -96,7 +96,10 @@ AnimatedTransform<Float, Spectrum>::eval_scalar(ScalarFloat time) const {
         return m_transform.scalar();
     }
 
-    auto it1 = m_keyframes.lower_bound(time);
+    auto it1 = std::lower_bound(m_keyframes.begin(), m_keyframes.end(), time,
+        [](const std::pair<ScalarFloat, Keyframe> &a, ScalarFloat b) {
+            return a.first < b;
+        });
     auto it0 = it1;
     if (it1 == m_keyframes.begin()) {
         it0 = it1;
@@ -152,7 +155,7 @@ MI_VARIANT void AnimatedTransform<Float, Spectrum>::parameters_changed(
             kf.T.z() = dr::slice(m_translations, 2);
 
             m_keyframes.clear();
-            m_keyframes[dr::slice(m_times, 0)] = kf;
+            m_keyframes.push_back({dr::slice(m_times, 0), kf});
 
             // Rebuild the single transform
             ScalarMatrix3f s = dr::diag(kf.S);
@@ -178,7 +181,7 @@ MI_VARIANT void AnimatedTransform<Float, Spectrum>::parameters_changed(
     } else if (n > 1) {
         // Read back all data from device to keep host map in sync
         dr::eval(m_times, m_scales, m_translations, m_rotations);
-        std::map<ScalarFloat, Keyframe> new_keyframes;
+        std::vector<std::pair<ScalarFloat, Keyframe>> new_keyframes;
         for (size_t i = 0; i < n; ++i) {
             Keyframe kf;
             kf.S.x() = dr::slice(m_scales, 3 * i + 0);
@@ -191,7 +194,7 @@ MI_VARIANT void AnimatedTransform<Float, Spectrum>::parameters_changed(
             kf.T.x() = dr::slice(m_translations, 3 * i + 0);
             kf.T.y() = dr::slice(m_translations, 3 * i + 1);
             kf.T.z() = dr::slice(m_translations, 3 * i + 2);
-            new_keyframes[dr::slice(m_times, i)] = kf;
+            new_keyframes.push_back({dr::slice(m_times, i), kf});
         }
         m_keyframes = std::move(new_keyframes);
     }
@@ -207,13 +210,19 @@ MI_VARIANT void AnimatedTransform<Float, Spectrum>::add_keyframe(
         Throw("AnimatedTransform: Transformation contains shear, which is not "
               "supported!");
 
-    m_keyframes[time] = { dr::diag(S), Q, T };
+    m_keyframes.push_back({time, { dr::diag(S), Q, T }});
 }
 
 MI_VARIANT void AnimatedTransform<Float, Spectrum>::initialize() {
     if (m_keyframes.empty()) {
         Throw("Animated transform requires at least one keyframe, found 0.");
     }
+
+    // Ensure keyframes are sorted by time
+    std::sort(m_keyframes.begin(), m_keyframes.end(),
+        [](const std::pair<ScalarFloat, Keyframe> &a, const std::pair<ScalarFloat, Keyframe> &b) {
+            return a.first < b.first;
+        });
 
     size_t n       = m_keyframes.size();
     m_times        = dr::zeros<FloatStorage>(n);

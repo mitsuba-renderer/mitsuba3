@@ -310,7 +310,7 @@ void prepare_ias(const OptixDeviceContext &context,
                  uint32_t instance_id,
                  const AnimatedTransform<Float, Spectrum>& transf,
                  std::vector<OptixInstance> &out_instances,
-                 std::vector<void*> &out_motion_transforms) {
+                 std::vector<OptixSRTMotionTransform*> &out_motion_transforms) {
     (void) shapes;
     unsigned int sbt_offset = base_sbt_offset;
     size_t n_keyframes = transf.keyframes().size();
@@ -354,7 +354,7 @@ void prepare_ias(const OptixDeviceContext &context,
 
             // Move memory to device (frees host memory)
             void* device_ptr = jit_malloc_migrate(host_ptr, AllocType::Device, 1);
-            out_motion_transforms.push_back(device_ptr);
+            out_motion_transforms.push_back((OptixSRTMotionTransform*) device_ptr);
 
             // Convert to traversable handle
             OptixTraversableHandle motion_handle;

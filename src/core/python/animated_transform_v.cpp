@@ -1,8 +1,11 @@
 #include <mitsuba/core/animated_transform.h>
 #include <mitsuba/python/python.h>
-#include <nanobind/stl/map.h>
-#include <nanobind/stl/string.h>
+
 #include <drjit/python.h>
+#include <nanobind/stl/unordered_map.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 template <typename AnimatedTransform, typename Float>
 void bind_animated_transform(nb::module_ &m, const char *name) {
@@ -13,9 +16,21 @@ void bind_animated_transform(nb::module_ &m, const char *name) {
                 .def(nb::init<>(), "Create an empty animated transformation")
                 .def(nb::init<const ScalarAffineTransform4f &>(),
                      "Initialize from a constant scalar transformation")
-                .def(nb::init<const std::map<ScalarFloat,
-                                             ScalarAffineTransform4f> &>(),
-                     "Initialize from a map of keyframes")
+                .def(nb::init<const std::vector<
+                         std::pair<ScalarFloat, ScalarAffineTransform4f>> &>(),
+                     "Initialize from a list of keyframes")
+                .def(
+                    "__init__",
+                    [](AnimatedTransform *t,
+                       const std::unordered_map<ScalarFloat, ScalarAffineTransform4f> &keyframes) {
+                        std::vector<std::pair<ScalarFloat, ScalarAffineTransform4f>> kf;
+                        kf.reserve(keyframes.size());
+                        for (const auto &[time, trafo] : keyframes) {
+                            kf.push_back({ time, trafo });
+                        }
+                        new (t) AnimatedTransform(kf);
+                    },
+                    "Initialize from a map of keyframes (dict in Python)")
                 .def_method(AnimatedTransform, eval, "time"_a)
                 .def_method(AnimatedTransform, eval_scalar, "time"_a)
                 .def_method(AnimatedTransform, is_animated)
