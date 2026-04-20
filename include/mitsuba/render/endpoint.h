@@ -318,8 +318,13 @@ public:
 
 
     /// Return the local space to world space transformation
-    AffineTransform4f world_transform() const {
-        return m_to_world->eval(0.f);
+    const AnimatedTransform<Float, Spectrum>* world_transform() const {
+        return m_to_world.get();
+    }
+
+    /// Return the world space to local space transformation
+    AnimatedTransform<Float, Spectrum>* world_transform() {
+        return m_to_world.get();
     }
 
     /**
