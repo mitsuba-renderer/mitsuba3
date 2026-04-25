@@ -165,8 +165,8 @@ Mesh<Float, Spectrum>::bbox() const {
 
 MI_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
 Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
-    if constexpr (dr::is_cuda_v<Float>)
-        Throw("bbox(ScalarIndex) is not available in CUDA mode!");
+    if constexpr (dr::is_cuda_v<Float> || dr::is_metal_v<Float>)
+        Throw("bbox(ScalarIndex) is not available in GPU mode!");
 
     Assert(index <= m_face_count);
 
