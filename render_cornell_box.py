@@ -3,6 +3,7 @@ Render the Cornell Box scene using the Metal GPU backend.
 """
 import time
 import mitsuba as mi
+# mi.set_variant('llvm_ad_rgb')
 mi.set_variant('metal_ad_rgb')
 
 # Load the Cornell Box scene
@@ -11,7 +12,7 @@ scene_dict = mi.cornell_box()
 # Increase sample count for quality
 scene_dict['sensor']['sampler'] = {
     'type': 'independent',
-    'sample_count': 256
+    'sample_count': 1024
 }
 scene_dict['sensor']['film']['width'] = 512
 scene_dict['sensor']['film']['height'] = 512
