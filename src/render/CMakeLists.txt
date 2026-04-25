@@ -45,6 +45,7 @@ if (MI_ENABLE_CUDA)
   )
 endif()
 
+
 add_library(mitsuba-render OBJECT
   ${INC_DIR}/fwd.h
   ${INC_DIR}/ior.h
@@ -98,6 +99,12 @@ if (MI_ENABLE_EMBREE)
 endif()
 
 target_link_libraries(mitsuba-render PUBLIC drjit)
+
+if (MI_ENABLE_METAL)
+  target_include_directories(mitsuba-render PRIVATE
+    ${PROJECT_SOURCE_DIR}/ext/drjit/ext/drjit-core/ext/metal-cpp)
+  target_link_libraries(mitsuba-render PRIVATE "-framework Metal" "-framework Foundation")
+endif()
 
 if (MI_ENABLE_JIT)
   target_link_libraries(mitsuba-render PUBLIC drjit-core)

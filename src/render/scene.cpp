@@ -17,6 +17,11 @@
 #  include "scene_optix.inl"
 #endif
 
+#if defined(MI_ENABLE_METAL)
+#  include <Metal/Metal.hpp>
+#  include "scene_metal.inl"
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
@@ -87,6 +92,8 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
 
     if constexpr (dr::is_cuda_v<Float>)
         accel_init_gpu(props);
+    else if constexpr (dr::is_metal_v<Float>)
+        accel_init_metal(props);
     else
         accel_init_cpu(props);
 
@@ -176,6 +183,8 @@ void Scene<Float, Spectrum>::update_silhouette_sampling_distribution() {
 MI_VARIANT Scene<Float, Spectrum>::~Scene() {
     if constexpr (dr::is_cuda_v<Float>)
         accel_release_gpu();
+    else if constexpr (dr::is_metal_v<Float>)
+        accel_release_metal();
     else
         accel_release_cpu();
 
@@ -205,6 +214,8 @@ Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags,
 
     if constexpr (dr::is_cuda_v<Float>)
         return ray_intersect_gpu(ray, ray_flags, reorder, reorder_hint, reorder_hint_bits, active);
+    else if constexpr (dr::is_metal_v<Float>)
+        return ray_intersect_metal(ray, ray_flags, active);
     else
         return ray_intersect_cpu(ray, ray_flags, coherent, active);
 }
@@ -222,6 +233,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray,
 
     if constexpr (dr::is_cuda_v<Float>)
         return ray_intersect_preliminary_gpu(ray, reorder, reorder_hint, reorder_hint_bits, active);
+    else if constexpr (dr::is_metal_v<Float>)
+        return ray_intersect_preliminary_metal(ray, active);
     else
         return ray_intersect_preliminary_cpu(ray, coherent, active);
 }
@@ -233,6 +246,8 @@ Scene<Float, Spectrum>::ray_test(const Ray3f &ray, Mask coherent, Mask active) c
 
     if constexpr (dr::is_cuda_v<Float>)
         return ray_test_gpu(ray, active);
+    else if constexpr (dr::is_metal_v<Float>)
+        return ray_test_metal(ray, active);
     else
         return ray_test_cpu(ray, coherent, active);
 }
@@ -543,6 +558,8 @@ MI_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std
     if (accel_is_dirty) {
         if constexpr (dr::is_cuda_v<Float>)
             accel_parameters_changed_gpu();
+        else if constexpr (dr::is_metal_v<Float>)
+            accel_parameters_changed_metal();
         else
             accel_parameters_changed_cpu();
 
@@ -589,6 +606,8 @@ MI_VARIANT std::string Scene<Float, Spectrum>::to_string() const {
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization() {
     if constexpr (dr::is_cuda_v<Float>)
         Scene::static_accel_initialization_gpu();
+    else if constexpr (dr::is_metal_v<Float>)
+        Scene::static_accel_initialization_metal();
     else
         Scene::static_accel_initialization_cpu();
 }
@@ -596,6 +615,8 @@ MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization() {
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown() {
     if constexpr (dr::is_cuda_v<Float>)
         Scene::static_accel_shutdown_gpu();
+    else if constexpr (dr::is_metal_v<Float>)
+        Scene::static_accel_shutdown_metal();
     else
         Scene::static_accel_shutdown_cpu();
 }
@@ -636,6 +657,32 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &, Mask) const {
 }
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_gpu() { }
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() { }
+#endif
+
+#if !defined(MI_ENABLE_METAL)
+MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &) {
+    NotImplementedError("accel_init_metal");
+}
+MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_metal() {
+    NotImplementedError("accel_parameters_changed_metal");
+}
+MI_VARIANT void Scene<Float, Spectrum>::accel_release_metal() {
+    NotImplementedError("accel_release_metal");
+}
+MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
+Scene<Float, Spectrum>::ray_intersect_preliminary_metal(const Ray3f &, Mask) const {
+    NotImplementedError("ray_intersect_preliminary_metal");
+}
+MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
+Scene<Float, Spectrum>::ray_intersect_metal(const Ray3f &, uint32_t, Mask) const {
+    NotImplementedError("ray_intersect_metal");
+}
+MI_VARIANT typename Scene<Float, Spectrum>::Mask
+Scene<Float, Spectrum>::ray_test_metal(const Ray3f &, Mask) const {
+    NotImplementedError("ray_test_metal");
+}
+MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_metal() { }
+MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_metal() { }
 #endif
 
 MI_VARIANT
