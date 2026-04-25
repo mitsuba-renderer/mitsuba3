@@ -13,10 +13,12 @@
 NAMESPACE_BEGIN(mitsuba)
 
 // Metal acceleration structure state, stored in Scene::m_accel
+template <typename UInt32>
 struct MetalAccelState {
     void *tlas = nullptr;  // MTL::InstanceAccelerationStructure*
     std::vector<void *> blas_list;  // per-shape BLAS handles
     std::vector<void *> resources;  // all buffers the TLAS references
+    DynamicBuffer<UInt32> shapes_registry_ids;  // shape index → registry ID
 };
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*props*/) {
@@ -24,8 +26,17 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
         auto *device = (MTL::Device *) jit_metal_context();
         auto *queue  = (MTL::CommandQueue *) jit_metal_command_queue();
 
-        auto *state = new MetalAccelState();
+        auto *state = new MetalAccelState<UInt32>();
         m_accel = state;
+
+        // Build shapes registry ID array (maps instance_id → shape registry ID)
+        if (!m_shapes.empty()) {
+            std::unique_ptr<uint32_t[]> reg_ids(new uint32_t[m_shapes.size()]);
+            for (size_t i = 0; i < m_shapes.size(); i++)
+                reg_ids[i] = jit_registry_id(m_shapes[i]);
+            state->shapes_registry_ids =
+                dr::load<DynamicBuffer<UInt32>>(reg_ids.get(), m_shapes.size());
+        }
 
         // ----------------------------------------------------------------
         //  1. Build BLAS for each mesh
@@ -192,7 +203,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
 MI_VARIANT void Scene<Float, Spectrum>::accel_release_metal() {
     if constexpr (dr::is_metal_v<Float>) {
         if (m_accel) {
-            auto *state = (MetalAccelState *) m_accel;
+            auto *state = (MetalAccelState<UInt32> *) m_accel;
             jit_metal_configure_rt(nullptr, nullptr, 0);
 
             // Release TLAS
@@ -228,16 +239,27 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_metal(const Ray3f &ray,
         jit_metal_ray_trace(8, args, active.index(), out, 7);
 
         // out: [valid, distance, bary_u, bary_v, instance_id, primitive_id, geometry_id]
+        Mask valid = Mask::steal(out[0]);
+
         PreliminaryIntersection3f pi;
         pi.t          = Float(Single::steal(out[1]));
         pi.prim_uv    = Point2f(Float(Single::steal(out[2])),
                                 Float(Single::steal(out[3])));
         pi.prim_index = UInt32::steal(out[5]);
-        pi.shape_index = UInt32::steal(out[4]); // instance_id maps to shape index
-        pi.shape      = nullptr;  // will be resolved later
+        pi.shape_index = UInt32::steal(out[4]); // instance_id → shape index
 
-        Mask valid = Mask::steal(out[0]);
-        dr::masked(pi.t, !valid) = dr::Infinity<Float>;
+        // Resolve shape pointer from instance_id via registry
+        auto *state = (MetalAccelState<UInt32> *) m_accel;
+        ShapePtr shape = dr::gather<UInt32>(state->shapes_registry_ids,
+                                           pi.shape_index, valid);
+        pi.shape    = shape & valid;
+        pi.instance = nullptr;
+
+        // Inactive lanes get infinity
+        pi.t[!valid]          = dr::Infinity<Float>;
+        pi.prim_uv[!valid]    = dr::zeros<Point2f>();
+        pi.prim_index[!valid] = 0;
+        pi.shape[!valid]      = nullptr;
 
         return pi;
     } else {
