@@ -85,6 +85,8 @@ for variant in mi.variants():
         continue
     if variant.startswith("llvm") and not dr.has_backend(dr.JitBackend.LLVM):
         continue
+    if variant.startswith("metal") and not dr.has_backend(dr.JitBackend.Metal):
+        continue
     available.append(variant)
 
 # Create the variant filter helper
@@ -94,7 +96,7 @@ v = VariantFilter(available)
 suffixes = ["_mono", "_mono_polarized", "_rgb", "_spectral", "_spectral_polarized"]
 suffix_variants = [a + b for a in suffixes for b in ["", "_double"]]
 all_possible_variants = ["scalar" + s for s in suffix_variants] + [
-    a + b + c for a in ["llvm", "cuda"] for b in ["", "_ad"] for c in suffix_variants]
+    a + b + c for a in ["llvm", "cuda", "metal"] for b in ["", "_ad"] for c in suffix_variants]
 
 # Create single variant fixtures for all possible variants
 for variant in all_possible_variants:
@@ -105,6 +107,7 @@ variant_groups = {
     "any_scalar": v.all("scalar").one(),
     "any_llvm": v.all("llvm").one(),
     "any_cuda": v.all("cuda").one(),
+    "any_metal": v.all("metal").one(),
     "all": v,
     "all_scalar": v.all("scalar"),
     "all_rgb": v.all("rgb"),
@@ -112,11 +115,15 @@ variant_groups = {
     "all_spectral": v.all("spectral"),
     "all_backends_once": v.all("scalar").one()
     + v.all("llvm").one()
-    + v.all("cuda").one(),
-    "vec_backends_once": v.all("llvm").one() + v.all("cuda").one(),
-    "vec_backends_once_rgb": v.all("llvm", "rgb").one() + v.all("cuda", "rgb").one(),
+    + v.all("cuda").one()
+    + v.all("metal").one(),
+    "vec_backends_once": v.all("llvm").one() + v.all("cuda").one()
+    + v.all("metal").one(),
+    "vec_backends_once_rgb": v.all("llvm", "rgb").one() + v.all("cuda", "rgb").one()
+    + v.all("metal", "rgb").one(),
     "vec_backends_once_spectral": v.all("llvm", "spectral").one()
-    + v.all("cuda", "spectral").one(),
+    + v.all("cuda", "spectral").one()
+    + v.all("metal", "spectral").one(),
     "vec_rgb": v.all("rgb").exclude("scalar"),
     "vec_spectral": v.all("spectral").exclude("scalar"),
     "all_ad_rgb": v.all("ad", "rgb"),
