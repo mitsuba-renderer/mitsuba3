@@ -117,8 +117,8 @@ class ChiSquareTest:
 
         samples_in = getattr(mi, 'Vector%if' % self.sample_dim)()
         for i in range(self.sample_dim):
-            samples_in[i] = rng.next_float32() if mi.Float is mi.Float32 \
-                else rng.next_float64()
+            samples_in[i] = rng.next_float32() if (mi.Float is mi.Float32 or
+                mi.variant().startswith('metal')) else rng.next_float64()
 
         # Invoke sampling strategy
         samples_out = self.sample_func(samples_in)
@@ -266,8 +266,10 @@ class ChiSquareTest:
                                                          key=lambda x: x[1])]))
 
         # Sort entries by expected frequency (increasing)
-        pdf = mi.Float64(dr.gather(mi.Float, self.pdf, index))
-        histogram = mi.Float64(dr.gather(mi.Float, self.histogram, index))
+        use_f64 = not mi.variant().startswith('metal')
+        HighPrec = mi.Float64 if use_f64 else mi.Float
+        pdf = HighPrec(dr.gather(mi.Float, self.pdf, index))
+        histogram = HighPrec(dr.gather(mi.Float, self.histogram, index))
 
         # Compute chi^2 statistic and pool low-valued cells
         chi2val, dof, pooled_in, pooled_out = mi.math.chi2(histogram, pdf, 5)
