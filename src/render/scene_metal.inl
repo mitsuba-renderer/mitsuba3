@@ -43,6 +43,12 @@ struct MetalAccelState {
     void *tlas = nullptr;  // MTL::InstanceAccelerationStructure*
     std::vector<void *> blas_list;  // per-shape BLAS handles
     std::vector<void *> resources;  // all buffers the TLAS references
+    /// Buffers that we OWN (allocated via device->newBuffer in this file)
+    /// and must release in accel_release_metal. The `resources` vector also
+    /// tracks borrowed buffers (e.g. mesh vertex/index buffers obtained via
+    /// jit_metal_lookup_buffer) which are NOT owned by us — releasing those
+    /// would corrupt drjit's internal book-keeping.
+    std::vector<void *> owned_buffers;
     DynamicBuffer<UInt32> shapes_registry_ids;  // shape index → registry ID
     void *intersection_library = nullptr;  // MTL::Library* with intersection fns
 };
@@ -80,11 +86,27 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
         // (Mitsuba reorders shapes internally — non-mesh shapes can appear
         // before meshes — so deferring custom shapes to a second pass would
         // break the mapping.)
+        //
+        // To enforce the invariant `instance_id == m_shapes_index` we use
+        // shape_idx directly as the instance index. Any failure path inside
+        // the loop must Throw rather than `continue`, otherwise subsequent
+        // shapes get the wrong _hit.instance_id and the registry gather at
+        // ray_intersect_preliminary_metal returns a wrong shape pointer.
         bool any_custom = false;
         bool any_curves = false;
 
-        uint32_t instance_id = 0;
+        // Detect when multiple custom shapes share the same MSL buffer slot
+        // (one per shape type). Currently the per-IFT-entry data buffer is
+        // bound at the type-specific slot (sphere=0, disk=1, cylinder=2,
+        // ellipsoids=3, sdfgrid=4). Because IntersectionFunctionTable
+        // setBuffer:offset:atIndex: binds GLOBALLY across all entries (last
+        // write wins), having two shapes of the same type silently makes
+        // both read from the LATER shape's data buffer. Warn if this case
+        // arises until we add per-type BLAS coalescing.
+        bool seen_fn_slot[metal_shape::INTERSECTION_FN_COUNT] = { false };
+
         for (size_t shape_idx = 0; shape_idx < m_shapes.size(); ++shape_idx) {
+            uint32_t instance_id = (uint32_t) shape_idx;
             auto &shape = m_shapes[shape_idx];
             auto *mesh = dynamic_cast<mitsuba::Mesh<Float, Spectrum> *>(shape.get());
 
@@ -100,12 +122,13 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
                     shape_ptr->metal_get_curve_data(
                         &cp_var, &cp_count, &idx_var, &seg_count);
 
-                    if (cp_count == 0 || seg_count == 0) {
-                        Log(Warn, "scene_metal: curve shape \"%s\" reports zero "
-                                  "control points or segments; skipping.",
-                            std::string(shape_ptr->id()).c_str());
-                        continue;
-                    }
+                    if (cp_count == 0 || seg_count == 0)
+                        Throw("scene_metal: curve shape \"%s\" reports zero "
+                              "control points or segments — cannot build a "
+                              "BLAS for it (would break the instance_id ↔ "
+                              "m_shapes_index mapping required by the shape "
+                              "registry lookup).",
+                              std::string(shape_ptr->id()).c_str());
 
                     // Materialize the buffers so we can find the underlying
                     // MTL::Buffer objects.
@@ -123,12 +146,10 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
                     auto *ix_buf  = (MTL::Buffer *) jit_metal_lookup_buffer(
                         idx_ptr, &idx_off);
 
-                    if (!cp_buf || !ix_buf) {
-                        Log(Warn, "scene_metal: could not find Metal buffers for "
-                                  "curve shape \"%s\".",
-                            std::string(shape_ptr->id()).c_str());
-                        continue;
-                    }
+                    if (!cp_buf || !ix_buf)
+                        Throw("scene_metal: could not find Metal buffers for "
+                              "curve shape \"%s\".",
+                              std::string(shape_ptr->id()).c_str());
                     any_curves = true;
 
                     auto *geom_desc =
@@ -198,7 +219,6 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
                     inst.accelerationStructureIndex       = instance_id;
                     instances.push_back(inst);
 
-                    instance_id++;
                     continue;
                 }
 
@@ -211,13 +231,26 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
                 size_t total_data_size = shape_ptr->metal_total_data_size();
                 uint32_t fn_idx = shape_ptr->metal_intersection_function_index();
 
-                if (n_aabb == 0 || total_data_size == 0) {
-                    Log(Warn, "scene_metal: custom shape \"%s\" reports zero "
-                              "AABBs or no data; skipping.",
-                        std::string(shape_ptr->id()).c_str());
-                    continue;
-                }
+                if (n_aabb == 0 || total_data_size == 0)
+                    Throw("scene_metal: custom shape \"%s\" reports zero "
+                          "AABBs or no data — cannot build a BLAS for it "
+                          "(would break the instance_id ↔ m_shapes_index "
+                          "mapping required by the shape registry lookup).",
+                          std::string(shape_ptr->id()).c_str());
                 any_custom = true;
+
+                if (fn_idx < metal_shape::INTERSECTION_FN_COUNT) {
+                    if (seen_fn_slot[fn_idx])
+                        Log(Warn, "scene_metal: scene has multiple custom "
+                                  "shapes that share intersection-function "
+                                  "slot %u (e.g. multiple instances of the "
+                                  "same shape type). The MSL function reads "
+                                  "from a single global per-slot buffer, so "
+                                  "all such shapes will see the LAST shape's "
+                                  "data. Group shapes of the same type into "
+                                  "one BLAS to fix.", fn_idx);
+                    seen_fn_slot[fn_idx] = true;
+                }
 
                 auto *aabb_buf = device->newBuffer(
                     n_aabb * 6 * sizeof(float),
@@ -272,6 +305,10 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
                 state->resources.push_back(aabb_buf);
                 state->resources.push_back(pdata_buf);
                 state->resources.push_back(blas);
+                // We allocated these via device->newBuffer; record them so
+                // accel_release_metal can release the retain.
+                state->owned_buffers.push_back(aabb_buf);
+                state->owned_buffers.push_back(pdata_buf);
 
                 uint32_t ift_entry_idx = (uint32_t) ift_function_names.size();
                 ift_function_names.emplace_back(
@@ -287,7 +324,6 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
                 inst.accelerationStructureIndex       = instance_id;
                 instances.push_back(inst);
 
-                instance_id++;
                 continue;
             }
 
@@ -312,11 +348,9 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
             auto *i_buf = (MTL::Buffer *) jit_metal_lookup_buffer(
                 index_ptr, &i_off);
 
-            if (!v_buf || !i_buf) {
-                Log(Warn, "scene_metal: could not find Metal buffers for mesh \"%s\"",
-                    std::string(mesh->id()).c_str());
-                continue;
-            }
+            if (!v_buf || !i_buf)
+                Throw("scene_metal: could not find Metal buffers for mesh "
+                      "\"%s\".", std::string(mesh->id()).c_str());
 
             // Create triangle geometry descriptor
             auto *geom_desc =
@@ -378,9 +412,6 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
             inst.intersectionFunctionTableOffset  = 0;
             inst.accelerationStructureIndex       = instance_id;
             instances.push_back(inst);
-
-            instance_id++;
-            (void) shape_idx;
         }
 
         if (instances.empty()) {
@@ -454,13 +485,11 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
             opts->release();
 
             if (!library) {
-                if (err)
-                    Log(Error, "scene_metal: failed to compile intersection "
-                               "function library: %s",
-                        err->localizedDescription()->utf8String());
-                else
-                    Log(Error, "scene_metal: failed to compile intersection "
-                               "function library (no error info).");
+                std::string desc = "no error info";
+                if (err && err->localizedDescription())
+                    desc = err->localizedDescription()->utf8String();
+                Throw("scene_metal: failed to compile intersection function "
+                      "library: %s", desc.c_str());
             }
 
             state->intersection_library = library;
@@ -522,6 +551,14 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_metal() {
             // Release BLAS
             for (auto *blas : state->blas_list)
                 ((MTL::AccelerationStructure *) blas)->release();
+
+            // Release per-shape buffers WE allocated via device->newBuffer
+            // (AABB + primitive-data buffers for custom shapes). The other
+            // entries in `state->resources` (mesh vertex/index buffers, BLAS
+            // handles, etc.) are managed elsewhere and must not be released
+            // here.
+            for (auto *buf : state->owned_buffers)
+                ((MTL::Buffer *) buf)->release();
 
             // Release intersection-function library
             if (state->intersection_library)

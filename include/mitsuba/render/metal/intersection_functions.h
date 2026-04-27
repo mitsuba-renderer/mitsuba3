@@ -74,6 +74,13 @@ struct EllipsoidData {
 
 // Numerically stable quadratic solver. Mirrors optix/math.cuh::solve_quadratic
 // (returns ordered roots x0 <= x1).
+//
+// Branchless GPU style: we pre-compute `x0 = x1 = -c / b` (the linear-case
+// root) at the top so both the quadratic and linear branches share one
+// division. When a == 0 AND b == 0 we return false up front, so this
+// division is always defined; when a != 0 (the quadratic case) `b` may be 0
+// and the pre-set value would be NaN/Inf, but it is overwritten further
+// down by `x0 = x0m; x1 = x1m;` before being read by callers.
 static inline bool solve_quadratic(float a, float b, float c,
                                    thread float &x0, thread float &x1) {
     bool linear_case = (a == 0.0f);
@@ -136,6 +143,12 @@ BoundingBoxIntersection intersection_sphere(
     float3 center = float3(s.center[0], s.center[1], s.center[2]);
 
     // See sphere.cuh — perpendicular plane projection for numerical stability.
+    // Note: `length(d)` could in principle be zero for a degenerate ray with
+    // d == 0; in practice Mitsuba never generates such rays (the integrator
+    // always normalizes), and Metal's IEEE-754 division by zero would yield
+    // ±inf rather than crash. The downstream comparisons all evaluate to
+    // false in that case, so we'd return r.accept == false (a "miss"), which
+    // is the right behavior.
     float3 l = origin - center;
     float3 d = direction;
     float plane_t = dot(-l, d) / length(d);
@@ -263,25 +276,49 @@ BoundingBoxIntersection intersection_ellipsoids(
 {
     EllipsoidData e = ellis[prim_id];
 
+    // World -> object (unit-sphere) space ray.
     float3 ro = apply_affine_point(e.to_object, origin);
     float3 rd = apply_affine_vector(e.to_object, direction);
 
-    // Ray-vs-unit-sphere in object space.
+    BoundingBoxIntersection r{false, 0.0f};
+
+    // Perpendicular-plane projection trick (matches src/shapes/optix/
+    // ellipsoids.cuh:62-72): we shift the ray origin to the foot of the
+    // perpendicular dropped from the ellipsoid center onto the ray, which
+    // significantly improves the conditioning of the discriminant for
+    // distant rays / grazing angles.
+    float plane_t  = dot(-ro, rd) / length(rd);
+    float3 plane_p = ro + plane_t * rd;
+
+    // Ray is perpendicular to the origin-center segment AND its closest
+    // point on the ray is outside the unit sphere -> definite miss.
+    if (plane_t == 0.0f && length(plane_p) > 1.0f)
+        return r;
+
+    // Ray-vs-unit-sphere using the shifted origin `plane_p`.
     float A = dot(rd, rd);
-    float B = 2.0f * dot(ro, rd);
-    float C = dot(ro, ro) - 1.0f;
+    float B = 2.0f * dot(plane_p, rd);
+    float C = dot(plane_p, plane_p) - 1.0f;
 
     float near_t, far_t;
     bool ok = solve_quadratic(A, B, C, near_t, far_t);
 
-    bool out_bounds = !(near_t <= max_distance && far_t >= 0.0f);
-    bool in_bounds  = near_t < min_distance && far_t > max_distance;
-    float t = (near_t < 0.0f ? far_t : near_t);
+    // Re-anchor the parametric distances to the original ray origin.
+    near_t += plane_t;
+    far_t  += plane_t;
 
-    BoundingBoxIntersection r{false, 0.0f};
-    if (ok && !out_bounds && !in_bounds && t >= min_distance && t <= max_distance) {
+    // Match OptiX semantics (ellipsoids.cuh:82-94):
+    //   out_bounds: ellipsoid does not intersect [0, ray.maxt]
+    //   in_bounds : ellipsoid fully contains the ray segment
+    //   backfacing: ray origin is INSIDE the ellipsoid (rejected)
+    bool out_bounds = !(near_t <= max_distance && far_t >= 0.0f);
+    bool in_bounds  = near_t < 0.0f && far_t > max_distance;
+    bool backfacing = near_t < 0.0f;
+
+    if (ok && !out_bounds && !in_bounds && !backfacing &&
+        near_t >= min_distance && near_t <= max_distance) {
         r.accept   = true;
-        r.distance = t;
+        r.distance = near_t;
     }
     return r;
 }
@@ -350,8 +387,11 @@ BoundingBoxIntersection intersection_sdfgrid(
     uint vi = voxel_indices[prim_id];
     uint x_len = h.res_x - 1;
     uint y_len = h.res_y - 1;
+    // Voxel index encoding: vi = vx + vy * x_len + vz * x_len * y_len
+    // (see SDFGrid::build_bboxes() / sdfgrid.cpp). Decoding therefore
+    // divides by x_len for vy and by x_len*y_len for vz.
     uint vx = vi % x_len;
-    uint vy = ((vi - vx) / y_len) % y_len;
+    uint vy = ((vi - vx) / x_len) % y_len;
     uint vz = (vi - vx - vy * x_len) / (x_len * y_len);
 
     // World -> object space ray. Copy matrix to thread storage first so it
