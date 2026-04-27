@@ -137,14 +137,22 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
                     dr::sync_thread();
 
                     void *cp_ptr = nullptr, *idx_ptr = nullptr;
-                    jit_var_data(cp_var, &cp_ptr);
-                    jit_var_data(idx_var, &idx_ptr);
+                    // jit_var_data returns a NEW reference to the evaluated
+                    // variable — we must release it once we're done with the
+                    // raw pointer (the MTL::Buffer survives via the shape's
+                    // own JIT array). Forgetting to dec_ref leaks a JIT
+                    // variable per call.
+                    uint32_t cp_data_idx  = jit_var_data(cp_var, &cp_ptr);
+                    uint32_t idx_data_idx = jit_var_data(idx_var, &idx_ptr);
 
                     size_t cp_off = 0, idx_off = 0;
                     auto *cp_buf  = (MTL::Buffer *) jit_metal_lookup_buffer(
                         cp_ptr, &cp_off);
                     auto *ix_buf  = (MTL::Buffer *) jit_metal_lookup_buffer(
                         idx_ptr, &idx_off);
+
+                    jit_var_dec_ref(cp_data_idx);
+                    jit_var_dec_ref(idx_data_idx);
 
                     if (!cp_buf || !ix_buf)
                         Throw("scene_metal: could not find Metal buffers for "
@@ -336,6 +344,10 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
             size_t vertex_count = mesh->vertex_count();
             size_t face_count   = mesh->face_count();
 
+            // jit_var_data returns a NEW JIT-variable reference — we must
+            // release it once we have looked up the underlying MTL::Buffer
+            // (the buffer itself survives via the mesh's own JIT array).
+            // Forgetting to dec_ref leaks a JIT variable per call.
             uint32_t vbuf_idx = jit_var_data(
                 mesh->vertex_positions_buffer().index(), &vertex_ptr);
             uint32_t ibuf_idx = jit_var_data(
@@ -347,6 +359,11 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
                 vertex_ptr, &v_off);
             auto *i_buf = (MTL::Buffer *) jit_metal_lookup_buffer(
                 index_ptr, &i_off);
+
+            jit_var_dec_ref(vbuf_idx);
+            jit_var_dec_ref(ibuf_idx);
+
+            (void) vertex_count;
 
             if (!v_buf || !i_buf)
                 Throw("scene_metal: could not find Metal buffers for mesh "
