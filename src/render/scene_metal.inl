@@ -9,8 +9,33 @@
 
 #include <drjit-core/metal.h>
 #include <mitsuba/render/mesh.h>
+#include <mitsuba/render/metal/intersection_functions.h>
+#include <mitsuba/render/metal/shapes.h>
 
 NAMESPACE_BEGIN(mitsuba)
+
+// Pack a 4x4 affine matrix into Metal's column-major MTL::PackedFloat4x3
+// (4 columns of PackedFloat3: columns 0-2 are basis vectors, column 3 is
+// translation). Mirrors OptiX's row-major float[12] layout in
+// include/mitsuba/render/optix/shapes.h:252-258.
+static inline MTL::PackedFloat4x3
+mtl_pack_4x3(const dr::Matrix<float, 4> &M) {
+    MTL::PackedFloat4x3 r;
+    r.columns[0] = MTL::PackedFloat3{(float) M(0, 0), (float) M(1, 0), (float) M(2, 0)};
+    r.columns[1] = MTL::PackedFloat3{(float) M(0, 1), (float) M(1, 1), (float) M(2, 1)};
+    r.columns[2] = MTL::PackedFloat3{(float) M(0, 2), (float) M(1, 2), (float) M(2, 2)};
+    r.columns[3] = MTL::PackedFloat3{(float) M(0, 3), (float) M(1, 3), (float) M(2, 3)};
+    return r;
+}
+
+static inline MTL::PackedFloat4x3 mtl_identity_4x3() {
+    MTL::PackedFloat4x3 r;
+    r.columns[0] = MTL::PackedFloat3{1.f, 0.f, 0.f};
+    r.columns[1] = MTL::PackedFloat3{0.f, 1.f, 0.f};
+    r.columns[2] = MTL::PackedFloat3{0.f, 0.f, 1.f};
+    r.columns[3] = MTL::PackedFloat3{0.f, 0.f, 0.f};
+    return r;
+}
 
 // Metal acceleration structure state, stored in Scene::m_accel
 template <typename UInt32>
@@ -19,6 +44,7 @@ struct MetalAccelState {
     std::vector<void *> blas_list;  // per-shape BLAS handles
     std::vector<void *> resources;  // all buffers the TLAS references
     DynamicBuffer<UInt32> shapes_registry_ids;  // shape index → registry ID
+    void *intersection_library = nullptr;  // MTL::Library* with intersection fns
 };
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*props*/) {
@@ -44,12 +70,224 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
         std::vector<MTL::AccelerationStructure *> blas_vec;
         std::vector<MTL::AccelerationStructureInstanceDescriptor> instances;
 
+        // Per-IFT-entry tracking for custom-shape BLAS (one entry per BLAS).
+        std::vector<std::string> ift_function_names;
+        std::vector<void *> ift_data_buffers;
+        std::vector<uint32_t> ift_buffer_slots;
+
+        // We build TLAS instances in m_shapes order so that Metal's
+        // `_hit.instance_id` directly indexes the shape registry array.
+        // (Mitsuba reorders shapes internally — non-mesh shapes can appear
+        // before meshes — so deferring custom shapes to a second pass would
+        // break the mapping.)
+        bool any_custom = false;
+        bool any_curves = false;
+
         uint32_t instance_id = 0;
-        for (auto &shape : m_shapes) {
+        for (size_t shape_idx = 0; shape_idx < m_shapes.size(); ++shape_idx) {
+            auto &shape = m_shapes[shape_idx];
             auto *mesh = dynamic_cast<mitsuba::Mesh<Float, Spectrum> *>(shape.get());
+
             if (!mesh) {
-                Log(Warn, "scene_metal: skipping non-mesh shape \"%s\"",
-                    std::string(shape->id()).c_str());
+                // ============================================================
+                //  Native curve BLAS (Metal HW curves, macOS 14+)
+                // ============================================================
+                int curve_kind = shape->metal_curve_kind();
+                if (curve_kind != 0) {
+                    Shape *shape_ptr = shape.get();
+                    uint32_t cp_var = 0, idx_var = 0;
+                    size_t cp_count = 0, seg_count = 0;
+                    shape_ptr->metal_get_curve_data(
+                        &cp_var, &cp_count, &idx_var, &seg_count);
+
+                    if (cp_count == 0 || seg_count == 0) {
+                        Log(Warn, "scene_metal: curve shape \"%s\" reports zero "
+                                  "control points or segments; skipping.",
+                            std::string(shape_ptr->id()).c_str());
+                        continue;
+                    }
+
+                    // Materialize the buffers so we can find the underlying
+                    // MTL::Buffer objects.
+                    jit_var_eval(cp_var);
+                    jit_var_eval(idx_var);
+                    dr::sync_thread();
+
+                    void *cp_ptr = nullptr, *idx_ptr = nullptr;
+                    jit_var_data(cp_var, &cp_ptr);
+                    jit_var_data(idx_var, &idx_ptr);
+
+                    size_t cp_off = 0, idx_off = 0;
+                    auto *cp_buf  = (MTL::Buffer *) jit_metal_lookup_buffer(
+                        cp_ptr, &cp_off);
+                    auto *ix_buf  = (MTL::Buffer *) jit_metal_lookup_buffer(
+                        idx_ptr, &idx_off);
+
+                    if (!cp_buf || !ix_buf) {
+                        Log(Warn, "scene_metal: could not find Metal buffers for "
+                                  "curve shape \"%s\".",
+                            std::string(shape_ptr->id()).c_str());
+                        continue;
+                    }
+                    any_curves = true;
+
+                    auto *geom_desc =
+                        MTL::AccelerationStructureCurveGeometryDescriptor::alloc()->init();
+
+                    // Control-point buffer: interleaved (x, y, z, radius),
+                    // stride 16 bytes. Position is float3, radius is the 4th
+                    // float (offset 12).
+                    geom_desc->setControlPointBuffer(cp_buf);
+                    geom_desc->setControlPointBufferOffset(cp_off);
+                    geom_desc->setControlPointFormat(MTL::AttributeFormatFloat3);
+                    geom_desc->setControlPointStride(4 * sizeof(float));
+                    geom_desc->setControlPointCount(cp_count);
+
+                    geom_desc->setRadiusBuffer(cp_buf);
+                    geom_desc->setRadiusBufferOffset(cp_off + 3 * sizeof(float));
+                    geom_desc->setRadiusFormat(MTL::AttributeFormatFloat);
+                    geom_desc->setRadiusStride(4 * sizeof(float));
+
+                    geom_desc->setIndexBuffer(ix_buf);
+                    geom_desc->setIndexBufferOffset(idx_off);
+                    geom_desc->setIndexType(MTL::IndexTypeUInt32);
+
+                    geom_desc->setSegmentCount(seg_count);
+                    geom_desc->setSegmentControlPointCount(curve_kind == 2 ? 4 : 2);
+                    geom_desc->setCurveBasis(
+                        curve_kind == 2 ? MTL::CurveBasisBSpline
+                                        : MTL::CurveBasisLinear);
+                    geom_desc->setCurveType(MTL::CurveTypeRound);
+                    geom_desc->setCurveEndCaps(MTL::CurveEndCapsSphere);
+
+                    NS::Array *geom_array = NS::Array::array(
+                        (const NS::Object *const *) &geom_desc, 1);
+                    auto *blas_desc =
+                        MTL::PrimitiveAccelerationStructureDescriptor::alloc()->init();
+                    blas_desc->setGeometryDescriptors(geom_array);
+
+                    auto sizes = device->accelerationStructureSizes(blas_desc);
+                    auto *blas = device->newAccelerationStructure(
+                        sizes.accelerationStructureSize);
+                    auto *scratch = device->newBuffer(
+                        sizes.buildScratchBufferSize,
+                        MTL::ResourceStorageModePrivate);
+
+                    auto *cb = queue->commandBuffer();
+                    auto *enc = cb->accelerationStructureCommandEncoder();
+                    enc->buildAccelerationStructure(blas, blas_desc, scratch, 0);
+                    enc->endEncoding();
+                    cb->commit();
+                    cb->waitUntilCompleted();
+
+                    scratch->release();
+                    geom_desc->release();
+                    blas_desc->release();
+
+                    blas_vec.push_back(blas);
+                    state->blas_list.push_back(blas);
+                    state->resources.push_back(cp_buf);
+                    state->resources.push_back(ix_buf);
+                    state->resources.push_back(blas);
+
+                    MTL::AccelerationStructureInstanceDescriptor inst = {};
+                    inst.transformationMatrix             = mtl_identity_4x3();
+                    inst.options                          = MTL::AccelerationStructureInstanceOptionOpaque;
+                    inst.mask                             = 0xFF;
+                    inst.intersectionFunctionTableOffset  = 0;
+                    inst.accelerationStructureIndex       = instance_id;
+                    instances.push_back(inst);
+
+                    instance_id++;
+                    continue;
+                }
+
+                // ------------------------------------------------------------
+                //  Custom (bounding-box) shape BLAS
+                // ------------------------------------------------------------
+                Shape *shape_ptr = shape.get();
+                size_t n_aabb = shape_ptr->metal_aabb_count();
+                size_t pdata_size = shape_ptr->metal_primitive_data_size();
+                size_t total_data_size = shape_ptr->metal_total_data_size();
+                uint32_t fn_idx = shape_ptr->metal_intersection_function_index();
+
+                if (n_aabb == 0 || total_data_size == 0) {
+                    Log(Warn, "scene_metal: custom shape \"%s\" reports zero "
+                              "AABBs or no data; skipping.",
+                        std::string(shape_ptr->id()).c_str());
+                    continue;
+                }
+                any_custom = true;
+
+                auto *aabb_buf = device->newBuffer(
+                    n_aabb * 6 * sizeof(float),
+                    MTL::ResourceStorageModeShared);
+                auto *pdata_buf = device->newBuffer(
+                    total_data_size,
+                    MTL::ResourceStorageModeShared);
+
+                shape_ptr->metal_fill_aabb_data(aabb_buf->contents());
+                shape_ptr->metal_fill_primitive_data(pdata_buf->contents());
+
+                auto *geom_desc =
+                    MTL::AccelerationStructureBoundingBoxGeometryDescriptor::alloc()->init();
+                geom_desc->setBoundingBoxBuffer(aabb_buf);
+                geom_desc->setBoundingBoxBufferOffset(0);
+                geom_desc->setBoundingBoxStride(6 * sizeof(float));
+                geom_desc->setBoundingBoxCount(n_aabb);
+                if (pdata_size > 0) {
+                    geom_desc->setPrimitiveDataBuffer(pdata_buf);
+                    geom_desc->setPrimitiveDataBufferOffset(0);
+                    geom_desc->setPrimitiveDataStride(pdata_size);
+                    geom_desc->setPrimitiveDataElementSize(pdata_size);
+                }
+                geom_desc->setIntersectionFunctionTableOffset(0);
+
+                NS::Array *geom_array = NS::Array::array(
+                    (const NS::Object *const *) &geom_desc, 1);
+                auto *blas_desc =
+                    MTL::PrimitiveAccelerationStructureDescriptor::alloc()->init();
+                blas_desc->setGeometryDescriptors(geom_array);
+
+                auto sizes = device->accelerationStructureSizes(blas_desc);
+                auto *blas = device->newAccelerationStructure(
+                    sizes.accelerationStructureSize);
+                auto *scratch = device->newBuffer(
+                    sizes.buildScratchBufferSize,
+                    MTL::ResourceStorageModePrivate);
+
+                auto *cb = queue->commandBuffer();
+                auto *enc = cb->accelerationStructureCommandEncoder();
+                enc->buildAccelerationStructure(blas, blas_desc, scratch, 0);
+                enc->endEncoding();
+                cb->commit();
+                cb->waitUntilCompleted();
+
+                scratch->release();
+                geom_desc->release();
+                blas_desc->release();
+
+                blas_vec.push_back(blas);
+                state->blas_list.push_back(blas);
+                state->resources.push_back(aabb_buf);
+                state->resources.push_back(pdata_buf);
+                state->resources.push_back(blas);
+
+                uint32_t ift_entry_idx = (uint32_t) ift_function_names.size();
+                ift_function_names.emplace_back(
+                    metal_shape::kFunctionNames[fn_idx]);
+                ift_data_buffers.push_back(pdata_buf);
+                ift_buffer_slots.push_back(fn_idx);
+
+                MTL::AccelerationStructureInstanceDescriptor inst = {};
+                inst.transformationMatrix             = mtl_identity_4x3();
+                inst.options                          = MTL::AccelerationStructureInstanceOptionOpaque;
+                inst.mask                             = 0xFF;
+                inst.intersectionFunctionTableOffset  = ift_entry_idx;
+                inst.accelerationStructureIndex       = instance_id;
+                instances.push_back(inst);
+
+                instance_id++;
                 continue;
             }
 
@@ -128,20 +366,21 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
             state->resources.push_back(i_buf);
             state->resources.push_back(blas);
 
-            // Create instance descriptor
+            // Create instance descriptor.
+            // For triangle meshes, m_to_world is already baked into vertex
+            // positions at load time (see obj.cpp:237, ply.cpp:279,
+            // serialized.cpp:362), so we use identity here. This matches
+            // OptiX's behavior (scene_optix.inl:467 also passes identity).
             MTL::AccelerationStructureInstanceDescriptor inst = {};
-            // Identity transform
-            inst.transformationMatrix.columns[0] = MTL::PackedFloat3{1,0,0};
-            inst.transformationMatrix.columns[1] = MTL::PackedFloat3{0,1,0};
-            inst.transformationMatrix.columns[2] = MTL::PackedFloat3{0,0,1};
-            inst.transformationMatrix.columns[3] = MTL::PackedFloat3{0,0,0};
-            inst.options = MTL::AccelerationStructureInstanceOptionOpaque;
-            inst.mask = 0xFF;
-            inst.intersectionFunctionTableOffset = 0;
-            inst.accelerationStructureIndex = instance_id;
+            inst.transformationMatrix             = mtl_identity_4x3();
+            inst.options                          = MTL::AccelerationStructureInstanceOptionOpaque;
+            inst.mask                             = 0xFF;
+            inst.intersectionFunctionTableOffset  = 0;
+            inst.accelerationStructureIndex       = instance_id;
             instances.push_back(inst);
 
             instance_id++;
+            (void) shape_idx;
         }
 
         if (instances.empty()) {
@@ -188,15 +427,85 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
         state->resources.push_back(tlas);
 
         // ----------------------------------------------------------------
-        //  3. Bind the TLAS to drjit for ray tracing
+        //  3. Compile the MSL intersection-function library (if needed)
+        //     and bind everything to drjit for ray tracing.
         // ----------------------------------------------------------------
-        jit_metal_configure_rt(
-            tlas,
-            state->resources.data(),
-            (uint32_t) state->resources.size());
+        // Geometry-types mask: bit 0 = triangle, bit 1 = bounding_box,
+        // bit 2 = curves. drjit uses this to choose the intersector<...>
+        // template tags.
+        uint32_t geom_mask = 0x1u;                  // triangle always present
+        if (any_custom)  geom_mask |= 0x2u;         // bounding_box (custom)
+        if (any_curves)  geom_mask |= 0x4u;         // native curves
 
-        Log(Info, "scene_metal: built acceleration structure (%zu meshes, %zu instances)",
-            blas_vec.size(), instances.size());
+        if (any_custom) {
+            // Compile our embedded MSL source into an MTL::Library. drjit will
+            // link the named [[intersection(...)]] functions into ray-tracing
+            // pipelines via MTLLinkedFunctions.
+            NS::String *src = NS::String::string(
+                metal_shape::kIntersectionFunctionsMSL,
+                NS::StringEncoding::UTF8StringEncoding);
+            auto *opts = MTL::CompileOptions::alloc()->init();
+            // The [[primitive_data]] attribute on intersection-function
+            // parameters requires MSL 3.0; curve_data tags require 3.1+.
+            opts->setLanguageVersion(MTL::LanguageVersion3_2);
+
+            NS::Error *err = nullptr;
+            auto *library = device->newLibrary(src, opts, &err);
+            opts->release();
+
+            if (!library) {
+                if (err)
+                    Log(Error, "scene_metal: failed to compile intersection "
+                               "function library: %s",
+                        err->localizedDescription()->utf8String());
+                else
+                    Log(Error, "scene_metal: failed to compile intersection "
+                               "function library (no error info).");
+            }
+
+            state->intersection_library = library;
+
+            // Build C-string array for the API.
+            std::vector<const char *> name_ptrs;
+            name_ptrs.reserve(ift_function_names.size());
+            for (auto &s : ift_function_names)
+                name_ptrs.push_back(s.c_str());
+
+            jit_metal_configure_rt_ex(
+                tlas,
+                state->resources.data(),
+                (uint32_t) state->resources.size(),
+                library,
+                (uint32_t) ift_function_names.size(),
+                name_ptrs.data(),
+                ift_data_buffers.data(),
+                ift_buffer_slots.data(),
+                geom_mask);
+        } else if (any_curves) {
+            // Curves but no custom shapes — use base RT setup but signal
+            // curve presence so drjit-core emits the right intersector tags.
+            jit_metal_configure_rt_ex(
+                tlas,
+                state->resources.data(),
+                (uint32_t) state->resources.size(),
+                /* library = */ nullptr,
+                /* n_ift_entries = */ 0,
+                /* names = */ nullptr,
+                /* buffers = */ nullptr,
+                /* slots = */ nullptr,
+                geom_mask);
+        } else {
+            jit_metal_configure_rt(
+                tlas,
+                state->resources.data(),
+                (uint32_t) state->resources.size());
+        }
+
+        size_t n_custom = ift_function_names.size();
+        Log(Info, "scene_metal: built acceleration structure (%zu meshes, "
+                  "%zu custom shapes, %zu instances)",
+            blas_vec.size() - n_custom, n_custom,
+            instances.size());
     }
 }
 
@@ -213,6 +522,10 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_metal() {
             // Release BLAS
             for (auto *blas : state->blas_list)
                 ((MTL::AccelerationStructure *) blas)->release();
+
+            // Release intersection-function library
+            if (state->intersection_library)
+                ((MTL::Library *) state->intersection_library)->release();
 
             delete state;
             m_accel = nullptr;
