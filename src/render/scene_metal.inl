@@ -37,6 +37,17 @@ static inline MTL::PackedFloat4x3 mtl_identity_4x3() {
     return r;
 }
 
+// Pack a 12-float column-major buffer (as produced by
+// `Shape::metal_instance_to_world`) into Metal's PackedFloat4x3 layout.
+static inline MTL::PackedFloat4x3 mtl_pack_4x3_from_floats(const float t[12]) {
+    MTL::PackedFloat4x3 r;
+    for (size_t col = 0; col < 4; ++col)
+        r.columns[col] = MTL::PackedFloat3{
+            t[col * 3 + 0], t[col * 3 + 1], t[col * 3 + 2]
+        };
+    return r;
+}
+
 // Metal acceleration structure state, stored in Scene::m_accel
 template <typename UInt32>
 struct MetalAccelState {
@@ -50,6 +61,9 @@ struct MetalAccelState {
     /// would corrupt drjit's internal book-keeping.
     std::vector<void *> owned_buffers;
     DynamicBuffer<UInt32> shapes_registry_ids;  // shape index → registry ID
+    /// Per-shape boolean mask: 1 if m_shapes[i] is an Instance, 0 otherwise.
+    /// Stored as UInt32 (0/1) so we can gather + compare in JIT code.
+    DynamicBuffer<UInt32> is_instance_mask;
     void *intersection_library = nullptr;  // MTL::Library* with intersection fns
 };
 
@@ -64,10 +78,16 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
         // Build shapes registry ID array (maps instance_id → shape registry ID)
         if (!m_shapes.empty()) {
             std::unique_ptr<uint32_t[]> reg_ids(new uint32_t[m_shapes.size()]);
-            for (size_t i = 0; i < m_shapes.size(); i++)
+            std::unique_ptr<uint32_t[]> is_inst(new uint32_t[m_shapes.size()]);
+            for (size_t i = 0; i < m_shapes.size(); i++) {
                 reg_ids[i] = jit_registry_id(m_shapes[i]);
+                is_inst[i] =
+                    (m_shapes[i]->shape_type() == +ShapeType::Instance) ? 1u : 0u;
+            }
             state->shapes_registry_ids =
                 dr::load<DynamicBuffer<UInt32>>(reg_ids.get(), m_shapes.size());
+            state->is_instance_mask =
+                dr::load<DynamicBuffer<UInt32>>(is_inst.get(), m_shapes.size());
         }
 
         // ----------------------------------------------------------------
@@ -108,15 +128,42 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
         for (size_t shape_idx = 0; shape_idx < m_shapes.size(); ++shape_idx) {
             uint32_t instance_id = (uint32_t) shape_idx;
             auto &shape = m_shapes[shape_idx];
-            auto *mesh = dynamic_cast<mitsuba::Mesh<Float, Spectrum> *>(shape.get());
+
+            // For Instance shapes, redirect BLAS construction to the leaf
+            // shape inside the referenced ShapeGroup, and capture the
+            // instance's per-shape `to_world` for the TLAS descriptor below.
+            // (Single-shape shapegroups are supported as the MVP; multi-shape
+            // shapegroups need a multi-geometry BLAS path which is TODO.)
+            Shape *effective_shape = shape.get();
+            MTL::PackedFloat4x3 tlas_transform = mtl_identity_4x3();
+            {
+                auto inst_children = shape->metal_instance_children();
+                if (!inst_children.empty()) {
+                    if (inst_children.size() != 1)
+                        Throw("scene_metal: shapegroup containing multiple "
+                              "shapes is not yet supported on the Metal "
+                              "backend (got %zu children inside Instance "
+                              "\"%s\"). Single-shape shapegroups work; "
+                              "multi-shape support is a TODO.",
+                              inst_children.size(),
+                              std::string(shape->id()).c_str());
+
+                    effective_shape = inst_children[0].get();
+                    float to_world[12];
+                    shape->metal_instance_to_world(to_world);
+                    tlas_transform = mtl_pack_4x3_from_floats(to_world);
+                }
+            }
+
+            auto *mesh = dynamic_cast<mitsuba::Mesh<Float, Spectrum> *>(effective_shape);
 
             if (!mesh) {
                 // ============================================================
                 //  Native curve BLAS (Metal HW curves, macOS 14+)
                 // ============================================================
-                int curve_kind = shape->metal_curve_kind();
+                int curve_kind = effective_shape->metal_curve_kind();
                 if (curve_kind != 0) {
-                    Shape *shape_ptr = shape.get();
+                    Shape *shape_ptr = effective_shape;
                     uint32_t cp_var = 0, idx_var = 0;
                     size_t cp_count = 0, seg_count = 0;
                     shape_ptr->metal_get_curve_data(
@@ -220,7 +267,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
                     state->resources.push_back(blas);
 
                     MTL::AccelerationStructureInstanceDescriptor inst = {};
-                    inst.transformationMatrix             = mtl_identity_4x3();
+                    inst.transformationMatrix             = tlas_transform;
                     inst.options                          = MTL::AccelerationStructureInstanceOptionOpaque;
                     inst.mask                             = 0xFF;
                     inst.intersectionFunctionTableOffset  = 0;
@@ -233,7 +280,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
                 // ------------------------------------------------------------
                 //  Custom (bounding-box) shape BLAS
                 // ------------------------------------------------------------
-                Shape *shape_ptr = shape.get();
+                Shape *shape_ptr = effective_shape;
                 size_t n_aabb = shape_ptr->metal_aabb_count();
                 size_t pdata_size = shape_ptr->metal_primitive_data_size();
                 size_t total_data_size = shape_ptr->metal_total_data_size();
@@ -325,7 +372,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
                 ift_buffer_slots.push_back(fn_idx);
 
                 MTL::AccelerationStructureInstanceDescriptor inst = {};
-                inst.transformationMatrix             = mtl_identity_4x3();
+                inst.transformationMatrix             = tlas_transform;
                 inst.options                          = MTL::AccelerationStructureInstanceOptionOpaque;
                 inst.mask                             = 0xFF;
                 inst.intersectionFunctionTableOffset  = ift_entry_idx;
@@ -423,7 +470,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
             // serialized.cpp:362), so we use identity here. This matches
             // OptiX's behavior (scene_optix.inl:467 also passes identity).
             MTL::AccelerationStructureInstanceDescriptor inst = {};
-            inst.transformationMatrix             = mtl_identity_4x3();
+            inst.transformationMatrix             = tlas_transform;
             inst.options                          = MTL::AccelerationStructureInstanceOptionOpaque;
             inst.mask                             = 0xFF;
             inst.intersectionFunctionTableOffset  = 0;
@@ -619,14 +666,26 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_metal(const Ray3f &ray,
         auto *state = (MetalAccelState<UInt32> *) m_accel;
         ShapePtr shape = dr::gather<UInt32>(state->shapes_registry_ids,
                                            pi.shape_index, valid);
+        // Detect whether this hit is on an Instance shape (in which case
+        // `pi.instance` must point to the Instance so its
+        // `compute_surface_interaction` runs the to_world transform and
+        // recurses into the shapegroup; `pi.shape` then points to the same
+        // Instance — the Instance plugin handles the leaf dispatch
+        // internally for the simple single-shape-shapegroup MVP).
+        UInt32 is_inst_u32 = dr::gather<UInt32>(state->is_instance_mask,
+                                                pi.shape_index, valid);
+        Mask is_instance = dr::neq(is_inst_u32, 0) & valid;
+
         pi.shape    = shape & valid;
-        pi.instance = nullptr;
+        pi.instance = dr::select(is_instance, shape,
+                                 dr::zeros<ShapePtr>());
 
         // Inactive lanes get infinity
         pi.t[!valid]          = dr::Infinity<Float>;
         pi.prim_uv[!valid]    = dr::zeros<Point2f>();
         pi.prim_index[!valid] = 0;
         pi.shape[!valid]      = nullptr;
+        pi.instance[!valid]   = nullptr;
 
         return pi;
     } else {

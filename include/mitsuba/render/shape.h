@@ -1090,6 +1090,28 @@ public:
                                       size_t *   /*cp_count*/,
                                       uint32_t * /*indices*/,
                                       size_t *   /*seg_count*/) const { }
+
+    /**
+     * \brief If this shape is an Instance, return the children of the
+     * referenced ShapeGroup so the Metal scene builder can construct one
+     * BLAS per child and reference it from the instance's TLAS descriptor.
+     * Default: empty vector (i.e. not an Instance).
+     */
+    virtual std::vector<ref<Shape>> metal_instance_children() const {
+        return {};
+    }
+
+    /**
+     * \brief Pack the per-instance world transform into a 12-float
+     * column-major MTL::PackedFloat4x3 layout. Default: identity.
+     */
+    virtual void metal_instance_to_world(float out[12]) const {
+        // Identity (column-major: out[col*3 + row])
+        out[0] = 1.f; out[1]  = 0.f; out[2]  = 0.f;
+        out[3] = 0.f; out[4]  = 1.f; out[5]  = 0.f;
+        out[6] = 0.f; out[7]  = 0.f; out[8]  = 1.f;
+        out[9] = 0.f; out[10] = 0.f; out[11] = 0.f;
+    }
 #endif
 
     void traverse(TraversalCallback *callback) override;

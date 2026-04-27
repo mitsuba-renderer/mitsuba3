@@ -289,6 +289,35 @@ public:
         return dr::grad_enabled(m_to_world) || m_shapegroup->parameters_grad_enabled();
     }
 
+#if defined(MI_ENABLE_METAL)
+    /// Read-only accessor exposing the contained shapegroup. Used by the
+    /// Metal scene builder to enumerate the per-instance child geometries.
+    const ShapeGroup_ *metal_shapegroup() const { return m_shapegroup.get(); }
+
+    /// Pack this instance's `m_to_world` 4x4 into Metal's column-major
+    /// PackedFloat4x3 (used as the TLAS instance descriptor's
+    /// transformationMatrix).
+    void metal_get_to_world(float out[12]) const {
+        if constexpr (dr::is_metal_v<Float>) {
+            const auto &M = m_to_world.scalar().matrix;
+            // Column-major: out[col*3 + row]
+            for (size_t col = 0; col < 4; ++col)
+                for (size_t row = 0; row < 3; ++row)
+                    out[col * 3 + row] = (float) M(row, col);
+        } else {
+            (void) out;
+        }
+    }
+
+    std::vector<ref<Base>> metal_instance_children() const override {
+        return m_shapegroup->shapes();
+    }
+
+    void metal_instance_to_world(float out[12]) const override {
+        metal_get_to_world(out);
+    }
+#endif
+
     MI_DECLARE_CLASS(Instance)
 private:
    ref<ShapeGroup_> m_shapegroup;
