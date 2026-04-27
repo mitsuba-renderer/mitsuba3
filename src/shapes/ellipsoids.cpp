@@ -19,6 +19,10 @@
     #include "optix/ellipsoids.cuh"
 #endif
 
+#if defined(MI_ENABLE_METAL)
+    #include <mitsuba/render/metal/shapes.h>
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 
 /**!
@@ -424,6 +428,145 @@ public:
     }
 
     static constexpr uint32_t optix_geometry_flags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
+#endif
+
+#if defined(MI_ENABLE_METAL)
+    // Multi-primitive shape: one AABB + one EllipsoidData per ellipsoid.
+    size_t metal_aabb_count() const override {
+        return (size_t) m_ellipsoids.count();
+    }
+
+    size_t metal_primitive_data_size() const override {
+        return sizeof(metal_shape::EllipsoidData);
+    }
+
+    uint32_t metal_intersection_function_index() const override {
+        return metal_shape::INTERSECTION_FN_ELLIPSOIDS;
+    }
+
+    void metal_fill_aabb_data(void *out) const override {
+        if constexpr (dr::is_metal_v<Float>) {
+            // Copy the ellipsoid arrays into a host-side temporary so the
+            // host CPU can read them. Metal device pointers are not always
+            // host-readable.
+            size_t n = (size_t) m_ellipsoids.count();
+            std::vector<float> data_h(n * 10), ext_h(n);
+
+            dr::eval(m_ellipsoids.data(), m_ellipsoids.extents_data());
+            dr::sync_thread();
+
+            jit_memcpy(JitBackend::Metal, data_h.data(),
+                       m_ellipsoids.data().data(), n * 10 * sizeof(float));
+            jit_memcpy(JitBackend::Metal, ext_h.data(),
+                       m_ellipsoids.extents_data().data(), n * sizeof(float));
+
+            float *dst = (float *) out;
+            for (size_t i = 0; i < n; ++i)
+                metal_compute_ellipsoid_aabb(data_h.data() + i * 10, ext_h[i],
+                                              dst + i * 6);
+        } else {
+            (void) out;
+        }
+    }
+
+    void metal_fill_primitive_data(void *out) const override {
+        if constexpr (dr::is_metal_v<Float>) {
+            size_t n = (size_t) m_ellipsoids.count();
+            std::vector<float> data_h(n * 10), ext_h(n);
+
+            dr::eval(m_ellipsoids.data(), m_ellipsoids.extents_data());
+            dr::sync_thread();
+
+            jit_memcpy(JitBackend::Metal, data_h.data(),
+                       m_ellipsoids.data().data(), n * 10 * sizeof(float));
+            jit_memcpy(JitBackend::Metal, ext_h.data(),
+                       m_ellipsoids.extents_data().data(), n * sizeof(float));
+
+            metal_shape::EllipsoidData *dst =
+                (metal_shape::EllipsoidData *) out;
+
+            for (size_t i = 0; i < n; ++i)
+                metal_compute_ellipsoid_data(data_h.data() + i * 10, ext_h[i],
+                                              dst[i]);
+        } else {
+            (void) out;
+        }
+    }
+
+private:
+    // Build the per-ellipsoid AABB. Mirrors recompute_bbox()'s formula:
+    // delta = (||R^T_row[0]·diag(s)||, ||R^T_row[1]·diag(s)||,
+    //          ||R^T_row[2]·diag(s)||) but computed per-ellipsoid on host.
+    static void metal_compute_ellipsoid_aabb(const float *e10, float ext,
+                                             float *out_bbox) {
+        float cx = e10[0], cy = e10[1], cz = e10[2];
+        float sx = e10[3] * ext, sy = e10[4] * ext, sz = e10[5] * ext;
+        float qx = e10[6], qy = e10[7], qz = e10[8], qw = e10[9];
+
+        float xx = qx*qx, yy = qy*qy, zz = qz*qz;
+        float xy = qx*qy, xz = qx*qz, yz = qy*qz;
+        float xw = qx*qw, yw = qy*qw, zw = qz*qw;
+        float R[3][3];
+        R[0][0] = 1 - 2*(yy + zz); R[0][1] = 2*(xy - zw);     R[0][2] = 2*(xz + yw);
+        R[1][0] = 2*(xy + zw);     R[1][1] = 1 - 2*(xx + zz); R[1][2] = 2*(yz - xw);
+        R[2][0] = 2*(xz - yw);     R[2][1] = 2*(yz + xw);     R[2][2] = 1 - 2*(xx + yy);
+
+        float dx = std::sqrt(R[0][0]*R[0][0]*sx*sx + R[0][1]*R[0][1]*sy*sy + R[0][2]*R[0][2]*sz*sz);
+        float dy = std::sqrt(R[1][0]*R[1][0]*sx*sx + R[1][1]*R[1][1]*sy*sy + R[1][2]*R[1][2]*sz*sz);
+        float dz = std::sqrt(R[2][0]*R[2][0]*sx*sx + R[2][1]*R[2][1]*sy*sy + R[2][2]*R[2][2]*sz*sz);
+
+        out_bbox[0] = cx - dx; out_bbox[1] = cy - dy; out_bbox[2] = cz - dz;
+        out_bbox[3] = cx + dx; out_bbox[4] = cy + dy; out_bbox[5] = cz + dz;
+    }
+
+    // Build the per-ellipsoid `to_object` 4x4 (row-major) that maps
+    // world-space points into the unit-sphere frame:
+    //   to_object = diag(1/scale_eff) * R^T * translate(-center)
+    // where R is the object-to-world rotation built from the quaternion.
+    static void metal_compute_ellipsoid_data(const float *e10, float ext,
+                                             metal_shape::EllipsoidData &dst) {
+        float cx = e10[0], cy = e10[1], cz = e10[2];
+        float sx = e10[3] * ext, sy = e10[4] * ext, sz = e10[5] * ext;
+        float qx = e10[6], qy = e10[7], qz = e10[8], qw = e10[9];
+
+        float xx = qx*qx, yy = qy*qy, zz = qz*qz;
+        float xy = qx*qy, xz = qx*qz, yz = qy*qz;
+        float xw = qx*qw, yw = qy*qw, zw = qz*qw;
+        float R[3][3];
+        R[0][0] = 1 - 2*(yy + zz); R[0][1] = 2*(xy - zw);     R[0][2] = 2*(xz + yw);
+        R[1][0] = 2*(xy + zw);     R[1][1] = 1 - 2*(xx + zz); R[1][2] = 2*(yz - xw);
+        R[2][0] = 2*(xz - yw);     R[2][1] = 2*(yz + xw);     R[2][2] = 1 - 2*(xx + yy);
+
+        // Fill bbox (mirrors metal_compute_ellipsoid_aabb).
+        float dx = std::sqrt(R[0][0]*R[0][0]*sx*sx + R[0][1]*R[0][1]*sy*sy + R[0][2]*R[0][2]*sz*sz);
+        float dy = std::sqrt(R[1][0]*R[1][0]*sx*sx + R[1][1]*R[1][1]*sy*sy + R[1][2]*R[1][2]*sz*sz);
+        float dz = std::sqrt(R[2][0]*R[2][0]*sx*sx + R[2][1]*R[2][1]*sy*sy + R[2][2]*R[2][2]*sz*sz);
+        dst.bbox.min[0] = cx - dx; dst.bbox.min[1] = cy - dy; dst.bbox.min[2] = cz - dz;
+        dst.bbox.max[0] = cx + dx; dst.bbox.max[1] = cy + dy; dst.bbox.max[2] = cz + dz;
+
+        float inv_s[3] = { 1.0f / sx, 1.0f / sy, 1.0f / sz };
+        float center[3] = { cx, cy, cz };
+
+        // to_object[row][col] (row-major). The 3x3 linear part is
+        // R^T scaled by inv_s on the rows; the translation is
+        //   - inv_s[row] * (R^T * center)[row].
+        for (int row = 0; row < 3; ++row) {
+            for (int col = 0; col < 3; ++col)
+                dst.to_object[row * 4 + col] = R[col][row] * inv_s[row];
+            float t = R[0][row] * center[0] +
+                      R[1][row] * center[1] +
+                      R[2][row] * center[2];
+            dst.to_object[row * 4 + 3] = -inv_s[row] * t;
+        }
+        // Last row: (0, 0, 0, 1) — apply_affine_point ignores it but keep
+        // the layout sane.
+        dst.to_object[12] = 0.f;
+        dst.to_object[13] = 0.f;
+        dst.to_object[14] = 0.f;
+        dst.to_object[15] = 1.f;
+    }
+
+public:
 #endif
 
     //! @}
