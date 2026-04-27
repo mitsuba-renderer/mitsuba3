@@ -68,6 +68,26 @@ struct MetalAccelState {
 };
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*props*/) {
+    // KNOWN LIMITATION: drjit-core's Metal backend stores the active TLAS
+    // and IFT (intersection function table) in per-thread global state set
+    // by `jit_metal_configure_rt[_ex]`. Compiled kernels are cached with
+    // those bindings BAKED IN at compile time, and the trace API does not
+    // pass the AS handle per launch (unlike OptiX which threads
+    // `pipeline_jit_index` / `sbt_jit_index` through `jit_optix_ray_trace`).
+    //
+    // Consequence: only ONE Metal Scene can ray-trace correctly at a time.
+    // Loading a second Scene reconfigures drjit's globals + emits a new
+    // cached kernel; the FIRST Scene's subsequent ray-tests still use its
+    // own cached kernel which now references the SECOND scene's stale
+    // bindings via the global state snapshot taken at first compile.
+    //
+    // Practical impact: most rendering uses a single live Scene throughout
+    // (works fine — see all our regression renders). Tests that build
+    // multiple Scenes in one process and ray-test each (e.g.
+    // test_sdfgrid::test08_load_tensor) hit this limitation. Fixing it
+    // properly requires plumbing per-scene `(tlas, ift)` through the
+    // drjit-core trace API, similar to OptiX's `pipeline_jit_index` /
+    // `sbt_jit_index`. That is a drjit-core change beyond this file.
     if constexpr (dr::is_metal_v<Float>) {
         auto *device = (MTL::Device *) jit_metal_context();
         auto *queue  = (MTL::CommandQueue *) jit_metal_command_queue();
@@ -674,7 +694,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_metal(const Ray3f &ray,
         // internally for the simple single-shape-shapegroup MVP).
         UInt32 is_inst_u32 = dr::gather<UInt32>(state->is_instance_mask,
                                                 pi.shape_index, valid);
-        Mask is_instance = dr::neq(is_inst_u32, 0) & valid;
+        Mask is_instance = (is_inst_u32 != 0u) & valid;
 
         pi.shape    = shape & valid;
         pi.instance = dr::select(is_instance, shape,
