@@ -432,6 +432,22 @@ public:
     }
 #endif
 
+#if defined(MI_ENABLE_METAL)
+    int metal_curve_kind() const override { return 1; /* linear */ }
+
+    void metal_get_curve_data(uint32_t *cp_index, size_t *cp_count,
+                              uint32_t *idx_index, size_t *seg_count) const override {
+        if constexpr (dr::is_metal_v<Float>) {
+            if (cp_index)  *cp_index  = m_control_points.index();
+            if (cp_count)  *cp_count  = (size_t) m_control_point_count;
+            if (idx_index) *idx_index = m_indices.index();
+            if (seg_count) *seg_count = (size_t) dr::width(m_indices);
+        } else {
+            (void) cp_index; (void) cp_count; (void) idx_index; (void) seg_count;
+        }
+    }
+#endif
+
     ScalarBoundingBox3f bbox() const override {
         return m_bbox;
     }
