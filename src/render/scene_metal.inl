@@ -667,6 +667,13 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
                   "%zu custom shapes, %zu instances)",
             blas_vec.size() - n_custom, n_custom,
             instances.size());
+
+        // Mark all shapes as clean now that they've been incorporated into
+        // the freshly-built acceleration structure. Without this, every
+        // call to Scene::parameters_changed() would see dirty shapes and
+        // trigger a full TLAS rebuild — even when only a BSDF parameter
+        // changed. (Embree, Native, and OptiX backends all do this.)
+        clear_shapes_dirty();
     }
 }
 
