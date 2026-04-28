@@ -65,29 +65,13 @@ struct MetalAccelState {
     /// Stored as UInt32 (0/1) so we can gather + compare in JIT code.
     DynamicBuffer<UInt32> is_instance_mask;
     void *intersection_library = nullptr;  // MTL::Library* with intersection fns
+    /// Drjit-core JIT-variable index returned by jit_metal_configure_scene.
+    /// Threaded through jit_metal_ray_trace per call to identify *this*
+    /// scene at codegen + launch. Released (dec_ref) in accel_release_metal.
+    uint32_t scene_index = 0;
 };
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*props*/) {
-    // KNOWN LIMITATION: drjit-core's Metal backend stores the active TLAS
-    // and IFT (intersection function table) in per-thread global state set
-    // by `jit_metal_configure_rt[_ex]`. Compiled kernels are cached with
-    // those bindings BAKED IN at compile time, and the trace API does not
-    // pass the AS handle per launch (unlike OptiX which threads
-    // `pipeline_jit_index` / `sbt_jit_index` through `jit_optix_ray_trace`).
-    //
-    // Consequence: only ONE Metal Scene can ray-trace correctly at a time.
-    // Loading a second Scene reconfigures drjit's globals + emits a new
-    // cached kernel; the FIRST Scene's subsequent ray-tests still use its
-    // own cached kernel which now references the SECOND scene's stale
-    // bindings via the global state snapshot taken at first compile.
-    //
-    // Practical impact: most rendering uses a single live Scene throughout
-    // (works fine — see all our regression renders). Tests that build
-    // multiple Scenes in one process and ray-test each (e.g.
-    // test_sdfgrid::test08_load_tensor) hit this limitation. Fixing it
-    // properly requires plumbing per-scene `(tlas, ift)` through the
-    // drjit-core trace API, similar to OptiX's `pipeline_jit_index` /
-    // `sbt_jit_index`. That is a drjit-core change beyond this file.
     if constexpr (dr::is_metal_v<Float>) {
         auto *device = (MTL::Device *) jit_metal_context();
         auto *queue  = (MTL::CommandQueue *) jit_metal_command_queue();
@@ -500,7 +484,9 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
 
         if (instances.empty()) {
             Log(Warn, "scene_metal: no meshes found, ray tracing will not work.");
-            jit_metal_configure_rt(nullptr, nullptr, 0);
+            // No scene to configure; leave state->scene_index = 0 so any
+            // subsequent ray-trace calls fail loudly rather than silently
+            // returning stale results from another scene's kernel.
             return;
         }
 
@@ -543,7 +529,9 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
 
         // ----------------------------------------------------------------
         //  3. Compile the MSL intersection-function library (if needed)
-        //     and bind everything to drjit for ray tracing.
+        //     and register a per-scene drjit handle that subsequent
+        //     ray-trace calls thread through to identify *this* scene at
+        //     codegen + launch time.
         // ----------------------------------------------------------------
         // Geometry-types mask: bit 0 = triangle, bit 1 = bounding_box,
         // bit 2 = curves. drjit uses this to choose the intersector<...>
@@ -552,10 +540,12 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
         if (any_custom)  geom_mask |= 0x2u;         // bounding_box (custom)
         if (any_curves)  geom_mask |= 0x4u;         // native curves
 
+        MTL::Library *library = nullptr;
+        std::vector<const char *> name_ptrs;
         if (any_custom) {
-            // Compile our embedded MSL source into an MTL::Library. drjit will
-            // link the named [[intersection(...)]] functions into ray-tracing
-            // pipelines via MTLLinkedFunctions.
+            // Compile our embedded MSL source into an MTL::Library. drjit
+            // will link the named [[intersection(...)]] functions into
+            // ray-tracing pipelines via MTLLinkedFunctions.
             NS::String *src = NS::String::string(
                 metal_shape::kIntersectionFunctionsMSL,
                 NS::StringEncoding::UTF8StringEncoding);
@@ -565,7 +555,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
             opts->setLanguageVersion(MTL::LanguageVersion3_2);
 
             NS::Error *err = nullptr;
-            auto *library = device->newLibrary(src, opts, &err);
+            library = device->newLibrary(src, opts, &err);
             opts->release();
 
             if (!library) {
@@ -579,40 +569,21 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
             state->intersection_library = library;
 
             // Build C-string array for the API.
-            std::vector<const char *> name_ptrs;
             name_ptrs.reserve(ift_function_names.size());
             for (auto &s : ift_function_names)
                 name_ptrs.push_back(s.c_str());
-
-            jit_metal_configure_rt_ex(
-                tlas,
-                state->resources.data(),
-                (uint32_t) state->resources.size(),
-                library,
-                (uint32_t) ift_function_names.size(),
-                name_ptrs.data(),
-                ift_data_buffers.data(),
-                ift_buffer_slots.data(),
-                geom_mask);
-        } else if (any_curves) {
-            // Curves but no custom shapes — use base RT setup but signal
-            // curve presence so drjit-core emits the right intersector tags.
-            jit_metal_configure_rt_ex(
-                tlas,
-                state->resources.data(),
-                (uint32_t) state->resources.size(),
-                /* library = */ nullptr,
-                /* n_ift_entries = */ 0,
-                /* names = */ nullptr,
-                /* buffers = */ nullptr,
-                /* slots = */ nullptr,
-                geom_mask);
-        } else {
-            jit_metal_configure_rt(
-                tlas,
-                state->resources.data(),
-                (uint32_t) state->resources.size());
         }
+
+        state->scene_index = jit_metal_configure_scene(
+            tlas,
+            state->resources.data(),
+            (uint32_t) state->resources.size(),
+            library,
+            (uint32_t) ift_function_names.size(),
+            name_ptrs.empty() ? nullptr : name_ptrs.data(),
+            ift_data_buffers.empty() ? nullptr : ift_data_buffers.data(),
+            ift_buffer_slots.empty() ? nullptr : ift_buffer_slots.data(),
+            geom_mask);
 
         size_t n_custom = ift_function_names.size();
         Log(Info, "scene_metal: built acceleration structure (%zu meshes, "
@@ -626,7 +597,16 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_metal() {
     if constexpr (dr::is_metal_v<Float>) {
         if (m_accel) {
             auto *state = (MetalAccelState<UInt32> *) m_accel;
-            jit_metal_configure_rt(nullptr, nullptr, 0);
+
+            // Release the per-scene drjit handle first. This drops drjit's
+            // last reference on the MetalScene; its destruction callback
+            // releases any cached IFTs and our retain on the
+            // intersection-function library. Mitsuba then releases the
+            // raw Metal objects (TLAS / BLAS / owned buffers) below.
+            if (state->scene_index) {
+                jit_var_dec_ref(state->scene_index);
+                state->scene_index = 0;
+            }
 
             // Release TLAS
             if (state->tlas)
@@ -660,6 +640,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_metal(const Ray3f &ray,
     if constexpr (dr::is_metal_v<Float>) {
         using Single = dr::float32_array_t<Float>;
 
+        auto *state = (MetalAccelState<UInt32> *) m_accel;
+
         dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
         Single ray_tmin(0.f), ray_tmax(ray.maxt);
 
@@ -670,7 +652,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_metal(const Ray3f &ray,
         };
 
         uint32_t out[7];
-        jit_metal_ray_trace(8, args, active.index(), out, 7);
+        jit_metal_ray_trace(8, args, active.index(), out, 7,
+                            state->scene_index);
 
         // out: [valid, distance, bary_u, bary_v, instance_id, primitive_id, geometry_id]
         Mask valid = Mask::steal(out[0]);
@@ -683,7 +666,6 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_metal(const Ray3f &ray,
         pi.shape_index = UInt32::steal(out[4]); // instance_id → shape index
 
         // Resolve shape pointer from instance_id via registry
-        auto *state = (MetalAccelState<UInt32> *) m_accel;
         ShapePtr shape = dr::gather<UInt32>(state->shapes_registry_ids,
                                            pi.shape_index, valid);
         // Detect whether this hit is on an Instance shape (in which case
@@ -729,6 +711,8 @@ Scene<Float, Spectrum>::ray_test_metal(const Ray3f &ray, Mask active) const {
     if constexpr (dr::is_metal_v<Float>) {
         using Single = dr::float32_array_t<Float>;
 
+        auto *state = (MetalAccelState<UInt32> *) m_accel;
+
         dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
         Single ray_tmin(0.f), ray_tmax(ray.maxt);
 
@@ -739,7 +723,8 @@ Scene<Float, Spectrum>::ray_test_metal(const Ray3f &ray, Mask active) const {
         };
 
         uint32_t out[7];
-        jit_metal_ray_trace(8, args, active.index(), out, 7);
+        jit_metal_ray_trace(8, args, active.index(), out, 7,
+                            state->scene_index);
 
         Mask valid = Mask::steal(out[0]);
 
