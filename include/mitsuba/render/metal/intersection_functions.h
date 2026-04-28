@@ -7,16 +7,28 @@
     the resulting MTLFunctions into the compute pipeline together with the
     drjit-generated ray-tracing kernels.
 
-    Per-shape data layout: each intersection function receives a `device const
-    <T> *` buffer at [[buffer(0)]], indexed by [[primitive_id]]. The buffer is
-    bound to the intersection-function-table entry for the corresponding BLAS
-    via MTLIntersectionFunctionTable::setBuffer:offset:atIndex:0 (this binding
-    is the responsibility of drjit-core's Metal launch code — see Phase 2
-    follow-up TODO in metal_core.cpp).
+    Per-type combined buffer layout (sphere / disk / cylinder / ellipsoids):
+    Mitsuba concatenates the per-primitive data of every shape of a given
+    type into ONE buffer per type, bound at the type's IFT slot
+    ([[buffer(N)]] where N = INTERSECTION_FN_<type>). Each TLAS instance
+    carries its data offset (in elements) inside this combined buffer via
+    ``MTLAccelerationStructureUserIDInstanceDescriptor::userID``, which the
+    intersection function reads as ``[[user_instance_id]]``. The MSL
+    function then indexes the buffer at ``user_instance_id + primitive_id``.
 
-    This buffer-based approach (vs. the [[primitive_data]] attribute) is the
-    pattern used by Apple's "Accelerating ray tracing using Metal" sample and
-    Blender Cycles' Metal kernel — both proven, robust paths.
+    This layout sidesteps Metal's "last write wins" semantics on shared IFT
+    buffer slots (the IFT only has one binding per slot, but each slot now
+    carries the entire concatenated dataset, and per-instance offsets pick
+    the right region).
+
+    The ``world_space_data`` intersection tag is required by MSL to make
+    [[user_instance_id]] available in bounding_box intersection functions.
+
+    SDFGrid is the exception: its data is shape-level (header + voxel
+    indices + sample grid), not per-primitive, so concatenating is harder
+    and SDFGrid keeps the original per-shape buffer scheme. Multiple
+    SDFGrid shapes in one scene therefore still trigger a warning in
+    scene_metal.inl until per-primitive shape pointers are wired up.
 
     The math here is a 1:1 port of the OptiX __intersection__sphere /
     __intersection__disk / __intersection__cylinder programs in
@@ -130,16 +142,17 @@ struct BoundingBoxIntersection {
 //  Sphere
 // ---------------------------------------------------------------------------
 
-[[intersection(bounding_box, instancing)]]
+[[intersection(bounding_box, instancing, world_space_data)]]
 BoundingBoxIntersection intersection_sphere(
     float3 origin                       [[origin]],
     float3 direction                    [[direction]],
     float  min_distance                 [[min_distance]],
     float  max_distance                 [[max_distance]],
     uint   prim_id                      [[primitive_id]],
+    uint   inst_off                     [[user_instance_id]],
     device const SphereData *spheres    [[buffer(0)]])
 {
-    SphereData s = spheres[prim_id];
+    SphereData s = spheres[inst_off + prim_id];
     float3 center = float3(s.center[0], s.center[1], s.center[2]);
 
     // See sphere.cuh — perpendicular plane projection for numerical stability.
@@ -187,16 +200,17 @@ BoundingBoxIntersection intersection_sphere(
 //  Disk (object-space: z=0 plane, unit radius)
 // ---------------------------------------------------------------------------
 
-[[intersection(bounding_box, instancing)]]
+[[intersection(bounding_box, instancing, world_space_data)]]
 BoundingBoxIntersection intersection_disk(
     float3 origin                       [[origin]],
     float3 direction                    [[direction]],
     float  min_distance                 [[min_distance]],
     float  max_distance                 [[max_distance]],
     uint   prim_id                      [[primitive_id]],
+    uint   inst_off                     [[user_instance_id]],
     device const DiskData *disks        [[buffer(1)]])
 {
-    DiskData d = disks[prim_id];
+    DiskData d = disks[inst_off + prim_id];
 
     float3 ro = apply_affine_point(d.to_object, origin);
     float3 rd = apply_affine_vector(d.to_object, direction);
@@ -217,16 +231,17 @@ BoundingBoxIntersection intersection_disk(
 //  Cylinder (object-space: z-axis, [0, length], radius)
 // ---------------------------------------------------------------------------
 
-[[intersection(bounding_box, instancing)]]
+[[intersection(bounding_box, instancing, world_space_data)]]
 BoundingBoxIntersection intersection_cylinder(
     float3 origin                       [[origin]],
     float3 direction                    [[direction]],
     float  min_distance                 [[min_distance]],
     float  max_distance                 [[max_distance]],
     uint   prim_id                      [[primitive_id]],
+    uint   inst_off                     [[user_instance_id]],
     device const CylinderData *cyls     [[buffer(2)]])
 {
-    CylinderData c = cyls[prim_id];
+    CylinderData c = cyls[inst_off + prim_id];
 
     float3 ro = apply_affine_point(c.to_object, origin);
     float3 rd = apply_affine_vector(c.to_object, direction);
@@ -265,16 +280,17 @@ BoundingBoxIntersection intersection_cylinder(
 //  Ellipsoids (one ellipsoid per primitive — object space is unit sphere)
 // ---------------------------------------------------------------------------
 
-[[intersection(bounding_box, instancing)]]
+[[intersection(bounding_box, instancing, world_space_data)]]
 BoundingBoxIntersection intersection_ellipsoids(
     float3 origin                       [[origin]],
     float3 direction                    [[direction]],
     float  min_distance                 [[min_distance]],
     float  max_distance                 [[max_distance]],
     uint   prim_id                      [[primitive_id]],
+    uint   inst_off                     [[user_instance_id]],
     device const EllipsoidData *ellis   [[buffer(3)]])
 {
-    EllipsoidData e = ellis[prim_id];
+    EllipsoidData e = ellis[inst_off + prim_id];
 
     // World -> object (unit-sphere) space ray.
     float3 ro = apply_affine_point(e.to_object, origin);

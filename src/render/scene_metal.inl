@@ -98,7 +98,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
         //  1. Build BLAS for each mesh
         // ----------------------------------------------------------------
         std::vector<MTL::AccelerationStructure *> blas_vec;
-        std::vector<MTL::AccelerationStructureInstanceDescriptor> instances;
+        std::vector<MTL::AccelerationStructureUserIDInstanceDescriptor> instances;
 
         // Per-IFT-entry tracking for custom-shape BLAS (one entry per BLAS).
         std::vector<std::string> ift_function_names;
@@ -119,15 +119,53 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
         bool any_custom = false;
         bool any_curves = false;
 
-        // Detect when multiple custom shapes share the same MSL buffer slot
-        // (one per shape type). Currently the per-IFT-entry data buffer is
-        // bound at the type-specific slot (sphere=0, disk=1, cylinder=2,
-        // ellipsoids=3, sdfgrid=4). Because IntersectionFunctionTable
-        // setBuffer:offset:atIndex: binds GLOBALLY across all entries (last
-        // write wins), having two shapes of the same type silently makes
-        // both read from the LATER shape's data buffer. Warn if this case
-        // arises until we add per-type BLAS coalescing.
-        bool seen_fn_slot[metal_shape::INTERSECTION_FN_COUNT] = { false };
+        // ----------------------------------------------------------------
+        //  Pre-pass: compute per-type total element counts so we can
+        //  allocate one combined data buffer per non-SDFGrid custom shape
+        //  type. Each TLAS instance later carries a userID equal to its
+        //  data offset (in elements) within its type's combined buffer,
+        //  which the MSL intersection function reads via [[user_instance_id]]
+        //  and uses to index `combined_buf[user_instance_id + primitive_id]`.
+        //  This sidesteps Metal's "last write wins" semantics on shared IFT
+        //  buffer slots without changing the instance_id ↔ m_shapes_index
+        //  invariant.
+        // ----------------------------------------------------------------
+        size_t per_type_total[metal_shape::INTERSECTION_FN_COUNT] = { 0 };
+        size_t per_type_elem_size[metal_shape::INTERSECTION_FN_COUNT] = { 0 };
+        for (size_t shape_idx = 0; shape_idx < m_shapes.size(); ++shape_idx) {
+            auto &shape = m_shapes[shape_idx];
+            Shape *eff = shape.get();
+            auto inst_children = shape->metal_instance_children();
+            if (!inst_children.empty() && inst_children.size() == 1)
+                eff = inst_children[0].get();
+            uint32_t fn_idx = eff->metal_intersection_function_index();
+            if (fn_idx < metal_shape::INTERSECTION_FN_COUNT &&
+                fn_idx != metal_shape::INTERSECTION_FN_SDFGRID) {
+                size_t pdata_size = eff->metal_primitive_data_size();
+                size_t aabb_count = eff->metal_aabb_count();
+                if (pdata_size > 0 && aabb_count > 0) {
+                    per_type_total[fn_idx] += aabb_count;
+                    per_type_elem_size[fn_idx] = pdata_size;
+                }
+            }
+        }
+        MTL::Buffer *combined_buf[metal_shape::INTERSECTION_FN_COUNT] = { nullptr };
+        size_t per_type_cursor[metal_shape::INTERSECTION_FN_COUNT] = { 0 };
+        for (uint32_t t = 0; t < metal_shape::INTERSECTION_FN_COUNT; ++t) {
+            if (per_type_total[t] > 0) {
+                combined_buf[t] = device->newBuffer(
+                    per_type_total[t] * per_type_elem_size[t],
+                    MTL::ResourceStorageModeShared);
+                state->owned_buffers.push_back(combined_buf[t]);
+                state->resources.push_back(combined_buf[t]);
+            }
+        }
+
+        // SDFGrid is the only type that still binds a per-shape buffer at
+        // its IFT slot (its data is shape-level, not per-primitive). A
+        // second SDFGrid shape would silently overwrite the first via the
+        // IFT's "last write wins" semantics, so we warn in that case.
+        bool seen_sdfgrid = false;
 
         for (size_t shape_idx = 0; shape_idx < m_shapes.size(); ++shape_idx) {
             uint32_t instance_id = (uint32_t) shape_idx;
@@ -270,12 +308,13 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
                     state->resources.push_back(ix_buf);
                     state->resources.push_back(blas);
 
-                    MTL::AccelerationStructureInstanceDescriptor inst = {};
+                    MTL::AccelerationStructureUserIDInstanceDescriptor inst = {};
                     inst.transformationMatrix             = tlas_transform;
                     inst.options                          = MTL::AccelerationStructureInstanceOptionOpaque;
                     inst.mask                             = 0xFF;
                     inst.intersectionFunctionTableOffset  = 0;
                     inst.accelerationStructureIndex       = instance_id;
+                    inst.userID                           = 0;
                     instances.push_back(inst);
 
                     continue;
@@ -298,28 +337,47 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
                           std::string(shape_ptr->id()).c_str());
                 any_custom = true;
 
-                if (fn_idx < metal_shape::INTERSECTION_FN_COUNT) {
-                    if (seen_fn_slot[fn_idx])
-                        Log(Warn, "scene_metal: scene has multiple custom "
-                                  "shapes that share intersection-function "
-                                  "slot %u (e.g. multiple instances of the "
-                                  "same shape type). The MSL function reads "
-                                  "from a single global per-slot buffer, so "
-                                  "all such shapes will see the LAST shape's "
-                                  "data. Group shapes of the same type into "
-                                  "one BLAS to fix.", fn_idx);
-                    seen_fn_slot[fn_idx] = true;
+                if (fn_idx == metal_shape::INTERSECTION_FN_SDFGRID) {
+                    if (seen_sdfgrid)
+                        Log(Warn, "scene_metal: scene has multiple SDFGrid "
+                                  "shapes. SDFGrid still binds its data at "
+                                  "IFT buffer slot %u (its data is shape-"
+                                  "level, not per-primitive), and Metal's "
+                                  "IFT buffer bindings are global to the "
+                                  "table, so all SDFGrids will read from "
+                                  "the LATER shape's data. Use a single "
+                                  "SDFGrid for now; per-primitive shape-"
+                                  "pointer support is a TODO.",
+                                  metal_shape::INTERSECTION_FN_SDFGRID);
+                    seen_sdfgrid = true;
                 }
 
                 auto *aabb_buf = device->newBuffer(
                     n_aabb * 6 * sizeof(float),
                     MTL::ResourceStorageModeShared);
-                auto *pdata_buf = device->newBuffer(
-                    total_data_size,
-                    MTL::ResourceStorageModeShared);
-
                 shape_ptr->metal_fill_aabb_data(aabb_buf->contents());
-                shape_ptr->metal_fill_primitive_data(pdata_buf->contents());
+
+                // Per-shape pdata_buf is only used for the SDFGrid path
+                // (which still binds it at the IFT slot). For the four
+                // [[user_instance_id]]-driven types, the per-shape data is
+                // copied into the type's combined buffer instead, and we
+                // record the per-instance offset (in elements) for the
+                // TLAS userID below.
+                MTL::Buffer *pdata_buf = nullptr;
+                uint32_t inst_user_id = 0;
+                if (fn_idx == metal_shape::INTERSECTION_FN_SDFGRID) {
+                    pdata_buf = device->newBuffer(
+                        total_data_size, MTL::ResourceStorageModeShared);
+                    shape_ptr->metal_fill_primitive_data(pdata_buf->contents());
+                } else if (fn_idx < metal_shape::INTERSECTION_FN_COUNT &&
+                           combined_buf[fn_idx]) {
+                    inst_user_id = (uint32_t) per_type_cursor[fn_idx];
+                    uint8_t *dst =
+                        (uint8_t *) combined_buf[fn_idx]->contents()
+                        + inst_user_id * per_type_elem_size[fn_idx];
+                    shape_ptr->metal_fill_primitive_data(dst);
+                    per_type_cursor[fn_idx] += n_aabb;
+                }
 
                 auto *geom_desc =
                     MTL::AccelerationStructureBoundingBoxGeometryDescriptor::alloc()->init();
@@ -327,12 +385,6 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
                 geom_desc->setBoundingBoxBufferOffset(0);
                 geom_desc->setBoundingBoxStride(6 * sizeof(float));
                 geom_desc->setBoundingBoxCount(n_aabb);
-                if (pdata_size > 0) {
-                    geom_desc->setPrimitiveDataBuffer(pdata_buf);
-                    geom_desc->setPrimitiveDataBufferOffset(0);
-                    geom_desc->setPrimitiveDataStride(pdata_size);
-                    geom_desc->setPrimitiveDataElementSize(pdata_size);
-                }
                 geom_desc->setIntersectionFunctionTableOffset(0);
 
                 NS::Array *geom_array = NS::Array::array(
@@ -362,25 +414,43 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
                 blas_vec.push_back(blas);
                 state->blas_list.push_back(blas);
                 state->resources.push_back(aabb_buf);
-                state->resources.push_back(pdata_buf);
                 state->resources.push_back(blas);
-                // We allocated these via device->newBuffer; record them so
-                // accel_release_metal can release the retain.
                 state->owned_buffers.push_back(aabb_buf);
-                state->owned_buffers.push_back(pdata_buf);
+                if (pdata_buf) {
+                    // SDFGrid path only: we allocated a per-shape pdata_buf
+                    // above. Track it for release + IFT binding.
+                    state->resources.push_back(pdata_buf);
+                    state->owned_buffers.push_back(pdata_buf);
+                }
 
                 uint32_t ift_entry_idx = (uint32_t) ift_function_names.size();
                 ift_function_names.emplace_back(
                     metal_shape::kFunctionNames[fn_idx]);
-                ift_data_buffers.push_back(pdata_buf);
-                ift_buffer_slots.push_back(fn_idx);
 
-                MTL::AccelerationStructureInstanceDescriptor inst = {};
+                // Per-IFT-entry buffer binding:
+                //   * SDFGrid: per-shape buffer at slot 4 (still has the
+                //     last-write-wins limitation if multiple SDFGrids exist).
+                //   * Other types: the type's combined buffer at the type's
+                //     slot. The MSL function picks its region via
+                //     [[user_instance_id]] (set on the TLAS descriptor).
+                if (fn_idx == metal_shape::INTERSECTION_FN_SDFGRID) {
+                    ift_data_buffers.push_back(pdata_buf);
+                    ift_buffer_slots.push_back(fn_idx);
+                } else if (combined_buf[fn_idx]) {
+                    ift_data_buffers.push_back(combined_buf[fn_idx]);
+                    ift_buffer_slots.push_back(fn_idx);
+                } else {
+                    ift_data_buffers.push_back(nullptr);
+                    ift_buffer_slots.push_back(0u);
+                }
+
+                MTL::AccelerationStructureUserIDInstanceDescriptor inst = {};
                 inst.transformationMatrix             = tlas_transform;
                 inst.options                          = MTL::AccelerationStructureInstanceOptionOpaque;
                 inst.mask                             = 0xFF;
                 inst.intersectionFunctionTableOffset  = ift_entry_idx;
                 inst.accelerationStructureIndex       = instance_id;
+                inst.userID                           = inst_user_id;
                 instances.push_back(inst);
 
                 continue;
@@ -473,12 +543,13 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
             // positions at load time (see obj.cpp:237, ply.cpp:279,
             // serialized.cpp:362), so we use identity here. This matches
             // OptiX's behavior (scene_optix.inl:467 also passes identity).
-            MTL::AccelerationStructureInstanceDescriptor inst = {};
+            MTL::AccelerationStructureUserIDInstanceDescriptor inst = {};
             inst.transformationMatrix             = tlas_transform;
             inst.options                          = MTL::AccelerationStructureInstanceOptionOpaque;
             inst.mask                             = 0xFF;
             inst.intersectionFunctionTableOffset  = 0;
             inst.accelerationStructureIndex       = instance_id;
+            inst.userID                           = 0;  // unused by triangle BLASes
             instances.push_back(inst);
         }
 
@@ -495,7 +566,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
         // ----------------------------------------------------------------
         auto *inst_buf = device->newBuffer(
             instances.data(),
-            instances.size() * sizeof(MTL::AccelerationStructureInstanceDescriptor),
+            instances.size() * sizeof(MTL::AccelerationStructureUserIDInstanceDescriptor),
             MTL::ResourceStorageModeShared);
 
         // Create BLAS reference array
@@ -507,6 +578,12 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
         tlas_desc->setInstancedAccelerationStructures(blas_array);
         tlas_desc->setInstanceDescriptorBuffer(inst_buf);
         tlas_desc->setInstanceCount(instances.size());
+        // We pass UserID-extended descriptors so each instance can carry a
+        // ``userID`` that the MSL intersection function reads as
+        // [[user_instance_id]] (its data offset within the type's combined
+        // buffer — see the pre-pass at the top of accel_init_metal).
+        tlas_desc->setInstanceDescriptorType(
+            MTL::AccelerationStructureInstanceDescriptorTypeUserID);
 
         auto sizes = device->accelerationStructureSizes(tlas_desc);
         auto *tlas = device->newAccelerationStructure(sizes.accelerationStructureSize);
