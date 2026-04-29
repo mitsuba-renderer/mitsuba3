@@ -5,6 +5,7 @@ from typing import Tuple
 import mitsuba as mi
 import drjit as dr
 
+
 class flat_sensor(mi.Sensor):
     def __init__(self, props):
         mi.Sensor.__init__(self, props)
@@ -208,6 +209,13 @@ class Rayloader():
                     f"Target image {i} must have shape "
                     "(height, width, channels)"
                 )
+            if (tensor_shape[0] != self.height or
+                tensor_shape[1] != self.width):
+                raise ValueError(
+                    f"Target image {i} has different shape: "
+                    f"{tensor_shape[0]}x{tensor_shape[1]}x{tensor_shape[2]} "
+                    f"vs {self.height}x{self.width}x{self.channel_size}"
+                )
             if tensor_shape[2] != self.channel_size:
                 raise ValueError(
                     f"Target image {i} has {tensor_shape[2]} channels, "
@@ -218,14 +226,6 @@ class Rayloader():
                 raise ValueError(
                     f"Sensor {i} film has {film_channels} channels, "
                     f"expected {self.channel_size}"
-                )
-            if (tensor_shape[0] != self.height or
-                tensor_shape[1] != self.width or
-                tensor_shape[2] != self.channel_size):
-                raise ValueError(
-                    f"Target image {i} has different shape: "
-                    f"{tensor_shape[0]}x{tensor_shape[1]}x{tensor_shape[2]} "
-                    f"vs {self.height}x{self.width}x{self.channel_size}"
                 )
 
         # Determine pixel format and component format
@@ -368,57 +368,10 @@ class Rayloader():
         Returns:
             Padded buffer of size effective_ttl_pixels
         """
-        buffer = dr.empty(mi.UInt32, self.effective_ttl_pixels)
         actual_count = len(pixel_indices)
-
-        if actual_count >= self.effective_ttl_pixels:
-            # Take only what we need
-            buffer_indices = dr.arange(mi.UInt32, self.effective_ttl_pixels)
-            final_indices = dr.gather(mi.UInt32, pixel_indices, buffer_indices)
-            dr.scatter(buffer, final_indices, buffer_indices)
-        else:
-            # Use all pixels and pad the rest
-            buffer_indices = dr.arange(mi.UInt32, actual_count)
-            dr.scatter(buffer, pixel_indices, buffer_indices)
-
-            # Pad remaining slots by repeating the pattern
-            remaining_count = self.effective_ttl_pixels - actual_count
-            remaining_indices = dr.arange(mi.UInt32, remaining_count) + actual_count
-            padding_source_indices = dr.arange(mi.UInt32, remaining_count) % actual_count
-            padding_values = dr.gather(mi.UInt32, pixel_indices, padding_source_indices)
-            dr.scatter(buffer, padding_values, remaining_indices)
-
-        return buffer
-
-    def flat_tile_idx_to_tile_coords(self, flat_tile_idx: int, sensor_idx: int) -> tuple[int, int]:
-        """Convert flat tile index to (tile_row, tile_col) coordinates within sensor."""
-        local_tile_idx = flat_tile_idx % self.tiles_per_sensor
-        tile_row = local_tile_idx // self.tiles_per_row
-        tile_col = local_tile_idx % self.tiles_per_row
-        return tile_row, tile_col
-
-    def tile_coords_to_pixel_range(self, tile_row: int, tile_col: int) -> tuple[int, int, int, int]:
-        """Convert tile coordinates to pixel coordinate ranges (start_y, end_y, start_x, end_x)."""
-        start_y = tile_row * self.tile_size
-        end_y = min(start_y + self.tile_size, self.height)
-        start_x = tile_col * self.tile_size
-        end_x = min(start_x + self.tile_size, self.width)
-        return start_y, end_y, start_x, end_x
-
-    def generate_tile_pixels(self, tile_idx: int, sensor_idx: int) -> list[int]:
-        """Generate all pixel indices within a tile, handling boundary clamping."""
-        tile_row, tile_col = self.flat_tile_idx_to_tile_coords(tile_idx, sensor_idx)
-        start_y, end_y, start_x, end_x = self.tile_coords_to_pixel_range(tile_row, tile_col)
-
-        pixel_indices = []
-        sensor_pixel_offset = sensor_idx * self.width * self.height
-
-        for y in range(start_y, end_y):
-            for x in range(start_x, end_x):
-                pixel_flat_idx = y * self.width + x + sensor_pixel_offset
-                pixel_indices.append(pixel_flat_idx)
-
-        return pixel_indices
+        buffer_indices = dr.arange(mi.UInt32, self.effective_ttl_pixels)
+        source_indices = buffer_indices % actual_count
+        return dr.gather(mi.UInt32, pixel_indices, source_indices)
 
     def shuffle_pixel_index(self, seed: mi.UInt32):
         """Shuffle pixel index buffer using tile-based permutation for GPU coherence."""
@@ -437,21 +390,18 @@ class Rayloader():
 
     def _shuffle_pixel_index_tiled(self, seed: mi.UInt32):
         """Tile-based permutation for GPU coherence."""
-        # Step 1: Create tile ordering permutation
+        # Special case: if tile is larger than image, just sample all pixels
+        if self.tile_size >= max(self.width, self.height):
+            self._shuffle_pixel_index_large_tiles(seed)
+            return
+
         total_tiles = self.num_sensors * self.tiles_per_sensor
         tile_permutation = mi.permute_kensler(
             dr.arange(mi.UInt32, total_tiles),
             total_tiles,
             seed,
         )
-
-        # Step 2: Treat sampled pixels as tile centers, generate tiles.
-
-        # Special case: if tile is larger than image, just sample all pixels
-        if self.tile_size >= max(self.width, self.height):
-            self._shuffle_pixel_index_large_tiles(seed)
-        else:
-            self._shuffle_pixel_index_normal_tiles(tile_permutation)
+        self._shuffle_pixel_index_normal_tiles(tile_permutation)
 
     def _shuffle_pixel_index_large_tiles(self, seed: mi.UInt32):
         """Handle large tiles that cover entire image."""

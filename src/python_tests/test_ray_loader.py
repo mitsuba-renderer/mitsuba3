@@ -3,6 +3,48 @@ import mitsuba as mi
 import drjit as dr
 
 
+def make_perspective_sensor(
+    width,
+    height,
+    pixel_format='rgb',
+    origin=(0, 0, 3),
+    component_format='float32',
+    film_overrides=None,
+):
+    T = mi.ScalarTransform4f
+    film = {
+        'type': 'hdrfilm',
+        'width': width,
+        'height': height,
+        'rfilter': {'type': 'box'},
+        'pixel_format': pixel_format,
+        'sample_border': False,
+    }
+    if component_format is not None:
+        film['component_format'] = component_format
+    if film_overrides is not None:
+        film.update(film_overrides)
+
+    return mi.load_dict({
+        'type': 'perspective',
+        'fov_axis': 'smaller',
+        'fov': 45,
+        'to_world': T().look_at(
+            origin=origin, target=[0, 0, 0], up=[0, 1, 0]
+        ),
+        'sampler': {'type': 'independent', 'sample_count': 1},
+        'film': film,
+    })
+
+
+def make_target(width, height, channels, offset=0):
+    size = width * height * channels
+    return mi.TensorXf(
+        dr.arange(mi.Float, size) + offset,
+        shape=(height, width, channels)
+    )
+
+
 def test_ray_loader(variants_vec_backends_once_rgb):
     """Test RayLoader with 2 cameras, 2x3 images, 4 channels"""
     T = mi.ScalarTransform4f
@@ -133,29 +175,8 @@ def test_ray_loader(variants_vec_backends_once_rgb):
 
 def test_ray_loader_pixel_perm(variants_vec_backends_once_rgb):
     """Test that tile_size=1 performs pixel permutation correctly."""
-    T = mi.ScalarTransform4f
-
-    # Create simple sensor
-    sensor_dict = {
-        'type': 'perspective',
-        'fov_axis': 'smaller',
-        'fov': 45,
-        'to_world': T().look_at(origin=[0, 0, 3], target=[0, 0, 0], up=[0, 1, 0]),
-        'sampler': {'type': 'independent', 'sample_count': 1},
-        'film': {
-            'type': 'hdrfilm',
-            'width': 4, 'height': 4,
-            'rfilter': {'type': 'box'},
-            'pixel_format': 'rgb',
-            'component_format': 'float32',
-            'sample_border': False,
-        }
-    }
-    sensor = mi.load_dict(sensor_dict)
-
-    # Create target image
-    target_data = dr.arange(mi.Float, 48)  # 4*4*3 = 48 values
-    target = mi.TensorXf(target_data, shape=(4, 4, 3))
+    sensor = make_perspective_sensor(4, 4)
+    target = make_target(4, 4, 3)
 
     ray_loader = mi.ad.loaders.Rayloader(
         sensors=[sensor],
@@ -185,29 +206,8 @@ def test_ray_loader_pixel_perm(variants_vec_backends_once_rgb):
 
 def test_ray_loader_tile_sampling_3x3(variants_vec_backends_once_rgb):
     """Test 3x3 tile sampling."""
-    T = mi.ScalarTransform4f
-
-    # Create larger image for meaningful tiles
-    sensor_dict = {
-        'type': 'perspective',
-        'fov_axis': 'smaller',
-        'fov': 45,
-        'to_world': T().look_at(origin=[0, 0, 3], target=[0, 0, 0], up=[0, 1, 0]),
-        'sampler': {'type': 'independent', 'sample_count': 1},
-        'film': {
-            'type': 'hdrfilm',
-            'width': 8, 'height': 6,  # 8x6 image
-            'rfilter': {'type': 'box'},
-            'pixel_format': 'rgb',
-            'component_format': 'float32',
-            'sample_border': False,
-        }
-    }
-    sensor = mi.load_dict(sensor_dict)
-
-    # Create target image
-    target_data = dr.arange(mi.Float, 144)  # 8*6*3 = 144 values
-    target = mi.TensorXf(target_data, shape=(6, 8, 3))
+    sensor = make_perspective_sensor(8, 6)
+    target = make_target(8, 6, 3)
 
     # Test with tile_size=3
     ray_loader = mi.ad.loaders.Rayloader(
@@ -244,28 +244,8 @@ def test_ray_loader_tile_sampling_3x3(variants_vec_backends_once_rgb):
 
 def test_ray_loader_boundary_handling(variants_vec_backends_once_rgb):
     """Test boundary handling with tiles that don't fit evenly."""
-    T = mi.ScalarTransform4f
-
-    # Create 7x5 image with 3x3 tiles (uneven fit)
-    sensor_dict = {
-        'type': 'perspective',
-        'fov_axis': 'smaller',
-        'fov': 45,
-        'to_world': T().look_at(origin=[0, 0, 3], target=[0, 0, 0], up=[0, 1, 0]),
-        'sampler': {'type': 'independent', 'sample_count': 1},
-        'film': {
-            'type': 'hdrfilm',
-            'width': 7, 'height': 5,  # 7x5 image
-            'rfilter': {'type': 'box'},
-            'pixel_format': 'rgb',
-            'component_format': 'float32',
-            'sample_border': False,
-        }
-    }
-    sensor = mi.load_dict(sensor_dict)
-
-    target_data = dr.arange(mi.Float, 105)  # 7*5*3 = 105 values
-    target = mi.TensorXf(target_data, shape=(5, 7, 3))
+    sensor = make_perspective_sensor(7, 5)
+    target = make_target(7, 5, 3)
 
     ray_loader = mi.ad.loaders.Rayloader(
         sensors=[sensor],
@@ -280,13 +260,6 @@ def test_ray_loader_boundary_handling(variants_vec_backends_once_rgb):
     assert ray_loader.tiles_per_col == 2  # ceil(5/3) = 2
     assert ray_loader.tiles_per_sensor == 6
 
-    # Test that we can generate pixels for boundary tiles
-    # Tile at (1,2) should only cover pixels in range x=[6,6], y=[3,4]
-    tile_pixels = ray_loader.generate_tile_pixels(5, 0)  # Last tile (row=1, col=2)
-    expected_pixels = [3*7 + 6, 4*7 + 6]  # Only 2 pixels in boundary tile
-    assert len(tile_pixels) == 2
-    assert set(tile_pixels) == set(expected_pixels)
-
     # The vectorized tiled shuffler should cover every pixel despite uneven
     # boundary tiles.
     all_pixels_seen = set()
@@ -299,33 +272,10 @@ def test_ray_loader_boundary_handling(variants_vec_backends_once_rgb):
 
 def test_ray_loader_multi_sensor_tiling(variants_vec_backends_once_rgb):
     """Test tiling with multiple sensors."""
-    T = mi.ScalarTransform4f
-
-    sensor_dict = {
-        'type': 'perspective',
-        'fov': 45,
-        'sampler': {'type': 'independent', 'sample_count': 1},
-        'film': {
-            'type': 'hdrfilm',
-            'width': 4, 'height': 4,
-            'rfilter': {'type': 'box'},
-            'pixel_format': 'rgb',
-            'sample_border': False,
-        }
-    }
-
-    # Create two sensors
-    sensor1_dict = dict(sensor_dict)
-    sensor1_dict['to_world'] = T().look_at(origin=[0, 0, 3], target=[0, 0, 0], up=[0, 1, 0])
-    sensor1 = mi.load_dict(sensor1_dict)
-
-    sensor2_dict = dict(sensor_dict)
-    sensor2_dict['to_world'] = T().look_at(origin=[0, 0, -3], target=[0, 0, 0], up=[0, 1, 0])
-    sensor2 = mi.load_dict(sensor2_dict)
-
-    # Create target images
-    target1 = mi.TensorXf(dr.arange(mi.Float, 48), shape=(4, 4, 3))
-    target2 = mi.TensorXf(dr.arange(mi.Float, 48) + 100, shape=(4, 4, 3))
+    sensor1 = make_perspective_sensor(4, 4, origin=(0, 0, 3))
+    sensor2 = make_perspective_sensor(4, 4, origin=(0, 0, -3))
+    target1 = make_target(4, 4, 3)
+    target2 = make_target(4, 4, 3, offset=100)
 
     ray_loader = mi.ad.loaders.Rayloader(
         sensors=[sensor1, sensor2],
@@ -357,23 +307,8 @@ def test_ray_loader_multi_sensor_tiling(variants_vec_backends_once_rgb):
 
 def test_ray_loader_tile_validation(variants_vec_backends_once_rgb):
     """Test validation of tile parameters."""
-    T = mi.ScalarTransform4f
-
-    sensor_dict = {
-        'type': 'perspective',
-        'fov': 45,
-        'to_world': T().look_at(origin=[0, 0, 3], target=[0, 0, 0], up=[0, 1, 0]),
-        'sampler': {'type': 'independent', 'sample_count': 1},
-        'film': {
-            'type': 'hdrfilm',
-            'width': 4, 'height': 4,
-            'rfilter': {'type': 'box'},
-            'pixel_format': 'rgb',
-            'sample_border': False,
-        }
-    }
-    sensor = mi.load_dict(sensor_dict)
-    target = mi.TensorXf(dr.arange(mi.Float, 48), shape=(4, 4, 3))
+    sensor = make_perspective_sensor(4, 4, component_format=None)
+    target = make_target(4, 4, 3)
 
     # Test negative tile_size
     with pytest.raises(ValueError, match="tile_size \\(-1\\) must be positive"):
@@ -411,11 +346,10 @@ def test_ray_loader_tile_validation(variants_vec_backends_once_rgb):
         )
 
     # Test mismatched channel counts across sensors/targets
-    rgba_sensor_dict = dict(sensor_dict)
-    rgba_sensor_dict['film'] = dict(sensor_dict['film'])
-    rgba_sensor_dict['film']['pixel_format'] = 'rgba'
-    rgba_sensor = mi.load_dict(rgba_sensor_dict)
-    rgba_target = mi.TensorXf(dr.arange(mi.Float, 64), shape=(4, 4, 4))
+    rgba_sensor = make_perspective_sensor(
+        4, 4, pixel_format='rgba', component_format=None
+    )
+    rgba_target = make_target(4, 4, 4)
     with pytest.raises(ValueError, match="channels"):
         mi.ad.loaders.Rayloader(
             sensors=[sensor, rgba_sensor],
@@ -424,11 +358,11 @@ def test_ray_loader_tile_validation(variants_vec_backends_once_rgb):
         )
 
     # Test unsupported crop windows
-    cropped_sensor_dict = dict(sensor_dict)
-    cropped_sensor_dict['film'] = dict(sensor_dict['film'])
-    cropped_sensor_dict['film']['crop_width'] = 2
-    cropped_sensor_dict['film']['crop_height'] = 2
-    cropped_sensor = mi.load_dict(cropped_sensor_dict)
+    cropped_sensor = make_perspective_sensor(
+        4, 4,
+        component_format=None,
+        film_overrides={'crop_width': 2, 'crop_height': 2}
+    )
     with pytest.raises(ValueError, match="crop window"):
         mi.ad.loaders.Rayloader(
             sensors=[cropped_sensor],
@@ -439,23 +373,8 @@ def test_ray_loader_tile_validation(variants_vec_backends_once_rgb):
 
 def test_ray_loader_tile_spatial_coherence(variants_vec_backends_once_rgb):
     """Test that tiled sampling produces spatially coherent batches."""
-    T = mi.ScalarTransform4f
-
-    sensor_dict = {
-        'type': 'perspective',
-        'fov': 45,
-        'to_world': T().look_at(origin=[0, 0, 3], target=[0, 0, 0], up=[0, 1, 0]),
-        'sampler': {'type': 'independent', 'sample_count': 1},
-        'film': {
-            'type': 'hdrfilm',
-            'width': 8, 'height': 8,
-            'rfilter': {'type': 'box'},
-            'pixel_format': 'rgb',
-            'sample_border': False,
-        }
-    }
-    sensor = mi.load_dict(sensor_dict)
-    target = mi.TensorXf(dr.arange(mi.Float, 192), shape=(8, 8, 3))
+    sensor = make_perspective_sensor(8, 8, component_format=None)
+    target = make_target(8, 8, 3)
 
     # Use 4x4 tiles
     ray_loader = mi.ad.loaders.Rayloader(
@@ -492,23 +411,8 @@ def test_ray_loader_tile_spatial_coherence(variants_vec_backends_once_rgb):
 
 def test_ray_loader_large_tile_size(variants_vec_backends_once_rgb):
     """Test with large tile sizes relative to image size."""
-    T = mi.ScalarTransform4f
-
-    sensor_dict = {
-        'type': 'perspective',
-        'fov': 45,
-        'to_world': T().look_at(origin=[0, 0, 3], target=[0, 0, 0], up=[0, 1, 0]),
-        'sampler': {'type': 'independent', 'sample_count': 1},
-        'film': {
-            'type': 'hdrfilm',
-            'width': 3, 'height': 3,  # Small image
-            'rfilter': {'type': 'box'},
-            'pixel_format': 'rgb',
-            'sample_border': False,
-        }
-    }
-    sensor = mi.load_dict(sensor_dict)
-    target = mi.TensorXf(dr.arange(mi.Float, 27), shape=(3, 3, 3))
+    sensor = make_perspective_sensor(3, 3, component_format=None)
+    target = make_target(3, 3, 3)
 
     # Use tile_size=5 which is larger than image dimensions
     ray_loader = mi.ad.loaders.Rayloader(
@@ -533,23 +437,8 @@ def test_ray_loader_large_tile_size(variants_vec_backends_once_rgb):
 
 def test_ray_loader_flat_sensor_api(variants_vec_backends_once_rgb):
     """Test flat sensor string conversion and direct ray sampling APIs."""
-    T = mi.ScalarTransform4f
-
-    sensor_dict = {
-        'type': 'perspective',
-        'fov': 45,
-        'to_world': T().look_at(origin=[0, 0, 3], target=[0, 0, 0], up=[0, 1, 0]),
-        'sampler': {'type': 'independent', 'sample_count': 1},
-        'film': {
-            'type': 'hdrfilm',
-            'width': 2, 'height': 2,
-            'rfilter': {'type': 'box'},
-            'pixel_format': 'rgb',
-            'sample_border': False,
-        }
-    }
-    sensor = mi.load_dict(sensor_dict)
-    target = mi.TensorXf(dr.arange(mi.Float, 12), shape=(2, 2, 3))
+    sensor = make_perspective_sensor(2, 2, component_format=None)
+    target = make_target(2, 2, 3)
 
     ray_loader = mi.ad.loaders.Rayloader(
         sensors=[sensor],
