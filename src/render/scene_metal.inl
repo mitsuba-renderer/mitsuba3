@@ -682,11 +682,25 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_release_metal() {
         if (m_accel) {
             auto *state = (MetalAccelState<UInt32> *) m_accel;
 
-            // Release the per-scene drjit handle first. This drops drjit's
-            // last reference on the MetalScene; its destruction callback
-            // releases any cached IFTs and our retain on the
-            // intersection-function library. Mitsuba then releases the
-            // raw Metal objects (TLAS / BLAS / owned buffers) below.
+            // Pre-emptively null out the MetalScene's TLAS pointer. This
+            // is a no-op for the common case (the dec_ref below is the
+            // last ref → the MetalScene is freed). However, frozen-
+            // function recordings retain references on ``scene_index``
+            // (via captured TraceRay nodes' dep[1]), keeping the
+            // MetalScene alive past this point. Without this null-out
+            // its ``tlas`` field would be a dangling pointer to a
+            // released MTL::AccelerationStructure, causing a use-after-
+            // free in ``setAccelerationStructure`` at the next
+            // frozen-function replay.
+            if (state->scene_index)
+                jit_metal_invalidate_scene_tlas(state->scene_index);
+
+            // Release the per-scene drjit handle. This drops drjit's
+            // last (Mitsuba-side) reference on the MetalScene; its
+            // destruction callback releases any cached IFTs and our
+            // retain on the intersection-function library. Mitsuba
+            // then releases the raw Metal objects (TLAS / BLAS / owned
+            // buffers) below.
             if (state->scene_index) {
                 jit_var_dec_ref(state->scene_index);
                 state->scene_index = 0;
