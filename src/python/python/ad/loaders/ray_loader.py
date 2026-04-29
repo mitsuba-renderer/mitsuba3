@@ -24,11 +24,25 @@ class flat_sensor(mi.Sensor):
         self.source_film_height = film_size[1]
         self.pixels_per_batch = pixels_per_batch
 
-        # Build vectorized pointer type of sensors
-        self.sensors_unique_ptr = dr.zeros(mi.SensorPtr, self.num_sensors)
-        for i in range(self.num_sensors):
-            dr.scatter(self.sensors_unique_ptr,
-                      mi.SensorPtr(sensors[i]), i)
+        def make_sample_ray_differential_target(sensor: mi.Sensor):
+            def sample_ray_differential(
+                time: mi.Float,
+                sample1: mi.Float,
+                sample2: mi.Point2f,
+                sample3: mi.Point2f,
+                active: mi.Bool = True,
+            ) -> Tuple[mi.RayDifferential3f, mi.Spectrum]:
+                return sensor.sample_ray_differential(
+                    time, sample1, sample2, sample3, active
+                )
+
+            return sample_ray_differential
+
+        # Use dr.switch to limit symbolic tracing to the known child sensors.
+        self.sensor_sample_ray_differential = [
+            make_sample_ray_differential_target(sensor)
+            for sensor in sensors
+        ]
 
     def sample_ray_differential(
         self,
@@ -40,9 +54,6 @@ class flat_sensor(mi.Sensor):
     ) -> Tuple[mi.RayDifferential3f, mi.Spectrum]:
 
         spp = dr.width(sample2) // dr.width(self.pixel_idx)
-        if spp == 0:
-            # This should not be traced as a virtual function
-            return dr.zeros(mi.RayDifferential3f), dr.zeros(mi.Spectrum)
 
         # Compute the corresponding sensor index
         pixel_idx = dr.repeat(self.pixel_idx, spp)
@@ -67,15 +78,15 @@ class flat_sensor(mi.Sensor):
         )
 
         # Dispatch the ray sampling to the corresponding sensors
-        sensors_ptr = dr.gather(
-            mi.SensorPtr, self.sensors_unique_ptr, sensor_idx
-        )
-        rays, weights = sensors_ptr.sample_ray_differential(
-            time=time,
-            sample1=sample1,
-            sample2=sample2_override,
-            sample3=sample3,
-            active=active,
+        rays, weights = dr.switch(
+            sensor_idx,
+            self.sensor_sample_ray_differential,
+            time,
+            sample1,
+            sample2_override,
+            sample3,
+            active,
+            label="Rayloader.sample_ray_differential",
         )
 
         return rays, weights
