@@ -98,10 +98,6 @@ def test_ray_loader(variants_vec_backends_once_rgb):
     assert target1.shape == (3, 2, 4), f"Target1 shape incorrect: {target1.shape}"
     assert target2.shape == (3, 2, 4), f"Target2 shape incorrect: {target2.shape}"
 
-    # Create a dummy scene (not actually used for this test)
-    scene_dict = mi.cornell_box()
-    scene = mi.load_dict(scene_dict)
-
     # Create the ray loader with batch size of 4 pixels
     sensors = [sensor1, sensor2]
     target_images = [target1, target2]
@@ -127,9 +123,11 @@ def test_ray_loader(variants_vec_backends_once_rgb):
 
     # Verify flat sensor dimensions match original sensors
     assert ray_loader.flat_sensor.source_film_width == 2, \
-        f"Flat sensor width incorrect: {ray_loader.flat_sensor.width}"
+        ("Flat sensor width incorrect: "
+         f"{ray_loader.flat_sensor.source_film_width}")
     assert ray_loader.flat_sensor.source_film_height == 3, \
-        f"Flat sensor height incorrect: {ray_loader.flat_sensor.height}"
+        ("Flat sensor height incorrect: "
+         f"{ray_loader.flat_sensor.source_film_height}")
 
     # Expected pixel to value mapping
     expected_values = {}
