@@ -310,6 +310,18 @@ public:
         // Divide by the number of faces per Gaussians
         si.prim_index /= (uint32_t) m_shell_faces.size();
 
+        // Backface culling. The Embree path installs a custom filter
+        // (`embree_filter_backface_culling`) so the integrator only ever sees
+        // the front-facing entry hit per ellipsoid. The Metal HW intersector
+        // accepts both faces, so without an equivalent post-hit reject the
+        // volprim integrator double-counts (entry + exit) every primitive
+        // and produces ~2x brightness. Invalidate hits where the geometric
+        // normal points the same direction as the ray.
+        if constexpr (dr::is_metal_v<Float>) {
+            Mask backface = active & (dr::dot(si.n, ray.d) > 0.f);
+            si.t = dr::select(backface, dr::Infinity<Float>, si.t);
+        }
+
         return si;
     }
 

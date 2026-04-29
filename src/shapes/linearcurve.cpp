@@ -348,6 +348,16 @@ public:
         Point3f c = p0 * (1.f - v_local) + p1 * v_local;
         si.n = si.sh_frame.n = dr::normalize(si.p - c);
 
+        // Backface culling: linear curves are documented to only return
+        // outward-facing hits (Embree's RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE
+        // and OptiX's OPTIX_PRIMITIVE_TYPE_ROUND_LINEAR cull at intersection
+        // time). Apple's Metal HW curve intersector accepts both sides — so
+        // when the ray hits from inside the tube (cosine of normal w.r.t.
+        // ray direction is positive), invalidate the hit here so backends
+        // agree on the public ray_intersect contract.
+        Mask backface = active & (dr::dot(si.n, ray.d) > 0.f);
+        si.t = dr::select(backface, dr::Infinity<Float>, si.t);
+
         if (need_uv) {
             Vector3f rad_vec = si.p - c;
             Vector3f rad_vec_normalized = dr::normalize(rad_vec);

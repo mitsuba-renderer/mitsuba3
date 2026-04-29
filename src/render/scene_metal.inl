@@ -740,6 +740,23 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_metal(const Ray3f &ray,
 
         auto *state = (MetalAccelState<UInt32> *) m_accel;
 
+        // Empty scene: nothing to intersect. Return an all-miss
+        // PreliminaryIntersection. Embree behaves this way silently for
+        // shape-less scenes; the Metal accel-build skips TLAS construction
+        // when there are no meshes (state->scene_index == 0), so we have to
+        // synthesize the miss result here. Without this short-circuit
+        // ``jit_metal_ray_trace`` raises because scene == 0.
+        if (state->scene_index == 0) {
+            PreliminaryIntersection3f pi;
+            pi.t           = dr::Infinity<Float>;
+            pi.prim_uv     = dr::zeros<Point2f>();
+            pi.prim_index  = 0;
+            pi.shape_index = 0;
+            pi.shape       = nullptr;
+            pi.instance    = nullptr;
+            return pi;
+        }
+
         dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
         Single ray_tmin(0.f), ray_tmax(ray.maxt);
 
@@ -810,6 +827,10 @@ Scene<Float, Spectrum>::ray_test_metal(const Ray3f &ray, Mask active) const {
         using Single = dr::float32_array_t<Float>;
 
         auto *state = (MetalAccelState<UInt32> *) m_accel;
+
+        // Empty scene: no occluders, every ray is unobstructed.
+        if (state->scene_index == 0)
+            return dr::zeros<Mask>(dr::width(ray.o));
 
         dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
         Single ray_tmin(0.f), ray_tmax(ray.maxt);
