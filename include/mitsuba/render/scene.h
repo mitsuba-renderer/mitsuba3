@@ -861,6 +861,17 @@ protected:
     void traverse_1_cb_rw_cpu(void *payload,
                               drjit::detail::traverse_callback_rw fn);
 
+    /**
+     * Metal-backend equivalents of the CPU traversal helpers above. Defined
+     * in scene_metal.inl, used by ``traverse_1_cb_*`` to walk the JIT-tracked
+     * fields of ``MetalAccelState`` (which has a different layout than the
+     * Embree state, so the CPU traversal cannot be reused).
+     */
+    void traverse_1_cb_ro_metal(void *payload,
+                                drjit::detail::traverse_callback_ro fn) const;
+    void traverse_1_cb_rw_metal(void *payload,
+                                drjit::detail::traverse_callback_rw fn);
+
     MI_DECLARE_TRAVERSE_CB(m_accel_handle, m_emitters, m_emitters_dr, m_shapes,
                            m_shapes_dr, m_shapegroups, m_sensors, m_sensors_dr,
                            m_children, m_integrator, m_environment,

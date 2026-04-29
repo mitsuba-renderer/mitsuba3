@@ -834,4 +834,30 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_metal() {
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_metal() { }
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_metal() { }
 
+MI_VARIANT void Scene<Float, Spectrum>::traverse_1_cb_ro_metal(
+    void *payload, drjit::detail::traverse_callback_ro fn) const {
+    if constexpr (dr::is_metal_v<Float>) {
+        if (!m_accel)
+            return;
+        auto &s = *(MetalAccelState<UInt32> *) m_accel;
+        // Traverse the JIT-tracked DynamicBuffer fields. The raw Metal
+        // pointers (TLAS / BLAS / library handles) and ``scene_index``
+        // (a single drjit-core variable index, kept alive via ref-count)
+        // are owned outside the JIT graph and intentionally skipped.
+        drjit::traverse_1_fn_ro(s.shapes_registry_ids, payload, fn);
+        drjit::traverse_1_fn_ro(s.is_instance_mask,    payload, fn);
+    }
+}
+
+MI_VARIANT void Scene<Float, Spectrum>::traverse_1_cb_rw_metal(
+    void *payload, drjit::detail::traverse_callback_rw fn) {
+    if constexpr (dr::is_metal_v<Float>) {
+        if (!m_accel)
+            return;
+        auto &s = *(MetalAccelState<UInt32> *) m_accel;
+        drjit::traverse_1_fn_rw(s.shapes_registry_ids, payload, fn);
+        drjit::traverse_1_fn_rw(s.is_instance_mask,    payload, fn);
+    }
+}
+
 NAMESPACE_END(mitsuba)

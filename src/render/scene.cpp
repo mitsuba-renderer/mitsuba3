@@ -683,6 +683,14 @@ Scene<Float, Spectrum>::ray_test_metal(const Ray3f &, Mask) const {
 }
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_metal() { }
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_metal() { }
+MI_VARIANT void Scene<Float, Spectrum>::traverse_1_cb_ro_metal(
+    void *, drjit::detail::traverse_callback_ro) const {
+    NotImplementedError("traverse_1_cb_ro_metal");
+}
+MI_VARIANT void Scene<Float, Spectrum>::traverse_1_cb_rw_metal(
+    void *, drjit::detail::traverse_callback_rw) {
+    NotImplementedError("traverse_1_cb_rw_metal");
+}
 #endif
 
 MI_VARIANT
@@ -702,6 +710,8 @@ void Scene<Float, Spectrum>::traverse_1_cb_ro(
     });
     if constexpr (dr::is_cuda_v<Float>) {
         // Nothing to traverse for now
+    } else if constexpr (dr::is_metal_v<Float>) {
+        traverse_1_cb_ro_metal(payload, fn);
     } else {
         traverse_1_cb_ro_cpu(payload, fn);
     }
@@ -724,6 +734,8 @@ void Scene<Float, Spectrum>::traverse_1_cb_rw(
     });
     if constexpr (dr::is_cuda_v<Float>) {
         // Nothing to traverse for now
+    } else if constexpr (dr::is_metal_v<Float>) {
+        traverse_1_cb_rw_metal(payload, fn);
     } else {
         traverse_1_cb_rw_cpu(payload, fn);
     }
