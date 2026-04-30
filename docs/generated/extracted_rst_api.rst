@@ -8438,7 +8438,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.ad.Array2u:
+        Returns → :py:obj:`mitsuba.Vector2u`:
             *no description available*
 
     .. py:method:: mitsuba.Mesh.face_count()
@@ -8458,7 +8458,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.ad.Array3u:
+        Returns → :py:obj:`mitsuba.Vector3u`:
             *no description available*
 
     .. py:method:: mitsuba.Mesh.face_normal(self, index, active=True)
@@ -8525,7 +8525,7 @@
         Parameter ``other`` (:py:obj:`mitsuba.Mesh`):
             *no description available*
 
-        Returns → ref<mitsuba::Mesh<drjit::DiffArray<(JitBackend)2, float>, mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>>>:
+        Returns → ref<mitsuba::Mesh<drjit::DiffArray<(JitBackend)2, float>, mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul> > >:
             *no description available*
 
     .. py:method:: mitsuba.Mesh.opposite_dedge(self, index, active=True)
@@ -8682,7 +8682,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.ad.Array2u:
+        Returns → :py:obj:`mitsuba.Vector2u`:
             *no description available*
 
     .. py:method:: mitsuba.MeshPtr.face_count()
@@ -8702,7 +8702,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.ad.Array3u:
+        Returns → :py:obj:`mitsuba.Vector3u`:
             *no description available*
 
     .. py:method:: mitsuba.MeshPtr.face_normal(self, index, active=True)
@@ -11393,6 +11393,77 @@
         Returns → int:
             *no description available*
 
+.. py:class:: mitsuba.Ray2d
+
+    Simple n-dimensional ray segment data structure
+
+    Along with the ray origin and direction, this data structure
+    additionally stores a maximum ray position ``maxt``, a time value
+    ``time`` as well a the wavelength information associated with the ray.
+
+    .. py:method:: __init__()
+
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Create an uninitialized ray
+        
+        2. ``__init__(self, other: :py:obj:`mitsuba.Ray2d`) -> None``
+        
+        Copy constructor
+        
+        3. ``__init__(self, o: :py:obj:`mitsuba.Point2d`, d: :py:obj:`mitsuba.Vector2d`, time: drjit.llvm.ad.Float64 = 0.0, wavelengths: :py:obj:`mitsuba.Color0f` | None = None) -> None``
+        
+        Construct a new ray (o, d) with time
+        
+        4. ``__init__(self, o: :py:obj:`mitsuba.Point2d`, d: :py:obj:`mitsuba.Vector2d`, maxt: drjit.llvm.ad.Float64, time: drjit.llvm.ad.Float64, wavelengths: :py:obj:`mitsuba.Color0f`) -> None``
+        
+        Construct a new ray (o, d) with bounds
+        
+        5. ``__init__(self, other: :py:obj:`mitsuba.Ray2d`, maxt: drjit.llvm.ad.Float64) -> None``
+        
+        Copy a ray, but change the maxt value
+
+        
+    .. py:method:: mitsuba.Ray2d.__call__(self, t)
+
+        Return the position of a point along the ray
+
+        Parameter ``t`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Point2d`:
+            *no description available*
+
+    .. py:method:: mitsuba.Ray2d.assign(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.Ray2d`, /):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:property:: mitsuba.Ray2d.d
+
+        Ray direction
+
+    .. py:property:: mitsuba.Ray2d.maxt
+
+        Maximum position on the ray segment
+
+    .. py:property:: mitsuba.Ray2d.o
+
+        Ray origin
+
+    .. py:property:: mitsuba.Ray2d.time
+
+        Time value associated with this ray
+
+    .. py:property:: mitsuba.Ray2d.wavelengths
+
+        Wavelength associated with the ray
+
 .. py:class:: mitsuba.Ray2f
 
     Simple n-dimensional ray segment data structure
@@ -13811,6 +13882,258 @@
 
         Returns → :py:obj:`mitsuba.ScalarProjectiveTransform4f`:
             *no description available*
+
+.. py:class:: mitsuba.ScalarRay2d
+
+    Simple n-dimensional ray segment data structure
+
+    Along with the ray origin and direction, this data structure
+    additionally stores a maximum ray position ``maxt``, a time value
+    ``time`` as well a the wavelength information associated with the ray.
+
+    .. py:method:: __init__()
+
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Create an uninitialized ray
+        
+        2. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay2d`) -> None``
+        
+        Copy constructor
+        
+        3. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint2d`, d: :py:obj:`mitsuba.ScalarVector2d`, time: float = 0.0, wavelengths: :py:obj:`mitsuba.ScalarColor0f` | None = None) -> None``
+        
+        Construct a new ray (o, d) with time
+        
+        4. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint2d`, d: :py:obj:`mitsuba.ScalarVector2d`, maxt: float, time: float, wavelengths: :py:obj:`mitsuba.ScalarColor0f`) -> None``
+        
+        Construct a new ray (o, d) with bounds
+        
+        5. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay2d`, maxt: float) -> None``
+        
+        Copy a ray, but change the maxt value
+
+        
+    .. py:method:: mitsuba.ScalarRay2d.__call__(self, t)
+
+        Return the position of a point along the ray
+
+        Parameter ``t`` (float):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ScalarPoint2d`:
+            *no description available*
+
+    .. py:property:: mitsuba.ScalarRay2d.d
+
+        Ray direction
+
+    .. py:property:: mitsuba.ScalarRay2d.maxt
+
+        Maximum position on the ray segment
+
+    .. py:property:: mitsuba.ScalarRay2d.o
+
+        Ray origin
+
+    .. py:property:: mitsuba.ScalarRay2d.time
+
+        Time value associated with this ray
+
+    .. py:property:: mitsuba.ScalarRay2d.wavelengths
+
+        Wavelength associated with the ray
+
+.. py:class:: mitsuba.ScalarRay2f
+
+    Simple n-dimensional ray segment data structure
+
+    Along with the ray origin and direction, this data structure
+    additionally stores a maximum ray position ``maxt``, a time value
+    ``time`` as well a the wavelength information associated with the ray.
+
+    .. py:method:: __init__()
+
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Create an uninitialized ray
+        
+        2. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay2f`) -> None``
+        
+        Copy constructor
+        
+        3. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint2f`, d: :py:obj:`mitsuba.ScalarVector2f`, time: float = 0.0, wavelengths: :py:obj:`mitsuba.ScalarColor0f` | None = None) -> None``
+        
+        Construct a new ray (o, d) with time
+        
+        4. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint2f`, d: :py:obj:`mitsuba.ScalarVector2f`, maxt: float, time: float, wavelengths: :py:obj:`mitsuba.ScalarColor0f`) -> None``
+        
+        Construct a new ray (o, d) with bounds
+        
+        5. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay2f`, maxt: float) -> None``
+        
+        Copy a ray, but change the maxt value
+
+        
+    .. py:method:: mitsuba.ScalarRay2f.__call__(self, t)
+
+        Return the position of a point along the ray
+
+        Parameter ``t`` (float):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ScalarPoint2f`:
+            *no description available*
+
+    .. py:property:: mitsuba.ScalarRay2f.d
+
+        Ray direction
+
+    .. py:property:: mitsuba.ScalarRay2f.maxt
+
+        Maximum position on the ray segment
+
+    .. py:property:: mitsuba.ScalarRay2f.o
+
+        Ray origin
+
+    .. py:property:: mitsuba.ScalarRay2f.time
+
+        Time value associated with this ray
+
+    .. py:property:: mitsuba.ScalarRay2f.wavelengths
+
+        Wavelength associated with the ray
+
+.. py:class:: mitsuba.ScalarRay3d
+
+    Simple n-dimensional ray segment data structure
+
+    Along with the ray origin and direction, this data structure
+    additionally stores a maximum ray position ``maxt``, a time value
+    ``time`` as well a the wavelength information associated with the ray.
+
+    .. py:method:: __init__()
+
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Create an uninitialized ray
+        
+        2. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay3d`) -> None``
+        
+        Copy constructor
+        
+        3. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint3d`, d: :py:obj:`mitsuba.ScalarVector3d`, time: float = 0.0, wavelengths: :py:obj:`mitsuba.ScalarColor0f` | None = None) -> None``
+        
+        Construct a new ray (o, d) with time
+        
+        4. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint3d`, d: :py:obj:`mitsuba.ScalarVector3d`, maxt: float, time: float, wavelengths: :py:obj:`mitsuba.ScalarColor0f`) -> None``
+        
+        Construct a new ray (o, d) with bounds
+        
+        5. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay3d`, maxt: float) -> None``
+        
+        Copy a ray, but change the maxt value
+
+        
+    .. py:method:: mitsuba.ScalarRay3d.__call__(self, t)
+
+        Return the position of a point along the ray
+
+        Parameter ``t`` (float):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ScalarPoint3d`:
+            *no description available*
+
+    .. py:property:: mitsuba.ScalarRay3d.d
+
+        Ray direction
+
+    .. py:property:: mitsuba.ScalarRay3d.maxt
+
+        Maximum position on the ray segment
+
+    .. py:property:: mitsuba.ScalarRay3d.o
+
+        Ray origin
+
+    .. py:property:: mitsuba.ScalarRay3d.time
+
+        Time value associated with this ray
+
+    .. py:property:: mitsuba.ScalarRay3d.wavelengths
+
+        Wavelength associated with the ray
+
+.. py:class:: mitsuba.ScalarRay3f
+
+    Simple n-dimensional ray segment data structure
+
+    Along with the ray origin and direction, this data structure
+    additionally stores a maximum ray position ``maxt``, a time value
+    ``time`` as well a the wavelength information associated with the ray.
+
+    .. py:method:: __init__()
+
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Create an uninitialized ray
+        
+        2. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay3f`) -> None``
+        
+        Copy constructor
+        
+        3. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint3f`, d: :py:obj:`mitsuba.ScalarVector3f`, time: float = 0.0, wavelengths: :py:obj:`mitsuba.ScalarColor0f` | None = None) -> None``
+        
+        Construct a new ray (o, d) with time
+        
+        4. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint3f`, d: :py:obj:`mitsuba.ScalarVector3f`, maxt: float, time: float, wavelengths: :py:obj:`mitsuba.ScalarColor0f`) -> None``
+        
+        Construct a new ray (o, d) with bounds
+        
+        5. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay3f`, maxt: float) -> None``
+        
+        Copy a ray, but change the maxt value
+
+        
+    .. py:method:: mitsuba.ScalarRay3f.__call__(self, t)
+
+        Return the position of a point along the ray
+
+        Parameter ``t`` (float):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ScalarPoint3f`:
+            *no description available*
+
+    .. py:property:: mitsuba.ScalarRay3f.d
+
+        Ray direction
+
+    .. py:property:: mitsuba.ScalarRay3f.maxt
+
+        Maximum position on the ray segment
+
+    .. py:property:: mitsuba.ScalarRay3f.o
+
+        Ray origin
+
+    .. py:property:: mitsuba.ScalarRay3f.time
+
+        Time value associated with this ray
+
+    .. py:property:: mitsuba.ScalarRay3f.wavelengths
+
+        Wavelength associated with the ray
 
 .. py:class:: mitsuba.ScalarVector0d
 
@@ -18289,7 +18612,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool | None):
             Mask to specify active lanes.
 
-        Parameter ``force_nonaccel`` (bool | None):
+        Parameter ``force_nonaccel`` (bool):
             *no description available*
 
         Returns → list[drjit.llvm.ad.Float]:
@@ -18600,7 +18923,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool | None):
             Mask to specify active lanes.
 
-        Parameter ``force_nonaccel`` (bool | None):
+        Parameter ``force_nonaccel`` (bool):
             *no description available*
 
         Returns → list[drjit.llvm.ad.Float]:
@@ -18911,7 +19234,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool | None):
             Mask to specify active lanes.
 
-        Parameter ``force_nonaccel`` (bool | None):
+        Parameter ``force_nonaccel`` (bool):
             *no description available*
 
         Returns → list[drjit.llvm.ad.Float]:
@@ -19222,7 +19545,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool | None):
             Mask to specify active lanes.
 
-        Parameter ``force_nonaccel`` (bool | None):
+        Parameter ``force_nonaccel`` (bool):
             *no description available*
 
         Returns → list[drjit.llvm.ad.Float]:
@@ -19533,7 +19856,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool | None):
             Mask to specify active lanes.
 
-        Parameter ``force_nonaccel`` (bool | None):
+        Parameter ``force_nonaccel`` (bool):
             *no description available*
 
         Returns → list[drjit.llvm.ad.Float]:
@@ -19844,7 +20167,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool | None):
             Mask to specify active lanes.
 
-        Parameter ``force_nonaccel`` (bool | None):
+        Parameter ``force_nonaccel`` (bool):
             *no description available*
 
         Returns → list[drjit.llvm.ad.Float]:
@@ -20155,7 +20478,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool | None):
             Mask to specify active lanes.
 
-        Parameter ``force_nonaccel`` (bool | None):
+        Parameter ``force_nonaccel`` (bool):
             *no description available*
 
         Returns → list[drjit.llvm.ad.Float]:
@@ -20466,7 +20789,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool | None):
             Mask to specify active lanes.
 
-        Parameter ``force_nonaccel`` (bool | None):
+        Parameter ``force_nonaccel`` (bool):
             *no description available*
 
         Returns → list[drjit.llvm.ad.Float]:
@@ -20777,7 +21100,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool | None):
             Mask to specify active lanes.
 
-        Parameter ``force_nonaccel`` (bool | None):
+        Parameter ``force_nonaccel`` (bool):
             *no description available*
 
         Returns → list[drjit.llvm.ad.Float]:
@@ -22942,6 +23265,173 @@
 
     Compute the index and data arrays of the (combinatorial) Laplacian matrix of
     a given mesh.
+
+.. py:class:: mitsuba.ad.loaders.Rayloader
+
+    Rayloader for efficient batch rendering with multiple sensors.
+
+    .. py:method:: mitsuba.ad.loaders.Rayloader.flat_tile_idx_to_tile_coords(flat_tile_idx, sensor_idx)
+
+        Convert flat tile index to (tile_row, tile_col) coordinates within sensor.
+
+        Parameter ``flat_tile_idx`` (int):
+            *no description available*
+
+        Parameter ``sensor_idx`` (int):
+            *no description available*
+
+        Returns → tuple[int, int]:
+            *no description available*
+
+    .. py:method:: mitsuba.ad.loaders.Rayloader.tile_coords_to_pixel_range(tile_row, tile_col)
+
+        Convert tile coordinates to pixel coordinate ranges (start_y, end_y, start_x, end_x).
+
+        Parameter ``tile_row`` (int):
+            *no description available*
+
+        Parameter ``tile_col`` (int):
+            *no description available*
+
+        Returns → tuple[int, int, int, int]:
+            *no description available*
+
+    .. py:method:: mitsuba.ad.loaders.Rayloader.generate_tile_pixels(tile_idx, sensor_idx)
+
+        Generate all pixel indices within a tile, handling boundary clamping.
+
+        Parameter ``tile_idx`` (int):
+            *no description available*
+
+        Parameter ``sensor_idx`` (int):
+            *no description available*
+
+        Returns → list[int]:
+            *no description available*
+
+    .. py:method:: mitsuba.ad.loaders.Rayloader.shuffle_pixel_index(seed)
+
+        Shuffle pixel index buffer using tile-based permutation for GPU coherence.
+
+        Parameter ``seed`` (~drjit.llvm.ad.UInt):
+            *no description available*
+
+    .. py:method:: mitsuba.ad.loaders.Rayloader.next()
+
+        Get the next batch of pixel indices and corresponding target tensor.
+
+        This method reshuffles the pixel index buffer every `iter_shuffle`
+        iterations.
+
+.. py:function:: mitsuba.ad.loaders.Tuple(overloaded)
+
+
+    Tuple[X, Y] is the cross-product type of X and Y.
+
+    Example: Tuple[T1, T2] is a tuple of two elements corresponding
+    to type variables T1 and T2.  Tuple[int, float, str] is a tuple
+    of an int, a float and a string.
+
+    To specify a variable-length tuple of homogeneous type, use Tuple[T, ...].
+
+.. py:class:: mitsuba.ad.loaders.flat_sensor
+
+    Base class: :py:obj:`mitsuba.Sensor`
+
+    .. py:method:: mitsuba.ad.loaders.flat_sensor.initialize(sensors, pixels_per_batch)
+
+        Initialize the flat sensor with multiple sensors.
+
+        Parameter ``sensors`` (list[~:py:obj:`mitsuba.Sensor`]):
+            *no description available*
+
+        Parameter ``pixels_per_batch`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.ad.loaders.flat_sensor.sample_ray_differential(self, time, sample1, sample2, sample3, active=True)
+
+        Importance sample a ray differential proportional to the sensor's
+        sensitivity profile.
+
+        The sensor profile is a six-dimensional quantity that depends on time,
+        wavelength, surface position, and direction. This function takes a
+        given time value and five uniformly distributed samples on the
+        interval [0, 1] and warps them so that the returned ray the profile.
+        Any discrepancies between ideal and actual sampled profiles are
+        absorbed into a spectral importance weight that is returned along with
+        the ray.
+
+        In contrast to Endpoint::sample_ray(), this function returns
+        differentials with respect to the X and Y axis in screen space.
+
+        Parameter ``time`` (drjit.llvm.ad.Float):
+            The scene time associated with the ray_differential to be sampled
+
+        Parameter ``sample1`` (drjit.llvm.ad.Float):
+            A uniformly distributed 1D value that is used to sample the
+            spectral dimension of the sensitivity profile.
+
+        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+            This argument corresponds to the sample position in fractional
+            pixel coordinates relative to the crop window of the underlying
+            film.
+
+        Parameter ``sample3`` (:py:obj:`mitsuba.Point2f`):
+            A uniformly distributed sample on the domain ``[0,1]^2``. This
+            argument determines the position on the aperture of the sensor.
+            This argument is ignored if ``needs_sample_3() == false``.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[:py:obj:`mitsuba.RayDifferential3f`, :py:obj:`mitsuba.Color3f`]:
+            The sampled ray differential and (potentially spectrally varying)
+            importance weights. The latter account for the difference between
+            the sensor profile and the actual used sampling density function.
+
+    .. py:method:: mitsuba.ad.loaders.flat_sensor.sample_ray(self, time, sample1, sample2, sample3, active=True)
+
+        Importance sample a ray proportional to the endpoint's
+        sensitivity/emission profile.
+
+        The endpoint profile is a six-dimensional quantity that depends on
+        time, wavelength, surface position, and direction. This function takes
+        a given time value and five uniformly distributed samples on the
+        interval [0, 1] and warps them so that the returned ray follows the
+        profile. Any discrepancies between ideal and actual sampled profile
+        are absorbed into a spectral importance weight that is returned along
+        with the ray.
+
+        Parameter ``time`` (drjit.llvm.ad.Float):
+            The scene time associated with the ray to be sampled
+
+        Parameter ``sample1`` (drjit.llvm.ad.Float):
+            A uniformly distributed 1D value that is used to sample the
+            spectral dimension of the emission profile.
+
+        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+            A uniformly distributed sample on the domain ``[0,1]^2``. For
+            sensor endpoints, this argument corresponds to the sample position
+            in fractional pixel coordinates relative to the crop window of the
+            underlying film. This argument is ignored if ``needs_sample_2() ==
+            false``.
+
+        Parameter ``sample3`` (:py:obj:`mitsuba.Point2f`):
+            A uniformly distributed sample on the domain ``[0,1]^2``. For
+            sensor endpoints, this argument determines the position on the
+            aperture of the sensor. This argument is ignored if
+            ``needs_sample_3() == false``.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[:py:obj:`mitsuba.Ray3f`, :py:obj:`mitsuba.Color3f`]:
+            The sampled ray and (potentially spectrally varying) importance
+            weights. The latter account for the difference between the profile
+            and the actual used sampling density function.
 
 .. py:function:: mitsuba.chi2.BSDFAdapter()
 
@@ -25175,7 +25665,7 @@
     Parameter ``scene`` (``mi.Scene``):
         Reference to the scene being rendered in a differentiable manner.
 
-    Parameter ``params`` (~typing.Any | None):
+    Parameter ``params`` (~typing.Any):
        An optional container of scene parameters that should receive gradients.
        This argument isn't optional when computing forward mode derivatives. It
        should be an instance of type ``mi.SceneParameters`` obtained via
@@ -25227,7 +25717,7 @@
     Parameter ``sensor`` (int | ~:py:obj:`mitsuba.Sensor`):
         *no description available*
 
-    Parameter ``integrator`` (~:py:obj:`mitsuba.Integrator` | None):
+    Parameter ``integrator`` (~:py:obj:`mitsuba.Integrator`):
         *no description available*
 
     Parameter ``seed`` (~drjit.llvm.ad.UInt):
@@ -25305,9 +25795,8 @@
     Returns → int:
         A uniformly distributed 64-bit integer
 
-.. py:function:: mitsuba.sample_tea_float
+.. py:function:: mitsuba.sample_tea_float(overloaded)
 
-    sample_tea_float32(v0: int, v1: int, rounds: int = 4) -> float
     sample_tea_float32(v0: drjit.llvm.ad.UInt, v1: drjit.llvm.ad.UInt, rounds: int = 4) -> drjit.llvm.ad.Float
 
     Generate fast and reasonably good pseudorandom numbers using the Tiny
@@ -26176,21 +26665,7 @@
     Returns → :py:obj:`mitsuba.Color3f`:
         *no description available*
 
-.. py:function:: mitsuba.util.Any()
-
-    Special type indicating an unconstrained type.
-
-    - Any is compatible with every type.
-    - Any assumed to have all methods.
-    - All values assumed to be instances of Any.
-
-    Note that all the above statements are true from the point of view of
-    static type checkers. At runtime, Any should not be used with instance
-    or class checks.
-
 .. py:function:: mitsuba.util.Optional()
-
-    Optional type.
 
     Optional[X] is equivalent to Union[X, None].
 
@@ -26198,25 +26673,29 @@
 
     Union type; Union[X, Y] means either X or Y.
 
-    To define a union, use e.g. Union[int, str].  Details:
+    On Python 3.10 and higher, the | operator
+    can also be used to denote unions;
+    X | Y means the same thing to the type checker as Union[X, Y].
+
+    To define a union, use e.g. Union[int, str]. Details:
     - The arguments must be types and there must be at least one.
     - None as an argument is a special case and is replaced by
       type(None).
     - Unions of unions are flattened, e.g.::
 
-        Union[Union[int, str], float] == Union[int, str, float]
+        assert Union[Union[int, str], float] == Union[int, str, float]
 
     - Unions of a single argument vanish, e.g.::
 
-        Union[int] == int  # The constructor actually returns int
+        assert Union[int] == int  # The constructor actually returns int
 
     - Redundant arguments are skipped, e.g.::
 
-        Union[int, str, int] == Union[int, str]
+        assert Union[int, str, int] == Union[int, str]
 
     - When comparing unions, the argument order is ignored, e.g.::
 
-        Union[int, str] == Union[str, int]
+        assert Union[int, str] == Union[str, int]
 
     - You cannot subclass or instantiate a union.
     - You can use Optional[X] as a shorthand for Union[X, None].

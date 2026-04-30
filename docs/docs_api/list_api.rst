@@ -354,6 +354,8 @@
 
 .. autoclass:: mitsuba.RadicalInverse
 
+.. autoclass:: mitsuba.Ray2d
+
 .. autoclass:: mitsuba.Ray2f
 
 .. autoclass:: mitsuba.Ray3d
@@ -451,6 +453,14 @@
 .. autoclass:: mitsuba.ScalarProjectiveTransform4d
 
 .. autoclass:: mitsuba.ScalarProjectiveTransform4f
+
+.. autoclass:: mitsuba.ScalarRay2d
+
+.. autoclass:: mitsuba.ScalarRay2f
+
+.. autoclass:: mitsuba.ScalarRay3d
+
+.. autoclass:: mitsuba.ScalarRay3f
 
 .. autoclass:: mitsuba.ScalarTransform3d
 
@@ -697,6 +707,12 @@
 .. autoclass:: mitsuba.ad.largesteps.SolveCholesky
 
 .. autofunction:: mitsuba.ad.largesteps.mesh_laplacian
+
+.. autoclass:: mitsuba.ad.loaders.Rayloader
+
+.. autofunction:: mitsuba.ad.loaders.Tuple
+
+.. autoclass:: mitsuba.ad.loaders.flat_sensor
 
 .. autofunction:: mitsuba.chi2.BSDFAdapter
 
@@ -1051,8 +1067,6 @@
 .. autofunction:: mitsuba.traverse
 
 .. autofunction:: mitsuba.unpolarized_spectrum
-
-.. autofunction:: mitsuba.util.Any
 
 .. autofunction:: mitsuba.util.Optional
 
