@@ -316,6 +316,10 @@ public:
     void metal_instance_to_world(float out[12]) const override {
         metal_get_to_world(out);
     }
+
+    const void *metal_shapegroup_id() const override {
+        return (const void *) m_shapegroup.get();
+    }
 #endif
 
     MI_DECLARE_CLASS(Instance)

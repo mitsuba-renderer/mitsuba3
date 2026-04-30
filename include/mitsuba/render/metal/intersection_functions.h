@@ -10,19 +10,19 @@
     Per-type combined buffer layout (sphere / disk / cylinder / ellipsoids):
     Mitsuba concatenates the per-primitive data of every shape of a given
     type into ONE buffer per type, bound at the type's IFT slot
-    ([[buffer(N)]] where N = INTERSECTION_FN_<type>). Each TLAS instance
-    carries its data offset (in elements) inside this combined buffer via
-    ``MTLAccelerationStructureUserIDInstanceDescriptor::userID``, which the
-    intersection function reads as ``[[user_instance_id]]``. The MSL
-    function then indexes the buffer at ``user_instance_id + primitive_id``.
+    ([[buffer(N)]] where N = INTERSECTION_FN_<type>) per IFT entry. The
+    intersection function reads its slice at ``[user_instance_id +
+    primitive_id]``.
 
-    This layout sidesteps Metal's "last write wins" semantics on shared IFT
-    buffer slots (the IFT only has one binding per slot, but each slot now
-    carries the entire concatenated dataset, and per-instance offsets pick
-    the right region).
-
-    The ``world_space_data`` intersection tag is required by MSL to make
-    [[user_instance_id]] available in bounding_box intersection functions.
+    Top-level shapes set the slice offset via the TLAS instance's
+    ``userID`` and bind the combined buffer at IFT-side offset 0.
+    Shape-group children share a single TLAS instance per group, so each
+    child gets its own IFT entry that re-binds the combined buffer with
+    a per-entry byte offset (and userID = 0). The MSL therefore sees
+    ``data[0 + primitive_id]`` against an already-offset pointer, which
+    resolves to the same combined-buffer slice. This sidesteps having
+    to thread a per-geometry offset through MSL primitive_data (Apple's
+    MSL rejects the various spellings we tried).
 
     SDFGrid is the exception: its data is shape-level (header + voxel
     indices + sample grid), not per-primitive, so concatenating is harder
@@ -141,7 +141,6 @@ struct BoundingBoxIntersection {
 // ---------------------------------------------------------------------------
 //  Sphere
 // ---------------------------------------------------------------------------
-
 [[intersection(bounding_box, instancing, world_space_data)]]
 BoundingBoxIntersection intersection_sphere(
     float3 origin                       [[origin]],

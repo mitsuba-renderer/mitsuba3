@@ -1112,6 +1112,13 @@ public:
         out[6] = 0.f; out[7]  = 0.f; out[8]  = 1.f;
         out[9] = 0.f; out[10] = 0.f; out[11] = 0.f;
     }
+
+    /**
+     * \brief Stable identity of the ShapeGroup referenced by this Instance,
+     * used by the Metal scene builder to cache one BLAS per group across
+     * multiple Instances. Returns nullptr by default (i.e. not an Instance).
+     */
+    virtual const void *metal_shapegroup_id() const { return nullptr; }
 #endif
 
     void traverse(TraversalCallback *callback) override;
