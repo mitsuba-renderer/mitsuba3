@@ -491,6 +491,22 @@ public:
 
         si.t = dr::select(active, si.t, dr::Infinity<Float>);
 
+        // The Metal IFT (intersection_disk in metal/intersection_functions.h)
+        // can only return ``accept_intersection`` and ``distance``; there is
+        // no MSL mechanism to forward the local (x, y) on the disk back to
+        // the kernel as ``pi.prim_uv``. Without a fix, every disk hit lands
+        // at the texture origin (uv=(0,0)). Recompute prim_uv from si.p so
+        // the UV-aware code below sees the correct value. (Embree fills
+        // prim_uv via ``ray_intersect_preliminary_impl``; OptiX uses
+        // OPTIX_PRIMITIVE_TYPE_CUSTOM hit attributes.) Done after the diff
+        // / non-diff branches because the IsDiff/non-FollowShape path
+        // overwrites prim_uv with ``replace_grad`` which propagates Metal's
+        // zero value.
+        if constexpr (dr::is_metal_v<Float>) {
+            Point3f local = to_object * si.p;
+            prim_uv = Point2f(local.x(), local.y());
+        }
+
         if (likely(has_flag(ray_flags, RayFlags::UV) ||
                    has_flag(ray_flags, RayFlags::dPdUV))) {
             Float r = dr::norm(Point2f(prim_uv.x(), prim_uv.y())),
