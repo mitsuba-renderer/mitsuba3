@@ -6,12 +6,26 @@ import mitsuba as mi
 import drjit as dr
 
 
-class flat_sensor(mi.Sensor):
+class FlatSensor(mi.Sensor):
+    """
+    Sensor used internally by :py:class:`~mitsuba.ad.RayDataLoader`.
+
+    Its film has one row with ``pixels_per_batch`` pixels. Before each render
+    call, :py:meth:`~mitsuba.ad.RayDataLoader.next()` stores the selected flat
+    source pixel indices in ``pixel_idx``. Sampling this sensor then remaps
+    those flat indices to the corresponding source sensor and pixel
+    coordinates.
+    """
+
     def __init__(self, props):
         mi.Sensor.__init__(self, props)
 
-        # To be updated by RayLoader
+        # To be updated by RayDataLoader
         self.pixel_idx = dr.zeros(mi.UInt32, 1)
+        self.num_sensors = 0
+        self.source_film_width = 0
+        self.source_film_height = 0
+        self.pixels_per_batch = 0
 
     def initialize(
         self,
@@ -24,6 +38,7 @@ class flat_sensor(mi.Sensor):
         self.source_film_width = film_size[0]
         self.source_film_height = film_size[1]
         self.pixels_per_batch = pixels_per_batch
+        self.pixel_idx = dr.zeros(mi.UInt32, pixels_per_batch)
 
         def make_sample_ray_differential_target(sensor: mi.Sensor):
             def sample_ray_differential(
@@ -87,7 +102,7 @@ class flat_sensor(mi.Sensor):
             sample2_override,
             sample3,
             active,
-            label="Rayloader.sample_ray_differential",
+            label="RayDataLoader.sample_ray_differential",
         )
 
         return rays, weights
@@ -105,7 +120,7 @@ class flat_sensor(mi.Sensor):
         return mi.Ray3f(ray), weight
 
     def to_string(self):
-        return ('Flat sensor[\n'
+        return ('FlatSensor[\n'
                 '    num_sensors=%d,\n'
                 '    width=%d,\n'
                 '    height=%d,\n'
@@ -114,10 +129,26 @@ class flat_sensor(mi.Sensor):
                        self.source_film_height))
 
 mi.register_sensor("flat_sensor",
-                   lambda props: flat_sensor(props))
+                   lambda props: FlatSensor(props))
 
 
-class Rayloader():
+class RayDataLoader:
+    """
+    Minibatch loader for rendering rays and matching target pixels.
+
+    This class treats every pixel of every source sensor as one flattened sample.
+    Calling :py:meth:`next()` returns a target tensor with shape
+    ``(1, pixels_per_batch, channels)`` together with an internal sensor that is
+    configured to render the same flattened pixels.
+
+    The loader exposes several scalar layout members: ``num_sensors``,
+    ``width``, ``height``, ``channel_size``, ``total_pixels``,
+    ``effective_total_pixels``, ``iter_shuffle``, and tile counts
+    (``tiles_per_row``, ``tiles_per_col``, ``tiles_per_sensor``). The member
+    ``pixel_batch_multiplier`` is equal to ``total_pixels / pixels_per_batch``
+    and can be used to scale minibatch losses to full-image magnitude.
+    """
+
     def __init__(
         self,
         sensors: list[mi.Sensor] | mi.Sensor,
@@ -127,7 +158,37 @@ class Rayloader():
         regular_reshuffle: bool = False,
         tile_size: int = 4,
     ) -> None:
-        """Rayloader for efficient batch rendering with multiple sensors."""
+        """
+        Initialize the ray data loader.
+
+        Parameter ``sensors`` (``mi.Sensor`` or ``list[mi.Sensor]``):
+            Source sensor(s). They must share a full film size, have no crop
+            window, disable ``sample_border``, and use the same number of base
+            channels as the target images.
+
+        Parameter ``target_images`` (``mi.TensorXf`` or ``list[mi.TensorXf]``):
+            Target image tensor(s), one per sensor. Each tensor must have shape
+            ``(height, width, channels)`` matching the corresponding sensor
+            film.
+
+        Parameter ``pixels_per_batch`` (``int``):
+            Number of flattened pixels returned by each
+            :py:meth:`~mitsuba.ad.RayDataLoader.next()` call. It must be
+            positive and no larger than ``total_pixels``.
+
+        Parameter ``seed`` (``int``):
+            Base seed used for deterministic pixel permutation.
+
+        Parameter ``regular_reshuffle`` (``bool``):
+            When enabled, reshuffle at the beginning of every full pass through
+            the padded pixel set. Otherwise, reuse the initial permutation.
+
+        Parameter ``tile_size`` (``int``):
+            Side length of square tiles used for pixel shuffling. A value of
+            ``1`` gives a fully random pixel permutation, intermediate values
+            improve spatial coherence, and values at least as large as the
+            image dimensions fall back to whole-image permutation.
+        """
 
         # Validate tile_size parameter
         if tile_size <= 0:
@@ -158,7 +219,7 @@ class Rayloader():
         self.width = reference_film.size()[0]
         self.height = reference_film.size()[1]
         self.channel_size = reference_shape[2]
-        self.ttl_pixels = self.num_sensors * self.width * self.height
+        self.total_pixels = self.num_sensors * self.width * self.height
 
         # Tile-related properties
         self.tile_size = tile_size
@@ -166,14 +227,14 @@ class Rayloader():
         self.tiles_per_col = (self.height + tile_size - 1) // tile_size
         self.tiles_per_sensor = self.tiles_per_row * self.tiles_per_col
 
-        # Assert that pixels_per_batch is valid
-        if pixels_per_batch <= 0 or pixels_per_batch > self.ttl_pixels:
+        # Validate that pixels_per_batch is valid
+        if pixels_per_batch <= 0 or pixels_per_batch > self.total_pixels:
             raise ValueError(
                 f"pixels_per_batch ({pixels_per_batch}) must be "
                 f"greater than 0 and less than or equal to "
-                f"ttl_pixels ({self.ttl_pixels})"
+                f"total_pixels ({self.total_pixels})"
             )
-        # Assert that all sensors and target_images have the same size
+        # Validate that all sensors and target_images have the same size
         if len(sensors) != len(target_images):
             raise ValueError(
                 f"Number of sensors ({len(sensors)}) does not match "
@@ -196,12 +257,12 @@ class Rayloader():
                 crop_offset[1] != 0):
                 raise ValueError(
                     f"Sensor {i} uses a crop window, which is not supported "
-                    "by RayLoader."
+                    "by RayDataLoader."
                 )
             if film.sample_border():
                 raise ValueError(
                     f"Sensor {i} has sample_border enabled, "
-                    "which is not supported by RayLoader."
+                    "which is not supported by RayDataLoader."
                 )
             tensor_shape = target_images[i].shape
             if len(tensor_shape) != 3:
@@ -261,9 +322,6 @@ class Rayloader():
         })
         self.flat_sensor.initialize(sensors, pixels_per_batch)
 
-        # Dummy initialization of pixel_idx, updated by `next()`
-        self.flat_sensor.pixel_idx = None
-
         self.target_images = target_images
         self.pixels_per_batch = pixels_per_batch
         self.seed = seed
@@ -273,18 +331,18 @@ class Rayloader():
 
         # Handle case where total pixels is not divisible by pixels_per_batch
         # by padding with repeated indices
-        self.effective_ttl_pixels = (
-            ((self.ttl_pixels + self.pixels_per_batch - 1) //
+        self.effective_total_pixels = (
+            ((self.total_pixels + self.pixels_per_batch - 1) //
             self.pixels_per_batch) * self.pixels_per_batch
         )
 
         # Calculate how many iterations to do a shuffle cycle
         self.iter_shuffle = (
-            self.effective_ttl_pixels // self.pixels_per_batch
+            self.effective_total_pixels // self.pixels_per_batch
         )
 
         # Calculate the pixel batch multiplier
-        self.pixel_batch_multiplier = float(self.ttl_pixels / pixels_per_batch)
+        self.pixel_batch_multiplier = float(self.total_pixels / pixels_per_batch)
 
         self._initialize_target_image_buffer()
         if 1 < self.tile_size < max(self.width, self.height):
@@ -292,8 +350,8 @@ class Rayloader():
 
     def _initialize_target_image_buffer(self):
         """Initialize the flattened target image buffer for efficient gathering."""
-        ttl_size = self.ttl_pixels * self.channel_size
-        self.target_image_flat = dr.empty(mi.Float, ttl_size)
+        total_size = self.total_pixels * self.channel_size
+        self.target_image_flat = dr.empty(mi.Float, total_size)
         chunk_size = self.width * self.height * self.channel_size
         for i in range(self.num_sensors):
             dr.scatter(
@@ -310,7 +368,7 @@ class Rayloader():
             mi.ArrayXf,
             self.target_image_flat,
             self.perm_pixel_index_buffer,
-            shape=(self.channel_size, self.effective_ttl_pixels)
+            shape=(self.channel_size, self.effective_total_pixels)
         ))
 
         # Make sure the buffer is in memory
@@ -356,20 +414,21 @@ class Rayloader():
             expanded_sensor_indices * (self.width * self.height) +
             final_y * self.width + final_x
         )
-        self.tile_pixel_table = dr.select(valid, pixel_indices, self.ttl_pixels)
+        self.tile_pixel_table = dr.select(valid, pixel_indices, self.total_pixels)
         dr.eval(self.tile_pixel_table)
 
     def _create_padded_buffer(self, pixel_indices):
-        """Create a padded buffer from pixel indices to fit effective_ttl_pixels.
+        """
+        Create a padded buffer from pixel indices to fit
+        ``effective_total_pixels``.
 
-        Args:
-            pixel_indices: DrJit array of pixel indices
+        Parameter ``pixel_indices`` (``mi.UInt32``):
+            Dr.Jit array containing pixel indices.
 
-        Returns:
-            Padded buffer of size effective_ttl_pixels
+        Returns a padded buffer of size ``effective_total_pixels``.
         """
         actual_count = len(pixel_indices)
-        buffer_indices = dr.arange(mi.UInt32, self.effective_ttl_pixels)
+        buffer_indices = dr.arange(mi.UInt32, self.effective_total_pixels)
         source_indices = buffer_indices % actual_count
         return dr.gather(mi.UInt32, pixel_indices, source_indices)
 
@@ -378,8 +437,9 @@ class Rayloader():
         if self.tile_size == 1:
             # Pixel-based permutation
             self.perm_pixel_index_buffer = mi.permute_kensler(
-                dr.arange(mi.UInt32, self.effective_ttl_pixels) % self.ttl_pixels,
-                self.effective_ttl_pixels,
+                dr.arange(mi.UInt32, self.effective_total_pixels) %
+                self.total_pixels,
+                self.effective_total_pixels,
                 seed,
             )
         else:
@@ -405,9 +465,9 @@ class Rayloader():
 
     def _shuffle_pixel_index_large_tiles(self, seed: mi.UInt32):
         """Handle large tiles that cover entire image."""
-        all_pixel_indices = dr.arange(mi.UInt32, self.ttl_pixels)
+        all_pixel_indices = dr.arange(mi.UInt32, self.total_pixels)
         permuted_pixels = mi.permute_kensler(
-            all_pixel_indices, self.ttl_pixels, seed
+            all_pixel_indices, self.total_pixels, seed
         )
         self.perm_pixel_index_buffer = self._create_padded_buffer(permuted_pixels)
 
@@ -425,7 +485,7 @@ class Rayloader():
         padded_pixel_indices = dr.gather(
             mi.UInt32, self.tile_pixel_table, permuted_table_indices
         )
-        valid_indices = dr.compress(padded_pixel_indices < self.ttl_pixels)
+        valid_indices = dr.compress(padded_pixel_indices < self.total_pixels)
         all_pixel_indices = dr.gather(
             mi.UInt32, padded_pixel_indices, valid_indices
         )

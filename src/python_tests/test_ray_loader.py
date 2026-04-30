@@ -46,7 +46,7 @@ def make_target(width, height, channels, offset=0):
 
 
 def test_ray_loader(variants_vec_backends_once_rgb):
-    """Test RayLoader with 2 cameras, 2x3 images, 4 channels"""
+    """Test RayDataLoader with 2 cameras, 2x3 images, 4 channels"""
     T = mi.ScalarTransform4f
 
     # Create two simple sensors with 2x3 films
@@ -103,7 +103,7 @@ def test_ray_loader(variants_vec_backends_once_rgb):
     target_images = [target1, target2]
     pixels_per_batch = 4
 
-    ray_loader = mi.ad.loaders.Rayloader(
+    ray_loader = mi.ad.loaders.RayDataLoader(
         sensors=sensors,
         target_images=target_images,
         pixels_per_batch=pixels_per_batch,
@@ -111,9 +111,9 @@ def test_ray_loader(variants_vec_backends_once_rgb):
         regular_reshuffle=True
     )
 
-    # Test RayLoader initialization
-    assert ray_loader.ttl_pixels == 12, \
-        f"Total pixels incorrect: {ray_loader.ttl_pixels}"
+    # Test RayDataLoader initialization
+    assert ray_loader.total_pixels == 12, \
+        f"Total pixels incorrect: {ray_loader.total_pixels}"
     assert ray_loader.channel_size == 4, \
         f"Channel size incorrect: {ray_loader.channel_size}"
     assert ray_loader.pixels_per_batch == 4, \
@@ -123,10 +123,10 @@ def test_ray_loader(variants_vec_backends_once_rgb):
 
     # Verify flat sensor dimensions match original sensors
     assert ray_loader.flat_sensor.source_film_width == 2, \
-        ("Flat sensor width incorrect: "
+        ("FlatSensor width incorrect: "
          f"{ray_loader.flat_sensor.source_film_width}")
     assert ray_loader.flat_sensor.source_film_height == 3, \
-        ("Flat sensor height incorrect: "
+        ("FlatSensor height incorrect: "
          f"{ray_loader.flat_sensor.source_film_height}")
 
     # Expected pixel to value mapping
@@ -176,7 +176,7 @@ def test_ray_loader_pixel_perm(variants_vec_backends_once_rgb):
     sensor = make_perspective_sensor(4, 4)
     target = make_target(4, 4, 3)
 
-    ray_loader = mi.ad.loaders.Rayloader(
+    ray_loader = mi.ad.loaders.RayDataLoader(
         sensors=[sensor],
         target_images=[target],
         pixels_per_batch=8,
@@ -189,7 +189,7 @@ def test_ray_loader_pixel_perm(variants_vec_backends_once_rgb):
     assert ray_loader.tiles_per_row == 4  # ceil(4/1) = 4
     assert ray_loader.tiles_per_col == 4  # ceil(4/1) = 4
     assert ray_loader.tiles_per_sensor == 16  # 4*4 = 16
-    assert ray_loader.ttl_pixels == 16
+    assert ray_loader.total_pixels == 16
 
     # Test pixel coverage is complete
     all_pixels_seen = set()
@@ -208,7 +208,7 @@ def test_ray_loader_tile_sampling_3x3(variants_vec_backends_once_rgb):
     target = make_target(8, 6, 3)
 
     # Test with tile_size=3
-    ray_loader = mi.ad.loaders.Rayloader(
+    ray_loader = mi.ad.loaders.RayDataLoader(
         sensors=[sensor],
         target_images=[target],
         pixels_per_batch=12,
@@ -221,7 +221,7 @@ def test_ray_loader_tile_sampling_3x3(variants_vec_backends_once_rgb):
     assert ray_loader.tiles_per_row == 3  # ceil(8/3) = 3 tiles per row
     assert ray_loader.tiles_per_col == 2  # ceil(6/3) = 2 tiles per col
     assert ray_loader.tiles_per_sensor == 6  # 3*2 = 6 tiles total
-    assert ray_loader.ttl_pixels == 48  # 8*6 = 48 total pixels
+    assert ray_loader.total_pixels == 48  # 8*6 = 48 total pixels
 
     # Test that batches work correctly
     all_pixels_seen = set()
@@ -245,7 +245,7 @@ def test_ray_loader_boundary_handling(variants_vec_backends_once_rgb):
     sensor = make_perspective_sensor(7, 5)
     target = make_target(7, 5, 3)
 
-    ray_loader = mi.ad.loaders.Rayloader(
+    ray_loader = mi.ad.loaders.RayDataLoader(
         sensors=[sensor],
         target_images=[target],
         pixels_per_batch=15,
@@ -275,7 +275,7 @@ def test_ray_loader_multi_sensor_tiling(variants_vec_backends_once_rgb):
     target1 = make_target(4, 4, 3)
     target2 = make_target(4, 4, 3, offset=100)
 
-    ray_loader = mi.ad.loaders.Rayloader(
+    ray_loader = mi.ad.loaders.RayDataLoader(
         sensors=[sensor1, sensor2],
         target_images=[target1, target2],
         pixels_per_batch=8,
@@ -285,7 +285,7 @@ def test_ray_loader_multi_sensor_tiling(variants_vec_backends_once_rgb):
 
     # Verify multi-sensor setup
     assert ray_loader.num_sensors == 2
-    assert ray_loader.ttl_pixels == 32  # 2 * 4 * 4
+    assert ray_loader.total_pixels == 32  # 2 * 4 * 4
     assert ray_loader.tiles_per_sensor == 4  # ceil(4/2) * ceil(4/2) = 2*2 = 4
 
     # Test that pixels from both sensors are sampled
@@ -310,7 +310,7 @@ def test_ray_loader_tile_validation(variants_vec_backends_once_rgb):
 
     # Test negative tile_size
     with pytest.raises(ValueError, match="tile_size \\(-1\\) must be positive"):
-        mi.ad.loaders.Rayloader(
+        mi.ad.loaders.RayDataLoader(
             sensors=[sensor],
             target_images=[target],
             pixels_per_batch=8,
@@ -319,7 +319,7 @@ def test_ray_loader_tile_validation(variants_vec_backends_once_rgb):
 
     # Test zero tile_size
     with pytest.raises(ValueError, match="tile_size \\(0\\) must be positive"):
-        mi.ad.loaders.Rayloader(
+        mi.ad.loaders.RayDataLoader(
             sensors=[sensor],
             target_images=[target],
             pixels_per_batch=8,
@@ -328,7 +328,7 @@ def test_ray_loader_tile_validation(variants_vec_backends_once_rgb):
 
     # Test empty inputs
     with pytest.raises(ValueError, match="At least one sensor"):
-        mi.ad.loaders.Rayloader(
+        mi.ad.loaders.RayDataLoader(
             sensors=[],
             target_images=[],
             pixels_per_batch=8
@@ -337,7 +337,7 @@ def test_ray_loader_tile_validation(variants_vec_backends_once_rgb):
     # Test malformed target image shape
     malformed_target = mi.TensorXf(dr.arange(mi.Float, 16), shape=(4, 4))
     with pytest.raises(ValueError, match="Target images must have shape"):
-        mi.ad.loaders.Rayloader(
+        mi.ad.loaders.RayDataLoader(
             sensors=[sensor],
             target_images=[malformed_target],
             pixels_per_batch=8
@@ -349,7 +349,7 @@ def test_ray_loader_tile_validation(variants_vec_backends_once_rgb):
     )
     rgba_target = make_target(4, 4, 4)
     with pytest.raises(ValueError, match="channels"):
-        mi.ad.loaders.Rayloader(
+        mi.ad.loaders.RayDataLoader(
             sensors=[sensor, rgba_sensor],
             target_images=[target, rgba_target],
             pixels_per_batch=8
@@ -362,7 +362,7 @@ def test_ray_loader_tile_validation(variants_vec_backends_once_rgb):
         film_overrides={'crop_width': 2, 'crop_height': 2}
     )
     with pytest.raises(ValueError, match="crop window"):
-        mi.ad.loaders.Rayloader(
+        mi.ad.loaders.RayDataLoader(
             sensors=[cropped_sensor],
             target_images=[target],
             pixels_per_batch=8
@@ -375,7 +375,7 @@ def test_ray_loader_tile_spatial_coherence(variants_vec_backends_once_rgb):
     target = make_target(8, 8, 3)
 
     # Use 4x4 tiles
-    ray_loader = mi.ad.loaders.Rayloader(
+    ray_loader = mi.ad.loaders.RayDataLoader(
         sensors=[sensor],
         target_images=[target],
         pixels_per_batch=16,  # Exactly one tile per batch
@@ -413,7 +413,7 @@ def test_ray_loader_large_tile_size(variants_vec_backends_once_rgb):
     target = make_target(3, 3, 3)
 
     # Use tile_size=5 which is larger than image dimensions
-    ray_loader = mi.ad.loaders.Rayloader(
+    ray_loader = mi.ad.loaders.RayDataLoader(
         sensors=[sensor],
         target_images=[target],
         pixels_per_batch=9,
@@ -438,7 +438,7 @@ def test_ray_loader_flat_sensor_api(variants_vec_backends_once_rgb):
     sensor = make_perspective_sensor(2, 2, component_format=None)
     target = make_target(2, 2, 3)
 
-    ray_loader = mi.ad.loaders.Rayloader(
+    ray_loader = mi.ad.loaders.RayDataLoader(
         sensors=[sensor],
         target_images=[target],
         pixels_per_batch=4,
@@ -446,7 +446,7 @@ def test_ray_loader_flat_sensor_api(variants_vec_backends_once_rgb):
     )
     target_tensor, flat_sensor = ray_loader.next()
 
-    assert "Flat sensor" in str(flat_sensor)
+    assert "FlatSensor" in str(flat_sensor)
 
     time = mi.Float(0)
     sample1 = mi.Float(0)
@@ -493,7 +493,7 @@ def test_ray_loader_render_spp_gt_one(variants_vec_backends_once_rgb):
     scene = mi.load_dict(scene_dict)
     sensor = scene.sensors()[0]
     target = mi.TensorXf(dr.zeros(mi.Float, 48), shape=(4, 4, 3))
-    ray_loader = mi.ad.loaders.Rayloader(
+    ray_loader = mi.ad.loaders.RayDataLoader(
         sensors=[sensor],
         target_images=[target],
         pixels_per_batch=8,
@@ -508,9 +508,9 @@ def test_ray_loader_render_spp_gt_one(variants_vec_backends_once_rgb):
 
 
 def test_ray_loader_with_rendering_optimization(variants_vec_backends_once_rgb):
-    """Test RayLoader with actual rendering and optimization.
+    """Test RayDataLoader with actual rendering and optimization.
 
-    This test demonstrates the typical usage pattern for RayLoader in an
+    This test demonstrates the typical usage pattern for RayDataLoader in an
     optimization loop where the loss should decrease over iterations.
     """
     T = mi.ScalarTransform4f
@@ -589,8 +589,8 @@ def test_ray_loader_with_rendering_optimization(variants_vec_backends_once_rgb):
     for sensor in sensors:
         image_ref.append(mi.render(target_scene, sensor=sensor, spp=4))
 
-    # Create RayLoader with tiled sampling
-    ray_loader = mi.ad.loaders.Rayloader(
+    # Create RayDataLoader with tiled sampling
+    ray_loader = mi.ad.loaders.RayDataLoader(
         sensors=sensors,
         target_images=image_ref,
         pixels_per_batch=256,
@@ -600,7 +600,7 @@ def test_ray_loader_with_rendering_optimization(variants_vec_backends_once_rgb):
     )
 
     # Verify setup
-    assert ray_loader.ttl_pixels == 2 * 32 * 32  # 2 sensors * 32*32 pixels each
+    assert ray_loader.total_pixels == 2 * 32 * 32  # 2 sensors * 32*32 pixels each
     assert ray_loader.tile_size == 4
     assert ray_loader.pixels_per_batch == 256
 
