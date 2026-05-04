@@ -1,6 +1,7 @@
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/bbox.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -15,8 +16,8 @@ Orthographic camera (:monosp:`orthographic`)
 .. pluginparameters::
 
  * - to_world
-   - |transform|
-   - Specifies an optional camera-to-world transformation.
+   - |animation|
+   - Specifies an optional camera-to-world transformation (can be animated).
      (Default: none (i.e. camera space = world space))
    - |exposed|
 
@@ -132,8 +133,9 @@ public:
         Point3f near_p = m_sample_to_camera *
                          Point3f(position_sample.x(), position_sample.y(), 0.f);
 
-        ray.o = m_to_world.value() * near_p;
-        ray.d = dr::normalize(m_to_world.value() * Vector3f(0, 0, 1));
+        auto to_world = m_to_world->eval(time);
+        ray.o = to_world * near_p;
+        ray.d = dr::normalize(to_world * Vector3f(0, 0, 1));
         ray.maxt = m_far_clip - m_near_clip;
 
         return { ray, wav_weight };
@@ -156,12 +158,13 @@ public:
         Point3f near_p = m_sample_to_camera *
                          Point3f(position_sample.x(), position_sample.y(), 0.f);
 
-        ray.o = m_to_world.value() * near_p;
-        ray.d = dr::normalize(m_to_world.value() * Vector3f(0, 0, 1));
+        auto to_world = m_to_world->eval(time);
+        ray.o = to_world * near_p;
+        ray.d = dr::normalize(to_world * Vector3f(0, 0, 1));
         ray.maxt = m_far_clip - m_near_clip;
 
-        ray.o_x = m_to_world.value() * (near_p + m_dx);
-        ray.o_y = m_to_world.value() * (near_p + m_dy);
+        ray.o_x = to_world * (near_p + m_dx);
+        ray.o_y = to_world * (near_p + m_dy);
         ray.d_x = ray.d_y = ray.d;
         ray.has_differentials = true;
 
@@ -174,8 +177,7 @@ public:
     }
 
     ScalarBoundingBox3f bbox() const override {
-        ScalarPoint3f p = m_to_world.scalar() * ScalarPoint3f(0.f);
-        return ScalarBoundingBox3f(p, p);
+        return m_to_world->get_translation_bounds();
     }
 
     std::string to_string() const override {

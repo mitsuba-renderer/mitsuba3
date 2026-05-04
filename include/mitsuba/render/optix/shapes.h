@@ -12,6 +12,7 @@
 
 #include <drjit-core/optix.h>
 
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/render/optix/common.h>
 #include <mitsuba/render/optix_api.h>
 #include <mitsuba/render/shape.h>
@@ -31,12 +32,16 @@ struct MiOptixAccelData {
     HandleData linear_curves;
     HandleData custom_shapes;
 
+    std::vector<void*> motion_transforms;
+
     ~MiOptixAccelData() {
         if (meshes.buffer) jit_free(meshes.buffer);
         if (ellipsoids_meshes.buffer) jit_free(ellipsoids_meshes.buffer);
         if (bspline_curves.buffer) jit_free(bspline_curves.buffer);
         if (linear_curves.buffer) jit_free(linear_curves.buffer);
         if (custom_shapes.buffer) jit_free(custom_shapes.buffer);
+        for (void* p : motion_transforms)
+            jit_free(p);
     }
 };
 
@@ -239,13 +244,13 @@ void build_gas(const OptixDeviceContext &context,
 }
 
 /// Prepares and fills the \ref OptixInstance array associated with a given list of shapes.
-template <typename Shape, typename Transform4f>
+template <typename Shape, typename Point>
 void prepare_ias(const OptixDeviceContext &context,
                  std::vector<ref<Shape>> &shapes,
                  uint32_t base_sbt_offset,
                  const MiOptixAccelData &accel,
                  uint32_t instance_id,
-                 const Transform4f& transf,
+                 const Transform<Point, true>& transf,
                  std::vector<OptixInstance> &out_instances) {
     unsigned int sbt_offset = base_sbt_offset;
 
@@ -295,6 +300,89 @@ void prepare_ias(const OptixDeviceContext &context,
                 context, out_instances,
                 jit_registry_id(shape), transf);
     }
+}
+
+template <typename Float, typename Spectrum>
+void prepare_ias(const OptixDeviceContext &context,
+                 std::vector<ref<Shape<Float, Spectrum>>> &shapes,
+                 uint32_t base_sbt_offset,
+                 const MiOptixAccelData &accel,
+                 uint32_t instance_id,
+                 const AnimatedTransform<Float, Spectrum>& transf,
+                 std::vector<OptixInstance> &out_instances,
+                 std::vector<OptixSRTMotionTransform*> &out_motion_transforms) {
+    (void) shapes;
+    unsigned int sbt_offset = base_sbt_offset;
+    size_t n_keyframes = transf.keyframes().size();
+
+    auto build_optix_motion_instance = [&](const MiOptixAccelData::HandleData &handle,
+                                            bool disable_face_culling = true) {
+        if (handle.handle) {
+            // Allocate memory for motion transform on host. See
+            // https://raytracing-docs.nvidia.com/optix7/api/struct_optix_s_r_t_motion_transform.html
+            // for API details, in particular the use of (n_keyframes - 2) for the allocation size.
+            size_t size = sizeof(OptixSRTMotionTransform) + (n_keyframes - 2) * sizeof(OptixSRTData);
+            void* host_ptr = jit_malloc(AllocType::HostPinned, size);
+
+            OptixSRTMotionTransform* mt = (OptixSRTMotionTransform*) host_ptr;
+            mt->child = handle.handle;
+            mt->motionOptions.numKeys = (unsigned short) n_keyframes;
+            mt->motionOptions.flags = 0;
+            mt->motionOptions.timeBegin = transf.get_time_bounds().min[0];
+            mt->motionOptions.timeEnd = transf.get_time_bounds().max[0];
+            int k = 0;
+            for (const auto &[time, kf] : transf.keyframes()) {
+                OptixSRTData* srt_data = &mt->srtData[k];
+                srt_data->sx = kf.S.x();
+                srt_data->sy = kf.S.y();
+                srt_data->sz = kf.S.z();
+                srt_data->a = 0.0f;
+                srt_data->b = 0.0f;
+                srt_data->c = 0.0f;
+                srt_data->pvx = 0.0f;
+                srt_data->pvy = 0.0f;
+                srt_data->pvz = 0.0f;
+                srt_data->qx = kf.Q.x();
+                srt_data->qy = kf.Q.y();
+                srt_data->qz = kf.Q.z();
+                srt_data->qw = kf.Q.w();
+                srt_data->tx = kf.T.x();
+                srt_data->ty = kf.T.y();
+                srt_data->tz = kf.T.z();
+                k++;
+            }
+
+            // Move memory to device (frees host memory)
+            void* device_ptr = jit_malloc_migrate(host_ptr, AllocType::Device, 1);
+            out_motion_transforms.push_back((OptixSRTMotionTransform*) device_ptr);
+
+            // Convert to traversable handle
+            OptixTraversableHandle motion_handle;
+            OptixTraversableType type = OPTIX_TRAVERSABLE_TYPE_SRT_MOTION_TRANSFORM;
+            OptixResult res = optixConvertPointerToTraversableHandle(context, device_ptr, type, &motion_handle);
+            if ((int)res != 0)
+                Throw("optixConvertPointerToTraversableHandle failed with error code %d", (int)res);
+
+            // Create OptixInstance pointing to the motion transform handle
+            uint32_t flags = disable_face_culling ?
+                             OPTIX_INSTANCE_FLAG_DISABLE_TRIANGLE_FACE_CULLING :
+                             OPTIX_INSTANCE_FLAG_NONE;
+
+            OptixInstance instance = {
+                { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0 }, // Identity transform
+                instance_id, sbt_offset, /* visibilityMask = */ 255,
+                flags, motion_handle, /* pads = */ { 0, 0 }
+            };
+            out_instances.push_back(instance);
+            sbt_offset += (unsigned int) handle.count;
+        }
+    };
+
+    build_optix_motion_instance(accel.meshes, /* disable_face_culling */ true);
+    build_optix_motion_instance(accel.ellipsoids_meshes, /* disable_face_culling */ false);
+    build_optix_motion_instance(accel.bspline_curves);
+    build_optix_motion_instance(accel.linear_curves);
+    build_optix_motion_instance(accel.custom_shapes);
 }
 
 NAMESPACE_END(mitsuba)

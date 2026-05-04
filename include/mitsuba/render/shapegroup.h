@@ -63,6 +63,12 @@ public:
                            uint32_t instance_id,
                            const ScalarAffineTransform4f& transf) override;
 
+    void optix_prepare_ias(const OptixDeviceContext& context,
+                           std::vector<OptixInstance>& instances,
+                           uint32_t instance_id,
+                           const AnimatedTransform4f& transf,
+                           std::vector<OptixSRTMotionTransform*>& out_motion_transforms);
+
     void optix_fill_hitgroup_records(
         std::vector<HitGroupSbtRecord> &hitgroup_records,
         const OptixProgramGroup *pg,

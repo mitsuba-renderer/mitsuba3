@@ -24,6 +24,7 @@ using OptixTransformFormat   = int;
 using OptixAccelPropertyType = int;
 using OptixProgramGroupKind  = int;
 using OptixPrimitiveType     = int;
+using OptixTraversableType   = int;
 using OptixDeviceContext     = void*;
 using OptixTask              = void*;
 using OptixDenoiserStructPtr = void*;
@@ -98,6 +99,11 @@ using OptixOpacityMicromapArrayIndexingMode       = int;
 #define OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES (1u << 4)
 
 #define OPTIX_MODULE_COMPILE_STATE_COMPLETED 0x2364
+
+#define OPTIX_TRAVERSABLE_TYPE_STATIC_TRANSFORM        0x21C1
+#define OPTIX_TRAVERSABLE_TYPE_MATRIX_MOTION_TRANSFORM 0x21C2
+#define OPTIX_TRAVERSABLE_TYPE_SRT_MOTION_TRANSFORM    0x21C3
+
 
 
 // =====================================================
@@ -263,6 +269,21 @@ struct OptixInstance {
     unsigned int flags;
     OptixTraversableHandle traversableHandle;
     unsigned int pad[2];
+};
+
+struct OptixSRTData {
+    float sx, a, b, pvx;
+    float sy, c, pvy;
+    float sz, pvz;
+    float qx, qy, qz, qw;
+    float tx, ty, tz;
+};
+
+struct OptixSRTMotionTransform {
+    OptixTraversableHandle child;
+    OptixMotionOptions motionOptions;
+    unsigned int pad[3];
+    OptixSRTData srtData[2];
 };
 
 struct OptixPayloadType {
@@ -469,6 +490,8 @@ D(optixDenoiserInvoke, OptixDenoiserStructPtr, CUstream,
   unsigned int, unsigned int, CUdeviceptr, size_t);
 D(optixDenoiserComputeIntensity, OptixDenoiserStructPtr, CUstream,
   const OptixImage2D *, CUdeviceptr, CUdeviceptr, size_t);
+D(optixConvertPointerToTraversableHandle, OptixDeviceContext, CUdeviceptr,
+  OptixTraversableType, OptixTraversableHandle *);
 
 #undef D
 

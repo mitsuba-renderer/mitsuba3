@@ -88,8 +88,8 @@ def test02_sample_ray(variants_vec_spectral, s_open, s_time):
     assert dr.allclose(mi.unpolarized_spectrum(spec_weight), spec)
     assert dr.allclose(ray.time, time)
 
-    inv_z0 = dr.rcp((camera0.world_transform().inverse() @ ray.d).z)
-    inv_z1 = dr.rcp((camera1.world_transform().inverse() @ ray.d).z)
+    inv_z0 = dr.rcp((camera0.world_transform().eval(0.0).inverse() @ ray.d).z)
+    inv_z1 = dr.rcp((camera1.world_transform().eval(0.0).inverse() @ ray.d).z)
     o0 = mi.Vector3f(origins[0]) + near_clip * inv_z0 * mi.Vector3f(ray.d)
     o1 = mi.Vector3f(origins[1]) + near_clip * inv_z1 * mi.Vector3f(ray.d)
     o = o0

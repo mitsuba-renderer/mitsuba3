@@ -44,7 +44,7 @@ def test01_create(variant_scalar_rgb, origin, direction, s_open, s_time):
     assert dr.allclose(camera.shutter_open_time(), s_time)
     assert not camera.needs_aperture_sample()
     assert camera.bbox() == mi.BoundingBox3f(origin, origin)
-    assert dr.allclose(camera.world_transform().matrix,
+    assert dr.allclose(camera.world_transform().eval(0.0).matrix,
                        mi.Transform4f().look_at(origin, mi.Vector3f(origin) + direction, [0, 1, 0]).matrix)
 
 

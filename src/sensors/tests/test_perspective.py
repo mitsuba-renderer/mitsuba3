@@ -48,7 +48,7 @@ def test01_create(variant_scalar_rgb, origin, direction, s_open, s_time):
     assert dr.allclose(camera.shutter_open_time(), s_time)
     assert not camera.needs_aperture_sample()
     assert camera.bbox() == mi.BoundingBox3f(origin, origin)
-    assert dr.allclose(camera.world_transform().matrix,
+    assert dr.allclose(camera.world_transform().eval(0.0).matrix,
                        mi.Transform4f().look_at(origin, mi.Vector3f(origin) + direction, [0, 1, 0]).matrix)
 
 
@@ -73,7 +73,7 @@ def test02_sample_ray(variants_vec_spectral, origin, direction):
     assert dr.allclose(mi.unpolarized_spectrum(spec_weight), spec)
     assert dr.allclose(ray.time, time)
 
-    inv_z = dr.rcp((camera.world_transform().inverse() @ ray.d).z)
+    inv_z = dr.rcp((camera.world_transform().eval(0.0).inverse() @ ray.d).z)
     o = mi.Point3f(origin) + near_clip * inv_z * mi.Vector3f(ray.d)
     assert dr.allclose(ray.o, o, atol=1e-4)
 
@@ -104,7 +104,7 @@ def test03_sample_ray_differential(variants_vec_spectral, origin, direction):
     assert dr.allclose(mi.unpolarized_spectrum(spec_weight), spec)
     assert dr.allclose(ray.time, time)
 
-    inv_z = dr.rcp((camera.world_transform().inverse() @ ray.d).z)
+    inv_z = dr.rcp((camera.world_transform().eval(0.0).inverse() @ ray.d).z)
     o = mi.Point3f(origin) + near_clip * inv_z * mi.Vector3f(ray.d)
     assert dr.allclose(ray.o, o, atol=1e-4)
 
@@ -198,3 +198,38 @@ def test05_spectrum_sampling(variants_vec_spectral):
                 }
             }
         })
+
+
+def test06_animated_transform(variant_scalar_rgb):
+    t = mi.AnimatedTransform4f({
+        0.0: mi.Transform4f().translate([0, 0, 0]),
+        1.0: mi.Transform4f().translate([0, 0, 1])
+    })
+    sensor = mi.load_dict({
+        'type': 'perspective',
+        'to_world': t,
+    })
+
+    ray, _ = sensor.sample_ray(0.5, 0, [0.5, 0.5], 0)
+    assert dr.allclose(ray.o, mi.Point3f(0, 0, 0.5), atol=0.01)
+
+
+def test07_animation_xml(variant_scalar_rgb):
+    xml = """
+    <scene version="3.0.0">
+        <sensor type="perspective">
+            <animation name="to_world">
+                <transform time="0">
+                    <translate x="0" y="0" z="0"/>
+                </transform>
+                <transform time="1">
+                    <translate x="0" y="0" z="1"/>
+                </transform>
+            </animation>
+        </sensor>
+    </scene>
+    """
+    scene = mi.load_string(xml)
+    sensor = scene.sensors()[0]
+    ray, _ = sensor.sample_ray(0.5, 0, [0.5, 0.5], 0)
+    assert dr.allclose(ray.o, mi.Point3f(0, 0, 0.5), atol=0.01)

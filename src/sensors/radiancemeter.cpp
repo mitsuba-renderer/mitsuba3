@@ -1,6 +1,7 @@
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/sensor.h>
 
@@ -16,8 +17,8 @@ Radiance meter (:monosp:`radiancemeter`)
 .. pluginparameters::
 
  * - to_world
-   - |transform|
-   - Specifies an optional camera-to-world transformation.
+   - |animation|
+   - Specifies an optional camera-to-world transformation (can be animated).
      (Default: none (i.e. camera space = world space))
 
  * - origin
@@ -78,8 +79,8 @@ public:
                 ScalarPoint3f target     = origin + direction;
                 auto [up, unused]        = coordinate_system(dr::normalize(direction));
 
-                m_to_world = ScalarAffineTransform4f::look_at(origin, target, up);
-                dr::make_opaque(m_to_world);
+                ScalarAffineTransform4f to_world = ScalarAffineTransform4f::look_at(origin, target, up);
+                m_to_world = new AnimatedTransform<Float, Spectrum>(to_world);
             }
         }
 
@@ -111,8 +112,9 @@ public:
         ray.wavelengths = wavelengths;
 
         // 2. Set ray origin and direction
-        ray.o = m_to_world.value() * Point3f(0.f, 0.f, 0.f);
-        ray.d = m_to_world.value() * Vector3f(0.f, 0.f, 1.f);
+        auto to_world = m_to_world->eval(time);
+        ray.o = to_world * Point3f(0.f, 0.f, 0.f);
+        ray.d = to_world * Vector3f(0.f, 0.f, 1.f);
         ray.o += ray.d * math::RayEpsilon<Float>;
 
         return { ray, wav_weight };
@@ -136,8 +138,9 @@ public:
         ray.wavelengths = wavelengths;
 
         // 2. Set ray origin and direction
-        ray.o = m_to_world.value() * Point3f(0.f, 0.f, 0.f);
-        ray.d = m_to_world.value() * Vector3f(0.f, 0.f, 1.f);
+        auto to_world = m_to_world->eval(time);
+        ray.o = to_world * Point3f(0.f, 0.f, 0.f);
+        ray.d = to_world * Vector3f(0.f, 0.f, 1.f);
         ray.o += ray.d * math::RayEpsilon<Float>;
 
         // 3. Set differentials; since the film size is always 1x1, we don't
