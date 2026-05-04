@@ -402,5 +402,67 @@
     "cuda_ad_spectral_polarized_double": {
         "float": "dr::DiffArray<JitBackend::CUDA, double>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
+    },
+
+    # Metal variant definitions (no double — Metal has no float64)
+
+    "metal_mono": {
+        "float": "dr::MetalArray<float>",
+        "spectrum": "Color<Float, 1>"
+    },
+
+    "metal_mono_polarized": {
+        "float": "dr::MetalArray<float>",
+        "spectrum": "MuellerMatrix<Color<Float, 1>>"
+    },
+
+    "metal_rgb": {
+        "float": "dr::MetalArray<float>",
+        "spectrum": "Color<Float, 3>"
+    },
+
+    "metal_rgb_polarized": {
+        "float": "dr::MetalArray<float>",
+        "spectrum": "MuellerMatrix<Color<Float, 3>>"
+    },
+
+    "metal_spectral": {
+        "float": "dr::MetalArray<float>",
+        "spectrum": "Spectrum<Float, 4>"
+    },
+
+    "metal_spectral_polarized": {
+        "float": "dr::MetalArray<float>",
+        "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
+    },
+
+    "metal_ad_mono": {
+        "float": "dr::DiffArray<JitBackend::Metal, float>",
+        "spectrum": "Color<Float, 1>"
+    },
+
+    "metal_ad_mono_polarized": {
+        "float": "dr::DiffArray<JitBackend::Metal, float>",
+        "spectrum": "MuellerMatrix<Color<Float, 1>>"
+    },
+
+    "metal_ad_rgb": {
+        "float": "dr::DiffArray<JitBackend::Metal, float>",
+        "spectrum": "Color<Float, 3>"
+    },
+
+    "metal_ad_rgb_polarized": {
+        "float": "dr::DiffArray<JitBackend::Metal, float>",
+        "spectrum": "MuellerMatrix<Color<Float, 3>>"
+    },
+
+    "metal_ad_spectral": {
+        "float": "dr::DiffArray<JitBackend::Metal, float>",
+        "spectrum": "Spectrum<Float, 4>"
+    },
+
+    "metal_ad_spectral_polarized": {
+        "float": "dr::DiffArray<JitBackend::Metal, float>",
+        "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     }
 }

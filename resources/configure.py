@@ -33,7 +33,7 @@ def write_core_config_cpp(f, enabled, default_variant):
     enable_jit = False
     enable_ad  = False
     for index, (name, float_, spectrum) in enumerate(enabled):
-        enable_jit |= ('cuda' in name) or ('llvm' in name)
+        enable_jit |= ('cuda' in name) or ('llvm' in name) or ('metal' in name)
         enable_ad  |= ('ad' in name)
     if enable_jit:
         f.write('#include <drjit/jit.h>\n')

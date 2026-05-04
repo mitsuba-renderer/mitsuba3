@@ -53,8 +53,8 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props)
     }
 #endif
 
-#if defined(MI_ENABLE_LLVM)
-    if constexpr (dr::is_llvm_v<Float>) {
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_METAL)
+    if constexpr (dr::is_llvm_v<Float> || dr::is_metal_v<Float>) {
         // Get shapes registry ids
         std::unique_ptr<uint32_t[]> data(new uint32_t[m_shapes.size()]);
         for (size_t i = 0; i < m_shapes.size(); i++)
@@ -130,7 +130,7 @@ ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
             Assert(pi.shape_index < m_shapes.size());
             shape = m_shapes[pi.shape_index];
         } else {
-#if defined(MI_ENABLE_LLVM)
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_METAL)
             shape = dr::gather<UInt32>(m_shapes_registry_ids, pi.shape_index, active);
 #endif
         }

@@ -372,7 +372,7 @@ extern "C" {
         return neq_expr(flags & (uint32_t) f, 0u);                             \
     }
 
-#if defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_LLVM)
+#if defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_METAL)
 #  define MI_DECLARE_ENUM_OPERATORS(name)                                      \
    MI_DECLARE_ENUM_OPERATORS_IMPL(name,                                        \
                              [&](UInt32 a, UInt32 b) {                         \

@@ -13,6 +13,10 @@
     #include "optix/disk.cuh"
 #endif
 
+#if defined(MI_ENABLE_METAL)
+    #include <mitsuba/render/metal/shapes.h>
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 
 /**!
@@ -487,6 +491,22 @@ public:
 
         si.t = dr::select(active, si.t, dr::Infinity<Float>);
 
+        // The Metal IFT (intersection_disk in metal/intersection_functions.h)
+        // can only return ``accept_intersection`` and ``distance``; there is
+        // no MSL mechanism to forward the local (x, y) on the disk back to
+        // the kernel as ``pi.prim_uv``. Without a fix, every disk hit lands
+        // at the texture origin (uv=(0,0)). Recompute prim_uv from si.p so
+        // the UV-aware code below sees the correct value. (Embree fills
+        // prim_uv via ``ray_intersect_preliminary_impl``; OptiX uses
+        // OPTIX_PRIMITIVE_TYPE_CUSTOM hit attributes.) Done after the diff
+        // / non-diff branches because the IsDiff/non-FollowShape path
+        // overwrites prim_uv with ``replace_grad`` which propagates Metal's
+        // zero value.
+        if constexpr (dr::is_metal_v<Float>) {
+            Point3f local = to_object * si.p;
+            prim_uv = Point2f(local.x(), local.y());
+        }
+
         if (likely(has_flag(ray_flags, RayFlags::UV) ||
                    has_flag(ray_flags, RayFlags::dPdUV))) {
             Float r = dr::norm(Point2f(prim_uv.x(), prim_uv.y())),
@@ -534,6 +554,29 @@ public:
             jit_memcpy_async(JitBackend::CUDA, m_optix_data_ptr, &data,
                              sizeof(OptixDiskData));
         }
+    }
+#endif
+
+#if defined(MI_ENABLE_METAL)
+    size_t metal_primitive_data_size() const override {
+        return sizeof(metal_shape::DiskData);
+    }
+    uint32_t metal_intersection_function_index() const override {
+        return metal_shape::INTERSECTION_FN_DISK;
+    }
+    void metal_fill_primitive_data(void *out) const override {
+        metal_shape::DiskData &d = *(metal_shape::DiskData *) out;
+        ScalarBoundingBox3f b = bbox();
+        d.bbox.min[0] = (float) b.min.x();
+        d.bbox.min[1] = (float) b.min.y();
+        d.bbox.min[2] = (float) b.min.z();
+        d.bbox.max[0] = (float) b.max.x();
+        d.bbox.max[1] = (float) b.max.y();
+        d.bbox.max[2] = (float) b.max.z();
+        const auto &M = m_to_world.scalar().inverse().matrix;
+        for (size_t i = 0; i < 4; ++i)
+            for (size_t j = 0; j < 4; ++j)
+                d.to_object[i * 4 + j] = (float) M(i, j);
     }
 #endif
 

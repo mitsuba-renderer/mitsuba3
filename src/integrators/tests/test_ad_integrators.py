@@ -119,15 +119,26 @@ def check_gradient_error(grad, grad_ref, config, integrator_name, threshold_attr
     threshold = getattr(config, threshold_attr)
 
     if error > threshold:
+        # The error/grad values are JIT tensors (e.g. drjit.metal.ad.TensorXf)
+        # which don't support precision-format specifiers. Coerce to a Python
+        # float for printing — these are scalars in the test paths that reach
+        # this branch.
+        try:
+            error_f = float(error)
+        except Exception:
+            error_f = error  # multi-element fallback
         print(f"Failure in config: {config.name}, {integrator_name}")
         print(f"-> grad:     {grad}")
         print(f"-> grad_ref: {grad_ref}")
-        print(f"-> error: {error:.6f} (threshold={threshold})")
+        print(f"-> error: {error_f} (threshold={threshold})")
 
         # Calculate how much the threshold was exceeded
-        error_diff = error - threshold
-        error_percent = (error/threshold - 1)*100
-        print(f"-> exceeds by {error_diff:.4f} ({error_percent:.1f}%)")
+        try:
+            error_diff = float(error) - threshold
+            error_percent = (float(error)/threshold - 1)*100
+            print(f"-> exceeds by {error_diff:.4f} ({error_percent:.1f}%)")
+        except Exception:
+            print(f"-> exceeds by {error - threshold} ({(error/threshold - 1)*100}%)")
         print(f"-> ratio: {grad / grad_ref}")
         return False
     return True

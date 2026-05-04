@@ -762,25 +762,32 @@ protected:
     /// Create the ray-intersection acceleration data structure
     void accel_init_cpu(const Properties &props);
     void accel_init_gpu(const Properties &props);
+    void accel_init_metal(const Properties &props);
 
     /// Updates the ray-intersection acceleration data structure
     void accel_parameters_changed_cpu();
     void accel_parameters_changed_gpu();
+    void accel_parameters_changed_metal();
 
     /// Release the ray-intersection acceleration data structure
     void accel_release_cpu();
     void accel_release_gpu();
+    void accel_release_metal();
 
     static void static_accel_initialization_cpu();
     static void static_accel_initialization_gpu();
+    static void static_accel_initialization_metal();
     static void static_accel_shutdown_cpu();
     static void static_accel_shutdown_gpu();
+    static void static_accel_shutdown_metal();
 
     /// Trace a ray and only return a preliminary intersection data structure
     MI_INLINE PreliminaryIntersection3f ray_intersect_preliminary_cpu(
         const Ray3f &ray, Mask coherent, Mask active) const;
     MI_INLINE PreliminaryIntersection3f ray_intersect_preliminary_gpu(
         const Ray3f &ray, bool reorder, UInt32 reorder_hint, uint32_t reorder_hint_bits, Mask active) const;
+    MI_INLINE PreliminaryIntersection3f ray_intersect_preliminary_metal(
+        const Ray3f &ray, Mask active) const;
 
     /// Trace a ray
     MI_INLINE SurfaceInteraction3f ray_intersect_cpu(
@@ -788,11 +795,14 @@ protected:
     MI_INLINE SurfaceInteraction3f ray_intersect_gpu(
         const Ray3f &ray, uint32_t ray_flags, bool reorder, UInt32 reorder_hint,
         uint32_t reorder_hint_bits, Mask active) const;
+    MI_INLINE SurfaceInteraction3f ray_intersect_metal(
+        const Ray3f &ray, uint32_t ray_flags, Mask active) const;
     MI_INLINE SurfaceInteraction3f ray_intersect_naive_cpu(const Ray3f &ray, Mask active) const;
 
     /// Trace a shadow ray
     MI_INLINE Mask ray_test_cpu(const Ray3f &ray, Mask coherent, Mask active) const;
     MI_INLINE Mask ray_test_gpu(const Ray3f &ray, Mask active) const;
+    MI_INLINE Mask ray_test_metal(const Ray3f &ray, Mask active) const;
 
     using ShapeKDTree = mitsuba::ShapeKDTree<Float, Spectrum>;
 
@@ -850,6 +860,17 @@ protected:
      */
     void traverse_1_cb_rw_cpu(void *payload,
                               drjit::detail::traverse_callback_rw fn);
+
+    /**
+     * Metal-backend equivalents of the CPU traversal helpers above. Defined
+     * in scene_metal.inl, used by ``traverse_1_cb_*`` to walk the JIT-tracked
+     * fields of ``MetalAccelState`` (which has a different layout than the
+     * Embree state, so the CPU traversal cannot be reused).
+     */
+    void traverse_1_cb_ro_metal(void *payload,
+                                drjit::detail::traverse_callback_ro fn) const;
+    void traverse_1_cb_rw_metal(void *payload,
+                                drjit::detail::traverse_callback_rw fn);
 
     MI_DECLARE_TRAVERSE_CB(m_accel_handle, m_emitters, m_emitters_dr, m_shapes,
                            m_shapes_dr, m_shapegroups, m_sensors, m_sensors_dr,
