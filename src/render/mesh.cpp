@@ -924,9 +924,12 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
 
     Ray3f ray(Point3f(uv.x(), uv.y(), -1), Vector3f(0, 0, 1), 0, Wavelength(0));
 
+    // Disable execution of any-hit shaders
+    ray_flags |= +RayFlags::NoInvoke;
+
     PreliminaryIntersection3f pi =
         m_parameterization->ray_intersect_preliminary(
-            ray, /* coherent = */ true, false, 0, 0, active);
+            ray, /* ray_flags = */ ray_flags, /* coherent = */ true, false, 0, 0, active);
     active &= pi.is_valid();
 
     if (dr::none_or<false>(active))
@@ -1965,7 +1968,7 @@ MI_VARIANT RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device) 
 #endif
 
 #if defined(MI_ENABLE_CUDA)
-static const uint32_t triangle_input_flags = OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT;
+static const uint32_t triangle_input_flags = OPTIX_GEOMETRY_FLAG_NONE;
 
 MI_VARIANT void Mesh<Float, Spectrum>::optix_prepare_geometry() { }
 

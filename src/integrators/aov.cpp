@@ -344,7 +344,7 @@ public:
                     break;
 
                 case AOVType::IntegratorRGBA: {
-                    auto [inner_spec, inner_mask] 
+                    auto [inner_spec, inner_mask]
                         = m_integrators[inner_idx]->sample(scene, sampler, ray, medium, aovs, active);
                     dr::disable_grad(inner_spec);
 
