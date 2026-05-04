@@ -7,7 +7,7 @@ import mitsuba as mi
 # following URL:
 # https://drjit.readthedocs.io/en/latest/reference.html#module-drjit.opt
 
-from drjit.opt import Optimizer, Adam, SGD, RMSProp, GradScaler
+from drjit.opt import Optimizer, Adam, AdamW, SGD, RMSProp, GradScaler
 
 # Patch the Dr.Jit optimizers to ignore non-differentiable scene parameters
 def _filter_func(self, params: Mapping[str, dr.ArrayBase]) -> Mapping[str, dr.ArrayBase]:
