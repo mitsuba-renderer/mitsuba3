@@ -22,6 +22,10 @@
 #  include "optix/sdfgrid.cuh"
 #endif
 
+#if defined(MI_ENABLE_METAL)
+#  include <mitsuba/render/metal/shapes.h>
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 
 /**!
@@ -581,6 +585,111 @@ public:
         build_input.customPrimitiveArray.strideInBytes = 6 * sizeof(float);
         build_input.customPrimitiveArray.flags         = optix_geometry_flags;
         build_input.customPrimitiveArray.numSbtRecords = 1;
+    }
+#endif
+
+#if defined(MI_ENABLE_METAL)
+    // Layout of the buffer bound at MSL [[buffer(4)]] for SDFGrid:
+    //   header (96 bytes): res(3)+n_voxels(1) ints, voxel_size(3)+pad floats,
+    //                      to_object 4x4 (16 floats)
+    //   uint32 voxel_indices[n_voxels]
+    //   float  grid_data[res_x * res_y * res_z]
+    struct MetalSDFHeader {
+        uint32_t res_x, res_y, res_z, n_voxels;
+        float voxel_size[3];
+        float pad;
+        float to_object[16];
+    };
+    static_assert(sizeof(MetalSDFHeader) == 96, "MetalSDFHeader layout mismatch");
+
+    size_t metal_aabb_count() const override {
+        return (size_t) m_filled_voxel_count;
+    }
+
+    // Use a custom buffer layout — Metal's [[primitive_data]] feature is not
+    // used for SDFGrid; we read everything from the IFT slot-4 buffer.
+    size_t metal_primitive_data_size() const override { return 0; }
+
+    size_t metal_total_data_size() const override {
+        if constexpr (dr::is_metal_v<Float>) {
+            auto shape = m_grid_texture.tensor().shape();
+            size_t grid_count = shape[0] * shape[1] * shape[2];
+            return sizeof(MetalSDFHeader)
+                 + (size_t) m_filled_voxel_count * sizeof(uint32_t)
+                 + grid_count * sizeof(float);
+        } else {
+            return 0;
+        }
+    }
+
+    uint32_t metal_intersection_function_index() const override {
+        return metal_shape::INTERSECTION_FN_SDFGRID;
+    }
+
+    void metal_fill_aabb_data(void *out) const override {
+        if constexpr (dr::is_metal_v<Float>) {
+            // m_jit_bboxes is a JIT array of floats with stride 3 per
+            // bbox-corner (so 6 floats per AABB). Copy directly to host.
+            dr::eval(m_jit_bboxes);
+            dr::sync_thread();
+
+            std::vector<float> bb_h(6 * (size_t) m_filled_voxel_count);
+            jit_memcpy(JitBackend::Metal, bb_h.data(),
+                       m_jit_bboxes.data(), bb_h.size() * sizeof(float));
+            std::memcpy(out, bb_h.data(), bb_h.size() * sizeof(float));
+        } else {
+            (void) out;
+        }
+    }
+
+    void metal_fill_primitive_data(void *out) const override {
+        if constexpr (dr::is_metal_v<Float>) {
+            auto shape = m_grid_texture.tensor().shape();
+            size_t res_x = shape[2], res_y = shape[1], res_z = shape[0];
+            size_t grid_count = res_x * res_y * res_z;
+            size_t n_voxels = (size_t) m_filled_voxel_count;
+
+            // 1. Header
+            MetalSDFHeader hdr{};
+            hdr.res_x = (uint32_t) res_x;
+            hdr.res_y = (uint32_t) res_y;
+            hdr.res_z = (uint32_t) res_z;
+            hdr.n_voxels = (uint32_t) n_voxels;
+            ScalarVector3f vs = m_voxel_size.scalar();
+            hdr.voxel_size[0] = (float) vs.x();
+            hdr.voxel_size[1] = (float) vs.y();
+            hdr.voxel_size[2] = (float) vs.z();
+            hdr.pad = 0.f;
+            // World->object affine, row-major.
+            const auto &M = m_to_world.scalar().inverse().matrix;
+            for (size_t i = 0; i < 4; ++i)
+                for (size_t j = 0; j < 4; ++j)
+                    hdr.to_object[i * 4 + j] = (float) M(i, j);
+
+            uint8_t *dst = (uint8_t *) out;
+            std::memcpy(dst, &hdr, sizeof(hdr));
+            dst += sizeof(hdr);
+
+            // 2. Voxel indices (copy from device).
+            dr::eval(m_jit_voxel_indices);
+            dr::sync_thread();
+            std::vector<uint32_t> vi_h(n_voxels);
+            jit_memcpy(JitBackend::Metal, vi_h.data(),
+                       m_jit_voxel_indices.data(), n_voxels * sizeof(uint32_t));
+            std::memcpy(dst, vi_h.data(), n_voxels * sizeof(uint32_t));
+            dst += n_voxels * sizeof(uint32_t);
+
+            // 3. Grid SDF values.
+            dr::eval(m_grid_texture.tensor().array());
+            dr::sync_thread();
+            std::vector<float> grid_h(grid_count);
+            jit_memcpy(JitBackend::Metal, grid_h.data(),
+                       m_grid_texture.tensor().array().data(),
+                       grid_count * sizeof(float));
+            std::memcpy(dst, grid_h.data(), grid_count * sizeof(float));
+        } else {
+            (void) out;
+        }
     }
 #endif
 

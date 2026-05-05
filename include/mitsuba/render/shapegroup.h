@@ -74,12 +74,16 @@ public:
     void optix_build_gas(const OptixDeviceContext& context);
 #endif
 
+    /// Read-only access to the contained shapes (used by the Metal backend
+    /// to enumerate children when building per-shapegroup BLASes).
+    const std::vector<ref<Base>> &shapes() const { return m_shapes; }
+
     MI_DECLARE_CLASS(ShapeGroup)
 private:
     ScalarBoundingBox3f m_bbox;
     std::vector<ref<Base>> m_shapes;
 
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
     DynamicBuffer<UInt32> m_shapes_registry_ids;
 #endif
 
