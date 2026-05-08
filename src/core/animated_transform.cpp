@@ -118,7 +118,7 @@ AnimatedTransform<Float, Spectrum>::eval_scalar(ScalarFloat time) const {
         const Keyframe &kf = it0->second;
         return compose<ScalarAffineTransform4f>(kf.S, kf.Q, kf.T);
     }
-    ScalarFloat t = std::clamp((time - it0->first) / (it1->first - it0->first), 0.f, 1.f);
+    ScalarFloat t = dr::clip((time - it0->first) / (it1->first - it0->first), 0.f, 1.f);
     const Keyframe &kf0 = it0->second;
     const Keyframe &kf1 = it1->second;
     return compose<ScalarAffineTransform4f>(dr::lerp(kf0.S, kf1.S, t),
