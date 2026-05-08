@@ -193,12 +193,20 @@ MI_VARIANT void AnimatedTransform<Float, Spectrum>::initialize() {
         Throw("Animated transform requires at least one keyframe, found 0.");
     }
 
-    // Ensure keyframes are sorted by time
+    // Sort keyframes by time.
     std::sort(m_keyframes.begin(), m_keyframes.end(),
               [](const std::pair<ScalarFloat, Keyframe> &a,
                  const std::pair<ScalarFloat, Keyframe> &b) {
                   return a.first < b.first;
               });
+
+    // OptiX requires subsequent quaternions to be on the same hemisphere.
+    // For larger rotations, additional keys need to be specified.
+    for (size_t idx = 1; idx < m_keyframes.size(); ++idx) {
+        if (dr::dot(m_keyframes[idx - 1].second.Q, m_keyframes[idx].second.Q) < 0.f) {
+            m_keyframes[idx].second.Q = -m_keyframes[idx].second.Q;
+        }
+    }
 
     size_t n = m_keyframes.size();
     m_data   = dr::zeros<FloatStorage>(stride * n);
