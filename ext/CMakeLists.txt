@@ -120,7 +120,11 @@ if (MI_ENABLE_EMBREE)
     set(EMBREE_ISA_NEON2X           OFF CACHE BOOL " " FORCE)
   endif()
 
-  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # -Wundefined-inline fires on Embree's __forceinline declarations whose
+    # definitions live in ISA-specialized headers (clang-only diagnostic).
+    add_compile_options(-Wno-unused-variable -Wno-undefined-inline)
+  elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     add_compile_options(-Wno-unused-variable)
   endif()
 
@@ -133,6 +137,17 @@ if (MI_ENABLE_EMBREE)
   if (MSVC)
     # Don't complain about ignored alignment specifier
     target_compile_options(embree PRIVATE "/wd4359")
+  endif()
+
+  # Embree's CMake lists 'sys' and 'math' both directly and transitively (via
+  # 'lexers'), which makes Apple's new linker warn about duplicate libraries.
+  if (APPLE AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.18)
+    include(CheckLinkerFlag)
+    check_linker_flag(CXX "LINKER:-no_warn_duplicate_libraries"
+                      MI_LINKER_NO_WARN_DUP_LIBS)
+    if (MI_LINKER_NO_WARN_DUP_LIBS)
+      target_link_options(embree PRIVATE "LINKER:-no_warn_duplicate_libraries")
+    endif()
   endif()
 
   set_property(TARGET
