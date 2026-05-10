@@ -241,7 +241,7 @@ def test04_animated_instance(variants_all_rgb, num_keyframes):
                 "type" : "ref",
                 "id" : "group_0"
             },
-            'animation' : mi.AnimatedTransform4f(keyframes)
+            'to_world' : mi.AnimatedTransform4f(keyframes)
         }
     })
 
@@ -278,7 +278,7 @@ def test05_animated_instance_rotation_scaling(variants_all_rgb):
                 "type" : "ref",
                 "id" : "group_0"
             },
-            'animation' : mi.AnimatedTransform4f({
+            'to_world' : mi.AnimatedTransform4f({
                 0.0 : T().rotate([0, 1, 0], 0).scale([1, 1, 1]),
                 10.0 : T().rotate([0, 1, 0], 90).scale([2, 2, 2])
             })
@@ -319,7 +319,7 @@ def test_non_uniform_animation_error(variants_vec_backends_once):
                     "type" : "ref",
                     "id" : "group_0"
                 },
-                'animation' : mi.AnimatedTransform4f({
+                'to_world' : mi.AnimatedTransform4f({
                     0.0 : T().translate([0, 0, 0]),
                     0.3 : T().translate([0, 0, 1]),
                     1.0 : T().translate([0, 0, 2])

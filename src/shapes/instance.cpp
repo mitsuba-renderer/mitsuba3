@@ -68,7 +68,7 @@ public:
 
     Instance(const Properties &props) : Base(props) {
         for (auto &prop : props.objects()) {
-            if (prop.name() == "animation")
+            if (prop.name() == "to_world")
                 continue;
 
             ShapeGroup_ *shapegroup = prop.try_get<ShapeGroup_>();
@@ -84,18 +84,7 @@ public:
 
         m_shape_type = ShapeType::Instance;
 
-        if (props.has_property("animation")) {
-            ref<Object> obj = props.get<ref<Object>>("animation");
-            if (auto *anim = dynamic_cast<AnimatedTransform4f *>(obj.get())) {
-                m_animated_to_world = anim;
-            } else {
-                Throw("Property 'animation' has incompatible type!");
-            }
-        } else {
-            m_animated_to_world = new AnimatedTransform<Float, Spectrum>(m_to_world.scalar());
-        }
-        m_animated_to_world->ensure_uniform_keyframes();
-        dr::make_opaque(m_to_world);
+        m_to_world->ensure_uniform_keyframes();
     }
 
     ~Instance() {
@@ -106,16 +95,15 @@ public:
     }
 
     void traverse(TraversalCallback *cb) override {
-        cb->put("to_world", m_to_world, ParamFlags::NonDifferentiable);
+        cb->put("to_world", m_to_world.get(), ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "to_world")) {
-            m_to_world = m_to_world.value().update();
             mark_dirty();
         }
-        m_animated_to_world->ensure_uniform_keyframes();
-        Base::parameters_changed();
+        m_to_world->ensure_uniform_keyframes();
+        Base::parameters_changed(keys);
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -125,7 +113,7 @@ public:
         if (!bbox.valid())
             return bbox;
 
-        return m_animated_to_world->get_spatial_bounds(bbox);
+        return m_to_world->get_spatial_bounds(bbox);
     }
 
     ScalarSize primitive_count() const override { return 1; }
@@ -149,7 +137,7 @@ public:
                                    dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
         if constexpr (!dr::is_array_v<FloatP>) {
-            return m_shapegroup->ray_intersect_preliminary_scalar(m_animated_to_world->eval_scalar(ray.time).inverse() * ray);
+            return m_shapegroup->ray_intersect_preliminary_scalar(m_to_world->eval_scalar(ray.time).inverse() * ray);
         } else {
             Throw("Instance::ray_intersect_preliminary() should only be called with scalar types.");
         }
@@ -162,7 +150,7 @@ public:
         MI_MASK_ARGUMENT(active);
 
         if constexpr (!dr::is_array_v<FloatP>) {
-            return m_shapegroup->ray_test_scalar(m_animated_to_world->eval_scalar(ray.time).inverse() * ray);
+            return m_shapegroup->ray_test_scalar(m_to_world->eval_scalar(ray.time).inverse() * ray);
         } else {
             Throw("Instance::ray_test_impl() should only be called with scalar types.");
         }
@@ -177,7 +165,7 @@ public:
                                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
-        auto to_world = m_animated_to_world->eval(ray.time);
+        auto to_world = m_to_world->eval(ray.time);
         auto to_object = to_world.inverse();
 
         constexpr bool IsDiff = dr::is_diff_v<Float>;
@@ -273,7 +261,7 @@ public:
         std::ostringstream oss;
             oss << "Instance[" << std::endl
                 << "  shapegroup = " << string::indent(m_shapegroup) << std::endl
-                << "  to_world = " << string::indent(m_to_world, 13) << "," << std::endl
+                << "  to_world = " << string::indent(m_to_world->eval_scalar(0.f), 13) << "," << std::endl
                 << "]";
         return oss.str();
     }
@@ -283,13 +271,13 @@ public:
         DRJIT_MARK_USED(device);
         if constexpr (!dr::is_cuda_v<Float>) {
             RTCGeometry instance = m_shapegroup->embree_geometry(device);
-            size_t n_keyframes = m_animated_to_world->keyframes().size();
+            size_t n_keyframes = m_to_world->keyframes().size();
             if (n_keyframes > 1) {
                 rtcSetGeometryTimeStepCount(instance, (unsigned int) n_keyframes);
-                ScalarBoundingBox1f time_bounds = m_animated_to_world->get_time_bounds();
+                ScalarBoundingBox1f time_bounds = m_to_world->get_time_bounds();
                 rtcSetGeometryTimeRange(instance, time_bounds.min[0], time_bounds.max[0]);
                 unsigned int i = 0;
-                for (const auto &[time, kf] : m_animated_to_world->keyframes()) {
+                for (const auto &[time, kf] : m_to_world->keyframes()) {
                     RTCQuaternionDecomposition rtc_decomp;
                     rtcInitQuaternionDecomposition(&rtc_decomp);
                     rtcQuaternionDecompositionSetQuaternion(
@@ -301,7 +289,7 @@ public:
                     rtcSetGeometryTransformQuaternion(instance, i++, &rtc_decomp);
                 }
             } else {
-                auto trafo = m_animated_to_world->eval_scalar(0.0);
+                auto trafo = m_to_world->eval_scalar(0.0);
                 dr::Matrix<ScalarFloat32, 4> matrix(dr::transpose(trafo.matrix));
                 rtcSetGeometryTransform(instance, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, matrix.data());
             }
@@ -318,17 +306,17 @@ public:
                                    std::vector<OptixInstance>& out_instances,
                                    uint32_t instance_id,
                                    const ScalarAffineTransform4f& transf) override {
-        if (m_animated_to_world->keyframes().size() > 1) {
+        if (m_to_world->keyframes().size() > 1) {
             // Clean up any previously used transforms.
             for (OptixSRTMotionTransform* p : m_motion_transforms) {
                 jit_free(p);
             }
             m_motion_transforms.clear();
             m_shapegroup->optix_prepare_ias(context, out_instances, instance_id,
-                                            *m_animated_to_world, m_motion_transforms);
+                                            *m_to_world.get(), m_motion_transforms);
         } else {
             m_shapegroup->optix_prepare_ias(context, out_instances, instance_id,
-                                            transf * m_animated_to_world->eval_scalar(0.0));
+                                            transf * m_to_world->eval_scalar(0.0));
         }
     }
 
@@ -339,13 +327,12 @@ public:
 #endif
 
     bool parameters_grad_enabled() const override {
-        return dr::grad_enabled(m_to_world) || m_shapegroup->parameters_grad_enabled();
+        return dr::grad_enabled(m_to_world.get()) || m_shapegroup->parameters_grad_enabled();
     }
 
     MI_DECLARE_CLASS(Instance)
 private:
    ref<ShapeGroup_> m_shapegroup;
-   ref<AnimatedTransform<Float, Spectrum>> m_animated_to_world;
 #if defined(MI_ENABLE_CUDA)
    std::vector<OptixSRTMotionTransform*> m_motion_transforms;
 #endif

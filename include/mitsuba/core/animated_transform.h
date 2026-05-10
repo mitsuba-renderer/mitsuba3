@@ -85,6 +85,11 @@ public:
         return m_keyframes;
     }
 
+    /// Checks if JIT AD gradients are enabled on the static transform or the animated data buffer
+    bool parameters_grad_enabled() const {
+        return dr::grad_enabled(m_transform.value()) || dr::grad_enabled(m_data);
+    }
+
     /// Returns the time bounds of the animated transform.
     ScalarBoundingBox1f get_time_bounds() const;
 

@@ -187,7 +187,7 @@ public:
 
     void update() {
         auto [S, Q, T] =
-            dr::transform_decompose(m_to_world.scalar().matrix, 25);
+            dr::transform_decompose(m_to_world->eval_scalar(0.f).matrix, 25);
         if (dr::abs(Q[0]) > 1e-6f || dr::abs(Q[1]) > 1e-6f ||
             dr::abs(Q[2]) > 1e-6f || dr::abs(Q[3] - 1) > 1e-6f)
             Log(Warn, "'to_world' transform shouldn't perform any rotations, "
@@ -224,8 +224,8 @@ public:
 
     void traverse(TraversalCallback *cb) override {
         Base::traverse(cb);
-        cb->put("to_world", m_to_world,              ParamFlags::NonDifferentiable);
         cb->put("grid",     m_grid_texture.tensor(), ParamFlags::NonDifferentiable);
+        cb->put("to_world", m_to_world.get(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -236,20 +236,19 @@ public:
             if constexpr (dr::is_jit_v<Float>)
                 dr::sync_thread();
 
-            m_to_world = m_to_world.value().update();
             m_grid_texture.update_inplace();
 
             update();
         }
 
-        Base::parameters_changed();
+        Base::parameters_changed(keys);
     }
 
     ScalarSize primitive_count() const override { return m_filled_voxel_count; }
 
     ScalarBoundingBox3f bbox() const override {
         ScalarBoundingBox3f bbox;
-        ScalarAffineTransform4f to_world = m_to_world.scalar();
+        ScalarAffineTransform4f to_world = m_to_world->eval_scalar(0.f);
 
         bbox.expand(to_world * ScalarPoint3f(0.f, 0.f, 0.f));
         bbox.expand(to_world * ScalarPoint3f(1.f, 0.f, 0.f));
@@ -350,7 +349,7 @@ public:
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
         bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
 
-        AffineTransform4f to_world  = m_to_world.value();
+        AffineTransform4f to_world  = m_to_world->eval(0.f);
         AffineTransform4f to_object = to_world.inverse();
 
         dr::suspend_grad<Float> scope(detach_shape, to_world, to_object,
@@ -424,10 +423,10 @@ public:
 
         si.t = dr::select(active, si.t, dr::Infinity<Float>);
 
-        Vector3f grad = sdf_grad(m_to_world.value().inverse() * si.p);
+        Vector3f grad = sdf_grad(m_to_world->eval(0.f).inverse() * si.p);
 
         si.n =
-            dr::normalize(m_to_world.value() * Normal3f(grad));
+            dr::normalize(m_to_world->eval(0.f) * Normal3f(grad));
 
         if (likely(has_flag(ray_flags, RayFlags::ShadingFrame))) {
             switch (m_normal_method) {
@@ -436,7 +435,7 @@ public:
                     break;
                 case Smooth:
                     si.sh_frame.n =
-                        smooth(m_to_world.value().inverse() * si.p);
+                        smooth(m_to_world->eval(0.f).inverse() * si.p);
                     break;
                 default:
                     Throw("Unknown normal computation.");
@@ -539,11 +538,11 @@ public:
 
     Normal3f smooth(const Point3f &p) const {
         Normal3f n = smooth_sh(p, nullptr, nullptr, nullptr);
-        return dr::normalize(m_to_world.value() * Normal3f(n));
+        return dr::normalize(m_to_world->eval(0.f) * Normal3f(n));
     }
 
     bool parameters_grad_enabled() const override {
-        return dr::grad_enabled(m_to_world);
+        return m_to_world->parameters_grad_enabled();
     }
 
 #if defined(MI_ENABLE_CUDA)
@@ -568,7 +567,7 @@ public:
                                       m_voxel_size.scalar()[1],
                                       m_voxel_size.scalar()[2],
                                       m_grid_texture.tensor().array().data(),
-                                      m_to_world.scalar().inverse() };
+                                      m_to_world->eval_scalar(0.f).inverse() };
             jit_memcpy_async(JitBackend::CUDA, m_optix_data_ptr, &data,
                              sizeof(OptixSDFGridData));
         }
@@ -587,7 +586,7 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "SDFgrid[" << std::endl
-            << "  to_world = " << string::indent(m_to_world, 13) << ","
+            << "  to_world = " << string::indent(m_to_world->eval_scalar(0.f), 13) << ","
             << std::endl
             << "  " << string::indent(get_children_string()) << std::endl
             << "]";
@@ -612,7 +611,7 @@ private:
         if constexpr (dr::is_jit_v<FloatP>)
             NotImplementedError("ray_intersect_preliminary_common_impl");
 
-        AffineTransform<Point<FloatP, 4>> to_object = m_to_world.scalar().inverse();
+        AffineTransform<Point<FloatP, 4>> to_object = m_to_world->eval_scalar(0.f).inverse();
         Ray3fP ray = to_object * ray_;
 
         auto shape = m_grid_texture.tensor().shape();
@@ -980,7 +979,7 @@ private:
                                  static_cast<uint32_t>(shape[0]) };
         uint32_t max_voxel_count =
             (uint32_t)((shape[0] - 1) * (shape[1] - 1) * (shape[2] - 1));
-        ScalarAffineTransform4f to_world = m_to_world.scalar();
+        ScalarAffineTransform4f to_world = m_to_world->eval_scalar(0.f);
 
         dr::eval(m_grid_texture.value()); // Make sure the SDF data is evaluated
 

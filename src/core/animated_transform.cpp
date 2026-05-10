@@ -30,7 +30,8 @@ MI_VARIANT
 AnimatedTransform<Float, Spectrum>::AnimatedTransform(
     const ScalarAffineTransform4f &trafo) {
     m_transform = AffineTransform4f(trafo);
-    add_keyframe(ScalarFloat(0), trafo);
+    auto [S, Q, T] = dr::transform_decompose(trafo.matrix);
+    m_keyframes.push_back({ ScalarFloat(0), { dr::diag(S), Q, T } });
     initialize();
 }
 

@@ -234,7 +234,7 @@ public:
                     p[i] = string::strtof<InputFloat>(cur, (char **) &cur);
                     parse_error |= cur == orig;
                 }
-                p = m_to_world.scalar() * p;
+                p = m_to_world->eval_scalar(0.f) * p;
                 if (unlikely(!all(dr::isfinite(p))))
                     fail("mesh contains invalid vertex position data");
                 m_bbox.expand(p);
@@ -249,7 +249,7 @@ public:
                         n[i] = string::strtof<InputFloat>(cur, (char **) &cur);
                         parse_error |= cur == orig;
                     }
-                    n = dr::normalize(m_to_world.scalar() * n);
+                    n = dr::normalize(m_to_world->eval_scalar(0.f) * n);
                     if (unlikely(!all(dr::isfinite(n))))
                         fail("mesh contains invalid vertex normal data");
                     normals.push_back(n);
