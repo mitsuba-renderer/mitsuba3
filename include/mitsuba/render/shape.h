@@ -809,6 +809,22 @@ public:
                                      Mask active = true) const;
 
     /**
+     * \brief 2D evaluation of a shape attribute at the given surface interaction
+     *
+     * \param name
+     *     Name of the attribute to evaluate
+     *
+     * \param si
+     *     Surface interaction associated with the query
+     *
+     * \return
+     *     A 2D vector value
+     */
+    virtual Vector2f eval_attribute_2(std::string_view name,
+                                      const SurfaceInteraction3f &si,
+                                      Mask active = true) const;
+
+    /**
      * \brief Evaluate a dynamically sized shape attribute at the given surface interaction.
      *
      * \param name
@@ -1171,6 +1187,7 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Shape)
     DRJIT_CALL_METHOD(has_attribute)
     DRJIT_CALL_METHOD(eval_attribute)
     DRJIT_CALL_METHOD(eval_attribute_1)
+    DRJIT_CALL_METHOD(eval_attribute_2)
     DRJIT_CALL_METHOD(eval_attribute_3)
     DRJIT_CALL_METHOD(eval_attribute_x)
     DRJIT_CALL_METHOD(eval_parameterization)

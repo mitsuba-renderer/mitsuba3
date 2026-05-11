@@ -282,6 +282,10 @@ public:
                              const SurfaceInteraction3f &si,
                              Mask active = true) const override;
 
+    Vector2f eval_attribute_2(std::string_view name,
+                              const SurfaceInteraction3f &si,
+                              Mask active = true) const override;
+
     SurfaceInteraction3f eval_parameterization(const Point2f &uv,
                                                uint32_t ray_flags = +RayFlags::All,
                                                Mask active = true) const override;
@@ -531,8 +535,11 @@ protected:
         using StorageType =
             std::conditional_t<Size == 1,
                                dr::replace_scalar_t<Float, InputFloat>,
-                               dr::replace_scalar_t<Color3f, InputFloat>>;
-        using ReturnType = std::conditional_t<Size == 1, Float, Color3f>;
+                               std::conditional_t<Size == 2,
+                                                  dr::replace_scalar_t<Vector2f, InputFloat>,
+                                                  dr::replace_scalar_t<Color3f, InputFloat>>>;
+        using ReturnType = std::conditional_t<Size == 1, Float,
+                                              std::conditional_t<Size == 2, Vector2f, Color3f>>;
 
         if (type == MeshAttributeType::Vertex) {
             auto fi = face_indices(si.prim_index, active);
