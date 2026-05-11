@@ -571,6 +571,16 @@ Shape<Float, Spectrum>::eval_attribute_3(std::string_view name,
     return texture->eval_3(si, active);
 }
 
+MI_VARIANT typename Shape<Float, Spectrum>::Vector2f
+Shape<Float, Spectrum>::eval_attribute_2(std::string_view name,
+                                         const SurfaceInteraction3f & /*si*/,
+                                         Mask /*active*/) const {
+    if constexpr (dr::is_jit_v<Float>)
+        return 0.f;
+    else
+        Throw("Invalid attribute requested %s.", name);
+}
+
 MI_VARIANT typename dr::DynamicArray<Float>
 Shape<Float, Spectrum>::eval_attribute_x(std::string_view /*name*/,
                                          const SurfaceInteraction3f & /*si*/,

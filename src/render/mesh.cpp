@@ -1787,6 +1787,25 @@ Mesh<Float, Spectrum>::eval_attribute_3(std::string_view name,
     }
 }
 
+MI_VARIANT typename Mesh<Float, Spectrum>::Vector2f
+Mesh<Float, Spectrum>::eval_attribute_2(std::string_view name,
+                                        const SurfaceInteraction3f &si,
+                                        Mask active) const {
+    const auto& it = m_mesh_attributes.find(name);
+    if (it == m_mesh_attributes.end())
+        return Base::eval_attribute_2(name, si, active);
+
+    const auto& attr = it->second;
+    if (attr.size == 2) {
+        return interpolate_attribute<2, true>(attr.type, attr.buf, si, active);
+    } else {
+        if constexpr (dr::is_jit_v<Float>)
+            return 0.f;
+        else
+            Throw("eval_attribute_2(): Attribute \"%s\" requested but had size %u.", name, attr.size);
+    }
+}
+
 //! @}
 // =============================================================
 
