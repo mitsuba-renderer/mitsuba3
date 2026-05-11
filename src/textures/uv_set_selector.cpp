@@ -64,7 +64,7 @@ public:
     SurfaceInteraction3f select_uv(const SurfaceInteraction3f &si,
                                    Mask active) const {
         SurfaceInteraction3f local_si(si);
-        Color3f attr = si.shape->eval_attribute_3(m_uv_set, si, active);
+        Vector2f attr = si.shape->eval_attribute_2(m_uv_set, si, active);
         local_si.uv  = Point2f(attr.x(), attr.y());
         return local_si;
     }

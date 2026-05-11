@@ -112,3 +112,16 @@ def test03_shape_set_bsdf(variants_all_backends_once):
     custom_shape.set_bsdf(new_bsdf)
     assert mi.has_flag(custom_shape.bsdf().flags(), mi.BSDFFlags.DeltaReflection)
     assert custom_shape.called
+
+
+def test04_eval_attribute_2(variants_all_backends_once):
+    # Test eval_attribute_2 directly on a mesh with 2D attributes
+    mesh = mi.load_dict({"type": "rectangle"})
+    mesh.add_attribute(
+        "vertex_uv2d", 2, [0.5, 0.5, 1.5, 0.5, 0.5, 1.5, 1.5, 1.5]
+    )
+
+    si = mesh.eval_parameterization([0.5, 0.5])
+    uv2d = mesh.eval_attribute_2("vertex_uv2d", si)
+    assert dr.allclose(uv2d, [1.0, 1.0])
+

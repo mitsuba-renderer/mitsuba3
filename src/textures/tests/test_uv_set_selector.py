@@ -7,7 +7,7 @@ import numpy as np
 def create_rectangle_with_extra_uvs():
     mesh = mi.load_dict({"type": "rectangle"})
     mesh.add_attribute(
-        "vertex_uv1", 3, [0.5, 0.5, 0.0, 1.5, 0.5, 0.0, 0.5, 1.5, 0.0, 1.5, 1.5, 0.0]
+        "vertex_uv1", 2, [0.5, 0.5, 1.5, 0.5, 0.5, 1.5, 1.5, 1.5]
     )
     return mesh
 
@@ -43,3 +43,4 @@ def test02_invalid_uv_set(variant_scalar_rgb):
                 "nested": {"type": "checkerboard"},
             }
         )
+
