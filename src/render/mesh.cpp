@@ -9,6 +9,7 @@
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/scene.h>
+#include <algorithm>
 
 #if defined(MI_ENABLE_EMBREE)
     #include <embree3/rtcore.h>
@@ -732,68 +733,136 @@ Mesh<Float, Spectrum>::build_indirect_silhouette_distribution() {
 MI_VARIANT
 ref<Mesh<Float, Spectrum>>
 Mesh<Float, Spectrum>::merge(const Mesh *other) const {
-    if (other->emitter() != m_emitter || other->sensor() != m_sensor ||
-        other->bsdf() != m_bsdf ||
-        other->interior_medium() != m_interior_medium ||
-        other->exterior_medium() != m_exterior_medium ||
-        other->has_vertex_normals() != has_vertex_normals() ||
-        other->has_vertex_texcoords() != has_vertex_texcoords() ||
-        other->has_face_normals() != has_face_normals() ||
-        other->has_flipped_normals() != has_flipped_normals() ||
-        other->has_mesh_attributes() || has_mesh_attributes())
-        Throw("Mesh::merge(): the two meshes are incompatible (%s and %s)!",
-              to_string(), other->to_string());
+    return merge({ ref<Mesh>(const_cast<Mesh *>(this)),
+                   ref<Mesh>(const_cast<Mesh *>(other)) });
+}
 
+MI_VARIANT
+ref<Mesh<Float, Spectrum>>
+Mesh<Float, Spectrum>::merge(const std::vector<ref<Mesh>> &meshes) {
+    const size_t n = meshes.size();
+    if (n == 0)
+        Throw("Mesh::merge(): called with an empty mesh list!");
+    if (n == 1)
+        return meshes[0];
+
+    /* The first mesh is the reference: its attribute layout and attached
+       objects (BSDF, emitter, ...) are inherited by the result, and every
+       other input must match them exactly. */
+    const Mesh *first  = meshes[0].get();
+    const bool  has_vn = first->has_vertex_normals();
+    const bool  has_vt = first->has_vertex_texcoords();
+    if (first->has_mesh_attributes())
+        Throw("Mesh::merge(): mesh attributes are not supported (%s)!",
+              first->to_string());
+
+    /* Single pass over the inputs: compatibility check, prefix offsets,
+       totals, merged bounding box and merged name. */
+    std::vector<ScalarIndex> vertex_offsets(n), face_offsets(n);
+    ScalarBoundingBox3f bbox = first->m_bbox;
+    std::string name = first->m_name;
+    size_t total_vertices = first->vertex_count(),
+           total_faces    = first->face_count();
+    vertex_offsets[0] = 0;
+    face_offsets[0]   = 0;
+
+    for (size_t i = 1; i < n; ++i) {
+        const Mesh *m = meshes[i].get();
+
+        bool compatible =
+            m->emitter()              == first->m_emitter                   &&
+            m->sensor()               == first->m_sensor                    &&
+            m->bsdf()                 == first->m_bsdf                      &&
+            m->interior_medium()      == first->m_interior_medium           &&
+            m->exterior_medium()      == first->m_exterior_medium           &&
+            m->has_vertex_normals()   == has_vn                             &&
+            m->has_vertex_texcoords() == has_vt                             &&
+            m->has_face_normals()     == first->has_face_normals()          &&
+            m->has_flipped_normals()  == first->has_flipped_normals()       &&
+            !m->has_mesh_attributes();
+
+        if (!compatible)
+            Throw("Mesh::merge(): incompatible meshes (%s and %s)!",
+                  first->to_string(), m->to_string());
+
+        vertex_offsets[i] = (ScalarIndex) total_vertices;
+        face_offsets[i]   = (ScalarIndex) total_faces;
+        total_vertices   += m->vertex_count();
+        total_faces      += m->face_count();
+        bbox.expand(m->m_bbox);
+        name += " + ";
+        name += m->m_name;
+    }
+
+    /* Use the bare `Mesh(Properties)` overload and allocate buffers with
+       `dr::empty` — the sized overload would zero-fill before we overwrite. */
     Properties props;
-    if (m_bsdf)
-        props.set("bsdf", (Object *) m_bsdf.get());
-    if (m_interior_medium)
-        props.set("interior", (Object *) m_interior_medium.get());
-    if (m_exterior_medium)
-        props.set("exterior", (Object *) m_exterior_medium.get());
-    if (m_sensor)
-        props.set("sensor", (Object *) m_sensor.get());
-    if (m_emitter)
-        props.set("emitter", (Object *) m_emitter.get());
-    props.set("face_normals", m_face_normals);
-    props.set("flip_normals", m_flip_normals);
+    if (first->m_bsdf)
+        props.set("bsdf",     (Object *) first->m_bsdf.get());
+    if (first->m_interior_medium)
+        props.set("interior", (Object *) first->m_interior_medium.get());
+    if (first->m_exterior_medium)
+        props.set("exterior", (Object *) first->m_exterior_medium.get());
+    if (first->m_sensor)
+        props.set("sensor",   (Object *) first->m_sensor.get());
+    if (first->m_emitter)
+        props.set("emitter",  (Object *) first->m_emitter.get());
+    props.set("face_normals", first->m_face_normals);
+    props.set("flip_normals", first->m_flip_normals);
 
-    ref<Mesh> result = new Mesh(
-        m_name + " + " + other->m_name, m_vertex_count + other->vertex_count(),
-        m_face_count + other->face_count(), props, has_vertex_normals(),
-        has_vertex_texcoords());
+    ref<Mesh> result = new Mesh(props);
+    result->m_name         = std::move(name);
+    result->m_vertex_count = (ScalarSize) total_vertices;
+    result->m_face_count   = (ScalarSize) total_faces;
+    result->m_bbox         = bbox;
+    result->m_vertex_positions = dr::empty<FloatStorage>(total_vertices * 3);
+    if (has_vn)
+        result->m_vertex_normals = dr::empty<FloatStorage>(total_vertices * 3);
+    if (has_vt)
+        result->m_vertex_texcoords = dr::empty<FloatStorage>(total_vertices * 2);
+    result->m_faces = dr::empty<DynamicBuffer<UInt32>>(total_faces * 3);
 
-    result->m_vertex_positions =
-        dr::concat(m_vertex_positions, other->m_vertex_positions);
+    for (size_t i = 0; i < n; ++i) {
+        const Mesh  *m     = meshes[i].get();
+        ScalarSize   vc    = m->vertex_count(),
+                     fc    = m->face_count();
+        ScalarIndex  v_off = vertex_offsets[i],
+                     f_off = face_offsets[i];
 
-    if (has_vertex_normals())
-        result->m_vertex_normals =
-            dr::concat(m_vertex_normals, other->m_vertex_normals);
+        if constexpr (!dr::is_jit_v<Float>) {
+            std::copy_n(m->m_vertex_positions.data(), vc * 3,
+                        result->m_vertex_positions.data() + v_off * 3);
+            if (has_vn)
+                std::copy_n(m->m_vertex_normals.data(), vc * 3,
+                            result->m_vertex_normals.data() + v_off * 3);
+            if (has_vt)
+                std::copy_n(m->m_vertex_texcoords.data(), vc * 2,
+                            result->m_vertex_texcoords.data() + v_off * 2);
 
-    if (has_vertex_texcoords())
-        result->m_vertex_texcoords =
-            dr::concat(m_vertex_texcoords, other->m_vertex_texcoords);
+            const ScalarIndex *src = m->m_faces.data();
+            ScalarIndex       *dst = result->m_faces.data() + f_off * 3;
+            for (ScalarSize k = 0; k < fc * 3; ++k)
+                dst[k] = src[k] + v_off;
+        } else {
+            UInt32 v_idx = dr::arange<UInt32>(vc * 3) + v_off * 3;
+            dr::scatter(result->m_vertex_positions, m->m_vertex_positions,
+                        v_idx);
+            if (has_vn)
+                dr::scatter(result->m_vertex_normals, m->m_vertex_normals,
+                            v_idx);
+            if (has_vt) {
+                UInt32 uv_idx = dr::arange<UInt32>(vc * 2) + v_off * 2;
+                dr::scatter(result->m_vertex_texcoords,
+                            m->m_vertex_texcoords, uv_idx);
+            }
+            UInt32 f_idx = dr::arange<UInt32>(fc * 3) + f_off * 3;
+            dr::scatter(result->m_faces, m->m_faces + v_off, f_idx);
+        }
+    }
 
-    result->m_faces = dr::concat(m_faces, other->m_faces);
-    result->m_bbox = m_bbox;
-    result->m_bbox.expand(other->m_bbox);
-
-    if constexpr (dr::is_jit_v<Float>) {
-        UInt32 threshold = dr::opaque<UInt32>(face_count() * 3),
-               offset    = dr::opaque<UInt32>(vertex_count()),
-               index     = dr::arange<UInt32>(result->face_count() * 3);
-
-        result->m_faces = dr::select(index < threshold, result->m_faces,
-                                     result->m_faces + offset);
-
+    if constexpr (dr::is_jit_v<Float>)
         dr::eval(result->m_faces, result->m_vertex_positions,
                  result->m_vertex_normals, result->m_vertex_texcoords);
-    } else {
-        uint32_t  offset = vertex_count(),
-                 *ptr    = result->m_faces.data() + face_count() * 3;
-        for (size_t i = 0; i < other->face_count() * 3; ++i)
-            *ptr++ += offset;
-    }
 
     result->initialize();
 

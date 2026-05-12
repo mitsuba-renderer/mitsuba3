@@ -366,8 +366,12 @@ MI_PY_EXPORT(Shape) {
         .def("write_ply",
              nb::overload_cast<Stream *>(&Mesh::write_ply, nb::const_),
              "stream"_a, D(Mesh, write_ply, 2))
-        .def("merge", &Mesh::merge, "other"_a,
-             D(Mesh, merge))
+        .def("merge",
+             nb::overload_cast<const Mesh *>(&Mesh::merge, nb::const_),
+             "other"_a, D(Mesh, merge))
+        .def_static("merge_many",
+             nb::overload_cast<const std::vector<ref<Mesh>> &>(&Mesh::merge),
+             "meshes"_a, D(Mesh, merge, 2))
 
         .def("vertex_positions_buffer", nb::overload_cast<>(&Mesh::vertex_positions_buffer))
         .def("vertex_normals_buffer", nb::overload_cast<>(&Mesh::vertex_normals_buffer))
