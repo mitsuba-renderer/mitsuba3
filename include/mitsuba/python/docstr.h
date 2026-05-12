@@ -5710,6 +5710,8 @@ static const char *__doc_mitsuba_Mesh_m_vertex_texcoords = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_merge = R"doc(Merge two meshes into one)doc";
 
+static const char *__doc_mitsuba_Mesh_merge_2 = R"doc(Merge a batch of compatible meshes into a single mesh)doc";
+
 static const char *__doc_mitsuba_Mesh_moeller_trumbore =
 R"doc(Moeller and Trumbore algorithm for computing ray-triangle intersection
 
