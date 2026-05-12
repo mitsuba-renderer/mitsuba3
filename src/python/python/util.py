@@ -1,6 +1,7 @@
 from __future__ import annotations as __annotations__ # Delayed parsing of type annotations
 
 import contextlib
+import dataclasses
 from collections.abc import Mapping
 from typing import Any, Optional, Union
 
@@ -21,9 +22,13 @@ class SceneParameters(Mapping):
         Private constructor (use
         :py:func:`mitsuba.traverse()` instead)
         """
+        # Maps str keys to (value, value_type, node, flags) tuples
         self.properties = properties if properties is not None else {}
+        # Maps nodes to a list of (parent, {child_names}) pairs
         self.hierarchy  = hierarchy  if hierarchy  is not None else {}
+        # Maps parameter keys to their JIT identifier hash values
         self.update_candidates = {}
+        # Maps (depth, node) pairs to sets of parameter keys that should trigger an update when modified
         self.nodes_to_update = {}
 
         self.set_property = mi.set_property
@@ -31,8 +36,74 @@ class SceneParameters(Mapping):
 
     def copy(self):
         return SceneParameters(
-            dict(self.properties),
+            dict(self.properties), 
             dict(self.hierarchy))
+
+    def merge(self, other: SceneParameters, other_prefix: Optional[str] = None) -> None:
+        """
+        Merge parameters from ``other`` into this instance.
+
+        All entries from ``other`` are added to this object's parameter table.
+        If ``other_prefix`` is given, every key from ``other`` is prepended
+        with ``<other_prefix>.`` before insertion, which avoids naming
+        conflicts with the existing keys.
+
+        Update propagation (via :py:meth:`~mitsuba.SceneParameters.update`)
+        is handled correctly: each node from ``other``'s scene graph will
+        receive the unmodified, un-prefixed key names in its
+        ``parameters_changed`` callback.
+
+        Parameter ``other`` (:py:class:`~mitsuba.SceneParameters`):
+            The SceneParameters instance whose parameters are merged in.
+
+        Parameter ``other_prefix`` (``str``, optional):
+            Dot-separated namespace prepended to every key from ``other``.
+            Required when ``other`` shares key names with ``self``.
+        """
+
+        # Prevent merging with pending updates, which would cause the update propagation to break
+        if self.update_candidates or self.nodes_to_update:
+            raise ValueError("Cannot merge into a SceneParameters instance with pending updates. Call update() first.")
+        if other.update_candidates or other.nodes_to_update:
+            raise ValueError("Cannot merge from a SceneParameters instance with pending updates. Call update() on the other instance first.")
+
+        # Merge properties, checking for key conflicts
+        for key, value_tuple in other.properties.items():
+            merged_key = f"{other_prefix}.{key}" if other_prefix else key
+            if merged_key in self.properties:
+                raise ValueError(
+                    f"Key conflict during merge: '{merged_key}' already exists. "
+                    "Specify other_prefix to avoid naming conflicts."
+                )
+            self.properties[merged_key] = value_tuple
+
+        # Merge hierarchy, inspecting for shared nodes
+        for node, parents in other.hierarchy.items():
+
+            # Node is independent from existing hierarchy
+            if node not in self.hierarchy:
+                self.hierarchy[node] = [(p, set(cn)) for p, cn in parents]
+
+            # Union parent entries: add any parent from other not yet known to self.
+            else:
+                # Alias to avoid lookup everytime
+                node_parents = self.hierarchy[node]
+                node_parents_id = {id(p) for p, _ in node_parents}
+
+                for parent, child_names in parents:
+
+                    # First time we explore this parent
+                    if id(parent) not in node_parents_id:
+                        node_parents.append((parent, set(child_names)))
+                        node_parents_id.add(id(parent))
+
+                    # Lookup the existing entry for this parent and update the child names
+                    else:
+                        for entry_parent, entry_child_names in node_parents:
+                            if entry_parent is parent:
+                                entry_child_names.update(child_names)
+                                break
+
 
     def __contains__(self, key: str):
         return self.properties.__contains__(key)
@@ -169,18 +240,33 @@ class SceneParameters(Mapping):
                 "gradients enabled, unexpected results may occur!"
             )
 
-        node_key = key
-        while node is not None:
-            parent, depth = self.hierarchy[node]
+        # BFS up the hierarchy so that all parents (including shared nodes with
+        # multiple parents) receive the correct slot-name notifications.
+        # step=0 is the directly-dirty leaf; parents get step+1.
+        # nodes_to_update stores {node: (min_step, names)} so that a node that is
+        # both directly dirty and an ancestor of another dirty node is treated as
+        # a leaf (lowest step wins → processed first).
+        step = 0
+        leaf_name = key.rsplit('.', 1)[-1] if '.' in key else key
+        work = {node: {leaf_name}}
+        while work:
 
-            name = node_key
-            if parent is not None:
-                node_key, name = node_key.rsplit('.', 1)
+            next_work = {}
+            for current_node, names in work.items():
 
-            self.nodes_to_update.setdefault((depth, node), set())
-            self.nodes_to_update[(depth, node)].add(name)
+                if current_node in self.nodes_to_update:
+                    existing_step, existing_names = self.nodes_to_update[current_node]
+                    self.nodes_to_update[current_node] = (min(existing_step, step), existing_names | names)
+                else:
+                    self.nodes_to_update[current_node] = (step, set(names))
 
-            node = parent
+                for parent, parent_child_names in self.hierarchy[current_node]:
+                    if parent not in next_work:
+                        next_work[parent] = set()
+                    next_work[parent].update(parent_child_names)
+
+            step += 1
+            work = next_work
 
         return self.properties[key]
 
@@ -219,11 +305,9 @@ class SceneParameters(Mapping):
         for key in self.keys():
             dr.schedule(self.__get_value(key))
 
-        # Notify nodes from bottom to top
-        work_list = [(d, n, k) for (d, n), k in self.nodes_to_update.items()]
-        work_list = reversed(sorted(work_list, key=lambda x: x[0]))
+        # Notify nodes leaf-first (step 0) up to the root (highest step).
         out = []
-        for _, node, keys in work_list:
+        for node, (_, keys) in sorted(self.nodes_to_update.items(), key=lambda x: x[1][0]):
             node.parameters_changed(list(keys))
             out.append((node, keys))
 
@@ -267,10 +351,32 @@ def _jit_id_hash(value: Any) -> int:
 
     return hash(tuple(jit_ids(value)))
 
-def traverse(node: mi.Object) -> SceneParameters:
+def traverse(node: Any) -> SceneParameters:
     """
     Traverse a node of Mitsuba's scene graph and return a dictionary-like
     object that can be used to read and write associated scene parameters.
+
+    In addition to a single :py:class:`mitsuba.Object`, ``node`` may be a
+    **pytree** — any nesting of lists, tuples, dicts, or dataclasses that
+    ultimately contains :py:class:`mitsuba.Object` leaves. The returned
+    :py:class:`~mitsuba.SceneParameters` merges the parameters of all objects
+    found, keyed by their path in the pytree:
+
+    - List/tuple element ``i`` → prefix ``elem_i``
+    - Dict entry with key ``k`` → prefix ``str(k)``
+    - Dataclass field ``f`` → prefix ``f``
+
+    Example (nested list)::
+
+        sensor_1, sensor_2 = ...
+        film_1, film_2 = ...
+        params = mi.traverse([[sensor_1, sensor_2], [film_1, film_2]])
+        # Keys: 'elem_0.elem_0.film.x_resolution', 'elem_0.elem_1.film.x_resolution', ...
+
+    Example (dict)::
+
+        params = mi.traverse({"sensor": sensor, "bsdf": bsdf})
+        # Keys: 'sensor.film.x_resolution', 'bsdf.reflectance.value', ...
 
     See also :py:class:`mitsuba.SceneParameters`.
     """
@@ -278,7 +384,7 @@ def traverse(node: mi.Object) -> SceneParameters:
     class SceneTraversal(mi.TraversalCallback):
         def __init__(self, node, parent=None, properties=None,
                      hierarchy=None, prefixes=None, name=None, depth=0,
-                     flags=+mi.ParamFlags.Differentiable):
+                     flags=+mi.ParamFlags.Differentiable, local_name=None):
             mi.TraversalCallback.__init__(self)
             self.properties = dict() if properties is None else properties
             self.hierarchy = dict() if hierarchy is None else hierarchy
@@ -294,7 +400,13 @@ def traverse(node: mi.Object) -> SceneParameters:
             self.name = name
             self.node = node
             self.depth = depth
-            self.hierarchy[node] = (parent, depth)
+            # parents: list of (parent_node, child_names_set) pairs.
+            # A node can have multiple parents when the same object is shared
+            # across several scene graph nodes (e.g., one texture used by many BSDFs).
+            # child_names_set holds all slot names by which this node is known to
+            # that particular parent.
+            parents = [(parent, {local_name})] if (parent is not None and local_name is not None) else []
+            self.hierarchy[node] = parents
             self.flags = flags
 
         def put(self, name, value, flags, cpptype=None):
@@ -316,24 +428,55 @@ def traverse(node: mi.Object) -> SceneParameters:
             self.properties[name] = (ptr, cpptype, self.node, self.flags | flags)
 
         def put_object(self, name, obj, flags):
-            if obj is None or obj in self.hierarchy:
+            if obj is None:
                 return
-            cb = SceneTraversal(
-                node=obj,
-                parent=self.node,
-                properties=self.properties,
-                hierarchy=self.hierarchy,
-                prefixes=self.prefixes,
-                name=name if self.name is None else self.name + '.' + name,
-                depth=self.depth + 1,
-                flags=self.flags | flags
-            )
-            obj.traverse(cb)
+            if obj in self.hierarchy:
+                # Already traversed — register this (parent, slot) relationship.
+                for entry_parent, entry_child_names in self.hierarchy[obj]:
+                    if entry_parent is self.node:
+                        entry_child_names.add(name)
+                        return
+            else:
+                cb = SceneTraversal(
+                    node=obj,
+                    parent=self.node,
+                    properties=self.properties,
+                    hierarchy=self.hierarchy,
+                    prefixes=self.prefixes,
+                    name=name if self.name is None else self.name + '.' + name,
+                    depth=self.depth + 1,
+                    flags=self.flags | flags,
+                    local_name=name,
+                )
+                obj.traverse(cb)
 
-    cb = SceneTraversal(node)
-    node.traverse(cb)
+    def _traverse_object(obj):
+        cb = SceneTraversal(obj)
+        obj.traverse(cb)
+        return SceneParameters(cb.properties, cb.hierarchy)
 
-    return SceneParameters(cb.properties, cb.hierarchy)
+    def _collect(node, result, prefix):
+        if isinstance(node, mi.Object):
+            result.merge(_traverse_object(node), other_prefix=prefix or None)
+        elif isinstance(node, (list, tuple)):
+            for i, child in enumerate(node):
+                child_prefix = f"{prefix}.elem_{i}" if prefix else f"elem_{i}"
+                _collect(child, result, child_prefix)
+        elif isinstance(node, dict):
+            for key, child in node.items():
+                child_prefix = f"{prefix}.{key}" if prefix else str(key)
+                _collect(child, result, child_prefix)
+        elif dataclasses.is_dataclass(node) and not isinstance(node, type):
+            for field in dataclasses.fields(node):
+                child_prefix = f"{prefix}.{field.name}" if prefix else field.name
+                _collect(getattr(node, field.name), result, child_prefix)
+
+    if isinstance(node, mi.Object):
+        return _traverse_object(node)
+
+    result = SceneParameters()
+    _collect(node, result, "")
+    return result
 
 # ------------------------------------------------------------------------------
 #                          Rendering Custom Operation
