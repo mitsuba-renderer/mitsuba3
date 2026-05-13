@@ -381,17 +381,17 @@ def test07_traverse_pytree(variants_all_ad_rgb):
     bsdf1_params = mi.traverse(bsdf1)
     n = len(bsdf1_params)
 
-    # List: keys prefixed with elem_i
+    # List: keys prefixed with {classname}_{i} (smoothdiffuse for diffuse BSDF)
     params = mi.traverse([bsdf1, bsdf2])
     assert len(params) == 2 * n
     for key in bsdf1_params.keys():
-        assert f"elem_0.{key}" in params
+        assert f"smoothdiffuse_0.{key}" in params
 
-    # Nested list: elem_0.elem_0, elem_1.elem_0
+    # Nested list: outer Python lists get class name "list"; inner BSDFs keep their class name
     params = mi.traverse([[bsdf1], [bsdf2]])
     assert len(params) == 2 * n
-    assert any(k.startswith('elem_0.elem_0.') for k in params.keys())
-    assert any(k.startswith('elem_1.elem_0.') for k in params.keys())
+    assert any(k.startswith('list_0.smoothdiffuse_0.') for k in params.keys())
+    assert any(k.startswith('list_1.smoothdiffuse_0.') for k in params.keys())
 
     # Dict: keys prefixed with dict key
     params = mi.traverse({'a': bsdf1, 'b': bsdf2})
@@ -411,7 +411,8 @@ def test07_traverse_pytree(variants_all_ad_rgb):
     # Single mi.Object: unchanged behaviour (no prefix)
     params_single = mi.traverse(bsdf1)
     params_pytree = mi.traverse([bsdf1])
-    assert list(params_single.keys()) == [k[len('elem_0.'):] for k in params_pytree.keys()]
+    prefix = bsdf1.class_name().lower() + '_0.'
+    assert list(params_single.keys()) == [k[len(prefix):] for k in params_pytree.keys()]
 
     # Non-object leaves are silently ignored
     params = mi.traverse({'bsdf': bsdf1, 'ignored': 42})
@@ -431,13 +432,13 @@ def test07_traverse_pytree(variants_all_ad_rgb):
     mi.register_bsdf("mybsdf4", AliasedBSDF)
     bsdf_shared = mi.load_dict({'type': 'mybsdf4'})
     params = mi.traverse({"first": bsdf_shared, "second": (bsdf_shared, bsdf_shared)})
-    params["second.elem_1.value"] = 0.5
+    params["second.bsdf_1.value"] = 0.5
     params.update()
     assert AliasedBSDF.update_keys == ['value']
     assert dr.allclose(bsdf_shared.value, 0.5)
     assert dr.allclose(params["first.value"], 0.5)
-    assert dr.allclose(params["second.elem_0.value"], 0.5)
-    assert dr.allclose(params["second.elem_1.value"], 0.5)
+    assert dr.allclose(params["second.bsdf_0.value"], 0.5)
+    assert dr.allclose(params["second.bsdf_1.value"], 0.5)
 
 def test08_shared_node_multiple_parents(variants_all_ad_rgb):
     # --- Custom plugins: shared texture, 5 BSDFs each get parameters_changed ---
@@ -473,7 +474,7 @@ def test08_shared_node_multiple_parents(variants_all_ad_rgb):
     tex = mi.load_dict({'type': 'mytexture5'})
     all_bsdfs = [mi.load_dict({'type': 'mybsdf5', 'tex': tex}) for _ in range(5)]
     params = mi.traverse([all_bsdfs, tex])
-    params["elem_1.value"] = 0.5
+    params["texture_0.value"] = 0.5
     params.update()
     for bsdf in all_bsdfs:
         assert dr.allclose(bsdf.tex.value, 0.5)
@@ -486,7 +487,7 @@ def test08_shared_node_multiple_parents(variants_all_ad_rgb):
         for _ in range(5)
     ]
     params = mi.traverse([all_scenes, bsdf])
-    params["elem_1.reflectance.value"] = mi.Float(0.5)
+    params["smoothdiffuse_0.reflectance.value"] = mi.Float(0.5)
     updated_nodes = {node for node, _ in params.update()}
     for scene in all_scenes:
         assert scene in updated_nodes

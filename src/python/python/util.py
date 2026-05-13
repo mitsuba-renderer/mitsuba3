@@ -2,6 +2,7 @@ from __future__ import annotations as __annotations__ # Delayed parsing of type 
 
 import contextlib
 import dataclasses
+from collections import Counter
 from collections.abc import Mapping
 from typing import Any, Optional, Union
 
@@ -362,16 +363,27 @@ def traverse(node: Any) -> SceneParameters:
     :py:class:`~mitsuba.SceneParameters` merges the parameters of all objects
     found, keyed by their path in the pytree:
 
-    - List/tuple element ``i`` → prefix ``elem_i``
-    - Dict entry with key ``k`` → prefix ``str(k)``
-    - Dataclass field ``f`` → prefix ``f``
+    - **List/tuple** element → prefix ``{classname}_{i}`` where ``classname``
+      is the lowercase class name (``node.class_name()`` for
+      :py:class:`~mitsuba.Object`, ``type(node).__name__`` for other types)
+      and ``i`` is the zero-based occurrence count among elements of the same
+      class within that container.
+    - **Dict** entry with key ``k`` → prefix ``str(k)``
+    - **Dataclass** field ``f`` → prefix ``f``
 
-    Example (nested list)::
+    Example (list of same-type objects)::
 
-        sensor_1, sensor_2 = ...
-        film_1, film_2 = ...
-        params = mi.traverse([[sensor_1, sensor_2], [film_1, film_2]])
-        # Keys: 'elem_0.elem_0.film.x_resolution', 'elem_0.elem_1.film.x_resolution', ...
+        bsdf1 = mi.load_dict({'type': 'diffuse'})  # class name: SmoothDiffuse
+        bsdf2 = mi.load_dict({'type': 'diffuse'})
+        params = mi.traverse([bsdf1, bsdf2])
+        # Keys: 'smoothdiffuse_0.reflectance.value',
+        #        'smoothdiffuse_1.reflectance.value'
+
+    Example (nested containers — Python lists get class name ``list``)::
+
+        params = mi.traverse([[bsdf1], [bsdf2]])
+        # Keys: 'list_0.smoothdiffuse_0.reflectance.value',
+        #        'list_1.smoothdiffuse_0.reflectance.value'
 
     Example (dict)::
 
@@ -459,13 +471,22 @@ def traverse(node: Any) -> SceneParameters:
         if isinstance(node, mi.Object):
             result.merge(_traverse_object(node), other_prefix=prefix or None)
         elif isinstance(node, (list, tuple)):
-            for i, child in enumerate(node):
-                child_prefix = f"{prefix}.elem_{i}" if prefix else f"elem_{i}"
+            prefix_count = Counter()
+            for child in node:
+                class_name = child.class_name() if isinstance(child, mi.Object) else type(child).__name__
+                class_name = class_name.lower()
+                child_prefix = f"{class_name}_{prefix_count[class_name]}"
+                child_prefix = f"{prefix}.{child_prefix}" if prefix else f"{child_prefix}"
+                
+                prefix_count[class_name] += 1
+
                 _collect(child, result, child_prefix)
+
         elif isinstance(node, dict):
             for key, child in node.items():
                 child_prefix = f"{prefix}.{key}" if prefix else str(key)
                 _collect(child, result, child_prefix)
+        
         elif dataclasses.is_dataclass(node) and not isinstance(node, type):
             for field in dataclasses.fields(node):
                 child_prefix = f"{prefix}.{field.name}" if prefix else field.name
