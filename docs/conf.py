@@ -81,6 +81,7 @@ rst_prolog = r"""
 .. |point| replace:: :paramtype:`point`
 .. |vector| replace:: :paramtype:`vector`
 .. |transform| replace:: :paramtype:`transform`
+.. |animation| replace:: :paramtype:`animation`
 .. |volume| replace:: :paramtype:`volume`
 .. |tensor| replace:: :paramtype:`tensor`
 

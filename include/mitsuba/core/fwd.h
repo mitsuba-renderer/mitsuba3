@@ -70,6 +70,7 @@ template <typename Point>                       struct BoundingSphere;
 template <typename Vector>                      struct Frame;
 template <typename Float>                       struct DiscreteDistribution;
 template <typename Float>                       struct ContinuousDistribution;
+template <typename Float, typename Spectrum>    struct AnimatedTransform;
 
 template <typename Spectrum> using StokesVector  = dr::Array<Spectrum, 4>;
 template <typename Spectrum> using MuellerMatrix = dr::Matrix<Spectrum, 4>;

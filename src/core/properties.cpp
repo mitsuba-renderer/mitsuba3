@@ -6,6 +6,7 @@
 #include <drjit/tensor.h>
 #include <typeinfo>
 
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/properties.h>

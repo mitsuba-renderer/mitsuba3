@@ -1552,7 +1552,7 @@ def test51_parallel_instantiation(parallel, variant_scalar_rgb):
 
     # Verify all 100 spheres
     for i in range(100):
-        to_world = params[f"sphere_{i}.to_world"]
+        to_world = params[f"sphere_{i}.to_world.transform"]
         # Extract the translation from the transform
         assert dr.allclose(to_world.translation(), mi.Point3f(i * 0.1, 0, 0))
 
