@@ -13,7 +13,9 @@ public:
     MergeShape(const Properties &props) {
         // Note: we are *not* calling the `Shape` constructor as we do not
         // want to accept various properties such as `to_world`.
-        std::unordered_map<Key, ref<Mesh>, key_hasher> tbl;
+        // Group meshes by merge key, then collapse each group in a single
+        // batched call to `Mesh::merge`.
+        std::unordered_map<Key, std::vector<ref<Mesh>>, key_hasher> groups;
         size_t visited = 0, ignored = 0;
         Timer timer;
 
@@ -37,22 +39,22 @@ public:
             key.has_texcoords = mesh->has_vertex_texcoords();
             key.has_face_normals = mesh->has_face_normals();
 
-            auto [it, success] = tbl.try_emplace(key, mesh);
-            if (!success)
-                it->second = it->second->merge(mesh);
-
+            groups[key].push_back(ref<Mesh>(mesh));
             visited++;
         }
 
-        for (auto &kv : tbl) {
-            if (tbl.size() == 1 && !props.id().empty())
-                kv.second->set_id(props.id());
+        for (auto &kv : groups) {
+            ref<Mesh> merged = Mesh::merge(kv.second);
 
-            m_objects.push_back((ref<Object>) kv.second);
+            if (groups.size() == 1 && !props.id().empty())
+                merged->set_id(props.id());
+
+            m_objects.push_back((ref<Object>) merged);
         }
 
         Log(Info, "Collapsed %zu into %zu meshes. (took %s, %zu objects ignored)",
-            visited, tbl.size(), util::time_string((float) timer.value()), ignored);
+            visited, groups.size(), util::time_string((float) timer.value()),
+            ignored);
     }
 
     std::vector<ref<Object>> expand() const override {
