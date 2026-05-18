@@ -613,7 +613,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_directed_edges() {
             DRJIT_STRUCT(LoopState, next_edge_id, active)
         };
         UInt32 next_edge_id = old;
-        LoopState ls{ next_edge_id, !swapped & !invalid_edges };
+        LoopState ls{ next_edge_id, (!swapped) & (!invalid_edges) };
         dr::tie(ls) = dr::while_loop(
             dr::make_tuple(ls),
             [](const LoopState &ls) { return ls.active; },
@@ -649,8 +649,8 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_directed_edges() {
                 // Opposite edge was already set, must be non-manifold
                 dr::scatter<Bool>(non_manifold, Bool(true), v1, found_edge & !invalid_opp, ReduceMode::NoConflicts);
                 dr::scatter<Bool>(non_manifold, Bool(true), v2, found_edge & !invalid_opp, ReduceMode::NoConflicts);
-                ls.edge_id_opp[found_edge & !invalid_opp] = INVALID_DEDGE;
-                ls.active[found_edge & !invalid_opp] = false;
+                ls.edge_id_opp[found_edge & (!invalid_opp)] = INVALID_DEDGE;
+                ls.active[found_edge & (!invalid_opp)] = false;
 
                 // Move to next edge of vertex
                 ls.it = dr::gather<UInt32>(tmp[1], ls.it);

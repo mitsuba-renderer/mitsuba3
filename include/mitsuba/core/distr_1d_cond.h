@@ -961,7 +961,6 @@ private:
         }
 
         Index bin_index;
-        Value w0, w1;
         size_t length;
 
         size_t size_nodes;
@@ -983,8 +982,7 @@ private:
         Value new_x = (value - range_nodes.x()) * inv_interval;
         Index index =
             dr::clip(Index(dr::floor(new_x)), 0u, uint32_t(size_nodes - 2));
-        w1 = new_x - Value(index);
-        w0 = 1.f - w1;
+        Value w1 = new_x - Value(index);
 
         // Check bounds
         active &= (value >= range_nodes.x()) && (value <= range_nodes.y());
