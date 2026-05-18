@@ -333,6 +333,14 @@ protected:
     // Implementation detail to atomically accumulate a value into the image block
     void accum(Float value, UInt32 index, Bool active);
 
+    // Packet variant of \ref accum: atomically accumulates m_channel_count
+    // consecutive values starting at index * m_channel_count
+    void accum_packet(const Float *values, UInt32 index, Bool active);
+
+    // Weighted variant of \ref accum_packet (each value multiplied by \c weight)
+    void accum_packet(const Float *values, const Float &weight,
+                      UInt32 index, Bool active);
+
 protected:
     ScalarPoint2i m_offset;
     ScalarVector2u m_size;
