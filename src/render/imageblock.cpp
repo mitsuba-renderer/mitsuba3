@@ -2,6 +2,7 @@
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/profiler.h>
 #include <drjit/while_loop.h>
+#include <drjit/util.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -132,6 +133,51 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::accum(Float value, UInt32 index, Bo
     }
 }
 
+MI_VARIANT void ImageBlock<Float, Spectrum>::accum_packet(const Float *values,
+                                                          UInt32 pixel_index,
+                                                          Bool active) {
+    if constexpr (dr::is_jit_v<Float>) {
+        if (!m_compensate) {
+            dr::scatter_reduce_packet_dynamic(
+                ReduceOp::Add, m_channel_count, m_tensor.array(),
+                values, pixel_index, active);
+            return;
+        }
+
+        // Kahan compensation has no packet variant; fall back to per-channel
+        UInt32 index = pixel_index * m_channel_count;
+        for (uint32_t k = 0; k < m_channel_count; ++k)
+            accum(values[k], index + k, active);
+    } else {
+        DRJIT_MARK_USED(values);
+        DRJIT_MARK_USED(pixel_index);
+        DRJIT_MARK_USED(active);
+    }
+}
+
+MI_VARIANT void ImageBlock<Float, Spectrum>::accum_packet(const Float *values,
+                                                          const Float &weight,
+                                                          UInt32 pixel_index,
+                                                          Bool active) {
+    if constexpr (dr::is_jit_v<Float>) {
+        // Multiply each channel by `weight` into a temporary buffer, then
+        // forward to the unweighted overload.
+        Float *weighted = (Float *) alloca(sizeof(Float) * m_channel_count);
+        for (uint32_t k = 0; k < m_channel_count; ++k)
+            new (weighted + k) Float(values[k] * weight);
+
+        accum_packet(weighted, pixel_index, active);
+
+        for (uint32_t k = 0; k < m_channel_count; ++k)
+            weighted[k].~Float();
+    } else {
+        DRJIT_MARK_USED(values);
+        DRJIT_MARK_USED(weight);
+        DRJIT_MARK_USED(pixel_index);
+        DRJIT_MARK_USED(active);
+    }
+}
+
 MI_VARIANT void ImageBlock<Float, Spectrum>::put_block(const ImageBlock *block) {
     ScopedPhase sp(ProfilerPhase::ImageBlockPut);
 
@@ -211,7 +257,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
         Point2u p = Point2u(dr::floor2int<Point2i>(pos) - m_offset);
 
         // Switch over to unsigned integers, compute pixel index
-        UInt32 index = dr::fmadd(p.y(), m_size.x(), p.x()) * m_channel_count;
+        UInt32 pixel_index = dr::fmadd(p.y(), m_size.x(), p.x());
 
         // The sample could be out of bounds
         active &= dr::all(p < m_size);
@@ -221,12 +267,12 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
             if (unlikely(!active))
                 return;
 
-            ScalarFloat *ptr = m_tensor.array().data() + index;
+            ScalarFloat *ptr = m_tensor.array().data() +
+                               (size_t) pixel_index * m_channel_count;
             for (uint32_t k = 0; k < m_channel_count; ++k)
                 *ptr++ += values[k];
         } else {
-            for (uint32_t k = 0; k < m_channel_count; ++k)
-                accum(values[k], index++, active);
+            accum_packet(values, pixel_index, active);
         }
 
         return;
@@ -450,7 +496,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
         // Switch over to unsigned integers, compute pixel index
         UInt32 x = UInt32(pos_i_local.x()),
                y = UInt32(pos_i_local.y()),
-               index = dr::fmadd(y, size.x(), x) * m_channel_count;
+               pixel_index = dr::fmadd(y, size.x(), x);
 
         // Evaluate filters weights along the X and Y axes
         Point2f rel_f = Point2f(pos_i) + .5f - pos;
@@ -497,15 +543,15 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
                     Mask active_2 = active_1 && x < size.x();
                     Float weight = weights_y[ys] * weights_x[xs];
 
-                    for (uint32_t k = 0; k < m_channel_count; ++k)
-                        accum(values[k] * weight, index++, active_2);
+                    accum_packet(values, weight, pixel_index, active_2);
 
                     x++;
+                    pixel_index += 1;
                 }
 
                 x -= count;
                 y += 1;
-                index += (size.x() - count) * m_channel_count;
+                pixel_index += size.x() - count;
             }
 
             // Destruct weight variables
@@ -518,41 +564,43 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
             // 2.2. Recorded loop mode
             // ===========================================================
 
+            UInt32 px = pixel_index;
             UInt32 ys = 0;
 
-            std::tie(ys, index) = dr::while_loop(
-                std::make_tuple(ys, index),
+            std::tie(ys, px) = dr::while_loop(
+                std::make_tuple(ys, px),
                 [count](const UInt32 &ys, const UInt32 &) {
                     return ys < count;
                 },
                 [this, active, count, values, x, y, rel_f,
-                    size](UInt32 &ys, UInt32 &index) {
+                    size](UInt32 &ys, UInt32 &px) {
                     Float weight_y = m_rfilter->eval(rel_f.y() + Float(ys));
                     Mask active_1 = active && (y + ys < size.y());
 
                     UInt32 xs = 0;
 
-                    std::tie(xs, index) = dr::while_loop(
-                        std::make_tuple(xs, index),
+                    std::tie(xs, px) = dr::while_loop(
+                        std::make_tuple(xs, px),
                         [count](const UInt32 &xs, const UInt32 &) {
                             return xs < count;
                         },
                         [this, values, rel_f, weight_y, x, y, size,
-                            active_1](UInt32 &xs, UInt32 &index) {
+                            active_1](UInt32 &xs, UInt32 &px) {
                             Float weight_x =
                                     m_rfilter->eval(rel_f.x() + Float(xs)),
                                   weight = weight_x * weight_y;
 
                             Mask active_2 = active_1 && (x + xs < size.x());
-                            for (uint32_t k = 0; k < m_channel_count; ++k)
-                                accum(values[k] * weight, index++, active_2);
+
+                            accum_packet(values, weight, px, active_2);
 
                             xs++;
+                            px += 1;
                         },
                         "ImageBlock::put() [2]");
 
                     ys++;
-                    index += (size.x() - count) * m_channel_count;
+                    px += size.x() - count;
                 },
                 "ImageBlock::put() [1]");
         }
