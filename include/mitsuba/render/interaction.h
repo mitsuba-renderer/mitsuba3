@@ -163,9 +163,37 @@ private:
      * position is offset along the surface normal to prevent self intersection.
      */
     Point3f offset_p(const Vector3f &d) const {
-        Float mag = (1.f + dr::max(dr::abs(p))) * math::RayEpsilon<Float>;
-        mag = dr::detach(dr::mulsign(mag, dr::dot(n, d)));
-        return dr::fmadd(mag, dr::detach(n), p);
+        using UInt32 = dr::uint32_array_t<Float>;
+        using Int32  = dr::int32_array_t<Float>;
+
+        Float dot_nd = dr::dot(n, d);
+        Vector3f n_signed = dr::select(dot_nd >= 0.f, n, -n);
+
+        auto offset_coord = [](const Float &p_c, const Float &n_c) {
+            UInt32 p_u = dr::reinterpret_array<UInt32>(p_c);
+            Int32 of_i = dr::floor2int<Int32>(256.f * n_c);
+
+            UInt32 p_i_u = dr::select(p_c >= 0.f,
+                                      dr::reinterpret_array<UInt32>(
+                                          dr::reinterpret_array<Int32>(p_u) + of_i),
+                                      dr::reinterpret_array<UInt32>(
+                                          dr::reinterpret_array<Int32>(p_u) - of_i));
+            Float p_i = dr::reinterpret_array<Float>(p_i_u);
+
+            Float origin = 1.f / 32.f;
+            Float float_scale = 1.f / 65536.f;
+
+            return dr::select(dr::abs(p_c) < origin,
+                              p_c + float_scale * n_c,
+                              p_i);
+        };
+
+        Point3f p_offset;
+        p_offset.x() = offset_coord(p.x(), n_signed.x());
+        p_offset.y() = offset_coord(p.y(), n_signed.y());
+        p_offset.z() = offset_coord(p.z(), n_signed.z());
+
+        return dr::detach(p_offset);
     }
 };
 
