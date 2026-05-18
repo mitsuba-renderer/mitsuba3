@@ -335,6 +335,8 @@ static const char *__doc_OptixHitGroupData_data = R"doc(Pointer to the memory re
 
 static const char *__doc_OptixHitGroupData_shape_registry_id = R"doc(Shape id in Dr.Jit's pointer registry)doc";
 
+static const char *__doc_OptixHitGroupData_shape_type = R"doc(Shape type)doc";
+
 static const char *__doc_OptixImage2D = R"doc()doc";
 
 static const char *__doc_OptixImage2D_data = R"doc()doc";
@@ -7679,6 +7681,12 @@ static const char *__doc_mitsuba_RayFlags_DetachShape = R"doc(Derivatives of the
 
 static const char *__doc_mitsuba_RayFlags_Empty = R"doc(No flags set)doc";
 
+static const char *__doc_mitsuba_RayFlags_StochasticEllipsoids = R"doc(Enable stochastic ray-tracing for ellipsoids)doc";
+
+static const char *__doc_mitsuba_RayFlags_GaussianEllipsoids = R"doc(Working with Gaussian Ellipsoids)doc";
+
+static const char *__doc_mitsuba_RayFlags_NoInvoke = R"doc(Force disable execution of any-hit shader (OptiX))doc";
+
 static const char *__doc_mitsuba_RayFlags_FollowShape = R"doc(Derivatives of the SurfaceInteraction fields follow shape's motion)doc";
 
 static const char *__doc_mitsuba_RayFlags_Minimal = R"doc(Compute position and geometric normal)doc";
@@ -14615,4 +14623,3 @@ static const char *__doc_operator_lshift = R"doc(Turns a vector of elements into
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif
-

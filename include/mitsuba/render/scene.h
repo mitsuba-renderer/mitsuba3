@@ -370,7 +370,7 @@ public:
     PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
                                                         Mask coherent = false,
                                                         Mask active = true) const {
-        return ray_intersect_preliminary(ray, coherent, false, 0, 0, active);
+        return ray_intersect_preliminary(ray, +RayFlags::All, coherent, false, 0, 0, active);
     }
 
     /**
@@ -448,6 +448,7 @@ public:
      *    should be queried to check if an intersection was actually found.
      */
     PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
+                                                        uint32_t ray_flags,
                                                         Mask coherent,
                                                         bool reorder,
                                                         UInt32 reorder_hint ,
@@ -780,7 +781,7 @@ protected:
     MI_INLINE PreliminaryIntersection3f ray_intersect_preliminary_cpu(
         const Ray3f &ray, Mask coherent, Mask active) const;
     MI_INLINE PreliminaryIntersection3f ray_intersect_preliminary_gpu(
-        const Ray3f &ray, bool reorder, UInt32 reorder_hint, uint32_t reorder_hint_bits, Mask active) const;
+        const Ray3f &ray, uint32_t ray_flags, bool reorder, UInt32 reorder_hint, uint32_t reorder_hint_bits, Mask active) const;
 
     /// Trace a ray
     MI_INLINE SurfaceInteraction3f ray_intersect_cpu(

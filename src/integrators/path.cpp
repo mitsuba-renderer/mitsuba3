@@ -160,6 +160,7 @@ public:
 
         // First bounce is usually coherent - don't reorder threads
         ls.pi = scene->ray_intersect_preliminary(ls.ray,
+                                                 /* ray_flags = */ +RayFlags::All,
                                                  /* coherent = */ true,
                                                  /* reorder = */ false,
                                                  /* reorder_hint = */ 0,
@@ -332,6 +333,7 @@ public:
 
             // Reorder threads based on the shape they hit
             ls.pi = scene->ray_intersect_preliminary(ls.ray,
+                                                     /* ray_flags = */ +RayFlags::All,
                                                      /* coherent = */ false,
                                                      /* reorder = */ jit_flag(JitFlag::LoopRecord),
                                                      /* reorder_hint = */ 0,

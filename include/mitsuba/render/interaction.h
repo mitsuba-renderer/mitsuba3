@@ -54,6 +54,19 @@ enum class RayFlags : uint32_t {
     DetachShape = 0x100,
 
     // =============================================================
+    //!                Volumetric Primitives flags
+    // =============================================================
+
+    /// Force disable execution of any-hit shader (OptiX)
+    NoInvoke = 0x800,
+
+    /// Enable stochastic ray-tracing for ellipsoids
+    StochasticEllipsoids = 0x1000,
+
+    /// Working with Gaussian Ellipsoids
+    GaussianEllipsoids = 0x2000,
+
+    // =============================================================
     //!                 Compound compute flags
     // =============================================================
 
