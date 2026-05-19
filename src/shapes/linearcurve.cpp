@@ -348,6 +348,16 @@ public:
         Point3f c = p0 * (1.f - v_local) + p1 * v_local;
         si.n = si.sh_frame.n = dr::normalize(si.p - c);
 
+        // Backface culling: linear curves are documented to only return
+        // outward-facing hits (Embree's RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE
+        // and OptiX's OPTIX_PRIMITIVE_TYPE_ROUND_LINEAR cull at intersection
+        // time). Apple's Metal HW curve intersector accepts both sides — so
+        // when the ray hits from inside the tube (cosine of normal w.r.t.
+        // ray direction is positive), invalidate the hit here so backends
+        // agree on the public ray_intersect contract.
+        Mask backface = active & (dr::dot(si.n, ray.d) > 0.f);
+        si.t = dr::select(backface, dr::Infinity<Float>, si.t);
+
         if (need_uv) {
             Vector3f rad_vec = si.p - c;
             Vector3f rad_vec_normalized = dr::normalize(rad_vec);
@@ -429,6 +439,22 @@ public:
         build_input.curveArray.flag                 = OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT;
         build_input.curveArray.primitiveIndexOffset = 0;
         build_input.curveArray.endcapFlags          = OPTIX_CURVE_ENDCAP_DEFAULT;
+    }
+#endif
+
+#if defined(MI_ENABLE_METAL)
+    int metal_curve_kind() const override { return 1; /* linear */ }
+
+    void metal_get_curve_data(uint32_t *cp_index, size_t *cp_count,
+                              uint32_t *idx_index, size_t *seg_count) const override {
+        if constexpr (dr::is_metal_v<Float>) {
+            if (cp_index)  *cp_index  = m_control_points.index();
+            if (cp_count)  *cp_count  = (size_t) m_control_point_count;
+            if (idx_index) *idx_index = m_indices.index();
+            if (seg_count) *seg_count = (size_t) dr::width(m_indices);
+        } else {
+            (void) cp_index; (void) cp_count; (void) idx_index; (void) seg_count;
+        }
     }
 #endif
 

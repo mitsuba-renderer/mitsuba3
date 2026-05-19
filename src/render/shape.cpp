@@ -339,6 +339,20 @@ MI_VARIANT void Shape<Float, Spectrum>::optix_build_input(OptixBuildInput &build
 }
 #endif
 
+#if defined(MI_ENABLE_METAL)
+MI_VARIANT void Shape<Float, Spectrum>::metal_fill_aabb_data(void *out) const {
+    // Default: write a single AABB derived from the shape's bounding box.
+    ScalarBoundingBox3f b = bbox();
+    float *dst = (float *) out;
+    dst[0] = (float) b.min.x();
+    dst[1] = (float) b.min.y();
+    dst[2] = (float) b.min.z();
+    dst[3] = (float) b.max.x();
+    dst[4] = (float) b.max.y();
+    dst[5] = (float) b.max.z();
+}
+#endif
+
 MI_VARIANT typename Shape<Float, Spectrum>::DirectionSample3f
 Shape<Float, Spectrum>::sample_direction(const Interaction3f &it,
                                          const Point2f &sample,

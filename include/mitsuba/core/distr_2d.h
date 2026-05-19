@@ -768,7 +768,7 @@ protected:
             : size(dr::prod(res)), width(res.x()) {
 
             uint32_t n = size * slices;
-            if constexpr (dr::is_cuda_v<Float>) {
+            if constexpr (dr::is_cuda_v<Float> || dr::is_metal_v<Float>) {
                 data = dr::map<FloatStorage>(
                     jit_malloc(AllocType::HostPinned, n * sizeof(ScalarFloat)),
                     n, true);
@@ -779,7 +779,7 @@ protected:
         }
 
         void ready() {
-            if constexpr (dr::is_cuda_v<Float>)
+            if constexpr (dr::is_cuda_v<Float> || dr::is_metal_v<Float>)
                 data = dr::migrate(data, AllocType::Device);
         }
 

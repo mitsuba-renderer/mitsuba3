@@ -1009,6 +1009,118 @@ public:
                                              const OptixProgramGroupMapping &pg_mapping);
 #endif
 
+#if defined(MI_ENABLE_METAL)
+    /**
+     * \brief Returns the number of axis-aligned bounding boxes that should
+     * be added to the Metal BLAS for this shape.
+     *
+     * Single-primitive shapes (sphere, disk, cylinder, ...) return 1.
+     * Multi-primitive shapes (ellipsoids cluster, sdfgrid voxels) return N.
+     * Triangle meshes and curves are handled separately and never call this.
+     */
+    virtual size_t metal_aabb_count() const { return 1; }
+
+    /**
+     * \brief Returns the size in bytes of the per-primitive data block used
+     * by the MSL intersection function. Multiplied by `metal_aabb_count()`
+     * to size the per-shape primitive_data buffer.
+     */
+    virtual size_t metal_primitive_data_size() const { return 0; }
+
+    /**
+     * \brief Returns the *total* size in bytes of the per-shape data buffer
+     * bound at the IFT entry's MSL slot. Default is
+     * `metal_aabb_count() * metal_primitive_data_size()`. Override when the
+     * shape uses a custom buffer layout (e.g. SDFGrid: header + per-voxel
+     * indices + shared grid data).
+     */
+    virtual size_t metal_total_data_size() const {
+        return metal_aabb_count() * metal_primitive_data_size();
+    }
+
+    /**
+     * \brief Index into the intersection-function table — selects which
+     * `[[intersection(bounding_box)]]` MSL function should run for this
+     * shape's BLAS. See `metal_shape::IntersectionFunctionIndex`.
+     */
+    virtual uint32_t metal_intersection_function_index() const { return 0; }
+
+    /**
+     * \brief Fill `metal_aabb_count()` AABBs (each `MTLAxisAlignedBoundingBox`
+     * == 6 floats: minX,minY,minZ,maxX,maxY,maxZ) into the destination buffer.
+     * Default implementation writes the shape's `bbox()`.
+     */
+    virtual void metal_fill_aabb_data(void *out) const;
+
+    /**
+     * \brief Fill `metal_aabb_count() * metal_primitive_data_size()` bytes of
+     * per-primitive data into the destination buffer. The layout must match
+     * the MSL struct read via `[[primitive_data]]`. Default is no-op.
+     */
+    virtual void metal_fill_primitive_data(void * /*out*/) const { }
+
+    /**
+     * \brief Indicates whether this shape is a curve and what kind. Triggers
+     * a native `MTLAccelerationStructureCurveGeometryDescriptor` BLAS path
+     * in scene_metal.inl.
+     *
+     * \return 0 = not a curve, 1 = linear curve, 2 = cubic B-spline curve.
+     */
+    virtual int metal_curve_kind() const { return 0; }
+
+    /**
+     * \brief Expose the JIT variable indices and counts of the curve data for
+     * Metal BLAS construction. Only called when `metal_curve_kind() != 0`.
+     *
+     * \param control_points
+     *     Output: JIT variable index of the flat control-point buffer
+     *     (interleaved (x, y, z, radius), 4 floats per control point).
+     *
+     * \param cp_count
+     *     Output: total number of control points.
+     *
+     * \param indices
+     *     Output: JIT variable index of the flat per-segment index buffer
+     *     (one uint32 per segment, the index of the first control point).
+     *
+     * \param seg_count
+     *     Output: total number of segments.
+     */
+    virtual void metal_get_curve_data(uint32_t * /*control_points*/,
+                                      size_t *   /*cp_count*/,
+                                      uint32_t * /*indices*/,
+                                      size_t *   /*seg_count*/) const { }
+
+    /**
+     * \brief If this shape is an Instance, return the children of the
+     * referenced ShapeGroup so the Metal scene builder can construct one
+     * BLAS per child and reference it from the instance's TLAS descriptor.
+     * Default: empty vector (i.e. not an Instance).
+     */
+    virtual std::vector<ref<Shape>> metal_instance_children() const {
+        return {};
+    }
+
+    /**
+     * \brief Pack the per-instance world transform into a 12-float
+     * column-major MTL::PackedFloat4x3 layout. Default: identity.
+     */
+    virtual void metal_instance_to_world(float out[12]) const {
+        // Identity (column-major: out[col*3 + row])
+        out[0] = 1.f; out[1]  = 0.f; out[2]  = 0.f;
+        out[3] = 0.f; out[4]  = 1.f; out[5]  = 0.f;
+        out[6] = 0.f; out[7]  = 0.f; out[8]  = 1.f;
+        out[9] = 0.f; out[10] = 0.f; out[11] = 0.f;
+    }
+
+    /**
+     * \brief Stable identity of the ShapeGroup referenced by this Instance,
+     * used by the Metal scene builder to cache one BLAS per group across
+     * multiple Instances. Returns nullptr by default (i.e. not an Instance).
+     */
+    virtual const void *metal_shapegroup_id() const { return nullptr; }
+#endif
+
     void traverse(TraversalCallback *callback) override;
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override;
 
@@ -1121,7 +1233,7 @@ NAMESPACE_END(mitsuba)
     ray_intersect_preliminary_packet(                                                       \
         const Ray3fP##N &ray, ScalarIndex prim_index, MaskP##N active) const override {     \
         (void) ray; (void) prim_index; (void) active;                                       \
-        if constexpr (!dr::is_cuda_v<Float>)                                                \
+        if constexpr (!dr::is_cuda_v<Float> && !dr::is_metal_v<Float>)                                                \
             return ray_intersect_preliminary_impl<FloatP##N>(ray, prim_index, active);      \
         else                                                                                \
             Throw("ray_intersect_preliminary_packet() CUDA not supported");                 \
@@ -1129,7 +1241,7 @@ NAMESPACE_END(mitsuba)
     MaskP##N ray_test_packet(const Ray3fP##N &ray, ScalarIndex prim_index, MaskP##N active) \
         const override {                                                                    \
         (void) ray; (void) prim_index; (void) active;                                       \
-        if constexpr (!dr::is_cuda_v<Float>)                                                \
+        if constexpr (!dr::is_cuda_v<Float> && !dr::is_metal_v<Float>)                                                \
             return ray_test_impl<FloatP##N>(ray, prim_index, active);                       \
         else                                                                                \
             Throw("ray_intersect_preliminary_packet() CUDA not supported");                 \
