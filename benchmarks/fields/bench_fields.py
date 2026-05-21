@@ -56,6 +56,7 @@ class BenchmarkResult:
     timings: list[float]
     summary: dict[str, float]
     metrics: dict[str, Any]
+    result: dict[str, Any]
 
 
 class BenchmarkContext:
@@ -90,7 +91,7 @@ class BenchmarkContext:
         return Path(self._tempdir.name) / name
 
 
-CaseFn = Callable[[BenchmarkContext], None]
+CaseFn = Callable[[BenchmarkContext], Any]
 
 
 @dataclass(frozen=True)
@@ -166,12 +167,46 @@ def collect_environment(config: BenchmarkConfig) -> dict[str, Any]:
         "cuda_enabled": bool(getattr(mi, "MI_ENABLE_CUDA", False)),
         "llvm_available": dr.has_backend(dr.JitBackend.LLVM),
         "cuda_available": dr.has_backend(dr.JitBackend.CUDA),
-        "kernel_history_enabled": config.kernel_history,
+        "kernel_history_enabled": True,
+        "kernel_history_payload_enabled": config.kernel_history,
     }
 
 
-def synchronize() -> None:
-    dr.eval()
+def force_eval(value: Any = None) -> None:
+    """Force evaluation of benchmark outputs before stopping a timer.
+
+    Dr.Jit traces lazily for JIT variants, so measuring only the Python call
+    would omit compilation and kernel execution.  Benchmark cases return every
+    value that should contribute to the measurement; this helper evaluates the
+    returned PyTree and synchronizes the backend before wall-clock timing stops.
+    """
+
+    if value is None:
+        dr.eval()
+        dr.sync_thread()
+        return
+
+    try:
+        dr.eval(value)
+        dr.sync_thread()
+        return
+    except Exception:
+        pass
+
+    if isinstance(value, dict):
+        for item in value.values():
+            force_eval(item)
+        return
+
+    if isinstance(value, (tuple, list)):
+        for item in value:
+            force_eval(item)
+        return
+
+    try:
+        dr.eval(dr.ravel(value))
+    except Exception:
+        pass
     dr.sync_thread()
 
 
@@ -190,6 +225,64 @@ def summarize(timings: list[float]) -> dict[str, float]:
     else:
         result["stdev"] = 0.0
     return result
+
+
+def kernel_history_summary(history: list[dict[str, Any]]) -> dict[str, Any]:
+    """Summarize Dr.Jit kernel history entries in milliseconds.
+
+    `execution_time` is the primary steady-state timing metric for JIT variants.
+    The first run additionally reports code generation and backend compilation
+    time, which are expected one-time costs when kernels are not already cached.
+    """
+
+    summary: dict[str, Any] = {
+        "entries": len(history),
+        "jit_entries": 0,
+        "kernel_entries": 0,
+        "cache_hits": 0,
+        "cache_disk_hits": 0,
+        "cache_misses": 0,
+        "soft_misses": 0,
+        "hard_misses": 0,
+        "execution_time_ms": 0.0,
+        "codegen_time_ms": 0.0,
+        "backend_time_ms": 0.0,
+        "total_time_ms": 0.0,
+        "operation_count": 0,
+    }
+
+    for entry in history:
+        if "execution_time" in entry:
+            summary["kernel_entries"] += 1
+            summary["execution_time_ms"] += float(entry.get("execution_time") or 0.0)
+
+        if "codegen_time" not in entry and "backend_time" not in entry:
+            continue
+
+        summary["jit_entries"] += 1
+        cache_hit = bool(entry.get("cache_hit"))
+        cache_disk = bool(entry.get("cache_disk"))
+        if cache_hit:
+            summary["cache_hits"] += 1
+        else:
+            summary["cache_misses"] += 1
+            if cache_disk:
+                summary["soft_misses"] += 1
+            else:
+                summary["hard_misses"] += 1
+        if cache_disk:
+            summary["cache_disk_hits"] += 1
+
+        summary["codegen_time_ms"] += float(entry.get("codegen_time") or 0.0)
+        summary["backend_time_ms"] += float(entry.get("backend_time") or 0.0)
+        summary["operation_count"] += int(entry.get("operation_count") or 0)
+
+    summary["total_time_ms"] = (
+        summary["execution_time_ms"] +
+        summary["codegen_time_ms"] +
+        summary["backend_time_ms"]
+    )
+    return summary
 
 
 def malloc_watermark() -> dict[str, int]:
@@ -221,40 +314,110 @@ def memory_total(memory: dict[str, int]) -> int:
     return int(sum(memory.values()))
 
 
+def _scalar_float(value: Any) -> float:
+    dr.eval(value)
+    dr.sync_thread()
+    return float(value[0] if hasattr(value, "__getitem__") else value)
+
+
+def result_signature(value: Any) -> dict[str, Any]:
+    """Return compact output statistics for benchmark result comparison.
+
+    The benchmark suite remains timing-oriented, but these signatures make it
+    easy to detect large disagreements between standard Mitsuba and the
+    field-based tree when both execute the same public texture/volume workload.
+    """
+
+    if value is None:
+        return {"kind": "none"}
+
+    if isinstance(value, (tuple, list)):
+        return {
+            "kind": type(value).__name__,
+            "items": [result_signature(item) for item in value],
+        }
+
+    if isinstance(value, (bool, int, float)):
+        return {"kind": type(value).__name__, "value": float(value)}
+
+    try:
+        flat = dr.ravel(value)
+        dr.eval(flat)
+        dr.sync_thread()
+        return {
+            "kind": type(value).__name__,
+            "shape": list(dr.shape(value)),
+            "width": int(dr.width(value)),
+            "sum": _scalar_float(dr.sum(flat, axis=None)),
+            "mean": _scalar_float(dr.mean(flat, axis=None)),
+            "min": _scalar_float(dr.min(flat, axis=None)),
+            "max": _scalar_float(dr.max(flat, axis=None)),
+        }
+    except Exception:
+        return {
+            "kind": type(value).__name__,
+            "repr": repr(value)[:160],
+        }
+
+
 def measure_case(ctx: BenchmarkContext, fn: CaseFn) -> BenchmarkResult:
-    def run_iterations() -> None:
+    def run_iterations() -> Any:
+        last_value = None
         for _ in range(ctx.iterations):
-            fn(ctx)
+            last_value = fn(ctx)
+        force_eval(last_value)
+        return last_value
 
-    if ctx.config.kernel_history:
-        dr.set_flag(dr.JitFlag.KernelHistory, True)
+    # Kernel history is always enabled while measuring. The optional CLI flag
+    # only controls whether representative raw entries are serialized.
+    with dr.scoped_set_flag(dr.JitFlag.KernelHistory, True):
         dr.kernel_history_clear()
-
-    setup_before = ctx.setup_seconds
-    start = time.perf_counter()
-    fn(ctx)
-    synchronize()
-    first_elapsed = time.perf_counter() - start
-    setup_delta = ctx.setup_seconds - setup_before
-    first_trace = max(0.0, first_elapsed - setup_delta)
-
-    for _ in range(ctx.config.warmup):
-        run_iterations()
-        synchronize()
-
-    timings = []
-    dr.detail.malloc_clear_statistics()
-    launch_start = dr.detail.launch_stats()
-
-    for _ in range(ctx.config.repeats):
+        setup_before = ctx.setup_seconds
         start = time.perf_counter()
-        run_iterations()
-        synchronize()
-        timings.append(time.perf_counter() - start)
+        value = fn(ctx)
+        force_eval(value)
+        first_elapsed = time.perf_counter() - start
+        first_history = dr.kernel_history()
+        setup_delta = ctx.setup_seconds - setup_before
+        first_eval = max(0.0, first_elapsed - setup_delta)
+        first_history_summary = kernel_history_summary(first_history)
 
-    launch_end = dr.detail.launch_stats()
+        for _ in range(ctx.config.warmup):
+            dr.kernel_history_clear()
+            run_iterations()
+            dr.kernel_history()
+
+        timings = []
+        kernel_execution_times_ms = []
+        kernel_total_times_ms = []
+        repeat_kernel_summaries = []
+        repeat_history_preview = []
+        dr.detail.malloc_clear_statistics()
+        launch_start = dr.detail.launch_stats()
+
+        for _ in range(ctx.config.repeats):
+            dr.kernel_history_clear()
+            start = time.perf_counter()
+            value = run_iterations()
+            timings.append(time.perf_counter() - start)
+            history = dr.kernel_history()
+            history_summary = kernel_history_summary(history)
+            repeat_kernel_summaries.append(history_summary)
+            if history_summary["kernel_entries"]:
+                kernel_execution_times_ms.append(history_summary["execution_time_ms"])
+            if history_summary["kernel_entries"] or history_summary["jit_entries"]:
+                kernel_total_times_ms.append(history_summary["total_time_ms"])
+            if ctx.config.kernel_history and not repeat_history_preview and history:
+                repeat_history_preview = [str(entry) for entry in history[:3]]
+
+        launch_end = dr.detail.launch_stats()
+
     memory = malloc_watermark()
     metrics = {
+        "timing_method": (
+            "Wall time uses perf_counter around traced work followed by dr.eval() "
+            "and dr.sync_thread(); JIT timing uses dr.kernel_history() execution_time."
+        ),
         "launches": launch_delta(launch_start, launch_end),
         "memory_watermark": memory,
         "memory_watermark_total": memory_total(memory),
@@ -262,19 +425,29 @@ def measure_case(ctx: BenchmarkContext, fn: CaseFn) -> BenchmarkResult:
         "iterations_per_repeat": ctx.iterations,
         "effective_sample_count": ctx.sample_count * ctx.iterations,
         "setup_seconds": ctx.setup_seconds,
+        "first_setup_seconds": setup_delta,
+        "first_wall_seconds": first_elapsed,
+        "first_eval_wall_seconds": first_eval,
+        "first_kernel_history": first_history_summary,
+        "kernel_execution_summary_ms": summarize(kernel_execution_times_ms),
+        "kernel_total_summary_ms": summarize(kernel_total_times_ms),
+        "kernel_repeat_summaries": repeat_kernel_summaries,
     }
     if ctx.config.kernel_history:
-        history = dr.kernel_history()
-        metrics["kernel_history_count"] = len(history)
-        metrics["kernel_history_first"] = [str(entry) for entry in history[:3]]
+        metrics["kernel_history_count"] = (
+            len(first_history) + sum(int(s["entries"]) for s in repeat_kernel_summaries)
+        )
+        metrics["kernel_history_first"] = [str(entry) for entry in first_history[:3]]
+        metrics["kernel_history_repeat"] = repeat_history_preview
 
     return BenchmarkResult(
         config=ctx.config,
         environment=collect_environment(ctx.config),
-        first_trace_seconds=first_trace,
+        first_trace_seconds=first_eval,
         timings=timings,
         summary=summarize(timings),
         metrics=metrics,
+        result=result_signature(value),
     )
 
 
@@ -465,46 +638,56 @@ def call_bitmap_eval(texture, si, method: str, active, channels: int):
     if method == "resolution":
         return texture.resolution()
     if method == "all":
-        texture.eval(si, active)
-        texture.eval_1(si, active)
+        values = [
+            texture.eval(si, active),
+            texture.eval_1(si, active),
+        ]
         if channels == 3:
-            texture.eval_3(si, active)
+            values.append(texture.eval_3(si, active))
         if channels == 1:
-            texture.eval_1_grad(si, active)
-        texture.mean()
-        texture.resolution()
-        return None
+            values.append(texture.eval_1_grad(si, active))
+        values.append(texture.mean())
+        values.append(texture.resolution())
+        return values
     raise ValueError(f"Unsupported bitmap eval method: {method}")
 
 
-def case_bitmap_eval(ctx: BenchmarkContext) -> None:
+def case_bitmap_eval(ctx: BenchmarkContext) -> Any:
     texture, si = ctx.get("bitmap_eval", lambda: (
         mi.load_dict(bitmap_texture_config(ctx)),
         make_uvs(ctx),
     ))
-    call_bitmap_eval(texture, si, ctx.config.method, active_mask(ctx), ctx.config.channels)
+    return call_bitmap_eval(texture, si, ctx.config.method, active_mask(ctx), ctx.config.channels)
 
 
-def case_bitmap_sampling(ctx: BenchmarkContext) -> None:
+def case_bitmap_sampling(ctx: BenchmarkContext) -> Any:
     texture, si, sample = ctx.get("bitmap_sampling", lambda: (
         mi.load_dict(bitmap_texture_config(ctx)),
         make_uvs(ctx),
         mi.Point2f(0.37, 0.73),
     ))
     method = ctx.config.method
+    if method == "all":
+        return [
+            texture.sample_position(sample, active_mask(ctx)),
+            texture.pdf_position(sample, active_mask(ctx)),
+            texture.sample_spectrum(si, mi.sample_shifted(mi.Float(0.5)), active_mask(ctx)),
+            texture.pdf_spectrum(si, active_mask(ctx)),
+        ]
     if method in ("sample_position", "all"):
-        texture.sample_position(sample, active_mask(ctx))
+        value = texture.sample_position(sample, active_mask(ctx))
     if method in ("pdf_position", "all"):
-        texture.pdf_position(sample, active_mask(ctx))
+        value = texture.pdf_position(sample, active_mask(ctx))
     if method in ("sample_spectrum", "all"):
-        texture.sample_spectrum(si, mi.sample_shifted(mi.Float(0.5)), active_mask(ctx))
+        value = texture.sample_spectrum(si, mi.sample_shifted(mi.Float(0.5)), active_mask(ctx))
     if method in ("pdf_spectrum", "all"):
-        texture.pdf_spectrum(si, active_mask(ctx))
+        value = texture.pdf_spectrum(si, active_mask(ctx))
     if method not in ("sample_position", "pdf_position", "sample_spectrum", "pdf_spectrum", "all"):
         raise ValueError(f"Unsupported bitmap sampling method: {method}")
+    return value
 
 
-def case_grid_volume_eval(ctx: BenchmarkContext) -> None:
+def case_grid_volume_eval(ctx: BenchmarkContext) -> Any:
     volume, it = ctx.get("grid_volume_eval", lambda: (
         mi.load_dict(grid_volume_config(ctx)),
         make_positions(ctx),
@@ -512,43 +695,51 @@ def case_grid_volume_eval(ctx: BenchmarkContext) -> None:
     active = active_mask(ctx)
     method = ctx.config.method
     if method == "eval":
-        volume.eval(it, active)
+        return volume.eval(it, active)
     elif method == "eval_1":
-        volume.eval_1(it, active)
+        return volume.eval_1(it, active)
     elif method == "eval_3":
-        volume.eval_3(it, active)
+        return volume.eval_3(it, active)
     elif method == "eval_6":
-        volume.eval_6(it, active)
+        return volume.eval_6(it, active)
     elif method == "eval_n":
-        volume.eval_n(it, active)
+        return volume.eval_n(it, active)
     elif method == "eval_gradient":
-        volume.eval_gradient(it, active)
+        return volume.eval_gradient(it, active)
     elif method == "max_per_channel":
-        volume.max_per_channel()
+        return volume.max_per_channel()
     elif method == "max":
-        volume.max()
+        return volume.max()
     elif method == "bbox":
-        volume.bbox()
+        return volume.bbox()
     elif method == "resolution":
-        volume.resolution()
+        return volume.resolution()
     elif method == "channel_count":
-        volume.channel_count()
+        return volume.channel_count()
     elif method == "all":
+        values = []
         if ctx.config.channels == 1:
-            volume.eval(it, active)
-            volume.eval_1(it, active)
-            volume.eval_gradient(it, active)
-        if ctx.config.channels == 3:
-            volume.eval(it, active)
-            volume.eval_3(it, active)
-        if ctx.config.channels == 6:
-            volume.eval_6(it, active)
-        volume.eval_n(it, active)
-        volume.max_per_channel()
-        volume.max()
-        volume.bbox()
-        volume.resolution()
-        volume.channel_count()
+            values.extend([
+                volume.eval(it, active),
+                volume.eval_1(it, active),
+                volume.eval_gradient(it, active),
+            ])
+        elif ctx.config.channels == 3:
+            values.extend([
+                volume.eval(it, active),
+                volume.eval_3(it, active),
+            ])
+        elif ctx.config.channels == 6:
+            values.append(volume.eval_6(it, active))
+        values.extend([
+            volume.eval_n(it, active),
+            volume.max_per_channel(),
+            volume.max(),
+            volume.bbox(),
+            volume.resolution(),
+            volume.channel_count(),
+        ])
+        return values
     else:
         raise ValueError(f"Unsupported grid volume method: {method}")
 
@@ -573,27 +764,27 @@ def call_field_fixed(field, interaction_record, method: str, active):
     raise ValueError(f"Unsupported field method: {method}")
 
 
-def case_field_fixed_eval(ctx: BenchmarkContext) -> None:
+def case_field_fixed_eval(ctx: BenchmarkContext) -> Any:
     field, record = ctx.get("field_fixed_eval", lambda: (
         mi.load_dict(bitmap_field_config(ctx) if ctx.config.field_plugin != "gridfield" else grid_field_config(ctx)),
         make_positions(ctx) if ctx.config.field_plugin == "gridfield" else make_uvs(ctx),
     ))
-    call_field_fixed(field, record, ctx.config.method, active_mask(ctx))
+    return call_field_fixed(field, record, ctx.config.method, active_mask(ctx))
 
 
-def case_field_generic_eval(ctx: BenchmarkContext) -> None:
+def case_field_generic_eval(ctx: BenchmarkContext) -> Any:
     field, si, args = ctx.get("field_generic_eval", lambda: (
         mi.load_dict(neural_field_config(ctx)),
         make_uvs(ctx),
         None if ctx.config.args_mode == "no_args" else [0.0] * ctx.config.args_dim,
     ))
     if args is None:
-        field.eval(si, active=active_mask(ctx))
+        return field.eval(si, active=active_mask(ctx))
     else:
-        field.eval(si, args=args, active=active_mask(ctx))
+        return field.eval(si, args=args, active=active_mask(ctx))
 
 
-def case_neural_field_inference(ctx: BenchmarkContext) -> None:
+def case_neural_field_inference(ctx: BenchmarkContext) -> Any:
     field, si, args = ctx.get("neural_field_inference", lambda: (
         mi.load_dict(neural_field_config(ctx)),
         make_uvs(ctx),
@@ -601,19 +792,19 @@ def case_neural_field_inference(ctx: BenchmarkContext) -> None:
     ))
     if ctx.config.method in ("eval_color3", "all"):
         if args is None:
-            field.eval_color3(si, active=active_mask(ctx))
+            return field.eval_color3(si, active=active_mask(ctx))
         else:
-            field.eval_color3(si, args=args, active=active_mask(ctx))
+            return field.eval_color3(si, args=args, active=active_mask(ctx))
     elif ctx.config.method in ("eval", "generic"):
         if args is None:
-            field.eval(si, active=active_mask(ctx))
+            return field.eval(si, active=active_mask(ctx))
         else:
-            field.eval(si, args=args, active=active_mask(ctx))
+            return field.eval(si, args=args, active=active_mask(ctx))
     else:
-        call_field_fixed(field, si, ctx.config.method, active_mask(ctx))
+        return call_field_fixed(field, si, ctx.config.method, active_mask(ctx))
 
 
-def case_neural_field_training(ctx: BenchmarkContext) -> None:
+def case_neural_field_training(ctx: BenchmarkContext) -> Any:
     field, si, args, params = ctx.get("neural_field_training", lambda: (
         mi.load_dict(neural_field_config(ctx)),
         make_uvs(ctx),
@@ -633,9 +824,10 @@ def case_neural_field_training(ctx: BenchmarkContext) -> None:
         value = field.eval_color3(si, args=args, active=active_mask(ctx))
     loss = dr.mean(dr.sqr(value))
     dr.backward(loss)
+    return loss
 
 
-def case_neuralbsdf_eval(ctx: BenchmarkContext) -> None:
+def case_neuralbsdf_eval(ctx: BenchmarkContext) -> Any:
     bsdf, si, ctx_bsdf, wo = ctx.get("neuralbsdf_eval", lambda: (
         mi.load_dict({
             "type": "neuralbsdf",
@@ -648,18 +840,20 @@ def case_neuralbsdf_eval(ctx: BenchmarkContext) -> None:
     active = active_mask(ctx)
     method = ctx.config.method
     if method == "eval":
-        bsdf.eval(ctx_bsdf, si, wo, active)
+        return bsdf.eval(ctx_bsdf, si, wo, active)
     elif method == "pdf":
-        bsdf.pdf(ctx_bsdf, si, wo, active)
+        return bsdf.pdf(ctx_bsdf, si, wo, active)
     elif method == "eval_pdf":
-        bsdf.eval_pdf(ctx_bsdf, si, wo, active)
+        return bsdf.eval_pdf(ctx_bsdf, si, wo, active)
     elif method == "sample":
-        bsdf.sample(ctx_bsdf, si, mi.Float(0.37), mi.Point2f(0.41, 0.73), active)
+        return bsdf.sample(ctx_bsdf, si, mi.Float(0.37), mi.Point2f(0.41, 0.73), active)
     elif method == "all":
-        bsdf.eval(ctx_bsdf, si, wo, active)
-        bsdf.pdf(ctx_bsdf, si, wo, active)
-        bsdf.eval_pdf(ctx_bsdf, si, wo, active)
-        bsdf.sample(ctx_bsdf, si, mi.Float(0.37), mi.Point2f(0.41, 0.73), active)
+        return [
+            bsdf.eval(ctx_bsdf, si, wo, active),
+            bsdf.pdf(ctx_bsdf, si, wo, active),
+            bsdf.eval_pdf(ctx_bsdf, si, wo, active),
+            bsdf.sample(ctx_bsdf, si, mi.Float(0.37), mi.Point2f(0.41, 0.73), active),
+        ]
     else:
         raise ValueError(f"Unsupported neuralbsdf method: {method}")
 
@@ -722,10 +916,24 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def selected_median_seconds(summary: dict[str, Any], metrics: dict[str, Any]) -> tuple[float | None, str]:
+    kernel = metrics.get("kernel_execution_summary_ms", {})
+    kernel_median = kernel.get("median")
+    if isinstance(kernel_median, (int, float)) and kernel_median > 0 and kernel.get("samples", 0) > 0:
+        return float(kernel_median) / 1000.0, "kernel_execution"
+    median = summary.get("median")
+    if isinstance(median, (int, float)):
+        return float(median), "wall"
+    return None, "missing"
+
+
 def compare_results(result: BenchmarkResult, baseline_path: Path) -> dict[str, Any]:
     baseline = json.loads(baseline_path.read_text())
-    baseline_median = baseline.get("summary", {}).get("median")
-    current_median = result.summary.get("median")
+    baseline_median, baseline_source = selected_median_seconds(
+        baseline.get("summary", {}),
+        baseline.get("metrics", {}),
+    )
+    current_median, current_source = selected_median_seconds(result.summary, result.metrics)
     baseline_launches = baseline.get("metrics", {}).get("launches", {}).get("total")
     current_launches = result.metrics.get("launches", {}).get("total")
     baseline_memory = baseline.get("metrics", {}).get("memory_watermark_total")
@@ -735,6 +943,8 @@ def compare_results(result: BenchmarkResult, baseline_path: Path) -> dict[str, A
     ratio = current_median / baseline_median if baseline_median else float("inf")
     comparison = {
         "baseline": str(baseline_path),
+        "baseline_timing_source": baseline_source,
+        "current_timing_source": current_source,
         "baseline_median": baseline_median,
         "current_median": current_median,
         "ratio": ratio,

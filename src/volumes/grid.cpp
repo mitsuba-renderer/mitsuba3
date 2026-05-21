@@ -290,6 +290,7 @@ public:
                                       m_accel, m_accel, filter_mode, wrap_mode);
                 m_max = (float) dr::max_nested(dr::detach(m_texture.value()));
                 m_channel_count = channel_count;
+                update_max_per_channel();
             }
         }
 
@@ -323,6 +324,7 @@ public:
 
             if (!m_fixed_max)
                 m_max = (float) dr::max_nested(dr::detach(m_texture.value()));
+            update_max_per_channel();
         }
     }
 
@@ -616,6 +618,37 @@ protected:
             m_texture.template eval<Float>(p, out, active);
         else
             m_texture.template eval_nonaccel<Float>(p, out, active);
+    }
+
+    void update_max_per_channel() {
+        size_t channels = nchannels();
+        m_max_per_channel.resize(channels);
+
+        if (channels == 0)
+            return;
+
+        const size_t *shape = m_texture.shape();
+        uint32_t voxel_count = (uint32_t) (shape[0] * shape[1] * shape[2]);
+        DynamicBuffer<Float> values = dr::detach(m_texture.value());
+
+        for (uint32_t c = 0; c < channels; ++c) {
+            if constexpr (dr::is_jit_v<Float>) {
+                DynamicBuffer<UInt32> voxel_idx =
+                    dr::arange<DynamicBuffer<UInt32>>(voxel_count);
+                DynamicBuffer<UInt32> index =
+                    voxel_idx * (uint32_t) shape[3] + c;
+                DynamicBuffer<Float> channel_values =
+                    dr::gather<Float>(values, index);
+                m_max_per_channel[c] =
+                    (ScalarFloat) dr::max_nested(channel_values);
+            } else {
+                ScalarFloat max_value = 0.f;
+                for (uint32_t i = 0; i < voxel_count; ++i)
+                    max_value = dr::maximum(max_value,
+                        (ScalarFloat) values.entry(i * shape[3] + c));
+                m_max_per_channel[c] = max_value;
+            }
+        }
     }
 
 protected:

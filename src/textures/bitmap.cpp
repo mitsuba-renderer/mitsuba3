@@ -240,7 +240,7 @@ public:
                 Log(Debug, "Loading bitmap texture from \"%s\" ..", m_name);
                 m_bitmap = new Bitmap(file_path);
             } else if (props.has_property("data")) {
-                m_tensor = std::move(const_cast<TensorXf&>(props.get_any<TensorXf>("data")));
+                m_tensor = props.get_any<TensorXf>("data");
                 if (m_tensor.ndim() != 3)
                     Throw("Bitmap raw tensor has dimension %lu, expected 3",
                         m_tensor.ndim());

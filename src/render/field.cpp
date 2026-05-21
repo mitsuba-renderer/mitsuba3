@@ -15,7 +15,16 @@ MI_VARIANT FieldDomain Field<Float, Spectrum>::domain() const {
 }
 
 MI_VARIANT uint32_t Field<Float, Spectrum>::out_dim() const {
-    return 0;
+    switch (out_type()) {
+        case FieldValueType::Float: return 1;
+        case FieldValueType::Spectrum:
+            return (uint32_t) dr::size_v<UnpolarizedSpectrum>;
+        case FieldValueType::Color3: return 3;
+        case FieldValueType::Array2: return 2;
+        case FieldValueType::Array3: return 3;
+        case FieldValueType::Features: return 0;
+        default: return 0;
+    }
 }
 
 MI_VARIANT uint32_t Field<Float, Spectrum>::args_dim() const {
@@ -31,11 +40,13 @@ MI_VARIANT bool Field<Float, Spectrum>::supports_jit() const {
 }
 
 MI_VARIANT bool Field<Float, Spectrum>::supports_surface_queries() const {
-    return true;
+    FieldDomain d = domain();
+    return d == FieldDomain::Surface || d == FieldDomain::SurfaceAndInteraction;
 }
 
 MI_VARIANT bool Field<Float, Spectrum>::supports_interaction_queries() const {
-    return true;
+    FieldDomain d = domain();
+    return d == FieldDomain::Interaction || d == FieldDomain::SurfaceAndInteraction;
 }
 
 MI_VARIANT typename Field<Float, Spectrum>::FloatStorage

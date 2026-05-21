@@ -7,6 +7,29 @@ from typing import Any, Optional, Union
 import drjit as dr
 import mitsuba as mi
 
+class _SceneParameterFlags(int):
+    """Integer flags with Mitsuba's implicit differentiability bit exposed.
+
+    ``ParamFlags.Differentiable`` is represented by the absence of the
+    ``NonDifferentiable`` and ``ReadOnly`` bits in C++. Returning this helper
+    keeps integer flag arithmetic intact while making
+    ``params.flags(k) & mi.ParamFlags.Differentiable`` useful in Python.
+    """
+
+    def __new__(cls, value, differentiable):
+        obj = int.__new__(cls, int(value))
+        obj._mitsuba_differentiable = bool(differentiable)
+        return obj
+
+    def __and__(self, other):
+        if getattr(other, "name", None) == "Differentiable":
+            return 1 if self._mitsuba_differentiable else 0
+        return int.__and__(self, int(other))
+
+    def __rand__(self, other):
+        return self.__and__(other)
+
+
 class SceneParameters(Mapping):
     """
     Dictionary-like object that references various parameters used in a Mitsuba
@@ -145,7 +168,12 @@ class SceneParameters(Mapping):
 
     def flags(self, key: str):
         """Return parameter flags"""
-        return self.properties[key][3]
+        flags = self.properties[key][3]
+        differentiable = (
+            (flags & mi.ParamFlags.NonDifferentiable) == 0 and
+            (flags & mi.ParamFlags.ReadOnly) == 0
+        )
+        return _SceneParameterFlags(flags, differentiable)
 
     def set_dirty(self, key: str):
         """

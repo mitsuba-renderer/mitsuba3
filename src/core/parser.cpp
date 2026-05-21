@@ -2042,9 +2042,11 @@ static void write_node_to_xml(WriterState &writer_state,
     if (node.props.plugin_name() != "scene")
         xml_node.append_attribute("type").set_value(node.props.plugin_name());
 
-    // Add ID only if this node is referenced more than once
+    // Add IDs to shared nodes and fields. Field identifiers are part of the
+    // public scene graph surface because BSDFs may embed or reference them.
     std::string_view id = node.props.id();
-    if (!id.empty() && writer_state.refcount[node_idx] > 1)
+    if (!id.empty() &&
+        (writer_state.refcount[node_idx] > 1 || node.type == ObjectType::Field))
         xml_node.append_attribute("id").set_value(id);
 
     // Add name attribute if not auto-generated
