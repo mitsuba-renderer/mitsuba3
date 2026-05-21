@@ -144,6 +144,7 @@ static std::pair<TagType, ObjectType> interpret_tag(std::string_view str) {
             if (str == "emitter") return {TagType::Object, ObjectType::Emitter};
             break;
         case 'f':
+            if (str == "field") return {TagType::Object, ObjectType::Field};
             if (str == "float") return {TagType::Float, ObjectType::Unknown};
             if (str == "film") return {TagType::Object, ObjectType::Film};
             break;
@@ -1398,7 +1399,8 @@ static const char* section_names[] = {
     "Shapes",                          // 5: Shape
     "Volumes",                         // 6: Volume
     "Volumes",                         // 7: Medium
-    "Other"                            // 8: Other/Unknown
+    "Fields",                          // 8: Field
+    "Other"                            // 9: Other/Unknown
 };
 
 // Helper function that assigns a logical section number to a node. Used in
@@ -1429,7 +1431,8 @@ static int node_order_id(const ParserState &state, size_t node_idx) {
         case ObjectType::Shape:      return has_area_light(node_idx) ? 4 : 5;
         case ObjectType::Volume:     return 6;
         case ObjectType::Medium:     return 7;
-        default:                     return 8;
+        case ObjectType::Field:      return 8;
+        default:                     return 9;
     }
 }
 

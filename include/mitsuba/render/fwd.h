@@ -12,6 +12,7 @@ template <typename Float, typename Spectrum> class BSDF;
 template <typename Float, typename Spectrum> class OptixDenoiser;
 template <typename Float, typename Spectrum> class Emitter;
 template <typename Float, typename Spectrum> class Endpoint;
+template <typename Float, typename Spectrum> class Field;
 template <typename Float, typename Spectrum> class Film;
 template <typename Float, typename Spectrum> class ImageBlock;
 template <typename Float, typename Spectrum> class Integrator;
@@ -85,6 +86,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using ProjectiveCamera       = mitsuba::ProjectiveCamera<Float, Spectrum>;
     using Emitter                = mitsuba::Emitter<Float, Spectrum>;
     using Endpoint               = mitsuba::Endpoint<Float, Spectrum>;
+    using Field                  = mitsuba::Field<Float, Spectrum>;
     using Medium                 = mitsuba::Medium<Float, Spectrum>;
     using PhaseFunction          = mitsuba::PhaseFunction<Float, Spectrum>;
     using Film                   = mitsuba::Film<Float, Spectrum>;
@@ -104,6 +106,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using MeshPtr                = dr::replace_scalar_t<Float, const Mesh *>;
     using SensorPtr              = dr::replace_scalar_t<Float, const Sensor *>;
     using EmitterPtr             = dr::replace_scalar_t<Float, const Emitter *>;
+    using FieldPtr               = dr::replace_scalar_t<Float, const Field *>;
     using TexturePtr             = dr::replace_scalar_t<Float, const Texture *>;
 };
 
@@ -172,6 +175,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using ProjectiveCamera       = typename RenderAliases::ProjectiveCamera;                       \
     using Emitter                = typename RenderAliases::Emitter;                                \
     using Endpoint               = typename RenderAliases::Endpoint;                               \
+    using Field                  = typename RenderAliases::Field;                                  \
     using Medium                 = typename RenderAliases::Medium;                                 \
     using PhaseFunction          = typename RenderAliases::PhaseFunction;                          \
     using Film                   = typename RenderAliases::Film;                                   \
@@ -186,6 +190,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using ShapePtr               = typename RenderAliases::ShapePtr;                               \
     using MeshPtr                = typename RenderAliases::MeshPtr;                                \
     using EmitterPtr             = typename RenderAliases::EmitterPtr;                             \
+    using FieldPtr               = typename RenderAliases::FieldPtr;                               \
     using SensorPtr              = typename RenderAliases::SensorPtr;
 
 NAMESPACE_END(mitsuba)

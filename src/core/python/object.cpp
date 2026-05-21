@@ -25,6 +25,7 @@ MI_PY_EXPORT(Object) {
         .def_value(ObjectType, Shape)
         .def_value(ObjectType, Texture)
         .def_value(ObjectType, Volume)
+        .value("Field", ObjectType::Field, "Structured storage/query field")
         .def_value(ObjectType, Medium)
         .def_value(ObjectType, BSDF)
         .def_value(ObjectType, Integrator)
