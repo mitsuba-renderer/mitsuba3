@@ -229,7 +229,7 @@ def test07_gridvolume_file_input_and_use_grid_bbox_behavior_is_preserved(variant
         })
 
 
-def test08_field_refactor_preserves_texture_and_volume_plugin_types(variant_scalar_rgb):
+def test08_texture_and_volume_keep_plugin_types(variant_scalar_rgb):
     pmgr = mi.PluginManager.instance()
 
     assert pmgr.plugin_type("bitmap") == mi.ObjectType.Texture

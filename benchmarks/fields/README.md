@@ -1,8 +1,9 @@
 # Field Benchmarks
 
-This folder is intentionally separate from Mitsuba's ordinary test suite. These
-benchmarks are private performance tooling for the Field refactor and should not
-be collected by `pytest` or treated as correctness tests.
+This directory is intentionally separate from Mitsuba's ordinary test suite.
+These benchmarks measure the Field API and related texture, volume, and BSDF
+paths. They should not be collected by `pytest` or treated as correctness
+tests.
 
 Run from a configured build environment:
 
@@ -58,9 +59,9 @@ Implemented baseline cases:
 - `bitmap_sampling`: current `bitmap` texture position and spectrum sampling.
 - `grid_volume_eval`: current `gridvolume` fixed and variable-channel paths.
 
-Field, neural-field, and `neuralbsdf` cases use the same timing, environment,
-launch-stat, and memory-watermark machinery. They intentionally fail clearly
-until the corresponding plugins land.
+Field, neural field, and `neuralbsdf` cases use the same timing, environment,
+kernel-launch, and memory-watermark machinery. They intentionally fail clearly
+until the corresponding plugins are available in the active build.
 
 Use `--compare baseline.json --fail-threshold 0.05` to compare medians against a
 previous result and fail when the slowdown exceeds the threshold. Launch-count

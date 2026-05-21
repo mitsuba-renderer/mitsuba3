@@ -55,7 +55,7 @@ enum class ObjectType : uint32_t {
     /// A 3D volume data source
     Volume,
 
-    /// A structured storage/query field
+    /// A field data source
     Field,
 
     /// A participating medium
@@ -417,7 +417,7 @@ public:
         put_value(name, &value, flags_val, typeid(T));
     }
 
-    /// Forward declaration for field<...> values that simultaneously store host+device values
+    /// Register a mirrored \c field<...> value as a traversable parameter
     template <typename DeviceType, typename HostType, typename SFINAE, typename Flags>
     void put(std::string_view name, field<DeviceType, HostType, SFINAE> &value, Flags flags);
 

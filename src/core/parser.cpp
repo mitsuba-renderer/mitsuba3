@@ -1404,7 +1404,7 @@ static const char* section_names[] = {
 };
 
 // Helper function that assigns a logical section number to a node. Used in
-// transform_reporder() and write_node_to_xml()
+// transform_reorder() and write_node_to_xml()
 static int node_order_id(const ParserState &state, size_t node_idx) {
     const SceneNode &node = state[node_idx];
 

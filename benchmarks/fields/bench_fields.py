@@ -680,16 +680,16 @@ CASE_INFO = {
     "bitmap_eval": CaseInfo("bitmap_eval", "texture", "Bitmap eval/eval_1/eval_3/eval_1_grad baseline"),
     "bitmap_sampling": CaseInfo("bitmap_sampling", "texture", "Bitmap position and spectrum sampling baseline"),
     "grid_volume_eval": CaseInfo("grid_volume_eval", "volume", "Grid volume fixed and variable channel baseline"),
-    "field_fixed_eval": CaseInfo("field_fixed_eval", "field", "Direct field fixed-output evaluation"),
-    "field_generic_eval": CaseInfo("field_generic_eval", "field", "Direct generic field evaluation with args"),
-    "neural_field_inference": CaseInfo("neural_field_inference", "neural", "Neural/encoded field inference"),
-    "neural_field_training": CaseInfo("neural_field_training", "neural", "Neural/encoded field forward+backward training step"),
-    "neuralbsdf_eval": CaseInfo("neuralbsdf_eval", "bsdf", "neuralbsdf eval/pdf/sample benchmark"),
+    "field_fixed_eval": CaseInfo("field_fixed_eval", "field", "Fixed-output field evaluation"),
+    "field_generic_eval": CaseInfo("field_generic_eval", "field", "Dynamic field evaluation with optional arguments"),
+    "neural_field_inference": CaseInfo("neural_field_inference", "neural", "Neural field inference"),
+    "neural_field_training": CaseInfo("neural_field_training", "neural", "Neural field forward and backward pass"),
+    "neuralbsdf_eval": CaseInfo("neuralbsdf_eval", "bsdf", "neuralbsdf eval/pdf/sample methods"),
 }
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Field refactor benchmark harness")
+    parser = argparse.ArgumentParser(description="Field benchmark runner")
     parser.add_argument("--variant", default="scalar_rgb")
     parser.add_argument("--case", choices=sorted(CASES))
     parser.add_argument("--repeats", type=int, default=10)
@@ -768,7 +768,7 @@ def main() -> None:
     if args.scalar_iterations < 1:
         raise SystemExit("--scalar-iterations must be positive")
     if args.args_mode == "no_args" and args.args_dim != 0:
-        # Keep the serialized config honest: no-args cases construct fields with args_dim=0.
+        # Reflect the no-argument configuration in serialized results.
         args.args_dim = 0
 
     mi.set_variant(args.variant)
