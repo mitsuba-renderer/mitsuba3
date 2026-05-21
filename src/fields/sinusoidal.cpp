@@ -57,9 +57,16 @@ public:
     SinusoidalEncoding(const Properties &props) : Base(props) {
         m_input_dim = props.get<uint32_t>("input_dim", 2);
         m_out_dim = props.get<uint32_t>("out_dim", 0);
-        props.mark_queried("n_frequencies");
-        props.mark_queried("min_frequency");
-        props.mark_queried("max_frequency");
+        m_n_frequencies = props.get<uint32_t>("n_frequencies", 4);
+        m_min_frequency = props.get<ScalarFloat>("min_frequency", 1.f);
+        m_max_frequency = props.get<ScalarFloat>("max_frequency", 8.f);
+
+        if (m_input_dim != 2 && m_input_dim != 3)
+            Throw("sinusoidalencoding: input_dim must be 2 or 3.");
+        if (m_out_dim == 0)
+            Throw("sinusoidalencoding: out_dim must be positive.");
+        if (m_n_frequencies == 0)
+            Throw("sinusoidalencoding: n_frequencies must be positive.");
     }
 
     FieldValueType out_type() const override { return FieldValueType::Features; }
@@ -72,12 +79,18 @@ public:
     bool supports_surface_queries() const override { return true; }
     bool supports_interaction_queries() const override { return m_input_dim == 3; }
 
-    FloatStorage eval(const SurfaceInteraction3f &, Args, Mask) const override {
-        NotImplementedError("eval");
+    FloatStorage eval(const SurfaceInteraction3f &si, Args args,
+                      Mask active) const override {
+        validate_args(args);
+        return eval_impl(si.uv.x(), si.uv.y(), si.p.z(), active);
     }
 
-    FloatStorage eval(const Interaction3f &, Args, Mask) const override {
-        NotImplementedError("eval");
+    FloatStorage eval(const Interaction3f &it, Args args,
+                      Mask active) const override {
+        validate_args(args);
+        if (m_input_dim != 3)
+            Throw("sinusoidalencoding: Interaction queries require input_dim=3.");
+        return eval_impl(it.p.x(), it.p.y(), it.p.z(), active);
     }
 
     std::string to_string() const override {
@@ -92,8 +105,36 @@ public:
     MI_DECLARE_CLASS(SinusoidalEncoding)
 
 private:
+    void validate_args(Args args) const {
+        if (args.size != 0)
+            Throw("sinusoidalencoding: args_dim is 0, got %u argument "
+                  "channel(s).", args.size);
+    }
+
+    FloatStorage eval_impl(Float x, Float y, Float z, Mask active) const {
+        FloatStorage result = dr::empty<FloatStorage>(m_out_dim);
+        Float base = m_input_dim == 2 ? x + y : x + y + z;
+        ScalarFloat log_min = dr::log(m_min_frequency),
+                    log_max = dr::log(m_max_frequency);
+
+        for (uint32_t i = 0; i < m_out_dim; ++i) {
+            uint32_t band = (i / 2) % m_n_frequencies;
+            ScalarFloat t = m_n_frequencies == 1
+                ? 0.f
+                : (ScalarFloat) band / (ScalarFloat) (m_n_frequencies - 1);
+            Float f = dr::exp(dr::lerp(log_min, log_max, t));
+            Float phase = base * f;
+            result.entry(i) = dr::select(active,
+                (i & 1) ? dr::cos(phase) : dr::sin(phase), 0.f);
+        }
+        return result;
+    }
+
     uint32_t m_input_dim = 2;
     uint32_t m_out_dim = 0;
+    uint32_t m_n_frequencies = 4;
+    ScalarFloat m_min_frequency = 1.f;
+    ScalarFloat m_max_frequency = 8.f;
 };
 
 MI_EXPORT_PLUGIN(SinusoidalEncoding)

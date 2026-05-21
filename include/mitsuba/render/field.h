@@ -75,7 +75,7 @@ class MI_EXPORT_LIB Field : public JitObject<Field<Float, Spectrum>> {
 public:
     MI_IMPORT_TYPES()
 
-    using FloatStorage = DynamicBuffer<Float>;
+    using FloatStorage = dr::DynamicArray<Float>;
     using Array2f      = dr::Array<Float, 2>;
     using Array3f      = dr::Array<Float, 3>;
     using Array6f      = dr::Array<Float, 6>;
@@ -254,6 +254,7 @@ MI_EXTERN_CLASS(Field)
 NAMESPACE_END(mitsuba)
 
 DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Field)
+    DRJIT_CALL_GETTER(out_dim)
     DRJIT_CALL_METHOD(eval)
     DRJIT_CALL_METHOD(eval_1)
     DRJIT_CALL_METHOD(eval_color3)

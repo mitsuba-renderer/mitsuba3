@@ -63,8 +63,50 @@ Field, neural field, and `neuralbsdf` cases use the same timing, environment,
 kernel-launch, and memory-watermark machinery. They intentionally fail clearly
 until the corresponding plugins are available in the active build.
 
+The runner also stores a compact result signature (shape, width, sum, mean,
+minimum, maximum where applicable). This is intended for benchmark comparison
+reports and quick sanity checks, not as a substitute for the ordinary test
+suite.
+
+For JIT variants, benchmark cases return every value that contributes to the
+workload. The runner forces these outputs with `dr.eval()` and `dr.sync_thread()`
+before stopping wall-clock timers, since Dr.Jit traces lazily. It also enables
+`dr.JitFlag.KernelHistory` during measurement. Raw `summary` values are forced
+wall times, while `metrics.kernel_execution_summary_ms` contains the preferred
+steady-state Dr.Jit device/backend execution timing when kernels are launched.
+The first measured call is kept separately in `metrics.first_wall_seconds` and
+`metrics.first_kernel_history` so one-time setup, code generation, backend
+compilation, cache hits/misses, and first execution are visible instead of being
+mixed into steady-state repeats.
+
 Use `--compare baseline.json --fail-threshold 0.05` to compare medians against a
 previous result and fail when the slowdown exceeds the threshold. Launch-count
 and allocation regressions can be checked with `--fail-launch-threshold` and
 `--fail-memory-watermark`. Scalar variants run a configurable inner loop via
 `--scalar-iterations` so per-call allocation and dispatch costs are visible.
+
+## Standard-vs-field comparison
+
+`compare_field_vs_std.py` runs common public texture/volume workloads against a
+clean standard Mitsuba checkout and this field-based tree, then emits CSV, raw
+JSON, Markdown, and SVG summaries. It does not modify the standard checkout; it
+only sources an existing build's `setpath.sh`.
+
+```bash
+python benchmarks/fields/compare_field_vs_std.py \
+    --std-root mitsuba-std \
+    --std-build mitsuba-std/build-std \
+    --field-build build-gpt-5 \
+    --variants scalar_rgb,llvm_ad_rgb \
+    --suite all
+```
+
+The `common` suite only runs workloads supported by both builds. The `field`
+suite only runs field-specific and neural cases on the current tree. The
+default `all` suite combines both so the report contains public API ratios and
+field-only absolute timings.
+
+When the standard checkout is present but no build has been configured yet,
+`--allow-missing-std --keep-going` still produces a current-tree report and
+marks standard rows as incomplete. Ratio tables will remain empty until a valid
+standard build is supplied.

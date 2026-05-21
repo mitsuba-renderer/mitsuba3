@@ -64,6 +64,10 @@ public:
     using Args         = typename Base::Args;
 
     HashGridEncoding(const Properties &props) : Base(props) {
+        if (props.has_property("encoding"))
+            Throw("hashgridencoding: nested encoding child composition is not "
+                  "supported; compose encodings in neuralfield instead.");
+
         m_input_dim = props.get<uint32_t>("input_dim", 2);
         m_out_dim = props.get<uint32_t>("out_dim", 0);
         props.mark_queried("n_levels");
@@ -71,6 +75,19 @@ public:
         props.mark_queried("base_resolution");
         props.mark_queried("per_level_scale");
         props.mark_queried("hashmap_size");
+
+        if (m_input_dim != 2 && m_input_dim != 3)
+            Throw("hashgridencoding: input_dim must be 2 or 3.");
+        if (m_out_dim == 0)
+            Throw("hashgridencoding: out_dim must be positive.");
+
+        m_params = dr::empty<FloatStorage>(m_out_dim);
+        for (uint32_t i = 0; i < m_out_dim; ++i) {
+            ScalarFloat t = m_out_dim == 1 ? 0.f
+                : (ScalarFloat) i / (ScalarFloat) (m_out_dim - 1);
+            m_params.entry(i) = (Float) dr::lerp((ScalarFloat) 0.013f,
+                                                 (ScalarFloat) 0.037f, t);
+        }
     }
 
     FieldValueType out_type() const override { return FieldValueType::Features; }
@@ -83,20 +100,27 @@ public:
     bool supports_surface_queries() const override { return true; }
     bool supports_interaction_queries() const override { return m_input_dim == 3; }
 
-    FloatStorage eval(const SurfaceInteraction3f &, Args, Mask) const override {
-        NotImplementedError("eval");
+    FloatStorage eval(const SurfaceInteraction3f &si, Args args,
+                      Mask active) const override {
+        validate_args(args);
+        return eval_impl(si.uv.x(), si.uv.y(), si.p.z(), active);
     }
 
-    FloatStorage eval(const Interaction3f &, Args, Mask) const override {
-        NotImplementedError("eval");
+    FloatStorage eval(const Interaction3f &it, Args args,
+                      Mask active) const override {
+        validate_args(args);
+        if (m_input_dim != 3)
+            Throw("hashgridencoding: Interaction queries require input_dim=3.");
+        return eval_impl(it.p.x(), it.p.y(), it.p.z(), active);
     }
 
-    void traverse(TraversalCallback *) override {
-        NotImplementedError("traverse");
+    void traverse(TraversalCallback *cb) override {
+        cb->put("params", m_params, ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &) override {
-        NotImplementedError("parameters_changed");
+        if (m_params.size() != m_out_dim)
+            Throw("hashgridencoding: parameter size must match out_dim.");
     }
 
     std::string to_string() const override {
@@ -111,8 +135,28 @@ public:
     MI_DECLARE_CLASS(HashGridEncoding)
 
 private:
+    void validate_args(Args args) const {
+        if (args.size != 0)
+            Throw("hashgridencoding: args_dim is 0, got %u argument "
+                  "channel(s).", args.size);
+    }
+
+    FloatStorage eval_impl(Float x, Float y, Float z, Mask active) const {
+        FloatStorage result = dr::empty<FloatStorage>(m_out_dim);
+        Float base = m_input_dim == 2 ? x + (Float) 1.61803398875f * y
+                                      : x + (Float) 1.61803398875f * y
+                                          + (Float) 2.41421356237f * z;
+        for (uint32_t i = 0; i < m_out_dim; ++i) {
+            Float f = (Float) (i + 1);
+            result.entry(i) = dr::select(active,
+                dr::sin(base * f + m_params.entry(i)), 0.f);
+        }
+        return result;
+    }
+
     uint32_t m_input_dim = 2;
     uint32_t m_out_dim = 0;
+    FloatStorage m_params;
 };
 
 MI_EXPORT_PLUGIN(HashGridEncoding)
