@@ -224,6 +224,7 @@ std::string_view plugin_type_name(ObjectType ot) {
         case ObjectType::Shape: return "shape";
         case ObjectType::Texture: return "texture";
         case ObjectType::Volume: return "volume";
+        case ObjectType::Field: return "field";
         case ObjectType::Medium: return "medium";
         case ObjectType::BSDF: return "bsdf";
         case ObjectType::Integrator: return "integrator";

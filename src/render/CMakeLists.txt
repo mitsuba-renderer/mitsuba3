@@ -76,6 +76,7 @@ add_library(mitsuba-render OBJECT
   dedge.cpp ${INC_DIR}/dedge.h
   emitter.cpp      ${INC_DIR}/emitter.h
   endpoint.cpp     ${INC_DIR}/endpoint.h
+  field.cpp        ${INC_DIR}/field.h
   film.cpp         ${INC_DIR}/film.h
                    ${INC_DIR}/fresnel.h
   imageblock.cpp   ${INC_DIR}/imageblock.h

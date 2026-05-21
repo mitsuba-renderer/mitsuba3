@@ -57,6 +57,9 @@ enum class ObjectType : uint32_t {
     /// A 3D volume data source
     Volume,
 
+    /// A structured storage/query field
+    Field,
+
     /// A participating medium
     Medium,
 

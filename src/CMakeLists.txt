@@ -32,6 +32,7 @@ add_subdirectory(mitsuba)
 
 add_subdirectory(bsdfs)
 add_subdirectory(emitters)
+add_subdirectory(fields)
 add_subdirectory(films)
 add_subdirectory(integrators)
 add_subdirectory(media)
