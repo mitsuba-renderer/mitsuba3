@@ -9,31 +9,50 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Semantic type of float channels produced by a Field.
+ * \brief Type of float channel tuple returned by a \ref Field
  */
 enum class FieldValueType : uint32_t {
+    /// A single scalar channel
     Float,
+
+    /// An unpolarized spectral value
     Spectrum,
+
+    /// A three-channel color value
     Color3,
+
+    /// A two-channel float array
     Array2,
+
+    /// A three-channel float array
     Array3,
+
+    /// A variable-length float array
     Features
 };
 
 /**
- * \brief Structured interaction domains supported by a Field.
+ * \brief Interaction record types accepted by a \ref Field
  */
 enum class FieldDomain : uint32_t {
+    /// Surface interactions only
     Surface,
+
+    /// Generic 3D interactions only
     Interaction,
+
+    /// Both surface and generic 3D interactions
     SurfaceAndInteraction
 };
 
 /**
- * \brief Lightweight view of optional float features supplied to Field queries.
+ * \brief View of optional argument channels passed to a \ref Field query
  */
 template <typename Float> struct FieldArgs {
+    /// Pointer to the first argument channel, or \c nullptr when empty
     const Float *data = nullptr;
+
+    /// Number of argument channels
     uint32_t size = 0;
 
     FieldArgs() = default;
@@ -41,7 +60,15 @@ template <typename Float> struct FieldArgs {
 };
 
 /**
- * \brief Base class of render-layer storage/query field implementations.
+ * \brief Base class of all field implementations
+ *
+ * A field evaluates float-valued data at renderer interaction records. The
+ * input can be a \ref SurfaceInteraction3f, a generic \ref Interaction3f, and
+ * an optional array of user-provided float arguments.
+ *
+ * The generic \ref eval() overloads return a dynamic array of output channels.
+ * Fixed-size routines are provided for callers that know the desired semantic
+ * output type and want to avoid dynamic storage in performance-sensitive code.
  */
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Field : public JitObject<Field<Float, Spectrum>> {
@@ -54,113 +81,166 @@ public:
     using Array6f      = dr::Array<Float, 6>;
     using Args         = FieldArgs<Float>;
 
-    /// Return the semantic output type of this field.
+    // =============================================================
+    //! @{ \name Field metadata
+    // =============================================================
+
+    /// Return the semantic output type of this field
     virtual FieldValueType out_type() const;
 
-    /// Return the structured query domain supported by this field.
+    /// Return the interaction record type accepted by this field
     virtual FieldDomain domain() const;
 
-    /// Return the number of output channels.
+    /// Return the number of output channels
     virtual uint32_t out_dim() const;
 
-    /// Return the number of optional argument channels.
+    /// Return the number of optional argument channels
     virtual uint32_t args_dim() const;
 
-    /// Return whether this field supports scalar Mitsuba variants.
+    /// Return whether this field supports scalar Mitsuba variants
     virtual bool supports_scalar() const;
 
-    /// Return whether this field supports JIT Mitsuba variants.
+    /// Return whether this field supports JIT Mitsuba variants
     virtual bool supports_jit() const;
 
-    /// Return whether this field supports SurfaceInteraction queries.
+    /// Return whether this field supports \ref SurfaceInteraction3f queries
     virtual bool supports_surface_queries() const;
 
-    /// Return whether this field supports Interaction queries.
+    /// Return whether this field supports \ref Interaction3f queries
     virtual bool supports_interaction_queries() const;
 
-    /// Generic dynamic-output evaluation at a surface interaction.
+    //! @}
+    // ======================================================================
+
+    // =============================================================
+    //! @{ \name Generic evaluation interface
+    // =============================================================
+
+    /**
+     * \brief Evaluate the field at a surface interaction
+     *
+     * \param si
+     *     An interaction record describing the associated surface position
+     *
+     * \param args
+     *     Optional field-specific argument channels
+     *
+     * \return
+     *     A dynamic array containing \ref out_dim() float channels
+     */
     virtual FloatStorage eval(const SurfaceInteraction3f &si,
                               Args args = {},
                               Mask active = true) const;
 
-    /// Generic dynamic-output evaluation at an interaction.
+    /**
+     * \brief Evaluate the field at a generic 3D interaction
+     *
+     * \param it
+     *     An interaction record describing the associated 3D position
+     *
+     * \param args
+     *     Optional field-specific argument channels
+     *
+     * \return
+     *     A dynamic array containing \ref out_dim() float channels
+     */
     virtual FloatStorage eval(const Interaction3f &it,
                               Args args = {},
                               Mask active = true) const;
 
-    /// Fixed one-channel evaluation at a surface interaction.
+    //! @}
+    // ======================================================================
+
+    // =============================================================
+    //! @{ \name Specialized evaluation routines
+    // =============================================================
+
+    /// Evaluate the field as a single-channel quantity at a surface interaction
     virtual Float eval_1(const SurfaceInteraction3f &si,
                          Args args = {},
                          Mask active = true) const;
 
-    /// Fixed one-channel evaluation at an interaction.
+    /// Evaluate the field as a single-channel quantity at a generic 3D interaction
     virtual Float eval_1(const Interaction3f &it,
                          Args args = {},
                          Mask active = true) const;
 
-    /// Fixed color evaluation at a surface interaction.
+    /// Evaluate the field as a three-channel color value at a surface interaction
     virtual Color3f eval_color3(const SurfaceInteraction3f &si,
                                 Args args = {},
                                 Mask active = true) const;
 
-    /// Fixed color evaluation at an interaction.
+    /// Evaluate the field as a three-channel color value at a generic 3D interaction
     virtual Color3f eval_color3(const Interaction3f &it,
                                 Args args = {},
                                 Mask active = true) const;
 
-    /// Fixed two-channel evaluation at a surface interaction.
+    /// Evaluate the field as a two-channel array at a surface interaction
     virtual Array2f eval_array2(const SurfaceInteraction3f &si,
                                 Args args = {},
                                 Mask active = true) const;
 
-    /// Fixed two-channel evaluation at an interaction.
+    /// Evaluate the field as a two-channel array at a generic 3D interaction
     virtual Array2f eval_array2(const Interaction3f &it,
                                 Args args = {},
                                 Mask active = true) const;
 
-    /// Fixed three-channel evaluation at a surface interaction.
+    /// Evaluate the field as a three-channel array at a surface interaction
     virtual Array3f eval_array3(const SurfaceInteraction3f &si,
                                 Args args = {},
                                 Mask active = true) const;
 
-    /// Fixed three-channel evaluation at an interaction.
+    /// Evaluate the field as a three-channel array at a generic 3D interaction
     virtual Array3f eval_array3(const Interaction3f &it,
                                 Args args = {},
                                 Mask active = true) const;
 
-    /// Fixed spectral evaluation at a surface interaction.
+    /// Evaluate the field as an unpolarized spectrum at a surface interaction
     virtual UnpolarizedSpectrum eval_spec(const SurfaceInteraction3f &si,
                                           Args args = {},
                                           Mask active = true) const;
 
-    /// Fixed spectral evaluation at an interaction.
+    /// Evaluate the field as an unpolarized spectrum at a generic 3D interaction
     virtual UnpolarizedSpectrum eval_spec(const Interaction3f &it,
                                           Args args = {},
                                           Mask active = true) const;
 
-    /// Fixed six-channel evaluation at a surface interaction.
+    /// Evaluate the field as a six-channel array at a surface interaction
     virtual Array6f eval_array6(const SurfaceInteraction3f &si,
                                 Args args = {},
                                 Mask active = true) const;
 
-    /// Fixed six-channel evaluation at an interaction.
+    /// Evaluate the field as a six-channel array at a generic 3D interaction
     virtual Array6f eval_array6(const Interaction3f &it,
                                 Args args = {},
                                 Mask active = true) const;
 
-    /// Fixed n-channel evaluation at a surface interaction.
+    /**
+     * \brief Evaluate the field as an n-channel float array at a surface
+     * interaction
+     *
+     * Pointer allocation and deallocation must be performed by the caller.
+     */
     virtual void eval_n(const SurfaceInteraction3f &si,
                         Float *out,
                         uint32_t count,
                         Args args = {},
                         Mask active = true) const;
 
-    /// Fixed n-channel evaluation at an interaction.
+    /**
+     * \brief Evaluate the field as an n-channel float array at a generic 3D
+     * interaction
+     *
+     * Pointer allocation and deallocation must be performed by the caller.
+     */
     virtual void eval_n(const Interaction3f &it,
                         Float *out,
                         uint32_t count,
                         Args args = {},
                         Mask active = true) const;
+
+    //! @}
+    // ======================================================================
 
     MI_DECLARE_PLUGIN_BASE_CLASS(Field)
 

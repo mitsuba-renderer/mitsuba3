@@ -7,7 +7,7 @@
 #include <drjit/python.h>
 #include <type_traits>
 
-/// Trampoline for derived types implemented in Python
+/// Trampoline for field implementations written in Python
 MI_VARIANT class PyField : public Field<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Field)
@@ -158,7 +158,7 @@ MI_PY_EXPORT(Field) {
     using Properties = mitsuba::Properties;
 
     auto field = nb::class_<Field, Object, PyField>(
-        m, "Field", "Base class for structured storage/query fields")
+        m, "Field", "Base class of all field implementations")
         .def(nb::init<const Properties &>(), "props"_a)
         .def("out_type", &Field::out_type)
         .def("domain", &Field::domain)
