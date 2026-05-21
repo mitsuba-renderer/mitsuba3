@@ -43,8 +43,8 @@ def grid_field_dict(channels=3):
     }
 
 
-def surface_interaction():
-    si = dr.zeros(mi.SurfaceInteraction3f)
+def surface_interaction(width=1):
+    si = dr.zeros(mi.SurfaceInteraction3f, width)
     si.p = mi.Point3f(0.25, 0.5, 0.75)
     si.uv = mi.Point2f(0.25, 0.75)
     si.n = mi.Normal3f(0, 0, 1)
@@ -53,8 +53,19 @@ def surface_interaction():
     return si
 
 
+def test01_encoding_and_neural_plugins_are_registered_as_fields(variant_scalar_rgb):
+    pmgr = mi.PluginManager.instance()
+    for name in [
+        "hashgridencoding",
+        "permutoencoding",
+        "sinusoidalencoding",
+        "neuralfield",
+    ]:
+        assert pmgr.plugin_type(name) == mi.ObjectType.Field
+
+
 @pytest.mark.parametrize("bad_args", [[1.0, 2.0, 3.0], [1.0] * 5])
-def test01_direct_field_args_are_validated_in_python_bindings(variant_llvm_ad_rgb, bad_args):
+def test02_direct_field_args_are_validated_in_python_bindings(variant_llvm_ad_rgb, bad_args):
     field = mi.load_dict(neural_field_dict(args_dim=4))
     si = surface_interaction()
 
@@ -67,7 +78,16 @@ def test01_direct_field_args_are_validated_in_python_bindings(variant_llvm_ad_rg
         field.eval_color3(si, args=bad_args)
 
 
-def test02_neural_fields_reject_scalar_variants_early(variant_scalar_rgb):
+def test03_zero_args_field_accepts_no_args_without_allocating_argument_storage(variant_llvm_ad_rgb):
+    field = mi.load_dict(neural_field_dict(args_dim=0))
+    si = surface_interaction()
+
+    assert dr.allclose(field.eval_color3(si), field.eval_color3(si, args=[]))
+    with pytest.raises(RuntimeError, match="args_dim|0"):
+        field.eval_color3(si, args=[1.0])
+
+
+def test04_neural_fields_reject_scalar_variants_early(variant_scalar_rgb):
     with pytest.raises(RuntimeError, match="neuralfield|scalar_rgb|LLVM|CUDA|JIT"):
         mi.load_dict(neural_field_dict())
 
@@ -76,7 +96,7 @@ def test02_neural_fields_reject_scalar_variants_early(variant_scalar_rgb):
     "field_factory, pattern",
     [
         (
-            lambda: encoding_dict("hashgridencoding", encoding=encoding_dict("sinusoidalencoding")),
+            lambda: encoding_dict("hashgridencoding", encoding=encoding_dict("hashgridencoding")),
             "encoding.*child|nested|compose",
         ),
         (
@@ -84,19 +104,40 @@ def test02_neural_fields_reject_scalar_variants_early(variant_scalar_rgb):
             "encoding|Features|field",
         ),
         (
-            lambda: neural_field_dict(decoder="linear", encoding=encoding_dict("sinusoidalencoding")),
-            "linear|hashgrid|permuto",
+            lambda: neural_field_dict(out_type="Features", out_dim=0),
+            "out_dim|Features|positive",
         ),
     ],
 )
-def test03_invalid_encoding_nesting_and_decoder_combinations_are_rejected(
+def test05_invalid_encoding_nesting_and_output_metadata_are_rejected(
     variant_llvm_ad_rgb, field_factory, pattern
 ):
     with pytest.raises(RuntimeError, match=pattern):
         mi.load_dict(field_factory())
 
 
-def test04_neural_field_traversal_exposes_trainable_state(variant_llvm_ad_rgb):
+@pytest.mark.parametrize(
+    "out_type,out_dim,method",
+    [
+        ("Float", 1, "eval_1"),
+        ("Color3", 3, "eval_color3"),
+        ("Array2", 2, "eval_array2"),
+        ("Array3", 3, "eval_array3"),
+        ("Features", 6, "eval_array6"),
+    ],
+)
+def test06_neural_field_fixed_output_methods_match_metadata(variant_llvm_ad_rgb, out_type, out_dim, method):
+    field = mi.load_dict(neural_field_dict(out_type=out_type, out_dim=out_dim, args_dim=0))
+    si = surface_interaction(width=8)
+
+    value = getattr(field, method)(si)
+    assert dr.all(dr.isfinite(value))
+
+    with pytest.raises(RuntimeError, match="out_type|out_dim|metadata"):
+        field.eval_color3(si) if method != "eval_color3" else field.eval_array3(si)
+
+
+def test07_neural_field_traversal_update_and_ad_state_are_preserved(variant_llvm_ad_rgb):
     field = mi.load_dict(neural_field_dict())
     params = mi.traverse(field)
 
@@ -104,8 +145,14 @@ def test04_neural_field_traversal_exposes_trainable_state(variant_llvm_ad_rgb):
     assert any("encoding" in key for key in params.keys())
     assert params.flags("network_weights") & mi.ParamFlags.Differentiable
 
-    si = surface_interaction()
-    loss = dr.sum(field.eval_color3(si, args=[0.0, 0.0, 0.0, 0.0]))
+    params["network_weights"] = params["network_weights"] + 0.01
+    params.update()
+    params = mi.traverse(field)
     dr.enable_grad(params["network_weights"])
+
+    si = surface_interaction(width=16)
+    loss = dr.sum(field.eval_color3(si, args=[0.0, 0.0, 0.0, 0.0]))
     dr.backward(loss)
-    assert dr.any(dr.isfinite(dr.grad(params["network_weights"])))
+    grad = dr.grad(params["network_weights"])
+    assert dr.all(dr.isfinite(grad))
+    assert dr.any(grad != 0)
