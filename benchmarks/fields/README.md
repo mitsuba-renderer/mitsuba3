@@ -21,6 +21,7 @@ python benchmarks/fields/bench_fields.py \
     --channels 3 \
     --filter-type bilinear \
     --wrap-mode repeat \
+    --scalar-iterations 20000 \
     --repeats 50 \
     --json bitmap_scalar.json
 
@@ -39,6 +40,15 @@ python benchmarks/fields/bench_fields.py \
     --field-plugin gridfield \
     --method eval_array6 \
     --channels 6
+
+python benchmarks/fields/bench_fields.py \
+    --variant llvm_ad_rgb \
+    --case neural_field_inference \
+    --method eval_color3 \
+    --args-mode no_args \
+    --args-dim 0 \
+    --kernel-history \
+    --json neural_no_args.json
 ```
 
 Implemented baseline cases:
@@ -53,4 +63,7 @@ launch-stat, and memory-watermark machinery. They intentionally fail clearly
 until the corresponding plugins land.
 
 Use `--compare baseline.json --fail-threshold 0.05` to compare medians against a
-previous result and fail when the slowdown exceeds the threshold.
+previous result and fail when the slowdown exceeds the threshold. Launch-count
+and allocation regressions can be checked with `--fail-launch-threshold` and
+`--fail-memory-watermark`. Scalar variants run a configurable inner loop via
+`--scalar-iterations` so per-call allocation and dispatch costs are visible.

@@ -1,17 +1,38 @@
-import pytest
-import drjit as dr
-import mitsuba as mi
 import subprocess
 import sys
 
+import pytest
+import drjit as dr
+import mitsuba as mi
 
-config = mi.parser.ParserConfig("scalar_rgb")
+
+CONFIG = mi.parser.ParserConfig("scalar_rgb")
 
 
-def make_metadata_only_field():
-    class MetadataOnlyField(mi.Field):
+def surface_interaction(width=1):
+    si = dr.zeros(mi.SurfaceInteraction3f, width)
+    si.p = mi.Point3f(0.25, 0.5, 0.75)
+    si.uv = mi.Point2f(0.25, 0.75)
+    si.n = mi.Normal3f(0, 0, 1)
+    si.wi = mi.Vector3f(0, 0, 1)
+    si.sh_frame = mi.Frame3f(si.n)
+    return si
+
+
+def bitmap_field(value):
+    return {
+        "type": "bitmapfield",
+        "data": mi.TensorXf(value, shape=(1, 1, len(value))),
+        "raw": True,
+        "filter_type": "nearest",
+        "wrap_mode": "clamp",
+    }
+
+
+def make_python_args_field():
+    class PythonArgsField(mi.Field):
         def __init__(self):
-            super().__init__(mi.Properties("metadata_only_field"))
+            super().__init__(mi.Properties("python_args_field"))
 
         def out_type(self):
             return mi.FieldValueType.Color3
@@ -29,7 +50,7 @@ def make_metadata_only_field():
             return True
 
         def supports_jit(self):
-            return False
+            return True
 
         def supports_surface_queries(self):
             return True
@@ -37,7 +58,14 @@ def make_metadata_only_field():
         def supports_interaction_queries(self):
             return False
 
-    return MetadataOnlyField()
+        def eval_color3(self, si, args=None, active=True):
+            assert args is not None
+            return mi.Color3f(args[0] + si.uv.x, args[1] + si.uv.y, args[2] + args[3])
+
+        def eval_1(self, si, args=None, active=True):
+            return self.eval_color3(si, args=args, active=active).x
+
+    return PythonArgsField()
 
 
 def test01_field_enums_are_not_registered_per_variant():
@@ -48,134 +76,103 @@ if 'llvm_ad_rgb' in mi.variants():
     variants.append('llvm_ad_rgb')
 for variant in variants:
     mi.set_variant(variant)
+    assert mi.ObjectType.Field.name == 'Field'
     assert mi.FieldValueType.Color3.name == 'Color3'
     assert mi.FieldDomain.Surface.name == 'Surface'
 """
     subprocess.run([sys.executable, "-c", code], check=True)
 
 
-def test02_xml_field_tag_is_typed_and_round_trips(variant_scalar_rgb):
+def test02_field_plugins_are_registered_as_fields_and_helper_zoo_is_absent(variant_scalar_rgb):
+    pmgr = mi.PluginManager.instance()
+
+    for name in ["bitmapfield", "gridfield", "neuralfield"]:
+        assert pmgr.plugin_type(name) == mi.ObjectType.Field
+
+    for name in ["constantfield", "coordfield"]:
+        assert pmgr.plugin_type(name) == mi.ObjectType.Unknown
+
+
+def test03_xml_field_tags_round_trip_nested_refs_and_ordering(variant_scalar_rgb):
     xml = """<scene version="3.0.0">
+        <shape type="rectangle"/>
         <field type="debugfield" id="f0">
             <integer name="out_dim" value="3"/>
         </field>
+        <bsdf type="neuralbsdf" id="mat_nested">
+            <field name="reflectance" type="debugfield" id="nested_f">
+                <integer name="out_dim" value="3"/>
+            </field>
+        </bsdf>
+        <bsdf type="neuralbsdf" id="mat_ref">
+            <ref name="reflectance" id="f0"/>
+        </bsdf>
     </scene>"""
 
-    state = mi.parser.parse_string(config, xml)
+    state = mi.parser.parse_string(CONFIG, xml)
     field_nodes = [n for n in state.nodes if n.type == mi.ObjectType.Field]
-
-    assert len(field_nodes) == 1
-    assert field_nodes[0].props.plugin_name() == "debugfield"
-    assert field_nodes[0].props.id() == "f0"
-    assert field_nodes[0].props["out_dim"] == 3
+    assert [n.props.plugin_name() for n in field_nodes] == ["debugfield", "debugfield"]
+    assert [n.props.id() for n in field_nodes] == ["f0", "nested_f"]
 
     output = mi.parser.write_string(state)
-    assert "<field" in output
+    assert '<field' in output
     assert 'type="debugfield"' in output
-    assert 'name="out_dim" value="3"' in output
+    assert 'id="f0"' in output
+    assert 'name="reflectance"' in output
+    assert 'id="nested_f"' in output
+    assert '<ref name="reflectance" id="f0"/>' in output
 
-    state_rt = mi.parser.parse_string(config, output)
+    state_rt = mi.parser.parse_string(CONFIG, output)
     field_nodes_rt = [n for n in state_rt.nodes if n.type == mi.ObjectType.Field]
-    assert len(field_nodes_rt) == 1
-    assert field_nodes_rt[0].props.plugin_name() == "debugfield"
-    assert field_nodes_rt[0].props["out_dim"] == 3
+    assert len(field_nodes_rt) == 2
+    assert all(n.props.plugin_name() == "debugfield" for n in field_nodes_rt)
 
 
-def test03_python_field_metadata_dispatches_through_virtual_api(variant_scalar_rgb):
-    field = make_metadata_only_field()
+def test04_python_field_metadata_and_eval_dispatch_through_virtual_api(variant_llvm_ad_rgb):
+    field = make_python_args_field()
+    si = surface_interaction()
 
     assert field.out_type() == mi.FieldValueType.Color3
     assert field.domain() == mi.FieldDomain.Surface
     assert field.out_dim() == 3
     assert field.args_dim() == 4
     assert field.supports_scalar()
-    assert not field.supports_jit()
+    assert field.supports_jit()
     assert field.supports_surface_queries()
     assert not field.supports_interaction_queries()
 
+    assert dr.allclose(field.eval_color3(si, args=[0.1, 0.2, 0.3, 0.4]),
+                       [0.35, 0.95, 0.7])
+    assert dr.allclose(field.eval_1(si, args=mi.ArrayXf([0.1, 0.2, 0.3, 0.4])),
+                       0.35)
 
-@pytest.mark.parametrize(
-    "name, call",
-    [
-        ("eval", lambda f, si: f.eval(si)),
-        ("eval_1", lambda f, si: f.eval_1(si)),
-        ("eval_color3", lambda f, si: f.eval_color3(si)),
-        ("eval_array2", lambda f, si: f.eval_array2(si)),
-        ("eval_array3", lambda f, si: f.eval_array3(si)),
-        ("eval_spec", lambda f, si: f.eval_spec(si)),
-        ("eval_array6", lambda f, si: f.eval_array6(si)),
-        ("eval_n", lambda f, si: f.eval_n(si, 3)),
-    ],
-)
-def test04_surface_evaluation_stubs_raise_specific_errors(variant_scalar_rgb, name, call):
-    si = dr.zeros(mi.SurfaceInteraction3f)
-
-    with pytest.raises(RuntimeError, match=name):
-        call(make_metadata_only_field(), si)
+    with pytest.raises(RuntimeError, match="args_dim|4"):
+        field.eval_color3(si, args=[1.0, 2.0, 3.0])
 
 
-@pytest.mark.parametrize(
-    "name, call",
-    [
-        ("eval", lambda f, it: f.eval(it)),
-        ("eval_1", lambda f, it: f.eval_1(it)),
-        ("eval_color3", lambda f, it: f.eval_color3(it)),
-        ("eval_array2", lambda f, it: f.eval_array2(it)),
-        ("eval_array3", lambda f, it: f.eval_array3(it)),
-        ("eval_spec", lambda f, it: f.eval_spec(it)),
-        ("eval_array6", lambda f, it: f.eval_array6(it)),
-        ("eval_n", lambda f, it: f.eval_n(it, 6)),
-    ],
-)
-def test05_interaction_evaluation_stubs_raise_specific_errors(variant_scalar_rgb, name, call):
-    it = dr.zeros(mi.Interaction3f)
+def test05_fieldptr_vectorized_fixed_and_generic_calls(variant_llvm_ad_rgb):
+    color_a = mi.load_dict(bitmap_field([0.1, 0.2, 0.3]))
+    color_b = mi.load_dict(bitmap_field([0.7, 0.8, 0.9]))
 
-    with pytest.raises(RuntimeError, match=name):
-        call(make_metadata_only_field(), it)
+    ptr = dr.zeros(mi.FieldPtr, 4)
+    dr.scatter(ptr, color_a, mi.UInt32(0, 2))
+    dr.scatter(ptr, color_b, mi.UInt32(1, 3))
 
+    si = surface_interaction(width=4)
+    result = ptr.eval_color3(si, True)
+    expected = mi.Color3f(
+        mi.Float(0.1, 0.7, 0.1, 0.7),
+        mi.Float(0.2, 0.8, 0.2, 0.8),
+        mi.Float(0.3, 0.9, 0.3, 0.9),
+    )
+    assert dr.allclose(result, expected)
 
-def test06_texture_and_volume_public_apis_do_not_accept_field_args(variant_scalar_rgb):
-    tex = mi.load_dict({
-        "type": "bitmap",
-        "data": dr.ones(mi.TensorXf, shape=[2, 2, 3]),
-        "raw": True,
-    })
-    vol = mi.load_dict({
-        "type": "gridvolume",
-        "data": dr.ones(mi.TensorXf, shape=[2, 2, 2, 1]),
-        "raw": True,
-    })
+    scalar_a = mi.load_dict(bitmap_field([1.0]))
+    scalar_b = mi.load_dict(bitmap_field([2.0]))
+    scalar_ptr = dr.zeros(mi.FieldPtr, 4)
+    dr.scatter(scalar_ptr, scalar_a, mi.UInt32(0, 2))
+    dr.scatter(scalar_ptr, scalar_b, mi.UInt32(1, 3))
 
-    si = dr.zeros(mi.SurfaceInteraction3f)
-    it = dr.zeros(mi.Interaction3f)
-
-    with pytest.raises(TypeError):
-        tex.eval(si, args=[1.0, 2.0])
-    with pytest.raises(TypeError):
-        tex.eval_1(si, args=[1.0, 2.0])
-    with pytest.raises(TypeError):
-        vol.eval(it, args=[1.0, 2.0])
-    with pytest.raises(TypeError):
-        vol.eval_n(it, args=[1.0, 2.0])
-
-
-def test07_no_public_constant_or_coordinate_field_plugins(variant_scalar_rgb):
-    pmgr = mi.PluginManager.instance()
-
-    assert pmgr.plugin_type("constantfield") == mi.ObjectType.Unknown
-    assert pmgr.plugin_type("coordfield") == mi.ObjectType.Unknown
-
-
-def test08_fieldptr_is_bound_for_jit_variants(variant_llvm_ad_rgb):
-    assert hasattr(mi, "FieldPtr")
-
-    for name in [
-        "eval",
-        "eval_1",
-        "eval_color3",
-        "eval_array2",
-        "eval_array3",
-        "eval_spec",
-        "eval_array6",
-    ]:
-        assert hasattr(mi.FieldPtr, name)
+    assert dr.allclose(scalar_ptr.eval_1(si, True), mi.Float(1, 2, 1, 2))
+    generic = scalar_ptr.eval(si, True)
+    assert dr.allclose(generic[0], mi.Float(1, 2, 1, 2))

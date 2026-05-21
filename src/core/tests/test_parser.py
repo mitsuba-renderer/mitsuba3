@@ -2322,6 +2322,7 @@ def test63_transform_reorder(variant_scalar_rgb):
         <shape type="cube"/>
         <volume type="constvolume" id="vol1"/>
         <bsdf type="conductor" id="mat2"/>
+        <field type="debugfield" id="field1"/>
         <shape type="cylinder">
             <bsdf type="diffuse"/>
             <medium type="homogeneous"/>
@@ -2352,6 +2353,7 @@ def test63_transform_reorder(variant_scalar_rgb):
     # Priority 5: Regular shapes in insertion order (rectangle, cube, cylinder)
     # Priority 6: Volumes (constvolume)
     # Priority 7: Media (homogeneous)
+    # Priority 8: Fields (debugfield)
 
     expected_types_and_names = [
         (mi.ObjectType.Integrator, "path"),
@@ -2368,6 +2370,7 @@ def test63_transform_reorder(variant_scalar_rgb):
         (mi.ObjectType.Shape, "cylinder"),
         (mi.ObjectType.Volume, "constvolume"),
         (mi.ObjectType.Medium, "homogeneous"),
+        (mi.ObjectType.Field, "debugfield"),
     ]
 
     assert types_and_names == expected_types_and_names
