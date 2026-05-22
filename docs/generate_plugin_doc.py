@@ -71,6 +71,7 @@ SENSOR_ORDERING = [
 TEXTURE_ORDERING = [
     'bitmap',
     'checkerboard',
+    'field', # fieldtexture
     'mesh_attribute',
     'volume'
 ]
@@ -133,6 +134,7 @@ PHASE_ORDERING = [
 
 VOLUME_ORDERING = [
     'constvolume',
+    'field', # fieldvolume
     'gridvolume'
 ]
 
