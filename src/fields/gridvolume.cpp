@@ -130,7 +130,7 @@ little endian encoding and is specified as follows:
     .. code-tab:: xml
 
         <medium type="heterogeneous">
-            <volume type="grid" name="albedo">
+            <volume type="gridvolume" name="albedo">
                 <string name="filename" value="my_volume.vol"/>
             </volume>
         </medium>
@@ -139,7 +139,7 @@ little endian encoding and is specified as follows:
 
         'type': 'heterogeneous',
         'albedo': {
-            'type': 'grid',
+            'type': 'gridvolume',
             'filename': 'my_volume.vol'
         }
 
@@ -159,10 +159,10 @@ little endian encoding and is specified as follows:
  *     where (xpos, ypos, zpos, chan) denotes the lookup location.
  */
 template <typename Float, typename Spectrum>
-class GridVolume final : public Volume<Float, Spectrum> {
+class GridVolume final : public VolumeField<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Volume, update_bbox, m_to_local, m_bbox, m_channel_count)
-    MI_IMPORT_TYPES(VolumeGrid)
+    MI_IMPORT_BASE(VolumeField, update_bbox, m_to_local, m_bbox, m_channel_count)
+    MI_IMPORT_TYPES(VolumeField, VolumeGrid)
 
     GridVolume(const Properties &props) : Base(props) {
         std::string_view filter_type_str = props.get<std::string_view>("filter_type", "trilinear");
@@ -199,7 +199,7 @@ public:
             ScalarUInt32 channel_count = 0;
 
             if (props.has_property("grid")) {
-                // Creates a Bitmap texture directly from an existing Bitmap object
+                // Create a grid volume directly from an existing VolumeGrid object
                 if (props.has_property("filename"))
                     Throw("Cannot specify both \"grid\" and \"filename\".");
                 Log(Debug, "Loading volume grid from memory...");
@@ -269,6 +269,8 @@ public:
                 };
                 m_texture = Texture3f(TensorXf(scaled_data.get(), 4, shape),
                                       m_accel, m_accel, filter_mode, wrap_mode);
+                m_channel_count = 0;
+                m_max_per_channel.clear();
             } else if (volume_grid) {
                 size_t shape[4] = {
                     (size_t) res.z(),
@@ -387,6 +389,63 @@ public:
                 return luminance(interpolate_3(it, active));
             else // 6 channels
                 return dr::mean(interpolate_6(it, active));
+        }
+    }
+
+    FieldValueType out_type() const override {
+        const size_t channels = nchannels();
+        if (channels == 1)
+            return FieldValueType::Float;
+        if (channels == 3) {
+            if constexpr (is_spectral_v<Spectrum>)
+                return m_raw ? FieldValueType::Array3 : FieldValueType::Spectrum;
+            else
+                return FieldValueType::Array3;
+        }
+        return FieldValueType::Features;
+    }
+
+    uint32_t out_dim() const override {
+        if (out_type() == FieldValueType::Spectrum)
+            return (uint32_t) dr::size_v<UnpolarizedSpectrum>;
+        return (uint32_t) nchannels();
+    }
+
+    void eval_n(const Interaction3f &it, Float *out, uint32_t count,
+                typename Base::Args args = {}, Mask active = true) const override {
+        if (args.size != 0)
+            Throw("GridVolume::eval_n(): expected args_dim=0, got %u.",
+                  args.size);
+        if (count != out_dim())
+            Throw("GridVolume::eval_n(): count (%u) must match out_dim (%u).",
+                  count, out_dim());
+
+        switch (out_type()) {
+            case FieldValueType::Float:
+                out[0] = eval_1(it, active);
+                break;
+
+            case FieldValueType::Spectrum: {
+                UnpolarizedSpectrum value = eval(it, active);
+                for (uint32_t i = 0; i < count; ++i)
+                    out[i] = value.entry(i);
+                break;
+            }
+
+            case FieldValueType::Array3: {
+                Vector3f value = eval_3(it, active);
+                out[0] = value.x();
+                out[1] = value.y();
+                out[2] = value.z();
+                break;
+            }
+
+            case FieldValueType::Features:
+                eval_n(it, out, active);
+                break;
+
+            default:
+                Throw("GridVolume::eval_n(): unsupported field output.");
         }
     }
 
@@ -624,6 +683,11 @@ protected:
     }
 
     void update_max_per_channel() {
+        if (out_type() == FieldValueType::Spectrum) {
+            m_max_per_channel.clear();
+            return;
+        }
+
         size_t channels = nchannels();
         m_max_per_channel.resize(channels);
 

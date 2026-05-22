@@ -20,6 +20,29 @@ NB_MAKE_OPAQUE(std::vector<parser::SceneNode>);
 // For casting ref<Object> to Python
 extern nb::object cast_object(Object *o);
 
+static bool is_spectrum_field_plugin(std::string_view plugin_name) {
+    return plugin_name == "uniform" || plugin_name == "srgb" ||
+           plugin_name == "d65" || plugin_name == "blackbody" ||
+           plugin_name == "regular" || plugin_name == "irregular" ||
+           plugin_name == "rawconstant";
+}
+
+static ObjectType dict_object_type(std::string_view plugin_name) {
+    ObjectType type = PluginManager::instance()->plugin_type(plugin_name);
+    if (type != ObjectType::Field)
+        return type;
+
+    if (plugin_name == "bitmap" || plugin_name == "checkerboard" ||
+        plugin_name == "mesh_attribute" || plugin_name == "volume" ||
+        is_spectrum_field_plugin(plugin_name))
+        return ObjectType::Texture;
+
+    if (plugin_name == "gridvolume" || plugin_name == "constvolume")
+        return ObjectType::Volume;
+
+    return type;
+}
+
 // Helper to parse RGB/spectrum dictionaries
 static void parse_color_spectrum(ParserState &state, size_t parent_idx,
                                  std::string_view key, const nb::dict &dict,
@@ -186,7 +209,7 @@ static void parse_dict_impl(ParserState &state, const nb::dict &d,
 
             // Set plugin name and object type
             child.props.set_plugin_name(type);
-            child.type = PluginManager::instance()->plugin_type(type);
+            child.type = dict_object_type(type);
             child.props.set_id(has_id ? id : key);
 
             // Register explicit IDs in the global map
@@ -253,7 +276,7 @@ static ParserState parse_dict(const ParserConfig &, const nb::dict &d) {
         parse_color_spectrum(state, 0, "value", d, plugin_name, "root");
         return state;
     } else {
-        root.type = PluginManager::instance()->plugin_type(root.props.plugin_name());
+        root.type = dict_object_type(root.props.plugin_name());
     }
 
     if (d.contains("id")) {

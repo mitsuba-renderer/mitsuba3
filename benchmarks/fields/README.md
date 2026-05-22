@@ -36,7 +36,7 @@ python benchmarks/fields/bench_fields.py \
 
 python benchmarks/fields/bench_fields.py \
     --case field_fixed_eval \
-    --field-plugin gridfield \
+    --field-plugin gridvolume \
     --method eval_array6 \
     --channels 6
 

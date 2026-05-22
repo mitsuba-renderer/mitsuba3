@@ -46,8 +46,8 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props)
                     Throw("Only a single exterior medium can be specified per shape.");
                 m_exterior_medium = medium;
             }
-        } else if (Texture *texture = prop.try_get<Texture>()) {
-            add_texture_attribute(prop.name(), texture);
+        } else if (Field *field = prop.try_get<Field>()) {
+            add_texture_attribute(prop.name(), field);
         }
     }
 
@@ -488,20 +488,20 @@ Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask
 }
 
 MI_VARIANT void
-Shape<Float, Spectrum>::add_texture_attribute(std::string_view name, Texture *texture) {
+Shape<Float, Spectrum>::add_texture_attribute(std::string_view name, Field *field) {
     // Replaces existing attribute with name `name`, if any.
-    m_texture_attributes.insert_or_assign(std::string(name), texture);
+    m_texture_attributes.insert_or_assign(std::string(name), field);
 }
 
-MI_VARIANT typename Shape<Float, Spectrum>::Texture *
+MI_VARIANT typename Shape<Float, Spectrum>::Field *
 Shape<Float, Spectrum>::texture_attribute(std::string_view name) {
     auto it = m_texture_attributes.find(name);
     if (it == m_texture_attributes.end())
         Throw("texture_attribute(): attribute %s doesn't exist.", name);
-    return const_cast<Texture*>(it->second.get());
+    return const_cast<Field *>(it->second.get());
 }
 
-MI_VARIANT const typename Shape<Float, Spectrum>::Texture *
+MI_VARIANT const typename Shape<Float, Spectrum>::Field *
 Shape<Float, Spectrum>::texture_attribute(std::string_view name) const {
     const auto it = m_texture_attributes.find(name);
     if (it == m_texture_attributes.end())

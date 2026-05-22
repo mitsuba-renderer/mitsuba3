@@ -153,7 +153,7 @@ def _mitsuba_wrap_field_method(fn, method_name):
         if "args" not in kwargs:
             if method_name == "eval_n" and len(args) >= 3:
                 field_args = args[2]
-            elif method_name != "eval_n" and len(args) >= 2:
+            elif method_name != "eval_n" and len(args) >= 3:
                 field_args = args[1]
 
         expected = int(self.args_dim())
@@ -202,9 +202,6 @@ def _mitsuba_register_python_fields(mi):
 def _mitsuba_patch_variant_aliases(mi):
     """Reapply Python-side compatibility patches after each variant switch."""
 
-    if mi.variant() and mi.variant().startswith("scalar_"):
-        mi.Float = _ScalarFloat
-        mi.Bool = _ScalarBool
     _mitsuba_patch_field_class(mi)
 
 

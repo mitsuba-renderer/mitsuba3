@@ -17,7 +17,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Sensor : public Endpoint<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(Film, Sampler, Texture)
+    MI_IMPORT_TYPES(Field, Film, Sampler, Texture)
     MI_IMPORT_BASE(Endpoint, sample_ray, m_needs_sample_3)
 
     // =============================================================
@@ -157,7 +157,7 @@ protected:
     ScalarVector2f m_resolution;
     ScalarFloat m_shutter_open;
     ScalarFloat m_shutter_open_time;
-    ref<const Texture> m_srf;
+    ref<const Field> m_srf;
     bool m_alpha;
 
     MI_TRAVERSE_CB(Base, m_film, m_sampler, m_srf)

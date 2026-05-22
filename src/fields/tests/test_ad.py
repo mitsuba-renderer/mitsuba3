@@ -17,7 +17,7 @@ def volume_data(channels=6, z=3, y=4, x=5):
 
 def bitmap_field_dict(channels=3, **kwargs):
     result = {
-        "type": "bitmapfield",
+        "type": "bitmap",
         "data": bitmap_data(channels),
         "raw": True,
         "filter_type": "nearest",
@@ -29,7 +29,7 @@ def bitmap_field_dict(channels=3, **kwargs):
 
 def grid_field_dict(channels=6, **kwargs):
     result = {
-        "type": "gridfield",
+        "type": "gridvolume",
         "data": volume_data(channels),
         "raw": True,
         "filter_type": "nearest",
@@ -110,9 +110,10 @@ def interaction(width=1):
 def test01_bitmap_field_ad_gradients_are_finite_and_nonzero(field_ad_rgb_variant):
     field = mi.load_dict(bitmap_field_dict(
         channels=3, filter_type="bilinear", data=bitmap_data(channels=3)
-    ))
+    )).field()
     params = mi.traverse(field)
     dr.enable_grad(params["data"])
+    params.update()
 
     loss = dr.sum(field.eval_color3(surface_interaction(width=5)))
     dr.backward(loss)
@@ -128,9 +129,10 @@ def test02_bitmap_field_ad_gradient_matches_bilinear_weights(field_ad_rgb_varian
         data=dr.zeros(mi.TensorXf, shape=(2, 2, 1)),
         filter_type="bilinear",
         wrap_mode="clamp",
-    ))
+    )).field()
     params = mi.traverse(field)
     dr.enable_grad(params["data"])
+    params.update()
 
     si = surface_interaction()
     si.uv = mi.Point2f(0.5, 0.5)
@@ -146,9 +148,10 @@ def test03_grid_field_ad_gradient_matches_trilinear_weights(field_ad_rgb_variant
         data=dr.zeros(mi.TensorXf, shape=(2, 2, 2, 1)),
         filter_type="trilinear",
         wrap_mode="clamp",
-    ))
+    )).field()
     params = mi.traverse(field)
     dr.enable_grad(params["data"])
+    params.update()
 
     it = interaction()
     it.p = mi.Point3f(0.5, 0.5, 0.5)
@@ -164,7 +167,7 @@ def test04_bitmap_field_data_can_be_optimized(field_ad_rgb_variant):
         data=dr.zeros(mi.TensorXf, shape=(2, 2, 1)),
         filter_type="bilinear",
         wrap_mode="clamp",
-    ))
+    )).field()
     params = mi.traverse(field)
     opt = mi.ad.SGD(lr=0.5, params=params)
     params.update(opt)
@@ -297,7 +300,7 @@ def test08_neuralfield_neural_decoder_can_be_optimized(field_ad_rgb_variant):
 
 def test09_neuralbsdf_backpropagates_to_reflectance_field(field_ad_rgb_variant):
     neural = mi.load_dict(neuralbsdf_dict({
-        "type": "bitmapfield",
+        "type": "bitmap",
         "data": dr.full(mi.TensorXf, 0.4, shape=(2, 2, 3)),
         "raw": True,
         "filter_type": "bilinear",
@@ -307,6 +310,7 @@ def test09_neuralbsdf_backpropagates_to_reflectance_field(field_ad_rgb_variant):
     key = "reflectance.data"
     assert key in params
     dr.enable_grad(params[key])
+    params.update()
 
     si = surface_interaction()
     si.uv = mi.Point2f(0.5, 0.5)

@@ -7,7 +7,7 @@ import mitsuba as mi
 
 def albedo_field(value=(0.2, 0.4, 0.6)):
     return {
-        "type": "bitmapfield",
+        "type": "bitmap",
         "data": mi.TensorXf(value, shape=(1, 1, 3)),
         "raw": True,
         "filter_type": "nearest",
@@ -16,11 +16,35 @@ def albedo_field(value=(0.2, 0.4, 0.6)):
 
 
 def features6_field():
-    return {
-        "type": "gridfield",
-        "data": dr.ones(mi.TensorXf, shape=[1, 1, 1, 6]),
-        "raw": True,
-    }
+    class Features6Field(mi.Field):
+        def __init__(self):
+            super().__init__(mi.Properties("features6_field"))
+
+        def out_type(self):
+            return mi.FieldValueType.Features
+
+        def domain(self):
+            return mi.FieldDomain.Surface
+
+        def out_dim(self):
+            return 6
+
+        def args_dim(self):
+            return 0
+
+        def supports_scalar(self):
+            return True
+
+        def supports_jit(self):
+            return True
+
+        def supports_surface_queries(self):
+            return True
+
+        def supports_interaction_queries(self):
+            return False
+
+    return Features6Field()
 
 
 def neural_field(args_dim=11):

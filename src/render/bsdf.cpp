@@ -42,18 +42,18 @@ MI_VARIANT Spectrum BSDF<Float, Spectrum>::eval_diffuse_reflectance(
     return eval(ctx, si, wo, active) * dr::Pi<Float>;
 }
 
-template <typename Texture, typename Type>
+template <typename Field, typename Type>
 struct AttributeCallback : public TraversalCallback {
-    using F1 = std::function<Type(Texture *)>;
+    using F1 = std::function<Type(Field *)>;
 
     AttributeCallback(std::string name, F1 func_object):
         name(name), found(false), result(0.f), func_object(func_object) { }
 
     void put_object(std::string_view name, Object *obj, uint32_t) override {
         if (this->name == name) {
-            Texture *texture = dynamic_cast<Texture *>(obj);
-            if (texture) {
-                result = func_object(texture);
+            Field *field = dynamic_cast<Field *>(obj);
+            if (field) {
+                result = func_object(field);
                 found = true;
             }
         }
@@ -75,7 +75,7 @@ struct AttributeCallback : public TraversalCallback {
 
 MI_VARIANT typename BSDF<Float, Spectrum>::Mask
 BSDF<Float, Spectrum>::has_attribute(const std::string& name, Mask /*active*/) const {
-    AttributeCallback<Texture, float> cb(name, [&](Texture *) { return 0.f; });
+    AttributeCallback<Field, float> cb(name, [&](Field *) { return 0.f; });
     const_cast<BSDF<Float, Spectrum>*>(this)->traverse((TraversalCallback *) &cb);
     return cb.found;
 }
@@ -84,9 +84,9 @@ MI_VARIANT typename BSDF<Float, Spectrum>::UnpolarizedSpectrum
 BSDF<Float, Spectrum>::eval_attribute(const std::string &name,
                                       const SurfaceInteraction3f &si,
                                       Mask active) const {
-    AttributeCallback<Texture, UnpolarizedSpectrum> cb(
+    AttributeCallback<Field, UnpolarizedSpectrum> cb(
         name,
-        [&](Texture *texture) { return texture->eval(si, active); }
+        [&](Field *field) { return field->eval(si, active); }
     );
     const_cast<BSDF<Float, Spectrum>*>(this)->traverse((TraversalCallback *) &cb);
 
@@ -101,9 +101,9 @@ MI_VARIANT Float
 BSDF<Float, Spectrum>::eval_attribute_1(const std::string& name,
                                         const SurfaceInteraction3f & si,
                                         Mask active) const {
-    AttributeCallback<Texture, Float> cb(
+    AttributeCallback<Field, Float> cb(
         name,
-        [&](Texture *texture) { return texture->eval_1(si, active); }
+        [&](Field *field) { return field->eval_1(si, active); }
     );
     const_cast<BSDF<Float, Spectrum>*>(this)->traverse((TraversalCallback *) &cb);
 
@@ -118,9 +118,9 @@ MI_VARIANT typename BSDF<Float, Spectrum>::Color3f
 BSDF<Float, Spectrum>::eval_attribute_3(const std::string& name,
                                         const SurfaceInteraction3f & si,
                                         Mask active) const {
-    AttributeCallback<Texture, Color3f> cb(
+    AttributeCallback<Field, Color3f> cb(
         name,
-        [&](Texture *texture) { return texture->eval_3(si, active); }
+        [&](Field *field) { return field->eval_3(si, active); }
     );
     const_cast<BSDF<Float, Spectrum>*>(this)->traverse((TraversalCallback *) &cb);
 

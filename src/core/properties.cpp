@@ -14,6 +14,7 @@
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/hash.h>
 #include <mitsuba/render/texture.h>
+#include <mitsuba/render/volume.h>
 
 #if defined(__GNUG__)
 #  include <cxxabi.h>
@@ -67,6 +68,149 @@ template<> struct variant_type<Properties::Spectrum> { static constexpr auto val
 using Variant = std::variant<std::monostate, bool, int64_t, Float, std::string,
                              Array3f, Color3f, Properties::Spectrum, AffineTransform4f, Reference,
                              ResolvedReference, ref<Object>, Any>;
+
+static const char *field_value_type_name(FieldValueType type) {
+    switch (type) {
+        case FieldValueType::Float: return "Float";
+        case FieldValueType::Spectrum: return "Spectrum";
+        case FieldValueType::Color3: return "Color3";
+        case FieldValueType::Array2: return "Array2";
+        case FieldValueType::Array3: return "Array3";
+        case FieldValueType::Features: return "Features";
+        default: return "Unknown";
+    }
+}
+
+template <typename Float_, typename Spectrum_>
+ref<Object> make_texture_object(const ref<Object> &object) {
+    using Field = mitsuba::Field<Float_, Spectrum_>;
+
+    Object *object_ptr = const_cast<Object *>(object.get());
+    Field *field = dynamic_cast<Field *>(object_ptr);
+    if (!field)
+        return nullptr;
+
+    if (!field->supports_surface_queries())
+        Throw("Texture role requires a field that supports surface queries.");
+    if (field->args_dim() != 0)
+        Throw("Texture role requires args_dim=0, got %u.",
+              field->args_dim());
+    if constexpr (dr::is_jit_v<Float_>) {
+        if (!field->supports_jit())
+            Throw("Texture role field does not support JIT variants.");
+    } else {
+        if (!field->supports_scalar())
+            Throw("Texture role field does not support scalar variants.");
+    }
+
+    uint32_t dim = field->out_dim();
+    bool valid_output =
+        (field->out_type() == FieldValueType::Float && dim == 1) ||
+        (field->out_type() == FieldValueType::Spectrum &&
+         dim == (uint32_t) dr::size_v<unpolarized_spectrum_t<Spectrum_>>) ||
+        (field->out_type() == FieldValueType::Color3 && dim == 3) ||
+        (field->out_type() == FieldValueType::Array3 && dim == 3);
+
+    if (!valid_output)
+        Throw("Texture role does not support field output %s[%u]. Expected "
+              "Float[1], Spectrum[%u], Color3[3], or Array3[3].",
+              field_value_type_name(field->out_type()), dim,
+              (uint32_t) dr::size_v<unpolarized_spectrum_t<Spectrum_>>);
+
+    return ref<Object>(field);
+}
+
+template <typename Float_, typename Spectrum_>
+ref<Object> make_volume_object(const ref<Object> &object) {
+    using Field = mitsuba::Field<Float_, Spectrum_>;
+
+    Object *object_ptr = const_cast<Object *>(object.get());
+    Field *field = dynamic_cast<Field *>(object_ptr);
+    if (!field)
+        return nullptr;
+    if (!field->supports_interaction_queries())
+        Throw("Volume role requires a field that supports interaction "
+              "queries.");
+    if (field->args_dim() != 0)
+        Throw("Volume role requires args_dim=0, got %u.",
+              field->args_dim());
+    if constexpr (dr::is_jit_v<Float_>) {
+        if (!field->supports_jit())
+            Throw("Volume role field does not support JIT variants.");
+    } else {
+        if (!field->supports_scalar())
+            Throw("Volume role field does not support scalar variants.");
+    }
+
+    uint32_t dim = field->out_dim();
+    bool valid_output =
+        (field->out_type() == FieldValueType::Float && dim == 1) ||
+        (field->out_type() == FieldValueType::Spectrum &&
+         dim == (uint32_t) dr::size_v<unpolarized_spectrum_t<Spectrum_>>) ||
+        (field->out_type() == FieldValueType::Color3 && dim == 3) ||
+        (field->out_type() == FieldValueType::Array3 && dim == 3) ||
+        (field->out_type() == FieldValueType::Features && dim == 6);
+
+    if (!valid_output)
+        Throw("Volume role does not support field output %s[%u]. Expected "
+              "Float[1], Spectrum[%u], Color3[3], Array3[3], or Features[6].",
+              field_value_type_name(field->out_type()), dim,
+              (uint32_t) dr::size_v<unpolarized_spectrum_t<Spectrum_>>);
+
+    try {
+        (void) field->bbox();
+        (void) field->max();
+    } catch (const std::exception &e) {
+        Throw("Volume role field \"%s\" does not provide required volume "
+              "metadata: %s", field->id(), e.what());
+    }
+
+    return ref<Object>(field);
+}
+
+template <typename Float_, typename Spectrum_>
+ref<Object> make_field_object(const ref<Object> &object) {
+    using Field = mitsuba::Field<Float_, Spectrum_>;
+
+    Object *object_ptr = const_cast<Object *>(object.get());
+    if (dynamic_cast<Field *>(object_ptr))
+        return object;
+    return nullptr;
+}
+
+MI_EXPORT_LIB ref<Object>
+make_texture_object_for_variant(std::string_view variant,
+                                const ref<Object> &object) {
+    return MI_INVOKE_VARIANT(variant, make_texture_object, object);
+}
+
+MI_EXPORT_LIB ref<Object>
+make_volume_object_for_variant(std::string_view variant,
+                               const ref<Object> &object) {
+    return MI_INVOKE_VARIANT(variant, make_volume_object, object);
+}
+
+MI_EXPORT_LIB ref<Object>
+make_field_object_for_variant(std::string_view variant,
+                              const ref<Object> &object) {
+    return MI_INVOKE_VARIANT(variant, make_field_object, object);
+}
+
+MI_EXPORT_LIB ref<Object>
+create_compatible_object_for_variant(const Properties &props,
+                                     std::string_view variant,
+                                     ObjectType type) {
+    ObjectType expected_type = type;
+    if (type == ObjectType::Texture || type == ObjectType::Volume) {
+        ObjectType plugin_type =
+            PluginManager::instance()->plugin_type(props.plugin_name());
+        if (plugin_type == ObjectType::Field)
+            expected_type = ObjectType::Field;
+    }
+
+    return PluginManager::instance()->create_object(props, variant,
+                                                    expected_type);
+}
 
 /// Minimal heap-allocated string for efficient storage with string_view compatibility
 /// Unlike std::string which uses small string optimization, heap_string is ALWAYS
@@ -683,10 +827,11 @@ ref<Object> Properties::get_texture_impl(std::string_view name,
 
         case Type::Object: {
                 const ref<Object> &obj = std::get<ref<Object>>(value);
-                if (obj->type() != ObjectType::Texture)
+                ref<Object> texture = make_texture_object_for_variant(variant, obj);
+                if (!texture)
                     raise_object_type_error(index, ObjectType::Texture, obj);
                 entry.queried = true;
-                return obj;
+                return texture;
             }
 
         default:
@@ -702,8 +847,9 @@ ref<Object> Properties::get_texture_impl(std::string_view name,
     // Set the plugin name after the switch
     props.set_plugin_name(plugin_name);
 
-    return PluginManager::instance()->create_object(
+    ref<Object> object = create_compatible_object_for_variant(
         props, variant, ObjectType::Texture);
+    return make_texture_object_for_variant(variant, object);
 }
 
 ref<Object> Properties::get_texture_impl(std::string_view name,
@@ -725,8 +871,9 @@ ref<Object> Properties::get_texture_impl(std::string_view name,
         props.set("value", def);
     }
 
-    return PluginManager::instance()->create_object(
+    ref<Object> object = create_compatible_object_for_variant(
         props, variant, ObjectType::Texture);
+    return make_texture_object_for_variant(variant, object);
 }
 
 // ==========================================================================

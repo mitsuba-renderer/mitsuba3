@@ -50,7 +50,7 @@ template <typename Float, typename Spectrum>
 class ConstantBackgroundEmitter final : public Emitter<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Emitter, m_flags)
-    MI_IMPORT_TYPES(Scene, Shape, Texture)
+    MI_IMPORT_TYPES(Field, Scene, Shape, Texture)
 
     ConstantBackgroundEmitter(const Properties &props) : Base(props) {
         /* Until `set_scene` is called, we have no information
@@ -58,7 +58,7 @@ public:
         m_bsphere = BoundingSphere3f(ScalarPoint3f(0.f), 1.f);
         m_surface_area = 4.f * dr::Pi<ScalarFloat>;
 
-        m_radiance = props.get_emissive_texture<Texture>("radiance", 1.f);
+        m_radiance = props.get_emissive_surface_field<Field>("radiance", 1.f);
 
         if (m_radiance->is_spatially_varying())
             Throw("Expected a non-spatially varying radiance spectra!");
@@ -199,7 +199,7 @@ public:
 
     MI_DECLARE_CLASS(ConstantBackgroundEmitter)
 protected:
-    ref<Texture> m_radiance;
+    ref<Field> m_radiance;
     BoundingSphere3f m_bsphere;
 
     /// Surface area of the bounding sphere

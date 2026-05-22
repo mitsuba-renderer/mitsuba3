@@ -171,7 +171,7 @@ MI_VARIANT
 class BaseSunskyEmitter: public Emitter<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Emitter, m_flags, m_to_world)
-    MI_IMPORT_TYPES(Scene, Texture)
+    MI_IMPORT_TYPES(Field, Scene, Texture)
 
     using FloatStorage    = DynamicBuffer<Float>;
     using SamplingWeights = dr::Array<Float, MPDF_CHANNELS>;
@@ -208,7 +208,7 @@ public:
 
         m_complex_sun = props.get<bool>("complex_sun", false);
 
-        m_albedo_tex = props.get_texture<Texture>("albedo", 0.3f);
+        m_albedo_tex = props.get_surface_field<Field>("albedo", 0.3f);
         if (m_albedo_tex->is_spatially_varying())
             Log(Error, "Expected a non-spatially varying radiance spectra!");
         m_albedo = extract_albedo(m_albedo_tex);
@@ -1134,21 +1134,21 @@ protected:
      * \return
      *      The buffer with the extracted albedo values for the needed wavelengths/channels
      */
-    FloatStorage extract_albedo(const ref<Texture>& albedo_tex) const {
+    FloatStorage extract_albedo(const ref<Field>& albedo_tex) const {
         FloatStorage albedo = dr::zeros<FloatStorage>(CHANNEL_COUNT);
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
         if constexpr (is_rgb_v<Spectrum>) {
-            albedo = dr::ravel(albedo_tex->eval(si));
+            albedo = dr::ravel(albedo_tex->eval(si, true));
 
         } else if constexpr (dr::is_array_v<Float> && is_spectral_v<Spectrum>) {
             si.wavelengths = dr::load<FloatStorage>(WAVELENGTHS<ScalarFloat>, CHANNEL_COUNT);
-            albedo = albedo_tex->eval(si)[0];
+            albedo = albedo_tex->eval(si, true)[0];
         } else if (!dr::is_array_v<Float> && is_spectral_v<Spectrum>) {
             for (ScalarUInt32 i = 0; i < CHANNEL_COUNT; ++i) {
                 if constexpr (!is_monochromatic_v<Spectrum>)
                     si.wavelengths = WAVELENGTHS<ScalarFloat>[i];
-                dr::scatter(albedo, albedo_tex->eval(si)[0], (UInt32) i);
+                dr::scatter(albedo, albedo_tex->eval(si, true)[0], (UInt32) i);
             }
         }
 
@@ -1177,7 +1177,7 @@ protected:
     ScalarFloat m_sky_scale;
     ScalarFloat m_sun_scale;
 
-    ref<Texture> m_albedo_tex;
+    ref<Field> m_albedo_tex;
     FloatStorage m_albedo;
 
     ScalarFloat m_sun_half_aperture;

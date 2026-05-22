@@ -1497,9 +1497,31 @@ void transform_relocate(const ParserConfig &/*config*/, ParserState &state,
     if (state.empty())
         return;
 
+    auto is_spectrum_field_plugin = [](std::string_view plugin_name) {
+        return plugin_name == "uniform" || plugin_name == "srgb" ||
+               plugin_name == "d65" || plugin_name == "blackbody" ||
+               plugin_name == "regular" || plugin_name == "irregular" ||
+               plugin_name == "rawconstant";
+    };
+
+    auto default_field_role =
+        [is_spectrum_field_plugin](std::string_view plugin_name) {
+            if (plugin_name == "bitmap" || plugin_name == "checkerboard" ||
+                plugin_name == "mesh_attribute" || plugin_name == "volume" ||
+                is_spectrum_field_plugin(plugin_name))
+                return ObjectType::Texture;
+            if (plugin_name == "gridvolume" || plugin_name == "constvolume")
+                return ObjectType::Volume;
+            return ObjectType::Field;
+        };
+
     // Helper function to determine subfolder based on object type
-    auto get_subfolder = [](ObjectType type,
-                            std::string_view plugin_name) -> std::string_view {
+    auto get_subfolder = [default_field_role](
+                             ObjectType type,
+                             std::string_view plugin_name) -> std::string_view {
+        if (type == ObjectType::Field)
+            type = default_field_role(plugin_name);
+
         switch (type) {
             case ObjectType::Texture:
                 if (plugin_name == "irregular" || plugin_name == "regular")
@@ -1712,7 +1734,7 @@ static Task* instantiate_node(const ParserConfig &config,
                 // These are special texture types that need to be created via get_texture_impl
                 obj = props.get_texture_impl("value", config.variant, false, false);
             } else {
-                obj = PluginManager::instance()->create_object(
+                obj = create_compatible_object_for_variant(
                     props, config.variant, node.type);
             }
         } catch (const std::exception &e) {
@@ -1725,6 +1747,28 @@ static Task* instantiate_node(const ParserConfig &config,
         s.objects = obj->expand();
         if (s.objects.empty())
             s.objects.push_back(obj);
+
+        if (node.type == ObjectType::Texture) {
+            for (ref<Object> &object : s.objects) {
+                ref<Object> texture =
+                    make_texture_object_for_variant(config.variant, object);
+                if (!texture)
+                    Throw("At %s: could not create a surface-compatible field for "
+                          "plugin \"%s\".",
+                          file_location(state, node), props.plugin_name());
+                object = std::move(texture);
+            }
+        } else if (node.type == ObjectType::Volume) {
+            for (ref<Object> &object : s.objects) {
+                ref<Object> volume =
+                    make_volume_object_for_variant(config.variant, object);
+                if (!volume)
+                    Throw("At %s: could not create a volume-compatible field for "
+                          "plugin \"%s\".",
+                          file_location(state, node), props.plugin_name());
+                object = std::move(volume);
+            }
+        }
 
         // Check for unqueried properties by iterating through all properties
         std::string unqueried_details;

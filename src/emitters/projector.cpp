@@ -118,14 +118,14 @@ operation remains efficient even if only a single pixel is turned on.
 MI_VARIANT class Projector final : public Emitter<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Emitter, m_flags, m_to_world, m_needs_sample_3)
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Field, Texture)
 
     Projector(const Properties &props) : Base(props) {
         m_intensity_scale = dr::opaque<Float>(props.get<ScalarFloat>("scale", 1.f));
 
-        m_irradiance = props.get_emissive_texture<Texture>("irradiance", 1.f);
+        m_irradiance = props.get_emissive_surface_field<Field>("irradiance", 1.f);
 
-        ScalarVector2i size = m_irradiance->resolution();
+        ScalarVector2i size = m_irradiance->resolution_2d();
         m_x_fov = ScalarFloat(parse_fov(props, size.x() / (double) size.y()));
 
         parameters_changed();
@@ -142,7 +142,7 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
         if (keys.empty() || string::contains(keys, "irradiance")) {
-            ScalarVector2i size = m_irradiance->resolution();
+            ScalarVector2i size = m_irradiance->resolution_2d();
 
             m_sample_to_camera = perspective_projection<Float>(size, size, 0, m_x_fov,
                                                         ScalarFloat(1e-4f),
@@ -320,7 +320,7 @@ public:
     MI_DECLARE_CLASS(Projector)
 
 protected:
-    ref<Texture> m_irradiance;
+    ref<Field> m_irradiance;
     Float m_intensity_scale;
     ProjectiveTransform4f m_sample_to_camera;
     ScalarFloat m_x_fov;

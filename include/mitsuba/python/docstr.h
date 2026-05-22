@@ -990,7 +990,7 @@ static const char *__doc_mitsuba_BSDF_eval_attribute_1 =
 R"doc(Monochromatic evaluation of a BSDF attribute at the given surface
 interaction
 
-This function differs from eval_attribute() in that it provided raw
+This function differs from eval_attribute() in that it provides raw
 access to scalar intensity/reflectance values without any color
 processing (e.g. spectral upsampling).
 
@@ -1001,13 +1001,13 @@ Parameter ``si``:
     Surface interaction associated with the query
 
 Returns:
-    An scalar intensity or reflectance value)doc";
+    A scalar intensity or reflectance value)doc";
 
 static const char *__doc_mitsuba_BSDF_eval_attribute_3 =
 R"doc(Trichromatic evaluation of a BSDF attribute at the given surface
 interaction
 
-This function differs from eval_attribute() in that it provided raw
+This function differs from eval_attribute() in that it provides raw
 access to RGB intensity/reflectance values without any additional
 color processing (e.g. RGB-to-spectral upsampling).
 
@@ -1018,7 +1018,7 @@ Parameter ``si``:
     Surface interaction associated with the query
 
 Returns:
-    An trichromatic intensity or reflectance value)doc";
+    A trichromatic intensity or reflectance value)doc";
 
 static const char *__doc_mitsuba_BSDF_eval_diffuse_reflectance =
 R"doc(Evaluate the diffuse reflectance
@@ -7284,12 +7284,11 @@ This method exposes a low level interface for texture construction, in
 general get_texture(), get_emissive_texture(), and
 get_unbounded_texture() are preferable.
 
-The method retrieves or construct a texture object (a subclass of
-``mitsuba::Texture<...>``).
+The method retrieves or constructs a surface-compatible field.
 
-If the parameter already holds a texture object, this function returns
-it directly. Otherwise, it creates an appropriate texture based on the
-property type and the current variant. The exact behavior is:
+If the parameter already holds a compatible field object, this function
+returns it directly. Otherwise, it creates an appropriate texture field
+based on the property type and the current variant. The exact behavior is:
 
 **Float/Integer Values:** - Monochromatic variants: Create ``uniform``
 texture with the value. - RGB/spectral variants: - For reflectance
@@ -7340,8 +7339,8 @@ conversions (see get_texture_impl for details))doc";
 static const char *__doc_mitsuba_Properties_get_volume =
 R"doc(Retrieve a volume parameter
 
-This method retrieves a volume parameter, where ``T`` is a subclass of
-``mitsuba::Volume<...>``.
+This method retrieves a volume parameter, where ``T`` is a field type
+compatible with volume queries.
 
 Scalar and texture values are also accepted. In this case, the plugin
 manager will automatically construct a ``constvolume`` instance.)doc";
@@ -9335,7 +9334,7 @@ static const char *__doc_mitsuba_Shape_eval_attribute_1 =
 R"doc(Monochromatic evaluation of a shape attribute at the given surface
 interaction
 
-This function differs from eval_attribute() in that it provided raw
+This function differs from eval_attribute() in that it provides raw
 access to scalar intensity/reflectance values without any color
 processing (e.g. spectral upsampling).
 
@@ -9346,13 +9345,13 @@ Parameter ``si``:
     Surface interaction associated with the query
 
 Returns:
-    An scalar intensity or reflectance value)doc";
+    A scalar intensity or reflectance value)doc";
 
 static const char *__doc_mitsuba_Shape_eval_attribute_3 =
 R"doc(Trichromatic evaluation of a shape attribute at the given surface
 interaction
 
-This function differs from eval_attribute() in that it provided raw
+This function differs from eval_attribute() in that it provides raw
 access to RGB intensity/reflectance values without any additional
 color processing (e.g. RGB-to-spectral upsampling).
 
@@ -11146,7 +11145,7 @@ static const char *__doc_mitsuba_Texture_eval_1 =
 R"doc(Monochromatic evaluation of the texture at the given surface
 interaction
 
-This function differs from eval() in that it provided raw access to
+This function differs from eval() in that it provides raw access to
 scalar intensity/reflectance values without any color processing (e.g.
 spectral upsampling). This is useful in parts of the renderer that
 encode scalar quantities using textures, e.g. a height field.
@@ -11155,7 +11154,7 @@ Parameter ``si``:
     An interaction record describing the associated surface position
 
 Returns:
-    An scalar intensity or reflectance value)doc";
+    A scalar intensity or reflectance value)doc";
 
 static const char *__doc_mitsuba_Texture_eval_1_grad =
 R"doc(Monochromatic evaluation of the texture gradient at the given surface
@@ -11171,7 +11170,7 @@ static const char *__doc_mitsuba_Texture_eval_3 =
 R"doc(Trichromatic evaluation of the texture at the given surface
 interaction
 
-This function differs from eval() in that it provided raw access to
+This function differs from eval() in that it provides raw access to
 RGB intensity/reflectance values without any additional color
 processing (e.g. RGB-to-spectral upsampling). This is useful in parts
 of the renderer that encode 3D quantities using textures, e.g. a
@@ -11181,9 +11180,9 @@ Parameter ``si``:
     An interaction record describing the associated surface position
 
 Returns:
-    An trichromatic intensity or reflectance value)doc";
+    A trichromatic intensity or reflectance value)doc";
 
-static const char *__doc_mitsuba_Texture_is_spatially_varying = R"doc(Does this texture evaluation depend on the UV coordinates)doc";
+static const char *__doc_mitsuba_Texture_is_spatially_varying = R"doc(Does this texture evaluation depend on the UV coordinates.)doc";
 
 static const char *__doc_mitsuba_Texture_max =
 R"doc(Return the maximum value of the spectrum
@@ -11204,7 +11203,7 @@ default implementation throws an exception.
 Even if the operation is provided, it may only return an
 approximation.)doc";
 
-static const char *__doc_mitsuba_Texture_pdf_position = R"doc(Returns the probability per unit area of sample_position())doc";
+static const char *__doc_mitsuba_Texture_pdf_position = R"doc(Returns the probability per unit area of sample_position().)doc";
 
 static const char *__doc_mitsuba_Texture_pdf_spectrum =
 R"doc(Evaluate the density function of the sample_spectrum() method as a
@@ -11233,8 +11232,8 @@ spectral reflectance or intensity of the texture
 This function assumes that the texture is implemented as a mapping
 from 2D UV positions to texture values, which is not necessarily true
 for all textures (e.g. 3D noise functions, mesh attributes, etc.). For
-this reason, not every will plugin provide a specialized
-implementation, and the default implementation simply return the input
+this reason, not every plugin will provide a specialized
+implementation, and the default implementation simply returns the input
 sample (i.e. uniform sampling is used).
 
 Parameter ``sample``:
@@ -11665,8 +11664,7 @@ support per-channel queries.)doc";
 static const char *__doc_mitsuba_Volume_class_name = R"doc()doc";
 
 static const char *__doc_mitsuba_Volume_eval =
-R"doc(Evaluate the volume at the given surface interaction, with color
-processing.)doc";
+R"doc(Evaluate the volume at the given interaction, with color processing.)doc";
 
 static const char *__doc_mitsuba_Volume_eval_1 = R"doc(Evaluate this volume as a single-channel quantity.)doc";
 
@@ -11676,15 +11674,17 @@ processing (e.g. velocity field).)doc";
 
 static const char *__doc_mitsuba_Volume_eval_6 =
 R"doc(Evaluate this volume as a six-channel quantity with no color
-processing This interface is specifically intended to encode the
-parameters of an SGGX phase function.)doc";
+processing
+
+This interface is specifically intended to encode the parameters of an
+SGGX phase function.)doc";
 
 static const char *__doc_mitsuba_Volume_eval_gradient =
-R"doc(Evaluate the volume at the given surface interaction, and compute the
+R"doc(Evaluate the volume at the given interaction and compute the
 gradients of the linear interpolant as well.)doc";
 
 static const char *__doc_mitsuba_Volume_eval_n =
-R"doc(Evaluate this volume as a n-channel float quantity
+R"doc(Evaluate this volume as an n-channel float quantity
 
 This interface is specifically intended to encode a variable number of
 parameters. Pointer allocation/deallocation must be performed by the
@@ -11710,7 +11710,7 @@ discrete representation.
 
 The default implementation returns ``(1, 1, 1)``)doc";
 
-static const char *__doc_mitsuba_Volume_to_string = R"doc(Returns a human-reable summary)doc";
+static const char *__doc_mitsuba_Volume_to_string = R"doc(Returns a human-readable summary.)doc";
 
 static const char *__doc_mitsuba_Volume_traverse_1_cb_ro = R"doc()doc";
 
@@ -12423,8 +12423,8 @@ checking is done here. The name-based get() is a thin wrapper.)doc";
 static const char *__doc_mitsuba_get_volume =
 R"doc(Retrieve a volume parameter
 
-This method retrieves a volume parameter, where ``T`` is a subclass of
-``mitsuba::Volume<...>``.
+This method retrieves a volume parameter, where ``T`` is a field type
+compatible with volume queries.
 
 Scalar and texture values are also accepted. In this case, the plugin
 manager will automatically construct a ``constvolume`` instance.)doc";
@@ -14615,4 +14615,3 @@ static const char *__doc_operator_lshift = R"doc(Turns a vector of elements into
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif
-

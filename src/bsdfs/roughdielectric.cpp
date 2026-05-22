@@ -160,14 +160,14 @@ template <typename Float, typename Spectrum>
 class RoughDielectric final : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
-    MI_IMPORT_TYPES(Texture, MicrofacetDistribution)
+    MI_IMPORT_TYPES(Field, Texture, MicrofacetDistribution)
 
     RoughDielectric(const Properties &props) : Base(props) {
         if (props.has_property("specular_reflectance"))
-            m_specular_reflectance   = props.get_texture<Texture>("specular_reflectance", 1.f);
+            m_specular_reflectance   = props.get_surface_field<Field>("specular_reflectance", 1.f);
 
         if (props.has_property("specular_transmittance"))
-            m_specular_transmittance = props.get_texture<Texture>("specular_transmittance", 1.f);
+            m_specular_transmittance = props.get_surface_field<Field>("specular_transmittance", 1.f);
 
         // Specifies the internal index of refraction at the interface
         ScalarFloat int_ior = lookup_ior(props, "int_ior", "bk7");
@@ -203,10 +203,10 @@ public:
             if (props.has_property("alpha"))
                 Throw("Microfacet model: please specify"
                       "either 'alpha' or 'alpha_u'/'alpha_v'.");
-            m_alpha_u = props.get_unbounded_texture<Texture>("alpha_u");
-            m_alpha_v = props.get_unbounded_texture<Texture>("alpha_v");
+            m_alpha_u = props.get_unbounded_surface_field<Field>("alpha_u");
+            m_alpha_v = props.get_unbounded_surface_field<Field>("alpha_v");
         } else {
-            m_alpha_u = m_alpha_v = props.get_unbounded_texture<Texture>("alpha", 0.1f);
+            m_alpha_u = m_alpha_v = props.get_unbounded_surface_field<Field>("alpha", 0.1f);
         }
 
         BSDFFlags extra = (m_alpha_u != m_alpha_v) ? BSDFFlags::Anisotropic : BSDFFlags(0);
@@ -633,10 +633,10 @@ public:
 
     MI_DECLARE_CLASS(RoughDielectric)
 private:
-    ref<Texture> m_specular_reflectance;
-    ref<Texture> m_specular_transmittance;
+    ref<Field> m_specular_reflectance;
+    ref<Field> m_specular_transmittance;
     MicrofacetType m_type;
-    ref<Texture> m_alpha_u, m_alpha_v;
+    ref<Field> m_alpha_u, m_alpha_v;
     Float m_eta, m_inv_eta;
     bool m_sample_visible;
 

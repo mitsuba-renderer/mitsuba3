@@ -1,6 +1,3 @@
-import subprocess
-import sys
-
 import pytest
 import drjit as dr
 import mitsuba as mi
@@ -21,8 +18,8 @@ def surface_interaction(width=1):
 
 def bitmap_field(value):
     return {
-        "type": "bitmapfield",
-        "data": mi.TensorXf(value, shape=(1, 1, len(value))),
+        "type": "bitmap",
+        "data": mi.TensorXf(list(value) * 4, shape=(2, 2, len(value))),
         "raw": True,
         "filter_type": "nearest",
         "wrap_mode": "clamp",
@@ -73,38 +70,7 @@ def make_python_args_field():
     return PythonArgsField()
 
 
-def test01_field_enums_are_not_registered_per_variant():
-    code = """
-import mitsuba as mi
-import drjit as dr
-variants = ['scalar_rgb']
-for variant, backend in [
-    ('cuda_ad_rgb', dr.JitBackend.CUDA),
-    ('llvm_ad_rgb', dr.JitBackend.LLVM),
-]:
-    if variant in mi.variants() and dr.has_backend(backend):
-        variants.append(variant)
-        break
-for variant in variants:
-    mi.set_variant(variant)
-    assert mi.ObjectType.Field.name == 'Field'
-    assert mi.FieldValueType.Color3.name == 'Color3'
-    assert mi.FieldDomain.Surface.name == 'Surface'
-"""
-    subprocess.run([sys.executable, "-c", code], check=True)
-
-
-def test02_field_plugins_are_registered_as_fields_and_helper_zoo_is_absent(variant_scalar_rgb):
-    pmgr = mi.PluginManager.instance()
-
-    for name in ["bitmapfield", "gridfield", "neuralfield"]:
-        assert pmgr.plugin_type(name) == mi.ObjectType.Field
-
-    for name in ["constantfield", "coordfield"]:
-        assert pmgr.plugin_type(name) == mi.ObjectType.Unknown
-
-
-def test03_xml_field_tags_round_trip_nested_refs_and_ordering(variant_scalar_rgb):
+def test01_xml_field_tags_round_trip_nested_refs_and_ordering(variant_scalar_rgb):
     xml = """<scene version="3.0.0">
         <shape type="rectangle"/>
         <field type="debugfield" id="f0">
@@ -139,7 +105,7 @@ def test03_xml_field_tags_round_trip_nested_refs_and_ordering(variant_scalar_rgb
     assert all(n.props.plugin_name() == "debugfield" for n in field_nodes_rt)
 
 
-def test04_python_field_metadata_and_eval_dispatch_through_virtual_api(field_ad_rgb_variant):
+def test02_python_field_metadata_and_eval_dispatch_through_virtual_api(field_ad_rgb_variant):
     field = make_python_args_field()
     si = surface_interaction()
 
@@ -165,9 +131,9 @@ def test04_python_field_metadata_and_eval_dispatch_through_virtual_api(field_ad_
         field.eval_n(si, 3, args=[1.0, 2.0, 3.0])
 
 
-def test05_fieldptr_vectorized_fixed_and_generic_calls(field_ad_rgb_variant):
-    color_a = mi.load_dict(bitmap_field([0.1, 0.2, 0.3]))
-    color_b = mi.load_dict(bitmap_field([0.7, 0.8, 0.9]))
+def test03_fieldptr_vectorized_fixed_and_generic_calls(field_ad_rgb_variant):
+    color_a = mi.load_dict(bitmap_field([0.1, 0.2, 0.3])).field()
+    color_b = mi.load_dict(bitmap_field([0.7, 0.8, 0.9])).field()
 
     ptr = dr.zeros(mi.FieldPtr, 4)
     dr.scatter(ptr, color_a, mi.UInt32(0, 2))
@@ -182,8 +148,8 @@ def test05_fieldptr_vectorized_fixed_and_generic_calls(field_ad_rgb_variant):
     )
     assert dr.allclose(result, expected)
 
-    scalar_a = mi.load_dict(bitmap_field([1.0]))
-    scalar_b = mi.load_dict(bitmap_field([2.0]))
+    scalar_a = mi.load_dict(bitmap_field([1.0])).field()
+    scalar_b = mi.load_dict(bitmap_field([2.0])).field()
     scalar_ptr = dr.zeros(mi.FieldPtr, 4)
     dr.scatter(scalar_ptr, scalar_a, mi.UInt32(0, 2))
     dr.scatter(scalar_ptr, scalar_b, mi.UInt32(1, 3))

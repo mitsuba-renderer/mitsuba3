@@ -253,7 +253,7 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Shape : public JitObject<Shape<Float, Spectrum>> {
 public:
-    MI_IMPORT_TYPES(BSDF, Medium, Emitter, Sensor, MeshAttribute, Texture)
+    MI_IMPORT_TYPES(Field, BSDF, Medium, Emitter, Sensor, MeshAttribute, Texture)
 
     // Use 32 bit indices to keep track of indices to conserve memory
     using ScalarIndex = uint32_t;
@@ -712,7 +712,7 @@ public:
     virtual Float surface_area() const;
 
     /**
-     * \brief Add a texture attribute with the given \c name.
+     * \brief Add a field-backed texture attribute with the given \c name.
      *
      * If an attribute with the same name already exists, it is replaced.
      *
@@ -721,17 +721,17 @@ public:
      *
      * \param name
      *     Name of the attribute
-     * \param texture
-     *     Texture to store. The dimensionality of the attribute
-     *     is simply the channel count of the texture.
+     * \param field
+     *     Surface-compatible field to store. The dimensionality of the
+     *     attribute is simply the channel count of the field.
      */
-    virtual void add_texture_attribute(std::string_view name, Texture *texture);
+    virtual void add_texture_attribute(std::string_view name, Field *field);
 
     /// Return the texture attribute associated with \c name.
-    Texture *texture_attribute(std::string_view name);
+    Field *texture_attribute(std::string_view name);
 
     /// Return the texture attribute associated with \c name.
-    const Texture *texture_attribute(std::string_view name) const;
+    const Field *texture_attribute(std::string_view name) const;
 
     /**
      * \brief Remove a texture texture with the given \c name.
@@ -771,7 +771,7 @@ public:
     /**
      * \brief Monochromatic evaluation of a shape attribute at the given surface interaction
      *
-     * This function differs from \ref eval_attribute() in that it provided raw access to
+     * This function differs from \ref eval_attribute() in that it provides raw access to
      * scalar intensity/reflectance values without any color processing (e.g.
      * spectral upsampling).
      *
@@ -782,7 +782,7 @@ public:
      *     Surface interaction associated with the query
      *
      * \return
-     *     An scalar intensity or reflectance value
+     *     A scalar intensity or reflectance value
      */
     virtual Float eval_attribute_1(std::string_view name,
                                    const SurfaceInteraction3f &si,
@@ -791,7 +791,7 @@ public:
     /**
      * \brief Trichromatic evaluation of a shape attribute at the given surface interaction
      *
-     * This function differs from \ref eval_attribute() in that it provided raw access to
+     * This function differs from \ref eval_attribute() in that it provides raw access to
      * RGB intensity/reflectance values without any additional color processing
      * (e.g. RGB-to-spectral upsampling).
      *
@@ -1054,7 +1054,7 @@ protected:
     /// Sampling weight (proportional to scene)
     float m_silhouette_sampling_weight;
 
-    tsl::robin_map<std::string, ref<Texture>, std::hash<std::string_view>,
+    tsl::robin_map<std::string, ref<Field>, std::hash<std::string_view>,
                    std::equal_to<>> m_texture_attributes;
 
     field<AffineTransform4f, ScalarAffineTransform4f> m_to_world;

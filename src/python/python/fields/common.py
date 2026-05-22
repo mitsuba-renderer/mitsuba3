@@ -170,7 +170,11 @@ def _make_drjit_feature_field(
             return mi.FieldValueType.Features
 
         def domain(self):
-            return mi.FieldDomain.SurfaceAndInteraction
+            return (
+                mi.FieldDomain.Surface
+                if self._input_dim == 2
+                else mi.FieldDomain.SurfaceAndInteraction
+            )
 
         def out_dim(self):
             return self._out_dim

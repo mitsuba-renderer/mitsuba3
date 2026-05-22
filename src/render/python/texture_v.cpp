@@ -1,21 +1,23 @@
-#include <nanobind/nanobind.h> // Needs to be first, to get `ref<T>` caster
+#include <nanobind/nanobind.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/python/python.h>
 #include <mitsuba/core/properties.h>
 #include <nanobind/trampoline.h>
-#include <nanobind/stl/string.h>
 #include <nanobind/stl/pair.h>
+#include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 #include <drjit/python.h>
 
 /// Trampoline for derived types implemented in Python
-MI_VARIANT class PyTexture : public Texture<Float, Spectrum> {
+MI_VARIANT class PyTexture : public SurfaceField<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(Texture)
-    NB_TRAMPOLINE(Texture, 17);
+    MI_IMPORT_TYPES(SurfaceField)
+    using BaseField = mitsuba::SurfaceField<Float, Spectrum>;
 
-    PyTexture(const Properties &props) : Texture(props) {}
+    NB_TRAMPOLINE(SurfaceField, 20);
+
+    PyTexture(const Properties &props) : BaseField(props) { }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si,
                              Mask active = true) const override {
@@ -26,12 +28,12 @@ public:
     sample_spectrum(const SurfaceInteraction3f &si, const Wavelength &sample,
                     Mask active = true) const override {
         using Return = std::pair<Wavelength, UnpolarizedSpectrum>;
-        NB_OVERRIDE_PURE(sample_spectrum, si, sample, active);
+        NB_OVERRIDE(sample_spectrum, si, sample, active);
     }
 
     Wavelength pdf_spectrum(const SurfaceInteraction3f &si,
                             Mask active = true) const override {
-        NB_OVERRIDE_PURE(pdf_spectrum, si, active);
+        NB_OVERRIDE(pdf_spectrum, si, active);
     }
 
     std::pair<Point2f, Float>
@@ -46,25 +48,25 @@ public:
 
     Float eval_1(const SurfaceInteraction3f &si,
                  Mask active = true) const override {
-        NB_OVERRIDE_PURE(eval_1, si, active);
+        NB_OVERRIDE(eval_1, si, active);
     }
 
     Vector2f eval_1_grad(const SurfaceInteraction3f &si,
                          Mask active = true) const override {
-        NB_OVERRIDE_PURE(eval_1_grad, si, active);
+        NB_OVERRIDE(eval_1_grad, si, active);
     }
 
     Color3f eval_3(const SurfaceInteraction3f &si,
                    Mask active = true) const override {
-        NB_OVERRIDE_PURE(eval_3, si, active);
+        NB_OVERRIDE(eval_3, si, active);
     }
 
     Float mean() const override {
-        NB_OVERRIDE_PURE(mean);
+        NB_OVERRIDE(mean);
     }
 
     ScalarFloat max() const override {
-        NB_OVERRIDE_PURE(max);
+        NB_OVERRIDE(max);
     }
 
     ScalarVector2i resolution() const override {
@@ -72,7 +74,7 @@ public:
     }
 
     ScalarFloat spectral_resolution() const override {
-        NB_OVERRIDE_PURE(spectral_resolution);
+        NB_OVERRIDE(spectral_resolution);
     }
 
     ScalarVector2f wavelength_range() const override {
@@ -95,7 +97,7 @@ public:
         NB_OVERRIDE(parameters_changed, keys);
     }
 
-    DR_TRAMPOLINE_TRAVERSE_CB(Texture)
+    DR_TRAMPOLINE_TRAVERSE_CB(SurfaceField)
 };
 
 template <typename Ptr, typename Cls> void bind_texture_generic(Cls &cls) {
@@ -115,29 +117,27 @@ template <typename Ptr, typename Cls> void bind_texture_generic(Cls &cls) {
              "si"_a, "active"_a = true, D(Texture, eval_3))
         .def("sample_spectrum",
              [](Ptr texture, const SurfaceInteraction3f &si,
-                const Wavelength &sample,
-                Mask active) {
+                const Wavelength &sample, Mask active) {
                  return texture->sample_spectrum(si, sample, active);
-             }, "si"_a, "sample"_a, "active"_a = true,
+             },
+             "si"_a, "sample"_a, "active"_a = true,
              D(Texture, sample_spectrum))
         .def("pdf_spectrum",
              [](Ptr texture, const SurfaceInteraction3f &si,
                 Mask active) {
                  return texture->pdf_spectrum(si, active);
-             }, "si"_a, "active"_a = true,
-             D(Texture, pdf_spectrum))
+             },
+             "si"_a, "active"_a = true, D(Texture, pdf_spectrum))
         .def("sample_position",
-             [](Ptr texture, const Point2f &sample,
-                Mask active) {
+             [](Ptr texture, const Point2f &sample, Mask active) {
                  return texture->sample_position(sample, active);
-             }, "sample"_a, "active"_a = true,
-             D(Texture, sample_position))
+             },
+             "sample"_a, "active"_a = true, D(Texture, sample_position))
         .def("pdf_position",
-             [](Ptr texture, const Point2f &p,
-                Mask active) {
+             [](Ptr texture, const Point2f &p, Mask active) {
                  return texture->pdf_position(p, active);
-             }, "p"_a, "active"_a = true,
-             D(Texture, pdf_position))
+             },
+             "p"_a, "active"_a = true, D(Texture, pdf_position))
         .def("eval_1_grad",
              [](Ptr texture, const SurfaceInteraction3f &si,
                 Mask active) { return texture->eval_1_grad(si, active); },
@@ -154,25 +154,30 @@ template <typename Ptr, typename Cls> void bind_texture_generic(Cls &cls) {
 }
 
 MI_PY_EXPORT(Texture) {
-    MI_PY_IMPORT_TYPES(Texture, TexturePtr)
+    MI_PY_IMPORT_TYPES(Field, FieldPtr, SurfaceField)
     using PyTexture = PyTexture<Float, Spectrum>;
     using Properties = mitsuba::Properties;
 
-    auto texture = MI_PY_TRAMPOLINE_CLASS(PyTexture, Texture, Object)
+    auto texture = nb::class_<SurfaceField, Field, PyTexture>(
+        m, "Texture", D(Texture))
         .def(nb::init<const Properties &>(), "props"_a)
-        .def_static("D65", nb::overload_cast<ScalarFloat>(&Texture::D65), "scale"_a = 1.f)
-        .def_method(Texture, resolution)
-        .def_method(Texture, spectral_resolution)
-        .def_method(Texture, wavelength_range)
-        .def("__repr__", &Texture::to_string);
+        .def_static("D65",
+            nb::overload_cast<ScalarFloat>(&SurfaceField::D65),
+            "scale"_a = 1.f)
+        .def_static("D65",
+            nb::overload_cast<ref<Field>>(&SurfaceField::D65),
+            "field"_a)
+        .def("resolution", &SurfaceField::resolution, D(Texture, resolution))
+        .def("spectral_resolution", &SurfaceField::spectral_resolution,
+             D(Texture, spectral_resolution))
+        .def("wavelength_range", &SurfaceField::wavelength_range,
+             D(Texture, wavelength_range))
+        .def("__repr__", &SurfaceField::to_string);
 
-    bind_texture_generic<Texture *>(texture);
+    bind_texture_generic<SurfaceField *>(texture);
 
-    if constexpr (dr::is_array_v<TexturePtr>) {
-        dr::ArrayBinding b;
-        auto texture_ptr = dr::bind_array_t<TexturePtr>(b, m, "TexturePtr");
-        bind_texture_generic<TexturePtr>(texture_ptr);
-    }
+    if constexpr (dr::is_array_v<FieldPtr>)
+        m.attr("TexturePtr") = m.attr("FieldPtr");
 
     drjit::bind_traverse(texture);
 }

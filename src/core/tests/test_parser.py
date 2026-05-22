@@ -2021,8 +2021,12 @@ def test62_transform_relocate(variant_scalar_rgb, tmp_path):
     # Create fake texture files
     texture1 = source_dir / "wood.jpg"
     texture2 = source_dir / "metal.png"
+    field_texture = source_dir / "field_reflectance.exr"
+    field_volume = source_dir / "density.vol"
     texture1.write_text("fake texture content")
     texture2.write_text("fake texture content 2")
+    field_texture.write_text("fake field texture content")
+    field_volume.write_text("fake field volume content")
 
     # Create fake mesh files
     mesh1 = source_dir / "bunny.ply"
@@ -2070,6 +2074,15 @@ def test62_transform_relocate(variant_scalar_rgb, tmp_path):
         <shape type="ply" name="bunny2_shape">
             <string name="filename" value="{xml_escape(duplicate_mesh2)}"/>
         </shape>
+
+        <!-- Field plugins should follow their default role relocation policy. -->
+        <field type="bitmap" name="field_tex">
+            <string name="filename" value="{xml_escape(field_texture)}"/>
+        </field>
+
+        <field type="gridvolume" name="field_volume">
+            <string name="filename" value="{xml_escape(field_volume)}"/>
+        </field>
     </scene>
     '''
 
@@ -2084,6 +2097,8 @@ def test62_transform_relocate(variant_scalar_rgb, tmp_path):
     # Verify files exist before relocation
     assert texture1.exists()
     assert texture2.exists()
+    assert field_texture.exists()
+    assert field_volume.exists()
     assert mesh1.exists()
     assert mesh2.exists()
     assert duplicate_mesh2.exists()
@@ -2094,15 +2109,19 @@ def test62_transform_relocate(variant_scalar_rgb, tmp_path):
     # Check that subdirectories were created
     textures_dir = output_dir / "textures"
     meshes_dir = output_dir / "meshes"
+    assets_dir = output_dir / "assets"
 
     assert textures_dir.exists()
     assert meshes_dir.exists()
+    assert assets_dir.exists()
 
     # Check that files were copied to correct directories
     assert (textures_dir / "wood.jpg").exists()
     assert (textures_dir / "metal.png").exists()
+    assert (textures_dir / "field_reflectance.exr").exists()
     assert (meshes_dir / "bunny.ply").exists()
     assert (meshes_dir / "teapot.obj").exists()
+    assert (assets_dir / "density.vol").exists()
 
     # Check that duplicate filename was handled (should have (1) suffix)
     assert (meshes_dir / "bunny (1).ply").exists()
@@ -2110,8 +2129,12 @@ def test62_transform_relocate(variant_scalar_rgb, tmp_path):
     # Verify content was copied correctly
     assert (textures_dir / "wood.jpg").read_text() == "fake texture content"
     assert (textures_dir / "metal.png").read_text() == "fake texture content 2"
+    assert ((textures_dir / "field_reflectance.exr").read_text() ==
+            "fake field texture content")
     assert (meshes_dir / "bunny.ply").read_text() == "fake mesh content"
     assert (meshes_dir / "teapot.obj").read_text() == "fake mesh content 2"
+    assert ((assets_dir / "density.vol").read_text() ==
+            "fake field volume content")
     assert (meshes_dir / "bunny (1).ply").read_text() == "different bunny content"
 
     # Verify that properties were updated with relative paths
@@ -2121,16 +2144,18 @@ def test62_transform_relocate(variant_scalar_rgb, tmp_path):
         if "filename" in node.props:
             updated_filenames.append(node.props.get("filename"))
 
-    # Should have 6 filename properties total
-    assert len(updated_filenames) == 6
+    # Should have 8 filename properties total
+    assert len(updated_filenames) == 8
 
     # Check that all paths were updated to relative paths
     expected_paths = {
         "textures/wood.jpg",    # wood texture (appears twice - texture and emitter)
         "textures/metal.png",   # metal texture
+        "textures/field_reflectance.exr",  # bitmap field keeps texture policy
         "meshes/bunny.ply",     # bunny mesh
         "meshes/teapot.obj",    # teapot mesh
-        "meshes/bunny (1).ply"   # duplicate bunny mesh
+        "meshes/bunny (1).ply",  # duplicate bunny mesh
+        "assets/density.vol",    # gridvolume field keeps volume/assets policy
     }
 
     # Verify all expected relative paths are present
@@ -2381,7 +2406,6 @@ def test65_tensorxf_lookup():
             super().__init__(props)
             self.foo = props.get('foo')
             assert type(self.foo) is mi.TensorXf
-            print(self.foo)
 
     mi.register_emitter('dummy_emitter', lambda props: DummyEmitter(props))
 

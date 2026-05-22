@@ -59,10 +59,10 @@ template <typename Float, typename Spectrum>
 class CircularPolarizer final : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Field, Texture)
 
     CircularPolarizer(const Properties &props) : Base(props) {
-        m_transmittance = props.get_texture<Texture>("transmittance", 1.f);
+        m_transmittance = props.get_surface_field<Field>("transmittance", 1.f);
         m_left_handed = props.get<bool>("left_handed", false);
 
         m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null;
@@ -164,7 +164,7 @@ public:
 
     MI_DECLARE_CLASS(CircularPolarizer)
 private:
-    ref<Texture> m_transmittance;
+    ref<Field> m_transmittance;
     bool m_left_handed;
 
     MI_TRAVERSE_CB(Base, m_transmittance)

@@ -265,7 +265,7 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB BSDF : public JitObject<BSDF<Float, Spectrum>> {
 public:
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Field, Texture)
 
     /**
      * \brief Importance sample the BSDF model
@@ -503,7 +503,7 @@ public:
     /**
      * \brief Monochromatic evaluation of a BSDF attribute at the given surface interaction
      *
-     * This function differs from \ref eval_attribute() in that it provided raw access to
+     * This function differs from \ref eval_attribute() in that it provides raw access to
      * scalar intensity/reflectance values without any color processing (e.g.
      * spectral upsampling).
      *
@@ -514,7 +514,7 @@ public:
      *     Surface interaction associated with the query
      *
      * \return
-     *     An scalar intensity or reflectance value
+     *     A scalar intensity or reflectance value
      */
     virtual Float eval_attribute_1(const std::string &name,
                                    const SurfaceInteraction3f &si,
@@ -523,7 +523,7 @@ public:
     /**
      * \brief Trichromatic evaluation of a BSDF attribute at the given surface interaction
      *
-     * This function differs from \ref eval_attribute() in that it provided raw access to
+     * This function differs from \ref eval_attribute() in that it provides raw access to
      * RGB intensity/reflectance values without any additional color processing
      * (e.g. RGB-to-spectral upsampling).
      *
@@ -534,7 +534,7 @@ public:
      *     Surface interaction associated with the query
      *
      * \return
-     *     An trichromatic intensity or reflectance value
+     *     A trichromatic intensity or reflectance value
      */
     virtual Color3f eval_attribute_3(const std::string &name,
                                      const SurfaceInteraction3f &si,

@@ -79,7 +79,10 @@ public:
     }
 
     FieldValueType out_type() const override { return FieldValueType::Features; }
-    FieldDomain domain() const override { return FieldDomain::SurfaceAndInteraction; }
+    FieldDomain domain() const override {
+        return m_input_dim == 2 ? FieldDomain::Surface
+                                : FieldDomain::SurfaceAndInteraction;
+    }
     uint32_t out_dim() const override { return m_out_dim; }
     uint32_t args_dim() const override { return 0; }
 

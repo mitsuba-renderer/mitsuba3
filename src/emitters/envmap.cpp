@@ -98,7 +98,7 @@ template <typename Float, typename Spectrum>
 class EnvironmentMapEmitter final : public Emitter<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Emitter, m_flags, m_to_world)
-    MI_IMPORT_TYPES(Scene, Shape, Texture)
+    MI_IMPORT_TYPES(Field, Scene, Shape, Texture)
 
     using Warp = Hierarchical2D<Float, 0>;
 
@@ -591,7 +591,7 @@ protected:
     BoundingSphere3f m_bsphere;
     TensorXf m_data;
     Warp m_warp;
-    ref<Texture> m_d65;
+    ref<Field> m_d65;
     Float m_scale;
 
     MI_TRAVERSE_CB(Base, m_bsphere, m_data, m_warp, m_d65, m_scale)
