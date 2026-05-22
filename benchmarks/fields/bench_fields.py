@@ -601,6 +601,15 @@ def bitmap_field_config(ctx: BenchmarkContext) -> dict[str, Any]:
     return config
 
 
+def field_texture_config(ctx: BenchmarkContext) -> dict[str, Any]:
+    return {
+        "type": "fieldtexture",
+        "field": bitmap_field_config(ctx),
+        "mean_value": 0.5,
+        "max_value": 0.5,
+    }
+
+
 def grid_field_config(ctx: BenchmarkContext) -> dict[str, Any]:
     filter_type = "trilinear" if ctx.config.filter_type == "bilinear" else ctx.config.filter_type
     config: dict[str, Any] = {
@@ -614,6 +623,14 @@ def grid_field_config(ctx: BenchmarkContext) -> dict[str, Any]:
     else:
         config["data"] = tensor3(ctx.config.channels)
     return config
+
+
+def field_volume_config(ctx: BenchmarkContext) -> dict[str, Any]:
+    return {
+        "type": "fieldvolume",
+        "field": grid_field_config(ctx),
+        "max_value": 0.5,
+    }
 
 
 def encoding_config(ctx: BenchmarkContext) -> dict[str, Any]:
@@ -698,6 +715,45 @@ def case_bitmap_eval(ctx: BenchmarkContext) -> Any:
     return call_bitmap_eval(texture, si, ctx.config.method, active_mask(ctx), ctx.config.channels)
 
 
+def call_fieldtexture_eval(texture, si, method: str, active, channels: int):
+    if method == "eval":
+        return texture.eval(si, active)
+    if method == "eval_1":
+        return texture.eval_1(si, active)
+    if method == "eval_3":
+        return texture.eval_3(si, active)
+    if method == "mean":
+        return texture.mean()
+    if method == "max":
+        return texture.max()
+    if method == "resolution":
+        return texture.resolution()
+    if method == "all":
+        values = [
+            texture.eval(si, active),
+            texture.eval_1(si, active),
+        ]
+        if channels == 3:
+            values.append(texture.eval_3(si, active))
+        values.extend([
+            texture.mean(),
+            texture.max(),
+            texture.resolution(),
+        ])
+        return values
+    raise ValueError(f"Unsupported fieldtexture eval method: {method}")
+
+
+def case_fieldtexture_eval(ctx: BenchmarkContext) -> Any:
+    texture, si = ctx.get("fieldtexture_eval", lambda: (
+        mi.load_dict(field_texture_config(ctx)),
+        make_uvs(ctx),
+    ))
+    return call_fieldtexture_eval(
+        texture, si, ctx.config.method, active_mask(ctx), ctx.config.channels
+    )
+
+
 def case_bitmap_sampling(ctx: BenchmarkContext) -> Any:
     texture, si, sample = ctx.get("bitmap_sampling", lambda: (
         mi.load_dict(bitmap_texture_config(ctx)),
@@ -780,6 +836,57 @@ def case_grid_volume_eval(ctx: BenchmarkContext) -> Any:
         return values
     else:
         raise ValueError(f"Unsupported grid volume method: {method}")
+
+
+def case_fieldvolume_eval(ctx: BenchmarkContext) -> Any:
+    volume, it = ctx.get("fieldvolume_eval", lambda: (
+        mi.load_dict(field_volume_config(ctx)),
+        make_positions(ctx),
+    ))
+    active = active_mask(ctx)
+    method = ctx.config.method
+    if method == "eval":
+        return volume.eval(it, active)
+    elif method == "eval_1":
+        return volume.eval_1(it, active)
+    elif method == "eval_3":
+        return volume.eval_3(it, active)
+    elif method == "eval_6":
+        return volume.eval_6(it, active)
+    elif method == "eval_n":
+        return volume.eval_n(it, active)
+    elif method == "max_per_channel":
+        return volume.max_per_channel()
+    elif method == "max":
+        return volume.max()
+    elif method == "bbox":
+        return volume.bbox()
+    elif method == "resolution":
+        return volume.resolution()
+    elif method == "channel_count":
+        return volume.channel_count()
+    elif method == "all":
+        values = []
+        if ctx.config.channels == 1:
+            values.extend([
+                volume.eval(it, active),
+                volume.eval_1(it, active),
+            ])
+        elif ctx.config.channels == 3:
+            values.append(volume.eval_3(it, active))
+        elif ctx.config.channels == 6:
+            values.append(volume.eval_6(it, active))
+        values.extend([
+            volume.eval_n(it, active),
+            volume.max_per_channel(),
+            volume.max(),
+            volume.bbox(),
+            volume.resolution(),
+            volume.channel_count(),
+        ])
+        return values
+    else:
+        raise ValueError(f"Unsupported fieldvolume method: {method}")
 
 
 def call_field_fixed(field, interaction_record, method: str, active):
@@ -899,7 +1006,9 @@ def case_neuralbsdf_eval(ctx: BenchmarkContext) -> Any:
 CASES: dict[str, CaseFn] = {
     "bitmap_eval": case_bitmap_eval,
     "bitmap_sampling": case_bitmap_sampling,
+    "fieldtexture_eval": case_fieldtexture_eval,
     "grid_volume_eval": case_grid_volume_eval,
+    "fieldvolume_eval": case_fieldvolume_eval,
     "field_fixed_eval": case_field_fixed_eval,
     "field_generic_eval": case_field_generic_eval,
     "neural_field_inference": case_neural_field_inference,
@@ -911,7 +1020,9 @@ CASES: dict[str, CaseFn] = {
 CASE_INFO = {
     "bitmap_eval": CaseInfo("bitmap_eval", "texture", "Bitmap eval/eval_1/eval_3/eval_1_grad baseline"),
     "bitmap_sampling": CaseInfo("bitmap_sampling", "texture", "Bitmap position and spectrum sampling baseline"),
+    "fieldtexture_eval": CaseInfo("fieldtexture_eval", "texture", "Field-backed texture adapter evaluation"),
     "grid_volume_eval": CaseInfo("grid_volume_eval", "volume", "Grid volume fixed and variable channel baseline"),
+    "fieldvolume_eval": CaseInfo("fieldvolume_eval", "volume", "Field-backed volume adapter evaluation"),
     "field_fixed_eval": CaseInfo("field_fixed_eval", "field", "Fixed-output field evaluation"),
     "field_generic_eval": CaseInfo("field_generic_eval", "field", "Dynamic field evaluation with optional arguments"),
     "neural_field_inference": CaseInfo("neural_field_inference", "neural", "Neural field inference"),
