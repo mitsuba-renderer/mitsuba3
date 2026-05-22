@@ -97,13 +97,12 @@ inline float lookup_ior(const Properties &props, const std::string &param_name,
     }
 }
 
-template <typename Spectrum, typename Texture>
-ref<Texture> ior_from_file(std::string_view filename) {
+template <typename Spectrum, typename FieldT>
+ref<FieldT> ior_from_file(std::string_view filename) {
     using Float = double;
     std::vector<Float> wavelengths, values;
     spectrum_from_file(fs::path(filename), wavelengths, values);
 
-    ref<Texture> tex;
     Properties props;
 
     if (is_spectral_v<Spectrum>) {
@@ -123,14 +122,20 @@ ref<Texture> ior_from_file(std::string_view filename) {
         }
     }
 
-    return PluginManager::instance()->create_object<Texture>(props);
+    using FieldType = typename FieldT::FieldType;
+    ref<Object> object = create_compatible_object_for_variant(
+        props, FieldT::Variant, ObjectType::Texture);
+    FieldType *field = dynamic_cast<FieldType *>(object.get());
+    if (!field)
+        Throw("ior_from_file(): expected a texture-compatible field.");
+    return ref<FieldType>(field);
 }
 
-template <typename Spectrum, typename Texture>
-std::pair<ref<Texture>, ref<Texture>> complex_ior_from_file(std::string_view material) {
+template <typename Spectrum, typename FieldT>
+std::pair<ref<FieldT>, ref<FieldT>> complex_ior_from_file(std::string_view material) {
     return {
-        ior_from_file<Spectrum, Texture>(std::string("data/ior/") + std::string(material) + ".eta.spd"),
-        ior_from_file<Spectrum, Texture>(std::string("data/ior/") + std::string(material) + ".k.spd")
+        ior_from_file<Spectrum, FieldT>(std::string("data/ior/") + std::string(material) + ".eta.spd"),
+        ior_from_file<Spectrum, FieldT>(std::string("data/ior/") + std::string(material) + ".k.spd")
     };
 }
 

@@ -60,7 +60,7 @@ template <typename Float, typename Spectrum>
 class PointLight final : public Emitter<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Emitter, m_flags, m_medium, m_needs_sample_3, m_to_world)
-    MI_IMPORT_TYPES(Scene, Shape, Texture)
+    MI_IMPORT_TYPES(Field, Scene, Shape, Texture)
 
     PointLight(const Properties &props) : Base(props) {
         if (props.has_property("position")) {
@@ -75,7 +75,7 @@ public:
 
         dr::make_opaque(m_position);
 
-        m_intensity = props.get_emissive_texture<Texture>("intensity", 1.f);
+        m_intensity = props.get_emissive_surface_field<Field>("intensity", 1.f);
 
         if (m_intensity->is_spatially_varying())
             Throw("Expected a non-spatially varying intensity spectra!");
@@ -204,7 +204,7 @@ public:
 
     MI_DECLARE_CLASS(PointLight)
 private:
-    ref<Texture> m_intensity;
+    ref<Field> m_intensity;
     field<Point3f> m_position;
 
     MI_TRAVERSE_CB(Base, m_intensity, m_position)

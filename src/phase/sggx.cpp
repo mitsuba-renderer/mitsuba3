@@ -57,11 +57,11 @@ class SGGXPhaseFunction final : public PhaseFunction<Float, Spectrum> {
 
 public:
     MI_IMPORT_BASE(PhaseFunction, m_flags)
-    MI_IMPORT_TYPES(PhaseFunctionContext, Volume)
+    MI_IMPORT_TYPES(Field, PhaseFunctionContext, Volume)
 
     SGGXPhaseFunction(const Properties &props) : Base(props) {
         // m_diffuse    = props.get<bool>("diffuse", false);
-        m_ndf_params = props.get<ref<Volume>>("S");
+        m_ndf_params = props.get_volume_field<Field>("S");
         m_flags =
             PhaseFunctionFlags::Anisotropic | PhaseFunctionFlags::Microflake;
     }
@@ -138,7 +138,7 @@ public:
     MI_DECLARE_CLASS(SGGXPhaseFunction)
 private:
     // bool m_diffuse;
-    ref<Volume> m_ndf_params;
+    ref<Field> m_ndf_params;
 };
 
 MI_EXPORT_PLUGIN(SGGXPhaseFunction)

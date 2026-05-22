@@ -72,12 +72,12 @@ whose reflectance is specified using the ``vertex_color`` attribute of that mesh
  */
 
 template <typename Float, typename Spectrum>
-class MeshAttribute final : public Texture<Float, Spectrum> {
+class MeshAttribute final : public SurfaceField<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(SurfaceField, Texture)
 
     MeshAttribute(const Properties &props)
-    : Texture(props) {
+    : SurfaceField(props) {
         m_name = props.get<std::string>("name");
         if (m_name.find("vertex_") == std::string::npos && m_name.find("face_") == std::string::npos)
             Throw("Invalid mesh attribute name: must be start with either \"vertex_\" or \"face_\" but was \"%s\".", m_name.c_str());

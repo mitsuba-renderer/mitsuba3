@@ -7,6 +7,9 @@
 #include <mitsuba/core/hash.h>
 #include <mitsuba/core/config.h>
 #include <mitsuba/render/scene.h>
+#include <mitsuba/render/field.h>
+#include <mitsuba/render/texture.h>
+#include <mitsuba/render/volume.h>
 #include <tsl/robin_map.h>
 #include <mutex>
 

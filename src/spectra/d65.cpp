@@ -71,21 +71,24 @@ product isn't required in this case.
  */
 
 template <typename Float, typename Spectrum>
-class D65Spectrum final : public Texture<Float, Spectrum> {
+class D65Spectrum final : public SurfaceField<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Texture)
-    MI_IMPORT_TYPES()
+    MI_IMPORT_BASE(SurfaceField)
+    MI_IMPORT_TYPES(Texture)
+
+    using FieldType = typename Texture::FieldType;
 
     D65Spectrum(const Properties &props) : Base(props) {
         m_scale = props.get<ScalarFloat>("scale", 1.f);
 
         for (auto &prop : props.objects()) {
-            Base *texture = prop.try_get<Base>();
-            if (!texture)
-                Throw("Child object should be a texture object.");
+            ref<Object> object = prop.get<ref<Object>>();
             if (m_nested_texture)
                 Throw("Only a single texture child object can be specified.");
-            m_nested_texture = texture;
+            if (FieldType *field = dynamic_cast<FieldType *>(object.get()))
+                m_nested_texture = field;
+            else
+                Throw("Child object should be a texture object.");
         }
 
         if (props.has_property("color")) {
@@ -125,7 +128,12 @@ public:
                       Properties::Spectrum(std::move(data), (double) MI_CIE_MIN,
                                            (double) MI_CIE_MAX));
 
-        m_d65 = (Base *) PluginManager::instance()->create_object<Base>(props_d65);
+        ref<Object> d65 = create_compatible_object_for_variant(
+            props_d65, Base::Variant, ObjectType::Texture);
+        FieldType *field = dynamic_cast<FieldType *>(d65.get());
+        if (!field)
+            Throw("D65Spectrum: expected a texture-compatible field.");
+        m_d65 = field;
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -144,11 +152,11 @@ public:
     std::vector<ref<Object>> expand() const override {
         if constexpr (is_spectral_v<Spectrum>) {
             if (!m_nested_texture && !m_has_value)
-                return { (Object *) m_d65.get() };
+                return { ref<Object>(const_cast<FieldType *>(m_d65.get())) };
             return { };
         } else {
             if (m_nested_texture)
-                 return { (Object *) m_nested_texture.get() };
+                return { ref<Object>(const_cast<FieldType *>(m_nested_texture.get())) };
 
             Properties props;
             if (m_has_value) {
@@ -160,7 +168,8 @@ public:
                 props.set("value", m_scale);
             }
 
-            return { (Object *) PluginManager::instance()->create_object<Base>(props) };
+            return { create_compatible_object_for_variant(
+                props, Base::Variant, ObjectType::Texture) };
         }
     }
 
@@ -168,9 +177,9 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if constexpr (is_spectral_v<Spectrum>) {
-            UnpolarizedSpectrum d65_val = m_d65->eval(si, active);
+            UnpolarizedSpectrum d65_val = m_d65->eval_spec(si, {}, active);
             if (m_nested_texture)
-                d65_val *= m_nested_texture->eval(si, active);
+                d65_val *= m_nested_texture->eval_spec(si, {}, active);
             else if (m_has_value)
                 d65_val *= srgb_model_eval<UnpolarizedSpectrum>(m_value, si.wavelengths);
             return d65_val;
@@ -190,7 +199,7 @@ public:
                 auto [wav, weight] = m_nested_texture->sample_spectrum(si, sample, active);
                 SurfaceInteraction3f si2(si);
                 si2.wavelengths = wav;
-                return { wav, weight * m_d65->eval(si2, active) };
+                return { wav, weight * m_d65->eval_spec(si2, {}, active) };
             } else {
                 // TODO: better sampling strategy
                 SurfaceInteraction3f si2(si);
@@ -263,7 +272,7 @@ public:
 
     ScalarVector2i resolution() const override {
         if (m_nested_texture)
-            return m_nested_texture->resolution();
+            return m_nested_texture->resolution_2d();
         else
             return Base::resolution();
     }
@@ -314,8 +323,8 @@ public:
     MI_DECLARE_CLASS(D65Spectrum)
 private:
     Color<Float, 3> m_value;
-    ref<Base> m_nested_texture;
-    ref<Base> m_d65;
+    ref<FieldType> m_nested_texture;
+    ref<FieldType> m_d65;
 
     ScalarFloat m_scale;
 

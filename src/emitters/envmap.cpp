@@ -99,7 +99,7 @@ template <typename Float, typename Spectrum>
 class EnvironmentMapEmitter final : public Emitter<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Emitter, m_flags, m_to_world)
-    MI_IMPORT_TYPES(Scene, Shape, Texture)
+    MI_IMPORT_TYPES(Field, Scene, Shape, Texture)
 
     using Warp = Hierarchical2D<Float, 0>;
     using Tex  = dr::Texture<Float, 2>;
@@ -600,7 +600,7 @@ protected:
     Tex m_texture;
     ScalarVector2u m_res;
     Warp m_warp;
-    ref<Texture> m_d65;
+    ref<Field> m_d65;
     Float m_scale;
     bool m_mis_compensation;
 

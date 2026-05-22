@@ -42,8 +42,6 @@ add_subdirectory(samplers)
 add_subdirectory(sensors)
 add_subdirectory(shapes)
 add_subdirectory(spectra)
-add_subdirectory(textures)
-add_subdirectory(volumes)
 set(MI_PLUGIN_TARGETS "${MI_PLUGIN_TARGETS}" PARENT_SCOPE)
 
 # ----------------------------------------------------------

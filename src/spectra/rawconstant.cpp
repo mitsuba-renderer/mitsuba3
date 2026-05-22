@@ -48,14 +48,14 @@ If color-handling is desired, see the :ref:`spectrum-srgb <spectrum-srgb>` plugi
 
 // Actualy ipmlementation, templated over the channel count.
 template <typename Float, typename Spectrum, size_t Channels>
-class RawConstantTextureImpl final : public Texture<Float, Spectrum> {
+class RawConstantTextureImpl final : public SurfaceField<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(SurfaceField, Texture)
     static_assert(Channels == 1 || Channels == 3, "Channels must be 1 or 3.");
     using Value = std::conditional_t<Channels == 1, Float, Vector3f>;
 
     RawConstantTextureImpl(const Properties &props, const Value &value)
-        : Texture(props), m_value(value) {}
+        : SurfaceField(props), m_value(value) {}
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &/*si*/, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
@@ -131,11 +131,11 @@ protected:
 
 // Note: this gets expanded to a `RawConstantTextureImpl` specialized to the channel count.
 template <typename Float, typename Spectrum>
-class RawConstantTexture final : public Texture<Float, Spectrum> {
+class RawConstantTexture final : public SurfaceField<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(SurfaceField, Texture)
 
-    RawConstantTexture(const Properties &props) : Texture(props), m_props(props) {
+    RawConstantTexture(const Properties &props) : SurfaceField(props), m_props(props) {
         if (!props.has_property("value"))
             Throw("RawConstantTexture: missing required parameter \"value\""
                   " (1D `float` or 3D `vector` expected).");

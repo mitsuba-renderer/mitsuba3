@@ -45,11 +45,11 @@ In monochrome modes, this spectrum represents a constant luminance value.
  */
 
 template <typename Float, typename Spectrum>
-class SRGBReflectanceSpectrum final : public Texture<Float, Spectrum> {
+class SRGBReflectanceSpectrum final : public SurfaceField<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(SurfaceField, Texture)
 
-    SRGBReflectanceSpectrum(const Properties &props) : Texture(props) {
+    SRGBReflectanceSpectrum(const Properties &props) : SurfaceField(props) {
         ScalarColor3f color = props.get<ScalarColor3f>("color");
 
         if (dr::any(color < 0 || color > 1) && !props.get<bool>("unbounded", false))
@@ -146,7 +146,7 @@ protected:
 
     Color<Float, ChannelCount> m_value;
 
-    MI_TRAVERSE_CB(Texture, m_value)
+    MI_TRAVERSE_CB(SurfaceField, m_value)
 };
 
 MI_EXPORT_PLUGIN(SRGBReflectanceSpectrum)

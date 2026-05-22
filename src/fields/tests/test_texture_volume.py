@@ -46,6 +46,9 @@ def test01_bitmap_texture_public_surface_does_not_grow_field_args(variant_scalar
     })
     si = make_si()
 
+    assert isinstance(texture, mi.Field)
+    assert texture.field() is texture
+
     texture.eval(si)
     texture.eval_1(si)
     texture.eval_3(si)
@@ -54,7 +57,7 @@ def test01_bitmap_texture_public_surface_does_not_grow_field_args(variant_scalar
     texture.pdf_position(mi.Point2f(0.2, 0.8))
 
     for method in ["eval", "eval_1", "eval_3", "eval_1_grad"]:
-        with pytest.raises(TypeError):
+        with pytest.raises((TypeError, RuntimeError)):
             getattr(texture, method)(si, args=[1.0])
 
 
@@ -82,6 +85,9 @@ def test02_grid_volume_public_surface_does_not_grow_field_args(variant_scalar_rg
     })
     it = make_it()
 
+    assert isinstance(volume6, mi.Field)
+    assert volume6.field() is volume6
+
     volume1.eval(it)
     volume1.eval_1(it)
     volume3.eval_3(it)
@@ -98,30 +104,30 @@ def test02_grid_volume_public_surface_does_not_grow_field_args(variant_scalar_rg
         (volume6, "eval_n"),
         (volume1, "eval_gradient"),
     ]:
-        with pytest.raises(TypeError):
+        with pytest.raises((TypeError, RuntimeError)):
             getattr(volume, method)(it, args=[1.0])
 
 
 def test03_texture_and_volume_do_not_accept_public_field_storage_properties(variant_scalar_rgb):
-    with pytest.raises(RuntimeError, match="bitmapfield|field|unqueried|unexpected|object"):
+    with pytest.raises(RuntimeError, match="storage|unqueried|unexpected|object"):
         mi.load_dict({
             "type": "bitmap",
             "data": constant_bitmap_rgb(),
             "raw": True,
             "storage": {
-                "type": "bitmapfield",
+                "type": "bitmap",
                 "data": constant_bitmap_rgb(),
                 "raw": True,
             },
         })
 
-    with pytest.raises(RuntimeError, match="gridfield|field|unqueried|unexpected|object"):
+    with pytest.raises(RuntimeError, match="storage|unqueried|unexpected|object"):
         mi.load_dict({
             "type": "gridvolume",
             "data": ramp_volume(channels=1),
             "raw": True,
             "storage": {
-                "type": "gridfield",
+                "type": "gridvolume",
                 "data": ramp_volume(channels=1),
                 "raw": True,
             },
@@ -227,10 +233,3 @@ def test07_gridvolume_file_input_and_use_grid_bbox_behavior_is_preserved(variant
             "raw": True,
             "use_grid_bbox": True,
         })
-
-
-def test08_texture_and_volume_keep_plugin_types(variant_scalar_rgb):
-    pmgr = mi.PluginManager.instance()
-
-    assert pmgr.plugin_type("bitmap") == mi.ObjectType.Texture
-    assert pmgr.plugin_type("gridvolume") == mi.ObjectType.Volume

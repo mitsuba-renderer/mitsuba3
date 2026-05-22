@@ -93,13 +93,12 @@ class NormalMap final
 public:
     using Base = PerturbedBSDF<NormalMap<Float, Spectrum>, Float, Spectrum>;
     MI_USING_MEMBERS(m_nested_bsdf)
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Field)
 
     NormalMap(const Properties &props)
         // Tangent-space normals need the mesh to supply a UV-oriented tangent
         : Base(props, (uint32_t) BSDFFlags::NormalMapped) {
-        // TODO: How to assert this is actually a RGBDataTexture?
-        m_normalmap = props.get_texture<Texture>("normalmap");
+        m_normalmap = props.get_surface_field<Field>("normalmap");
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -124,7 +123,7 @@ public:
 
     MI_DECLARE_CLASS(NormalMap)
 protected:
-    ref<Texture> m_normalmap;
+    ref<Field> m_normalmap;
 
     MI_TRAVERSE_CB(Base, m_normalmap)
 };

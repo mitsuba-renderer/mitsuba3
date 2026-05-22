@@ -51,7 +51,7 @@ MI_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props
     m_srf = nullptr;
     if (props.has_property("srf")) {
         if constexpr (is_spectral_v<Spectrum>) {
-            m_srf = props.get_texture<Texture>("srf");
+            m_srf = props.get_surface_field<Field>("srf");
         } else {
             Throw("Sensor(): Spectral Response Function should be used in combination with a"
                   "spectral variant");

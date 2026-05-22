@@ -147,16 +147,16 @@ template <typename Float, typename Spectrum>
 class PolarizedPlastic final : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
-    MI_IMPORT_TYPES(Texture, MicrofacetDistribution)
+    MI_IMPORT_TYPES(Field, Texture, MicrofacetDistribution)
 
     PolarizedPlastic(const Properties &props) : Base(props) {
-        m_diffuse_reflectance = props.get_texture<Texture>("diffuse_reflectance", .5f);
+        m_diffuse_reflectance = props.get_surface_field<Field>("diffuse_reflectance", .5f);
 
         if (props.has_property("specular_reflectance"))
-            m_specular_reflectance = props.get_texture<Texture>("specular_reflectance", 1.f);
+            m_specular_reflectance = props.get_surface_field<Field>("specular_reflectance", 1.f);
 
         if (props.has_property("eta")) {
-            m_eta = props.get_unbounded_texture<Texture>("eta", 0.f);
+            m_eta = props.get_unbounded_surface_field<Field>("eta", 0.f);
             if (props.has_property("int_ior") || props.has_property("ext_iot"))
                 Throw("Should specify either eta or int_ior and ext_ior, not both.");
         }
@@ -171,7 +171,7 @@ public:
                 Throw("The interior and exterior indices of "
                       "refraction must be positive and differ!");
 
-            m_eta = props.get_texture<Texture>("eta", int_ior / ext_ior);
+            m_eta = props.get_surface_field<Field>("eta", int_ior / ext_ior);
         }
 
         if (props.has_property("distribution")) {
@@ -195,10 +195,10 @@ public:
             if (props.has_property("alpha"))
                 Throw("Microfacet model: please specify"
                       "either 'alpha' or 'alpha_u'/'alpha_v'.");
-            m_alpha_u = props.get_unbounded_texture<Texture>("alpha_u", 0.1f);
-            m_alpha_v = props.get_unbounded_texture<Texture>("alpha_v", 0.1f);
+            m_alpha_u = props.get_unbounded_surface_field<Field>("alpha_u", 0.1f);
+            m_alpha_v = props.get_unbounded_surface_field<Field>("alpha_v", 0.1f);
         } else {
-            m_alpha_u = m_alpha_v = props.get_unbounded_texture<Texture>("alpha", 0.1f);
+            m_alpha_u = m_alpha_v = props.get_unbounded_surface_field<Field>("alpha", 0.1f);
         }
 
         m_flags = BSDFFlags::GlossyReflection | BSDFFlags::DiffuseReflection;
@@ -494,19 +494,19 @@ public:
     MI_DECLARE_CLASS(PolarizedPlastic)
 private:
     /// Diffuse reflectance component
-    ref<Texture> m_diffuse_reflectance;
+    ref<Field> m_diffuse_reflectance;
     /// Specular reflectance component
-    ref<Texture> m_specular_reflectance;
+    ref<Field> m_specular_reflectance;
 
     /// Specifies the type of microfacet distribution
     MicrofacetType m_type;
     /// Importance sample the distribution of visible normals?
     bool m_sample_visible;
     /// Roughness values
-    ref<Texture> m_alpha_u, m_alpha_v;
+    ref<Field> m_alpha_u, m_alpha_v;
 
     /// Relative refractive index
-    ref<Texture> m_eta;
+    ref<Field> m_eta;
 
     /// Sampling weight for specular component
     Float m_specular_sampling_weight;

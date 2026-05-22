@@ -57,7 +57,7 @@ class DirectionalArea final : public Emitter<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Emitter, set_shape, m_flags, m_shape, m_medium,
                     m_needs_sample_3)
-    MI_IMPORT_TYPES(Scene, Shape, Mesh, Texture)
+    MI_IMPORT_TYPES(Field, Scene, Shape, Mesh, Texture)
 
     DirectionalArea(const Properties &props) : Base(props) {
         if (props.has_property("to_world"))
@@ -65,7 +65,7 @@ public:
                   "The area light inherits this transformation from its parent "
                   "shape.");
 
-        m_radiance = props.get_emissive_texture<Texture>("radiance", 1.f);
+        m_radiance = props.get_emissive_surface_field<Field>("radiance", 1.f);
         m_needs_sample_3 = false;
 
         m_flags = EmitterFlags::Surface | EmitterFlags::DeltaDirection;
@@ -188,7 +188,7 @@ public:
 
     MI_DECLARE_CLASS(DirectionalArea)
 private:
-    ref<Texture> m_radiance;
+    ref<Field> m_radiance;
     Float m_area = 0.f;
 
     MI_TRAVERSE_CB(Base, m_radiance, m_area)

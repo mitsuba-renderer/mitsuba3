@@ -97,14 +97,20 @@ class BumpMap final
 public:
     using Base = PerturbedBSDF<BumpMap<Float, Spectrum>, Float, Spectrum>;
     MI_USING_MEMBERS(m_nested_bsdf)
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Field)
 
     BumpMap(const Properties &props) : Base(props) {
         for (auto &prop : props.objects()) {
-            if (Texture *texture = prop.try_get<Texture>()) {
+            if (prop.try_get<Field>()) {
                 if (m_nested_texture)
                     Throw("Only a single Texture child object can be specified.");
-                m_nested_texture = texture;
+
+                ref<Object> object = make_texture_object_for_variant(
+                    Field::Variant, prop.get<ref<Object>>());
+                Field *field = dynamic_cast<Field *>(object.get());
+                if (!field)
+                    Throw("BumpMap requires a field child with gradient support.");
+                m_nested_texture = field;
             }
         }
         if (!m_nested_texture)
@@ -150,7 +156,7 @@ public:
     MI_DECLARE_CLASS(BumpMap)
 protected:
     ScalarFloat m_scale;
-    ref<Texture> m_nested_texture;
+    ref<Field> m_nested_texture;
 
     MI_TRAVERSE_CB(Base, m_nested_texture)
 };

@@ -51,13 +51,13 @@ This plugin provides a simple procedural checkerboard texture with customizable 
  */
 
 template <typename Float, typename Spectrum>
-class Checkerboard final : public Texture<Float, Spectrum> {
+class Checkerboard final : public SurfaceField<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Field, SurfaceField, Texture)
 
-    Checkerboard(const Properties &props) : Texture(props) {
-        m_color0 = props.get_texture<Texture>("color0", .4f);
-        m_color1 = props.get_texture<Texture>("color1", .2f);
+    Checkerboard(const Properties &props) : SurfaceField(props) {
+        m_color0 = props.get_surface_field<Field>("color0", .4f);
+        m_color1 = props.get_surface_field<Field>("color1", .2f);
         m_transform = props.get<ScalarAffineTransform3f>("to_uv", ScalarAffineTransform3f());
     }
 
@@ -127,11 +127,11 @@ public:
 
     MI_DECLARE_CLASS(Checkerboard)
 protected:
-    ref<Texture> m_color0;
-    ref<Texture> m_color1;
+    ref<Field> m_color0;
+    ref<Field> m_color1;
     ScalarAffineTransform3f m_transform;
 
-    MI_TRAVERSE_CB(Texture, m_color0, m_color1)
+    MI_TRAVERSE_CB(SurfaceField, m_color0, m_color1)
 };
 
 MI_EXPORT_PLUGIN(Checkerboard)

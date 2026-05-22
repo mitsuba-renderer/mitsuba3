@@ -71,7 +71,6 @@ SENSOR_ORDERING = [
 TEXTURE_ORDERING = [
     'bitmap',
     'checkerboard',
-    'field', # fieldtexture
     'mesh_attribute',
     'volume'
 ]
@@ -135,7 +134,6 @@ PHASE_ORDERING = [
 
 VOLUME_ORDERING = [
     'constvolume',
-    'field', # fieldvolume
     'gridvolume'
 ]
 
@@ -191,7 +189,7 @@ def extract_python(target, filename):
 
 # Traverse source directories and process any found plugin code
 
-def process(path, target, ordering):
+def process(path, target, ordering, include_files=None):
     def capture(file_list, dirname, files):
         suffix = os.path.split(dirname)[1]
         if 'lib' in suffix or suffix == 'tests' \
@@ -199,7 +197,8 @@ def process(path, target, ordering):
                 or suffix == 'converter':
             return
         for filename in files:
-            if '.cpp' == os.path.splitext(filename)[1]:
+            name, ext = os.path.splitext(filename)
+            if ext == '.cpp' and (include_files is None or name in include_files):
                 fname = os.path.join(dirname, filename)
                 file_list += [fname]
 
@@ -221,13 +220,16 @@ def process(path, target, ordering):
             extract(target, entry[1])
 
 
-def process_src(target, src_subdir, ordering=None):
+def process_src(target, src_subdir, ordering=None, source_subdir=None,
+                include_files=None):
     section = "section_" + src_subdir
 
     # Copy paste the contents of the appropriate section file
     with open('src/plugin_reference/' + section + '.rst', 'r', encoding='utf-8') as f:
         target.write(f.read())
-    process('../src/{0}'.format(src_subdir), target, ordering)
+    if source_subdir is None:
+        source_subdir = src_subdir
+    process('../src/{0}'.format(source_subdir), target, ordering, include_files)
 
 
 def generate(build_dir):
@@ -235,26 +237,27 @@ def generate(build_dir):
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     sections = [
-        ('shapes',      SHAPE_ORDERING),
-        ('bsdfs',       BSDF_ORDERING),
-        ('media',       MEDIUM_ORDERING),
-        ('phase',       PHASE_ORDERING),
-        ('emitters',    EMITTER_ORDERING),
-        ('sensors',     SENSOR_ORDERING),
-        ('textures',    TEXTURE_ORDERING),
-        ('spectra',     SPECTRUM_ORDERING),
-        ('integrators', INTEGRATOR_ORDERING),
-        ('samplers',    SAMPLER_ORDERING),
-        ('films',       FILM_ORDERING),
-        ('rfilters',    RFILTER_ORDERING),
-        ('volumes',     VOLUME_ORDERING)
+        ('shapes',      SHAPE_ORDERING,   None,     None),
+        ('bsdfs',       BSDF_ORDERING,    None,     None),
+        ('media',       MEDIUM_ORDERING,  None,     None),
+        ('phase',       PHASE_ORDERING,   None,     None),
+        ('emitters',    EMITTER_ORDERING, None,     None),
+        ('sensors',     SENSOR_ORDERING,  None,     None),
+        ('textures',    TEXTURE_ORDERING, 'fields', TEXTURE_ORDERING),
+        ('spectra',     SPECTRUM_ORDERING, None,    None),
+        ('integrators', INTEGRATOR_ORDERING, None,  None),
+        ('samplers',    SAMPLER_ORDERING, None,     None),
+        ('films',       FILM_ORDERING,    None,     None),
+        ('rfilters',    RFILTER_ORDERING, None,     None),
+        ('volumes',     VOLUME_ORDERING,  'fields', VOLUME_ORDERING)
     ]
 
-    for section, ordering in sections:
+    for section, ordering, source_subdir, include_files in sections:
         with open(os.path.join(build_dir, f'plugins_{section}.rst'), 'w', encoding='utf-8') as f:
-            process_src(f, section, ordering)
+            process_src(f, section, ordering, source_subdir, include_files)
 
     os.chdir(original_wd)
 
 if __name__ == "__main__":
-    generate()
+    import sys
+    generate(sys.argv[1] if len(sys.argv) > 1 else os.getcwd())
