@@ -84,8 +84,8 @@ Neural field (:monosp:`neuralfield`)
  * - encoding
    - |field|
    - Nested encoding field that maps interaction records to feature channels.
-     Examples include :monosp:`hashgridencoding`,
-     :monosp:`permutoencoding`, and :monosp:`sinusoidalencoding`.
+     Examples include :monosp:`hashgridfield`,
+     :monosp:`permutofield`, and :monosp:`sinusoidalfield`.
 
  * - decoder
    - |string|

@@ -31,7 +31,7 @@ def neural_field(args_dim=11):
         "out_dim": 3,
         "args_dim": args_dim,
         "encoding": {
-            "type": "hashgridencoding",
+            "type": "hashgridfield",
             "input_dim": 2,
             "out_dim": 8,
             "n_levels": 4,

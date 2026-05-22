@@ -7,10 +7,10 @@ NAMESPACE_BEGIN(mitsuba)
 
 /**!
 
-.. _field-sinusoidalencoding:
+.. _field-sinusoidalfield:
 
-Sinusoidal encoding field (:monosp:`sinusoidalencoding`)
---------------------------------------------------------
+Sinusoidal field (:monosp:`sinusoidalfield`)
+--------------------------------------------
 
 .. pluginparameters::
 
@@ -63,17 +63,17 @@ public:
         m_out_dim = props.get<uint32_t>("out_dim", natural_dim);
 
         if (m_input_dim != 2 && m_input_dim != 3)
-            Throw("sinusoidalencoding: input_dim must be 2 or 3.");
+            Throw("sinusoidalfield: input_dim must be 2 or 3.");
         if (m_n_frequencies == 0)
-            Throw("sinusoidalencoding: n_frequencies must be positive.");
+            Throw("sinusoidalfield: n_frequencies must be positive.");
         if (m_min_frequency <= 0 || m_max_frequency <= 0)
-            Throw("sinusoidalencoding: min_frequency and max_frequency must "
+            Throw("sinusoidalfield: min_frequency and max_frequency must "
                   "be positive.");
         if (m_max_frequency < m_min_frequency)
-            Throw("sinusoidalencoding: max_frequency must be greater than or "
+            Throw("sinusoidalfield: max_frequency must be greater than or "
                   "equal to min_frequency.");
         if (m_out_dim == 0 || m_out_dim > natural_dim)
-            Throw("sinusoidalencoding: out_dim must be in [1, %u] for "
+            Throw("sinusoidalfield: out_dim must be in [1, %u] for "
                   "input_dim=%u and n_frequencies=%u.",
                   natural_dim, m_input_dim, m_n_frequencies);
     }
@@ -98,7 +98,7 @@ public:
                       Mask active) const override {
         validate_args(args);
         if (m_input_dim != 3)
-            Throw("sinusoidalencoding: Interaction queries require input_dim=3.");
+            Throw("sinusoidalfield: Interaction queries require input_dim=3.");
         return eval_impl(it.p.x(), it.p.y(), it.p.z(), active);
     }
 
@@ -116,7 +116,7 @@ public:
 private:
     void validate_args(Args args) const {
         if (args.size != 0)
-            Throw("sinusoidalencoding: args_dim is 0, got %u argument "
+            Throw("sinusoidalfield: args_dim is 0, got %u argument "
                   "channel(s).", args.size);
     }
 

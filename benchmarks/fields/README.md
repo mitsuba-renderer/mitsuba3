@@ -27,7 +27,6 @@ python benchmarks/fields/bench_fields.py \
     --json bitmap_scalar.json
 
 python benchmarks/fields/bench_fields.py \
-    --variant llvm_ad_rgb \
     --case grid_volume_eval \
     --method eval_6 \
     --channels 6 \
@@ -36,14 +35,12 @@ python benchmarks/fields/bench_fields.py \
     --json grid_llvm.json
 
 python benchmarks/fields/bench_fields.py \
-    --variant llvm_ad_rgb \
     --case field_fixed_eval \
     --field-plugin gridfield \
     --method eval_array6 \
     --channels 6
 
 python benchmarks/fields/bench_fields.py \
-    --variant llvm_ad_rgb \
     --case neural_field_inference \
     --method eval_color3 \
     --args-mode no_args \
@@ -97,9 +94,13 @@ python benchmarks/fields/compare_field_vs_std.py \
     --std-root mitsuba-std \
     --std-build mitsuba-std/build-std \
     --field-build build-gpt-5 \
-    --variants scalar_rgb,llvm_ad_rgb \
+    --variants scalar_rgb,auto_ad_rgb \
     --suite all
 ```
+
+When `--variant` is omitted in `bench_fields.py`, the runner selects
+`cuda_ad_rgb` when available and falls back to `llvm_ad_rgb`. The comparison
+runner resolves `auto_ad_rgb` the same way for the supplied builds.
 
 The `common` suite only runs workloads supported by both builds. The `field`
 suite only runs field-specific and neural cases on the current tree. The
