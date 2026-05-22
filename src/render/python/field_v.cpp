@@ -16,7 +16,7 @@ public:
     using BaseField = mitsuba::Field<Float, Spectrum>;
     using Args = FieldArgs<Float>;
 
-    NB_TRAMPOLINE(Field, 28);
+    NB_TRAMPOLINE(Field, 30);
 
     PyField(const Properties &props) : Field(props) { }
 
@@ -199,9 +199,54 @@ public:
         return BaseField::eval_array6(it, args, active);
     }
 
+    void eval_n(const SurfaceInteraction3f &si, Float *out, uint32_t count,
+                Args args, Mask active) const override {
+        nb::detail::ticket ticket(nb_trampoline, "eval_n", false);
+        if (ticket.key.is_valid()) {
+            nb::object result = nb_trampoline.base().attr(ticket.key)(
+                si, count, field_args_to_python(args), active);
+            copy_eval_n_result(result, out, count);
+            return;
+        }
+        BaseField::eval_n(si, out, count, args, active);
+    }
+
+    void eval_n(const Interaction3f &it, Float *out, uint32_t count,
+                Args args, Mask active) const override {
+        nb::detail::ticket ticket(nb_trampoline, "eval_n", false);
+        if (ticket.key.is_valid()) {
+            nb::object result = nb_trampoline.base().attr(ticket.key)(
+                it, count, field_args_to_python(args), active);
+            copy_eval_n_result(result, out, count);
+            return;
+        }
+        BaseField::eval_n(it, out, count, args, active);
+    }
+
     DR_TRAMPOLINE_TRAVERSE_CB(Field)
 
 private:
+    static void copy_eval_n_result(nb::object result_o, Float *out,
+                                   uint32_t count) {
+        using FloatStorage = typename BaseField::FloatStorage;
+        try {
+            FloatStorage result = nb::cast<FloatStorage>(result_o);
+            if (result.size() != count)
+                Throw("Field::eval_n(): Python override returned %zu "
+                      "channel(s), expected %u.", result.size(), count);
+            for (uint32_t i = 0; i < count; ++i)
+                out[i] = result.entry(i);
+            return;
+        } catch (const nb::cast_error &) { }
+
+        std::vector<Float> result = nb::cast<std::vector<Float>>(result_o);
+        if (result.size() != count)
+            Throw("Field::eval_n(): Python override returned %zu channel(s), "
+                  "expected %u.", result.size(), count);
+        for (uint32_t i = 0; i < count; ++i)
+            out[i] = result[i];
+    }
+
     static nb::list field_args_to_python(Args args) {
         nb::list result;
         for (uint32_t i = 0; i < args.size; ++i)

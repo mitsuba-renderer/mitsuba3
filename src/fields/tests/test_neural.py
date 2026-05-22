@@ -1,5 +1,6 @@
 import pytest
 import drjit as dr
+import drjit.nn as nn
 import mitsuba as mi
 
 
@@ -80,7 +81,40 @@ def test02_trainable_encodings_reject_scalar_variants_early(variant_scalar_rgb, 
         mi.load_dict(config)
 
 
-def test03_sinusoidal_field_uses_per_coordinate_sincos_features(variant_scalar_rgb):
+@pytest.mark.parametrize(
+    "plugin,encoding_cls",
+    [
+        ("hashgridfield", nn.HashGridEncoding),
+        ("permutofield", nn.PermutoEncoding),
+    ],
+)
+def test03_trainable_encoding_fields_match_drjit_nn(
+    field_ad_rgb_variant, plugin, encoding_cls
+):
+    config = encoding_dict(plugin, seed=7)
+    field = mi.load_dict(config)
+
+    direct = encoding_cls(
+        mi.TensorXf16,
+        dimension=2,
+        n_levels=config["n_levels"],
+        n_features_per_level=config["n_features_per_level"],
+        hashmap_size=config["hashmap_size"],
+        base_resolution=config["base_resolution"],
+        per_level_scale=config["per_level_scale"],
+        rng=dr.rng(seed=config["seed"]),
+    )
+
+    si = surface_interaction(width=8)
+    assert dr.width(mi.traverse(field)["params"]) == direct.n_params
+    assert dr.allclose(
+        field.eval(si),
+        mi.ArrayXf(direct((si.uv.x, si.uv.y))),
+        atol=1e-6,
+    )
+
+
+def test04_sinusoidal_field_uses_per_coordinate_sincos_features(variant_scalar_rgb):
     field = mi.load_dict({
         "type": "sinusoidalfield",
         "input_dim": 2,
@@ -94,7 +128,7 @@ def test03_sinusoidal_field_uses_per_coordinate_sincos_features(variant_scalar_r
 
 
 @pytest.mark.parametrize("bad_args", [[1.0, 2.0, 3.0], [1.0] * 5])
-def test04_direct_field_args_are_validated_in_python_bindings(field_ad_rgb_variant, bad_args):
+def test05_direct_field_args_are_validated_in_python_bindings(field_ad_rgb_variant, bad_args):
     field = mi.load_dict(neural_field_dict(args_dim=4))
     si = surface_interaction()
 
@@ -107,7 +141,9 @@ def test04_direct_field_args_are_validated_in_python_bindings(field_ad_rgb_varia
         field.eval_color3(si, args=bad_args)
 
 
-def test05_zero_args_field_accepts_no_args_without_allocating_argument_storage(field_ad_rgb_variant):
+def test06_zero_args_field_accepts_no_args_without_allocating_argument_storage(
+    field_ad_rgb_variant
+):
     field = mi.load_dict(neural_field_dict(args_dim=0))
     si = surface_interaction()
 
@@ -116,7 +152,7 @@ def test05_zero_args_field_accepts_no_args_without_allocating_argument_storage(f
         field.eval_color3(si, args=[1.0])
 
 
-def test06_neural_fields_reject_scalar_variants_early(variant_scalar_rgb):
+def test07_neural_fields_reject_scalar_variants_early(variant_scalar_rgb):
     with pytest.raises(RuntimeError, match="neuralfield|scalar_rgb|LLVM|CUDA|JIT"):
         mi.load_dict(neural_field_dict(encoding={
             "type": "sinusoidalfield",
@@ -142,7 +178,7 @@ def test06_neural_fields_reject_scalar_variants_early(variant_scalar_rgb):
         ),
     ],
 )
-def test07_invalid_encoding_nesting_and_output_metadata_are_rejected(
+def test08_invalid_encoding_nesting_and_output_metadata_are_rejected(
     field_ad_rgb_variant, field_factory, pattern
 ):
     with pytest.raises(RuntimeError, match=pattern):
@@ -159,7 +195,9 @@ def test07_invalid_encoding_nesting_and_output_metadata_are_rejected(
         ("Features", 6, "eval_array6"),
     ],
 )
-def test08_neural_field_fixed_output_methods_match_metadata(field_ad_rgb_variant, out_type, out_dim, method):
+def test09_neural_field_fixed_output_methods_match_metadata(
+    field_ad_rgb_variant, out_type, out_dim, method
+):
     field = mi.load_dict(neural_field_dict(out_type=out_type, out_dim=out_dim, args_dim=0))
     si = surface_interaction(width=8)
 
@@ -170,7 +208,7 @@ def test08_neural_field_fixed_output_methods_match_metadata(field_ad_rgb_variant
         field.eval_color3(si) if method != "eval_color3" else field.eval_array3(si)
 
 
-def test09_neural_field_traversal_and_update_are_preserved(field_ad_rgb_variant):
+def test10_neural_field_traversal_and_update_are_preserved(field_ad_rgb_variant):
     field = mi.load_dict(neural_field_dict())
     params = mi.traverse(field)
 

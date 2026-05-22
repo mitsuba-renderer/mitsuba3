@@ -5,6 +5,7 @@ import os as _os
 import drjit as _dr
 import logging
 import functools as _functools
+import importlib as _importlib
 
 if not hasattr(_dr, "_mitsuba_scalar_arange"):
     # Scalar Mitsuba variants expose ``mi.Float``/``mi.Bool`` as Python scalar
@@ -140,7 +141,7 @@ def _mitsuba_field_args_len(args):
         return 1
 
 
-def _mitsuba_wrap_field_method(fn):
+def _mitsuba_wrap_field_method(fn, method_name):
     """Wrap Python field overrides with the same argument validation as C++."""
 
     if getattr(fn, "_mitsuba_args_checked", False):
@@ -149,8 +150,11 @@ def _mitsuba_wrap_field_method(fn):
     @_functools.wraps(fn)
     def wrapper(self, *args, **kwargs):
         field_args = kwargs.get("args", None)
-        if "args" not in kwargs and len(args) >= 2:
-            field_args = args[1]
+        if "args" not in kwargs:
+            if method_name == "eval_n" and len(args) >= 3:
+                field_args = args[2]
+            elif method_name != "eval_n" and len(args) >= 2:
+                field_args = args[1]
 
         expected = int(self.args_dim())
         actual = _mitsuba_field_args_len(field_args)
@@ -182,10 +186,17 @@ def _mitsuba_patch_field_class(mi):
         for name in eval_methods:
             method = cls.__dict__.get(name, None)
             if method is not None:
-                setattr(cls, name, _mitsuba_wrap_field_method(method))
+                setattr(cls, name, _mitsuba_wrap_field_method(method, name))
 
     field_cls.__init_subclass__ = __init_subclass__
     field_cls._mitsuba_args_patch = True
+
+
+def _mitsuba_register_python_fields(mi):
+    if mi.variant() is None:
+        return
+    fields = _importlib.import_module("mitsuba.python.fields")
+    fields._register_variant_fields(mi)
 
 
 def _mitsuba_patch_variant_aliases(mi):
@@ -203,8 +214,10 @@ if not hasattr(mitsuba_alias, "_mitsuba_original_set_variant"):
     def _mitsuba_set_variant(*args):
         mitsuba_alias._mitsuba_original_set_variant(*args)
         _mitsuba_patch_variant_aliases(mitsuba_alias)
+        _mitsuba_register_python_fields(mitsuba_alias)
 
     mitsuba_alias.set_variant = _mitsuba_set_variant
     _mitsuba_patch_variant_aliases(mitsuba_alias)
+    _mitsuba_register_python_fields(mitsuba_alias)
 
 _ = mitsuba_alias # Removes unused variable warnings
