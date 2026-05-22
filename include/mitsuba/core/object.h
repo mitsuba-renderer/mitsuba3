@@ -57,9 +57,6 @@ enum class ObjectType : uint32_t {
     /// A 3D volume data source
     Volume,
 
-    /// A field data source
-    Field,
-
     /// A participating medium
     Medium,
 
@@ -70,7 +67,10 @@ enum class ObjectType : uint32_t {
     PhaseFunction,
 
     /// A rendering algorithm aka. `Integrator`
-    Integrator
+    Integrator,
+
+    /// A field data source
+    Field
 };
 
 /**
@@ -261,6 +261,7 @@ inline constexpr const char* object_type_name(ObjectType ot) {
         case ObjectType::Shape: return "Shape";
         case ObjectType::Texture: return "Texture";
         case ObjectType::Volume: return "Volume";
+        case ObjectType::Field: return "Field";
         case ObjectType::Medium: return "Medium";
         case ObjectType::BSDF: return "BSDF";
         case ObjectType::Integrator: return "Integrator";

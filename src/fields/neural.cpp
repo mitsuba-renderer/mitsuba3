@@ -219,55 +219,83 @@ public:
     Float eval_1(const SurfaceInteraction3f &si, Args args,
                  Mask active) const override {
         validate_output(FieldValueType::Float, 1, "eval_1");
-        return eval(si, args, active).entry(0);
+        validate_surface_query();
+        validate_args(args);
+        FloatStorage encoding = eval_encoding(&si, nullptr, active);
+        return eval_channel(&si, nullptr, args, encoding, 0, active);
     }
 
     Float eval_1(const Interaction3f &it, Args args,
                  Mask active) const override {
         validate_output(FieldValueType::Float, 1, "eval_1");
-        return eval(it, args, active).entry(0);
+        validate_interaction_query();
+        validate_args(args);
+        FloatStorage encoding = eval_encoding(nullptr, &it, active);
+        return eval_channel(nullptr, &it, args, encoding, 0, active);
     }
 
     Color3f eval_color3(const SurfaceInteraction3f &si, Args args,
                         Mask active) const override {
         validate_output(FieldValueType::Color3, 3, "eval_color3");
-        FloatStorage value = eval(si, args, active);
-        return Color3f(value.entry(0), value.entry(1), value.entry(2));
+        validate_surface_query();
+        validate_args(args);
+        FloatStorage encoding = eval_encoding(&si, nullptr, active);
+        return Color3f(eval_channel(&si, nullptr, args, encoding, 0, active),
+                       eval_channel(&si, nullptr, args, encoding, 1, active),
+                       eval_channel(&si, nullptr, args, encoding, 2, active));
     }
 
     Color3f eval_color3(const Interaction3f &it, Args args,
                         Mask active) const override {
         validate_output(FieldValueType::Color3, 3, "eval_color3");
-        FloatStorage value = eval(it, args, active);
-        return Color3f(value.entry(0), value.entry(1), value.entry(2));
+        validate_interaction_query();
+        validate_args(args);
+        FloatStorage encoding = eval_encoding(nullptr, &it, active);
+        return Color3f(eval_channel(nullptr, &it, args, encoding, 0, active),
+                       eval_channel(nullptr, &it, args, encoding, 1, active),
+                       eval_channel(nullptr, &it, args, encoding, 2, active));
     }
 
     Array2f eval_array2(const SurfaceInteraction3f &si, Args args,
                         Mask active) const override {
         validate_output(FieldValueType::Array2, 2, "eval_array2");
-        FloatStorage value = eval(si, args, active);
-        return Array2f(value.entry(0), value.entry(1));
+        validate_surface_query();
+        validate_args(args);
+        FloatStorage encoding = eval_encoding(&si, nullptr, active);
+        return Array2f(eval_channel(&si, nullptr, args, encoding, 0, active),
+                       eval_channel(&si, nullptr, args, encoding, 1, active));
     }
 
     Array2f eval_array2(const Interaction3f &it, Args args,
                         Mask active) const override {
         validate_output(FieldValueType::Array2, 2, "eval_array2");
-        FloatStorage value = eval(it, args, active);
-        return Array2f(value.entry(0), value.entry(1));
+        validate_interaction_query();
+        validate_args(args);
+        FloatStorage encoding = eval_encoding(nullptr, &it, active);
+        return Array2f(eval_channel(nullptr, &it, args, encoding, 0, active),
+                       eval_channel(nullptr, &it, args, encoding, 1, active));
     }
 
     Array3f eval_array3(const SurfaceInteraction3f &si, Args args,
                         Mask active) const override {
         validate_output(FieldValueType::Array3, 3, "eval_array3");
-        FloatStorage value = eval(si, args, active);
-        return Array3f(value.entry(0), value.entry(1), value.entry(2));
+        validate_surface_query();
+        validate_args(args);
+        FloatStorage encoding = eval_encoding(&si, nullptr, active);
+        return Array3f(eval_channel(&si, nullptr, args, encoding, 0, active),
+                       eval_channel(&si, nullptr, args, encoding, 1, active),
+                       eval_channel(&si, nullptr, args, encoding, 2, active));
     }
 
     Array3f eval_array3(const Interaction3f &it, Args args,
                         Mask active) const override {
         validate_output(FieldValueType::Array3, 3, "eval_array3");
-        FloatStorage value = eval(it, args, active);
-        return Array3f(value.entry(0), value.entry(1), value.entry(2));
+        validate_interaction_query();
+        validate_args(args);
+        FloatStorage encoding = eval_encoding(nullptr, &it, active);
+        return Array3f(eval_channel(nullptr, &it, args, encoding, 0, active),
+                       eval_channel(nullptr, &it, args, encoding, 1, active),
+                       eval_channel(nullptr, &it, args, encoding, 2, active));
     }
 
     UnpolarizedSpectrum eval_spec(const SurfaceInteraction3f &si, Args args,
@@ -275,10 +303,13 @@ public:
         validate_output(FieldValueType::Spectrum,
                         (uint32_t) dr::size_v<UnpolarizedSpectrum>,
                         "eval_spec");
-        FloatStorage value = eval(si, args, active);
+        validate_surface_query();
+        validate_args(args);
+        FloatStorage encoding = eval_encoding(&si, nullptr, active);
         UnpolarizedSpectrum result;
         for (uint32_t i = 0; i < dr::size_v<UnpolarizedSpectrum>; ++i)
-            result.entry(i) = value.entry(i);
+            result.entry(i) =
+                eval_channel(&si, nullptr, args, encoding, i, active);
         return result;
     }
 
@@ -287,27 +318,42 @@ public:
         validate_output(FieldValueType::Spectrum,
                         (uint32_t) dr::size_v<UnpolarizedSpectrum>,
                         "eval_spec");
-        FloatStorage value = eval(it, args, active);
+        validate_interaction_query();
+        validate_args(args);
+        FloatStorage encoding = eval_encoding(nullptr, &it, active);
         UnpolarizedSpectrum result;
         for (uint32_t i = 0; i < dr::size_v<UnpolarizedSpectrum>; ++i)
-            result.entry(i) = value.entry(i);
+            result.entry(i) =
+                eval_channel(nullptr, &it, args, encoding, i, active);
         return result;
     }
 
     Array6f eval_array6(const SurfaceInteraction3f &si, Args args,
                         Mask active) const override {
         validate_feature_count(6, "eval_array6");
-        FloatStorage value = eval(si, args, active);
-        return Array6f(value.entry(0), value.entry(1), value.entry(2),
-                       value.entry(3), value.entry(4), value.entry(5));
+        validate_surface_query();
+        validate_args(args);
+        FloatStorage encoding = eval_encoding(&si, nullptr, active);
+        return Array6f(eval_channel(&si, nullptr, args, encoding, 0, active),
+                       eval_channel(&si, nullptr, args, encoding, 1, active),
+                       eval_channel(&si, nullptr, args, encoding, 2, active),
+                       eval_channel(&si, nullptr, args, encoding, 3, active),
+                       eval_channel(&si, nullptr, args, encoding, 4, active),
+                       eval_channel(&si, nullptr, args, encoding, 5, active));
     }
 
     Array6f eval_array6(const Interaction3f &it, Args args,
                         Mask active) const override {
         validate_feature_count(6, "eval_array6");
-        FloatStorage value = eval(it, args, active);
-        return Array6f(value.entry(0), value.entry(1), value.entry(2),
-                       value.entry(3), value.entry(4), value.entry(5));
+        validate_interaction_query();
+        validate_args(args);
+        FloatStorage encoding = eval_encoding(nullptr, &it, active);
+        return Array6f(eval_channel(nullptr, &it, args, encoding, 0, active),
+                       eval_channel(nullptr, &it, args, encoding, 1, active),
+                       eval_channel(nullptr, &it, args, encoding, 2, active),
+                       eval_channel(nullptr, &it, args, encoding, 3, active),
+                       eval_channel(nullptr, &it, args, encoding, 4, active),
+                       eval_channel(nullptr, &it, args, encoding, 5, active));
     }
 
     void eval_n(const SurfaceInteraction3f &si, Float *out, uint32_t count,
@@ -315,9 +361,11 @@ public:
         if (count != m_out_dim)
             Throw("neuralfield::eval_n(): count (%u) must match out_dim (%u).",
                   count, m_out_dim);
-        FloatStorage value = eval(si, args, active);
+        validate_surface_query();
+        validate_args(args);
+        FloatStorage encoding = eval_encoding(&si, nullptr, active);
         for (uint32_t i = 0; i < count; ++i)
-            out[i] = value.entry(i);
+            out[i] = eval_channel(&si, nullptr, args, encoding, i, active);
     }
 
     void eval_n(const Interaction3f &it, Float *out, uint32_t count,
@@ -325,9 +373,11 @@ public:
         if (count != m_out_dim)
             Throw("neuralfield::eval_n(): count (%u) must match out_dim (%u).",
                   count, m_out_dim);
-        FloatStorage value = eval(it, args, active);
+        validate_interaction_query();
+        validate_args(args);
+        FloatStorage encoding = eval_encoding(nullptr, &it, active);
         for (uint32_t i = 0; i < count; ++i)
-            out[i] = value.entry(i);
+            out[i] = eval_channel(nullptr, &it, args, encoding, i, active);
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -374,6 +424,18 @@ private:
                   m_args_dim, args.size);
     }
 
+    void validate_surface_query() const {
+        if (!supports_surface_queries())
+            Throw("neuralfield: domain mismatch, field does not support "
+                  "Surface queries.");
+    }
+
+    void validate_interaction_query() const {
+        if (!supports_interaction_queries())
+            Throw("neuralfield: domain mismatch, field does not support "
+                  "Interaction queries.");
+    }
+
     void validate_output(FieldValueType expected_type, uint32_t expected_dim,
                          const char *method) const {
         if (m_out_type != expected_type || m_out_dim != expected_dim)
@@ -392,6 +454,16 @@ private:
     FloatStorage eval_impl(const SurfaceInteraction3f *si,
                            const Interaction3f *it,
                            Args args, Mask active) const {
+        FloatStorage encoding = eval_encoding(si, it, active);
+        FloatStorage result = dr::empty<FloatStorage>(m_out_dim);
+        for (uint32_t o = 0; o < m_out_dim; ++o)
+            result.entry(o) = eval_channel(si, it, args, encoding, o, active);
+        return result;
+    }
+
+    FloatStorage eval_encoding(const SurfaceInteraction3f *si,
+                               const Interaction3f *it,
+                               Mask active) const {
         FloatStorage encoding;
         if (m_encoding) {
             if (si)
@@ -399,38 +471,42 @@ private:
             else
                 encoding = m_encoding->eval(*it, Args{}, active);
         }
+        return encoding;
+    }
 
+    Float eval_channel(const SurfaceInteraction3f *si,
+                       const Interaction3f *it,
+                       Args args,
+                       const FloatStorage &encoding,
+                       uint32_t o,
+                       Mask active) const {
         Float p_x = si ? si->p.x() : it->p.x(),
               p_y = si ? si->p.y() : it->p.y(),
               p_z = si ? si->p.z() : it->p.z(),
               uv_x = si ? si->uv.x() : 0.f,
               uv_y = si ? si->uv.y() : 0.f;
 
-        FloatStorage result = dr::empty<FloatStorage>(m_out_dim);
-        for (uint32_t o = 0; o < m_out_dim; ++o) {
-            uint32_t offset = o * (m_feature_dim + 1);
-            Float value = m_network_weights.entry(offset + m_feature_dim);
+        uint32_t offset = o * (m_feature_dim + 1);
+        Float value = m_network_weights.entry(offset + m_feature_dim);
 
-            value = dr::fmadd(p_x, m_network_weights.entry(offset++), value);
-            value = dr::fmadd(p_y, m_network_weights.entry(offset++), value);
-            value = dr::fmadd(p_z, m_network_weights.entry(offset++), value);
-            value = dr::fmadd(uv_x, m_network_weights.entry(offset++), value);
-            value = dr::fmadd(uv_y, m_network_weights.entry(offset++), value);
+        value = dr::fmadd(p_x, m_network_weights.entry(offset++), value);
+        value = dr::fmadd(p_y, m_network_weights.entry(offset++), value);
+        value = dr::fmadd(p_z, m_network_weights.entry(offset++), value);
+        value = dr::fmadd(uv_x, m_network_weights.entry(offset++), value);
+        value = dr::fmadd(uv_y, m_network_weights.entry(offset++), value);
 
-            for (uint32_t i = 0; i < m_args_dim; ++i)
-                value = dr::fmadd(args.data[i],
+        for (uint32_t i = 0; i < m_args_dim; ++i)
+            value = dr::fmadd(args.data[i],
+                              m_network_weights.entry(offset++), value);
+
+        if (m_encoding) {
+            // Encodings are appended after fixed interaction and arg data.
+            for (uint32_t i = 0; i < m_encoding->out_dim(); ++i)
+                value = dr::fmadd(encoding.entry(i),
                                   m_network_weights.entry(offset++), value);
-
-            if (m_encoding) {
-                // Encodings are appended after fixed interaction and arg data.
-                for (uint32_t i = 0; i < m_encoding->out_dim(); ++i)
-                    value = dr::fmadd(encoding.entry(i),
-                                      m_network_weights.entry(offset++), value);
-            }
-
-            result.entry(o) = dr::select(active, (Float) 0.5f + (Float) 0.1f * value, 0.f);
         }
-        return result;
+
+        return dr::select(active, (Float) 0.5f + (Float) 0.1f * value, 0.f);
     }
 
     FieldDomain m_domain = FieldDomain::Surface;

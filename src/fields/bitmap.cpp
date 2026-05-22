@@ -319,6 +319,7 @@ public:
         if (keys.empty() || string::contains(keys, "data")) {
             validate_tensor(m_texture.tensor());
             m_texture.update_inplace();
+            sync_ad_texture_state();
         }
     }
 
@@ -423,9 +424,17 @@ private:
                parameter. When gradients are enabled on that tensor without an
                intervening parameters_changed() call, refresh the padded texture
                storage before evaluating so the lookup depends on it. */
-            if (dr::grad_enabled(m_texture.tensor().array()))
+            if (!m_ad_texture_synced &&
+                dr::grad_enabled(m_texture.tensor().array())) {
                 const_cast<Texture2f &>(m_texture).update_inplace();
+                m_ad_texture_synced = true;
+            }
         }
+    }
+
+    void sync_ad_texture_state() {
+        if constexpr (dr::is_diff_v<Float>)
+            m_ad_texture_synced = dr::grad_enabled(m_texture.tensor().array());
     }
 
 private:
@@ -434,6 +443,7 @@ private:
     dr::WrapMode m_wrap_mode;
     bool m_raw = false;
     bool m_accel = true;
+    mutable bool m_ad_texture_synced = false;
 };
 
 MI_EXPORT_PLUGIN(BitmapField)
