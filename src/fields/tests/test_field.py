@@ -71,9 +71,15 @@ def make_python_args_field():
 def test01_field_enums_are_not_registered_per_variant():
     code = """
 import mitsuba as mi
+import drjit as dr
 variants = ['scalar_rgb']
-if 'llvm_ad_rgb' in mi.variants():
-    variants.append('llvm_ad_rgb')
+for variant, backend in [
+    ('cuda_ad_rgb', dr.JitBackend.CUDA),
+    ('llvm_ad_rgb', dr.JitBackend.LLVM),
+]:
+    if variant in mi.variants() and dr.has_backend(backend):
+        variants.append(variant)
+        break
 for variant in variants:
     mi.set_variant(variant)
     assert mi.ObjectType.Field.name == 'Field'
@@ -128,7 +134,7 @@ def test03_xml_field_tags_round_trip_nested_refs_and_ordering(variant_scalar_rgb
     assert all(n.props.plugin_name() == "debugfield" for n in field_nodes_rt)
 
 
-def test04_python_field_metadata_and_eval_dispatch_through_virtual_api(variant_llvm_ad_rgb):
+def test04_python_field_metadata_and_eval_dispatch_through_virtual_api(field_ad_rgb_variant):
     field = make_python_args_field()
     si = surface_interaction()
 
@@ -150,7 +156,7 @@ def test04_python_field_metadata_and_eval_dispatch_through_virtual_api(variant_l
         field.eval_color3(si, args=[1.0, 2.0, 3.0])
 
 
-def test05_fieldptr_vectorized_fixed_and_generic_calls(variant_llvm_ad_rgb):
+def test05_fieldptr_vectorized_fixed_and_generic_calls(field_ad_rgb_variant):
     color_a = mi.load_dict(bitmap_field([0.1, 0.2, 0.3]))
     color_b = mi.load_dict(bitmap_field([0.7, 0.8, 0.9]))
 

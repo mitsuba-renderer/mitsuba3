@@ -8,10 +8,10 @@ NAMESPACE_BEGIN(mitsuba)
 
 /**!
 
-.. _field-hashgridencoding:
+.. _field-hashgridfield:
 
-Hash grid encoding field (:monosp:`hashgridencoding`)
------------------------------------------------------
+Hash grid field (:monosp:`hashgridfield`)
+-----------------------------------------
 
 .. pluginparameters::
 
@@ -65,12 +65,12 @@ public:
 
     HashGridEncoding(const Properties &props) : Base(props) {
         if constexpr (!dr::is_jit_v<Float>)
-            Throw("hashgridencoding: variant \"%s\" is unsupported. Hash grid "
+            Throw("hashgridfield: variant \"%s\" is unsupported. Hash grid "
                   "encodings require an LLVM or CUDA JIT variant.",
                   this->variant_name());
 
         if (props.has_property("encoding"))
-            Throw("hashgridencoding: nested encoding child composition is not "
+            Throw("hashgridfield: nested encoding child composition is not "
                   "supported; compose encodings in neuralfield instead.");
 
         m_input_dim = props.get<uint32_t>("input_dim", 2);
@@ -82,9 +82,9 @@ public:
         props.mark_queried("hashmap_size");
 
         if (m_input_dim != 2 && m_input_dim != 3)
-            Throw("hashgridencoding: input_dim must be 2 or 3.");
+            Throw("hashgridfield: input_dim must be 2 or 3.");
         if (m_out_dim == 0)
-            Throw("hashgridencoding: out_dim must be positive.");
+            Throw("hashgridfield: out_dim must be positive.");
 
         m_params = dr::empty<FloatStorage>(m_out_dim);
         for (uint32_t i = 0; i < m_out_dim; ++i) {
@@ -115,7 +115,7 @@ public:
                       Mask active) const override {
         validate_args(args);
         if (m_input_dim != 3)
-            Throw("hashgridencoding: Interaction queries require input_dim=3.");
+            Throw("hashgridfield: Interaction queries require input_dim=3.");
         return eval_impl(it.p.x(), it.p.y(), it.p.z(), active);
     }
 
@@ -125,7 +125,7 @@ public:
 
     void parameters_changed(const std::vector<std::string> &) override {
         if (m_params.size() != m_out_dim)
-            Throw("hashgridencoding: parameter size must match out_dim.");
+            Throw("hashgridfield: parameter size must match out_dim.");
     }
 
     std::string to_string() const override {
@@ -142,7 +142,7 @@ public:
 private:
     void validate_args(Args args) const {
         if (args.size != 0)
-            Throw("hashgridencoding: args_dim is 0, got %u argument "
+            Throw("hashgridfield: args_dim is 0, got %u argument "
                   "channel(s).", args.size);
     }
 

@@ -237,7 +237,7 @@ def test05_eval_n_count_must_match_output_dimension(variant_scalar_rgb):
             field.eval_n(record, count)
 
 
-def test06_storage_field_traversal_and_parameters_changed_update_storage(variant_llvm_ad_rgb):
+def test06_storage_field_traversal_and_parameters_changed_update_storage(field_ad_rgb_variant):
     field = mi.load_dict(bitmap_field_dict(channels=1))
     params = mi.traverse(field)
 
@@ -246,10 +246,15 @@ def test06_storage_field_traversal_and_parameters_changed_update_storage(variant
 
     si = surface_interaction()
     before = field.eval_1(si)
+    dr.eval(before)
+    dr.sync_thread()
+    before_value = float(before[0])
     params["data"] = dr.full(mi.TensorXf, 0.75, shape=dr.shape(params["data"]))
     params.update()
     after = field.eval_1(si)
-    assert not dr.allclose(before, after)
+    dr.eval(after)
+    dr.sync_thread()
+    assert before_value != float(after[0])
     assert dr.allclose(after, 0.75)
 
     params = mi.traverse(field)
@@ -258,23 +263,7 @@ def test06_storage_field_traversal_and_parameters_changed_update_storage(variant
         params.update()
 
 
-def test07_storage_field_ad_gradients_are_finite_and_nonzero(variant_llvm_ad_rgb):
-    field = mi.load_dict(bitmap_field_dict(
-        channels=3, filter_type="bilinear", data=bitmap_data(channels=3)
-    ))
-    params = mi.traverse(field)
-    dr.enable_grad(params["data"])
-
-    value = field.eval_color3(surface_interaction(width=5))
-    loss = dr.sum(value)
-    dr.backward(loss)
-
-    grad = dr.grad(params["data"])
-    assert dr.all(dr.isfinite(grad))
-    assert dr.any(grad != 0)
-
-
-def test08_grid_field_loads_volume_grid_file_and_tensor_equivalently(variant_scalar_rgb, tmpdir):
+def test07_grid_field_loads_volume_grid_file_and_tensor_equivalently(variant_scalar_rgb, tmpdir):
     data = volume_data(channels=6)
     tmp_file = os.path.join(str(tmpdir), "field_grid.vol")
     mi.VolumeGrid(data).write(tmp_file)

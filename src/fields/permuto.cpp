@@ -8,10 +8,10 @@ NAMESPACE_BEGIN(mitsuba)
 
 /**!
 
-.. _field-permutoencoding:
+.. _field-permutofield:
 
-Permutohedral encoding field (:monosp:`permutoencoding`)
---------------------------------------------------------
+Permutohedral field (:monosp:`permutofield`)
+--------------------------------------------
 
 .. pluginparameters::
 
@@ -61,12 +61,12 @@ public:
 
     PermutoEncoding(const Properties &props) : Base(props) {
         if constexpr (!dr::is_jit_v<Float>)
-            Throw("permutoencoding: variant \"%s\" is unsupported. "
+            Throw("permutofield: variant \"%s\" is unsupported. "
                   "Permutohedral encodings require an LLVM or CUDA JIT "
                   "variant.", this->variant_name());
 
         if (props.has_property("encoding"))
-            Throw("permutoencoding: nested encoding child composition is not "
+            Throw("permutofield: nested encoding child composition is not "
                   "supported; compose encodings in neuralfield instead.");
 
         m_input_dim = props.get<uint32_t>("input_dim", 2);
@@ -77,9 +77,9 @@ public:
         props.mark_queried("per_level_scale");
 
         if (m_input_dim != 2 && m_input_dim != 3)
-            Throw("permutoencoding: input_dim must be 2 or 3.");
+            Throw("permutofield: input_dim must be 2 or 3.");
         if (m_out_dim == 0)
-            Throw("permutoencoding: out_dim must be positive.");
+            Throw("permutofield: out_dim must be positive.");
 
         m_params = dr::empty<FloatStorage>(m_out_dim);
         for (uint32_t i = 0; i < m_out_dim; ++i) {
@@ -110,7 +110,7 @@ public:
                       Mask active) const override {
         validate_args(args);
         if (m_input_dim != 3)
-            Throw("permutoencoding: Interaction queries require input_dim=3.");
+            Throw("permutofield: Interaction queries require input_dim=3.");
         return eval_impl(it.p.x(), it.p.y(), it.p.z(), active);
     }
 
@@ -120,7 +120,7 @@ public:
 
     void parameters_changed(const std::vector<std::string> &) override {
         if (m_params.size() != m_out_dim)
-            Throw("permutoencoding: parameter size must match out_dim.");
+            Throw("permutofield: parameter size must match out_dim.");
     }
 
     std::string to_string() const override {
@@ -137,7 +137,7 @@ public:
 private:
     void validate_args(Args args) const {
         if (args.size != 0)
-            Throw("permutoencoding: args_dim is 0, got %u argument "
+            Throw("permutofield: args_dim is 0, got %u argument "
                   "channel(s).", args.size);
     }
 

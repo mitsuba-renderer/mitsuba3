@@ -154,6 +154,16 @@ def gpu_summary() -> str | None:
     ])
 
 
+def preferred_ad_rgb_variant() -> str:
+    for variant, backend in [
+        ("cuda_ad_rgb", dr.JitBackend.CUDA),
+        ("llvm_ad_rgb", dr.JitBackend.LLVM),
+    ]:
+        if variant in mi.variants() and dr.has_backend(backend):
+            return variant
+    raise SystemExit("No available AD RGB variant found; expected cuda_ad_rgb or llvm_ad_rgb.")
+
+
 def collect_environment(config: BenchmarkConfig) -> dict[str, Any]:
     build_type = None
     cache = build_dir(config) / "CMakeCache.txt"
@@ -608,11 +618,22 @@ def grid_field_config(ctx: BenchmarkContext) -> dict[str, Any]:
 
 def encoding_config(ctx: BenchmarkContext) -> dict[str, Any]:
     plugin = {
-        "hashgrid": "hashgridencoding",
-        "permuto": "permutoencoding",
-        "sinusoidal": "sinusoidalencoding",
+        "hashgrid": "hashgridfield",
+        "permuto": "permutofield",
+        "sinusoidal": "sinusoidalfield",
     }[ctx.config.encoding]
-    return {
+
+    if ctx.config.encoding == "sinusoidal":
+        return {
+            "type": plugin,
+            "input_dim": 2,
+            "out_dim": max(ctx.config.out_dim, 8),
+            "n_frequencies": 4,
+            "min_frequency": 1.0,
+            "max_frequency": 8.0,
+        }
+
+    config = {
         "type": plugin,
         "input_dim": 2,
         "out_dim": max(ctx.config.out_dim, 8),
@@ -620,8 +641,10 @@ def encoding_config(ctx: BenchmarkContext) -> dict[str, Any]:
         "n_features_per_level": 2,
         "base_resolution": 8,
         "per_level_scale": 1.5,
-        "hashmap_size": 1 << 14,
     }
+    if ctx.config.encoding == "hashgrid":
+        config["hashmap_size"] = 1 << 14
+    return config
 
 
 def neural_field_config(ctx: BenchmarkContext) -> dict[str, Any]:
@@ -899,7 +922,11 @@ CASE_INFO = {
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Field benchmark runner")
-    parser.add_argument("--variant", default="scalar_rgb")
+    parser.add_argument(
+        "--variant",
+        default="auto_ad_rgb",
+        help="Variant to run. Defaults to cuda_ad_rgb with llvm_ad_rgb fallback.",
+    )
     parser.add_argument("--case", choices=sorted(CASES))
     parser.add_argument("--repeats", type=int, default=10)
     parser.add_argument("--warmup", type=int, default=3)
@@ -987,6 +1014,8 @@ def main() -> None:
 
     if not args.case:
         raise SystemExit("--case is required unless --list is specified")
+    if args.variant in ("auto", "auto_ad_rgb"):
+        args.variant = preferred_ad_rgb_variant()
 
     if args.inactive_fraction < 0 or args.inactive_fraction >= 1:
         raise SystemExit("--inactive-fraction must be in [0, 1)")
