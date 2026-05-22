@@ -65,6 +65,11 @@ def make_python_args_field():
         def eval_1(self, si, args=None, active=True):
             return self.eval_color3(si, args=args, active=active).x
 
+        def eval_n(self, si, count, args=None, active=True):
+            if count != 3:
+                raise RuntimeError("count must be 3")
+            return mi.ArrayXf(self.eval_color3(si, args=args, active=active))
+
     return PythonArgsField()
 
 
@@ -151,9 +156,13 @@ def test04_python_field_metadata_and_eval_dispatch_through_virtual_api(field_ad_
                        [0.35, 0.95, 0.7])
     assert dr.allclose(field.eval_1(si, args=mi.ArrayXf([0.1, 0.2, 0.3, 0.4])),
                        0.35)
+    assert dr.allclose(field.eval_n(si, 3, args=[0.1, 0.2, 0.3, 0.4]),
+                       [0.35, 0.95, 0.7])
 
     with pytest.raises(RuntimeError, match="args_dim|4"):
         field.eval_color3(si, args=[1.0, 2.0, 3.0])
+    with pytest.raises(RuntimeError, match="args_dim|4"):
+        field.eval_n(si, 3, args=[1.0, 2.0, 3.0])
 
 
 def test05_fieldptr_vectorized_fixed_and_generic_calls(field_ad_rgb_variant):
