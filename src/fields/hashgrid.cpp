@@ -64,6 +64,11 @@ public:
     using Args         = typename Base::Args;
 
     HashGridEncoding(const Properties &props) : Base(props) {
+        if constexpr (!dr::is_jit_v<Float>)
+            Throw("hashgridencoding: variant \"%s\" is unsupported. Hash grid "
+                  "encodings require an LLVM or CUDA JIT variant.",
+                  this->variant_name());
+
         if (props.has_property("encoding"))
             Throw("hashgridencoding: nested encoding child composition is not "
                   "supported; compose encodings in neuralfield instead.");

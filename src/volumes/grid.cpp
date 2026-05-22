@@ -9,6 +9,9 @@
 #include <drjit/dynamic.h>
 #include <drjit/texture.h>
 
+#include <algorithm>
+#include <limits>
+
 NAMESPACE_BEGIN(mitsuba)
 
 
@@ -631,22 +634,25 @@ protected:
         uint32_t voxel_count = (uint32_t) (shape[0] * shape[1] * shape[2]);
         DynamicBuffer<Float> values = dr::detach(m_texture.value());
 
-        for (uint32_t c = 0; c < channels; ++c) {
-            if constexpr (dr::is_jit_v<Float>) {
-                DynamicBuffer<UInt32> voxel_idx =
-                    dr::arange<DynamicBuffer<UInt32>>(voxel_count);
+        if constexpr (dr::is_jit_v<Float>) {
+            DynamicBuffer<UInt32> voxel_idx =
+                dr::arange<DynamicBuffer<UInt32>>(voxel_count);
+            for (uint32_t c = 0; c < channels; ++c) {
                 DynamicBuffer<UInt32> index =
                     voxel_idx * (uint32_t) shape[3] + c;
                 DynamicBuffer<Float> channel_values =
                     dr::gather<Float>(values, index);
                 m_max_per_channel[c] =
                     (ScalarFloat) dr::max_nested(channel_values);
-            } else {
-                ScalarFloat max_value = 0.f;
-                for (uint32_t i = 0; i < voxel_count; ++i)
-                    max_value = dr::maximum(max_value,
-                        (ScalarFloat) values.entry(i * shape[3] + c));
-                m_max_per_channel[c] = max_value;
+            }
+        } else {
+            std::fill(m_max_per_channel.begin(), m_max_per_channel.end(),
+                      -std::numeric_limits<ScalarFloat>::infinity());
+            for (uint32_t i = 0; i < voxel_count; ++i) {
+                uint32_t base = i * (uint32_t) shape[3];
+                for (uint32_t c = 0; c < channels; ++c)
+                    m_max_per_channel[c] = dr::maximum(m_max_per_channel[c],
+                        (ScalarFloat) values.entry(base + c));
             }
         }
     }

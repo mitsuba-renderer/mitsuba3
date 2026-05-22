@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import platform
 import statistics
 import subprocess
@@ -106,11 +107,22 @@ def repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
+def source_root() -> Path:
+    return Path(os.environ.get("MITSUBA_BENCH_SOURCE_ROOT", repo_root())).resolve()
+
+
+def build_dir(config: BenchmarkConfig) -> Path:
+    env_build = os.environ.get("MITSUBA_BENCH_BUILD_DIR")
+    if env_build:
+        return Path(env_build).resolve()
+    return repo_root() / f"build-{config.variant}"
+
+
 def git_output(*args: str) -> str | None:
     try:
         return subprocess.check_output(
             ["git", *args],
-            cwd=repo_root(),
+            cwd=source_root(),
             text=True,
             stderr=subprocess.DEVNULL,
         ).strip()
@@ -144,7 +156,7 @@ def gpu_summary() -> str | None:
 
 def collect_environment(config: BenchmarkConfig) -> dict[str, Any]:
     build_type = None
-    cache = repo_root() / f"build-{config.variant}" / "CMakeCache.txt"
+    cache = build_dir(config) / "CMakeCache.txt"
     if cache.exists():
         for line in cache.read_text(errors="ignore").splitlines():
             if line.startswith("CMAKE_BUILD_TYPE:"):
@@ -156,6 +168,9 @@ def collect_environment(config: BenchmarkConfig) -> dict[str, Any]:
         "drjit_version": getattr(dr, "__version__", None),
         "git_commit": git_output("rev-parse", "--short", "HEAD"),
         "git_dirty": bool(git_output("status", "--short")),
+        "source_root": str(source_root()),
+        "build_dir": str(build_dir(config)),
+        "implementation": os.environ.get("MITSUBA_BENCH_IMPLEMENTATION"),
         "variant": config.variant,
         "available_variants": list(mi.variants()),
         "platform": platform.platform(),

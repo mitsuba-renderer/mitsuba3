@@ -60,6 +60,11 @@ public:
     using Args         = typename Base::Args;
 
     PermutoEncoding(const Properties &props) : Base(props) {
+        if constexpr (!dr::is_jit_v<Float>)
+            Throw("permutoencoding: variant \"%s\" is unsupported. "
+                  "Permutohedral encodings require an LLVM or CUDA JIT "
+                  "variant.", this->variant_name());
+
         if (props.has_property("encoding"))
             Throw("permutoencoding: nested encoding child composition is not "
                   "supported; compose encodings in neuralfield instead.");
