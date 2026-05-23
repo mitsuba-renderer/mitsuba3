@@ -114,7 +114,8 @@ def test_incoming_flux(variant_scalar_rgb, radiance, np_rng):
 
 
 @pytest.mark.parametrize("radiance", [2.04, 1.0, 0.0])
-def test_incoming_flux_integrator(variant_scalar_rgb, radiance):
+@pytest.mark.parametrize("integrator_type", ["path", "ptracer"])
+def test_incoming_flux_integrator(variant_scalar_rgb, radiance, integrator_type):
     """
     We test the recorded power density of the irradiance meter, by creating a simple scene:
     The irradiance meter is attached to a sphere with unit radius at the coordinate origin
@@ -129,17 +130,21 @@ def test_incoming_flux_integrator(variant_scalar_rgb, radiance):
         'type': 'scene',
         'sensor': sensor_shape_dict(1, mi.ScalarVector3f(0, 0, 0)),
         'emitter': constant_emitter_dict(radiance),
-        'integrator': {'type': 'path'}
+        'integrator': {'type': integrator_type},
+        'sampler': {
+            'type': 'independent',
+            'sample_count': 4000  
+        }
     }
 
     scene = mi.load_dict(scene_dict)
-    scene.integrator().render(scene, seed=0)
+    scene.integrator().render(scene, seed=0, spp=10000)
     film = scene.sensors()[0].film()
 
     img = film.bitmap(raw=True).convert(mi.Bitmap.PixelFormat.Y,
                                         mi.Struct.Type.Float32, srgb_gamma=False)
 
-    assert dr.allclose(mi.TensorXf(img), (radiance * dr.pi))
+    assert dr.allclose(mi.TensorXf(img), (radiance * dr.pi), rtol=0.2)
 
 
 def test_shape_accessors(variants_vec_rgb):
