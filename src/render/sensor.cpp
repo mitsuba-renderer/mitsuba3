@@ -101,10 +101,15 @@ Sensor<Float, Spectrum>::sample_wavelengths(const SurfaceInteraction3f& /*si*/, 
                                             Mask active) const {
     if constexpr (is_spectral_v<Spectrum>) {
         if (m_srf != nullptr) {
-            return m_srf->sample_spectrum(
-                    dr::zeros<SurfaceInteraction3f>(),
-                    math::sample_shifted<Wavelength>(sample),
-                    active);
+            auto wavelengths = m_srf->sample_spectrum(
+                                dr::zeros<SurfaceInteraction3f>(),
+                                math::sample_shifted<Wavelength>(sample),
+                                active).first;
+            SurfaceInteraction3f si;
+            si.wavelengths = wavelengths;
+            auto pdf = m_srf->pdf_spectrum(si, active);
+            auto weights = dr::select(pdf != 0.f, dr::rcp(pdf), 0.f);
+            return { wavelengths, weights };
         }
     } else {
         DRJIT_MARK_USED(active);
