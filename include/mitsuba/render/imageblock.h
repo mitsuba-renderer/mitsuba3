@@ -105,14 +105,6 @@ public:
      *   are random and will in any case be subject to thread divergence (e.g.
      *   in a particle tracer that makes random connections to the sensor).
      *
-     * \param compensate
-     *   If set to \c true, the implementation internally switches to
-     *   Kahan-style error-compensated floating point accumulation. This is
-     *   useful when accumulating many samples into a single precision image
-     *   block. Note that this is currently only supported in JIT modes, and
-     *   that it can make the accumulation quite a bit more expensive. The
-     *   default is \c false.
-     *
      * \param warn_negative
      *    If set to \c true, \ref put() will warn when writing samples with
      *    negative components. This test is only enabled in scalar variants by
@@ -132,7 +124,6 @@ public:
                bool border = std::is_scalar_v<Float>,
                bool normalize = false,
                bool coalesce = dr::is_jit_v<Float>,
-               bool compensate = false,
                bool warn_negative = std::is_scalar_v<Float>,
                bool warn_invalid = std::is_scalar_v<Float>);
 
@@ -154,7 +145,6 @@ public:
                bool border = std::is_scalar_v<Float>,
                bool normalize = false,
                bool coalesce = dr::is_jit_v<Float>,
-               bool compensate = false,
                bool warn_negative = std::is_scalar_v<Float>,
                bool warn_invalid = std::is_scalar_v<Float>);
 
@@ -298,12 +288,6 @@ public:
     /// Try to coalesce reads/writes in JIT modes?
     bool coalesce() const { return m_coalesce; }
 
-    /// Use Kahan-style error-compensated floating point accumulation?
-    void set_compensate(bool value) { m_compensate = value; }
-
-    /// Use Kahan-style error-compensated floating point accumulation?
-    bool compensate() const { return m_compensate; }
-
     /// Return the number of channels stored by the image block
     uint32_t channel_count() const { return m_channel_count; }
 
@@ -347,15 +331,13 @@ protected:
     uint32_t m_channel_count;
     uint32_t m_border_size;
     TensorXf m_tensor;
-    mutable TensorXf m_tensor_compensation;
     ref<const ReconstructionFilter> m_rfilter;
     bool m_normalize;
     bool m_coalesce;
-    bool m_compensate;
     bool m_warn_negative;
     bool m_warn_invalid;
 
-    MI_TRAVERSE_CB(Object, m_tensor, m_tensor_compensation)
+    MI_TRAVERSE_CB(Object, m_tensor)
 };
 
 MI_EXTERN_CLASS(ImageBlock)
