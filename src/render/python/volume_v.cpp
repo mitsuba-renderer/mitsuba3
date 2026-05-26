@@ -16,9 +16,41 @@ public:
     MI_IMPORT_TYPES(VolumeField)
     using BaseField = mitsuba::VolumeField<Float, Spectrum>;
 
-    NB_TRAMPOLINE(VolumeField, 12);
+    NB_TRAMPOLINE(VolumeField, 21);
 
     PyVolume(const Properties &props) : BaseField(props) { }
+
+    FieldValueType out_type() const override {
+        NB_OVERRIDE(out_type);
+    }
+
+    FieldDomain domain() const override {
+        NB_OVERRIDE(domain);
+    }
+
+    uint32_t out_dim() const override {
+        NB_OVERRIDE(out_dim);
+    }
+
+    uint32_t args_dim() const override {
+        NB_OVERRIDE(args_dim);
+    }
+
+    bool supports_scalar() const override {
+        NB_OVERRIDE(supports_scalar);
+    }
+
+    bool supports_jit() const override {
+        NB_OVERRIDE(supports_jit);
+    }
+
+    bool supports_surface_queries() const override {
+        NB_OVERRIDE(supports_surface_queries);
+    }
+
+    bool supports_interaction_queries() const override {
+        NB_OVERRIDE(supports_interaction_queries);
+    }
 
     UnpolarizedSpectrum eval(const Interaction3f &it,
                              Mask active = true) const override {
@@ -87,6 +119,10 @@ public:
 
     ScalarVector3i resolution() const override {
         NB_OVERRIDE(resolution);
+    }
+
+    uint32_t channel_count() const override {
+        NB_OVERRIDE(channel_count);
     }
 
     std::string to_string() const override {

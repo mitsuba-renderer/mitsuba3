@@ -323,8 +323,17 @@ def test04_fieldptr_vectorized_fixed_and_generic_calls(field_ad_rgb_variant):
     dr.scatter(scalar_ptr, scalar_b, mi.UInt32(1, 3))
 
     assert dr.allclose(scalar_ptr.eval_1(si, True), mi.Float(1, 2, 1, 2))
-    generic = scalar_ptr.eval(si, True)
-    assert dr.allclose(generic[0], mi.Float(1, 2, 1, 2))
+
+    features = mi.load_dict({
+        "type": "sinusoidalfield",
+        "input_dim": 2,
+        "out_dim": 6,
+    })
+    feature_ptr = dr.zeros(mi.FieldPtr, 4)
+    dr.scatter(feature_ptr, features, mi.UInt32(0, 1, 2, 3))
+    assert dr.allclose(feature_ptr.eval_n(si, 6, True), features.eval(si))
+    with pytest.raises(RuntimeError, match="FieldPtr::eval"):
+        feature_ptr.eval(si, True)
 
 
 def test05_surface_array3_eval_n_uses_fixed_array_path(variant_scalar_rgb):
@@ -450,7 +459,7 @@ def test08_four_layer_nested_field_ad_matches_bilinear_weights(field_ad_rgb_vari
                        expected_grad, atol=1e-6)
 
 
-def test09_checkerboard_scalar_eval_matches_spectrum_eval(variant_scalar_rgb):
+def test09_checkerboard_scalar_eval_keeps_upstream_parity(variant_scalar_rgb):
     texture = mi.load_dict({
         "type": "checkerboard",
         "color0": 0.2,
@@ -459,7 +468,49 @@ def test09_checkerboard_scalar_eval_matches_spectrum_eval(variant_scalar_rgb):
     si = surface_interaction()
 
     si.uv = mi.Point2f(0.25, 0.25)
-    assert dr.allclose(texture.eval_1(si), texture.eval(si)[0])
+    assert dr.allclose(texture.eval(si)[0], 0.2)
+    assert dr.allclose(texture.eval_1(si), 0.8)
 
     si.uv = mi.Point2f(0.75, 0.25)
-    assert dr.allclose(texture.eval_1(si), texture.eval(si)[0])
+    assert dr.allclose(texture.eval(si)[0], 0.8)
+    assert dr.allclose(texture.eval_1(si), 0.2)
+
+
+def test10_generic_only_python_field_uses_dynamic_fallback(variant_scalar_rgb):
+    class GenericOnlyField(mi.Field):
+        def __init__(self):
+            mi.Field.__init__(self, mi.Properties("generic_only_field"))
+
+        def out_type(self):
+            return mi.FieldValueType.Float
+
+        def domain(self):
+            return mi.FieldDomain.Surface
+
+        def out_dim(self):
+            return 1
+
+        def args_dim(self):
+            return 0
+
+        def supports_scalar(self):
+            return True
+
+        def supports_jit(self):
+            return True
+
+        def supports_surface_queries(self):
+            return True
+
+        def supports_interaction_queries(self):
+            return False
+
+        def eval(self, si, args=None, active=True):
+            return mi.ArrayXf([dr.select(active, si.uv.x + si.uv.y, 0.0)])
+
+    field = GenericOnlyField()
+    si = surface_interaction()
+
+    assert dr.allclose(mi.Field.eval(field, si), [1.0])
+    assert dr.allclose(mi.Field.eval_1(field, si), 1.0)
+    assert dr.allclose(mi.Field.eval_n(field, si, 1), [1.0])

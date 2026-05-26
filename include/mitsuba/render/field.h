@@ -45,6 +45,8 @@ enum class FieldDomain : uint32_t {
     SurfaceAndInteraction
 };
 
+extern MI_EXPORT_LIB const char *field_value_type_name(FieldValueType type);
+
 /**
  * \brief View of optional argument channels passed to a \ref Field query
  */
@@ -382,6 +384,7 @@ NAMESPACE_END(mitsuba)
 
 DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Field)
     DRJIT_CALL_GETTER(out_dim)
+    DRJIT_CALL_GETTER(args_dim)
     DRJIT_CALL_METHOD(eval)
     DRJIT_CALL_METHOD(eval_1)
     DRJIT_CALL_METHOD(eval_color3)

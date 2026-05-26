@@ -281,10 +281,13 @@ def test15_plugin_manager_plugin_type(variant_scalar_rgb):
     assert pmgr.plugin_type('independent') == mi.ObjectType.Sampler
     assert pmgr.plugin_type('sphere') == mi.ObjectType.Shape
     assert pmgr.plugin_type('bitmap') == mi.ObjectType.Field
+    assert pmgr.plugin_type('gridvolume') == mi.ObjectType.Field
     assert pmgr.plugin_type('hdrfilm') == mi.ObjectType.Film
     assert pmgr.plugin_type('box') == mi.ObjectType.ReconstructionFilter
     # Test unknown/non-existent plugin types
     assert pmgr.plugin_type('nonexistent_plugin') == mi.ObjectType.Unknown
+    assert pmgr.plugin_type('fieldtexture') == mi.ObjectType.Unknown
+    assert pmgr.plugin_type('fieldvolume') == mi.ObjectType.Unknown
     assert pmgr.plugin_type('') == mi.ObjectType.Unknown
     # Test special case: scene
     assert pmgr.plugin_type('scene') == mi.ObjectType.Scene

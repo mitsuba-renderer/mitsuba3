@@ -10,20 +10,6 @@ NAMESPACE_BEGIN(mitsuba)
 //! Volume base implementation
 // =======================================================================
 
-namespace {
-    const char *volume_field_value_type_name(FieldValueType type) {
-        switch (type) {
-            case FieldValueType::Float: return "Float";
-            case FieldValueType::Spectrum: return "Spectrum";
-            case FieldValueType::Color3: return "Color3";
-            case FieldValueType::Array2: return "Array2";
-            case FieldValueType::Array3: return "Array3";
-            case FieldValueType::Features: return "Features";
-            default: return "Unknown";
-        }
-    }
-}
-
 MI_VARIANT VolumeField<Float, Spectrum>::VolumeField(const Properties &props)
     : Base(props) {
     m_to_local = props.get<ScalarAffineTransform4f>("to_world", ScalarAffineTransform4f()).inverse();
@@ -110,7 +96,7 @@ VolumeField<Float, Spectrum>::eval_1(const Interaction3f &it,
     uint32_t dim = out_dim();
     if (type != FieldValueType::Float || dim != 1)
         Throw("Volume::eval_1(): expected Float[1], got %s[%u].",
-              volume_field_value_type_name(type), dim);
+              field_value_type_name(type), dim);
     return eval_1(it, active);
 }
 
@@ -136,7 +122,7 @@ VolumeField<Float, Spectrum>::eval_color3(const Interaction3f &it,
     uint32_t dim = out_dim();
     if (type != FieldValueType::Color3 || dim != 3)
         Throw("Volume::eval_color3(): expected Color3[3], got %s[%u].",
-              volume_field_value_type_name(type), dim);
+              field_value_type_name(type), dim);
     Vector3f value = eval_3(it, active);
     return Color3f(value.x(), value.y(), value.z());
 }
@@ -161,7 +147,7 @@ VolumeField<Float, Spectrum>::eval_array2(const Interaction3f &, Args args,
     FieldValueType type = out_type();
     uint32_t dim = out_dim();
     Throw("Volume::eval_array2(): expected Array2[2], got %s[%u].",
-          volume_field_value_type_name(type), dim);
+          field_value_type_name(type), dim);
     return dr::zeros<Array2f>();
 }
 
@@ -187,7 +173,7 @@ VolumeField<Float, Spectrum>::eval_array3(const Interaction3f &it,
     uint32_t dim = out_dim();
     if (type != FieldValueType::Array3 || dim != 3)
         Throw("Volume::eval_array3(): expected Array3[3], got %s[%u].",
-              volume_field_value_type_name(type), dim);
+              field_value_type_name(type), dim);
     return eval_3(it, active);
 }
 
@@ -213,7 +199,7 @@ VolumeField<Float, Spectrum>::eval_spec(const Interaction3f &it,
     uint32_t dim = out_dim();
     if (type != FieldValueType::Spectrum || dim != expected_dim)
         Throw("Volume::eval_spec(): expected Spectrum[%u], got %s[%u].",
-              expected_dim, volume_field_value_type_name(type), dim);
+              expected_dim, field_value_type_name(type), dim);
     return eval(it, active);
 }
 
@@ -239,7 +225,7 @@ VolumeField<Float, Spectrum>::eval_array6(const Interaction3f &it,
     uint32_t dim = out_dim();
     if (type != FieldValueType::Features || dim != 6)
         Throw("Volume::eval_array6(): expected Features[6], got %s[%u].",
-              volume_field_value_type_name(type), dim);
+              field_value_type_name(type), dim);
     return eval_6(it, active);
 }
 
@@ -303,7 +289,7 @@ VolumeField<Float, Spectrum>::eval_n(const Interaction3f &it,
     }
 
     Throw("Volume::eval_n(): unsupported volume field output %s[%u].",
-          volume_field_value_type_name(type), dim);
+          field_value_type_name(type), dim);
 }
 
 MI_VARIANT typename VolumeField<Float, Spectrum>::UnpolarizedSpectrum

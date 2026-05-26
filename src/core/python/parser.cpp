@@ -20,27 +20,8 @@ NB_MAKE_OPAQUE(std::vector<parser::SceneNode>);
 // For casting ref<Object> to Python
 extern nb::object cast_object(Object *o);
 
-static bool is_spectrum_field_plugin(std::string_view plugin_name) {
-    return plugin_name == "uniform" || plugin_name == "srgb" ||
-           plugin_name == "d65" || plugin_name == "blackbody" ||
-           plugin_name == "regular" || plugin_name == "irregular" ||
-           plugin_name == "rawconstant";
-}
-
 static ObjectType dict_object_type(std::string_view plugin_name) {
-    ObjectType type = PluginManager::instance()->plugin_type(plugin_name);
-    if (type != ObjectType::Field)
-        return type;
-
-    if (plugin_name == "bitmap" || plugin_name == "checkerboard" ||
-        plugin_name == "mesh_attribute" || plugin_name == "volume" ||
-        is_spectrum_field_plugin(plugin_name))
-        return ObjectType::Texture;
-
-    if (plugin_name == "gridvolume" || plugin_name == "constvolume")
-        return ObjectType::Volume;
-
-    return type;
+    return PluginManager::instance()->plugin_type(plugin_name);
 }
 
 // Helper to parse RGB/spectrum dictionaries

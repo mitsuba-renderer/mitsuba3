@@ -89,7 +89,13 @@ public:
      * type from the provided class 'T'.
      */
     template <typename T> ref<T> create_object(const Properties &props) {
-        return ref<T>((T *) create_object(props, T::Variant, T::Type).get());
+        ref<Object> object = create_object(props, T::Variant, T::Type);
+        T *result = dynamic_cast<T *>(object.get());
+        if (!result)
+            throw std::runtime_error(
+                "Type mismatch: instantiated plugin does not implement the "
+                "requested C++ interface.");
+        return ref<T>(result);
     }
 
     /// Get the type of a plugin by name, or return Object::Unknown if unknown.

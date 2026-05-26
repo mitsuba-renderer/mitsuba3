@@ -160,7 +160,8 @@ def test02_bitmap_field_matches_bitmap_texture_for_filters_wraps_and_masks(
         data, filter_type=filter_type, wrap_mode=wrap_mode
     ))
     field = load_field(bitmap_field_dict(
-        channels=3, data=data, filter_type=filter_type, wrap_mode=wrap_mode
+        channels=3, data=bitmap_data(channels=3), filter_type=filter_type,
+        wrap_mode=wrap_mode
     ))
     si = surface_interaction(width=5)
     active = bool_array([True, False, True, True, False])
@@ -173,7 +174,8 @@ def test02_bitmap_field_matches_bitmap_texture_for_filters_wraps_and_masks(
         mono_data, filter_type=filter_type, wrap_mode=wrap_mode
     ))
     mono_field = load_field(bitmap_field_dict(
-        channels=1, data=mono_data, filter_type=filter_type, wrap_mode=wrap_mode
+        channels=1, data=bitmap_data(channels=1), filter_type=filter_type,
+        wrap_mode=wrap_mode
     ))
 
     assert dr.allclose(mono_field.eval_1(si, active=active),

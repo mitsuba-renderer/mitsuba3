@@ -10,19 +10,6 @@ NAMESPACE_BEGIN(mitsuba)
 //! Texture base implementation
 // =======================================================================
 
-namespace {
-    const char *texture_field_value_type_name(FieldValueType type) {
-        switch (type) {
-            case FieldValueType::Float: return "Float";
-            case FieldValueType::Spectrum: return "Spectrum";
-            case FieldValueType::Color3: return "Color3";
-            case FieldValueType::Array2: return "Array2";
-            case FieldValueType::Array3: return "Array3";
-            case FieldValueType::Features: return "Features";
-            default: return "Unknown";
-        }
-    }
-}
 
 MI_VARIANT SurfaceField<Float, Spectrum>::SurfaceField(const Properties &props)
     : Base(props) { }
@@ -102,7 +89,7 @@ SurfaceField<Float, Spectrum>::eval_1(const SurfaceInteraction3f &si,
     uint32_t dim = out_dim();
     if (type != FieldValueType::Float || dim != 1)
         Throw("Texture::eval_1(): expected Float[1], got %s[%u].",
-              texture_field_value_type_name(type), dim);
+              field_value_type_name(type), dim);
     return eval_1(si, active);
 }
 
@@ -128,7 +115,7 @@ SurfaceField<Float, Spectrum>::eval_color3(const SurfaceInteraction3f &si,
     uint32_t dim = out_dim();
     if (type != FieldValueType::Color3 || dim != 3)
         Throw("Texture::eval_color3(): expected Color3[3], got %s[%u].",
-              texture_field_value_type_name(type), dim);
+              field_value_type_name(type), dim);
     return eval_3(si, active);
 }
 
@@ -153,7 +140,7 @@ SurfaceField<Float, Spectrum>::eval_array2(const SurfaceInteraction3f &,
     FieldValueType type = out_type();
     uint32_t dim = out_dim();
     Throw("Texture::eval_array2(): expected Array2[2], got %s[%u].",
-          texture_field_value_type_name(type), dim);
+          field_value_type_name(type), dim);
     return dr::zeros<Array2f>();
 }
 
@@ -179,7 +166,7 @@ SurfaceField<Float, Spectrum>::eval_array3(const SurfaceInteraction3f &si,
     uint32_t dim = out_dim();
     if (type != FieldValueType::Array3 || dim != 3)
         Throw("Texture::eval_array3(): expected Array3[3], got %s[%u].",
-              texture_field_value_type_name(type), dim);
+              field_value_type_name(type), dim);
     return eval_3(si, active);
 }
 
@@ -205,7 +192,7 @@ SurfaceField<Float, Spectrum>::eval_spec(const SurfaceInteraction3f &si,
     uint32_t dim = out_dim();
     if (type != FieldValueType::Spectrum || dim != expected_dim)
         Throw("Texture::eval_spec(): expected Spectrum[%u], got %s[%u].",
-              expected_dim, texture_field_value_type_name(type), dim);
+              expected_dim, field_value_type_name(type), dim);
     return eval(si, active);
 }
 
@@ -230,7 +217,7 @@ SurfaceField<Float, Spectrum>::eval_array6(const SurfaceInteraction3f &,
     FieldValueType type = out_type();
     uint32_t dim = out_dim();
     Throw("Texture::eval_array6(): expected Features[6], got %s[%u].",
-          texture_field_value_type_name(type), dim);
+          field_value_type_name(type), dim);
     return dr::zeros<Array6f>();
 }
 
@@ -277,7 +264,7 @@ SurfaceField<Float, Spectrum>::eval_n(const SurfaceInteraction3f &si,
             out[i] = value.entry(i);
     } else {
         Throw("Texture::eval_n(): unsupported texture field output %s[%u].",
-              texture_field_value_type_name(type), dim);
+              field_value_type_name(type), dim);
     }
 }
 
@@ -359,6 +346,24 @@ SurfaceField<Float, Spectrum>::wavelength_range() const {
 MI_VARIANT typename SurfaceField<Float, Spectrum>::ScalarFloat
 SurfaceField<Float, Spectrum>::max() const {
     NotImplementedError("max");
+}
+
+MI_VARIANT ref<SurfaceField<Float, Spectrum>>
+SurfaceField<Float, Spectrum>::D65(ScalarFloat scale) {
+    ref<FieldType> field = Base::D65(scale);
+    SurfaceField *texture = dynamic_cast<SurfaceField *>(field.get());
+    if (!texture)
+        Throw("Texture::D65(): expected a texture field expansion.");
+    return ref<SurfaceField>(texture);
+}
+
+MI_VARIANT ref<SurfaceField<Float, Spectrum>>
+SurfaceField<Float, Spectrum>::D65(ref<FieldType> field) {
+    ref<FieldType> result = Base::D65(field);
+    SurfaceField *texture = dynamic_cast<SurfaceField *>(result.get());
+    if (!texture)
+        Throw("Texture::D65(): expected a texture field expansion.");
+    return ref<SurfaceField>(texture);
 }
 
 MI_INSTANTIATE_CLASS(SurfaceField)

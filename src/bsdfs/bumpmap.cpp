@@ -97,7 +97,7 @@ template <typename Float, typename Spectrum>
 class BumpMap final : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
-    MI_IMPORT_TYPES(Field, SurfaceField, Texture)
+        MI_IMPORT_TYPES(Field, Texture)
 
     BumpMap(const Properties &props) : Base(props) {
         for (auto &prop : props.objects()) {
@@ -110,12 +110,10 @@ public:
                     Throw("Only a single Texture child object can be specified.");
                 ref<Object> object = make_texture_object_for_variant(
                     Field::Variant, prop.get<ref<Object>>());
-                SurfaceField *surface_field =
-                    dynamic_cast<SurfaceField *>(object.get());
-                if (!surface_field)
-                    Throw("BumpMap requires a SurfaceField child with gradient "
-                          "support.");
-                m_nested_texture = surface_field;
+                Field *field = dynamic_cast<Field *>(object.get());
+                if (!field)
+                    Throw("BumpMap requires a field child with gradient support.");
+                m_nested_texture = field;
             }
         }
         if (!m_nested_bsdf)
@@ -281,7 +279,7 @@ public:
     MI_DECLARE_CLASS(BumpMap)
 protected:
     ScalarFloat m_scale;
-    ref<SurfaceField> m_nested_texture;
+    ref<Field> m_nested_texture;
     ref<Base> m_nested_bsdf;
 
     bool m_flip_invalid_normals;

@@ -71,10 +71,9 @@ _ScalarBool._mitsuba_scalar_bool = True
 def _mitsuba_field_args_len(args):
     if args is None:
         return 0
-    try:
+    if isinstance(args, (list, tuple)) or type(args).__name__ == "ArrayXf":
         return len(args)
-    except TypeError:
-        return 1
+    return 1
 
 
 def _mitsuba_wrap_field_method(fn, method_name):

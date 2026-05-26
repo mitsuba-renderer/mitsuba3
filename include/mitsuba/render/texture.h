@@ -18,7 +18,7 @@ NAMESPACE_BEGIN(mitsuba)
  * unitless reflectance parameters (e.g. an albedo of a reflectance model).
  *
  * The spectrum can be evaluated at arbitrary (continuous) wavelengths, though
-     * the underlying function is not required to be smooth or even continuous.
+ * the underlying function is not required to be smooth or even continuous.
  */
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB SurfaceField : public Field<Float, Spectrum> {
@@ -31,6 +31,7 @@ public:
     using Array2f      = typename Field<Float, Spectrum>::Array2f;
     using Array3f      = typename Field<Float, Spectrum>::Array3f;
     using Array6f      = typename Field<Float, Spectrum>::Array6f;
+    using FieldType    = typename Field<Float, Spectrum>::FieldType;
 
     // =============================================================
     //! @{ \name Standard sampling interface
@@ -292,6 +293,12 @@ public:
     /// Does this texture evaluation depend on the UV coordinates.
     bool is_spatially_varying() const override { return false; }
 
+    /// Convenience function returning the standard D65 illuminant texture.
+    static ref<SurfaceField> D65(ScalarFloat scale = 1.f);
+
+    /// Convenience function to create a product texture with the D65 illuminant.
+    static ref<SurfaceField> D65(ref<FieldType> field);
+
     MI_DECLARE_CLASS(SurfaceField)
     static constexpr const char *Variant =
         detail::variant<Float, Spectrum>::name;
@@ -308,3 +315,22 @@ protected:
 
 MI_EXTERN_CLASS(SurfaceField)
 NAMESPACE_END(mitsuba)
+
+// -----------------------------------------------------------------------
+//! @{ \name Enables vectorized method calls on Dr.Jit arrays of Textures
+// -----------------------------------------------------------------------
+
+DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::SurfaceField)
+    DRJIT_CALL_METHOD(eval)
+    DRJIT_CALL_METHOD(sample_spectrum)
+    DRJIT_CALL_METHOD(pdf_spectrum)
+    DRJIT_CALL_METHOD(sample_position)
+    DRJIT_CALL_METHOD(pdf_position)
+    DRJIT_CALL_METHOD(eval_1)
+    DRJIT_CALL_METHOD(eval_1_grad)
+    DRJIT_CALL_METHOD(eval_3)
+    DRJIT_CALL_METHOD(mean)
+
+    DRJIT_CALL_GETTER(max)
+    DRJIT_CALL_GETTER(is_spatially_varying)
+DRJIT_CALL_END()

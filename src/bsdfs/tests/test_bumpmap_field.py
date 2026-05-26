@@ -64,3 +64,69 @@ def test03_bumpmap_rejects_direct_fields_without_gradient_support(variant_scalar
                 "type": "diffuse",
             },
         })
+
+
+def test04_bumpmap_accepts_generic_field_with_gradient_support(variant_cuda_ad_rgb):
+    class ZeroGradientField(mi.Field):
+        def __init__(self, props):
+            mi.Field.__init__(self, props)
+
+        def out_type(self):
+            return mi.FieldValueType.Float
+
+        def domain(self):
+            return mi.FieldDomain.Surface
+
+        def out_dim(self):
+            return 1
+
+        def args_dim(self):
+            return 0
+
+        def supports_scalar(self):
+            return True
+
+        def supports_jit(self):
+            return True
+
+        def supports_surface_queries(self):
+            return True
+
+        def supports_interaction_queries(self):
+            return False
+
+        def eval(self, si, args=None, active=True):
+            return mi.ArrayXf([self.eval_1(si, args=args, active=active)])
+
+        def eval_1(self, si, args=None, active=True):
+            return dr.select(active, 0.5, 0.0)
+
+        def eval_1_grad(self, si, active=True):
+            return mi.Vector2f(0.0)
+
+    try:
+        mi.register_field("zero_gradient_field", ZeroGradientField)
+    except RuntimeError as exc:
+        if "already" not in str(exc).lower():
+            raise
+
+    bsdf = mi.load_dict({
+        "type": "bumpmap",
+        "height": {
+            "type": "zero_gradient_field",
+        },
+        "bsdf": {
+            "type": "diffuse",
+            "reflectance": 0.6,
+        },
+    })
+    reference = mi.load_dict({
+        "type": "diffuse",
+        "reflectance": 0.6,
+    })
+    si = make_si()
+    ctx = mi.BSDFContext()
+    wo = mi.Vector3f(0, 0, 1)
+
+    assert dr.allclose(bsdf.eval(ctx, si, wo),
+                       reference.eval(ctx, si, wo), atol=1e-6)

@@ -79,6 +79,14 @@ public:
                     break;
             }
         }
+
+        try {
+            (void) m_value->max();
+        } catch (const std::exception &e) {
+            Throw("ConstVolume requires its value field to provide max(): %s",
+                  e.what());
+        }
+
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -92,8 +100,8 @@ public:
         return result;
     }
 
-    Float eval_1(const Interaction3f & /* it */, Mask /* active */) const override {
-        return m_value->mean();
+    Float eval_1(const Interaction3f &it, Mask active) const override {
+        return eval(it, active).entry(0);
     }
 
     Vector3f eval_3(const Interaction3f &it, Mask active = true) const override {

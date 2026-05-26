@@ -2,6 +2,7 @@
 #include <mitsuba/render/field.h>
 
 #include <sstream>
+#include <vector>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -57,8 +58,8 @@ public:
     SinusoidalEncoding(const Properties &props) : Base(props) {
         m_input_dim = props.get<uint32_t>("input_dim", 2);
         m_n_frequencies = props.get<uint32_t>("n_frequencies", 4);
-        m_min_frequency = props.get<ScalarFloat>("min_frequency", 1.f);
-        m_max_frequency = props.get<ScalarFloat>("max_frequency", 8.f);
+        ScalarFloat min_frequency = props.get<ScalarFloat>("min_frequency", 1.f);
+        ScalarFloat max_frequency = props.get<ScalarFloat>("max_frequency", 8.f);
         uint32_t natural_dim = m_input_dim * m_n_frequencies * 2;
         m_out_dim = props.get<uint32_t>("out_dim", natural_dim);
 
@@ -66,16 +67,27 @@ public:
             Throw("sinusoidalfield: input_dim must be 2 or 3.");
         if (m_n_frequencies == 0)
             Throw("sinusoidalfield: n_frequencies must be positive.");
-        if (m_min_frequency <= 0 || m_max_frequency <= 0)
+        if (min_frequency <= 0 || max_frequency <= 0)
             Throw("sinusoidalfield: min_frequency and max_frequency must "
                   "be positive.");
-        if (m_max_frequency < m_min_frequency)
+        if (max_frequency < min_frequency)
             Throw("sinusoidalfield: max_frequency must be greater than or "
                   "equal to min_frequency.");
         if (m_out_dim == 0 || m_out_dim > natural_dim)
             Throw("sinusoidalfield: out_dim must be in [1, %u] for "
                   "input_dim=%u and n_frequencies=%u.",
                   natural_dim, m_input_dim, m_n_frequencies);
+
+        ScalarFloat log_min = dr::log(min_frequency),
+                    log_max = dr::log(max_frequency);
+        m_phases.resize(m_n_frequencies);
+        for (uint32_t band = 0; band < m_n_frequencies; ++band) {
+            ScalarFloat t = m_n_frequencies == 1
+                ? 0.f
+                : (ScalarFloat) band / (ScalarFloat) (m_n_frequencies - 1);
+            m_phases[band] = dr::TwoPi<ScalarFloat> *
+                             dr::exp(dr::lerp(log_min, log_max, t));
+        }
     }
 
     FieldValueType out_type() const override { return FieldValueType::Features; }
@@ -129,18 +141,12 @@ private:
     FloatStorage eval_impl(Float x, Float y, Float z, Mask active) const {
         FloatStorage result = dr::empty<FloatStorage>(m_out_dim);
         Float coords[3] = { x, y, z };
-        ScalarFloat log_min = dr::log(m_min_frequency),
-                    log_max = dr::log(m_max_frequency);
 
         uint32_t out = 0;
         for (uint32_t c = 0; c < m_input_dim && out < m_out_dim; ++c) {
             Float coord = coords[c];
             for (uint32_t band = 0; band < m_n_frequencies && out < m_out_dim; ++band) {
-                ScalarFloat t = m_n_frequencies == 1
-                    ? 0.f
-                    : (ScalarFloat) band / (ScalarFloat) (m_n_frequencies - 1);
-                Float phase = coord * (Float) (dr::TwoPi<ScalarFloat> *
-                                               dr::exp(dr::lerp(log_min, log_max, t)));
+                Float phase = coord * (Float) m_phases[band];
                 auto [s, c_] = dr::sincos(phase);
                 result.entry(out++) = dr::select(active, s, 0.f);
                 if (out < m_out_dim)
@@ -153,8 +159,7 @@ private:
     uint32_t m_input_dim = 2;
     uint32_t m_out_dim = 0;
     uint32_t m_n_frequencies = 4;
-    ScalarFloat m_min_frequency = 1.f;
-    ScalarFloat m_max_frequency = 8.f;
+    std::vector<ScalarFloat> m_phases;
 };
 
 MI_EXPORT_PLUGIN(SinusoidalEncoding)

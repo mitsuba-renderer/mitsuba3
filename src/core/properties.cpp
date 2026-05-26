@@ -69,24 +69,11 @@ using Variant = std::variant<std::monostate, bool, int64_t, Float, std::string,
                              Array3f, Color3f, Properties::Spectrum, AffineTransform4f, Reference,
                              ResolvedReference, ref<Object>, Any>;
 
-static const char *field_value_type_name(FieldValueType type) {
-    switch (type) {
-        case FieldValueType::Float: return "Float";
-        case FieldValueType::Spectrum: return "Spectrum";
-        case FieldValueType::Color3: return "Color3";
-        case FieldValueType::Array2: return "Array2";
-        case FieldValueType::Array3: return "Array3";
-        case FieldValueType::Features: return "Features";
-        default: return "Unknown";
-    }
-}
-
 template <typename Float_, typename Spectrum_>
 ref<Object> make_texture_object(const ref<Object> &object) {
     using Field = mitsuba::Field<Float_, Spectrum_>;
 
-    Object *object_ptr = const_cast<Object *>(object.get());
-    Field *field = dynamic_cast<Field *>(object_ptr);
+    const Field *field = dynamic_cast<const Field *>(object.get());
     if (!field)
         return nullptr;
 
@@ -119,7 +106,7 @@ ref<Object> make_texture_object(const ref<Object> &object) {
               field_value_type_name(type), dim,
               (uint32_t) dr::size_v<unpolarized_spectrum_t<Spectrum_>>);
 
-    return ref<Object>(field);
+    return ref<Object>(const_cast<Field *>(field));
 }
 
 template <typename Float_, typename Spectrum_>
@@ -127,11 +114,10 @@ ref<Object> make_volume_object(const ref<Object> &object) {
     using Field = mitsuba::Field<Float_, Spectrum_>;
     using VolumeField = mitsuba::VolumeField<Float_, Spectrum_>;
 
-    Object *object_ptr = const_cast<Object *>(object.get());
-    Field *field = dynamic_cast<Field *>(object_ptr);
+    const Field *field = dynamic_cast<const Field *>(object.get());
     if (!field)
         return nullptr;
-    VolumeField *volume = dynamic_cast<VolumeField *>(field);
+    const VolumeField *volume = dynamic_cast<const VolumeField *>(field);
     if (!field->supports_interaction_queries())
         return nullptr;
     if (!volume)
@@ -172,15 +158,14 @@ ref<Object> make_volume_object(const ref<Object> &object) {
               "metadata: %s", field->id(), e.what());
     }
 
-    return ref<Object>(volume);
+    return ref<Object>(const_cast<VolumeField *>(volume));
 }
 
 template <typename Float_, typename Spectrum_>
 ref<Object> make_field_object(const ref<Object> &object) {
     using Field = mitsuba::Field<Float_, Spectrum_>;
 
-    Object *object_ptr = const_cast<Object *>(object.get());
-    if (dynamic_cast<Field *>(object_ptr))
+    if (dynamic_cast<const Field *>(object.get()))
         return object;
     return nullptr;
 }
@@ -789,7 +774,6 @@ ref<Object> Properties::get_texture_impl(std::string_view name,
                     props.set("value", scalar_value);
                 } else {
                     // For RGB/spectral emitters, create d65 texture with grayscale color
-                    plugin_name = "d65";
                     plugin_name = is_spectral ? "d65" : "srgb";
                     props.set("color", Color3f(scalar_value));
                 }

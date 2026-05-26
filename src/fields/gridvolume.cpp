@@ -323,19 +323,38 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "data")) {
-            m_texture.update_inplace();
+            const TensorXf &tensor = m_texture.tensor();
+            if (tensor.ndim() != 4)
+                Throw("parameters_changed(): The volume data %s was changed "
+                      "to have %zu dimensions, expected 4.",
+                      to_string(), tensor.ndim());
 
-            const size_t storage_channels = m_texture.shape()[3];
-            const size_t expected_size = (size_t) m_texture.shape()[0] *
-                                         (size_t) m_texture.shape()[1] *
-                                         (size_t) m_texture.shape()[2] *
+            const size_t *old_shape = m_texture.shape();
+            for (size_t i = 0; i < 4; ++i) {
+                if (tensor.shape(i) != old_shape[i])
+                    Throw("parameters_changed(): The volume data %s was changed "
+                          "from shape [%zu, %zu, %zu, %zu] to "
+                          "[%zu, %zu, %zu, %zu]. Changing volume resolution or "
+                          "channel count through traversal is not supported.",
+                          to_string(),
+                          old_shape[0], old_shape[1], old_shape[2], old_shape[3],
+                          tensor.shape(0), tensor.shape(1), tensor.shape(2),
+                          tensor.shape(3));
+            }
+
+            const size_t storage_channels = old_shape[3];
+            const size_t expected_size = (size_t) old_shape[0] *
+                                         (size_t) old_shape[1] *
+                                         (size_t) old_shape[2] *
                                          storage_channels;
-            size_t value_size = dr::width(m_texture.value());
+            size_t value_size = dr::width(tensor.array());
             if (value_size != expected_size)
                 Throw("parameters_changed(): The volume data %s was changed "
                       "to have %zu value(s), expected %zu. Changing volume "
                       "resolution or channel count through traversal is not "
                       "supported.", to_string(), value_size, expected_size);
+
+            m_texture.update_inplace();
 
             const size_t channels = nchannels();
             if (channels != 1 && channels != 3 && channels != 6)
@@ -520,7 +539,7 @@ public:
     void max_per_channel(ScalarFloat *out) const override {
         if (m_max_per_channel_dirty)
             update_max_per_channel();
-        for (size_t i=0; i<m_max_per_channel.size(); ++i)
+        for (size_t i = 0; i < m_max_per_channel.size(); ++i)
             out[i] = m_max_per_channel[i];
     }
 

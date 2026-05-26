@@ -7,12 +7,12 @@ from .common import (
     _field_domain,
     _field_value_type,
     _field_value_type_name,
+    _args_as_channels,
     _network_dtype,
     _require_jit,
     _semantic_dim,
     _surface_record,
     _validate_args,
-    _vector_entries,
 )
 
 
@@ -38,6 +38,8 @@ def _make_neural_field(mi):
                 raise RuntimeError("neuralfield: hidden_size must be positive.")
             if self._num_layers < 0:
                 raise RuntimeError("neuralfield: num_layers must be non-negative.")
+            if self._args_dim < 0:
+                raise RuntimeError("neuralfield: args_dim must be non-negative.")
 
             expected_dim = _semantic_dim(mi, self._out_type)
             if self._out_type == mi.FieldValueType.Features:
@@ -169,6 +171,7 @@ def _make_neural_field(mi):
                 uv_x, uv_y = mi.Float(0), mi.Float(0)
 
             _validate_args("neuralfield", self._args_dim, args)
+            arg_channels = _args_as_channels(args)
             features = [
                 record.p.x,
                 record.p.y,
@@ -176,14 +179,11 @@ def _make_neural_field(mi):
                 uv_x,
                 uv_y,
             ]
-            if self._args_dim == 1 and not hasattr(args, "__getitem__"):
-                features.append(args)
-            else:
-                features.extend(args[i] for i in range(self._args_dim))
+            features.extend(arg_channels)
 
             if self._encoding is not None:
                 encoded = self._encoding.eval(record, active=active)
-                features.extend(_vector_entries(encoded, self._encoding.out_dim()))
+                features.append(encoded)
 
             return features
 
@@ -230,7 +230,8 @@ def _make_neural_field(mi):
 
         def eval_array6(self, record, args=None, active=True):
             self._validate_output(mi.FieldValueType.Features, 6, "eval_array6")
-            return mi.ArrayXf(self._eval_coop(record, args, active)) & active
+            result = list(self._eval_coop(record, args, active))
+            return [dr.select(active, mi.Float(result[i]), 0) for i in range(6)]
 
         def eval_n(self, record, count, args=None, active=True):
             if int(count) != self._out_dim:

@@ -59,3 +59,15 @@ def test02_trampoline(variants_vec_backends_once_rgb):
     ptr = dr.zeros(mi.TexturePtr, 4)
     dr.scatter(ptr, texture, mi.UInt32(0,1,2,3))
     assert dr.allclose(ptr.eval(si, True), 96.0)
+
+
+def test03_texture_role_identity_is_preserved(variants_vec_backends_once_rgb):
+    texture = mi.Texture.D65()
+    assert isinstance(texture, mi.Texture)
+    assert isinstance(texture, mi.Field)
+    assert mi.TexturePtr is not mi.FieldPtr
+
+    si = dr.zeros(mi.SurfaceInteraction3f, 2)
+    ptr = dr.zeros(mi.TexturePtr, 2)
+    dr.scatter(ptr, texture, mi.UInt32(0, 1))
+    assert dr.allclose(ptr.eval(si, True), texture.eval(si, True))

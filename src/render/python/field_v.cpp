@@ -488,16 +488,21 @@ std::vector<Float> field_args_from_python(nb::handle args, uint32_t expected) {
         return result;
     }
 
-    try {
+    if (nb::isinstance<nb::list>(args) || nb::isinstance<nb::tuple>(args)) {
         result = nb::cast<std::vector<Float>>(args);
-    } catch (const nb::cast_error &) {
+    } else {
         try {
-            FloatStorage storage = nb::cast<FloatStorage>(args);
-            result.resize(storage.size());
-            for (size_t i = 0; i < storage.size(); ++i)
-                result[i] = storage.entry(i);
+            result.push_back(nb::cast<Float>(args));
         } catch (const nb::cast_error &) {
-            Throw("Field arguments must be a list, tuple, or ArrayXf value.");
+            try {
+                FloatStorage storage = nb::cast<FloatStorage>(args);
+                result.resize(storage.size());
+                for (size_t i = 0; i < storage.size(); ++i)
+                    result[i] = storage.entry(i);
+            } catch (const nb::cast_error &) {
+                Throw("Field arguments must be a scalar, list, tuple, or "
+                      "ArrayXf value.");
+            }
         }
     }
 
@@ -555,18 +560,6 @@ dr::DynamicArray<Float> array6_to_dynamic(Array6f &&input) {
     return result;
 }
 
-static const char *field_value_type_name(FieldValueType type) {
-    switch (type) {
-        case FieldValueType::Float: return "Float";
-        case FieldValueType::Spectrum: return "Spectrum";
-        case FieldValueType::Color3: return "Color3";
-        case FieldValueType::Array2: return "Array2";
-        case FieldValueType::Array3: return "Array3";
-        case FieldValueType::Features: return "Features";
-        default: return "Unknown";
-    }
-}
-
 template <typename Ptr>
 void check_field_output(Ptr field, FieldValueType expected_type,
                         uint32_t expected_dim, const char *method) {
@@ -575,8 +568,8 @@ void check_field_output(Ptr field, FieldValueType expected_type,
         uint32_t dim = field->out_dim();
         if (type != expected_type || dim != expected_dim)
             Throw("%s: expected %s[%u], got %s[%u].", method,
-                  field_value_type_name(expected_type), expected_dim,
-                  field_value_type_name(type), dim);
+                  mitsuba::field_value_type_name(expected_type), expected_dim,
+                  mitsuba::field_value_type_name(type), dim);
     }
 }
 
@@ -603,25 +596,31 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
     MI_PY_IMPORT_TYPES()
 
     cls.def("eval",
-            [](Ptr field, const SurfaceInteraction3f &si, Mask active) {
+            [](Ptr field, const SurfaceInteraction3f &si,
+               Mask active) -> nb::object {
                 if constexpr (std::is_pointer_v<Ptr>) {
                     check_field_args_dim_zero(field, "Field::eval()");
                     return nb::cast(field->eval(si, FieldArgs<Float>{},
                                                 active));
                 } else {
-                    return field->eval(si, active);
+                    Throw("FieldPtr::eval(): output dimension is dynamic; use "
+                          "eval_n(si, count, active) or a fixed output method.");
                 }
+                return nb::cast(dr::DynamicArray<Float>());
             },
             "si"_a, "active"_a = true)
     .def("eval",
-            [](Ptr field, const Interaction3f &it, Mask active) {
+            [](Ptr field, const Interaction3f &it,
+               Mask active) -> nb::object {
                 if constexpr (std::is_pointer_v<Ptr>) {
                     check_field_args_dim_zero(field, "Field::eval()");
                     return nb::cast(field->eval(it, FieldArgs<Float>{},
                                                 active));
                 } else {
-                    return field->eval(it, active);
+                    Throw("FieldPtr::eval(): output dimension is dynamic; use "
+                          "eval_n(it, count, active) or a fixed output method.");
                 }
+                return nb::cast(dr::DynamicArray<Float>());
             },
             "it"_a, "active"_a = true)
         .def("eval_1",
@@ -1013,6 +1012,67 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
                 return result;
             },
             "it"_a, "count"_a, "args"_a = nb::none(), "active"_a = true);
+    } else {
+        cls.def("eval_n",
+            [](Ptr field, const SurfaceInteraction3f &si,
+               uint32_t count, Mask active) {
+                UInt32 dim = field->out_dim(active),
+                       args_dim = field->args_dim(active);
+                Mask mismatch = active && (dim != count || args_dim != 0);
+                if (dr::any(mismatch))
+                    Throw("FieldPtr::eval_n(): count must match out_dim and "
+                          "args_dim must be zero.");
+
+                using FloatStorage = dr::DynamicArray<Float>;
+                FloatStorage storage = dr::dispatch(
+                    field,
+                    [count](const Field *field,
+                            const SurfaceInteraction3f &si,
+                            Mask active) {
+                        FloatStorage result = dr::zeros<FloatStorage>(count);
+                        if (field->out_dim() == count && field->args_dim() == 0)
+                            field->eval_n(si, result.data(), count,
+                                          FieldArgs<Float>{}, active);
+                        return result;
+                    },
+                    si, active);
+
+                std::vector<Float> result(count);
+                for (uint32_t i = 0; i < count; ++i)
+                    result[i] = storage.entry(i);
+                return result;
+            },
+            "si"_a, "count"_a, "active"_a = true)
+        .def("eval_n",
+            [](Ptr field, const Interaction3f &it,
+               uint32_t count, Mask active) {
+                UInt32 dim = field->out_dim(active),
+                       args_dim = field->args_dim(active);
+                Mask mismatch = active && (dim != count || args_dim != 0);
+                if (dr::any(mismatch))
+                    Throw("FieldPtr::eval_n(): count must match out_dim and "
+                          "args_dim must be zero.");
+
+                using FloatStorage = dr::DynamicArray<Float>;
+                FloatStorage storage = dr::dispatch(
+                    field,
+                    [count](const Field *field,
+                            const Interaction3f &it,
+                            Mask active) {
+                        FloatStorage result = dr::zeros<FloatStorage>(count);
+                        if (field->out_dim() == count && field->args_dim() == 0)
+                            field->eval_n(it, result.data(), count,
+                                          FieldArgs<Float>{}, active);
+                        return result;
+                    },
+                    it, active);
+
+                std::vector<Float> result(count);
+                for (uint32_t i = 0; i < count; ++i)
+                    result[i] = storage.entry(i);
+                return result;
+            },
+            "it"_a, "count"_a, "active"_a = true);
     }
 }
 
