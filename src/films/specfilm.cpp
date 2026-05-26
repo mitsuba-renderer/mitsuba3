@@ -259,8 +259,8 @@ public:
                                                 (double) m_range.x(),
                                                 (double) m_range.y()));
 
-        ref<Object> object = create_compatible_object_for_variant(
-            props, Texture::Variant, ObjectType::Texture);
+        ref<Object> object =
+            create_texture_role_object_for_variant(props, Texture::Variant);
         using FieldType = typename Texture::FieldType;
         FieldType *field = dynamic_cast<FieldType *>(object.get());
         if (!field)

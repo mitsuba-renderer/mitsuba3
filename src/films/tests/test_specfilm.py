@@ -202,8 +202,8 @@ def test07_srf(variants_all_spectral):
     key_range = "range"
     key_values = "values"
 
-    dr.allclose(params[key_range], [400, 800])
-    dr.allclose(params[key_values], [0.1, 0.2, 0., 0.3, 0.4])
+    assert dr.allclose(params[key_range], [400, 800])
+    assert dr.allclose(params[key_values], [0.1, 0.2, 0., 0.3, 0.4])
 
 
 def test08_direct_field_srf_must_be_spectrum_valued(variants_all_spectral):

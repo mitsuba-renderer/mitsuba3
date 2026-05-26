@@ -6,6 +6,7 @@ import drjit as _dr
 import logging
 import functools as _functools
 import importlib as _importlib
+import inspect as _inspect
 
 if _sys.version_info < (3, 9):
     raise ImportError("Mitsuba requires Python 3.9 or greater.")
@@ -82,13 +83,22 @@ def _mitsuba_wrap_field_method(fn, method_name):
     if getattr(fn, "_mitsuba_args_checked", False):
         return fn
 
+    try:
+        parameters = _inspect.signature(fn).parameters
+        accepts_field_args = "args" in parameters
+    except (TypeError, ValueError):
+        accepts_field_args = True
+
     @_functools.wraps(fn)
     def wrapper(self, *args, **kwargs):
+        if not accepts_field_args:
+            return fn(self, *args, **kwargs)
+
         field_args = kwargs.get("args", None)
         if "args" not in kwargs:
             if method_name == "eval_n" and len(args) >= 3:
                 field_args = args[2]
-            elif method_name != "eval_n" and len(args) >= 3:
+            elif method_name != "eval_n" and len(args) >= 2:
                 field_args = args[1]
 
         expected = int(self.args_dim())
@@ -115,9 +125,15 @@ def _mitsuba_patch_field_class(mi):
         "eval", "eval_1", "eval_color3", "eval_array2", "eval_array3",
         "eval_spec", "eval_array6", "eval_n"
     )
+    previous_init_subclass = field_cls.__dict__.get("__init_subclass__", None)
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
+        if previous_init_subclass is not None:
+            previous_init_subclass.__get__(cls, cls)(**kwargs)
+        else:
+            super(field_cls, cls).__init_subclass__(**kwargs)
+
         for name in eval_methods:
             method = cls.__dict__.get(name, None)
             if method is not None:

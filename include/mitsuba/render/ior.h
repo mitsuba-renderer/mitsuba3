@@ -123,8 +123,8 @@ ref<FieldT> ior_from_file(std::string_view filename) {
     }
 
     using FieldType = typename FieldT::FieldType;
-    ref<Object> object = create_compatible_object_for_variant(
-        props, FieldT::Variant, ObjectType::Texture);
+    ref<Object> object =
+        create_texture_role_object_for_variant(props, FieldT::Variant);
     FieldType *field = dynamic_cast<FieldType *>(object.get());
     if (!field)
         Throw("ior_from_file(): expected a texture-compatible field.");

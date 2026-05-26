@@ -36,6 +36,7 @@ template <typename Float, typename Spectrum> class VolumeField;
 template <typename Float, typename Spectrum> class VolumeGrid;
 template <typename Float, typename Spectrum> class MeshAttribute;
 
+// Python keeps Texture/Volume classes for compatibility with previous Mitsuba.
 template <typename Float, typename Spectrum>
 using Texture = Field<Float, Spectrum>;
 

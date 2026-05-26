@@ -103,7 +103,7 @@ def test02_eval_spectrum(variants_vec_spectral):
     for u, v in [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.3, 0.4), (0.5, 0.5)]:
         si = mesh.eval_parameterization([u, v])
         si.wavelengths = wavelengths
-        dr.allclose(texture.eval(si), mi.srgb_model_eval(mi.srgb_model_fetch([u, v, 0]), wavelengths))
+        assert dr.allclose(texture.eval(si), mi.srgb_model_eval(mi.srgb_model_fetch([u, v, 0]), wavelengths))
 
 
 def test03_invalid_attribute(variant_scalar_rgb):

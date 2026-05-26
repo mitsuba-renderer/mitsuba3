@@ -139,8 +139,8 @@ public:
                       Properties::Spectrum(std::move(data), (double) MI_CIE_MIN,
                                            (double) MI_CIE_MAX));
 
-        ref<Object> d65 = create_compatible_object_for_variant(
-            props_d65, Base::Variant, ObjectType::Texture);
+        ref<Object> d65 =
+            create_texture_role_object_for_variant(props_d65, Base::Variant);
         FieldType *field = dynamic_cast<FieldType *>(d65.get());
         if (!field)
             Throw("D65Spectrum: expected a texture-compatible field.");
@@ -179,8 +179,8 @@ public:
                 props.set("value", m_scale);
             }
 
-            return { create_compatible_object_for_variant(
-                props, Base::Variant, ObjectType::Texture) };
+            return { create_texture_role_object_for_variant(
+                props, Base::Variant) };
         }
     }
 

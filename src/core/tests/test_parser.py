@@ -2075,7 +2075,7 @@ def test62_transform_relocate(variant_scalar_rgb, tmp_path):
             <string name="filename" value="{xml_escape(duplicate_mesh2)}"/>
         </shape>
 
-        <!-- Field plugins should follow their default role relocation policy. -->
+        <!-- Field plugins use the generic assets relocation policy. -->
         <field type="bitmap" name="field_tex">
             <string name="filename" value="{xml_escape(field_texture)}"/>
         </field>
@@ -2118,9 +2118,9 @@ def test62_transform_relocate(variant_scalar_rgb, tmp_path):
     # Check that files were copied to correct directories
     assert (textures_dir / "wood.jpg").exists()
     assert (textures_dir / "metal.png").exists()
-    assert (textures_dir / "field_reflectance.exr").exists()
     assert (meshes_dir / "bunny.ply").exists()
     assert (meshes_dir / "teapot.obj").exists()
+    assert (assets_dir / "field_reflectance.exr").exists()
     assert (assets_dir / "density.vol").exists()
 
     # Check that duplicate filename was handled (should have (1) suffix)
@@ -2129,10 +2129,10 @@ def test62_transform_relocate(variant_scalar_rgb, tmp_path):
     # Verify content was copied correctly
     assert (textures_dir / "wood.jpg").read_text() == "fake texture content"
     assert (textures_dir / "metal.png").read_text() == "fake texture content 2"
-    assert ((textures_dir / "field_reflectance.exr").read_text() ==
-            "fake field texture content")
     assert (meshes_dir / "bunny.ply").read_text() == "fake mesh content"
     assert (meshes_dir / "teapot.obj").read_text() == "fake mesh content 2"
+    assert ((assets_dir / "field_reflectance.exr").read_text() ==
+            "fake field texture content")
     assert ((assets_dir / "density.vol").read_text() ==
             "fake field volume content")
     assert (meshes_dir / "bunny (1).ply").read_text() == "different bunny content"
@@ -2151,11 +2151,11 @@ def test62_transform_relocate(variant_scalar_rgb, tmp_path):
     expected_paths = {
         "textures/wood.jpg",    # wood texture (appears twice - texture and emitter)
         "textures/metal.png",   # metal texture
-        "textures/field_reflectance.exr",  # bitmap field keeps texture policy
         "meshes/bunny.ply",     # bunny mesh
         "meshes/teapot.obj",    # teapot mesh
         "meshes/bunny (1).ply",  # duplicate bunny mesh
-        "assets/density.vol",    # gridvolume field keeps volume/assets policy
+        "assets/field_reflectance.exr",  # fields use generic assets policy
+        "assets/density.vol",
     }
 
     # Verify all expected relative paths are present
@@ -2364,7 +2364,7 @@ def test63_transform_reorder(variant_scalar_rgb):
     # Priority 5: Regular shapes in insertion order (rectangle, cube, cylinder)
     # Priority 6: Volumes (constvolume)
     # Priority 7: Media (homogeneous)
-    # Priority 8: Fields (debugfield)
+    # Priority 8: Other objects, including fields (debugfield)
 
     expected_types_and_names = [
         (mi.ObjectType.Integrator, "path"),

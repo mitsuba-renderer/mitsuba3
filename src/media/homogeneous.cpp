@@ -151,7 +151,7 @@ public:
     }
 
     MI_INLINE auto eval_sigmat(const MediumInteraction3f &mi, Mask active) const {
-        auto sigmat = m_sigmat->eval(mi, true) * m_scale;
+        auto sigmat = m_sigmat->eval(mi, active) * m_scale;
         if (has_flag(m_phase_function->flags(), PhaseFunctionFlags::Microflake))
             sigmat *= m_phase_function->projected_area(mi, active);
         return sigmat;

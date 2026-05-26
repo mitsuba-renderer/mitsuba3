@@ -44,3 +44,39 @@ def test03_interaction_fields_without_volume_metadata_are_rejected(variant_scala
                 "out_dim": 6,
             },
         })
+
+
+def test04_sigma_t_forwards_inactive_mask(variants_all_ad_rgb_unpolarized):
+    class InactiveSensitiveValue(mi.Texture):
+        def __init__(self):
+            mi.Texture.__init__(self, mi.Properties("inactive_sensitive_value"))
+            self.last_active = None
+
+        def out_type(self):
+            return mi.FieldValueType.Float
+
+        def out_dim(self):
+            return 1
+
+        def eval(self, si, active=True):
+            self.last_active = active
+            return dr.select(active, 2.0, 0.0)
+
+        def max(self):
+            return 2.0
+
+    value = InactiveSensitiveValue()
+    medium = mi.load_dict({
+        "type": "homogeneous",
+        "albedo": 1.0,
+        "sigma_t": {
+            "type": "constvolume",
+            "value": value,
+        },
+    })
+
+    mei = dr.zeros(mi.MediumInteraction3f, 1)
+    active = mi.Bool(False)
+    assert dr.allclose(medium.get_majorant(mei, active), 0.0)
+    assert value.last_active is not None
+    assert not dr.any(value.last_active)

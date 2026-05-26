@@ -452,7 +452,7 @@ Field<Float, Spectrum>::pdf_position(const Point2f &, Mask active) const {
 }
 
 MI_VARIANT Float Field<Float, Spectrum>::mean() const {
-    NotImplementedError("mean");
+    return Float(.5f);
 }
 
 MI_VARIANT typename Field<Float, Spectrum>::ScalarFloat
@@ -476,7 +476,7 @@ Field<Float, Spectrum>::wavelength_range() const {
 }
 
 MI_VARIANT bool Field<Float, Spectrum>::is_spatially_varying() const {
-    return false;
+    return supports_surface_queries();
 }
 
 MI_VARIANT std::pair<typename Field<Float, Spectrum>::UnpolarizedSpectrum,
@@ -508,8 +508,8 @@ MI_VARIANT ref<Field<Float, Spectrum>>
 Field<Float, Spectrum>::D65(ScalarFloat scale) {
     Properties props("d65");
     props.set("scale", scale);
-    ref<Object> object = create_compatible_object_for_variant(
-        props, Variant, ObjectType::Texture);
+    ref<Object> object = create_texture_role_object_for_variant(
+        props, Variant);
     std::vector<ref<Object>> children = object->expand();
     if (!children.empty())
         object = children[0];
@@ -527,8 +527,8 @@ Field<Float, Spectrum>::D65(ref<Field> field) {
     } else {
         Properties props("d65");
         props.set("nested", ref<Object>(field.get()));
-        ref<Object> object = create_compatible_object_for_variant(
-            props, Variant, ObjectType::Texture);
+        ref<Object> object = create_texture_role_object_for_variant(
+            props, Variant);
         std::vector<ref<Object>> children = object->expand();
         if (!children.empty())
             object = children[0];

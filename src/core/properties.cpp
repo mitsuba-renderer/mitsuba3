@@ -204,12 +204,36 @@ MI_EXPORT_LIB ref<Object>
 create_compatible_object_for_variant(const Properties &props,
                                      std::string_view variant,
                                      ObjectType type) {
-    ObjectType expected_type = type;
-    if (type == ObjectType::Texture || type == ObjectType::Volume)
-        expected_type = ObjectType::Unknown;
+    if (type == ObjectType::Texture)
+        return create_texture_role_object_for_variant(props, variant);
+    if (type == ObjectType::Volume)
+        return create_volume_role_object_for_variant(props, variant);
 
-    return PluginManager::instance()->create_object(props, variant,
-                                                    expected_type);
+    return PluginManager::instance()->create_object(props, variant, type);
+}
+
+MI_EXPORT_LIB ref<Object>
+create_texture_role_object_for_variant(const Properties &props,
+                                       std::string_view variant) {
+    ref<Object> object = PluginManager::instance()->create_object(
+        props, variant, ObjectType::Field);
+    ref<Object> texture = make_texture_object_for_variant(variant, object);
+    if (!texture)
+        Throw("Plugin \"%s\" did not create a texture-compatible field.",
+              props.plugin_name());
+    return texture;
+}
+
+MI_EXPORT_LIB ref<Object>
+create_volume_role_object_for_variant(const Properties &props,
+                                      std::string_view variant) {
+    ref<Object> object = PluginManager::instance()->create_object(
+        props, variant, ObjectType::Field);
+    ref<Object> volume = make_volume_object_for_variant(variant, object);
+    if (!volume)
+        Throw("Plugin \"%s\" did not create a volume-compatible field.",
+              props.plugin_name());
+    return volume;
 }
 
 /// Minimal heap-allocated string for efficient storage with string_view compatibility
@@ -847,9 +871,7 @@ ref<Object> Properties::get_texture_impl(std::string_view name,
     // Set the plugin name after the switch
     props.set_plugin_name(plugin_name);
 
-    ref<Object> object = create_compatible_object_for_variant(
-        props, variant, ObjectType::Texture);
-    return make_texture_object_for_variant(variant, object);
+    return create_texture_role_object_for_variant(props, variant);
 }
 
 ref<Object> Properties::get_texture_impl(std::string_view name,
@@ -871,9 +893,7 @@ ref<Object> Properties::get_texture_impl(std::string_view name,
         props.set("value", def);
     }
 
-    ref<Object> object = create_compatible_object_for_variant(
-        props, variant, ObjectType::Texture);
-    return make_texture_object_for_variant(variant, object);
+    return create_texture_role_object_for_variant(props, variant);
 }
 
 // ==========================================================================

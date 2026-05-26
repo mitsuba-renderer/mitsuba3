@@ -24,6 +24,14 @@ make_field_object_for_variant(std::string_view variant,
                               const ref<Object> &object);
 
 extern MI_EXPORT_LIB ref<Object>
+create_texture_role_object_for_variant(const Properties &props,
+                                       std::string_view variant);
+
+extern MI_EXPORT_LIB ref<Object>
+create_volume_role_object_for_variant(const Properties &props,
+                                      std::string_view variant);
+
+extern MI_EXPORT_LIB ref<Object>
 create_compatible_object_for_variant(const Properties &props,
                                      std::string_view variant,
                                      ObjectType type);
@@ -360,43 +368,73 @@ public:
     /// Retrieve a surface field parameter with variant-specific conversions
     /// (see get_texture_impl for details).
     template <typename T> ref<T> get_surface_field(std::string_view name) const {
-        return static_cast<T*>(get_texture_impl(name, T::Variant, false, false).get());
+        ref<Object> object = get_texture_impl(name, T::Variant, false, false);
+        T *ptr = dynamic_cast<T *>(object.get());
+        if (!ptr)
+            Throw("Property \"%s\": texture-compatible field is not of the "
+                  "requested type.", name);
+        return ref<T>(ptr);
     }
 
     /// Retrieve a surface field parameter with default value and
     /// variant-specific conversions (see get_texture_impl for details).
     template <typename T, typename Float>
     ref<T> get_surface_field(std::string_view name, Float def) const {
-        return static_cast<T*>(
-            get_texture_impl(name, T::Variant, false, false, (double) def).get());
+        ref<Object> object =
+            get_texture_impl(name, T::Variant, false, false, (double) def);
+        T *ptr = dynamic_cast<T *>(object.get());
+        if (!ptr)
+            Throw("Property \"%s\": texture-compatible field is not of the "
+                  "requested type.", name);
+        return ref<T>(ptr);
     }
 
     /// Retrieve an emissive surface field parameter with variant-specific
     /// conversions (see get_texture_impl for details).
     template <typename T> ref<T> get_emissive_surface_field(std::string_view name) const {
-        return static_cast<T*>(get_texture_impl(name, T::Variant, true, false).get());
+        ref<Object> object = get_texture_impl(name, T::Variant, true, false);
+        T *ptr = dynamic_cast<T *>(object.get());
+        if (!ptr)
+            Throw("Property \"%s\": texture-compatible field is not of the "
+                  "requested type.", name);
+        return ref<T>(ptr);
     }
 
     /// Retrieve an emissive surface field parameter with default value and
     /// variant-specific conversions (see get_texture_impl for details).
     template <typename T, typename Float>
     ref<T> get_emissive_surface_field(std::string_view name, Float def) const {
-        return static_cast<T*>(
-            get_texture_impl(name, T::Variant, true, false, (double) def).get());
+        ref<Object> object =
+            get_texture_impl(name, T::Variant, true, false, (double) def);
+        T *ptr = dynamic_cast<T *>(object.get());
+        if (!ptr)
+            Throw("Property \"%s\": texture-compatible field is not of the "
+                  "requested type.", name);
+        return ref<T>(ptr);
     }
 
     /// Retrieve an unbounded surface field parameter with default value and
     /// variant-specific conversions (see get_texture_impl for details).
     template <typename T, typename Float>
     ref<T> get_unbounded_surface_field(std::string_view name, Float def) const {
-        return static_cast<T*>(
-            get_texture_impl(name, T::Variant, false, true, (double) def).get());
+        ref<Object> object =
+            get_texture_impl(name, T::Variant, false, true, (double) def);
+        T *ptr = dynamic_cast<T *>(object.get());
+        if (!ptr)
+            Throw("Property \"%s\": texture-compatible field is not of the "
+                  "requested type.", name);
+        return ref<T>(ptr);
     }
 
     /// Retrieve an unbounded surface field parameter with variant-specific
     /// conversions (see get_texture_impl for details).
     template <typename T> ref<T> get_unbounded_surface_field(std::string_view name) const {
-        return static_cast<T*>(get_texture_impl(name, T::Variant, false, true).get());
+        ref<Object> object = get_texture_impl(name, T::Variant, false, true);
+        T *ptr = dynamic_cast<T *>(object.get());
+        if (!ptr)
+            Throw("Property \"%s\": texture-compatible field is not of the "
+                  "requested type.", name);
+        return ref<T>(ptr);
     }
 
     /// Compatibility spelling for \ref get_surface_field().
@@ -1016,21 +1054,21 @@ ref<T> Properties::get_volume(std::string_view name) const {
         // Otherwise, treat it as a texture field and convert it to constvolume.
         Properties props("constvolume");
         props.set("value", texture);
-        ref<Object> field = create_compatible_object_for_variant(
-            props, T::Variant, ObjectType::Volume);
+        ref<Object> field =
+            create_volume_role_object_for_variant(props, T::Variant);
         return make_volume(field);
     } else if (prop_type == Type::Float) {
         Properties props("constvolume");
         props.set("value", get<double>(name));
-        ref<Object> field = create_compatible_object_for_variant(
-            props, T::Variant, ObjectType::Volume);
+        ref<Object> field =
+            create_volume_role_object_for_variant(props, T::Variant);
         return make_volume(field);
     } else if (prop_type == Type::Color || prop_type == Type::Spectrum) {
         // For Color/Spectrum properties, create a texture first
         Properties props("constvolume");
         props.set("value", get_texture_impl(name, T::Variant, false, false));
-        ref<Object> field = create_compatible_object_for_variant(
-            props, T::Variant, ObjectType::Volume);
+        ref<Object> field =
+            create_volume_role_object_for_variant(props, T::Variant);
         return make_volume(field);
     } else {
         Throw("The property \"%s\" has the wrong type (expected "
@@ -1045,9 +1083,8 @@ ref<T> Properties::get_volume(std::string_view name, Float def_val) const {
     if (!has_property(name)) {
         Properties props("constvolume");
         props.set("value", (double) def_val);
-        ref<Object> field = create_compatible_object_for_variant(
-            props, T::Variant, ObjectType::Volume);
-        ref<Object> volume = make_volume_object_for_variant(T::Variant, field);
+        ref<Object> volume =
+            create_volume_role_object_for_variant(props, T::Variant);
         if (T *ptr = dynamic_cast<T *>(volume.get()))
             return ref<T>(ptr);
         Throw("Property \"%s\": could not create a default volume field.",

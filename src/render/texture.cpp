@@ -252,6 +252,11 @@ SurfaceField<Float, Spectrum>::eval_n(const SurfaceInteraction3f &si,
         out[0] = value.x();
         out[1] = value.y();
         out[2] = value.z();
+    } else if (out_type() == FieldValueType::Array3) {
+        Array3f value = eval_array3(si, args, active);
+        out[0] = value.x();
+        out[1] = value.y();
+        out[2] = value.z();
     } else if (out_type() == FieldValueType::Spectrum) {
         UnpolarizedSpectrum value = eval(si, active);
         for (uint32_t i = 0; i < count; ++i)

@@ -61,9 +61,11 @@ kernel-launch, and memory-watermark machinery. They intentionally fail clearly
 until the corresponding plugins are available in the active build.
 
 The runner also stores a compact result signature (shape, width, sum, mean,
-minimum, maximum where applicable). This is intended for benchmark comparison
-reports and quick sanity checks, not as a substitute for the ordinary test
-suite.
+minimum, maximum, and a few sampled entries where applicable). Tensor-backed
+fixtures use deterministic non-constant data so these signatures can catch
+accidental constant paths and some channel/order mistakes. This is intended for
+benchmark comparison reports and quick sanity checks, not as a substitute for
+the ordinary test suite.
 
 For JIT variants, benchmark cases return every value that contributes to the
 workload. The runner forces these outputs with `dr.eval()` and `dr.sync_thread()`
@@ -94,8 +96,29 @@ python benchmarks/fields/compare_field_vs_std.py \
     --std-root mitsuba-std \
     --std-build mitsuba-std/build-std \
     --field-build build-gpt-5 \
-    --variants scalar_rgb,auto_ad_rgb \
-    --suite all
+    --variants scalar_rgb \
+    --suite common
+```
+
+CUDA comparisons require both builds to include `cuda_ad_rgb`. If the standard
+checkout was built with CUDA, run:
+
+```bash
+python benchmarks/fields/compare_field_vs_std.py \
+    --std-root mitsuba-std \
+    --std-build mitsuba-std/build-std \
+    --field-build build-gpt-5 \
+    --variants cuda_ad_rgb \
+    --suite common
+```
+
+If only the field tree has CUDA, run a field-only sanity report instead:
+
+```bash
+python benchmarks/fields/compare_field_vs_std.py \
+    --field-build build-gpt-5 \
+    --variants cuda_ad_rgb \
+    --suite field
 ```
 
 When `--variant` is omitted in `bench_fields.py`, the runner selects
@@ -111,3 +134,9 @@ When the standard checkout is present but no build has been configured yet,
 `--allow-missing-std --keep-going` still produces a current-tree report and
 marks standard rows as incomplete. Ratio tables will remain empty until a valid
 standard build is supplied.
+
+Comparison reports include operation-count medians, first-run operation counts,
+launch deltas, allocation-watermark deltas, first-kernel totals, and
+result-signature differences. Treat CUDA rows as comparative evidence only when
+the report contains both standard and field-based rows for `cuda_ad_rgb`; rows
+under "Field-Only Runs" are sanity checks.

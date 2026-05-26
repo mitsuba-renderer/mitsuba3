@@ -8,18 +8,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-static const char *bumpmap_field_value_type_name(FieldValueType type) {
-    switch (type) {
-        case FieldValueType::Float: return "Float";
-        case FieldValueType::Spectrum: return "Spectrum";
-        case FieldValueType::Color3: return "Color3";
-        case FieldValueType::Array2: return "Array2";
-        case FieldValueType::Array3: return "Array3";
-        case FieldValueType::Features: return "Features";
-        default: return "Unknown";
-    }
-}
-
 /**!
 .. _bsdf-bumpmap:
 
@@ -127,12 +115,6 @@ public:
                 if (!surface_field)
                     Throw("BumpMap requires a SurfaceField child with gradient "
                           "support.");
-                if (surface_field->out_type() != FieldValueType::Float ||
-                    surface_field->out_dim() != 1)
-                    Throw("BumpMap texture must be a scalar surface field, got "
-                          "%s[%u].",
-                          bumpmap_field_value_type_name(surface_field->out_type()),
-                          surface_field->out_dim());
                 m_nested_texture = surface_field;
             }
         }

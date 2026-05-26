@@ -1399,8 +1399,7 @@ static const char* section_names[] = {
     "Shapes",                          // 5: Shape
     "Volumes",                         // 6: Volume
     "Volumes",                         // 7: Medium
-    "Fields",                          // 8: Field
-    "Other"                            // 9: Other/Unknown
+    "Other"                            // 8: Other/Unknown
 };
 
 // Helper function that assigns a logical section number to a node. Used in
@@ -1431,8 +1430,7 @@ static int node_order_id(const ParserState &state, size_t node_idx) {
         case ObjectType::Shape:      return has_area_light(node_idx) ? 4 : 5;
         case ObjectType::Volume:     return 6;
         case ObjectType::Medium:     return 7;
-        case ObjectType::Field:      return 8;
-        default:                     return 9;
+        default:                     return 8;
     }
 }
 
@@ -1497,31 +1495,9 @@ void transform_relocate(const ParserConfig &/*config*/, ParserState &state,
     if (state.empty())
         return;
 
-    auto is_spectrum_field_plugin = [](std::string_view plugin_name) {
-        return plugin_name == "uniform" || plugin_name == "srgb" ||
-               plugin_name == "d65" || plugin_name == "blackbody" ||
-               plugin_name == "regular" || plugin_name == "irregular" ||
-               plugin_name == "rawconstant";
-    };
-
-    auto default_field_role =
-        [is_spectrum_field_plugin](std::string_view plugin_name) {
-            if (plugin_name == "bitmap" || plugin_name == "checkerboard" ||
-                plugin_name == "mesh_attribute" || plugin_name == "volume" ||
-                is_spectrum_field_plugin(plugin_name))
-                return ObjectType::Texture;
-            if (plugin_name == "gridvolume" || plugin_name == "constvolume")
-                return ObjectType::Volume;
-            return ObjectType::Field;
-        };
-
     // Helper function to determine subfolder based on object type
-    auto get_subfolder = [default_field_role](
-                             ObjectType type,
-                             std::string_view plugin_name) -> std::string_view {
-        if (type == ObjectType::Field)
-            type = default_field_role(plugin_name);
-
+    auto get_subfolder = [](ObjectType type,
+                            std::string_view plugin_name) -> std::string_view {
         switch (type) {
             case ObjectType::Texture:
                 if (plugin_name == "irregular" || plugin_name == "regular")
@@ -1734,8 +1710,15 @@ static Task* instantiate_node(const ParserConfig &config,
                 // These are special texture types that need to be created via get_texture_impl
                 obj = props.get_texture_impl("value", config.variant, false, false);
             } else {
-                obj = create_compatible_object_for_variant(
-                    props, config.variant, node.type);
+                if (node.type == ObjectType::Texture)
+                    obj = create_texture_role_object_for_variant(
+                        props, config.variant);
+                else if (node.type == ObjectType::Volume)
+                    obj = create_volume_role_object_for_variant(
+                        props, config.variant);
+                else
+                    obj = create_compatible_object_for_variant(
+                        props, config.variant, node.type);
             }
         } catch (const std::exception &e) {
             Throw("At %s: failed to instantiate %s plugin of type \"%s\": %s",

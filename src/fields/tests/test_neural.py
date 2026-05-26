@@ -218,7 +218,33 @@ def test08_neural_field_fixed_output_methods_match_metadata(
             field.eval_array3(si)
 
 
-def test09_neural_field_traversal_and_update_are_preserved(field_ad_rgb_variant):
+def test09_neural_field_features6_round_trips_through_base_dispatch(field_ad_rgb_variant):
+    field = mi.load_dict(
+        neural_field_dict(out_type="Features", out_dim=6, args_dim=0)
+    )
+    si = surface_interaction(width=8)
+
+    direct = field.eval_array6(si)
+    via_base = mi.Field.eval_array6(field, si, args=[])
+    assert dr.allclose(via_base, direct)
+
+
+def test10_neural_field_uses_conservative_texture_metadata(field_ad_rgb_variant):
+    field = mi.load_dict(neural_field_dict(args_dim=0))
+
+    assert field.is_spatially_varying()
+    assert dr.allclose(field.mean(), 0.5)
+
+    bsdf = mi.load_dict({
+        "type": "roughplastic",
+        "diffuse_reflectance": neural_field_dict(args_dim=0),
+    })
+    si = surface_interaction()
+    value = bsdf.eval(mi.BSDFContext(), si, mi.Vector3f(0, 0, 1))
+    assert dr.all(dr.isfinite(value))
+
+
+def test11_neural_field_traversal_and_update_are_preserved(field_ad_rgb_variant):
     field = mi.load_dict(neural_field_dict())
     params = mi.traverse(field)
 
@@ -264,7 +290,7 @@ def neural_volume_xml():
     </volume>"""
 
 
-def test10_neural_fields_in_texture_roles_are_validated(field_ad_rgb_variant):
+def test12_neural_fields_in_texture_roles_are_validated(field_ad_rgb_variant):
     texture = mi.load_string(neural_texture_xml())
     si = surface_interaction(width=4)
 
@@ -281,6 +307,6 @@ def test10_neural_fields_in_texture_roles_are_validated(field_ad_rgb_variant):
         mi.load_string(neural_texture_xml(out_type="Features", out_dim=8))
 
 
-def test11_neural_fields_without_volume_metadata_are_rejected(field_ad_rgb_variant):
+def test13_neural_fields_without_volume_metadata_are_rejected(field_ad_rgb_variant):
     with pytest.raises(RuntimeError, match="Volume role|VolumeField|metadata"):
         mi.load_string(neural_volume_xml())
