@@ -490,7 +490,7 @@ Field<Float, Spectrum>::pdf_position(const Point2f &, Mask active) const {
 }
 
 MI_VARIANT Float Field<Float, Spectrum>::mean() const {
-    return Float(.5f);
+    NotImplementedError("mean");
 }
 
 MI_VARIANT typename Field<Float, Spectrum>::ScalarFloat

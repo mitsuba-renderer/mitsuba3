@@ -68,6 +68,22 @@ def _make_neural_field(mi):
                     raise RuntimeError(
                         "neuralfield: encoding fields may not require args."
                     )
+                if (
+                    self.supports_surface_queries()
+                    and not self._encoding.supports_surface_queries()
+                ):
+                    raise RuntimeError(
+                        "neuralfield: encoding field does not support Surface "
+                        "queries required by the selected domain."
+                    )
+                if (
+                    self.supports_interaction_queries()
+                    and not self._encoding.supports_interaction_queries()
+                ):
+                    raise RuntimeError(
+                        "neuralfield: encoding field does not support "
+                        "Interaction queries required by the selected domain."
+                    )
 
             tensor_dtype, scalar_dtype = _network_dtype(
                 mi, props.get("precision", "fp16"), plugin_name="neuralfield"
@@ -160,7 +176,10 @@ def _make_neural_field(mi):
                 uv_x,
                 uv_y,
             ]
-            features.extend(args[i] for i in range(self._args_dim))
+            if self._args_dim == 1 and not hasattr(args, "__getitem__"):
+                features.append(args)
+            else:
+                features.extend(args[i] for i in range(self._args_dim))
 
             if self._encoding is not None:
                 encoded = self._encoding.eval(record, active=active)
@@ -220,6 +239,9 @@ def _make_neural_field(mi):
                     f"out_dim ({self._out_dim})."
                 )
             return self.eval(record, args=args, active=active)
+
+        def mean(self):
+            return mi.Float(0.5)
 
         def traverse(self, cb):
             cb.put(

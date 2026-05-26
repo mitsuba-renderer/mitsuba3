@@ -344,10 +344,63 @@ def test05_surface_array3_eval_n_uses_fixed_array_path(variant_scalar_rgb):
     texture = Array3Texture(mi.Properties("array3_texture"))
     si = surface_interaction()
 
+    assert dr.allclose(texture.eval_n(si), [0.25, 0.75, 1.0])
     assert dr.allclose(mi.Field.eval_n(texture, si, 3), [0.25, 0.75, 1.0])
 
 
-def test06_four_layer_scalar_field_nesting_has_exact_value(variant_scalar_rgb):
+def test06_python_field_legacy_overrides_work_through_base_dispatch(variant_scalar_rgb):
+    class LegacyScalarField(mi.Field):
+        def __init__(self):
+            mi.Field.__init__(self, mi.Properties("legacy_scalar_field"))
+
+        def out_type(self):
+            return mi.FieldValueType.Float
+
+        def domain(self):
+            return mi.FieldDomain.Surface
+
+        def out_dim(self):
+            return 1
+
+        def args_dim(self):
+            return 0
+
+        def supports_scalar(self):
+            return True
+
+        def supports_jit(self):
+            return True
+
+        def supports_surface_queries(self):
+            return True
+
+        def supports_interaction_queries(self):
+            return False
+
+        def eval(self, si, active=True):
+            return mi.ArrayXf([self.eval_1(si, active)])
+
+        def eval_1(self, si, active=True):
+            return dr.select(active, 2.0 * si.uv.x, 0.0)
+
+        def eval_n(self, si, count, active=True):
+            if count != 1:
+                raise RuntimeError("count must be 1")
+            return [self.eval_1(si, active)]
+
+    field = LegacyScalarField()
+    si = surface_interaction()
+
+    assert dr.allclose(mi.Field.eval(field, si), [0.5])
+    assert dr.allclose(mi.Field.eval_1(field, si), 0.5)
+    assert dr.allclose(mi.Field.eval_n(field, si), [0.5])
+    assert dr.allclose(mi.Field.eval_n(field, si, 1), [0.5])
+
+    with pytest.raises(RuntimeError, match="args_dim|expected 0|got 1"):
+        mi.Field.eval_1(field, si, args=[1.0])
+
+
+def test07_four_layer_scalar_field_nesting_has_exact_value(variant_scalar_rgb):
     register_nested_test_fields()
 
     field = mi.load_dict(
@@ -367,7 +420,7 @@ def test06_four_layer_scalar_field_nesting_has_exact_value(variant_scalar_rgb):
     assert dr.allclose(field.eval_1(si), -10.25, atol=1e-6)
 
 
-def test07_four_layer_nested_field_ad_matches_bilinear_weights(field_ad_rgb_variant):
+def test08_four_layer_nested_field_ad_matches_bilinear_weights(field_ad_rgb_variant):
     register_nested_test_fields()
 
     field = mi.load_dict(
@@ -395,3 +448,18 @@ def test07_four_layer_nested_field_ad_matches_bilinear_weights(field_ad_rgb_vari
     expected_grad = dr.full(mi.TensorXf, -0.375, shape=(2, 2, 1))
     assert dr.allclose(dr.grad(params["child.child.child.data"]),
                        expected_grad, atol=1e-6)
+
+
+def test09_checkerboard_scalar_eval_matches_spectrum_eval(variant_scalar_rgb):
+    texture = mi.load_dict({
+        "type": "checkerboard",
+        "color0": 0.2,
+        "color1": 0.8,
+    })
+    si = surface_interaction()
+
+    si.uv = mi.Point2f(0.25, 0.25)
+    assert dr.allclose(texture.eval_1(si), texture.eval(si)[0])
+
+    si.uv = mi.Point2f(0.75, 0.25)
+    assert dr.allclose(texture.eval_1(si), texture.eval(si)[0])

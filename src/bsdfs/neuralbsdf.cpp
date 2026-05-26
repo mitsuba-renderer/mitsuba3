@@ -276,7 +276,7 @@ private:
             }
         }
 
-        return dr::maximum(0.f, value);
+        return dr::clip(value, 0.f, 1.f);
     }
 
     ref<Field> m_reflectance;

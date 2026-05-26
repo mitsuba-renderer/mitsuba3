@@ -313,3 +313,10 @@ def test08_neuralbsdf_uses_cached_reflectance_dispatch_after_setup(
     assert dr.allclose(bsdf.eval_diffuse_reflectance(si), expected)
     assert dr.allclose(bsdf.eval(ctx, si, wo),
                        mi.Color3f(*expected) * dr.inv_pi)
+
+
+def test09_neuralbsdf_clamps_diffuse_reflectance_to_albedo_range(variant_scalar_rgb):
+    bsdf = mi.load_dict(neuralbsdf_dict(albedo_field((1.5, -0.25, 0.5))))
+    si = make_si()
+
+    assert dr.allclose(bsdf.eval_diffuse_reflectance(si), [1.0, 0.0, 0.5])

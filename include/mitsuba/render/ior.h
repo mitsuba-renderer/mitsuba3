@@ -122,13 +122,12 @@ ref<FieldT> ior_from_file(std::string_view filename) {
         }
     }
 
-    using FieldType = typename FieldT::FieldType;
     ref<Object> object =
         create_texture_role_object_for_variant(props, FieldT::Variant);
-    FieldType *field = dynamic_cast<FieldType *>(object.get());
+    FieldT *field = dynamic_cast<FieldT *>(object.get());
     if (!field)
         Throw("ior_from_file(): expected a texture-compatible field.");
-    return ref<FieldType>(field);
+    return ref<FieldT>(field);
 }
 
 template <typename Spectrum, typename FieldT>
