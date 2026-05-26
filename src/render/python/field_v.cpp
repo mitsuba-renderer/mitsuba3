@@ -10,6 +10,9 @@
 #include <drjit/python.h>
 #include <type_traits>
 
+template <typename Float, typename Array6f>
+Array6f field_array6_from_python(nb::handle value);
+
 /// Trampoline for field implementations written in Python
 MI_VARIANT class PyField : public Field<Float, Spectrum> {
 public:
@@ -398,8 +401,9 @@ public:
         using Ret = typename BaseField::Array6f;
         nb::detail::ticket ticket(nb_trampoline, "eval_array6", false);
         if (ticket.key.is_valid())
-            return nb::cast<Ret>(nb_trampoline.base().attr(ticket.key)(
-                si, field_args_to_python(args), active));
+            return field_array6_from_python<Float, Ret>(
+                nb_trampoline.base().attr(ticket.key)(
+                    si, field_args_to_python(args), active));
         return BaseField::eval_array6(si, args, active);
     }
 
@@ -408,8 +412,9 @@ public:
         using Ret = typename BaseField::Array6f;
         nb::detail::ticket ticket(nb_trampoline, "eval_array6", false);
         if (ticket.key.is_valid())
-            return nb::cast<Ret>(nb_trampoline.base().attr(ticket.key)(
-                it, field_args_to_python(args), active));
+            return field_array6_from_python<Float, Ret>(
+                nb_trampoline.base().attr(ticket.key)(
+                    it, field_args_to_python(args), active));
         return BaseField::eval_array6(it, args, active);
     }
 
@@ -501,6 +506,43 @@ std::vector<Float> field_args_from_python(nb::handle args, uint32_t expected) {
               expected, result.size());
 
     return result;
+}
+
+template <typename Float, typename Array6f>
+Array6f field_array6_from_python(nb::handle value) {
+    using FloatStorage = dr::DynamicArray<Float>;
+
+    try {
+        return nb::cast<Array6f>(value);
+    } catch (const nb::cast_error &) {
+        // Fall through to dynamic/list conversions.
+    }
+
+    Array6f result;
+    try {
+        FloatStorage storage = nb::cast<FloatStorage>(value);
+        if (storage.size() != 6)
+            Throw("Field::eval_array6(): Python override returned %zu "
+                  "channel(s), expected 6.", storage.size());
+        for (size_t i = 0; i < 6; ++i)
+            result.entry(i) = storage.entry(i);
+        return result;
+    } catch (const nb::cast_error &) {
+        // Fall through to list/tuple conversion.
+    }
+
+    try {
+        std::vector<Float> storage = nb::cast<std::vector<Float>>(value);
+        if (storage.size() != 6)
+            Throw("Field::eval_array6(): Python override returned %zu "
+                  "channel(s), expected 6.", storage.size());
+        for (size_t i = 0; i < 6; ++i)
+            result.entry(i) = storage[i];
+        return result;
+    } catch (const nb::cast_error &) {
+        Throw("Field::eval_array6(): Python override must return Array6f, "
+              "ArrayXf, list, or tuple with 6 channels.");
+    }
 }
 
 template <typename Float, typename Array6f>

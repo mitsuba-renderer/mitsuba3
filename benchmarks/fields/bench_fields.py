@@ -372,7 +372,7 @@ def result_signature(value: Any) -> dict[str, Any]:
         flat = dr.ravel(value)
         dr.eval(flat)
         dr.sync_thread()
-        return {
+        stats = {
             "kind": type(value).__name__,
             "shape": list(dr.shape(value)),
             "width": int(dr.width(value)),
@@ -381,6 +381,15 @@ def result_signature(value: Any) -> dict[str, Any]:
             "min": _scalar_float(dr.min(flat, axis=None)),
             "max": _scalar_float(dr.max(flat, axis=None)),
         }
+        try:
+            flat_width = dr.width(flat)
+            if flat_width:
+                stats["sample0"] = _scalar_float(flat[0])
+                stats["sample_mid"] = _scalar_float(flat[flat_width // 2])
+                stats["sample_last"] = _scalar_float(flat[flat_width - 1])
+        except Exception:
+            pass
+        return stats
     except Exception:
         return {
             "kind": type(value).__name__,
@@ -532,11 +541,17 @@ def active_mask(ctx: BenchmarkContext):
 
 
 def tensor2(channels: int, resolution: int = 128):
-    return dr.full(mi.TensorXf, 0.5, shape=[resolution, resolution, channels])
+    count = resolution * resolution * channels
+    values = [(i + 1) / float(count + 1) for i in range(count)]
+    return mi.TensorXf(values, shape=(resolution, resolution, channels))
 
 
 def tensor3(channels: int, resolution: int = 64):
-    return dr.full(mi.TensorXf, 0.5, shape=[resolution, resolution, resolution, channels])
+    count = resolution * resolution * resolution * channels
+    values = [(i + 1) / float(count + 1) for i in range(count)]
+    return mi.TensorXf(
+        values, shape=(resolution, resolution, resolution, channels)
+    )
 
 
 def bitmap_filename(channels: int) -> str:

@@ -53,12 +53,12 @@ struct AttributeCallback : public TraversalCallback {
         if (this->name == name) {
             Field *field = dynamic_cast<Field *>(obj);
             if (field) {
-                ref<Object> texture = make_texture_object_for_variant(
-                    Field::Variant, ref<Object>(field));
-                field = dynamic_cast<Field *>(texture.get());
-                if (!field)
-                    Throw("BSDF attribute \"%s\" is not a surface-compatible "
-                          "field.", name);
+                if (!field->supports_surface_queries())
+                    Throw("BSDF attribute \"%s\" requires a field that "
+                          "supports surface queries.", name);
+                if (field->args_dim() != 0)
+                    Throw("BSDF attribute \"%s\" requires args_dim=0, got %u.",
+                          name, field->args_dim());
                 result = func_object(field);
                 found = true;
             }

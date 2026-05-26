@@ -15,9 +15,17 @@ public:
     MI_IMPORT_TYPES(SurfaceField)
     using BaseField = mitsuba::SurfaceField<Float, Spectrum>;
 
-    NB_TRAMPOLINE(SurfaceField, 20);
+    NB_TRAMPOLINE(SurfaceField, 22);
 
     PyTexture(const Properties &props) : BaseField(props) { }
+
+    FieldValueType out_type() const override {
+        NB_OVERRIDE(out_type);
+    }
+
+    uint32_t out_dim() const override {
+        NB_OVERRIDE(out_dim);
+    }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si,
                              Mask active = true) const override {
