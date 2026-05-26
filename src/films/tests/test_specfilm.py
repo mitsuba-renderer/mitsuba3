@@ -179,7 +179,7 @@ def test07_aovs(variants_all_spectral):
         })
         film.prepare(['AOV', 'AOV'])
 
-def test07_srf(variants_all_spectral):
+def test08_srf(variants_all_spectral):
     dic = {
         'type': 'specfilm',
         'channel1': {
@@ -206,7 +206,7 @@ def test07_srf(variants_all_spectral):
     assert dr.allclose(params[key_values], [0.1, 0.2, 0., 0.3, 0.4])
 
 
-def test08_direct_field_srf_must_be_spectrum_valued(variants_all_spectral):
+def test09_direct_field_srf_must_be_spectrum_valued(variants_all_spectral):
     with pytest.raises(RuntimeError, match="SpecFilm|Texture role|Spectrum|Features"):
         mi.load_dict({
             "type": "specfilm",

@@ -299,7 +299,7 @@ def test03_python_field_subclass_hook_preserves_user_hooks(field_ad_rgb_variant)
         field.eval_color3(si)
 
 
-def test03_fieldptr_vectorized_fixed_and_generic_calls(field_ad_rgb_variant):
+def test04_fieldptr_vectorized_fixed_and_generic_calls(field_ad_rgb_variant):
     color_a = mi.load_dict(bitmap_field([0.1, 0.2, 0.3])).field()
     color_b = mi.load_dict(bitmap_field([0.7, 0.8, 0.9])).field()
 
@@ -327,7 +327,7 @@ def test03_fieldptr_vectorized_fixed_and_generic_calls(field_ad_rgb_variant):
     assert dr.allclose(generic[0], mi.Float(1, 2, 1, 2))
 
 
-def test04_surface_array3_eval_n_uses_fixed_array_path(variant_scalar_rgb):
+def test05_surface_array3_eval_n_uses_fixed_array_path(variant_scalar_rgb):
     class Array3Texture(mi.Texture):
         def __init__(self, props):
             mi.Texture.__init__(self, props)
@@ -347,7 +347,7 @@ def test04_surface_array3_eval_n_uses_fixed_array_path(variant_scalar_rgb):
     assert dr.allclose(mi.Field.eval_n(texture, si, 3), [0.25, 0.75, 1.0])
 
 
-def test05_four_layer_scalar_field_nesting_has_exact_value(variant_scalar_rgb):
+def test06_four_layer_scalar_field_nesting_has_exact_value(variant_scalar_rgb):
     register_nested_test_fields()
 
     field = mi.load_dict(
@@ -367,7 +367,7 @@ def test05_four_layer_scalar_field_nesting_has_exact_value(variant_scalar_rgb):
     assert dr.allclose(field.eval_1(si), -10.25, atol=1e-6)
 
 
-def test06_four_layer_nested_field_ad_matches_bilinear_weights(field_ad_rgb_variant):
+def test07_four_layer_nested_field_ad_matches_bilinear_weights(field_ad_rgb_variant):
     register_nested_test_fields()
 
     field = mi.load_dict(

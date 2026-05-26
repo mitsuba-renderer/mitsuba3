@@ -88,11 +88,13 @@ public:
         if (args.size != 0)
             Throw("VolumeAdapter::eval_n(): expected args_dim=0, got %u.",
                   args.size);
-        if (count != out_dim())
+        uint32_t dim = out_dim();
+        FieldValueType type = out_type();
+        if (count != dim)
             Throw("VolumeAdapter::eval_n(): count (%u) must match out_dim (%u).",
-                  count, out_dim());
+                  count, dim);
 
-        switch (out_type()) {
+        switch (type) {
             case FieldValueType::Float:
                 out[0] = eval_1(si, active);
                 break;
@@ -128,7 +130,9 @@ public:
         if (args.size != 0)
             Throw("VolumeAdapter::eval_array6(): expected args_dim=0, got %u.",
                   args.size);
-        if (out_type() != FieldValueType::Features || out_dim() != 6)
+        FieldValueType type = out_type();
+        uint32_t dim = out_dim();
+        if (type != FieldValueType::Features || dim != 6)
             Throw("VolumeAdapter::eval_array6(): expected Features[6], got "
                   "a different field output.");
         return m_volume->eval_array6(static_cast<const Interaction3f &>(si),

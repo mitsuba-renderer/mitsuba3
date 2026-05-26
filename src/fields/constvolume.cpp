@@ -122,9 +122,10 @@ public:
         if (args.size != 0)
             Throw("ConstVolume::eval_n(): expected args_dim=0, got %u.",
                   args.size);
-        if (count != out_dim())
+        uint32_t dim = out_dim();
+        if (count != dim)
             Throw("ConstVolume::eval_n(): count (%u) must match out_dim (%u).",
-                  count, out_dim());
+                  count, dim);
 
         SurfaceInteraction3f si = surface_interaction(it);
         switch (m_out_type) {

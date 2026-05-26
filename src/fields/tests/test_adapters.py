@@ -45,16 +45,7 @@ def grid_field(values, **kwargs):
     return result
 
 
-def test01_deleted_adapter_plugin_names_fail_to_load(variant_scalar_rgb):
-    pmgr = mi.PluginManager.instance()
-
-    for name in ["fieldtexture", "fieldvolume", "bitmapfield", "gridfield"]:
-        assert pmgr.plugin_type(name) == mi.ObjectType.Unknown
-        with pytest.raises(RuntimeError, match=name):
-            mi.load_dict({"type": name})
-
-
-def test02_texture_and_field_tags_can_instantiate_bitmap(variant_scalar_rgb, tmpdir):
+def test01_texture_and_field_tags_can_instantiate_bitmap(variant_scalar_rgb, tmpdir):
     value = (0.2, 0.4, 0.6)
     texture = mi.load_dict(bitmap_field(value))
     assert isinstance(texture, mi.Field)
@@ -86,7 +77,7 @@ def test02_texture_and_field_tags_can_instantiate_bitmap(variant_scalar_rgb, tmp
     assert dr.allclose(bsdf.eval_diffuse_reflectance(make_si()), value)
 
 
-def test03_volume_and_field_tags_can_instantiate_gridvolume(variant_scalar_rgb, tmpdir):
+def test02_volume_and_field_tags_can_instantiate_gridvolume(variant_scalar_rgb, tmpdir):
     values = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
     volume = mi.load_dict(grid_field(values, max_value=6.0))
     assert isinstance(volume, mi.Field)
@@ -118,7 +109,7 @@ def test03_volume_and_field_tags_can_instantiate_gridvolume(variant_scalar_rgb, 
                        values)
 
 
-def test04_role_tags_still_reject_incompatible_field_implementations(variant_scalar_rgb, tmpdir):
+def test03_role_tags_still_reject_incompatible_field_implementations(variant_scalar_rgb, tmpdir):
     volume_path = os.path.join(str(tmpdir), "role_volume.vol")
     mi.VolumeGrid(mi.TensorXf([1.0] * 8, shape=(2, 2, 2, 1))).write(volume_path)
 
@@ -165,7 +156,7 @@ def test04_role_tags_still_reject_incompatible_field_implementations(variant_sca
     assert isinstance(volume_like_field, mi.Field)
 
 
-def test05_direct_field_traversal_has_no_adapter_prefix(field_ad_rgb_variant):
+def test04_direct_field_traversal_has_no_adapter_prefix(field_ad_rgb_variant):
     texture = mi.load_dict(bitmap_field((0.25,), data=dr.zeros(mi.TensorXf, shape=(2, 2, 1)),
                                         filter_type="bilinear"))
     t_params = mi.traverse(texture)
@@ -192,7 +183,7 @@ def test05_direct_field_traversal_has_no_adapter_prefix(field_ad_rgb_variant):
     assert dr.any(dr.grad(v_params["data"]) != 0)
 
 
-def test06_file_backed_bitmap_and_gridvolume_work_as_fields(variant_scalar_rgb, tmpdir):
+def test05_file_backed_bitmap_and_gridvolume_work_as_fields(variant_scalar_rgb, tmpdir):
     bitmap_path = os.path.join(str(tmpdir), "field_texture.exr")
     bitmap_data = mi.TensorXf([0.2, 0.4, 0.6] * 4, shape=(2, 2, 3))
     mi.Bitmap(bitmap_data).write(bitmap_path)

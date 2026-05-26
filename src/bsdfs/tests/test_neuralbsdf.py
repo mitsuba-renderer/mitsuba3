@@ -126,6 +126,72 @@ def make_args_reflectance_field():
     return ArgsReflectanceField()
 
 
+def make_metadata_trap_field(value=(0.25, 0.5, 0.75)):
+    class MetadataTrapField(mi.Field):
+        def __init__(self):
+            mi.Field.__init__(self, mi.Properties("metadata_trap_field"))
+            self.fail_metadata = False
+
+        def _check_metadata_allowed(self):
+            if self.fail_metadata:
+                raise RuntimeError("reflectance metadata was queried during eval")
+
+        def out_type(self):
+            self._check_metadata_allowed()
+            return mi.FieldValueType.Color3
+
+        def domain(self):
+            return mi.FieldDomain.Surface
+
+        def out_dim(self):
+            self._check_metadata_allowed()
+            return 3
+
+        def args_dim(self):
+            return 0
+
+        def supports_scalar(self):
+            return True
+
+        def supports_jit(self):
+            return True
+
+        def supports_surface_queries(self):
+            return True
+
+        def supports_interaction_queries(self):
+            return False
+
+        def eval_color3(self, si, args=None, active=True):
+            return mi.Color3f(*value) & active
+
+    return MetadataTrapField()
+
+
+def make_metadata_trap_texture(value=(0.35, 0.45, 0.55)):
+    class MetadataTrapTexture(mi.Texture):
+        def __init__(self):
+            mi.Texture.__init__(self, mi.Properties("metadata_trap_texture"))
+            self.fail_metadata = False
+
+        def _check_metadata_allowed(self):
+            if self.fail_metadata:
+                raise RuntimeError("reflectance metadata was queried during eval")
+
+        def out_type(self):
+            self._check_metadata_allowed()
+            return mi.FieldValueType.Color3
+
+        def out_dim(self):
+            self._check_metadata_allowed()
+            return 3
+
+        def eval_3(self, si, active=True):
+            return mi.Color3f(*value) & active
+
+    return MetadataTrapTexture()
+
+
 def test01_constant_field_neuralbsdf_matches_diffuse_eval_pdf_sample_and_reflectance(variant_scalar_rgb):
     reflectance = (0.2, 0.4, 0.6)
     neural = mi.load_dict(neuralbsdf_dict(albedo_field(reflectance)))
@@ -168,7 +234,7 @@ def test02_neuralbsdf_rejects_feature6_field_for_reflectance(variant_scalar_rgb)
         mi.load_dict(neuralbsdf_dict(features6_field()))
 
 
-def test03_neuralbsdf_requires_argument_free_reflectance_field(variant_llvm_ad_rgb):
+def test03_neuralbsdf_requires_argument_free_reflectance_field(variant_cuda_ad_rgb):
     with pytest.raises(RuntimeError, match="reflectance|args_dim|11|0"):
         mi.load_dict(neuralbsdf_dict(neural_field(args_dim=4)))
 
@@ -176,7 +242,7 @@ def test03_neuralbsdf_requires_argument_free_reflectance_field(variant_llvm_ad_r
         mi.load_dict(neuralbsdf_dict(make_args_reflectance_field()))
 
 
-def test04_neuralbsdf_traverses_field_children(variant_llvm_ad_rgb):
+def test04_neuralbsdf_traverses_field_children(variant_cuda_ad_rgb):
     bsdf = mi.load_dict(neuralbsdf_dict(neural_field()))
     params = mi.traverse(bsdf)
 
@@ -194,7 +260,7 @@ def test05_neuralbsdf_rejects_direction_dependent_reflectance_args(variant_scala
         mi.load_dict(neuralbsdf_dict(make_args_reflectance_field()))
 
 
-def test06_neuralbsdf_rejects_unstructured_neural_scattering_mode(variant_llvm_ad_rgb):
+def test06_neuralbsdf_rejects_unstructured_neural_scattering_mode(variant_cuda_ad_rgb):
     with pytest.raises(RuntimeError, match="sample|pdf|structured|diffuse"):
         mi.load_dict({
             "type": "neuralbsdf",
@@ -224,3 +290,26 @@ def test07_neuralbsdf_matches_diffuse_in_polarized_variants(variants_all_spectra
     wo = mi.Vector3f(0.3, 0.2, math.sqrt(1.0 - 0.3 * 0.3 - 0.2 * 0.2))
     ctx = mi.BSDFContext()
     assert dr.allclose(neural.eval(ctx, si, wo), diffuse.eval(ctx, si, wo))
+
+
+@pytest.mark.parametrize(
+    "factory, expected",
+    [
+        (make_metadata_trap_field, (0.25, 0.5, 0.75)),
+        (make_metadata_trap_texture, (0.35, 0.45, 0.55)),
+    ],
+)
+def test08_neuralbsdf_uses_cached_reflectance_dispatch_after_setup(
+    variant_scalar_rgb, factory, expected
+):
+    reflectance = factory()
+    bsdf = mi.load_dict(neuralbsdf_dict(reflectance))
+    reflectance.fail_metadata = True
+
+    si = make_si()
+    wo = mi.Vector3f(0, 0, 1)
+    ctx = mi.BSDFContext()
+
+    assert dr.allclose(bsdf.eval_diffuse_reflectance(si), expected)
+    assert dr.allclose(bsdf.eval(ctx, si, wo),
+                       mi.Color3f(*expected) * dr.inv_pi)

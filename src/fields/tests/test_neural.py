@@ -252,12 +252,17 @@ def test11_neural_field_traversal_and_update_are_preserved(field_ad_rgb_variant)
     assert any("encoding" in key for key in params.keys())
     assert params.flags("network_weights") & mi.ParamFlags.Differentiable
 
+    si = surface_interaction(width=8)
+    args = [0.0, 0.0, 0.0, 0.0]
+    before = field.eval_color3(si, args=args)
+    dr.eval(before)
+
     params["network_weights"] = params["network_weights"] + 0.01
     params.update()
 
-    value = field.eval_color3(surface_interaction(width=8),
-                              args=[0.0, 0.0, 0.0, 0.0])
+    value = field.eval_color3(si, args=args)
     assert dr.all(dr.isfinite(value))
+    assert dr.any(dr.abs(value - before) > 1e-6)
 
 
 def neural_texture_xml(args_dim=0, out_type="Color3", out_dim=3):

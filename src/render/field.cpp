@@ -71,7 +71,9 @@ Field<Float, Spectrum>::eval(const Interaction3f &, Args, Mask) const {
 
 MI_VARIANT typename Field<Float, Spectrum>::UnpolarizedSpectrum
 Field<Float, Spectrum>::eval(const SurfaceInteraction3f &si, Mask active) const {
-    switch (out_type()) {
+    FieldValueType type = out_type();
+
+    switch (type) {
         case FieldValueType::Float:
             return eval_1(si, active);
 
@@ -101,15 +103,19 @@ Field<Float, Spectrum>::eval(const SurfaceInteraction3f &si, Mask active) const 
                 return color;
         }
 
-        default:
+        default: {
+            uint32_t dim = out_dim();
             Throw("Field::eval(): unsupported field output %s[%u].",
-                  field_value_type_name(out_type()), out_dim());
+                  field_value_type_name(type), dim);
+        }
     }
 }
 
 MI_VARIANT typename Field<Float, Spectrum>::UnpolarizedSpectrum
 Field<Float, Spectrum>::eval(const Interaction3f &it, Mask active) const {
-    switch (out_type()) {
+    FieldValueType type = out_type();
+
+    switch (type) {
         case FieldValueType::Float:
             return eval_1(it, active);
 
@@ -139,9 +145,11 @@ Field<Float, Spectrum>::eval(const Interaction3f &it, Mask active) const {
                 return color;
         }
 
-        default:
+        default: {
+            uint32_t dim = out_dim();
             Throw("Field::eval(): unsupported field output %s[%u].",
-                  field_value_type_name(out_type()), out_dim());
+                  field_value_type_name(type), dim);
+        }
     }
 }
 
@@ -151,9 +159,11 @@ Field<Float, Spectrum>::eval_1(const SurfaceInteraction3f &si,
                                Mask active) const {
     if (dr::none_or<false>(active))
         return 0.f;
-    if (out_type() != FieldValueType::Float || out_dim() != 1)
+    FieldValueType type = out_type();
+    uint32_t dim = out_dim();
+    if (type != FieldValueType::Float || dim != 1)
         Throw("Field::eval_1(): expected Float[1], got %s[%u].",
-              field_value_type_name(out_type()), out_dim());
+              field_value_type_name(type), dim);
     Float result;
     eval_n(si, &result, 1, args, active);
     return result;
@@ -171,9 +181,11 @@ Field<Float, Spectrum>::eval_1(const Interaction3f &it,
                                Mask active) const {
     if (dr::none_or<false>(active))
         return 0.f;
-    if (out_type() != FieldValueType::Float || out_dim() != 1)
+    FieldValueType type = out_type();
+    uint32_t dim = out_dim();
+    if (type != FieldValueType::Float || dim != 1)
         Throw("Field::eval_1(): expected Float[1], got %s[%u].",
-              field_value_type_name(out_type()), out_dim());
+              field_value_type_name(type), dim);
     Float result;
     eval_n(it, &result, 1, args, active);
     return result;
@@ -191,9 +203,11 @@ Field<Float, Spectrum>::eval_color3(const SurfaceInteraction3f &si,
                                     Mask active) const {
     if (dr::none_or<false>(active))
         return dr::zeros<Color3f>();
-    if (out_type() != FieldValueType::Color3 || out_dim() != 3)
+    FieldValueType type = out_type();
+    uint32_t dim = out_dim();
+    if (type != FieldValueType::Color3 || dim != 3)
         Throw("Field::eval_color3(): expected Color3[3], got %s[%u].",
-              field_value_type_name(out_type()), out_dim());
+              field_value_type_name(type), dim);
     Color3f result;
     eval_n(si, result.data(), 3, args, active);
     return result;
@@ -211,9 +225,11 @@ Field<Float, Spectrum>::eval_color3(const Interaction3f &it,
                                     Mask active) const {
     if (dr::none_or<false>(active))
         return dr::zeros<Color3f>();
-    if (out_type() != FieldValueType::Color3 || out_dim() != 3)
+    FieldValueType type = out_type();
+    uint32_t dim = out_dim();
+    if (type != FieldValueType::Color3 || dim != 3)
         Throw("Field::eval_color3(): expected Color3[3], got %s[%u].",
-              field_value_type_name(out_type()), out_dim());
+              field_value_type_name(type), dim);
     Color3f result;
     eval_n(it, result.data(), 3, args, active);
     return result;
@@ -231,9 +247,11 @@ Field<Float, Spectrum>::eval_array2(const SurfaceInteraction3f &si,
                                     Mask active) const {
     if (dr::none_or<false>(active))
         return dr::zeros<Array2f>();
-    if (out_type() != FieldValueType::Array2 || out_dim() != 2)
+    FieldValueType type = out_type();
+    uint32_t dim = out_dim();
+    if (type != FieldValueType::Array2 || dim != 2)
         Throw("Field::eval_array2(): expected Array2[2], got %s[%u].",
-              field_value_type_name(out_type()), out_dim());
+              field_value_type_name(type), dim);
     Array2f result;
     eval_n(si, result.data(), 2, args, active);
     return result;
@@ -245,9 +263,11 @@ Field<Float, Spectrum>::eval_array2(const Interaction3f &it,
                                     Mask active) const {
     if (dr::none_or<false>(active))
         return dr::zeros<Array2f>();
-    if (out_type() != FieldValueType::Array2 || out_dim() != 2)
+    FieldValueType type = out_type();
+    uint32_t dim = out_dim();
+    if (type != FieldValueType::Array2 || dim != 2)
         Throw("Field::eval_array2(): expected Array2[2], got %s[%u].",
-              field_value_type_name(out_type()), out_dim());
+              field_value_type_name(type), dim);
     Array2f result;
     eval_n(it, result.data(), 2, args, active);
     return result;
@@ -259,9 +279,11 @@ Field<Float, Spectrum>::eval_array3(const SurfaceInteraction3f &si,
                                     Mask active) const {
     if (dr::none_or<false>(active))
         return dr::zeros<Array3f>();
-    if (out_type() != FieldValueType::Array3 || out_dim() != 3)
+    FieldValueType type = out_type();
+    uint32_t dim = out_dim();
+    if (type != FieldValueType::Array3 || dim != 3)
         Throw("Field::eval_array3(): expected Array3[3], got %s[%u].",
-              field_value_type_name(out_type()), out_dim());
+              field_value_type_name(type), dim);
     Array3f result;
     eval_n(si, result.data(), 3, args, active);
     return result;
@@ -273,9 +295,11 @@ Field<Float, Spectrum>::eval_array3(const Interaction3f &it,
                                     Mask active) const {
     if (dr::none_or<false>(active))
         return dr::zeros<Array3f>();
-    if (out_type() != FieldValueType::Array3 || out_dim() != 3)
+    FieldValueType type = out_type();
+    uint32_t dim = out_dim();
+    if (type != FieldValueType::Array3 || dim != 3)
         Throw("Field::eval_array3(): expected Array3[3], got %s[%u].",
-              field_value_type_name(out_type()), out_dim());
+              field_value_type_name(type), dim);
     Array3f result;
     eval_n(it, result.data(), 3, args, active);
     return result;
@@ -287,12 +311,14 @@ Field<Float, Spectrum>::eval_spec(const SurfaceInteraction3f &si,
                                   Mask active) const {
     if (dr::none_or<false>(active))
         return dr::zeros<UnpolarizedSpectrum>();
-    uint32_t dim = (uint32_t) dr::size_v<UnpolarizedSpectrum>;
-    if (out_type() != FieldValueType::Spectrum || out_dim() != dim)
+    uint32_t expected_dim = (uint32_t) dr::size_v<UnpolarizedSpectrum>;
+    FieldValueType type = out_type();
+    uint32_t dim = out_dim();
+    if (type != FieldValueType::Spectrum || dim != expected_dim)
         Throw("Field::eval_spec(): expected Spectrum[%u], got %s[%u].",
-              dim, field_value_type_name(out_type()), out_dim());
+              expected_dim, field_value_type_name(type), dim);
     UnpolarizedSpectrum result;
-    eval_n(si, result.data(), dim, args, active);
+    eval_n(si, result.data(), expected_dim, args, active);
     return result;
 }
 
@@ -308,12 +334,14 @@ Field<Float, Spectrum>::eval_spec(const Interaction3f &it,
                                   Mask active) const {
     if (dr::none_or<false>(active))
         return dr::zeros<UnpolarizedSpectrum>();
-    uint32_t dim = (uint32_t) dr::size_v<UnpolarizedSpectrum>;
-    if (out_type() != FieldValueType::Spectrum || out_dim() != dim)
+    uint32_t expected_dim = (uint32_t) dr::size_v<UnpolarizedSpectrum>;
+    FieldValueType type = out_type();
+    uint32_t dim = out_dim();
+    if (type != FieldValueType::Spectrum || dim != expected_dim)
         Throw("Field::eval_spec(): expected Spectrum[%u], got %s[%u].",
-              dim, field_value_type_name(out_type()), out_dim());
+              expected_dim, field_value_type_name(type), dim);
     UnpolarizedSpectrum result;
-    eval_n(it, result.data(), dim, args, active);
+    eval_n(it, result.data(), expected_dim, args, active);
     return result;
 }
 
@@ -329,9 +357,11 @@ Field<Float, Spectrum>::eval_array6(const SurfaceInteraction3f &si,
                                     Mask active) const {
     if (dr::none_or<false>(active))
         return dr::zeros<Array6f>();
-    if (out_type() != FieldValueType::Features || out_dim() != 6)
+    FieldValueType type = out_type();
+    uint32_t dim = out_dim();
+    if (type != FieldValueType::Features || dim != 6)
         Throw("Field::eval_array6(): expected Features[6], got %s[%u].",
-              field_value_type_name(out_type()), out_dim());
+              field_value_type_name(type), dim);
     Array6f result;
     eval_n(si, result.data(), 6, args, active);
     return result;
@@ -343,9 +373,11 @@ Field<Float, Spectrum>::eval_array6(const Interaction3f &it,
                                     Mask active) const {
     if (dr::none_or<false>(active))
         return dr::zeros<Array6f>();
-    if (out_type() != FieldValueType::Features || out_dim() != 6)
+    FieldValueType type = out_type();
+    uint32_t dim = out_dim();
+    if (type != FieldValueType::Features || dim != 6)
         Throw("Field::eval_array6(): expected Features[6], got %s[%u].",
-              field_value_type_name(out_type()), out_dim());
+              field_value_type_name(type), dim);
     Array6f result;
     eval_n(it, result.data(), 6, args, active);
     return result;
@@ -356,9 +388,10 @@ Field<Float, Spectrum>::eval_n(const SurfaceInteraction3f &si, Float *out,
                                uint32_t count, Args args, Mask active) const {
     if (dr::none_or<false>(active))
         return;
-    if (count != out_dim())
+    uint32_t dim = out_dim();
+    if (count != dim)
         Throw("Field::eval_n(): count (%u) must match out_dim (%u).",
-              count, out_dim());
+              count, dim);
     FloatStorage result = eval(si, args, active);
     if (result.size() != count)
         Throw("Field::eval_n(): generic eval returned %zu channel(s), "
@@ -372,9 +405,10 @@ Field<Float, Spectrum>::eval_n(const Interaction3f &it, Float *out,
                                uint32_t count, Args args, Mask active) const {
     if (dr::none_or<false>(active))
         return;
-    if (count != out_dim())
+    uint32_t dim = out_dim();
+    if (count != dim)
         Throw("Field::eval_n(): count (%u) must match out_dim (%u).",
-              count, out_dim());
+              count, dim);
     FloatStorage result = eval(it, args, active);
     if (result.size() != count)
         Throw("Field::eval_n(): generic eval returned %zu channel(s), "
@@ -392,29 +426,33 @@ Field<Float, Spectrum>::eval_n(const Interaction3f &it, Float *out,
 MI_VARIANT typename Field<Float, Spectrum>::Color3f
 Field<Float, Spectrum>::eval_3(const SurfaceInteraction3f &si,
                                Mask active) const {
-    if (out_type() == FieldValueType::Color3)
+    FieldValueType type = out_type();
+    if (type == FieldValueType::Color3)
         return eval_color3(si, Args{}, active);
-    if (out_type() == FieldValueType::Array3) {
+    if (type == FieldValueType::Array3) {
         Array3f value = eval_array3(si, Args{}, active);
         return Color3f(value.x(), value.y(), value.z());
     }
+    uint32_t dim = out_dim();
     Throw("Field::eval_3(): expected Color3[3] or Array3[3], got %s[%u].",
-          field_value_type_name(out_type()), out_dim());
+          field_value_type_name(type), dim);
 }
 
 MI_VARIANT typename Field<Float, Spectrum>::Vector3f
 Field<Float, Spectrum>::eval_3(const Interaction3f &it,
                                Mask active) const {
-    if (out_type() == FieldValueType::Array3) {
+    FieldValueType type = out_type();
+    if (type == FieldValueType::Array3) {
         Array3f value = eval_array3(it, Args{}, active);
         return Vector3f(value.x(), value.y(), value.z());
     }
-    if (out_type() == FieldValueType::Color3) {
+    if (type == FieldValueType::Color3) {
         Color3f value = eval_color3(it, Args{}, active);
         return Vector3f(value.x(), value.y(), value.z());
     }
+    uint32_t dim = out_dim();
     Throw("Field::eval_3(): expected Array3[3] or Color3[3], got %s[%u].",
-          field_value_type_name(out_type()), out_dim());
+          field_value_type_name(type), dim);
 }
 
 MI_VARIANT typename Field<Float, Spectrum>::Array6f
