@@ -104,7 +104,6 @@ public:
             if (prop.try_get<Field>()) {
                 if (m_nested_texture)
                     Throw("Only a single Texture child object can be specified.");
-
                 ref<Object> object = make_texture_object_for_variant(
                     Field::Variant, prop.get<ref<Object>>());
                 Field *field = dynamic_cast<Field *>(object.get());

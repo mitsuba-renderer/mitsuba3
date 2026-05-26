@@ -268,6 +268,7 @@ public:
                     m_accel, m_accel, filter_mode, wrap_mode);
                 m_channel_count = 0;
                 m_max_per_channel.clear();
+                m_max_per_channel_dirty = false;
             } else if (volume_grid) {
                 m_texture = Texture3f(
                     TensorXf(volume_grid->data(), { (size_t) res.z(),
@@ -278,6 +279,7 @@ public:
                 m_max = volume_grid->max();
                 m_max_per_channel.resize(volume_grid->channel_count());
                 volume_grid->max_per_channel(m_max_per_channel.data());
+                m_max_per_channel_dirty = false;
                 m_channel_count = channel_count;
             } else if (tensor) {
                 m_texture = Texture3f(
@@ -288,7 +290,7 @@ public:
                     m_accel, m_accel, filter_mode, wrap_mode);
                 m_max = (float) dr::max_nested(dr::detach(m_texture.value()));
                 m_channel_count = channel_count;
-                update_max_per_channel();
+                m_max_per_channel_dirty = true;
             }
         }
 
@@ -322,7 +324,7 @@ public:
 
             if (!m_fixed_max)
                 m_max = (float) dr::max_nested(dr::detach(m_texture.value()));
-            update_max_per_channel();
+            m_max_per_channel_dirty = true;
         }
     }
 
@@ -487,6 +489,8 @@ public:
     ScalarFloat max() const override { return m_max; }
 
     void max_per_channel(ScalarFloat *out) const override {
+        if (m_max_per_channel_dirty)
+            update_max_per_channel();
         for (size_t i=0; i<m_max_per_channel.size(); ++i)
             out[i] = m_max_per_channel[i];
     }
@@ -653,17 +657,20 @@ protected:
             out[i] = result.entry(i);
     }
 
-    void update_max_per_channel() {
+    void update_max_per_channel() const {
         if (out_type() == FieldValueType::Spectrum) {
             m_max_per_channel.clear();
+            m_max_per_channel_dirty = false;
             return;
         }
 
         size_t channels = nchannels();
         m_max_per_channel.resize(channels);
 
-        if (channels == 0)
+        if (channels == 0) {
+            m_max_per_channel_dirty = false;
             return;
+        }
 
         const size_t *shape = m_texture.shape();
         uint32_t voxel_count = (uint32_t) (shape[0] * shape[1] * shape[2]);
@@ -690,6 +697,7 @@ protected:
                         (ScalarFloat) values.entry(base + c));
             }
         }
+        m_max_per_channel_dirty = false;
     }
 
 protected:
@@ -698,7 +706,8 @@ protected:
     bool m_raw;
     bool m_fixed_max = false;
     ScalarFloat m_max;
-    std::vector<ScalarFloat> m_max_per_channel;
+    mutable std::vector<ScalarFloat> m_max_per_channel;
+    mutable bool m_max_per_channel_dirty = true;
 
     MI_TRAVERSE_CB(Base, m_texture)
 };

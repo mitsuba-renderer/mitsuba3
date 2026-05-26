@@ -204,3 +204,15 @@ def test07_srf(variants_all_spectral):
 
     dr.allclose(params[key_range], [400, 800])
     dr.allclose(params[key_values], [0.1, 0.2, 0., 0.3, 0.4])
+
+
+def test08_direct_field_srf_must_be_spectrum_valued(variants_all_spectral):
+    with pytest.raises(RuntimeError, match="SpecFilm|Texture role|Spectrum|Features"):
+        mi.load_dict({
+            "type": "specfilm",
+            "srf_bad": {
+                "type": "sinusoidalfield",
+                "input_dim": 2,
+                "out_dim": 8,
+            },
+        })

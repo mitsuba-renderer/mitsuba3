@@ -62,6 +62,10 @@ public:
     SGGXPhaseFunction(const Properties &props) : Base(props) {
         // m_diffuse    = props.get<bool>("diffuse", false);
         m_ndf_params = props.get_volume_field<Field>("S");
+        if (m_ndf_params->out_type() != FieldValueType::Features ||
+            m_ndf_params->out_dim() != 6)
+            Throw("sggx: parameter \"S\" must be a six-channel volume field "
+                  "(Features[6]), got out_dim=%u.", m_ndf_params->out_dim());
         m_flags =
             PhaseFunctionFlags::Anisotropic | PhaseFunctionFlags::Microflake;
     }

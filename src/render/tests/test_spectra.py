@@ -69,6 +69,18 @@ def test04_d65(variant_scalar_spectral, np_rng):
                            d65_eval * intensity * srgb.eval(mi.SurfaceInteraction3f(ps, wavelengths)), atol=1e-5)
 
 
+def test04b_d65_rejects_non_spectrum_direct_field_children(variant_scalar_spectral):
+    with pytest.raises(RuntimeError, match="Texture role|D65 nested|Features"):
+        mi.load_dict({
+            "type": "d65",
+            "nested": {
+                "type": "sinusoidalfield",
+                "input_dim": 2,
+                "out_dim": 8,
+            },
+        })
+
+
 def test05_sample_rgb_spectrum(variant_scalar_spectral):
     """rgb_spectrum: Spot check the model in a few places, the chi^2 test will
     ensure that sampling works."""

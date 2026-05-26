@@ -116,6 +116,20 @@ def test03_sinusoidal_field_uses_per_coordinate_sincos_features(variant_scalar_r
     si = surface_interaction()
     assert dr.allclose(field.eval(si), [1.0, 0.0, -1.0, 0.0], atol=1e-6)
 
+    field3 = mi.load_dict({
+        "type": "sinusoidalfield",
+        "input_dim": 3,
+        "out_dim": 6,
+        "n_frequencies": 1,
+        "min_frequency": 1.0,
+        "max_frequency": 1.0,
+    })
+    assert dr.allclose(
+        field3.eval(si),
+        [1.0, 0.0, 0.0, -1.0, -1.0, 0.0],
+        atol=1e-6,
+    )
+
 
 @pytest.mark.parametrize("bad_args", [[1.0, 2.0, 3.0], [1.0] * 5])
 def test04_direct_field_args_are_validated_in_python_bindings(

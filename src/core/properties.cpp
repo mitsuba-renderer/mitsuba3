@@ -123,14 +123,18 @@ ref<Object> make_texture_object(const ref<Object> &object) {
 template <typename Float_, typename Spectrum_>
 ref<Object> make_volume_object(const ref<Object> &object) {
     using Field = mitsuba::Field<Float_, Spectrum_>;
+    using VolumeField = mitsuba::VolumeField<Float_, Spectrum_>;
 
     Object *object_ptr = const_cast<Object *>(object.get());
     Field *field = dynamic_cast<Field *>(object_ptr);
     if (!field)
         return nullptr;
+    VolumeField *volume = dynamic_cast<VolumeField *>(field);
     if (!field->supports_interaction_queries())
-        Throw("Volume role requires a field that supports interaction "
-              "queries.");
+        return nullptr;
+    if (!volume)
+        Throw("Volume role requires a VolumeField implementation carrying "
+              "volume metadata.");
     if (field->args_dim() != 0)
         Throw("Volume role requires args_dim=0, got %u.",
               field->args_dim());
@@ -158,14 +162,14 @@ ref<Object> make_volume_object(const ref<Object> &object) {
               (uint32_t) dr::size_v<unpolarized_spectrum_t<Spectrum_>>);
 
     try {
-        (void) field->bbox();
-        (void) field->max();
+        (void) volume->bbox();
+        (void) volume->max();
     } catch (const std::exception &e) {
         Throw("Volume role field \"%s\" does not provide required volume "
               "metadata: %s", field->id(), e.what());
     }
 
-    return ref<Object>(field);
+    return ref<Object>(volume);
 }
 
 template <typename Float_, typename Spectrum_>
@@ -201,12 +205,8 @@ create_compatible_object_for_variant(const Properties &props,
                                      std::string_view variant,
                                      ObjectType type) {
     ObjectType expected_type = type;
-    if (type == ObjectType::Texture || type == ObjectType::Volume) {
-        ObjectType plugin_type =
-            PluginManager::instance()->plugin_type(props.plugin_name());
-        if (plugin_type == ObjectType::Field)
-            expected_type = ObjectType::Field;
-    }
+    if (type == ObjectType::Texture || type == ObjectType::Volume)
+        expected_type = ObjectType::Unknown;
 
     return PluginManager::instance()->create_object(props, variant,
                                                     expected_type);

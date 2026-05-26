@@ -47,7 +47,7 @@ def features6_field():
     return Features6Field()
 
 
-def neural_field(args_dim=11):
+def neural_field(args_dim=0):
     return {
         "type": "neuralfield",
         "domain": "Surface",
@@ -126,14 +126,6 @@ def make_args_reflectance_field():
     return ArgsReflectanceField()
 
 
-def expected_args_reflectance(si, wo):
-    return (
-        0.1 + 0.1 * float(si.p.x) + 0.2 * float(si.uv.x) + 0.3 * float(wo.x),
-        0.1 + 0.1 * float(si.p.y) + 0.2 * float(si.uv.y) + 0.3 * float(wo.y),
-        0.1 + 0.1 * float(si.p.z) + 0.2 * float(si.wi.z) + 0.3 * float(wo.z),
-    )
-
-
 def test01_constant_field_neuralbsdf_matches_diffuse_eval_pdf_sample_and_reflectance(variant_scalar_rgb):
     reflectance = (0.2, 0.4, 0.6)
     neural = mi.load_dict(neuralbsdf_dict(albedo_field(reflectance)))
@@ -150,7 +142,7 @@ def test01_constant_field_neuralbsdf_matches_diffuse_eval_pdf_sample_and_reflect
     assert dr.allclose(neural.eval_diffuse_reflectance(si),
                        diffuse.eval_diffuse_reflectance(si))
 
-    for theta in dr.linspace(mi.Float, 0.0, dr.pi / 2 - 1e-4, 8):
+    for theta in dr.linspace(dr.scalar.ArrayXf, 0.0, dr.pi / 2 - 1e-4, 8):
         wo = mi.Vector3f(dr.sin(theta), 0, dr.cos(theta))
         assert dr.allclose(neural.eval(ctx, si, wo), diffuse.eval(ctx, si, wo))
         assert dr.allclose(neural.pdf(ctx, si, wo), diffuse.pdf(ctx, si, wo))
@@ -176,38 +168,30 @@ def test02_neuralbsdf_rejects_feature6_field_for_reflectance(variant_scalar_rgb)
         mi.load_dict(neuralbsdf_dict(features6_field()))
 
 
-def test03_neuralbsdf_requires_zero_or_bsdf_context_argument_dimension(variant_llvm_ad_rgb):
+def test03_neuralbsdf_requires_argument_free_reflectance_field(variant_llvm_ad_rgb):
     with pytest.raises(RuntimeError, match="reflectance|args_dim|11|0"):
         mi.load_dict(neuralbsdf_dict(neural_field(args_dim=4)))
 
+    with pytest.raises(RuntimeError, match="reflectance|args_dim|11|0"):
+        mi.load_dict(neuralbsdf_dict(make_args_reflectance_field()))
+
 
 def test04_neuralbsdf_traverses_field_children(variant_llvm_ad_rgb):
-    bsdf = mi.load_dict(neuralbsdf_dict(neural_field(args_dim=11)))
+    bsdf = mi.load_dict(neuralbsdf_dict(neural_field()))
     params = mi.traverse(bsdf)
 
     assert any("reflectance" in key or "field" in key for key in params.keys())
     assert any("network_weights" in key for key in params.keys())
     assert any("encoding" in key for key in params.keys())
 
-
-def test05_neuralbsdf_passes_surface_and_direction_context_through_field_args(variant_scalar_rgb):
     si = make_si()
-    wo = mi.Vector3f(0.2, 0.3, math.sqrt(1.0 - 0.2 * 0.2 - 0.3 * 0.3))
-    reflectance = expected_args_reflectance(si, wo)
+    wo = mi.Vector3f(0.2, 0.1, math.sqrt(1.0 - 0.2 * 0.2 - 0.1 * 0.1))
+    assert dr.all(dr.isfinite(bsdf.eval(mi.BSDFContext(), si, wo)))
 
-    neural = mi.load_dict(neuralbsdf_dict(make_args_reflectance_field()))
-    diffuse = mi.load_dict({
-        "type": "diffuse",
-        "reflectance": {"type": "rgb", "value": reflectance},
-    })
-    ctx = mi.BSDFContext()
 
-    neural_eval, neural_pdf = neural.eval_pdf(ctx, si, wo)
-    diffuse_eval, diffuse_pdf = diffuse.eval_pdf(ctx, si, wo)
-
-    assert dr.allclose(neural.eval(ctx, si, wo), diffuse.eval(ctx, si, wo))
-    assert dr.allclose(neural_eval, diffuse_eval)
-    assert dr.allclose(neural_pdf, diffuse_pdf)
+def test05_neuralbsdf_rejects_direction_dependent_reflectance_args(variant_scalar_rgb):
+    with pytest.raises(RuntimeError, match="reflectance|args_dim|11|0"):
+        mi.load_dict(neuralbsdf_dict(make_args_reflectance_field()))
 
 
 def test06_neuralbsdf_rejects_unstructured_neural_scattering_mode(variant_llvm_ad_rgb):
@@ -230,7 +214,7 @@ def test07_neuralbsdf_matches_diffuse_in_polarized_variants(variants_all_spectra
         pytest.skip("polarized spectral variant not selected")
 
     reflectance = (0.2, 0.4, 0.6)
-    neural = mi.load_dict(neuralbsdf_dict(albedo_field(reflectance)))
+    neural = mi.load_dict(neuralbsdf_dict(mi.Color3f(*reflectance)))
     diffuse = mi.load_dict({
         "type": "diffuse",
         "reflectance": {"type": "rgb", "value": reflectance},

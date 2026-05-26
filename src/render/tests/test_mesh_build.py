@@ -884,6 +884,11 @@ def test20_texture_attributes(variants_all_rgb):
             "filter_type": "nearest",
             "data": dr.full(mi.TensorXf, 0.3, [1, 1, 3])
         })
+        volume = mi.load_dict({
+            "type": "gridvolume",
+            "data": dr.full(mi.TensorXf, 1.0, [1, 1, 1, 1]),
+            "raw": True,
+        })
 
         shapes = [
             mi.load_dict({
@@ -910,6 +915,9 @@ def test20_texture_attributes(variants_all_rgb):
             # Registration after construction, replacement, deletion
             shape.add_texture_attribute('attribute_2', texture2)
             assert dr.all(shape.has_attribute('attribute_2'))
+            with pytest.raises(RuntimeError,
+                               match="surface-compatible|Texture role"):
+                shape.add_texture_attribute('bad_attribute', volume)
             shape.add_texture_attribute('attribute_2', texture)
             assert shape.texture_attribute('attribute_2') == texture
             shape.add_texture_attribute('attribute_2', texture2)

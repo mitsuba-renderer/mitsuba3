@@ -59,6 +59,10 @@ def make_python_args_field():
             assert args is not None
             return mi.Color3f(args[0] + si.uv.x, args[1] + si.uv.y, args[2] + args[3])
 
+        def eval(self, si, args=None, active=True):
+            value = self.eval_color3(si, args=args, active=active)
+            return mi.ArrayXf([value.x, value.y, value.z])
+
         def eval_1(self, si, args=None, active=True):
             return self.eval_color3(si, args=args, active=active).x
 
@@ -120,11 +124,17 @@ def test02_python_field_metadata_and_eval_dispatch_through_virtual_api(field_ad_
 
     assert dr.allclose(field.eval_color3(si, args=[0.1, 0.2, 0.3, 0.4]),
                        [0.35, 0.95, 0.7])
+    assert dr.allclose(field.eval(si, args=[0.1, 0.2, 0.3, 0.4]),
+                       [0.35, 0.95, 0.7])
     assert dr.allclose(field.eval_1(si, args=mi.ArrayXf([0.1, 0.2, 0.3, 0.4])),
                        0.35)
     assert dr.allclose(field.eval_n(si, 3, args=[0.1, 0.2, 0.3, 0.4]),
                        [0.35, 0.95, 0.7])
 
+    with pytest.raises(RuntimeError, match="args_dim|expected 4|got 0"):
+        field.eval(si)
+    with pytest.raises(RuntimeError, match="args_dim|expected 4|got 0"):
+        field.eval_color3(si)
     with pytest.raises(RuntimeError, match="args_dim|4"):
         field.eval_color3(si, args=[1.0, 2.0, 3.0])
     with pytest.raises(RuntimeError, match="args_dim|4"):
