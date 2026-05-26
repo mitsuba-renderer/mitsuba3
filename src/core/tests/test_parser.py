@@ -1869,7 +1869,7 @@ def test59_uoffset_voffset_uscale_vscale_upgrade(variant_scalar_rgb):
     assert dr.allclose(transform.matrix, expected.matrix)
 
 
-def test59_alias_support(variant_scalar_rgb):
+def test60_alias_support(variant_scalar_rgb):
     """Test alias tag functionality"""
 
     # Create a scene with an object and an alias to it
@@ -1928,7 +1928,7 @@ def test59_alias_support(variant_scalar_rgb):
         mi.parser.parse_string(config, xml_bad2)
 
 
-def test60_default_parameter_values(variant_scalar_rgb):
+def test61_default_parameter_values(variant_scalar_rgb):
     """Test default parameter value functionality"""
 
     xml = '''<scene version="3.0.0">
@@ -1961,7 +1961,7 @@ def test60_default_parameter_values(variant_scalar_rgb):
     mi.parser.parse_string(config, xml_unused)
 
 
-def test61_circular_references(variant_scalar_rgb):
+def test62_circular_references(variant_scalar_rgb):
     """Test detection of circular references"""
 
     # Test case 1: Two shapes that reference each other
@@ -2011,7 +2011,7 @@ def test61_circular_references(variant_scalar_rgb):
 
 
 @fresolver_append_path
-def test62_transform_relocate(variant_scalar_rgb, tmp_path):
+def test63_transform_relocate(variant_scalar_rgb, tmp_path):
     """Test the transform_relocate functionality for organizing scene files."""
 
     # Create temporary source files with fake content
@@ -2212,7 +2212,7 @@ def test62_transform_relocate(variant_scalar_rgb, tmp_path):
     assert "meshes/sphere.ply" in relocated_filenames  # Updated
 
 
-def test63_resource_path_management(variant_scalar_rgb, tmp_path):
+def test64_resource_path_management(variant_scalar_rgb, tmp_path):
     """Test resource path management (<path> tag)"""
     import shutil
     from mitsuba.test.util import find_resource
@@ -2312,7 +2312,7 @@ def test63_resource_path_management(variant_scalar_rgb, tmp_path):
         mi.parser.parse_file(config, str(scene_file))
 
 
-def test63_transform_reorder(variant_scalar_rgb):
+def test65_transform_reorder(variant_scalar_rgb):
     """Test reordering of scene elements by type"""
 
     # Create a comprehensive test scene with all object types
@@ -2392,14 +2392,14 @@ def test63_transform_reorder(variant_scalar_rgb):
     assert len(sphere_children) == 1
     assert sphere_children[0][1].props.plugin_name() == "area"
 
-def test64_logger_deadlock():
+def test66_logger_deadlock():
     """Test that logging does not cause a deadlock when loading a scene in parallel"""
     log_level = dr.log_level()
     dr.set_log_level(dr.LogLevel.Debug)
     scene = mi.load_dict(mi.cornell_box(), parallel=True)
     dr.set_log_level(log_level)
 
-def test65_tensorxf_lookup():
+def test67_tensorxf_lookup():
     """Test that TensorXf values can be correctly passed to plugins"""
     class DummyEmitter(mi.Emitter):
         def __init__(self, props) -> None:
@@ -2415,7 +2415,7 @@ def test65_tensorxf_lookup():
     })
 
 
-def test66_escaped_dollar_sign(variant_scalar_rgb):
+def test68_escaped_dollar_sign(variant_scalar_rgb):
     """Test that escaped dollar signs (\\$) are preserved as literal $"""
 
     # Test escaped dollar sign
@@ -2435,7 +2435,7 @@ def test66_escaped_dollar_sign(variant_scalar_rgb):
     assert shape.props["mixed"] == "$50 for 10 items"
 
 
-def test67_dict_resource_path_management(variant_scalar_rgb, tmp_path):
+def test69_dict_resource_path_management(variant_scalar_rgb, tmp_path):
     """Test resource path management for dictionaries (type='resources')"""
     import shutil
     from mitsuba.test.util import find_resource

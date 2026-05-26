@@ -98,9 +98,11 @@ SurfaceField<Float, Spectrum>::eval_1(const SurfaceInteraction3f &si,
         Throw("Texture::eval_1(): expected args_dim=0, got %u.", args.size);
     if (dr::none_or<false>(active))
         return 0.f;
-    if (out_type() != FieldValueType::Float || out_dim() != 1)
+    FieldValueType type = out_type();
+    uint32_t dim = out_dim();
+    if (type != FieldValueType::Float || dim != 1)
         Throw("Texture::eval_1(): expected Float[1], got %s[%u].",
-              texture_field_value_type_name(out_type()), out_dim());
+              texture_field_value_type_name(type), dim);
     return eval_1(si, active);
 }
 
@@ -122,9 +124,11 @@ SurfaceField<Float, Spectrum>::eval_color3(const SurfaceInteraction3f &si,
               args.size);
     if (dr::none_or<false>(active))
         return dr::zeros<Color3f>();
-    if (out_type() != FieldValueType::Color3 || out_dim() != 3)
+    FieldValueType type = out_type();
+    uint32_t dim = out_dim();
+    if (type != FieldValueType::Color3 || dim != 3)
         Throw("Texture::eval_color3(): expected Color3[3], got %s[%u].",
-              texture_field_value_type_name(out_type()), out_dim());
+              texture_field_value_type_name(type), dim);
     return eval_3(si, active);
 }
 
@@ -146,8 +150,10 @@ SurfaceField<Float, Spectrum>::eval_array2(const SurfaceInteraction3f &,
               args.size);
     if (dr::none_or<false>(active))
         return dr::zeros<Array2f>();
+    FieldValueType type = out_type();
+    uint32_t dim = out_dim();
     Throw("Texture::eval_array2(): expected Array2[2], got %s[%u].",
-          texture_field_value_type_name(out_type()), out_dim());
+          texture_field_value_type_name(type), dim);
     return dr::zeros<Array2f>();
 }
 
@@ -169,9 +175,11 @@ SurfaceField<Float, Spectrum>::eval_array3(const SurfaceInteraction3f &si,
               args.size);
     if (dr::none_or<false>(active))
         return dr::zeros<Array3f>();
-    if (out_type() != FieldValueType::Array3 || out_dim() != 3)
+    FieldValueType type = out_type();
+    uint32_t dim = out_dim();
+    if (type != FieldValueType::Array3 || dim != 3)
         Throw("Texture::eval_array3(): expected Array3[3], got %s[%u].",
-              texture_field_value_type_name(out_type()), out_dim());
+              texture_field_value_type_name(type), dim);
     return eval_3(si, active);
 }
 
@@ -192,10 +200,12 @@ SurfaceField<Float, Spectrum>::eval_spec(const SurfaceInteraction3f &si,
         Throw("Texture::eval_spec(): expected args_dim=0, got %u.", args.size);
     if (dr::none_or<false>(active))
         return dr::zeros<UnpolarizedSpectrum>();
-    uint32_t dim = (uint32_t) dr::size_v<UnpolarizedSpectrum>;
-    if (out_type() != FieldValueType::Spectrum || out_dim() != dim)
+    uint32_t expected_dim = (uint32_t) dr::size_v<UnpolarizedSpectrum>;
+    FieldValueType type = out_type();
+    uint32_t dim = out_dim();
+    if (type != FieldValueType::Spectrum || dim != expected_dim)
         Throw("Texture::eval_spec(): expected Spectrum[%u], got %s[%u].",
-              dim, texture_field_value_type_name(out_type()), out_dim());
+              expected_dim, texture_field_value_type_name(type), dim);
     return eval(si, active);
 }
 
@@ -217,8 +227,10 @@ SurfaceField<Float, Spectrum>::eval_array6(const SurfaceInteraction3f &,
               args.size);
     if (dr::none_or<false>(active))
         return dr::zeros<Array6f>();
+    FieldValueType type = out_type();
+    uint32_t dim = out_dim();
     Throw("Texture::eval_array6(): expected Features[6], got %s[%u].",
-          texture_field_value_type_name(out_type()), out_dim());
+          texture_field_value_type_name(type), dim);
     return dr::zeros<Array6f>();
 }
 
@@ -241,29 +253,31 @@ SurfaceField<Float, Spectrum>::eval_n(const SurfaceInteraction3f &si,
         Throw("Texture::eval_n(): expected args_dim=0, got %u.", args.size);
     if (dr::none_or<false>(active))
         return;
-    if (count != out_dim())
+    uint32_t dim = out_dim();
+    FieldValueType type = out_type();
+    if (count != dim)
         Throw("Texture::eval_n(): count (%u) must match out_dim (%u).",
-              count, out_dim());
+              count, dim);
 
-    if (out_type() == FieldValueType::Float) {
+    if (type == FieldValueType::Float) {
         out[0] = eval_1(si, active);
-    } else if (out_type() == FieldValueType::Color3) {
+    } else if (type == FieldValueType::Color3) {
         Color3f value = eval_3(si, active);
         out[0] = value.x();
         out[1] = value.y();
         out[2] = value.z();
-    } else if (out_type() == FieldValueType::Array3) {
+    } else if (type == FieldValueType::Array3) {
         Array3f value = eval_array3(si, args, active);
         out[0] = value.x();
         out[1] = value.y();
         out[2] = value.z();
-    } else if (out_type() == FieldValueType::Spectrum) {
+    } else if (type == FieldValueType::Spectrum) {
         UnpolarizedSpectrum value = eval(si, active);
         for (uint32_t i = 0; i < count; ++i)
             out[i] = value.entry(i);
     } else {
         Throw("Texture::eval_n(): unsupported texture field output %s[%u].",
-              texture_field_value_type_name(out_type()), out_dim());
+              texture_field_value_type_name(type), dim);
     }
 }
 

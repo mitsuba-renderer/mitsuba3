@@ -2,6 +2,7 @@
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/field.h>
+#include <mitsuba/render/texture.h>
 
 #include <sstream>
 
@@ -46,7 +47,7 @@ template <typename Float, typename Spectrum>
 class NeuralBSDF final : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
-    MI_IMPORT_TYPES(Field)
+    MI_IMPORT_TYPES(Field, SurfaceField)
 
     NeuralBSDF(const Properties &props) : Base(props) {
         std::string_view mode = props.get<std::string_view>("mode", "diffuse");
@@ -80,6 +81,24 @@ public:
                       ? ""
                       : ", Color3[3], or Array3[3]",
                   field_value_type_name(type), dim);
+
+        m_reflectance_surface = dynamic_cast<SurfaceField *>(m_reflectance.get());
+        switch (type) {
+            case FieldValueType::Float:
+                m_reflectance_mode = ReflectanceMode::Scalar;
+                break;
+            case FieldValueType::Spectrum:
+                m_reflectance_mode = ReflectanceMode::Spectral;
+                break;
+            case FieldValueType::Color3:
+                m_reflectance_mode = ReflectanceMode::Color3;
+                break;
+            case FieldValueType::Array3:
+                m_reflectance_mode = ReflectanceMode::Array3;
+                break;
+            default:
+                break;
+        }
 
         m_flags = BSDFFlags::DiffuseReflection | BSDFFlags::FrontSide;
         m_components.push_back(m_flags);
@@ -182,6 +201,13 @@ public:
     MI_DECLARE_CLASS(NeuralBSDF)
 
 private:
+    enum class ReflectanceMode {
+        Scalar,
+        Spectral,
+        Color3,
+        Array3
+    };
+
     const char *field_value_type_name(FieldValueType type) const {
         switch (type) {
             case FieldValueType::Float: return "Float";
@@ -196,10 +222,66 @@ private:
 
     UnpolarizedSpectrum reflectance(const SurfaceInteraction3f &si,
                                     Mask active) const {
-        return dr::maximum(0.f, m_reflectance->eval(si, active));
+        UnpolarizedSpectrum value = 0.f;
+
+        switch (m_reflectance_mode) {
+            case ReflectanceMode::Scalar: {
+                Float v = m_reflectance_surface
+                    ? m_reflectance_surface->eval_1(si, active)
+                    : m_reflectance->eval_1(si, typename Field::Args{}, active);
+                value = v;
+                break;
+            }
+
+            case ReflectanceMode::Spectral:
+                value = m_reflectance_surface
+                    ? m_reflectance_surface->eval(si, active)
+                    : m_reflectance->eval_spec(si, typename Field::Args{}, active);
+                break;
+
+            case ReflectanceMode::Color3: {
+                Color3f color = m_reflectance_surface
+                    ? m_reflectance_surface->eval_3(si, active)
+                    : m_reflectance->eval_color3(si, typename Field::Args{},
+                                                 active);
+                if constexpr (is_monochromatic_v<Spectrum>)
+                    value = luminance(color);
+                else if constexpr (is_spectral_v<Spectrum>)
+                    Throw("neuralbsdf: Color3 reflectance is invalid in "
+                          "spectral variants.");
+                else
+                    value = color;
+                break;
+            }
+
+            case ReflectanceMode::Array3: {
+                Color3f color;
+                if (m_reflectance_surface) {
+                    color = m_reflectance_surface->eval_3(si, active);
+                } else {
+                    typename Field::Array3f array =
+                        m_reflectance->eval_array3(si, typename Field::Args{},
+                                                   active);
+                    color = Color3f(array.x(), array.y(), array.z());
+                }
+
+                if constexpr (is_monochromatic_v<Spectrum>)
+                    value = luminance(color);
+                else if constexpr (is_spectral_v<Spectrum>)
+                    Throw("neuralbsdf: Array3 reflectance is invalid in "
+                          "spectral variants.");
+                else
+                    value = color;
+                break;
+            }
+        }
+
+        return dr::maximum(0.f, value);
     }
 
     ref<Field> m_reflectance;
+    SurfaceField *m_reflectance_surface = nullptr;
+    ReflectanceMode m_reflectance_mode = ReflectanceMode::Spectral;
 
     MI_TRAVERSE_CB(Base, m_reflectance)
 };

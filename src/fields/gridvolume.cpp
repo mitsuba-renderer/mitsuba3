@@ -418,11 +418,13 @@ public:
         if (args.size != 0)
             Throw("GridVolume::eval_n(): expected args_dim=0, got %u.",
                   args.size);
-        if (count != out_dim())
+        uint32_t dim = out_dim();
+        FieldValueType type = out_type();
+        if (count != dim)
             Throw("GridVolume::eval_n(): count (%u) must match out_dim (%u).",
-                  count, out_dim());
+                  count, dim);
 
-        switch (out_type()) {
+        switch (type) {
             case FieldValueType::Float:
                 out[0] = eval_1(it, active);
                 break;

@@ -92,9 +92,10 @@ ref<Object> make_texture_object(const ref<Object> &object) {
 
     if (!field->supports_surface_queries())
         Throw("Texture role requires a field that supports surface queries.");
-    if (field->args_dim() != 0)
+    uint32_t args_dim = field->args_dim();
+    if (args_dim != 0)
         Throw("Texture role requires args_dim=0, got %u.",
-              field->args_dim());
+              args_dim);
     if constexpr (dr::is_jit_v<Float_>) {
         if (!field->supports_jit())
             Throw("Texture role field does not support JIT variants.");
@@ -103,18 +104,19 @@ ref<Object> make_texture_object(const ref<Object> &object) {
             Throw("Texture role field does not support scalar variants.");
     }
 
+    FieldValueType type = field->out_type();
     uint32_t dim = field->out_dim();
     bool valid_output =
-        (field->out_type() == FieldValueType::Float && dim == 1) ||
-        (field->out_type() == FieldValueType::Spectrum &&
+        (type == FieldValueType::Float && dim == 1) ||
+        (type == FieldValueType::Spectrum &&
          dim == (uint32_t) dr::size_v<unpolarized_spectrum_t<Spectrum_>>) ||
-        (field->out_type() == FieldValueType::Color3 && dim == 3) ||
-        (field->out_type() == FieldValueType::Array3 && dim == 3);
+        (type == FieldValueType::Color3 && dim == 3) ||
+        (type == FieldValueType::Array3 && dim == 3);
 
     if (!valid_output)
         Throw("Texture role does not support field output %s[%u]. Expected "
               "Float[1], Spectrum[%u], Color3[3], or Array3[3].",
-              field_value_type_name(field->out_type()), dim,
+              field_value_type_name(type), dim,
               (uint32_t) dr::size_v<unpolarized_spectrum_t<Spectrum_>>);
 
     return ref<Object>(field);
@@ -135,9 +137,10 @@ ref<Object> make_volume_object(const ref<Object> &object) {
     if (!volume)
         Throw("Volume role requires a VolumeField implementation carrying "
               "volume metadata.");
-    if (field->args_dim() != 0)
+    uint32_t args_dim = field->args_dim();
+    if (args_dim != 0)
         Throw("Volume role requires args_dim=0, got %u.",
-              field->args_dim());
+              args_dim);
     if constexpr (dr::is_jit_v<Float_>) {
         if (!field->supports_jit())
             Throw("Volume role field does not support JIT variants.");
@@ -146,19 +149,20 @@ ref<Object> make_volume_object(const ref<Object> &object) {
             Throw("Volume role field does not support scalar variants.");
     }
 
+    FieldValueType type = field->out_type();
     uint32_t dim = field->out_dim();
     bool valid_output =
-        (field->out_type() == FieldValueType::Float && dim == 1) ||
-        (field->out_type() == FieldValueType::Spectrum &&
+        (type == FieldValueType::Float && dim == 1) ||
+        (type == FieldValueType::Spectrum &&
          dim == (uint32_t) dr::size_v<unpolarized_spectrum_t<Spectrum_>>) ||
-        (field->out_type() == FieldValueType::Color3 && dim == 3) ||
-        (field->out_type() == FieldValueType::Array3 && dim == 3) ||
-        (field->out_type() == FieldValueType::Features && dim == 6);
+        (type == FieldValueType::Color3 && dim == 3) ||
+        (type == FieldValueType::Array3 && dim == 3) ||
+        (type == FieldValueType::Features && dim == 6);
 
     if (!valid_output)
         Throw("Volume role does not support field output %s[%u]. Expected "
               "Float[1], Spectrum[%u], Color3[3], Array3[3], or Features[6].",
-              field_value_type_name(field->out_type()), dim,
+              field_value_type_name(type), dim,
               (uint32_t) dr::size_v<unpolarized_spectrum_t<Spectrum_>>);
 
     try {
