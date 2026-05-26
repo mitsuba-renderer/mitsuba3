@@ -31,3 +31,69 @@ def test02_constant_eval(variant_scalar_rgb):
     it = dr.zeros(mi.Interaction3f, 1)
     assert dr.allclose(vol.eval(it), mi.Color3f(0.5, 1.0, 0.3))
     assert vol.bbox() == mi.BoundingBox3f([0, 0, 0], [1, 1, 1])
+
+
+def test03_constant_rejects_generic_fields_without_summaries(variant_scalar_rgb):
+    class ScalarFieldNoSummary(mi.Field):
+        def __init__(self, props):
+            mi.Field.__init__(self, props)
+
+        def out_type(self):
+            return mi.FieldValueType.Float
+
+        def domain(self):
+            return mi.FieldDomain.Surface
+
+        def out_dim(self):
+            return 1
+
+        def args_dim(self):
+            return 0
+
+        def supports_scalar(self):
+            return True
+
+        def supports_jit(self):
+            return True
+
+        def supports_surface_queries(self):
+            return True
+
+        def supports_interaction_queries(self):
+            return False
+
+        def eval(self, si, args=None, active=True):
+            return mi.ArrayXf([self.eval_1(si, args=args, active=active)])
+
+        def eval_1(self, si, args=None, active=True):
+            return dr.select(active, 0.5, 0.0)
+
+    class ScalarFieldMaxOnly(ScalarFieldNoSummary):
+        def max(self):
+            return 0.5
+
+    for name, cls in [
+        ("scalar_field_no_summary", ScalarFieldNoSummary),
+        ("scalar_field_max_only", ScalarFieldMaxOnly),
+    ]:
+        try:
+            mi.register_field(name, cls)
+        except RuntimeError as exc:
+            if "already" not in str(exc).lower():
+                raise
+
+    with pytest.raises(RuntimeError, match="ConstVolume requires.*max"):
+        mi.load_dict({
+            "type": "constvolume",
+            "value": {
+                "type": "scalar_field_no_summary",
+            },
+        })
+
+    vol = mi.load_dict({
+        "type": "constvolume",
+        "value": {
+            "type": "scalar_field_max_only",
+        },
+    })
+    assert dr.allclose(vol.eval_1(dr.zeros(mi.Interaction3f)), 0.5)

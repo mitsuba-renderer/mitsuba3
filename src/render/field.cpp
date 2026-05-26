@@ -3,7 +3,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-static const char *field_value_type_name(FieldValueType type) {
+MI_EXPORT_LIB const char *field_value_type_name(FieldValueType type) {
     switch (type) {
         case FieldValueType::Float: return "Float";
         case FieldValueType::Spectrum: return "Spectrum";

@@ -16,13 +16,20 @@ def _require_jit(mi, plugin_name: str) -> None:
         )
 
 
-def _args_len(args) -> int:
+def _is_channel_sequence(args) -> bool:
+    return isinstance(args, (list, tuple)) or type(args).__name__ == "ArrayXf"
+
+
+def _args_as_channels(args):
     if args is None:
-        return 0
-    try:
-        return len(args)
-    except TypeError:
-        return 1
+        return []
+    if _is_channel_sequence(args):
+        return [args[i] for i in range(len(args))]
+    return [args]
+
+
+def _args_len(args) -> int:
+    return len(_args_as_channels(args))
 
 
 def _validate_args(plugin_name: str, expected: int, args) -> None:
@@ -214,6 +221,16 @@ def _make_drjit_feature_field(
                     f"match out_dim ({self._out_dim})."
                 )
             return self.eval(record, args=args, active=active)
+
+        def eval_array6(self, record, args=None, active=True):
+            if self._out_dim != 6:
+                raise RuntimeError(
+                    f"{plugin_name}::eval_array6(): incompatible output "
+                    f"metadata (out_dim={self._out_dim})."
+                )
+            _validate_args(plugin_name, 0, args)
+            encoded = self._encoding(self._coords(record), active)
+            return [dr.select(active, encoded[i], 0) for i in range(6)]
 
         def traverse(self, cb):
             cb.put("params", self._encoding.data, mi.ParamFlags.Differentiable)

@@ -208,18 +208,6 @@ private:
         Array3
     };
 
-    const char *field_value_type_name(FieldValueType type) const {
-        switch (type) {
-            case FieldValueType::Float: return "Float";
-            case FieldValueType::Spectrum: return "Spectrum";
-            case FieldValueType::Color3: return "Color3";
-            case FieldValueType::Array2: return "Array2";
-            case FieldValueType::Array3: return "Array3";
-            case FieldValueType::Features: return "Features";
-            default: return "Unknown";
-        }
-    }
-
     UnpolarizedSpectrum reflectance(const SurfaceInteraction3f &si,
                                     Mask active) const {
         UnpolarizedSpectrum value = 0.f;

@@ -162,7 +162,7 @@ template <typename Ptr, typename Cls> void bind_texture_generic(Cls &cls) {
 }
 
 MI_PY_EXPORT(Texture) {
-    MI_PY_IMPORT_TYPES(Field, FieldPtr, SurfaceField)
+    MI_PY_IMPORT_TYPES(Field, SurfaceField, TexturePtr)
     using PyTexture = PyTexture<Float, Spectrum>;
     using Properties = mitsuba::Properties;
 
@@ -184,8 +184,11 @@ MI_PY_EXPORT(Texture) {
 
     bind_texture_generic<SurfaceField *>(texture);
 
-    if constexpr (dr::is_array_v<FieldPtr>)
-        m.attr("TexturePtr") = m.attr("FieldPtr");
+    if constexpr (dr::is_array_v<TexturePtr>) {
+        dr::ArrayBinding b;
+        auto texture_ptr = dr::bind_array_t<TexturePtr>(b, m, "TexturePtr");
+        bind_texture_generic<TexturePtr>(texture_ptr);
+    }
 
     drjit::bind_traverse(texture);
 }

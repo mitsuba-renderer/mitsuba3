@@ -172,6 +172,15 @@ def test06_single_scalar_arg_matches_one_element_sequence(field_ad_rgb_variant):
     assert dr.allclose(field.eval_1(si, args=0.25),
                        field.eval_1(si, args=[0.25]))
 
+    vector_arg = dr.linspace(mi.Float, 0.1, 0.8, 8)
+    assert dr.allclose(field.eval_1(si, args=vector_arg),
+                       field.eval_1(si, args=[vector_arg]))
+
+
+def test07_neural_fields_reject_negative_args_dim(field_ad_rgb_variant):
+    with pytest.raises(RuntimeError, match="args_dim must be non-negative"):
+        mi.load_dict(neural_field_dict(args_dim=-1))
+
 
 def test07_neural_fields_reject_incompatible_encoding_domain(field_ad_rgb_variant):
     with pytest.raises(RuntimeError, match="encoding|Interaction|domain"):
@@ -237,7 +246,11 @@ def test10_neural_field_fixed_output_methods_match_metadata(
     si = surface_interaction(width=8)
 
     value = getattr(field, method)(si)
-    assert dr.all(dr.isfinite(value))
+    if method == "eval_array6":
+        assert len(value) == 6
+        assert dr.all(dr.isfinite(mi.ArrayXf(value)))
+    else:
+        assert dr.all(dr.isfinite(value))
 
     with pytest.raises(RuntimeError, match="out_type|out_dim|metadata"):
         if method != "eval_color3":
@@ -254,7 +267,7 @@ def test11_neural_field_features6_round_trips_through_base_dispatch(field_ad_rgb
 
     direct = field.eval_array6(si)
     via_base = mi.Field.eval_array6(field, si, args=[])
-    assert dr.allclose(via_base, direct)
+    assert dr.allclose(via_base, mi.ArrayXf(direct))
 
 
 def test12_neural_field_uses_conservative_texture_metadata(field_ad_rgb_variant):

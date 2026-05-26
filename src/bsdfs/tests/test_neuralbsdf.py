@@ -235,10 +235,10 @@ def test02_neuralbsdf_rejects_feature6_field_for_reflectance(variant_scalar_rgb)
 
 
 def test03_neuralbsdf_requires_argument_free_reflectance_field(variant_cuda_ad_rgb):
-    with pytest.raises(RuntimeError, match="reflectance|args_dim|11|0"):
+    with pytest.raises(RuntimeError, match="Texture role requires args_dim=0, got 4"):
         mi.load_dict(neuralbsdf_dict(neural_field(args_dim=4)))
 
-    with pytest.raises(RuntimeError, match="reflectance|args_dim|11|0"):
+    with pytest.raises(RuntimeError, match="Texture role requires args_dim=0, got 11"):
         mi.load_dict(neuralbsdf_dict(make_args_reflectance_field()))
 
 
@@ -256,7 +256,7 @@ def test04_neuralbsdf_traverses_field_children(variant_cuda_ad_rgb):
 
 
 def test05_neuralbsdf_rejects_direction_dependent_reflectance_args(variant_scalar_rgb):
-    with pytest.raises(RuntimeError, match="reflectance|args_dim|11|0"):
+    with pytest.raises(RuntimeError, match="Texture role requires args_dim=0, got 11"):
         mi.load_dict(neuralbsdf_dict(make_args_reflectance_field()))
 
 

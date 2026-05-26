@@ -140,3 +140,32 @@ def test07_parameter_update_rejects_channel_count_changes(variant_scalar_rgb):
     params["data"] = mi.TensorXf([1.0, 2.0], shape=(1, 1, 1, 2))
     with pytest.raises(RuntimeError, match="resolution|channel count|traversal"):
         params.update()
+
+
+def test08_parameter_update_rejects_cuda_metadata_changes(variant_cuda_ad_rgb):
+    vol = mi.load_dict({
+        "type": "gridvolume",
+        "data": mi.TensorXf([1.0] * 48, shape=(2, 2, 2, 6)),
+        "raw": True,
+        "filter_type": "nearest",
+        "wrap_mode": "clamp",
+    })
+
+    assert vol.out_type() == mi.FieldValueType.Features
+    assert vol.out_dim() == 6
+    assert vol.channel_count() == 6
+
+    params = mi.traverse(vol)
+    params["data"] = mi.TensorXf([2.0] * 24, shape=(2, 2, 2, 3))
+    with pytest.raises(RuntimeError, match="resolution|channel count|traversal"):
+        params.update()
+
+    assert vol.out_type() == mi.FieldValueType.Features
+    assert vol.out_dim() == 6
+    assert vol.channel_count() == 6
+
+    params["data"] = mi.TensorXf([3.0] * 48, shape=(2, 2, 2, 6))
+    params.update()
+    params["data"] = mi.TensorXf([4.0] * 72, shape=(3, 2, 2, 6))
+    with pytest.raises(RuntimeError, match="resolution|channel count|traversal"):
+        params.update()
