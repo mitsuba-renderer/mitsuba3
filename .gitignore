@@ -38,5 +38,12 @@ __pycache__
 old-design
 LLM.md
 NOTE.md
-benchmarks/*
 PR.md
+
+# Benchmark outputs and caches. Keep benchmark scripts reviewable.
+benchmarks/**/__pycache__/
+benchmarks/**/*.pyc
+benchmarks/**/results/
+benchmarks/**/*.json
+benchmarks/**/*.jsonl
+benchmarks/**/*.csv

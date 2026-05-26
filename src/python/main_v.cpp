@@ -28,8 +28,8 @@ static nb::object caster(Object *o) {
     PY_TRY_CAST(Scene);
     PY_TRY_CAST(Mesh);
     PY_TRY_CAST(Shape);
-    PY_TRY_CAST(Texture);
-    PY_TRY_CAST(Volume);
+    PY_TRY_CAST(SurfaceField);
+    PY_TRY_CAST(VolumeField);
     PY_TRY_CAST(Field);
     PY_TRY_CAST(ReconstructionFilter);
 

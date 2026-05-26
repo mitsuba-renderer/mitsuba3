@@ -8,6 +8,18 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+static const char *bumpmap_field_value_type_name(FieldValueType type) {
+    switch (type) {
+        case FieldValueType::Float: return "Float";
+        case FieldValueType::Spectrum: return "Spectrum";
+        case FieldValueType::Color3: return "Color3";
+        case FieldValueType::Array2: return "Array2";
+        case FieldValueType::Array3: return "Array3";
+        case FieldValueType::Features: return "Features";
+        default: return "Unknown";
+    }
+}
+
 /**!
 .. _bsdf-bumpmap:
 
@@ -97,7 +109,7 @@ template <typename Float, typename Spectrum>
 class BumpMap final : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
-    MI_IMPORT_TYPES(Field, Texture)
+    MI_IMPORT_TYPES(Field, SurfaceField, Texture)
 
     BumpMap(const Properties &props) : Base(props) {
         for (auto &prop : props.objects()) {
@@ -108,7 +120,20 @@ public:
             } else if (Field *texture = prop.try_get<Field>()) {
                 if (m_nested_texture)
                     Throw("Only a single Texture child object can be specified.");
-                m_nested_texture = texture;
+                ref<Object> object = make_texture_object_for_variant(
+                    Field::Variant, prop.get<ref<Object>>());
+                SurfaceField *surface_field =
+                    dynamic_cast<SurfaceField *>(object.get());
+                if (!surface_field)
+                    Throw("BumpMap requires a SurfaceField child with gradient "
+                          "support.");
+                if (surface_field->out_type() != FieldValueType::Float ||
+                    surface_field->out_dim() != 1)
+                    Throw("BumpMap texture must be a scalar surface field, got "
+                          "%s[%u].",
+                          bumpmap_field_value_type_name(surface_field->out_type()),
+                          surface_field->out_dim());
+                m_nested_texture = surface_field;
             }
         }
         if (!m_nested_bsdf)
@@ -274,7 +299,7 @@ public:
     MI_DECLARE_CLASS(BumpMap)
 protected:
     ScalarFloat m_scale;
-    ref<Field> m_nested_texture;
+    ref<SurfaceField> m_nested_texture;
     ref<Base> m_nested_bsdf;
 
     bool m_flip_invalid_normals;

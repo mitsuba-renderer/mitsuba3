@@ -1007,9 +1007,15 @@ ref<T> Properties::get_volume(std::string_view name) const {
         if (volume)
             return volume;
 
-        // Otherwise, assume it is a texture field and convert it to constvolume.
+        ref<Object> texture =
+            make_texture_object_for_variant(T::Variant, object);
+        if (!texture)
+            Throw("Property \"%s\": object is neither a volume-compatible nor "
+                  "a texture-compatible field.", name);
+
+        // Otherwise, treat it as a texture field and convert it to constvolume.
         Properties props("constvolume");
-        props.set("value", object);
+        props.set("value", texture);
         ref<Object> field = create_compatible_object_for_variant(
             props, T::Variant, ObjectType::Volume);
         return make_volume(field);

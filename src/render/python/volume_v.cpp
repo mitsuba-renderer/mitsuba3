@@ -47,6 +47,10 @@ public:
             std::vector<Float> result =
                 nb::cast<std::vector<Float>>(
                     nb_trampoline.base().attr(ticket.key)(it, active));
+            uint32_t count = this->out_dim();
+            if (result.size() != count)
+                Throw("Volume::eval_n(): Python override returned %zu "
+                      "channel(s), expected %u.", result.size(), count);
             for (size_t i = 0; i < result.size(); ++i)
                 out[i] = result[i];
             return;
@@ -70,6 +74,10 @@ public:
             std::vector<ScalarFloat> result =
                 nb::cast<std::vector<ScalarFloat>>(
                     nb_trampoline.base().attr(ticket.key)());
+            uint32_t count = this->channel_count();
+            if (result.size() != count)
+                Throw("Volume::max_per_channel(): Python override returned %zu "
+                      "value(s), expected %u.", result.size(), count);
             for (size_t i = 0; i < result.size(); ++i)
                 out[i] = result[i];
             return;
@@ -149,8 +157,10 @@ MI_PY_EXPORT(Volume) {
         .def("eval_n",
             [] (const VolumeField *volume, const Interaction3f &it,
                 Mask active = true) {
-                std::vector<Float> evaluation(volume->channel_count());
-                volume->eval_n(it, evaluation.data(), active);
+                uint32_t count = volume->out_dim();
+                std::vector<Float> evaluation(count);
+                volume->eval_n(it, evaluation.data(), count,
+                               FieldArgs<Float>{}, active);
                 return evaluation;
             },
             "it"_a, "active"_a = true, D(Volume, eval_n));

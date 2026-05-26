@@ -161,7 +161,15 @@ public:
                 m_srfs.push_back(props.get_surface_field<Field>(prop.name()));
                 m_names.push_back(std::string(prop.name()));
             } else if (Field *srf = prop.try_get<Field>()) {
-                m_srfs.push_back(srf);
+                ref<Object> texture = make_texture_object_for_variant(
+                    Field::Variant, prop.get<ref<Object>>());
+                Field *field = dynamic_cast<Field *>(texture.get());
+                uint32_t dim = (uint32_t) dr::size_v<UnpolarizedSpectrum>;
+                if (!field || field->out_type() != FieldValueType::Spectrum ||
+                    field->out_dim() != dim)
+                    Throw("SpecFilm SRF \"%s\" must be a surface-compatible "
+                          "Spectrum[%u] field.", prop.name(), dim);
+                m_srfs.push_back(field);
                 m_names.push_back(std::string(prop.name()));
             }
         }

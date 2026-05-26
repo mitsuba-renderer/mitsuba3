@@ -130,7 +130,7 @@ public:
      *     A dynamic array containing \ref out_dim() float channels
      */
     virtual FloatStorage eval(const SurfaceInteraction3f &si,
-                              Args args = {},
+                              Args args,
                               Mask active = true) const;
 
     /**
@@ -146,16 +146,16 @@ public:
      *     A dynamic array containing \ref out_dim() float channels
      */
     virtual FloatStorage eval(const Interaction3f &it,
-                              Args args = {},
+                              Args args,
                               Mask active = true) const;
 
     /// Evaluate an argument-free surface field as an unpolarized spectrum.
     virtual UnpolarizedSpectrum eval(const SurfaceInteraction3f &si,
-                                     Mask active) const;
+                                     Mask active = true) const;
 
     /// Evaluate an argument-free interaction field as an unpolarized spectrum.
     virtual UnpolarizedSpectrum eval(const Interaction3f &it,
-                                     Mask active) const;
+                                     Mask active = true) const;
 
     //! @}
     // ======================================================================

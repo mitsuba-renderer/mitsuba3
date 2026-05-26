@@ -63,19 +63,11 @@ public:
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si,
                              Mask active) const override {
-        nb::detail::ticket ticket(nb_trampoline, "eval", false);
-        if (ticket.key.is_valid())
-            return nb::cast<UnpolarizedSpectrum>(
-                nb_trampoline.base().attr(ticket.key)(si, active));
         return BaseField::eval(si, active);
     }
 
     UnpolarizedSpectrum eval(const Interaction3f &it,
                              Mask active) const override {
-        nb::detail::ticket ticket(nb_trampoline, "eval", false);
-        if (ticket.key.is_valid())
-            return nb::cast<UnpolarizedSpectrum>(
-                nb_trampoline.base().attr(ticket.key)(it, active));
         return BaseField::eval(it, active);
     }
 
@@ -84,7 +76,7 @@ public:
         nb::detail::ticket ticket(nb_trampoline, "eval_1", false);
         if (ticket.key.is_valid())
             return nb::cast<Float>(
-                nb_trampoline.base().attr(ticket.key)(si, active));
+                nb_trampoline.base().attr(ticket.key)(si, nb::none(), active));
         return BaseField::eval_1(si, active);
     }
 
@@ -93,7 +85,7 @@ public:
         nb::detail::ticket ticket(nb_trampoline, "eval_1", false);
         if (ticket.key.is_valid())
             return nb::cast<Float>(
-                nb_trampoline.base().attr(ticket.key)(it, active));
+                nb_trampoline.base().attr(ticket.key)(it, nb::none(), active));
         return BaseField::eval_1(it, active);
     }
 
@@ -243,6 +235,10 @@ public:
                 nb_trampoline.base().attr(ticket.key)();
             std::vector<ScalarFloat> values =
                 nb::cast<std::vector<ScalarFloat>>(result);
+            uint32_t count = this->channel_count();
+            if (values.size() != count)
+                Throw("Field::max_per_channel(): Python override returned %zu "
+                      "value(s), expected %u.", values.size(), count);
             for (size_t i = 0; i < values.size(); ++i)
                 out[i] = values[i];
             return;
@@ -478,7 +474,7 @@ std::vector<Float> field_args_from_python(nb::handle args, uint32_t expected) {
     using FloatStorage = dr::DynamicArray<Float>;
 
     // Convert Python argument containers into the temporary contiguous storage
-    // required by FieldArgs. C++ no-argument callers bypass this path.
+    // required by FieldArgs.
     std::vector<Float> result;
     if (args.is_none()) {
         if (expected != 0)
@@ -552,32 +548,35 @@ void check_field_count(Ptr field, uint32_t count, const char *method) {
     }
 }
 
+template <typename Ptr>
+void check_field_args_dim_zero(Ptr field, const char *method) {
+    if constexpr (std::is_pointer_v<Ptr>) {
+        uint32_t dim = field->args_dim();
+        if (dim != 0)
+            Throw("%s: expected args_dim=0, got %u.", method, dim);
+    }
+}
+
 template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
     MI_PY_IMPORT_TYPES()
 
     cls.def("eval",
             [](Ptr field, const SurfaceInteraction3f &si, Mask active) {
                 if constexpr (std::is_pointer_v<Ptr>) {
-                    FieldValueType type = field->out_type();
-                    if (type == FieldValueType::Features ||
-                        type == FieldValueType::Array2)
-                        return nb::cast(field->eval(si, FieldArgs<Float>{},
-                                                    active));
-                    return nb::cast(field->eval(si, active));
+                    check_field_args_dim_zero(field, "Field::eval()");
+                    return nb::cast(field->eval(si, FieldArgs<Float>{},
+                                                active));
                 } else {
                     return field->eval(si, active);
                 }
             },
             "si"_a, "active"_a = true)
-        .def("eval",
+    .def("eval",
             [](Ptr field, const Interaction3f &it, Mask active) {
                 if constexpr (std::is_pointer_v<Ptr>) {
-                    FieldValueType type = field->out_type();
-                    if (type == FieldValueType::Features ||
-                        type == FieldValueType::Array2)
-                        return nb::cast(field->eval(it, FieldArgs<Float>{},
-                                                    active));
-                    return nb::cast(field->eval(it, active));
+                    check_field_args_dim_zero(field, "Field::eval()");
+                    return nb::cast(field->eval(it, FieldArgs<Float>{},
+                                                active));
                 } else {
                     return field->eval(it, active);
                 }
@@ -585,32 +584,38 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
             "it"_a, "active"_a = true)
         .def("eval_1",
             [](Ptr field, const SurfaceInteraction3f &si, Mask active) {
+                check_field_args_dim_zero(field, "Field::eval_1()");
                 return field->eval_1(si, active);
             },
             "si"_a, "active"_a = true)
         .def("eval_1",
             [](Ptr field, const Interaction3f &it, Mask active) {
+                check_field_args_dim_zero(field, "Field::eval_1()");
                 return field->eval_1(it, active);
             },
             "it"_a, "active"_a = true)
         .def("eval_3",
             [](Ptr field, const SurfaceInteraction3f &si, Mask active) {
+                check_field_args_dim_zero(field, "Field::eval_3()");
                 return field->eval_3(si, active);
             },
             "si"_a, "active"_a = true)
         .def("eval_3",
             [](Ptr field, const Interaction3f &it, Mask active) {
+                check_field_args_dim_zero(field, "Field::eval_3()");
                 return field->eval_3(it, active);
             },
             "it"_a, "active"_a = true)
         .def("eval_6",
             [](Ptr field, const Interaction3f &it, Mask active) {
+                check_field_args_dim_zero(field, "Field::eval_6()");
                 auto result = field->eval_6(it, active);
                 return array6_to_dynamic<Float>(std::move(result));
             },
             "it"_a, "active"_a = true)
         .def("eval_color3",
             [](Ptr field, const SurfaceInteraction3f &si, Mask active) {
+                check_field_args_dim_zero(field, "Field::eval_color3()");
                 check_field_output(field, FieldValueType::Color3, 3,
                                    "Field::eval_color3()");
                 return field->eval_color3(si, FieldArgs<Float>{}, active);
@@ -618,6 +623,7 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
             "si"_a, "active"_a = true)
         .def("eval_color3",
             [](Ptr field, const Interaction3f &it, Mask active) {
+                check_field_args_dim_zero(field, "Field::eval_color3()");
                 check_field_output(field, FieldValueType::Color3, 3,
                                    "Field::eval_color3()");
                 return field->eval_color3(it, FieldArgs<Float>{}, active);
@@ -625,6 +631,7 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
             "it"_a, "active"_a = true)
         .def("eval_array2",
             [](Ptr field, const SurfaceInteraction3f &si, Mask active) {
+                check_field_args_dim_zero(field, "Field::eval_array2()");
                 check_field_output(field, FieldValueType::Array2, 2,
                                    "Field::eval_array2()");
                 return field->eval_array2(si, FieldArgs<Float>{}, active);
@@ -632,6 +639,7 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
             "si"_a, "active"_a = true)
         .def("eval_array2",
             [](Ptr field, const Interaction3f &it, Mask active) {
+                check_field_args_dim_zero(field, "Field::eval_array2()");
                 check_field_output(field, FieldValueType::Array2, 2,
                                    "Field::eval_array2()");
                 return field->eval_array2(it, FieldArgs<Float>{}, active);
@@ -639,6 +647,7 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
             "it"_a, "active"_a = true)
         .def("eval_array3",
             [](Ptr field, const SurfaceInteraction3f &si, Mask active) {
+                check_field_args_dim_zero(field, "Field::eval_array3()");
                 check_field_output(field, FieldValueType::Array3, 3,
                                    "Field::eval_array3()");
                 return field->eval_array3(si, FieldArgs<Float>{}, active);
@@ -646,6 +655,7 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
             "si"_a, "active"_a = true)
         .def("eval_array3",
             [](Ptr field, const Interaction3f &it, Mask active) {
+                check_field_args_dim_zero(field, "Field::eval_array3()");
                 check_field_output(field, FieldValueType::Array3, 3,
                                    "Field::eval_array3()");
                 return field->eval_array3(it, FieldArgs<Float>{}, active);
@@ -653,6 +663,7 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
             "it"_a, "active"_a = true)
         .def("eval_spec",
             [](Ptr field, const SurfaceInteraction3f &si, Mask active) {
+                check_field_args_dim_zero(field, "Field::eval_spec()");
                 check_field_output(
                     field, FieldValueType::Spectrum,
                     (uint32_t) dr::size_v<UnpolarizedSpectrum>,
@@ -662,6 +673,7 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
             "si"_a, "active"_a = true)
         .def("eval_spec",
             [](Ptr field, const Interaction3f &it, Mask active) {
+                check_field_args_dim_zero(field, "Field::eval_spec()");
                 check_field_output(
                     field, FieldValueType::Spectrum,
                     (uint32_t) dr::size_v<UnpolarizedSpectrum>,
@@ -671,6 +683,7 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
             "it"_a, "active"_a = true)
         .def("eval_array6",
             [](Ptr field, const SurfaceInteraction3f &si, Mask active) {
+                check_field_args_dim_zero(field, "Field::eval_array6()");
                 check_field_output(field, FieldValueType::Features, 6,
                                    "Field::eval_array6()");
                 auto result = field->eval_array6(si, FieldArgs<Float>{}, active);
@@ -679,6 +692,7 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
             "si"_a, "active"_a = true)
         .def("eval_array6",
             [](Ptr field, const Interaction3f &it, Mask active) {
+                check_field_args_dim_zero(field, "Field::eval_array6()");
                 check_field_output(field, FieldValueType::Features, 6,
                                    "Field::eval_array6()");
                 auto result = field->eval_array6(it, FieldArgs<Float>{}, active);
@@ -754,6 +768,7 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
             "it"_a, "active"_a = true)
         .def("eval_n",
             [](Ptr field, const Interaction3f &it, Mask active) {
+                check_field_args_dim_zero(field, "Field::eval_n()");
                 uint32_t count = field->out_dim();
                 std::vector<Float> result(count);
                 field->eval_n(it, result.data(), count,

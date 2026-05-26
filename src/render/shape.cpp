@@ -489,8 +489,15 @@ Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask
 
 MI_VARIANT void
 Shape<Float, Spectrum>::add_texture_attribute(std::string_view name, Field *field) {
+    ref<Object> texture = make_texture_object_for_variant(Field::Variant,
+                                                          ref<Object>(field));
+    Field *validated = dynamic_cast<Field *>(texture.get());
+    if (!validated)
+        Throw("add_texture_attribute(): attribute \"%s\" is not a "
+              "surface-compatible field.", name);
+
     // Replaces existing attribute with name `name`, if any.
-    m_texture_attributes.insert_or_assign(std::string(name), field);
+    m_texture_attributes.insert_or_assign(std::string(name), validated);
 }
 
 MI_VARIANT typename Shape<Float, Spectrum>::Field *

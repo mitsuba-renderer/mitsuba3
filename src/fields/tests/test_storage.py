@@ -5,13 +5,21 @@ import drjit as dr
 import mitsuba as mi
 
 
+def dr_float_array_type():
+    return dr.scalar.ArrayXf if mi.variant().startswith("scalar_") else mi.Float
+
+
 def bitmap_data(channels=3, height=3, width=4):
-    values = (dr.arange(mi.Float, height * width * channels) + 1) / 17.0
+    values = (
+        dr.arange(dr_float_array_type(), height * width * channels) + 1
+    ) / 17.0
     return mi.TensorXf(values, shape=(height, width, channels))
 
 
 def volume_data(channels=6, z=3, y=4, x=5):
-    values = (dr.arange(mi.Float, z * y * x * channels) + 1) / 29.0
+    values = (
+        dr.arange(dr_float_array_type(), z * y * x * channels) + 1
+    ) / 29.0
     return mi.TensorXf(values, shape=(z, y, x, channels))
 
 
@@ -232,9 +240,9 @@ def test04_fixed_query_metadata_and_domain_mismatches_are_errors(variant_scalar_
     with pytest.raises(RuntimeError, match="Array3|6|out_dim|Features"):
         grid6.eval_array3(it)
     with pytest.raises(RuntimeError, match="Float|Color3|out_type"):
-        color.eval_1(si, args=[])
+        mi.Field.eval_1(color, si, args=[])
     with pytest.raises(RuntimeError, match="Float|Array3|out_type"):
-        grid3.eval_1(it, args=[])
+        mi.Field.eval_1(grid3, it, args=[])
     with pytest.raises(RuntimeError, match="domain|Interaction|Surface"):
         color.eval_color3(it)
     with pytest.raises(RuntimeError, match="domain|Surface|Interaction"):
@@ -249,7 +257,7 @@ def test04b_fixed_query_metadata_checks_match_jit(field_ad_rgb_variant):
 
     assert dr.allclose(texture.eval_1(si), mi.luminance([0.2, 0.4, 0.6]))
     with pytest.raises(RuntimeError, match="Float|Color3|out_type"):
-        field.eval_1(si, args=[])
+        mi.Field.eval_1(field, si, args=[])
 
 
 def test05_eval_n_count_must_match_output_dimension(variant_scalar_rgb):
@@ -340,7 +348,7 @@ def test08_constvolume_reports_field_metadata_and_fixed_queries(variant_scalar_r
     assert dr.allclose(color.eval_spec(it), color.eval(it))
     assert len(color.eval_n(it)) == color.out_dim()
     with pytest.raises(RuntimeError, match="Float|Spectrum|out_type"):
-        color.eval_1(it, args=[])
+        mi.Field.eval_1(color, it, args=[])
 
 
 def test09_spectral_gridvolume_reports_spectrum_field_output(variants_vec_spectral):

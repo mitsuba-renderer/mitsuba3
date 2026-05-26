@@ -94,7 +94,10 @@ public:
     FloatStorage eval(const SurfaceInteraction3f &si, Args args,
                       Mask active) const override {
         validate_args(args);
-        return eval_impl(si.uv.x(), si.uv.y(), si.p.z(), active);
+        if (m_input_dim == 2)
+            return eval_impl(si.uv.x(), si.uv.y(), 0.f, active);
+        else
+            return eval_impl(si.p.x(), si.p.y(), si.p.z(), active);
     }
 
     FloatStorage eval(const Interaction3f &it, Args args,
