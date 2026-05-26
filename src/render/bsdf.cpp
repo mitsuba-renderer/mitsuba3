@@ -46,19 +46,26 @@ template <typename Field, typename Type>
 struct AttributeCallback : public TraversalCallback {
     using F1 = std::function<Type(Field *)>;
 
-    AttributeCallback(std::string name, F1 func_object):
-        name(name), found(false), result(0.f), func_object(func_object) { }
+    AttributeCallback(std::string name, F1 func_object,
+                      bool validate_field = true):
+        name(name), found(false), result(0.f), validate_field(validate_field),
+        func_object(func_object) { }
 
     void put_object(std::string_view name, Object *obj, uint32_t) override {
         if (this->name == name) {
             Field *field = dynamic_cast<Field *>(obj);
             if (field) {
+                if (!validate_field) {
+                    found = true;
+                    return;
+                }
                 if (!field->supports_surface_queries())
                     Throw("BSDF attribute \"%s\" requires a field that "
                           "supports surface queries.", name);
-                if (field->args_dim() != 0)
+                uint32_t args_dim = field->args_dim();
+                if (args_dim != 0)
                     Throw("BSDF attribute \"%s\" requires args_dim=0, got %u.",
-                          name, field->args_dim());
+                          name, args_dim);
                 result = func_object(field);
                 found = true;
             }
@@ -76,12 +83,14 @@ struct AttributeCallback : public TraversalCallback {
     std::string name;
     bool found;
     Type result;
+    bool validate_field;
     F1 func_object;
 };
 
 MI_VARIANT typename BSDF<Float, Spectrum>::Mask
 BSDF<Float, Spectrum>::has_attribute(const std::string& name, Mask /*active*/) const {
-    AttributeCallback<Field, float> cb(name, [&](Field *) { return 0.f; });
+    AttributeCallback<Field, float> cb(
+        name, [&](Field *) { return 0.f; }, false);
     const_cast<BSDF<Float, Spectrum>*>(this)->traverse((TraversalCallback *) &cb);
     return cb.found;
 }

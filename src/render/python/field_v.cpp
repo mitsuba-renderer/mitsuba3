@@ -809,6 +809,16 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
             },
             "it"_a, "active"_a = true)
         .def("eval_n",
+            [](Ptr field, const SurfaceInteraction3f &si, Mask active) {
+                check_field_args_dim_zero(field, "Field::eval_n()");
+                uint32_t count = field->out_dim();
+                std::vector<Float> result(count);
+                field->eval_n(si, result.data(), count,
+                              FieldArgs<Float>{}, active);
+                return result;
+            },
+            "si"_a, "active"_a = true)
+        .def("eval_n",
             [](Ptr field, const Interaction3f &it, Mask active) {
                 check_field_args_dim_zero(field, "Field::eval_n()");
                 uint32_t count = field->out_dim();

@@ -210,16 +210,18 @@ public:
                     Throw("Property \"grid\" must be a VolumeGrid instance.");
                 res = volume_grid->size();
                 channel_count = (uint32_t) volume_grid->channel_count();
-            } else if(props.has_property("data")) {
-                tensor = const_cast<TensorXf*>(&props.get_any<TensorXf>("data"));
+            } else if (props.has_property("data")) {
+                tensor = const_cast<TensorXf *>(&props.get_any<TensorXf>("data"));
                 if (tensor->ndim() != 3 && tensor->ndim() != 4)
-                    Throw("Tensor->has %ul dimensions. Expected 3 or 4", tensor->ndim());
+                    Throw("Tensor has %u dimensions. Expected 3 or 4.",
+                          tensor->ndim());
                 res = { (uint32_t) tensor->shape(2), (uint32_t) tensor->shape(1), (uint32_t) tensor->shape(0) };
                 channel_count = tensor->ndim() == 4 ? (uint32_t) tensor->shape(3) : 1;
 
                 if (channel_count != 1 && channel_count != 3 && channel_count != 6)
-                    Throw("Tensor shape at index 3 is %lu invalid. Only volumes with 1, 3 or 6 "
-                          "channels are supported!", to_string(), channel_count);
+                    Throw("Tensor channel count %u is invalid. Only volumes "
+                          "with 1, 3 or 6 channels are supported!",
+                          channel_count);
             } else {
                 FileResolver *fs = file_resolver();
                 fs::path file_path = fs->resolve(props.get<std::string_view>("filename"));
@@ -321,13 +323,31 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "data")) {
+            m_texture.update_inplace();
+
+            const size_t storage_channels = m_texture.shape()[3];
+            const size_t expected_size = (size_t) m_texture.shape()[0] *
+                                         (size_t) m_texture.shape()[1] *
+                                         (size_t) m_texture.shape()[2] *
+                                         storage_channels;
+            size_t value_size = dr::width(m_texture.value());
+            if (value_size != expected_size)
+                Throw("parameters_changed(): The volume data %s was changed "
+                      "to have %zu value(s), expected %zu. Changing volume "
+                      "resolution or channel count through traversal is not "
+                      "supported.", to_string(), value_size, expected_size);
+
             const size_t channels = nchannels();
             if (channels != 1 && channels != 3 && channels != 6)
                 Throw("parameters_changed(): The volume data %s was changed "
-                      "to have %d channels, only volumes with 1, 3 or 6 "
+                      "to have %zu channels, only volumes with 1, 3 or 6 "
                       "channels are supported!", to_string(), channels);
 
-            m_texture.update_inplace();
+            if constexpr (is_spectral_v<Spectrum>)
+                m_channel_count = (!m_raw && storage_channels == 4) ? 0
+                                                                    : (uint32_t) channels;
+            else
+                m_channel_count = (uint32_t) channels;
 
             if (!m_fixed_max)
                 m_max = (float) dr::max_nested(dr::detach(m_texture.value()));

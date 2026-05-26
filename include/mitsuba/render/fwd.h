@@ -36,12 +36,12 @@ template <typename Float, typename Spectrum> class VolumeField;
 template <typename Float, typename Spectrum> class VolumeGrid;
 template <typename Float, typename Spectrum> class MeshAttribute;
 
-// Python keeps Texture/Volume classes for compatibility with previous Mitsuba.
+// Compatibility role names used by legacy C++ code and Python bindings.
 template <typename Float, typename Spectrum>
-using Texture = Field<Float, Spectrum>;
+using Texture = SurfaceField<Float, Spectrum>;
 
 template <typename Float, typename Spectrum>
-using Volume = Field<Float, Spectrum>;
+using Volume = VolumeField<Float, Spectrum>;
 
 template <typename Float, typename Spectrum> struct DirectionSample;
 template <typename Float, typename Spectrum> struct PositionSample;

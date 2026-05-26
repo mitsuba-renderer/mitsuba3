@@ -158,7 +158,35 @@ def test05_zero_args_field_accepts_no_args_without_allocating_argument_storage(
         field.eval_color3(si, args=[1.0])
 
 
-def test06_neural_fields_reject_scalar_variants_early(variant_scalar_rgb):
+def test06_single_scalar_arg_matches_one_element_sequence(field_ad_rgb_variant):
+    field = mi.load_dict(
+        neural_field_dict(
+            out_type="Float",
+            out_dim=1,
+            args_dim=1,
+            encoding=sinusoidal_encoding_dict(),
+        )
+    )
+    si = surface_interaction(width=8)
+
+    assert dr.allclose(field.eval_1(si, args=0.25),
+                       field.eval_1(si, args=[0.25]))
+
+
+def test07_neural_fields_reject_incompatible_encoding_domain(field_ad_rgb_variant):
+    with pytest.raises(RuntimeError, match="encoding|Interaction|domain"):
+        mi.load_dict(
+            neural_field_dict(
+                domain="Interaction",
+                out_type="Float",
+                out_dim=1,
+                args_dim=0,
+                encoding=encoding_dict(input_dim=2),
+            )
+        )
+
+
+def test08_neural_fields_reject_scalar_variants_early(variant_scalar_rgb):
     with pytest.raises(RuntimeError, match="neuralfield|scalar_rgb|LLVM|CUDA|JIT"):
         mi.load_dict(neural_field_dict(encoding=sinusoidal_encoding_dict()))
 
@@ -183,7 +211,7 @@ def test06_neural_fields_reject_scalar_variants_early(variant_scalar_rgb):
         ),
     ],
 )
-def test07_invalid_encoding_nesting_and_output_metadata_are_rejected(
+def test09_invalid_encoding_nesting_and_output_metadata_are_rejected(
     field_ad_rgb_variant, field_factory, pattern
 ):
     with pytest.raises(RuntimeError, match=pattern):
@@ -200,7 +228,7 @@ def test07_invalid_encoding_nesting_and_output_metadata_are_rejected(
         ("Features", 6, "eval_array6"),
     ],
 )
-def test08_neural_field_fixed_output_methods_match_metadata(
+def test10_neural_field_fixed_output_methods_match_metadata(
     field_ad_rgb_variant, out_type, out_dim, method
 ):
     field = mi.load_dict(
@@ -218,7 +246,7 @@ def test08_neural_field_fixed_output_methods_match_metadata(
             field.eval_array3(si)
 
 
-def test09_neural_field_features6_round_trips_through_base_dispatch(field_ad_rgb_variant):
+def test11_neural_field_features6_round_trips_through_base_dispatch(field_ad_rgb_variant):
     field = mi.load_dict(
         neural_field_dict(out_type="Features", out_dim=6, args_dim=0)
     )
@@ -229,7 +257,7 @@ def test09_neural_field_features6_round_trips_through_base_dispatch(field_ad_rgb
     assert dr.allclose(via_base, direct)
 
 
-def test10_neural_field_uses_conservative_texture_metadata(field_ad_rgb_variant):
+def test12_neural_field_uses_conservative_texture_metadata(field_ad_rgb_variant):
     field = mi.load_dict(neural_field_dict(args_dim=0))
 
     assert field.is_spatially_varying()
@@ -244,7 +272,7 @@ def test10_neural_field_uses_conservative_texture_metadata(field_ad_rgb_variant)
     assert dr.all(dr.isfinite(value))
 
 
-def test11_neural_field_traversal_and_update_are_preserved(field_ad_rgb_variant):
+def test13_neural_field_traversal_and_update_are_preserved(field_ad_rgb_variant):
     field = mi.load_dict(neural_field_dict())
     params = mi.traverse(field)
 
@@ -295,7 +323,7 @@ def neural_volume_xml():
     </volume>"""
 
 
-def test12_neural_fields_in_texture_roles_are_validated(field_ad_rgb_variant):
+def test14_neural_fields_in_texture_roles_are_validated(field_ad_rgb_variant):
     texture = mi.load_string(neural_texture_xml())
     si = surface_interaction(width=4)
 
@@ -312,6 +340,6 @@ def test12_neural_fields_in_texture_roles_are_validated(field_ad_rgb_variant):
         mi.load_string(neural_texture_xml(out_type="Features", out_dim=8))
 
 
-def test13_neural_fields_without_volume_metadata_are_rejected(field_ad_rgb_variant):
+def test15_neural_fields_without_volume_metadata_are_rejected(field_ad_rgb_variant):
     with pytest.raises(RuntimeError, match="Volume role|VolumeField|metadata"):
         mi.load_string(neural_volume_xml())

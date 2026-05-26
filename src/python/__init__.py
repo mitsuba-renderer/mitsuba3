@@ -92,6 +92,22 @@ def _mitsuba_wrap_field_method(fn, method_name):
     @_functools.wraps(fn)
     def wrapper(self, *args, **kwargs):
         if not accepts_field_args:
+            if method_name == "eval_n" and len(args) >= 4:
+                field_args = args[2]
+                if _mitsuba_field_args_len(field_args) != 0:
+                    raise RuntimeError(
+                        "Field argument args_dim mismatch "
+                        f"(expected 0, got {_mitsuba_field_args_len(field_args)})."
+                    )
+                return fn(self, args[0], args[1], *args[3:], **kwargs)
+            elif method_name != "eval_n" and len(args) >= 3:
+                field_args = args[1]
+                if _mitsuba_field_args_len(field_args) != 0:
+                    raise RuntimeError(
+                        "Field argument args_dim mismatch "
+                        f"(expected 0, got {_mitsuba_field_args_len(field_args)})."
+                    )
+                return fn(self, args[0], *args[2:], **kwargs)
             return fn(self, *args, **kwargs)
 
         field_args = kwargs.get("args", None)

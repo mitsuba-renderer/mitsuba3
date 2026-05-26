@@ -1,5 +1,6 @@
 import os
 
+import pytest
 import drjit as dr
 import mitsuba as mi
 
@@ -111,3 +112,31 @@ def test06_eval_per_channel(variants_all_rgb, tmpdir):
     assert dr.allclose(vol.eval_n(it), [0.0] * 6)
     it.p = mi.Point3f(1.0)
     assert dr.allclose(vol.eval_n(it), [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
+
+
+def test07_parameter_update_rejects_channel_count_changes(variant_scalar_rgb):
+    vol = mi.load_dict({
+        "type": "gridvolume",
+        "data": mi.TensorXf([1.0], shape=(1, 1, 1, 1)),
+        "raw": True,
+        "filter_type": "nearest",
+        "wrap_mode": "clamp",
+    })
+
+    assert vol.out_dim() == 1
+    assert vol.channel_count() == 1
+    assert dr.allclose(vol.max_per_channel(), [1.0])
+
+    params = mi.traverse(vol)
+    params["data"] = mi.TensorXf([2.0], shape=(1, 1, 1, 1))
+    params.update()
+
+    it = dr.zeros(mi.Interaction3f)
+    assert vol.out_dim() == 1
+    assert vol.channel_count() == 1
+    assert dr.allclose(vol.max_per_channel(), [2.0])
+    assert dr.allclose(mi.Field.eval_n(vol, it, 1), [2.0])
+
+    params["data"] = mi.TensorXf([1.0, 2.0], shape=(1, 1, 1, 2))
+    with pytest.raises(RuntimeError, match="resolution|channel count|traversal"):
+        params.update()
