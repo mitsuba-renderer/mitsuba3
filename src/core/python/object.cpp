@@ -40,7 +40,12 @@ MI_PY_EXPORT(Object) {
             std::string variant = nb::cast<std::string>(mi.attr("variant")());
             return cast_object(pmgr.create_object(props, variant, ObjectType::Unknown).get());
         }, "props"_a, D(PluginManager, create_object))
-        .def("plugin_type", &PluginManager::plugin_type, "name"_a,
+        .def("plugin_type",
+             [](PluginManager &pmgr, std::string_view name,
+                std::string_view variant) {
+                 return pmgr.plugin_type(name, variant);
+             },
+             "name"_a, "variant"_a = MI_DEFAULT_VARIANT,
              "Get the ObjectType of a plugin by name");
 
     nb::class_<Object, drjit::TraversableBase>(

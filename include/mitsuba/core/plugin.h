@@ -101,6 +101,9 @@ public:
     /// Get the type of a plugin by name, or return Object::Unknown if unknown.
     ObjectType plugin_type(std::string_view name);
 
+    /// Get the type of a plugin by name and variant, or return Object::Unknown if unknown.
+    ObjectType plugin_type(std::string_view name, std::string_view variant);
+
     MI_DECLARE_CLASS(PluginManager)
 
 protected:

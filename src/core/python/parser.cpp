@@ -20,8 +20,9 @@ NB_MAKE_OPAQUE(std::vector<parser::SceneNode>);
 // For casting ref<Object> to Python
 extern nb::object cast_object(Object *o);
 
-static ObjectType dict_object_type(std::string_view plugin_name) {
-    return PluginManager::instance()->plugin_type(plugin_name);
+static ObjectType dict_object_type(std::string_view plugin_name,
+                                   std::string_view variant) {
+    return PluginManager::instance()->plugin_type(plugin_name, variant);
 }
 
 // Helper to parse RGB/spectrum dictionaries
@@ -107,7 +108,8 @@ static void parse_color_spectrum(ParserState &state, size_t parent_idx,
 
 // Helper function to parse dictionary entries recursively
 static void parse_dict_impl(ParserState &state, const nb::dict &d,
-                            size_t parent_idx, std::string_view parent_path) {
+                            size_t parent_idx, std::string_view parent_path,
+                            std::string_view variant) {
     for (auto [key_o, value] : d) {
         if (!nb::isinstance<nb::str>(key_o))
             Throw("[%s]: dictionary keys must be strings", parent_path);
@@ -190,7 +192,7 @@ static void parse_dict_impl(ParserState &state, const nb::dict &d,
 
             // Set plugin name and object type
             child.props.set_plugin_name(type);
-            child.type = dict_object_type(type);
+            child.type = dict_object_type(type, variant);
             child.props.set_id(has_id ? id : key);
 
             // Register explicit IDs in the global map
@@ -211,7 +213,7 @@ static void parse_dict_impl(ParserState &state, const nb::dict &d,
             state.nodes[parent_idx].props.set(
                 key, Properties::ResolvedReference(child_idx));
 
-            parse_dict_impl(state, child_dict, child_idx, path);
+            parse_dict_impl(state, child_dict, child_idx, path, variant);
         } else {
             {
                 Object* obj_ptr;
@@ -238,7 +240,7 @@ static void parse_dict_impl(ParserState &state, const nb::dict &d,
     }
 }
 
-static ParserState parse_dict(const ParserConfig &, const nb::dict &d) {
+static ParserState parse_dict(const ParserConfig &config, const nb::dict &d) {
     ParserState state;
 
     // Create root node
@@ -257,7 +259,7 @@ static ParserState parse_dict(const ParserConfig &, const nb::dict &d) {
         parse_color_spectrum(state, 0, "value", d, plugin_name, "root");
         return state;
     } else {
-        root.type = dict_object_type(root.props.plugin_name());
+        root.type = dict_object_type(root.props.plugin_name(), config.variant);
     }
 
     if (d.contains("id")) {
@@ -286,7 +288,7 @@ static ParserState parse_dict(const ParserConfig &, const nb::dict &d) {
                   "reserved as a delimiter in object paths. Please use '_' instead.", key);
     }
 
-    parse_dict_impl(state, d, 0, "root");
+    parse_dict_impl(state, d, 0, "root", config.variant);
 
     return state;
 }

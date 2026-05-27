@@ -1352,8 +1352,9 @@ void transform_merge_equivalent(const ParserConfig &/*config*/, ParserState &sta
         for (size_t i = 0; i < state.size(); ++i) {
             size_t repr = canonical[i];
 
-            // Skip merging for emitters and shapes
+            // Skip merging for stateful or identity-sensitive objects
             if (state[repr].type == ObjectType::Emitter ||
+                state[repr].type == ObjectType::Field ||
                 state[repr].type == ObjectType::Shape)
                 continue;
 

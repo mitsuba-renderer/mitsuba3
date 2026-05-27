@@ -76,6 +76,13 @@ def _mitsuba_field_args_len(args):
     return 1
 
 
+def _mitsuba_is_active_argument(value):
+    if isinstance(value, bool):
+        return True
+    type_name = type(value).__name__
+    return type_name == "Bool" or type_name.endswith("Bool")
+
+
 def _mitsuba_wrap_field_method(fn, method_name):
     """Wrap Python field overrides with the same argument validation as C++."""
 
@@ -85,8 +92,13 @@ def _mitsuba_wrap_field_method(fn, method_name):
     try:
         parameters = _inspect.signature(fn).parameters
         accepts_field_args = "args" in parameters
+        accepts_active = "active" in parameters or any(
+            p.kind == _inspect.Parameter.VAR_KEYWORD
+            for p in parameters.values()
+        )
     except (TypeError, ValueError):
         accepts_field_args = True
+        accepts_active = True
 
     @_functools.wraps(fn)
     def wrapper(self, *args, **kwargs):
@@ -108,6 +120,26 @@ def _mitsuba_wrap_field_method(fn, method_name):
                     )
                 return fn(self, args[0], *args[2:], **kwargs)
             return fn(self, *args, **kwargs)
+
+        if accepts_active and "args" not in kwargs and "active" not in kwargs:
+            if (method_name == "eval_n" and len(args) == 3 and
+                    _mitsuba_is_active_argument(args[2])):
+                expected = int(self.args_dim())
+                if expected != 0:
+                    raise RuntimeError(
+                        f"Field argument args_dim mismatch "
+                        f"(expected {expected}, got 0)."
+                    )
+                return fn(self, args[0], args[1], active=args[2], **kwargs)
+            elif (method_name != "eval_n" and len(args) == 2 and
+                    _mitsuba_is_active_argument(args[1])):
+                expected = int(self.args_dim())
+                if expected != 0:
+                    raise RuntimeError(
+                        f"Field argument args_dim mismatch "
+                        f"(expected {expected}, got 0)."
+                    )
+                return fn(self, args[0], active=args[1], **kwargs)
 
         field_args = kwargs.get("args", None)
         if "args" not in kwargs:
