@@ -40,11 +40,4 @@ LLM.md
 NOTE.md
 PR.md
 field-design-pdf/
-compare_field_vs_std.py
 
-# Benchmark outputs and caches. Keep benchmark scripts reviewable.
-benchmarks/**/__pycache__/
-benchmarks/**/*.pyc
-benchmarks/**/results/
-benchmarks/**/*.json
-benchmarks/**/*.jsonl

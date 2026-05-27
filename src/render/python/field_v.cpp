@@ -600,46 +600,37 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
     cls.def("eval",
             [](Ptr field, const SurfaceInteraction3f &si,
                Mask active) -> nb::object {
-                if constexpr (std::is_pointer_v<Ptr>)
-                    check_field_args_dim_zero(field, "Field::eval()");
                 return nb::cast(field->eval(si, active));
             },
             "si"_a, "active"_a = true)
     .def("eval",
             [](Ptr field, const Interaction3f &it,
                Mask active) -> nb::object {
-                if constexpr (std::is_pointer_v<Ptr>)
-                    check_field_args_dim_zero(field, "Field::eval()");
                 return nb::cast(field->eval(it, active));
             },
             "it"_a, "active"_a = true)
         .def("eval_1",
             [](Ptr field, const SurfaceInteraction3f &si, Mask active) {
-                check_field_args_dim_zero(field, "Field::eval_1()");
                 return field->eval_1(si, active);
             },
             "si"_a, "active"_a = true)
         .def("eval_1",
             [](Ptr field, const Interaction3f &it, Mask active) {
-                check_field_args_dim_zero(field, "Field::eval_1()");
                 return field->eval_1(it, active);
             },
             "it"_a, "active"_a = true)
         .def("eval_3",
             [](Ptr field, const SurfaceInteraction3f &si, Mask active) {
-                check_field_args_dim_zero(field, "Field::eval_3()");
                 return field->eval_3(si, active);
             },
             "si"_a, "active"_a = true)
         .def("eval_3",
             [](Ptr field, const Interaction3f &it, Mask active) {
-                check_field_args_dim_zero(field, "Field::eval_3()");
                 return field->eval_3(it, active);
             },
             "it"_a, "active"_a = true)
         .def("eval_6",
             [](Ptr field, const Interaction3f &it, Mask active) {
-                check_field_args_dim_zero(field, "Field::eval_6()");
                 auto result = field->eval_6(it, active);
                 return array6_to_dynamic<Float>(std::move(result));
             },
@@ -799,7 +790,6 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
             "it"_a, "active"_a = true)
         .def("eval_n",
             [](Ptr field, const SurfaceInteraction3f &si, Mask active) {
-                check_field_args_dim_zero(field, "Field::eval_n()");
                 uint32_t count = field->out_dim();
                 std::vector<Float> result(count);
                 field->eval_n(si, result.data(), count,
@@ -809,7 +799,6 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
             "si"_a, "active"_a = true)
         .def("eval_n",
             [](Ptr field, const Interaction3f &it, Mask active) {
-                check_field_args_dim_zero(field, "Field::eval_n()");
                 uint32_t count = field->out_dim();
                 std::vector<Float> result(count);
                 field->eval_n(it, result.data(), count,
