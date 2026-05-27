@@ -168,30 +168,6 @@ def make_metadata_trap_field(value=(0.25, 0.5, 0.75)):
     return MetadataTrapField()
 
 
-def make_metadata_trap_texture(value=(0.35, 0.45, 0.55)):
-    class MetadataTrapTexture(mi.Texture):
-        def __init__(self):
-            mi.Texture.__init__(self, mi.Properties("metadata_trap_texture"))
-            self.fail_metadata = False
-
-        def _check_metadata_allowed(self):
-            if self.fail_metadata:
-                raise RuntimeError("reflectance metadata was queried during eval")
-
-        def out_type(self):
-            self._check_metadata_allowed()
-            return mi.FieldValueType.Color3
-
-        def out_dim(self):
-            self._check_metadata_allowed()
-            return 3
-
-        def eval_3(self, si, active=True):
-            return mi.Color3f(*value) & active
-
-    return MetadataTrapTexture()
-
-
 def test01_constant_field_neuralbsdf_matches_diffuse_eval_pdf_sample_and_reflectance(variant_scalar_rgb):
     reflectance = (0.2, 0.4, 0.6)
     neural = mi.load_dict(neuralbsdf_dict(albedo_field(reflectance)))
@@ -296,7 +272,6 @@ def test07_neuralbsdf_matches_diffuse_in_polarized_variants(variants_all_spectra
     "factory, expected",
     [
         (make_metadata_trap_field, (0.25, 0.5, 0.75)),
-        (make_metadata_trap_texture, (0.35, 0.45, 0.55)),
     ],
 )
 def test08_neuralbsdf_uses_cached_reflectance_dispatch_after_setup(

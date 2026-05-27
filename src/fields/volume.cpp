@@ -49,10 +49,10 @@ This is done in world space and potentially requires using the volume's
 template <typename Float, typename Spectrum>
 class VolumeAdapter final : public SurfaceField<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(Field, SurfaceField, Texture, Volume)
+    MI_IMPORT_TYPES(Field, SurfaceField)
 
-    using Args    = typename Texture::Args;
-    using Array6f = typename Texture::Array6f;
+    using Args    = typename Field::Args;
+    using Array6f = typename Field::Array6f;
 
     VolumeAdapter(const Properties &props) : SurfaceField(props) {
         m_volume = props.get_volume_field<Field>("volume");

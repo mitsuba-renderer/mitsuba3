@@ -212,11 +212,12 @@ def test05_file_backed_bitmap_and_gridvolume_work_as_fields(variant_scalar_rgb, 
     assert dr.allclose(volume.eval_1(make_it((0.5, 0.5, 0.5))), 0.5)
 
 
-def test06_python_volume_metadata_trampolines_are_role_validated(variant_scalar_rgb):
-    class PythonUnitVolume(mi.Volume):
+def test06_python_fields_are_not_volume_role_implementations(variant_scalar_rgb):
+    assert not hasattr(mi, "Volume")
+
+    class PythonUnitField(mi.Field):
         def __init__(self, props):
-            mi.Volume.__init__(self, props)
-            self._args_dim = props.get("args_dim", 0)
+            mi.Field.__init__(self, props)
 
         def out_type(self):
             return mi.FieldValueType.Float
@@ -228,7 +229,7 @@ def test06_python_volume_metadata_trampolines_are_role_validated(variant_scalar_
             return 1
 
         def args_dim(self):
-            return self._args_dim
+            return 0
 
         def supports_scalar(self):
             return True
@@ -242,46 +243,21 @@ def test06_python_volume_metadata_trampolines_are_role_validated(variant_scalar_
         def supports_interaction_queries(self):
             return True
 
-        def channel_count(self):
-            return 1
-
-        def eval(self, it, active=True):
-            return mi.Color3f(self.eval_1(it, active))
-
-        def eval_1(self, it, active=True):
+        def eval_1(self, it, args=None, active=True):
             return dr.select(active, 0.75, 0.0)
-
-        def eval_3(self, it, active=True):
-            return mi.Vector3f(self.eval_1(it, active))
-
-        def eval_6(self, it, active=True):
-            return [self.eval_1(it, active)] * 6
-
-        def eval_gradient(self, it, active=True):
-            return (mi.Color3f(self.eval_1(it, active)), mi.Vector3f(0.0))
 
         def max(self):
             return 0.75
 
-        def max_per_channel(self):
-            return [0.75]
-
     try:
-        mi.register_field("python_unit_volume", PythonUnitVolume)
+        mi.register_field("python_unit_field", PythonUnitField)
     except RuntimeError as exc:
         if "already" not in str(exc).lower():
             raise
 
-    volume = mi.load_string("""<volume version="3.0.0" type="python_unit_volume"/>""")
-    assert isinstance(volume, mi.Volume)
-    assert volume.out_type() == mi.FieldValueType.Float
-    assert volume.out_dim() == 1
-    assert volume.args_dim() == 0
-    assert volume.channel_count() == 1
-    assert dr.allclose(volume.eval_1(make_it()), 0.75)
-    assert dr.allclose(volume.max_per_channel(), [0.75])
+    field = mi.load_string("""<field version="3.0.0" type="python_unit_field"/>""")
+    assert isinstance(field, mi.Field)
+    assert dr.allclose(field.eval_1(make_it()), 0.75)
 
-    with pytest.raises(RuntimeError, match="Volume role requires args_dim=0, got 1"):
-        mi.load_string("""<volume version="3.0.0" type="python_unit_volume">
-            <integer name="args_dim" value="1"/>
-        </volume>""")
+    with pytest.raises(RuntimeError, match="Volume role requires a VolumeField"):
+        mi.load_string("""<volume version="3.0.0" type="python_unit_field"/>""")

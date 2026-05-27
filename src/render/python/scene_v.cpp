@@ -198,13 +198,6 @@ MI_PY_EXPORT(Scene) {
           "name"_a, "constructor"_a,
           "Register a Python sampler plugin");
 
-    m.def("register_texture",
-          [](const std::string &name, nb::object constructor) {
-              register_typed_plugin(name, constructor, ObjectType::Field);
-          },
-          "name"_a, "constructor"_a,
-          "Register a Python texture-compatible field plugin");
-
     m.def("register_field",
           [](const std::string &name, nb::object constructor) {
               register_typed_plugin(name, constructor, ObjectType::Field);
