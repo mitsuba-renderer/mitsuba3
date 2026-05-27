@@ -33,7 +33,7 @@ def test02_constant_eval(variant_scalar_rgb):
     assert vol.bbox() == mi.BoundingBox3f([0, 0, 0], [1, 1, 1])
 
 
-def test03_constant_rejects_generic_fields_without_summaries(variant_scalar_rgb):
+def test03_constant_defers_generic_field_summary_failures(variant_scalar_rgb):
     class ScalarFieldNoSummary(mi.Field):
         def __init__(self, props):
             mi.Field.__init__(self, props)
@@ -87,21 +87,24 @@ def test03_constant_rejects_generic_fields_without_summaries(variant_scalar_rgb)
             if "already" not in str(exc).lower():
                 raise
 
-    with pytest.raises(RuntimeError, match="ConstVolume requires.*max"):
-        mi.load_dict({
-            "type": "constvolume",
-            "value": {
-                "type": "scalar_field_no_summary",
-            },
-        })
+    vol_no_summary = mi.load_dict({
+        "type": "constvolume",
+        "value": {
+            "type": "scalar_field_no_summary",
+        },
+    })
+    with pytest.raises(RuntimeError, match="max"):
+        vol_no_summary.max()
 
-    with pytest.raises(RuntimeError, match="ConstVolume requires.*mean"):
-        mi.load_dict({
-            "type": "constvolume",
-            "value": {
-                "type": "scalar_field_max_only",
-            },
-        })
+    vol_max_only = mi.load_dict({
+        "type": "constvolume",
+        "value": {
+            "type": "scalar_field_max_only",
+        },
+    })
+    assert dr.allclose(vol_max_only.max(), 0.5)
+    with pytest.raises(RuntimeError, match="mean"):
+        vol_max_only.mean()
 
     vol = mi.load_dict({
         "type": "constvolume",

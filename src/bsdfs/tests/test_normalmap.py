@@ -180,3 +180,24 @@ def test04_use_shadowing_function(variants_vec_backends_once_rgb):
     assert dr.all(bsdf2.sample(context, si, 0.5, (0.5, 0.5))[1] < 0.05)
     assert dr.all(bsdf2.eval(context, si, wo) < 0.01)
     assert dr.all(bsdf2.eval_pdf(context, si, wo)[0] < 0.01)
+
+
+def test05_non_vector_normalmap_fails_when_evaluated(variant_scalar_rgb):
+    bsdf = mi.load_dict({
+        "type": "normalmap",
+        "normalmap": {
+            "type": "bitmap",
+            "data": mi.TensorXf([0.5], shape=(1, 1, 1)),
+            "raw": True,
+        },
+        "nested_bsdf": {
+            "type": "diffuse",
+        },
+    })
+
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.sh_frame = mi.Frame3f(mi.Vector3f(0, 0, 1))
+    si.wi = mi.Vector3f(0, 0, 1)
+
+    with pytest.raises(RuntimeError, match="queried for a RGB value"):
+        bsdf.eval(mi.BSDFContext(), si, mi.Vector3f(0, 0, 1))

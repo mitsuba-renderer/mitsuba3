@@ -160,7 +160,6 @@ public:
             require_field_spectral_evaluable(m_albedo.get(), "albedo");
             require_field_spectral_evaluable(m_sigmat.get(), "sigma_t");
         }
-        require_field_max(m_sigmat.get(), "sigma_t");
 
         m_scale = props.get<ScalarFloat>("scale", 1.0f);
         m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);

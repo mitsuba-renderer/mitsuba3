@@ -48,8 +48,10 @@ def test02_eval_grad(variant_scalar_rgb, np_rng):
             si.uv = uv + mi.Vector2f(0, delta)
             fv = bitmap.eval_1(si)
             gradient_finite_difference = mi.Vector2f((fu - f)/delta, (fv - f)/delta)
+            si.uv = mi.Vector2f(uv)
             gradient_analytic = bitmap.eval_1_grad(si)
-            assert dr.allclose(0, dr.abs(gradient_finite_difference/gradient_analytic - 1.0), atol = 1e04)
+            scale = dr.maximum(mi.Vector2f(1.0), dr.abs(gradient_analytic))
+            assert dr.all(dr.abs(gradient_finite_difference - gradient_analytic) / scale < 5e-2)
 
 
 @fresolver_append_path

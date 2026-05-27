@@ -76,8 +76,6 @@ public:
         dr::make_opaque(m_position);
 
         m_intensity = props.get_emissive_surface_field<Field>("intensity", 1.f);
-        if constexpr (is_spectral_v<Spectrum>)
-            require_field_sample_spectrum(m_intensity.get(), "intensity");
 
         if (m_intensity->is_spatially_varying())
             Throw("Expected a non-spatially varying intensity spectra!");

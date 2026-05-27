@@ -216,3 +216,14 @@ def test09_direct_field_srf_must_be_spectrum_valued(variants_all_spectral):
                 "out_dim": 8,
             },
         })
+
+
+def test10_d65_srf_has_valid_resolution(variant_scalar_spectral):
+    film = mi.load_dict({
+        "type": "specfilm",
+        "srf_d65": {
+            "type": "d65",
+            "color": [1.0, 1.0, 1.0],
+        },
+    })
+    assert film is not None

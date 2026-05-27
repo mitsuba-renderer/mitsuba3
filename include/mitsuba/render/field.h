@@ -5,6 +5,7 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
 #include <drjit/call.h>
+#include <cmath>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -379,67 +380,20 @@ protected:
     MI_TRAVERSE_CB(Object)
 };
 
-/// Validate optional role methods that are required by specific consumers.
-template <typename FieldT>
-MI_INLINE void require_field_eval_1_grad(const FieldT *field,
-                                         std::string_view param_name) {
-    try {
-        typename FieldT::SurfaceInteraction3f si =
-            dr::zeros<typename FieldT::SurfaceInteraction3f>();
-        (void) field->eval_1_grad(si);
-    } catch (const std::exception &e) {
-        Throw("Field parameter \"%s\": requires eval_1_grad(): %s",
-              param_name, e.what());
-    }
-}
-
-template <typename FieldT>
-MI_INLINE void require_field_mean(const FieldT *field,
-                                  std::string_view param_name) {
-    try {
-        (void) field->mean();
-    } catch (const std::exception &e) {
-        Throw("Field parameter \"%s\": requires mean(): %s",
-              param_name, e.what());
-    }
-}
-
-template <typename FieldT>
-MI_INLINE void require_field_max(const FieldT *field,
-                                 std::string_view param_name) {
-    try {
-        (void) field->max();
-    } catch (const std::exception &e) {
-        Throw("Field parameter \"%s\": requires max(): %s",
-              param_name, e.what());
-    }
-}
-
-template <typename FieldT>
-MI_INLINE void require_field_sample_spectrum(const FieldT *field,
-                                             std::string_view param_name) {
-    try {
-        typename FieldT::SurfaceInteraction3f si =
-            dr::zeros<typename FieldT::SurfaceInteraction3f>();
-        typename FieldT::Wavelength sample =
-            dr::full<typename FieldT::Wavelength>(.5f);
-        (void) field->sample_spectrum(si, sample);
-    } catch (const std::exception &e) {
-        Throw("Field parameter \"%s\": requires sample_spectrum(): %s",
-              param_name, e.what());
-    }
-}
-
+/// Validate cheap field metadata that is consumed immediately.
 template <typename FieldT>
 MI_INLINE void require_field_spectral_metadata(const FieldT *field,
                                                std::string_view param_name) {
-    try {
-        (void) field->wavelength_range();
-        (void) field->spectral_resolution();
-    } catch (const std::exception &e) {
-        Throw("Field parameter \"%s\": requires spectral metadata: %s",
-              param_name, e.what());
-    }
+    typename FieldT::ScalarVector2f range = field->wavelength_range();
+    typename FieldT::ScalarFloat resolution = field->spectral_resolution();
+
+    if (!std::isfinite(range.x()) || !std::isfinite(range.y()) ||
+        !std::isfinite(resolution) || range.x() >= range.y() ||
+        resolution <= 0.f)
+        Throw("Field parameter \"%s\": invalid spectral metadata: "
+              "wavelength_range=[%g, %g], spectral_resolution=%g.",
+              param_name, (double) range.x(), (double) range.y(),
+              (double) resolution);
 }
 
 template <typename FieldT>

@@ -113,7 +113,6 @@ public:
                 Field *field = dynamic_cast<Field *>(object.get());
                 if (!field)
                     Throw("BumpMap requires a field child with gradient support.");
-                require_field_eval_1_grad(field, "nested_texture");
                 m_nested_texture = field;
             }
         }

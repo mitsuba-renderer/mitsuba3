@@ -108,7 +108,6 @@ public:
         if (!m_nested_bsdf)
             Throw("Exactly one BSDF child object must be specified.");
 
-        // TODO: How to assert this is actually a RGBDataTexture?
         m_normalmap = props.get_surface_field<Field>("normalmap");
 
         m_flip_invalid_normals = props.get<bool>("flip_invalid_normals", true);

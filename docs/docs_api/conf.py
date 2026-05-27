@@ -205,6 +205,8 @@ api_doc_structure = {
     'Integrator': [r'mitsuba.(.*)Integrator([\w]*)', 'mitsuba.ad.common.mis_weight'],
     'Endpoint': ['mitsuba.Endpoint'],
     'Emitter': [r'mitsuba.Emitter([\w]*)'],
+    'Field': [r'mitsuba.Field([\w]*)', 'mitsuba.FieldValueType',
+              'mitsuba.FieldDomain'],
     'Sensor': ['mitsuba.Sensor([\w]+|)', 'mitsuba.ProjectiveCamera', 'mitsuba.parse_fov'],
     'Medium': [r'mitsuba.Medium([\w]*)', r'mitsuba.PhaseFunction([\w]+)'],
     'Shape': ['mitsuba.Shape([\w]+|)', 'mitsuba.Mesh([\w]+|)'],

@@ -101,3 +101,9 @@ def test02_invalid_attribute(variant_scalar_rgb):
 
     with pytest.raises(Exception, match="Invalid attribute requested"):
         texture.eval(si)
+
+    with pytest.raises(RuntimeError, match="must start with either"):
+        mi.load_dict({
+            "type": "mesh_attribute",
+            "name": "foo_vertex_color",
+        })

@@ -79,8 +79,10 @@ public:
     MeshAttribute(const Properties &props)
     : SurfaceField(props) {
         m_name = props.get<std::string>("name");
-        if (m_name.find("vertex_") == std::string::npos && m_name.find("face_") == std::string::npos)
-            Throw("Invalid mesh attribute name: must be start with either \"vertex_\" or \"face_\" but was \"%s\".", m_name.c_str());
+        if (m_name.rfind("vertex_", 0) != 0 && m_name.rfind("face_", 0) != 0)
+            Throw("Invalid mesh attribute name: must start with either "
+                  "\"vertex_\" or \"face_\" but was \"%s\".",
+                  m_name.c_str());
 
         m_scale = props.get<ScalarFloat>("scale", 1.f);
     }

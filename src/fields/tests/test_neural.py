@@ -277,7 +277,7 @@ def test12_neural_field_without_summary_is_rejected_by_mean_users(field_ad_rgb_v
     with pytest.raises(RuntimeError, match="mean"):
         field.mean()
 
-    with pytest.raises(RuntimeError, match="requires mean"):
+    with pytest.raises(RuntimeError, match="mean"):
         mi.load_dict({
             "type": "roughplastic",
             "diffuse_reflectance": neural_field_dict(args_dim=0),

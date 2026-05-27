@@ -617,7 +617,7 @@ def test08_four_layer_nested_field_ad_matches_bilinear_weights(field_ad_rgb_vari
                        expected_grad, atol=1e-6)
 
 
-def test09_checkerboard_scalar_eval_keeps_upstream_parity(variant_scalar_rgb):
+def test09_checkerboard_scalar_eval_matches_color_eval(variant_scalar_rgb):
     texture = mi.load_dict({
         "type": "checkerboard",
         "color0": 0.2,
@@ -627,11 +627,11 @@ def test09_checkerboard_scalar_eval_keeps_upstream_parity(variant_scalar_rgb):
 
     si.uv = mi.Point2f(0.25, 0.25)
     assert dr.allclose(texture.eval(si)[0], 0.2)
-    assert dr.allclose(texture.eval_1(si), 0.8)
+    assert dr.allclose(texture.eval_1(si), 0.2)
 
     si.uv = mi.Point2f(0.75, 0.25)
     assert dr.allclose(texture.eval(si)[0], 0.8)
-    assert dr.allclose(texture.eval_1(si), 0.2)
+    assert dr.allclose(texture.eval_1(si), 0.8)
 
 
 def test10_generic_only_python_field_uses_dynamic_fallback(variant_scalar_rgb):

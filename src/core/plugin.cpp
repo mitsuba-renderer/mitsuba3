@@ -265,6 +265,13 @@ ref<Object> PluginManager::create_object(const Properties &props,
               props.plugin_name(), plugin_type_name(actual_type),
               plugin_type_name(type));
 
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+    // Ensures queued side effects are consistently compiled into cacheable kernels
+    if (string::starts_with(variant, "cuda_") ||
+        string::starts_with(variant, "llvm_"))
+        dr::eval();
+#endif
+
     return object;
 }
 

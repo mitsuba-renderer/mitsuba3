@@ -80,15 +80,6 @@ public:
             }
         }
 
-        try {
-            (void) m_value->max();
-            (void) m_value->mean();
-        } catch (const std::exception &e) {
-            Throw("ConstVolume requires its value field to provide max() and "
-                  "mean(): %s",
-                  e.what());
-        }
-
     }
 
     void traverse(TraversalCallback *cb) override {

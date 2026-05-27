@@ -188,9 +188,9 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if constexpr (is_spectral_v<Spectrum>) {
-            UnpolarizedSpectrum d65_val = m_d65->eval_spec(si, {}, active);
+            UnpolarizedSpectrum d65_val = m_d65->eval(si, active);
             if (m_nested_texture)
-                d65_val *= m_nested_texture->eval_spec(si, {}, active);
+                d65_val *= m_nested_texture->eval(si, active);
             else if (m_has_value)
                 d65_val *= srgb_model_eval<UnpolarizedSpectrum>(m_value, si.wavelengths);
             return d65_val;
@@ -210,7 +210,7 @@ public:
                 auto [wav, weight] = m_nested_texture->sample_spectrum(si, sample, active);
                 SurfaceInteraction3f si2(si);
                 si2.wavelengths = wav;
-                return { wav, weight * m_d65->eval_spec(si2, {}, active) };
+                return { wav, weight * m_d65->eval(si2, active) };
             } else {
                 // TODO: better sampling strategy
                 SurfaceInteraction3f si2(si);
@@ -289,7 +289,7 @@ public:
     }
 
     ScalarFloat spectral_resolution() const override {
-        return (MI_CIE_MAX - MI_CIE_MAX) / (MI_CIE_SAMPLES - 1);
+        return (MI_CIE_MAX - MI_CIE_MIN) / (MI_CIE_SAMPLES - 1);
     }
 
     ScalarVector2f wavelength_range() const override {

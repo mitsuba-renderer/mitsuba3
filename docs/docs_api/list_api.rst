@@ -116,6 +116,14 @@
 
 .. autoclass:: mitsuba.Endpoint
 
+.. autoclass:: mitsuba.Field
+
+.. autoclass:: mitsuba.FieldDomain
+
+.. autoclass:: mitsuba.FieldPtr
+
+.. autoclass:: mitsuba.FieldValueType
+
 .. autoclass:: mitsuba.FileResolver
 
 .. autoclass:: mitsuba.FileStream
@@ -963,6 +971,8 @@
 .. autofunction:: mitsuba.register_bsdf
 
 .. autofunction:: mitsuba.register_emitter
+
+.. autofunction:: mitsuba.register_field
 
 .. autofunction:: mitsuba.register_film
 
