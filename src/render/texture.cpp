@@ -87,10 +87,27 @@ SurfaceField<Float, Spectrum>::eval_1(const SurfaceInteraction3f &si,
         return 0.f;
     FieldValueType type = out_type();
     uint32_t dim = out_dim();
-    if (type != FieldValueType::Float || dim != 1)
-        Throw("Texture::eval_1(): expected Float[1], got %s[%u].",
-              field_value_type_name(type), dim);
-    return eval_1(si, active);
+    switch (type) {
+        case FieldValueType::Float:
+            if (dim == 1)
+                return eval_1(si, active);
+            break;
+
+        case FieldValueType::Spectrum:
+            return dr::mean(eval(si, active));
+
+        case FieldValueType::Color3:
+        case FieldValueType::Array3:
+            if (dim == 3)
+                return luminance(eval_3(si, active));
+            break;
+
+        default:
+            break;
+    }
+
+    Throw("Texture::eval_1(): expected scalar-compatible output, got %s[%u].",
+          field_value_type_name(type), dim);
 }
 
 MI_VARIANT Float

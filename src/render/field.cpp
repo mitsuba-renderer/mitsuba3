@@ -161,12 +161,36 @@ Field<Float, Spectrum>::eval_1(const SurfaceInteraction3f &si,
         return 0.f;
     FieldValueType type = out_type();
     uint32_t dim = out_dim();
-    if (type != FieldValueType::Float || dim != 1)
-        Throw("Field::eval_1(): expected Float[1], got %s[%u].",
-              field_value_type_name(type), dim);
-    Float result;
-    eval_n(si, &result, 1, args, active);
-    return result;
+    switch (type) {
+        case FieldValueType::Float: {
+            if (dim != 1)
+                break;
+            Float result;
+            eval_n(si, &result, 1, args, active);
+            return result;
+        }
+
+        case FieldValueType::Spectrum:
+            return dr::mean(eval_spec(si, args, active));
+
+        case FieldValueType::Color3:
+            if (dim == 3)
+                return luminance(eval_color3(si, args, active));
+            break;
+
+        case FieldValueType::Array3:
+            if (dim == 3) {
+                Array3f value = eval_array3(si, args, active);
+                return luminance(Color3f(value.x(), value.y(), value.z()));
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    Throw("Field::eval_1(): expected scalar-compatible output, got %s[%u].",
+          field_value_type_name(type), dim);
 }
 
 MI_VARIANT Float
@@ -183,12 +207,36 @@ Field<Float, Spectrum>::eval_1(const Interaction3f &it,
         return 0.f;
     FieldValueType type = out_type();
     uint32_t dim = out_dim();
-    if (type != FieldValueType::Float || dim != 1)
-        Throw("Field::eval_1(): expected Float[1], got %s[%u].",
-              field_value_type_name(type), dim);
-    Float result;
-    eval_n(it, &result, 1, args, active);
-    return result;
+    switch (type) {
+        case FieldValueType::Float: {
+            if (dim != 1)
+                break;
+            Float result;
+            eval_n(it, &result, 1, args, active);
+            return result;
+        }
+
+        case FieldValueType::Spectrum:
+            return dr::mean(eval_spec(it, args, active));
+
+        case FieldValueType::Color3:
+            if (dim == 3)
+                return luminance(eval_color3(it, args, active));
+            break;
+
+        case FieldValueType::Array3:
+            if (dim == 3) {
+                Array3f value = eval_array3(it, args, active);
+                return luminance(Color3f(value.x(), value.y(), value.z()));
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    Throw("Field::eval_1(): expected scalar-compatible output, got %s[%u].",
+          field_value_type_name(type), dim);
 }
 
 MI_VARIANT Float

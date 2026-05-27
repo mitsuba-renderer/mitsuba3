@@ -80,6 +80,9 @@ def test04_sigma_t_forwards_inactive_mask(variants_all_ad_rgb_unpolarized):
         def max(self):
             return 2.0
 
+        def mean(self):
+            return 2.0
+
     value = InactiveSensitiveValue()
     medium = mi.load_dict({
         "type": "homogeneous",

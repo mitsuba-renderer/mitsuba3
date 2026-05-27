@@ -598,29 +598,17 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
     cls.def("eval",
             [](Ptr field, const SurfaceInteraction3f &si,
                Mask active) -> nb::object {
-                if constexpr (std::is_pointer_v<Ptr>) {
+                if constexpr (std::is_pointer_v<Ptr>)
                     check_field_args_dim_zero(field, "Field::eval()");
-                    return nb::cast(field->eval(si, FieldArgs<Float>{},
-                                                active));
-                } else {
-                    Throw("FieldPtr::eval(): output dimension is dynamic; use "
-                          "eval_n(si, count, active) or a fixed output method.");
-                }
-                return nb::cast(dr::DynamicArray<Float>());
+                return nb::cast(field->eval(si, active));
             },
             "si"_a, "active"_a = true)
     .def("eval",
             [](Ptr field, const Interaction3f &it,
                Mask active) -> nb::object {
-                if constexpr (std::is_pointer_v<Ptr>) {
+                if constexpr (std::is_pointer_v<Ptr>)
                     check_field_args_dim_zero(field, "Field::eval()");
-                    return nb::cast(field->eval(it, FieldArgs<Float>{},
-                                                active));
-                } else {
-                    Throw("FieldPtr::eval(): output dimension is dynamic; use "
-                          "eval_n(it, count, active) or a fixed output method.");
-                }
-                return nb::cast(dr::DynamicArray<Float>());
+                return nb::cast(field->eval(it, active));
             },
             "it"_a, "active"_a = true)
         .def("eval_1",
@@ -848,8 +836,6 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
         .def("eval_1",
             [](Ptr field, const SurfaceInteraction3f &si, nb::object args,
                Mask active) {
-                check_field_output(field, FieldValueType::Float, 1,
-                                   "Field::eval_1()");
                 std::vector<Float> storage =
                     field_args_from_python<Float>(args, field->args_dim());
                 return field->eval_1(si, FieldArgs<Float>(
@@ -859,8 +845,6 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
         .def("eval_1",
             [](Ptr field, const Interaction3f &it, nb::object args,
                Mask active) {
-                check_field_output(field, FieldValueType::Float, 1,
-                                   "Field::eval_1()");
                 std::vector<Float> storage =
                     field_args_from_python<Float>(args, field->args_dim());
                 return field->eval_1(it, FieldArgs<Float>(

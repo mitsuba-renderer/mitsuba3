@@ -331,8 +331,8 @@ def test04_fieldptr_vectorized_fixed_and_generic_calls(field_ad_rgb_variant):
     })
     feature_ptr = dr.zeros(mi.FieldPtr, 4)
     dr.scatter(feature_ptr, features, mi.UInt32(0, 1, 2, 3))
-    assert dr.allclose(feature_ptr.eval_n(si, 6, True), features.eval(si))
-    with pytest.raises(RuntimeError, match="FieldPtr::eval"):
+    assert dr.allclose(feature_ptr.eval_n(si, 6, True), features.eval_n(si, 6))
+    with pytest.raises(RuntimeError, match="unsupported field output|Features"):
         feature_ptr.eval(si, True)
 
 
@@ -416,7 +416,7 @@ def test06_python_field_legacy_overrides_work_through_base_dispatch(variant_scal
     field = LegacyScalarField()
     si = surface_interaction()
 
-    assert dr.allclose(mi.Field.eval(field, si), [0.5])
+    assert dr.allclose(mi.Field.eval(field, si), mi.Color3f(0.5))
     assert dr.allclose(mi.Field.eval_1(field, si), 0.5)
     assert dr.allclose(mi.Field.eval_n(field, si), [0.5])
     assert dr.allclose(mi.Field.eval_n(field, si, 1), [0.5])
@@ -527,6 +527,6 @@ def test10_generic_only_python_field_uses_dynamic_fallback(variant_scalar_rgb):
     field = GenericOnlyField()
     si = surface_interaction()
 
-    assert dr.allclose(mi.Field.eval(field, si), [1.0])
+    assert dr.allclose(mi.Field.eval(field, si), mi.Color3f(1.0))
     assert dr.allclose(mi.Field.eval_1(field, si), 1.0)
     assert dr.allclose(mi.Field.eval_n(field, si, 1), [1.0])

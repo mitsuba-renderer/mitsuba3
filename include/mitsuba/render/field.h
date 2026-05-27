@@ -379,6 +379,79 @@ protected:
     MI_TRAVERSE_CB(Object)
 };
 
+/// Validate optional role methods that are required by specific consumers.
+template <typename FieldT>
+MI_INLINE void require_field_eval_1_grad(const FieldT *field,
+                                         std::string_view param_name) {
+    try {
+        typename FieldT::SurfaceInteraction3f si =
+            dr::zeros<typename FieldT::SurfaceInteraction3f>();
+        (void) field->eval_1_grad(si);
+    } catch (const std::exception &e) {
+        Throw("Field parameter \"%s\": requires eval_1_grad(): %s",
+              param_name, e.what());
+    }
+}
+
+template <typename FieldT>
+MI_INLINE void require_field_mean(const FieldT *field,
+                                  std::string_view param_name) {
+    try {
+        (void) field->mean();
+    } catch (const std::exception &e) {
+        Throw("Field parameter \"%s\": requires mean(): %s",
+              param_name, e.what());
+    }
+}
+
+template <typename FieldT>
+MI_INLINE void require_field_max(const FieldT *field,
+                                 std::string_view param_name) {
+    try {
+        (void) field->max();
+    } catch (const std::exception &e) {
+        Throw("Field parameter \"%s\": requires max(): %s",
+              param_name, e.what());
+    }
+}
+
+template <typename FieldT>
+MI_INLINE void require_field_sample_spectrum(const FieldT *field,
+                                             std::string_view param_name) {
+    try {
+        typename FieldT::SurfaceInteraction3f si =
+            dr::zeros<typename FieldT::SurfaceInteraction3f>();
+        typename FieldT::Wavelength sample =
+            dr::full<typename FieldT::Wavelength>(.5f);
+        (void) field->sample_spectrum(si, sample);
+    } catch (const std::exception &e) {
+        Throw("Field parameter \"%s\": requires sample_spectrum(): %s",
+              param_name, e.what());
+    }
+}
+
+template <typename FieldT>
+MI_INLINE void require_field_spectral_metadata(const FieldT *field,
+                                               std::string_view param_name) {
+    try {
+        (void) field->wavelength_range();
+        (void) field->spectral_resolution();
+    } catch (const std::exception &e) {
+        Throw("Field parameter \"%s\": requires spectral metadata: %s",
+              param_name, e.what());
+    }
+}
+
+template <typename FieldT>
+MI_INLINE void require_field_spectral_evaluable(const FieldT *field,
+                                                std::string_view param_name) {
+    FieldValueType type = field->out_type();
+    if (type == FieldValueType::Color3 || type == FieldValueType::Array3)
+        Throw("Field parameter \"%s\": cannot use %s[%u] output as a "
+              "spectral value.",
+              param_name, field_value_type_name(type), field->out_dim());
+}
+
 MI_EXTERN_CLASS(Field)
 NAMESPACE_END(mitsuba)
 

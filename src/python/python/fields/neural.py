@@ -182,7 +182,9 @@ def _make_neural_field(mi):
             features.extend(arg_channels)
 
             if self._encoding is not None:
-                encoded = self._encoding.eval(record, active=active)
+                encoded = self._encoding.eval_n(
+                    record, self._encoding.out_dim(), active=active
+                )
                 features.append(encoded)
 
             return features
@@ -199,12 +201,49 @@ def _make_neural_field(mi):
                 )
 
         def eval(self, record, args=None, active=True):
+            if args is None and self._args_dim == 0:
+                if self._out_type == mi.FieldValueType.Float and self._out_dim == 1:
+                    value = self.eval_1(record, args=[], active=active)
+                    return mi.UnpolarizedSpectrum(value)
+                if self._out_type == mi.FieldValueType.Spectrum:
+                    return self.eval_spec(record, args=[], active=active)
+                if (
+                    self._out_type == mi.FieldValueType.Color3
+                    and self._out_dim == 3
+                ):
+                    return self.eval_color3(record, args=[], active=active)
+                if (
+                    self._out_type == mi.FieldValueType.Array3
+                    and self._out_dim == 3
+                ):
+                    value = self.eval_array3(record, args=[], active=active)
+                    return mi.Color3f(value.x, value.y, value.z)
+                raise RuntimeError(
+                    "neuralfield::eval(): output is not spectrum-compatible; "
+                    "use eval_n()."
+                )
             return mi.ArrayXf(self._eval_coop(record, args, active)) & active
 
         def eval_1(self, record, args=None, active=True):
-            self._validate_output(mi.FieldValueType.Float, 1, "eval_1")
             result = list(self._eval_coop(record, args, active))
-            return dr.select(active, mi.Float(result[0]), 0)
+
+            if self._out_type == mi.FieldValueType.Float and self._out_dim == 1:
+                value = mi.Float(result[0])
+            elif self._out_type == mi.FieldValueType.Spectrum:
+                value = dr.mean(mi.UnpolarizedSpectrum(result))
+            elif (
+                self._out_type in (mi.FieldValueType.Color3, mi.FieldValueType.Array3)
+                and self._out_dim == 3
+            ):
+                value = mi.luminance(mi.Color3f(result[0], result[1], result[2]))
+            else:
+                raise RuntimeError(
+                    "neuralfield::eval_1(): incompatible output metadata "
+                    f"(out_type={_field_value_type_name(mi, self._out_type)}, "
+                    f"out_dim={self._out_dim})."
+                )
+
+            return dr.select(active, value, 0)
 
         def eval_color3(self, record, args=None, active=True):
             self._validate_output(mi.FieldValueType.Color3, 3, "eval_color3")
@@ -239,10 +278,9 @@ def _make_neural_field(mi):
                     f"neuralfield::eval_n(): count ({int(count)}) must match "
                     f"out_dim ({self._out_dim})."
                 )
-            return self.eval(record, args=args, active=active)
-
-        def mean(self):
-            return mi.Float(0.5)
+            return self.eval(
+                record, args=[] if args is None else args, active=active
+            )
 
         def traverse(self, cb):
             cb.put(

@@ -98,7 +98,7 @@ def test02_trainable_encoding_fields_match_drjit_nn(
     si = surface_interaction(width=8)
     assert dr.width(mi.traverse(field)["params"]) == direct.n_params
     assert dr.allclose(
-        field.eval(si),
+        field.eval_n(si, field.out_dim()),
         mi.ArrayXf(direct((si.uv.x, si.uv.y))),
         atol=1e-6,
     )
@@ -114,7 +114,7 @@ def test03_sinusoidal_field_uses_per_coordinate_sincos_features(variant_scalar_r
         "max_frequency": 1.0,
     })
     si = surface_interaction()
-    assert dr.allclose(field.eval(si), [1.0, 0.0, -1.0, 0.0], atol=1e-6)
+    assert dr.allclose(field.eval_n(si, 4), [1.0, 0.0, -1.0, 0.0], atol=1e-6)
 
     field3 = mi.load_dict({
         "type": "sinusoidalfield",
@@ -125,7 +125,7 @@ def test03_sinusoidal_field_uses_per_coordinate_sincos_features(variant_scalar_r
         "max_frequency": 1.0,
     })
     assert dr.allclose(
-        field3.eval(si),
+        field3.eval_n(si, 6),
         [1.0, 0.0, 0.0, -1.0, -1.0, 0.0],
         atol=1e-6,
     )
@@ -270,19 +270,18 @@ def test11_neural_field_features6_round_trips_through_base_dispatch(field_ad_rgb
     assert dr.allclose(via_base, mi.ArrayXf(direct))
 
 
-def test12_neural_field_uses_conservative_texture_metadata(field_ad_rgb_variant):
+def test12_neural_field_without_summary_is_rejected_by_mean_users(field_ad_rgb_variant):
     field = mi.load_dict(neural_field_dict(args_dim=0))
 
     assert field.is_spatially_varying()
-    assert dr.allclose(field.mean(), 0.5)
+    with pytest.raises(RuntimeError, match="mean"):
+        field.mean()
 
-    bsdf = mi.load_dict({
-        "type": "roughplastic",
-        "diffuse_reflectance": neural_field_dict(args_dim=0),
-    })
-    si = surface_interaction()
-    value = bsdf.eval(mi.BSDFContext(), si, mi.Vector3f(0, 0, 1))
-    assert dr.all(dr.isfinite(value))
+    with pytest.raises(RuntimeError, match="requires mean"):
+        mi.load_dict({
+            "type": "roughplastic",
+            "diffuse_reflectance": neural_field_dict(args_dim=0),
+        })
 
 
 def test13_neural_field_traversal_and_update_are_preserved(field_ad_rgb_variant):

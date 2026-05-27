@@ -156,6 +156,7 @@ public:
         m_is_homogeneous = false;
         m_albedo = props.get_volume_field<Field>("albedo", 0.75f);
         m_sigmat = props.get_volume_field<Field>("sigma_t", 1.0f);
+        require_field_max(m_sigmat.get(), "sigma_t");
 
         m_scale = props.get<ScalarFloat>("scale", 1.0f);
         m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);
