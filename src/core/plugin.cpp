@@ -7,9 +7,6 @@
 #include <mitsuba/core/hash.h>
 #include <mitsuba/core/config.h>
 #include <mitsuba/render/scene.h>
-#include <mitsuba/render/field.h>
-#include <mitsuba/render/texture.h>
-#include <mitsuba/render/volume.h>
 #include <tsl/robin_map.h>
 #include <mutex>
 
@@ -267,13 +264,6 @@ ref<Object> PluginManager::create_object(const Properties &props,
               "which does not match the expected type \"%s\".",
               props.plugin_name(), plugin_type_name(actual_type),
               plugin_type_name(type));
-
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
-    // Ensures queued side effects are consistently compiled into cacheable kernels
-    if (string::starts_with(variant, "cuda_") ||
-        string::starts_with(variant, "llvm_"))
-        dr::eval();
-#endif
 
     return object;
 }

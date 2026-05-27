@@ -182,7 +182,7 @@ def test07_neural_fields_reject_negative_args_dim(field_ad_rgb_variant):
         mi.load_dict(neural_field_dict(args_dim=-1))
 
 
-def test07_neural_fields_reject_incompatible_encoding_domain(field_ad_rgb_variant):
+def test07b_neural_fields_reject_incompatible_encoding_domain(field_ad_rgb_variant):
     with pytest.raises(RuntimeError, match="encoding|Interaction|domain"):
         mi.load_dict(
             neural_field_dict(

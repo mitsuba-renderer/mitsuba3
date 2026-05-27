@@ -57,6 +57,17 @@ public:
     RawConstantTextureImpl(const Properties &props, const Value &value)
         : SurfaceField(props), m_value(value) {}
 
+    FieldValueType out_type() const override {
+        if constexpr (Channels == 1)
+            return FieldValueType::Float;
+        else
+            return FieldValueType::Color3;
+    }
+
+    uint32_t out_dim() const override {
+        return (uint32_t) Channels;
+    }
+
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &/*si*/, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 

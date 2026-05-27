@@ -731,6 +731,8 @@ public:
 
     Float mean() const override { return m_mean; }
 
+    ScalarFloat max() const override { return m_max; }
+
     bool is_spatially_varying() const override { return true; }
 
     std::string to_string() const override {
@@ -859,9 +861,24 @@ protected:
                     values = srgb_model_mean(colors_fl);
                 else
                     values = luminance(colors_fl);
+
+                if (init_mean) {
+                    if constexpr (is_spectral_v<Spectrum>) {
+                        if (!m_raw)
+                            m_max = (ScalarFloat) dr::max_nested(values);
+                        else {
+                            FloatStorage all_values = tensor.array();
+                            m_max = (ScalarFloat) dr::max_nested(all_values);
+                        }
+                    } else {
+                        FloatStorage all_values = tensor.array();
+                        m_max = (ScalarFloat) dr::max_nested(all_values);
+                    }
+                }
             } else {
                 StoredScalar* ptr = (StoredScalar*) tensor.data();
-                ScalarFloat *out = nullptr, mean = 0;
+                ScalarFloat *out = nullptr, mean = 0,
+                            max = -dr::Infinity<ScalarFloat>;
                 if (init_distr) {
                     values = dr::empty<FloatStorage>(pixel_count);
                     out = values.data();
@@ -876,21 +893,29 @@ protected:
                         lum = srgb_model_mean(col);
                     else
                         lum = luminance(col);
+                    ScalarFloat value_max;
+                    if (is_spectral_v<Spectrum> && !m_raw)
+                        value_max = lum;
+                    else
+                        value_max = dr::max(col);
 
                     if (init_distr)
                         *out++ = lum;
                     mean += lum;
+                    max = dr::maximum(max, value_max);
                     range_issue |= lum < 0 || lum > 1;
                 }
 
                 m_mean = mean / pixel_count;
+                m_max = max;
             }
         } else {
             if constexpr (dr::is_jit_v<Float>) {
                 values = tensor.array();
             } else {
                 StoredScalar* ptr = (StoredScalar*) tensor.data();
-                ScalarFloat *out = nullptr, mean = 0;
+                ScalarFloat *out = nullptr, mean = 0,
+                            max = -dr::Infinity<ScalarFloat>;
                 if (init_distr) {
                     values = dr::empty<FloatStorage>(pixel_count);
                     out = values.data();
@@ -900,15 +925,20 @@ protected:
                     if (init_distr)
                         *out++ = value;
                     mean += value;
+                    max = dr::maximum(max, value);
                     range_issue |= value < 0 || value > 1;
                 }
                 m_mean = mean / pixel_count;
+                m_max = max;
             }
         }
 
         if constexpr (dr::is_jit_v<Float>) {
-            if (init_mean)
+            if (init_mean) {
                 m_mean = dr::mean(values);
+                if (channels == 1)
+                    m_max = (ScalarFloat) dr::max_nested(values);
+            }
             if (!m_raw)
                 range_issue = dr::any(values < 0 || values > 1);
         }
@@ -946,6 +976,7 @@ protected:
     bool m_accel;
     bool m_raw;
     Float m_mean;
+    ScalarFloat m_max;
     StoredTexture2f m_texture;
 
     // Optional: distribution for importance sampling

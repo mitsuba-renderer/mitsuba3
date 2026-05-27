@@ -81,6 +81,24 @@ def test04b_d65_rejects_non_spectrum_direct_field_children(variant_scalar_spectr
         })
 
 
+def test04c_rawconstant_field_metadata(variant_scalar_rgb):
+    scalar = mi.load_dict({
+        "type": "rawconstant",
+        "value": 0.5,
+    })
+    assert scalar.out_type() == mi.FieldValueType.Float
+    assert scalar.out_dim() == 1
+    assert dr.allclose(scalar.max(), 0.5)
+
+    color = mi.load_dict({
+        "type": "rawconstant",
+        "value": mi.ScalarVector3f(0.1, 0.2, 0.3),
+    })
+    assert color.out_type() == mi.FieldValueType.Color3
+    assert color.out_dim() == 3
+    assert dr.allclose(color.max(), 0.3)
+
+
 def test05_sample_rgb_spectrum(variant_scalar_spectral):
     """rgb_spectrum: Spot check the model in a few places, the chi^2 test will
     ensure that sampling works."""

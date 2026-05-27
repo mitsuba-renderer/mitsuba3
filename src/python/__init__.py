@@ -170,7 +170,7 @@ def _mitsuba_patch_field_class(mi):
 
     eval_methods = (
         "eval", "eval_1", "eval_color3", "eval_array2", "eval_array3",
-        "eval_spec", "eval_array6", "eval_n"
+        "eval_spec", "eval_array6", "eval_3", "eval_6", "eval_n"
     )
     previous_init_subclass = field_cls.__dict__.get("__init_subclass__", None)
 
