@@ -44,6 +44,7 @@ class BenchmarkConfig:
     field_plugin: str
     encoding: str
     decoder: str
+    out_type: str
     out_dim: int
     args_dim: int
     kernel_history: bool
@@ -633,7 +634,7 @@ def bitmap_field_config(ctx: BenchmarkContext) -> dict[str, Any]:
 def grid_field_config(ctx: BenchmarkContext) -> dict[str, Any]:
     filter_type = "trilinear" if ctx.config.filter_type == "bilinear" else ctx.config.filter_type
     config: dict[str, Any] = {
-        "type": ctx.config.field_plugin or "gridvolume",
+        "type": ctx.config.field_plugin or "grid",
         "raw": ctx.config.raw,
         "filter_type": filter_type,
         "wrap_mode": ctx.config.wrap_mode,
@@ -680,17 +681,42 @@ def encoding_config(ctx: BenchmarkContext) -> dict[str, Any]:
 
 def neural_field_config(ctx: BenchmarkContext) -> dict[str, Any]:
     args_dim = 0 if ctx.config.args_mode == "no_args" else ctx.config.args_dim
+    out_type, out_dim = neural_output_metadata(ctx.config)
     return {
         "type": ctx.config.field_plugin or "neuralfield",
         "domain": "Surface",
-        "out_type": "Color3" if ctx.config.out_dim == 3 else "Features",
-        "out_dim": ctx.config.out_dim,
+        "out_type": out_type,
+        "out_dim": out_dim,
         "args_dim": args_dim,
         "encoding": encoding_config(ctx),
         "decoder": ctx.config.decoder,
         "hidden_size": 64,
         "num_layers": 3,
     }
+
+
+def neural_output_metadata(config: BenchmarkConfig) -> tuple[str, int]:
+    if config.out_type != "auto":
+        return config.out_type, config.out_dim
+
+    method_outputs = {
+        "eval_color3": ("Color3", 3),
+        "eval_array2": ("Array2", 2),
+        "eval_array3": ("Array3", 3),
+        "eval_spec": ("Spectrum", dr.size_v(mi.UnpolarizedSpectrum)),
+        "eval_array6": ("Features", 6),
+        "all": ("Color3", 3),
+    }
+    if config.method in method_outputs:
+        return method_outputs[config.method]
+
+    if config.out_dim == 1:
+        return "Float", 1
+    if config.out_dim == 2:
+        return "Array2", 2
+    if config.out_dim == 3:
+        return "Color3", 3
+    return "Features", config.out_dim
 
 
 def call_bitmap_eval(texture, si, method: str, active, channels: int):
@@ -852,7 +878,7 @@ def direct_field(obj):
 
 
 def case_field_fixed_eval(ctx: BenchmarkContext) -> Any:
-    use_grid = ctx.config.field_plugin == "gridvolume"
+    use_grid = ctx.config.field_plugin in ("grid", "gridvolume")
     field_config = grid_field_config if use_grid else bitmap_field_config
     field, record = ctx.get("field_fixed_eval", lambda: (
         direct_field(mi.load_dict(field_config(ctx))),
@@ -912,6 +938,8 @@ def case_neural_field_training(ctx: BenchmarkContext) -> Any:
     else:
         value = field.eval_color3(si, args=args, active=active_mask(ctx))
     loss = dr.mean(dr.sqr(value))
+    for key in params.keys():
+        dr.clear_grad(params[key])
     dr.backward(loss)
     return loss
 
@@ -997,6 +1025,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--field-plugin", default="")
     parser.add_argument("--encoding", choices=["hashgrid", "permuto", "sinusoidal"], default="hashgrid")
     parser.add_argument("--decoder", choices=["neural", "linear"], default="neural")
+    parser.add_argument(
+        "--out-type",
+        choices=[
+            "auto", "Float", "Spectrum", "Color3", "Array2", "Array3", "Features"
+        ],
+        default="auto",
+    )
     parser.add_argument("--out-dim", type=int, default=3)
     parser.add_argument("--args-dim", type=int, default=4)
     parser.add_argument("--kernel-history", action="store_true")
@@ -1098,6 +1133,7 @@ def main() -> None:
         field_plugin=args.field_plugin,
         encoding=args.encoding,
         decoder=args.decoder,
+        out_type=args.out_type,
         out_dim=args.out_dim,
         args_dim=args.args_dim,
         kernel_history=args.kernel_history,

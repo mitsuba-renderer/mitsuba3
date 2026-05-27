@@ -215,6 +215,48 @@ def test01_xml_field_tags_round_trip_nested_refs_and_ordering(variant_scalar_rgb
     assert all(n.props.plugin_name() == "debugfield" for n in field_nodes_rt)
 
 
+def test01b_merge_equivalent_keeps_field_references_distinct(variant_scalar_rgb):
+    xml = """<scene version="3.0.0">
+        <field type="debugfield" id="field_a">
+            <integer name="out_dim" value="3"/>
+        </field>
+        <field type="debugfield" id="field_b">
+            <integer name="out_dim" value="3"/>
+        </field>
+        <bsdf type="neuralbsdf" id="mat_a">
+            <ref name="reflectance" id="field_a"/>
+        </bsdf>
+        <bsdf type="neuralbsdf" id="mat_b">
+            <ref name="reflectance" id="field_b"/>
+        </bsdf>
+    </scene>"""
+
+    state = mi.parser.parse_string(CONFIG, xml)
+    mi.parser.transform_resolve(CONFIG, state)
+    mi.parser.transform_merge_equivalent(CONFIG, state)
+    output = mi.parser.write_string(state)
+
+    assert 'id="field_a" name="reflectance"' in output
+    assert 'id="field_b" name="reflectance"' in output
+
+
+def test01c_dict_parser_uses_config_variant_for_field_types(field_ad_rgb_variant):
+    class VariantOnlyField(mi.Field):
+        def __init__(self, props):
+            super().__init__(props)
+
+    name = "variant_only_field_parser_test_" + field_ad_rgb_variant
+    try:
+        mi.register_field(name, VariantOnlyField)
+    except RuntimeError as exc:
+        if "already" not in str(exc).lower():
+            raise
+
+    config = mi.parser.ParserConfig(field_ad_rgb_variant)
+    state = mi.parser.parse_dict(config, {"type": name})
+    assert state.root.type == mi.ObjectType.Field
+
+
 def test02_python_field_metadata_and_eval_dispatch_through_virtual_api(field_ad_rgb_variant):
     field = make_python_args_field()
     si = surface_interaction()
@@ -247,6 +289,52 @@ def test02_python_field_metadata_and_eval_dispatch_through_virtual_api(field_ad_
         field.eval_color3(si, args=[1.0, 2.0, 3.0])
     with pytest.raises(RuntimeError, match="args_dim|4"):
         field.eval_n(si, 3, args=[1.0, 2.0, 3.0])
+
+
+def test02b_python_field_accepts_positional_active(field_ad_rgb_variant):
+    class ActiveField(mi.Field):
+        def __init__(self):
+            super().__init__(mi.Properties("active_field"))
+
+        def out_type(self):
+            return mi.FieldValueType.Float
+
+        def domain(self):
+            return mi.FieldDomain.Surface
+
+        def out_dim(self):
+            return 1
+
+        def args_dim(self):
+            return 0
+
+        def supports_scalar(self):
+            return True
+
+        def supports_jit(self):
+            return True
+
+        def supports_surface_queries(self):
+            return True
+
+        def supports_interaction_queries(self):
+            return False
+
+        def eval_1(self, si, args=None, active=True):
+            return dr.select(active, mi.Float(1.0), mi.Float(0.0))
+
+        def eval_n(self, si, count, args=None, active=True):
+            if count != 1:
+                raise RuntimeError("count must be 1")
+            return mi.ArrayXf([self.eval_1(si, args=args, active=active)])
+
+    field = ActiveField()
+    si = surface_interaction()
+
+    assert dr.allclose(field.eval_1(si, True), 1.0)
+    assert dr.allclose(field.eval_1(si, False), 0.0)
+    assert dr.allclose(field.eval_n(si, 1, True), [1.0])
+    assert dr.allclose(field.eval_n(si, 1, False), [0.0])
 
 
 def test03_python_field_subclass_hook_preserves_user_hooks(field_ad_rgb_variant):
