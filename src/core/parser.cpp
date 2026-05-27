@@ -1399,7 +1399,8 @@ static const char* section_names[] = {
     "Shapes",                          // 5: Shape
     "Volumes",                         // 6: Volume
     "Volumes",                         // 7: Medium
-    "Other"                            // 8: Other/Unknown
+    "Fields",                          // 8: Field
+    "Other"                            // 9: Other/Unknown
 };
 
 // Helper function that assigns a logical section number to a node. Used in
@@ -1430,7 +1431,8 @@ static int node_order_id(const ParserState &state, size_t node_idx) {
         case ObjectType::Shape:      return has_area_light(node_idx) ? 4 : 5;
         case ObjectType::Volume:     return 6;
         case ObjectType::Medium:     return 7;
-        default:                     return 8;
+        case ObjectType::Field:      return 8;
+        default:                     return 9;
     }
 }
 
@@ -1507,6 +1509,8 @@ void transform_relocate(const ParserConfig &/*config*/, ParserState &state,
                 return "textures";
             case ObjectType::Shape:
                 return "meshes";
+            case ObjectType::Field:
+                return "fields";
             default:
                 return "assets";
         }

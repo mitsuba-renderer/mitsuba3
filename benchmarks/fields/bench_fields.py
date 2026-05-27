@@ -167,6 +167,17 @@ def preferred_ad_rgb_variant() -> str:
     raise SystemExit("No available AD RGB variant found; expected cuda_ad_rgb or llvm_ad_rgb.")
 
 
+def bitmap_can_sample_spectrum(config: BenchmarkConfig) -> bool:
+    return bool(getattr(mi, "is_spectral", False)) and not config.raw
+
+
+def wavelength_sample():
+    sample_shifted = getattr(mi, "sample_shifted", None)
+    if sample_shifted is None:
+        return mi.Float(0.5)
+    return sample_shifted(mi.Float(0.5))
+
+
 def collect_environment(config: BenchmarkConfig) -> dict[str, Any]:
     build_type = None
     cache = build_dir(config) / "CMakeCache.txt"
@@ -726,21 +737,26 @@ def case_bitmap_sampling(ctx: BenchmarkContext) -> Any:
     ))
     method = ctx.config.method
     if method == "all":
-        return [
+        values = [
             texture.sample_position(sample, active_mask(ctx)),
             texture.pdf_position(sample, active_mask(ctx)),
-            texture.sample_spectrum(si, mi.sample_shifted(mi.Float(0.5)), active_mask(ctx)),
-            texture.pdf_spectrum(si, active_mask(ctx)),
         ]
+        if bitmap_can_sample_spectrum(ctx.config):
+            values.append(
+                texture.sample_spectrum(si, wavelength_sample(), active_mask(ctx))
+            )
+        return values
     if method in ("sample_position", "all"):
         value = texture.sample_position(sample, active_mask(ctx))
     if method in ("pdf_position", "all"):
         value = texture.pdf_position(sample, active_mask(ctx))
-    if method in ("sample_spectrum", "all"):
-        value = texture.sample_spectrum(si, mi.sample_shifted(mi.Float(0.5)), active_mask(ctx))
-    if method in ("pdf_spectrum", "all"):
-        value = texture.pdf_spectrum(si, active_mask(ctx))
-    if method not in ("sample_position", "pdf_position", "sample_spectrum", "pdf_spectrum", "all"):
+    if method == "sample_spectrum":
+        if not bitmap_can_sample_spectrum(ctx.config):
+            raise ValueError(
+                "bitmap sample_spectrum requires a spectral non-raw configuration."
+            )
+        value = texture.sample_spectrum(si, wavelength_sample(), active_mask(ctx))
+    if method not in ("sample_position", "pdf_position", "sample_spectrum", "all"):
         raise ValueError(f"Unsupported bitmap sampling method: {method}")
     return value
 
@@ -780,7 +796,6 @@ def case_grid_volume_eval(ctx: BenchmarkContext) -> Any:
             values.extend([
                 volume.eval(it, active),
                 volume.eval_1(it, active),
-                volume.eval_gradient(it, active),
             ])
         elif ctx.config.channels == 3:
             values.extend([

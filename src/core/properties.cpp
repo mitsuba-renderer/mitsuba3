@@ -153,6 +153,7 @@ ref<Object> make_volume_object(const ref<Object> &object) {
 
     try {
         (void) volume->bbox();
+        (void) volume->max();
     } catch (const std::exception &e) {
         Throw("Volume role field \"%s\" does not provide required volume "
               "metadata: %s", field->id(), e.what());

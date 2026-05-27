@@ -89,6 +89,8 @@ public:
 
     SmoothDiffuse(const Properties &props) : Base(props) {
         m_reflectance = props.get_surface_field<Field>("reflectance", .5f);
+        if constexpr (is_spectral_v<Spectrum>)
+            require_field_spectral_evaluable(m_reflectance.get(), "reflectance");
         m_flags = BSDFFlags::DiffuseReflection | BSDFFlags::FrontSide;
         m_components.push_back(m_flags);
     }

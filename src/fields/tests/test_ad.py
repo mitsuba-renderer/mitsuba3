@@ -207,7 +207,7 @@ def test05_trainable_encoding_field_params_receive_gradients(
     si = surface_interaction()
     si.uv = mi.Point2f(0.2, 0.35)
     si.p = mi.Point3f(0.2, 0.35, 0)
-    loss = dr.sum(field.eval(si))
+    loss = dr.sum(field.eval_n(si, field.out_dim()))
     dr.backward(loss)
 
     grad = dr.grad(params["params"])
@@ -231,7 +231,7 @@ def test06_sinusoidalfield_has_coordinate_ad_but_no_trainable_params(field_ad_rg
     si = surface_interaction()
     si.uv = mi.Point2f(u, 0.25)
     si.p = mi.Point3f(u, 0.25, 0)
-    dr.backward(field.eval(si)[0])
+    dr.backward(field.eval_n(si, field.out_dim())[0])
 
     expected = 2.0 * math.pi * math.cos(2.0 * math.pi * 0.125)
     assert dr.allclose(dr.grad(u), expected, atol=1e-5)

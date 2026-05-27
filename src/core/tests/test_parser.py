@@ -2109,19 +2109,19 @@ def test63_transform_relocate(variant_scalar_rgb, tmp_path):
     # Check that subdirectories were created
     textures_dir = output_dir / "textures"
     meshes_dir = output_dir / "meshes"
-    assets_dir = output_dir / "assets"
+    fields_dir = output_dir / "fields"
 
     assert textures_dir.exists()
     assert meshes_dir.exists()
-    assert assets_dir.exists()
+    assert fields_dir.exists()
 
     # Check that files were copied to correct directories
     assert (textures_dir / "wood.jpg").exists()
     assert (textures_dir / "metal.png").exists()
     assert (meshes_dir / "bunny.ply").exists()
     assert (meshes_dir / "teapot.obj").exists()
-    assert (assets_dir / "field_reflectance.exr").exists()
-    assert (assets_dir / "density.vol").exists()
+    assert (fields_dir / "field_reflectance.exr").exists()
+    assert (fields_dir / "density.vol").exists()
 
     # Check that duplicate filename was handled (should have (1) suffix)
     assert (meshes_dir / "bunny (1).ply").exists()
@@ -2131,9 +2131,9 @@ def test63_transform_relocate(variant_scalar_rgb, tmp_path):
     assert (textures_dir / "metal.png").read_text() == "fake texture content 2"
     assert (meshes_dir / "bunny.ply").read_text() == "fake mesh content"
     assert (meshes_dir / "teapot.obj").read_text() == "fake mesh content 2"
-    assert ((assets_dir / "field_reflectance.exr").read_text() ==
+    assert ((fields_dir / "field_reflectance.exr").read_text() ==
             "fake field texture content")
-    assert ((assets_dir / "density.vol").read_text() ==
+    assert ((fields_dir / "density.vol").read_text() ==
             "fake field volume content")
     assert (meshes_dir / "bunny (1).ply").read_text() == "different bunny content"
 
@@ -2154,8 +2154,8 @@ def test63_transform_relocate(variant_scalar_rgb, tmp_path):
         "meshes/bunny.ply",     # bunny mesh
         "meshes/teapot.obj",    # teapot mesh
         "meshes/bunny (1).ply",  # duplicate bunny mesh
-        "assets/field_reflectance.exr",  # fields use generic assets policy
-        "assets/density.vol",
+        "fields/field_reflectance.exr",
+        "fields/density.vol",
     }
 
     # Verify all expected relative paths are present
@@ -2364,7 +2364,7 @@ def test65_transform_reorder(variant_scalar_rgb):
     # Priority 5: Regular shapes in insertion order (rectangle, cube, cylinder)
     # Priority 6: Volumes (constvolume)
     # Priority 7: Media (homogeneous)
-    # Priority 8: Other objects, including fields (debugfield)
+    # Priority 8: Fields (debugfield)
 
     expected_types_and_names = [
         (mi.ObjectType.Integrator, "path"),

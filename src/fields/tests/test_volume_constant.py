@@ -72,9 +72,14 @@ def test03_constant_rejects_generic_fields_without_summaries(variant_scalar_rgb)
         def max(self):
             return 0.5
 
+    class ScalarFieldWithSummary(ScalarFieldMaxOnly):
+        def mean(self):
+            return 0.5
+
     for name, cls in [
         ("scalar_field_no_summary", ScalarFieldNoSummary),
         ("scalar_field_max_only", ScalarFieldMaxOnly),
+        ("scalar_field_with_summary", ScalarFieldWithSummary),
     ]:
         try:
             mi.register_field(name, cls)
@@ -90,10 +95,18 @@ def test03_constant_rejects_generic_fields_without_summaries(variant_scalar_rgb)
             },
         })
 
+    with pytest.raises(RuntimeError, match="ConstVolume requires.*mean"):
+        mi.load_dict({
+            "type": "constvolume",
+            "value": {
+                "type": "scalar_field_max_only",
+            },
+        })
+
     vol = mi.load_dict({
         "type": "constvolume",
         "value": {
-            "type": "scalar_field_max_only",
+            "type": "scalar_field_with_summary",
         },
     })
     assert dr.allclose(vol.eval_1(dr.zeros(mi.Interaction3f)), 0.5)

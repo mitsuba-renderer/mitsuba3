@@ -159,6 +159,7 @@ public:
         for (auto &prop : props) {
             if (prop.type() == Properties::Type::Spectrum) {
                 m_srfs.push_back(props.get_surface_field<Field>(prop.name()));
+                require_field_spectral_metadata(m_srfs.back().get(), prop.name());
                 m_names.push_back(std::string(prop.name()));
             } else if (Field *srf = prop.try_get<Field>()) {
                 ref<Object> texture = make_texture_object_for_variant(
@@ -169,6 +170,7 @@ public:
                     field->out_dim() != dim)
                     Throw("SpecFilm SRF \"%s\" must be a surface-compatible "
                           "Spectrum[%u] field.", prop.name(), dim);
+                require_field_spectral_metadata(field, prop.name());
                 m_srfs.push_back(field);
                 m_names.push_back(std::string(prop.name()));
             }

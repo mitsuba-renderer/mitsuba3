@@ -91,6 +91,10 @@ public:
         m_flags = +EmitterFlags::DeltaPosition;
         m_intensity = props.get_emissive_surface_field<Field>("intensity", 1.f);
         m_texture = props.get_surface_field<Field>("texture", 1.f);
+        if constexpr (is_spectral_v<Spectrum>) {
+            require_field_sample_spectrum(m_intensity.get(), "intensity");
+            require_field_sample_spectrum(m_texture.get(), "texture");
+        }
 
         if (m_intensity->is_spatially_varying())
             Throw("The parameter 'intensity' cannot be spatially varying (e.g. bitmap type)!");

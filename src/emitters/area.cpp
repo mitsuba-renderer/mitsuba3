@@ -69,6 +69,8 @@ public:
                   "shape.");
 
         m_radiance = props.get_emissive_surface_field<Field>("radiance", 1.f);
+        if constexpr (is_spectral_v<Spectrum>)
+            require_field_sample_spectrum(m_radiance.get(), "radiance");
 
         m_flags = +EmitterFlags::Surface;
         if (m_radiance->is_spatially_varying())

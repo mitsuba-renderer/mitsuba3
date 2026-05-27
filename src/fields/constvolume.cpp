@@ -82,8 +82,10 @@ public:
 
         try {
             (void) m_value->max();
+            (void) m_value->mean();
         } catch (const std::exception &e) {
-            Throw("ConstVolume requires its value field to provide max(): %s",
+            Throw("ConstVolume requires its value field to provide max() and "
+                  "mean(): %s",
                   e.what());
         }
 
@@ -100,8 +102,8 @@ public:
         return result;
     }
 
-    Float eval_1(const Interaction3f &it, Mask active) const override {
-        return eval(it, active).entry(0);
+    Float eval_1(const Interaction3f & /*it*/, Mask active) const override {
+        return dr::select(active, m_value->mean(), 0.f);
     }
 
     Vector3f eval_3(const Interaction3f &it, Mask active = true) const override {

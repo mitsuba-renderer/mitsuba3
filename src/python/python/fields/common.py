@@ -211,6 +211,11 @@ def _make_drjit_feature_field(
             return (record.p.x, record.p.y, record.p.z)
 
         def eval(self, record, args=None, active=True):
+            if args is None:
+                raise RuntimeError(
+                    f"{plugin_name}::eval(): Features[{self._out_dim}] output "
+                    "is not spectrum-compatible; use eval_n()."
+                )
             _validate_args(plugin_name, 0, args)
             return mi.ArrayXf(self._encoding(self._coords(record), active))
 
@@ -220,7 +225,9 @@ def _make_drjit_feature_field(
                     f"{plugin_name}::eval_n(): count ({int(count)}) must "
                     f"match out_dim ({self._out_dim})."
                 )
-            return self.eval(record, args=args, active=active)
+            return self.eval(
+                record, args=[] if args is None else args, active=active
+            )
 
         def eval_array6(self, record, args=None, active=True):
             if self._out_dim != 6:
