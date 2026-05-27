@@ -434,8 +434,11 @@ Field<Float, Spectrum>::eval_array6(const Interaction3f &it,
 MI_VARIANT void
 Field<Float, Spectrum>::eval_n(const SurfaceInteraction3f &si, Float *out,
                                uint32_t count, Args args, Mask active) const {
-    if (dr::none_or<false>(active))
+    if (dr::none_or<false>(active)) {
+        for (uint32_t i = 0; i < count; ++i)
+            out[i] = 0.f;
         return;
+    }
     uint32_t dim = out_dim();
     if (count != dim)
         Throw("Field::eval_n(): count (%u) must match out_dim (%u).",
@@ -451,8 +454,11 @@ Field<Float, Spectrum>::eval_n(const SurfaceInteraction3f &si, Float *out,
 MI_VARIANT void
 Field<Float, Spectrum>::eval_n(const Interaction3f &it, Float *out,
                                uint32_t count, Args args, Mask active) const {
-    if (dr::none_or<false>(active))
+    if (dr::none_or<false>(active)) {
+        for (uint32_t i = 0; i < count; ++i)
+            out[i] = 0.f;
         return;
+    }
     uint32_t dim = out_dim();
     if (count != dim)
         Throw("Field::eval_n(): count (%u) must match out_dim (%u).",

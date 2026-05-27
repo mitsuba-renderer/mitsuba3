@@ -162,6 +162,8 @@ public:
     PrincipledThin(const Properties &props) : Base(props) {
 
         m_base_color = props.get_surface_field<Field>("base_color", 0.5f);
+        if constexpr (is_spectral_v<Spectrum>)
+            require_field_spectral_evaluable(m_base_color.get(), "base_color");
         m_roughness = props.get_surface_field<Field>("roughness", 0.5f);
         m_has_anisotropic = get_flag("anisotropic", props);
         m_anisotropic = props.get_surface_field<Field>("anisotropic", 0.0f);

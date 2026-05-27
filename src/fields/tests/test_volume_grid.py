@@ -112,6 +112,7 @@ def test06_eval_per_channel(variants_all_rgb, tmpdir):
     assert dr.allclose(vol.eval_n(it), [0.0] * 6)
     it.p = mi.Point3f(1.0)
     assert dr.allclose(vol.eval_n(it), [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
+    assert dr.allclose(mi.Field.eval_n(vol, it, 6, active=False), [0.0] * 6)
 
 
 def test07_parameter_update_rejects_channel_count_changes(variant_scalar_rgb):

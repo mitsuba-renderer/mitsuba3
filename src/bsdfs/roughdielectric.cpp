@@ -168,6 +168,14 @@ public:
 
         if (props.has_property("specular_transmittance"))
             m_specular_transmittance = props.get_surface_field<Field>("specular_transmittance", 1.f);
+        if constexpr (is_spectral_v<Spectrum>) {
+            if (m_specular_reflectance)
+                require_field_spectral_evaluable(m_specular_reflectance.get(),
+                                                 "specular_reflectance");
+            if (m_specular_transmittance)
+                require_field_spectral_evaluable(m_specular_transmittance.get(),
+                                                 "specular_transmittance");
+        }
 
         // Specifies the internal index of refraction at the interface
         ScalarFloat int_ior = lookup_ior(props, "int_ior", "bk7");

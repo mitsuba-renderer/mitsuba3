@@ -173,6 +173,8 @@ public:
         m_pheomelanin = props.get<ScalarFloat>("pheomelanin", 0.2f);
         if (props.has_property("sigma_a")) {
             m_sigma_a = props.get_unbounded_surface_field<Field>("sigma_a");
+            if constexpr (is_spectral_v<Spectrum>)
+                require_field_spectral_evaluable(m_sigma_a.get(), "sigma_a");
             m_use_pigmentation = false;
         }
         m_scale = props.get<ScalarFloat>("scale", 1.f);

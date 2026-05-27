@@ -201,6 +201,14 @@ public:
         if (props.has_property("specular_reflectance"))
             m_specular_reflectance = props.get_surface_field<Field>("specular_reflectance", 1.f);
 
+        if constexpr (is_spectral_v<Spectrum>) {
+            require_field_spectral_evaluable(m_eta.get(), "eta");
+            require_field_spectral_evaluable(m_k.get(), "k");
+            if (m_specular_reflectance)
+                require_field_spectral_evaluable(m_specular_reflectance.get(),
+                                                 "specular_reflectance");
+        }
+
         m_flags = BSDFFlags::GlossyReflection | BSDFFlags::FrontSide;
         if (m_alpha_u != m_alpha_v)
             m_flags = m_flags | BSDFFlags::Anisotropic;

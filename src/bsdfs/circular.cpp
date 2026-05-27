@@ -63,6 +63,9 @@ public:
 
     CircularPolarizer(const Properties &props) : Base(props) {
         m_transmittance = props.get_surface_field<Field>("transmittance", 1.f);
+        if constexpr (is_spectral_v<Spectrum>)
+            require_field_spectral_evaluable(m_transmittance.get(),
+                                             "transmittance");
         m_left_handed = props.get<bool>("left_handed", false);
 
         m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null;
