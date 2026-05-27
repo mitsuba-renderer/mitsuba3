@@ -257,6 +257,24 @@ def test01c_dict_parser_uses_config_variant_for_field_types(field_ad_rgb_variant
     assert state.root.type == mi.ObjectType.Field
 
 
+def test01d_dict_writer_skips_duplicate_implicit_field_ids(variant_scalar_rgb):
+    state = mi.parser.parse_dict(CONFIG, {
+        "type": "scene",
+        "mat_a": {
+            "type": "diffuse",
+            "reflectance": { "type": "checkerboard" },
+        },
+        "mat_b": {
+            "type": "diffuse",
+            "reflectance": { "type": "checkerboard" },
+        },
+    })
+
+    output = mi.parser.write_string(state)
+    assert 'id="reflectance"' not in output
+    mi.parser.parse_string(CONFIG, output)
+
+
 def test02_python_field_metadata_and_eval_dispatch_through_virtual_api(field_ad_rgb_variant):
     field = make_python_args_field()
     si = surface_interaction()
@@ -335,6 +353,42 @@ def test02b_python_field_accepts_positional_active(field_ad_rgb_variant):
     assert dr.allclose(field.eval_1(si, False), 0.0)
     assert dr.allclose(field.eval_n(si, 1, True), [1.0])
     assert dr.allclose(field.eval_n(si, 1, False), [0.0])
+
+    class ActiveColorField(mi.Field):
+        def __init__(self):
+            super().__init__(mi.Properties("active_color_field"))
+
+        def out_type(self):
+            return mi.FieldValueType.Color3
+
+        def domain(self):
+            return mi.FieldDomain.Surface
+
+        def out_dim(self):
+            return 3
+
+        def args_dim(self):
+            return 0
+
+        def supports_scalar(self):
+            return True
+
+        def supports_jit(self):
+            return True
+
+        def supports_surface_queries(self):
+            return True
+
+        def supports_interaction_queries(self):
+            return False
+
+        def eval_3(self, si, args=None, active=True):
+            assert args is None
+            return mi.Color3f(si.uv.x, si.uv.y, 1.0) & active
+
+    color_field = ActiveColorField()
+    assert dr.allclose(color_field.eval_3(si, True), [0.25, 0.75, 1.0])
+    assert dr.allclose(color_field.eval_3(si, False), [0.0, 0.0, 0.0])
 
 
 def test03_python_field_subclass_hook_preserves_user_hooks(field_ad_rgb_variant):
