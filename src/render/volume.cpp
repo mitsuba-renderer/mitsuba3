@@ -250,10 +250,13 @@ VolumeField<Float, Spectrum>::eval_array6(const Interaction3f &it,
 }
 
 MI_VARIANT void
-VolumeField<Float, Spectrum>::eval_n(const SurfaceInteraction3f &, Float *,
-                                uint32_t, Args, Mask active) const {
-    if (dr::none_or<false>(active))
+VolumeField<Float, Spectrum>::eval_n(const SurfaceInteraction3f &, Float *out,
+                                uint32_t count, Args, Mask active) const {
+    if (dr::none_or<false>(active)) {
+        for (uint32_t i = 0; i < count; ++i)
+            out[i] = 0.f;
         return;
+    }
     Throw("Volume::eval_n(): domain mismatch, expected Interaction, got "
           "Surface interaction.");
 }
@@ -266,8 +269,11 @@ VolumeField<Float, Spectrum>::eval_n(const Interaction3f &it,
                                 Mask active) const {
     if (args.size != 0)
         Throw("Volume::eval_n(): expected args_dim=0, got %u.", args.size);
-    if (dr::none_or<false>(active))
+    if (dr::none_or<false>(active)) {
+        for (uint32_t i = 0; i < count; ++i)
+            out[i] = 0.f;
         return;
+    }
     uint32_t dim = out_dim();
     FieldValueType type = out_type();
     if (count != dim)

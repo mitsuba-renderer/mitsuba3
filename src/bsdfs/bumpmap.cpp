@@ -97,7 +97,7 @@ template <typename Float, typename Spectrum>
 class BumpMap final : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
-        MI_IMPORT_TYPES(Field, Texture)
+    MI_IMPORT_TYPES(Field, Texture)
 
     BumpMap(const Properties &props) : Base(props) {
         for (auto &prop : props.objects()) {

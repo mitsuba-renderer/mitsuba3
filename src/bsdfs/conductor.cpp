@@ -236,6 +236,13 @@ public:
         } else {
             std::tie(m_eta, m_k) = complex_ior_from_file<Spectrum, Texture>(props.get<std::string_view>("material", "Cu"));
         }
+
+        if constexpr (is_spectral_v<Spectrum>) {
+            require_field_spectral_evaluable(m_specular_reflectance.get(),
+                                             "specular_reflectance");
+            require_field_spectral_evaluable(m_eta.get(), "eta");
+            require_field_spectral_evaluable(m_k.get(), "k");
+        }
     }
 
     void traverse(TraversalCallback *cb) override {

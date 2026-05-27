@@ -463,6 +463,12 @@ public:
             Throw("GridVolume::eval_n(): count (%u) must match out_dim (%u).",
                   count, dim);
 
+        if (dr::none_or<false>(active)) {
+            for (uint32_t i = 0; i < count; ++i)
+                out[i] = 0.f;
+            return;
+        }
+
         switch (type) {
             case FieldValueType::Float:
                 out[0] = eval_1(it, active);
@@ -493,6 +499,12 @@ public:
     }
 
     void eval_n(const Interaction3f &it, Float *out, Mask active = true) const override {
+        if (dr::none_or<false>(active)) {
+            for (size_t i = 0; i < nchannels(); ++i)
+                out[i] = 0.f;
+            return;
+        }
+
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         return interpolate_per_channel<Float>(it, out, active);

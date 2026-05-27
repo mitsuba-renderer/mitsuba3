@@ -120,6 +120,14 @@ public:
             m_specular_reflectance   = props.get_surface_field<Field>("specular_reflectance", 1.f);
         if (props.has_property("specular_transmittance"))
             m_specular_transmittance = props.get_surface_field<Field>("specular_transmittance", 1.f);
+        if constexpr (is_spectral_v<Spectrum>) {
+            if (m_specular_reflectance)
+                require_field_spectral_evaluable(m_specular_reflectance.get(),
+                                                 "specular_reflectance");
+            if (m_specular_transmittance)
+                require_field_spectral_evaluable(m_specular_transmittance.get(),
+                                                 "specular_transmittance");
+        }
 
         m_components.push_back(BSDFFlags::DeltaReflection | BSDFFlags::FrontSide |
                                BSDFFlags::BackSide);

@@ -77,6 +77,12 @@ public:
         // As default, instantiate as a quarter-wave plate
         m_delta = props.get_unbounded_surface_field<Field>("delta", 90.f);
         m_transmittance = props.get_surface_field<Field>("transmittance", 1.f);
+        if constexpr (is_spectral_v<Spectrum>) {
+            require_field_spectral_evaluable(m_theta.get(), "theta");
+            require_field_spectral_evaluable(m_delta.get(), "delta");
+            require_field_spectral_evaluable(m_transmittance.get(),
+                                             "transmittance");
+        }
 
         m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null;
         m_components.push_back(m_flags);

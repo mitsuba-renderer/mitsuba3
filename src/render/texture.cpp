@@ -255,8 +255,11 @@ SurfaceField<Float, Spectrum>::eval_n(const SurfaceInteraction3f &si,
                                  Mask active) const {
     if (args.size != 0)
         Throw("Texture::eval_n(): expected args_dim=0, got %u.", args.size);
-    if (dr::none_or<false>(active))
+    if (dr::none_or<false>(active)) {
+        for (uint32_t i = 0; i < count; ++i)
+            out[i] = 0.f;
         return;
+    }
     uint32_t dim = out_dim();
     FieldValueType type = out_type();
     if (count != dim)
@@ -286,8 +289,13 @@ SurfaceField<Float, Spectrum>::eval_n(const SurfaceInteraction3f &si,
 }
 
 MI_VARIANT void
-SurfaceField<Float, Spectrum>::eval_n(const Interaction3f &, Float *, uint32_t,
-                                 Args, Mask) const {
+SurfaceField<Float, Spectrum>::eval_n(const Interaction3f &, Float *out,
+                                 uint32_t count, Args, Mask active) const {
+    if (dr::none_or<false>(active)) {
+        for (uint32_t i = 0; i < count; ++i)
+            out[i] = 0.f;
+        return;
+    }
     Throw("Texture::eval_n(): domain mismatch, expected Surface interaction, "
           "got Interaction.");
 }

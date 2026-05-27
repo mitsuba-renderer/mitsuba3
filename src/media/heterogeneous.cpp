@@ -156,6 +156,10 @@ public:
         m_is_homogeneous = false;
         m_albedo = props.get_volume_field<Field>("albedo", 0.75f);
         m_sigmat = props.get_volume_field<Field>("sigma_t", 1.0f);
+        if constexpr (is_spectral_v<Spectrum>) {
+            require_field_spectral_evaluable(m_albedo.get(), "albedo");
+            require_field_spectral_evaluable(m_sigmat.get(), "sigma_t");
+        }
         require_field_max(m_sigmat.get(), "sigma_t");
 
         m_scale = props.get<ScalarFloat>("scale", 1.0f);
