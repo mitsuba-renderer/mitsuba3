@@ -113,7 +113,7 @@ def test03_role_tags_still_reject_incompatible_field_implementations(variant_sca
     volume_path = os.path.join(str(tmpdir), "role_volume.vol")
     mi.VolumeGrid(mi.TensorXf([1.0] * 8, shape=(2, 2, 2, 1))).write(volume_path)
 
-    with pytest.raises(RuntimeError, match="Type mismatch|texture|field|gridvolume"):
+    with pytest.raises(RuntimeError, match="Texture role requires a field that supports surface queries"):
         mi.load_string(f"""<texture version="3.0.0" type="gridvolume">
             <string name="filename" value="{volume_path}"/>
             <boolean name="raw" value="true"/>
@@ -122,7 +122,7 @@ def test03_role_tags_still_reject_incompatible_field_implementations(variant_sca
     bitmap_path = os.path.join(str(tmpdir), "role_texture.exr")
     mi.Bitmap(mi.TensorXf([0.2, 0.4, 0.6] * 4, shape=(2, 2, 3))).write(bitmap_path)
 
-    with pytest.raises(RuntimeError, match="Type mismatch|volume|field|bitmap"):
+    with pytest.raises(RuntimeError, match="did not create a volume-compatible field"):
         mi.load_string(f"""<volume version="3.0.0" type="bitmap">
             <string name="filename" value="{bitmap_path}"/>
             <boolean name="raw" value="true"/>
@@ -134,7 +134,7 @@ def test03_role_tags_still_reject_incompatible_field_implementations(variant_sca
             <integer name="out_dim" value="8"/>
         </texture>""")
 
-    with pytest.raises(RuntimeError, match="Volume role|Features\\[8\\]"):
+    with pytest.raises(RuntimeError, match="Volume role requires a VolumeField implementation"):
         mi.load_string("""<volume version="3.0.0" type="sinusoidalfield">
             <integer name="input_dim" value="3"/>
             <integer name="out_dim" value="8"/>

@@ -277,3 +277,24 @@ def test07_rotated_normals(variants_vec_backends_once_rgb):
 
         dr.assert_allclose(bsdf.eval(ctx, si, rot.to_world(wo)), reference,
                            rtol=1e-4, atol=1e-5)
+
+
+def test08_non_vector_normalmap_fails_when_evaluated(variant_scalar_rgb):
+    bsdf = mi.load_dict({
+        "type": "normalmap",
+        "normalmap": {
+            "type": "bitmap",
+            "data": mi.TensorXf([0.5], shape=(1, 1, 1)),
+            "raw": True,
+        },
+        "nested_bsdf": {
+            "type": "diffuse",
+        },
+    })
+
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.sh_frame = mi.Frame3f(mi.Vector3f(0, 0, 1))
+    si.wi = mi.Vector3f(0, 0, 1)
+
+    with pytest.raises(RuntimeError, match="queried for a RGB value"):
+        bsdf.eval(mi.BSDFContext(), si, mi.Vector3f(0, 0, 1))

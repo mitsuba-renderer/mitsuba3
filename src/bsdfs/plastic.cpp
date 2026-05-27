@@ -168,14 +168,12 @@ public:
         m_eta = int_ior / ext_ior;
 
         m_diffuse_reflectance  = props.get_surface_field<Field>("diffuse_reflectance", .5f);
-        require_field_mean(m_diffuse_reflectance.get(), "diffuse_reflectance");
         if constexpr (is_spectral_v<Spectrum>)
             require_field_spectral_evaluable(m_diffuse_reflectance.get(),
                                              "diffuse_reflectance");
 
         if (props.has_property("specular_reflectance")) {
             m_specular_reflectance = props.get_surface_field<Field>("specular_reflectance", 1.f);
-            require_field_mean(m_specular_reflectance.get(), "specular_reflectance");
             if constexpr (is_spectral_v<Spectrum>)
                 require_field_spectral_evaluable(m_specular_reflectance.get(),
                                                  "specular_reflectance");

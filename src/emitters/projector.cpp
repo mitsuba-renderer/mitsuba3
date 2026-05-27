@@ -124,8 +124,6 @@ public:
         m_intensity_scale = dr::opaque<Float>(props.get<ScalarFloat>("scale", 1.f));
 
         m_irradiance = props.get_emissive_surface_field<Field>("irradiance", 1.f);
-        if constexpr (is_spectral_v<Spectrum>)
-            require_field_sample_spectrum(m_irradiance.get(), "irradiance");
 
         ScalarVector2i size = m_irradiance->resolution_2d();
         m_x_fov = ScalarFloat(parse_fov(props, size.x() / (double) size.y()));

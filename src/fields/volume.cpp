@@ -55,7 +55,7 @@ public:
     using Array6f = typename Field::Array6f;
 
     VolumeAdapter(const Properties &props) : SurfaceField(props) {
-        m_volume = props.get_volume_field<Field>("volume");
+        m_volume = props.get_volume_field<Field>("volume", .75f);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &it,

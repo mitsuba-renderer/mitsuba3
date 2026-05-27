@@ -164,14 +164,6 @@ ref<Object> make_volume_object(const ref<Object> &object) {
               field_value_type_name(type), dim,
               (uint32_t) dr::size_v<unpolarized_spectrum_t<Spectrum_>>);
 
-    try {
-        (void) volume->bbox();
-        (void) volume->max();
-    } catch (const std::exception &e) {
-        Throw("Volume role field \"%s\" does not provide required volume "
-              "metadata: %s", field->id(), e.what());
-    }
-
     return ref<Object>(const_cast<VolumeField *>(volume));
 }
 

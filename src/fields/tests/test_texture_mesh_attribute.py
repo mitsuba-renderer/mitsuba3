@@ -124,3 +124,9 @@ def test04_missing_or_mismatched_reads_zero(variant_scalar_rgb):
     texture = mi.load_dict({"type": "mesh_attribute",
                             "name": "vertex_mono"})
     dr.assert_allclose(texture.eval_3(si), 0)
+
+    with pytest.raises(RuntimeError, match="must start with either"):
+        mi.load_dict({
+            "type": "mesh_attribute",
+            "name": "foo_vertex_color",
+        })
