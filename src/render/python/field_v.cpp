@@ -466,7 +466,9 @@ private:
             out[i] = result[i];
     }
 
-    static nb::list field_args_to_python(Args args) {
+    static nb::object field_args_to_python(Args args) {
+        if (args.size == 0)
+            return nb::none();
         nb::list result;
         for (uint32_t i = 0; i < args.size; ++i)
             result.append(args.data[i]);

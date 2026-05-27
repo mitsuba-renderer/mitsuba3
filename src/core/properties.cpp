@@ -69,6 +69,19 @@ using Variant = std::variant<std::monostate, bool, int64_t, Float, std::string,
                              Array3f, Color3f, Properties::Spectrum, AffineTransform4f, Reference,
                              ResolvedReference, ref<Object>, Any>;
 
+static ref<Object> expand_single_role_object(const Properties &props,
+                                             const ref<Object> &object,
+                                             std::string_view role) {
+    std::vector<ref<Object>> children = object->expand();
+    if (children.empty())
+        return object;
+    if (children.size() != 1)
+        Throw("%s role plugin \"%s\" expanded into %zu objects, expected one "
+              "field.",
+              role, props.plugin_name(), children.size());
+    return children[0];
+}
+
 template <typename Float_, typename Spectrum_>
 ref<Object> make_texture_object(const ref<Object> &object) {
     using Field = mitsuba::Field<Float_, Spectrum_>;
@@ -206,6 +219,7 @@ create_texture_role_object_for_variant(const Properties &props,
                                        std::string_view variant) {
     ref<Object> object = PluginManager::instance()->create_object(
         props, variant, ObjectType::Field);
+    object = expand_single_role_object(props, object, "Texture");
     ref<Object> texture = make_texture_object_for_variant(variant, object);
     if (!texture)
         Throw("Plugin \"%s\" did not create a texture-compatible field.",
@@ -218,6 +232,7 @@ create_volume_role_object_for_variant(const Properties &props,
                                       std::string_view variant) {
     ref<Object> object = PluginManager::instance()->create_object(
         props, variant, ObjectType::Field);
+    object = expand_single_role_object(props, object, "Volume");
     ref<Object> volume = make_volume_object_for_variant(variant, object);
     if (!volume)
         Throw("Plugin \"%s\" did not create a volume-compatible field.",
