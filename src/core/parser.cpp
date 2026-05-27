@@ -1393,13 +1393,13 @@ void transform_merge_equivalent(const ParserConfig &/*config*/, ParserState &sta
 static const char* section_names[] = {
     "Camera and Rendering Parameters", // 0: Integrator
     "Camera and Rendering Parameters", // 1: Sensor
-    "Materials",                       // 2: Texture
-    "Materials",                       // 3: BSDF
-    "Emitters",                        // 4: Emitter/Shape with area light
-    "Shapes",                          // 5: Shape
-    "Volumes",                         // 6: Volume
-    "Volumes",                         // 7: Medium
-    "Fields",                          // 8: Field
+    "Fields",                          // 2: Field
+    "Materials",                       // 3: Texture
+    "Materials",                       // 4: BSDF
+    "Emitters",                        // 5: Emitter/Shape with area light
+    "Shapes",                          // 6: Shape
+    "Volumes",                         // 7: Volume
+    "Volumes",                         // 8: Medium
     "Other"                            // 9: Other/Unknown
 };
 
@@ -1425,13 +1425,13 @@ static int node_order_id(const ParserState &state, size_t node_idx) {
     switch (node.type) {
         case ObjectType::Integrator: return 0;
         case ObjectType::Sensor:     return 1;
-        case ObjectType::Texture:    return 2;
-        case ObjectType::BSDF:       return 3;
-        case ObjectType::Emitter:    return 4;
-        case ObjectType::Shape:      return has_area_light(node_idx) ? 4 : 5;
-        case ObjectType::Volume:     return 6;
-        case ObjectType::Medium:     return 7;
-        case ObjectType::Field:      return 8;
+        case ObjectType::Field:      return 2;
+        case ObjectType::Texture:    return 3;
+        case ObjectType::BSDF:       return 4;
+        case ObjectType::Emitter:    return 5;
+        case ObjectType::Shape:      return has_area_light(node_idx) ? 5 : 6;
+        case ObjectType::Volume:     return 7;
+        case ObjectType::Medium:     return 8;
         default:                     return 9;
     }
 }

@@ -446,10 +446,14 @@ template <typename FieldT>
 MI_INLINE void require_field_spectral_evaluable(const FieldT *field,
                                                 std::string_view param_name) {
     FieldValueType type = field->out_type();
-    if (type == FieldValueType::Color3 || type == FieldValueType::Array3)
-        Throw("Field parameter \"%s\": cannot use %s[%u] output as a "
-              "spectral value.",
-              param_name, field_value_type_name(type), field->out_dim());
+    uint32_t dim = field->out_dim(),
+             spectrum_dim = (uint32_t) dr::size_v<typename FieldT::UnpolarizedSpectrum>;
+    bool valid = (type == FieldValueType::Float && dim == 1) ||
+                 (type == FieldValueType::Spectrum && dim == spectrum_dim);
+    if (!valid)
+        Throw("Field parameter \"%s\": spectral variants require Float[1] or "
+              "Spectrum[%u], got %s[%u].",
+              param_name, spectrum_dim, field_value_type_name(type), dim);
 }
 
 MI_EXTERN_CLASS(Field)

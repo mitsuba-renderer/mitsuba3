@@ -281,6 +281,7 @@ def test15_plugin_manager_plugin_type(variant_scalar_rgb):
     assert pmgr.plugin_type('independent') == mi.ObjectType.Sampler
     assert pmgr.plugin_type('sphere') == mi.ObjectType.Shape
     assert pmgr.plugin_type('bitmap') == mi.ObjectType.Field
+    assert pmgr.plugin_type('grid') == mi.ObjectType.Field
     assert pmgr.plugin_type('gridvolume') == mi.ObjectType.Field
     assert pmgr.plugin_type('hdrfilm') == mi.ObjectType.Film
     assert pmgr.plugin_type('box') == mi.ObjectType.ReconstructionFilter

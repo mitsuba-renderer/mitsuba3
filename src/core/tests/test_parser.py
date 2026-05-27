@@ -2333,7 +2333,7 @@ def test65_transform_reorder(variant_scalar_rgb):
         <shape type="cube"/>
         <volume type="constvolume" id="vol1"/>
         <bsdf type="conductor" id="mat2"/>
-        <field type="debugfield" id="field1"/>
+        <field type="sinusoidalfield" id="field1"/>
         <shape type="cylinder">
             <bsdf type="diffuse"/>
             <medium type="homogeneous"/>
@@ -2358,17 +2358,18 @@ def test65_transform_reorder(variant_scalar_rgb):
     # Expected order preserves insertion order within each priority group:
     # Priority 0: Integrator (path)
     # Priority 1: Sensor (perspective)
-    # Priority 2: Textures in insertion order (bitmap, checkerboard)
-    # Priority 3: BSDFs in insertion order (diffuse, conductor)
-    # Priority 4: Emitters and area light shapes in insertion order (point, sphere, envmap)
-    # Priority 5: Regular shapes in insertion order (rectangle, cube, cylinder)
-    # Priority 6: Volumes (constvolume)
-    # Priority 7: Media (homogeneous)
-    # Priority 8: Fields (debugfield)
+    # Priority 2: Fields (sinusoidalfield)
+    # Priority 3: Textures in insertion order (bitmap, checkerboard)
+    # Priority 4: BSDFs in insertion order (diffuse, conductor)
+    # Priority 5: Emitters and area light shapes in insertion order (point, sphere, envmap)
+    # Priority 6: Regular shapes in insertion order (rectangle, cube, cylinder)
+    # Priority 7: Volumes (constvolume)
+    # Priority 8: Media (homogeneous)
 
     expected_types_and_names = [
         (mi.ObjectType.Integrator, "path"),
         (mi.ObjectType.Sensor, "perspective"),
+        (mi.ObjectType.Field, "sinusoidalfield"),
         (mi.ObjectType.Texture, "bitmap"),
         (mi.ObjectType.Texture, "checkerboard"),
         (mi.ObjectType.BSDF, "diffuse"),
@@ -2381,7 +2382,6 @@ def test65_transform_reorder(variant_scalar_rgb):
         (mi.ObjectType.Shape, "cylinder"),
         (mi.ObjectType.Volume, "constvolume"),
         (mi.ObjectType.Medium, "homogeneous"),
-        (mi.ObjectType.Field, "debugfield"),
     ]
 
     assert types_and_names == expected_types_and_names
@@ -2391,6 +2391,37 @@ def test65_transform_reorder(variant_scalar_rgb):
     sphere_children = get_children(state, sphere)
     assert len(sphere_children) == 1
     assert sphere_children[0][1].props.plugin_name() == "area"
+
+
+def test65b_transform_reorder_keeps_shared_field_declaration(variant_scalar_rgb):
+    """Fields referenced by materials should be written before their consumers."""
+
+    xml = '''<scene version="3.0.0">
+        <field type="sinusoidalfield" id="shared_field">
+            <integer name="out_dim" value="2"/>
+        </field>
+        <bsdf type="diffuse" id="mat">
+            <ref id="shared_field" name="reflectance"/>
+        </bsdf>
+    </scene>'''
+
+    config = mi.parser.ParserConfig('scalar_rgb')
+    config.merge_meshes = False
+
+    state = mi.parser.parse_string(config, xml)
+    mi.parser.transform_all(config, state)
+    mi.parser.transform_reorder(config, state)
+    written = mi.parser.write_string(state, False)
+
+    field_pos = written.find('<field type="sinusoidalfield" id="shared_field"')
+    bsdf_pos = written.find('<bsdf type="diffuse"')
+
+    assert field_pos != -1
+    assert bsdf_pos != -1
+    assert field_pos < bsdf_pos
+    assert '<ref id="shared_field" name="reflectance"' in written
+    assert '<bsdf type="diffuse">\n        <field' not in written
+
 
 def test66_logger_deadlock():
     """Test that logging does not cause a deadlock when loading a scene in parallel"""
