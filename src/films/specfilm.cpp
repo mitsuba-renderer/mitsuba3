@@ -147,7 +147,7 @@ class SpecFilm final : public Film<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset, m_sample_border,
                    m_filter, m_flags, m_srf, set_crop_window)
-    MI_IMPORT_TYPES(Field, ImageBlock, Texture)
+    MI_IMPORT_TYPES(Field, ImageBlock)
     using FloatStorage = DynamicBuffer<Float>;
 
     SpecFilm(const Properties &props) : Base(props) {
@@ -260,8 +260,8 @@ public:
                                                 (double) m_range.y()));
 
         ref<Object> object =
-            create_texture_role_object_for_variant(props, Texture::Variant);
-        using FieldType = typename Texture::FieldType;
+            create_texture_role_object_for_variant(props, Field::Variant);
+        using FieldType = typename Field::FieldType;
         FieldType *field = dynamic_cast<FieldType *>(object.get());
         if (!field)
             Throw("SpecFilm: expected a texture-compatible field.");

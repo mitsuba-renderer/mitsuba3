@@ -570,8 +570,6 @@
 
 .. autoclass:: mitsuba.TensorXu8
 
-.. autoclass:: mitsuba.Texture
-
 .. autoclass:: mitsuba.Texture1d
 
 .. autoclass:: mitsuba.Texture1f
@@ -601,8 +599,6 @@
 .. autoclass:: mitsuba.Texture3f32
 
 .. autoclass:: mitsuba.Texture3f64
-
-.. autoclass:: mitsuba.TexturePtr
 
 .. autoclass:: mitsuba.Thread
 
@@ -671,8 +667,6 @@
 .. autoclass:: mitsuba.Vector4u
 
 .. autoclass:: mitsuba.Version
-
-.. autoclass:: mitsuba.Volume
 
 .. autoclass:: mitsuba.VolumeGrid
 
@@ -986,8 +980,6 @@
 
 .. autofunction:: mitsuba.register_shape
 
-.. autofunction:: mitsuba.register_texture
-
 .. autofunction:: mitsuba.render
 
 .. autofunction:: mitsuba.sample_rgb_spectrum
@@ -1181,4 +1173,3 @@
 .. autofunction:: mitsuba.while_loop
 
 .. autofunction:: mitsuba.xyz_to_srgb
-

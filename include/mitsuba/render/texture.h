@@ -293,12 +293,6 @@ public:
     /// Does this texture evaluation depend on the UV coordinates.
     bool is_spatially_varying() const override { return false; }
 
-    /// Convenience function returning the standard D65 illuminant texture.
-    static ref<SurfaceField> D65(ScalarFloat scale = 1.f);
-
-    /// Convenience function to create a product texture with the D65 illuminant.
-    static ref<SurfaceField> D65(ref<FieldType> field);
-
     MI_DECLARE_CLASS(SurfaceField)
     static constexpr const char *Variant =
         detail::variant<Float, Spectrum>::name;

@@ -47,18 +47,33 @@ def test03_interaction_fields_without_volume_metadata_are_rejected(variant_scala
 
 
 def test04_sigma_t_forwards_inactive_mask(variants_all_ad_rgb_unpolarized):
-    class InactiveSensitiveValue(mi.Texture):
+    class InactiveSensitiveValue(mi.Field):
         def __init__(self):
-            mi.Texture.__init__(self, mi.Properties("inactive_sensitive_value"))
+            mi.Field.__init__(self, mi.Properties("inactive_sensitive_value"))
             self.last_active = None
 
         def out_type(self):
             return mi.FieldValueType.Float
 
+        def domain(self):
+            return mi.FieldDomain.Surface
+
         def out_dim(self):
             return 1
 
-        def eval(self, si, active=True):
+        def supports_scalar(self):
+            return True
+
+        def supports_jit(self):
+            return True
+
+        def supports_surface_queries(self):
+            return True
+
+        def supports_interaction_queries(self):
+            return False
+
+        def eval_1(self, si, args=None, active=True):
             self.last_active = active
             return dr.select(active, 2.0, 0.0)
 

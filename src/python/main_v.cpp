@@ -11,8 +11,6 @@
 #include <mitsuba/render/phase.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
-#include <mitsuba/render/texture.h>
-#include <mitsuba/render/volume.h>
 
 #include <mitsuba/python/python.h>
 
@@ -28,8 +26,6 @@ static nb::object caster(Object *o) {
     PY_TRY_CAST(Scene);
     PY_TRY_CAST(Mesh);
     PY_TRY_CAST(Shape);
-    PY_TRY_CAST(SurfaceField);
-    PY_TRY_CAST(VolumeField);
     PY_TRY_CAST(Field);
     PY_TRY_CAST(ReconstructionFilter);
 
@@ -113,8 +109,6 @@ MI_PY_DECLARE(SilhouetteSample);
 MI_PY_DECLARE(Shape);
 //MI_PY_DECLARE(ShapeKDTree);
 MI_PY_DECLARE(srgb);
-MI_PY_DECLARE(Texture);
-MI_PY_DECLARE(Volume);
 MI_PY_DECLARE(VolumeGrid);
 
 using Caster = nb::object(*)(mitsuba::Object *);
@@ -229,8 +223,6 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT(Sensor);
 //    MI_PY_IMPORT(ShapeKDTree);
     MI_PY_IMPORT(srgb);
-    MI_PY_IMPORT(Texture);
-    MI_PY_IMPORT(Volume);
     MI_PY_IMPORT(VolumeGrid);
 
     /* Callback function cleanup static variant-specific data structures, this

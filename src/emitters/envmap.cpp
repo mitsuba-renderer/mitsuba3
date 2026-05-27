@@ -98,7 +98,7 @@ template <typename Float, typename Spectrum>
 class EnvironmentMapEmitter final : public Emitter<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Emitter, m_flags, m_to_world)
-    MI_IMPORT_TYPES(Field, Scene, Shape, Texture)
+    MI_IMPORT_TYPES(Field, Scene, Shape)
 
     using Warp = Hierarchical2D<Float, 0>;
 
@@ -231,7 +231,7 @@ public:
 
         m_scale = props.get<ScalarFloat>("scale", 1.f);
         m_warp = Warp(luminance_data.get(), res);
-        m_d65 = Texture::D65(1.f);
+        m_d65 = Field::D65(1.f);
         m_flags = EmitterFlags::Infinite | EmitterFlags::SpatiallyVarying;
     }
 

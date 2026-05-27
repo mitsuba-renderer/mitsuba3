@@ -348,23 +348,5 @@ SurfaceField<Float, Spectrum>::max() const {
     NotImplementedError("max");
 }
 
-MI_VARIANT ref<SurfaceField<Float, Spectrum>>
-SurfaceField<Float, Spectrum>::D65(ScalarFloat scale) {
-    ref<FieldType> field = Base::D65(scale);
-    SurfaceField *texture = dynamic_cast<SurfaceField *>(field.get());
-    if (!texture)
-        Throw("Texture::D65(): expected a texture field expansion.");
-    return ref<SurfaceField>(texture);
-}
-
-MI_VARIANT ref<SurfaceField<Float, Spectrum>>
-SurfaceField<Float, Spectrum>::D65(ref<FieldType> field) {
-    ref<FieldType> result = Base::D65(field);
-    SurfaceField *texture = dynamic_cast<SurfaceField *>(result.get());
-    if (!texture)
-        Throw("Texture::D65(): expected a texture field expansion.");
-    return ref<SurfaceField>(texture);
-}
-
 MI_INSTANTIATE_CLASS(SurfaceField)
 NAMESPACE_END(mitsuba)

@@ -36,7 +36,7 @@ template <typename Float, typename Spectrum> class VolumeField;
 template <typename Float, typename Spectrum> class VolumeGrid;
 template <typename Float, typename Spectrum> class MeshAttribute;
 
-// Compatibility role names used by legacy C++ code and Python bindings.
+// Compatibility role names used by legacy C++ code.
 template <typename Float, typename Spectrum>
 using Texture = SurfaceField<Float, Spectrum>;
 
@@ -116,8 +116,6 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using SensorPtr              = dr::replace_scalar_t<Float, const Sensor *>;
     using EmitterPtr             = dr::replace_scalar_t<Float, const Emitter *>;
     using FieldPtr               = dr::replace_scalar_t<Float, const Field *>;
-    using TexturePtr             = dr::replace_scalar_t<Float, const Texture *>;
-    using VolumePtr              = dr::replace_scalar_t<Float, const Volume *>;
 };
 
 /**
@@ -203,7 +201,6 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using MeshPtr                = typename RenderAliases::MeshPtr;                                \
     using EmitterPtr             = typename RenderAliases::EmitterPtr;                             \
     using FieldPtr               = typename RenderAliases::FieldPtr;                               \
-    using VolumePtr              = typename RenderAliases::VolumePtr;                              \
     using SensorPtr              = typename RenderAliases::SensorPtr;
 
 NAMESPACE_END(mitsuba)

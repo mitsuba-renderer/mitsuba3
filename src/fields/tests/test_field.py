@@ -336,24 +336,40 @@ def test04_fieldptr_vectorized_fixed_and_generic_calls(field_ad_rgb_variant):
         feature_ptr.eval(si, True)
 
 
-def test05_surface_array3_eval_n_uses_fixed_array_path(variant_scalar_rgb):
-    class Array3Texture(mi.Texture):
+def test05_python_surface_array3_eval_n(variant_scalar_rgb):
+    class Array3Field(mi.Field):
         def __init__(self, props):
-            mi.Texture.__init__(self, props)
+            mi.Field.__init__(self, props)
 
         def out_type(self):
             return mi.FieldValueType.Array3
 
+        def domain(self):
+            return mi.FieldDomain.Surface
+
         def out_dim(self):
             return 3
 
-        def eval_3(self, si, active=True):
-            return mi.Color3f(si.uv.x, si.uv.y, si.uv.x + si.uv.y)
+        def supports_scalar(self):
+            return True
 
-    texture = Array3Texture(mi.Properties("array3_texture"))
+        def supports_jit(self):
+            return True
+
+        def supports_surface_queries(self):
+            return True
+
+        def supports_interaction_queries(self):
+            return False
+
+        def eval_n(self, si, count, args=None, active=True):
+            assert count == 3
+            return [si.uv.x, si.uv.y, si.uv.x + si.uv.y]
+
+    texture = Array3Field(mi.Properties("array3_field"))
     si = surface_interaction()
 
-    assert dr.allclose(texture.eval_n(si), [0.25, 0.75, 1.0])
+    assert dr.allclose(texture.eval_n(si, 3), [0.25, 0.75, 1.0])
     assert dr.allclose(mi.Field.eval_n(texture, si, 3), [0.25, 0.75, 1.0])
 
 

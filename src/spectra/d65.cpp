@@ -74,9 +74,9 @@ template <typename Float, typename Spectrum>
 class D65Spectrum final : public SurfaceField<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(SurfaceField)
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Field)
 
-    using FieldType = typename Texture::FieldType;
+    using FieldType = typename Field::FieldType;
 
     D65Spectrum(const Properties &props) : Base(props) {
         m_scale = props.get<ScalarFloat>("scale", 1.f);
