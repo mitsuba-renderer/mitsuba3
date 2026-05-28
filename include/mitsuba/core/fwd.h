@@ -21,8 +21,8 @@ namespace dr = drjit;
 
 class Object;
 
-/// Forward declaration of field template
-template <typename DeviceType, typename HostType, typename SFINAE> struct field;
+/// Forward declaration of synced template
+template <typename DeviceType, typename HostType, typename SFINAE> struct synced;
 
 class AnnotatedStream;
 class Appender;

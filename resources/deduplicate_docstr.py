@@ -14,6 +14,7 @@ def main() -> int:
     with open(filename, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
+    original_lines = list(lines)
     pattern = re.compile(r"(static const char \*)(__doc_[A-Za-z0-9_]+)(\b)")
     names = []
     for line in lines:
@@ -46,9 +47,16 @@ def main() -> int:
         all_names.add(replacement)
         replacements += 1
 
-    if replacements:
+    while lines and not lines[-1].strip():
+        lines.pop()
+    if lines and not lines[-1].endswith("\n"):
+        lines[-1] += "\n"
+
+    if lines != original_lines:
         with open(filename, "w", encoding="utf-8") as f:
             f.writelines(lines)
+
+    if replacements:
         print(f"Renamed {replacements} duplicate docstring symbol(s).")
 
     return 0

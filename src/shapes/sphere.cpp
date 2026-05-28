@@ -780,8 +780,8 @@ public:
     MI_DECLARE_CLASS(Sphere)
 
 private:
-    field<Point3f> m_center; ///< Center in world-space
-    field<Float> m_radius;   ///< Radius in world-space
+    synced<Point3f> m_center; ///< Center in world-space
+    synced<Float> m_radius;   ///< Radius in world-space
     Float m_inv_surface_area;
     bool m_flip_normals;
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mitsuba/core/field.h>
+#include <mitsuba/core/synced.h>
 #include <mitsuba/core/profiler.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/shape.h>
@@ -389,7 +389,7 @@ protected:
     Endpoint(const Properties &props, ObjectType type);
 
 protected:
-    field<AffineTransform4f, ScalarAffineTransform4f> m_to_world;
+    synced<AffineTransform4f, ScalarAffineTransform4f> m_to_world;
     ref<Medium> m_medium;
     Shape *m_shape = nullptr;
     bool m_needs_sample_2 = true;

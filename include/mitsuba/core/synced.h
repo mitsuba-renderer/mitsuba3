@@ -1,9 +1,10 @@
-
 #pragma once
 
 #include <ostream>
 #include <type_traits>
+#include <utility>
 
+#include <mitsuba/core/object.h>
 #include <drjit/array.h>
 #include <drjit/array_traverse.h>
 namespace dr = drjit;
@@ -11,8 +12,8 @@ namespace dr = drjit;
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Convenience wrapper to simultaneously instantiate a host and a device
- * version of a type
+ * \brief Convenience wrapper that keeps scalar host and Dr.Jit device values
+ * synchronized
  *
  * This class implements a simple wrapper that replicates instance attributes
  * on the host and device. This is only relevant when \c DeviceType is a
@@ -20,8 +21,8 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * Why is this needed? Mitsuba plugins represent their internal state using
  * attributes like position, intensity, etc., which are typically represented
- * using Dr.Jit arrays. For technical reasons, it is helpful if those fields are
- * both accessible on the host (in which case the lowest-level representation
+ * using Dr.Jit arrays. For technical reasons, it is helpful if those attributes
+ * are accessible on the host (in which case the lowest-level representation
  * builds on standard C++ types like float or int, for example Point<float, 3>)
  * or the device, whose types invoke the JIT compiler
  * (e.g., Point<CUDAArray<float>, 3>). Copying this data back and forth can be
@@ -34,34 +35,34 @@ template <typename DeviceType,
           typename HostType =
               std::decay_t<decltype(dr::slice(std::declval<DeviceType>()))>,
           typename SFINAE = int>
-struct field {};
+struct synced {};
 
 template <typename DeviceType, typename HostType>
-struct field<DeviceType, HostType,
-             dr::enable_if_t<std::is_same_v<DeviceType, HostType>>> {
-    field() {}
-    field(const DeviceType &v) : m_scalar(v) { }
-    field(DeviceType &&v) : m_scalar(v) { }
-    field(field&& f) = default;
+struct synced<DeviceType, HostType,
+              dr::enable_if_t<std::is_same_v<DeviceType, HostType>>> {
+    synced() {}
+    synced(const DeviceType &v) : m_scalar(v) { }
+    synced(DeviceType &&v) : m_scalar(std::move(v)) { }
+    synced(synced &&) = default;
 
-    const DeviceType& value()  const { return m_scalar; }
-    DeviceType& value() { return m_scalar; }
-    const DeviceType& scalar() const { return m_scalar; }
-    DeviceType* ptr() { return &m_scalar; }
-    field& operator=(const field& f) {
+    const DeviceType &value() const { return m_scalar; }
+    DeviceType &value() { return m_scalar; }
+    const DeviceType &scalar() const { return m_scalar; }
+    DeviceType *ptr() { return &m_scalar; }
+    synced &operator=(const synced &f) {
         m_scalar = f.m_scalar;
         return *this;
     }
-    field& operator=(field&& f) {
+    synced &operator=(synced &&f) {
         m_scalar = std::move(f.m_scalar);
         return *this;
     }
-    field& operator=(const DeviceType &v) {
+    synced &operator=(const DeviceType &v) {
         m_scalar = v;
         return *this;
     }
-    field& operator=(DeviceType &&v) {
-        m_scalar = v;
+    synced &operator=(DeviceType &&v) {
+        m_scalar = std::move(v);
         return *this;
     }
 private:
@@ -75,42 +76,43 @@ public:
 };
 
 template <typename DeviceType, typename HostType>
-struct field<DeviceType, HostType,
-             dr::enable_if_t<!std::is_same_v<DeviceType, HostType>>> {
-    field() {}
-    field(const HostType &v) : m_value(v), m_scalar(v) { }
-    field(HostType &&v) : m_value(v), m_scalar(v) { }
-    field(field&& f) = default;
+struct synced<DeviceType, HostType,
+              dr::enable_if_t<!std::is_same_v<DeviceType, HostType>>> {
+    synced() {}
+    synced(const HostType &v) : m_value(v), m_scalar(v) { }
+    synced(HostType &&v) : m_value(v), m_scalar(std::move(v)) { }
+    synced(synced &&) = default;
 
-    const DeviceType& value()  const { return m_value; }
-    DeviceType& value()  { return m_value; }
-    const HostType& scalar() const { return m_scalar; }
-    DeviceType* ptr() { return &m_value; }
-    field& operator=(const field& f) {
+    const DeviceType &value() const { return m_value; }
+    DeviceType &value() { return m_value; }
+    const HostType &scalar() const { return m_scalar; }
+    DeviceType *ptr() { return &m_value; }
+    synced &operator=(const synced &f) {
         m_value  = f.m_value;
         m_scalar = f.m_scalar;
         return *this;
     }
-    field& operator=(field&& f) {
+    synced &operator=(synced &&f) {
         m_value  = std::move(f.m_value);
         m_scalar = std::move(f.m_scalar);
         return *this;
     }
-    field& operator=(const HostType &v) {
+    synced &operator=(const HostType &v) {
         m_value = m_scalar = v;
         return *this;
     }
-    field& operator=(HostType &&v) {
-        m_value = m_scalar = v;
+    synced &operator=(HostType &&v) {
+        m_value = v;
+        m_scalar = std::move(v);
         return *this;
     }
-    field& operator=(const DeviceType &v) {
+    synced &operator=(const DeviceType &v) {
         m_value = v;
         m_scalar = dr::slice<HostType>(m_value);
         return *this;
     }
-    field& operator=(DeviceType &&v) {
-        m_value = v;
+    synced &operator=(DeviceType &&v) {
+        m_value = std::move(v);
         m_scalar = dr::slice<HostType>(m_value);
         return *this;
     }
@@ -130,21 +132,21 @@ public:
     }
 };
 
-/// Prints the canonical string representation of a field
+/// Prints the canonical string representation of a synced value
 template <typename DeviceType, typename HostType>
 std::ostream &operator<<(std::ostream &os,
-                         const field<DeviceType, HostType> &f) {
+                         const synced<DeviceType, HostType> &f) {
     os << f.scalar();
     return os;
 }
 
-/// Implementation of TraversalCallback::put() for field<> objects
-/// This is defined here to avoid circular dependencies
+// Implementation of TraversalCallback::put() for synced<> objects.
+// This is defined here to avoid circular dependencies.
 template <typename DeviceType, typename HostType, typename SFINAE,
           typename Flags>
 void TraversalCallback::put(
     std::string_view name,
-    mitsuba::field<DeviceType, HostType, SFINAE> &value,
+    mitsuba::synced<DeviceType, HostType, SFINAE> &value,
     Flags flags) {
 
     // Use the device version

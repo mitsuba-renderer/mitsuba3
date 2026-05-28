@@ -418,9 +418,9 @@ public:
         put_value(name, &value, flags_val, typeid(T));
     }
 
-    /// Register a mirrored \c field<...> value as a traversable parameter
+    /// Register a mirrored \c synced<...> value as a traversable parameter
     template <typename DeviceType, typename HostType, typename SFINAE, typename Flags>
-    void put(std::string_view name, field<DeviceType, HostType, SFINAE> &value, Flags flags);
+    void put(std::string_view name, synced<DeviceType, HostType, SFINAE> &value, Flags flags);
 
     virtual ~TraversalCallback() = default;
 

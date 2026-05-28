@@ -11901,7 +11901,7 @@ static const char *__doc_mitsuba_TraversalCallback_put_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_TraversalCallback_put_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_TraversalCallback_put_4 = R"doc(Register a mirrored ``field``<...> value as a traversable parameter)doc";
+static const char *__doc_mitsuba_TraversalCallback_put_4 = R"doc(Register a mirrored ``synced``<...> value as a traversable parameter)doc";
 
 static const char *__doc_mitsuba_TraversalCallback_put_object =
 R"doc(Actual implementation for Object references [To be provided by
@@ -12547,29 +12547,6 @@ static const char *__doc_mitsuba_end = R"doc()doc";
 static const char *__doc_mitsuba_eval_reflectance = R"doc()doc";
 
 static const char *__doc_mitsuba_eval_transmittance = R"doc()doc";
-
-static const char *__doc_mitsuba_field =
-R"doc(Convenience wrapper to simultaneously instantiate a host and a device
-version of a type
-
-This class implements a simple wrapper that replicates instance
-attributes on the host and device. This is only relevant when
-``DeviceType`` is a JIT-compiled Dr.Jit array (when compiling the
-renderer in CUDA/LLVM mode).
-
-Why is this needed? Mitsuba plugins represent their internal state
-using attributes like position, intensity, etc., which are typically
-represented using Dr.Jit arrays. For technical reasons, it is helpful
-if those fields are both accessible on the host (in which case the
-lowest-level representation builds on standard C++ types like float or
-int, for example Point<float, 3>) or the device, whose types invoke
-the JIT compiler (e.g., Point<CUDAArray<float>, 3>). Copying this data
-back and forth can be costly if both host and device require
-simultaneous access. Even if all code effectively runs on the host
-(e.g. in LLVM mode), accessing "LLVM device" arrays still requires
-traversal of JIT compiler data structures, which was a severe
-bottleneck e.g. when Embree calls shape-specific intersection
-routines.)doc";
 
 static const char *__doc_mitsuba_field_value_type_name = R"doc()doc";
 
@@ -13450,21 +13427,21 @@ static const char *__doc_mitsuba_operator_lshift_9 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_10 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_11 = R"doc(Prints the canonical string representation of a field)doc";
+static const char *__doc_mitsuba_operator_lshift_11 = R"doc(Return a string representation of a frame)doc";
 
-static const char *__doc_mitsuba_operator_lshift_12 = R"doc(Return a string representation of a frame)doc";
+static const char *__doc_mitsuba_operator_lshift_12 = R"doc(Prints the canonical string representation of an object instance)doc";
 
 static const char *__doc_mitsuba_operator_lshift_13 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_14 = R"doc(Prints the canonical string representation of an object instance)doc";
+static const char *__doc_mitsuba_operator_lshift_14 = R"doc(Return a string representation of the ray)doc";
 
-static const char *__doc_mitsuba_operator_lshift_15 = R"doc(Return a string representation of the ray)doc";
+static const char *__doc_mitsuba_operator_lshift_15 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_16 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_17 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_18 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_18 = R"doc(Prints the canonical string representation of a synced value)doc";
 
 static const char *__doc_mitsuba_operator_lshift_19 = R"doc()doc";
 
@@ -13943,6 +13920,8 @@ R"doc(Prepares and fills the OptixInstance array associated with a given
 list of shapes.)doc";
 
 static const char *__doc_mitsuba_property_type_name = R"doc(Turn a Properties::Type enumeration value into string form)doc";
+
+static const char *__doc_mitsuba_put = R"doc(Register a mirrored ``synced``<...> value as a traversable parameter)doc";
 
 static const char *__doc_mitsuba_quad_chebyshev =
 R"doc(Computes the Chebyshev nodes, i.e. the roots of the Chebyshev
@@ -14826,6 +14805,29 @@ R"doc(Chop up the string given a set of delimiters (warning: not unicode
 compliant))doc";
 
 static const char *__doc_mitsuba_string_trim = R"doc(Remove leading and trailing characters)doc";
+
+static const char *__doc_mitsuba_synced =
+R"doc(Convenience wrapper that keeps scalar host and Dr.Jit device values
+synchronized
+
+This class implements a simple wrapper that replicates instance
+attributes on the host and device. This is only relevant when
+``DeviceType`` is a JIT-compiled Dr.Jit array (when compiling the
+renderer in CUDA/LLVM mode).
+
+Why is this needed? Mitsuba plugins represent their internal state
+using attributes like position, intensity, etc., which are typically
+represented using Dr.Jit arrays. For technical reasons, it is helpful
+if those attributes are accessible on the host (in which case the
+lowest-level representation builds on standard C++ types like float or
+int, for example Point<float, 3>) or the device, whose types invoke
+the JIT compiler (e.g., Point<CUDAArray<float>, 3>). Copying this data
+back and forth can be costly if both host and device require
+simultaneous access. Even if all code effectively runs on the host
+(e.g. in LLVM mode), accessing "LLVM device" arrays still requires
+traversal of JIT compiler data structures, which was a severe
+bottleneck e.g. when Embree calls shape-specific intersection
+routines.)doc";
 
 static const char *__doc_mitsuba_tuple_hasher = R"doc()doc";
 
