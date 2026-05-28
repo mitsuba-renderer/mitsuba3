@@ -270,7 +270,9 @@ def _make_neural_field(mi):
         def eval_array6(self, record, args=None, active=True):
             self._validate_output(mi.FieldValueType.Features, 6, "eval_array6")
             result = list(self._eval_coop(record, args, active))
-            return [dr.select(active, mi.Float(result[i]), 0) for i in range(6)]
+            return mi.ArrayXf(
+                [dr.select(active, mi.Float(result[i]), 0) for i in range(6)]
+            )
 
         def eval_n(self, record, count, args=None, active=True):
             if int(count) != self._out_dim:

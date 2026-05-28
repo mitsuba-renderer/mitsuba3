@@ -80,6 +80,8 @@ public:
         }
 
         m_irradiance = props.get_emissive_surface_field<Field>("irradiance", 1.f);
+        if constexpr (is_spectral_v<Spectrum>)
+            require_field_spectral_evaluable(m_irradiance.get(), "irradiance");
 
         if (m_irradiance->is_spatially_varying())
             Throw("Expected a non-spatially varying irradiance spectra!");

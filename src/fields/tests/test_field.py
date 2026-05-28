@@ -633,6 +633,24 @@ def test09_checkerboard_scalar_eval_matches_color_eval(variant_scalar_rgb):
     assert dr.allclose(texture.eval(si)[0], 0.8)
     assert dr.allclose(texture.eval_1(si), 0.8)
 
+    raw = mi.load_dict({
+        "type": "checkerboard",
+        "color0": { "type": "rawconstant", "value": 0.2 },
+        "color1": { "type": "rawconstant", "value": 0.8 },
+    })
+    assert raw.out_type() == mi.FieldValueType.Float
+    assert raw.out_dim() == 1
+    assert dr.allclose(mi.Field.eval_n(raw, si, 1)[0], 0.8)
+
+    color = mi.load_dict({
+        "type": "checkerboard",
+        "color0": { "type": "rawconstant", "value": mi.ScalarVector3f(0.2, 0.3, 0.4) },
+        "color1": { "type": "rawconstant", "value": mi.ScalarVector3f(0.8, 0.7, 0.6) },
+    })
+    assert color.out_type() == mi.FieldValueType.Color3
+    assert color.out_dim() == 3
+    assert dr.allclose(color.eval_3(si), [0.8, 0.7, 0.6])
+
 
 def test10_generic_only_python_field_uses_dynamic_fallback(variant_scalar_rgb):
     class GenericOnlyField(mi.Field):

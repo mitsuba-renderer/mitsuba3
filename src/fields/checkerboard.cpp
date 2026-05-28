@@ -109,6 +109,72 @@ public:
         return result;
     }
 
+    Color3f eval_3(const SurfaceInteraction3f &it, Mask active) const override {
+        MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+
+        Point2f uv = m_transform * it.uv;
+        dr::mask_t<Point2f> mask = (uv - dr::floor(uv)) > .5f;
+        Color3f result = 0.f;
+
+        Mask m0 = mask.x() == mask.y(),
+             m1 = !m0;
+
+        m0 &= active; m1 &= active;
+
+        if (dr::any_or<true>(m0))
+            dr::masked(result, m0) = m_color0->eval_3(it, m0);
+
+        if (dr::any_or<true>(m1))
+            dr::masked(result, m1) = m_color1->eval_3(it, m1);
+
+        return result;
+    }
+
+    FieldValueType out_type() const override {
+        FieldValueType type0 = m_color0->out_type(),
+                       type1 = m_color1->out_type();
+        uint32_t dim0 = m_color0->out_dim(),
+                 dim1 = m_color1->out_dim();
+
+        if (type0 == type1 && dim0 == dim1)
+            return type0;
+
+        uint32_t spectrum_dim = (uint32_t) dr::size_v<UnpolarizedSpectrum>;
+        bool spec0 = (type0 == FieldValueType::Float && dim0 == 1) ||
+                     (type0 == FieldValueType::Spectrum &&
+                      dim0 == spectrum_dim),
+             spec1 = (type1 == FieldValueType::Float && dim1 == 1) ||
+                     (type1 == FieldValueType::Spectrum &&
+                      dim1 == spectrum_dim);
+        if (spec0 && spec1)
+            return FieldValueType::Spectrum;
+
+        bool array0 = (type0 == FieldValueType::Color3 ||
+                       type0 == FieldValueType::Array3) && dim0 == 3,
+             array1 = (type1 == FieldValueType::Color3 ||
+                       type1 == FieldValueType::Array3) && dim1 == 3;
+        if (array0 && array1)
+            return type0 == FieldValueType::Array3 ||
+                   type1 == FieldValueType::Array3
+                       ? FieldValueType::Array3
+                       : FieldValueType::Color3;
+
+        return FieldValueType::Spectrum;
+    }
+
+    uint32_t out_dim() const override {
+        switch (out_type()) {
+            case FieldValueType::Float: return 1;
+            case FieldValueType::Spectrum:
+                return (uint32_t) dr::size_v<UnpolarizedSpectrum>;
+            case FieldValueType::Color3:
+            case FieldValueType::Array3:
+                return 3;
+            default:
+                return SurfaceField::out_dim();
+        }
+    }
+
     Float mean() const override {
         return .5f * (m_color0->mean() + m_color1->mean());
     }
