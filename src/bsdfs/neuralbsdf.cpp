@@ -27,10 +27,10 @@ Neural diffuse material (:monosp:`neuralbsdf`)
      explicit.
    - |exposed|, |differentiable|
 
-	 * - mode
-	   - |string|
-	   - Scattering model exposed by this plugin. Only ``diffuse`` is currently
-	     supported. (Default: ``diffuse``)
+ * - mode
+   - |string|
+   - Scattering model exposed by this plugin. Only ``diffuse`` is currently
+     supported. (Default: ``diffuse``)
 
 The neural BSDF owns scattering semantics while fields provide learned or
 tabulated reflectance data. The initial model is intentionally a diffuse BSDF:
@@ -52,16 +52,13 @@ public:
     NeuralBSDF(const Properties &props) : Base(props) {
         std::string_view mode = props.get<std::string_view>("mode", "diffuse");
         if (mode != "diffuse")
-            Throw("neuralbsdf: only the structured diffuse mode is supported. "
+            Throw("NeuralBSDF: only the structured diffuse mode is supported. "
                   "Arbitrary neural scattering values cannot define a "
                   "consistent sample() and pdf() contract.");
 
         m_reflectance = props.get_surface_field<Field>("reflectance");
-        if (!m_reflectance)
-            Throw("neuralbsdf: missing reflectance field.");
-
         if (m_reflectance->args_dim() != 0)
-            Throw("neuralbsdf diffuse mode requires an argument-free "
+            Throw("NeuralBSDF: diffuse mode requires an argument-free "
                   "reflectance field, got args_dim=%u.",
                   m_reflectance->args_dim());
 
@@ -74,7 +71,7 @@ public:
                       ((type == FieldValueType::Color3 && dim == 3) ||
                        (type == FieldValueType::Array3 && dim == 3)));
         if (!valid)
-            Throw("neuralbsdf: reflectance field must output Float[1], "
+            Throw("NeuralBSDF: reflectance field must output Float[1], "
                   "Spectrum[%u]%s. Got %s[%u].",
                   (uint32_t) dr::size_v<UnpolarizedSpectrum>,
                   is_spectral_v<Spectrum>
@@ -235,7 +232,7 @@ private:
                 if constexpr (is_monochromatic_v<Spectrum>)
                     value = luminance(color);
                 else if constexpr (is_spectral_v<Spectrum>)
-                    Throw("neuralbsdf: Color3 reflectance is invalid in "
+                    Throw("NeuralBSDF: Color3 reflectance is invalid in "
                           "spectral variants.");
                 else
                     value = color;
@@ -256,7 +253,7 @@ private:
                 if constexpr (is_monochromatic_v<Spectrum>)
                     value = luminance(color);
                 else if constexpr (is_spectral_v<Spectrum>)
-                    Throw("neuralbsdf: Array3 reflectance is invalid in "
+                    Throw("NeuralBSDF: Array3 reflectance is invalid in "
                           "spectral variants.");
                 else
                     value = color;

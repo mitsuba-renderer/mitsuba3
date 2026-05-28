@@ -25,7 +25,7 @@ D65 spectrum (:monosp:`d65`)
 
  * - (Nested plugin)
    - :paramtype:`texture`
-   - Underlying texture-role field or spectrum to be multiplied by D65.
+   - Underlying texture or spectrum to be multiplied by D65.
    - |exposed|, |differentiable|
 
  * - color
@@ -42,7 +42,7 @@ The D65 spectrum can be multiplied by a color value specified using the ``color`
 parameters.
 
 Alternatively, it is possible to modulate the D65 illuminant with a spectrally
-or\and spatially varying signal defined by a nested texture plugin. This is used
+or spatially varying signal defined by a nested texture plugin. This is used
 in many emitter plugins when the radiance quantity might be driven by a 2D
 texture but also needs to be multiplied with the D65 spectrum.
 

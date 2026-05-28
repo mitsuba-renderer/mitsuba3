@@ -46,7 +46,7 @@ If color-handling is desired, see the :ref:`spectrum-srgb <spectrum-srgb>` plugi
 
  */
 
-// Actualy ipmlementation, templated over the channel count.
+// Actual implementation, templated over the channel count.
 template <typename Float, typename Spectrum, size_t Channels>
 class RawConstantTextureImpl final : public SurfaceField<Float, Spectrum> {
 public:

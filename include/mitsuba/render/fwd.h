@@ -116,6 +116,8 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using SensorPtr              = dr::replace_scalar_t<Float, const Sensor *>;
     using EmitterPtr             = dr::replace_scalar_t<Float, const Emitter *>;
     using FieldPtr               = dr::replace_scalar_t<Float, const Field *>;
+    using TexturePtr             = dr::replace_scalar_t<Float, const Texture *>;
+    using VolumePtr              = dr::replace_scalar_t<Float, const Volume *>;
 };
 
 /**

@@ -21,7 +21,7 @@ public:
     using BaseField = mitsuba::Field<Float, Spectrum>;
     using Args = FieldArgs<Float>;
 
-    NB_TRAMPOLINE(Field, 50);
+    NB_TRAMPOLINE(Field, 51);
 
     PyField(const Properties &props) : Field(props) { }
 
@@ -281,6 +281,10 @@ public:
             return nb::cast<uint32_t>(
                 nb_trampoline.base().attr(ticket.key)());
         return BaseField::channel_count();
+    }
+
+    std::string to_string() const override {
+        NB_OVERRIDE(to_string);
     }
 
     typename BaseField::FloatStorage
