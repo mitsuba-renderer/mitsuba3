@@ -288,28 +288,34 @@ def test02_python_field_metadata_and_eval_dispatch_through_virtual_api(field_ad_
     assert field.supports_surface_queries()
     assert not field.supports_interaction_queries()
 
-    assert dr.allclose(field.eval_color3(si, args=[0.1, 0.2, 0.3, 0.4]),
+    assert dr.allclose(mi.Field.eval_color3(field, si,
+                                            args=[0.1, 0.2, 0.3, 0.4]),
                        [0.35, 0.95, 0.7])
-    assert dr.allclose(field.eval_color3(si, [0.1, 0.2, 0.3, 0.4]),
+    assert dr.allclose(mi.Field.eval_color3(field, si,
+                                            [0.1, 0.2, 0.3, 0.4]),
                        [0.35, 0.95, 0.7])
-    assert dr.allclose(field.eval(si, args=[0.1, 0.2, 0.3, 0.4]),
+    assert dr.allclose(mi.Field.eval(field, si, args=[0.1, 0.2, 0.3, 0.4]),
                        [0.35, 0.95, 0.7])
-    assert dr.allclose(field.eval_1(si, args=mi.ArrayXf([0.1, 0.2, 0.3, 0.4])),
+    assert dr.allclose(mi.Field.eval_1(field, si,
+                                       args=mi.ArrayXf([0.1, 0.2, 0.3, 0.4])),
                        0.35)
-    assert dr.allclose(field.eval_n(si, 3, args=[0.1, 0.2, 0.3, 0.4]),
+    assert dr.allclose(mi.Field.eval_n(field, si, 3,
+                                       args=[0.1, 0.2, 0.3, 0.4]),
                        [0.35, 0.95, 0.7])
 
     with pytest.raises(RuntimeError, match="args_dim|expected 4|got 0"):
-        field.eval(si)
+        mi.Field.eval(field, si)
     with pytest.raises(RuntimeError, match="args_dim|expected 4|got 0"):
-        field.eval_color3(si)
+        mi.Field.eval_1(field, si)
+    with pytest.raises(RuntimeError, match="args_dim|expected 4|got 0"):
+        mi.Field.eval_color3(field, si)
     with pytest.raises(RuntimeError, match="args_dim|4"):
-        field.eval_color3(si, args=[1.0, 2.0, 3.0])
+        mi.Field.eval_color3(field, si, args=[1.0, 2.0, 3.0])
     with pytest.raises(RuntimeError, match="args_dim|4"):
-        field.eval_n(si, 3, args=[1.0, 2.0, 3.0])
+        mi.Field.eval_n(field, si, 3, args=[1.0, 2.0, 3.0])
 
 
-def test02b_python_field_accepts_positional_active(field_ad_rgb_variant):
+def test02b_python_field_active_keyword(field_ad_rgb_variant):
     class ActiveField(mi.Field):
         def __init__(self):
             super().__init__(mi.Properties("active_field"))
@@ -349,10 +355,10 @@ def test02b_python_field_accepts_positional_active(field_ad_rgb_variant):
     field = ActiveField()
     si = surface_interaction()
 
-    assert dr.allclose(field.eval_1(si, True), 1.0)
-    assert dr.allclose(field.eval_1(si, False), 0.0)
-    assert dr.allclose(field.eval_n(si, 1, True), [1.0])
-    assert dr.allclose(field.eval_n(si, 1, False), [0.0])
+    assert dr.allclose(field.eval_1(si, active=True), 1.0)
+    assert dr.allclose(field.eval_1(si, active=False), 0.0)
+    assert dr.allclose(field.eval_n(si, 1, active=True), [1.0])
+    assert dr.allclose(field.eval_n(si, 1, active=False), [0.0])
 
     class ActiveColorField(mi.Field):
         def __init__(self):
@@ -387,8 +393,8 @@ def test02b_python_field_accepts_positional_active(field_ad_rgb_variant):
             return mi.Color3f(si.uv.x, si.uv.y, 1.0) & active
 
     color_field = ActiveColorField()
-    assert dr.allclose(color_field.eval_3(si, True), [0.25, 0.75, 1.0])
-    assert dr.allclose(color_field.eval_3(si, False), [0.0, 0.0, 0.0])
+    assert dr.allclose(color_field.eval_3(si, active=True), [0.25, 0.75, 1.0])
+    assert dr.allclose(color_field.eval_3(si, active=False), [0.0, 0.0, 0.0])
 
 
 def test03_python_field_subclass_hook_preserves_user_hooks(field_ad_rgb_variant):
@@ -436,9 +442,10 @@ def test03_python_field_subclass_hook_preserves_user_hooks(field_ad_rgb_variant)
 
     assert HookedField.label == "child"
     assert "HookedField" in HookedFieldBase.initialized_subclasses
-    assert dr.allclose(field.eval_color3(si, args=[0.5]), [0.75, 0.75, 1.0])
+    assert dr.allclose(mi.Field.eval_color3(field, si, args=[0.5]),
+                       [0.75, 0.75, 1.0])
     with pytest.raises(RuntimeError, match="args_dim|expected 1|got 0"):
-        field.eval_color3(si)
+        mi.Field.eval_color3(field, si)
 
 
 def test04_fieldptr_vectorized_fixed_and_generic_calls(field_ad_rgb_variant):
@@ -603,7 +610,12 @@ def test08_four_layer_nested_field_ad_matches_bilinear_weights(field_ad_rgb_vari
         )
     )
     params = mi.traverse(field)
-    dr.enable_grad(params["child.child.child.data"])
+    data_keys = [key for key in params.keys()
+                 if key == "data" or key.endswith(".data")]
+    assert len(data_keys) == 1
+    data_key = data_keys[0]
+
+    dr.enable_grad(params[data_key])
     params.update()
 
     si = surface_interaction()
@@ -613,8 +625,7 @@ def test08_four_layer_nested_field_ad_matches_bilinear_weights(field_ad_rgb_vari
 
     dr.backward(value)
     expected_grad = dr.full(mi.TensorXf, -0.375, shape=(2, 2, 1))
-    assert dr.allclose(dr.grad(params["child.child.child.data"]),
-                       expected_grad, atol=1e-6)
+    assert dr.allclose(dr.grad(params[data_key]), expected_grad, atol=1e-6)
 
 
 def test09_checkerboard_scalar_eval_matches_color_eval(variant_scalar_rgb):

@@ -94,6 +94,16 @@ def surface_interaction(width=1):
     return si
 
 
+def normalized_surface_interaction(width=5):
+    si = surface_interaction(width)
+    si.uv = mi.Point2f(
+        dr.linspace(mi.Float, 0.1, 0.9, width),
+        dr.linspace(mi.Float, 0.2, 0.8, width),
+    )
+    si.p = mi.Point3f(si.uv.x, si.uv.y, 0)
+    return si
+
+
 def interaction(width=1):
     it = dr.zeros(mi.Interaction3f, width)
     if width == 1:
@@ -247,7 +257,7 @@ def test07_neuralfield_backpropagates_to_network_and_encoding_params(field_ad_rg
     dr.enable_grad(params["encoding.params"])
 
     loss = dr.sum(field.eval_color3(
-        surface_interaction(width=5),
+        normalized_surface_interaction(width=5),
         args=[0.0, 0.0, 0.0, 0.0],
     ))
     dr.backward(loss)

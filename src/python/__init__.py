@@ -4,9 +4,7 @@ import sys as _sys
 import os as _os
 import drjit as _dr
 import logging
-import functools as _functools
 import importlib as _importlib
-import inspect as _inspect
 
 if _sys.version_info < (3, 9):
     raise ImportError("Mitsuba requires Python 3.9 or greater.")
@@ -40,179 +38,19 @@ with _dr.detail.scoped_rtld_deepbind():
     # Replaces 'mitsuba' in sys.modules with itself (mitsuba_alias)
     from . import mitsuba_alias
 
-class _ScalarFloat(float):
-    """Scalar variant ``mi.Float`` accepting vector-style constructor syntax."""
-
-    _mitsuba_scalar_float = True
-
-    def __new__(cls, *values):
-        if len(values) == 0:
-            value = 0.0
-        elif len(values) == 1 and isinstance(values[0], (list, tuple)):
-            value = values[0][0] if values[0] else 0.0
-        else:
-            value = values[0]
-        return float.__new__(cls, value)
-
-
-def _ScalarBool(*values):
-    """Scalar variant ``mi.Bool`` accepting vector-style constructor syntax."""
-
-    if len(values) == 0:
-        return False
-    if len(values) == 1 and isinstance(values[0], (list, tuple)):
-        return bool(values[0][0]) if values[0] else False
-    return bool(values[0])
-
-
-_ScalarBool._mitsuba_scalar_bool = True
-
-
-def _mitsuba_field_args_len(args):
-    if args is None:
-        return 0
-    if isinstance(args, (list, tuple)) or type(args).__name__ == "ArrayXf":
-        return len(args)
-    return 1
-
-
-def _mitsuba_is_active_argument(value):
-    if isinstance(value, bool):
-        return True
-    type_name = type(value).__name__
-    return type_name == "Bool" or type_name.endswith("Bool")
-
-
-def _mitsuba_wrap_field_method(fn, method_name):
-    """Wrap Python field overrides with the same argument validation as C++."""
-
-    if getattr(fn, "_mitsuba_args_checked", False):
-        return fn
-
-    try:
-        parameters = _inspect.signature(fn).parameters
-        accepts_field_args = "args" in parameters
-        accepts_active = "active" in parameters or any(
-            p.kind == _inspect.Parameter.VAR_KEYWORD
-            for p in parameters.values()
-        )
-    except (TypeError, ValueError):
-        accepts_field_args = True
-        accepts_active = True
-
-    @_functools.wraps(fn)
-    def wrapper(self, *args, **kwargs):
-        if not accepts_field_args:
-            if method_name == "eval_n" and len(args) >= 4:
-                field_args = args[2]
-                if _mitsuba_field_args_len(field_args) != 0:
-                    raise RuntimeError(
-                        "Field argument args_dim mismatch "
-                        f"(expected 0, got {_mitsuba_field_args_len(field_args)})."
-                    )
-                return fn(self, args[0], args[1], *args[3:], **kwargs)
-            elif method_name != "eval_n" and len(args) >= 3:
-                field_args = args[1]
-                if _mitsuba_field_args_len(field_args) != 0:
-                    raise RuntimeError(
-                        "Field argument args_dim mismatch "
-                        f"(expected 0, got {_mitsuba_field_args_len(field_args)})."
-                    )
-                return fn(self, args[0], *args[2:], **kwargs)
-            return fn(self, *args, **kwargs)
-
-        if accepts_active and "args" not in kwargs and "active" not in kwargs:
-            if (method_name == "eval_n" and len(args) == 3 and
-                    _mitsuba_is_active_argument(args[2])):
-                expected = int(self.args_dim())
-                if expected != 0:
-                    raise RuntimeError(
-                        f"Field argument args_dim mismatch "
-                        f"(expected {expected}, got 0)."
-                    )
-                return fn(self, args[0], args[1], active=args[2], **kwargs)
-            elif (method_name != "eval_n" and len(args) == 2 and
-                    _mitsuba_is_active_argument(args[1])):
-                expected = int(self.args_dim())
-                if expected != 0:
-                    raise RuntimeError(
-                        f"Field argument args_dim mismatch "
-                        f"(expected {expected}, got 0)."
-                    )
-                return fn(self, args[0], active=args[1], **kwargs)
-
-        field_args = kwargs.get("args", None)
-        if "args" not in kwargs:
-            if method_name == "eval_n" and len(args) >= 3:
-                field_args = args[2]
-            elif method_name != "eval_n" and len(args) >= 2:
-                field_args = args[1]
-
-        expected = int(self.args_dim())
-        actual = _mitsuba_field_args_len(field_args)
-        if actual != expected:
-            raise RuntimeError(
-                f"Field argument args_dim mismatch "
-                f"(expected {expected}, got {actual})."
-            )
-        return fn(self, *args, **kwargs)
-
-    wrapper._mitsuba_args_checked = True
-    return wrapper
-
-
-def _mitsuba_patch_field_class(mi):
-    """Install argument validation on future Python ``Field`` subclasses."""
-
-    field_cls = getattr(mi, "Field", None)
-    if field_cls is None or getattr(field_cls, "_mitsuba_args_patch", False):
-        return
-
-    eval_methods = (
-        "eval", "eval_1", "eval_color3", "eval_array2", "eval_array3",
-        "eval_spec", "eval_array6", "eval_3", "eval_6", "eval_n"
-    )
-    previous_init_subclass = field_cls.__dict__.get("__init_subclass__", None)
-
-    @classmethod
-    def __init_subclass__(cls, **kwargs):
-        if previous_init_subclass is not None:
-            previous_init_subclass.__get__(cls, cls)(**kwargs)
-        else:
-            super(field_cls, cls).__init_subclass__(**kwargs)
-
-        for name in eval_methods:
-            method = cls.__dict__.get(name, None)
-            if method is not None:
-                setattr(cls, name, _mitsuba_wrap_field_method(method, name))
-
-    field_cls.__init_subclass__ = __init_subclass__
-    field_cls._mitsuba_args_patch = True
-
-
-def _mitsuba_register_python_fields(mi):
-    if mi.variant() is None:
+def _mitsuba_register_python_fields(_old_variant=None, _new_variant=None):
+    if mitsuba_alias.variant() is None:
         return
     fields = _importlib.import_module("mitsuba.python.fields")
-    fields._register_variant_fields(mi)
+    fields._register_variant_fields(mitsuba_alias)
 
 
-def _mitsuba_patch_variant_aliases(mi):
-    """Reapply Python-side compatibility patches after each variant switch."""
+if not hasattr(mitsuba_alias, "_mitsuba_field_registration_callback"):
+    mitsuba_alias.detail.add_variant_callback(_mitsuba_register_python_fields)
+    mitsuba_alias._mitsuba_field_registration_callback = (
+        _mitsuba_register_python_fields
+    )
 
-    _mitsuba_patch_field_class(mi)
-
-
-if not hasattr(mitsuba_alias, "_mitsuba_original_set_variant"):
-    mitsuba_alias._mitsuba_original_set_variant = mitsuba_alias.set_variant
-
-    def _mitsuba_set_variant(*args):
-        mitsuba_alias._mitsuba_original_set_variant(*args)
-        _mitsuba_patch_variant_aliases(mitsuba_alias)
-        _mitsuba_register_python_fields(mitsuba_alias)
-
-    mitsuba_alias.set_variant = _mitsuba_set_variant
-    _mitsuba_patch_variant_aliases(mitsuba_alias)
-    _mitsuba_register_python_fields(mitsuba_alias)
+_mitsuba_register_python_fields()
 
 _ = mitsuba_alias # Removes unused variable warnings

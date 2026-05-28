@@ -294,6 +294,52 @@ def test15_plugin_manager_plugin_type(variant_scalar_rgb):
     assert pmgr.plugin_type('scene') == mi.ObjectType.Scene
 
 
+def test15b_plugin_type_defaults_to_active_python_variant(variant_cuda_ad_rgb):
+    pmgr = mi.PluginManager.instance()
+    name = "plugin_type_variant_field_test"
+
+    class VariantField(mi.Field):
+        def __init__(self, props):
+            mi.Field.__init__(self, props)
+
+        def out_type(self):
+            return mi.FieldValueType.Float
+
+        def domain(self):
+            return mi.FieldDomain.Surface
+
+        def out_dim(self):
+            return 1
+
+        def args_dim(self):
+            return 0
+
+        def supports_scalar(self):
+            return False
+
+        def supports_jit(self):
+            return True
+
+        def supports_surface_queries(self):
+            return True
+
+        def supports_interaction_queries(self):
+            return False
+
+        def eval_1(self, si, args=None, active=True):
+            return dr.select(active, mi.Float(1.0), mi.Float(0.0))
+
+    try:
+        mi.register_field(name, VariantField)
+    except RuntimeError as exc:
+        if "already" not in str(exc).lower():
+            raise
+
+    assert pmgr.plugin_type(name) == mi.ObjectType.Field
+    assert pmgr.plugin_type(name, variant_cuda_ad_rgb) == mi.ObjectType.Field
+    assert pmgr.plugin_type(name, "scalar_rgb") == mi.ObjectType.Unknown
+
+
 def test16_dictionary_like_interface(variant_scalar_rgb):
     """Test new dictionary-like methods and deprecation warnings"""
     from drjit.scalar import Array3f

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <drjit-core/nanostl.h>
+#include <mitsuba/core/logger.h>
 #include <mitsuba/core/object.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -92,9 +93,8 @@ public:
         ref<Object> object = create_object(props, T::Variant, T::Type);
         T *result = dynamic_cast<T *>(object.get());
         if (!result)
-            throw std::runtime_error(
-                "Type mismatch: instantiated plugin does not implement the "
-                "requested C++ interface.");
+            Throw("Type mismatch: instantiated plugin does not implement the "
+                  "requested C++ interface.");
         return ref<T>(result);
     }
 
