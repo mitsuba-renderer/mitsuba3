@@ -108,6 +108,18 @@ def test02_volume_and_field_tags_can_instantiate_gridvolume(variant_scalar_rgb, 
     assert dr.allclose(xml_volume.eval_array6(make_it((0.5, 0.5, 0.5))),
                        values)
 
+    xml = f"""<volume version="3.0.0" type="gridvolume">
+        <string name="filename" value="{volume_path}"/>
+        <boolean name="raw" value="true"/>
+        <string name="filter_type" value="nearest"/>
+        <string name="wrap_mode" value="clamp"/>
+        <float name="max_value" value="6"/>
+    </volume>"""
+    xml_volume = mi.load_string(xml)
+    assert isinstance(xml_volume, mi.Field)
+    assert dr.allclose(xml_volume.eval_array6(make_it((0.5, 0.5, 0.5))),
+                       values)
+
 
 def test03_role_tags_still_reject_incompatible_field_implementations(variant_scalar_rgb, tmpdir):
     volume_path = os.path.join(str(tmpdir), "role_volume.vol")

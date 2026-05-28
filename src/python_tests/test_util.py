@@ -162,6 +162,14 @@ def test02_traverse_update(variants_all_ad_rgb):
 
     params = mi.traverse(bsdf)
     assert len(params) == 3
+    assert (
+        params.flags("bsdf_tex_diff.tex_param_diff")
+        & mi.ParamFlags.Differentiable
+    )
+    assert not (
+        params.flags("bsdf_tex_diff.tex_param_scalar")
+        & mi.ParamFlags.Differentiable
+    )
 
     # Normal usage
     params["bsdf_tex_diff.tex_param_diff"][0] = 0

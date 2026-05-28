@@ -28,6 +28,7 @@ SHAPE_ORDERING = [
 
 BSDF_ORDERING = [
     'diffuse',
+    'neuralbsdf',
     'dielectric',
     'thindielectric',
     'roughdielectric',
@@ -137,6 +138,10 @@ VOLUME_ORDERING = [
     'gridvolume'
 ]
 
+FIELD_ORDERING = [
+    'sinusoidalfield'
+]
+
 
 def find_order_id(filename, ordering):
     f = os.path.split(filename)[-1].split('.')[0]
@@ -244,6 +249,7 @@ def generate(build_dir):
         ('emitters',    EMITTER_ORDERING, None,     None),
         ('sensors',     SENSOR_ORDERING,  None,     None),
         ('textures',    TEXTURE_ORDERING, 'fields', TEXTURE_ORDERING),
+        ('fields',      FIELD_ORDERING,   'fields', FIELD_ORDERING),
         ('spectra',     SPECTRUM_ORDERING, None,    None),
         ('integrators', INTEGRATOR_ORDERING, None,  None),
         ('samplers',    SAMPLER_ORDERING, None,     None),

@@ -845,7 +845,6 @@ protected:
 
         bool range_issue = false;
         using FloatStorage = DynamicBuffer<Float>;
-        using StoredTypeArray= DynamicBuffer<StoredType>;
         FloatStorage values;
 
         if (channels == 3) {
