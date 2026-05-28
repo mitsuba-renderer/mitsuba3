@@ -710,11 +710,11 @@
 
 .. autofunction:: mitsuba.ad.largesteps.mesh_laplacian
 
-.. autoclass:: mitsuba.ad.loaders.Rayloader
+.. autoclass:: mitsuba.ad.loaders.FlatSensor
+
+.. autoclass:: mitsuba.ad.loaders.RayDataLoader
 
 .. autofunction:: mitsuba.ad.loaders.Tuple
-
-.. autoclass:: mitsuba.ad.loaders.flat_sensor
 
 .. autofunction:: mitsuba.chi2.BSDFAdapter
 

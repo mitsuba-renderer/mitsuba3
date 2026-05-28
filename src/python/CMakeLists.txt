@@ -320,5 +320,9 @@ if (UNIX)
     `find ${MKDOC_PATH}/render -name '*.h' ! -name fwd.h -print`
     `find ${MKDOC_PATH}/ui -name '*.h' ! -name fwd.h -print`
     -o ${MKDOC_PATH}/python/docstr.h
+    # pybind11_mkdoc can emit duplicate symbols when an overload suffix
+    # collides with a real Mitsuba method name, e.g. eval() vs. eval_3().
+    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/deduplicate_docstr.py
+            ${MKDOC_PATH}/python/docstr.h
   )
 endif()
