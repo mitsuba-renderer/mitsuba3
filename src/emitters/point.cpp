@@ -207,7 +207,7 @@ public:
     MI_DECLARE_CLASS(PointLight)
 private:
     ref<Field> m_intensity;
-    field<Point3f> m_position;
+    synced<Point3f> m_position;
 
     MI_TRAVERSE_CB(Base, m_intensity, m_position)
 };

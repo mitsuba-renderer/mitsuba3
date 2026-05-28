@@ -745,9 +745,9 @@ public:
 
 private:
     /// Center in world-space
-    field<Point3f> m_center;
+    synced<Point3f> m_center;
     /// Radius in world-space
-    field<Float> m_radius;
+    synced<Float> m_radius;
     Float m_inv_surface_area;
     bool m_flip_normals;
 

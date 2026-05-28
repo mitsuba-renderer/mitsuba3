@@ -1,20 +1,20 @@
 #pragma once
 
-#include <mitsuba/core/field.h>
+#include <mitsuba/core/synced.h>
 #include <nanobind/nanobind.h>
 
 NAMESPACE_BEGIN(NB_NAMESPACE)
 NAMESPACE_BEGIN(detail)
 
 /**
- * \brief Type caster for \c mitsuba::field<...> values
+ * \brief Type caster for \c mitsuba::synced<...> values
  *
  * The caster unwraps the device value when converting from C++ to Python and
- * wraps it back into a mirrored field value when converting from Python to C++.
+ * wraps it back into a mirrored synced value when converting from Python to C++.
  */
 template <typename DeviceType, typename HostType>
-struct type_caster<mitsuba::field<DeviceType, HostType>> {
-    using Value                      = mitsuba::field<DeviceType, HostType>;
+struct type_caster<mitsuba::synced<DeviceType, HostType>> {
+    using Value                      = mitsuba::synced<DeviceType, HostType>;
     using Caster                     = make_caster<DeviceType>;
     template <typename T> using Cast = Value;
     static constexpr auto Name       = Caster::Name;
