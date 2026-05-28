@@ -3,17 +3,17 @@
 
 MI_PY_EXPORT(FieldTypes) {
     nb::enum_<FieldValueType>(
-        m, "FieldValueType", "Type of float channel tuple returned by a Field")
-        .value("Float", FieldValueType::Float)
-        .value("Spectrum", FieldValueType::Spectrum)
-        .value("Color3", FieldValueType::Color3)
-        .value("Array2", FieldValueType::Array2)
-        .value("Array3", FieldValueType::Array3)
-        .value("Features", FieldValueType::Features);
+        m, "FieldValueType", D(FieldValueType))
+        .def_value(FieldValueType, Float)
+        .def_value(FieldValueType, Spectrum)
+        .def_value(FieldValueType, Color3)
+        .def_value(FieldValueType, Array2)
+        .def_value(FieldValueType, Array3)
+        .def_value(FieldValueType, Features);
 
     nb::enum_<FieldDomain>(
-        m, "FieldDomain", "Interaction record types accepted by a Field")
-        .value("Surface", FieldDomain::Surface)
-        .value("Interaction", FieldDomain::Interaction)
-        .value("SurfaceAndInteraction", FieldDomain::SurfaceAndInteraction);
+        m, "FieldDomain", D(FieldDomain))
+        .def_value(FieldDomain, Surface)
+        .def_value(FieldDomain, Interaction)
+        .def_value(FieldDomain, SurfaceAndInteraction);
 }

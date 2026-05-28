@@ -39,6 +39,10 @@ def grid_field_dict(channels=6, **kwargs):
     return result
 
 
+def encoding_precision_for_ad(variant):
+    return "fp32" if variant.startswith("cuda_ad_") else "fp16"
+
+
 def encoding_dict(plugin="hashgridfield", input_dim=2, out_dim=8, **kwargs):
     result = {
         "type": plugin,
@@ -210,7 +214,9 @@ def test04_bitmap_field_data_can_be_optimized(field_ad_rgb_variant):
 def test05_trainable_encoding_field_params_receive_gradients(
     field_ad_rgb_variant, plugin
 ):
-    field = mi.load_dict(encoding_dict(plugin))
+    field = mi.load_dict(encoding_dict(
+        plugin, precision=encoding_precision_for_ad(field_ad_rgb_variant)
+    ))
     params = mi.traverse(field)
     dr.enable_grad(params["params"])
 
@@ -248,7 +254,12 @@ def test06_sinusoidalfield_has_coordinate_ad_but_no_trainable_params(field_ad_rg
 
 
 def test07_neuralfield_backpropagates_to_network_and_encoding_params(field_ad_rgb_variant):
-    field = mi.load_dict(neural_field_dict())
+    field = mi.load_dict(neural_field_dict(
+        encoding=encoding_dict(
+            "hashgridfield",
+            precision=encoding_precision_for_ad(field_ad_rgb_variant),
+        )
+    ))
     params = mi.traverse(field)
     assert "network_weights" in params
     assert "encoding.params" in params

@@ -134,7 +134,7 @@ public:
         uint32_t dim = out_dim();
         if (type != FieldValueType::Features || dim != 6)
             Throw("VolumeAdapter::eval_array6(): expected Features[6], got "
-                  "a different field output.");
+                  "%s[%u].", field_value_type_name(type), dim);
         return m_volume->eval_array6(static_cast<const Interaction3f &>(si),
                                      Args{}, active);
     }

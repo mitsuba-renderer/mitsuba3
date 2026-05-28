@@ -59,6 +59,7 @@ public:
         m_color0 = props.get_surface_field<Field>("color0", .4f);
         m_color1 = props.get_surface_field<Field>("color1", .2f);
         m_transform = props.get<ScalarAffineTransform3f>("to_uv", ScalarAffineTransform3f());
+        (void) resolve_output_type();
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -131,35 +132,7 @@ public:
     }
 
     FieldValueType out_type() const override {
-        FieldValueType type0 = m_color0->out_type(),
-                       type1 = m_color1->out_type();
-        uint32_t dim0 = m_color0->out_dim(),
-                 dim1 = m_color1->out_dim();
-
-        if (type0 == type1 && dim0 == dim1)
-            return type0;
-
-        uint32_t spectrum_dim = (uint32_t) dr::size_v<UnpolarizedSpectrum>;
-        bool spec0 = (type0 == FieldValueType::Float && dim0 == 1) ||
-                     (type0 == FieldValueType::Spectrum &&
-                      dim0 == spectrum_dim),
-             spec1 = (type1 == FieldValueType::Float && dim1 == 1) ||
-                     (type1 == FieldValueType::Spectrum &&
-                      dim1 == spectrum_dim);
-        if (spec0 && spec1)
-            return FieldValueType::Spectrum;
-
-        bool array0 = (type0 == FieldValueType::Color3 ||
-                       type0 == FieldValueType::Array3) && dim0 == 3,
-             array1 = (type1 == FieldValueType::Color3 ||
-                       type1 == FieldValueType::Array3) && dim1 == 3;
-        if (array0 && array1)
-            return type0 == FieldValueType::Array3 ||
-                   type1 == FieldValueType::Array3
-                       ? FieldValueType::Array3
-                       : FieldValueType::Color3;
-
-        return FieldValueType::Spectrum;
+        return resolve_output_type();
     }
 
     uint32_t out_dim() const override {
@@ -192,7 +165,43 @@ public:
     }
 
     MI_DECLARE_CLASS(Checkerboard)
+
 protected:
+    FieldValueType resolve_output_type() const {
+        FieldValueType type0 = m_color0->out_type(),
+                       type1 = m_color1->out_type();
+        uint32_t dim0 = m_color0->out_dim(),
+                 dim1 = m_color1->out_dim();
+
+        uint32_t spectrum_dim = (uint32_t) dr::size_v<UnpolarizedSpectrum>;
+        bool scalar0 = type0 == FieldValueType::Float && dim0 == 1,
+             scalar1 = type1 == FieldValueType::Float && dim1 == 1,
+             spec0 = type0 == FieldValueType::Spectrum && dim0 == spectrum_dim,
+             spec1 = type1 == FieldValueType::Spectrum && dim1 == spectrum_dim;
+
+        if (scalar0 && scalar1)
+            return FieldValueType::Float;
+        if ((scalar0 || spec0) && (scalar1 || spec1))
+            return FieldValueType::Spectrum;
+
+        bool color0 = type0 == FieldValueType::Color3 && dim0 == 3,
+             color1 = type1 == FieldValueType::Color3 && dim1 == 3,
+             array0 = type0 == FieldValueType::Array3 && dim0 == 3,
+             array1 = type1 == FieldValueType::Array3 && dim1 == 3;
+        if (color0 && color1)
+            return FieldValueType::Color3;
+        if (array0 && array1)
+            return FieldValueType::Array3;
+        if ((color0 || array0) && (color1 || array1))
+            return FieldValueType::Array3;
+
+        Throw("Checkerboard: color0 and color1 have incompatible field outputs "
+              "%s[%u] and %s[%u]. Expected two scalar/spectral fields or two "
+              "3-channel color/vector fields.",
+              field_value_type_name(type0), dim0, field_value_type_name(type1),
+              dim1);
+    }
+
     ref<Field> m_color0;
     ref<Field> m_color1;
     ScalarAffineTransform3f m_transform;

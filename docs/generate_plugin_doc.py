@@ -139,7 +139,7 @@ VOLUME_ORDERING = [
 ]
 
 FIELD_ORDERING = [
-    'sinusoidalfield'
+    'sinusoidal'
 ]
 
 

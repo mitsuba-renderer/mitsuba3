@@ -307,7 +307,9 @@ def test13_neural_field_traversal_and_update_are_preserved(field_ad_rgb_variant)
 
     assert "network_weights" in params
     assert any("encoding" in key for key in params.keys())
-    assert params.flags("network_weights") & mi.ParamFlags.Differentiable
+    flags = params.flags("network_weights")
+    assert (flags & mi.ParamFlags.NonDifferentiable) == 0
+    assert (flags & mi.ParamFlags.ReadOnly) == 0
 
     si = surface_interaction(width=8)
     args = [0.0, 0.0, 0.0, 0.0]

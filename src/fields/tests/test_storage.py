@@ -284,7 +284,9 @@ def test06_storage_field_traversal_and_parameters_changed_update_storage(field_a
     params = mi.traverse(field)
 
     assert "data" in params
-    assert params.flags("data") & mi.ParamFlags.Differentiable
+    flags = params.flags("data")
+    assert (flags & mi.ParamFlags.NonDifferentiable) == 0
+    assert (flags & mi.ParamFlags.ReadOnly) == 0
 
     si = surface_interaction()
     before = field.eval_1(si)

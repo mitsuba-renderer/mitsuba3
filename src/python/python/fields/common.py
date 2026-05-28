@@ -49,10 +49,10 @@ def _field_value_type(mi, value: str):
         "Array3": mi.FieldValueType.Array3,
         "Features": mi.FieldValueType.Features,
     }
-    try:
-        return mapping[str(value)]
-    except KeyError:
+    key = str(value)
+    if key not in mapping:
         raise RuntimeError(f'Invalid field output type "{value}".') from None
+    return mapping[key]
 
 
 def _field_domain(mi, value: str):
@@ -61,10 +61,10 @@ def _field_domain(mi, value: str):
         "Interaction": mi.FieldDomain.Interaction,
         "SurfaceAndInteraction": mi.FieldDomain.SurfaceAndInteraction,
     }
-    try:
-        return mapping[str(value)]
-    except KeyError:
+    key = str(value)
+    if key not in mapping:
         raise RuntimeError(f'Invalid field domain "{value}".') from None
+    return mapping[key]
 
 
 def _semantic_dim(mi, out_type) -> int:

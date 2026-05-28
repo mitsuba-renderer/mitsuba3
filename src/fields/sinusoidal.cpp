@@ -16,17 +16,17 @@ Sinusoidal field (:monosp:`sinusoidalfield`)
 .. pluginparameters::
 
  * - input_dim
-   - |integer|
+   - |int|
    - Number of coordinates encoded from the interaction record. A value of 2
      conventionally uses surface UV coordinates, while 3 uses position.
      (Default: 2)
 
  * - out_dim
-   - |integer|
+   - |int|
    - Number of feature channels produced by the encoding.
 
  * - n_frequencies
-   - |integer|
+   - |int|
    - Number of sinusoidal frequency bands.
 
  * - min_frequency

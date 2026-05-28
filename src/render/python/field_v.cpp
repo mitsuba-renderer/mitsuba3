@@ -1154,23 +1154,22 @@ MI_PY_EXPORT(Field) {
     using PyField = PyField<Float, Spectrum>;
     using Properties = mitsuba::Properties;
 
-    auto field = nb::class_<Field, Object, PyField>(
-        m, "Field", "Base class of all field implementations")
-        .def(nb::init<const Properties &>(), "props"_a)
+    auto field = nb::class_<Field, Object, PyField>(m, "Field", D(Field))
+        .def(nb::init<const Properties &>(), "props"_a, D(Field, Field))
         .def_static("D65",
             nb::overload_cast<ScalarFloat>(&Field::D65),
-            "scale"_a = 1.f)
+            "scale"_a = 1.f, D(Field, D65))
         .def_static("D65",
             nb::overload_cast<ref<Field>>(&Field::D65),
-            "field"_a)
-        .def("out_type", &Field::out_type)
-        .def("domain", &Field::domain)
-        .def("out_dim", &Field::out_dim)
-        .def("args_dim", &Field::args_dim)
-        .def("supports_scalar", &Field::supports_scalar)
-        .def("supports_jit", &Field::supports_jit)
-        .def("supports_surface_queries", &Field::supports_surface_queries)
-        .def("supports_interaction_queries", &Field::supports_interaction_queries)
+            "field"_a, D(Field, D65, 2))
+        .def_method(Field, out_type)
+        .def_method(Field, domain)
+        .def_method(Field, out_dim)
+        .def_method(Field, args_dim)
+        .def_method(Field, supports_scalar)
+        .def_method(Field, supports_jit)
+        .def_method(Field, supports_surface_queries)
+        .def_method(Field, supports_interaction_queries)
         .def("__repr__", &Field::to_string);
 
     bind_field_generic<Field *>(field);

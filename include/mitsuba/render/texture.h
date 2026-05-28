@@ -311,7 +311,7 @@ MI_EXTERN_CLASS(SurfaceField)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Enables vectorized method calls on Dr.Jit arrays of Textures
+//! @{ \name Enables vectorized method calls on Dr.Jit arrays of surface fields
 // -----------------------------------------------------------------------
 
 DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::SurfaceField)
