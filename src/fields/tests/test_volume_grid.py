@@ -115,7 +115,7 @@ def test06_eval_per_channel(variants_all_rgb, tmpdir):
     assert dr.allclose(mi.Field.eval_n(vol, it, 6, active=False), [0.0] * 6)
 
 
-def test07_parameter_update_rejects_channel_count_changes(variant_scalar_rgb):
+def test07_parameter_update_allows_resolution_change(variant_scalar_rgb):
     vol = mi.load_dict({
         "type": "gridvolume",
         "data": mi.TensorXf([1.0], shape=(1, 1, 1, 1)),
@@ -138,12 +138,24 @@ def test07_parameter_update_rejects_channel_count_changes(variant_scalar_rgb):
     assert dr.allclose(vol.max_per_channel(), [2.0])
     assert dr.allclose(mi.Field.eval_n(vol, it, 1), [2.0])
 
+    params["data"] = mi.TensorXf([3.0, 4.0], shape=(2, 1, 1, 1))
+    params.update()
+
+    assert tuple(vol.resolution()) == (1, 1, 2)
+    assert vol.out_dim() == 1
+    assert vol.channel_count() == 1
+    assert dr.allclose(vol.max_per_channel(), [4.0])
+    it.p = mi.Point3f(0.5, 0.5, 0.25)
+    assert dr.allclose(mi.Field.eval_n(vol, it, 1), [3.0])
+    it.p = mi.Point3f(0.5, 0.5, 0.75)
+    assert dr.allclose(mi.Field.eval_n(vol, it, 1), [4.0])
+
     params["data"] = mi.TensorXf([1.0, 2.0], shape=(1, 1, 1, 2))
-    with pytest.raises(RuntimeError, match="resolution|channel count|traversal"):
+    with pytest.raises(RuntimeError, match="channels.*not supported"):
         params.update()
 
 
-def test08_parameter_update_rejects_cuda_metadata_changes(variant_cuda_ad_rgb):
+def test08_parameter_update_allows_cuda_resolution_change(variant_cuda_ad_rgb):
     vol = mi.load_dict({
         "type": "gridvolume",
         "data": mi.TensorXf([1.0] * 48, shape=(2, 2, 2, 6)),
@@ -158,7 +170,7 @@ def test08_parameter_update_rejects_cuda_metadata_changes(variant_cuda_ad_rgb):
 
     params = mi.traverse(vol)
     params["data"] = mi.TensorXf([2.0] * 24, shape=(2, 2, 2, 3))
-    with pytest.raises(RuntimeError, match="resolution|channel count|traversal"):
+    with pytest.raises(RuntimeError, match="channels.*not supported"):
         params.update()
 
     assert vol.out_type() == mi.FieldValueType.Features
@@ -168,5 +180,9 @@ def test08_parameter_update_rejects_cuda_metadata_changes(variant_cuda_ad_rgb):
     params["data"] = mi.TensorXf([3.0] * 48, shape=(2, 2, 2, 6))
     params.update()
     params["data"] = mi.TensorXf([4.0] * 72, shape=(3, 2, 2, 6))
-    with pytest.raises(RuntimeError, match="resolution|channel count|traversal"):
-        params.update()
+    params.update()
+
+    assert tuple(vol.resolution()) == (2, 2, 3)
+    assert vol.out_type() == mi.FieldValueType.Features
+    assert vol.out_dim() == 6
+    assert vol.channel_count() == 6

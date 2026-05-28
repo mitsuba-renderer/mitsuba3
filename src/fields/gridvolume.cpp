@@ -331,31 +331,22 @@ public:
                       to_string(), tensor.ndim());
 
             const size_t *old_shape = m_texture.shape();
-            for (size_t i = 0; i < 4; ++i) {
-                if (tensor.shape(i) != old_shape[i])
-                    Throw("parameters_changed(): The volume data %s was changed "
-                          "from shape [%zu, %zu, %zu, %zu] to "
-                          "[%zu, %zu, %zu, %zu]. Changing volume resolution or "
-                          "channel count through traversal is not supported.",
-                          to_string(),
-                          old_shape[0], old_shape[1], old_shape[2], old_shape[3],
-                          tensor.shape(0), tensor.shape(1), tensor.shape(2),
-                          tensor.shape(3));
-            }
-
-            const size_t storage_channels = old_shape[3];
-            const size_t expected_size = (size_t) old_shape[0] *
-                                         (size_t) old_shape[1] *
-                                         (size_t) old_shape[2] *
-                                         storage_channels;
-            size_t value_size = dr::width(tensor.array());
-            if (value_size != expected_size)
+            const size_t storage_channels = tensor.shape(3);
+            if (storage_channels != old_shape[3])
                 Throw("parameters_changed(): The volume data %s was changed "
-                      "to have %zu value(s), expected %zu. Changing volume "
-                      "resolution or channel count through traversal is not "
-                      "supported.", to_string(), value_size, expected_size);
+                      "from %zu to %zu channels, which is not supported.",
+                      to_string(), old_shape[3], storage_channels);
 
-            m_texture.update_inplace();
+            bool shape_changed = tensor.shape(0) != old_shape[0] ||
+                                 tensor.shape(1) != old_shape[1] ||
+                                 tensor.shape(2) != old_shape[2];
+
+            if (shape_changed) {
+                TensorXf updated_tensor(tensor);
+                m_texture.set_tensor(updated_tensor);
+            } else {
+                m_texture.update_inplace();
+            }
 
             const size_t channels = nchannels();
             if (channels != 1 && channels != 3 && channels != 6)

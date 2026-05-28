@@ -83,6 +83,8 @@ def make_si():
     si.n = mi.Normal3f(0, 0, 1)
     si.wi = mi.Vector3f(0, 0, 1)
     si.sh_frame = mi.Frame3f(si.n)
+    if mi.is_spectral:
+        si.wavelengths = 500
     return si
 
 
@@ -260,7 +262,10 @@ def test07_neuralbsdf_matches_diffuse_in_polarized_variants(variants_all_spectra
         pytest.skip("polarized spectral variant not selected")
 
     reflectance = (0.2, 0.4, 0.6)
-    neural = mi.load_dict(neuralbsdf_dict(mi.Color3f(*reflectance)))
+    neural = mi.load_dict(neuralbsdf_dict({
+        "type": "rgb",
+        "value": reflectance,
+    }))
     diffuse = mi.load_dict({
         "type": "diffuse",
         "reflectance": {"type": "rgb", "value": reflectance},
