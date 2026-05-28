@@ -3629,6 +3629,78 @@ static const char *__doc_mitsuba_Endpoint_traverse_1_cb_rw = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_world_transform = R"doc(Return the local space to world space transformation)doc";
 
+static const char *__doc_mitsuba_Field =
+R"doc(Base class of all field implementations.
+
+A field evaluates float-valued data at renderer interaction records.
+The input can be a SurfaceInteraction3f, a generic Interaction3f, and
+an optional array of user-provided float arguments.)doc";
+
+static const char *__doc_mitsuba_FieldDomain =
+R"doc(Interaction record types accepted by a Field.)doc";
+
+static const char *__doc_mitsuba_FieldDomain_Interaction =
+R"doc(Generic 3D interactions only)doc";
+
+static const char *__doc_mitsuba_FieldDomain_Surface =
+R"doc(Surface interactions only)doc";
+
+static const char *__doc_mitsuba_FieldDomain_SurfaceAndInteraction =
+R"doc(Both surface and generic 3D interactions)doc";
+
+static const char *__doc_mitsuba_FieldValueType =
+R"doc(Type of float channel tuple returned by a Field.)doc";
+
+static const char *__doc_mitsuba_FieldValueType_Array2 =
+R"doc(A two-channel float array)doc";
+
+static const char *__doc_mitsuba_FieldValueType_Array3 =
+R"doc(A three-channel float array)doc";
+
+static const char *__doc_mitsuba_FieldValueType_Color3 =
+R"doc(A three-channel color value)doc";
+
+static const char *__doc_mitsuba_FieldValueType_Features =
+R"doc(A variable-length float array)doc";
+
+static const char *__doc_mitsuba_FieldValueType_Float =
+R"doc(A single scalar channel)doc";
+
+static const char *__doc_mitsuba_FieldValueType_Spectrum =
+R"doc(An unpolarized spectral value)doc";
+
+static const char *__doc_mitsuba_Field_D65 =
+R"doc(Convenience function returning the standard D65 illuminant field.)doc";
+
+static const char *__doc_mitsuba_Field_D65_2 =
+R"doc(Convenience function to create a product field with the D65 illuminant.)doc";
+
+static const char *__doc_mitsuba_Field_Field = R"doc()doc";
+
+static const char *__doc_mitsuba_Field_args_dim =
+R"doc(Return the number of optional argument channels.)doc";
+
+static const char *__doc_mitsuba_Field_domain =
+R"doc(Return the interaction record type accepted by this field.)doc";
+
+static const char *__doc_mitsuba_Field_out_dim =
+R"doc(Return the number of output channels.)doc";
+
+static const char *__doc_mitsuba_Field_out_type =
+R"doc(Return the semantic output type of this field.)doc";
+
+static const char *__doc_mitsuba_Field_supports_interaction_queries =
+R"doc(Return whether this field supports Interaction3f queries.)doc";
+
+static const char *__doc_mitsuba_Field_supports_jit =
+R"doc(Return whether this field supports JIT Mitsuba variants.)doc";
+
+static const char *__doc_mitsuba_Field_supports_scalar =
+R"doc(Return whether this field supports scalar Mitsuba variants.)doc";
+
+static const char *__doc_mitsuba_Field_supports_surface_queries =
+R"doc(Return whether this field supports SurfaceInteraction3f queries.)doc";
+
 static const char *__doc_mitsuba_FileResolver =
 R"doc(Simple class for resolving paths on Linux/Windows/Mac OS
 
@@ -6126,6 +6198,8 @@ allow its usage in macros that appear before the full definition.)doc";
 static const char *__doc_mitsuba_ObjectType_BSDF = R"doc(A bidirectional reflectance distribution function)doc";
 
 static const char *__doc_mitsuba_ObjectType_Emitter = R"doc(Emits radiance, subclasses Emitter)doc";
+
+static const char *__doc_mitsuba_ObjectType_Field = R"doc(A field data source)doc";
 
 static const char *__doc_mitsuba_ObjectType_Film = R"doc(Storage representation of the sensor)doc";
 
