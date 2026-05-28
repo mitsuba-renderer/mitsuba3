@@ -59,6 +59,8 @@ public:
         m_surface_area = 4.f * dr::Pi<ScalarFloat>;
 
         m_radiance = props.get_emissive_surface_field<Field>("radiance", 1.f);
+        if constexpr (is_spectral_v<Spectrum>)
+            require_field_spectral_evaluable(m_radiance.get(), "radiance");
 
         if (m_radiance->is_spatially_varying())
             Throw("Expected a non-spatially varying radiance spectra!");

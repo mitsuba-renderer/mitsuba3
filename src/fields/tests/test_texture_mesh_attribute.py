@@ -41,6 +41,8 @@ def test01_eval(variant_scalar_rgb):
         "type" : "mesh_attribute",
         "name" : "vertex_color",
     })
+    assert texture.out_type() == mi.FieldValueType.Spectrum
+    assert texture.out_dim() == dr.size_v(mi.UnpolarizedSpectrum)
 
     for u, v in [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.3, 0.4), (0.5, 0.5)]:
         value = texture.eval(mesh.eval_parameterization([u, v]))
@@ -59,6 +61,8 @@ def test01_eval(variant_scalar_rgb):
         "type" : "mesh_attribute",
         "name" : "vertex_mono",
     })
+    assert texture.out_type() == mi.FieldValueType.Float
+    assert texture.out_dim() == 1
 
     for u, v in [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.3, 0.4), (0.5, 0.5)]:
         a, b, c, d = [1.0, 2.0, 3.0, 4.0]

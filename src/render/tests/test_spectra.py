@@ -80,6 +80,19 @@ def test04b_d65_rejects_non_spectrum_direct_field_children(variant_scalar_spectr
             },
         })
 
+    d65 = mi.load_dict({ "type": "d65" })
+    modulated = mi.load_dict({
+        "type": "d65",
+        "scale": 2.0,
+        "nested": {
+            "type": "rawconstant",
+            "value": 0.5,
+        },
+    })
+    si = mi.SurfaceInteraction3f(mi.PositionSample3f(),
+                                 [350, 456, 700, 840])
+    assert dr.allclose(modulated.eval(si), d65.eval(si))
+
 
 def test04c_rawconstant_field_metadata(variant_scalar_rgb):
     scalar = mi.load_dict({

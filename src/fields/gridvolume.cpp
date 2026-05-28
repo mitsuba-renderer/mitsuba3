@@ -499,6 +499,11 @@ public:
     }
 
     void eval_n(const Interaction3f &it, Float *out, Mask active = true) const override {
+        if (out_type() == FieldValueType::Spectrum) {
+            eval_n(it, out, out_dim(), typename Base::Args{}, active);
+            return;
+        }
+
         if (dr::none_or<false>(active)) {
             for (size_t i = 0; i < nchannels(); ++i)
                 out[i] = 0.f;

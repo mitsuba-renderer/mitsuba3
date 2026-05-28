@@ -88,14 +88,9 @@ public:
             ref<Object> texture =
                 make_texture_object_for_variant(Base::Variant, object);
             if (FieldType *field = dynamic_cast<FieldType *>(texture.get())) {
-                if constexpr (is_spectral_v<Spectrum>) {
-                    uint32_t dim = (uint32_t) dr::size_v<UnpolarizedSpectrum>;
-                    if (field->out_type() != FieldValueType::Spectrum ||
-                        field->out_dim() != dim)
-                        Throw("D65 nested texture must provide Spectrum[%u] in "
-                              "spectral variants, got output dimension %u.",
-                              dim, field->out_dim());
-                }
+                if constexpr (is_spectral_v<Spectrum>)
+                    require_field_spectral_evaluable(field,
+                                                     "D65 nested texture");
                 m_nested_texture = field;
             } else {
                 Throw("Child object should be a texture object.");

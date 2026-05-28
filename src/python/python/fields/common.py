@@ -237,7 +237,9 @@ def _make_drjit_feature_field(
                 )
             _validate_args(plugin_name, 0, args)
             encoded = self._encoding(self._coords(record), active)
-            return [dr.select(active, encoded[i], 0) for i in range(6)]
+            return mi.ArrayXf(
+                [dr.select(active, encoded[i], 0) for i in range(6)]
+            )
 
         def traverse(self, cb):
             cb.put("params", self._encoding.data, mi.ParamFlags.Differentiable)
