@@ -1,4 +1,5 @@
 #include <mitsuba/core/properties.h>
+#include <mitsuba/core/string.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/field.h>
@@ -26,11 +27,10 @@ Neural diffuse material (:monosp:`neuralbsdf`)
      explicit.
    - |exposed|, |differentiable|
 
- * - mode
-   - |string|
-   - Scattering model exposed by this plugin. The initial public mode is a
-     field-modulated diffuse model. More expressive modes must define matching
-     value, sampling, and PDF outputs before becoming public.
+	 * - mode
+	   - |string|
+	   - Scattering model exposed by this plugin. Only ``diffuse`` is currently
+	     supported. (Default: ``diffuse``)
 
 The neural BSDF owns scattering semantics while fields provide learned or
 tabulated reflectance data. The initial model is intentionally a diffuse BSDF:
@@ -193,7 +193,7 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "NeuralBSDF[" << std::endl
-            << "  reflectance = " << m_reflectance << std::endl
+            << "  reflectance = " << string::indent(m_reflectance) << std::endl
             << "]";
         return oss.str();
     }

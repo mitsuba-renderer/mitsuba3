@@ -25,7 +25,7 @@ D65 spectrum (:monosp:`d65`)
 
  * - (Nested plugin)
    - :paramtype:`texture`
-   - Underlying texture/spectra to be multiplied by D65.
+   - Underlying texture-role field or spectrum to be multiplied by D65.
    - |exposed|, |differentiable|
 
  * - color
@@ -84,7 +84,8 @@ public:
         for (auto &prop : props.objects()) {
             ref<Object> object = prop.get<ref<Object>>();
             if (m_nested_texture)
-                Throw("Only a single texture child object can be specified.");
+                Throw("Only a single texture-role field child object can be "
+                      "specified.");
             ref<Object> texture =
                 make_texture_object_for_variant(Base::Variant, object);
             if (FieldType *field = dynamic_cast<FieldType *>(texture.get())) {
@@ -93,14 +94,14 @@ public:
                                                      "D65 nested texture");
                 m_nested_texture = field;
             } else {
-                Throw("Child object should be a texture object.");
+                Throw("Child object should be a texture-role field object.");
             }
         }
 
         if (props.has_property("color")) {
             if (m_nested_texture)
-                Throw("Color and child texture object shouldn't be specified at "
-                      "the same time.");
+                Throw("Color and child texture-role field object shouldn't "
+                      "be specified at the same time.");
 
             ScalarColor3f color = props.get<ScalarColor3f>("color");
 

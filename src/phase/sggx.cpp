@@ -65,7 +65,9 @@ public:
         if (m_ndf_params->out_type() != FieldValueType::Features ||
             m_ndf_params->out_dim() != 6)
             Throw("sggx: parameter \"S\" must be a six-channel volume field "
-                  "(Features[6]), got out_dim=%u.", m_ndf_params->out_dim());
+                  "(Features[6]), got %s[%u].",
+                  field_value_type_name(m_ndf_params->out_type()),
+                  m_ndf_params->out_dim());
         m_flags =
             PhaseFunctionFlags::Anisotropic | PhaseFunctionFlags::Microflake;
     }

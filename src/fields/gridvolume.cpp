@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <mutex>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -370,7 +371,10 @@ public:
 
             if (!m_fixed_max)
                 m_max = (float) dr::max_nested(dr::detach(m_texture.value()));
-            m_max_per_channel_dirty = true;
+            {
+                std::lock_guard<std::mutex> lock(m_mutex);
+                m_max_per_channel_dirty = true;
+            }
         }
     }
 
@@ -554,6 +558,7 @@ public:
     ScalarFloat max() const override { return m_max; }
 
     void max_per_channel(ScalarFloat *out) const override {
+        std::lock_guard<std::mutex> lock(m_mutex);
         if (m_max_per_channel_dirty)
             update_max_per_channel();
         for (size_t i = 0; i < m_max_per_channel.size(); ++i)
@@ -795,6 +800,7 @@ protected:
     ScalarFloat m_max;
     mutable std::vector<ScalarFloat> m_max_per_channel;
     mutable bool m_max_per_channel_dirty = true;
+    mutable std::mutex m_mutex;
 
     MI_TRAVERSE_CB(Base, m_texture)
 };

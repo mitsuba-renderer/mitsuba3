@@ -239,9 +239,10 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
  * acceleration data structures.
  *
  * Two types of attributes can be associated with a shape:
- * 1. Texture attributes (\c Shape::add_texture_attribute), which must be
- *    a \c Texture instance but can have arbitrary resolution. The UV
- *    parametrization of the shape is used to look up texture attribute values.
+     * 1. Texture attributes (\c Shape::add_texture_attribute), which are
+     *    backed by surface-compatible fields and can have arbitrary resolution.
+     *    The UV parametrization of the shape is used to look up texture
+     *    attribute values.
  * 2. Mesh attributes (\c Mesh::add_attribute), which can only be added
  *    to mesh-type Shapes. They must be either per-vertex or per-face attributes,
  *    their name must start with "vertex_" (resp. "face_"), and their size

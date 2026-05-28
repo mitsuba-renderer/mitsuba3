@@ -70,6 +70,7 @@ rst_prolog = r"""
 
 .. |spectrum| replace:: :paramtype:`spectrum`
 .. |texture| replace:: :paramtype:`texture`
+.. |field| replace:: :paramtype:`field`
 .. |float| replace:: :paramtype:`float`
 .. |bool| replace:: :paramtype:`boolean`
 .. |int| replace:: :paramtype:`integer`

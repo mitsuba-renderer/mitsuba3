@@ -210,7 +210,9 @@ def test02_neuralbsdf_rejects_feature6_field_for_reflectance(variant_scalar_rgb)
         mi.load_dict(neuralbsdf_dict(features6_field()))
 
 
-def test03_neuralbsdf_requires_argument_free_reflectance_field(variant_cuda_ad_rgb):
+def test03_neuralbsdf_requires_argument_free_reflectance_field(
+    variants_all_ad_rgb_unpolarized
+):
     with pytest.raises(RuntimeError, match="Texture role requires args_dim=0, got 4"):
         mi.load_dict(neuralbsdf_dict(neural_field(args_dim=4)))
 
@@ -218,7 +220,7 @@ def test03_neuralbsdf_requires_argument_free_reflectance_field(variant_cuda_ad_r
         mi.load_dict(neuralbsdf_dict(make_args_reflectance_field()))
 
 
-def test04_neuralbsdf_traverses_field_children(variant_cuda_ad_rgb):
+def test04_neuralbsdf_traverses_field_children(variants_all_ad_rgb_unpolarized):
     bsdf = mi.load_dict(neuralbsdf_dict(neural_field()))
     params = mi.traverse(bsdf)
 
@@ -236,7 +238,9 @@ def test05_neuralbsdf_rejects_direction_dependent_reflectance_args(variant_scala
         mi.load_dict(neuralbsdf_dict(make_args_reflectance_field()))
 
 
-def test06_neuralbsdf_rejects_unstructured_neural_scattering_mode(variant_cuda_ad_rgb):
+def test06_neuralbsdf_rejects_unstructured_neural_scattering_mode(
+    variants_all_ad_rgb_unpolarized
+):
     with pytest.raises(RuntimeError, match="sample|pdf|structured|diffuse"):
         mi.load_dict({
             "type": "neuralbsdf",
