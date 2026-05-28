@@ -82,6 +82,18 @@ static ref<Object> expand_single_role_object(const Properties &props,
     return children[0];
 }
 
+static ref<Object> expand_single_object(const ref<Object> &object,
+                                        std::string_view role) {
+    std::vector<ref<Object>> children = object->expand();
+    if (children.empty())
+        return object;
+    if (children.size() != 1)
+        Throw("%s role object \"%s\" expanded into %zu objects, expected one "
+              "field.",
+              role, object->class_name(), children.size());
+    return children[0];
+}
+
 template <typename Float_, typename Spectrum_>
 ref<Object> make_texture_object(const ref<Object> &object) {
     using Field = mitsuba::Field<Float_, Spectrum_>;
@@ -179,19 +191,22 @@ ref<Object> make_field_object(const ref<Object> &object) {
 MI_EXPORT_LIB ref<Object>
 make_texture_object_for_variant(std::string_view variant,
                                 const ref<Object> &object) {
-    return MI_INVOKE_VARIANT(variant, make_texture_object, object);
+    ref<Object> expanded = expand_single_object(object, "Texture");
+    return MI_INVOKE_VARIANT(variant, make_texture_object, expanded);
 }
 
 MI_EXPORT_LIB ref<Object>
 make_volume_object_for_variant(std::string_view variant,
                                const ref<Object> &object) {
-    return MI_INVOKE_VARIANT(variant, make_volume_object, object);
+    ref<Object> expanded = expand_single_object(object, "Volume");
+    return MI_INVOKE_VARIANT(variant, make_volume_object, expanded);
 }
 
 MI_EXPORT_LIB ref<Object>
 make_field_object_for_variant(std::string_view variant,
                               const ref<Object> &object) {
-    return MI_INVOKE_VARIANT(variant, make_field_object, object);
+    ref<Object> expanded = expand_single_object(object, "Field");
+    return MI_INVOKE_VARIANT(variant, make_field_object, expanded);
 }
 
 MI_EXPORT_LIB ref<Object>

@@ -164,6 +164,22 @@ from . import python
 _import_symbols(python)
 
 
+def _mitsuba_register_python_fields(_old_variant=None, _new_variant=None):
+    if variant() is None:
+        return
+    fields = _importlib.import_module("mitsuba.python.fields")
+    fields._register_variant_fields(_sys.modules[__name__])
+
+
+if not hasattr(detail, "_mitsuba_field_registration_callback"):
+    detail.add_variant_callback(_mitsuba_register_python_fields)
+    detail._mitsuba_field_registration_callback = (
+        _mitsuba_register_python_fields
+    )
+
+_mitsuba_register_python_fields()
+
+
 if _os.environ.get('NB_STUBGEN'):
     # Score and set the variant with the largest API surface for stub generation
     _S = {'scalar': 1, 'llvm': 200, 'cuda': 300, 'mono': 10, 'rgb': 20,

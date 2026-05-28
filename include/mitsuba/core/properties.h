@@ -45,6 +45,24 @@ template <typename T> using prop_map_t = typename prop_map<std::decay_t<T>>::typ
 template <typename T> struct base_type;
 template <typename T> struct is_transform_3: std::false_type { };
 template <typename T> struct is_transform_3<AffineTransform<Point<T, 3>>> : std::true_type { };
+
+template <typename T>
+ref<T> try_field_role_object(const ref<Object> &object) {
+    if (T *ptr = dynamic_cast<T *>(const_cast<Object *>(object.get())))
+        return ref<T>(ptr);
+    return nullptr;
+}
+
+template <typename T>
+ref<T> checked_field_role_object(std::string_view name,
+                                 const ref<Object> &object,
+                                 std::string_view role) {
+    ref<T> result = try_field_role_object<T>(object);
+    if (!result)
+        Throw("Property \"%s\": %s-compatible field is not of the requested "
+              "type.", name, role);
+    return result;
+}
 NAMESPACE_END(detail)
 
 /** \brief Associative container for passing configuration parameters to Mitsuba
@@ -369,11 +387,7 @@ public:
     /// (see get_texture_impl for details).
     template <typename T> ref<T> get_surface_field(std::string_view name) const {
         ref<Object> object = get_texture_impl(name, T::Variant, false, false);
-        T *ptr = dynamic_cast<T *>(object.get());
-        if (!ptr)
-            Throw("Property \"%s\": texture-compatible field is not of the "
-                  "requested type.", name);
-        return ref<T>(ptr);
+        return detail::checked_field_role_object<T>(name, object, "texture");
     }
 
     /// Retrieve a surface field parameter with default value and
@@ -382,22 +396,14 @@ public:
     ref<T> get_surface_field(std::string_view name, Float def) const {
         ref<Object> object =
             get_texture_impl(name, T::Variant, false, false, (double) def);
-        T *ptr = dynamic_cast<T *>(object.get());
-        if (!ptr)
-            Throw("Property \"%s\": texture-compatible field is not of the "
-                  "requested type.", name);
-        return ref<T>(ptr);
+        return detail::checked_field_role_object<T>(name, object, "texture");
     }
 
     /// Retrieve an emissive surface field parameter with variant-specific
     /// conversions (see get_texture_impl for details).
     template <typename T> ref<T> get_emissive_surface_field(std::string_view name) const {
         ref<Object> object = get_texture_impl(name, T::Variant, true, false);
-        T *ptr = dynamic_cast<T *>(object.get());
-        if (!ptr)
-            Throw("Property \"%s\": texture-compatible field is not of the "
-                  "requested type.", name);
-        return ref<T>(ptr);
+        return detail::checked_field_role_object<T>(name, object, "texture");
     }
 
     /// Retrieve an emissive surface field parameter with default value and
@@ -406,11 +412,7 @@ public:
     ref<T> get_emissive_surface_field(std::string_view name, Float def) const {
         ref<Object> object =
             get_texture_impl(name, T::Variant, true, false, (double) def);
-        T *ptr = dynamic_cast<T *>(object.get());
-        if (!ptr)
-            Throw("Property \"%s\": texture-compatible field is not of the "
-                  "requested type.", name);
-        return ref<T>(ptr);
+        return detail::checked_field_role_object<T>(name, object, "texture");
     }
 
     /// Retrieve an unbounded surface field parameter with default value and
@@ -419,22 +421,14 @@ public:
     ref<T> get_unbounded_surface_field(std::string_view name, Float def) const {
         ref<Object> object =
             get_texture_impl(name, T::Variant, false, true, (double) def);
-        T *ptr = dynamic_cast<T *>(object.get());
-        if (!ptr)
-            Throw("Property \"%s\": texture-compatible field is not of the "
-                  "requested type.", name);
-        return ref<T>(ptr);
+        return detail::checked_field_role_object<T>(name, object, "texture");
     }
 
     /// Retrieve an unbounded surface field parameter with variant-specific
     /// conversions (see get_texture_impl for details).
     template <typename T> ref<T> get_unbounded_surface_field(std::string_view name) const {
         ref<Object> object = get_texture_impl(name, T::Variant, false, true);
-        T *ptr = dynamic_cast<T *>(object.get());
-        if (!ptr)
-            Throw("Property \"%s\": texture-compatible field is not of the "
-                  "requested type.", name);
-        return ref<T>(ptr);
+        return detail::checked_field_role_object<T>(name, object, "texture");
     }
 
     /// Compatibility spelling for \ref get_surface_field().
@@ -1024,9 +1018,7 @@ ref<T> Properties::get_volume(std::string_view name) const {
 
     auto try_volume = [](const ref<Object> &object) -> ref<T> {
         ref<Object> volume = make_volume_object_for_variant(T::Variant, object);
-        if (T *ptr = dynamic_cast<T *>(volume.get()))
-            return ref<T>(ptr);
-        return nullptr;
+        return detail::try_field_role_object<T>(volume);
     };
     auto make_volume = [&](const ref<Object> &object) -> ref<T> {
         ref<T> volume = try_volume(object);
@@ -1085,8 +1077,8 @@ ref<T> Properties::get_volume(std::string_view name, Float def_val) const {
         props.set("value", (double) def_val);
         ref<Object> volume =
             create_volume_role_object_for_variant(props, T::Variant);
-        if (T *ptr = dynamic_cast<T *>(volume.get()))
-            return ref<T>(ptr);
+        if (ref<T> result = detail::try_field_role_object<T>(volume))
+            return result;
         Throw("Property \"%s\": could not create a default volume field.",
               name);
     }

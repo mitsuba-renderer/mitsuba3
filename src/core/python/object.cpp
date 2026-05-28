@@ -41,11 +41,20 @@ MI_PY_EXPORT(Object) {
             return cast_object(pmgr.create_object(props, variant, ObjectType::Unknown).get());
         }, "props"_a, D(PluginManager, create_object))
         .def("plugin_type",
-             [](PluginManager &pmgr, std::string_view name,
-                std::string_view variant) {
+             [](PluginManager &pmgr, std::string_view name, nb::object variant_o) {
+                 std::string variant;
+                 if (variant_o.is_none()) {
+                     auto mi = nb::module_::import_("mitsuba");
+                     nb::object current = mi.attr("variant")();
+                     variant = current.is_none()
+                         ? std::string(MI_DEFAULT_VARIANT)
+                         : nb::cast<std::string>(current);
+                 } else {
+                     variant = nb::cast<std::string>(variant_o);
+                 }
                  return pmgr.plugin_type(name, variant);
              },
-             "name"_a, "variant"_a = MI_DEFAULT_VARIANT,
+             "name"_a, "variant"_a = nb::none(),
              "Get the ObjectType of a plugin by name");
 
     nb::class_<Object, drjit::TraversableBase>(

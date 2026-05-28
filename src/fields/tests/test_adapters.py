@@ -261,3 +261,46 @@ def test06_python_fields_are_not_volume_role_implementations(variant_scalar_rgb)
 
     with pytest.raises(RuntimeError, match="Volume role requires a VolumeField"):
         mi.load_string("""<volume version="3.0.0" type="python_unit_field"/>""")
+
+
+def test07_object_valued_expandable_fields_are_role_expanded(variant_scalar_rgb):
+    pmgr = mi.PluginManager.instance()
+    si = make_si()
+
+    props = mi.Properties("rawconstant")
+    props["value"] = 0.5
+    raw = pmgr.create_object(props)
+    bsdf = mi.load_dict({
+        "type": "diffuse",
+        "reflectance": raw,
+    })
+    assert dr.allclose(bsdf.eval_diffuse_reflectance(si), 0.5)
+
+    props = mi.Properties("bitmap")
+    props["data"] = mi.TensorXf([0.2, 0.3, 0.4], shape=(1, 1, 3))
+    props["raw"] = True
+    props["filter_type"] = "nearest"
+    props["wrap_mode"] = "clamp"
+    bitmap = pmgr.create_object(props)
+    bsdf = mi.load_dict({
+        "type": "diffuse",
+        "reflectance": bitmap,
+    })
+    assert dr.allclose(bsdf.eval_diffuse_reflectance(si), [0.2, 0.3, 0.4])
+
+    props = mi.Properties("gridvolume")
+    props["data"] = mi.TensorXf([0.75] * 8, shape=(2, 2, 2, 1))
+    props["raw"] = True
+    props["filter_type"] = "nearest"
+    props["wrap_mode"] = "clamp"
+    grid = pmgr.create_object(props)
+    medium = mi.load_dict({
+        "type": "homogeneous",
+        "albedo": 1.0,
+        "sigma_t": grid,
+    })
+    sigma_s, sigma_n, sigma_t = medium.get_scattering_coefficients(
+        dr.zeros(mi.MediumInteraction3f))
+    assert dr.allclose(sigma_s, 0.75)
+    assert dr.allclose(sigma_n, 0.0)
+    assert dr.allclose(sigma_t, 0.75)

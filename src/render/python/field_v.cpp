@@ -8,6 +8,7 @@
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 #include <drjit/python.h>
+#include <algorithm>
 #include <type_traits>
 
 template <typename Float, typename Array6f>
@@ -79,7 +80,8 @@ public:
         nb::detail::ticket ticket(nb_trampoline, "eval_1", false);
         if (ticket.key.is_valid())
             return nb::cast<Float>(
-                nb_trampoline.base().attr(ticket.key)(si, nb::none(), active));
+                call_field_override(nb_trampoline.base().attr(ticket.key),
+                                    si, Args{}, active));
         return BaseField::eval_1(si, active);
     }
 
@@ -88,7 +90,8 @@ public:
         nb::detail::ticket ticket(nb_trampoline, "eval_1", false);
         if (ticket.key.is_valid())
             return nb::cast<Float>(
-                nb_trampoline.base().attr(ticket.key)(it, nb::none(), active));
+                call_field_override(nb_trampoline.base().attr(ticket.key),
+                                    it, Args{}, active));
         return BaseField::eval_1(it, active);
     }
 
@@ -97,7 +100,8 @@ public:
         nb::detail::ticket ticket(nb_trampoline, "eval_3", false);
         if (ticket.key.is_valid())
             return nb::cast<Color3f>(
-                nb_trampoline.base().attr(ticket.key)(si, active));
+                call_field_override(nb_trampoline.base().attr(ticket.key),
+                                    si, Args{}, active));
         return BaseField::eval_3(si, active);
     }
 
@@ -106,7 +110,8 @@ public:
         nb::detail::ticket ticket(nb_trampoline, "eval_3", false);
         if (ticket.key.is_valid())
             return nb::cast<Vector3f>(
-                nb_trampoline.base().attr(ticket.key)(it, active));
+                call_field_override(nb_trampoline.base().attr(ticket.key),
+                                    it, Args{}, active));
         return BaseField::eval_3(it, active);
     }
 
@@ -116,7 +121,8 @@ public:
         nb::detail::ticket ticket(nb_trampoline, "eval_6", false);
         if (ticket.key.is_valid())
             return nb::cast<Ret>(
-                nb_trampoline.base().attr(ticket.key)(it, active));
+                call_field_override(nb_trampoline.base().attr(ticket.key),
+                                    it, Args{}, active));
         return BaseField::eval_6(it, active);
     }
 
@@ -282,8 +288,9 @@ public:
         using Ret = typename BaseField::FloatStorage;
         nb::detail::ticket ticket(nb_trampoline, "eval", false);
         if (ticket.key.is_valid())
-            return nb::cast<Ret>(nb_trampoline.base().attr(ticket.key)(
-                si, field_args_to_python(args), active));
+            return nb::cast<Ret>(
+                call_field_override(nb_trampoline.base().attr(ticket.key),
+                                    si, args, active));
         return BaseField::eval(si, args, active);
     }
 
@@ -292,8 +299,9 @@ public:
         using Ret = typename BaseField::FloatStorage;
         nb::detail::ticket ticket(nb_trampoline, "eval", false);
         if (ticket.key.is_valid())
-            return nb::cast<Ret>(nb_trampoline.base().attr(ticket.key)(
-                it, field_args_to_python(args), active));
+            return nb::cast<Ret>(
+                call_field_override(nb_trampoline.base().attr(ticket.key),
+                                    it, args, active));
         return BaseField::eval(it, args, active);
     }
 
@@ -301,8 +309,9 @@ public:
                  Mask active) const override {
         nb::detail::ticket ticket(nb_trampoline, "eval_1", false);
         if (ticket.key.is_valid())
-            return nb::cast<Float>(nb_trampoline.base().attr(ticket.key)(
-                si, field_args_to_python(args), active));
+            return nb::cast<Float>(
+                call_field_override(nb_trampoline.base().attr(ticket.key),
+                                    si, args, active));
         return BaseField::eval_1(si, args, active);
     }
 
@@ -310,8 +319,9 @@ public:
                  Mask active) const override {
         nb::detail::ticket ticket(nb_trampoline, "eval_1", false);
         if (ticket.key.is_valid())
-            return nb::cast<Float>(nb_trampoline.base().attr(ticket.key)(
-                it, field_args_to_python(args), active));
+            return nb::cast<Float>(
+                call_field_override(nb_trampoline.base().attr(ticket.key),
+                                    it, args, active));
         return BaseField::eval_1(it, args, active);
     }
 
@@ -319,8 +329,9 @@ public:
                         Mask active) const override {
         nb::detail::ticket ticket(nb_trampoline, "eval_color3", false);
         if (ticket.key.is_valid())
-            return nb::cast<Color3f>(nb_trampoline.base().attr(ticket.key)(
-                si, field_args_to_python(args), active));
+            return nb::cast<Color3f>(
+                call_field_override(nb_trampoline.base().attr(ticket.key),
+                                    si, args, active));
         return BaseField::eval_color3(si, args, active);
     }
 
@@ -328,8 +339,9 @@ public:
                         Mask active) const override {
         nb::detail::ticket ticket(nb_trampoline, "eval_color3", false);
         if (ticket.key.is_valid())
-            return nb::cast<Color3f>(nb_trampoline.base().attr(ticket.key)(
-                it, field_args_to_python(args), active));
+            return nb::cast<Color3f>(
+                call_field_override(nb_trampoline.base().attr(ticket.key),
+                                    it, args, active));
         return BaseField::eval_color3(it, args, active);
     }
 
@@ -339,8 +351,9 @@ public:
         using Ret = typename BaseField::Array2f;
         nb::detail::ticket ticket(nb_trampoline, "eval_array2", false);
         if (ticket.key.is_valid())
-            return nb::cast<Ret>(nb_trampoline.base().attr(ticket.key)(
-                si, field_args_to_python(args), active));
+            return nb::cast<Ret>(
+                call_field_override(nb_trampoline.base().attr(ticket.key),
+                                    si, args, active));
         return BaseField::eval_array2(si, args, active);
     }
 
@@ -349,8 +362,9 @@ public:
         using Ret = typename BaseField::Array2f;
         nb::detail::ticket ticket(nb_trampoline, "eval_array2", false);
         if (ticket.key.is_valid())
-            return nb::cast<Ret>(nb_trampoline.base().attr(ticket.key)(
-                it, field_args_to_python(args), active));
+            return nb::cast<Ret>(
+                call_field_override(nb_trampoline.base().attr(ticket.key),
+                                    it, args, active));
         return BaseField::eval_array2(it, args, active);
     }
 
@@ -360,8 +374,9 @@ public:
         using Ret = typename BaseField::Array3f;
         nb::detail::ticket ticket(nb_trampoline, "eval_array3", false);
         if (ticket.key.is_valid())
-            return nb::cast<Ret>(nb_trampoline.base().attr(ticket.key)(
-                si, field_args_to_python(args), active));
+            return nb::cast<Ret>(
+                call_field_override(nb_trampoline.base().attr(ticket.key),
+                                    si, args, active));
         return BaseField::eval_array3(si, args, active);
     }
 
@@ -370,8 +385,9 @@ public:
         using Ret = typename BaseField::Array3f;
         nb::detail::ticket ticket(nb_trampoline, "eval_array3", false);
         if (ticket.key.is_valid())
-            return nb::cast<Ret>(nb_trampoline.base().attr(ticket.key)(
-                it, field_args_to_python(args), active));
+            return nb::cast<Ret>(
+                call_field_override(nb_trampoline.base().attr(ticket.key),
+                                    it, args, active));
         return BaseField::eval_array3(it, args, active);
     }
 
@@ -380,8 +396,8 @@ public:
         nb::detail::ticket ticket(nb_trampoline, "eval_spec", false);
         if (ticket.key.is_valid())
             return nb::cast<UnpolarizedSpectrum>(
-                nb_trampoline.base().attr(ticket.key)(
-                    si, field_args_to_python(args), active));
+                call_field_override(nb_trampoline.base().attr(ticket.key),
+                                    si, args, active));
         return BaseField::eval_spec(si, args, active);
     }
 
@@ -390,8 +406,8 @@ public:
         nb::detail::ticket ticket(nb_trampoline, "eval_spec", false);
         if (ticket.key.is_valid())
             return nb::cast<UnpolarizedSpectrum>(
-                nb_trampoline.base().attr(ticket.key)(
-                    it, field_args_to_python(args), active));
+                call_field_override(nb_trampoline.base().attr(ticket.key),
+                                    it, args, active));
         return BaseField::eval_spec(it, args, active);
     }
 
@@ -402,8 +418,8 @@ public:
         nb::detail::ticket ticket(nb_trampoline, "eval_array6", false);
         if (ticket.key.is_valid())
             return field_array6_from_python<Float, Ret>(
-                nb_trampoline.base().attr(ticket.key)(
-                    si, field_args_to_python(args), active));
+                call_field_override(nb_trampoline.base().attr(ticket.key),
+                                    si, args, active));
         return BaseField::eval_array6(si, args, active);
     }
 
@@ -413,8 +429,8 @@ public:
         nb::detail::ticket ticket(nb_trampoline, "eval_array6", false);
         if (ticket.key.is_valid())
             return field_array6_from_python<Float, Ret>(
-                nb_trampoline.base().attr(ticket.key)(
-                    it, field_args_to_python(args), active));
+                call_field_override(nb_trampoline.base().attr(ticket.key),
+                                    it, args, active));
         return BaseField::eval_array6(it, args, active);
     }
 
@@ -422,8 +438,8 @@ public:
                 Args args, Mask active) const override {
         nb::detail::ticket ticket(nb_trampoline, "eval_n", false);
         if (ticket.key.is_valid()) {
-            nb::object result = nb_trampoline.base().attr(ticket.key)(
-                si, count, field_args_to_python(args), active);
+            nb::object result = call_eval_n_override(
+                nb_trampoline.base().attr(ticket.key), si, count, args, active);
             copy_eval_n_result(result, out, count);
             return;
         }
@@ -434,8 +450,8 @@ public:
                 Args args, Mask active) const override {
         nb::detail::ticket ticket(nb_trampoline, "eval_n", false);
         if (ticket.key.is_valid()) {
-            nb::object result = nb_trampoline.base().attr(ticket.key)(
-                it, count, field_args_to_python(args), active);
+            nb::object result = call_eval_n_override(
+                nb_trampoline.base().attr(ticket.key), it, count, args, active);
             copy_eval_n_result(result, out, count);
             return;
         }
@@ -445,10 +461,96 @@ public:
     DR_TRAMPOLINE_TRAVERSE_CB(Field)
 
 private:
+    static bool python_callable_accepts_parameter(nb::handle callable,
+                                                  std::string_view name) {
+        nb::object function = nb::borrow(callable);
+        if (nb::hasattr(callable, "__func__"))
+            function = callable.attr("__func__");
+
+        if (!nb::hasattr(function, "__code__"))
+            return true;
+
+        nb::object code = function.attr("__code__");
+        uint32_t flags = nb::cast<uint32_t>(code.attr("co_flags"));
+        constexpr uint32_t co_varargs = 0x04;
+        constexpr uint32_t co_varkeywords = 0x08;
+        if (flags & (co_varargs | co_varkeywords))
+            return true;
+
+        size_t arg_count =
+            nb::cast<size_t>(code.attr("co_argcount")) +
+            nb::cast<size_t>(code.attr("co_kwonlyargcount"));
+        nb::tuple names = nb::cast<nb::tuple>(code.attr("co_varnames"));
+        arg_count = std::min(arg_count, (size_t) nb::len(names));
+
+        for (size_t i = 0; i < arg_count; ++i) {
+            std::string candidate = nb::cast<std::string>(names[i]);
+            if (candidate == name)
+                return true;
+        }
+
+        return false;
+    }
+
+    template <typename Record>
+    nb::object call_field_override(nb::object method, const Record &record,
+                                   Args args, Mask active) const {
+        uint32_t expected = this->args_dim();
+        if (args.size != expected)
+            Throw("Field argument args_dim mismatch (expected %u, got %u).",
+                  expected, args.size);
+
+        bool accepts_args = python_callable_accepts_parameter(method, "args"),
+             accepts_active = python_callable_accepts_parameter(method, "active");
+
+        if (accepts_args) {
+            nb::object args_o = field_args_to_python(args);
+            if (accepts_active)
+                return method(record, args_o, active);
+            return method(record, args_o);
+        }
+
+        if (args.size != 0)
+            Throw("Field argument args_dim mismatch (expected 0, got %u).",
+                  args.size);
+
+        if (accepts_active)
+            return method(record, active);
+        return method(record);
+    }
+
+    template <typename Record>
+    nb::object call_eval_n_override(nb::object method, const Record &record,
+                                    uint32_t count, Args args,
+                                    Mask active) const {
+        uint32_t expected = this->args_dim();
+        if (args.size != expected)
+            Throw("Field argument args_dim mismatch (expected %u, got %u).",
+                  expected, args.size);
+
+        bool accepts_args = python_callable_accepts_parameter(method, "args"),
+             accepts_active = python_callable_accepts_parameter(method, "active");
+
+        if (accepts_args) {
+            nb::object args_o = field_args_to_python(args);
+            if (accepts_active)
+                return method(record, count, args_o, active);
+            return method(record, count, args_o);
+        }
+
+        if (args.size != 0)
+            Throw("Field argument args_dim mismatch (expected 0, got %u).",
+                  args.size);
+
+        if (accepts_active)
+            return method(record, count, active);
+        return method(record, count);
+    }
+
     static void copy_eval_n_result(nb::object result_o, Float *out,
                                    uint32_t count) {
         using FloatStorage = typename BaseField::FloatStorage;
-        try {
+        if (nb::isinstance<FloatStorage>(result_o)) {
             FloatStorage result = nb::cast<FloatStorage>(result_o);
             if (result.size() != count)
                 Throw("Field::eval_n(): Python override returned %zu "
@@ -456,7 +558,12 @@ private:
             for (uint32_t i = 0; i < count; ++i)
                 out[i] = result.entry(i);
             return;
-        } catch (const nb::cast_error &) { }
+        }
+
+        if (!nb::isinstance<nb::list>(result_o) &&
+            !nb::isinstance<nb::tuple>(result_o))
+            Throw("Field::eval_n(): Python override must return ArrayXf, list, "
+                  "or tuple.");
 
         std::vector<Float> result = nb::cast<std::vector<Float>>(result_o);
         if (result.size() != count)
@@ -492,20 +599,17 @@ std::vector<Float> field_args_from_python(nb::handle args, uint32_t expected) {
 
     if (nb::isinstance<nb::list>(args) || nb::isinstance<nb::tuple>(args)) {
         result = nb::cast<std::vector<Float>>(args);
+    } else if (nb::isinstance<FloatStorage>(args)) {
+        FloatStorage storage = nb::cast<FloatStorage>(args);
+        result.resize(storage.size());
+        for (size_t i = 0; i < storage.size(); ++i)
+            result[i] = storage.entry(i);
+    } else if (PyFloat_Check(args.ptr()) || PyLong_Check(args.ptr()) ||
+               nb::isinstance<Float>(args)) {
+        result.push_back(nb::cast<Float>(args));
     } else {
-        try {
-            result.push_back(nb::cast<Float>(args));
-        } catch (const nb::cast_error &) {
-            try {
-                FloatStorage storage = nb::cast<FloatStorage>(args);
-                result.resize(storage.size());
-                for (size_t i = 0; i < storage.size(); ++i)
-                    result[i] = storage.entry(i);
-            } catch (const nb::cast_error &) {
-                Throw("Field arguments must be a scalar, list, tuple, or "
-                      "ArrayXf value.");
-            }
-        }
+        Throw("Field arguments must be a scalar, list, tuple, or ArrayXf "
+              "value.");
     }
 
     if (result.size() != expected)
@@ -519,14 +623,11 @@ template <typename Float, typename Array6f>
 Array6f field_array6_from_python(nb::handle value) {
     using FloatStorage = dr::DynamicArray<Float>;
 
-    try {
+    if (nb::isinstance<Array6f>(value))
         return nb::cast<Array6f>(value);
-    } catch (const nb::cast_error &) {
-        // Fall through to dynamic/list conversions.
-    }
 
     Array6f result;
-    try {
+    if (nb::isinstance<FloatStorage>(value)) {
         FloatStorage storage = nb::cast<FloatStorage>(value);
         if (storage.size() != 6)
             Throw("Field::eval_array6(): Python override returned %zu "
@@ -534,22 +635,19 @@ Array6f field_array6_from_python(nb::handle value) {
         for (size_t i = 0; i < 6; ++i)
             result.entry(i) = storage.entry(i);
         return result;
-    } catch (const nb::cast_error &) {
-        // Fall through to list/tuple conversion.
     }
 
-    try {
-        std::vector<Float> storage = nb::cast<std::vector<Float>>(value);
-        if (storage.size() != 6)
-            Throw("Field::eval_array6(): Python override returned %zu "
-                  "channel(s), expected 6.", storage.size());
-        for (size_t i = 0; i < 6; ++i)
-            result.entry(i) = storage[i];
-        return result;
-    } catch (const nb::cast_error &) {
+    if (!nb::isinstance<nb::list>(value) && !nb::isinstance<nb::tuple>(value))
         Throw("Field::eval_array6(): Python override must return Array6f, "
               "ArrayXf, list, or tuple with 6 channels.");
-    }
+
+    std::vector<Float> storage = nb::cast<std::vector<Float>>(value);
+    if (storage.size() != 6)
+        Throw("Field::eval_array6(): Python override returned %zu "
+              "channel(s), expected 6.", storage.size());
+    for (size_t i = 0; i < 6; ++i)
+        result.entry(i) = storage[i];
+    return result;
 }
 
 template <typename Float, typename Array6f>
