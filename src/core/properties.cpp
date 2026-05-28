@@ -191,6 +191,8 @@ ref<Object> make_field_object(const ref<Object> &object) {
 MI_EXPORT_LIB ref<Object>
 make_texture_object_for_variant(std::string_view variant,
                                 const ref<Object> &object) {
+    if (!object || object->type() != ObjectType::Field)
+        return nullptr;
     ref<Object> expanded = expand_single_object(object, "Texture");
     return MI_INVOKE_VARIANT(variant, make_texture_object, expanded);
 }
@@ -198,6 +200,8 @@ make_texture_object_for_variant(std::string_view variant,
 MI_EXPORT_LIB ref<Object>
 make_volume_object_for_variant(std::string_view variant,
                                const ref<Object> &object) {
+    if (!object || object->type() != ObjectType::Field)
+        return nullptr;
     ref<Object> expanded = expand_single_object(object, "Volume");
     return MI_INVOKE_VARIANT(variant, make_volume_object, expanded);
 }
@@ -205,6 +209,8 @@ make_volume_object_for_variant(std::string_view variant,
 MI_EXPORT_LIB ref<Object>
 make_field_object_for_variant(std::string_view variant,
                               const ref<Object> &object) {
+    if (!object || object->type() != ObjectType::Field)
+        return nullptr;
     ref<Object> expanded = expand_single_object(object, "Field");
     return MI_INVOKE_VARIANT(variant, make_field_object, expanded);
 }
@@ -227,7 +233,8 @@ create_texture_role_object_for_variant(const Properties &props,
     ref<Object> object = PluginManager::instance()->create_object(
         props, variant, ObjectType::Field);
     object = expand_single_role_object(props, object, "Texture");
-    ref<Object> texture = make_texture_object_for_variant(variant, object);
+    ref<Object> texture =
+        MI_INVOKE_VARIANT(variant, make_texture_object, object);
     if (!texture)
         Throw("Plugin \"%s\" did not create a texture-compatible field.",
               props.plugin_name());
@@ -240,7 +247,8 @@ create_volume_role_object_for_variant(const Properties &props,
     ref<Object> object = PluginManager::instance()->create_object(
         props, variant, ObjectType::Field);
     object = expand_single_role_object(props, object, "Volume");
-    ref<Object> volume = make_volume_object_for_variant(variant, object);
+    ref<Object> volume =
+        MI_INVOKE_VARIANT(variant, make_volume_object, object);
     if (!volume)
         Throw("Plugin \"%s\" did not create a volume-compatible field.",
               props.plugin_name());

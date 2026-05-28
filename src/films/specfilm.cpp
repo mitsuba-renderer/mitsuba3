@@ -165,11 +165,10 @@ public:
                 ref<Object> texture = make_texture_object_for_variant(
                     Field::Variant, prop.get<ref<Object>>());
                 Field *field = dynamic_cast<Field *>(texture.get());
-                uint32_t dim = (uint32_t) dr::size_v<UnpolarizedSpectrum>;
-                if (!field || field->out_type() != FieldValueType::Spectrum ||
-                    field->out_dim() != dim)
+                if (!field)
                     Throw("SpecFilm SRF \"%s\" must be a surface-compatible "
-                          "Spectrum[%u] field.", prop.name(), dim);
+                          "field.", prop.name());
+                require_field_spectral_evaluable(field, prop.name());
                 require_field_spectral_metadata(field, prop.name());
                 m_srfs.push_back(field);
                 m_names.push_back(std::string(prop.name()));

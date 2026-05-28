@@ -228,6 +228,23 @@ def test09_invalid_encoding_nesting_and_output_metadata_are_rejected(
 
 
 @pytest.mark.parametrize(
+    "key,value",
+    [
+        ("n_levels", 0),
+        ("n_features_per_level", 0),
+        ("hashmap_size", 0),
+        ("base_resolution", 0),
+        ("per_level_scale", 0.0),
+    ],
+)
+def test09b_trainable_encoding_parameters_are_validated(
+    field_ad_rgb_variant, key, value
+):
+    with pytest.raises(RuntimeError, match=f"{key}.*positive"):
+        mi.load_dict(encoding_dict("hashgridfield", **{key: value}))
+
+
+@pytest.mark.parametrize(
     "out_type,out_dim,method",
     [
         ("Float", 1, "eval_1"),
@@ -355,3 +372,21 @@ def test14_neural_fields_in_texture_roles_are_validated(field_ad_rgb_variant):
 def test15_neural_fields_without_volume_metadata_are_rejected(field_ad_rgb_variant):
     with pytest.raises(RuntimeError, match="Volume role|VolumeField|metadata"):
         mi.load_string(neural_volume_xml())
+
+
+def test16_neural_field_eval_rejects_color_outputs_in_spectral_variants(
+    variants_all_ad_spectral
+):
+    field = mi.load_dict(
+        neural_field_dict(
+            out_type="Color3",
+            out_dim=3,
+            args_dim=0,
+            encoding=sinusoidal_encoding_dict(),
+        )
+    )
+    si = surface_interaction(width=4)
+
+    assert dr.all(dr.isfinite(field.eval_color3(si)))
+    with pytest.raises(RuntimeError, match="cannot convert Color3"):
+        field.eval(si)

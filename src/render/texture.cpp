@@ -146,7 +146,7 @@ SurfaceField<Float, Spectrum>::eval_color3(const Interaction3f &, Args,
 }
 
 MI_VARIANT typename SurfaceField<Float, Spectrum>::Array2f
-SurfaceField<Float, Spectrum>::eval_array2(const SurfaceInteraction3f &,
+SurfaceField<Float, Spectrum>::eval_array2(const SurfaceInteraction3f &si,
                                       Args args,
                                       Mask active) const {
     if (args.size != 0)
@@ -154,11 +154,7 @@ SurfaceField<Float, Spectrum>::eval_array2(const SurfaceInteraction3f &,
               args.size);
     if (dr::none_or<false>(active))
         return dr::zeros<Array2f>();
-    FieldValueType type = out_type();
-    uint32_t dim = out_dim();
-    Throw("Texture::eval_array2(): expected Array2[2], got %s[%u].",
-          field_value_type_name(type), dim);
-    return dr::zeros<Array2f>();
+    return Base::eval_array2(si, args, active);
 }
 
 MI_VARIANT typename SurfaceField<Float, Spectrum>::Array2f
@@ -223,7 +219,7 @@ SurfaceField<Float, Spectrum>::eval_spec(const Interaction3f &, Args,
 }
 
 MI_VARIANT typename SurfaceField<Float, Spectrum>::Array6f
-SurfaceField<Float, Spectrum>::eval_array6(const SurfaceInteraction3f &,
+SurfaceField<Float, Spectrum>::eval_array6(const SurfaceInteraction3f &si,
                                       Args args,
                                       Mask active) const {
     if (args.size != 0)
@@ -231,11 +227,7 @@ SurfaceField<Float, Spectrum>::eval_array6(const SurfaceInteraction3f &,
               args.size);
     if (dr::none_or<false>(active))
         return dr::zeros<Array6f>();
-    FieldValueType type = out_type();
-    uint32_t dim = out_dim();
-    Throw("Texture::eval_array6(): expected Features[6], got %s[%u].",
-          field_value_type_name(type), dim);
-    return dr::zeros<Array6f>();
+    return Base::eval_array6(si, args, active);
 }
 
 MI_VARIANT typename SurfaceField<Float, Spectrum>::Array6f

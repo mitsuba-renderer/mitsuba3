@@ -302,13 +302,8 @@ VolumeField<Float, Spectrum>::eval_n(const Interaction3f &it,
         }
 
         case FieldValueType::Features:
-            if (count == 6) {
-                Array6f value = eval_6(it, active);
-                for (uint32_t i = 0; i < 6; ++i)
-                    out[i] = value.entry(i);
-                return;
-            }
-            break;
+            eval_n(it, out, active);
+            return;
 
         default:
             break;

@@ -28,6 +28,7 @@ SHAPE_ORDERING = [
 
 BSDF_ORDERING = [
     'diffuse',
+    'neuralbsdf',
     'dielectric',
     'thindielectric',
     'roughdielectric',
@@ -134,6 +135,10 @@ PHASE_ORDERING = [
 VOLUME_ORDERING = [
     'constvolume',
     'gridvolume'
+]
+
+FIELD_ORDERING = [
+    'sinusoidalfield'
 ]
 
 
@@ -243,6 +248,7 @@ def generate(build_dir):
         ('emitters',    EMITTER_ORDERING, None,     None),
         ('sensors',     SENSOR_ORDERING,  None,     None),
         ('textures',    TEXTURE_ORDERING, 'fields', TEXTURE_ORDERING),
+        ('fields',      FIELD_ORDERING,   'fields', FIELD_ORDERING),
         ('spectra',     SPECTRUM_ORDERING, None,    None),
         ('integrators', INTEGRATOR_ORDERING, None,  None),
         ('samplers',    SAMPLER_ORDERING, None,     None),

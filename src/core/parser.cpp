@@ -1709,11 +1709,14 @@ static Task* instantiate_node(const ParserConfig &config,
 
         // Create the object
         ref<Object> obj;
+        bool role_object = node.type == ObjectType::Texture ||
+                           node.type == ObjectType::Volume;
         try {
             // Special handling for rgb/spectrum dictionaries
             if (props.plugin_name() == "rgb" || props.plugin_name() == "spectrum") {
                 // These are special texture types that need to be created via get_texture_impl
                 obj = props.get_texture_impl("value", config.variant, false, false);
+                role_object = true;
             } else {
                 if (node.type == ObjectType::Texture)
                     obj = create_texture_role_object_for_variant(
@@ -1732,31 +1735,10 @@ static Task* instantiate_node(const ParserConfig &config,
         }
 
         // Expand the object once and store the results
-        s.objects = obj->expand();
+        if (!role_object)
+            s.objects = obj->expand();
         if (s.objects.empty())
             s.objects.push_back(obj);
-
-        if (node.type == ObjectType::Texture) {
-            for (ref<Object> &object : s.objects) {
-                ref<Object> texture =
-                    make_texture_object_for_variant(config.variant, object);
-                if (!texture)
-                    Throw("At %s: could not create a surface-compatible field for "
-                          "plugin \"%s\".",
-                          file_location(state, node), props.plugin_name());
-                object = std::move(texture);
-            }
-        } else if (node.type == ObjectType::Volume) {
-            for (ref<Object> &object : s.objects) {
-                ref<Object> volume =
-                    make_volume_object_for_variant(config.variant, object);
-                if (!volume)
-                    Throw("At %s: could not create a volume-compatible field for "
-                          "plugin \"%s\".",
-                          file_location(state, node), props.plugin_name());
-                object = std::move(volume);
-            }
-        }
 
         // Check for unqueried properties by iterating through all properties
         std::string unqueried_details;

@@ -238,8 +238,8 @@ def test06_tensor_load(variants_all_rgb):
         'raw' : True
     })
 
-    assert dr.allclose(bitmap.mean(), 1.0);
-    assert dr.allclose(bitmap.max(), 1.0);
+    assert dr.allclose(bitmap.mean(), 1.0)
+    assert dr.allclose(bitmap.max(), 1.0)
 
     bitmap = mi.load_dict({
         'type' : 'bitmap',
@@ -247,7 +247,7 @@ def test06_tensor_load(variants_all_rgb):
         'raw' : True
     })
 
-    assert dr.allclose(bitmap.mean(), 3.0);
+    assert dr.allclose(bitmap.mean(), 3.0)
     assert dr.allclose(bitmap.max(), 3.0);
 
     bitmap = mi.load_dict({

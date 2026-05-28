@@ -135,6 +135,27 @@ def _make_drjit_feature_field(
 
             self._n_levels = int(props.get("n_levels", 16))
             self._n_features_per_level = int(props.get("n_features_per_level", 2))
+            hashmap_size = int(props.get("hashmap_size", 2**19))
+            base_resolution = int(props.get("base_resolution", 16))
+            per_level_scale = float(props.get("per_level_scale", 2.0))
+
+            if self._n_levels <= 0:
+                raise RuntimeError(f"{plugin_name}: n_levels must be positive.")
+            if self._n_features_per_level <= 0:
+                raise RuntimeError(
+                    f"{plugin_name}: n_features_per_level must be positive."
+                )
+            if hashmap_size <= 0:
+                raise RuntimeError(f"{plugin_name}: hashmap_size must be positive.")
+            if base_resolution <= 0:
+                raise RuntimeError(
+                    f"{plugin_name}: base_resolution must be positive."
+                )
+            if per_level_scale <= 0:
+                raise RuntimeError(
+                    f"{plugin_name}: per_level_scale must be positive."
+                )
+
             self._out_dim = int(
                 props.get("out_dim", self._n_levels * self._n_features_per_level)
             )
@@ -153,9 +174,9 @@ def _make_drjit_feature_field(
             kwargs = {
                 "n_levels": self._n_levels,
                 "n_features_per_level": self._n_features_per_level,
-                "hashmap_size": int(props.get("hashmap_size", 2**19)),
-                "base_resolution": int(props.get("base_resolution", 16)),
-                "per_level_scale": float(props.get("per_level_scale", 2.0)),
+                "hashmap_size": hashmap_size,
+                "base_resolution": base_resolution,
+                "per_level_scale": per_level_scale,
                 "align_corners": bool(props.get("align_corners", False)),
                 "smooth_weight_gradients": bool(
                     props.get("smooth_weight_gradients", False)

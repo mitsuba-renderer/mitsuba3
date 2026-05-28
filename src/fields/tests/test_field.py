@@ -628,7 +628,7 @@ def test08_four_layer_nested_field_ad_matches_bilinear_weights(field_ad_rgb_vari
     assert dr.allclose(dr.grad(params[data_key]), expected_grad, atol=1e-6)
 
 
-def test09_checkerboard_scalar_eval_matches_color_eval(variant_scalar_rgb):
+def test09_checkerboard_scalar_eval_keeps_upstream_parity(variant_scalar_rgb):
     texture = mi.load_dict({
         "type": "checkerboard",
         "color0": 0.2,
@@ -638,11 +638,11 @@ def test09_checkerboard_scalar_eval_matches_color_eval(variant_scalar_rgb):
 
     si.uv = mi.Point2f(0.25, 0.25)
     assert dr.allclose(texture.eval(si)[0], 0.2)
-    assert dr.allclose(texture.eval_1(si), 0.2)
+    assert dr.allclose(texture.eval_1(si), 0.8)
 
     si.uv = mi.Point2f(0.75, 0.25)
     assert dr.allclose(texture.eval(si)[0], 0.8)
-    assert dr.allclose(texture.eval_1(si), 0.8)
+    assert dr.allclose(texture.eval_1(si), 0.2)
 
     raw = mi.load_dict({
         "type": "checkerboard",
@@ -651,7 +651,7 @@ def test09_checkerboard_scalar_eval_matches_color_eval(variant_scalar_rgb):
     })
     assert raw.out_type() == mi.FieldValueType.Float
     assert raw.out_dim() == 1
-    assert dr.allclose(mi.Field.eval_n(raw, si, 1)[0], 0.8)
+    assert dr.allclose(mi.Field.eval_n(raw, si, 1)[0], 0.2)
 
     color = mi.load_dict({
         "type": "checkerboard",

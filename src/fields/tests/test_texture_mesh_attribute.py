@@ -93,7 +93,28 @@ def test01_eval(variant_scalar_rgb):
         assert dr.allclose(texture.eval_1(si), si.prim_index)
 
 
-def test02_invalid_attribute(variant_scalar_rgb):
+def test02_eval_spectrum(variants_vec_spectral):
+    import numpy as np
+
+    mesh = create_rectangle()
+
+    texture = mi.load_dict({
+        "type" : "mesh_attribute",
+        "name" : "vertex_color",
+    })
+
+    wavelengths = np.linspace(mi.MI_CIE_MIN, mi.MI_CIE_MAX,
+                              mi.MI_WAVELENGTH_SAMPLES)
+
+    for u, v in [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0),
+                 (0.3, 0.4), (0.5, 0.5)]:
+        si = mesh.eval_parameterization([u, v])
+        si.wavelengths = wavelengths
+        expected = si.shape.eval_attribute("vertex_color", si)
+        assert dr.allclose(texture.eval(si), expected)
+
+
+def test03_invalid_attribute(variant_scalar_rgb):
     mesh = create_rectangle()
 
     texture = mi.load_dict({

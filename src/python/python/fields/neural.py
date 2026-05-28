@@ -211,13 +211,29 @@ def _make_neural_field(mi):
                     self._out_type == mi.FieldValueType.Color3
                     and self._out_dim == 3
                 ):
-                    return self.eval_color3(record, args=[], active=active)
+                    value = self.eval_color3(record, args=[], active=active)
+                    if mi.is_monochromatic:
+                        return mi.UnpolarizedSpectrum(mi.luminance(value))
+                    if mi.is_spectral:
+                        raise RuntimeError(
+                            "neuralfield::eval(): cannot convert Color3 field "
+                            "output to a spectral value."
+                        )
+                    return value
                 if (
                     self._out_type == mi.FieldValueType.Array3
                     and self._out_dim == 3
                 ):
                     value = self.eval_array3(record, args=[], active=active)
-                    return mi.Color3f(value.x, value.y, value.z)
+                    color = mi.Color3f(value.x, value.y, value.z)
+                    if mi.is_monochromatic:
+                        return mi.UnpolarizedSpectrum(mi.luminance(color))
+                    if mi.is_spectral:
+                        raise RuntimeError(
+                            "neuralfield::eval(): cannot convert Array3 field "
+                            "output to a spectral value."
+                        )
+                    return color
                 raise RuntimeError(
                     "neuralfield::eval(): output is not spectrum-compatible; "
                     "use eval_n()."
