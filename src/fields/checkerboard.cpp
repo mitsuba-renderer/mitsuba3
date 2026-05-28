@@ -96,6 +96,7 @@ public:
         dr::mask_t<Point2f> mask = (uv - dr::floor(uv)) > .5f;
         Float result = 0.f;
 
+        // Preserve the legacy scalar checkerboard convention.
         Mask m0 = mask.x() != mask.y(),
              m1 = !m0;
 

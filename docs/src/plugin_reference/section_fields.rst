@@ -11,4 +11,3 @@ plugins that operate on generic field outputs.
 The XML scene format supports explicit ``<field>`` declarations for plugins
 that request generic field data. Existing ``<texture>`` and ``<volume>`` tags
 remain the preferred spelling for surface and volume role parameters.
-

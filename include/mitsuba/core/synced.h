@@ -7,7 +7,6 @@
 #include <mitsuba/core/object.h>
 #include <drjit/array.h>
 #include <drjit/array_traverse.h>
-namespace dr = drjit;
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -43,6 +42,7 @@ struct synced<DeviceType, HostType,
     synced() {}
     synced(const DeviceType &v) : m_scalar(v) { }
     synced(DeviceType &&v) : m_scalar(std::move(v)) { }
+    synced(const synced &) = default;
     synced(synced &&) = default;
 
     const DeviceType &value() const { return m_scalar; }
@@ -81,6 +81,7 @@ struct synced<DeviceType, HostType,
     synced() {}
     synced(const HostType &v) : m_value(v), m_scalar(v) { }
     synced(HostType &&v) : m_value(v), m_scalar(std::move(v)) { }
+    synced(const synced &) = default;
     synced(synced &&) = default;
 
     const DeviceType &value() const { return m_value; }
@@ -124,11 +125,11 @@ private:
 public:
     void traverse_1_cb_ro(void *payload,
                           drjit::detail::traverse_callback_ro fn) const {
-        drjit ::traverse_1_fn_ro(m_value, payload, fn);
+        drjit::traverse_1_fn_ro(m_value, payload, fn);
     }
     void traverse_1_cb_rw(void *payload,
                           drjit::detail::traverse_callback_rw fn) {
-        drjit ::traverse_1_fn_rw(m_value, payload, fn);
+        drjit::traverse_1_fn_rw(m_value, payload, fn);
     }
 };
 

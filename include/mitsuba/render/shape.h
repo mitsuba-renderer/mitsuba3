@@ -699,7 +699,7 @@ public:
     const Field *texture_attribute(std::string_view name) const;
 
     /**
-     * \brief Remove a texture texture with the given \c name.
+     * \brief Remove a texture attribute with the given \c name.
      *
      * Throws an exception if the attribute was not registered.
      */

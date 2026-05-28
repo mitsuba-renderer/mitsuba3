@@ -176,18 +176,18 @@ public:
             Throw("Invalid filter type \"%s\", must be one of: \"nearest\" or "
                   "\"trilinear\"!", filter_type_str);
 
-        std::string_view wrap_mode_st = props.get<std::string_view>("wrap_mode", "clamp");
+        std::string_view wrap_mode_str = props.get<std::string_view>("wrap_mode", "clamp");
         dr::WrapMode wrap_mode;
-        if (wrap_mode_st == "repeat")
+        if (wrap_mode_str == "repeat")
             wrap_mode = dr::WrapMode::Repeat;
-        else if (wrap_mode_st == "mirror")
+        else if (wrap_mode_str == "mirror")
             wrap_mode = dr::WrapMode::Mirror;
-        else if (wrap_mode_st == "clamp")
+        else if (wrap_mode_str == "clamp")
             wrap_mode = dr::WrapMode::Clamp;
         else
             Throw("Invalid wrap mode \"%s\", must be one of: \"repeat\", "
                   "\"mirror\", or \"clamp\"!",
-                  wrap_mode_st);
+                  wrap_mode_str);
 
         m_raw = props.get<bool>("raw", false);
         m_accel = props.get<bool>("accel", true);
