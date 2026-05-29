@@ -1,3 +1,61 @@
+r"""
+.. _field-neuralfield:
+
+Neural field (:monosp:`neuralfield`)
+------------------------------------
+
+.. pluginparameters::
+
+ * - domain
+   - |string|
+   - Query domain, one of ``Surface``, ``Interaction``, or
+     ``SurfaceAndInteraction``. (Default: ``Surface``)
+
+ * - out_type
+   - |string|
+   - Semantic output type: ``Float``, ``Spectrum``, ``Color3``, ``Array2``,
+     ``Array3``, or ``Features``. (Default: ``Color3``)
+
+ * - out_dim
+   - |int|
+   - Number of output channels. Fixed semantic types infer this automatically
+     when set to 0. ``Features`` outputs must specify a positive value.
+     (Default: 0)
+
+ * - args_dim
+   - |int|
+   - Number of optional argument channels consumed by each query. Texture and
+     volume role requests require this to be zero. (Default: 0)
+
+ * - encoding
+   - |field|
+   - Optional argument-free ``Features`` field that augments the neural network
+     input.
+
+ * - decoder
+   - |string|
+   - Network decoder, either ``neural`` or ``linear``. (Default: ``neural``)
+
+ * - hidden_size
+   - |int|
+   - Width of hidden layers for the neural decoder. (Default: 16)
+
+ * - num_layers
+   - |int|
+   - Number of hidden layers for the neural decoder. (Default: 2)
+
+ * - precision
+   - |string|
+   - Network storage precision, either ``fp16`` or ``fp32``. CUDA cooperative
+     vectors currently require ``fp16``. (Default: ``fp16``)
+
+This JIT-only field evaluates a Dr.Jit neural network at renderer interaction
+records. The network input always includes position, includes UV coordinates for
+surface queries, can include optional argument channels, and can be augmented by
+a nested encoding field.
+
+"""
+
 from __future__ import annotations # Delayed parsing of type annotations
 
 import drjit as dr

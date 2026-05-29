@@ -240,7 +240,37 @@ def test01b_merge_equivalent_keeps_field_references_distinct(variant_scalar_rgb)
     assert 'id="field_b" name="reflectance"' in output
 
 
-def test01c_dict_parser_uses_config_variant_for_field_types(field_ad_rgb_variant):
+def test01c_merge_equivalent_keeps_texture_role_fields_distinct(variant_scalar_rgb):
+    xml = """<scene version="3.0.0">
+        <texture type="debugfield" id="field_a">
+            <integer name="out_dim" value="3"/>
+        </texture>
+        <texture type="debugfield" id="field_b">
+            <integer name="out_dim" value="3"/>
+        </texture>
+        <bsdf type="neuralbsdf" id="mat_a">
+            <ref name="reflectance" id="field_a"/>
+        </bsdf>
+        <bsdf type="neuralbsdf" id="mat_b">
+            <ref name="reflectance" id="field_b"/>
+        </bsdf>
+    </scene>"""
+
+    state = mi.parser.parse_string(CONFIG, xml)
+    mi.parser.transform_resolve(CONFIG, state)
+    mi.parser.transform_merge_equivalent(CONFIG, state)
+
+    mat_a = state.id_to_index["mat_a"]
+    mat_b = state.id_to_index["mat_b"]
+    field_a = state.nodes[mat_a].props["reflectance"].index()
+    field_b = state.nodes[mat_b].props["reflectance"].index()
+
+    assert field_a != field_b
+    assert state.nodes[field_a].type == mi.ObjectType.Texture
+    assert state.nodes[field_b].type == mi.ObjectType.Texture
+
+
+def test01d_dict_parser_uses_config_variant_for_field_types(field_ad_rgb_variant):
     class VariantOnlyField(mi.Field):
         def __init__(self, props):
             super().__init__(props)
