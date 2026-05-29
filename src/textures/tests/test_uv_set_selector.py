@@ -34,7 +34,6 @@ def test01_uv_selector_checkerboard(variant_scalar_rgb):
 
 
 def test02_invalid_uv_set(variant_scalar_rgb):
-    mesh = create_rectangle_with_extra_uvs()
     with pytest.raises(Exception):
         mi.load_dict(
             {
