@@ -10046,7 +10046,7 @@ static const char *__doc_mitsuba_Shape_ray_test_packet_3 = R"doc()doc";
 static const char *__doc_mitsuba_Shape_ray_test_scalar = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_remove_attribute =
-R"doc(Remove a texture texture with the given ``name``.
+R"doc(Remove a texture attribute with the given ``name``.
 
 Throws an exception if the attribute was not registered.)doc";
 

@@ -5010,10 +5010,14 @@
 
     .. py:method:: mitsuba.Field.bbox()
 
+        Return the world-space bounding box of a volume field.
+
         Returns → :py:obj:`mitsuba.ScalarBoundingBox3f`:
             *no description available*
 
     .. py:method:: mitsuba.Field.channel_count()
+
+        Return the number of stored volume channels, if available.
 
         Returns → int:
             *no description available*
@@ -5027,16 +5031,69 @@
 
     .. py:method:: mitsuba.Field.eval(self, si, active=True)
 
+        Overloaded function.
+
+        1. ``eval(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, active: drjit.llvm.ad.Bool = True) -> object``
+
+        Evaluate an argument-free surface field as an unpolarized spectrum.
+
+        2. ``eval(self, it: :py:obj:`mitsuba.Interaction3f`, active: drjit.llvm.ad.Bool = True) -> object``
+
+        Evaluate an argument-free interaction field as an unpolarized
+        spectrum.
+
+        3. ``eval(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, args: object | None = None, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.ArrayXf``
+
+        Evaluate the field at a surface interaction
+
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
-            *no description available*
+            An interaction record describing the associated surface position
+
+        Parameter ``args``:
+            Optional field-specific argument channels
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
         Returns → object:
-            *no description available*
+            A dynamic array containing out_dim() float channels
+
+        4. ``eval(self, it: :py:obj:`mitsuba.Interaction3f`, args: object | None = None, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.ArrayXf``
+
+        Evaluate the field at a generic 3D interaction
+
+        Parameter ``it``:
+            An interaction record describing the associated 3D position
+
+        Parameter ``args``:
+            Optional field-specific argument channels
+
+        Returns → object:
+            A dynamic array containing out_dim() float channels
 
     .. py:method:: mitsuba.Field.eval_1(self, si, active=True)
+
+        Overloaded function.
+
+        1. ``eval_1(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Float``
+
+        Evaluate an argument-free single-channel field at a surface
+        interaction.
+
+        2. ``eval_1(self, it: :py:obj:`mitsuba.Interaction3f`, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Float``
+
+        Evaluate an argument-free single-channel field at a generic 3D
+        interaction.
+
+        3. ``eval_1(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, args: object | None = None, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Float``
+
+        Evaluate the field as a single-channel quantity at a surface
+        interaction.
+
+        4. ``eval_1(self, it: :py:obj:`mitsuba.Interaction3f`, args: object | None = None, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Float``
+
+        Evaluate the field as a single-channel quantity at a generic 3D
+        interaction.
 
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
@@ -5049,6 +5106,8 @@
 
     .. py:method:: mitsuba.Field.eval_1_grad(self, si, active=True)
 
+        Evaluate the UV-space gradient of a scalar surface field.
+
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
 
@@ -5059,6 +5118,16 @@
             *no description available*
 
     .. py:method:: mitsuba.Field.eval_3(self, si, active=True)
+
+        Overloaded function.
+
+        1. ``eval_3(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.Color3f```
+
+        Texture-style trichromatic evaluation at a surface interaction.
+
+        2. ``eval_3(self, it: :py:obj:`mitsuba.Interaction3f`, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.Vector3f```
+
+        Volume-style three-channel evaluation at a generic 3D interaction.
 
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
@@ -5071,6 +5140,8 @@
 
     .. py:method:: mitsuba.Field.eval_6(self, it, active=True)
 
+        Volume-style six-channel evaluation at a generic 3D interaction.
+
         Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
             *no description available*
 
@@ -5081,6 +5152,24 @@
             *no description available*
 
     .. py:method:: mitsuba.Field.eval_array2(self, si, active=True)
+
+        Overloaded function.
+
+        1. ``eval_array2(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Array2f``
+
+        Evaluate the field as a two-channel array at a surface interaction.
+
+        2. ``eval_array2(self, it: :py:obj:`mitsuba.Interaction3f`, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Array2f``
+
+        Evaluate the field as a two-channel array at a generic 3D interaction.
+
+        3. ``eval_array2(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, args: object | None = None, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Array2f``
+
+        Evaluate the field as a two-channel array at a surface interaction.
+
+        4. ``eval_array2(self, it: :py:obj:`mitsuba.Interaction3f`, args: object | None = None, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Array2f``
+
+        Evaluate the field as a two-channel array at a generic 3D interaction.
 
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
@@ -5093,6 +5182,26 @@
 
     .. py:method:: mitsuba.Field.eval_array3(self, si, active=True)
 
+        Overloaded function.
+
+        1. ``eval_array3(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Array3f``
+
+        Evaluate the field as a three-channel array at a surface interaction.
+
+        2. ``eval_array3(self, it: :py:obj:`mitsuba.Interaction3f`, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Array3f``
+
+        Evaluate the field as a three-channel array at a generic 3D
+        interaction.
+
+        3. ``eval_array3(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, args: object | None = None, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Array3f``
+
+        Evaluate the field as a three-channel array at a surface interaction.
+
+        4. ``eval_array3(self, it: :py:obj:`mitsuba.Interaction3f`, args: object | None = None, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Array3f``
+
+        Evaluate the field as a three-channel array at a generic 3D
+        interaction.
+
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
 
@@ -5103,6 +5212,24 @@
             *no description available*
 
     .. py:method:: mitsuba.Field.eval_array6(self, si, active=True)
+
+        Overloaded function.
+
+        1. ``eval_array6(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.ArrayXf``
+
+        Evaluate the field as a six-channel array at a surface interaction.
+
+        2. ``eval_array6(self, it: :py:obj:`mitsuba.Interaction3f`, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.ArrayXf``
+
+        Evaluate the field as a six-channel array at a generic 3D interaction.
+
+        3. ``eval_array6(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, args: object | None = None, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.ArrayXf``
+
+        Evaluate the field as a six-channel array at a surface interaction.
+
+        4. ``eval_array6(self, it: :py:obj:`mitsuba.Interaction3f`, args: object | None = None, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.ArrayXf``
+
+        Evaluate the field as a six-channel array at a generic 3D interaction.
 
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
@@ -5115,6 +5242,26 @@
 
     .. py:method:: mitsuba.Field.eval_color3(self, si, active=True)
 
+        Overloaded function.
+
+        1. ``eval_color3(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.Color3f```
+
+        Evaluate an argument-free color field at a surface interaction.
+
+        2. ``eval_color3(self, it: :py:obj:`mitsuba.Interaction3f`, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.Color3f```
+
+        Evaluate an argument-free color field at a generic 3D interaction.
+
+        3. ``eval_color3(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, args: object | None = None, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.Color3f```
+
+        Evaluate the field as a three-channel color value at a surface
+        interaction.
+
+        4. ``eval_color3(self, it: :py:obj:`mitsuba.Interaction3f`, args: object | None = None, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.Color3f```
+
+        Evaluate the field as a three-channel color value at a generic 3D
+        interaction.
+
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
 
@@ -5125,6 +5272,8 @@
             *no description available*
 
     .. py:method:: mitsuba.Field.eval_gradient(self, it, active=True)
+
+        Evaluate a volume field and its spatial gradient, if available.
 
         Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
             *no description available*
@@ -5137,6 +5286,33 @@
 
     .. py:method:: mitsuba.Field.eval_n(self, si, active=True)
 
+        Overloaded function.
+
+        1. ``eval_n(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, active: drjit.llvm.ad.Bool = True) -> list[drjit.llvm.ad.Float]``
+
+        Evaluate the field as an n-channel float array at a surface
+        interaction
+
+        Pointer allocation and deallocation must be performed by the caller.
+
+        2. ``eval_n(self, it: :py:obj:`mitsuba.Interaction3f`, active: drjit.llvm.ad.Bool = True) -> list[drjit.llvm.ad.Float]``
+
+        Evaluate all channels at a generic 3D interaction.
+
+        3. ``eval_n(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, count: int, args: object | None = None, active: drjit.llvm.ad.Bool = True) -> list[drjit.llvm.ad.Float]``
+
+        Evaluate the field as an n-channel float array at a surface
+        interaction
+
+        Pointer allocation and deallocation must be performed by the caller.
+
+        4. ``eval_n(self, it: :py:obj:`mitsuba.Interaction3f`, count: int, args: object | None = None, active: drjit.llvm.ad.Bool = True) -> list[drjit.llvm.ad.Float]``
+
+        Evaluate the field as an n-channel float array at a generic 3D
+        interaction
+
+        Pointer allocation and deallocation must be performed by the caller.
+
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
 
@@ -5147,6 +5323,26 @@
             *no description available*
 
     .. py:method:: mitsuba.Field.eval_spec(self, si, active=True)
+
+        Overloaded function.
+
+        1. ``eval_spec(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.Color3f```
+
+        Evaluate an argument-free spectrum field at a surface interaction.
+
+        2. ``eval_spec(self, it: :py:obj:`mitsuba.Interaction3f`, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.Color3f```
+
+        Evaluate an argument-free spectrum field at a generic 3D interaction.
+
+        3. ``eval_spec(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, args: object | None = None, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.Color3f```
+
+        Evaluate the field as an unpolarized spectrum at a surface
+        interaction.
+
+        4. ``eval_spec(self, it: :py:obj:`mitsuba.Interaction3f`, args: object | None = None, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.Color3f```
+
+        Evaluate the field as an unpolarized spectrum at a generic 3D
+        interaction.
 
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
@@ -5164,20 +5360,28 @@
 
     .. py:method:: mitsuba.Field.is_spatially_varying()
 
+        Return whether evaluation varies over surface position.
+
         Returns → bool:
             *no description available*
 
     .. py:method:: mitsuba.Field.max()
+
+        Return the maximum value of a field, if available.
 
         Returns → float:
             *no description available*
 
     .. py:method:: mitsuba.Field.max_per_channel()
 
+        Return per-channel maxima for a multi-channel volume field.
+
         Returns → list[float]:
             *no description available*
 
     .. py:method:: mitsuba.Field.mean()
+
+        Return the mean value of a surface field, if available.
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
@@ -5198,6 +5402,8 @@
 
     .. py:method:: mitsuba.Field.pdf_position(self, p, active=True)
 
+        Return the UV-space position PDF associated with sample_position().
+
         Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
             *no description available*
 
@@ -5208,6 +5414,8 @@
             *no description available*
 
     .. py:method:: mitsuba.Field.pdf_spectrum(self, si, active=True)
+
+        Return the wavelength PDF associated with sample_spectrum().
 
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
@@ -5225,15 +5433,21 @@
 
     .. py:method:: mitsuba.Field.resolution_2d()
 
+        Return the 2D resolution of a discrete surface field.
+
         Returns → :py:obj:`mitsuba.ScalarVector2i`:
             *no description available*
 
     .. py:method:: mitsuba.Field.resolution_3d()
 
+        Return the 3D resolution of a discrete volume field.
+
         Returns → :py:obj:`mitsuba.ScalarVector3i`:
             *no description available*
 
     .. py:method:: mitsuba.Field.sample_position(self, sample, active=True)
+
+        Importance sample a UV-space position.
 
         Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
             *no description available*
@@ -5245,6 +5459,8 @@
             *no description available*
 
     .. py:method:: mitsuba.Field.sample_spectrum(self, si, sample, active=True)
+
+        Importance sample wavelengths proportional to the surface spectrum.
 
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
@@ -5259,6 +5475,8 @@
             *no description available*
 
     .. py:method:: mitsuba.Field.spectral_resolution()
+
+        Return the wavelength spacing of a discretized spectrum.
 
         Returns → float:
             *no description available*
@@ -5293,6 +5511,8 @@
 
     .. py:method:: mitsuba.Field.wavelength_range()
 
+        Return the wavelength range covered by a spectrum.
+
         Returns → :py:obj:`mitsuba.ScalarVector2f`:
             *no description available*
 
@@ -5318,6 +5538,17 @@
 
     .. py:method:: mitsuba.FieldPtr.eval(self, si, active=True)
 
+        Overloaded function.
+
+        1. ``eval(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, active: drjit.llvm.ad.Bool = True) -> object``
+
+        Evaluate an argument-free surface field as an unpolarized spectrum.
+
+        2. ``eval(self, it: :py:obj:`mitsuba.Interaction3f`, active: drjit.llvm.ad.Bool = True) -> object``
+
+        Evaluate an argument-free interaction field as an unpolarized
+        spectrum.
+
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
 
@@ -5328,6 +5559,18 @@
             *no description available*
 
     .. py:method:: mitsuba.FieldPtr.eval_1(self, si, active=True)
+
+        Overloaded function.
+
+        1. ``eval_1(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Float``
+
+        Evaluate an argument-free single-channel field at a surface
+        interaction.
+
+        2. ``eval_1(self, it: :py:obj:`mitsuba.Interaction3f`, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Float``
+
+        Evaluate an argument-free single-channel field at a generic 3D
+        interaction.
 
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
@@ -5340,6 +5583,8 @@
 
     .. py:method:: mitsuba.FieldPtr.eval_1_grad(self, si, active=True)
 
+        Evaluate the UV-space gradient of a scalar surface field.
+
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
 
@@ -5350,6 +5595,16 @@
             *no description available*
 
     .. py:method:: mitsuba.FieldPtr.eval_3(self, si, active=True)
+
+        Overloaded function.
+
+        1. ``eval_3(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.Color3f```
+
+        Texture-style trichromatic evaluation at a surface interaction.
+
+        2. ``eval_3(self, it: :py:obj:`mitsuba.Interaction3f`, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.Vector3f```
+
+        Volume-style three-channel evaluation at a generic 3D interaction.
 
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
@@ -5362,6 +5617,8 @@
 
     .. py:method:: mitsuba.FieldPtr.eval_6(self, it, active=True)
 
+        Volume-style six-channel evaluation at a generic 3D interaction.
+
         Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
             *no description available*
 
@@ -5372,6 +5629,16 @@
             *no description available*
 
     .. py:method:: mitsuba.FieldPtr.eval_array2(self, si, active=True)
+
+        Overloaded function.
+
+        1. ``eval_array2(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Array2f``
+
+        Evaluate the field as a two-channel array at a surface interaction.
+
+        2. ``eval_array2(self, it: :py:obj:`mitsuba.Interaction3f`, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Array2f``
+
+        Evaluate the field as a two-channel array at a generic 3D interaction.
 
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
@@ -5384,6 +5651,17 @@
 
     .. py:method:: mitsuba.FieldPtr.eval_array3(self, si, active=True)
 
+        Overloaded function.
+
+        1. ``eval_array3(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Array3f``
+
+        Evaluate the field as a three-channel array at a surface interaction.
+
+        2. ``eval_array3(self, it: :py:obj:`mitsuba.Interaction3f`, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Array3f``
+
+        Evaluate the field as a three-channel array at a generic 3D
+        interaction.
+
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
 
@@ -5394,6 +5672,16 @@
             *no description available*
 
     .. py:method:: mitsuba.FieldPtr.eval_array6(self, si, active=True)
+
+        Overloaded function.
+
+        1. ``eval_array6(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.ArrayXf``
+
+        Evaluate the field as a six-channel array at a surface interaction.
+
+        2. ``eval_array6(self, it: :py:obj:`mitsuba.Interaction3f`, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.ArrayXf``
+
+        Evaluate the field as a six-channel array at a generic 3D interaction.
 
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
@@ -5406,6 +5694,16 @@
 
     .. py:method:: mitsuba.FieldPtr.eval_color3(self, si, active=True)
 
+        Overloaded function.
+
+        1. ``eval_color3(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.Color3f```
+
+        Evaluate an argument-free color field at a surface interaction.
+
+        2. ``eval_color3(self, it: :py:obj:`mitsuba.Interaction3f`, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.Color3f```
+
+        Evaluate an argument-free color field at a generic 3D interaction.
+
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
 
@@ -5416,6 +5714,22 @@
             *no description available*
 
     .. py:method:: mitsuba.FieldPtr.eval_n(self, si, count, active=True)
+
+        Overloaded function.
+
+        1. ``eval_n(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, count: int, active: drjit.llvm.ad.Bool = True) -> list[drjit.llvm.ad.Float]``
+
+        Evaluate the field as an n-channel float array at a surface
+        interaction
+
+        Pointer allocation and deallocation must be performed by the caller.
+
+        2. ``eval_n(self, it: :py:obj:`mitsuba.Interaction3f`, count: int, active: drjit.llvm.ad.Bool = True) -> list[drjit.llvm.ad.Float]``
+
+        Evaluate the field as an n-channel float array at a generic 3D
+        interaction
+
+        Pointer allocation and deallocation must be performed by the caller.
 
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
@@ -5431,6 +5745,16 @@
 
     .. py:method:: mitsuba.FieldPtr.eval_spec(self, si, active=True)
 
+        Overloaded function.
+
+        1. ``eval_spec(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.Color3f```
+
+        Evaluate an argument-free spectrum field at a surface interaction.
+
+        2. ``eval_spec(self, it: :py:obj:`mitsuba.Interaction3f`, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.Color3f```
+
+        Evaluate an argument-free spectrum field at a generic 3D interaction.
+
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
 
@@ -5442,10 +5766,14 @@
 
     .. py:method:: mitsuba.FieldPtr.mean()
 
+        Return the mean value of a surface field, if available.
+
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
     .. py:method:: mitsuba.FieldPtr.pdf_position(self, p, active=True)
+
+        Return the UV-space position PDF associated with sample_position().
 
         Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
             *no description available*
@@ -5458,6 +5786,8 @@
 
     .. py:method:: mitsuba.FieldPtr.pdf_spectrum(self, si, active=True)
 
+        Return the wavelength PDF associated with sample_spectrum().
+
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
 
@@ -5469,6 +5799,8 @@
 
     .. py:method:: mitsuba.FieldPtr.sample_position(self, sample, active=True)
 
+        Importance sample a UV-space position.
+
         Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
             *no description available*
 
@@ -5479,6 +5811,8 @@
             *no description available*
 
     .. py:method:: mitsuba.FieldPtr.sample_spectrum(self, si, sample, active=True)
+
+        Importance sample wavelengths proportional to the surface spectrum.
 
         Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
             *no description available*
@@ -16693,7 +17027,7 @@
 
     .. py:method:: mitsuba.Shape.remove_attribute(self, name)
 
-        Remove a texture texture with the given ``name``.
+        Remove a texture attribute with the given ``name``.
 
         Throws an exception if the attribute was not registered.
 

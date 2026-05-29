@@ -138,7 +138,10 @@ VOLUME_ORDERING = [
 ]
 
 FIELD_ORDERING = [
-    'sinusoidal'
+    'sinusoidal',
+    '../src/python/python/fields/hashgrid.py',
+    '../src/python/python/fields/permuto.py',
+    '../src/python/python/fields/neural.py'
 ]
 
 
@@ -173,18 +176,21 @@ def extract(target, filename):
 def extract_python(target, filename):
     f = open(filename, encoding='utf-8')
     inheader = False
+    indent = ''
     for line in f.readlines():
-        # Remove indentation
-        if line.startswith('    '):
-            line = line[4:]
-        match_beg = re.match(r'r\"\"\"', line)
+        if inheader and indent and line.startswith(indent):
+            line = line[len(indent):]
+
+        match_beg = re.match(r'^(\s*)r\"\"\"', line)
         match_end = re.match(r'\"\"\"',  line)
         if not inheader and match_beg is not None:
             print("Processing %s" % filename)
+            indent = match_beg.group(1)
             inheader = True
             continue
         if inheader and match_end is not None:
             inheader = False
+            indent = ''
             continue
         if not inheader:
             continue

@@ -1355,6 +1355,8 @@ void transform_merge_equivalent(const ParserConfig &/*config*/, ParserState &sta
             // Skip merging for stateful or identity-sensitive objects
             if (state[repr].type == ObjectType::Emitter ||
                 state[repr].type == ObjectType::Field ||
+                state[repr].type == ObjectType::Texture ||
+                state[repr].type == ObjectType::Volume ||
                 state[repr].type == ObjectType::Shape)
                 continue;
 
