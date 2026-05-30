@@ -623,7 +623,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
     }
 
     ScalarFloat sample_scale =
-        dr::prod(crop_size) / ScalarFloat(spp * dr::prod(film_size));
+        dr::prod(crop_size) / ScalarFloat((size_t) spp * (size_t) dr::prod(film_size));
 
     TensorXf result;
     if constexpr (!dr::is_jit_v<Float>) {
@@ -646,7 +646,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
 
         size_t total_samples = samples_per_pass * n_passes;
 
-        seed *= (uint32_t) total_samples / (uint32_t) grain_size;
+        seed *= (uint32_t) (total_samples / grain_size);
         std::atomic<size_t> samples_done(0);
 
         // Start the render timer (used for timeouts & log messages)
