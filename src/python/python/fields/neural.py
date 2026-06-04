@@ -8,13 +8,19 @@ Neural field (:monosp:`neuralfield`)
 
  * - domain
    - |string|
-   - Query domain, one of ``Surface``, ``Interaction``, or
-     ``SurfaceAndInteraction``. (Default: ``Surface``)
+   - Renderer interaction record accepted by the field, one of ``surface``,
+     ``interaction``, or ``surface_and_interaction``. Surface queries receive
+     a ``SurfaceInteraction3f`` and use position plus UV coordinates as network
+     inputs. Interaction queries receive a generic ``Interaction3f`` and use
+     position plus zero UV channels. This setting does not describe the full
+     mathematical input dimensionality of the neural function; use
+     ``args_dim`` for extra per-query channels such as directions.
+     (Default: ``surface``)
 
  * - out_type
    - |string|
-   - Semantic output type: ``Float``, ``Spectrum``, ``Color3``, ``Array2``,
-     ``Array3``, or ``Features``. (Default: ``Color3``)
+   - Semantic output type: ``float``, ``spectrum``, ``color3``, ``array2``,
+     ``array3``, or ``features``. (Default: ``color3``)
 
  * - out_dim
    - |int|
@@ -52,7 +58,9 @@ Neural field (:monosp:`neuralfield`)
 This JIT-only field evaluates a Dr.Jit neural network at renderer interaction
 records. The network input always includes position, includes UV coordinates for
 surface queries, can include optional argument channels, and can be augmented by
-a nested encoding field.
+a nested encoding field. Direction-dependent scattering still needs a BSDF that
+defines matching ``sample()`` and ``pdf()`` methods; it is not provided by a
+field alone.
 
 """
 

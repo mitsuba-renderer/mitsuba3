@@ -158,6 +158,17 @@ def test05_zero_args_field_accepts_no_args_without_allocating_argument_storage(
         field.eval_color3(si, args=[1.0])
 
 
+def test05b_neural_field_string_parameters_accept_lowercase(field_ad_rgb_variant):
+    field = mi.load_dict(neural_field_dict(
+        domain="surface",
+        out_type="color3",
+        args_dim=0,
+    ))
+
+    assert field.domain() == mi.FieldDomain.Surface
+    assert field.out_type() == mi.FieldValueType.Color3
+
+
 def test06_single_scalar_arg_matches_one_element_sequence(field_ad_rgb_variant):
     field = mi.load_dict(
         neural_field_dict(

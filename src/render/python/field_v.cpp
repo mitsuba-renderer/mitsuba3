@@ -475,15 +475,7 @@ private:
             return true;
 
         nb::object code = function.attr("__code__");
-        uint32_t flags = nb::cast<uint32_t>(code.attr("co_flags"));
-        constexpr uint32_t co_varargs = 0x04;
-        constexpr uint32_t co_varkeywords = 0x08;
-        if (flags & (co_varargs | co_varkeywords))
-            return true;
-
-        size_t arg_count =
-            nb::cast<size_t>(code.attr("co_argcount")) +
-            nb::cast<size_t>(code.attr("co_kwonlyargcount"));
+        size_t arg_count = nb::cast<size_t>(code.attr("co_argcount"));
         nb::tuple names = nb::cast<nb::tuple>(code.attr("co_varnames"));
         arg_count = std::min(arg_count, (size_t) nb::len(names));
 
@@ -510,8 +502,8 @@ private:
         if (accepts_args) {
             nb::object args_o = field_args_to_python(args);
             if (accepts_active)
-                return method(record, args_o, active);
-            return method(record, args_o);
+                return method(record, "args"_a = args_o, "active"_a = active);
+            return method(record, "args"_a = args_o);
         }
 
         if (args.size != 0)
@@ -519,7 +511,7 @@ private:
                   args.size);
 
         if (accepts_active)
-            return method(record, active);
+            return method(record, "active"_a = active);
         return method(record);
     }
 
@@ -538,8 +530,9 @@ private:
         if (accepts_args) {
             nb::object args_o = field_args_to_python(args);
             if (accepts_active)
-                return method(record, count, args_o, active);
-            return method(record, count, args_o);
+                return method(record, count, "args"_a = args_o,
+                              "active"_a = active);
+            return method(record, count, "args"_a = args_o);
         }
 
         if (args.size != 0)
@@ -547,7 +540,7 @@ private:
                   args.size);
 
         if (accepts_active)
-            return method(record, count, active);
+            return method(record, count, "active"_a = active);
         return method(record, count);
     }
 
