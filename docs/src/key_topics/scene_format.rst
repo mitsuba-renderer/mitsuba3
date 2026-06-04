@@ -145,6 +145,9 @@ the available object types:
         * - `integrator`
           - Integrators implement rendering techniques for solving the light transport equation
           - `path`, `direct`, `depth`
+        * - `field`
+          - Field plugins represent generic data evaluated at surface or volume interactions
+          - `bitmap`, `gridvolume`, `neuralfield`
         * - `rfilter`
           - Reconstruction filters control how the `film` converts a set of samples into the output image
           - `box`, `gaussian`
@@ -158,8 +161,11 @@ the available object types:
           - Shape puglins define surfaces that mark transitions between different types of materials
           - `obj`, `ply`, `serialized`
         * - `texture`
-          - Texture plugins represent spatially varying signals on surfaces
+          - Compatibility role request for surface-compatible fields
           - `bitmap`, `checkerboard`
+        * - `volume`
+          - Compatibility role request for volume-compatible fields
+          - `gridvolume`, `constvolume`
 
 
 Properties

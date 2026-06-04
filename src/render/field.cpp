@@ -52,11 +52,15 @@ MI_VARIANT bool Field<Float, Spectrum>::supports_jit() const {
 }
 
 MI_VARIANT bool Field<Float, Spectrum>::supports_surface_queries() const {
-    return false;
+    FieldDomain d = domain();
+    return d == FieldDomain::Surface ||
+           d == FieldDomain::SurfaceAndInteraction;
 }
 
 MI_VARIANT bool Field<Float, Spectrum>::supports_interaction_queries() const {
-    return false;
+    FieldDomain d = domain();
+    return d == FieldDomain::Interaction ||
+           d == FieldDomain::SurfaceAndInteraction;
 }
 
 MI_VARIANT typename Field<Float, Spectrum>::FloatStorage

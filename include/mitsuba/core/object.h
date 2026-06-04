@@ -49,10 +49,10 @@ enum class ObjectType : uint32_t {
     /// Denotes an arbitrary shape (including meshes)
     Shape,
 
-    /// A 2D texture data source
+    /// Compatibility request for a surface-compatible field
     Texture,
 
-    /// A 3D volume data source
+    /// Compatibility request for a volume-compatible field
     Volume,
 
     /// A participating medium

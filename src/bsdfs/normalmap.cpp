@@ -109,6 +109,17 @@ public:
             Throw("Exactly one BSDF child object must be specified.");
 
         m_normalmap = props.get_surface_field<Field>("normalmap");
+        FieldValueType type = m_normalmap->out_type();
+        uint32_t dim = m_normalmap->out_dim();
+        bool rgb_spectrum = !is_spectral_v<Spectrum> &&
+                            type == FieldValueType::Spectrum && dim == 3;
+        if (!((type == FieldValueType::Color3 ||
+               type == FieldValueType::Array3) && dim == 3) &&
+            !rgb_spectrum)
+            Throw("NormalMap: parameter \"normalmap\" must be a "
+                  "three-channel surface field (Color3[3], Array3[3], or "
+                  "RGB Spectrum[3]), got %s[%u].",
+                  field_value_type_name(type), dim);
 
         m_flip_invalid_normals = props.get<bool>("flip_invalid_normals", true);
         m_use_shadowing_function = props.get<bool>("use_shadowing_function", true);

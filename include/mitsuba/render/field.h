@@ -33,7 +33,12 @@ enum class FieldValueType : uint32_t {
 };
 
 /**
- * \brief Interaction record types accepted by a \ref Field
+ * \brief Mitsuba interaction record types accepted by a \ref Field
+ *
+ * This selects the supported evaluation record type
+ * (\ref SurfaceInteraction3f or \ref Interaction3f). It does not describe the
+ * mathematical dimensionality of the function; extra per-query channels are
+ * represented by \ref FieldArgs.
  */
 enum class FieldDomain : uint32_t {
     /// Surface interactions only

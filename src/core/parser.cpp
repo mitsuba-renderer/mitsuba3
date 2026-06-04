@@ -593,7 +593,7 @@ static void parse_xml_node(const ParserConfig &config, ParserState &state,
     // Special case: <spectrum> with 'type' attribute should be treated as an object
     if (tag_type == TagType::Spectrum && node.attribute("type")) {
         tag_type = TagType::Object;
-        object_type = ObjectType::Texture;  // Spectrum plugins are textures
+        object_type = ObjectType::Texture;  // Spectrum plugins request texture-role fields
     }
 
     // Create a new scene node

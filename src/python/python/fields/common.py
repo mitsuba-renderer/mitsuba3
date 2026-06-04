@@ -42,28 +42,36 @@ def _validate_args(plugin_name: str, expected: int, args) -> None:
 
 def _field_value_type(mi, value: str):
     mapping = {
-        "Float": mi.FieldValueType.Float,
-        "Spectrum": mi.FieldValueType.Spectrum,
-        "Color3": mi.FieldValueType.Color3,
-        "Array2": mi.FieldValueType.Array2,
-        "Array3": mi.FieldValueType.Array3,
-        "Features": mi.FieldValueType.Features,
+        "float": mi.FieldValueType.Float,
+        "spectrum": mi.FieldValueType.Spectrum,
+        "color3": mi.FieldValueType.Color3,
+        "array2": mi.FieldValueType.Array2,
+        "array3": mi.FieldValueType.Array3,
+        "features": mi.FieldValueType.Features,
     }
-    key = str(value)
+    key = str(value).replace("_", "").lower()
     if key not in mapping:
-        raise RuntimeError(f'Invalid field output type "{value}".') from None
+        raise RuntimeError(
+            f'Invalid field output type "{value}" '
+            '(expected "float", "spectrum", "color3", "array2", '
+            '"array3", or "features").'
+        ) from None
     return mapping[key]
 
 
 def _field_domain(mi, value: str):
     mapping = {
-        "Surface": mi.FieldDomain.Surface,
-        "Interaction": mi.FieldDomain.Interaction,
-        "SurfaceAndInteraction": mi.FieldDomain.SurfaceAndInteraction,
+        "surface": mi.FieldDomain.Surface,
+        "interaction": mi.FieldDomain.Interaction,
+        "surfaceandinteraction": mi.FieldDomain.SurfaceAndInteraction,
     }
-    key = str(value)
+    key = str(value).replace("_", "").lower()
     if key not in mapping:
-        raise RuntimeError(f'Invalid field domain "{value}".') from None
+        raise RuntimeError(
+            f'Invalid field domain "{value}" '
+            '(expected "surface", "interaction", or '
+            '"surface_and_interaction").'
+        ) from None
     return mapping[key]
 
 
