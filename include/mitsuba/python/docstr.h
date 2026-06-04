@@ -990,7 +990,7 @@ static const char *__doc_mitsuba_BSDF_eval_attribute_1 =
 R"doc(Monochromatic evaluation of a BSDF attribute at the given surface
 interaction
 
-This function differs from eval_attribute() in that it provided raw
+This function differs from eval_attribute() in that it provides raw
 access to scalar intensity/reflectance values without any color
 processing (e.g. spectral upsampling).
 
@@ -1001,13 +1001,13 @@ Parameter ``si``:
     Surface interaction associated with the query
 
 Returns:
-    An scalar intensity or reflectance value)doc";
+    A scalar intensity or reflectance value)doc";
 
 static const char *__doc_mitsuba_BSDF_eval_attribute_3 =
 R"doc(Trichromatic evaluation of a BSDF attribute at the given surface
 interaction
 
-This function differs from eval_attribute() in that it provided raw
+This function differs from eval_attribute() in that it provides raw
 access to RGB intensity/reflectance values without any additional
 color processing (e.g. RGB-to-spectral upsampling).
 
@@ -1018,7 +1018,7 @@ Parameter ``si``:
     Surface interaction associated with the query
 
 Returns:
-    An trichromatic intensity or reflectance value)doc";
+    A trichromatic intensity or reflectance value)doc";
 
 static const char *__doc_mitsuba_BSDF_eval_diffuse_reflectance =
 R"doc(Evaluate the diffuse reflectance
@@ -3629,6 +3629,230 @@ static const char *__doc_mitsuba_Endpoint_traverse_1_cb_rw = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_world_transform = R"doc(Return the local space to world space transformation)doc";
 
+static const char *__doc_mitsuba_Field =
+R"doc(Base class of all field implementations
+
+A field evaluates float-valued data at renderer interaction records.
+The input can be a SurfaceInteraction3f, a generic Interaction3f, and
+an optional array of user-provided float arguments.
+
+The generic eval() overloads return a dynamic array of output
+channels. Fixed-size routines are provided for callers that know the
+desired semantic output type and want to avoid dynamic storage in
+performance-sensitive code.)doc";
+
+static const char *__doc_mitsuba_Field_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Field_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Field_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Field_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_Field_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_FieldArgs = R"doc(View of optional argument channels passed to a Field query)doc";
+
+static const char *__doc_mitsuba_FieldArgs_FieldArgs = R"doc()doc";
+
+static const char *__doc_mitsuba_FieldArgs_FieldArgs_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_FieldArgs_data = R"doc(Pointer to the first argument channel, or ``nullptr`` when empty)doc";
+
+static const char *__doc_mitsuba_FieldArgs_size = R"doc(Number of argument channels)doc";
+
+static const char *__doc_mitsuba_FieldDomain = R"doc(Interaction record types accepted by a Field)doc";
+
+static const char *__doc_mitsuba_FieldDomain_Interaction = R"doc(Generic 3D interactions only)doc";
+
+static const char *__doc_mitsuba_FieldDomain_Surface = R"doc(Surface interactions only)doc";
+
+static const char *__doc_mitsuba_FieldDomain_SurfaceAndInteraction = R"doc(Both surface and generic 3D interactions)doc";
+
+static const char *__doc_mitsuba_FieldValueType = R"doc(Type of float channel tuple returned by a Field)doc";
+
+static const char *__doc_mitsuba_FieldValueType_Array2 = R"doc(A two-channel float array)doc";
+
+static const char *__doc_mitsuba_FieldValueType_Array3 = R"doc(A three-channel float array)doc";
+
+static const char *__doc_mitsuba_FieldValueType_Color3 = R"doc(A three-channel color value)doc";
+
+static const char *__doc_mitsuba_FieldValueType_Features = R"doc(A variable-length float array)doc";
+
+static const char *__doc_mitsuba_FieldValueType_Float = R"doc(A single scalar channel)doc";
+
+static const char *__doc_mitsuba_FieldValueType_Spectrum = R"doc(An unpolarized spectral value)doc";
+
+static const char *__doc_mitsuba_Field_D65 = R"doc(Convenience function returning the standard D65 illuminant field.)doc";
+
+static const char *__doc_mitsuba_Field_D65_2 =
+R"doc(Convenience function to create a product field with the D65
+illuminant.)doc";
+
+static const char *__doc_mitsuba_Field_Field = R"doc()doc";
+
+static const char *__doc_mitsuba_Field_args_dim = R"doc(Return the number of optional argument channels)doc";
+
+static const char *__doc_mitsuba_Field_bbox = R"doc(Return the world-space bounding box of a volume field.)doc";
+
+static const char *__doc_mitsuba_Field_channel_count = R"doc(Return the number of stored volume channels, if available.)doc";
+
+static const char *__doc_mitsuba_Field_class_name = R"doc()doc";
+
+static const char *__doc_mitsuba_Field_domain = R"doc(Return the interaction record type accepted by this field)doc";
+
+static const char *__doc_mitsuba_Field_eval =
+R"doc(Evaluate the field at a surface interaction
+
+Parameter ``si``:
+    An interaction record describing the associated surface position
+
+Parameter ``args``:
+    Optional field-specific argument channels
+
+Returns:
+    A dynamic array containing out_dim() float channels)doc";
+
+static const char *__doc_mitsuba_Field_eval_2 =
+R"doc(Evaluate the field at a generic 3D interaction
+
+Parameter ``it``:
+    An interaction record describing the associated 3D position
+
+Parameter ``args``:
+    Optional field-specific argument channels
+
+Returns:
+    A dynamic array containing out_dim() float channels)doc";
+
+static const char *__doc_mitsuba_Field_eval_3 = R"doc(Evaluate an argument-free surface field as an unpolarized spectrum.)doc";
+
+static const char *__doc_mitsuba_Field_eval_4 =
+R"doc(Evaluate an argument-free interaction field as an unpolarized
+spectrum.)doc";
+
+static const char *__doc_mitsuba_Field_eval_1 =
+R"doc(Evaluate the field as a single-channel quantity at a surface
+interaction.)doc";
+
+static const char *__doc_mitsuba_Field_eval_1_2 =
+R"doc(Evaluate an argument-free single-channel field at a surface
+interaction.)doc";
+
+static const char *__doc_mitsuba_Field_eval_1_3 =
+R"doc(Evaluate the field as a single-channel quantity at a generic 3D
+interaction.)doc";
+
+static const char *__doc_mitsuba_Field_eval_1_4 =
+R"doc(Evaluate an argument-free single-channel field at a generic 3D
+interaction.)doc";
+
+static const char *__doc_mitsuba_Field_eval_1_grad = R"doc(Evaluate the UV-space gradient of a scalar surface field.)doc";
+
+static const char *__doc_mitsuba_Field_eval_3_3 = R"doc(Texture-style trichromatic evaluation at a surface interaction.)doc";
+
+static const char *__doc_mitsuba_Field_eval_3_2 = R"doc(Volume-style three-channel evaluation at a generic 3D interaction.)doc";
+
+static const char *__doc_mitsuba_Field_eval_6 = R"doc(Volume-style six-channel evaluation at a generic 3D interaction.)doc";
+
+static const char *__doc_mitsuba_Field_eval_array2 = R"doc(Evaluate the field as a two-channel array at a surface interaction.)doc";
+
+static const char *__doc_mitsuba_Field_eval_array2_2 = R"doc(Evaluate the field as a two-channel array at a generic 3D interaction.)doc";
+
+static const char *__doc_mitsuba_Field_eval_array3 = R"doc(Evaluate the field as a three-channel array at a surface interaction.)doc";
+
+static const char *__doc_mitsuba_Field_eval_array3_2 =
+R"doc(Evaluate the field as a three-channel array at a generic 3D
+interaction.)doc";
+
+static const char *__doc_mitsuba_Field_eval_array6 = R"doc(Evaluate the field as a six-channel array at a surface interaction.)doc";
+
+static const char *__doc_mitsuba_Field_eval_array6_2 = R"doc(Evaluate the field as a six-channel array at a generic 3D interaction.)doc";
+
+static const char *__doc_mitsuba_Field_eval_color3 =
+R"doc(Evaluate the field as a three-channel color value at a surface
+interaction.)doc";
+
+static const char *__doc_mitsuba_Field_eval_color3_2 = R"doc(Evaluate an argument-free color field at a surface interaction.)doc";
+
+static const char *__doc_mitsuba_Field_eval_color3_3 =
+R"doc(Evaluate the field as a three-channel color value at a generic 3D
+interaction.)doc";
+
+static const char *__doc_mitsuba_Field_eval_color3_4 = R"doc(Evaluate an argument-free color field at a generic 3D interaction.)doc";
+
+static const char *__doc_mitsuba_Field_eval_gradient = R"doc(Evaluate a volume field and its spatial gradient, if available.)doc";
+
+static const char *__doc_mitsuba_Field_eval_n =
+R"doc(Evaluate the field as an n-channel float array at a surface
+interaction
+
+Pointer allocation and deallocation must be performed by the caller.)doc";
+
+static const char *__doc_mitsuba_Field_eval_n_2 =
+R"doc(Evaluate the field as an n-channel float array at a generic 3D
+interaction
+
+Pointer allocation and deallocation must be performed by the caller.)doc";
+
+static const char *__doc_mitsuba_Field_eval_n_3 = R"doc(Evaluate all channels at a generic 3D interaction.)doc";
+
+static const char *__doc_mitsuba_Field_eval_spec =
+R"doc(Evaluate the field as an unpolarized spectrum at a surface
+interaction.)doc";
+
+static const char *__doc_mitsuba_Field_eval_spec_2 = R"doc(Evaluate an argument-free spectrum field at a surface interaction.)doc";
+
+static const char *__doc_mitsuba_Field_eval_spec_3 =
+R"doc(Evaluate the field as an unpolarized spectrum at a generic 3D
+interaction.)doc";
+
+static const char *__doc_mitsuba_Field_eval_spec_4 = R"doc(Evaluate an argument-free spectrum field at a generic 3D interaction.)doc";
+
+static const char *__doc_mitsuba_Field_is_spatially_varying = R"doc(Return whether evaluation varies over surface position.)doc";
+
+static const char *__doc_mitsuba_Field_max = R"doc(Return the maximum value of a field, if available.)doc";
+
+static const char *__doc_mitsuba_Field_max_per_channel = R"doc(Return per-channel maxima for a multi-channel volume field.)doc";
+
+static const char *__doc_mitsuba_Field_mean = R"doc(Return the mean value of a surface field, if available.)doc";
+
+static const char *__doc_mitsuba_Field_out_dim = R"doc(Return the number of output channels)doc";
+
+static const char *__doc_mitsuba_Field_out_type = R"doc(Return the semantic output type of this field)doc";
+
+static const char *__doc_mitsuba_Field_pdf_position = R"doc(Return the UV-space position PDF associated with sample_position().)doc";
+
+static const char *__doc_mitsuba_Field_pdf_spectrum = R"doc(Return the wavelength PDF associated with sample_spectrum().)doc";
+
+static const char *__doc_mitsuba_Field_resolution_2d = R"doc(Return the 2D resolution of a discrete surface field.)doc";
+
+static const char *__doc_mitsuba_Field_resolution_3d = R"doc(Return the 3D resolution of a discrete volume field.)doc";
+
+static const char *__doc_mitsuba_Field_sample_position = R"doc(Importance sample a UV-space position.)doc";
+
+static const char *__doc_mitsuba_Field_sample_spectrum = R"doc(Importance sample wavelengths proportional to the surface spectrum.)doc";
+
+static const char *__doc_mitsuba_Field_spectral_resolution = R"doc(Return the wavelength spacing of a discretized spectrum.)doc";
+
+static const char *__doc_mitsuba_Field_supports_interaction_queries = R"doc(Return whether this field supports Interaction3f queries)doc";
+
+static const char *__doc_mitsuba_Field_supports_jit = R"doc(Return whether this field supports JIT Mitsuba variants)doc";
+
+static const char *__doc_mitsuba_Field_supports_scalar = R"doc(Return whether this field supports scalar Mitsuba variants)doc";
+
+static const char *__doc_mitsuba_Field_supports_surface_queries = R"doc(Return whether this field supports SurfaceInteraction3f queries)doc";
+
+static const char *__doc_mitsuba_Field_traverse_1_cb_ro = R"doc()doc";
+
+static const char *__doc_mitsuba_Field_traverse_1_cb_rw = R"doc()doc";
+
+static const char *__doc_mitsuba_Field_type = R"doc()doc";
+
+static const char *__doc_mitsuba_Field_variant_name = R"doc()doc";
+
+static const char *__doc_mitsuba_Field_wavelength_range = R"doc(Return the wavelength range covered by a spectrum.)doc";
+
 static const char *__doc_mitsuba_FileResolver =
 R"doc(Simple class for resolving paths on Linux/Windows/Mac OS
 
@@ -6127,6 +6351,8 @@ static const char *__doc_mitsuba_ObjectType_BSDF = R"doc(A bidirectional reflect
 
 static const char *__doc_mitsuba_ObjectType_Emitter = R"doc(Emits radiance, subclasses Emitter)doc";
 
+static const char *__doc_mitsuba_ObjectType_Field = R"doc(A field data source)doc";
+
 static const char *__doc_mitsuba_ObjectType_Film = R"doc(Storage representation of the sensor)doc";
 
 static const char *__doc_mitsuba_ObjectType_Integrator = R"doc(A rendering algorithm aka. Integrator)doc";
@@ -6651,6 +6877,10 @@ static const char *__doc_mitsuba_PluginManager_plugin_type =
 R"doc(Get the type of a plugin by name, or return Object::Unknown if
 unknown.)doc";
 
+static const char *__doc_mitsuba_PluginManager_plugin_type_2 =
+R"doc(Get the type of a plugin by name and variant, or return
+Object::Unknown if unknown.)doc";
+
 static const char *__doc_mitsuba_PluginManager_register_plugin =
 R"doc(Register a new plugin variant with the plugin manager
 
@@ -7028,8 +7258,98 @@ for (const auto &prop : props) {
 for (const auto &prop : props.objects()) {
     if (BSDF *bsdf = prop.try_get<BSDF>()) {
         // Process BSDF object
-    } else if (Texture *texture = prop.try_get<Texture>()) {
-        // Process Texture object
+    } else if (Field *field = prop.try_get<Field>()) {
+        // Process field object
+    }
+}
+```
+
+## Iterator stability
+
+It is legal to mutate the container (e.g., by adding/removing
+elements) while iterating over its elements.
+
+## Python API
+
+In Python, Property instances implement a dictionary-like interface:
+
+```
+props = mi.Properties("plugin_name")
+
+# Write to 'props':
+props["color_value"] = mi.ScalarColor3f(0.1, 0.2, 0.3)
+
+for k, v in props.items():
+   print(f'{k} = {v}')
+```
+
+## Query Tracking
+
+Each property stores a flag that tracks whether it has been accessed.
+This helps detect configuration errors such as typos in parameter
+names or unused parameters. The get() function automatically marks
+parameters as queried.
+
+Use the following methods to work with query tracking: -
+was_queried(name): Check if a specific parameter was accessed -
+unqueried(): Get a list of all parameters that were never accessed -
+mark_queried(name): Manually mark a parameter as accessed
+
+This is particularly useful during plugin initialization to warn users
+about potentially misspelled or unnecessary parameters in their scene
+descriptions.
+
+## Caveats
+
+Deleting parameters leaves unused entries ("tombstones") that reduce
+memory efficiency especially following a large number of deletions.)doc";
+
+static const char *__doc_mitsuba_Properties_2 =
+R"doc(Associative container for passing configuration parameters to Mitsuba
+plugins.
+
+When Mitsuba scene objects (BSDFs, textures, emitters, etc.) are
+instantiated, they receive their configuration through a Properties
+object. This container maps parameter names to values of various
+types: booleans, integers, floats, strings, colors, transforms, and
+references to other scene objects.
+
+The Properties class combines the convenience of a dictionary with
+type safety and provides several key features:
+
+- Fast O(1) insertion and lookup by property name. - Traversal of
+properties in the original insertion order. - Automatic tracking of
+queried properties. - Reference properties that can be used to build
+object hierarchies.
+
+## Basic C++ Usage
+
+```
+Properties props("plugin_name");
+
+// Write to 'props':
+props.set("color_value", ScalarColor3f(0.1f, 0.2f, 0.3f));
+props.set("my_bsdf", bsdf); // ref<BSDF> or BSDF*
+
+// Read from 'props':
+ScalarColor3f value = props.get<ScalarColor3f>("color_value");
+BSDF *bsdf = props.get<BSDF*>("my_bsdf");
+```
+
+## Iterating Over Properties
+
+```
+// Iterate over all properties
+for (const auto &prop : props) {
+    std::cout << prop.name() << " = " << prop.type() << std::endl;
+}
+
+// Iterate only over object properties
+for (const auto &prop : props.objects()) {
+    if (BSDF *bsdf = prop.try_get<BSDF>()) {
+        // Process BSDF object
+    } else if (Field *field = prop.try_get<Field>()) {
+        // Process field object
     }
 }
 ```
@@ -7259,23 +7579,31 @@ The function raises an exception if the parameter does not exist or
 cannot be cast to the requested type. Accessing the parameter
 automatically marks it as queried.)doc";
 
-static const char *__doc_mitsuba_Properties_get_emissive_texture =
-R"doc(Retrieve an emissive texture parameter with variant-specific
-conversions (see get_texture_impl for details))doc";
+static const char *__doc_mitsuba_Properties_get_emissive_surface_field =
+R"doc(Retrieve an emissive surface field parameter with variant-specific
+conversions (see get_texture_impl for details).)doc";
 
-static const char *__doc_mitsuba_Properties_get_emissive_texture_2 =
-R"doc(Retrieve an emissive texture parameter with default value and variant-
-specific conversions (see get_texture_impl for details))doc";
+static const char *__doc_mitsuba_Properties_get_emissive_surface_field_2 =
+R"doc(Retrieve an emissive surface field parameter with default value and
+variant-specific conversions (see get_texture_impl for details).)doc";
+
+static const char *__doc_mitsuba_Properties_get_emissive_texture = R"doc(Compatibility spelling for get_emissive_surface_field().)doc";
+
+static const char *__doc_mitsuba_Properties_get_emissive_texture_2 = R"doc(Compatibility spelling for get_emissive_surface_field().)doc";
 
 static const char *__doc_mitsuba_Properties_get_impl = R"doc(Implementation detail of get())doc";
 
-static const char *__doc_mitsuba_Properties_get_texture =
-R"doc(Retrieve a texture parameter with variant-specific conversions (see
-get_texture_impl for details))doc";
+static const char *__doc_mitsuba_Properties_get_surface_field =
+R"doc(Retrieve a surface field parameter with variant-specific conversions
+(see get_texture_impl for details).)doc";
 
-static const char *__doc_mitsuba_Properties_get_texture_2 =
-R"doc(Retrieve a texture parameter with default value and variant-specific
-conversions (see get_texture_impl for details))doc";
+static const char *__doc_mitsuba_Properties_get_surface_field_2 =
+R"doc(Retrieve a surface field parameter with default value and variant-
+specific conversions (see get_texture_impl for details).)doc";
+
+static const char *__doc_mitsuba_Properties_get_texture = R"doc(Compatibility spelling for get_surface_field().)doc";
+
+static const char *__doc_mitsuba_Properties_get_texture_2 = R"doc(Compatibility spelling for get_surface_field().)doc";
 
 static const char *__doc_mitsuba_Properties_get_texture_impl =
 R"doc(Retrieve a texture parameter (internal method)
@@ -7284,12 +7612,12 @@ This method exposes a low level interface for texture construction, in
 general get_texture(), get_emissive_texture(), and
 get_unbounded_texture() are preferable.
 
-The method retrieves or construct a texture object (a subclass of
-``mitsuba::Texture<...>``).
+The method retrieves or constructs a surface-compatible field.
 
-If the parameter already holds a texture object, this function returns
-it directly. Otherwise, it creates an appropriate texture based on the
-property type and the current variant. The exact behavior is:
+If the parameter already holds a compatible field object, this
+function returns it directly. Otherwise, it creates an appropriate
+texture field based on the property type and the current variant. The
+exact behavior is:
 
 **Float/Integer Values:** - Monochromatic variants: Create ``uniform``
 texture with the value. - RGB/spectral variants: - For reflectance
@@ -7329,19 +7657,23 @@ static const char *__doc_mitsuba_Properties_get_texture_impl_2 =
 R"doc(Version of the above that switches to a default initialization when
 the property was not specified)doc";
 
-static const char *__doc_mitsuba_Properties_get_unbounded_texture =
-R"doc(Retrieve an unbounded texture parameter with default value and
-variant-specific conversions (see get_texture_impl for details))doc";
+static const char *__doc_mitsuba_Properties_get_unbounded_surface_field =
+R"doc(Retrieve an unbounded surface field parameter with default value and
+variant-specific conversions (see get_texture_impl for details).)doc";
 
-static const char *__doc_mitsuba_Properties_get_unbounded_texture_2 =
-R"doc(Retrieve an unbounded texture parameter with variant-specific
-conversions (see get_texture_impl for details))doc";
+static const char *__doc_mitsuba_Properties_get_unbounded_surface_field_2 =
+R"doc(Retrieve an unbounded surface field parameter with variant-specific
+conversions (see get_texture_impl for details).)doc";
+
+static const char *__doc_mitsuba_Properties_get_unbounded_texture = R"doc(Compatibility spelling for get_unbounded_surface_field().)doc";
+
+static const char *__doc_mitsuba_Properties_get_unbounded_texture_2 = R"doc(Compatibility spelling for get_unbounded_surface_field().)doc";
 
 static const char *__doc_mitsuba_Properties_get_volume =
 R"doc(Retrieve a volume parameter
 
-This method retrieves a volume parameter, where ``T`` is a subclass of
-``mitsuba::Volume<...>``.
+This method retrieves a volume parameter, where ``T`` is a field type
+compatible with volume queries.
 
 Scalar and texture values are also accepted. In this case, the plugin
 manager will automatically construct a ``constvolume`` instance.)doc";
@@ -7351,6 +7683,10 @@ R"doc(Retrieve a volume parameter with float default
 
 When the volume parameter doesn't exist, creates a constant volume
 with the specified floating point value.)doc";
+
+static const char *__doc_mitsuba_Properties_get_volume_field = R"doc(Retrieve a volume field parameter.)doc";
+
+static const char *__doc_mitsuba_Properties_get_volume_field_2 = R"doc(Retrieve a volume field parameter with float default.)doc";
 
 static const char *__doc_mitsuba_Properties_has_property = R"doc(Verify if a property with the specified name exists)doc";
 
@@ -9202,7 +9538,7 @@ static const char *__doc_mitsuba_Shape_Shape = R"doc(//! @})doc";
 static const char *__doc_mitsuba_Shape_Shape_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_add_texture_attribute =
-R"doc(Add a texture attribute with the given ``name``.
+R"doc(Add a field-backed texture attribute with the given ``name``.
 
 If an attribute with the same name already exists, it is replaced.
 
@@ -9212,9 +9548,9 @@ face attributes via the ``Mesh::add_attribute`` method.
 Parameter ``name``:
     Name of the attribute
 
-Parameter ``texture``:
-    Texture to store. The dimensionality of the attribute is simply
-    the channel count of the texture.)doc";
+Parameter ``field``:
+    Surface-compatible field to store. The dimensionality of the
+    attribute is simply the channel count of the field.)doc";
 
 static const char *__doc_mitsuba_Shape_bbox =
 R"doc(Return an axis aligned box that bounds all shape primitives (including
@@ -9335,7 +9671,7 @@ static const char *__doc_mitsuba_Shape_eval_attribute_1 =
 R"doc(Monochromatic evaluation of a shape attribute at the given surface
 interaction
 
-This function differs from eval_attribute() in that it provided raw
+This function differs from eval_attribute() in that it provides raw
 access to scalar intensity/reflectance values without any color
 processing (e.g. spectral upsampling).
 
@@ -9346,13 +9682,13 @@ Parameter ``si``:
     Surface interaction associated with the query
 
 Returns:
-    An scalar intensity or reflectance value)doc";
+    A scalar intensity or reflectance value)doc";
 
 static const char *__doc_mitsuba_Shape_eval_attribute_3 =
 R"doc(Trichromatic evaluation of a shape attribute at the given surface
 interaction
 
-This function differs from eval_attribute() in that it provided raw
+This function differs from eval_attribute() in that it provides raw
 access to RGB intensity/reflectance values without any additional
 color processing (e.g. RGB-to-spectral upsampling).
 
@@ -9710,7 +10046,7 @@ static const char *__doc_mitsuba_Shape_ray_test_packet_3 = R"doc()doc";
 static const char *__doc_mitsuba_Shape_ray_test_scalar = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_remove_attribute =
-R"doc(Remove a texture texture with the given ``name``.
+R"doc(Remove a texture attribute with the given ``name``.
 
 Throws an exception if the attribute was not registered.)doc";
 
@@ -10472,6 +10808,234 @@ static const char *__doc_mitsuba_SurfaceAreaHeuristic3_traversal_cost =
 R"doc(Get the cost of a traversal operation used by the tree construction
 heuristic)doc";
 
+static const char *__doc_mitsuba_SurfaceField =
+R"doc(Base class of fields that provide the surface texture role
+
+This class implements a generic texture map that supports evaluation
+at arbitrary surface positions and wavelengths (if compiled in
+spectral mode). It can be used to provide both intensities (e.g. for
+light sources) and unitless reflectance parameters (e.g. an albedo of
+a reflectance model).
+
+The spectrum can be evaluated at arbitrary (continuous) wavelengths,
+though the underlying function is not required to be smooth or even
+continuous.)doc";
+
+static const char *__doc_mitsuba_SurfaceField_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_SurfaceField = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_args_dim = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_class_name = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_domain = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_eval =
+R"doc(Evaluate the texture at the given surface interaction
+
+Parameter ``si``:
+    An interaction record describing the associated surface position
+
+Returns:
+    An unpolarized spectral power distribution or reflectance value)doc";
+
+static const char *__doc_mitsuba_SurfaceField_eval_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_eval_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_eval_1 =
+R"doc(Monochromatic evaluation of the texture at the given surface
+interaction
+
+This function differs from eval() in that it provides raw access to
+scalar intensity/reflectance values without any color processing (e.g.
+spectral upsampling). This is useful in parts of the renderer that
+encode scalar quantities using textures, e.g. a height field.
+
+Parameter ``si``:
+    An interaction record describing the associated surface position
+
+Returns:
+    A scalar intensity or reflectance value)doc";
+
+static const char *__doc_mitsuba_SurfaceField_eval_1_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_eval_1_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_eval_1_grad =
+R"doc(Monochromatic evaluation of the texture gradient at the given surface
+interaction
+
+Parameter ``si``:
+    An interaction record describing the associated surface position
+
+Returns:
+    A (u,v) pair of intensity or reflectance value gradients)doc";
+
+static const char *__doc_mitsuba_SurfaceField_eval_3_2 =
+R"doc(Trichromatic evaluation of the texture at the given surface
+interaction
+
+This function differs from eval() in that it provides raw access to
+RGB intensity/reflectance values without any additional color
+processing (e.g. RGB-to-spectral upsampling). This is useful in parts
+of the renderer that encode 3D quantities using textures, e.g. a
+normal map.
+
+Parameter ``si``:
+    An interaction record describing the associated surface position
+
+Returns:
+    A trichromatic intensity or reflectance value)doc";
+
+static const char *__doc_mitsuba_SurfaceField_eval_array2 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_eval_array2_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_eval_array3 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_eval_array3_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_eval_array6 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_eval_array6_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_eval_color3 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_eval_color3_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_eval_n = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_eval_n_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_eval_spec = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_eval_spec_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_is_spatially_varying = R"doc(Does this texture evaluation depend on the UV coordinates.)doc";
+
+static const char *__doc_mitsuba_SurfaceField_max =
+R"doc(Return the maximum value of the spectrum
+
+Not every implementation necessarily provides this function. The
+default implementation throws an exception.
+
+Even if the operation is provided, it may only return an
+approximation.)doc";
+
+static const char *__doc_mitsuba_SurfaceField_mean =
+R"doc(Return the mean value of the spectrum over the support
+(MI_WAVELENGTH_MIN..MI_WAVELENGTH_MAX)
+
+Not every implementation necessarily provides this function. The
+default implementation throws an exception.
+
+Even if the operation is provided, it may only return an
+approximation.)doc";
+
+static const char *__doc_mitsuba_SurfaceField_out_dim = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_out_type = R"doc(//! @{ \name Field compatibility interface)doc";
+
+static const char *__doc_mitsuba_SurfaceField_pdf_position = R"doc(Returns the probability per unit area of sample_position().)doc";
+
+static const char *__doc_mitsuba_SurfaceField_pdf_spectrum =
+R"doc(Evaluate the density function of the sample_spectrum() method as a
+probability per unit wavelength (in units of 1/nm).
+
+Not every implementation necessarily overrides this function. The
+default implementation throws an exception.
+
+Parameter ``si``:
+    An interaction record describing the associated surface position
+
+Returns:
+    A density value for each wavelength in ``si.wavelengths`` (hence
+    the Wavelength type).)doc";
+
+static const char *__doc_mitsuba_SurfaceField_resolution =
+R"doc(Returns the resolution of the texture, assuming that it is based on a
+discrete representation.
+
+The default implementation returns ``(1, 1)``)doc";
+
+static const char *__doc_mitsuba_SurfaceField_resolution_2d = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_sample_position =
+R"doc(Importance sample a surface position proportional to the overall
+spectral reflectance or intensity of the texture
+
+This function assumes that the texture is implemented as a mapping
+from 2D UV positions to texture values, which is not necessarily true
+for all textures (e.g. 3D noise functions, mesh attributes, etc.). For
+this reason, not every plugin will provide a specialized
+implementation, and the default implementation simply returns the
+input sample (i.e. uniform sampling is used).
+
+Parameter ``sample``:
+    A 2D vector of uniform variates
+
+Returns:
+    1. A texture-space position in the range :math:`[0, 1]^2`
+
+2. The associated probability per unit area in UV space)doc";
+
+static const char *__doc_mitsuba_SurfaceField_sample_spectrum =
+R"doc(Importance sample a set of wavelengths proportional to the spectrum
+defined at the given surface position
+
+Not every implementation necessarily provides this function, and it is
+a no-op when compiling non-spectral variants of Mitsuba. The default
+implementation throws an exception.
+
+Parameter ``si``:
+    An interaction record describing the associated surface position
+
+Parameter ``sample``:
+    A uniform variate for each desired wavelength.
+
+Returns:
+    1. Set of sampled wavelengths specified in nanometers
+
+2. The Monte Carlo importance weight (Spectral power distribution
+value divided by the sampling density))doc";
+
+static const char *__doc_mitsuba_SurfaceField_spectral_resolution =
+R"doc(Returns the resolution of the spectrum in nanometers (if discretized)
+
+Not every implementation necessarily provides this function. The
+default implementation throws an exception.)doc";
+
+static const char *__doc_mitsuba_SurfaceField_supports_interaction_queries = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_supports_jit = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_supports_scalar = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_supports_surface_queries = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_traverse_1_cb_ro = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_traverse_1_cb_rw = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_type = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_variant_name = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceField_wavelength_range =
+R"doc(Returns the range of wavelengths covered by the spectrum
+
+The default implementation returns ``(MI_CIE_MIN, MI_CIE_MAX)``)doc";
+
 static const char *__doc_mitsuba_SurfaceInteraction = R"doc(Stores information related to a surface scattering interaction)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction =
@@ -11100,190 +11664,6 @@ static const char *__doc_mitsuba_TensorFile_has_field = R"doc(Does the file cont
 
 static const char *__doc_mitsuba_TensorFile_to_string = R"doc(Return a human-readable summary)doc";
 
-static const char *__doc_mitsuba_Texture =
-R"doc(Base class of all surface texture implementations
-
-This class implements a generic texture map that supports evaluation
-at arbitrary surface positions and wavelengths (if compiled in
-spectral mode). It can be used to provide both intensities (e.g. for
-light sources) and unitless reflectance parameters (e.g. an albedo of
-a reflectance model).
-
-The spectrum can be evaluated at arbitrary (continuous) wavelengths,
-though the underlying function it is not required to be smooth or even
-continuous.)doc";
-
-static const char *__doc_mitsuba_Texture_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_D65 = R"doc(Convenience function returning the standard D65 illuminant)doc";
-
-static const char *__doc_mitsuba_Texture_D65_2 =
-R"doc(Convenience function to create a product texture of a texture and the
-standard D65 illuminant)doc";
-
-static const char *__doc_mitsuba_Texture_Texture = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_class_name = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_eval =
-R"doc(Evaluate the texture at the given surface interaction
-
-Parameter ``si``:
-    An interaction record describing the associated surface position
-
-Returns:
-    An unpolarized spectral power distribution or reflectance value)doc";
-
-static const char *__doc_mitsuba_Texture_eval_1 =
-R"doc(Monochromatic evaluation of the texture at the given surface
-interaction
-
-This function differs from eval() in that it provided raw access to
-scalar intensity/reflectance values without any color processing (e.g.
-spectral upsampling). This is useful in parts of the renderer that
-encode scalar quantities using textures, e.g. a height field.
-
-Parameter ``si``:
-    An interaction record describing the associated surface position
-
-Returns:
-    An scalar intensity or reflectance value)doc";
-
-static const char *__doc_mitsuba_Texture_eval_1_grad =
-R"doc(Monochromatic evaluation of the texture gradient at the given surface
-interaction
-
-Parameter ``si``:
-    An interaction record describing the associated surface position
-
-Returns:
-    A (u,v) pair of intensity or reflectance value gradients)doc";
-
-static const char *__doc_mitsuba_Texture_eval_3 =
-R"doc(Trichromatic evaluation of the texture at the given surface
-interaction
-
-This function differs from eval() in that it provided raw access to
-RGB intensity/reflectance values without any additional color
-processing (e.g. RGB-to-spectral upsampling). This is useful in parts
-of the renderer that encode 3D quantities using textures, e.g. a
-normal map.
-
-Parameter ``si``:
-    An interaction record describing the associated surface position
-
-Returns:
-    An trichromatic intensity or reflectance value)doc";
-
-static const char *__doc_mitsuba_Texture_is_spatially_varying = R"doc(Does this texture evaluation depend on the UV coordinates)doc";
-
-static const char *__doc_mitsuba_Texture_max =
-R"doc(Return the maximum value of the spectrum
-
-Not every implementation necessarily provides this function. The
-default implementation throws an exception.
-
-Even if the operation is provided, it may only return an
-approximation.)doc";
-
-static const char *__doc_mitsuba_Texture_mean =
-R"doc(Return the mean value of the spectrum over the support
-(MI_WAVELENGTH_MIN..MI_WAVELENGTH_MAX)
-
-Not every implementation necessarily provides this function. The
-default implementation throws an exception.
-
-Even if the operation is provided, it may only return an
-approximation.)doc";
-
-static const char *__doc_mitsuba_Texture_pdf_position = R"doc(Returns the probability per unit area of sample_position())doc";
-
-static const char *__doc_mitsuba_Texture_pdf_spectrum =
-R"doc(Evaluate the density function of the sample_spectrum() method as a
-probability per unit wavelength (in units of 1/nm).
-
-Not every implementation necessarily overrides this function. The
-default implementation throws an exception.
-
-Parameter ``si``:
-    An interaction record describing the associated surface position
-
-Returns:
-    A density value for each wavelength in ``si.wavelengths`` (hence
-    the Wavelength type).)doc";
-
-static const char *__doc_mitsuba_Texture_resolution =
-R"doc(Returns the resolution of the texture, assuming that it is based on a
-discrete representation.
-
-The default implementation returns ``(1, 1)``)doc";
-
-static const char *__doc_mitsuba_Texture_sample_position =
-R"doc(Importance sample a surface position proportional to the overall
-spectral reflectance or intensity of the texture
-
-This function assumes that the texture is implemented as a mapping
-from 2D UV positions to texture values, which is not necessarily true
-for all textures (e.g. 3D noise functions, mesh attributes, etc.). For
-this reason, not every will plugin provide a specialized
-implementation, and the default implementation simply return the input
-sample (i.e. uniform sampling is used).
-
-Parameter ``sample``:
-    A 2D vector of uniform variates
-
-Returns:
-    1. A texture-space position in the range :math:`[0, 1]^2`
-
-2. The associated probability per unit area in UV space)doc";
-
-static const char *__doc_mitsuba_Texture_sample_spectrum =
-R"doc(Importance sample a set of wavelengths proportional to the spectrum
-defined at the given surface position
-
-Not every implementation necessarily provides this function, and it is
-a no-op when compiling non-spectral variants of Mitsuba. The default
-implementation throws an exception.
-
-Parameter ``si``:
-    An interaction record describing the associated surface position
-
-Parameter ``sample``:
-    A uniform variate for each desired wavelength.
-
-Returns:
-    1. Set of sampled wavelengths specified in nanometers
-
-2. The Monte Carlo importance weight (Spectral power distribution
-value divided by the sampling density))doc";
-
-static const char *__doc_mitsuba_Texture_spectral_resolution =
-R"doc(Returns the resolution of the spectrum in nanometers (if discretized)
-
-Not every implementation necessarily provides this function. The
-default implementation throws an exception.)doc";
-
-static const char *__doc_mitsuba_Texture_traverse_1_cb_ro = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_traverse_1_cb_rw = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_type = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_variant_name = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_wavelength_range =
-R"doc(Returns the range of wavelengths covered by the spectrum
-
-The default implementation returns ``(MI_CIE_MIN, MI_CIE_MAX)``)doc";
-
 static const char *__doc_mitsuba_Thread =
 R"doc(Dummy thread class for backward compatibility
 
@@ -11521,9 +11901,7 @@ static const char *__doc_mitsuba_TraversalCallback_put_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_TraversalCallback_put_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_TraversalCallback_put_4 =
-R"doc(Forward declaration for field<...> values that simultaneously store
-host+device values)doc";
+static const char *__doc_mitsuba_TraversalCallback_put_4 = R"doc(Register a mirrored ``synced``<...> value as a traversable parameter)doc";
 
 static const char *__doc_mitsuba_TraversalCallback_put_object =
 R"doc(Actual implementation for Object references [To be provided by
@@ -11545,17 +11923,137 @@ static const char *__doc_mitsuba_Vector_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Vector_operator_assign_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_Volume = R"doc(Abstract base class for 3D volumes.)doc";
+static const char *__doc_mitsuba_VolumeField = R"doc(Base class of fields that provide the volume role.)doc";
 
-static const char *__doc_mitsuba_Volume_2 = R"doc()doc";
+static const char *__doc_mitsuba_VolumeField_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_Volume_3 = R"doc()doc";
+static const char *__doc_mitsuba_VolumeField_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Volume_4 = R"doc()doc";
+static const char *__doc_mitsuba_VolumeField_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_Volume_5 = R"doc()doc";
+static const char *__doc_mitsuba_VolumeField_5 = R"doc()doc";
 
-static const char *__doc_mitsuba_Volume_6 = R"doc()doc";
+static const char *__doc_mitsuba_VolumeField_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_VolumeField = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_args_dim = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_bbox = R"doc(Returns the bounding box of the volume.)doc";
+
+static const char *__doc_mitsuba_VolumeField_channel_count =
+R"doc(Returns the number of channels stored in the volume
+
+When the channel count is zero, it indicates that the volume does not
+support per-channel queries.)doc";
+
+static const char *__doc_mitsuba_VolumeField_class_name = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_domain = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_eval = R"doc(Evaluate the volume at the given interaction, with color processing.)doc";
+
+static const char *__doc_mitsuba_VolumeField_eval_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_eval_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_eval_1 = R"doc(Evaluate this volume as a single-channel quantity.)doc";
+
+static const char *__doc_mitsuba_VolumeField_eval_1_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_eval_1_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_eval_3_2 =
+R"doc(Evaluate this volume as a three-channel quantity with no color
+processing (e.g. velocity field).)doc";
+
+static const char *__doc_mitsuba_VolumeField_eval_6 =
+R"doc(Evaluate this volume as a six-channel quantity with no color
+processing
+
+This interface is specifically intended to encode the parameters of an
+SGGX phase function.)doc";
+
+static const char *__doc_mitsuba_VolumeField_eval_array2 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_eval_array2_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_eval_array3 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_eval_array3_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_eval_array6 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_eval_array6_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_eval_color3 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_eval_color3_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_eval_gradient =
+R"doc(Evaluate the volume at the given interaction and compute the gradients
+of the linear interpolant as well.)doc";
+
+static const char *__doc_mitsuba_VolumeField_eval_n =
+R"doc(Evaluate this volume as an n-channel float quantity
+
+This interface is specifically intended to encode a variable number of
+parameters. Pointer allocation/deallocation must be performed by the
+caller.)doc";
+
+static const char *__doc_mitsuba_VolumeField_eval_n_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_eval_n_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_eval_spec = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_eval_spec_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_m_bbox = R"doc(Bounding box)doc";
+
+static const char *__doc_mitsuba_VolumeField_m_channel_count = R"doc(Number of channels stored in the volume)doc";
+
+static const char *__doc_mitsuba_VolumeField_m_to_local = R"doc(Used to bring points in world coordinates to local coordinates.)doc";
+
+static const char *__doc_mitsuba_VolumeField_max = R"doc(Returns the maximum value of the volume over all dimensions.)doc";
+
+static const char *__doc_mitsuba_VolumeField_max_per_channel =
+R"doc(In the case of a multi-channel volume, this function returns the
+maximum value for each channel.
+
+Pointer allocation/deallocation must be performed by the caller.)doc";
+
+static const char *__doc_mitsuba_VolumeField_out_dim = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_out_type = R"doc(//! @{ \name Field compatibility interface)doc";
+
+static const char *__doc_mitsuba_VolumeField_resolution =
+R"doc(Returns the resolution of the volume, assuming that it is based on a
+discrete representation.
+
+The default implementation returns ``(1, 1, 1)``)doc";
+
+static const char *__doc_mitsuba_VolumeField_resolution_3d = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_supports_interaction_queries = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_supports_jit = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_supports_scalar = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_supports_surface_queries = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_to_string = R"doc(Returns a human-readable summary.)doc";
+
+static const char *__doc_mitsuba_VolumeField_traverse_1_cb_ro = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_traverse_1_cb_rw = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_type = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_update_bbox = R"doc()doc";
+
+static const char *__doc_mitsuba_VolumeField_variant_name = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid =
 R"doc(Class to read and write 3D volume grids
@@ -11651,76 +12149,6 @@ R"doc(Write an encoded form of the volume grid to a stream
 
 Parameter ``stream``:
     Target stream that will receive the encoded output)doc";
-
-static const char *__doc_mitsuba_Volume_Volume = R"doc()doc";
-
-static const char *__doc_mitsuba_Volume_bbox = R"doc(Returns the bounding box of the volume)doc";
-
-static const char *__doc_mitsuba_Volume_channel_count =
-R"doc(Returns the number of channels stored in the volume
-
-When the channel count is zero, it indicates that the volume does not
-support per-channel queries.)doc";
-
-static const char *__doc_mitsuba_Volume_class_name = R"doc()doc";
-
-static const char *__doc_mitsuba_Volume_eval =
-R"doc(Evaluate the volume at the given surface interaction, with color
-processing.)doc";
-
-static const char *__doc_mitsuba_Volume_eval_1 = R"doc(Evaluate this volume as a single-channel quantity.)doc";
-
-static const char *__doc_mitsuba_Volume_eval_3 =
-R"doc(Evaluate this volume as a three-channel quantity with no color
-processing (e.g. velocity field).)doc";
-
-static const char *__doc_mitsuba_Volume_eval_6 =
-R"doc(Evaluate this volume as a six-channel quantity with no color
-processing This interface is specifically intended to encode the
-parameters of an SGGX phase function.)doc";
-
-static const char *__doc_mitsuba_Volume_eval_gradient =
-R"doc(Evaluate the volume at the given surface interaction, and compute the
-gradients of the linear interpolant as well.)doc";
-
-static const char *__doc_mitsuba_Volume_eval_n =
-R"doc(Evaluate this volume as a n-channel float quantity
-
-This interface is specifically intended to encode a variable number of
-parameters. Pointer allocation/deallocation must be performed by the
-caller.)doc";
-
-static const char *__doc_mitsuba_Volume_m_bbox = R"doc(Bounding box)doc";
-
-static const char *__doc_mitsuba_Volume_m_channel_count = R"doc(Number of channels stored in the volume)doc";
-
-static const char *__doc_mitsuba_Volume_m_to_local = R"doc(Used to bring points in world coordinates to local coordinates.)doc";
-
-static const char *__doc_mitsuba_Volume_max = R"doc(Returns the maximum value of the volume over all dimensions.)doc";
-
-static const char *__doc_mitsuba_Volume_max_per_channel =
-R"doc(In the case of a multi-channel volume, this function returns the
-maximum value for each channel.
-
-Pointer allocation/deallocation must be performed by the caller.)doc";
-
-static const char *__doc_mitsuba_Volume_resolution =
-R"doc(Returns the resolution of the volume, assuming that it is based on a
-discrete representation.
-
-The default implementation returns ``(1, 1, 1)``)doc";
-
-static const char *__doc_mitsuba_Volume_to_string = R"doc(Returns a human-reable summary)doc";
-
-static const char *__doc_mitsuba_Volume_traverse_1_cb_ro = R"doc()doc";
-
-static const char *__doc_mitsuba_Volume_traverse_1_cb_rw = R"doc()doc";
-
-static const char *__doc_mitsuba_Volume_type = R"doc()doc";
-
-static const char *__doc_mitsuba_Volume_update_bbox = R"doc()doc";
-
-static const char *__doc_mitsuba_Volume_variant_name = R"doc()doc";
 
 static const char *__doc_mitsuba_ZStream =
 R"doc(Transparent compression/decompression stream based on ``zlib``.
@@ -11864,6 +12292,12 @@ Parameter ``frame``:
 
 static const char *__doc_mitsuba_coordinate_system = R"doc(Complete the set {a} to an orthonormal basis {a, b, c})doc";
 
+static const char *__doc_mitsuba_create_compatible_object_for_variant = R"doc()doc";
+
+static const char *__doc_mitsuba_create_texture_role_object_for_variant = R"doc()doc";
+
+static const char *__doc_mitsuba_create_volume_role_object_for_variant = R"doc()doc";
+
 static const char *__doc_mitsuba_depolarizer =
 R"doc(Turn a spectrum into a Mueller matrix representation that only has a
 non-zero (1,1) entry. For all non-polarized modes, this is the
@@ -11975,6 +12409,8 @@ static const char *__doc_mitsuba_detail_base_type = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_base_type_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_detail_checked_field_role_object = R"doc()doc";
+
 static const char *__doc_mitsuba_detail_compare_typeid = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_get_color_space_tables = R"doc()doc";
@@ -12073,6 +12509,8 @@ static const char *__doc_mitsuba_detail_swap_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_swap_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_detail_try_field_role_object = R"doc()doc";
+
 static const char *__doc_mitsuba_detail_underlying = R"doc(Type trait to strip away dynamic/masking-related type wrappers)doc";
 
 static const char *__doc_mitsuba_detail_underlying_2 = R"doc()doc";
@@ -12110,28 +12548,7 @@ static const char *__doc_mitsuba_eval_reflectance = R"doc()doc";
 
 static const char *__doc_mitsuba_eval_transmittance = R"doc()doc";
 
-static const char *__doc_mitsuba_field =
-R"doc(Convenience wrapper to simultaneously instantiate a host and a device
-version of a type
-
-This class implements a simple wrapper that replicates instance
-attributes on the host and device. This is only relevant when
-``DeviceType`` is a JIT-compiled Dr.Jit array (when compiling the
-renderer in CUDA/LLVM mode).
-
-Why is this needed? Mitsuba plugins represent their internal state
-using attributes like position, intensity, etc., which are typically
-represented using Dr.Jit arrays. For technical reasons, it is helpful
-if those fields are both accessible on the host (in which case the
-lowest-level representation builds on standard C++ types like float or
-int, for example Point<float, 3>) or the device, whose types invoke
-the JIT compiler (e.g., Point<CUDAArray<float>, 3>). Copying this data
-back and forth can be costly if both host and device require
-simultaneous access. Even if all code effectively runs on the host
-(e.g. in LLVM mode), accessing "LLVM device" arrays still requires
-traversal of JIT compiler data structures, which was a severe
-bottleneck e.g. when Embree calls shape-specific intersection
-routines.)doc";
+static const char *__doc_mitsuba_field_value_type_name = R"doc()doc";
 
 static const char *__doc_mitsuba_file_resolver =
 R"doc(Return the global file resolver instance (this is a process-wide
@@ -12423,8 +12840,8 @@ checking is done here. The name-based get() is a thin wrapper.)doc";
 static const char *__doc_mitsuba_get_volume =
 R"doc(Retrieve a volume parameter
 
-This method retrieves a volume parameter, where ``T`` is a subclass of
-``mitsuba::Volume<...>``.
+This method retrieves a volume parameter, where ``T`` is a field type
+compatible with volume queries.
 
 Scalar and texture values are also accepted. In this case, the plugin
 manager will automatically construct a ``constvolume`` instance.)doc";
@@ -12545,6 +12962,12 @@ static const char *__doc_mitsuba_lookup_ior_3 = R"doc()doc";
 static const char *__doc_mitsuba_luminance = R"doc()doc";
 
 static const char *__doc_mitsuba_luminance_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_make_field_object_for_variant = R"doc()doc";
+
+static const char *__doc_mitsuba_make_texture_object_for_variant = R"doc()doc";
+
+static const char *__doc_mitsuba_make_volume_object_for_variant = R"doc()doc";
 
 static const char *__doc_mitsuba_math_bisect =
 R"doc(Bisect a floating point interval given a predicate function
@@ -13004,21 +13427,21 @@ static const char *__doc_mitsuba_operator_lshift_9 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_10 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_11 = R"doc(Prints the canonical string representation of a field)doc";
+static const char *__doc_mitsuba_operator_lshift_11 = R"doc(Return a string representation of a frame)doc";
 
-static const char *__doc_mitsuba_operator_lshift_12 = R"doc(Return a string representation of a frame)doc";
+static const char *__doc_mitsuba_operator_lshift_12 = R"doc(Prints the canonical string representation of an object instance)doc";
 
 static const char *__doc_mitsuba_operator_lshift_13 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_14 = R"doc(Prints the canonical string representation of an object instance)doc";
+static const char *__doc_mitsuba_operator_lshift_14 = R"doc(Return a string representation of the ray)doc";
 
-static const char *__doc_mitsuba_operator_lshift_15 = R"doc(Return a string representation of the ray)doc";
+static const char *__doc_mitsuba_operator_lshift_15 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_16 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_17 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_18 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_18 = R"doc(Prints the canonical string representation of a synced value)doc";
 
 static const char *__doc_mitsuba_operator_lshift_19 = R"doc()doc";
 
@@ -13498,6 +13921,8 @@ list of shapes.)doc";
 
 static const char *__doc_mitsuba_property_type_name = R"doc(Turn a Properties::Type enumeration value into string form)doc";
 
+static const char *__doc_mitsuba_put = R"doc(Register a mirrored ``synced``<...> value as a traversable parameter)doc";
+
 static const char *__doc_mitsuba_quad_chebyshev =
 R"doc(Computes the Chebyshev nodes, i.e. the roots of the Chebyshev
 polynomials of the first kind
@@ -13612,6 +14037,10 @@ Parameter ``cos_theta_t``:
 
 Parameter ``eta_ti``:
     Relative index of refraction (transmitted / incident))doc";
+
+static const char *__doc_mitsuba_require_field_spectral_evaluable = R"doc()doc";
+
+static const char *__doc_mitsuba_require_field_spectral_metadata = R"doc(Validate cheap field metadata that is consumed immediately.)doc";
 
 static const char *__doc_mitsuba_sample_rgb_spectrum =
 R"doc(Importance sample a "importance spectrum" that concentrates the
@@ -14377,6 +14806,29 @@ compliant))doc";
 
 static const char *__doc_mitsuba_string_trim = R"doc(Remove leading and trailing characters)doc";
 
+static const char *__doc_mitsuba_synced =
+R"doc(Convenience wrapper that keeps scalar host and Dr.Jit device values
+synchronized
+
+This class implements a simple wrapper that replicates instance
+attributes on the host and device. This is only relevant when
+``DeviceType`` is a JIT-compiled Dr.Jit array (when compiling the
+renderer in CUDA/LLVM mode).
+
+Why is this needed? Mitsuba plugins represent their internal state
+using attributes like position, intensity, etc., which are typically
+represented using Dr.Jit arrays. For technical reasons, it is helpful
+if those attributes are accessible on the host (in which case the
+lowest-level representation builds on standard C++ types like float or
+int, for example Point<float, 3>) or the device, whose types invoke
+the JIT compiler (e.g., Point<CUDAArray<float>, 3>). Copying this data
+back and forth can be costly if both host and device require
+simultaneous access. Even if all code effectively runs on the host
+(e.g. in LLVM mode), accessing "LLVM device" arrays still requires
+traversal of JIT compiler data structures, which was a severe
+bottleneck e.g. when Embree calls shape-specific intersection
+routines.)doc";
+
 static const char *__doc_mitsuba_tuple_hasher = R"doc()doc";
 
 static const char *__doc_mitsuba_tuple_hasher_operator_call = R"doc()doc";
@@ -14615,4 +15067,3 @@ static const char *__doc_operator_lshift = R"doc(Turns a vector of elements into
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif
-

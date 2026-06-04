@@ -116,6 +116,14 @@
 
 .. autoclass:: mitsuba.Endpoint
 
+.. autoclass:: mitsuba.Field
+
+.. autoclass:: mitsuba.FieldDomain
+
+.. autoclass:: mitsuba.FieldPtr
+
+.. autoclass:: mitsuba.FieldValueType
+
 .. autoclass:: mitsuba.FileResolver
 
 .. autoclass:: mitsuba.FileStream
@@ -570,8 +578,6 @@
 
 .. autoclass:: mitsuba.TensorXu8
 
-.. autoclass:: mitsuba.Texture
-
 .. autoclass:: mitsuba.Texture1d
 
 .. autoclass:: mitsuba.Texture1f
@@ -601,8 +607,6 @@
 .. autoclass:: mitsuba.Texture3f32
 
 .. autoclass:: mitsuba.Texture3f64
-
-.. autoclass:: mitsuba.TexturePtr
 
 .. autoclass:: mitsuba.Thread
 
@@ -672,8 +676,6 @@
 
 .. autoclass:: mitsuba.Version
 
-.. autoclass:: mitsuba.Volume
-
 .. autoclass:: mitsuba.VolumeGrid
 
 .. autoclass:: mitsuba.ZStream
@@ -708,11 +710,11 @@
 
 .. autofunction:: mitsuba.ad.largesteps.mesh_laplacian
 
-.. autoclass:: mitsuba.ad.loaders.Rayloader
+.. autoclass:: mitsuba.ad.loaders.FlatSensor
+
+.. autoclass:: mitsuba.ad.loaders.RayDataLoader
 
 .. autofunction:: mitsuba.ad.loaders.Tuple
-
-.. autoclass:: mitsuba.ad.loaders.flat_sensor
 
 .. autofunction:: mitsuba.chi2.BSDFAdapter
 
@@ -970,6 +972,8 @@
 
 .. autofunction:: mitsuba.register_emitter
 
+.. autofunction:: mitsuba.register_field
+
 .. autofunction:: mitsuba.register_film
 
 .. autofunction:: mitsuba.register_integrator
@@ -985,8 +989,6 @@
 .. autofunction:: mitsuba.register_sensor
 
 .. autofunction:: mitsuba.register_shape
-
-.. autofunction:: mitsuba.register_texture
 
 .. autofunction:: mitsuba.render
 
@@ -1181,4 +1183,3 @@
 .. autofunction:: mitsuba.while_loop
 
 .. autofunction:: mitsuba.xyz_to_srgb
-

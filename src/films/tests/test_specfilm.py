@@ -179,7 +179,7 @@ def test07_aovs(variants_all_spectral):
         })
         film.prepare(['AOV', 'AOV'])
 
-def test07_srf(variants_all_spectral):
+def test08_srf(variants_all_spectral):
     dic = {
         'type': 'specfilm',
         'channel1': {
@@ -202,5 +202,79 @@ def test07_srf(variants_all_spectral):
     key_range = "range"
     key_values = "values"
 
-    dr.allclose(params[key_range], [400, 800])
-    dr.allclose(params[key_values], [0.1, 0.2, 0., 0.3, 0.4])
+    assert dr.allclose(params[key_range], [400, 800])
+    assert dr.allclose(params[key_values], [0.1, 0.2, 0., 0.3, 0.4])
+
+
+def test09_direct_field_srf_accepts_spectral_evaluable_fields(variants_all_spectral):
+    class UnitSpectralFloatField(mi.Field):
+        def __init__(self, props):
+            mi.Field.__init__(self, props)
+
+        def out_type(self):
+            return mi.FieldValueType.Float
+
+        def domain(self):
+            return mi.FieldDomain.Surface
+
+        def out_dim(self):
+            return 1
+
+        def args_dim(self):
+            return 0
+
+        def supports_scalar(self):
+            return True
+
+        def supports_jit(self):
+            return True
+
+        def supports_surface_queries(self):
+            return True
+
+        def supports_interaction_queries(self):
+            return False
+
+        def eval_1(self, si, args=None, active=True):
+            return dr.select(active, mi.Float(1.0), mi.Float(0.0))
+
+        def wavelength_range(self):
+            return mi.ScalarVector2f(400.0, 700.0)
+
+        def spectral_resolution(self):
+            return 10.0
+
+    try:
+        mi.register_field("unit_spectral_float_field", UnitSpectralFloatField)
+    except RuntimeError as exc:
+        if "already" not in str(exc).lower():
+            raise
+
+    film = mi.load_dict({
+        "type": "specfilm",
+        "srf_float": {
+            "type": "unit_spectral_float_field",
+        },
+    })
+    assert film is not None
+
+    with pytest.raises(RuntimeError, match="SpecFilm|Texture role|Spectrum|Features"):
+        mi.load_dict({
+            "type": "specfilm",
+            "srf_bad": {
+                "type": "sinusoidalfield",
+                "input_dim": 2,
+                "out_dim": 8,
+            },
+        })
+
+
+def test10_d65_srf_has_valid_resolution(variant_scalar_spectral):
+    film = mi.load_dict({
+        "type": "specfilm",
+        "srf_d65": {
+            "type": "d65",
+            "color": [1.0, 1.0, 1.0],
+        },
+    })
+    assert film is not None

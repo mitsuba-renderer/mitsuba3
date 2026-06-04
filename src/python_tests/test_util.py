@@ -28,9 +28,9 @@ def test01_traverse_flags(variants_vec_backends_once_rgb):
         def to_string(self, *args, **kwargs):
             return "MyBSDF[]"
 
-    class MyTexture(mi.Texture):
+    class MyField(mi.Field):
         def __init__(self, props):
-            mi.Texture.__init__(self, props)
+            mi.Field.__init__(self, props)
 
         def traverse(self, cb):
             cb.put("tex_param_diff", 0.1, mi.ParamFlags.Differentiable)
@@ -56,12 +56,12 @@ def test01_traverse_flags(variants_vec_backends_once_rgb):
             return 0
 
     mi.register_bsdf("mybsdf", MyBSDF)
-    mi.register_texture("mytexture", MyTexture)
+    mi.register_field("myfield", MyField)
 
     bsdf = mi.load_dict({
         "type": "mybsdf",
-        "texture1": {"type": "mytexture"},
-        "texture2": {"type": "mytexture"},
+        "texture1": {"type": "myfield"},
+        "texture2": {"type": "myfield"},
     }, optimize=False)
 
     params = mi.traverse(bsdf)
@@ -116,11 +116,11 @@ def test02_traverse_update(variants_all_ad_rgb):
         def to_string(self, *args, **kwargs):
             return "MyBSDF[]"
 
-    class MyTexture(mi.Texture):
+    class MyField(mi.Field):
         update_keys = []
 
         def __init__(self, props):
-            mi.Texture.__init__(self, props)
+            mi.Field.__init__(self, props)
             self.tex_param_nondiff = mi.Float(3)
 
         def traverse(self, cb):
@@ -129,7 +129,7 @@ def test02_traverse_update(variants_all_ad_rgb):
             cb.put("tex_param_nondiff", self.tex_param_nondiff, mi.ParamFlags.NonDifferentiable)
 
         def parameters_changed(self, keys):
-            MyTexture.update_keys = keys
+            MyField.update_keys = keys
 
         def eval(self, *args, **kwargs):
             return dr.zeros(mi.Color3f)
@@ -148,26 +148,32 @@ def test02_traverse_update(variants_all_ad_rgb):
 
     def reset_update_keys():
         MyBSDF.update_keys = []
-        MyTexture.update_keys = []
+        MyField.update_keys = []
 
 
     mi.register_bsdf("mybsdf", MyBSDF)
-    mi.register_texture("mytexture", MyTexture)
+    mi.register_field("myfield", MyField)
 
     bsdf = mi.load_dict({
         "type": "mybsdf",
-        "texture1": {"type": "mytexture"},
-        "texture2": {"type": "mytexture"},
+        "texture1": {"type": "myfield"},
+        "texture2": {"type": "myfield"},
     })
 
     params = mi.traverse(bsdf)
     assert len(params) == 3
+    flags = params.flags("bsdf_tex_diff.tex_param_diff")
+    assert (flags & mi.ParamFlags.NonDifferentiable) == 0
+    assert (flags & mi.ParamFlags.ReadOnly) == 0
+
+    flags = params.flags("bsdf_tex_diff.tex_param_scalar")
+    assert (flags & mi.ParamFlags.NonDifferentiable) != 0
 
     # Normal usage
     params["bsdf_tex_diff.tex_param_diff"][0] = 0
     params.update()
     assert (
-        MyTexture.update_keys == ['tex_param_diff']
+        MyField.update_keys == ['tex_param_diff']
     ), "Only the updated parameter should figure in the keys!"
     assert (
         MyBSDF.update_keys == ['bsdf_tex_diff']
@@ -183,7 +189,7 @@ def test02_traverse_update(variants_all_ad_rgb):
     params["bsdf_tex_diff.tex_param_diff"] = mi.Point3f(0, 0, 0)
     params.update()
     assert (
-        MyTexture.update_keys == ['tex_param_diff'] and
+        MyField.update_keys == ['tex_param_diff'] and
         MyBSDF.update_keys == ['bsdf_tex_diff']
     ), "Updating an entire container should be supported!"
     reset_update_keys()
@@ -193,21 +199,21 @@ def test02_traverse_update(variants_all_ad_rgb):
     params["bsdf_tex_diff.tex_param_diff"] = params["bsdf_tex_diff.tex_param_diff"]
     params.update()
     assert (
-        MyTexture.update_keys == [] and MyBSDF.update_keys == []
+        MyField.update_keys == [] and MyBSDF.update_keys == []
     ), "A no-op should not trigger an update (self-assignment)!"
     reset_update_keys()
 
     params["bsdf_tex_diff.tex_param_diff"] = (params["bsdf_tex_diff.tex_param_diff"] + mi.Point3f(0, 0, 0))
     params.update()
     assert (
-        MyTexture.update_keys == [] and MyBSDF.update_keys == []
+        MyField.update_keys == [] and MyBSDF.update_keys == []
     ), "A no-op should not trigger an update (adding zero)!"
     reset_update_keys()
 
     params["bsdf_tex_diff.tex_param_scalar"] = mi.ScalarFloat(2)
     params.update()
     assert (
-        MyTexture.update_keys == [] and MyBSDF.update_keys == []
+        MyField.update_keys == [] and MyBSDF.update_keys == []
     ), "A no-op should not trigger an update (scalar with same value)!"
 
 
@@ -215,7 +221,7 @@ def test02_traverse_update(variants_all_ad_rgb):
     dr.enable_grad(params["bsdf_tex_diff.tex_param_diff"])
     params.update()
     assert (
-        MyTexture.update_keys == ['tex_param_diff'] and
+        MyField.update_keys == ['tex_param_diff'] and
         MyBSDF.update_keys == ['bsdf_tex_diff']
     ), "Updates should be triggered when enabling gradients!"
     reset_update_keys()
@@ -225,7 +231,7 @@ def test02_traverse_update(variants_all_ad_rgb):
     update_inplace(params["bsdf_tex_diff.tex_param_diff"])
     params.update()
     assert (
-        MyTexture.update_keys == ['tex_param_diff'] and
+        MyField.update_keys == ['tex_param_diff'] and
         MyBSDF.update_keys == ['bsdf_tex_diff']
     ), "Updates should be triggered when modifying parameters through side-effects!"
     reset_update_keys()

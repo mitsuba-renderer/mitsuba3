@@ -55,12 +55,12 @@ placed samples.
  */
 
 template <typename Float, typename Spectrum>
-class RegularSpectrum final : public Texture<Float, Spectrum> {
+class RegularSpectrum final : public SurfaceField<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(SurfaceField, Texture)
 
 public:
-    RegularSpectrum(const Properties &props) : Texture(props) {
+    RegularSpectrum(const Properties &props) : SurfaceField(props) {
         if (props.has_property("value")) {
             const Properties::Spectrum *spec = props.try_get<Properties::Spectrum>("value");
             if (!spec)
@@ -167,7 +167,7 @@ public:
 private:
     ContinuousDistribution<Wavelength> m_distr;
 
-    MI_TRAVERSE_CB(Texture, m_distr)
+    MI_TRAVERSE_CB(SurfaceField, m_distr)
 };
 
 MI_EXPORT_PLUGIN(RegularSpectrum)

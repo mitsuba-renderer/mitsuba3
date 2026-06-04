@@ -34,3 +34,9 @@ __pycache__
 /docs/src/quickstart
 /docs/src/generated
 /docs/resources
+
+old-design
+LLM.md
+NOTE.md
+PR.md
+field-design-pdf/

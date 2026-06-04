@@ -95,7 +95,7 @@ template <typename Float, typename Spectrum>
 class NormalMap final : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Field, Texture)
 
     NormalMap(const Properties &props) : Base(props) {
         for (auto &prop : props.objects()) {
@@ -108,8 +108,18 @@ public:
         if (!m_nested_bsdf)
             Throw("Exactly one BSDF child object must be specified.");
 
-        // TODO: How to assert this is actually a RGBDataTexture?
-        m_normalmap = props.get_texture<Texture>("normalmap");
+        m_normalmap = props.get_surface_field<Field>("normalmap");
+        FieldValueType type = m_normalmap->out_type();
+        uint32_t dim = m_normalmap->out_dim();
+        bool rgb_spectrum = !is_spectral_v<Spectrum> &&
+                            type == FieldValueType::Spectrum && dim == 3;
+        if (!((type == FieldValueType::Color3 ||
+               type == FieldValueType::Array3) && dim == 3) &&
+            !rgb_spectrum)
+            Throw("NormalMap: parameter \"normalmap\" must be a "
+                  "three-channel surface field (Color3[3], Array3[3], or "
+                  "RGB Spectrum[3]), got %s[%u].",
+                  field_value_type_name(type), dim);
 
         m_flip_invalid_normals = props.get<bool>("flip_invalid_normals", true);
         m_use_shadowing_function = props.get<bool>("use_shadowing_function", true);
@@ -262,7 +272,7 @@ public:
     MI_DECLARE_CLASS(NormalMap)
 protected:
     ref<Base> m_nested_bsdf;
-    ref<Texture> m_normalmap;
+    ref<Field> m_normalmap;
 
     bool m_flip_invalid_normals;
     bool m_use_shadowing_function;

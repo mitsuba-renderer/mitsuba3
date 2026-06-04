@@ -1115,7 +1115,7 @@ private:
     /// Inverse resolution (1 / tensor_shape)
     Vector3f m_inv_shape;
     /// Local voxel sizes (1 / (tensor_shape - 1))
-    field<Vector<InputFloat, 3>> m_voxel_size;
+    synced<Vector<InputFloat, 3>> m_voxel_size;
 
     // Weak pointer to underlying grid texture data. Only used for llvm/scalar
     // variants. We store this because during raytracing, we don't want to call

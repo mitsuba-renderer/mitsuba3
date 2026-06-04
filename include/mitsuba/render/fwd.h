@@ -12,6 +12,7 @@ template <typename Float, typename Spectrum> class BSDF;
 template <typename Float, typename Spectrum> class OptixDenoiser;
 template <typename Float, typename Spectrum> class Emitter;
 template <typename Float, typename Spectrum> class Endpoint;
+template <typename Float, typename Spectrum> class Field;
 template <typename Float, typename Spectrum> class Film;
 template <typename Float, typename Spectrum> class ImageBlock;
 template <typename Float, typename Spectrum> class Integrator;
@@ -30,10 +31,17 @@ template <typename Float, typename Spectrum> class ProjectiveCamera;
 template <typename Float, typename Spectrum> class Shape;
 template <typename Float, typename Spectrum> class ShapeGroup;
 template <typename Float, typename Spectrum> class ShapeKDTree;
-template <typename Float, typename Spectrum> class Texture;
-template <typename Float, typename Spectrum> class Volume;
+template <typename Float, typename Spectrum> class SurfaceField;
+template <typename Float, typename Spectrum> class VolumeField;
 template <typename Float, typename Spectrum> class VolumeGrid;
 template <typename Float, typename Spectrum> class MeshAttribute;
+
+// Compatibility role names used by legacy C++ code.
+template <typename Float, typename Spectrum>
+using Texture = SurfaceField<Float, Spectrum>;
+
+template <typename Float, typename Spectrum>
+using Volume = VolumeField<Float, Spectrum>;
 
 template <typename Float, typename Spectrum> struct DirectionSample;
 template <typename Float, typename Spectrum> struct PositionSample;
@@ -85,6 +93,8 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using ProjectiveCamera       = mitsuba::ProjectiveCamera<Float, Spectrum>;
     using Emitter                = mitsuba::Emitter<Float, Spectrum>;
     using Endpoint               = mitsuba::Endpoint<Float, Spectrum>;
+    using Field                  = mitsuba::Field<Float, Spectrum>;
+    using SurfaceField           = mitsuba::SurfaceField<Float, Spectrum>;
     using Medium                 = mitsuba::Medium<Float, Spectrum>;
     using PhaseFunction          = mitsuba::PhaseFunction<Float, Spectrum>;
     using Film                   = mitsuba::Film<Float, Spectrum>;
@@ -92,6 +102,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using ReconstructionFilter   = mitsuba::ReconstructionFilter<Float, Spectrum>;
     using Texture                = mitsuba::Texture<Float, Spectrum>;
     using Volume                 = mitsuba::Volume<Float, Spectrum>;
+    using VolumeField            = mitsuba::VolumeField<Float, Spectrum>;
     using VolumeGrid             = mitsuba::VolumeGrid<Float, Spectrum>;
 
     using MeshAttribute          = mitsuba::MeshAttribute<Float, Spectrum>;
@@ -104,7 +115,9 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using MeshPtr                = dr::replace_scalar_t<Float, const Mesh *>;
     using SensorPtr              = dr::replace_scalar_t<Float, const Sensor *>;
     using EmitterPtr             = dr::replace_scalar_t<Float, const Emitter *>;
+    using FieldPtr               = dr::replace_scalar_t<Float, const Field *>;
     using TexturePtr             = dr::replace_scalar_t<Float, const Texture *>;
+    using VolumePtr              = dr::replace_scalar_t<Float, const Volume *>;
 };
 
 /**
@@ -172,6 +185,8 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using ProjectiveCamera       = typename RenderAliases::ProjectiveCamera;                       \
     using Emitter                = typename RenderAliases::Emitter;                                \
     using Endpoint               = typename RenderAliases::Endpoint;                               \
+    using Field                  = typename RenderAliases::Field;                                  \
+    using SurfaceField           = typename RenderAliases::SurfaceField;                           \
     using Medium                 = typename RenderAliases::Medium;                                 \
     using PhaseFunction          = typename RenderAliases::PhaseFunction;                          \
     using Film                   = typename RenderAliases::Film;                                   \
@@ -179,6 +194,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using ReconstructionFilter   = typename RenderAliases::ReconstructionFilter;                   \
     using Texture                = typename RenderAliases::Texture;                                \
     using Volume                 = typename RenderAliases::Volume;                                 \
+    using VolumeField            = typename RenderAliases::VolumeField;                            \
     using ObjectPtr              = typename RenderAliases::ObjectPtr;                              \
     using BSDFPtr                = typename RenderAliases::BSDFPtr;                                \
     using MediumPtr              = typename RenderAliases::MediumPtr;                              \
@@ -186,6 +202,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using ShapePtr               = typename RenderAliases::ShapePtr;                               \
     using MeshPtr                = typename RenderAliases::MeshPtr;                                \
     using EmitterPtr             = typename RenderAliases::EmitterPtr;                             \
+    using FieldPtr               = typename RenderAliases::FieldPtr;                               \
     using SensorPtr              = typename RenderAliases::SensorPtr;
 
 NAMESPACE_END(mitsuba)

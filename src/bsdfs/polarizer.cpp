@@ -79,11 +79,16 @@ template <typename Float, typename Spectrum>
 class LinearPolarizer final : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Field, Texture)
 
     LinearPolarizer(const Properties &props) : Base(props) {
-        m_theta = props.get_unbounded_texture<Texture>("theta", 0.f);
-        m_transmittance = props.get_texture<Texture>("transmittance", 1.f);
+        m_theta = props.get_unbounded_surface_field<Field>("theta", 0.f);
+        m_transmittance = props.get_surface_field<Field>("transmittance", 1.f);
+        if constexpr (is_spectral_v<Spectrum>) {
+            require_field_spectral_evaluable(m_theta.get(), "theta");
+            require_field_spectral_evaluable(m_transmittance.get(),
+                                             "transmittance");
+        }
         m_polarizing = props.get<bool>("polarizing", true);
 
         m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null;
@@ -216,8 +221,8 @@ public:
     MI_DECLARE_CLASS(LinearPolarizer)
 private:
     bool m_polarizing;
-    ref<Texture> m_theta;
-    ref<Texture> m_transmittance;
+    ref<Field> m_theta;
+    ref<Field> m_transmittance;
 
     MI_TRAVERSE_CB(Base, m_theta, m_transmittance)
 };

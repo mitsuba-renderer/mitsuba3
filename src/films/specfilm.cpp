@@ -1,6 +1,7 @@
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/fstream.h>
+#include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/render/film.h>
@@ -146,7 +147,7 @@ class SpecFilm final : public Film<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset, m_sample_border,
                    m_filter, m_flags, m_srf, set_crop_window)
-    MI_IMPORT_TYPES(ImageBlock, Texture)
+    MI_IMPORT_TYPES(Field, ImageBlock)
     using FloatStorage = DynamicBuffer<Float>;
 
     SpecFilm(const Properties &props) : Base(props) {
@@ -157,10 +158,19 @@ public:
         // Load all SRF and store both name and data
         for (auto &prop : props) {
             if (prop.type() == Properties::Type::Spectrum) {
-                m_srfs.push_back(props.get_texture<Texture>(prop.name()));
+                m_srfs.push_back(props.get_surface_field<Field>(prop.name()));
+                require_field_spectral_metadata(m_srfs.back().get(), prop.name());
                 m_names.push_back(std::string(prop.name()));
-            } else if (Texture *srf = prop.try_get<Texture>()) {
-                m_srfs.push_back(srf);
+            } else if (Field *srf = prop.try_get<Field>()) {
+                ref<Object> texture = make_texture_object_for_variant(
+                    Field::Variant, prop.get<ref<Object>>());
+                Field *field = dynamic_cast<Field *>(texture.get());
+                if (!field)
+                    Throw("SpecFilm SRF \"%s\" must be a surface-compatible "
+                          "field.", prop.name());
+                require_field_spectral_evaluable(field, prop.name());
+                require_field_spectral_metadata(field, prop.name());
+                m_srfs.push_back(field);
                 m_names.push_back(std::string(prop.name()));
             }
         }
@@ -219,14 +229,14 @@ public:
         if constexpr (dr::is_jit_v<Float>) {
             si.wavelengths = mis_wavelengths;
             for (auto srf : m_srfs) {
-                UnpolarizedSpectrum values = srf->eval(si);
+                UnpolarizedSpectrum values = srf->eval(si, true);
                 mis_data += values.x();
             }
         } else {
             for (size_t i = 0; i < n_points; ++i) {
                 si.wavelengths = mis_wavelengths[i];
                 for (auto srf : m_srfs) {
-                    UnpolarizedSpectrum values = srf->eval(si);
+                    UnpolarizedSpectrum values = srf->eval(si, true);
                     mis_data[i] += values.x();
                 }
             }
@@ -250,7 +260,13 @@ public:
                                                 (double) m_range.x(),
                                                 (double) m_range.y()));
 
-        m_srf = PluginManager::instance()->create_object<Texture>(props);
+        ref<Object> object =
+            create_texture_role_object_for_variant(props, Field::Variant);
+        using FieldType = typename Field::FieldType;
+        FieldType *field = dynamic_cast<FieldType *>(object.get());
+        if (!field)
+            Throw("SpecFilm: expected a texture-compatible field.");
+        m_srf = field;
     }
 
     size_t base_channels_count() const override {
@@ -302,12 +318,12 @@ public:
         si.wavelengths = wavelengths;
 
         // The SRF is not necessarily normalized, cancel out multiplicative factors
-        UnpolarizedSpectrum inv_spec = m_srf->eval(si);
+        UnpolarizedSpectrum inv_spec = m_srf->eval(si, true);
         inv_spec = dr::select(inv_spec != 0.f, dr::rcp(inv_spec), 1.f);
         UnpolarizedSpectrum values = spec * inv_spec;
 
         for (size_t j = 0; j < m_srfs.size(); ++j) {
-            UnpolarizedSpectrum weights = m_srfs[j]->eval(si);
+            UnpolarizedSpectrum weights = m_srfs[j]->eval(si, true);
             aovs[j] = dr::zeros<Float>();
 
             for (size_t i = 0; i<Spectrum::Size; ++i)
@@ -493,7 +509,7 @@ protected:
     ref<ImageBlock> m_storage;
     mutable std::mutex m_mutex;
     std::vector<std::string> m_channels;
-    std::vector<ref<Texture>> m_srfs;
+    std::vector<ref<Field>> m_srfs;
     std::vector<std::string> m_names;
     ScalarVector2f m_range { dr::Infinity<ScalarFloat>, -dr::Infinity<ScalarFloat> };
 };

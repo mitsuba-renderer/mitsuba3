@@ -3,7 +3,7 @@
 #include <mitsuba/render/emitter.h> // Has to be included, so that Emitter::CallSupport::Variant is instantiated here
 #include <mitsuba/core/properties.h>
 #include <mitsuba/python/python.h>
-#include <mitsuba/python/field.h> // Provides field<...> type caster.
+#include <mitsuba/python/synced.h> // Provides synced<...> type caster.
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/pair.h>

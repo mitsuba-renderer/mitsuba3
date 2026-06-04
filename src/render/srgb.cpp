@@ -39,16 +39,16 @@ Color<float, 3> srgb_model_eval_rgb(const dr::Array<float, 3> &coeff) {
     using Array3f = dr::Array<float, 3>;
     using Spectrum = Spectrum<float, 4>;
     using Matrix3f = Matrix<float, 3>;
-    using Texture = Texture<float, Spectrum>;
+    using FieldType = Field<float, Spectrum>;
     using Wavelength = wavelength_t<Spectrum>;
     using SurfaceInteraction3f = SurfaceInteraction<float, Spectrum>;
 
-    ref<Texture> d65 =
-        PluginManager::instance()->create_object<Texture>(
+    ref<FieldType> d65 =
+        PluginManager::instance()->create_object<FieldType>(
             Properties("d65"));
     auto expanded = d65->expand();
     if (expanded.size() == 1)
-        d65 = (Texture *) expanded[0].get();
+        d65 = (FieldType *) expanded[0].get();
 
     const size_t n_samples = ((MI_CIE_SAMPLES - 1) * 3 + 1);
 
@@ -67,7 +67,7 @@ Color<float, 3> srgb_model_eval_rgb(const dr::Array<float, 3> &coeff) {
             weight *= 3.f;
 
         si.wavelengths = lambda;
-        Array3f weight_v = weight * d65->eval(si).x() * cie1931_xyz(lambda);
+        Array3f weight_v = weight * d65->eval(si, true).x() * cie1931_xyz(lambda);
 
         float model_eval =
             srgb_model_eval<Spectrum>(coeff, Wavelength(lambda)).x();

@@ -3,6 +3,7 @@
 
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/emitter.h>
+#include <mitsuba/render/field.h>
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/medium.h>
@@ -10,8 +11,6 @@
 #include <mitsuba/render/phase.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
-#include <mitsuba/render/texture.h>
-#include <mitsuba/render/volume.h>
 
 #include <mitsuba/python/python.h>
 
@@ -27,8 +26,7 @@ static nb::object caster(Object *o) {
     PY_TRY_CAST(Scene);
     PY_TRY_CAST(Mesh);
     PY_TRY_CAST(Shape);
-    PY_TRY_CAST(Texture);
-    PY_TRY_CAST(Volume);
+    PY_TRY_CAST(Field);
     PY_TRY_CAST(ReconstructionFilter);
 
     PY_TRY_CAST(ProjectiveCamera);
@@ -85,6 +83,7 @@ MI_PY_DECLARE(BSDFSample);
 MI_PY_DECLARE(BSDF);
 MI_PY_DECLARE(Emitter);
 MI_PY_DECLARE(Endpoint);
+MI_PY_DECLARE(Field);
 MI_PY_DECLARE(Film);
 MI_PY_DECLARE(fresnel);
 MI_PY_DECLARE(ImageBlock);
@@ -110,8 +109,6 @@ MI_PY_DECLARE(SilhouetteSample);
 MI_PY_DECLARE(Shape);
 //MI_PY_DECLARE(ShapeKDTree);
 MI_PY_DECLARE(srgb);
-MI_PY_DECLARE(Texture);
-MI_PY_DECLARE(Volume);
 MI_PY_DECLARE(VolumeGrid);
 
 using Caster = nb::object(*)(mitsuba::Object *);
@@ -205,6 +202,7 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT(SurfaceInteraction);
     MI_PY_IMPORT(MediumInteraction);
     MI_PY_IMPORT(PreliminaryIntersection);
+    MI_PY_IMPORT(Field);
     MI_PY_IMPORT(PositionSample);
     MI_PY_IMPORT(SilhouetteSample);
     MI_PY_IMPORT(DirectionSample);
@@ -225,8 +223,6 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT(Sensor);
 //    MI_PY_IMPORT(ShapeKDTree);
     MI_PY_IMPORT(srgb);
-    MI_PY_IMPORT(Texture);
-    MI_PY_IMPORT(Volume);
     MI_PY_IMPORT(VolumeGrid);
 
     /* Callback function cleanup static variant-specific data structures, this

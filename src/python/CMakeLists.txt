@@ -236,7 +236,7 @@ set(STUB_ARGS
 if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
 
   set(MI_STUB_SUBMODULES "math" "quad" "spline" "mueller" "warp" "misc" "detail" "filesystem"
-                         "python.ad" "python.chi2" "python.math_py" "python.util" "parser")
+                         "python.ad" "python.chi2" "python.fields" "python.math_py" "python.util" "parser")
 
   nanobind_add_stub(
     mitsuba-stub
@@ -320,5 +320,9 @@ if (UNIX)
     `find ${MKDOC_PATH}/render -name '*.h' ! -name fwd.h -print`
     `find ${MKDOC_PATH}/ui -name '*.h' ! -name fwd.h -print`
     -o ${MKDOC_PATH}/python/docstr.h
+    # pybind11_mkdoc can emit duplicate symbols when an overload suffix
+    # collides with a real Mitsuba method name, e.g. eval() vs. eval_3().
+    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/deduplicate_docstr.py
+            ${MKDOC_PATH}/python/docstr.h
   )
 endif()

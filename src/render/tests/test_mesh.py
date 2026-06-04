@@ -980,6 +980,11 @@ def test23_texture_attributes(variants_all_rgb):
         "filter_type": "nearest",
         "data" : dr.full(mi.TensorXf, 0.3, [1, 1, 3])
     })
+    volume = mi.load_dict({
+        "type": "gridvolume",
+        "data": dr.full(mi.TensorXf, 1.0, [1, 1, 1, 1]),
+        "raw": True,
+    })
 
     # Texture attributes are supported by shapes in general, not only meshes.
     shapes = [
@@ -1006,6 +1011,8 @@ def test23_texture_attributes(variants_all_rgb):
         # --- Texture attribute registered later
         shape.add_texture_attribute('attribute_2', texture2)
         assert dr.all(shape.has_attribute('attribute_2'))
+        with pytest.raises(RuntimeError, match="surface-compatible|Texture role"):
+            shape.add_texture_attribute('bad_attribute', volume)
 
         # --- Texture attribute replacement
         shape.add_texture_attribute('attribute_2', texture)

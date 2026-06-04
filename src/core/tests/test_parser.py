@@ -1869,7 +1869,7 @@ def test59_uoffset_voffset_uscale_vscale_upgrade(variant_scalar_rgb):
     assert dr.allclose(transform.matrix, expected.matrix)
 
 
-def test59_alias_support(variant_scalar_rgb):
+def test60_alias_support(variant_scalar_rgb):
     """Test alias tag functionality"""
 
     # Create a scene with an object and an alias to it
@@ -1928,7 +1928,7 @@ def test59_alias_support(variant_scalar_rgb):
         mi.parser.parse_string(config, xml_bad2)
 
 
-def test60_default_parameter_values(variant_scalar_rgb):
+def test61_default_parameter_values(variant_scalar_rgb):
     """Test default parameter value functionality"""
 
     xml = '''<scene version="3.0.0">
@@ -1961,7 +1961,7 @@ def test60_default_parameter_values(variant_scalar_rgb):
     mi.parser.parse_string(config, xml_unused)
 
 
-def test61_circular_references(variant_scalar_rgb):
+def test62_circular_references(variant_scalar_rgb):
     """Test detection of circular references"""
 
     # Test case 1: Two shapes that reference each other
@@ -2011,7 +2011,7 @@ def test61_circular_references(variant_scalar_rgb):
 
 
 @fresolver_append_path
-def test62_transform_relocate(variant_scalar_rgb, tmp_path):
+def test63_transform_relocate(variant_scalar_rgb, tmp_path):
     """Test the transform_relocate functionality for organizing scene files."""
 
     # Create temporary source files with fake content
@@ -2021,8 +2021,12 @@ def test62_transform_relocate(variant_scalar_rgb, tmp_path):
     # Create fake texture files
     texture1 = source_dir / "wood.jpg"
     texture2 = source_dir / "metal.png"
+    field_texture = source_dir / "field_reflectance.exr"
+    field_volume = source_dir / "density.vol"
     texture1.write_text("fake texture content")
     texture2.write_text("fake texture content 2")
+    field_texture.write_text("fake field texture content")
+    field_volume.write_text("fake field volume content")
 
     # Create fake mesh files
     mesh1 = source_dir / "bunny.ply"
@@ -2070,6 +2074,15 @@ def test62_transform_relocate(variant_scalar_rgb, tmp_path):
         <shape type="ply" name="bunny2_shape">
             <string name="filename" value="{xml_escape(duplicate_mesh2)}"/>
         </shape>
+
+        <!-- Field plugins use the generic assets relocation policy. -->
+        <field type="bitmap" name="field_tex">
+            <string name="filename" value="{xml_escape(field_texture)}"/>
+        </field>
+
+        <field type="gridvolume" name="field_volume">
+            <string name="filename" value="{xml_escape(field_volume)}"/>
+        </field>
     </scene>
     '''
 
@@ -2084,6 +2097,8 @@ def test62_transform_relocate(variant_scalar_rgb, tmp_path):
     # Verify files exist before relocation
     assert texture1.exists()
     assert texture2.exists()
+    assert field_texture.exists()
+    assert field_volume.exists()
     assert mesh1.exists()
     assert mesh2.exists()
     assert duplicate_mesh2.exists()
@@ -2094,15 +2109,19 @@ def test62_transform_relocate(variant_scalar_rgb, tmp_path):
     # Check that subdirectories were created
     textures_dir = output_dir / "textures"
     meshes_dir = output_dir / "meshes"
+    fields_dir = output_dir / "fields"
 
     assert textures_dir.exists()
     assert meshes_dir.exists()
+    assert fields_dir.exists()
 
     # Check that files were copied to correct directories
     assert (textures_dir / "wood.jpg").exists()
     assert (textures_dir / "metal.png").exists()
     assert (meshes_dir / "bunny.ply").exists()
     assert (meshes_dir / "teapot.obj").exists()
+    assert (fields_dir / "field_reflectance.exr").exists()
+    assert (fields_dir / "density.vol").exists()
 
     # Check that duplicate filename was handled (should have (1) suffix)
     assert (meshes_dir / "bunny (1).ply").exists()
@@ -2112,6 +2131,10 @@ def test62_transform_relocate(variant_scalar_rgb, tmp_path):
     assert (textures_dir / "metal.png").read_text() == "fake texture content 2"
     assert (meshes_dir / "bunny.ply").read_text() == "fake mesh content"
     assert (meshes_dir / "teapot.obj").read_text() == "fake mesh content 2"
+    assert ((fields_dir / "field_reflectance.exr").read_text() ==
+            "fake field texture content")
+    assert ((fields_dir / "density.vol").read_text() ==
+            "fake field volume content")
     assert (meshes_dir / "bunny (1).ply").read_text() == "different bunny content"
 
     # Verify that properties were updated with relative paths
@@ -2121,8 +2144,8 @@ def test62_transform_relocate(variant_scalar_rgb, tmp_path):
         if "filename" in node.props:
             updated_filenames.append(node.props.get("filename"))
 
-    # Should have 6 filename properties total
-    assert len(updated_filenames) == 6
+    # Should have 8 filename properties total
+    assert len(updated_filenames) == 8
 
     # Check that all paths were updated to relative paths
     expected_paths = {
@@ -2130,7 +2153,9 @@ def test62_transform_relocate(variant_scalar_rgb, tmp_path):
         "textures/metal.png",   # metal texture
         "meshes/bunny.ply",     # bunny mesh
         "meshes/teapot.obj",    # teapot mesh
-        "meshes/bunny (1).ply"   # duplicate bunny mesh
+        "meshes/bunny (1).ply",  # duplicate bunny mesh
+        "fields/field_reflectance.exr",
+        "fields/density.vol",
     }
 
     # Verify all expected relative paths are present
@@ -2187,7 +2212,7 @@ def test62_transform_relocate(variant_scalar_rgb, tmp_path):
     assert "meshes/sphere.ply" in relocated_filenames  # Updated
 
 
-def test63_resource_path_management(variant_scalar_rgb, tmp_path):
+def test64_resource_path_management(variant_scalar_rgb, tmp_path):
     """Test resource path management (<path> tag)"""
     import shutil
     from mitsuba.test.util import find_resource
@@ -2287,7 +2312,7 @@ def test63_resource_path_management(variant_scalar_rgb, tmp_path):
         mi.parser.parse_file(config, str(scene_file))
 
 
-def test63_transform_reorder(variant_scalar_rgb):
+def test65_transform_reorder(variant_scalar_rgb):
     """Test reordering of scene elements by type"""
 
     # Create a comprehensive test scene with all object types
@@ -2308,6 +2333,7 @@ def test63_transform_reorder(variant_scalar_rgb):
         <shape type="cube"/>
         <volume type="constvolume" id="vol1"/>
         <bsdf type="conductor" id="mat2"/>
+        <field type="sinusoidalfield" id="field1"/>
         <shape type="cylinder">
             <bsdf type="diffuse"/>
             <medium type="homogeneous"/>
@@ -2332,16 +2358,18 @@ def test63_transform_reorder(variant_scalar_rgb):
     # Expected order preserves insertion order within each priority group:
     # Priority 0: Integrator (path)
     # Priority 1: Sensor (perspective)
-    # Priority 2: Textures in insertion order (bitmap, checkerboard)
-    # Priority 3: BSDFs in insertion order (diffuse, conductor)
-    # Priority 4: Emitters and area light shapes in insertion order (point, sphere, envmap)
-    # Priority 5: Regular shapes in insertion order (rectangle, cube, cylinder)
-    # Priority 6: Volumes (constvolume)
-    # Priority 7: Media (homogeneous)
+    # Priority 2: Fields (sinusoidalfield)
+    # Priority 3: Textures in insertion order (bitmap, checkerboard)
+    # Priority 4: BSDFs in insertion order (diffuse, conductor)
+    # Priority 5: Emitters and area light shapes in insertion order (point, sphere, envmap)
+    # Priority 6: Regular shapes in insertion order (rectangle, cube, cylinder)
+    # Priority 7: Volumes (constvolume)
+    # Priority 8: Media (homogeneous)
 
     expected_types_and_names = [
         (mi.ObjectType.Integrator, "path"),
         (mi.ObjectType.Sensor, "perspective"),
+        (mi.ObjectType.Field, "sinusoidalfield"),
         (mi.ObjectType.Texture, "bitmap"),
         (mi.ObjectType.Texture, "checkerboard"),
         (mi.ObjectType.BSDF, "diffuse"),
@@ -2364,21 +2392,51 @@ def test63_transform_reorder(variant_scalar_rgb):
     assert len(sphere_children) == 1
     assert sphere_children[0][1].props.plugin_name() == "area"
 
-def test64_logger_deadlock():
+
+def test65b_transform_reorder_keeps_shared_field_declaration(variant_scalar_rgb):
+    """Fields referenced by materials should be written before their consumers."""
+
+    xml = '''<scene version="3.0.0">
+        <field type="sinusoidalfield" id="shared_field">
+            <integer name="out_dim" value="2"/>
+        </field>
+        <bsdf type="diffuse" id="mat">
+            <ref id="shared_field" name="reflectance"/>
+        </bsdf>
+    </scene>'''
+
+    config = mi.parser.ParserConfig('scalar_rgb')
+    config.merge_meshes = False
+
+    state = mi.parser.parse_string(config, xml)
+    mi.parser.transform_all(config, state)
+    mi.parser.transform_reorder(config, state)
+    written = mi.parser.write_string(state, False)
+
+    field_pos = written.find('<field type="sinusoidalfield" id="shared_field"')
+    bsdf_pos = written.find('<bsdf type="diffuse"')
+
+    assert field_pos != -1
+    assert bsdf_pos != -1
+    assert field_pos < bsdf_pos
+    assert '<ref id="shared_field" name="reflectance"' in written
+    assert '<bsdf type="diffuse">\n        <field' not in written
+
+
+def test66_logger_deadlock():
     """Test that logging does not cause a deadlock when loading a scene in parallel"""
     log_level = dr.log_level()
     dr.set_log_level(dr.LogLevel.Debug)
     scene = mi.load_dict(mi.cornell_box(), parallel=True)
     dr.set_log_level(log_level)
 
-def test65_tensorxf_lookup():
+def test67_tensorxf_lookup():
     """Test that TensorXf values can be correctly passed to plugins"""
     class DummyEmitter(mi.Emitter):
         def __init__(self, props) -> None:
             super().__init__(props)
             self.foo = props.get('foo')
             assert type(self.foo) is mi.TensorXf
-            print(self.foo)
 
     mi.register_emitter('dummy_emitter', lambda props: DummyEmitter(props))
 
@@ -2388,7 +2446,7 @@ def test65_tensorxf_lookup():
     })
 
 
-def test66_escaped_dollar_sign(variant_scalar_rgb):
+def test68_escaped_dollar_sign(variant_scalar_rgb):
     """Test that escaped dollar signs (\\$) are preserved as literal $"""
 
     # Test escaped dollar sign
@@ -2408,7 +2466,7 @@ def test66_escaped_dollar_sign(variant_scalar_rgb):
     assert shape.props["mixed"] == "$50 for 10 items"
 
 
-def test67_dict_resource_path_management(variant_scalar_rgb, tmp_path):
+def test69_dict_resource_path_management(variant_scalar_rgb, tmp_path):
     """Test resource path management for dictionaries (type='resources')"""
     import shutil
     from mitsuba.test.util import find_resource

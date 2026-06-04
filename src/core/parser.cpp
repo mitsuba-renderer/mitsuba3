@@ -144,6 +144,7 @@ static std::pair<TagType, ObjectType> interpret_tag(std::string_view str) {
             if (str == "emitter") return {TagType::Object, ObjectType::Emitter};
             break;
         case 'f':
+            if (str == "field") return {TagType::Object, ObjectType::Field};
             if (str == "float") return {TagType::Float, ObjectType::Unknown};
             if (str == "film") return {TagType::Object, ObjectType::Film};
             break;
@@ -592,7 +593,7 @@ static void parse_xml_node(const ParserConfig &config, ParserState &state,
     // Special case: <spectrum> with 'type' attribute should be treated as an object
     if (tag_type == TagType::Spectrum && node.attribute("type")) {
         tag_type = TagType::Object;
-        object_type = ObjectType::Texture;  // Spectrum plugins are textures
+        object_type = ObjectType::Texture;  // Spectrum plugins request texture-role fields
     }
 
     // Create a new scene node
@@ -1351,8 +1352,11 @@ void transform_merge_equivalent(const ParserConfig &/*config*/, ParserState &sta
         for (size_t i = 0; i < state.size(); ++i) {
             size_t repr = canonical[i];
 
-            // Skip merging for emitters and shapes
+            // Skip merging for stateful or identity-sensitive objects
             if (state[repr].type == ObjectType::Emitter ||
+                state[repr].type == ObjectType::Field ||
+                state[repr].type == ObjectType::Texture ||
+                state[repr].type == ObjectType::Volume ||
                 state[repr].type == ObjectType::Shape)
                 continue;
 
@@ -1392,17 +1396,18 @@ void transform_merge_equivalent(const ParserConfig &/*config*/, ParserState &sta
 static const char* section_names[] = {
     "Camera and Rendering Parameters", // 0: Integrator
     "Camera and Rendering Parameters", // 1: Sensor
-    "Materials",                       // 2: Texture
-    "Materials",                       // 3: BSDF
-    "Emitters",                        // 4: Emitter/Shape with area light
-    "Shapes",                          // 5: Shape
-    "Volumes",                         // 6: Volume
-    "Volumes",                         // 7: Medium
-    "Other"                            // 8: Other/Unknown
+    "Fields",                          // 2: Field
+    "Materials",                       // 3: Texture
+    "Materials",                       // 4: BSDF
+    "Emitters",                        // 5: Emitter/Shape with area light
+    "Shapes",                          // 6: Shape
+    "Volumes",                         // 7: Volume
+    "Volumes",                         // 8: Medium
+    "Other"                            // 9: Other/Unknown
 };
 
 // Helper function that assigns a logical section number to a node. Used in
-// transform_reporder() and write_node_to_xml()
+// transform_reorder() and write_node_to_xml()
 static int node_order_id(const ParserState &state, size_t node_idx) {
     const SceneNode &node = state[node_idx];
 
@@ -1423,13 +1428,14 @@ static int node_order_id(const ParserState &state, size_t node_idx) {
     switch (node.type) {
         case ObjectType::Integrator: return 0;
         case ObjectType::Sensor:     return 1;
-        case ObjectType::Texture:    return 2;
-        case ObjectType::BSDF:       return 3;
-        case ObjectType::Emitter:    return 4;
-        case ObjectType::Shape:      return has_area_light(node_idx) ? 4 : 5;
-        case ObjectType::Volume:     return 6;
-        case ObjectType::Medium:     return 7;
-        default:                     return 8;
+        case ObjectType::Field:      return 2;
+        case ObjectType::Texture:    return 3;
+        case ObjectType::BSDF:       return 4;
+        case ObjectType::Emitter:    return 5;
+        case ObjectType::Shape:      return has_area_light(node_idx) ? 5 : 6;
+        case ObjectType::Volume:     return 7;
+        case ObjectType::Medium:     return 8;
+        default:                     return 9;
     }
 }
 
@@ -1506,6 +1512,8 @@ void transform_relocate(const ParserConfig &/*config*/, ParserState &state,
                 return "textures";
             case ObjectType::Shape:
                 return "meshes";
+            case ObjectType::Field:
+                return "fields";
             default:
                 return "assets";
         }
@@ -1703,14 +1711,24 @@ static Task* instantiate_node(const ParserConfig &config,
 
         // Create the object
         ref<Object> obj;
+        bool role_object = node.type == ObjectType::Texture ||
+                           node.type == ObjectType::Volume;
         try {
             // Special handling for rgb/spectrum dictionaries
             if (props.plugin_name() == "rgb" || props.plugin_name() == "spectrum") {
                 // These are special texture types that need to be created via get_texture_impl
                 obj = props.get_texture_impl("value", config.variant, false, false);
+                role_object = true;
             } else {
-                obj = PluginManager::instance()->create_object(
-                    props, config.variant, node.type);
+                if (node.type == ObjectType::Texture)
+                    obj = create_texture_role_object_for_variant(
+                        props, config.variant);
+                else if (node.type == ObjectType::Volume)
+                    obj = create_volume_role_object_for_variant(
+                        props, config.variant);
+                else
+                    obj = create_compatible_object_for_variant(
+                        props, config.variant, node.type);
             }
         } catch (const std::exception &e) {
             Throw("At %s: failed to instantiate %s plugin of type \"%s\": %s",
@@ -1719,7 +1737,8 @@ static Task* instantiate_node(const ParserConfig &config,
         }
 
         // Expand the object once and store the results
-        s.objects = obj->expand();
+        if (!role_object)
+            s.objects = obj->expand();
         if (s.objects.empty())
             s.objects.push_back(obj);
 
@@ -2039,9 +2058,18 @@ static void write_node_to_xml(WriterState &writer_state,
     if (node.props.plugin_name() != "scene")
         xml_node.append_attribute("type").set_value(node.props.plugin_name());
 
-    // Add ID only if this node is referenced more than once
+    // Add IDs to shared nodes and explicitly referenced fields. Dictionary
+    // parsing also assigns local property names as object IDs for diagnostics;
+    // those implicit IDs should not be serialized as XML identifiers because
+    // the same property name can appear multiple times in independent subtrees.
     std::string_view id = node.props.id();
-    if (!id.empty() && writer_state.refcount[node_idx] > 1)
+    bool id_registered = false;
+    if (!id.empty()) {
+        auto it = state.id_to_index.find(std::string(id));
+        id_registered = it != state.id_to_index.end() && it->second == node_idx;
+    }
+    if (!id.empty() && (writer_state.refcount[node_idx] > 1 ||
+                        (node.type == ObjectType::Field && id_registered)))
         xml_node.append_attribute("id").set_value(id);
 
     // Add name attribute if not auto-generated

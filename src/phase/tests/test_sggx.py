@@ -23,6 +23,18 @@ def test01_create(variant_scalar_rgb, tmpdir):
     assert p.flags() == mi.PhaseFunctionFlags.Anisotropic | mi.PhaseFunctionFlags.Microflake
 
 
+def test01b_rejects_non_six_channel_parameter_volume(variant_scalar_rgb):
+    with pytest.raises(RuntimeError, match="six-channel|Features|out_dim"):
+        mi.load_dict({
+            "type": "sggx",
+            "S": {
+                "type": "gridvolume",
+                "data": mi.TensorXf([1.0, 1.0, 1.0], shape=(1, 1, 1, 3)),
+                "raw": True,
+            },
+        })
+
+
 @pytest.mark.slow
 def test02_chi2_simple(variants_vec_backends_once_rgb, tmpdir):
     tmp_file = os.path.join(str(tmpdir), "sggx.vol")

@@ -4,6 +4,7 @@ import sys as _sys
 import os as _os
 import drjit as _dr
 import logging
+import importlib as _importlib
 
 if _sys.version_info < (3, 9):
     raise ImportError("Mitsuba requires Python 3.9 or greater.")
@@ -36,5 +37,20 @@ from . import detail
 with _dr.detail.scoped_rtld_deepbind():
     # Replaces 'mitsuba' in sys.modules with itself (mitsuba_alias)
     from . import mitsuba_alias
+
+def _mitsuba_register_python_fields(_old_variant=None, _new_variant=None):
+    if mitsuba_alias.variant() is None:
+        return
+    fields = _importlib.import_module("mitsuba.python.fields")
+    fields._register_variant_fields(mitsuba_alias)
+
+
+if not hasattr(mitsuba_alias, "_mitsuba_field_registration_callback"):
+    mitsuba_alias.detail.add_variant_callback(_mitsuba_register_python_fields)
+    mitsuba_alias._mitsuba_field_registration_callback = (
+        _mitsuba_register_python_fields
+    )
+
+_mitsuba_register_python_fields()
 
 _ = mitsuba_alias # Removes unused variable warnings

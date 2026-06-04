@@ -219,22 +219,29 @@ template <typename Float, typename Spectrum>
 class SmoothConductor final : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Field, Texture)
 
     SmoothConductor(const Properties &props) : Base(props) {
         m_flags = BSDFFlags::DeltaReflection | BSDFFlags::FrontSide;
         m_components.push_back(m_flags);
 
-        m_specular_reflectance = props.get_texture<Texture>("specular_reflectance", 1.f);
+        m_specular_reflectance = props.get_surface_field<Field>("specular_reflectance", 1.f);
 
         std::string_view material = props.get<std::string_view>("material", "none");
         if (props.has_property("eta") || material == "none") {
-            m_eta = props.get_unbounded_texture<Texture>("eta", 0.f);
-            m_k   = props.get_unbounded_texture<Texture>("k",   1.f);
+            m_eta = props.get_unbounded_surface_field<Field>("eta", 0.f);
+            m_k   = props.get_unbounded_surface_field<Field>("k",   1.f);
             if (material != "none")
                 Throw("Should specify either (eta, k) or material, not both.");
         } else {
             std::tie(m_eta, m_k) = complex_ior_from_file<Spectrum, Texture>(props.get<std::string_view>("material", "Cu"));
+        }
+
+        if constexpr (is_spectral_v<Spectrum>) {
+            require_field_spectral_evaluable(m_specular_reflectance.get(),
+                                             "specular_reflectance");
+            require_field_spectral_evaluable(m_eta.get(), "eta");
+            require_field_spectral_evaluable(m_k.get(), "k");
         }
     }
 
@@ -328,8 +335,8 @@ public:
 
     MI_DECLARE_CLASS(SmoothConductor)
 private:
-    ref<Texture> m_specular_reflectance;
-    ref<Texture> m_eta, m_k;
+    ref<Field> m_specular_reflectance;
+    ref<Field> m_eta, m_k;
 
     MI_TRAVERSE_CB(Base, m_specular_reflectance, m_eta, m_k)
 };

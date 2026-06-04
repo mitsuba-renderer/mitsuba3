@@ -48,7 +48,7 @@ MI_DECLARE_ENUM_OPERATORS(FilmFlags)
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Film : public JitObject<Film<Float, Spectrum>> {
 public:
-    MI_IMPORT_TYPES(ImageBlock, ReconstructionFilter, Texture)
+    MI_IMPORT_TYPES(Field, ImageBlock, ReconstructionFilter, Texture)
 
     /// Destructor
     ~Film();
@@ -195,7 +195,7 @@ public:
     }
 
     /// Returns the specific Sensor Response Function (SRF) used by the film
-    const Texture *sensor_response_function();
+    const Field *sensor_response_function();
 
     /// Flags for all properties combined.
     uint32_t flags() const { return m_flags; }
@@ -222,7 +222,7 @@ protected:
     ScalarPoint2u m_crop_offset;
     bool m_sample_border;
     ref<ReconstructionFilter> m_filter;
-    ref<Texture> m_srf;
+    ref<Field> m_srf;
 
     MI_DECLARE_TRAVERSE_CB(m_srf)
 };

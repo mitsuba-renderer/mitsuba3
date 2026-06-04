@@ -85,12 +85,16 @@ template <typename Float, typename Spectrum>
 class SpotLight final : public Emitter<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Emitter, m_flags, m_medium, m_to_world)
-    MI_IMPORT_TYPES(Scene, Texture)
+    MI_IMPORT_TYPES(Field, Scene, Texture)
 
     SpotLight(const Properties &props) : Base(props) {
         m_flags = +EmitterFlags::DeltaPosition;
-        m_intensity = props.get_emissive_texture<Texture>("intensity", 1.f);
-        m_texture = props.get_texture<Texture>("texture", 1.f);
+        m_intensity = props.get_emissive_surface_field<Field>("intensity", 1.f);
+        m_texture = props.get_surface_field<Field>("texture", 1.f);
+        if constexpr (is_spectral_v<Spectrum>) {
+            require_field_spectral_evaluable(m_intensity.get(), "intensity");
+            require_field_spectral_evaluable(m_texture.get(), "texture");
+        }
 
         if (m_intensity->is_spatially_varying())
             Throw("The parameter 'intensity' cannot be spatially varying (e.g. bitmap type)!");
@@ -296,8 +300,8 @@ public:
 
     MI_DECLARE_CLASS(SpotLight)
 private:
-    ref<Texture> m_intensity;
-    ref<Texture> m_texture;
+    ref<Field> m_intensity;
+    ref<Field> m_texture;
     Float m_beam_width, m_cutoff_angle, m_uv_factor;
     Float m_cos_beam_width, m_cos_cutoff_angle, m_inv_transition_width;
 

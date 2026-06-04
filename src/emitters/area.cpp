@@ -60,7 +60,7 @@ template <typename Float, typename Spectrum>
 class AreaLight final : public Emitter<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Emitter, m_flags, m_shape, m_medium)
-    MI_IMPORT_TYPES(Scene, Shape, Texture)
+    MI_IMPORT_TYPES(Field, Scene, Shape, Texture)
 
     AreaLight(const Properties &props) : Base(props) {
         if (props.has_property("to_world"))
@@ -68,7 +68,9 @@ public:
                   "The area light inherits this transformation from its parent "
                   "shape.");
 
-        m_radiance = props.get_emissive_texture<Texture>("radiance", 1.f);
+        m_radiance = props.get_emissive_surface_field<Field>("radiance", 1.f);
+        if constexpr (is_spectral_v<Spectrum>)
+            require_field_spectral_evaluable(m_radiance.get(), "radiance");
 
         m_flags = +EmitterFlags::Surface;
         if (m_radiance->is_spatially_varying())
@@ -269,7 +271,7 @@ public:
 
     MI_DECLARE_CLASS(AreaLight)
 private:
-    ref<Texture> m_radiance;
+    ref<Field> m_radiance;
 
     MI_TRAVERSE_CB(Base, m_radiance)
 };

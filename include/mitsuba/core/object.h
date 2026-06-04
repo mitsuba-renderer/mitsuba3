@@ -49,10 +49,10 @@ enum class ObjectType : uint32_t {
     /// Denotes an arbitrary shape (including meshes)
     Shape,
 
-    /// A 2D texture data source
+    /// Compatibility request for a surface-compatible field
     Texture,
 
-    /// A 3D volume data source
+    /// Compatibility request for a volume-compatible field
     Volume,
 
     /// A participating medium
@@ -65,7 +65,10 @@ enum class ObjectType : uint32_t {
     PhaseFunction,
 
     /// A rendering algorithm aka. Integrator
-    Integrator
+    Integrator,
+
+    /// A field data source
+    Field
 };
 
 /**
@@ -251,6 +254,7 @@ inline constexpr const char* object_type_name(ObjectType ot) {
         case ObjectType::Shape: return "Shape";
         case ObjectType::Texture: return "Texture";
         case ObjectType::Volume: return "Volume";
+        case ObjectType::Field: return "Field";
         case ObjectType::Medium: return "Medium";
         case ObjectType::BSDF: return "BSDF";
         case ObjectType::Integrator: return "Integrator";
@@ -414,9 +418,9 @@ public:
         put_value(name, &value, flags_val, typeid(T));
     }
 
-    /// Forward declaration for field<...> values that simultaneously store host+device values
+    /// Register a mirrored \c synced<...> value as a traversable parameter
     template <typename DeviceType, typename HostType, typename SFINAE, typename Flags>
-    void put(std::string_view name, field<DeviceType, HostType, SFINAE> &value, Flags flags);
+    void put(std::string_view name, synced<DeviceType, HostType, SFINAE> &value, Flags flags);
 
     virtual ~TraversalCallback() = default;
 

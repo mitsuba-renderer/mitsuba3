@@ -32,6 +32,7 @@ add_subdirectory(mitsuba)
 
 add_subdirectory(bsdfs)
 add_subdirectory(emitters)
+add_subdirectory(fields)
 add_subdirectory(films)
 add_subdirectory(integrators)
 add_subdirectory(media)
@@ -41,8 +42,6 @@ add_subdirectory(samplers)
 add_subdirectory(sensors)
 add_subdirectory(shapes)
 add_subdirectory(spectra)
-add_subdirectory(textures)
-add_subdirectory(volumes)
 set(MI_PLUGIN_TARGETS "${MI_PLUGIN_TARGETS}" PARENT_SCOPE)
 
 # ----------------------------------------------------------

@@ -40,6 +40,7 @@ rst_prolog = r"""
 
 .. |spectrum| replace:: :paramtype:`spectrum`
 .. |texture| replace:: :paramtype:`texture`
+.. |field| replace:: :paramtype:`field`
 .. |float| replace:: :paramtype:`float`
 .. |bool| replace:: :paramtype:`boolean`
 .. |int| replace:: :paramtype:`integer`
@@ -191,7 +192,7 @@ api_doc_structure = {
               r'mitsuba.Normal([\w]+)',
               r'mitsuba.Matrix([\w]+)',
               r'mitsuba.Quaternion([\w]+)',
-              r'mitsuba.Texture([\w]+)',
+              r'mitsuba.Texture[123]([\w]*)',
               r'mitsuba.Bounding([\w]+)',
               r'mitsuba.Transform([\w]+)',
               r'mitsuba.Chain([\w]*)Transform([\w]+)',
@@ -205,11 +206,12 @@ api_doc_structure = {
     'Integrator': [r'mitsuba.(.*)Integrator([\w]*)', 'mitsuba.ad.common.mis_weight'],
     'Endpoint': ['mitsuba.Endpoint'],
     'Emitter': [r'mitsuba.Emitter([\w]*)'],
+    'Field': [r'mitsuba.Field([\w]*)', 'mitsuba.FieldValueType',
+              'mitsuba.FieldDomain'],
     'Sensor': ['mitsuba.Sensor([\w]+|)', 'mitsuba.ProjectiveCamera', 'mitsuba.parse_fov'],
     'Medium': [r'mitsuba.Medium([\w]*)', r'mitsuba.PhaseFunction([\w]+)'],
     'Shape': ['mitsuba.Shape([\w]+|)', 'mitsuba.Mesh([\w]+|)'],
-    'Texture': ['mitsuba.Texture'],
-    'Volume': [r'mitsuba.Volume([\w]*)'],
+    'Volume': ['mitsuba.VolumeGrid'],
     'PhaseFunction': [r'mitsuba.PhaseFunction([\w]*)'],
     'Film': ['mitsuba.Film([\w]+|)', 'mitsuba.ImageBlock'],
     'Filter': [r'mitsuba.([\w]*)Filter([\w]*)'],

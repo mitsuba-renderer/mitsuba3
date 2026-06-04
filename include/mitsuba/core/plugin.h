@@ -1,6 +1,7 @@
 #pragma once
 
 #include <drjit-core/nanostl.h>
+#include <mitsuba/core/logger.h>
 #include <mitsuba/core/object.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -89,11 +90,19 @@ public:
      * type from the provided class 'T'.
      */
     template <typename T> ref<T> create_object(const Properties &props) {
-        return ref<T>((T *) create_object(props, T::Variant, T::Type).get());
+        ref<Object> object = create_object(props, T::Variant, T::Type);
+        T *result = dynamic_cast<T *>(object.get());
+        if (!result)
+            Throw("Type mismatch: instantiated plugin does not implement the "
+                  "requested C++ interface.");
+        return ref<T>(result);
     }
 
     /// Get the type of a plugin by name, or return Object::Unknown if unknown.
     ObjectType plugin_type(std::string_view name);
+
+    /// Get the type of a plugin by name and variant, or return Object::Unknown if unknown.
+    ObjectType plugin_type(std::string_view name, std::string_view variant);
 
     MI_DECLARE_CLASS(PluginManager)
 

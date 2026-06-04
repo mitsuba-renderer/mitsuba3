@@ -158,13 +158,13 @@ template <typename Float, typename Spectrum>
 class RoughConductor final : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
-    MI_IMPORT_TYPES(Texture, MicrofacetDistribution)
+    MI_IMPORT_TYPES(Field, Texture, MicrofacetDistribution)
 
     RoughConductor(const Properties &props) : Base(props) {
         std::string_view material = props.get<std::string_view>("material", "none");
         if (props.has_property("eta") || material == "none") {
-            m_eta = props.get_unbounded_texture<Texture>("eta", 0.f);
-            m_k   = props.get_unbounded_texture<Texture>("k",   1.f);
+            m_eta = props.get_unbounded_surface_field<Field>("eta", 0.f);
+            m_k   = props.get_unbounded_surface_field<Field>("k",   1.f);
             if (material != "none")
                 Throw("Should specify either (eta, k) or material, not both.");
         } else {
@@ -192,14 +192,22 @@ public:
             if (props.has_property("alpha"))
                 Throw("Microfacet model: please specify"
                       "either 'alpha' or 'alpha_u'/'alpha_v'.");
-            m_alpha_u = props.get_unbounded_texture<Texture>("alpha_u");
-            m_alpha_v = props.get_unbounded_texture<Texture>("alpha_v");
+            m_alpha_u = props.get_unbounded_surface_field<Field>("alpha_u");
+            m_alpha_v = props.get_unbounded_surface_field<Field>("alpha_v");
         } else {
-            m_alpha_u = m_alpha_v = props.get_unbounded_texture<Texture>("alpha", 0.1f);
+            m_alpha_u = m_alpha_v = props.get_unbounded_surface_field<Field>("alpha", 0.1f);
         }
 
         if (props.has_property("specular_reflectance"))
-            m_specular_reflectance = props.get_texture<Texture>("specular_reflectance", 1.f);
+            m_specular_reflectance = props.get_surface_field<Field>("specular_reflectance", 1.f);
+
+        if constexpr (is_spectral_v<Spectrum>) {
+            require_field_spectral_evaluable(m_eta.get(), "eta");
+            require_field_spectral_evaluable(m_k.get(), "k");
+            if (m_specular_reflectance)
+                require_field_spectral_evaluable(m_specular_reflectance.get(),
+                                                 "specular_reflectance");
+        }
 
         m_flags = BSDFFlags::GlossyReflection | BSDFFlags::FrontSide;
         if (m_alpha_u != m_alpha_v)
@@ -537,15 +545,15 @@ private:
     /// Specifies the type of microfacet distribution
     MicrofacetType m_type;
     /// Anisotropic roughness values
-    ref<Texture> m_alpha_u, m_alpha_v;
+    ref<Field> m_alpha_u, m_alpha_v;
     /// Importance sample the distribution of visible normals?
     bool m_sample_visible;
     /// Relative refractive index (real component)
-    ref<Texture> m_eta;
+    ref<Field> m_eta;
     /// Relative refractive index (imaginary component).
-    ref<Texture> m_k;
+    ref<Field> m_k;
     /// Specular reflectance component
-    ref<Texture> m_specular_reflectance;
+    ref<Field> m_specular_reflectance;
 
     MI_TRAVERSE_CB(Base, m_alpha_u, m_alpha_v, m_eta, m_k,
                    m_specular_reflectance)

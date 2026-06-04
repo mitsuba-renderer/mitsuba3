@@ -72,15 +72,17 @@ whose reflectance is specified using the ``vertex_color`` attribute of that mesh
  */
 
 template <typename Float, typename Spectrum>
-class MeshAttribute final : public Texture<Float, Spectrum> {
+class MeshAttribute final : public SurfaceField<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(SurfaceField, Texture)
 
     MeshAttribute(const Properties &props)
-    : Texture(props) {
+    : SurfaceField(props) {
         m_name = props.get<std::string>("name");
-        if (m_name.find("vertex_") == std::string::npos && m_name.find("face_") == std::string::npos)
-            Throw("Invalid mesh attribute name: must be start with either \"vertex_\" or \"face_\" but was \"%s\".", m_name.c_str());
+        if (m_name.rfind("vertex_", 0) != 0 && m_name.rfind("face_", 0) != 0)
+            Throw("Invalid mesh attribute name: must start with either "
+                  "\"vertex_\" or \"face_\" but was \"%s\".",
+                  m_name.c_str());
 
         m_scale = props.get<ScalarFloat>("scale", 1.f);
     }
@@ -90,6 +92,17 @@ public:
     }
 
     const std::string& name() const { return m_name; }
+
+    FieldValueType out_type() const override {
+        return is_color_attribute() ? FieldValueType::Spectrum
+                                    : FieldValueType::Float;
+    }
+
+    uint32_t out_dim() const override {
+        return is_color_attribute()
+                   ? (uint32_t) dr::size_v<UnpolarizedSpectrum>
+                   : 1;
+    }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
@@ -117,6 +130,10 @@ public:
 
     MI_DECLARE_CLASS(MeshAttribute)
 protected:
+    bool is_color_attribute() const {
+        return m_name.find("color") != std::string::npos;
+    }
+
     std::string m_name;
     float m_scale;
 };

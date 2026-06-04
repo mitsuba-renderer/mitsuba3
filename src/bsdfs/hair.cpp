@@ -136,7 +136,7 @@ template <typename Float, typename Spectrum>
 class Hair final : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Field, Texture)
 
 
     /* Implementation notes:
@@ -172,7 +172,9 @@ public:
         m_eumelanin = props.get<ScalarFloat>("eumelanin", 1.3f);
         m_pheomelanin = props.get<ScalarFloat>("pheomelanin", 0.2f);
         if (props.has_property("sigma_a")) {
-            m_sigma_a = props.get_unbounded_texture<Texture>("sigma_a");
+            m_sigma_a = props.get_unbounded_surface_field<Field>("sigma_a");
+            if constexpr (is_spectral_v<Spectrum>)
+                require_field_spectral_evaluable(m_sigma_a.get(), "sigma_a");
             m_use_pigmentation = false;
         }
         m_scale = props.get<ScalarFloat>("scale", 1.f);
@@ -779,7 +781,7 @@ private:
     bool m_use_pigmentation = true;
     Float m_eumelanin, m_pheomelanin;
 
-    ref<Texture> m_sigma_a; /// Absorption if pigmentation is not used;
+    ref<Field> m_sigma_a; /// Absorption if pigmentation is not used;
     ScalarFloat m_scale;
 
     Float m_v[P_MAX + 1]; /// Longitudinal variance due to roughness

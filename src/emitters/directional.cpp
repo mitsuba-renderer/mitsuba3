@@ -60,7 +60,7 @@ radiates in the direction of the positive Z axis, i.e. :math:`(0, 0, 1)`.
 MI_VARIANT class DirectionalEmitter final : public Emitter<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Emitter, m_flags, m_to_world, m_needs_sample_3)
-    MI_IMPORT_TYPES(Scene, Texture)
+    MI_IMPORT_TYPES(Field, Scene, Texture)
 
     DirectionalEmitter(const Properties &props) : Base(props) {
         /* Until `set_scene` is called, we have no information
@@ -79,7 +79,9 @@ public:
             dr::make_opaque(m_to_world);
         }
 
-        m_irradiance = props.get_emissive_texture<Texture>("irradiance", 1.f);
+        m_irradiance = props.get_emissive_surface_field<Field>("irradiance", 1.f);
+        if constexpr (is_spectral_v<Spectrum>)
+            require_field_spectral_evaluable(m_irradiance.get(), "irradiance");
 
         if (m_irradiance->is_spatially_varying())
             Throw("Expected a non-spatially varying irradiance spectra!");
@@ -229,7 +231,7 @@ public:
     MI_DECLARE_CLASS(DirectionalEmitter)
 
 protected:
-    ref<Texture> m_irradiance;
+    ref<Field> m_irradiance;
     ScalarBoundingSphere3f m_bsphere;
 
     MI_TRAVERSE_CB(Base, m_irradiance)

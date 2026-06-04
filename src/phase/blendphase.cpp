@@ -65,7 +65,7 @@ template <typename Float, typename Spectrum>
 class BlendPhaseFunction final : public PhaseFunction<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(PhaseFunction, m_flags, m_components)
-    MI_IMPORT_TYPES(PhaseFunctionContext, Volume)
+    MI_IMPORT_TYPES(Field, PhaseFunctionContext, Volume)
 
     BlendPhaseFunction(const Properties &props) : Base(props) {
         int phase_index = 0;
@@ -79,7 +79,7 @@ public:
             }
         }
 
-        m_weight = props.get_volume<Volume>("weight");
+        m_weight = props.get_volume_field<Field>("weight");
         if (phase_index != 2)
             Throw("BlendPhase: Two child phase functions must be specified!");
 
@@ -203,7 +203,7 @@ public:
 
     MI_DECLARE_CLASS(BlendPhaseFunction)
 protected:
-    ref<Volume> m_weight;
+    ref<Field> m_weight;
     ref<Base> m_nested_phase[2];
 };
 

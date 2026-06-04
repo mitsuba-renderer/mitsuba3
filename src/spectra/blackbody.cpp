@@ -66,9 +66,9 @@ your scene should be modeled in meters for this plugin to work properly.
  */
 
 template <typename Float, typename Spectrum>
-class BlackBodySpectrum final : public Texture<Float, Spectrum> {
+class BlackBodySpectrum final : public SurfaceField<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(SurfaceField, Texture)
 
     // A few natural constants
     constexpr static ScalarFloat c = ScalarFloat(2.99792458e+8);   /// Speed of light
@@ -80,7 +80,7 @@ public:
     constexpr static ScalarFloat c0 = 2 * h * c * c;
     constexpr static ScalarFloat c1 = h * c / k;
 
-    BlackBodySpectrum(const Properties &props) : Texture(props) {
+    BlackBodySpectrum(const Properties &props) : SurfaceField(props) {
         m_temperature = props.get<ScalarFloat>("temperature");
         m_wavelength_range = ScalarVector2f(
             props.get<ScalarFloat>("wavelength_min", MI_CIE_MIN),

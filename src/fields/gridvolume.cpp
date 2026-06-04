@@ -9,6 +9,10 @@
 #include <drjit/dynamic.h>
 #include <drjit/texture.h>
 
+#include <algorithm>
+#include <limits>
+#include <mutex>
+
 NAMESPACE_BEGIN(mitsuba)
 
 
@@ -127,7 +131,7 @@ little endian encoding and is specified as follows:
     .. code-tab:: xml
 
         <medium type="heterogeneous">
-            <volume type="grid" name="albedo">
+            <volume type="gridvolume" name="albedo">
                 <string name="filename" value="my_volume.vol"/>
             </volume>
         </medium>
@@ -136,7 +140,7 @@ little endian encoding and is specified as follows:
 
         'type': 'heterogeneous',
         'albedo': {
-            'type': 'grid',
+            'type': 'gridvolume',
             'filename': 'my_volume.vol'
         }
 
@@ -156,9 +160,9 @@ little endian encoding and is specified as follows:
  *     where (xpos, ypos, zpos, chan) denotes the lookup location.
  */
 template <typename Float, typename Spectrum>
-class GridVolume final : public Volume<Float, Spectrum> {
+class GridVolume final : public VolumeField<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Volume, update_bbox, m_to_local, m_bbox, m_channel_count)
+    MI_IMPORT_BASE(VolumeField, update_bbox, m_to_local, m_bbox, m_channel_count)
     MI_IMPORT_TYPES(VolumeGrid)
 
     GridVolume(const Properties &props) : Base(props) {
@@ -172,18 +176,18 @@ public:
             Throw("Invalid filter type \"%s\", must be one of: \"nearest\" or "
                   "\"trilinear\"!", filter_type_str);
 
-        std::string_view wrap_mode_st = props.get<std::string_view>("wrap_mode", "clamp");
+        std::string_view wrap_mode_str = props.get<std::string_view>("wrap_mode", "clamp");
         dr::WrapMode wrap_mode;
-        if (wrap_mode_st == "repeat")
+        if (wrap_mode_str == "repeat")
             wrap_mode = dr::WrapMode::Repeat;
-        else if (wrap_mode_st == "mirror")
+        else if (wrap_mode_str == "mirror")
             wrap_mode = dr::WrapMode::Mirror;
-        else if (wrap_mode_st == "clamp")
+        else if (wrap_mode_str == "clamp")
             wrap_mode = dr::WrapMode::Clamp;
         else
             Throw("Invalid wrap mode \"%s\", must be one of: \"repeat\", "
                   "\"mirror\", or \"clamp\"!",
-                  wrap_mode_st);
+                  wrap_mode_str);
 
         m_raw = props.get<bool>("raw", false);
         m_accel = props.get<bool>("accel", true);
@@ -196,7 +200,7 @@ public:
             ScalarUInt32 channel_count = 0;
 
             if (props.has_property("grid")) {
-                // Creates a Bitmap texture directly from an existing Bitmap object
+                // Create a grid volume directly from an existing VolumeGrid object
                 if (props.has_property("filename"))
                     Throw("Cannot specify both \"grid\" and \"filename\".");
                 Log(Debug, "Loading volume grid from memory...");
@@ -207,16 +211,18 @@ public:
                     Throw("Property \"grid\" must be a VolumeGrid instance.");
                 res = volume_grid->size();
                 channel_count = (uint32_t) volume_grid->channel_count();
-            } else if(props.has_property("data")) {
-                tensor = const_cast<TensorXf*>(&props.get_any<TensorXf>("data"));
+            } else if (props.has_property("data")) {
+                tensor = const_cast<TensorXf *>(&props.get_any<TensorXf>("data"));
                 if (tensor->ndim() != 3 && tensor->ndim() != 4)
-                    Throw("Tensor->has %ul dimensions. Expected 3 or 4", tensor->ndim());
+                    Throw("Tensor has %u dimensions. Expected 3 or 4.",
+                          tensor->ndim());
                 res = { (uint32_t) tensor->shape(2), (uint32_t) tensor->shape(1), (uint32_t) tensor->shape(0) };
                 channel_count = tensor->ndim() == 4 ? (uint32_t) tensor->shape(3) : 1;
 
                 if (channel_count != 1 && channel_count != 3 && channel_count != 6)
-                    Throw("Tensor shape at index 3 is %lu invalid. Only volumes with 1, 3 or 6 "
-                          "channels are supported!", to_string(), channel_count);
+                    Throw("Tensor channel count %u is invalid. Only volumes "
+                          "with 1, 3 or 6 channels are supported!",
+                          channel_count);
             } else {
                 FileResolver *fs = file_resolver();
                 fs::path file_path = fs->resolve(props.get<std::string_view>("filename"));
@@ -266,6 +272,9 @@ public:
                 };
                 m_texture = Texture3f(TensorXf(scaled_data.get(), 4, shape),
                                       m_accel, m_accel, filter_mode, wrap_mode);
+                m_channel_count = 0;
+                m_max_per_channel.clear();
+                m_max_per_channel_dirty = false;
             } else if (volume_grid) {
                 size_t shape[4] = {
                     (size_t) res.z(),
@@ -278,6 +287,7 @@ public:
                 m_max = volume_grid->max();
                 m_max_per_channel.resize(volume_grid->channel_count());
                 volume_grid->max_per_channel(m_max_per_channel.data());
+                m_max_per_channel_dirty = false;
                 m_channel_count = channel_count;
             } else if (tensor) {
                 size_t shape[4] = {
@@ -290,6 +300,7 @@ public:
                                       m_accel, m_accel, filter_mode, wrap_mode);
                 m_max = (float) dr::max_nested(dr::detach(m_texture.value()));
                 m_channel_count = channel_count;
+                m_max_per_channel_dirty = true;
             }
         }
 
@@ -313,16 +324,48 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "data")) {
+            const TensorXf &tensor = m_texture.tensor();
+            if (tensor.ndim() != 4)
+                Throw("parameters_changed(): The volume data %s was changed "
+                      "to have %zu dimensions, expected 4.",
+                      to_string(), tensor.ndim());
+
+            const size_t *old_shape = m_texture.shape();
+            const size_t storage_channels = tensor.shape(3);
+            if (storage_channels != old_shape[3])
+                Throw("parameters_changed(): The volume data %s was changed "
+                      "from %zu to %zu channels, which is not supported.",
+                      to_string(), old_shape[3], storage_channels);
+
+            bool shape_changed = tensor.shape(0) != old_shape[0] ||
+                                 tensor.shape(1) != old_shape[1] ||
+                                 tensor.shape(2) != old_shape[2];
+
+            if (shape_changed) {
+                TensorXf updated_tensor(tensor);
+                m_texture.set_tensor(updated_tensor);
+            } else {
+                m_texture.update_inplace();
+            }
+
             const size_t channels = nchannels();
             if (channels != 1 && channels != 3 && channels != 6)
                 Throw("parameters_changed(): The volume data %s was changed "
-                      "to have %d channels, only volumes with 1, 3 or 6 "
+                      "to have %zu channels, only volumes with 1, 3 or 6 "
                       "channels are supported!", to_string(), channels);
 
-            m_texture.update_inplace();
+            if constexpr (is_spectral_v<Spectrum>)
+                m_channel_count = (!m_raw && storage_channels == 4) ? 0
+                                                                    : (uint32_t) channels;
+            else
+                m_channel_count = (uint32_t) channels;
 
             if (!m_fixed_max)
                 m_max = (float) dr::max_nested(dr::detach(m_texture.value()));
+            {
+                std::lock_guard<std::mutex> lock(m_mutex);
+                m_max_per_channel_dirty = true;
+            }
         }
     }
 
@@ -385,7 +428,83 @@ public:
         }
     }
 
+    FieldValueType out_type() const override {
+        const size_t channels = nchannels();
+        if (channels == 1)
+            return FieldValueType::Float;
+        if (channels == 3) {
+            if constexpr (is_spectral_v<Spectrum>)
+                return m_raw ? FieldValueType::Array3 : FieldValueType::Spectrum;
+            else
+                return FieldValueType::Array3;
+        }
+        return FieldValueType::Features;
+    }
+
+    uint32_t out_dim() const override {
+        if (out_type() == FieldValueType::Spectrum)
+            return (uint32_t) dr::size_v<UnpolarizedSpectrum>;
+        return (uint32_t) nchannels();
+    }
+
+    void eval_n(const Interaction3f &it, Float *out, uint32_t count,
+                typename Base::Args args = {}, Mask active = true) const override {
+        if (args.size != 0)
+            Throw("GridVolume::eval_n(): expected args_dim=0, got %u.",
+                  args.size);
+        uint32_t dim = out_dim();
+        FieldValueType type = out_type();
+        if (count != dim)
+            Throw("GridVolume::eval_n(): count (%u) must match out_dim (%u).",
+                  count, dim);
+
+        if (dr::none_or<false>(active)) {
+            for (uint32_t i = 0; i < count; ++i)
+                out[i] = 0.f;
+            return;
+        }
+
+        switch (type) {
+            case FieldValueType::Float:
+                out[0] = eval_1(it, active);
+                break;
+
+            case FieldValueType::Spectrum: {
+                UnpolarizedSpectrum value = eval(it, active);
+                for (uint32_t i = 0; i < count; ++i)
+                    out[i] = value.entry(i);
+                break;
+            }
+
+            case FieldValueType::Array3: {
+                Vector3f value = eval_3(it, active);
+                out[0] = value.x();
+                out[1] = value.y();
+                out[2] = value.z();
+                break;
+            }
+
+            case FieldValueType::Features:
+                eval_n(it, out, active);
+                break;
+
+            default:
+                Throw("GridVolume::eval_n(): unsupported field output.");
+        }
+    }
+
     void eval_n(const Interaction3f &it, Float *out, Mask active = true) const override {
+        if (out_type() == FieldValueType::Spectrum) {
+            eval_n(it, out, out_dim(), typename Base::Args{}, active);
+            return;
+        }
+
+        if (dr::none_or<false>(active)) {
+            for (size_t i = 0; i < nchannels(); ++i)
+                out[i] = 0.f;
+            return;
+        }
+
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         return interpolate_per_channel<Float>(it, out, active);
@@ -430,7 +549,10 @@ public:
     ScalarFloat max() const override { return m_max; }
 
     void max_per_channel(ScalarFloat *out) const override {
-        for (size_t i=0; i<m_max_per_channel.size(); ++i)
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (m_max_per_channel_dirty)
+            update_max_per_channel();
+        for (size_t i = 0; i < m_max_per_channel.size(); ++i)
             out[i] = m_max_per_channel[i];
     }
 
@@ -618,13 +740,58 @@ protected:
             m_texture.template eval_nonaccel<Float>(p, out, active);
     }
 
+    void update_max_per_channel() const {
+        if (out_type() == FieldValueType::Spectrum) {
+            m_max_per_channel.clear();
+            m_max_per_channel_dirty = false;
+            return;
+        }
+
+        size_t channels = nchannels();
+        m_max_per_channel.resize(channels);
+
+        if (channels == 0) {
+            m_max_per_channel_dirty = false;
+            return;
+        }
+
+        const size_t *shape = m_texture.shape();
+        uint32_t voxel_count = (uint32_t) (shape[0] * shape[1] * shape[2]);
+        DynamicBuffer<Float> values = dr::detach(m_texture.value());
+
+        if constexpr (dr::is_jit_v<Float>) {
+            DynamicBuffer<UInt32> voxel_idx =
+                dr::arange<DynamicBuffer<UInt32>>(voxel_count);
+            for (uint32_t c = 0; c < channels; ++c) {
+                DynamicBuffer<UInt32> index =
+                    voxel_idx * (uint32_t) shape[3] + c;
+                DynamicBuffer<Float> channel_values =
+                    dr::gather<Float>(values, index);
+                m_max_per_channel[c] =
+                    (ScalarFloat) dr::max_nested(channel_values);
+            }
+        } else {
+            std::fill(m_max_per_channel.begin(), m_max_per_channel.end(),
+                      -std::numeric_limits<ScalarFloat>::infinity());
+            for (uint32_t i = 0; i < voxel_count; ++i) {
+                uint32_t base = i * (uint32_t) shape[3];
+                for (uint32_t c = 0; c < channels; ++c)
+                    m_max_per_channel[c] = dr::maximum(m_max_per_channel[c],
+                        (ScalarFloat) values.entry(base + c));
+            }
+        }
+        m_max_per_channel_dirty = false;
+    }
+
 protected:
     Texture3f m_texture;
     bool m_accel;
     bool m_raw;
     bool m_fixed_max = false;
     ScalarFloat m_max;
-    std::vector<ScalarFloat> m_max_per_channel;
+    mutable std::vector<ScalarFloat> m_max_per_channel;
+    mutable bool m_max_per_channel_dirty = true;
+    mutable std::mutex m_mutex;
 
     MI_TRAVERSE_CB(Base, m_texture)
 };
