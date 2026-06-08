@@ -25,7 +25,7 @@ public:
     /// Information about the specified field
     struct MI_EXPORT_LIB Field {
         /// Data type (uint32, float, ...) of the tensor
-        Struct::Type dtype;
+        sj::Type dtype;
 
         /// Offset within the file
         size_t offset;

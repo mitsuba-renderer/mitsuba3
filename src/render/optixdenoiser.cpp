@@ -169,7 +169,7 @@ ref<Bitmap> OptixDenoiser<Float, Spectrum>::operator()(
         void *denoised_data =
             jit_malloc_migrate(denoised.data(), AllocType::Host, false);
         ref<Bitmap> output =
-            new Bitmap(noisy->pixel_format(), Struct::Type::Float32,
+            new Bitmap(noisy->pixel_format(), sj::Type::Float32,
                        { denoised.shape(1), denoised.shape(0) },
                        denoised.shape(2), {});
 
@@ -257,7 +257,7 @@ ref<Bitmap> OptixDenoiser<Float, Spectrum>::operator()(
     void *denoised_data =
         jit_malloc_migrate(denoised.data(), AllocType::Host, false);
     ref<Bitmap> output = new Bitmap(
-        noisy_bmp->pixel_format(), Struct::Type::Float32,
+        noisy_bmp->pixel_format(), sj::Type::Float32,
         { denoised.shape(1), denoised.shape(0) }, denoised.shape(2), {});
     jit_sync_thread(); // Wait for `denoised_data` to be ready
     memcpy(output->data(), denoised_data, output->buffer_size());

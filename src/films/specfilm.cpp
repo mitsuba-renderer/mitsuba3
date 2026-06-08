@@ -176,11 +176,11 @@ public:
         m_pixel_format = Bitmap::PixelFormat::MultiChannel;
 
         if (component_format == "float16")
-            m_component_format = Struct::Type::Float16;
+            m_component_format = sj::Type::Float16;
         else if (component_format == "float32")
-            m_component_format = Struct::Type::Float32;
+            m_component_format = sj::Type::Float32;
         else if (component_format == "uint32")
-            m_component_format = Struct::Type::UInt32;
+            m_component_format = sj::Type::UInt32;
         else
             Throw("The \"component_format\" parameter must either be "
                   "equal to \"float16\", \"float32\", or \"uint32\"."
@@ -414,9 +414,9 @@ public:
             struct_type_v<ScalarFloat>, m_storage->size(),
             m_storage->channel_count() - 1);
 
-        source->struct_()->operator[](m_channels.size() - 1).flags |= +Struct::Flags::Weight;
+        source->struct_()[m_channels.size() - 1].flags |= +sj::Flag::Weight;
         for (size_t i = 0; i < m_storage->channel_count() - 1; ++i) {
-            Struct::Field &dest_field = target->struct_()->operator[](i);
+            sj::Field &dest_field = target->struct_()[i];
             dest_field.name = m_channels[i];
         }
 
@@ -445,7 +445,7 @@ public:
             // Conversion is necessary before saving to disk
             std::vector<std::string> channel_names;
             for (size_t i = 0; i < source->channel_count(); i++)
-                channel_names.push_back(source->struct_()->operator[](i).name);
+                channel_names.push_back(source->struct_()[i].name);
             ref<Bitmap> target = new Bitmap(
                 source->pixel_format(),
                 m_component_format,
@@ -488,7 +488,7 @@ public:
 protected:
     Bitmap::FileFormat m_file_format;
     Bitmap::PixelFormat m_pixel_format;
-    Struct::Type m_component_format;
+    sj::Type m_component_format;
     bool m_compensate;
     ref<ImageBlock> m_storage;
     mutable std::mutex m_mutex;

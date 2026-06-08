@@ -1,5 +1,4 @@
 #include <mitsuba/core/bitmap.h>
-#include <mitsuba/core/jit.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/fresolver.h>
@@ -110,7 +109,6 @@ NB_MODULE(mitsuba_ext, m) {
         return mitsuba::logger()->log_level();
     }, "Returns the current log level.");
 
-    Jit::static_initialization();
     Thread::static_initialization();
     Logger::static_initialization();
     Bitmap::static_initialization();
@@ -174,12 +172,11 @@ NB_MODULE(mitsuba_ext, m) {
         // Release all loaded plugins
         PluginManager::instance()->release_all();
 
-        StructConverter::static_shutdown();
+        struct_jit::clear_cache();
         Profiler::static_shutdown();
         Bitmap::static_shutdown();
         Logger::static_shutdown();
         Thread::static_shutdown();
-        Jit::static_shutdown();
     }));
 
     /* Make this a package, thus allowing statements such as:

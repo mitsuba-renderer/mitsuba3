@@ -40,8 +40,6 @@ class PluginManager;
 class Properties;
 class Stream;
 class StreamAppender;
-class Struct;
-class StructConverter;
 class Thread;
 class TraversalCallback;
 class ZStream;

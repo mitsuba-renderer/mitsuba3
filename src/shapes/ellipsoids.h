@@ -91,28 +91,28 @@ public:
             bool failure = false;
             size_t i1 = 0;
             for (auto &f : { "x", "y", "z", "nx", "ny", "nz" })
-                failure |= ((*el.struct_)[i1++].name != f);
+                failure |= (el.struct_[i1++].name != f);
 
-            size_t i2 = el.struct_->field_count() - 7;
+            size_t i2 = el.struct_.size() - 7;
             for (auto &f : { "scale_0", "scale_1", "scale_2", "rot_0", "rot_1", "rot_2", "rot_3" })
-                failure |= ((*el.struct_)[i2++].name != f);
+                failure |= (el.struct_[i2++].name != f);
 
             if (failure) {
                 std::cout << "el.struct: " << el.struct_ << std::endl;
                 Throw("Invalid structure in PLY file!");
             }
 
-            size_t extras_count = el.struct_->field_count() - 13;
+            size_t extras_count = el.struct_.size() - 13;
             std::vector<std::pair<std::string, uint32_t>> extras;
 
-            bool is_3dg = ((*el.struct_)[6].name == "f_dc_0" && (*el.struct_)[el.struct_->field_count() - 8].name == "opacity");
+            bool is_3dg = (el.struct_[6].name == "f_dc_0" && el.struct_[el.struct_.size() - 8].name == "opacity");
 
             if (!is_3dg) {
                 size_t i = 0;
                 std::string prefix = "";
                 size_t count = 0;
                 while (i < extras_count) {
-                    auto name2 = (*el.struct_)[6 + i].name;
+                    auto name2 = el.struct_[6 + i].name;
                     auto current_prefix = name2.substr(0, name2.find_last_of("_"));
                     if (prefix == current_prefix) {
                         count++;
@@ -130,10 +130,10 @@ public:
                 extras.push_back({ "opacity", 1 });
             }
 
-            size_t scale_offset = el.struct_->field_count() - 7;
-            size_t quat_offset  = el.struct_->field_count() - 4;
+            size_t scale_offset = el.struct_.size() - 7;
+            size_t quat_offset  = el.struct_.size() - 4;
 
-            std::unique_ptr<float[]> buf(new float[el.struct_->field_count()]);
+            std::unique_ptr<float[]> buf(new float[el.struct_.size()]);
             std::unique_ptr<float[]> ellipsoid_data(new float[el.count * EllipsoidStructSize]);
 
             std::vector<std::unique_ptr<float[]>> extras_data;
@@ -148,7 +148,7 @@ public:
 
             size_t count = 0;
             for (size_t i = 0; i < el.count; i++) {
-                stream->read(buf.get(), el.struct_->size());
+                stream->read(buf.get(), el.struct_.nbytes());
 
                 ScalarPoint3f center = dr::load<ScalarPoint3f>(buf.get());
                 center = to_world * center;
@@ -184,7 +184,7 @@ public:
                         extras_data[0].get()[count * sh_coeffs_count + j * 3 + 2] = buf.get()[6 + (j - 1) + 2 * sh_n + 1];
                     }
 
-                    float opacity = buf.get()[el.struct_->field_count() - 8];
+                    float opacity = buf.get()[el.struct_.size() - 8];
                     opacity = 1.f / (1.f + dr::exp(-opacity)); // Opacity activation (sigmoid)
                     opacity = dr::clip(opacity, 1e-8f, 1.f - 1e-8f);
                     extras_data[1].get()[count] = opacity;

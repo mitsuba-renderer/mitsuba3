@@ -482,9 +482,7 @@ set(MI_DEPEND
   IlmImf IlmThread Imath Iex IexMath Half pugixml
 )
 
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64)|(amd64)|(AMD64)")
-  set(MI_DEPEND ${MI_DEPEND} asmjit)
-endif()
+list(APPEND MI_DEPEND struct-jit)
 
 list(APPEND MI_DEPEND png jpeg)
 

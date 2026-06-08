@@ -17,7 +17,6 @@ set(MI_NB_DOMAIN drjit)
 include_directories(
   ${PNG_INCLUDE_DIRS}
   ${PUGIXML_INCLUDE_DIRS}
-  ${ASMJIT_INCLUDE_DIRS}
   ${ZLIB_INCLUDE_DIR}
   ${OPENEXR_INCLUDE_DIRS}
   ${JPEG_INCLUDE_DIRS}
@@ -96,9 +95,13 @@ target_compile_definitions(mitsuba_ext PRIVATE "-DDRJIT_UNROLL= ")
 
 target_link_libraries(mitsuba_ext PRIVATE mitsuba)
 
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64)|(amd64)|(AMD64)")
-  target_link_libraries(mitsuba_ext PRIVATE asmjit)
-endif()
+target_link_libraries(mitsuba_ext PRIVATE struct-jit)
+
+# Ships Struct-JIT's nanobind bindings as part of Dr.Jit
+set(SJIT_PY_BINDINGS ${CMAKE_SOURCE_DIR}/ext/struct-jit/src/python/main.cpp)
+target_sources(mitsuba_ext PRIVATE ${SJIT_PY_BINDINGS})
+set_source_files_properties(${SJIT_PY_BINDINGS} PROPERTIES
+  COMPILE_DEFINITIONS SJIT_PYTHON_EMBED)
 
 set_target_properties(mitsuba_ext
   PROPERTIES

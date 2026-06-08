@@ -317,34 +317,14 @@ target_compile_features(pugixml PUBLIC cxx_std_17)
 set(TINYFORMAT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tinyformat PARENT_SCOPE)
 
 # ----------------------------------------------------------
-#  asmjit -- x86/64 JIT compiler
+#  struct-jit -- JIT-accelerated structure converter
 # ----------------------------------------------------------
-
-if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
-  # Build asmjit
-  set(ASMJIT_NO_AARCH32    TRUE CACHE BOOL "" FORCE)
-  set(ASMJIT_NO_AARCH64    TRUE CACHE BOOL "" FORCE)
-  set(ASMJIT_NO_DEPRECATED TRUE CACHE BOOL "" FORCE)
-
-  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-inconsistent-missing-override -Wno-undefined-inline")
-  endif()
-  add_subdirectory(asmjit)
-  set(ASMJIT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/asmjit/src PARENT_SCOPE)
-  set_property(TARGET asmjit PROPERTY FOLDER "dependencies")
-  if (MSVC)
-    target_compile_options(asmjit PRIVATE "/wd4804" "/wd4838")
-    # Don't complain about ignoring '/INCREMENTAL'
-    set_target_properties(asmjit PROPERTIES LINK_FLAGS "/ignore:4075")
-  endif()
-  # Avoid name clashes with pytorch (which also includes asmjit)
-  set_property(TARGET asmjit PROPERTY OUTPUT_NAME "asmjit-mitsuba")
-endif()
+set(SJIT_ENABLE_PYTHON OFF CACHE BOOL "" FORCE)
+add_subdirectory(struct-jit)
+set_property(TARGET struct-jit PROPERTY FOLDER "dependencies")
 
 mark_as_advanced(
-  ASMJIT_DIR ASMJIT_EMBED ASMJIT_STATIC ASMJIT_NO_AARCH32 ASMJIT_NO_AARCH64
-  ASMJIT_NO_DEPRECATED ASMJIT_NO_CUSTOM_FLAGS ASMJIT_NO_FOREIGN ASMJIT_NO_NATVIS
-  ASMJIT_NO_X86 ASMJIT_TEST ASMJIT_SANITIZE
+  SJIT_ENABLE_PYTHON
 )
 
 # ----------------------------------------------------------

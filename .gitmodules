@@ -16,9 +16,6 @@
 [submodule "ext/pugixml"]
     path = ext/pugixml
     url = https://github.com/mitsuba-renderer/pugixml
-[submodule "ext/asmjit"]
-    path = ext/asmjit
-    url = https://github.com/mitsuba-renderer/asmjit
 [submodule "ext/nanogui"]
     path = ext/nanogui
     url = https://github.com/mitsuba-renderer/nanogui
@@ -45,3 +42,6 @@
 [submodule "ext/nanobind"]
 	path = ext/nanobind
 	url = https://github.com/wjakob/nanobind.git
+[submodule "ext/struct-jit"]
+	path = ext/struct-jit
+	url = https://github.com/mitsuba-renderer/struct-jit

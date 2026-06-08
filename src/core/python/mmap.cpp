@@ -53,7 +53,7 @@ MI_PY_EXPORT(MemoryMappedFile) {
             nb::object array = nb::steal(s.tensor_array(tensor.ptr()));
             dr::vector<size_t> &shape = s.tensor_shape(nb::inst_ptr<dr::ArrayBase>(tensor));
 
-            using Type = Struct::Type;
+            using Type = sj::Type;
             VarType vt;
             switch (f.dtype) {
                 case Type::UInt32: vt = VarType::UInt32; break;

@@ -325,11 +325,11 @@ def test_split(variant_scalar_rgb):
 
         for f in split[1].struct_():
             if f.name == "A" and split[1].pixel_format() != mi.Bitmap.PixelFormat.MultiChannel:
-                assert f.flags == 64
+                assert f.flags == mi.Struct.Flags.Alpha
             elif f.name == "W":
-                assert f.flags == 16
+                assert f.flags == mi.Struct.Flags.Weight
             else:
-                assert f.flags == 32
+                assert f.flags == mi.Struct.Flags.PremultipliedAlpha
 
 
 def test_split_data(variant_scalar_rgb):
