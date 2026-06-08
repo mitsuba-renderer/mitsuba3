@@ -98,6 +98,7 @@ if (MI_ENABLE_EMBREE)
 endif()
 
 target_link_libraries(mitsuba-render PUBLIC drjit)
+target_link_libraries(mitsuba-render PUBLIC struct-jit)
 
 if (MI_ENABLE_JIT)
   target_link_libraries(mitsuba-render PUBLIC drjit-core)

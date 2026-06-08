@@ -189,11 +189,11 @@ public:
         }
 
         if (component_format == "float16")
-            m_component_format = Struct::Type::Float16;
+            m_component_format = sj::Type::Float16;
         else if (component_format == "float32")
-            m_component_format = Struct::Type::Float32;
+            m_component_format = sj::Type::Float32;
         else if (component_format == "uint32")
-            m_component_format = Struct::Type::UInt32;
+            m_component_format = sj::Type::UInt32;
         else
             Throw("The \"component_format\" parameter must either be "
                   "equal to \"float16\", \"float32\", or \"uint32\"."
@@ -205,10 +205,10 @@ public:
                            " Overriding..");
                 m_pixel_format = Bitmap::PixelFormat::RGB;
             }
-            if (m_component_format != Struct::Type::Float32) {
+            if (m_component_format != sj::Type::Float32) {
                 Log(Warn, "The RGBE format only supports "
                            "component_format=\"float32\". Overriding..");
-                m_component_format = Struct::Type::Float32;
+                m_component_format = sj::Type::Float32;
             }
         } else if (m_file_format == Bitmap::FileFormat::PFM) {
             // PFM output; override pixel & component format if necessary
@@ -217,10 +217,10 @@ public:
                            " or \"luminance\". Overriding (setting to \"rgb\")..");
                 m_pixel_format = Bitmap::PixelFormat::RGB;
             }
-            if (m_component_format != Struct::Type::Float32) {
+            if (m_component_format != sj::Type::Float32) {
                 Log(Warn, "The PFM format only supports"
                            " component_format=\"float32\". Overriding..");
-                m_component_format = Struct::Type::Float32;
+                m_component_format = sj::Type::Float32;
             }
         }
 
@@ -463,11 +463,11 @@ public:
             has_aovs ? target_ch : 0);
 
         if (has_aovs) {
-            source->struct_()->operator[](base_ch - 1).flags |=
-                +Struct::Flags::Weight;
+            source->struct_()[base_ch - 1].flags |=
+                +sj::Flag::Weight;
 
             for (size_t i = 0; i < target_ch; ++i) {
-                Struct::Field &dest_field = target->struct_()->operator[](i);
+                sj::Field &dest_field = target->struct_()[i];
 
                 switch (i) {
                     case 0:
@@ -571,7 +571,7 @@ public:
             // Conversion is necessary before saving to disk
             std::vector<std::string> channel_names;
             for (size_t i = 0; i < source->channel_count(); i++)
-                channel_names.push_back(source->struct_()->operator[](i).name);
+                channel_names.push_back(source->struct_()[i].name);
             ref<Bitmap> target = new Bitmap(
                 source->pixel_format(),
                 m_component_format,
@@ -610,7 +610,7 @@ public:
 protected:
     Bitmap::FileFormat m_file_format;
     Bitmap::PixelFormat m_pixel_format;
-    Struct::Type m_component_format;
+    sj::Type m_component_format;
     bool m_compensate;
     ref<ImageBlock> m_storage;
     mutable std::mutex m_mutex;

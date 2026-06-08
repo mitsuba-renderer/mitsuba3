@@ -3,7 +3,6 @@
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/fstream.h>
-#include <mitsuba/core/jit.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/profiler.h>
 #include <mitsuba/core/thread.h>
@@ -143,7 +142,6 @@ void hup_signal_handler(int signal) {
 #endif
 
 int main(int argc, char *argv[]) {
-    Jit::static_initialization();
     Thread::static_initialization();
     Logger::static_initialization();
     Bitmap::static_initialization();
@@ -391,10 +389,9 @@ int main(int argc, char *argv[]) {
     color_management_static_shutdown();
     Profiler::static_shutdown();
     Bitmap::static_shutdown();
-    StructConverter::static_shutdown();
+    struct_jit::clear_cache();
     Logger::static_shutdown();
     Thread::static_shutdown();
-    Jit::static_shutdown();
 
 
 #if defined(MI_ENABLE_CUDA)

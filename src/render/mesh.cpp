@@ -238,7 +238,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::write_ply(Stream *stream) const {
         dr::sync_thread();
 
     stream->write_line("ply");
-    if (Struct::host_byte_order() == Struct::ByteOrder::BigEndian)
+    if (sj::native_byte_order() == sj::ByteOrder::BigEndian)
         stream->write_line("format binary_big_endian 1.0");
     else
         stream->write_line("format binary_little_endian 1.0");
