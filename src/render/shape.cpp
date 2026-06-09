@@ -297,7 +297,7 @@ MI_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice device)
 #endif
 
 #if defined(MI_ENABLE_CUDA)
-static const uint32_t optix_geometry_flags[1] = { OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT };
+static const uint32_t optix_geometry_flags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
 
 MI_VARIANT void Shape<Float, Spectrum>::optix_prepare_geometry() {
     NotImplementedError("optix_prepare_geometry");
@@ -311,7 +311,8 @@ void Shape<Float, Spectrum>::optix_fill_hitgroup_records(
 
     optix_prepare_geometry();
 
-    HitGroupSbtRecord rec{ { jit_registry_id(this), m_optix_data_ptr } };
+    // Set hitgroup record data
+    HitGroupSbtRecord rec{ { jit_registry_id(this), (uint32_t) m_shape_type, m_optix_data_ptr } };
     uint32_t pg_index = pg_mapping.at((ShapeType) shape_type());
 
     // Setup the hitgroup record and copy it to the hitgroup records array

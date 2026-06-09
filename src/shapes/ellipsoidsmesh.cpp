@@ -11,6 +11,10 @@
     #include <embree3/rtcore.h>
 #endif
 
+#if defined(MI_ENABLE_CUDA)
+    #include "optix/ellipsoids.cuh"
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 
 /// Forward declaration of template shell mesh data buffers
@@ -557,6 +561,32 @@ private:
 
         rtcCommitGeometry(geom);
         return geom;
+    }
+#endif
+
+#if defined(MI_ENABLE_CUDA)
+    using Base::m_optix_data_ptr;
+
+    void optix_prepare_geometry() override {
+        if constexpr (dr::is_cuda_v<Float>) {
+            if (!m_optix_data_ptr)
+                m_optix_data_ptr =
+                    jit_malloc(AllocType::Device, sizeof(OptixEllipsoidsData));
+
+            float *opacity_data = nullptr;
+            if (m_ellipsoids.has_attribute("opacities"))
+                opacity_data = (float*) m_ellipsoids.attributes().find("opacities")->second.data();
+
+            OptixEllipsoidsData data = {
+                m_bbox,
+                m_ellipsoids.extents_data().data(),
+                opacity_data,
+                IntersectionMode::SHELL,
+                m_ellipsoids.data().data(),
+                (uint32_t) m_shell_faces.size()
+            };
+            jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data, sizeof(OptixEllipsoidsData));
+        }
     }
 #endif
 

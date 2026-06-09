@@ -98,7 +98,7 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types) {
     }
 
     config.pipeline_compile_options.usesMotionBlur     = false;
-    config.pipeline_compile_options.numPayloadValues   = 0;
+    config.pipeline_compile_options.numPayloadValues   = 1;
     config.pipeline_compile_options.numAttributeValues = 2; // the minimum legal value
     config.pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
     config.pipeline_compile_options.traversableGraphFlags =
@@ -237,17 +237,23 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types) {
     // First hitgroup is for triangle meshes. We always create it, as
     // empty pipelines cause linker errors.
     pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+    pgd[pg_count].hitgroup.moduleAH = config.main_module;
+    pgd[pg_count].hitgroup.entryFunctionNameAH = "__anyhit__intersection_check";
     config.pg_mapping[ShapeType::Mesh] = pg_count++;
 
     if (shape_types & (uint32_t) ShapeType::BSplineCurve) {
         pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
         pgd[pg_count].hitgroup.moduleIS = config.bspline_curve_module;
+        pgd[pg_count].hitgroup.moduleAH = config.main_module;
+        pgd[pg_count].hitgroup.entryFunctionNameAH = "__anyhit__intersection_check";
         config.pg_mapping[ShapeType::BSplineCurve] = pg_count++;
     }
 
     if (shape_types & (uint32_t) ShapeType::LinearCurve) {
         pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
         pgd[pg_count].hitgroup.moduleIS = config.linear_curve_module;
+        pgd[pg_count].hitgroup.moduleAH = config.main_module;
+        pgd[pg_count].hitgroup.entryFunctionNameAH = "__anyhit__intersection_check";
         config.pg_mapping[ShapeType::LinearCurve] = pg_count++;
     }
 
@@ -255,6 +261,8 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types) {
         pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
         pgd[pg_count].hitgroup.entryFunctionNameIS = "__intersection__sphere";
         pgd[pg_count].hitgroup.moduleIS = config.main_module;
+        pgd[pg_count].hitgroup.moduleAH = config.main_module;
+        pgd[pg_count].hitgroup.entryFunctionNameAH = "__anyhit__intersection_check";
         config.pg_mapping[ShapeType::Sphere] = pg_count++;
     }
 
@@ -262,6 +270,8 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types) {
         pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
         pgd[pg_count].hitgroup.entryFunctionNameIS = "__intersection__disk";
         pgd[pg_count].hitgroup.moduleIS = config.main_module;
+        pgd[pg_count].hitgroup.moduleAH = config.main_module;
+        pgd[pg_count].hitgroup.entryFunctionNameAH = "__anyhit__intersection_check";
         config.pg_mapping[ShapeType::Disk] = pg_count++;
     }
 
@@ -269,6 +279,8 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types) {
         pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
         pgd[pg_count].hitgroup.entryFunctionNameIS = "__intersection__cylinder";
         pgd[pg_count].hitgroup.moduleIS = config.main_module;
+        pgd[pg_count].hitgroup.moduleAH = config.main_module;
+        pgd[pg_count].hitgroup.entryFunctionNameAH = "__anyhit__intersection_check";
         config.pg_mapping[ShapeType::Cylinder] = pg_count++;
     }
 
@@ -283,6 +295,8 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types) {
         pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
         pgd[pg_count].hitgroup.entryFunctionNameIS = "__intersection__ellipsoids";
         pgd[pg_count].hitgroup.moduleIS = config.main_module;
+        pgd[pg_count].hitgroup.moduleAH = config.main_module;
+        pgd[pg_count].hitgroup.entryFunctionNameAH = "__anyhit__intersection_check";
         config.pg_mapping[ShapeType::Ellipsoids] = pg_count++;
     }
 
@@ -590,6 +604,7 @@ MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
 
 MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
+                                                      uint32_t ray_flags_,
                                                       bool reorder,
                                                       UInt32 reorder_hint,
                                                       uint32_t reorder_hint_bits,
@@ -598,8 +613,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
         MiOptixSceneState &s = *(MiOptixSceneState *) m_accel;
 
         UInt32 ray_mask(255),
-               ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT |
-                         OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
+               ray_flags(OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
         // Enforce backface culling, which is only enabled on EllipsoidsMesh
@@ -607,6 +621,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
         ray_flags |= OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES;
 
         bool has_instances = !m_shapegroups.empty();
+        UInt32 mi_ray_flags(ray_flags_);
 
         using Single = dr::float32_array_t<Float>;
         dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
@@ -624,7 +639,10 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
             ray_mask.index(), ray_flags.index(),
             sbt_offset.index(), sbt_stride.index(),
             miss_sbt_index.index(),
+            mi_ray_flags.index(),
         };
+        uint32_t n_args = sizeof(trace_args) / sizeof(uint32_t);
+
         OptixHitObjectField fields[] {
             OptixHitObjectField::IsHit,
             OptixHitObjectField::RayTMax,
@@ -639,11 +657,25 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
         // Scene property takes precedence
         reorder &= m_thread_reordering;
 
-        jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
+        // Whether we should execute any-hit shader
+        bool invoke = !has_flag(ray_flags_, RayFlags::NoInvoke);
+
+        if (invoke && reorder) {
+            Log(Warn, "Shader reordering with any-hit shader is not working yet. Disabling it to be safe!");
+            reorder = false;
+        }
+
+        jit_optix_ray_trace(n_args, trace_args,
                             has_instances ? 7 : 6, fields, hitobject_out,
                             reorder, reorder_hint.index(), reorder_hint_bits,
-                            false, active.index(),
+                            invoke, active.index(),
                             s.pipeline_jit_index, s.sbt_jit_index);
+
+        // jit_optix_ray_trace creates "extract" variables for payload values,
+        // which need to be handles on the caller side
+        if (invoke) {
+            UInt32::steal(trace_args[sizeof(trace_args) / sizeof(uint32_t) - 1]);
+        }
 
         Mask hitobject_is_hit = UInt32::steal(hitobject_out[0]) != 0;
         active &= hitobject_is_hit;
@@ -690,7 +722,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
                                           Mask active) const {
     if constexpr (dr::is_cuda_v<Float>) {
         PreliminaryIntersection3f pi = ray_intersect_preliminary_gpu(
-            ray, reorder, reorder_hint, reorder_hint_bits, active);
+            ray, ray_flags, reorder, reorder_hint, reorder_hint_bits, active);
         return pi.compute_surface_interaction(ray, ray_flags, active);
     } else {
         DRJIT_MARK_USED(ray);
@@ -709,8 +741,7 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
         MiOptixSceneState &s = *(MiOptixSceneState *) m_accel;
 
         UInt32 ray_mask(255),
-               ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT |
-                         OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
+               ray_flags(OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
                          OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
@@ -726,6 +757,8 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
         if constexpr (!std::is_same_v<Single, Float>)
             ray_maxt = dr::minimum(ray_maxt, dr::Largest<Single>);
 
+        UInt32 mi_ray_flags(+RayFlags::All);
+
         uint32_t trace_args[] {
             m_accel_handle.index(),
             ray_o.x().index(), ray_o.y().index(), ray_o.z().index(),
@@ -733,15 +766,20 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
             ray_mint.index(), ray_maxt.index(), ray_time.index(),
             ray_mask.index(), ray_flags.index(),
             sbt_offset.index(), sbt_stride.index(),
-            miss_sbt_index.index()
+            miss_sbt_index.index(),
+            mi_ray_flags.index(),
         };
+        uint32_t n_args = sizeof(trace_args) / sizeof(uint32_t);
 
         OptixHitObjectField field = OptixHitObjectField::IsHit;
         uint32_t hitobject_out;
 
-        jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
+        // Whether we should execute any-hit shader
+        bool invoke = false;
+
+        jit_optix_ray_trace(n_args, trace_args,
                             1, &field, &hitobject_out,
-                            false, 0, 0, false, active.index(),
+                            false, 0, 0, invoke, active.index(),
                             s.pipeline_jit_index, s.sbt_jit_index);
 
         UInt32 hitobject_is_hit = UInt32::steal(hitobject_out);

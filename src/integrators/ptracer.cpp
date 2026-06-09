@@ -213,7 +213,7 @@ public:
 
         /* ---------------------- Path construction ------------------------- */
         // First intersection from the emitter to the scene
-        PreliminaryIntersection3f pi = scene->ray_intersect_preliminary(ray, active);
+        PreliminaryIntersection3f pi = scene->ray_intersect_preliminary(ray, false, active);
 
         active &= pi.is_valid();
         if (m_max_depth >= 0)
@@ -304,6 +304,7 @@ public:
             ls.ray = si.spawn_ray(si.to_world(bs.wo));
             // Reorder threads based on the shape they hit
             ls.pi = scene->ray_intersect_preliminary(ls.ray,
+                                                     /* ray_flags = */ +RayFlags::All,
                                                      /* coherent = */ false,
                                                      /* reorder = */ jit_flag(JitFlag::LoopRecord),
                                                      /* reorder_hint = */ 0,

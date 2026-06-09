@@ -17,6 +17,11 @@
 
 #if defined(MI_ENABLE_CUDA)
     #include "optix/ellipsoids.cuh"
+#else
+  enum IntersectionMode : uint32_t {
+      SHELL     = 0, /// Set intersection distance to shell boundary
+      PEAK      = 1, /// Set intersection distance to peak value
+  };
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
@@ -145,6 +150,16 @@ public:
 
         Timer timer;
 
+        m_intersection_mode_str = props.get<std::string>("intersection_mode", "shell");
+        if (m_intersection_mode_str == "shell")
+            // This mode will return an intersection point at on the analytical shell
+            m_intersection_mode = IntersectionMode::SHELL;
+        else if (m_intersection_mode_str == "peak")
+            // This mode will return an intersection point at the center of the segment traversing the shell
+            m_intersection_mode = IntersectionMode::PEAK;
+        else
+            Log(Error, "Invalid intersection mode: %s. Should be one of ['shell', 'peak']", m_intersection_mode_str);
+
         m_ellipsoids = EllipsoidsData<Float, Spectrum>(props);
 
         size_t ellipsoids_count_bytes = EllipsoidStructSize * sizeof(float);
@@ -166,6 +181,7 @@ public:
 
     void traverse(TraversalCallback *cb) override {
         m_ellipsoids.traverse(cb);
+        cb->put("intersection_mode", m_intersection_mode_str, ParamFlags::ReadOnly);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -194,6 +210,8 @@ public:
             ScalarPoint3f(bbox.max[0], bbox.max[1], bbox.max[2])
         );
     }
+
+    bool parameters_grad_enabled() const override { return dr::grad_enabled(m_ellipsoids.data()); }
 
     //! @}
     // =============================================================
@@ -287,38 +305,56 @@ public:
         o *= scale_rcp;
         d *= scale_rcp;
 
-        Ray3fP ray_relative(o, d);
+        FloatP t;
 
-        // We define a plane which is perpendicular to the ray direction and
-        // contains the ellipsoid center and intersect it. We then solve the
-        // ray-sphere intersection as if the ray origin was this new
-        // intersection point. This additional step makes the whole intersection
-        // routine numerically more robust.
+        if (m_intersection_mode == IntersectionMode::PEAK) {
+            // Compute closest approach to center in canonical space (from "3D Gaussian Ray Tracing", NVIDIA)
+            // t_peak = -dot(o, d) / dot(d, d) gives the point on the ray closest to the origin
+            t = FloatP(-dr::dot(o, d) / dr::squared_norm(d));
 
-        Value plane_t = dot(-o, d) / norm(d);
-        Value3 plane_p = ray_relative(FloatP(plane_t));
+            // Compute minimum squared distance from ray to center in canonical space
+            Value3 peak_p = o + t * d;
+            Value squared_dist = dr::squared_norm(peak_p);
 
-        Value A = dr::squared_norm(d);
-        Value B = dr::scalar_t<Value>(2.0) * dr::dot(plane_p, d);
-        Value C = dr::squared_norm(plane_p) - Value(1.0);
-        auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
+            // Hit within within 3σ (scale already divided by extent)
+            dr::mask_t<Value> within_extent = (squared_dist < Value(1.0));
 
-        // Adjust distances for plane intersection
-        near_t += plane_t;
-        far_t += plane_t;
+            active &= within_extent && (t > FloatP(0.0)) && (t < FloatP(maxt));
+        } else {
+            Ray3fP ray_relative(o, d);
 
-        // Ellipsoid doesn't intersect with the segment on the ray
-        dr::mask_t<FloatP> out_bounds = !(near_t <= maxt && far_t >= Value(0.0)); // NaN-aware conditionals
+            // We define a plane which is perpendicular to the ray direction and
+            // contains the ellipsoid center and intersect it. We then solve the
+            // ray-sphere intersection as if the ray origin was this new
+            // intersection point. This additional step makes the whole intersection
+            // routine numerically more robust.
 
-        // Ellipsoid fully contains the segment of the ray
-        dr::mask_t<FloatP> in_bounds = near_t < Value(0.0) && far_t > maxt;
+            Value plane_t = dot(-o, d) / norm(d);
+            Value3 plane_p = ray_relative(FloatP(plane_t));
 
-        // Ellipsoid is backfacing
-        dr::mask_t<FloatP> backfacing = (near_t < Value(0.0));
+            Value A = dr::squared_norm(d);
+            Value B = dr::scalar_t<Value>(2.0) * dr::dot(plane_p, d);
+            Value C = dr::squared_norm(plane_p) - Value(1.0);
+            auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
-        active &= solution_found && !out_bounds && !in_bounds && !backfacing;
+            // Adjust distances for plane intersection
+            near_t += plane_t;
+            far_t += plane_t;
 
-        FloatP t = dr::select(near_t < Value(0.0), FloatP(far_t), FloatP(near_t));
+            // Ellipsoid doesn't intersect with the segment on the ray
+            dr::mask_t<FloatP> out_bounds = !(near_t <= maxt && far_t >= Value(0.0)); // NaN-aware conditionals
+
+            // Ellipsoid fully contains the segment of the ray
+            dr::mask_t<FloatP> in_bounds = near_t < Value(0.0) && far_t > maxt;
+
+            // Ellipsoid is backfacing
+            dr::mask_t<FloatP> backfacing = (near_t < Value(0.0));
+
+            active &= solution_found && !out_bounds && !in_bounds && !backfacing;
+
+            t = dr::select(near_t < Value(0.0), FloatP(far_t), FloatP(near_t));
+        }
+
         t =  dr::select(active, t, dr::Infinity<FloatP>);
 
         return { t, active };
@@ -379,8 +415,12 @@ public:
         si.t = dr::select(active, pi.t, dr::Infinity<Float>);
         si.p = ray(pi.t);
 
-        Point3f local = dr::transpose(rot) * (si.p - ellipsoid.center);
-        si.sh_frame.n = dr::normalize(rot * (local / dr::square(ellipsoid.scale)));
+        if (m_intersection_mode == IntersectionMode::SHELL) {
+            Point3f local = dr::transpose(rot) * (si.p - ellipsoid.center);
+            si.sh_frame.n = dr::normalize(rot * (local / dr::square(ellipsoid.scale)));
+        } else {
+            si.sh_frame.n = dr::normalize(ray.o - ellipsoid.center); // Shading normal like billboards
+        }
 
         si.n = si.sh_frame.n;
         si.uv    = Point2f(0.f, 0.f);
@@ -404,10 +444,17 @@ public:
                 m_optix_data_ptr =
                     jit_malloc(AllocType::Device, sizeof(OptixEllipsoidsData));
 
+            float *opacity_data = nullptr;
+            if (m_ellipsoids.has_attribute("opacities"))
+                opacity_data = (float*) m_ellipsoids.attributes().find("opacities")->second.data();
+
             OptixEllipsoidsData data = {
                 m_bbox,
                 m_ellipsoids.extents_data().data(),
-                m_ellipsoids.data().data()
+                opacity_data,
+                m_intersection_mode,
+                m_ellipsoids.data().data(),
+                1 // subprimitives per primitives
             };
             jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data, sizeof(OptixEllipsoidsData));
         }
@@ -595,6 +642,10 @@ private:
     /// The pointer to the bounding box data above (used in Embree and OptiX)
     void *m_host_bboxes   = nullptr;
     void *m_device_bboxes = nullptr;
+
+    /// Whether the intersection function should emulate splatting ordering
+    IntersectionMode m_intersection_mode;
+    std::string m_intersection_mode_str;
 };
 
 MI_EXPORT_PLUGIN(Ellipsoids)

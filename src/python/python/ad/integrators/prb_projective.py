@@ -169,6 +169,7 @@ class PathProjectiveIntegrator(PSIntegrator):
             si = si_shade
         else:
             pi = scene.ray_intersect_preliminary(ray,
+                                                 ray_flags=mi.RayFlags.All,
                                                  coherent=True,
                                                  reorder=False,
                                                  active=active)
@@ -373,6 +374,7 @@ class PathProjectiveIntegrator(PSIntegrator):
             # ----------------- Find the next interaction -----------------
 
             pi_next = scene.ray_intersect_preliminary(ray_next,
+                                                      ray_flags=mi.RayFlags.All,
                                                       coherent=False,
                                                       reorder=False,
                                                       active=active_next)

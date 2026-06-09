@@ -96,7 +96,8 @@ class PRBIntegrator(RBIntegrator):
         β = mi.Spectrum(1)                               # Path throughput weight
         η = mi.Float(1)                                  # Index of refraction
         active = mi.Bool(active)                         # Active SIMD lanes
-        pi = scene.ray_intersect_preliminary(ray,        # Current interaction
+        pi = scene.ray_intersect_preliminary(ray,
+                                             ray_flags=mi.RayFlags.All,
                                              coherent=True,
                                              reorder=False,
                                              active=active)
@@ -254,6 +255,7 @@ class PRBIntegrator(RBIntegrator):
             # ----------------- Find the next interaction -----------------
 
             pi_next = scene.ray_intersect_preliminary(ray_next,
+                                                      ray_flags=mi.RayFlags.All,
                                                       coherent=False,
                                                       reorder=False,
                                                       active=active_next)
