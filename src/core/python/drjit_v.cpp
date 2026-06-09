@@ -51,6 +51,8 @@ MI_PY_EXPORT(DrJit) {
         backend = "cuda";
     else if constexpr (dr::is_llvm_v<Float>)
         backend = "llvm";
+    else if constexpr (dr::is_metal_v<Float>)
+        backend = "metal";
 
     nb::module_ drjit         = nb::module_::import_("drjit"),
                 drjit_variant = drjit.attr(backend),

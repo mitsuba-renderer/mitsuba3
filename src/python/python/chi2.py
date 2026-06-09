@@ -117,8 +117,8 @@ class ChiSquareTest:
 
         samples_in = getattr(mi, 'Vector%if' % self.sample_dim)()
         for i in range(self.sample_dim):
-            samples_in[i] = rng.next_float32() if mi.Float is mi.Float32 \
-                else rng.next_float64()
+            samples_in[i] = rng.next_float32() if (mi.Float is mi.Float32 or
+                mi.variant().startswith('metal')) else rng.next_float64()
 
         # Invoke sampling strategy
         samples_out = self.sample_func(samples_in)
@@ -266,11 +266,39 @@ class ChiSquareTest:
                                                          key=lambda x: x[1])]))
 
         # Sort entries by expected frequency (increasing)
-        pdf = mi.Float64(dr.gather(mi.Float, self.pdf, index))
-        histogram = mi.Float64(dr.gather(mi.Float, self.histogram, index))
-
-        # Compute chi^2 statistic and pool low-valued cells
-        chi2val, dof, pooled_in, pooled_out = mi.math.chi2(histogram, pdf, 5)
+        if mi.variant().startswith('metal'):
+            # Metal has no float64 — use numpy for the chi2 computation
+            import numpy as np
+            pdf_np = dr.gather(mi.Float, self.pdf, index).numpy().astype(np.float64)
+            hist_np = dr.gather(mi.Float, self.histogram, index).numpy().astype(np.float64)
+            # Inline chi2 computation on CPU with float64
+            chsq, dof, pooled_in, pooled_out = 0.0, 0, 0, 0
+            pooled_obs, pooled_exp = 0.0, 0.0
+            for i in range(len(pdf_np)):
+                if pdf_np[i] == 0 and hist_np[i] == 0:
+                    continue
+                if pdf_np[i] < 5:
+                    pooled_obs += hist_np[i]
+                    pooled_exp += pdf_np[i]
+                    pooled_in += 1
+                    if pooled_exp > 5:
+                        diff = pooled_obs - pooled_exp
+                        chsq += (diff * diff) / pooled_exp
+                        pooled_obs = pooled_exp = 0.0
+                        pooled_out += 1
+                        dof += 1
+                else:
+                    diff = hist_np[i] - pdf_np[i]
+                    chsq += (diff * diff) / pdf_np[i]
+                    dof += 1
+            dof -= 1
+            chi2val = chsq
+            pdf = mi.Float(pdf_np.astype(np.float32))
+            histogram = mi.Float(hist_np.astype(np.float32))
+        else:
+            pdf = mi.Float64(dr.gather(mi.Float, self.pdf, index))
+            histogram = mi.Float64(dr.gather(mi.Float, self.histogram, index))
+            chi2val, dof, pooled_in, pooled_out = mi.math.chi2(histogram, pdf, 5)
 
         if dof < 1:
             self._log('Failure: The number of degrees of freedom is too low!')

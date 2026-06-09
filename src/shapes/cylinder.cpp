@@ -14,6 +14,10 @@
     #include "optix/cylinder.cuh"
 #endif
 
+#if defined(MI_ENABLE_METAL)
+    #include <mitsuba/render/metal/shapes.h>
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 
 /**!
@@ -777,6 +781,34 @@ public:
             jit_memcpy_async(JitBackend::CUDA, m_optix_data_ptr, &data,
                              sizeof(OptixCylinderData));
         }
+    }
+#endif
+
+#if defined(MI_ENABLE_METAL)
+    size_t metal_primitive_data_size() const override {
+        return sizeof(metal_shape::CylinderData);
+    }
+    uint32_t metal_intersection_function_index() const override {
+        return metal_shape::INTERSECTION_FN_CYLINDER;
+    }
+    void metal_fill_primitive_data(void *out) const override {
+        metal_shape::CylinderData &d = *(metal_shape::CylinderData *) out;
+        ScalarBoundingBox3f b = bbox();
+        d.bbox.min[0] = (float) b.min.x();
+        d.bbox.min[1] = (float) b.min.y();
+        d.bbox.min[2] = (float) b.min.z();
+        d.bbox.max[0] = (float) b.max.x();
+        d.bbox.max[1] = (float) b.max.y();
+        d.bbox.max[2] = (float) b.max.z();
+        const auto &M = m_to_world.scalar().inverse().matrix;
+        for (size_t i = 0; i < 4; ++i)
+            for (size_t j = 0; j < 4; ++j)
+                d.to_object[i * 4 + j] = (float) M(i, j);
+        // Object-space cylinder is z-axis aligned with length=1 and radius=1
+        // (matching the OptiX struct above where length and radius are baked
+        // into m_to_world).
+        d.length = 1.f;
+        d.radius = 1.f;
     }
 #endif
 
