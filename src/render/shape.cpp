@@ -20,8 +20,21 @@ NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props)
     : JitObject<Shape>(props.id()) {
-    m_to_world =
-        (ScalarAffineTransform4f) props.get<ScalarAffineTransform4f>("to_world", ScalarAffineTransform4f());
+    if (props.has_property("to_world")) {
+        if (props.type("to_world") == Properties::Type::Object) {
+            ref<Object> obj = props.get<ref<Object>>("to_world");
+            if (auto *anim = dynamic_cast<AnimatedTransform4f *>(obj.get())) {
+                m_to_world = anim;
+            } else {
+                Throw("Property 'to_world' has incompatible type!");
+            }
+        } else {
+            ScalarAffineTransform4f trafo = props.get<ScalarAffineTransform4f>("to_world");
+            m_to_world = new AnimatedTransform4f(trafo);
+        }
+    } else {
+        m_to_world = new AnimatedTransform4f(ScalarAffineTransform4f());
+    }
 
     for (auto &prop : props.objects()) {
         if (Emitter *emitter = prop.try_get<Emitter>()) {
@@ -634,16 +647,11 @@ MI_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *cb) {
 }
 
 MI_VARIANT
-void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
+void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
+    if (m_to_world)
+        m_to_world->parameters_changed(keys);
+
     if (dirty()) {
-        if constexpr (dr::is_jit_v<Float>) {
-            bool is_bspline_curve = shape_type() == +ShapeType::BSplineCurve,
-                 is_linear_curve  = shape_type() == +ShapeType::LinearCurve;
-
-            if (!is_mesh() && !is_bspline_curve && !is_linear_curve) // to_world is used
-                dr::make_opaque(m_to_world);
-        }
-
         if (m_emitter)
             m_emitter->parameters_changed({"parent"});
 
@@ -662,12 +670,8 @@ MI_VARIANT bool Shape<Float, Spectrum>::parameters_grad_enabled() const {
 }
 
 MI_VARIANT void Shape<Float, Spectrum>::initialize() {
-    if constexpr (dr::is_jit_v<Float>) {
-        bool is_bspline_curve = shape_type() == +ShapeType::BSplineCurve,
-             is_linear_curve  = shape_type() == +ShapeType::LinearCurve;
-
-        if (!is_mesh() && !is_bspline_curve && !is_linear_curve) // to_world is not used
-            dr::make_opaque(m_to_world);
+    if (!is_instance() && m_to_world && m_to_world->is_animated()) {
+        Throw("Shape animation requires the use of the instance plugin");
     }
 
     // Explicitly register this shape as the parent of the provided sub-objects

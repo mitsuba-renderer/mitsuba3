@@ -114,9 +114,9 @@ public:
 
     void initialize() override {
         // Compute shading frame
-        Normal3f n     = dr::normalize(m_to_world.value() * Normal3f(0.f, 0.f, 1.f)),
-                 dp_du = m_to_world.value() * Vector3f(2.f, 0.f, 0.f),
-                 dp_dv = m_to_world.value() * Vector3f(0.f, 2.f, 0.f);
+        Normal3f n     = dr::normalize(m_to_world->eval(0.f) * Normal3f(0.f, 0.f, 1.f)),
+                 dp_du = m_to_world->eval(0.f) * Vector3f(2.f, 0.f, 0.f),
+                 dp_dv = m_to_world->eval(0.f) * Vector3f(0.f, 2.f, 0.f);
 
         m_frame = Frame3f(dp_du, dp_dv, n);
         m_inv_surface_area = dr::rcp(surface_area());
@@ -126,14 +126,14 @@ public:
 
         if constexpr (dr::is_diff_v<Float>) {
             // Differentiable case: launch kernels to generate coordinates
-            if (dr::grad_enabled(m_to_world.value())) {
+            if (m_to_world->parameters_grad_enabled()) {
                 UInt32 index = dr::arange<UInt32>(4);
                 Float xf = Float(index & 1),
                       yf = Float((index & 2) >> 1);
 
                 Point3f p =
-                    m_to_world.value() * Point3f(dr::fmadd(xf, 2.f, -1.f),
-                                                 dr::fmadd(yf, 2.f, -1.f), 0.f);
+                    m_to_world->eval(0.f) * Point3f(dr::fmadd(xf, 2.f, -1.f),
+                                            dr::fmadd(yf, 2.f, -1.f), 0.f);
 
                 using Point3fi = dr::replace_scalar_t<Point3f, InputFloat>;
                 using Vector2fi = dr::replace_scalar_t<Vector2f, InputFloat>;
@@ -157,11 +157,11 @@ public:
             ScalarFloat xf = ScalarFloat(index & 1),
                         yf = ScalarFloat((index & 2) >> 1);
 
-            ScalarPoint3f p = m_to_world.scalar() *
-                              ScalarPoint3f(dr::fmadd(xf, 2.f, -1.f),
-                                            dr::fmadd(yf, 2.f, -1.f), 0.f);
-            ScalarPoint3f ns =
-                normalize(m_to_world.scalar() * ScalarNormal3f(0.f, 0.f, 1.f));
+             ScalarPoint3f p = m_to_world->eval_scalar(0.f) *
+                               ScalarPoint3f(dr::fmadd(xf, 2.f, -1.f),
+                                             dr::fmadd(yf, 2.f, -1.f), 0.f);
+             ScalarPoint3f ns =
+                 normalize(m_to_world->eval_scalar(0.f) * ScalarNormal3f(0.f, 0.f, 1.f));
 
             dr::store(vertex_positions + index * 3, Point<InputFloat, 3>(p));
             dr::store(vertex_normals   + index * 3, Normal<InputFloat, 3>(ns));
@@ -183,9 +183,9 @@ public:
         MI_MASK_ARGUMENT(active);
 
         PositionSample3f ps = dr::zeros<PositionSample3f>();
-        ps.p = m_to_world.value() *
-            Point3f(dr::fmadd(sample.x(), 2.f, -1.f),
-                    dr::fmadd(sample.y(), 2.f, -1.f), 0.f);
+        ps.p = m_to_world->eval(time) *
+               Point3f(dr::fmadd(sample.x(), 2.f, -1.f),
+                       dr::fmadd(sample.y(), 2.f, -1.f), 0.f);
         ps.n    = m_frame.n;
         ps.pdf  = m_inv_surface_area;
         ps.uv   = sample;
@@ -209,7 +209,7 @@ public:
 
     ScalarBoundingBox3f bbox() const override {
         ScalarBoundingBox3f bbox;
-        ScalarAffineTransform4f to_world = m_to_world.scalar();
+        ScalarAffineTransform4f to_world = m_to_world->eval_scalar(0.f);
 
         bbox.expand(to_world * ScalarPoint3f(-1.f, -1.f, 0.f));
         bbox.expand(to_world * ScalarPoint3f(-1.f,  1.f, 0.f));
@@ -221,25 +221,25 @@ public:
 
     void traverse(TraversalCallback *cb) override {
         Shape<Float, Spectrum>::traverse(cb); // mesh attributes not exposed
-        cb->put("to_world", m_to_world, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("to_world", m_to_world.get(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
+        Base::parameters_changed(keys);
+
         if (keys.empty() || string::contains(keys, "to_world")) {
             // Ensure previous ray-tracing operation are fully evaluated before
             // modifying the scalar values of the fields in this class
             if constexpr (dr::is_jit_v<Float>)
                 dr::sync_thread();
 
-            m_to_world = m_to_world.value().update();
             initialize();
         }
-        Base::parameters_changed(keys);
     }
 
     SurfaceInteraction3f eval_parameterization(const Point2f &uv, uint32_t, Mask active) const override {
         SurfaceInteraction3f si{};
-        si.p = m_to_world.value() *
+        si.p = m_to_world->eval(0.f) *
             Point3f(dr::fmadd(uv.x(), 2.f, - 1.f),
                     dr::fmadd(uv.y(), 2.f, - 1.f), 0.f);
         si.sh_frame  = m_frame;
@@ -264,7 +264,7 @@ public:
 
     bool parameters_grad_enabled() const override {
         return dr::grad_enabled(m_frame) ||
-               dr::grad_enabled(m_to_world.value());
+               m_to_world->parameters_grad_enabled();
     }
 
     //! @}
@@ -283,7 +283,7 @@ public:
             return dr::zeros<SilhouetteSample3f>();
 
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
-        const AffineTransform4f &to_world = m_to_world.value();
+        AffineTransform4f to_world = m_to_world->eval(0.f);
 
         /// Sample a point on one of the edges
         Mask range = false;
@@ -388,7 +388,7 @@ public:
 
             Point3f local(dr::fmadd(uv.x(), 2.f, -1.f),
                           dr::fmadd(uv.y(), 2.f, -1.f), 0.f);
-            Point3f p_diff = m_to_world.value() * local;
+            Point3f p_diff = m_to_world->eval(0.f) * local;
 
             return dr::replace_grad(si.p, p_diff);
         }
@@ -403,7 +403,7 @@ public:
             return dr::zeros<SilhouetteSample3f>();
 
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
-        const AffineTransform4f &to_world = m_to_world.value();
+        AffineTransform4f to_world = m_to_world->eval(si.time);
 
         // Project to nearest edge
         Mask top_right_triangle = si.uv.y() > 1 - si.uv.x();
@@ -492,8 +492,8 @@ public:
         uint32_t flags = (uint32_t) DiscontinuityFlags::PerimeterType;
         ss = primitive_silhouette_projection(viewpoint, si, flags, sample_reuse,
                                              active);
-        ss.pdf = dr::rcp(m_to_world.value().matrix(0, 0) * 4 +
-                         m_to_world.value().matrix(1, 1) * 4);
+        ss.pdf = dr::rcp(m_to_world->eval(0.f).matrix(0, 0) * 4 +
+                         m_to_world->eval(0.f).matrix(1, 1) * 4);
 
         return ss;
     }
@@ -517,9 +517,9 @@ public:
 
         AffineTransform<Point<FloatP, 4>> to_object;
         if constexpr (!dr::is_jit_v<FloatP>)
-            to_object = m_to_world.scalar().inverse();
+            to_object = m_to_world->eval_scalar(0.f).inverse();
         else
-            to_object = m_to_world.value().inverse();
+            to_object = m_to_world->eval(ray_.time).inverse();
 
         Ray3fP ray = to_object * ray_;
         FloatP t   = -ray.o.z() / ray.d.z();
@@ -570,9 +570,9 @@ public:
 
         AffineTransform<Point<FloatP, 4>> to_object;
         if constexpr (!dr::is_jit_v<FloatP>)
-            to_object = m_to_world.scalar().inverse();
+            to_object = m_to_world->eval_scalar(0.f).inverse();
         else
-            to_object = m_to_world.value().inverse();
+            to_object = m_to_world->eval(ray_.time).inverse();
 
         Ray3fP ray     = to_object * ray_;
         FloatP t       = -ray.o.z() / ray.d.z();
@@ -593,7 +593,7 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Rectangle[" << std::endl
-            << "  to_world = " << string::indent(m_to_world, 13) << "," << std::endl
+            << "  to_world = " << string::indent(m_to_world->eval_scalar(0.f), 13) << "," << std::endl
             << "  frame = " << string::indent(m_frame) << "," << std::endl
             << "  surface_area = " << surface_area() << "," << std::endl
             << "  " << string::indent(get_children_string()) << std::endl

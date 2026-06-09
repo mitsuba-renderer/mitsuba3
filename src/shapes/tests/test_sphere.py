@@ -230,7 +230,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     theta = mi.Float(0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f().scale(1 + theta)
+    params['to_world.transform'] = mi.Transform4f().scale(1 + theta)
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.DetachShape)
 
@@ -248,7 +248,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     theta = mi.Float(0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f().scale(1 + theta)
+    params['to_world.transform'] = mi.Transform4f().scale(1 + theta)
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All)
 
@@ -266,7 +266,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     theta = mi.Float(0.0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f().translate([theta, 0.0, 0.0])
+    params['to_world.transform'] = mi.Transform4f().translate([theta, 0.0, 0.0])
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
 
@@ -284,7 +284,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     theta = mi.Float(0.0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f().rotate([0, 1, 0], 90 * theta)
+    params['to_world.transform'] = mi.Transform4f().rotate([0, 1, 0], 90 * theta)
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
 
@@ -302,7 +302,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     theta = mi.Float(0.0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f().rotate([1, 0, 0], 90 * theta)
+    params['to_world.transform'] = mi.Transform4f().rotate([1, 0, 0], 90 * theta)
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All)
 
@@ -398,7 +398,7 @@ def test15_differential_motion(variants_vec_rgb):
 
     theta = mi.Point3f(0.0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f().translate(
+    params['to_world.transform'] = mi.Transform4f().translate(
         [theta.x, 2 * theta.y, 3 * theta.z])
     params.update()
 

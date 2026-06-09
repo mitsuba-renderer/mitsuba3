@@ -7,6 +7,7 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/bbox.h>
 #include <mitsuba/core/field.h>
+#include <mitsuba/core/animated_transform.h>
 #include <drjit/packet.h>
 #include <tsl/robin_map.h>
 
@@ -1057,7 +1058,7 @@ protected:
     tsl::robin_map<std::string, ref<Texture>, std::hash<std::string_view>,
                    std::equal_to<>> m_texture_attributes;
 
-    field<AffineTransform4f, ScalarAffineTransform4f> m_to_world;
+    ref<AnimatedTransform4f> m_to_world;
 
     /// True if the shape is used in a \c ShapeGroup
     bool m_is_instance = false;

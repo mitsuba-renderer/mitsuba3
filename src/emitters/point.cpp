@@ -1,4 +1,5 @@
 #include <mitsuba/core/bbox.h>
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/emitter.h>
@@ -26,12 +27,12 @@ Point light source (:monosp:`point`)
    - Alternative parameter for specifying the light source position.
      Note that only one of the parameters :monosp:`to_world` and
      :monosp:`position` can be used at a time.
-   - |exposed|
 
  * - to_world
-   - |transform|
-   - Specifies an optional emitter-to-world transformation.  (Default: none,
-     i.e. emitter space = world space)
+   - |animation|
+   - Specifies an optional emitter-to-world transformation (can be animated).
+     (Default: none, i.e. emitter space = world space)
+   - |exposed|
 
 This emitter plugin implements a simple point light source, which
 uniformly radiates illumination into all directions.
@@ -68,12 +69,9 @@ public:
                 Throw("Only one of the parameters 'position' and 'to_world' "
                       "can be specified at the same time!'");
 
-            m_position = props.get<ScalarPoint3f>("position");
-        } else {
-            m_position = ScalarPoint3f(m_to_world.scalar().translation());
+            ScalarPoint3f position = props.get<ScalarPoint3f>("position");
+            m_to_world = new AnimatedTransform<Float, Spectrum>(ScalarAffineTransform4f::translate(ScalarVector3f(position)));
         }
-
-        dr::make_opaque(m_position);
 
         m_intensity = props.get_emissive_texture<Texture>("intensity", 1.f);
 
@@ -86,16 +84,8 @@ public:
 
     void traverse(TraversalCallback *cb) override {
         Base::traverse(cb);
-        cb->put("position",  m_position,  ParamFlags::NonDifferentiable);
-        cb->put("intensity", m_intensity, ParamFlags::Differentiable);
-    }
-
-    void parameters_changed(const std::vector<std::string> &keys) override {
-        if (keys.empty() || string::contains(keys, "position")) {
-            m_position = m_position.value(); // update scalar part as well
-            dr::make_opaque(m_position);
-        }
-        Base::parameters_changed(keys);
+        cb->put("to_world",   m_to_world,  ParamFlags::Differentiable);
+        cb->put("intensity",  m_intensity, ParamFlags::Differentiable);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -109,7 +99,7 @@ public:
 
         weight *= 4.f * dr::Pi<Float>;
 
-        Ray3f ray(m_position.value(),
+        Ray3f ray(m_to_world->eval(time).translation(),
                   warp::square_to_uniform_sphere(dir_sample), time,
                   wavelengths);
 
@@ -122,7 +112,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         DirectionSample3f ds;
-        ds.p       = m_position.value();
+        ds.p       = m_to_world->eval(it.time).translation();
         ds.n       = 0.f;
         ds.uv      = 0.f;
         ds.time    = it.time;
@@ -170,7 +160,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
 
         PositionSample3f ps = dr::zeros<PositionSample3f>();
-        ps.p = m_position.value();
+        ps.p = m_to_world->eval(time).translation();
         ps.time = time;
         ps.delta = true;
 
@@ -189,13 +179,13 @@ public:
     }
 
     ScalarBoundingBox3f bbox() const override {
-        return ScalarBoundingBox3f(m_position.scalar());
+        return m_to_world->get_translation_bounds();
     }
 
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "PointLight[" << std::endl
-            << "  position = " << string::indent(m_position) << "," << std::endl
+            << "  to_world = " << string::indent(m_to_world) << "," << std::endl
             << "  intensity = " << m_intensity << "," << std::endl
             << "  medium = " << (m_medium ? string::indent(m_medium) : "none")
             << "]";
@@ -205,9 +195,8 @@ public:
     MI_DECLARE_CLASS(PointLight)
 private:
     ref<Texture> m_intensity;
-    field<Point3f> m_position;
 
-    MI_TRAVERSE_CB(Base, m_intensity, m_position)
+    MI_TRAVERSE_CB(Base, m_intensity)
 };
 
 

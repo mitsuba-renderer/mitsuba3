@@ -29,7 +29,9 @@ def test01_create(variant_scalar_rgb):
         "to_world" : rot @ T().translate([1, -1, -1]) @ T().rotate([1.0, 0.0, 0.0], -45) @ T().scale([0.5, 0.5, dr.sqrt(8)])
     })
 
-    assert str(s1) == str(s2)
+    p1 = mi.traverse(s1)
+    p2 = mi.traverse(s2)
+    assert dr.allclose(p1['to_world.transform'].matrix, p2['to_world.transform'].matrix)
 
 
 def test02_bbox(variant_scalar_rgb):
@@ -193,7 +195,7 @@ def test07_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
 
     theta = mi.Float(0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f().scale(1 + theta)
+    params['to_world.transform'] = mi.Transform4f().scale(1 + theta)
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All)
 
@@ -211,7 +213,7 @@ def test07_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
 
     theta = mi.Float(0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f().scale(1 + theta)
+    params['to_world.transform'] = mi.Transform4f().scale(1 + theta)
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
 
@@ -229,7 +231,7 @@ def test07_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
 
     theta = mi.Float(0.0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f().translate([0, 0, theta])
+    params['to_world.transform'] = mi.Transform4f().translate([0, 0, theta])
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
 
@@ -247,7 +249,7 @@ def test07_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
 
     theta = mi.Float(0.0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f().rotate([0, 0, 1], 90 * theta)
+    params['to_world.transform'] = mi.Transform4f().rotate([0, 0, 1], 90 * theta)
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
 
@@ -265,7 +267,7 @@ def test07_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
 
     theta = mi.Float(0.0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f().rotate([0, 0, 1], 90 * theta)
+    params['to_world.transform'] = mi.Transform4f().rotate([0, 0, 1], 90 * theta)
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.All)
 
@@ -349,7 +351,7 @@ def test12_differential_motion(variants_vec_rgb):
 
     theta = mi.Point3f(0.0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f().translate(
+    params['to_world.transform'] = mi.Transform4f().translate(
         [theta.x, 2 * theta.y, 3 * theta.z])
     params.update()
 

@@ -5,6 +5,7 @@
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/shape.h>
 #include <mitsuba/render/medium.h>
+#include <mitsuba/core/animated_transform.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -317,8 +318,13 @@ public:
 
 
     /// Return the local space to world space transformation
-    AffineTransform4f world_transform() const {
-        return m_to_world.value();
+    const AnimatedTransform<Float, Spectrum>* world_transform() const {
+        return m_to_world.get();
+    }
+
+    /// Return the world space to local space transformation
+    AnimatedTransform<Float, Spectrum>* world_transform() {
+        return m_to_world.get();
     }
 
     /**
@@ -389,7 +395,7 @@ protected:
     Endpoint(const Properties &props, ObjectType type);
 
 protected:
-    field<AffineTransform4f, ScalarAffineTransform4f> m_to_world;
+    ref<AnimatedTransform<Float, Spectrum>> m_to_world;
     ref<Medium> m_medium;
     Shape *m_shape = nullptr;
     bool m_needs_sample_2 = true;
