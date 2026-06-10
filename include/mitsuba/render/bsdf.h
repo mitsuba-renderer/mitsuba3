@@ -574,8 +574,9 @@ public:
      * value multiplied by pi. This is the default behaviour of this method.
      * BSDFs without a diffuse lobe return a view-independent stand-in
      * suitable for denoising albedo AOVs instead: \c roughconductor returns
-     * the normal-incidence Fresnel reflectance (F0), while transmissive
-     * microfacet models such as \c roughdielectric return 0.
+     * the normal-incidence Fresnel reflectance (F0), while \c roughdielectric
+     * returns 1 (tinted by its specular transmittance), since a transmissive
+     * microfacet surface passes on essentially all incident energy.
      *
      * \param si
      *     A surface interaction data structure describing the underlying

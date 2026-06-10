@@ -248,10 +248,16 @@ def test13_attached_sampling(variants_all_ad_rgb):
     
 
 def test14_eval_diffuse_reflectance(variant_scalar_rgb):
-    # Microfacet-only BSDF: the diffuse reflectance must be 0 for any view
-    # direction. The base-class fallback used to evaluate the glossy lobe at
-    # wo = n, returning a view-dependent specular peak near normal incidence.
+    # Microfacet-only BSDF: the value must be view-independent and in [0, 1].
+    # The base-class fallback used to evaluate the glossy lobe at wo = n,
+    # returning a view-dependent specular peak near normal incidence. The
+    # override returns 1 (a transmissive surface passes on all energy),
+    # tinted by specular_transmittance when present.
     bsdf = mi.load_dict({'type': 'roughdielectric', 'alpha': 0.1})
+    bsdf_tinted = mi.load_dict({
+        'type': 'roughdielectric', 'alpha': 0.1,
+        'specular_transmittance': {'type': 'rgb', 'value': [0.2, 0.4, 0.6]},
+    })
 
     si    = mi.SurfaceInteraction3f()
     si.p  = [0, 0, 0]
@@ -261,4 +267,6 @@ def test14_eval_diffuse_reflectance(variant_scalar_rgb):
     for cos_theta in [0.999, 0.95, 0.8, 0.6, 0.4]:
         sin_theta = dr.sqrt(1.0 - cos_theta * cos_theta)
         si.wi = [sin_theta, 0, cos_theta]
-        assert dr.allclose(bsdf.eval_diffuse_reflectance(si), 0.0)
+        assert dr.allclose(bsdf.eval_diffuse_reflectance(si), 1.0)
+        assert dr.allclose(bsdf_tinted.eval_diffuse_reflectance(si),
+                           [0.2, 0.4, 0.6])

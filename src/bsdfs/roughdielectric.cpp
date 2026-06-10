@@ -607,12 +607,18 @@ public:
                  dr::select(active, pdf * dr::abs(dwh_dwo), 0.f) };
     }
 
-    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f & /*si*/,
-                                      Mask /*active*/) const override {
-        // Microfacet-only BSDF: there is no diffuse lobe. The default
+    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
+                                      Mask active) const override {
+        // Microfacet-only BSDF: there is no diffuse lobe, so the default
         // implementation would evaluate the glossy lobe at wo = n, leaking a
-        // view-dependent specular peak into denoising albedo AOVs.
-        return 0.f;
+        // view-dependent specular peak into denoising albedo AOVs. A rough
+        // dielectric reflects or transmits essentially all incident energy,
+        // so return 1 (tinted by specular_transmittance when present), the
+        // denoising-albedo convention for transmissive surfaces.
+        UnpolarizedSpectrum value(1.f);
+        if (m_specular_transmittance)
+            value *= m_specular_transmittance->eval(si, active);
+        return depolarizer<Spectrum>(value) & active;
     }
 
     std::string to_string() const override {
