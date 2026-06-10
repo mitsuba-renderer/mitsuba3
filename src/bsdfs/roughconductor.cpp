@@ -517,6 +517,14 @@ public:
         return { F * value & active, dr::select(active, pdf, 0.f) };
     }
 
+    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f & /*si*/,
+                                      Mask /*active*/) const override {
+        // Microfacet-only BSDF: there is no diffuse lobe. The default
+        // implementation would evaluate the glossy lobe at wo = n, leaking a
+        // view-dependent specular peak into denoising albedo AOVs.
+        return 0.f;
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "RoughConductor[" << std::endl

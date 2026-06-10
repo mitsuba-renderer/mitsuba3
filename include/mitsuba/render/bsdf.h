@@ -572,6 +572,8 @@ public:
      * When this is not possible, the value is approximated by
      * evaluating the BSDF for a normal outgoing direction and returning this
      * value multiplied by pi. This is the default behaviour of this method.
+     * BSDFs without a diffuse lobe (e.g. microfacet-only models such as
+     * \c roughconductor and \c roughdielectric) return 0.
      *
      * \param si
      *     A surface interaction data structure describing the underlying
