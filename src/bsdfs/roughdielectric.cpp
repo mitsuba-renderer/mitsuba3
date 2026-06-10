@@ -613,8 +613,9 @@ public:
         // implementation would evaluate the glossy lobe at wo = n, leaking a
         // view-dependent specular peak into denoising albedo AOVs. A rough
         // dielectric reflects or transmits essentially all incident energy,
-        // so return 1 (tinted by specular_transmittance when present), the
-        // denoising-albedo convention for transmissive surfaces.
+        // so return 1 (tinted by specular_transmittance when present). This
+        // follows the Open Image Denoise documentation, which recommends an
+        // albedo of 1 for non-delta dielectric surfaces such as glass.
         UnpolarizedSpectrum value(1.f);
         if (m_specular_transmittance)
             value *= m_specular_transmittance->eval(si, active);

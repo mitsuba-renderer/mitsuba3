@@ -523,8 +523,9 @@ public:
         // implementation would evaluate the glossy lobe at wo = n, leaking a
         // view-dependent specular peak into denoising albedo AOVs. Return the
         // normal-incidence Fresnel reflectance (F0) instead: a view-independent
-        // base color in [0, 1], which is what denoisers expect as the albedo
-        // of a metal.
+        // base color in [0, 1]. This follows the Open Image Denoise
+        // documentation, which recommends "the reflectivity at normal
+        // incidence" as the albedo of metallic surfaces.
         dr::Complex<UnpolarizedSpectrum> eta_c(m_eta->eval(si, active),
                                                m_k->eval(si, active));
         UnpolarizedSpectrum f0 =
