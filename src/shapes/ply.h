@@ -328,9 +328,9 @@ void find_other_fields(const std::string& type, std::vector<PLYAttributeDescript
         reading_attribute = false;
     };
     auto flush_attribute = [&]() {
-        if (current_postfix_level_index != 1 && current_postfix_level_index != 3) {
-            Log(Warn, "\"%s\": attribute must have either 1 or 3 fields (had %d) : attribute \"%s\" ignored",
-                name, current_postfix_level_index, (type + current_prefix).c_str());
+        if (current_postfix_level_index != 1 && current_postfix_level_index != 2 && current_postfix_level_index != 3) {
+            Log(Warn, "\"%s\": attribute must have 1, 2 or 3 fields (had %d) : attribute \"%s\" ignored",
+                name, (int) current_postfix_level_index, (type + current_prefix).c_str());
             ignore_attribute();
             return;
         }
