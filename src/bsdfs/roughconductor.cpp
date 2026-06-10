@@ -517,12 +517,21 @@ public:
         return { F * value & active, dr::select(active, pdf, 0.f) };
     }
 
-    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f & /*si*/,
-                                      Mask /*active*/) const override {
-        // Microfacet-only BSDF: there is no diffuse lobe. The default
+    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
+                                      Mask active) const override {
+        // Microfacet-only BSDF: there is no diffuse lobe, so the default
         // implementation would evaluate the glossy lobe at wo = n, leaking a
-        // view-dependent specular peak into denoising albedo AOVs.
-        return 0.f;
+        // view-dependent specular peak into denoising albedo AOVs. Return the
+        // normal-incidence Fresnel reflectance (F0) instead: a view-independent
+        // base color in [0, 1], which is what denoisers expect as the albedo
+        // of a metal.
+        dr::Complex<UnpolarizedSpectrum> eta_c(m_eta->eval(si, active),
+                                               m_k->eval(si, active));
+        UnpolarizedSpectrum f0 =
+            fresnel_conductor(UnpolarizedSpectrum(1.f), eta_c);
+        if (m_specular_reflectance)
+            f0 *= m_specular_reflectance->eval(si, active);
+        return depolarizer<Spectrum>(f0) & active;
     }
 
     std::string to_string() const override {

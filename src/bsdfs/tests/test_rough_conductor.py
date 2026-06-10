@@ -118,10 +118,14 @@ def test06_eval_pdf(variant_scalar_rgb):
 
 
 def test07_eval_diffuse_reflectance(variant_scalar_rgb):
-    # Microfacet-only BSDF: the diffuse reflectance must be 0 for any view
-    # direction. The base-class fallback used to evaluate the glossy lobe at
-    # wo = n, returning values >> 1 near normal incidence.
-    bsdf = mi.load_dict({'type': 'roughconductor', 'alpha': 0.1})
+    # Microfacet-only BSDF: the value must be view-independent and in [0, 1].
+    # The base-class fallback used to evaluate the glossy lobe at wo = n,
+    # returning values >> 1 near normal incidence. The override returns the
+    # normal-incidence Fresnel reflectance (F0) instead.
+    eta, k = 0.2, 3.0
+    f0 = ((eta - 1)**2 + k**2) / ((eta + 1)**2 + k**2)
+    bsdf = mi.load_dict({'type': 'roughconductor', 'alpha': 0.1,
+                         'eta': eta, 'k': k})
 
     si    = mi.SurfaceInteraction3f()
     si.p  = [0, 0, 0]
@@ -131,4 +135,5 @@ def test07_eval_diffuse_reflectance(variant_scalar_rgb):
     for cos_theta in [0.999, 0.95, 0.8, 0.6, 0.4]:
         sin_theta = dr.sqrt(1.0 - cos_theta * cos_theta)
         si.wi = [sin_theta, 0, cos_theta]
-        assert dr.allclose(bsdf.eval_diffuse_reflectance(si), 0.0)
+        value = bsdf.eval_diffuse_reflectance(si)
+        assert dr.allclose(value, f0, rtol=1e-4)
