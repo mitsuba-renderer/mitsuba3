@@ -350,7 +350,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
         const MiOptixConfig &config = optix_configs[s2.config_key];
 
         HitGroupSbtRecord* prev_data
-            = (HitGroupSbtRecord*) jit_malloc_migrate(s2.sbt.hitgroupRecordBase, AllocType::Host, 1);
+            = (HitGroupSbtRecord*) jit_malloc_migrate(s2.sbt.hitgroupRecordBase, JitBackend::None, 1);
         dr::sync_thread();
 
         std::vector<HitGroupSbtRecord> hg_sbts;
@@ -374,15 +374,16 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
 
         size_t shapes_count = hg_sbts.size();
 
-        s2.sbt.hitgroupRecordBase = jit_malloc(
-            AllocType::HostPinned, shapes_count * sizeof(HitGroupSbtRecord));
+        s2.sbt.hitgroupRecordBase =
+            jit_malloc(JitBackend::CUDA,
+                       shapes_count * sizeof(HitGroupSbtRecord), /* shared = */ 1);
         s2.sbt.hitgroupRecordCount = (unsigned int) shapes_count;
 
         jit_memcpy_async(JitBackend::CUDA, s2.sbt.hitgroupRecordBase, hg_sbts.data(),
                          shapes_count * sizeof(HitGroupSbtRecord));
 
         s2.sbt.hitgroupRecordBase =
-            jit_malloc_migrate(s2.sbt.hitgroupRecordBase, AllocType::Device, 1);
+            jit_malloc_migrate(s2.sbt.hitgroupRecordBase, JitBackend::CUDA, 1);
 
         jit_optix_update_sbt(s2.sbt_jit_index, &s2.sbt);
 
@@ -406,7 +407,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
         // =====================================================
 
         s.sbt.missRecordBase =
-            jit_malloc(AllocType::HostPinned, sizeof(MissSbtRecord));
+            jit_malloc(JitBackend::CUDA, sizeof(MissSbtRecord), /* shared = */ 1);
         s.sbt.missRecordStrideInBytes = sizeof(MissSbtRecord);
         s.sbt.missRecordCount = 1;
 
@@ -422,8 +423,9 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
 
         size_t shapes_count = hg_sbts.size();
 
-        s.sbt.hitgroupRecordBase = jit_malloc(
-            AllocType::HostPinned, shapes_count * sizeof(HitGroupSbtRecord));
+        s.sbt.hitgroupRecordBase =
+            jit_malloc(JitBackend::CUDA,
+                       shapes_count * sizeof(HitGroupSbtRecord), /* shared = */ 1);
         s.sbt.hitgroupRecordStrideInBytes = sizeof(HitGroupSbtRecord);
         s.sbt.hitgroupRecordCount = (unsigned int) shapes_count;
 
@@ -431,9 +433,9 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
                          shapes_count * sizeof(HitGroupSbtRecord));
 
         s.sbt.missRecordBase =
-            jit_malloc_migrate(s.sbt.missRecordBase, AllocType::Device, 1);
+            jit_malloc_migrate(s.sbt.missRecordBase, JitBackend::CUDA, 1);
         s.sbt.hitgroupRecordBase =
-            jit_malloc_migrate(s.sbt.hitgroupRecordBase, AllocType::Device, 1);
+            jit_malloc_migrate(s.sbt.hitgroupRecordBase, JitBackend::CUDA, 1);
 
         s.sbt_jit_index = jit_optix_configure_sbt(&s.sbt, config.pipeline_jit_index);
         s.config_key = config.key;
@@ -474,13 +476,13 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
             accel_options.motionOptions.numKeys = 0;
 
             size_t ias_data_size = ias.size() * sizeof(OptixInstance);
-            void* d_ias = jit_malloc(AllocType::HostPinned, ias_data_size);
+            void* d_ias = jit_malloc(JitBackend::CUDA, ias_data_size, /* shared = */ 1);
             jit_memcpy_async(JitBackend::CUDA, d_ias, ias.data(), ias_data_size);
 
             jit_free(s.ias_data.buffer);
             jit_free(s.ias_data.inputs);
             s.ias_data = {};
-            s.ias_data.inputs = jit_malloc_migrate(d_ias, AllocType::Device, 1);
+            s.ias_data.inputs = jit_malloc_migrate(d_ias, JitBackend::CUDA, 1);
 
             OptixBuildInput build_input;
             memset(&build_input, 0, sizeof(OptixBuildInput)); // Use memset due to union member.
@@ -498,9 +500,9 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
             ));
 
             void* d_temp_buffer
-                = jit_malloc(AllocType::Device, buffer_sizes.tempSizeInBytes);
+                = jit_malloc(JitBackend::CUDA, buffer_sizes.tempSizeInBytes);
             s.ias_data.buffer
-                = jit_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes);
+                = jit_malloc(JitBackend::CUDA, buffer_sizes.outputSizeInBytes);
 
             jit_optix_check(optixAccelBuild(
                 s.context,

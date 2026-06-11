@@ -527,7 +527,7 @@ public:
     void optix_prepare_geometry() override {
         if constexpr (dr::is_cuda_v<Float>) {
             if (!m_optix_data_ptr)
-                m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixDiskData));
+                m_optix_data_ptr = jit_malloc(JitBackend::CUDA, sizeof(OptixDiskData));
 
             OptixDiskData data = { bbox(), m_to_world.scalar().inverse() };
 

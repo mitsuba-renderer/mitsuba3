@@ -49,13 +49,13 @@ OptixDenoiser<Float, Spectrum>::OptixDenoiser(const ScalarVector2u &input_size,
 
     CUstream stream = jit_cuda_stream();
     m_state_size = (uint32_t) sizes.stateSizeInBytes;
-    m_state = jit_malloc(AllocType::Device, m_state_size);
+    m_state = jit_malloc(JitBackend::CUDA, m_state_size);
     m_scratch_size = (uint32_t) sizes.withoutOverlapScratchSizeInBytes;
-    m_scratch = jit_malloc(AllocType::Device, m_scratch_size);
+    m_scratch = jit_malloc(JitBackend::CUDA, m_scratch_size);
     jit_optix_check(optixDenoiserSetup(m_denoiser, stream, input_size.x(),
                                        input_size.y(), m_state, m_state_size,
                                        m_scratch, m_scratch_size));
-    m_hdr_intensity = jit_malloc(AllocType::Device, sizeof(float));
+    m_hdr_intensity = jit_malloc(JitBackend::CUDA, sizeof(float));
 }
 
 MI_VARIANT OptixDenoiser<Float, Spectrum>::~OptixDenoiser() {
@@ -167,7 +167,7 @@ ref<Bitmap> OptixDenoiser<Float, Spectrum>::operator()(
         TensorXf denoised = (*this)(noisy_tensor);
 
         void *denoised_data =
-            jit_malloc_migrate(denoised.data(), AllocType::Host, false);
+            jit_malloc_migrate(denoised.data(), JitBackend::None, false);
         ref<Bitmap> output =
             new Bitmap(noisy->pixel_format(), sj::Type::Float32,
                        { denoised.shape(1), denoised.shape(0) },
@@ -255,7 +255,7 @@ ref<Bitmap> OptixDenoiser<Float, Spectrum>::operator()(
                                 to_sensor, flow_tensor, prev_denoised_tensor);
 
     void *denoised_data =
-        jit_malloc_migrate(denoised.data(), AllocType::Host, false);
+        jit_malloc_migrate(denoised.data(), JitBackend::None, false);
     ref<Bitmap> output = new Bitmap(
         noisy_bmp->pixel_format(), sj::Type::Float32,
         { denoised.shape(1), denoised.shape(0) }, denoised.shape(2), {});

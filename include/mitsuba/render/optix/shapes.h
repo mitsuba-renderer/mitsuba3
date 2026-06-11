@@ -175,9 +175,9 @@ void build_gas(const OptixDeviceContext &context,
             &buffer_sizes
         ));
 
-        void* d_temp_buffer = jit_malloc(AllocType::Device, buffer_sizes.tempSizeInBytes);
-        void* output_buffer = jit_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes);
-        void* compact_size_buffer = jit_malloc(AllocType::Device, 8);
+        void* d_temp_buffer = jit_malloc(JitBackend::CUDA, buffer_sizes.tempSizeInBytes);
+        void* output_buffer = jit_malloc(JitBackend::CUDA, buffer_sizes.outputSizeInBytes);
+        void* compact_size_buffer = jit_malloc(JitBackend::CUDA, 8);
 
         OptixAccelEmitDesc emit_property = {};
         emit_property.type   = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
@@ -209,7 +209,7 @@ void build_gas(const OptixDeviceContext &context,
         jit_free(emit_property.result);
 
         if (compact_size < buffer_sizes.outputSizeInBytes) {
-            void* compact_buffer = jit_malloc(AllocType::Device, compact_size);
+            void* compact_buffer = jit_malloc(JitBackend::CUDA, compact_size);
             // Use handle as input and output
             jit_optix_check(optixAccelCompact(
                 context,

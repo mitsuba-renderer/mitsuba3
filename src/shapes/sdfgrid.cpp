@@ -553,7 +553,7 @@ public:
         if constexpr (dr::is_cuda_v<Float>) {
             if (!m_optix_data_ptr)
                 m_optix_data_ptr =
-                    jit_malloc(AllocType::Device, sizeof(OptixSDFGridData));
+                    jit_malloc(JitBackend::CUDA, sizeof(OptixSDFGridData));
 
             auto shape = m_grid_texture.tensor().shape();
             uint32_t resolution[3] = { static_cast<uint32_t>(shape[2]),
@@ -1029,9 +1029,9 @@ private:
             count = counter[0];
         } else {
             aabbs_ptr = (ScalarBoundingBox3f*) jit_malloc(
-                AllocType::Host, sizeof(ScalarBoundingBox3f) * max_voxel_count);
+                JitBackend::None, sizeof(ScalarBoundingBox3f) * max_voxel_count);
             voxel_indices_ptr = (uint32_t *) jit_malloc(
-                AllocType::Host, sizeof(uint32_t) * max_voxel_count);
+                JitBackend::None, sizeof(uint32_t) * max_voxel_count);
 
             FloatStorage grid = m_grid_texture.tensor().array();
             ScalarVector3f voxel_size = m_voxel_size.scalar();

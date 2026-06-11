@@ -467,7 +467,7 @@ private:
     }
 
     void recompute_bbox() {
-        auto&& control_points = dr::migrate(m_control_points, AllocType::Host);
+        auto&& control_points = dr::migrate(m_control_points, JitBackend::None);
         if constexpr (dr::is_jit_v<Float>)
             dr::sync_thread();
         const InputFloat *ptr = control_points.data();
