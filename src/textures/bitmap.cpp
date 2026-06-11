@@ -894,7 +894,7 @@ protected:
         }
 
         if (init_distr) {
-            auto&& data = dr::migrate(values, AllocType::Host);
+            auto&& data = dr::migrate(values, JitBackend::None);
 
             if constexpr (dr::is_jit_v<Float>)
                 dr::sync_thread();

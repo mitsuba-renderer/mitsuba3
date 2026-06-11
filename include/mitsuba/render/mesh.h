@@ -516,8 +516,8 @@ protected:
         MeshAttributeType type;
         mutable FloatStorage buf;
 
-        MeshAttribute migrate(AllocType at) const {
-            return MeshAttribute { size, type, dr::migrate(buf, at) };
+        MeshAttribute migrate(JitBackend backend) const {
+            return MeshAttribute { size, type, dr::migrate(buf, backend) };
         }
 
         DRJIT_STRUCT_NODEF(MeshAttribute, buf);
