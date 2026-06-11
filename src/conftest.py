@@ -168,15 +168,16 @@ class TestMetricsPlugin:
         if "memory" in self.enabled:
             memory_stats = {}
             total = 0
-            for alloc_type in [
-                dr.detail.AllocType.Host,
-                dr.detail.AllocType.HostAsync,
-                dr.detail.AllocType.HostPinned,
-                dr.detail.AllocType.Device,
+            for backend in [
+                dr.JitBackend.Invalid,  # host memory
+                dr.JitBackend.CUDA,
+                dr.JitBackend.LLVM,
+                dr.JitBackend.Metal,
             ]:
-                usage = dr.detail.malloc_watermark(alloc_type)
+                usage = dr.detail.malloc_watermark(backend)
                 if usage > 0:
-                    memory_stats[alloc_type.name] = usage
+                    name = "Host" if backend == dr.JitBackend.Invalid else backend.name
+                    memory_stats[name] = usage
                     total += usage
 
             if total > 0:

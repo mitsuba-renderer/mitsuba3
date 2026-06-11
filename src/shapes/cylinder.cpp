@@ -768,7 +768,7 @@ public:
     void optix_prepare_geometry() override {
         if constexpr (dr::is_cuda_v<Float>) {
             if (!m_optix_data_ptr)
-                m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixCylinderData));
+                m_optix_data_ptr = jit_malloc(JitBackend::CUDA, sizeof(OptixCylinderData));
 
             OptixCylinderData data = { bbox(), m_to_world.scalar().inverse(),
                                        (float) 1.f,

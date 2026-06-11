@@ -753,7 +753,7 @@ public:
     void optix_prepare_geometry() override {
         if constexpr (dr::is_cuda_v<Float>) {
             if (!m_optix_data_ptr)
-                m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixSphereData));
+                m_optix_data_ptr = jit_malloc(JitBackend::CUDA, sizeof(OptixSphereData));
 
             OptixSphereData data = { bbox(),
                                      (Vector<float, 3>) m_center.scalar(),

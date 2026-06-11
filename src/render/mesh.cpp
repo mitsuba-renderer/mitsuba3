@@ -213,10 +213,10 @@ MI_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) co
 }
 
 MI_VARIANT void Mesh<Float, Spectrum>::write_ply(Stream *stream) const {
-    auto&& vertex_positions = dr::migrate(m_vertex_positions, AllocType::Host);
-    auto&& vertex_normals   = dr::migrate(m_vertex_normals, AllocType::Host);
-    auto&& vertex_texcoords = dr::migrate(m_vertex_texcoords, AllocType::Host);
-    auto&& faces = dr::migrate(m_faces, AllocType::Host);
+    auto&& vertex_positions = dr::migrate(m_vertex_positions, JitBackend::None);
+    auto&& vertex_normals   = dr::migrate(m_vertex_normals, JitBackend::None);
+    auto&& vertex_texcoords = dr::migrate(m_vertex_texcoords, JitBackend::None);
+    auto&& faces = dr::migrate(m_faces, JitBackend::None);
 
     std::vector<std::pair<std::string, MeshAttribute>> vertex_attributes;
     std::vector<std::pair<std::string, MeshAttribute>> face_attributes;
@@ -225,11 +225,11 @@ MI_VARIANT void Mesh<Float, Spectrum>::write_ply(Stream *stream) const {
         switch (attribute.type) {
             case MeshAttributeType::Vertex:
                 vertex_attributes.push_back(
-                    { name.substr(7), attribute.migrate(AllocType::Host) });
+                    { name.substr(7), attribute.migrate(JitBackend::None) });
                 break;
             case MeshAttributeType::Face:
                 face_attributes.push_back(
-                    { name.substr(5), attribute.migrate(AllocType::Host) });
+                    { name.substr(5), attribute.migrate(JitBackend::None) });
                 break;
         }
     }
@@ -434,7 +434,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 }
 
 MI_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() {
-    auto&& vertex_positions = dr::migrate(m_vertex_positions, AllocType::Host);
+    auto&& vertex_positions = dr::migrate(m_vertex_positions, JitBackend::None);
     if constexpr (dr::is_jit_v<Float>)
         dr::sync_thread();
 
@@ -491,7 +491,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_directed_edges() {
         Throw("Cannot create directed edges for an empty mesh: %s", to_string());
 
     if constexpr (!dr::is_jit_v<Float>) {
-        auto&& faces = dr::migrate(m_faces, AllocType::Host);
+        auto&& faces = dr::migrate(m_faces, JitBackend::None);
         if constexpr (dr::is_array_v<Float>)
             dr::sync_thread();
 
@@ -814,7 +814,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
                  props, false, false);
     mesh->m_faces = m_faces;
 
-    auto&& vertex_texcoords = dr::migrate(m_vertex_texcoords, AllocType::Host);
+    auto&& vertex_texcoords = dr::migrate(m_vertex_texcoords, JitBackend::None);
     if constexpr (dr::is_jit_v<Float>)
         dr::sync_thread();
 
@@ -1299,9 +1299,9 @@ Mesh<Float, Spectrum>::precompute_silhouette(
         using Pt3f  = ScalarPoint3f;
 
         auto &&vertex_positions =
-            dr::migrate(m_vertex_positions, AllocType::Host);
-        auto &&faces = dr::migrate(m_faces, AllocType::Host);
-        auto &&E2E   = dr::migrate(m_E2E, AllocType::Host);
+            dr::migrate(m_vertex_positions, JitBackend::None);
+        auto &&faces = dr::migrate(m_faces, JitBackend::None);
+        auto &&E2E   = dr::migrate(m_E2E, JitBackend::None);
 
         if constexpr (dr::is_array_v<Float>)
             dr::sync_thread();

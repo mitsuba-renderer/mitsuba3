@@ -186,8 +186,8 @@ public:
             MeshDataRetriever retriever = MeshDataRetriever();
             mesh->traverse((TraversalCallback *) &retriever);
 
-            auto&& vertex_positions = dr::migrate(retriever.vertex_positions, AllocType::Host);
-            auto&& faces            = dr::migrate(retriever.faces,            AllocType::Host);
+            auto&& vertex_positions = dr::migrate(retriever.vertex_positions, JitBackend::None);
+            auto&& faces            = dr::migrate(retriever.faces,            JitBackend::None);
 
             if constexpr (dr::is_jit_v<Float>)
                 dr::sync_thread();

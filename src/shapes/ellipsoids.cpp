@@ -402,7 +402,7 @@ public:
         if constexpr (dr::is_cuda_v<Float>) {
             if (!m_optix_data_ptr)
                 m_optix_data_ptr =
-                    jit_malloc(AllocType::Device, sizeof(OptixEllipsoidsData));
+                    jit_malloc(JitBackend::CUDA, sizeof(OptixEllipsoidsData));
 
             OptixEllipsoidsData data = {
                 m_bbox,
@@ -523,14 +523,14 @@ private:
 
             if constexpr (dr::is_cuda_v<Float>) {
                 jit_free(m_device_bboxes);
-                m_device_bboxes = jit_malloc(AllocType::Device, sizeof(BoundingBoxType) * ellipsoid_count);
+                m_device_bboxes = jit_malloc(JitBackend::CUDA, sizeof(BoundingBoxType) * ellipsoid_count);
                 jit_memcpy(JitBackend::CUDA, m_device_bboxes, data.data(),
                            sizeof(BoundingBoxType) * ellipsoid_count);
             }
 
             if constexpr (dr::is_llvm_v<Float>) {
                 jit_free(m_host_bboxes);
-                m_host_bboxes = jit_malloc(AllocType::Host, sizeof(BoundingBoxType) * ellipsoid_count);
+                m_host_bboxes = jit_malloc(JitBackend::None, sizeof(BoundingBoxType) * ellipsoid_count);
                 jit_memcpy(JitBackend::LLVM, m_host_bboxes, data.data(),
                            sizeof(BoundingBoxType) * ellipsoid_count);
             }
@@ -552,7 +552,7 @@ private:
             const float *ptr_extents = m_ellipsoids.extents_data().data();
 
             BoundingBoxType *host_bboxes = (BoundingBoxType *) jit_malloc(
-                AllocType::Host, sizeof(BoundingBoxType) * ellipsoid_count);
+                JitBackend::None, sizeof(BoundingBoxType) * ellipsoid_count);
 
             m_bbox.reset();
 

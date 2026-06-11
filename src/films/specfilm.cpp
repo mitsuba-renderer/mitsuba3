@@ -236,7 +236,7 @@ public:
         using DoubleStorage = dr::float64_array_t<FloatStorage>;
         DoubleStorage mis_data_dbl = DoubleStorage(mis_data);
 
-        auto && storage = dr::migrate(mis_data_dbl, AllocType::Host);
+        auto && storage = dr::migrate(mis_data_dbl, JitBackend::None);
         if constexpr (dr::is_jit_v<Float>)
             dr::sync_thread();
 
@@ -396,7 +396,7 @@ public:
             Throw("No storage allocated, was prepare() called first?");
 
         std::lock_guard<std::mutex> lock(m_mutex);
-        auto &&storage = dr::migrate(m_storage->tensor().array(), AllocType::Host);
+        auto &&storage = dr::migrate(m_storage->tensor().array(), JitBackend::None);
 
         if constexpr (dr::is_jit_v<Float>)
             dr::sync_thread();

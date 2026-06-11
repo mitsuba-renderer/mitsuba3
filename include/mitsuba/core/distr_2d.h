@@ -770,7 +770,8 @@ protected:
             uint32_t n = size * slices;
             if constexpr (dr::is_cuda_v<Float>) {
                 data = dr::map<FloatStorage>(
-                    jit_malloc(AllocType::HostPinned, n * sizeof(ScalarFloat)),
+                    jit_malloc(JitBackend::CUDA, n * sizeof(ScalarFloat),
+                               /* shared = */ 1),
                     n, true);
             } else {
                 data = dr::empty<FloatStorage>(n);
@@ -780,7 +781,7 @@ protected:
 
         void ready() {
             if constexpr (dr::is_cuda_v<Float>)
-                data = dr::migrate(data, AllocType::Device);
+                data = dr::migrate(data, JitBackend::CUDA);
         }
 
         /**

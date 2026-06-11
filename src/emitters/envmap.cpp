@@ -267,7 +267,7 @@ public:
                 dr::scatter(m_data.array(), v01, row_index + (res.x() - 1));
             }
 
-            auto&& data = dr::migrate(m_data.array(), AllocType::Host);
+            auto&& data = dr::migrate(m_data.array(), JitBackend::None);
 
             if constexpr (dr::is_jit_v<Float>)
                 dr::sync_thread();
