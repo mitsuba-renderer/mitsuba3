@@ -138,7 +138,14 @@ To fetch all dependencies and Clang, enter the following commands on Ubuntu:
     sudo apt install libpng-dev libjpeg-dev
 
     # Install required Python packages
-    sudo apt install libpython3-dev python3-distutils
+    sudo apt install libpython3-dev python3-setuptools
+
+.. note::
+
+    Since Ubuntu 24.04 with python 3.12 python3-distutils has been deprecated,
+    see `PEP632 <https://peps.python.org/pep-0632/>`_ for details.
+    `setuptools`, as described in the `documentation <https://docs.python.org/3.10/library/distutils.html>`_ 
+    is an alternative even if the script itself only imports `distutils`.
 
 Additional packages are required to run the included test suite or to generate
 HTML documentation (see :ref:`Developer guide <sec-writing-documentation>`). If those are
