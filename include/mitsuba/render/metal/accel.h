@@ -118,6 +118,19 @@ struct Accel;
 extern MI_EXPORT_LIB std::pair<Accel *, uint32_t> build(const SceneDesc &desc);
 
 /**
+ * \brief Rebuild the acceleration structures of an existing scene in place
+ *
+ * Builds fresh Metal objects from \c desc and swaps them into the Dr.Jit
+ * scene identified by \c scene_index (the in-place update mode of
+ * jit_metal_configure_scene()). The scene variable (and hence
+ * \c scene_index) remains valid, which keeps kernels
+ * recorded by frozen functions working across geometry updates. The previous
+ * \c Accel handle is released and the new one returned.
+ */
+extern MI_EXPORT_LIB Accel *update(uint32_t scene_index, Accel *old_accel,
+                                   const SceneDesc &desc);
+
+/**
  * \brief Release a scene built with \ref build()
  *
  * Invalidates the TLAS reference held by Dr.Jit (in case frozen-function

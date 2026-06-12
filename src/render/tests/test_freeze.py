@@ -5,14 +5,6 @@ import mitsuba as mi
 
 from mitsuba.scalar_rgb.test.util import find_resource
 
-
-@pytest.fixture(autouse=True)
-def skip_metal(request):
-    """Frozen functions are not yet supported by Dr.Jit's Metal backend
-    (the recorder lacks support for Metal's scene resource handles)."""
-    if "metal" in request.node.name:
-        pytest.skip("dr.freeze() is not yet supported on the Metal backend")
-
 EMITTERS = [
     "area",
     "point",

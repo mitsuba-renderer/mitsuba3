@@ -48,213 +48,231 @@ struct MetalAccelState {
    mode rather than silently returning garbage. */
 static constexpr uint32_t METAL_LEAF_IDX_NONE = (uint32_t) -1;
 
+/**
+ * Gather the scene's shapes into the description consumed by the Metal
+ * acceleration structure builder (src/render/metal_accel.mm), and (re)build
+ * the per-TLAS-instance lookup tables on \c state. Returns a description
+ * with no instances when the scene contains no shapes.
+ */
+template <typename Float, typename Spectrum>
+static metal_accel::SceneDesc metal_build_scene_desc(
+    std::vector<ref<Shape<Float, Spectrum>>> &shapes,
+    MetalAccelState<dr::uint32_array_t<Float>> *state) {
+    using Shape  = mitsuba::Shape<Float, Spectrum>;
+    using Mesh   = mitsuba::Mesh<Float, Spectrum>;
+    using UInt32 = dr::uint32_array_t<Float>;
+
+    metal_accel::SceneDesc desc;
+
+    // Per-TLAS-instance bookkeeping, built in lock-step with
+    // desc.instances. ``instance_id'' values reported by Metal index
+    // into these arrays.
+    std::vector<uint32_t> tlas_owner_shape_idx;
+    std::vector<uint32_t> tlas_is_instance;
+    std::vector<uint32_t> tlas_leaf_offset;
+    std::vector<uint32_t> leaf_idx_table_host;
+
+    auto push_instance = [&](const metal_accel::InstanceDesc &inst,
+                             uint32_t owner_shape_idx, bool is_instance,
+                             uint32_t leaf_offset) {
+        desc.instances.push_back(inst);
+        tlas_owner_shape_idx.push_back(owner_shape_idx);
+        tlas_is_instance.push_back(is_instance ? 1u : 0u);
+        tlas_leaf_offset.push_back(leaf_offset);
+    };
+
+    // Describe one shape as a geometry
+    auto make_geometry = [&](Shape *shape) -> metal_accel::GeometryDesc {
+        metal_accel::GeometryDesc g;
+
+        if (auto *mesh = dynamic_cast<Mesh *>(shape); mesh != nullptr) {
+            dr::eval(mesh->vertex_positions_buffer(), mesh->faces_buffer());
+            dr::sync_thread();
+
+            /* jit_var_data() returns a new reference to the (evaluated)
+               variable; release it right away — the underlying buffer
+               stays alive through the mesh's own arrays. */
+            void *vertex_ptr = nullptr, *index_ptr = nullptr;
+            uint32_t v_idx = jit_var_data(
+                mesh->vertex_positions_buffer().index(), &vertex_ptr);
+            uint32_t i_idx = jit_var_data(
+                mesh->faces_buffer().index(), &index_ptr);
+            jit_var_dec_ref(v_idx);
+            jit_var_dec_ref(i_idx);
+
+            g.kind = metal_accel::GeometryDesc::Triangle;
+            g.vertex_ptr = vertex_ptr;
+            g.index_ptr = index_ptr;
+            g.triangle_count = mesh->face_count();
+            return g;
+        }
+
+        if (int curve_kind = shape->metal_curve_kind(); curve_kind != 0) {
+            uint32_t cp_var = 0, idx_var = 0;
+            size_t cp_count = 0, seg_count = 0;
+            shape->metal_get_curve_data(&cp_var, &cp_count,
+                                        &idx_var, &seg_count);
+            if (cp_count == 0 || seg_count == 0)
+                Throw("accel_init_metal(): curve shape \"%s\" reports "
+                      "zero control points or segments.",
+                      std::string(shape->id()).c_str());
+
+            jit_var_eval(cp_var);
+            jit_var_eval(idx_var);
+            dr::sync_thread();
+
+            void *cp_ptr = nullptr, *idx_ptr = nullptr;
+            uint32_t cp_idx = jit_var_data(cp_var, &cp_ptr);
+            uint32_t ix_idx = jit_var_data(idx_var, &idx_ptr);
+            jit_var_dec_ref(cp_idx);
+            jit_var_dec_ref(ix_idx);
+
+            g.kind = metal_accel::GeometryDesc::Curve;
+            g.cp_ptr = cp_ptr;
+            g.cp_count = cp_count;
+            g.seg_index_ptr = idx_ptr;
+            g.segment_count = seg_count;
+            g.curve_kind = curve_kind;
+            return g;
+        }
+
+        // Custom (bounding-box) shape
+        g.kind = metal_accel::GeometryDesc::BoundingBox;
+        g.aabb_count = shape->metal_aabb_count();
+        g.pdata_size = shape->metal_primitive_data_size();
+        g.total_data_size = shape->metal_total_data_size();
+        g.fn_idx = shape->metal_intersection_function_index();
+        if (g.aabb_count == 0 || g.total_data_size == 0)
+            Throw("accel_init_metal(): custom shape \"%s\" reports zero "
+                  "AABBs or no primitive data.",
+                  std::string(shape->id()).c_str());
+        // The shape outlives the build, so capturing it by pointer is safe
+        g.fill_aabbs = [shape](void *out) {
+            shape->metal_fill_aabb_data(out);
+        };
+        g.fill_pdata = [shape](void *out) {
+            shape->metal_fill_primitive_data(out);
+        };
+        return g;
+    };
+
+    /* Per-geometry-kind sub-BLAS set for a multi-shape ShapeGroup,
+       cached so that several Instances of the same group share it.
+       Metal forbids mixing geometry kinds within one primitive
+       acceleration structure, hence one BLAS per non-empty kind. */
+    struct SubBlas {
+        uint32_t blas_idx;
+        std::vector<uint32_t> leaf_idx; // geometry_id -> ShapeGroup leaf
+    };
+    std::unordered_map<const void *, std::vector<SubBlas>> group_cache;
+
+    auto build_group_blases =
+        [&](std::vector<ref<Shape>> &children) -> std::vector<SubBlas> {
+        metal_accel::BlasDesc per_kind[3];
+        std::vector<uint32_t> per_kind_leaf[3];
+
+        for (size_t leaf = 0; leaf < children.size(); ++leaf) {
+            metal_accel::GeometryDesc g = make_geometry(children[leaf].get());
+            per_kind[(int) g.kind].geoms.push_back(std::move(g));
+            per_kind_leaf[(int) g.kind].push_back((uint32_t) leaf);
+        }
+
+        std::vector<SubBlas> result;
+        for (int kind = 0; kind < 3; ++kind) {
+            if (per_kind[kind].geoms.empty())
+                continue;
+            result.push_back({ (uint32_t) desc.blases.size(),
+                               std::move(per_kind_leaf[kind]) });
+            desc.blases.push_back(std::move(per_kind[kind]));
+        }
+        return result;
+    };
+
+    for (size_t shape_idx = 0; shape_idx < shapes.size(); ++shape_idx) {
+        Shape *shape = shapes[shape_idx].get();
+
+        metal_accel::InstanceDesc inst;
+        Shape *effective_shape = shape;
+        auto inst_children = shape->metal_instance_children();
+        bool is_instance = !inst_children.empty();
+
+        if (is_instance)
+            shape->metal_instance_to_world(inst.transform);
+
+        if (inst_children.size() == 1) {
+            // Single-shape group: collapse the Instance to its child
+            effective_shape = inst_children[0].get();
+        } else if (inst_children.size() > 1) {
+            // Multi-shape group: one TLAS instance per per-kind sub-BLAS
+            const void *sg_id = shape->metal_shapegroup_id();
+            auto it = sg_id ? group_cache.find(sg_id) : group_cache.end();
+            if (it == group_cache.end())
+                it = group_cache.emplace(
+                    sg_id, build_group_blases(inst_children)).first;
+
+            for (const SubBlas &sub : it->second) {
+                uint32_t leaf_offset = (uint32_t) leaf_idx_table_host.size();
+                leaf_idx_table_host.insert(leaf_idx_table_host.end(),
+                                           sub.leaf_idx.begin(),
+                                           sub.leaf_idx.end());
+                inst.blas_idx = sub.blas_idx;
+                push_instance(inst, (uint32_t) shape_idx,
+                              /*is_instance=*/true, leaf_offset);
+            }
+            continue;
+        }
+
+        // Top-level shape or collapsed single-shape Instance
+        metal_accel::BlasDesc blas;
+        blas.geoms.push_back(make_geometry(effective_shape));
+        inst.blas_idx = (uint32_t) desc.blases.size();
+        desc.blases.push_back(std::move(blas));
+        push_instance(inst, (uint32_t) shape_idx, is_instance,
+                      METAL_LEAF_IDX_NONE);
+    }
+
+    if (desc.instances.empty())
+        return desc;
+
+    // Per-TLAS-instance lookup tables used at hit-decode time
+    {
+        size_t n_tlas = desc.instances.size();
+        std::unique_ptr<uint32_t[]> reg_ids(new uint32_t[n_tlas]);
+        for (size_t i = 0; i < n_tlas; ++i)
+            reg_ids[i] = jit_registry_id(shapes[tlas_owner_shape_idx[i]]);
+        state->shapes_registry_ids =
+            dr::load<DynamicBuffer<UInt32>>(reg_ids.get(), n_tlas);
+        state->is_instance_mask =
+            dr::load<DynamicBuffer<UInt32>>(tlas_is_instance.data(), n_tlas);
+        state->leaf_idx_offsets =
+            dr::load<DynamicBuffer<UInt32>>(tlas_leaf_offset.data(), n_tlas);
+        if (!leaf_idx_table_host.empty())
+            state->leaf_idx_table = dr::load<DynamicBuffer<UInt32>>(
+                leaf_idx_table_host.data(), leaf_idx_table_host.size());
+        else
+            /* Non-empty placeholder: the gather below is masked to
+               instance hits, but the array handle must be valid. */
+            state->leaf_idx_table = dr::zeros<DynamicBuffer<UInt32>>(1);
+    }
+
+    return desc;
+}
+
 MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*props*/) {
     if constexpr (dr::is_metal_v<Float>) {
-        using Mesh = mitsuba::Mesh<Float, Spectrum>;
-
         auto *state = new MetalAccelState<UInt32>();
         m_accel = state;
 
-        metal_accel::SceneDesc desc;
+        metal_accel::SceneDesc desc =
+            metal_build_scene_desc(m_shapes, state);
 
-        // Per-TLAS-instance bookkeeping, built in lock-step with
-        // desc.instances. ``instance_id'' values reported by Metal index
-        // into these arrays.
-        std::vector<uint32_t> tlas_owner_shape_idx;
-        std::vector<uint32_t> tlas_is_instance;
-        std::vector<uint32_t> tlas_leaf_offset;
-        std::vector<uint32_t> leaf_idx_table_host;
-
-        auto push_instance = [&](const metal_accel::InstanceDesc &inst,
-                                 uint32_t owner_shape_idx, bool is_instance,
-                                 uint32_t leaf_offset) {
-            desc.instances.push_back(inst);
-            tlas_owner_shape_idx.push_back(owner_shape_idx);
-            tlas_is_instance.push_back(is_instance ? 1u : 0u);
-            tlas_leaf_offset.push_back(leaf_offset);
-        };
-
-        // Describe one shape as a geometry
-        auto make_geometry = [&](Shape *shape) -> metal_accel::GeometryDesc {
-            metal_accel::GeometryDesc g;
-
-            if (auto *mesh = dynamic_cast<Mesh *>(shape); mesh != nullptr) {
-                dr::eval(mesh->vertex_positions_buffer(), mesh->faces_buffer());
-                dr::sync_thread();
-
-                /* jit_var_data() returns a new reference to the (evaluated)
-                   variable; release it right away — the underlying buffer
-                   stays alive through the mesh's own arrays. */
-                void *vertex_ptr = nullptr, *index_ptr = nullptr;
-                uint32_t v_idx = jit_var_data(
-                    mesh->vertex_positions_buffer().index(), &vertex_ptr);
-                uint32_t i_idx = jit_var_data(
-                    mesh->faces_buffer().index(), &index_ptr);
-                jit_var_dec_ref(v_idx);
-                jit_var_dec_ref(i_idx);
-
-                g.kind = metal_accel::GeometryDesc::Triangle;
-                g.vertex_ptr = vertex_ptr;
-                g.index_ptr = index_ptr;
-                g.triangle_count = mesh->face_count();
-                return g;
-            }
-
-            if (int curve_kind = shape->metal_curve_kind(); curve_kind != 0) {
-                uint32_t cp_var = 0, idx_var = 0;
-                size_t cp_count = 0, seg_count = 0;
-                shape->metal_get_curve_data(&cp_var, &cp_count,
-                                            &idx_var, &seg_count);
-                if (cp_count == 0 || seg_count == 0)
-                    Throw("accel_init_metal(): curve shape \"%s\" reports "
-                          "zero control points or segments.",
-                          std::string(shape->id()).c_str());
-
-                jit_var_eval(cp_var);
-                jit_var_eval(idx_var);
-                dr::sync_thread();
-
-                void *cp_ptr = nullptr, *idx_ptr = nullptr;
-                uint32_t cp_idx = jit_var_data(cp_var, &cp_ptr);
-                uint32_t ix_idx = jit_var_data(idx_var, &idx_ptr);
-                jit_var_dec_ref(cp_idx);
-                jit_var_dec_ref(ix_idx);
-
-                g.kind = metal_accel::GeometryDesc::Curve;
-                g.cp_ptr = cp_ptr;
-                g.cp_count = cp_count;
-                g.seg_index_ptr = idx_ptr;
-                g.segment_count = seg_count;
-                g.curve_kind = curve_kind;
-                return g;
-            }
-
-            // Custom (bounding-box) shape
-            g.kind = metal_accel::GeometryDesc::BoundingBox;
-            g.aabb_count = shape->metal_aabb_count();
-            g.pdata_size = shape->metal_primitive_data_size();
-            g.total_data_size = shape->metal_total_data_size();
-            g.fn_idx = shape->metal_intersection_function_index();
-            if (g.aabb_count == 0 || g.total_data_size == 0)
-                Throw("accel_init_metal(): custom shape \"%s\" reports zero "
-                      "AABBs or no primitive data.",
-                      std::string(shape->id()).c_str());
-            // The shape outlives the build, so capturing it by pointer is safe
-            g.fill_aabbs = [shape](void *out) {
-                shape->metal_fill_aabb_data(out);
-            };
-            g.fill_pdata = [shape](void *out) {
-                shape->metal_fill_primitive_data(out);
-            };
-            return g;
-        };
-
-        /* Per-geometry-kind sub-BLAS set for a multi-shape ShapeGroup,
-           cached so that several Instances of the same group share it.
-           Metal forbids mixing geometry kinds within one primitive
-           acceleration structure, hence one BLAS per non-empty kind. */
-        struct SubBlas {
-            uint32_t blas_idx;
-            std::vector<uint32_t> leaf_idx; // geometry_id -> ShapeGroup leaf
-        };
-        std::unordered_map<const void *, std::vector<SubBlas>> group_cache;
-
-        auto build_group_blases =
-            [&](std::vector<ref<Shape>> &children) -> std::vector<SubBlas> {
-            metal_accel::BlasDesc per_kind[3];
-            std::vector<uint32_t> per_kind_leaf[3];
-
-            for (size_t leaf = 0; leaf < children.size(); ++leaf) {
-                metal_accel::GeometryDesc g =
-                    make_geometry(children[leaf].get());
-                per_kind[(int) g.kind].geoms.push_back(std::move(g));
-                per_kind_leaf[(int) g.kind].push_back((uint32_t) leaf);
-            }
-
-            std::vector<SubBlas> result;
-            for (int kind = 0; kind < 3; ++kind) {
-                if (per_kind[kind].geoms.empty())
-                    continue;
-                result.push_back({ (uint32_t) desc.blases.size(),
-                                   std::move(per_kind_leaf[kind]) });
-                desc.blases.push_back(std::move(per_kind[kind]));
-            }
-            return result;
-        };
-
-        for (size_t shape_idx = 0; shape_idx < m_shapes.size(); ++shape_idx) {
-            Shape *shape = m_shapes[shape_idx].get();
-
-            metal_accel::InstanceDesc inst;
-            Shape *effective_shape = shape;
-            auto inst_children = shape->metal_instance_children();
-            bool is_instance = !inst_children.empty();
-
-            if (is_instance)
-                shape->metal_instance_to_world(inst.transform);
-
-            if (inst_children.size() == 1) {
-                // Single-shape group: collapse the Instance to its child
-                effective_shape = inst_children[0].get();
-            } else if (inst_children.size() > 1) {
-                // Multi-shape group: one TLAS instance per per-kind sub-BLAS
-                const void *sg_id = shape->metal_shapegroup_id();
-                auto it = sg_id ? group_cache.find(sg_id) : group_cache.end();
-                if (it == group_cache.end())
-                    it = group_cache.emplace(
-                        sg_id, build_group_blases(inst_children)).first;
-
-                for (const SubBlas &sub : it->second) {
-                    uint32_t leaf_offset = (uint32_t) leaf_idx_table_host.size();
-                    leaf_idx_table_host.insert(leaf_idx_table_host.end(),
-                                               sub.leaf_idx.begin(),
-                                               sub.leaf_idx.end());
-                    inst.blas_idx = sub.blas_idx;
-                    push_instance(inst, (uint32_t) shape_idx,
-                                  /*is_instance=*/true, leaf_offset);
-                }
-                continue;
-            }
-
-            // Top-level shape or collapsed single-shape Instance
-            metal_accel::BlasDesc blas;
-            blas.geoms.push_back(make_geometry(effective_shape));
-            inst.blas_idx = (uint32_t) desc.blases.size();
-            desc.blases.push_back(std::move(blas));
-            push_instance(inst, (uint32_t) shape_idx, is_instance,
-                          METAL_LEAF_IDX_NONE);
-        }
-
-        if (desc.instances.empty()) {
+        if (desc.instances.empty())
             /* Leave state->scene_index = 0; the ray-tracing entry points
                below synthesize an all-miss result in that case. */
             Log(Debug, "accel_init_metal(): scene contains no shapes.");
-            clear_shapes_dirty();
-            return;
-        }
-
-        // Per-TLAS-instance lookup tables used at hit-decode time
-        {
-            size_t n_tlas = desc.instances.size();
-            std::unique_ptr<uint32_t[]> reg_ids(new uint32_t[n_tlas]);
-            for (size_t i = 0; i < n_tlas; ++i)
-                reg_ids[i] = jit_registry_id(m_shapes[tlas_owner_shape_idx[i]]);
-            state->shapes_registry_ids =
-                dr::load<DynamicBuffer<UInt32>>(reg_ids.get(), n_tlas);
-            state->is_instance_mask =
-                dr::load<DynamicBuffer<UInt32>>(tlas_is_instance.data(), n_tlas);
-            state->leaf_idx_offsets =
-                dr::load<DynamicBuffer<UInt32>>(tlas_leaf_offset.data(), n_tlas);
-            if (!leaf_idx_table_host.empty())
-                state->leaf_idx_table = dr::load<DynamicBuffer<UInt32>>(
-                    leaf_idx_table_host.data(), leaf_idx_table_host.size());
-            else
-                /* Non-empty placeholder: the gather below is masked to
-                   instance hits, but the array handle must be valid. */
-                state->leaf_idx_table = dr::zeros<DynamicBuffer<UInt32>>(1);
-        }
-
-        std::tie(state->accel, state->scene_index) = metal_accel::build(desc);
+        else
+            std::tie(state->accel, state->scene_index) =
+                metal_accel::build(desc);
 
         /* Mark all shapes as clean so that Scene::parameters_changed() only
            rebuilds the acceleration structure when geometry actually
@@ -265,6 +283,30 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_metal(const Properties &/*pro
 
 MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_metal() {
     if constexpr (dr::is_metal_v<Float>) {
+        auto *state = (MetalAccelState<UInt32> *) m_accel;
+
+        /* Scenes that were empty at initialization were never registered
+           with Dr.Jit (and scenes whose shapes were all removed cannot stay
+           registered); both transitions fall through to a from-scratch
+           rebuild below. */
+        if (state && state->scene_index != 0) {
+            metal_accel::SceneDesc desc =
+                metal_build_scene_desc(m_shapes, state);
+
+            if (!desc.instances.empty()) {
+                /* Rebuild the Metal objects and swap them into the
+                   *existing* Dr.Jit scene. Keeping the scene variable (and
+                   its index) alive is what allows kernels recorded by
+                   frozen functions to follow geometry updates: they
+                   reference the scene by its owner pointer and re-resolve
+                   the acceleration structure at every launch. */
+                state->accel = metal_accel::update(state->scene_index,
+                                                   state->accel, desc);
+                clear_shapes_dirty();
+                return;
+            }
+        }
+
         accel_release_metal();
         Properties props;
         accel_init_metal(props);

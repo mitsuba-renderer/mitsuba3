@@ -123,7 +123,11 @@ static id<MTLBuffer> lookup_buffer(const void *ptr, size_t *offset,
     return buf;
 }
 
-std::pair<Accel *, uint32_t> build(const SceneDesc &desc) {
+/// Shared implementation of build() / update(). When ``update_index`` is
+/// nonzero, the freshly built Metal objects replace those of the existing
+/// scene instead of registering a new one.
+static std::pair<Accel *, uint32_t> build_impl(const SceneDesc &desc,
+                                               uint32_t update_index) {
     @autoreleasepool {
         id<MTLDevice> device = (__bridge id<MTLDevice>) jit_metal_context();
         id<MTLCommandQueue> queue =
@@ -460,8 +464,10 @@ std::pair<Accel *, uint32_t> build(const SceneDesc &desc) {
             bind_slots.push_back(metal_shape::INTERSECTION_FN_COUNT);
         }
 
-        // Register the scene with Dr.Jit
+        /* Register a new scene with Dr.Jit (update_index == 0), or swap the
+           freshly built Metal objects into the existing one. */
         uint32_t scene_index = jit_metal_configure_scene(
+            update_index,
             (__bridge void *) accel->tlas,
             resources.data(), (uint32_t) resources.size(),
             (__bridge void *) isect_library,
@@ -487,6 +493,18 @@ std::pair<Accel *, uint32_t> build(const SceneDesc &desc) {
 
         return { accel, scene_index };
     }
+}
+
+std::pair<Accel *, uint32_t> build(const SceneDesc &desc) {
+    return build_impl(desc, 0);
+}
+
+Accel *update(uint32_t scene_index, Accel *old_accel, const SceneDesc &desc) {
+    Accel *accel = build_impl(desc, scene_index).first;
+    /* In-flight command buffers retain the resources they reference, so the
+       previous generation of Metal objects can be released right away. */
+    delete old_accel;
+    return accel;
 }
 
 void release(Accel *accel, uint32_t scene_index) {
