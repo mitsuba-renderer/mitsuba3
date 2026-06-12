@@ -1660,11 +1660,13 @@ static Task* instantiate_node(const ParserConfig &config,
     uint32_t backend = 0, scope = 0;
 
     if (config.parallel) {
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
         if (string::starts_with(config.variant, "cuda_"))
             backend = (uint32_t) JitBackend::CUDA;
         else if (string::starts_with(config.variant, "llvm_"))
             backend = (uint32_t) JitBackend::LLVM;
+        else if (string::starts_with(config.variant, "metal_"))
+            backend = (uint32_t) JitBackend::Metal;
 
         if (backend) {
             jit_new_scope((JitBackend) backend);

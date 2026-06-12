@@ -238,8 +238,9 @@ int main(int argc, char *argv[]) {
             arg_define = arg_define->next();
         }
         mode = (*arg_mode ? arg_mode->as_string() : MI_DEFAULT_VARIANT);
-        bool cuda = string::starts_with(mode, "cuda_");
-        bool llvm = string::starts_with(mode, "llvm_");
+        bool cuda  = string::starts_with(mode, "cuda_");
+        bool llvm  = string::starts_with(mode, "llvm_");
+        bool metal = string::starts_with(mode, "metal_");
 
 #if defined(MI_ENABLE_CUDA)
         if (cuda)
@@ -251,8 +252,13 @@ int main(int argc, char *argv[]) {
             jit_init((uint32_t) JitBackend::LLVM);
 #endif
 
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
-        if (cuda || llvm) {
+#if defined(MI_ENABLE_METAL)
+        if (metal)
+            jit_init((uint32_t) JitBackend::Metal);
+#endif
+
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
+        if (cuda || llvm || metal) {
             if (*arg_optim_lev) {
                 int lev = arg_optim_lev->as_int();
                 jit_set_flag(JitFlag::VCallDeduplicate, lev > 0);
@@ -403,6 +409,13 @@ int main(int argc, char *argv[]) {
 
 #if defined(MI_ENABLE_LLVM)
     if (string::starts_with(mode, "llvm_")) {
+        printf("%s\n", jit_var_whos());
+        jit_shutdown();
+    }
+#endif
+
+#if defined(MI_ENABLE_METAL)
+    if (string::starts_with(mode, "metal_")) {
         printf("%s\n", jit_var_whos());
         jit_shutdown();
     }

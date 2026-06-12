@@ -768,9 +768,9 @@ protected:
             : size(dr::prod(res)), width(res.x()) {
 
             uint32_t n = size * slices;
-            if constexpr (dr::is_cuda_v<Float>) {
+            if constexpr (dr::is_cuda_v<Float> || dr::is_metal_v<Float>) {
                 data = dr::map<FloatStorage>(
-                    jit_malloc(JitBackend::CUDA, n * sizeof(ScalarFloat),
+                    jit_malloc(dr::backend_v<Float>, n * sizeof(ScalarFloat),
                                /* shared = */ 1),
                     n, true);
             } else {
@@ -780,8 +780,8 @@ protected:
         }
 
         void ready() {
-            if constexpr (dr::is_cuda_v<Float>)
-                data = dr::migrate(data, JitBackend::CUDA);
+            if constexpr (dr::is_cuda_v<Float> || dr::is_metal_v<Float>)
+                data = dr::migrate(data, dr::backend_v<Float>);
         }
 
         /**

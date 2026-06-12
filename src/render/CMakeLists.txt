@@ -45,6 +45,15 @@ if (MI_ENABLE_CUDA)
   )
 endif()
 
+if (MI_ENABLE_METAL)
+  set(LIBRENDER_EXTRA_SRC
+    metal_accel.mm ${INC_DIR}/metal/accel.h
+    ${LIBRENDER_EXTRA_SRC}
+  )
+  set_source_files_properties(metal_accel.mm
+    PROPERTIES COMPILE_FLAGS "-fobjc-arc")
+endif()
+
 add_library(mitsuba-render OBJECT
   ${INC_DIR}/fwd.h
   ${INC_DIR}/ior.h
@@ -99,6 +108,10 @@ endif()
 
 target_link_libraries(mitsuba-render PUBLIC drjit)
 target_link_libraries(mitsuba-render PUBLIC struct-jit)
+
+if (MI_ENABLE_METAL)
+  target_link_libraries(mitsuba-render PRIVATE "-framework Metal" "-framework Foundation")
+endif()
 
 if (MI_ENABLE_JIT)
   target_link_libraries(mitsuba-render PUBLIC drjit-core)
