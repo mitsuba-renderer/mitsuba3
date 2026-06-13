@@ -6,6 +6,7 @@
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/shapegroup.h>
+#include <mitsuba/render/accel.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -759,50 +760,12 @@ protected:
     /// Unmarks all shapes as dirty
     void clear_shapes_dirty();
 
-    /// Create the ray-intersection acceleration data structure
-    void accel_init_cpu(const Properties &props);
-    void accel_init_gpu(const Properties &props);
-    void accel_init_metal(const Properties &props);
-
-    /// Updates the ray-intersection acceleration data structure
-    void accel_parameters_changed_cpu();
-    void accel_parameters_changed_gpu();
-    void accel_parameters_changed_metal();
-
-    /// Release the ray-intersection acceleration data structure
-    void accel_release_cpu();
-    void accel_release_gpu();
-    void accel_release_metal();
-
-    static void static_accel_initialization_cpu();
-    static void static_accel_initialization_gpu();
-    static void static_accel_initialization_metal();
-    static void static_accel_shutdown_cpu();
-    static void static_accel_shutdown_gpu();
-    static void static_accel_shutdown_metal();
-
-    /// Trace a ray and only return a preliminary intersection data structure
-    MI_INLINE PreliminaryIntersection3f ray_intersect_preliminary_cpu(
-        const Ray3f &ray, Mask coherent, Mask active) const;
-    MI_INLINE PreliminaryIntersection3f ray_intersect_preliminary_gpu(
-        const Ray3f &ray, bool reorder, UInt32 reorder_hint, uint32_t reorder_hint_bits, Mask active) const;
-    MI_INLINE PreliminaryIntersection3f ray_intersect_preliminary_metal(
-        const Ray3f &ray, Mask active) const;
-
-    /// Trace a ray
-    MI_INLINE SurfaceInteraction3f ray_intersect_cpu(
-        const Ray3f &ray, uint32_t ray_flags, Mask coherent, Mask active) const;
-    MI_INLINE SurfaceInteraction3f ray_intersect_gpu(
-        const Ray3f &ray, uint32_t ray_flags, bool reorder, UInt32 reorder_hint,
-        uint32_t reorder_hint_bits, Mask active) const;
-    MI_INLINE SurfaceInteraction3f ray_intersect_metal(
-        const Ray3f &ray, uint32_t ray_flags, Mask active) const;
-    MI_INLINE SurfaceInteraction3f ray_intersect_naive_cpu(const Ray3f &ray, Mask active) const;
-
-    /// Trace a shadow ray
-    MI_INLINE Mask ray_test_cpu(const Ray3f &ray, Mask coherent, Mask active) const;
-    MI_INLINE Mask ray_test_gpu(const Ray3f &ray, Mask active) const;
-    MI_INLINE Mask ray_test_metal(const Ray3f &ray, Mask active) const;
+    /* Per-backend acceleration-structure construction, ray queries, lifetime
+       and traversal now live on the typed ``m_accel`` member (see
+       include/mitsuba/render/accel*.h and src/render/scene_*.inl). The
+       compile-time ``SceneAccel`` trait selects the concrete type, so the
+       previous ``_cpu/_gpu/_metal`` dispatch ladders collapse into uniform
+       one-line forwards in scene.cpp. */
 
     using ShapeKDTree = mitsuba::ShapeKDTree<Float, Spectrum>;
 
@@ -813,10 +776,11 @@ protected:
     void update_silhouette_sampling_distribution();
 
 protected:
-    /// Acceleration data structure (IAS) (type depends on implementation)
-    void *m_accel = nullptr;
-    /// Handle to the IAS used to ensure its lifetime in jit variants
-    UInt64 m_accel_handle;
+    /// Typed, by-value acceleration-structure state. The ``SceneAccel`` trait
+    /// selects the concrete backend type (Embree / native kd-tree / OptiX /
+    /// Metal) at compile time. Its JIT-tracked fields are traversed
+    /// declaratively (see MI_DECLARE_TRAVERSE_CB below).
+    SceneAccel<Float, Spectrum> m_accel;
 
     ScalarBoundingBox3f m_bbox;
 
@@ -844,35 +808,26 @@ protected:
     bool m_shapes_grad_enabled;
     bool m_thread_reordering;
 
-    /**
-     * When the scene is defined on the CPU, traversal of the acceleration
-     * structure has to be handled separately. These functions are defined
-     * either for the Embree or native version of the scene, and handle its
-     * traversal.
-     */
-    void traverse_1_cb_ro_cpu(void *payload,
-                              drjit::detail::traverse_callback_ro fn) const;
-    /**
-     * When the scene is defined on the CPU, traversal of the acceleration
-     * structure has to be handled separately. These functions are defined
-     * either for the Embree or native version of the scene, and handle its
-     * traversal.
-     */
-    void traverse_1_cb_rw_cpu(void *payload,
-                              drjit::detail::traverse_callback_rw fn);
+    // The accel types access the protected scene members (shapes, shapegroups,
+    // clear_shapes_dirty(), ...) while building and tracing.
+#if defined(MI_ENABLE_CUDA)
+    friend struct OptixAccel<Float, Spectrum>;
+#endif
+#if defined(MI_ENABLE_METAL)
+    friend struct MetalAccel<Float, Spectrum>;
+#endif
+#if defined(MI_ENABLE_EMBREE)
+    friend struct EmbreeAccel<Float, Spectrum>;
+#else
+    friend struct NativeAccel<Float, Spectrum>;
+#endif
 
-    /**
-     * Metal-backend equivalents of the CPU traversal helpers above. Defined
-     * in scene_metal.inl, used by ``traverse_1_cb_*`` to walk the JIT-tracked
-     * fields of ``MetalAccelState`` (which has a different layout than the
-     * Embree state, so the CPU traversal cannot be reused).
-     */
-    void traverse_1_cb_ro_metal(void *payload,
-                                drjit::detail::traverse_callback_ro fn) const;
-    void traverse_1_cb_rw_metal(void *payload,
-                                drjit::detail::traverse_callback_rw fn);
-
-    MI_DECLARE_TRAVERSE_CB(m_accel_handle, m_emitters, m_emitters_dr, m_shapes,
+    /* The acceleration structure's JIT-tracked fields are traversed
+       declaratively by listing ``m_accel`` here: it is a DRJIT_STRUCT-like
+       type (provides ``fields_()``), so drjit recurses into its lookup
+       tables / handles. The native handles it also holds are intentionally
+       excluded from ``fields_()``. */
+    MI_DECLARE_TRAVERSE_CB(m_accel, m_emitters, m_emitters_dr, m_shapes,
                            m_shapes_dr, m_shapegroups, m_sensors, m_sensors_dr,
                            m_children, m_integrator, m_environment,
                            m_emitter_pmf, m_emitter_distr, m_silhouette_shapes,

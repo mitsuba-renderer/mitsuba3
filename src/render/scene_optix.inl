@@ -11,13 +11,14 @@
 #include <mitsuba/render/optix/common.h>
 #include <mitsuba/render/optix/shapes.h>
 #include <mitsuba/render/optix_api.h>
+#include <mitsuba/render/scene.h>
 #include <tsl/robin_map.h>
 
 #include "librender_ptx.h"
 
 NAMESPACE_BEGIN(mitsuba)
 
-// Per scene OptiX state data structure
+// Per scene OptiX state data structure (the by-value OptixAccel::state pimpl)
 struct MiOptixSceneState {
     OptixShaderBindingTable sbt = {};
     MiOptixAccelData accel;
@@ -315,22 +316,25 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types) {
     return config;
 }
 
-MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) {
-    if constexpr (!dr::is_cuda_v<Float>)
-        return;
+// -----------------------------------------------------------------------
+//  OptixAccel<Float, Spectrum> -- lifecycle
+// -----------------------------------------------------------------------
 
+template <typename Float, typename Spectrum>
+void OptixAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
+                                       const Properties &props) {
     ScopedPhase phase(ProfilerPhase::InitAccel);
     Log(Info, "Building scene in OptiX ..");
     Timer timer;
     optix_initialize();
 
-    m_accel = new MiOptixSceneState();
-    MiOptixSceneState &s = *(MiOptixSceneState *) m_accel;
+    state = new MiOptixSceneState();
+    MiOptixSceneState &s = *state;
 
     // Check if another scene was passed to the constructor
-    Scene *other_scene = nullptr;
+    Scene<Float, Spectrum> *other_scene = nullptr;
     for (auto &prop : props.objects()) {
-        other_scene = prop.try_get<Scene>();
+        other_scene = prop.try_get<Scene<Float, Spectrum>>();
         if (other_scene)
             break;
     }
@@ -345,7 +349,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
 
     if (other_scene) {
         Log(Debug, "Re-use OptiX config, pipeline and update SBT ..");
-        MiOptixSceneState &s2 = *(MiOptixSceneState *) other_scene->m_accel;
+        MiOptixSceneState &s2 = *other_scene->m_accel.state;
 
         const MiOptixConfig &config = optix_configs[s2.config_key];
 
@@ -358,13 +362,13 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
         jit_free(prev_data);
 
         fill_hitgroup_records(
-                m_shapes,
+                scene->m_shapes,
                 hg_sbts,
                 config.pg,
                 config.pg_mapping
         );
 
-        for (ShapeGroup *shapegroup : m_shapegroups) {
+        for (ShapeGroup *shapegroup : scene->m_shapegroups) {
             shapegroup->optix_fill_hitgroup_records(
                 hg_sbts,
                 config.pg,
@@ -400,7 +404,7 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
         //  Initialize OptiX configuration
         // =====================================================
 
-        const MiOptixConfig &config = init_optix_config(shape_types());
+        const MiOptixConfig &config = init_optix_config(scene->shape_types());
 
         // =====================================================
         //  Shader Binding Table generation
@@ -415,8 +419,8 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
                                                  s.sbt.missRecordBase));
 
         std::vector<HitGroupSbtRecord> hg_sbts;
-        fill_hitgroup_records(m_shapes, hg_sbts, config.pg, config.pg_mapping);
-        for (ShapeGroup *shapegroup : m_shapegroups) {
+        fill_hitgroup_records(scene->m_shapes, hg_sbts, config.pg, config.pg_mapping);
+        for (ShapeGroup *shapegroup : scene->m_shapegroups) {
             shapegroup->optix_fill_hitgroup_records(hg_sbts, config.pg,
                                                     config.pg_mapping);
         }
@@ -447,313 +451,302 @@ MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &props) 
     //  Acceleration data structure building
     // =====================================================
 
-    accel_parameters_changed_gpu();
+    parameters_changed(scene);
 
     Log(Info, "OptiX ready. (took %s)", util::time_string((float) timer.value()));
 }
 
-MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
-    if constexpr (dr::is_cuda_v<Float>) {
-        MiOptixSceneState &s = *(MiOptixSceneState *) m_accel;
+template <typename Float, typename Spectrum>
+void OptixAccel<Float, Spectrum>::parameters_changed(
+    Scene<Float, Spectrum> *scene) {
+    MiOptixSceneState &s = *state;
 
-        if (!m_shapes.empty()) {
-            scoped_optix_context guard;
+    if (!scene->m_shapes.empty()) {
+        scoped_optix_context guard;
 
-            // Build geometry acceleration structures for all the shapes
-            build_gas(s.context, m_shapes, s.accel);
-            for (auto& shapegroup: m_shapegroups)
-                shapegroup->optix_build_gas(s.context);
+        // Build geometry acceleration structures for all the shapes
+        build_gas(s.context, scene->m_shapes, s.accel);
+        for (auto& shapegroup: scene->m_shapegroups)
+            shapegroup->optix_build_gas(s.context);
 
-            // Gather information about the instance acceleration structure to be built
-            std::vector<OptixInstance> ias;
-            prepare_ias(s.context, m_shapes, 0, s.accel, 0u, ScalarAffineTransform4f(), ias);
+        // Gather information about the instance acceleration structure to be built
+        std::vector<OptixInstance> ias;
+        prepare_ias(s.context, scene->m_shapes, 0, s.accel, 0u, ScalarAffineTransform4f(), ias);
 
-            // Build a "master" IAS that contains all the GAS of the scene (meshes,
-            // custom shapes, curves, ...)
-            OptixAccelBuildOptions accel_options = {};
-            accel_options.buildFlags = OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
-            accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
-            accel_options.motionOptions.numKeys = 0;
+        // Build a "master" IAS that contains all the GAS of the scene (meshes,
+        // custom shapes, curves, ...)
+        OptixAccelBuildOptions accel_options = {};
+        accel_options.buildFlags = OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
+        accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
+        accel_options.motionOptions.numKeys = 0;
 
-            size_t ias_data_size = ias.size() * sizeof(OptixInstance);
-            void* d_ias = jit_malloc(JitBackend::CUDA, ias_data_size, /* shared = */ 1);
-            jit_memcpy_async(JitBackend::CUDA, d_ias, ias.data(), ias_data_size);
+        size_t ias_data_size = ias.size() * sizeof(OptixInstance);
+        void* d_ias = jit_malloc(JitBackend::CUDA, ias_data_size, /* shared = */ 1);
+        jit_memcpy_async(JitBackend::CUDA, d_ias, ias.data(), ias_data_size);
 
-            jit_free(s.ias_data.buffer);
-            jit_free(s.ias_data.inputs);
-            s.ias_data = {};
-            s.ias_data.inputs = jit_malloc_migrate(d_ias, JitBackend::CUDA, 1);
+        jit_free(s.ias_data.buffer);
+        jit_free(s.ias_data.inputs);
+        s.ias_data = {};
+        s.ias_data.inputs = jit_malloc_migrate(d_ias, JitBackend::CUDA, 1);
 
-            OptixBuildInput build_input;
-            memset(&build_input, 0, sizeof(OptixBuildInput)); // Use memset due to union member.
-            build_input.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
-            build_input.instanceArray.instances = (CUdeviceptr) s.ias_data.inputs;
-            build_input.instanceArray.numInstances = (unsigned int) ias.size();
+        OptixBuildInput build_input;
+        memset(&build_input, 0, sizeof(OptixBuildInput)); // Use memset due to union member.
+        build_input.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
+        build_input.instanceArray.instances = (CUdeviceptr) s.ias_data.inputs;
+        build_input.instanceArray.numInstances = (unsigned int) ias.size();
 
-            OptixAccelBufferSizes buffer_sizes{};
-            jit_optix_check(optixAccelComputeMemoryUsage(
-                s.context,
-                &accel_options,
-                &build_input,
-                1,
-                &buffer_sizes
-            ));
+        OptixAccelBufferSizes buffer_sizes{};
+        jit_optix_check(optixAccelComputeMemoryUsage(
+            s.context,
+            &accel_options,
+            &build_input,
+            1,
+            &buffer_sizes
+        ));
 
-            void* d_temp_buffer
-                = jit_malloc(JitBackend::CUDA, buffer_sizes.tempSizeInBytes);
-            s.ias_data.buffer
-                = jit_malloc(JitBackend::CUDA, buffer_sizes.outputSizeInBytes);
+        void* d_temp_buffer
+            = jit_malloc(JitBackend::CUDA, buffer_sizes.tempSizeInBytes);
+        s.ias_data.buffer
+            = jit_malloc(JitBackend::CUDA, buffer_sizes.outputSizeInBytes);
 
-            jit_optix_check(optixAccelBuild(
-                s.context,
-                (CUstream) jit_cuda_stream(),
-                &accel_options,
-                &build_input,
-                1, // num build inputs
-                (CUdeviceptr) d_temp_buffer,
-                buffer_sizes.tempSizeInBytes,
-                (CUdeviceptr) s.ias_data.buffer,
-                buffer_sizes.outputSizeInBytes,
-                &s.ias_handle,
-                0, // emitted property list
-                0  // num emitted properties
-            ));
+        jit_optix_check(optixAccelBuild(
+            s.context,
+            (CUstream) jit_cuda_stream(),
+            &accel_options,
+            &build_input,
+            1, // num build inputs
+            (CUdeviceptr) d_temp_buffer,
+            buffer_sizes.tempSizeInBytes,
+            (CUdeviceptr) s.ias_data.buffer,
+            buffer_sizes.outputSizeInBytes,
+            &s.ias_handle,
+            0, // emitted property list
+            0  // num emitted properties
+        ));
 
-            jit_free(d_temp_buffer);
-        }
-
-        /* Set up a callback on the handle variable to release the OptiX scene
-           state when this variable is freed. This ensures that the lifetime of
-           the pipeline goes beyond the one of the Scene instance if there are
-           still some pending ray tracing calls (e.g. non evaluated variables
-           depending on a ray tracing call). */
-
-        // Prevents the pipeline to be released when updating the scene parameters
-        if (m_accel_handle.index())
-            jit_var_set_callback(m_accel_handle.index(), nullptr, nullptr);
-        m_accel_handle = dr::opaque<UInt64>(s.ias_handle);
-
-        jit_var_set_callback(
-            m_accel_handle.index(),
-            [](uint32_t /* index */, int should_free, void *payload) {
-                if (should_free) {
-                    Log(Debug, "Free OptiX IAS..");
-                    auto* s = (MiOptixSceneState *)payload;
-                    jit_free(s->ias_data.buffer);
-                    jit_free(s->ias_data.inputs);
-                    delete s;
-                }
-            },
-            (void *) m_accel
-        );
-
-        clear_shapes_dirty();
+        jit_free(d_temp_buffer);
     }
+
+    /* Set up a callback on the handle variable to release the OptiX scene
+       state when this variable is freed. This ensures that the lifetime of
+       the pipeline goes beyond the one of the Scene instance if there are
+       still some pending ray tracing calls (e.g. non evaluated variables
+       depending on a ray tracing call). The by-value OptixAccel dies with the
+       Scene, so the callback owns the heap MiOptixSceneState it captures. */
+
+    // Prevents the pipeline to be released when updating the scene parameters
+    if (accel_handle.index())
+        jit_var_set_callback(accel_handle.index(), nullptr, nullptr);
+    accel_handle = dr::opaque<UInt64>(s.ias_handle);
+
+    jit_var_set_callback(
+        accel_handle.index(),
+        [](uint32_t /* index */, int should_free, void *payload) {
+            if (should_free) {
+                Log(Debug, "Free OptiX IAS..");
+                auto* s = (MiOptixSceneState *)payload;
+                jit_free(s->ias_data.buffer);
+                jit_free(s->ias_data.inputs);
+                delete s;
+            }
+        },
+        (void *) state
+    );
+
+    scene->clear_shapes_dirty();
 }
 
-MI_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
-    if constexpr (dr::is_cuda_v<Float>) {
-        Log(Debug, "Scene GPU acceleration release ..");
+template <typename Float, typename Spectrum>
+void OptixAccel<Float, Spectrum>::release() {
+    if (!state)
+        return;
+    Log(Debug, "Scene GPU acceleration release ..");
 
-        // Ensure all ray tracing kernels are terminated before releasing the scene
-        dr::sync_thread();
+    // Ensure all ray tracing kernels are terminated before releasing the scene
+    dr::sync_thread();
 
-        MiOptixSceneState *s = (MiOptixSceneState *) m_accel;
+    /* This will decrease the reference count of the shader binding table JIT
+       variable which might trigger the release of the OptiX SBT if no ray
+       tracing calls are pending. */
+    (void) UInt32::steal(state->sbt_jit_index);
 
-        /* This will decrease the reference count of the shader binding table
-            JIT variable which might trigger the release of the OptiX SBT if
-            no ray tracing calls are pending. */
-        (void) UInt32::steal(s->sbt_jit_index);
+    /* Decrease the reference count of the IAS handle variable. This will
+       trigger the (deferred) release of the OptiX acceleration data structure
+       and the MiOptixSceneState if no ray tracing calls are pending.
+       This **needs** to be done after decreasing the SBT index. */
+    accel_handle = 0;
 
-        /* Decrease the reference count of the IAS handle variable. This will
-           trigger the release of the OptiX acceleration data structure if no
-           ray tracing calls are pending.
-           This **needs** to be done after decreasing the SBT index */
-        m_accel_handle = 0;
-
-        m_accel = nullptr;
-    }
+    state = nullptr;
 }
 
-MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_gpu() { }
-MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
-    if constexpr (dr::is_cuda_v<Float>) {
-        Log(Debug, "Scene static GPU acceleration shutdown ..");
-        for (auto &kv : optix_configs) {
-            /* Decrease the reference count of the pipeline JIT variable.
-               This will trigger the release of the OptiX pipeline data
-               structure if no ray tracing calls are pending. */
-            jit_var_dec_ref(kv.second.pipeline_jit_index);
-        }
-        tsl::robin_map<uint32_t, MiOptixConfig> empty_map;
-        optix_configs.swap(empty_map);
+template <typename Float, typename Spectrum>
+void OptixAccel<Float, Spectrum>::static_shutdown() {
+    Log(Debug, "Scene static GPU acceleration shutdown ..");
+    for (auto &kv : optix_configs) {
+        /* Decrease the reference count of the pipeline JIT variable.
+           This will trigger the release of the OptiX pipeline data
+           structure if no ray tracing calls are pending. */
+        jit_var_dec_ref(kv.second.pipeline_jit_index);
     }
+    tsl::robin_map<uint32_t, MiOptixConfig> empty_map;
+    optix_configs.swap(empty_map);
 }
 
-MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
-Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
-                                                      bool reorder,
-                                                      UInt32 reorder_hint,
-                                                      uint32_t reorder_hint_bits,
-                                                      Mask active) const {
-    if constexpr (dr::is_cuda_v<Float>) {
-        MiOptixSceneState &s = *(MiOptixSceneState *) m_accel;
+// -----------------------------------------------------------------------
+//  OptixAccel<Float, Spectrum> -- ray queries
+// -----------------------------------------------------------------------
 
-        UInt32 ray_mask(255),
-               ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT |
-                         OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
-               sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
+template <typename Float, typename Spectrum>
+typename OptixAccel<Float, Spectrum>::PreliminaryIntersection3f
+OptixAccel<Float, Spectrum>::ray_intersect_preliminary(
+    const Scene<Float, Spectrum> *scene, const Ray3f &ray, Mask /*coherent*/,
+    bool reorder, UInt32 reorder_hint, uint32_t reorder_hint_bits,
+    Mask active) const {
+    MiOptixSceneState &s = *state;
 
-        // Enforce backface culling, which is only enabled on EllipsoidsMesh
-        // instances.
-        ray_flags |= OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES;
+    UInt32 ray_mask(255),
+           ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT |
+                     OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
+           sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
-        bool has_instances = !m_shapegroups.empty();
+    // Enforce backface culling, which is only enabled on EllipsoidsMesh
+    // instances.
+    ray_flags |= OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES;
 
-        using Single = dr::float32_array_t<Float>;
-        dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
-        Single ray_mint(0.f), ray_maxt(ray.maxt), ray_time(ray.time);
+    bool has_instances = !scene->m_shapegroups.empty();
 
-        // Be careful with 'ray.maxt' in double precision variants
-        if constexpr (!std::is_same_v<Single, Float>)
-            ray_maxt = dr::minimum(ray_maxt, dr::Largest<Single>);
+    using Single = dr::float32_array_t<Float>;
+    dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
+    Single ray_mint(0.f), ray_maxt(ray.maxt), ray_time(ray.time);
 
-        uint32_t trace_args[] {
-            m_accel_handle.index(),
-            ray_o.x().index(), ray_o.y().index(), ray_o.z().index(),
-            ray_d.x().index(), ray_d.y().index(), ray_d.z().index(),
-            ray_mint.index(), ray_maxt.index(), ray_time.index(),
-            ray_mask.index(), ray_flags.index(),
-            sbt_offset.index(), sbt_stride.index(),
-            miss_sbt_index.index(),
-        };
-        OptixHitObjectField fields[] {
-            OptixHitObjectField::IsHit,
-            OptixHitObjectField::RayTMax,
-            OptixHitObjectField::Attribute0,
-            OptixHitObjectField::Attribute1,
-            OptixHitObjectField::PrimitiveIndex,
-            OptixHitObjectField::SBTDataPointer,
-            OptixHitObjectField::InstanceId
-        };
-        uint32_t hitobject_out[7];
+    // Be careful with 'ray.maxt' in double precision variants
+    if constexpr (!std::is_same_v<Single, Float>)
+        ray_maxt = dr::minimum(ray_maxt, dr::Largest<Single>);
 
-        // Scene property takes precedence
-        reorder &= m_thread_reordering;
+    uint32_t trace_args[] {
+        accel_handle.index(),
+        ray_o.x().index(), ray_o.y().index(), ray_o.z().index(),
+        ray_d.x().index(), ray_d.y().index(), ray_d.z().index(),
+        ray_mint.index(), ray_maxt.index(), ray_time.index(),
+        ray_mask.index(), ray_flags.index(),
+        sbt_offset.index(), sbt_stride.index(),
+        miss_sbt_index.index(),
+    };
+    OptixHitObjectField fields[] {
+        OptixHitObjectField::IsHit,
+        OptixHitObjectField::RayTMax,
+        OptixHitObjectField::Attribute0,
+        OptixHitObjectField::Attribute1,
+        OptixHitObjectField::PrimitiveIndex,
+        OptixHitObjectField::SBTDataPointer,
+        OptixHitObjectField::InstanceId
+    };
+    uint32_t hitobject_out[7];
 
-        jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
-                            has_instances ? 7 : 6, fields, hitobject_out,
-                            reorder, reorder_hint.index(), reorder_hint_bits,
-                            false, active.index(),
-                            s.pipeline_jit_index, s.sbt_jit_index);
+    // Scene property takes precedence
+    reorder &= scene->m_thread_reordering;
 
-        Mask hitobject_is_hit = UInt32::steal(hitobject_out[0]) != 0;
-        active &= hitobject_is_hit;
+    jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
+                        has_instances ? 7 : 6, fields, hitobject_out,
+                        reorder, reorder_hint.index(), reorder_hint_bits,
+                        false, active.index(),
+                        s.pipeline_jit_index, s.sbt_jit_index);
 
-        // Get shape registry ID from SBT data (first 32 bits of `OptixHitGroupData`)
-        UInt64 hitobject_sbt_ptr = UInt64::steal(hitobject_out[5]);
-        uint32_t shape_id_idx = jit_optix_sbt_data_load(
-            hitobject_sbt_ptr.index(), VarType::UInt32, 0, active.index());
+    Mask hitobject_is_hit = UInt32::steal(hitobject_out[0]) != 0;
+    active &= hitobject_is_hit;
 
-        PreliminaryIntersection3f pi;
-        pi.t          = dr::reinterpret_array<Single, UInt32>(UInt32::steal(hitobject_out[1]));
-        pi.prim_uv[0] = dr::reinterpret_array<Single, UInt32>(UInt32::steal(hitobject_out[2]));
-        pi.prim_uv[1] = dr::reinterpret_array<Single, UInt32>(UInt32::steal(hitobject_out[3]));
-        pi.prim_index = UInt32::steal(hitobject_out[4]);
-        pi.shape      = dr::reinterpret_array<ShapePtr, UInt32>(UInt32::steal(shape_id_idx));
-        pi.instance   = has_instances ? ShapePtr::steal(hitobject_out[6]) : dr::zeros<ShapePtr>();
+    // Get shape registry ID from SBT data (first 32 bits of `OptixHitGroupData`)
+    UInt64 hitobject_sbt_ptr = UInt64::steal(hitobject_out[5]);
+    uint32_t shape_id_idx = jit_optix_sbt_data_load(
+        hitobject_sbt_ptr.index(), VarType::UInt32, 0, active.index());
 
-        // This field is only used by embree, but we still need to initialize it for vcalls
-        pi.shape_index = dr::zeros<UInt32>();
+    PreliminaryIntersection3f pi;
+    pi.t          = dr::reinterpret_array<Single, UInt32>(UInt32::steal(hitobject_out[1]));
+    pi.prim_uv[0] = dr::reinterpret_array<Single, UInt32>(UInt32::steal(hitobject_out[2]));
+    pi.prim_uv[1] = dr::reinterpret_array<Single, UInt32>(UInt32::steal(hitobject_out[3]));
+    pi.prim_index = UInt32::steal(hitobject_out[4]);
+    pi.shape      = dr::reinterpret_array<ShapePtr, UInt32>(UInt32::steal(shape_id_idx));
+    pi.instance   = has_instances ? ShapePtr::steal(hitobject_out[6]) : dr::zeros<ShapePtr>();
 
-        // jit_optix_ray_trace leaves data uninitialized for inactive lanes
-        pi.t[!active] = dr::Infinity<Float>;
-        active &= pi.is_valid();
-        pi.shape[!active]    = nullptr;
-        pi.instance[!active] = nullptr;
-        pi.prim_uv[!active] = dr::zeros<Point2f>();
-        pi.prim_index[!active] = 0;
+    // This field is only used by embree, but we still need to initialize it for vcalls
+    pi.shape_index = dr::zeros<UInt32>();
 
-        return pi;
-    } else {
-        DRJIT_MARK_USED(ray);
-        DRJIT_MARK_USED(reorder);
-        DRJIT_MARK_USED(reorder_hint);
-        DRJIT_MARK_USED(reorder_hint_bits);
-        DRJIT_MARK_USED(active);
-        Throw("ray_intersect_gpu() should only be called in GPU mode.");
-    }
+    // jit_optix_ray_trace leaves data uninitialized for inactive lanes
+    pi.t[!active] = dr::Infinity<Float>;
+    active &= pi.is_valid();
+    pi.shape[!active]    = nullptr;
+    pi.instance[!active] = nullptr;
+    pi.prim_uv[!active] = dr::zeros<Point2f>();
+    pi.prim_index[!active] = 0;
+
+    return pi;
 }
 
-MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
-Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t ray_flags,
-                                          bool reorder, UInt32 reorder_hint,
-                                          uint32_t reorder_hint_bits,
-                                          Mask active) const {
-    if constexpr (dr::is_cuda_v<Float>) {
-        PreliminaryIntersection3f pi = ray_intersect_preliminary_gpu(
-            ray, reorder, reorder_hint, reorder_hint_bits, active);
-        return pi.compute_surface_interaction(ray, ray_flags, active);
-    } else {
-        DRJIT_MARK_USED(ray);
-        DRJIT_MARK_USED(ray_flags);
-        DRJIT_MARK_USED(reorder);
-        DRJIT_MARK_USED(reorder_hint);
-        DRJIT_MARK_USED(reorder_hint_bits);
-        DRJIT_MARK_USED(active);
-        Throw("ray_intersect_gpu() should only be called in GPU mode.");
-    }
+template <typename Float, typename Spectrum>
+typename OptixAccel<Float, Spectrum>::SurfaceInteraction3f
+OptixAccel<Float, Spectrum>::ray_intersect(
+    const Scene<Float, Spectrum> *scene, const Ray3f &ray, uint32_t ray_flags,
+    Mask coherent, bool reorder, UInt32 reorder_hint,
+    uint32_t reorder_hint_bits, Mask active) const {
+    PreliminaryIntersection3f pi = ray_intersect_preliminary(
+        scene, ray, coherent, reorder, reorder_hint, reorder_hint_bits, active);
+    return pi.compute_surface_interaction(ray, ray_flags, active);
 }
 
-MI_VARIANT typename Scene<Float, Spectrum>::Mask
-Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
-    if constexpr (dr::is_cuda_v<Float>) {
-        MiOptixSceneState &s = *(MiOptixSceneState *) m_accel;
+template <typename Float, typename Spectrum>
+typename OptixAccel<Float, Spectrum>::Mask
+OptixAccel<Float, Spectrum>::ray_test(const Scene<Float, Spectrum> * /*scene*/,
+                                      const Ray3f &ray, Mask /*coherent*/,
+                                      Mask active) const {
+    MiOptixSceneState &s = *state;
 
-        UInt32 ray_mask(255),
-               ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT |
-                         OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
-                         OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
-               sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
+    UInt32 ray_mask(255),
+           ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT |
+                     OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
+                     OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
+           sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
-        // Enforce backface culling, which is only enabled on EllipsoidsMesh
-        // instances.
-        ray_flags |= OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES;
+    // Enforce backface culling, which is only enabled on EllipsoidsMesh
+    // instances.
+    ray_flags |= OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES;
 
-        using Single = dr::float32_array_t<Float>;
-        dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
-        Single ray_mint(0.f), ray_maxt(ray.maxt), ray_time(ray.time);
+    using Single = dr::float32_array_t<Float>;
+    dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
+    Single ray_mint(0.f), ray_maxt(ray.maxt), ray_time(ray.time);
 
-        // Be careful with 'ray.maxt' in double precision variants
-        if constexpr (!std::is_same_v<Single, Float>)
-            ray_maxt = dr::minimum(ray_maxt, dr::Largest<Single>);
+    // Be careful with 'ray.maxt' in double precision variants
+    if constexpr (!std::is_same_v<Single, Float>)
+        ray_maxt = dr::minimum(ray_maxt, dr::Largest<Single>);
 
-        uint32_t trace_args[] {
-            m_accel_handle.index(),
-            ray_o.x().index(), ray_o.y().index(), ray_o.z().index(),
-            ray_d.x().index(), ray_d.y().index(), ray_d.z().index(),
-            ray_mint.index(), ray_maxt.index(), ray_time.index(),
-            ray_mask.index(), ray_flags.index(),
-            sbt_offset.index(), sbt_stride.index(),
-            miss_sbt_index.index()
-        };
+    uint32_t trace_args[] {
+        accel_handle.index(),
+        ray_o.x().index(), ray_o.y().index(), ray_o.z().index(),
+        ray_d.x().index(), ray_d.y().index(), ray_d.z().index(),
+        ray_mint.index(), ray_maxt.index(), ray_time.index(),
+        ray_mask.index(), ray_flags.index(),
+        sbt_offset.index(), sbt_stride.index(),
+        miss_sbt_index.index()
+    };
 
-        OptixHitObjectField field = OptixHitObjectField::IsHit;
-        uint32_t hitobject_out;
+    OptixHitObjectField field = OptixHitObjectField::IsHit;
+    uint32_t hitobject_out;
 
-        jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
-                            1, &field, &hitobject_out,
-                            false, 0, 0, false, active.index(),
-                            s.pipeline_jit_index, s.sbt_jit_index);
+    jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
+                        1, &field, &hitobject_out,
+                        false, 0, 0, false, active.index(),
+                        s.pipeline_jit_index, s.sbt_jit_index);
 
-        UInt32 hitobject_is_hit = UInt32::steal(hitobject_out);
+    UInt32 hitobject_is_hit = UInt32::steal(hitobject_out);
 
-        return active && (hitobject_is_hit != 0);
-    } else {
-        DRJIT_MARK_USED(ray);
-        DRJIT_MARK_USED(active);
-        Throw("ray_test_gpu() should only be called in GPU mode.");
-    }
+    return active && (hitobject_is_hit != 0);
+}
+
+template <typename Float, typename Spectrum>
+typename OptixAccel<Float, Spectrum>::SurfaceInteraction3f
+OptixAccel<Float, Spectrum>::ray_intersect_naive(
+    const Scene<Float, Spectrum> * /*scene*/, const Ray3f & /*ray*/,
+    Mask /*active*/) const {
+    NotImplementedError("ray_intersect_naive");
 }
 
 NAMESPACE_END(mitsuba)

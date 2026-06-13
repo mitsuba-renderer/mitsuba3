@@ -123,11 +123,9 @@ static id<MTLBuffer> lookup_buffer(const void *ptr, size_t *offset,
     return buf;
 }
 
-/// Shared implementation of build() / update(). When ``update_index`` is
-/// nonzero, the freshly built Metal objects replace those of the existing
-/// scene instead of registering a new one.
-static std::pair<Accel *, uint32_t> build_impl(const SceneDesc &desc,
-                                               uint32_t update_index) {
+/// Build all Metal objects for the scene description and register a fresh
+/// Dr.Jit scene variable.
+static std::pair<Accel *, uint32_t> build_impl(const SceneDesc &desc) {
     @autoreleasepool {
         id<MTLDevice> device = (__bridge id<MTLDevice>) jit_metal_context();
         id<MTLCommandQueue> queue =
@@ -377,11 +375,17 @@ static std::pair<Accel *, uint32_t> build_impl(const SceneDesc &desc,
         // ------------------------------------------------------------------
         // Build the TLAS over all instances
         // ------------------------------------------------------------------
-        std::vector<MTLAccelerationStructureInstanceDescriptor>
+        /* Use userID instance descriptors so each instance carries its owner
+           shape's registry id; the trace returns it as ``user_instance_id``,
+           letting the megakernel recover the ShapePtr without a host-side
+           registry gather. ``[[instance_id]]`` inside the intersection
+           functions is unaffected -- it remains the raw instance index that
+           the scene-global IFT lookup table is keyed by. */
+        std::vector<MTLAccelerationStructureUserIDInstanceDescriptor>
             inst_descs(desc.instances.size());
         for (size_t i = 0; i < desc.instances.size(); ++i) {
             const InstanceDesc &inst = desc.instances[i];
-            MTLAccelerationStructureInstanceDescriptor &d = inst_descs[i];
+            MTLAccelerationStructureUserIDInstanceDescriptor &d = inst_descs[i];
             d = {};
             for (int col = 0; col < 4; ++col)
                 d.transformationMatrix.columns[col] =
@@ -392,6 +396,7 @@ static std::pair<Accel *, uint32_t> build_impl(const SceneDesc &desc,
             d.mask                            = 0xFFu;
             d.intersectionFunctionTableOffset = blas_ift_base[inst.blas_idx];
             d.accelerationStructureIndex      = inst.blas_idx;
+            d.userID                          = inst.user_id;
         }
 
         id<MTLBuffer> inst_buf = [device
@@ -410,7 +415,7 @@ static std::pair<Accel *, uint32_t> build_impl(const SceneDesc &desc,
         tdesc.instanceDescriptorBuffer        = inst_buf;
         tdesc.instanceCount                   = inst_descs.size();
         tdesc.instanceDescriptorType =
-            MTLAccelerationStructureInstanceDescriptorTypeDefault;
+            MTLAccelerationStructureInstanceDescriptorTypeUserID;
 
         accel->tlas = build_accel(device, queue, tdesc);
 
@@ -464,10 +469,8 @@ static std::pair<Accel *, uint32_t> build_impl(const SceneDesc &desc,
             bind_slots.push_back(metal_shape::INTERSECTION_FN_COUNT);
         }
 
-        /* Register a new scene with Dr.Jit (update_index == 0), or swap the
-           freshly built Metal objects into the existing one. */
+        /* Register a fresh scene with Dr.Jit. */
         uint32_t scene_index = jit_metal_configure_scene(
-            update_index,
             (__bridge void *) accel->tlas,
             resources.data(), (uint32_t) resources.size(),
             (__bridge void *) isect_library,
@@ -480,7 +483,7 @@ static std::pair<Accel *, uint32_t> build_impl(const SceneDesc &desc,
 
         /* Tie the lifetime of the Metal objects to that of the scene
            variable: unevaluated kernels and frozen-function recordings may
-           keep the scene alive past accel_release_metal() (e.g. a
+           keep the scene alive past MetalAccel::release() (e.g. a
            PreliminaryIntersection obtained before a geometry update is
            still valid afterwards, mirroring the Embree/OptiX backends). */
         jit_metal_scene_set_cleanup(
@@ -496,15 +499,7 @@ static std::pair<Accel *, uint32_t> build_impl(const SceneDesc &desc,
 }
 
 std::pair<Accel *, uint32_t> build(const SceneDesc &desc) {
-    return build_impl(desc, 0);
-}
-
-Accel *update(uint32_t scene_index, Accel *old_accel, const SceneDesc &desc) {
-    Accel *accel = build_impl(desc, scene_index).first;
-    /* In-flight command buffers retain the resources they reference, so the
-       previous generation of Metal objects can be released right away. */
-    delete old_accel;
-    return accel;
+    return build_impl(desc);
 }
 
 void release(Accel *accel, uint32_t scene_index) {
