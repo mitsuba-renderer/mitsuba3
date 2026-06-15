@@ -841,7 +841,7 @@ private:
         uint32_t resolution_y = shape_v[1] - 1;
 
         uint32_t x = index % resolution_x;
-        uint32_t y = ((index - x) / resolution_y) % resolution_y;
+        uint32_t y = ((index - x) / resolution_x) % resolution_y;
         uint32_t z =
             (index - x - y * resolution_x) / (resolution_x * resolution_y);
 
@@ -1009,11 +1009,11 @@ private:
 
             m_jit_voxel_indices = dr::zeros<UInt32>(max_voxel_count);
 
-            uint32_t stride = 3; // BBobx's Point3f stride
+            uint32_t stride = 3; // BBox's Point3f corner stride (floats per corner)
             if constexpr (dr::is_llvm_v<Float>)
                 stride = sizeof(InputScalarBoundingBox3f) / sizeof(float) / 2u; // Typically 4-wide
 
-            m_jit_bboxes = dr::zeros<InputFloat>(stride * max_voxel_count);
+            m_jit_bboxes = dr::zeros<InputFloat>(2 * stride * max_voxel_count);
             dr::scatter(m_jit_bboxes, bbox.min.x(), stride * (2 * slot + 0) + 0, occupied);
             dr::scatter(m_jit_bboxes, bbox.min.y(), stride * (2 * slot + 0) + 1, occupied);
             dr::scatter(m_jit_bboxes, bbox.min.z(), stride * (2 * slot + 0) + 2, occupied);

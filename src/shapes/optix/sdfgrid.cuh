@@ -26,7 +26,7 @@ __device__ Vector3u index_to_vec(unsigned int index,
     uint32_t x_len = sdf.res_x - 1;
     uint32_t y_len = sdf.res_y - 1;
     unsigned int x = index % x_len;
-    unsigned int y = ((index - x) / y_len) % y_len;
+    unsigned int y = ((index - x) / x_len) % y_len;
     unsigned int z = (index - x - y * x_len) / (x_len * y_len);
 
     return Vector3u(x, y, z);
