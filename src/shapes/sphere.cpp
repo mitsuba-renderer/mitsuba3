@@ -7,9 +7,14 @@
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
+#include <mitsuba/render/scene_ir.h>
 
 #if defined(MI_ENABLE_CUDA)
     #include "optix/sphere.cuh"
+#endif
+
+#if defined(MI_ENABLE_METAL) || defined(MI_ENABLE_CUDA)
+    #include <mitsuba/render/shapedata.h>
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
@@ -514,8 +519,8 @@ public:
     // =============================================================
 
     template <typename FloatP, typename Ray3fP>
-    std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
-               dr::uint32_array_t<FloatP>>
+    std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
+               dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray,
                                    ScalarIndex /*prim_index*/,
                                    dr::mask_t<FloatP> active) const {
@@ -575,7 +580,7 @@ public:
         FloatP t = dr::select(near_t < Value(0.0), FloatP(far_t), FloatP(near_t));
         t =  dr::select(active, t, dr::Infinity<FloatP>);
 
-        return { t, dr::zeros<Point<FloatP, 2>>(), ((uint32_t) -1), 0 };
+        return { active, t, dr::zeros<Point<FloatP, 2>>(), ((uint32_t) -1), 0 };
     }
 
     template <typename FloatP, typename Ray3fP>
@@ -747,21 +752,16 @@ public:
     //! @}
     // =============================================================
 
-#if defined(MI_ENABLE_CUDA)
-    using Base::m_optix_data_ptr;
+#if defined(MI_ENABLE_METAL) || defined(MI_ENABLE_CUDA)
+    void gpu_fill_data(void *out) const {
+        shapedata::SphereData &d = *(shapedata::SphereData *) out;
+        ScalarPoint3f c = m_center.scalar();
+        d.center_radius = { (float) c.x(), (float) c.y(), (float) c.z(),
+                            (float) m_radius.scalar() };
+    }
 
-    void optix_prepare_geometry() override {
-        if constexpr (dr::is_cuda_v<Float>) {
-            if (!m_optix_data_ptr)
-                m_optix_data_ptr = jit_malloc(JitBackend::CUDA, sizeof(OptixSphereData));
-
-            OptixSphereData data = { bbox(),
-                                     (Vector<float, 3>) m_center.scalar(),
-                                     (float) m_radius.scalar() };
-
-            jit_memcpy_async(JitBackend::CUDA, m_optix_data_ptr, &data,
-                             sizeof(OptixSphereData));
-        }
+    void describe(ShapeIR &g) const override {
+        Base::template describe_with_data<Sphere, shapedata::SphereData>(g);
     }
 #endif
 

@@ -7,7 +7,9 @@
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/mesh.h>
+#include <mitsuba/render/scene_ir.h>
 #include <mitsuba/render/records.h>
+#include "bbox_reduce.h"
 #include <mitsuba/render/scene.h>
 
 #if defined(MI_ENABLE_EMBREE)
@@ -165,8 +167,8 @@ Mesh<Float, Spectrum>::bbox() const {
 
 MI_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
 Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
-    if constexpr (dr::is_cuda_v<Float>)
-        Throw("bbox(ScalarIndex) is not available in CUDA mode!");
+    if constexpr (dr::is_cuda_v<Float> || dr::is_metal_v<Float>)
+        Throw("bbox(ScalarIndex) is not available in GPU mode!");
 
     Assert(index <= m_face_count);
 
@@ -434,16 +436,19 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 }
 
 MI_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() {
-    auto&& vertex_positions = dr::migrate(m_vertex_positions, JitBackend::None);
-    if constexpr (dr::is_jit_v<Float>)
-        dr::sync_thread();
-
-    const InputFloat *ptr = vertex_positions.data();
-
     m_bbox.reset();
-    for (ScalarSize i = 0; i < m_vertex_count; ++i)
-        m_bbox.expand(
-            ScalarPoint3f(ptr[3 * i + 0], ptr[3 * i + 1], ptr[3 * i + 2]));
+    if (m_vertex_count == 0)
+        return;
+
+    if constexpr (dr::is_jit_v<Float>) {
+        m_bbox = device_reduce_bbox<ScalarPoint3f>(m_vertex_positions,
+                                                   m_vertex_count, 3);
+    } else {
+        const InputFloat *ptr = m_vertex_positions.data();
+        for (ScalarSize i = 0; i < m_vertex_count; ++i)
+            m_bbox.expand(
+                ScalarPoint3f(ptr[3 * i + 0], ptr[3 * i + 1], ptr[3 * i + 2]));
+    }
 }
 
 MI_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
@@ -1948,41 +1953,16 @@ MI_VARIANT size_t Mesh<Float, Spectrum>::face_data_bytes() const {
     return face_data_bytes;
 }
 
-#if defined(MI_ENABLE_EMBREE)
-MI_VARIANT RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device) {
-    RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
-
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3,
-                               m_vertex_positions.data(), 0, 3 * sizeof(InputFloat),
-                               m_vertex_count);
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3,
-                               m_faces.data(), 0, 3 * sizeof(ScalarIndex),
-                               m_face_count);
-
-    rtcCommitGeometry(geom);
-    return geom;
+MI_VARIANT void
+Mesh<Float, Spectrum>::describe(ShapeIR &g) const {
+    g.kind = ShapeIR::Kind::Triangles;
+    g.type = m_shape_type;
+    g.ctx = this;
+    g.vertex_count = m_vertex_count;
+    g.face_count = m_face_count;
+    g.vertex_ptr = m_vertex_positions.data();
+    g.index_ptr  = m_faces.data();
 }
-#endif
-
-#if defined(MI_ENABLE_CUDA)
-static const uint32_t triangle_input_flags = OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT;
-
-MI_VARIANT void Mesh<Float, Spectrum>::optix_prepare_geometry() { }
-
-MI_VARIANT void Mesh<Float, Spectrum>::optix_build_input(OptixBuildInput &build_input) const {
-    m_vertex_buffer_ptr = (void*) m_vertex_positions.data(); // triggers dr::eval()
-
-    build_input.type                           = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
-    build_input.triangleArray.vertexFormat     = OPTIX_VERTEX_FORMAT_FLOAT3;
-    build_input.triangleArray.indexFormat      = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
-    build_input.triangleArray.numVertices      = m_vertex_count;
-    build_input.triangleArray.vertexBuffers    = (CUdeviceptr*) &m_vertex_buffer_ptr;
-    build_input.triangleArray.numIndexTriplets = m_face_count;
-    build_input.triangleArray.indexBuffer      = (CUdeviceptr) m_faces.data();
-    build_input.triangleArray.flags            = &triangle_input_flags;
-    build_input.triangleArray.numSbtRecords    = 1;
-}
-#endif
 
 MI_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
     return dr::grad_enabled(m_vertex_positions);

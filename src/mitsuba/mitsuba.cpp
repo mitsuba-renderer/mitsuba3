@@ -146,9 +146,6 @@ int main(int argc, char *argv[]) {
     Logger::static_initialization();
     Bitmap::static_initialization();
 
-    // Ensure that the mitsuba-render shared library is loaded
-    librender_nop();
-
     ArgParser parser;
     using StringVec    = std::vector<std::string>;
     auto arg_threads   = parser.add(StringVec{ "-t", "--threads" }, true);
@@ -205,7 +202,7 @@ int main(int argc, char *argv[]) {
 
         logger->set_log_level(log_level_mitsuba[std::min(log_level, 2)]);
 
-#if defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_LLVM)
+#if defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_METAL)
         ::LogLevel log_level_drjit[] = {
             ::LogLevel::Error,
             ::LogLevel::Warn,
@@ -238,21 +235,29 @@ int main(int argc, char *argv[]) {
             arg_define = arg_define->next();
         }
         mode = (*arg_mode ? arg_mode->as_string() : MI_DEFAULT_VARIANT);
-        bool cuda = string::starts_with(mode, "cuda_");
-        bool llvm = string::starts_with(mode, "llvm_");
+        bool cuda  = string::starts_with(mode, "cuda_");
+        bool llvm  = string::starts_with(mode, "llvm_");
+        bool metal = string::starts_with(mode, "metal_");
 
+        // jit_init() expects a bitmask of backends (1 << JitBackend), not a
+        // raw enum value.
 #if defined(MI_ENABLE_CUDA)
         if (cuda)
-            jit_init((uint32_t) JitBackend::CUDA);
+            jit_init(1u << (uint32_t) JitBackend::CUDA);
 #endif
 
 #if defined(MI_ENABLE_LLVM)
         if (llvm)
-            jit_init((uint32_t) JitBackend::LLVM);
+            jit_init(1u << (uint32_t) JitBackend::LLVM);
 #endif
 
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
-        if (cuda || llvm) {
+#if defined(MI_ENABLE_METAL)
+        if (metal)
+            jit_init(1u << (uint32_t) JitBackend::Metal);
+#endif
+
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
+        if (cuda || llvm || metal) {
             if (*arg_optim_lev) {
                 int lev = arg_optim_lev->as_int();
                 jit_set_flag(JitFlag::VCallDeduplicate, lev > 0);
@@ -290,12 +295,12 @@ int main(int argc, char *argv[]) {
         DRJIT_MARK_USED(arg_source);
 #endif
 
-        if (!cuda && !llvm &&
+        if (!cuda && !llvm && !metal &&
             (*arg_optim_lev || *arg_wavefront || *arg_source || *arg_vec_width))
-            Throw("Specified an argument that only makes sense in a JIT (LLVM/CUDA) mode!");
+            Throw("Specified an argument that only makes sense in a JIT (LLVM/CUDA/Metal) mode!");
 
         Profiler::static_initialization();
-        color_management_static_initialization(cuda, llvm);
+        color_management_static_initialization(cuda, llvm, metal);
 
         MI_INVOKE_VARIANT(mode, scene_static_accel_initialization);
 
@@ -395,17 +400,18 @@ int main(int argc, char *argv[]) {
 
 
 #if defined(MI_ENABLE_CUDA)
-    if (string::starts_with(mode, "cuda_")) {
-        printf("%s\n", jit_var_whos());
+    if (string::starts_with(mode, "cuda_"))
         jit_shutdown();
-    }
 #endif
 
 #if defined(MI_ENABLE_LLVM)
-    if (string::starts_with(mode, "llvm_")) {
-        printf("%s\n", jit_var_whos());
+    if (string::starts_with(mode, "llvm_"))
         jit_shutdown();
-    }
+#endif
+
+#if defined(MI_ENABLE_METAL)
+    if (string::starts_with(mode, "metal_"))
+        jit_shutdown();
 #endif
 
     return error_msg.empty() ? 0 : -1;

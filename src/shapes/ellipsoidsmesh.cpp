@@ -4,6 +4,7 @@
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/timer.h>
 #include <mitsuba/render/mesh.h>
+#include <mitsuba/render/scene_ir.h>
 
 #include "ellipsoids.h"
 
@@ -310,6 +311,12 @@ public:
         // Divide by the number of faces per Gaussians
         si.prim_index /= (uint32_t) m_shell_faces.size();
 
+        // Embree (custom filter) and OptiX (TrianglesCulled) cull backfaces so
+        // the volprim integrator sees one entry hit per primitive. Metal reports
+        // both faces, which would double-count (~2x brightness), so reject here.
+        if constexpr (dr::is_metal_v<Float>)
+            this->cull_backface(si, ray, active);
+
         return si;
     }
 
@@ -473,92 +480,12 @@ private:
         }
     }
 
-#if defined(MI_ENABLE_EMBREE)
-    template <size_t N, typename RTCRay_, typename RTCHit_>
-    static void embree_filter_backface_culling_packet(
-        const RTCFilterFunctionNArguments *args, RTCRay_ *ray, RTCHit_ *hit) {
-        using FloatP    = dr::Packet<float, N>;
-        using Int32P    = dr::Packet<int, N>;
-        using Vector3fP = dr::Array<FloatP, 3>;
-
-        Vector3fP d;
-        d.x() = dr::load_aligned<FloatP>(ray->dir_x);
-        d.y() = dr::load_aligned<FloatP>(ray->dir_y);
-        d.z() = dr::load_aligned<FloatP>(ray->dir_z);
-
-        Vector3fP n;
-        n.x() = dr::load_aligned<FloatP>(hit->Ng_x);
-        n.y() = dr::load_aligned<FloatP>(hit->Ng_y);
-        n.z() = dr::load_aligned<FloatP>(hit->Ng_z);
-
-        Int32P valid = dr::load_aligned<Int32P>(args->valid);
-        valid = dr::select(dr::dot(d, n) > 0.0f, 0, valid);
-        dr::store_aligned(args->valid, valid);
+    void describe(ShapeIR &g) const override {
+        Base::describe(g);
+        // Mesh::describe() tags this as plain Triangles. Refine it to the
+        // back-face-culled bucket (the only kind both GPU backends cull).
+        g.kind = ShapeIR::Kind::TrianglesCulled;
     }
-
-    static void embree_filter_backface_culling(const RTCFilterFunctionNArguments *args) {
-        switch (args->N) {
-            case 1:
-                {
-                    const RTCRay *ray = (RTCRay *)args->ray;
-                    RTCHit *hit = (RTCHit *)args->hit;
-
-                    auto d = dr::Array<float, 3>(ray->dir_x, ray->dir_y, ray->dir_z);
-                    auto n = dr::Array<float, 3>(hit->Ng_x, hit->Ng_y, hit->Ng_z);
-
-                    // Always ignore back-facing intersections
-                    if (dr::dot(d, n) > 0.0f) {
-                        *args->valid = 0;
-                    }
-                }
-                break;
-
-            case 4:
-                embree_filter_backface_culling_packet<4>(
-                    args,
-                    (RTCRay4 *) args->ray,
-                    (RTCHit4 *) args->hit
-                );
-                break;
-
-            case 8:
-                embree_filter_backface_culling_packet<8>(
-                    args,
-                    (RTCRay8 *) args->ray,
-                    (RTCHit8 *) args->hit
-                );
-                break;
-
-            case 16:
-                embree_filter_backface_culling_packet<16>(
-                    args,
-                    (RTCRay16 *) args->ray,
-                    (RTCHit16 *) args->hit
-                );
-                break;
-
-            default:
-                Throw("embree_filter_backface_culling(): unsupported packet size!");
-        }
-    }
-
-    RTCGeometry embree_geometry(RTCDevice device) override {
-        RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
-
-        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3,
-                                m_vertex_positions.data(), 0, 3 * sizeof(InputFloat),
-                                m_vertex_count);
-        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3,
-                                m_faces.data(), 0, 3 * sizeof(ScalarIndex),
-                                m_face_count);
-
-        rtcSetGeometryIntersectFilterFunction(geom, embree_filter_backface_culling);
-        rtcSetGeometryOccludedFilterFunction(geom,  embree_filter_backface_culling);
-
-        rtcCommitGeometry(geom);
-        return geom;
-    }
-#endif
 
 private:
     /// Object holding the ellipsoid data and attributes

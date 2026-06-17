@@ -9,6 +9,7 @@
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
+#include <mitsuba/render/scene_ir.h>
 #include <mitsuba/render/volumegrid.h>
 
 #include <drjit/tensor.h>
@@ -20,6 +21,10 @@
 
 #if defined(MI_ENABLE_CUDA)
 #  include "optix/sdfgrid.cuh"
+#endif
+
+#if defined(MI_ENABLE_METAL)
+#  include "../render/metal/shapes.h"
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
@@ -231,9 +236,9 @@ public:
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "to_world") ||
             string::contains(keys, "grid")) {
-            // Ensure previous ray-tracing operation are fully evaluated before
-            // modifying the scalar values of the fields in this class
-            if constexpr (dr::is_jit_v<Float>)
+            // LLVM/Embree reads these parameters from host memory; wait for
+            // in-flight kernels before overwriting (GPU uploads are queue-ordered).
+            if constexpr (dr::is_llvm_v<Float>)
                 dr::sync_thread();
 
             m_to_world = m_to_world.value().update();
@@ -311,15 +316,13 @@ public:
     // =============================================================
 
     template <typename FloatP, typename Ray3fP>
-    std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
-               dr::uint32_array_t<FloatP>>
+    std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
+               dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray_,
                                    ScalarIndex prim_index,
                                    dr::mask_t<FloatP> active) const {
-        auto [hit, t, uv, shape_index, p] =
-            ray_intersect_preliminary_common_impl<FloatP>(ray_, prim_index,
-                                                          active);
-        return { t, uv, shape_index, p };
+        return ray_intersect_preliminary_common_impl<FloatP>(ray_, prim_index,
+                                                            active);
     }
 
     template <typename FloatP, typename Ray3fP>
@@ -546,41 +549,121 @@ public:
         return dr::grad_enabled(m_to_world);
     }
 
-#if defined(MI_ENABLE_CUDA)
-    using Base::m_optix_data_ptr;
+#if defined(MI_ENABLE_METAL)
+    // Layout of the buffer bound at MSL [[buffer(4)]] for SDFGrid:
+    //   header (80 bytes): res(3)+n_voxels(1) ints, voxel_size(3)+pad floats,
+    //                      to_object affine (3 rows of float4)
+    //   uint32 voxel_indices[n_voxels]
+    //   float  grid_data[res_x * res_y * res_z]
+    struct MetalSDFHeader {
+        uint32_t res_x, res_y, res_z, n_voxels;
+        float voxel_size[3];
+        float pad;
+        mi_float4 to_object[3];
+    };
+    static_assert(sizeof(MetalSDFHeader) == 80, "MetalSDFHeader layout mismatch");
+#endif
 
-    void optix_prepare_geometry() override {
-        if constexpr (dr::is_cuda_v<Float>) {
-            if (!m_optix_data_ptr)
-                m_optix_data_ptr =
-                    jit_malloc(JitBackend::CUDA, sizeof(OptixSDFGridData));
-
+    // SDFGrid uses a custom layout rather than per-primitive [[primitive_data]]:
+    // pdata_size stays 0 and the whole slice size is reported through data_size.
+    // OptiX reads the precomputed device AABBs zero-copy and a header-only SBT
+    // record (pointers + resolution + affine) referencing the existing arrays.
+    void describe(ShapeIR &g) const override {
+        Base::describe(g);
+#if defined(MI_ENABLE_METAL)
+        if constexpr (dr::is_metal_v<Float>) {
             auto shape = m_grid_texture.tensor().shape();
-            uint32_t resolution[3] = { static_cast<uint32_t>(shape[2]),
-                                       static_cast<uint32_t>(shape[1]),
-                                       static_cast<uint32_t>(shape[0]) };
+            size_t grid_count = shape[0] * shape[1] * shape[2];
+            g.data_size =
+                sizeof(MetalSDFHeader)
+                + (size_t) m_filled_voxel_count * sizeof(uint32_t)
+                + grid_count * sizeof(float);
+            g.fill_aabbs = [](const void *ctx, void *out) {
+                static_cast<const SDFGrid *>(ctx)->gpu_fill_aabbs(out);
+            };
+            g.fill_data = [](const void *ctx, void *out) {
+                static_cast<const SDFGrid *>(ctx)->gpu_fill_data(out);
+            };
+        }
+#endif
+#if defined(MI_ENABLE_CUDA)
+        if constexpr (dr::is_cuda_v<Float>) {
+            g.data_size = sizeof(OptixSDFGridData);
+            g.aabb_buffer = m_bboxes_ptr;
+            g.fill_data = [](const void *ctx, void *out) {
+                auto *self = const_cast<SDFGrid *>(
+                    static_cast<const SDFGrid *>(ctx));
+                auto shape = self->m_grid_texture.tensor().shape();
+                OptixSDFGridData &data = *static_cast<OptixSDFGridData *>(out);
+                data = OptixSDFGridData{};
+                data.voxel_indices = (uint32_t *) self->m_voxel_indices_ptr;
+                data.grid_data     = self->m_grid_texture.tensor().array().data();
+                data.res_x         = (uint32_t) shape[2];
+                data.res_y         = (uint32_t) shape[1];
+                data.res_z         = (uint32_t) shape[0];
+                ScalarVector3f vs  = self->m_voxel_size.scalar();
+                data.voxel_size    = { (float) vs[0], (float) vs[1],
+                                       (float) vs[2], 0.f };
+                shapedata::fill_affine3x4(
+                    self->m_to_world.scalar().inverse().matrix, data.to_object);
+            };
+        }
+#endif
+    }
 
-            OptixSDFGridData data = { (uint32_t *) m_voxel_indices_ptr,
-                                      resolution[0],
-                                      resolution[1],
-                                      resolution[2],
-                                      m_voxel_size.scalar()[0],
-                                      m_voxel_size.scalar()[1],
-                                      m_voxel_size.scalar()[2],
-                                      m_grid_texture.tensor().array().data(),
-                                      m_to_world.scalar().inverse() };
-            jit_memcpy_async(JitBackend::CUDA, m_optix_data_ptr, &data,
-                             sizeof(OptixSDFGridData));
+#if defined(MI_ENABLE_METAL)
+    void gpu_fill_aabbs(void *out) const {
+        if constexpr (dr::is_metal_v<Float>) {
+            // m_jit_bboxes holds 6 floats per AABB; stream it straight into the
+            // host-visible shared Metal buffer ``out`` (data() evaluates first).
+            jit_memcpy(JitBackend::Metal, out, m_jit_bboxes.data(),
+                       6 * (size_t) m_filled_voxel_count * sizeof(float));
+        } else {
+            (void) out;
         }
     }
 
-    void optix_build_input(OptixBuildInput &build_input) const override {
-        build_input.type                               = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
-        build_input.customPrimitiveArray.aabbBuffers   = &m_bboxes_ptr;
-        build_input.customPrimitiveArray.numPrimitives = m_filled_voxel_count;
-        build_input.customPrimitiveArray.strideInBytes = 6 * sizeof(float);
-        build_input.customPrimitiveArray.flags         = optix_geometry_flags;
-        build_input.customPrimitiveArray.numSbtRecords = 1;
+    void gpu_fill_data(void *out) const {
+        if constexpr (dr::is_metal_v<Float>) {
+            auto shape = m_grid_texture.tensor().shape();
+            size_t res_x = shape[2], res_y = shape[1], res_z = shape[0];
+            size_t grid_count = res_x * res_y * res_z;
+            size_t n_voxels = (size_t) m_filled_voxel_count;
+
+            // 1. Header
+            MetalSDFHeader hdr{};
+            hdr.res_x = (uint32_t) res_x;
+            hdr.res_y = (uint32_t) res_y;
+            hdr.res_z = (uint32_t) res_z;
+            hdr.n_voxels = (uint32_t) n_voxels;
+            ScalarVector3f vs = m_voxel_size.scalar();
+            hdr.voxel_size[0] = (float) vs.x();
+            hdr.voxel_size[1] = (float) vs.y();
+            hdr.voxel_size[2] = (float) vs.z();
+            hdr.pad = 0.f;
+            // World->object affine, row-major (rows 0..2; last row implicit).
+            shapedata::fill_affine3x4(m_to_world.scalar().inverse().matrix,
+                                      hdr.to_object);
+
+            uint8_t *dst = (uint8_t *) out;
+            std::memcpy(dst, &hdr, sizeof(hdr));
+            dst += sizeof(hdr);
+
+            // 2./3. Voxel indices and grid SDF values must be read on the host.
+            // Migrate both device arrays to the host and wait once (a single
+            // required readback), then copy them into the output slice -- rather
+            // than evaluating, syncing and staging each array separately.
+            auto vi   = dr::migrate(m_jit_voxel_indices, JitBackend::None);
+            auto grid = dr::migrate(m_grid_texture.tensor().array(),
+                                    JitBackend::None);
+            dr::sync_thread();
+
+            std::memcpy(dst, vi.data(), n_voxels * sizeof(uint32_t));
+            dst += n_voxels * sizeof(uint32_t);
+            std::memcpy(dst, grid.data(), grid_count * sizeof(float));
+        } else {
+            (void) out;
+        }
     }
 #endif
 
@@ -1098,12 +1181,6 @@ private:
 
         return voxel_grad(p, min_voxel_index);
     }
-
-#if defined(MI_ENABLE_CUDA)
-    static constexpr uint32_t optix_geometry_flags[1] = {
-        OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT
-    };
-#endif
 
     enum NormalMethod {
         Analytic,

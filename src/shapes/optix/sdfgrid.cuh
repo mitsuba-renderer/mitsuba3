@@ -2,17 +2,16 @@
 
 #include <math.h>
 #include <mitsuba/render/optix/common.h>
+#include <mitsuba/render/shapedata.h>
 
 struct OptixSDFGridData {
     uint32_t* voxel_indices;
+    float* grid_data;
     uint32_t res_x;
     uint32_t res_y;
     uint32_t res_z;
-    float voxel_size_x;
-    float voxel_size_y;
-    float voxel_size_z;
-    float* grid_data;
-    optix::Transform4f to_object;
+    mi_float4 voxel_size;     // xyz = voxel size (w unused)
+    mi_float4 to_object[3];   // world->object affine (row-major, 3 rows)
 };
 
 #ifdef __CUDACC__
@@ -157,11 +156,11 @@ extern "C" __global__ void __intersection__sdfgrid() {
     unsigned int voxel_index = sdf.voxel_indices[optixGetPrimitiveIndex()];
 
     Ray3f ray = get_ray();
-    ray = sdf.to_object.transform_ray(ray); // object-space
+    ray = apply_affine_ray(sdf.to_object, ray); // object-space
 
     Vector3f bbox_min = index_to_vec(voxel_index, sdf);
     Vector3f bbox_max = bbox_min + Vector3f(1.f, 1.f, 1.f);
-    Vector3f voxel_size(sdf.voxel_size_x, sdf.voxel_size_y, sdf.voxel_size_z);
+    Vector3f voxel_size(sdf.voxel_size.x, sdf.voxel_size.y, sdf.voxel_size.z);
     bbox_min *= voxel_size;
     bbox_max *= voxel_size;
 
@@ -187,29 +186,18 @@ extern "C" __global__ void __intersection__sdfgrid() {
         return;
     }
 
-    optix::Transform4f to_voxel;
-    to_voxel.matrix[0][0] = (float) (sdf.res_x - 1);
-    to_voxel.matrix[1][0] = 0.f;
-    to_voxel.matrix[2][0] = 0.f;
-    to_voxel.matrix[3][0] = 0.f;
-
-    to_voxel.matrix[0][1] = 0.f;
-    to_voxel.matrix[1][1] = (float) (sdf.res_y - 1);
-    to_voxel.matrix[2][1] = 0.f;
-    to_voxel.matrix[3][1] = 0.f;
-
-    to_voxel.matrix[0][2] = 0.f;
-    to_voxel.matrix[1][2] = 0.f;
-    to_voxel.matrix[2][2] = (float) (sdf.res_z - 1);
-    to_voxel.matrix[3][2] = 0.f;
-
     Vector3u voxel_position = index_to_vec(voxel_index, sdf);
-    to_voxel.matrix[0][3] = -1.f * ((float) voxel_position.x());
-    to_voxel.matrix[1][3] = -1.f * ((float) voxel_position.y());
-    to_voxel.matrix[2][3] = -1.f * ((float) voxel_position.z());
-    to_voxel.matrix[3][3] = 1.f;
 
-    ray = to_voxel.transform_ray(ray); // voxel-space [0, 1] x [0, 1] x [0, 1]
+    // Object space -> voxel-local [0,1]^3: a diagonal scale by (res - 1) plus a
+    // translation by -voxel_position (no full matrix needed).
+    Vector3f vox_scale((float) (sdf.res_x - 1),
+                       (float) (sdf.res_y - 1),
+                       (float) (sdf.res_z - 1));
+    Vector3f vox_trans(-(float) voxel_position.x(),
+                       -(float) voxel_position.y(),
+                       -(float) voxel_position.z());
+    ray.o = ray.o * vox_scale + vox_trans;
+    ray.d = ray.d * vox_scale;
 
     /**
        Herman Hansson-Söderlund, Alex Evans, and Tomas Akenine-Möller, Ray

@@ -83,26 +83,6 @@ template <typename Value_, size_t Size_> struct Matrix {
         return m[i];
     }
 
-    /// Debug print
-    DEVICE void print() const {
-        printf("[\n");
-        for (size_t j = 0; j < Size; j++) {
-            printf("  [");
-            for (size_t i = 0; i < Size; i++)
-                printf((i < Size - 1 ? "%f, " : "%f"), m[i][j]);
-            printf("]\n");
-        }
-        printf("]\n");
-    }
-
-    DEVICE Vector3f prod(const Vector3f &v) const {
-        Vector3f result(0.f);
-        for (size_t i = 0; i < 3; ++i)
-            for (size_t j = 0; j < 3; ++j)
-                result = ::fmaf(v[j], m[j][i], result[i]);
-        return result;
-    }
-
     DEVICE Vector3f transposed_prod(const Vector3f &v) const {
         Vector3f result = m[0];
         result *= v.x();
@@ -117,75 +97,31 @@ template <typename Value_, size_t Size_> struct Matrix {
 
 // Import some common Dr.Jit types
 using Matrix3f = Matrix<float, 3>;
-using Matrix4f = Matrix<float, 4>;
 
-struct Transform4f {
-    Matrix4f matrix;
-    Matrix4f inverse_transpose;
+#ifdef __CUDACC__
+/// FMA dot of an affine row with a homogeneous point/vector (w=1 point, w=0 vector).
+DEVICE float affine_dot(const float4 &r, const Vector3f &p, float w) {
+    return ::fmaf(r.x, p.x(), ::fmaf(r.y, p.y(), ::fmaf(r.z, p.z(), r.w * w)));
+}
 
-#ifndef __CUDACC__
-    Transform4f() = default;
+/// Apply a row-major affine transformation to a point.
+DEVICE Vector3f apply_affine_point(const float4 *m, const Vector3f &p) {
+    return Vector3f(affine_dot(m[0], p, 1.f),
+                    affine_dot(m[1], p, 1.f),
+                    affine_dot(m[2], p, 1.f));
+}
 
-    template <typename T>
-    Transform4f(const mitsuba::AffineTransform<mitsuba::Point<T, 4>> &t)
-        : matrix((Matrix4f) t.matrix),
-          inverse_transpose((Matrix4f) t.inverse_transpose) {}
-#else
-    DEVICE Transform4f() { }
+/// Apply a row-major affine transformation to a vector.
+DEVICE Vector3f apply_affine_vector(const float4 *m, const Vector3f &v) {
+    return Vector3f(affine_dot(m[0], v, 0.f),
+                    affine_dot(m[1], v, 0.f),
+                    affine_dot(m[2], v, 0.f));
+}
 
-    DEVICE Transform4f(float m[12], float inv[12]) {
-        for (size_t j = 0; j < 3; ++j)
-            for (size_t i = 0; i < 4; ++i)
-                matrix[i][j] = m[j*4 + i];
-        matrix[3][0] = matrix[3][1] = matrix[3][2] = 0.f;
-        matrix[3][3] = 1.f;
-
-        for (size_t j = 0; j < 3; ++j)
-            for (size_t i = 0; i < 4; ++i)
-                inverse_transpose[j][i] = inv[j*4 + i];
-        inverse_transpose[0][3] = inverse_transpose[1][3] = inverse_transpose[2][3] = 0.f;
-        inverse_transpose[3][3] = 1.f;
-    }
-
-    DEVICE Vector3f transform_point(const Vector3f &p) const {
-        Vector4f result;
-        Vector4f point = Vector4f(p.x(), p.y(), p.z(), 1);
-
-        for (size_t i = 0; i < 3; ++i)
-            result[i] = dot(matrix[i], point);
-        return Vector3f(result.x(), result.y(), result.z());
-    }
-
-    DEVICE Vector3f transform_normal(const Vector3f &n) const {
-        Vector4f result;
-        Vector4f vec = Vector4f(n.x(), n.y(), n.z(), 0);
-
-        for (size_t i = 0; i < 3; ++i)
-            result[i] = dot(inverse_transpose[i], vec);
-        return Vector3f(result.x(), result.y(), result.z());
-    }
-
-    DEVICE Vector3f transform_vector(const Vector3f &v) const {
-        Vector4f result;
-        Vector4f vec = Vector4f(v.x(), v.y(), v.z(), 0);
-
-        for (size_t i = 0; i < 3; ++i)
-            result[i] = dot(matrix[i], vec);
-        return Vector3f(result.x(), result.y(), result.z());
-    }
-
-    DEVICE Ray3f transform_ray(const Ray3f &ray) const {
-        return Ray3f(transform_point(ray.o), transform_vector(ray.d),
-                     ray.maxt, ray.time);
-    }
-
-    /// Debug print
-    DEVICE void print() const {
-        printf("matrix: ");
-        matrix.print();
-        printf("inverse_transpose: ");
-        inverse_transpose.print();
-    }
+/// Apply a row-major affine transformation to a ray.
+DEVICE Ray3f apply_affine_ray(const float4 *m, const Ray3f &ray) {
+    return Ray3f(apply_affine_point(m, ray.o), apply_affine_vector(m, ray.d),
+                 ray.maxt, ray.time);
+}
 #endif
-};
 } // end namespace optix

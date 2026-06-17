@@ -317,6 +317,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
             # contribute here. In order to get its contribution, we must create
             # a valid surface interaction object.
             pi_fg = dr.zeros(mi.PreliminaryIntersection3f)
+            pi_fg.valid = active
             pi_fg.t = 1
             pi_fg.prim_index = ss.prim_index
             pi_fg.prim_uv = ss.uv
@@ -347,6 +348,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
             # ----------- Estimate the radiance of the foreground -----------
             # Create a preliminary intersection point
             pi_fg = dr.zeros(mi.PreliminaryIntersection3f)
+            pi_fg.valid = active
             pi_fg.t = 1
             pi_fg.prim_index = ss.prim_index
             pi_fg.prim_uv = ss.uv

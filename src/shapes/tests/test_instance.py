@@ -216,3 +216,49 @@ def test03_ray_intersect_instance(variants_all_rgb, width):
         assert 'instance=0x0' in str(pi)
     else:
         assert ('instance=[' + '0x0, ' * (width - 1) + '0x0]') in str(pi)
+
+
+@pytest.mark.parametrize("shape", shapes)
+def test04_single_child_group_recovery(variants_vec_backends_once_rgb, shape):
+    """A ShapeGroup with exactly one child, instanced with a non-identity
+    transform, must recover ``si.shape`` (the child) and ``si.instance`` (the
+    Instance) correctly.
+
+    This exercises the GPU backends' per-geometry hit recovery: a one-child group
+    resolves its hit shape from ``pi.shape`` exactly like a multi-child group. The
+    directly-placed shape (``s``) is the ground truth the instanced hit
+    (``s_inst``) must match field-for-field."""
+    s, s_inst = example_scene(shape, scale=0.5, translate=[0.1, 0.2, 0.0],
+                              angle=15.0)
+
+    n = 7
+    inv_n = 1.0 / n
+    for x in range(n):
+        for y in range(n):
+            x_coord = (2 * (x * inv_n) - 1) + 0.014
+            y_coord = (2 * (y * inv_n) - 1) + 0.057
+            ray = mi.Ray3f(o=[x_coord, y_coord + 1, -8], d=[0.0, 0.0, 1.0],
+                           time=0.0, wavelengths=[])
+
+            # Trace the two scenes in separate kernels. On the OptiX backend a
+            # single kernel cannot use more than one pipeline/SBT, and ``s`` and
+            # ``s_inst`` each carry their own, so fusing both traces would abort.
+            si = s.ray_intersect(ray)
+            dr.eval(si)
+            si_inst = s_inst.ray_intersect(ray)
+
+            valid = si.is_valid()
+            assert dr.all(valid == si_inst.is_valid())
+            if dr.none(valid):
+                continue
+
+            # The instanced hit names the Instance as si.instance; the direct
+            # hit has none. The recovered child (si.shape) is never the Instance.
+            assert dr.all(~valid | (si_inst.instance != dr.zeros(mi.ShapePtr)))
+            assert dr.all(si.instance == dr.zeros(mi.ShapePtr))
+            assert dr.all(~valid | (si_inst.shape != si_inst.instance))
+
+            # The recovered child geometry must match the directly-placed shape.
+            assert dr.allclose(si.t, si_inst.t, atol=2e-2)
+            assert dr.allclose(si.p, si_inst.p, atol=2e-2)
+            assert dr.allclose(si.n, si_inst.n, atol=2e-2)

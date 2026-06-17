@@ -1,15 +1,11 @@
+#pragma once
+
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/shape.h>
 
-#if defined(MI_ENABLE_EMBREE)
-#  include <embree3/rtcore.h>
-#else
+#if !defined(MI_ENABLE_EMBREE)
 #  include <mitsuba/render/kdtree.h>
-#endif
-
-#if defined(MI_ENABLE_CUDA)
-#  include <mitsuba/render/optix/shapes.h>
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
@@ -26,10 +22,8 @@ public:
     ShapeGroup(const Properties &props);
     ~ShapeGroup();
 
-#if defined(MI_ENABLE_EMBREE)
-    RTCGeometry embree_geometry(RTCDevice device) override;
-#else
-    std::tuple<ScalarFloat, ScalarPoint2f, ScalarUInt32, ScalarUInt32>
+#if !defined(MI_ENABLE_EMBREE)
+    std::tuple<bool, ScalarFloat, ScalarPoint2f, ScalarUInt32, ScalarUInt32>
     ray_intersect_preliminary_scalar(const ScalarRay3f &ray) const override;
     bool ray_test_scalar(const ScalarRay3f &ray) const override;
 #endif
@@ -57,43 +51,25 @@ public:
 
     std::string to_string() const override;
 
-#if defined(MI_ENABLE_CUDA)
-    void optix_prepare_ias(const OptixDeviceContext& context,
-                           std::vector<OptixInstance>& instances,
-                           uint32_t instance_id,
-                           const ScalarAffineTransform4f& transf) override;
+    /// Set the freeze-visible acceleration-structure handles.
+    void set_accel_handles(std::vector<UInt64> handles) {
+        m_accel_handles = std::move(handles);
+    }
 
-    void optix_fill_hitgroup_records(
-        std::vector<HitGroupSbtRecord> &hitgroup_records,
-        const OptixProgramGroup *pg,
-        const OptixProgramGroupMapping &pg_mapping) override;
-
-    void optix_prepare_geometry() override;
-
-    /// Build OptiX geometry acceleration structures for this group's shapes
-    void optix_build_gas(const OptixDeviceContext& context);
-#endif
+    /// Read-only access to the contained shapes.
+    const std::vector<ref<Base>> &shapes() const { return m_shapes; }
 
     MI_DECLARE_CLASS(ShapeGroup)
 private:
     ScalarBoundingBox3f m_bbox;
     std::vector<ref<Base>> m_shapes;
 
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
     DynamicBuffer<UInt32> m_shapes_registry_ids;
 #endif
 
-#if defined(MI_ENABLE_EMBREE)
-    RTCScene m_embree_scene = nullptr;
-    std::vector<int> m_embree_geometries;
-#else
+#if !defined(MI_ENABLE_EMBREE)
     ref<ShapeKDTree> m_kdtree;
-#endif
-
-#if defined(MI_ENABLE_CUDA)
-    MiOptixAccelData m_accel;
-    /// OptiX hitgroup sbt offset
-    uint32_t m_sbt_offset;
 #endif
 
     uint32_t m_shape_types;
@@ -104,7 +80,7 @@ private:
     mutable bool m_parameters_grad_enabled_cache = false;
     mutable bool m_parameters_grad_enabled_dirty = true;
 
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
     MI_DECLARE_TRAVERSE_CB(m_shapes, m_shapes_registry_ids, m_accel_handles)
 #else
     MI_DECLARE_TRAVERSE_CB(m_shapes, m_accel_handles)

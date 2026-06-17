@@ -318,14 +318,12 @@ private:
             dr::maximum(dr::minimum(bin_index, (uint32_t) length - 1u), 1u) -
             1u;
 
-        Value w0, w1;
+        Value w1;
         if (length > 1) {
             Value b0 = dr::gather<Value>(*data, bin_index, active);
             Value b1 = dr::gather<Value>(*data, bin_index + 1, active);
             w1       = dr::clip((cond - b0) * dr::rcp(b1 - b0), 0.f, 1.f);
-            w0       = 1.0f - w1;
         } else {
-            w0 = 1.f;
             w1 = 0.f;
         }
 
