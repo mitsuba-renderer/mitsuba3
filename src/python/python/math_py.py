@@ -1,5 +1,40 @@
 import drjit as dr
 
+def chi2(obs, exp, pool_threshold):
+    '''
+    Pure-Python/numpy port of ``mitsuba::math::chi2()`` for backends that lack
+    float64 (e.g. Metal). Cells with expected frequency below ``pool_threshold``
+    are pooled into larger groups before contributing to the statistic.
+
+    Returns ``(statistic, dof, n_pooled_in, n_pooled_out)``.
+    '''
+    import numpy as np
+    obs = np.asarray(obs, dtype=np.float64)
+    exp = np.asarray(exp, dtype=np.float64)
+
+    # Cells above the threshold contribute directly (vectorized)
+    high = exp >= pool_threshold
+    diff = obs[high] - exp[high]
+    chsq = float(np.sum(diff * diff / exp[high]))
+    dof = int(np.count_nonzero(high))
+
+    # Pool the remaining non-empty cells, preserving the caller's ordering
+    low = ~high & ((obs != 0) | (exp != 0))
+    pooled_obs = pooled_exp = 0.0
+    n_pooled_in = n_pooled_out = 0
+    for o, e in zip(obs[low], exp[low]):
+        pooled_obs += o
+        pooled_exp += e
+        n_pooled_in += 1
+        if pooled_exp > pool_threshold:
+            d = pooled_obs - pooled_exp
+            chsq += d * d / pooled_exp
+            pooled_obs = pooled_exp = 0.0
+            n_pooled_out += 1
+            dof += 1
+
+    return chsq, dof - 1, n_pooled_in, n_pooled_out
+
 def rlgamma(a, x):
     'Regularized lower incomplete gamma function based on CEPHES'
 

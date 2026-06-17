@@ -110,7 +110,11 @@ endif()
 # ----------------------------------------------------------
 
 if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf)
-  set(MI_DEFAULT_VARIANTS "scalar_rgb,scalar_spectral,cuda_ad_rgb,llvm_ad_rgb,llvm_ad_spectral" CACHE STRING "Default Mitsuba variants that should be included if no mitsuba.conf file exists")
+  if (APPLE)
+    set(MI_DEFAULT_VARIANTS "scalar_rgb,scalar_spectral,metal_ad_rgb,llvm_ad_rgb,llvm_ad_spectral" CACHE STRING "Default Mitsuba variants that should be included if no mitsuba.conf file exists")
+  else()
+    set(MI_DEFAULT_VARIANTS "scalar_rgb,scalar_spectral,cuda_ad_rgb,llvm_ad_rgb,llvm_ad_spectral" CACHE STRING "Default Mitsuba variants that should be included if no mitsuba.conf file exists")
+  endif()
   string(REPLACE "," ";" MI_DEFAULT_VARIANTS "${MI_DEFAULT_VARIANTS}")
   message(STATUS "MI_DEFAULT_VARIANTS: ${MI_DEFAULT_VARIANTS}")
   mark_as_advanced(MI_DEFAULT_VARIANTS)
@@ -174,7 +178,11 @@ if (MI_VARIANTS MATCHES "llvm_")
   set(MI_ENABLE_LLVM ON)
 endif()
 
-if (MI_ENABLE_LLVM OR MI_ENABLE_CUDA)
+if (MI_VARIANTS MATCHES "metal_")
+  set(MI_ENABLE_METAL ON)
+endif()
+
+if (MI_ENABLE_LLVM OR MI_ENABLE_CUDA OR MI_ENABLE_METAL)
   set(MI_ENABLE_JIT ON)
 endif()
 
@@ -309,6 +317,11 @@ if (MI_ENABLE_LLVM)
   add_definitions(-DMI_ENABLE_LLVM=1)
 endif()
 
+if (MI_ENABLE_METAL)
+  message(STATUS "Mitsuba: using Metal for GPU ray tracing.")
+  add_definitions(-DMI_ENABLE_METAL=1)
+endif()
+
 if (MI_ENABLE_EMBREE)
   include_directories(${EMBREE_INCLUDE_DIRS})
   add_definitions(-DMI_ENABLE_EMBREE=1)
@@ -361,6 +374,9 @@ if (MSVC)
 
   # Don't complain about incompatible modifier on explicit instantiations
   add_compile_options(/wd4910)
+
+  # Member definitions of exported template classes live in separate .cpp files
+  add_compile_options(/wd4661)
 
   # Ensure source and execution charset is encoded as UTF-8
   add_compile_options(/utf-8)

@@ -1,12 +1,10 @@
 #pragma once
 
 #include <math.h>
-#include <math.h>
 #include <mitsuba/render/optix/common.h>
 #include <mitsuba/render/optix/math.cuh>
 
 struct OptixEllipsoidsData {
-    optix::BoundingBox3f bbox;
     float* extents;
     float* data;
 

@@ -475,6 +475,7 @@ class PathProjectiveIntegrator(PSIntegrator):
 
         # Create a preliminary intersection point
         pi_fg = dr.zeros(mi.PreliminaryIntersection3f)
+        pi_fg.valid = active
         pi_fg.t = 1
         pi_fg.prim_index = ss.prim_index
         pi_fg.prim_uv = ss.uv

@@ -41,8 +41,29 @@ endif()
 if (MI_ENABLE_CUDA)
   set(LIBRENDER_EXTRA_SRC
     optixdenoiser.cpp ${INC_DIR}/optixdenoiser.h
+    optix/accel.cpp optix/accel.h
     ${LIBRENDER_EXTRA_SRC}
   )
+endif()
+
+if (MI_ENABLE_METAL)
+  # Embed the prebuilt intersection-function metallib as a C byte array. The
+  # build never invokes the Metal toolchain. Regenerate via metal/Makefile.
+  include(${CMAKE_SOURCE_DIR}/ext/drjit/ext/drjit-core/cmake/bin2c.cmake)
+  set(METAL_ISECT_OUT "${CMAKE_CURRENT_BINARY_DIR}/metal_isect_lib.c")
+  drjit_embed_binary(
+    OUTPUT  ${METAL_ISECT_OUT}
+    SYMBOLS mi_metal_isect_metallib
+    INPUTS  ${CMAKE_CURRENT_SOURCE_DIR}/metal/intersection_functions.metallib
+    SIZE)
+
+  set(LIBRENDER_EXTRA_SRC
+    metal_accel.mm metal/accel.h metal/shapes.h
+    "${METAL_ISECT_OUT}"
+    ${LIBRENDER_EXTRA_SRC}
+  )
+  set_source_files_properties(metal_accel.mm
+    PROPERTIES COMPILE_FLAGS "-fobjc-arc")
 endif()
 
 add_library(mitsuba-render OBJECT
@@ -66,6 +87,7 @@ add_library(mitsuba-render OBJECT
   phase.cpp        ${INC_DIR}/phase.h
   sampler.cpp      ${INC_DIR}/sampler.h
   scene.cpp        ${INC_DIR}/scene.h
+  scene_ir.cpp     ${INC_DIR}/scene_ir.h
   sensor.cpp       ${INC_DIR}/sensor.h
   shape.cpp        ${INC_DIR}/shape.h
   texture.cpp      ${INC_DIR}/texture.h
@@ -99,6 +121,10 @@ endif()
 
 target_link_libraries(mitsuba-render PUBLIC drjit)
 target_link_libraries(mitsuba-render PUBLIC struct-jit)
+
+if (MI_ENABLE_METAL)
+  target_link_libraries(mitsuba-render PRIVATE "-framework Metal" "-framework Foundation")
+endif()
 
 if (MI_ENABLE_JIT)
   target_link_libraries(mitsuba-render PUBLIC drjit-core)

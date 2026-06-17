@@ -10,6 +10,7 @@
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
+#include <mitsuba/render/scene_ir.h>
 #include <iostream>
 
 #include <drjit/texture.h>
@@ -17,6 +18,12 @@
 #if defined(MI_ENABLE_EMBREE)
 #include <embree3/rtcore.h>
 #endif
+
+#if defined(MI_ENABLE_METAL)
+#include "../render/metal/shapes.h"
+#endif
+
+#include "../render/bbox_reduce.h"
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -366,6 +373,7 @@ public:
         pi.prim_uv.y() = 0;
         pi.prim_index = segment_idx;
         pi.shape = this;
+        pi.valid = active;
         dr::masked(pi.t, active) = eps * 10;
 
         /* Create a ray at the intersection point and offset it by epsilon in
@@ -984,6 +992,11 @@ public:
         );
         si.n = si.sh_frame.n = n;
 
+        // Embree and OptiX cull curve backfaces at trace time; Metal's HW
+        // intersector reports both sides. Drop inside hits to match (a no-op
+        // on backends that already cull).
+        this->cull_backface(si, ray, active);
+
         if (need_uv) {
             Float u = dr::atan2(dr::dot(u_rot, rad_vec_normalized),
                                 dr::dot(u_rad, rad_vec_normalized));
@@ -1016,48 +1029,14 @@ public:
     //! @}
     // =============================================================
 
-#if defined(MI_ENABLE_EMBREE)
-    RTCGeometry embree_geometry(RTCDevice device) override {
-        RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
-        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4,
-                                   m_control_points.data(), 0, 4 * sizeof(InputFloat),
-                                   m_control_point_count);
-        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT,
-                                   m_indices.data(), 0, 1 * sizeof(ScalarIndex),
-                                   dr::width(m_indices));
-        rtcCommitGeometry(geom);
-        return geom;
+    void describe(ShapeIR &g) const override {
+        Base::describe(g);
+        g.kind = ShapeIR::Kind::BSplineCurve;
+        g.cp_count = (size_t) m_control_point_count;
+        g.seg_count = (size_t) dr::width(m_indices);
+        g.cp_ptr  = m_control_points.data();
+        g.seg_ptr = m_indices.data();
     }
-#endif
-
-#if defined(MI_ENABLE_CUDA)
-    void optix_prepare_geometry() override { }
-
-    void optix_build_input(OptixBuildInput &build_input) const override {
-        m_vertex_buffer_ptr = (CUdeviceptr*) m_control_points.data();
-        m_radius_buffer_ptr = (CUdeviceptr*) (m_control_points.data() + 3);
-
-        build_input.type                            = OPTIX_BUILD_INPUT_TYPE_CURVES;
-        build_input.curveArray.curveType            = OPTIX_PRIMITIVE_TYPE_ROUND_CUBIC_BSPLINE;
-        build_input.curveArray.numPrimitives        = (unsigned int) dr::width(m_indices);
-
-        build_input.curveArray.vertexBuffers        = (CUdeviceptr*) &m_vertex_buffer_ptr;
-        build_input.curveArray.numVertices          = m_control_point_count;
-        build_input.curveArray.vertexStrideInBytes  = sizeof( InputFloat ) * 4;
-
-        build_input.curveArray.widthBuffers         = (CUdeviceptr*) &m_radius_buffer_ptr;
-        build_input.curveArray.widthStrideInBytes   = sizeof( InputFloat ) * 4;
-
-        build_input.curveArray.indexBuffer          = (CUdeviceptr) m_indices.data();
-        build_input.curveArray.indexStrideInBytes   = sizeof( ScalarIndex );
-
-        build_input.curveArray.normalBuffers        = 0;
-        build_input.curveArray.normalStrideInBytes  = 0;
-        build_input.curveArray.flag                 = OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT;
-        build_input.curveArray.primitiveIndexOffset = 0;
-        build_input.curveArray.endcapFlags          = OPTIX_CURVE_ENDCAP_DEFAULT;
-    }
-#endif
 
     ScalarBoundingBox3f bbox() const override {
         return m_bbox;
@@ -1094,21 +1073,25 @@ private:
     }
 
     void recompute_bbox() {
-        auto&& control_points = dr::migrate(m_control_points, JitBackend::None);
-        if constexpr (dr::is_jit_v<Float>)
-            dr::sync_thread();
-        const InputFloat *ptr = control_points.data();
-
         m_bbox.reset();
-        for (ScalarSize i = 0; i < m_control_point_count; ++i) {
-            ScalarPoint3f p(ptr[4 * i + 0], ptr[4 * i + 1], ptr[4 * i + 2]);
-            ScalarFloat r(ptr[4 * i + 3]);
-            m_bbox.expand(p + r * ScalarVector3f(-1, 0, 0));
-            m_bbox.expand(p + r * ScalarVector3f(1, 0, 0));
-            m_bbox.expand(p + r * ScalarVector3f(0, -1, 0));
-            m_bbox.expand(p + r * ScalarVector3f(0, 1, 0));
-            m_bbox.expand(p + r * ScalarVector3f(0, 0, -1));
-            m_bbox.expand(p + r * ScalarVector3f(0, 0, 1));
+        if (m_control_point_count == 0)
+            return;
+
+        if constexpr (dr::is_jit_v<Float>) {
+            m_bbox = device_reduce_bbox<ScalarPoint3f>(
+                m_control_points, m_control_point_count, 4, /* radius_offset = */ 3);
+        } else {
+            const InputFloat *ptr = m_control_points.data();
+            for (ScalarSize i = 0; i < m_control_point_count; ++i) {
+                ScalarPoint3f p(ptr[4 * i + 0], ptr[4 * i + 1], ptr[4 * i + 2]);
+                ScalarFloat r(ptr[4 * i + 3]);
+                m_bbox.expand(p + r * ScalarVector3f(-1, 0, 0));
+                m_bbox.expand(p + r * ScalarVector3f(1, 0, 0));
+                m_bbox.expand(p + r * ScalarVector3f(0, -1, 0));
+                m_bbox.expand(p + r * ScalarVector3f(0, 1, 0));
+                m_bbox.expand(p + r * ScalarVector3f(0, 0, -1));
+                m_bbox.expand(p + r * ScalarVector3f(0, 0, 1));
+            }
         }
     }
 
@@ -1297,12 +1280,6 @@ private:
     mutable FloatStorage m_control_points;
 
     static constexpr float silhouette_offset = 5e-3f;
-
-#if defined(MI_ENABLE_CUDA)
-    // For OptiX build input
-    mutable CUdeviceptr* m_vertex_buffer_ptr = nullptr;
-    mutable CUdeviceptr* m_radius_buffer_ptr = nullptr;
-#endif
 
     MI_TRAVERSE_CB(Base, m_curves_prim_idx, m_indices, m_control_points)
 };

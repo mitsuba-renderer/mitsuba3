@@ -1,5 +1,10 @@
 #include <embree3/rtcore.h>
 #include <nanothread/nanothread.h>
+#include <mitsuba/render/scene.h>
+#include <mitsuba/render/shapegroup.h>
+#include <mitsuba/render/scene_ir.h>
+#include "accel_cpu_common.h"
+#include "embree.h"
 #include <thread>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -8,17 +13,6 @@ static_assert(sizeof(RTCIntersectContext) == 24 /* Dr.Jit assumes this */);
 
 static uint32_t embree_threads = 0;
 static RTCDevice embree_device = nullptr;
-
-template <typename Float>
-struct EmbreeState {
-    MI_IMPORT_CORE_TYPES()
-    RTCScene accel;
-    std::vector<int> geometries;
-    DynamicBuffer<UInt32> shapes_registry_ids;
-    bool is_nested_scene = false;
-    void *func_ptr = nullptr;
-    UInt64 func_handle;
-};
 
 static void embree_error_callback(void * /*user_ptr */, RTCError code, const char *str) {
     Log(Warn, "Embree device error %i: %s.", (int) code, str);
@@ -83,8 +77,126 @@ void rtcIntersect32(const int *valid, RTCScene scene,
     }
 }
 
-MI_VARIANT void
-Scene<Float, Spectrum>::accel_init_cpu(const Properties &props) {
+// EllipsoidsMesh: drop back-facing triangle hits (d·Ng > 0).
+template <size_t N, typename RTCRay_, typename RTCHit_>
+static void embree_backface_cull_packet(const RTCFilterFunctionNArguments *args,
+                                        RTCRay_ *ray, RTCHit_ *hit) {
+    using FloatP = dr::Packet<float, N>;
+    using Int32P = dr::Packet<int, N>;
+    using Vector3fP = dr::Array<FloatP, 3>;
+
+    Vector3fP d(dr::load_aligned<FloatP>(ray->dir_x),
+                dr::load_aligned<FloatP>(ray->dir_y),
+                dr::load_aligned<FloatP>(ray->dir_z));
+    Vector3fP n(dr::load_aligned<FloatP>(hit->Ng_x),
+                dr::load_aligned<FloatP>(hit->Ng_y),
+                dr::load_aligned<FloatP>(hit->Ng_z));
+
+    Int32P valid = dr::load_aligned<Int32P>(args->valid);
+    valid = dr::select(dr::dot(d, n) > 0.f, 0, valid);
+    dr::store_aligned(args->valid, valid);
+}
+
+static void embree_backface_cull(const RTCFilterFunctionNArguments *args) {
+    switch (args->N) {
+        case 1: {
+            const RTCRay *ray = (const RTCRay *) args->ray;
+            const RTCHit *hit = (const RTCHit *) args->hit;
+            dr::Array<float, 3> d(ray->dir_x, ray->dir_y, ray->dir_z),
+                                n(hit->Ng_x, hit->Ng_y, hit->Ng_z);
+            if (dr::dot(d, n) > 0.f)
+                *args->valid = 0;
+            break;
+        }
+        case 4:  embree_backface_cull_packet<4>(args, (RTCRay4 *) args->ray, (RTCHit4 *) args->hit); break;
+        case 8:  embree_backface_cull_packet<8>(args, (RTCRay8 *) args->ray, (RTCHit8 *) args->hit); break;
+        case 16: embree_backface_cull_packet<16>(args, (RTCRay16 *) args->ray, (RTCHit16 *) args->hit); break;
+        default: Throw("embree_backface_cull(): unsupported packet size!");
+    }
+}
+
+/// Build one Embree geometry from a \ref ShapeIR.
+template <typename Float, typename Spectrum>
+static RTCGeometry
+embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
+                     const tsl::robin_map<const void *, RTCSceneTy *,
+                                          PointerHasher> &group_scenes) {
+    ShapeIR g;
+    shape->describe(g);
+
+    switch (g.kind) {
+        case ShapeIR::Kind::Custom: {
+            RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
+            rtcSetGeometryUserPrimitiveCount(geom, (unsigned int) g.prim_count);
+            rtcSetGeometryUserData(geom, (void *) shape);
+            rtcSetGeometryBoundsFunction(geom, embree_bbox<Float, Spectrum>, nullptr);
+            rtcSetGeometryIntersectFunction(geom, embree_intersect<Float, Spectrum>);
+            rtcSetGeometryOccludedFunction(geom, embree_occluded<Float, Spectrum>);
+            rtcCommitGeometry(geom);
+            return geom;
+        }
+
+        case ShapeIR::Kind::Triangles:
+        case ShapeIR::Kind::TrianglesCulled: {
+            RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
+            rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
+                                       RTC_FORMAT_FLOAT3, g.vertex_ptr, 0,
+                                       3 * sizeof(float), g.vertex_count);
+            rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0,
+                                       RTC_FORMAT_UINT3, g.index_ptr, 0,
+                                       3 * sizeof(uint32_t), g.face_count);
+            if (g.kind == ShapeIR::Kind::TrianglesCulled) {
+                rtcSetGeometryIntersectFilterFunction(geom, embree_backface_cull);
+                rtcSetGeometryOccludedFilterFunction(geom, embree_backface_cull);
+            }
+            rtcCommitGeometry(geom);
+            return geom;
+        }
+
+        case ShapeIR::Kind::BSplineCurve:
+        case ShapeIR::Kind::LinearCurve: {
+            RTCGeometry geom = rtcNewGeometry(
+                device, g.kind == ShapeIR::Kind::BSplineCurve
+                            ? RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE
+                            : RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE);
+            rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
+                                       RTC_FORMAT_FLOAT4, g.cp_ptr, 0,
+                                       4 * sizeof(float), g.cp_count);
+            rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0,
+                                       RTC_FORMAT_UINT, g.seg_ptr, 0,
+                                       sizeof(uint32_t), g.seg_count);
+            rtcCommitGeometry(geom);
+            return geom;
+        }
+
+        case ShapeIR::Kind::Instance: {
+            RTCScene nested = group_scenes.at(g.group_id);
+
+            RTCGeometry inst = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_INSTANCE);
+            rtcSetGeometryInstancedScene(inst, nested);
+            rtcSetGeometryTimeStepCount(inst, 1);
+            // Column-major 3x4 (g.to_world[col*3+row]) -> column-major 4x4.
+            float M[16];
+            for (int col = 0; col < 4; ++col) {
+                for (int row = 0; row < 3; ++row)
+                    M[col * 4 + row] = g.to_world[col * 3 + row];
+                M[col * 4 + 3] = (col == 3) ? 1.f : 0.f;
+            }
+            rtcSetGeometryTransform(inst, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, M);
+            rtcCommitGeometry(inst);
+            return inst;
+        }
+    }
+    return nullptr; // unreachable
+}
+
+// -----------------------------------------------------------------------
+//  EmbreeAccel<Float, Spectrum> -- lifecycle
+// -----------------------------------------------------------------------
+
+template <typename Float, typename Spectrum>
+void EmbreeAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
+                                        const Properties &props) {
     if (!embree_device) {
         // Tricky: Embree allows at most 2*hardware_concurrency() builder
         // threads due to allocation of a thread-local data structure in
@@ -101,157 +213,164 @@ Scene<Float, Spectrum>::accel_init_cpu(const Properties &props) {
 
     Timer timer;
 
-    m_accel = new EmbreeState<Float>();
-    EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
-
     // Check if another scene was passed to the constructor
     for (auto &prop : props.objects()) {
-        if (Scene *scene = prop.try_get<Scene>()) {
-            s.is_nested_scene = true;
+        if (prop.try_get<Scene<Float, Spectrum>>()) {
+            is_nested_scene = true;
             break;
         }
     }
 
-    s.accel = rtcNewScene(embree_device);
-    rtcSetSceneBuildQuality(s.accel, RTC_BUILD_QUALITY_HIGH);
+    accel = rtcNewScene(embree_device);
+    rtcSetSceneBuildQuality(accel, RTC_BUILD_QUALITY_HIGH);
     bool use_robust = props.get<bool>("embree_use_robust_intersections", false);
-    rtcSetSceneFlags(s.accel, use_robust ? RTC_SCENE_FLAG_ROBUST : RTC_SCENE_FLAG_NONE);
+    rtcSetSceneFlags(accel, use_robust ? RTC_SCENE_FLAG_ROBUST : RTC_SCENE_FLAG_NONE);
 
     ScopedPhase phase(ProfilerPhase::InitAccel);
-    accel_parameters_changed_cpu();
+    rebuild(scene);
 
     Log(Info, "Embree ready. (took %s)",
         util::time_string((float) timer.value()));
 
-    if constexpr (dr::is_llvm_v<Float>) {
-        // Get shapes registry ids
-        if (!m_shapes.empty()) {
-            std::unique_ptr<uint32_t[]> data(new uint32_t[m_shapes.size()]);
-            for (size_t i = 0; i < m_shapes.size(); i++)
-                data[i] = jit_registry_id(m_shapes[i]);
-            s.shapes_registry_ids
-                = dr::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
-        } else {
-            s.shapes_registry_ids = dr::zeros<DynamicBuffer<UInt32>>();
-        }
-    }
+    if constexpr (dr::is_llvm_v<Float>)
+        shapes_registry_ids = build_registry_ids<Float, Spectrum>(scene->m_shapes);
 }
 
-MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
+template <typename Float, typename Spectrum>
+void EmbreeAccel<Float, Spectrum>::rebuild(
+    Scene<Float, Spectrum> *scene) {
     if constexpr (dr::is_llvm_v<Float>)
         dr::sync_thread();
 
-    EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
+    for (int geo : geometries)
+        rtcDetachGeometry(accel, geo);
+    geometries.clear();
 
-    for (int geo : s.geometries)
-        rtcDetachGeometry(s.accel, geo);
-    s.geometries.clear();
+    // Rebuild nested scenes first so Instances can reference them. Attach all
+    // geometry before the single LLVM sync below.
+    for (auto &kv : group_scenes)
+        rtcReleaseScene(kv.second);
+    group_scenes.clear();
 
-    for (Shape *shape : m_shapes) {
-        RTCGeometry geom = shape->embree_geometry(embree_device);
-        s.geometries.push_back(rtcAttachGeometry(s.accel, geom));
+    std::vector<RTCScene> nested_scenes;
+    nested_scenes.reserve(scene->m_shapegroups.size());
+    for (auto &group : scene->m_shapegroups) {
+        RTCScene nested = rtcNewScene(embree_device);
+        for (const ref<Shape> &child : group->shapes()) {
+            RTCGeometry cg = embree_make_geometry<Float, Spectrum>(
+                embree_device, child.get(), group_scenes);
+            rtcAttachGeometry(nested, cg);
+            rtcReleaseGeometry(cg);
+        }
+        // Publish the uncommitted nested scene for top-level Instances.
+        group_scenes[(const void *) group.get()] = nested;
+        nested_scenes.push_back(nested);
+    }
+
+    for (Shape *shape : scene->m_shapes) {
+        RTCGeometry geom = embree_make_geometry<Float, Spectrum>(
+            embree_device, shape, group_scenes);
+        geometries.push_back(rtcAttachGeometry(accel, geom));
         rtcReleaseGeometry(geom);
     }
 
-    // Ensure shape data pointers are fully evaluated before building the BVH
+    // One sync for the whole rebuild: all geometry (nested + top-level) is now
+    // evaluated before any BVH build reads it.
     if constexpr (dr::is_llvm_v<Float>)
         dr::sync_thread();
 
+    // Commit the nested scenes (each must be committed before the top-level
+    // scene that instances it).
+    for (RTCScene nested : nested_scenes)
+        rtcCommitScene(nested);
+
     // Avoid getting in a deadlock when building a nested scene while rendering
-    if (s.is_nested_scene) {
-        rtcCommitScene(s.accel);
+    if (is_nested_scene) {
+        rtcCommitScene(accel);
     } else {
         dr::parallel_for(
             dr::blocked_range<size_t>(0, embree_threads, 1),
             [&](const dr::blocked_range<size_t> &) {
-                rtcJoinCommitScene(s.accel);
+                rtcJoinCommitScene(accel);
             }
         );
     }
 
-    /* Set up a callback on the handle variable to release the Embree
-       acceleration data structure (IAS) when this variable is freed. This
-       ensures that the lifetime of the IAS goes beyond the one of the Scene
-       instance if there are still some pending ray tracing calls (e.g. non
-       evaluated variables depending on a ray tracing call). */
+    // The RTCScene pointer and entry points stay stable across rebuilds, so
+    // initialize the handles only once. The cleanup callback keeps the native
+    // scene alive until pending ray-tracing kernels finish.
     if constexpr (dr::is_llvm_v<Float>) {
-        // Prevents the IAS to be released when updating the scene parameters
-        if (m_accel_handle.index())
-            jit_var_set_callback(m_accel_handle.index(), nullptr, nullptr);
-        m_accel_handle = UInt64::map_(s.accel, 1, false);
-        jit_var_set_callback(
-            m_accel_handle.index(),
-            [](uint32_t /* index */, int free, void *payload) {
-                if (free) {
-                    // Enqueue delayed function to ensure all ray tracing
-                    // kernels are terminated before releasing the scene. This
-                    // is needed in the scenario where we record a ray-tracing
-                    // operation, the scene is destroyed, and we only trigger an
-                    // evaluation afterwards.
+        if (!accel_handle.index()) {
+            init_mapped_handle(
+                accel_handle, (void *) accel,
+                [](uint32_t /* index */, int free, void *payload) {
+                    if (free)
+                        jit_enqueue_host_func(
+                            JitBackend::LLVM,
+                            [](void *p) { rtcReleaseScene((RTCScene) p); },
+                            payload);
+                },
+                (void *) accel);
 
-                    jit_enqueue_host_func(
-                        JitBackend::LLVM,
-                        [](void *p) {
-                            EmbreeState<Float> *s = (EmbreeState<Float> *) p;
-                            rtcReleaseScene(s->accel);
-                            delete s;
-                        },
-                        payload
-                    );
-                }
-            },
-            (void *) m_accel
-        );
+            // The LLVM vector width is fixed over the scene's lifetime.
+            uint32_t jit_width = jit_llvm_vector_width();
+            switch (jit_width) {
+                case 1:  func_ptr = (void *) rtcIntersect1;  occlude_func_ptr = (void *) rtcOccluded1;  break;
+                case 4:  func_ptr = (void *) rtcIntersect4;  occlude_func_ptr = (void *) rtcOccluded4;  break;
+                case 8:  func_ptr = (void *) rtcIntersect8;  occlude_func_ptr = (void *) rtcOccluded8;  break;
+                case 16: func_ptr = (void *) rtcIntersect16; occlude_func_ptr = (void *) rtcOccluded16; break;
+                case 32: func_ptr = (void *) rtcIntersect32; occlude_func_ptr = (void *) rtcOccluded32; break;
+                default:
+                    Throw("EmbreeAccel::rebuild(): Dr.Jit is configured for "
+                          "vectors of width %u, which is not supported by "
+                          "Embree!", jit_width);
+            }
 
-        // To support frozen functions the func_ptr has to exist as a variable
-        // when the scene is traversed.
-        // Since the LLVM vector width should not change over the lifetime of
-        // the scene, we determine the intersection function here.
-        uint32_t jit_width = jit_llvm_vector_width();
-        void *func_ptr = nullptr;
-        switch (jit_width) {
-            case 1:  func_ptr = (void *) rtcIntersect1;  break;
-            case 4:  func_ptr = (void *) rtcIntersect4;  break;
-            case 8:  func_ptr = (void *) rtcIntersect8;  break;
-            case 16: func_ptr = (void *) rtcIntersect16; break;
-            case 32: func_ptr = (void *) rtcIntersect32; break;
-            default:
-                Throw("accel_init_cpu(): Dr.Jit is configured for vectors of "
-                      "width %u, which is not supported by Embree!",
-                      jit_width);
+            map_func_handles(func_handle, occlude_handle, func_ptr,
+                             occlude_func_ptr);
         }
-
-        s.func_ptr = func_ptr;
-        s.func_handle = UInt64::map_(func_ptr, 1, false);
     }
-
-    clear_shapes_dirty();
 }
 
-MI_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
+template <typename Float, typename Spectrum>
+void EmbreeAccel<Float, Spectrum>::release() {
+    if (!accel)
+        return; // already released
     if constexpr (dr::is_llvm_v<Float>) {
-        // Ensure all ray tracing kernels are terminated before releasing the scene
+        // Ensure all ray tracing kernels are terminated before releasing the
+        // scene.
         dr::sync_thread();
 
-        /* Decrease the reference count of the handle variable. This will
-           trigger the release of the Embree acceleration data structure if no
-           ray tracing calls are pending. */
-        m_accel_handle = 0;
-    } else {    
-        // Immediately release Embree structures in non-JIT modes.
-        EmbreeState<Float> *s = (EmbreeState<Float> *) m_accel;
-        rtcReleaseScene(s->accel);
-        delete s;
+        // Drop the reference count of the handle variable. This will trigger
+        // the deferred release of the Embree scene if no ray tracing calls are
+        // pending.
+        accel_handle = 0;
+    } else {
+        // Immediately release Embree structures in scalar mode.
+        rtcReleaseScene(accel);
     }
-    m_accel = nullptr;
+
+    // Drop our nested-scene references. The top-level scene's instance
+    // geometries keep them alive until it is itself released.
+    for (auto &kv : group_scenes)
+        rtcReleaseScene(kv.second);
+    group_scenes.clear();
+
+    accel = nullptr;
 }
 
-MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
-Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
-                                                      Mask coherent,
-                                                      Mask active) const {
+// -----------------------------------------------------------------------
+//  EmbreeAccel<Float, Spectrum> -- ray queries
+// -----------------------------------------------------------------------
+
+template <typename Float, typename Spectrum>
+typename EmbreeAccel<Float, Spectrum>::PreliminaryIntersection3f
+EmbreeAccel<Float, Spectrum>::ray_intersect_preliminary(
+    const Scene<Float, Spectrum> *scene, const Ray3f &ray, Mask coherent,
+    bool /*reorder*/, UInt32 /*reorder_hint*/, uint32_t /*reorder_hint_bits*/,
+    Mask active) const {
     using Single = dr::float32_array_t<Float>;
-    EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
+    DRJIT_MARK_USED(scene);
 
     // Be careful with 'ray.maxt' in double precision variants
     Single ray_maxt = Single(ray.maxt);
@@ -278,9 +397,9 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
         rh.ray.flags = 0;
         rh.hit.geomID = (uint32_t) -1;
 
-        rtcIntersect1(s.accel, &context, &rh);
+        rtcIntersect1(accel, &context, &rh);
 
-        if (rh.ray.tfar != ray_maxt) {
+        if (rh.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
             uint32_t shape_index = rh.hit.geomID;
             uint32_t prim_index  = rh.hit.primID;
 
@@ -291,12 +410,13 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
             bool hit_instance = inst_index != RTC_INVALID_GEOMETRY_ID;
             uint32_t index = hit_instance ? inst_index : shape_index;
 
-            ShapePtr shape = m_shapes[index];
+            ShapePtr shape = scene->m_shapes[index];
             if (hit_instance)
                 pi.instance = shape;
             else
                 pi.shape = shape;
 
+            pi.valid = true;
             pi.shape_index = shape_index;
 
             pi.t = rh.ray.tfar;
@@ -306,83 +426,32 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
 
         return pi;
     } else if constexpr (dr::is_llvm_v<Float>) {
-        void *scene_ptr = (void *) s.accel,
-             *func_ptr  = s.func_ptr;
-
-        UInt64 func_v  = UInt64::steal(jit_var_pointer(
-                   JitBackend::LLVM, func_ptr, s.func_handle.index(), 0)),
-               scene_v = UInt64::steal(jit_var_pointer(
-                   JitBackend::LLVM, scene_ptr, m_accel_handle.index(), 0));
-
-        UInt32 zero = dr::zeros<UInt32>();
-
         dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
-        Single ray_mint(0.f), ray_time(ray.time);
+        Single ray_time(ray.time);
 
-        uint32_t in[14] = { coherent.index(),  active.index(),
-                            ray_o.x().index(), ray_o.y().index(),
-                            ray_o.z().index(), ray_mint.index(),
-                            ray_d.x().index(), ray_d.y().index(),
-                            ray_d.z().index(), ray_time.index(),
-                            ray_maxt.index(),  zero.index(),
-                            zero.index(),      zero.index() };
+        uint32_t out[8] { };
+        cpu_llvm_ray_trace<Float>((void *) func_ptr, func_handle.index(),
+                                  (void *) accel, accel_handle.index(), ray_o,
+                                  ray_d, ray_time, ray_maxt, coherent, active,
+                                  0, out);
 
-        uint32_t out[6] { };
-
-        jit_llvm_ray_trace(func_v.index(), scene_v.index(), 0, in, out);
-
-        PreliminaryIntersection3f pi;
-
-        Float t(Single::steal(out[0]));
-
-        pi.prim_uv = Vector2f(Single::steal(out[1]),
-                              Single::steal(out[2]));
-
-        pi.prim_index  = UInt32::steal(out[3]);
-        pi.shape_index = UInt32::steal(out[4]);
-
-        UInt32 inst_index = UInt32::steal(out[5]);
-
-        Mask hit = active && (t != ray_maxt);
-
-        pi.t = dr::select(hit, t, dr::Infinity<Float>);
-
-        // Set si.instance and si.shape
-        Mask hit_inst = hit && (inst_index != RTC_INVALID_GEOMETRY_ID);
-        UInt32 index = dr::select(hit_inst, inst_index, pi.shape_index);
-
-        ShapePtr shape = dr::gather<UInt32>(s.shapes_registry_ids, index, hit);
-
-        pi.instance = shape & hit_inst;
-        pi.shape    = shape & !hit_inst;
-
-        return pi;
+        // Embree traces in float32, so the hit fields are stolen as ``Single``.
+        return decode_cpu_llvm_pi<Float, Spectrum, Single>(out,
+                                                           shapes_registry_ids);
     } else {
         DRJIT_MARK_USED(ray);
         DRJIT_MARK_USED(coherent);
         DRJIT_MARK_USED(active);
-        Throw("ray_intersect_preliminary_cpu() should only be called in CPU mode.");
+        Throw("EmbreeAccel::ray_intersect_preliminary() should only be called in CPU mode.");
     }
 }
 
-MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
-Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, uint32_t ray_flags, Mask coherent, Mask active) const {
-    if constexpr (!dr::is_cuda_v<Float>) {
-        PreliminaryIntersection3f pi = ray_intersect_preliminary_cpu(ray, coherent, active);
-        return pi.compute_surface_interaction(ray, ray_flags, active);
-    } else {
-        DRJIT_MARK_USED(ray);
-        DRJIT_MARK_USED(ray_flags);
-        DRJIT_MARK_USED(coherent);
-        DRJIT_MARK_USED(active);
-        Throw("ray_intersect_cpu() should only be called in CPU mode.");
-    }
-}
-
-MI_VARIANT typename Scene<Float, Spectrum>::Mask
-Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask coherent, Mask active) const {
+template <typename Float, typename Spectrum>
+typename EmbreeAccel<Float, Spectrum>::Mask
+EmbreeAccel<Float, Spectrum>::ray_test(const Scene<Float, Spectrum> * /*scene*/,
+                                       const Ray3f &ray, Mask coherent,
+                                       Mask active) const {
     using Single = dr::float32_array_t<Float>;
-    EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
 
     // Be careful with 'ray.maxt' in double precision variants
     Single ray_maxt = Single(ray.maxt);
@@ -406,65 +475,37 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask coherent, Mask activ
         ray2.id = 0;
         ray2.flags = 0;
 
-        rtcOccluded1(s.accel, &context, &ray2);
+        rtcOccluded1(accel, &context, &ray2);
 
-        return ray2.tfar != ray_maxt;
+        return ray2.tfar < 0.f;
     } else if constexpr (dr::is_llvm_v<Float>) {
-        void *scene_ptr = (void *) s.accel,
-             *func_ptr  = s.func_ptr;
-
-        UInt64 func_v  = UInt64::steal(jit_var_pointer(
-                   JitBackend::LLVM, func_ptr, s.func_handle.index(), 0)),
-               scene_v = UInt64::steal(jit_var_pointer(
-                   JitBackend::LLVM, scene_ptr, m_accel_handle.index(), 0));
-
-        UInt32 zero = dr::zeros<UInt32>();
-
         // Conversion, in case this is a double precision build
         dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
-        Single ray_mint(0.f), ray_time(ray.time);
+        Single ray_time(ray.time);
 
-        uint32_t in[14] = { coherent.index(),  active.index(),
-                            ray_o.x().index(), ray_o.y().index(),
-                            ray_o.z().index(), ray_mint.index(),
-                            ray_d.x().index(), ray_d.y().index(),
-                            ray_d.z().index(), ray_time.index(),
-                            ray_maxt.index(),  zero.index(),
-                            zero.index(),      zero.index() };
-
+        // Shadow ray: trace against rtcOccludedN, which accepts any hit and
+        // terminates traversal early.
         uint32_t out[1] { };
+        cpu_llvm_ray_trace<Float>((void *) occlude_func_ptr,
+                                  occlude_handle.index(), (void *) accel,
+                                  accel_handle.index(), ray_o, ray_d, ray_time,
+                                  ray_maxt, coherent, active, 1, out);
 
-        jit_llvm_ray_trace(func_v.index(), scene_v.index(), 1, in, out);
-
-        return active && (Single::steal(out[0]) != ray_maxt);
+        return Mask::steal(out[0]);
     } else {
         DRJIT_MARK_USED(ray);
         DRJIT_MARK_USED(coherent);
         DRJIT_MARK_USED(active);
-        Throw("ray_test_cpu() should only be called in CPU mode.");
+        Throw("EmbreeAccel::ray_test() should only be called in CPU mode.");
     }
 }
 
-MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
-Scene<Float, Spectrum>::ray_intersect_naive_cpu(const Ray3f &ray,
-                                                Mask active) const {
-    return ray_intersect_cpu(ray, +RayFlags::All, false, active);
-}
-
-MI_VARIANT void Scene<Float, Spectrum>::traverse_1_cb_ro_cpu(
-    void *payload, drjit::detail::traverse_callback_ro fn) const {
-
-    EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
-    drjit::traverse_1_fn_ro(s.shapes_registry_ids, payload, fn);
-    drjit::traverse_1_fn_ro(s.func_handle, payload, fn);
-}
-
-MI_VARIANT void Scene<Float, Spectrum>::traverse_1_cb_rw_cpu(
-    void *payload, drjit::detail::traverse_callback_rw fn) {
-
-    EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
-    drjit::traverse_1_fn_rw(s.shapes_registry_ids, payload, fn);
-    drjit::traverse_1_fn_rw(s.func_handle, payload, fn);
+template <typename Float, typename Spectrum>
+typename EmbreeAccel<Float, Spectrum>::SurfaceInteraction3f
+EmbreeAccel<Float, Spectrum>::ray_intersect_naive(
+    const Scene<Float, Spectrum> *scene, const Ray3f &ray, Mask active) const {
+    // Embree has no brute-force path; route through the accelerated query.
+    return scene->ray_intersect(ray, active);
 }
 
 NAMESPACE_END(mitsuba)

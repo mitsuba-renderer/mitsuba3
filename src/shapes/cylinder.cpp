@@ -7,11 +7,16 @@
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
+#include <mitsuba/render/scene_ir.h>
 
 #include <drjit/packet.h>
 
 #if defined(MI_ENABLE_CUDA)
     #include "optix/cylinder.cuh"
+#endif
+
+#if defined(MI_ENABLE_METAL) || defined(MI_ENABLE_CUDA)
+    #include <mitsuba/render/shapedata.h>
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
@@ -161,9 +166,9 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "to_world")) {
-            // Ensure previous ray-tracing operation are fully evaluated before
-            // modifying the scalar values of the fields in this class
-            if constexpr (dr::is_jit_v<Float>)
+            // LLVM/Embree reads these parameters from host memory; wait for
+            // in-flight kernels before overwriting (GPU uploads are queue-ordered).
+            if constexpr (dr::is_llvm_v<Float>)
                 dr::sync_thread();
 
             m_to_world = m_to_world.value().update();
@@ -555,8 +560,8 @@ public:
     // =============================================================
 
     template <typename FloatP, typename Ray3fP>
-    std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
-               dr::uint32_array_t<FloatP>>
+    std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
+               dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray_,
                                    ScalarIndex /*prim_index*/,
                                    dr::mask_t<FloatP> active) const {
@@ -611,7 +616,7 @@ public:
                                   FloatP(near_t), FloatP(far_t)),
                        dr::Infinity<FloatP>);
 
-        return { t, dr::zeros<Point<FloatP, 2>>(), ((uint32_t) -1), 0 };
+        return { active, t, dr::zeros<Point<FloatP, 2>>(), ((uint32_t) -1), 0 };
     }
 
     template <typename FloatP, typename Ray3fP>
@@ -762,21 +767,18 @@ public:
         return si;
     }
 
-#if defined(MI_ENABLE_CUDA)
-    using Base::m_optix_data_ptr;
+#if defined(MI_ENABLE_METAL) || defined(MI_ENABLE_CUDA)
+    void gpu_fill_data(void *out) const {
+        shapedata::CylinderData &d = *(shapedata::CylinderData *) out;
+        shapedata::fill_affine3x4(m_to_world.scalar().inverse().matrix,
+                                  d.to_object);
+        // Object space is the unit-radius, unit-length z-axis cylinder (length
+        // and radius are baked into m_to_world), so both params are 1 here.
+        d.params = { 1.f, 1.f, 0.f, 0.f };
+    }
 
-    void optix_prepare_geometry() override {
-        if constexpr (dr::is_cuda_v<Float>) {
-            if (!m_optix_data_ptr)
-                m_optix_data_ptr = jit_malloc(JitBackend::CUDA, sizeof(OptixCylinderData));
-
-            OptixCylinderData data = { bbox(), m_to_world.scalar().inverse(),
-                                       (float) 1.f,
-                                       (float) 1.f };
-
-            jit_memcpy_async(JitBackend::CUDA, m_optix_data_ptr, &data,
-                             sizeof(OptixCylinderData));
-        }
+    void describe(ShapeIR &g) const override {
+        Base::template describe_with_data<Cylinder, shapedata::CylinderData>(g);
     }
 #endif
 
