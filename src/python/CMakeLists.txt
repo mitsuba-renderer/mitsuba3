@@ -209,7 +209,7 @@ foreach (MI_VARIANT ${MI_VARIANTS})
   list(APPEND MI_ALL_VARIANTS ${MI_VARIANT_NAME})
 endforeach()
 
-set(MI_STUB_DEPENDS mitsuba_alias mitsuba_ext mitsuba-copy-python-src ${MI_ALL_VARIANTS})
+set(MI_STUB_DEPENDS mitsuba_alias mitsuba_ext mitsuba-copy-python-src drjit-python ${MI_ALL_VARIANTS})
 
 # ----------------------------------------------------------
 #   Copy targets for python (no rpath on Windows)
@@ -220,7 +220,7 @@ if (MSVC)
   add_custom_target(copy-targets-python ALL)
   set_target_properties(copy-targets-python PROPERTIES FOLDER python)
 
-  list(APPEND MI_STUB_DEPENDS copy-targets-python)
+  list(APPEND MI_STUB_DEPENDS copy-targets-python copy-targets-drjit)
 endif()
 
 # ----------------------------------------------------------
