@@ -1802,6 +1802,15 @@ std::vector<ref<Object>> instantiate(const ParserConfig &config, ParserState &st
     if (state.empty())
         Throw("No nodes to instantiate");
 
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
+    // Flush pending side effects here and now, to avoid potentially dirty
+    // user-provided Dr.Jit arrays/tensor from being propagated to plugin
+    // loaders running on a different thread. Side effects are queued in
+    // per-thread data structures.
+    if (config.parallel && !string::starts_with(config.variant, "scalar_"))
+        jit_eval();
+#endif
+
     std::vector<Scratch> scratch(state.size());
     instantiate_node(config, state, scratch, 0);
 
