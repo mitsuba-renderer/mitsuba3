@@ -301,17 +301,12 @@ public:
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.wavelengths = wavelengths;
 
-        // The SRF is not necessarily normalized, cancel out multiplicative factors
-        UnpolarizedSpectrum inv_spec = m_srf->eval(si);
-        inv_spec = dr::select(inv_spec != 0.f, dr::rcp(inv_spec), 1.f);
-        UnpolarizedSpectrum values = spec * inv_spec;
-
         for (size_t j = 0; j < m_srfs.size(); ++j) {
             UnpolarizedSpectrum weights = m_srfs[j]->eval(si);
             aovs[j] = dr::zeros<Float>();
 
             for (size_t i = 0; i<Spectrum::Size; ++i)
-                aovs[j] = dr::fmadd(weights[i], values[i], aovs[j]);
+                aovs[j] = dr::fmadd(weights[i], spec[i], aovs[j]);
 
             aovs[j] *= 1.f / Spectrum::Size;
         }
