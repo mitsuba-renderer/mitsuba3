@@ -1786,7 +1786,7 @@ static Task* instantiate_node(const ParserConfig &config,
         return nullptr;
     } else {
         // Non-root nodes
-        if (config.parallel && !deps.empty()) {
+        if (config.parallel) {
             // Schedule asynchronous instantiation with dependencies
             s.task = dr::do_async(instantiate, deps.data(), deps.size());
             return s.task;
