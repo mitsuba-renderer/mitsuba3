@@ -411,101 +411,136 @@ public:
         // The linear interpolant has 'size-1' patches
         ScalarVector2u n_patches = size - 1;
 
-        // Keep track of the dependence on additional parameters (optional)
+        // Number of MIP levels traversed during sample warping (0 for 2x2 input)
         uint32_t max_level = math::log2i_ceil(dr::max(n_patches));
 
         m_max_patch_index = n_patches - 1;
 
-        if (!enable_sampling) {
-            m_levels.reserve(1);
-            m_levels.emplace_back(size, m_slices);
+        // Determine the resolution of each level. Level 0 stores the raw
+        // (row-major) input; levels >= 1 form the 2x2-blocked MIP hierarchy.
+        auto add_level = [&](ScalarVector2u res) {
+            Level level;
+            level.width  = res.x();
+            level.size   = dr::prod(res);
+            level.offset = 0;
+            m_levels.push_back(level);
+        };
 
+        m_levels.reserve((enable_sampling ? max_level : 0) + 1);
+        add_level(size);
+
+        if (enable_sampling) {
+            ScalarVector2u level_size = n_patches;
+            for (uint32_t level = 0; level < max_level; ++level) {
+                level_size += level_size & 1u; // zero-pad to even resolution
+                add_level(level_size);
+                level_size = dr::sr<1>(level_size);
+            }
+        }
+
+        // Pack all levels into a single buffer, keeping each level base (and
+        // hence every 2x2 packet) aligned to a multiple of four elements.
+        uint32_t total = 0;
+        for (Level &level : m_levels) {
+            total = (total + 3u) & ~3u;
+            level.offset = total;
+            total += level.size * m_slices;
+        }
+        total = (total + 3u) & ~3u;
+
+        if constexpr (dr::is_jit_v<Float>) {
+            m_data = dr::map<FloatStorage>(
+                jit_malloc(dr::backend_v<Float>, total * sizeof(ScalarFloat),
+                           /* shared = */ 1),
+                total, true);
+        } else {
+            m_data = dr::empty<FloatStorage>(total);
+        }
+
+        ScalarFloat *out = m_data.data();
+        memset(out, 0, total * sizeof(ScalarFloat));
+
+        if (!enable_sampling) {
+            const Level &l0 = m_levels[0];
             for (uint32_t slice = 0; slice < m_slices; ++slice) {
-                ScalarFloat *p = m_levels[0].data.data();
-                uint32_t offset = m_levels[0].size * slice;
+                const ScalarFloat *in = data + l0.size * slice;
+                ScalarFloat *dst = out + l0.offset + l0.size * slice;
 
                 ScalarFloat scale = 1.f;
                 if (normalize) {
                     double sum = 0.0;
-                    for (uint32_t i = 0; i < m_levels[0].size; ++i)
-                        sum += (double) data[offset + i];
+                    for (uint32_t i = 0; i < l0.size; ++i)
+                        sum += (double) in[i];
                     scale = dr::prod(n_patches) / (ScalarFloat) sum;
                 }
 
-                for (uint32_t i = 0; i < m_levels[0].size; ++i)
-                    p[offset + i] = data[offset + i] * scale;
-
-                m_levels[0].ready();
+                for (uint32_t i = 0; i < l0.size; ++i)
+                    dst[i] = in[i] * scale;
             }
+        } else {
+            bool has_mip = m_levels.size() > 1;
 
-            return;
-        }
+            for (uint32_t slice = 0; slice < m_slices; ++slice) {
+                const Level &lv0 = m_levels[0];
+                uint32_t base0 = lv0.offset + lv0.size * slice;
+                const ScalarFloat *in = data + lv0.size * slice;
 
-        // Allocate memory for input array and MIP hierarchy
-        m_levels.reserve(max_level + 2);
-        m_levels.emplace_back(size, m_slices);
-
-        ScalarVector2u level_size = n_patches;
-        for (int level = max_level; level >= 0; --level) {
-            level_size += level_size & 1u; // zero-pad
-            m_levels.emplace_back(level_size, m_slices);
-            level_size = dr::sr<1>(level_size);
-        }
-
-        ScalarFloat *l0p = m_levels[0].data.data(),
-                    *l1p = m_levels[1].data.data();
-
-        for (uint32_t slice = 0; slice < m_slices; ++slice) {
-            uint32_t offset0 = m_levels[0].size * slice,
-                     offset1 = m_levels[1].size * slice;
-
-            // Integrate linear interpolant
-            const ScalarFloat *in = data + offset0;
-
-            double sum = 0.0;
-            for (uint32_t y = 0; y < n_patches.y(); ++y) {
-                for (uint32_t x = 0; x < n_patches.x(); ++x) {
-                    ScalarFloat avg = .25f * (in[0] + in[1] + in[size.x()] +
-                                              in[size.x() + 1]);
-                    sum += (double) avg;
-                    *(l1p + m_levels[1].index(ScalarVector2u(x, y)) + offset1) = avg;
-                    ++in;
+                // Integrate the linear interpolant. This yields the
+                // normalization factor and (if present) the first MIP level.
+                double sum = 0.0;
+                {
+                    const ScalarFloat *p = in;
+                    uint32_t base1 = has_mip
+                        ? m_levels[1].offset + m_levels[1].size * slice : 0u;
+                    for (uint32_t y = 0; y < n_patches.y(); ++y) {
+                        for (uint32_t x = 0; x < n_patches.x(); ++x) {
+                            ScalarFloat avg = .25f * (p[0] + p[1] + p[size.x()] +
+                                                      p[size.x() + 1]);
+                            sum += (double) avg;
+                            if (has_mip)
+                                out[base1 + m_levels[1].index(ScalarVector2u(x, y))] = avg;
+                            ++p;
+                        }
+                        ++p;
+                    }
                 }
-                ++in;
-            }
 
-            // Copy and normalize fine resolution interpolant
-            ScalarFloat scale = normalize ? (ScalarFloat) (dr::prod(n_patches) / sum) : 1.f;
-            for (uint32_t i = 0; i < m_levels[0].size; ++i)
-                l0p[offset0 + i] = data[offset0 + i] * scale;
-            for (uint32_t i = 0; i < m_levels[1].size; ++i)
-                l1p[offset1 + i] *= scale;
+                // Copy and normalize the fine resolution interpolant
+                ScalarFloat scale = normalize ? (ScalarFloat) (dr::prod(n_patches) / sum) : 1.f;
+                for (uint32_t i = 0; i < lv0.size; ++i)
+                    out[base0 + i] = in[i] * scale;
 
-            // Build a MIP hierarchy
-            level_size = n_patches;
-            for (uint32_t level = 2; level <= max_level + 1; ++level) {
-                const Level &l0 = m_levels[level - 1];
-                Level &l1 = m_levels[level];
-                offset0 = l0.size * slice;
-                offset1 = l1.size * slice;
-                level_size = dr::sr<1>(level_size + 1u);
+                if (has_mip) {
+                    const Level &lv1 = m_levels[1];
+                    uint32_t base1 = lv1.offset + lv1.size * slice;
+                    for (uint32_t i = 0; i < lv1.size; ++i)
+                        out[base1 + i] *= scale;
+                }
 
-                const ScalarFloat *l0p_ = l0.data.data();
-                ScalarFloat *l1p_ = l1.data.data();
+                // Build the remaining MIP hierarchy by downsampling
+                ScalarVector2u level_size = n_patches;
+                for (uint32_t level = 2; level < m_levels.size(); ++level) {
+                    const Level &la = m_levels[level - 1],
+                                &lb = m_levels[level];
+                    uint32_t basea = la.offset + la.size * slice,
+                             baseb = lb.offset + lb.size * slice;
+                    level_size = dr::sr<1>(level_size + 1u);
 
-                // Downsample
-                for (uint32_t y = 0; y < level_size.y(); ++y) {
-                    for (uint32_t x = 0; x < level_size.x(); ++x) {
-                        ScalarFloat *d1 = l1p_ + l1.index(ScalarVector2u(x, y)) + offset1;
-                        const ScalarFloat *d0 = l0p_ + l0.index(ScalarVector2u(x*2, y*2)) + offset0;
-                        *d1 = d0[0] + d0[1] + d0[2] + d0[3];
+                    // Downsample
+                    for (uint32_t y = 0; y < level_size.y(); ++y) {
+                        for (uint32_t x = 0; x < level_size.x(); ++x) {
+                            ScalarFloat *d1 = out + baseb + lb.index(ScalarVector2u(x, y));
+                            const ScalarFloat *d0 = out + basea +
+                                                    la.index(ScalarVector2u(x * 2, y * 2));
+                            *d1 = d0[0] + d0[1] + d0[2] + d0[3];
+                        }
                     }
                 }
             }
         }
 
-        for (auto& level : m_levels)
-            level.ready();
+        if constexpr (dr::is_jit_v<Float>)
+            m_data = dr::migrate(m_data, dr::backend_v<Float>);
     }
 
     /**
@@ -528,28 +563,18 @@ public:
 
         // Hierarchical sample warping
         Point2u offset = dr::zeros<Point2u>();
-        for (int l = (int) m_levels.size() - 2; l > 0; --l) {
+        for (int l = (int) m_levels.size() - 1; l > 0; --l) {
             const Level &level = m_levels[l];
 
             offset = dr::sl<1>(offset);
 
-            // Fetch values from next MIP level
-            UInt32 offset_i = level.index(offset) + slice_offset * level.size;
+            // Fetch the 2x2 patch from this MIP level with a single packet gather
+            UInt32 packet = dr::sr<2>(level.offset + slice_offset * level.size +
+                                      level.index(offset));
 
-            Float v00 = level.lookup(offset_i, m_param_strides,
-                                     param_weight, active);
-            offset_i += 1u;
-
-            Float v10 = level.lookup(offset_i, m_param_strides,
-                                     param_weight, active);
-            offset_i += 1u;
-
-            Float v01 = level.lookup(offset_i, m_param_strides,
-                                     param_weight, active);
-            offset_i += 1u;
-
-            Float v11 = level.lookup(offset_i, m_param_strides,
-                                     param_weight, active);
+            dr::Array<Float, 4> v =
+                lookup_packet(packet, level.size, param_weight, active);
+            Float v00 = v.x(), v10 = v.y(), v01 = v.z(), v11 = v.w();
 
             // Avoid issues with roundoff error
             sample = dr::clip(sample, 0.f, 1.f);
@@ -558,38 +583,36 @@ public:
             Float r0 = v00 + v10,
                   r1 = v01 + v11;
             sample.y() *= r0 + r1;
-            Mask mask = sample.y() > r0;
-            dr::masked(offset.y(), mask) += 1u;
-            dr::masked(sample.y(), mask) -= r0;
-            sample.y() /= dr::select(mask, r1, r0);
+            Mask y_mask = sample.y() > r0;
+            dr::masked(offset.y(), y_mask) += 1u;
+            dr::masked(sample.y(), y_mask) -= r0;
+            Float dy = dr::select(y_mask, r1, r0);
 
             // Select the column
-            Float c0 = dr::select(mask, v01, v00),
-                  c1 = dr::select(mask, v11, v10);
-            sample.x() *= c0 + c1;
-            mask = sample.x() > c0;
-            dr::masked(sample.x(), mask) -= c0;
-            sample.x() /= dr::select(mask, c1, c0);
-            dr::masked(offset.x(), mask) += 1u;
+            Float c0 = dr::select(y_mask, v01, v00),
+                  c1 = dr::select(y_mask, v11, v10);
+            sample.x() *= dy;
+            Mask x_mask = sample.x() > c0;
+            dr::masked(sample.x(), x_mask) -= c0;
+            dr::masked(offset.x(), x_mask) += 1u;
+            Float dx = dr::select(x_mask, c1, c0);
+
+            // Renormalize both axes with a single (combined) reciprocal
+            Float inv = dr::rcp(dy * dx);
+            sample.y() *= dx * inv; // == numerator_y / dy
+            sample.x() *= dy * inv; // == numerator_x / dx
         }
 
         const Level &level0 = m_levels[0];
 
-        UInt32 offset_i =
-            offset.x() + offset.y() * level0.width + slice_offset * level0.size;
+        UInt32 offset_i = level0.offset + slice_offset * level0.size +
+                          offset.x() + offset.y() * level0.width;
 
         // Fetch corners of bilinear patch
-        Float v00 = level0.lookup(offset_i, m_param_strides,
-                                  param_weight, active);
-
-        Float v10 = level0.lookup(offset_i + 1, m_param_strides,
-                                  param_weight, active);
-
-        Float v01 = level0.lookup(offset_i + level0.width, m_param_strides,
-                                  param_weight, active);
-
-        Float v11 = level0.lookup(offset_i + level0.width + 1, m_param_strides,
-                                  param_weight, active);
+        Float v00 = lookup(offset_i, level0.size, param_weight, active),
+              v10 = lookup(offset_i + 1, level0.size, param_weight, active),
+              v01 = lookup(offset_i + level0.width, level0.size, param_weight, active),
+              v11 = lookup(offset_i + level0.width + 1, level0.size, param_weight, active);
 
         Float pdf;
         std::tie(sample, pdf) =
@@ -621,20 +644,13 @@ public:
 
         /// Point2f() -> Point2i() cast because AVX2 has no _mm256_cvtps_epu32 :(
         Point2u offset = dr::minimum(Point2u(Point2i(sample)), m_max_patch_index);
-        UInt32 offset_i =
-            offset.x() + offset.y() * level0.width + slice_offset * level0.size;
+        UInt32 offset_i = level0.offset + slice_offset * level0.size +
+                          offset.x() + offset.y() * level0.width;
 
-        Float v00 = level0.lookup(offset_i, m_param_strides,
-                                  param_weight, active);
-
-        Float v10 = level0.lookup(offset_i + 1, m_param_strides,
-                                  param_weight, active);
-
-        Float v01 = level0.lookup(offset_i + level0.width, m_param_strides,
-                                  param_weight, active);
-
-        Float v11 = level0.lookup(offset_i + level0.width + 1, m_param_strides,
-                                  param_weight, active);
+        Float v00 = lookup(offset_i, level0.size, param_weight, active),
+              v10 = lookup(offset_i + 1, level0.size, param_weight, active),
+              v01 = lookup(offset_i + level0.width, level0.size, param_weight, active),
+              v11 = lookup(offset_i + level0.width + 1, level0.size, param_weight, active);
 
         sample -= Point2f(Point2i(offset));
 
@@ -642,26 +658,16 @@ public:
         std::tie(sample, pdf) = warp::bilinear_to_square(v00, v10, v01, v11, sample);
 
         // Hierarchical sample warping -- reverse direction
-        for (int l = 1; l < (int) m_levels.size() - 1; ++l) {
+        for (int l = 1; l < (int) m_levels.size(); ++l) {
             const Level &level = m_levels[l];
 
-            // Fetch values from next MIP level
-            offset_i = level.index(offset & ~1u) + slice_offset * level.size;
+            // Fetch the 2x2 patch from this MIP level with a single packet gather
+            UInt32 packet = dr::sr<2>(level.offset + slice_offset * level.size +
+                                      level.index(offset & ~1u));
 
-            v00 = level.lookup(offset_i, m_param_strides,
-                               param_weight, active);
-            offset_i += 1u;
-
-            v10 = level.lookup(offset_i, m_param_strides,
-                               param_weight, active);
-            offset_i += 1u;
-
-            v01 = level.lookup(offset_i, m_param_strides,
-                               param_weight, active);
-            offset_i += 1u;
-
-            v11 = level.lookup(offset_i, m_param_strides,
-                               param_weight, active);
+            dr::Array<Float, 4> v =
+                lookup_packet(packet, level.size, param_weight, active);
+            v00 = v.x(); v10 = v.y(); v01 = v.z(); v11 = v.w();
 
             Mask x_mask = offset.x() & (1u != 0u),
                  y_mask = offset.y() & (1u != 0u);
@@ -671,13 +677,19 @@ public:
                   c0 = dr::select(y_mask, v01, v00),
                   c1 = dr::select(y_mask, v11, v10);
 
+            Float dy = r0 + r1,
+                  dx = c0 + c1;
+
             sample.y() *= dr::select(y_mask, r1, r0);
             dr::masked(sample.y(), y_mask) += r0;
-            sample.y() /= r0 + r1;
 
             sample.x() *= dr::select(x_mask, c1, c0);
             dr::masked(sample.x(), x_mask) += c0;
-            sample.x() /= c0 + c1;
+
+            // Renormalize both axes with a single (combined) reciprocal
+            Float inv = dr::rcp(dy * dx);
+            sample.y() *= dx * inv; // == numerator_y / dy
+            sample.x() *= dy * inv; // == numerator_x / dx
 
             // Avoid issues with roundoff error
             sample = dr::clip(sample, 0.f, 1.f);
@@ -707,20 +719,13 @@ public:
         pos -= Point2f(Point2i(offset));
 
         const Level &level0 = m_levels[0];
-        UInt32 offset_i =
-            offset.x() + offset.y() * level0.width + slice_offset * level0.size;
+        UInt32 offset_i = level0.offset + slice_offset * level0.size +
+                          offset.x() + offset.y() * level0.width;
 
-        Float v00 = level0.lookup(offset_i, m_param_strides,
-                                  param_weight, active);
-
-        Float v10 = level0.lookup(offset_i + 1, m_param_strides,
-                                  param_weight, active);
-
-        Float v01 = level0.lookup(offset_i + level0.width, m_param_strides,
-                                  param_weight, active);
-
-        Float v11 = level0.lookup(offset_i + level0.width + 1, m_param_strides,
-                                  param_weight, active);
+        Float v00 = lookup(offset_i, level0.size, param_weight, active),
+              v10 = lookup(offset_i + 1, level0.size, param_weight, active),
+              v01 = lookup(offset_i + level0.width, level0.size, param_weight, active),
+              v11 = lookup(offset_i + level0.width + 1, level0.size, param_weight, active);
 
         return warp::square_to_bilinear_pdf(v00, v10, v01, v11, pos);
     }
@@ -758,76 +763,84 @@ public:
     }
 
 protected:
+    /// Per-level layout descriptor into the unified \ref m_data buffer
     struct Level {
-        uint32_t size;
+        /// Horizontal resolution of the level
         uint32_t width;
-        FloatStorage data;
 
-        Level() { }
-        Level(ScalarVector2u res, uint32_t slices)
-            : size(dr::prod(res)), width(res.x()) {
+        /// Number of elements per slice (width * height)
+        uint32_t size;
 
-            uint32_t n = size * slices;
-            if constexpr (dr::is_jit_v<Float>) {
-                data = dr::map<FloatStorage>(
-                    jit_malloc(dr::backend_v<Float>, n * sizeof(ScalarFloat),
-                               /* shared = */ 1),
-                    n, true);
-            } else {
-                data = dr::empty<FloatStorage>(n);
-            }
-            memset(data.data(), 0, n * sizeof(ScalarFloat));
-        }
-
-        void ready() {
-            if constexpr (dr::is_jit_v<Float>)
-                data = dr::migrate(data, dr::backend_v<Float>);
-        }
+        /// Element offset of slice 0 within \ref m_data
+        uint32_t offset;
 
         /**
          * \brief Convert from 2D pixel coordinates to an index indicating how the
          * data is laid out in memory.
          *
-         * The implementation stores 2x2 patches contiguously in memory to
-         * improve cache locality during hierarchical traversals
+         * The implementation stores 2x2 patches contiguously in memory so that
+         * the four corners can be fetched with a single packet load.
          */
         template <typename Point2u>
         MI_INLINE dr::value_t<Point2u> index(const Point2u &p) const {
             return ((p.x() & 1u) | dr::sl<1>((p.x() & ~1u) | (p.y() & 1u))) +
                    ((p.y() & ~1u) * width);
         }
-
-        template <size_t Dim = Dimension>
-        MI_INLINE Float lookup(const UInt32 &i0,
-                                const uint32_t *param_strides,
-                                const Float *param_weight,
-                                const Mask &active) const {
-            if constexpr (Dim != 0) {
-                UInt32 i1 = i0 + param_strides[Dim - 1] * size;
-                Float w0 = param_weight[2 * Dim - 2],
-                      w1 = param_weight[2 * Dim - 1],
-                      v0 = lookup<Dim - 1>(i0, param_strides, param_weight, active),
-                      v1 = lookup<Dim - 1>(i1, param_strides, param_weight, active);
-
-                return dr::fmadd(v0, w0, v1 * w1);
-            } else {
-                DRJIT_MARK_USED(param_strides);
-                DRJIT_MARK_USED(param_weight);
-                return dr::gather<Float>(data, i0, active);
-            }
-        }
-
-        DRJIT_ARRAY_DEFAULTS(Level)
-        DRJIT_TRAVERSE(Level, data)
     };
 
-    /// MIP hierarchy over linearly interpolated patches
+    /// Look up a single value, interpolating across parameter slices
+    template <size_t Dim = Dimension>
+    MI_INLINE Float lookup(UInt32 index, uint32_t size,
+                           const Float *param_weight, Mask active) const {
+        if constexpr (Dim != 0) {
+            UInt32 index1 = index + m_param_strides[Dim - 1] * size;
+            Float w0 = param_weight[2 * Dim - 2],
+                  w1 = param_weight[2 * Dim - 1],
+                  v0 = lookup<Dim - 1>(index, size, param_weight, active),
+                  v1 = lookup<Dim - 1>(index1, size, param_weight, active);
+            return dr::fmadd(v0, w0, v1 * w1);
+        } else {
+            DRJIT_MARK_USED(param_weight);
+            DRJIT_MARK_USED(size);
+            return dr::gather<Float>(m_data, index, active);
+        }
+    }
+
+    /**
+     * \brief Fetch the four corners of a 2x2 patch with a single packet gather,
+     * interpolating across parameter slices.
+     *
+     * \c packet is the patch index (an element offset divided by four) and
+     * \c size is the per-slice element count of the level.
+     */
+    template <size_t Dim = Dimension>
+    MI_INLINE dr::Array<Float, 4> lookup_packet(UInt32 packet, uint32_t size,
+                                                const Float *param_weight,
+                                                Mask active) const {
+        if constexpr (Dim != 0) {
+            UInt32 packet1 = packet + m_param_strides[Dim - 1] * (size / 4);
+            Float w0 = param_weight[2 * Dim - 2],
+                  w1 = param_weight[2 * Dim - 1];
+            dr::Array<Float, 4>
+                v0 = lookup_packet<Dim - 1>(packet, size, param_weight, active),
+                v1 = lookup_packet<Dim - 1>(packet1, size, param_weight, active);
+            return dr::fmadd(v0, w0, v1 * w1);
+        } else {
+            DRJIT_MARK_USED(param_weight);
+            return dr::gather<dr::Array<Float, 4>>(m_data, packet, active);
+        }
+    }
+
+    /// Unified storage buffer: level 0 (row-major) followed by the MIP hierarchy
+    FloatStorage m_data;
+
+    /// Per-level layout descriptors into \ref m_data
     std::vector<Level> m_levels;
 
     /// Number of bilinear patches in the X/Y dimension - 1
     ScalarVector2u m_max_patch_index;
 
-    MI_TRAVERSE_CB(Base, m_levels)
+    MI_TRAVERSE_CB(Base, m_data)
 };
 
 /**
