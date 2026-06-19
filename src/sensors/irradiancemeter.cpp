@@ -101,7 +101,9 @@ public:
 
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
-        return { m_shape->sample_direction(it, sample, active), dr::Pi<ScalarFloat> };
+        DirectionSample3f ds = m_shape->sample_direction(it, sample, active);
+        return { ds, dr::select(ds.pdf > 0.f,
+                                dr::rcp(ds.pdf) / m_shape->surface_area(), 0.f) };
     }
 
     Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
