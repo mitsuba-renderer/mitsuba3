@@ -166,8 +166,8 @@ public:
     Value eval_pdf(Value pos, std::vector<Value> &cond,
                    Mask active = true) const {
         if (cond.size() != m_nodes_cond.size())
-            Log(Error, "The number of conditionals should be %u instead of %u",
-                m_nodes_cond.size(), cond.size());
+            Throw("The number of conditionals should be %u instead of %u",
+                  m_nodes_cond.size(), cond.size());
 
         auto [value, integral] = lookup(pos, cond, 0, 0, active);
         return value;
@@ -190,8 +190,8 @@ public:
     Value eval_pdf_normalized(Value pos, std::vector<Value> &cond,
                               Mask active = true) const {
         if (cond.size() != m_nodes_cond.size())
-            Log(Error, "The number of conditionals should be %u instead of %u",
-                m_nodes_cond.size(), cond.size());
+            Throw("The number of conditionals should be %u instead of %u",
+                  m_nodes_cond.size(), cond.size());
 
         ensure_cdf_computed();
 
@@ -217,13 +217,13 @@ public:
     std::pair<Value, Value> sample_pdf(Value u, std::vector<Value> &cond,
                                        Mask active) const {
         if (cond.size() != m_nodes_cond.size())
-            Log(Error, "The number of conditionals should be %u instead of %u",
-                m_nodes_cond.size(), cond.size());
+            Throw("The number of conditionals should be %u instead of %u",
+                  m_nodes_cond.size(), cond.size());
 
         ensure_cdf_computed();
 
-        std::vector<Index> indices(1 << m_nodes_cond.size());
-        std::vector<Value> weights(1 << m_nodes_cond.size());
+        std::vector<Index> indices((size_t) 1 << m_nodes_cond.size());
+        std::vector<Value> weights((size_t) 1 << m_nodes_cond.size());
 
         lookup_fill(cond, 0, 1.f, indices, weights, 0, 0, active);
         return lookup_sample(u, indices, weights, true, active);
@@ -515,10 +515,8 @@ private:
             size_cond *= dr::width(m_nodes_cond[i]);
 
         if (size_pdf != size_nodes * size_cond)
-            Log(Error,
-                "ConditionalIrregular1D: %f (size_pdf) != %f (size_nodes) * %f "
-                "(size_cond)",
-                size_pdf, size_nodes, size_cond);
+            Throw("ConditionalIrregular1D: %f (size_pdf) != %f (size_nodes) * %f (size_cond)",
+                  size_pdf, size_nodes, size_cond);
 
         m_max = dr::slice(dr::max(m_pdf.array()));
 
@@ -540,8 +538,8 @@ private:
         Float interval_integral =
             0.5 * (nodes_next - nodes_curr) * (pdf_curr + pdf_next);
 
-        m_cdf = dr::block_prefix_sum(interval_integral, dr::width(m_nodes) - 1,
-                                     false);
+        m_cdf = dr::block_prefix_sum(interval_integral,
+                                     (uint32_t) (dr::width(m_nodes) - 1), false);
 
         UInt32 indexes_integral =
             dr::arange<UInt32>(size_cond) * (dr::width(m_nodes) - 1) +
@@ -565,8 +563,7 @@ private:
         std::vector<ScalarFloat> integral(size_cond, 0.f);
 
         if (size_pdf != size_nodes * size_cond)
-            Log(Error,
-                "ConditionalIrregular1D: size_pdf != size_nodes * size_cond");
+            Throw("ConditionalIrregular1D: size_pdf != size_nodes * size_cond");
 
         ScalarFloat integral_val = 0.0;
 
@@ -579,15 +576,15 @@ private:
                 ScalarFloat x1 = nodes[j + 1];
 
                 if (x0 >= x1)
-                    Log(Error, "ConditionalIrregular1D: Nodes must be strictly "
-                               "increasing");
+                    Throw("ConditionalIrregular1D: Nodes must be strictly "
+                          "increasing");
 
                 ScalarFloat y0 = pdf[i * size_nodes + j];
                 ScalarFloat y1 = pdf[i * size_nodes + j + 1];
 
                 if (y0 < 0.f || y1 < 0.f)
-                    Log(Error, "ConditionalIrregular1D: Entries of the "
-                               "conditioned PDFs must be non-negative!");
+                    Throw("ConditionalIrregular1D: Entries of the "
+                          "conditioned PDFs must be non-negative!");
 
                 m_max = dr::maximum(m_max, (ScalarFloat) y1);
 
@@ -607,8 +604,8 @@ private:
             }
 
             if (dr::any(valid == (uint32_t) -1))
-                Log(Error, "ConditionalIrregular1D: No probability mass found "
-                           "for one conditioned PDF");
+                Throw("ConditionalIrregular1D: No probability mass found "
+                      "for one conditioned PDF");
 
             integral[i] = integral_val;
         }
@@ -705,20 +702,17 @@ public:
             shape.push_back(s);
             total_size_cond *= s;
             if (s < 2)
-                Log(Error,
-                    "Dimension %u should have at least size 2 instead of %u", i,
-                    s);
+                Throw("Dimension %u should have at least size 2 instead of %u",
+                      i, s);
         }
         shape.push_back(dr::width(pdf) / total_size_cond);
 
         m_pdf = TensorXf(pdf, shape.size(), shape.data());
 
-        m_size_nodes = dr::width(pdf) / total_size_cond;
+        m_size_nodes = (ScalarUInt32) (dr::width(pdf) / total_size_cond);
         if (m_size_nodes < 2)
-            Log(Error,
-                "The number of the leading dimension should have at least size "
-                "2 instead of %u",
-                m_size_nodes);
+            Throw("The number of the leading dimension should have at least size "
+                  "2 instead of %u", m_size_nodes);
 
         prepare_distribution();
     }
@@ -742,19 +736,16 @@ public:
         m_size_cond.reserve(m_pdf.ndim() - 1);
         for (size_t i = 0; i < m_pdf.ndim() - 1; i++) {
             const size_t s = m_pdf.shape(i);
-            m_size_cond.push_back(s);
+            m_size_cond.push_back((ScalarUInt32) s);
             if (s < 2)
-                Log(Error,
-                    "Dimension %u should have at least size 2 instead of %u", i,
-                    s);
+                Throw("Dimension %u should have at least size 2 instead of %u",
+                      i, s);
         }
 
-        m_size_nodes = m_pdf.shape(m_pdf.ndim() - 1);
+        m_size_nodes = (ScalarUInt32) m_pdf.shape(m_pdf.ndim() - 1);
         if (m_size_nodes < 2)
-            Log(Error,
-                "The number of the leading dimension should have at least size "
-                "2 instead of %u",
-                m_size_nodes);
+            Throw("The number of the leading dimension should have at least size "
+                  "2 instead of %u", m_size_nodes);
 
         prepare_distribution();
     }
@@ -768,9 +759,8 @@ public:
             m_size_cond.push_back(size_cond[i]);
             m_range_cond.push_back(range_cond[i]);
             if (size_cond[i] < 2)
-                Log(Error,
-                    "Dimension %u should have at least size 2 instead of %u", i,
-                    size_cond[i]);
+                Throw("Dimension %u should have at least size 2 instead of %u",
+                      i, size_cond[i]);
         }
 
         // Update tensor with the information
@@ -781,15 +771,14 @@ public:
             shape.push_back(s);
             total_size_cond *= s;
             if (s < 2)
-                Log(Error,
-                    "Dimension %u should have at least size 2 instead of %u", i,
-                    s);
+                Throw("Dimension %u should have at least size 2 instead of %u",
+                      i, s);
         }
-        m_size_nodes = dr::width(pdf) / total_size_cond;
+        m_size_nodes = (ScalarUInt32) (dr::width(pdf) / total_size_cond);
         shape.push_back(m_size_nodes);
 
         if (m_size_nodes < 2)
-            Log(Error,
+            Throw(
                 "The number of the leading dimension should have at least size "
                 "2 instead of %u",
                 m_size_nodes);
@@ -824,8 +813,8 @@ public:
         Mask active2 = active && (x >= m_range.x()) && (x <= m_range.y());
 
         if (cond.size() != m_size_cond.size())
-            Log(Error, "The number of conditionals should be %u instead of %u",
-                m_size_cond.size(), cond.size());
+            Throw("The number of conditionals should be %u instead of %u",
+                  m_size_cond.size(), cond.size());
 
         auto [value, integral] = lookup(x, cond, 0, 0, active2);
         return value;
@@ -843,8 +832,8 @@ public:
     Value eval_pdf_normalized(Value x, std::vector<Value> &cond,
                               Mask active = true) const {
         if (cond.size() != m_size_cond.size())
-            Log(Error, "The number of conditionals should be %u instead of %u",
-                m_size_cond.size(), cond.size());
+            Throw("The number of conditionals should be %u instead of %u",
+                  m_size_cond.size(), cond.size());
 
         ensure_cdf_computed();
 
@@ -866,13 +855,13 @@ public:
     std::pair<Value, Value> sample_pdf(Value u, std::vector<Value> &cond,
                                        Mask active) const {
         if (cond.size() != m_size_cond.size())
-            Log(Error, "The number of conditionals should be %u instead of %u",
-                m_size_cond.size(), cond.size());
+            Throw("The number of conditionals should be %u instead of %u",
+                  m_size_cond.size(), cond.size());
 
         ensure_cdf_computed();
 
-        std::vector<Index> indices(1 << m_size_cond.size());
-        std::vector<Value> weights(1 << m_size_cond.size());
+        std::vector<Index> indices((size_t) 1 << m_size_cond.size());
+        std::vector<Value> weights((size_t) 1 << m_size_cond.size());
 
         lookup_fill(cond, 0, 1.f, indices, weights, 0, 0, active);
         return lookup_sample(u, indices, weights, active);
@@ -1150,7 +1139,7 @@ private:
             size_cond *= m_size_cond[i];
 
         if (size_pdf != size_nodes * size_cond)
-            Log(Error,
+            Throw(
                 "ConditionalRegular1D: %f (size_pdf) != %f (size_nodes) * %f "
                 "(size_cond)",
                 size_pdf, size_nodes, size_cond);
@@ -1197,8 +1186,7 @@ private:
         std::vector<ScalarFloat> integral(size_cond, 0.f);
 
         if (size_pdf != m_size_nodes * size_cond)
-            Log(Error,
-                "ConditionalRegular1D: size_pdf != size_nodes * size_cond");
+            Throw("ConditionalRegular1D: size_pdf != size_nodes * size_cond");
 
         ScalarFloat integral_val = 0.0;
         ScalarFloat range = ScalarFloat(m_range.y()) - ScalarFloat(m_range.x()),
@@ -1213,8 +1201,8 @@ private:
                 ScalarFloat y1 = pdf[i * m_size_nodes + j + 1];
 
                 if (y0 < 0.f || y1 < 0.f)
-                    Log(Error, "ConditionalRegular1D: Entries of the "
-                               "conditioned PDFs must be non-negative!");
+                    Throw("ConditionalRegular1D: Entries of the "
+                          "conditioned PDFs must be non-negative!");
 
                 m_max = dr::maximum(m_max, (ScalarFloat) y1);
 
@@ -1234,8 +1222,8 @@ private:
             }
 
             if (dr::any(valid == (uint32_t) -1))
-                Log(Error, "ConditionalRegular1D: No probability mass found "
-                           "for one conditioned PDF");
+                Throw("ConditionalRegular1D: No probability mass found "
+                      "for one conditioned PDF");
 
             integral[i] = integral_val;
         }
