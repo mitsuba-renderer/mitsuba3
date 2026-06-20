@@ -8,6 +8,7 @@
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
 #include <drjit/tensor.h>
+#include <drjit/texture.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/core/fstream.h>
 
@@ -101,11 +102,13 @@ public:
     MI_IMPORT_TYPES(Scene, Shape, Texture)
 
     using Warp = Hierarchical2D<Float, 0>;
+    using Tex  = dr::Texture<Float, 2>;
 
     /* In RGB variants: 3-channel array for R, G, and B components
        In spectral variants: 4-channel array for polynomial coefficients & scale */
-    using PixelData = dr::Array<Float, is_spectral_v<Spectrum> ? 4 : 3>;
-    using ScalarPixelData = dr::Array<ScalarFloat, is_spectral_v<Spectrum> ? 4 : 3>;
+    static constexpr uint32_t PixelWidth = is_spectral_v<Spectrum> ? 4 : 3;
+    using PixelData = dr::Array<Float, PixelWidth>;
+    using ScalarPixelData = dr::Array<ScalarFloat, PixelWidth>;
 
     EnvironmentMapEmitter(const Properties &props) : Base(props) {
         /* Until `set_scene` is called, we have no information
@@ -142,18 +145,22 @@ public:
             pixel_format = Bitmap::PixelFormat::RGBA;
         bitmap = bitmap->convert(pixel_format, struct_type_v<Float>, false);
 
-        /* Allocate a larger image including an extra column to
-           account for the periodic boundary */
-        ScalarVector2u res(bitmap->width() + 1, bitmap->height());
+        /* Allocate a larger image with a one-column halo on each side carrying
+           a copy of the opposite edge so that ``WrapMode::Clamp`` reproduces
+           the periodic boundary exactly. */
+        m_res = ScalarVector2u((uint32_t) bitmap->width(),
+                               (uint32_t) bitmap->height());
+        const uint32_t sw = m_res.x() + 2;
         ref<Bitmap> bitmap_2 = new Bitmap(bitmap->pixel_format(),
-                                          bitmap->component_format(), res);
+                                          bitmap->component_format(),
+                                          ScalarVector2u(sw, m_res.y()));
 
         ScalarFloat *in_ptr  = (ScalarFloat *) bitmap->data(),
                     *out_ptr = (ScalarFloat *) bitmap_2->data();
 
-        size_t pixel_width = is_spectral_v<Spectrum> ? 4 : 3;
-        for (size_t y = 0; y < bitmap->size().y(); ++y) {
-            for (size_t x = 0; x < bitmap->size().x(); ++x) {
+        for (size_t y = 0; y < m_res.y(); ++y) {
+            ScalarFloat *row = out_ptr + y * sw * PixelWidth;
+            for (size_t x = 0; x < m_res.x(); ++x) {
                 ScalarColor3f rgb = dr::load<ScalarVector3f>(in_ptr);
 
                 ScalarPixelData coeff;
@@ -173,81 +180,80 @@ public:
                                        dr::Array<ScalarFloat, 1>(scale));
                 }
 
-                dr::store(out_ptr, coeff);
-                in_ptr += pixel_width;
-                out_ptr += pixel_width;
+                // Real column x is stored at column x+1
+                dr::store(row + (x + 1) * PixelWidth, coeff);
+                in_ptr += PixelWidth;
             }
-
-            // Last column of pixels mirrors first to enforce periodicity
-            dr::store(out_ptr, dr::load<ScalarPixelData>(
-                                   out_ptr - bitmap->size().x() * pixel_width));
-            out_ptr += pixel_width;
         }
 
-        size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), pixel_width };
-        m_data = TensorXf(bitmap_2->data(), 3, shape);
+        refresh_halo((ScalarFloat *) bitmap_2->data(), m_res);
+
+        size_t shape[3] = { (size_t) m_res.y(), (size_t) sw, (size_t) PixelWidth };
+        TensorXf tensor(bitmap_2->data(), 3, shape);
+        m_texture = Tex(tensor, /* use_accel = */ true,
+                        /* migrate = */ dr::is_jit_v<Float>,
+                        dr::FilterMode::Linear, dr::WrapMode::Clamp);
 
         m_scale = props.get<ScalarFloat>("scale", 1.f);
         m_mis_compensation = props.get<bool>("mis_compensation", false);
         m_d65 = Texture::D65(1.f);
         m_flags = EmitterFlags::Infinite | EmitterFlags::SpatiallyVarying;
 
-        rebuild_distribution((ScalarFloat *) bitmap_2->data(), res);
+        rebuild_distribution((ScalarFloat *) bitmap_2->data());
     }
 
     void traverse(TraversalCallback *cb) override {
         Base::traverse(cb);
-        cb->put("scale",     m_scale,     ParamFlags::Differentiable);
-        cb->put("data",      m_data,      ParamFlags::Differentiable | ParamFlags::Discontinuous);
-        cb->put("to_world",  m_to_world,  ParamFlags::NonDifferentiable);
+        cb->put("scale",     m_scale,               ParamFlags::Differentiable);
+        cb->put("data",      m_texture.tensor(),    ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("to_world",  m_to_world,            ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
         if (keys.empty() || string::contains(keys, "data")) {
-            if (m_data.ndim() != 3)
-                    Throw("Environment map data has dimension %lu, expected 3", m_data.ndim());
+            TensorXf &tensor = m_texture.tensor();
+
+            if (tensor.ndim() != 3)
+                Throw("Environment map data has dimension %lu, expected 3", tensor.ndim());
 
             if constexpr (is_spectral_v<Spectrum>) {
-                if (m_data.shape(2) != 4)
-                    Throw("Environment map data has %lu channels, expected 4", m_data.shape(2));
+                if (tensor.shape(2) != 4)
+                    Throw("Environment map data has %lu channels, expected 4", tensor.shape(2));
             } else {
-                if (m_data.shape(2) != 3)
-                    Throw("Environment map data has %lu channels, expected 3", m_data.shape(2));
+                if (tensor.shape(2) != 3)
+                    Throw("Environment map data has %lu channels, expected 3", tensor.shape(2));
             }
 
-            ScalarVector2u res = { m_data.shape(1), m_data.shape(0) };
+            m_res = ScalarVector2u((uint32_t) tensor.shape(1) - 2,
+                                   (uint32_t) tensor.shape(0));
+            const uint32_t sw = m_res.x() + 2;
 
+            /* The user may have edited the real columns, so refresh the halo
+               that makes ``WrapMode::Clamp`` periodic in phi (col 0 <- last real
+               col, col W+1 <- first). Scatter into a copy so the exposed leaf
+               stays clean; the AD-tracked scatter then routes each halo column's
+               gradient onto its source real column. */
             if constexpr (dr::is_jit_v<Float>) {
-                // Enforce horizontal continuity
-                UInt32 row_index = dr::arange<UInt32>(res.y()) * res.x();
-                PixelData v0 = dr::gather<PixelData>(m_data.array(), row_index);
-                PixelData v1 = dr::gather<PixelData>(m_data.array(), row_index + (res.x() - 1));
-                PixelData v01 = .5f * (v0 + v1);
-                dr::scatter(m_data.array(), v01, row_index);
-                dr::scatter(m_data.array(), v01, row_index + (res.x() - 1));
+                auto &array = tensor.array();
+                Float corrected = array; // copy-on-write; the scatters fork it
+
+                UInt32 row = dr::arange<UInt32>(m_res.y()) * sw;
+                dr::scatter(corrected, dr::gather<PixelData>(array, row + m_res.x()), row);
+                dr::scatter(corrected, dr::gather<PixelData>(array, row + 1u),
+                            row + (m_res.x() + 1u));
+
+                size_t shape[3] = { (size_t) m_res.y(), (size_t) sw, (size_t) PixelWidth };
+                m_texture.set_tensor(TensorXf(corrected, 3, shape), /* migrate */ true);
+            } else {
+                refresh_halo((ScalarFloat *) tensor.array().data(), m_res);
+                m_texture.update_inplace();
             }
 
-            auto&& data = dr::migrate(m_data.array(), JitBackend::None);
-
+            auto&& data = dr::migrate(m_texture.tensor().array(), JitBackend::None);
             if constexpr (dr::is_jit_v<Float>)
                 dr::sync_thread();
 
-            ScalarFloat *ptr = (ScalarFloat *) data.data();
-
-            if constexpr (!dr::is_jit_v<Float>) {
-                // Enforce horizontal continuity
-                size_t pixel_width = is_spectral_v<Spectrum> ? 4 : 3;
-                for (size_t y = 0; y < res.y(); ++y) {
-                    ScalarFloat *p0 = ptr + y * res.x() * pixel_width,
-                                *p1 = p0 + (res.x() - 1) * pixel_width;
-                    ScalarPixelData v01 = .5f * (dr::load<ScalarPixelData>(p0) +
-                                                 dr::load<ScalarPixelData>(p1));
-                    dr::store(p0, v01);
-                    dr::store(p1, v01);
-                }
-            }
-
-            rebuild_distribution(ptr, res);
+            rebuild_distribution((ScalarFloat *) data.data());
         }
         Base::parameters_changed(keys);
     }
@@ -416,20 +422,20 @@ public:
     }
 
     std::string to_string() const override {
-        ScalarVector2u res = { m_data.shape(1), m_data.shape(0) };
         std::ostringstream oss;
         oss << "EnvironmentMapEmitter[" << std::endl;
         if (!m_filename.empty())
             oss << "  filename = \"" << m_filename << "\"," << std::endl;
-        oss << "  res = \"" << res << "\"," << std::endl
+        oss << "  res = \"" << m_res << "\"," << std::endl
             << "  bsphere = " << string::indent(m_bsphere) << std::endl
             << "]";
         return oss.str();
     }
 
 protected:
-    /// Half-texel shift aligning the sample warp grid with the texture
-    ScalarFloat half_texel() const { return .5f / (m_data.shape(1) - 1); }
+    /// Half-texel shift aligning the sample warp grid with the texture.
+    /// The warp grid has ``W + 1`` columns, so this is ``0.5 / W``.
+    ScalarFloat half_texel() const { return .5f / m_res.x(); }
 
     /// Convert a latitude-longitude UV coordinate into a local-frame direction,
     /// also returning the spherical-coordinate Jacobian term 1 / sin(theta).
@@ -448,23 +454,42 @@ protected:
                        dr::safe_acos(d.y()) * dr::InvPi<Float>);
     }
 
-    /// Rebuild the luminance-based sample warp from the (host-resident) pixel
-    /// data, applying optional MIS compensation and the sin(theta) weighting.
-    void rebuild_distribution(const ScalarFloat *data, const ScalarVector2u &res) {
-        size_t pixel_width = is_spectral_v<Spectrum> ? 4 : 3,
-               n           = (size_t) res.x() * res.y();
+    /// Copy the real edge columns into the halo columns of a host-resident
+    /// (H, W+2, N) buffer: col 0 <- last real col, col W+1 <- first real col.
+    static void refresh_halo(ScalarFloat *ptr, const ScalarVector2u &res) {
+        const uint32_t sw = res.x() + 2;
+        for (size_t y = 0; y < res.y(); ++y) {
+            ScalarFloat *r = ptr + (size_t) y * sw * PixelWidth;
+            dr::store(r, dr::load<ScalarPixelData>(r + res.x() * PixelWidth));
+            dr::store(r + (res.x() + 1) * PixelWidth,
+                      dr::load<ScalarPixelData>(r + PixelWidth));
+        }
+    }
+
+    /// Rebuild a width W+1 luminance warp from the width W+2 host texture
+    /// storage applying optional MIS compensation and sin(theta) weighting.
+    void rebuild_distribution(const ScalarFloat *data) {
+        const uint32_t sw = m_res.x() + 2;                  // texture storage stride
+        const ScalarVector2u res(m_res.x() + 1, m_res.y()); // warp grid (W+1, H)
+        size_t n = (size_t) res.x() * res.y();
 
         std::unique_ptr<ScalarFloat[]> luminance_data(new ScalarFloat[n]);
         ScalarFloat *lum_ptr = luminance_data.get();
 
-        for (size_t i = 0; i < n; ++i) {
-            ScalarPixelData coeff = dr::load<ScalarPixelData>(data + i * pixel_width);
-            if constexpr (is_monochromatic_v<Spectrum>)
-                lum_ptr[i] = coeff.x();
-            else if constexpr (is_rgb_v<Spectrum>)
-                lum_ptr[i] = luminance(ScalarColor3f(coeff));
-            else
-                lum_ptr[i] = srgb_model_mean(dr::head<3>(coeff)) * coeff.w();
+        for (size_t y = 0; y < res.y(); ++y) {
+            for (size_t x = 0; x < res.x(); ++x) {
+                // Warp column x corresponds to storage column x+1
+                ScalarPixelData coeff = dr::load<ScalarPixelData>(
+                    data + ((size_t) y * sw + (x + 1)) * PixelWidth);
+                ScalarFloat lum;
+                if constexpr (is_monochromatic_v<Spectrum>)
+                    lum = coeff.x();
+                else if constexpr (is_rgb_v<Spectrum>)
+                    lum = luminance(ScalarColor3f(coeff));
+                else
+                    lum = srgb_model_mean(dr::head<3>(coeff)) * coeff.w();
+                lum_ptr[y * res.x() + x] = lum;
+            }
         }
 
         /* "MIS Compensation: Optimizing Sampling Techniques in Multiple
@@ -506,38 +531,44 @@ protected:
 
     UnpolarizedSpectrum eval_spectrum(Point2f uv, const Wavelength &wavelengths,
                                       Mask active, bool include_whitepoint = true) const {
-        ScalarVector2u res = { m_data.shape(1), m_data.shape(0) };
+        Vector2f res(m_res); // real (W, H) as floats
 
-        uv.x() -= half_texel();
-        uv -= dr::floor(uv);
-        uv *= Vector2f(res - 1u);
-
-        Point2u pos = dr::minimum(Point2u(uv), res - 2u);
-
-        Point2f w1 = uv - Point2f(pos),
-                w0 = 1.f - w1;
-
-        const uint32_t width = res.x();
-        UInt32 index = dr::fmadd(pos.y(), width, pos.x());
-
-        PixelData v00 = dr::gather<PixelData>(m_data.array(), index, active),
-                  v10 = dr::gather<PixelData>(m_data.array(), index + 1, active),
-                  v01 = dr::gather<PixelData>(m_data.array(), index + width, active),
-                  v11 = dr::gather<PixelData>(m_data.array(), index + width + 1, active);
+        /* Texel-centered phi over the W real columns (offset by one to skip the
+           leading halo column), align-corners theta over the H rows. The
+           texture's ``pos = uv * res - 0.5`` absorbs the half-texel offset, and
+           ``WrapMode::Clamp`` plus the halo give periodic phi / clamped theta. */
+        Float u = uv.x() - dr::floor(uv.x()),       // wrap phi into [0, 1)
+              v = dr::clip(uv.y(), 0.f, 1.f);
+        Point2f pos(dr::fmadd(u, res.x(), 1.f) / (res.x() + 2.f),
+                    dr::fmadd(v, res.y() - 1.f, 0.5f) / res.y());
 
         if constexpr (is_spectral_v<Spectrum>) {
+            /* The spectral upsampling model is nonlinear. Use ``eval_fetch`` to
+               get the coefficients at the four corners so that we can evaluate
+               the model and interpolate ourselves. */
+
+            PixelData c00, c10, c01, c11;
+            dr::Array<Float *, 4> fetch{ c00.data(), c10.data(),
+                                         c01.data(), c11.data() };
+            m_texture.template eval_fetch<Float>(pos, fetch, active);
+
+            // Weights from ``eval_fetch``'s own ``pos_f = uv * res - 0.5``
+            Point2f pos_f = dr::fmadd(pos, Point2f(res.x() + 2.f, res.y()), -.5f);
+            Point2f w1 = pos_f - dr::floor(pos_f),
+                    w0 = 1.f - w1;
+
             UnpolarizedSpectrum s00, s10, s01, s11, s0, s1, s;
             Float f0, f1, f;
 
-            s00 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(v00), wavelengths);
-            s10 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(v10), wavelengths);
-            s01 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(v01), wavelengths);
-            s11 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(v11), wavelengths);
+            s00 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(c00), wavelengths);
+            s10 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(c10), wavelengths);
+            s01 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(c01), wavelengths);
+            s11 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(c11), wavelengths);
 
             s0  = dr::fmadd(w0.x(), s00, w1.x() * s10);
             s1  = dr::fmadd(w0.x(), s01, w1.x() * s11);
-            f0  = dr::fmadd(w0.x(), v00.w(), w1.x() * v10.w());
-            f1  = dr::fmadd(w0.x(), v01.w(), w1.x() * v11.w());
+            f0  = dr::fmadd(w0.x(), c00.w(), w1.x() * c10.w());
+            f1  = dr::fmadd(w0.x(), c01.w(), w1.x() * c11.w());
 
             s   = dr::fmadd(w0.y(), s0, w1.y() * s1);
             f   = dr::fmadd(w0.y(), f0, w1.y() * f1);
@@ -553,14 +584,15 @@ protected:
             return result;
         } else {
             DRJIT_MARK_USED(wavelengths);
-            PixelData v0 = dr::fmadd(w0.x(), v00, w1.x() * v10),
-                      v1 = dr::fmadd(w0.x(), v01, w1.x() * v11),
-                      v  = dr::fmadd(w0.y(), v0, w1.y() * v1);
+            /* RGB / mono store linearly-interpolatable values, so the hardware
+               bilinear lookup matches the original math exactly. */
+            Color3f v_rgb;
+            m_texture.template eval<Float>(pos, v_rgb.data(), active);
 
             if constexpr (is_monochromatic_v<Spectrum>)
-                return dr::head<1>(v) * m_scale;
+                return dr::head<1>(v_rgb) * m_scale;
             else
-                return v * m_scale;
+                return v_rgb * m_scale;
         }
     }
 
@@ -568,13 +600,14 @@ protected:
 protected:
     std::string m_filename;
     BoundingSphere3f m_bsphere;
-    TensorXf m_data;
+    Tex m_texture;
+    ScalarVector2u m_res;
     Warp m_warp;
     ref<Texture> m_d65;
     Float m_scale;
     bool m_mis_compensation;
 
-    MI_TRAVERSE_CB(Base, m_bsphere, m_data, m_warp, m_d65, m_scale)
+    MI_TRAVERSE_CB(Base, m_bsphere, m_texture, m_warp, m_d65, m_scale)
 };
 
 MI_EXPORT_PLUGIN(EnvironmentMapEmitter)
