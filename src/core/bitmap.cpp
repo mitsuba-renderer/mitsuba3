@@ -180,7 +180,7 @@ void Bitmap::rebuild_struct(size_t channel_count, const std::vector<std::string>
             if (channel_names.size() == 0) {
                 // Compute number of digits required for channel count - 1 to prepend zeros and ensure
                 // alphanumerical ordering of channel names
-                int num_digits = std::floor(std::log10(std::max<size_t>(1, channel_count - 1))) + 1;
+                int num_digits = (int) std::floor(std::log10(std::max<size_t>(1, channel_count - 1))) + 1;
                 std::string channel_format = tfm::format("ch%%0%dd", num_digits);
                 for (size_t i = 0; i < channel_count; ++i)
                     channels.push_back(tfm::format(channel_format.c_str(), i));

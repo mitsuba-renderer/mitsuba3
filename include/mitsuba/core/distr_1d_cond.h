@@ -292,15 +292,15 @@ private:
         }
 
         const FloatStorage *data;
-        size_t length;
+        uint32_t length;
         Value cond;
         if (dim == m_nodes_cond.size()) {
             data   = &m_nodes;
-            length = dr::width(*data);
+            length = (uint32_t) dr::width(*data);
             cond   = pos;
         } else {
             data   = &m_nodes_cond[dim];
-            length = dr::width(*data);
+            length = (uint32_t) dr::width(*data);
             cond   = cond_[dim];
         }
 
@@ -372,7 +372,7 @@ private:
         }
 
         const FloatStorage *data = &(m_nodes_cond[dim]);
-        size_t length            = dr::width(m_nodes_cond[dim]);
+        uint32_t length          = (uint32_t) dr::width(m_nodes_cond[dim]);
         Value cond               = cond_[dim];
 
         Index bin_index = dr::binary_search<Index>(
@@ -429,7 +429,7 @@ private:
 
         // This is the length of the CDF, which has one element less than the
         // nodes
-        size_t length_cdf = dr::width(m_nodes) - 1;
+        uint32_t length_cdf = (uint32_t) dr::width(m_nodes) - 1;
 
         // On the fly generate interpolated CDF and search for its entry
         Index bin_index = dr::binary_search<Index>(
@@ -457,7 +457,7 @@ private:
 
         for (ScalarUInt32 i = 0; i < index_res_array_.size(); i++) {
             Index index_tmp =
-                index_res_array_[i] * dr::width(m_nodes) + bin_index;
+                index_res_array_[i] * (uint32_t) dr::width(m_nodes) + bin_index;
             y0 = y0 +
                  weight_res_array_[i] *
                      dr::gather<Value>(m_pdf.array(), index_tmp,
@@ -948,9 +948,9 @@ private:
         }
 
         Index bin_index;
-        size_t length;
+        uint32_t length;
 
-        size_t size_nodes;
+        uint32_t size_nodes;
         Float inv_interval;
         Vector2f range_nodes;
         Value value;
@@ -1018,7 +1018,7 @@ private:
         }
 
         Value cond           = cond_[dim];
-        size_t size_nodes    = m_size_cond[dim];
+        uint32_t size_nodes  = m_size_cond[dim];
         Vector2f range_nodes = m_range_cond[dim];
         Float inv_interval   = m_inv_interval_cond[dim];
 
@@ -1060,7 +1060,7 @@ private:
 
         // This is the length of the CDF, which has one element less than the
         // nodes
-        size_t length_cdf = m_size_nodes - 1;
+        uint32_t length_cdf = m_size_nodes - 1;
 
         // On the fly generate interpolated CDF and search for its entry
         Index bin_index = dr::binary_search<Index>(
