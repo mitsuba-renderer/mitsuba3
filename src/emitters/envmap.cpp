@@ -111,8 +111,8 @@ public:
     using ScalarPixelData = dr::Array<ScalarFloat, PixelWidth>;
 
     EnvironmentMapEmitter(const Properties &props) : Base(props) {
-        /* Until `set_scene` is called, we have no information
-           about the scene and default to the unit bounding sphere. */
+        // Until `set_scene` is called, we have no information about the
+        // scene and default to the unit bounding sphere.
         m_bsphere = BoundingSphere3f(ScalarPoint3f(0.f), 1.f);
 
         ref<Bitmap> bitmap;
@@ -138,16 +138,16 @@ public:
             Throw("\"%s\": the environment map resolution must be at least "
                   "2x3 pixels", (m_filename.empty() ? "<Bitmap>" : m_filename));
 
-        /* Convert to linear RGBA float bitmap, will undergo further
-           conversion into coefficients of a spectral upsampling model below */
+        // Convert to linear RGBA float bitmap, will undergo further
+        // conversion into coefficients of a spectral upsampling model below
         Bitmap::PixelFormat pixel_format = Bitmap::PixelFormat::RGB;
         if constexpr (is_spectral_v<Spectrum>)
             pixel_format = Bitmap::PixelFormat::RGBA;
         bitmap = bitmap->convert(pixel_format, struct_type_v<Float>, false);
 
-        /* Allocate a larger image with a one-column halo on each side carrying
-           a copy of the opposite edge so that ``WrapMode::Clamp`` reproduces
-           the periodic boundary exactly. */
+        // Allocate a larger image with a one-column halo on each side carrying
+        // a copy of the opposite edge so that ``WrapMode::Clamp`` reproduces
+        // the periodic boundary exactly.
         m_res = ScalarVector2u((uint32_t) bitmap->width(),
                                (uint32_t) bitmap->height());
         const uint32_t sw = m_res.x() + 2;
@@ -170,10 +170,10 @@ public:
                     coeff = rgb;
                 } else {
                     static_assert(is_spectral_v<Spectrum>);
-                    /* Evaluate the spectral upsampling model. This requires a
-                       reflectance value (colors in [0, 1]) which is accomplished here by
-                       scaling. We use a color where the highest component is 50%,
-                       which generally yields a fairly smooth spectrum. */
+                    // Evaluate the spectral upsampling model. This requires a
+                    // reflectance value (colors in [0, 1]) which is accomplished
+                    // here by scaling. We use a color where the highest component
+                    // is 50%, which generally yields a fairly smooth spectrum.
                     ScalarFloat scale = dr::max(rgb) * 2.f;
                     ScalarColor3f rgb_norm = rgb / dr::maximum(1e-8f, scale);
                     coeff = dr::concat((ScalarColor3f) srgb_model_fetch(rgb_norm),
@@ -228,11 +228,11 @@ public:
                                    (uint32_t) tensor.shape(0));
             const uint32_t sw = m_res.x() + 2;
 
-            /* The user may have edited the real columns, so refresh the halo
-               that makes ``WrapMode::Clamp`` periodic in phi (col 0 <- last real
-               col, col W+1 <- first). Scatter into a copy so the exposed leaf
-               stays clean; the AD-tracked scatter then routes each halo column's
-               gradient onto its source real column. */
+            // The user may have edited the real columns, so refresh the halo
+            // that makes ``WrapMode::Clamp`` periodic in phi (col 0 <- last real
+            // col, col W+1 <- first). Scatter into a copy so the exposed leaf
+            // stays clean; the AD-tracked scatter then routes each halo column's
+            // gradient onto its source real column.
             if constexpr (dr::is_jit_v<Float>) {
                 auto &array = tensor.array();
                 Float corrected = array; // copy-on-write; the scatters fork it
@@ -405,10 +405,9 @@ public:
     sample_position(Float /*time*/, const Point2f & /*sample*/,
                     Mask /*active*/) const override {
         if constexpr (dr::is_jit_v<Float>) {
-            /* Do not throw an exception in JIT-compiled variants. This
-               function might be invoked by DrJit's virtual function call
-               recording mechanism despite not influencing any actual
-               calculation. */
+            // Do not throw an exception in JIT-compiled variants. This function
+            // might be invoked by DrJit's virtual function call recording
+            // mechanism despite not influencing any actual calculation.
             return { dr::zeros<PositionSample3f>(), dr::NaN<Float> };
         } else {
             NotImplementedError("sample_position");
@@ -416,8 +415,8 @@ public:
     }
 
     ScalarBoundingBox3f bbox() const override {
-        /* This emitter does not occupy any particular region
-           of space, return an invalid bounding box */
+        // This emitter does not occupy any particular region of space, return
+        // an invalid bounding box
         return ScalarBoundingBox3f();
     }
 
@@ -492,9 +491,9 @@ protected:
             }
         }
 
-        /* "MIS Compensation: Optimizing Sampling Techniques in Multiple
-           Importance Sampling" Ondrej Karlik, Martin Sik, Petr Vivoda, Tomas
-           Skrivan, and Jaroslav Krivanek. SIGGRAPH Asia 2019 */
+        // "MIS Compensation: Optimizing Sampling Techniques in Multiple
+        // Importance Sampling" Ondrej Karlik, Martin Sik, Petr Vivoda, Tomas
+        // Skrivan, and Jaroslav Krivanek. SIGGRAPH Asia 2019
         ScalarFloat offset = 0.f;
         if (m_mis_compensation) {
             ScalarFloat min_lum = dr::Infinity<ScalarFloat>;
@@ -511,8 +510,8 @@ protected:
 
             offset = ScalarFloat(lum_accum_d / ((res.x() - 1u) * (size_t) res.y()));
 
-            /* Be wary of constant environment maps: average and minimum
-               should be sufficiently different */
+            // Be wary of constant environment maps: average and minimum should
+            // be sufficiently different
             if (offset - min_lum <= 0.01f * offset)
                 offset = 0.f; // disable
         }
@@ -533,20 +532,19 @@ protected:
                                       Mask active, bool include_whitepoint = true) const {
         Vector2f res(m_res); // real (W, H) as floats
 
-        /* Texel-centered phi over the W real columns (offset by one to skip the
-           leading halo column), align-corners theta over the H rows. The
-           texture's ``pos = uv * res - 0.5`` absorbs the half-texel offset, and
-           ``WrapMode::Clamp`` plus the halo give periodic phi / clamped theta. */
+        // Texel-centered phi over the W real columns (offset by one to skip the
+        // leading halo column), align-corners theta over the H rows. The
+        // texture's ``pos = uv * res - 0.5`` absorbs the half-texel offset, and
+        // ``WrapMode::Clamp`` plus the halo give periodic phi / clamped theta.
         Float u = uv.x() - dr::floor(uv.x()),       // wrap phi into [0, 1)
               v = dr::clip(uv.y(), 0.f, 1.f);
         Point2f pos(dr::fmadd(u, res.x(), 1.f) / (res.x() + 2.f),
                     dr::fmadd(v, res.y() - 1.f, 0.5f) / res.y());
 
         if constexpr (is_spectral_v<Spectrum>) {
-            /* The spectral upsampling model is nonlinear. Use ``eval_fetch`` to
-               get the coefficients at the four corners so that we can evaluate
-               the model and interpolate ourselves. */
-
+            // The spectral upsampling model is nonlinear. Use ``eval_fetch`` to
+            // get the coefficients at the four corners so that we can evaluate
+            // the model and interpolate ourselves.
             PixelData c00, c10, c01, c11;
             dr::Array<Float *, 4> fetch{ c00.data(), c10.data(),
                                          c01.data(), c11.data() };
@@ -584,8 +582,8 @@ protected:
             return result;
         } else {
             DRJIT_MARK_USED(wavelengths);
-            /* RGB / mono store linearly-interpolatable values, so the hardware
-               bilinear lookup matches the original math exactly. */
+            // RGB / mono store linearly-interpolatable values, so the hardware
+            // bilinear lookup matches the original math exactly.
             Color3f v_rgb;
             m_texture.template eval<Float>(pos, v_rgb.data(), active);
 
