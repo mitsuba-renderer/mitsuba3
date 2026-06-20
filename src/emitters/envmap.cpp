@@ -148,54 +148,17 @@ public:
         ref<Bitmap> bitmap_2 = new Bitmap(bitmap->pixel_format(),
                                           bitmap->component_format(), res);
 
-        // Luminance image used for importance sampling
-        std::unique_ptr<ScalarFloat[]> luminance_data(new ScalarFloat[dr::prod(res)]);
-
         ScalarFloat *in_ptr  = (ScalarFloat *) bitmap->data(),
-                    *out_ptr = (ScalarFloat *) bitmap_2->data(),
-                    *lum_ptr = (ScalarFloat *) luminance_data.get();
-
-        ScalarFloat theta_scale = 1.f / (bitmap->size().y() - 1) * dr::Pi<Float>;
-
-        /* "MIS Compensation: Optimizing Sampling Techniques in Multiple
-           Importance Sampling" Ondrej Karlik, Martin Sik, Petr Vivoda, Tomas
-           Skrivan, and Jaroslav Krivanek. SIGGRAPH Asia 2019 */
-        ScalarFloat luminance_offset = 0.f;
-        if (props.get<bool>("mis_compensation", false)) {
-            ScalarFloat min_lum = 0.f;
-            double lum_accum_d = 0.0;
-
-            for (size_t y = 0; y < bitmap->size().y(); ++y) {
-                for (size_t x = 0; x < bitmap->size().x(); ++x) {
-                    ScalarColor3f rgb = dr::load<ScalarVector3f>(in_ptr);
-                    ScalarFloat lum = luminance(rgb);
-                    min_lum = dr::minimum(min_lum, lum);
-                    lum_accum_d += (double) lum;
-                    in_ptr += 4;
-                }
-            }
-            in_ptr = (ScalarFloat *) bitmap->data();
-
-            luminance_offset = ScalarFloat(lum_accum_d / dr::prod(bitmap->size()));
-
-            /* Be wary of constant environment maps: average and minimum
-               should be sufficiently different */
-            if (luminance_offset - min_lum <= 0.01f * luminance_offset)
-                luminance_offset = 0.f; // disable
-        }
+                    *out_ptr = (ScalarFloat *) bitmap_2->data();
 
         size_t pixel_width = is_spectral_v<Spectrum> ? 4 : 3;
         for (size_t y = 0; y < bitmap->size().y(); ++y) {
-            ScalarFloat sin_theta = dr::sin(y * theta_scale);
-
             for (size_t x = 0; x < bitmap->size().x(); ++x) {
                 ScalarColor3f rgb = dr::load<ScalarVector3f>(in_ptr);
 
-                ScalarFloat lum = luminance(rgb);
-
                 ScalarPixelData coeff;
                 if constexpr (is_monochromatic_v<Spectrum>) {
-                    coeff = ScalarPixelData(lum);
+                    coeff = ScalarPixelData(luminance(rgb));
                 } else if constexpr (is_rgb_v<Spectrum>) {
                     coeff = rgb;
                 } else {
@@ -210,17 +173,12 @@ public:
                                        dr::Array<ScalarFloat, 1>(scale));
                 }
 
-                lum = dr::maximum(lum - luminance_offset, 0.f);
-
-                *lum_ptr++ = lum * sin_theta;
                 dr::store(out_ptr, coeff);
                 in_ptr += pixel_width;
                 out_ptr += pixel_width;
             }
 
-            // Last column of pixels mirrors first
-            ScalarFloat temp = *(lum_ptr - bitmap->size().x());
-            *lum_ptr++ = temp;
+            // Last column of pixels mirrors first to enforce periodicity
             dr::store(out_ptr, dr::load<ScalarPixelData>(
                                    out_ptr - bitmap->size().x() * pixel_width));
             out_ptr += pixel_width;
@@ -230,9 +188,11 @@ public:
         m_data = TensorXf(bitmap_2->data(), 3, shape);
 
         m_scale = props.get<ScalarFloat>("scale", 1.f);
-        m_warp = Warp(luminance_data.get(), res);
+        m_mis_compensation = props.get<bool>("mis_compensation", false);
         m_d65 = Texture::D65(1.f);
         m_flags = EmitterFlags::Infinite | EmitterFlags::SpatiallyVarying;
+
+        rebuild_distribution((ScalarFloat *) bitmap_2->data(), res);
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -272,64 +232,22 @@ public:
             if constexpr (dr::is_jit_v<Float>)
                 dr::sync_thread();
 
-            std::unique_ptr<ScalarFloat[]> luminance_data(
-                new ScalarFloat[dr::prod(res)]);
+            ScalarFloat *ptr = (ScalarFloat *) data.data();
 
-            ScalarFloat *ptr     = (ScalarFloat *) data.data(),
-                        *lum_ptr = (ScalarFloat *) luminance_data.get();
-
-            size_t pixel_width = is_spectral_v<Spectrum> ? 4 : 3;
-            constexpr bool is_aligned = ScalarPixelData::Size == 4;
-
-            ScalarFloat theta_scale = 1.f / (res.y() - 1) * dr::Pi<Float>;
-            for (size_t y = 0; y < res.y(); ++y) {
-                ScalarFloat sin_theta = dr::sin(y * theta_scale);
-
-                if constexpr (!dr::is_jit_v<Float>) {
-                    // Enforce horizontal continuity
-                    ScalarFloat *ptr2 = ptr + pixel_width * (res.x() - 1);
-                    ScalarPixelData v0, v1;
-                    if constexpr (is_aligned) {
-                        v0  = dr::load_aligned<ScalarPixelData>(ptr);
-                        v1  = dr::load_aligned<ScalarPixelData>(ptr2);
-                    } else {
-                        v0  = dr::load<ScalarPixelData>(ptr);
-                        v1  = dr::load<ScalarPixelData>(ptr2);
-                    }
-                    ScalarPixelData v01 = .5f * (v0 + v1);
-
-                    if constexpr (is_aligned) {
-                        dr::store_aligned(ptr, v01),
-                        dr::store_aligned(ptr2, v01);
-                    } else {
-                        dr::store(ptr, v01),
-                        dr::store(ptr2, v01);
-                    }
-                }
-
-                for (size_t x = 0; x < res.x(); ++x) {
-                    ScalarPixelData coeff;
-                    if constexpr (is_aligned)
-                        coeff = dr::load_aligned<ScalarPixelData>(ptr);
-                    else
-                        coeff = dr::load<ScalarPixelData>(ptr);
-
-                    ScalarFloat lum;
-                    if constexpr (is_monochromatic_v<Spectrum>) {
-                        lum = coeff.x();
-                    } else if constexpr (is_rgb_v<Spectrum>) {
-                        lum = luminance(ScalarColor3f(coeff));
-                    } else {
-                        static_assert(is_spectral_v<Spectrum>);
-                        lum = srgb_model_mean(dr::head<3>(coeff)) * coeff.w();
-                    }
-
-                    *lum_ptr++ = lum * sin_theta;
-                    ptr += pixel_width;
+            if constexpr (!dr::is_jit_v<Float>) {
+                // Enforce horizontal continuity
+                size_t pixel_width = is_spectral_v<Spectrum> ? 4 : 3;
+                for (size_t y = 0; y < res.y(); ++y) {
+                    ScalarFloat *p0 = ptr + y * res.x() * pixel_width,
+                                *p1 = p0 + (res.x() - 1) * pixel_width;
+                    ScalarPixelData v01 = .5f * (dr::load<ScalarPixelData>(p0) +
+                                                 dr::load<ScalarPixelData>(p1));
+                    dr::store(p0, v01);
+                    dr::store(p1, v01);
                 }
             }
 
-            m_warp = Warp(luminance_data.get(), res);
+            rebuild_distribution(ptr, res);
         }
         Base::parameters_changed(keys);
     }
@@ -355,9 +273,7 @@ public:
 
         Vector3f v = m_to_world.value().inverse() * (-si.wi);
 
-        // Convert to latitude-longitude texture coordinates
-        Point2f uv = Point2f(dr::atan2(v.x(), -v.z()) * dr::InvTwoPi<Float>,
-                             dr::safe_acos(v.y()) * dr::InvPi<Float>);
+        Point2f uv = direction_to_uv(v);
 
         return depolarizer<Spectrum>(eval_spectrum(uv, si.wavelengths, active));
     }
@@ -373,17 +289,12 @@ public:
 
         // 2. Sample directional component
         auto [uv, pdf] = m_warp.sample(sample3, nullptr, active);
-        uv.x() += .5f / (m_data.shape(1) - 1);
+        uv.x() += half_texel();
 
         active &= pdf > 0.f;
 
-        Float theta = uv.y() * dr::Pi<Float>,
-              phi   = uv.x() * dr::TwoPi<Float>;
-
-        Vector3f d = dr::sphdir(theta, phi);
-        d = Vector3f(d.y(), d.z(), -d.x());
-
-        Float inv_sin_theta = dr::safe_rsqrt(dr::square(d.x()) + dr::square(d.z()));
+        Float inv_sin_theta;
+        Vector3f d = uv_to_direction(uv, inv_sin_theta);
         pdf *= inv_sin_theta * dr::InvTwoPi<Float> * dr::InvPi<Float>;
 
         // Unlike \ref sample_direction, ray goes from the envmap toward the scene
@@ -417,21 +328,15 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         auto [uv, pdf] = m_warp.sample(sample, nullptr, active);
-        uv.x() += .5f / (m_data.shape(1) - 1);
+        uv.x() += half_texel();
         active &= pdf > 0.f;
 
-        Float theta = uv.y() * dr::Pi<Float>,
-              phi   = uv.x() * dr::TwoPi<Float>;
-
-        Vector3f d = dr::sphdir(theta, phi);
-        d = Vector3f(d.y(), d.z(), -d.x());
+        Float inv_sin_theta;
+        Vector3f d = uv_to_direction(uv, inv_sin_theta);
 
         // Needed when the reference point is on the sensor, which is not part of the bbox
         Float radius = dr::maximum(m_bsphere.radius, dr::norm(it.p - m_bsphere.center));
         Float dist = 2.f * radius;
-
-        Float inv_sin_theta = dr::safe_rsqrt(dr::maximum(
-            dr::square(d.x()) + dr::square(d.z()), dr::square(dr::Epsilon<Float>)));
 
         d = m_to_world.value() * d;
 
@@ -463,10 +368,8 @@ public:
 
         Vector3f d = m_to_world.value().inverse() * ds.d;
 
-        // Convert to latitude-longitude texture coordinates
-        Point2f uv = Point2f(dr::atan2(d.x(), -d.z()) * dr::InvTwoPi<Float>,
-                             dr::safe_acos(d.y()) * dr::InvPi<Float>);
-        uv.x() -= .5f / (m_data.shape(1) - 1u);
+        Point2f uv = direction_to_uv(d);
+        uv.x() -= half_texel();
         uv -= dr::floor(uv);
 
         Float inv_sin_theta = dr::safe_rsqrt(dr::maximum(
@@ -525,11 +428,87 @@ public:
     }
 
 protected:
+    /// Half-texel shift aligning the sample warp grid with the texture
+    ScalarFloat half_texel() const { return .5f / (m_data.shape(1) - 1); }
+
+    /// Convert a latitude-longitude UV coordinate into a local-frame direction,
+    /// also returning the spherical-coordinate Jacobian term 1 / sin(theta).
+    Vector3f uv_to_direction(const Point2f &uv, Float &inv_sin_theta) const {
+        Float theta = uv.y() * dr::Pi<Float>,
+              phi   = uv.x() * dr::TwoPi<Float>;
+        auto [sin_theta, cos_theta] = dr::sincos(theta);
+        auto [sin_phi,   cos_phi]   = dr::sincos(phi);
+        inv_sin_theta = dr::rcp(dr::maximum(sin_theta, dr::Epsilon<Float>));
+        return Vector3f(sin_phi * sin_theta, cos_theta, -cos_phi * sin_theta);
+    }
+
+    /// Inverse of \ref uv_to_direction (latitude-longitude texture coordinates)
+    Point2f direction_to_uv(const Vector3f &d) const {
+        return Point2f(dr::atan2(d.x(), -d.z()) * dr::InvTwoPi<Float>,
+                       dr::safe_acos(d.y()) * dr::InvPi<Float>);
+    }
+
+    /// Rebuild the luminance-based sample warp from the (host-resident) pixel
+    /// data, applying optional MIS compensation and the sin(theta) weighting.
+    void rebuild_distribution(const ScalarFloat *data, const ScalarVector2u &res) {
+        size_t pixel_width = is_spectral_v<Spectrum> ? 4 : 3,
+               n           = (size_t) res.x() * res.y();
+
+        std::unique_ptr<ScalarFloat[]> luminance_data(new ScalarFloat[n]);
+        ScalarFloat *lum_ptr = luminance_data.get();
+
+        for (size_t i = 0; i < n; ++i) {
+            ScalarPixelData coeff = dr::load<ScalarPixelData>(data + i * pixel_width);
+            if constexpr (is_monochromatic_v<Spectrum>)
+                lum_ptr[i] = coeff.x();
+            else if constexpr (is_rgb_v<Spectrum>)
+                lum_ptr[i] = luminance(ScalarColor3f(coeff));
+            else
+                lum_ptr[i] = srgb_model_mean(dr::head<3>(coeff)) * coeff.w();
+        }
+
+        /* "MIS Compensation: Optimizing Sampling Techniques in Multiple
+           Importance Sampling" Ondrej Karlik, Martin Sik, Petr Vivoda, Tomas
+           Skrivan, and Jaroslav Krivanek. SIGGRAPH Asia 2019 */
+        ScalarFloat offset = 0.f;
+        if (m_mis_compensation) {
+            ScalarFloat min_lum = dr::Infinity<ScalarFloat>;
+            double lum_accum_d = 0.0;
+
+            // Skip the padded periodic column (last column mirrors the first)
+            for (size_t y = 0; y < res.y(); ++y) {
+                for (size_t x = 0; x < res.x() - 1u; ++x) {
+                    ScalarFloat lum = lum_ptr[y * res.x() + x];
+                    min_lum = dr::minimum(min_lum, lum);
+                    lum_accum_d += (double) lum;
+                }
+            }
+
+            offset = ScalarFloat(lum_accum_d / ((res.x() - 1u) * (size_t) res.y()));
+
+            /* Be wary of constant environment maps: average and minimum
+               should be sufficiently different */
+            if (offset - min_lum <= 0.01f * offset)
+                offset = 0.f; // disable
+        }
+
+        ScalarFloat theta_scale = 1.f / (res.y() - 1) * dr::Pi<Float>;
+        for (size_t y = 0; y < res.y(); ++y) {
+            ScalarFloat sin_theta = dr::sin(y * theta_scale);
+            for (size_t x = 0; x < res.x(); ++x) {
+                ScalarFloat &lum = lum_ptr[y * res.x() + x];
+                lum = dr::maximum(lum - offset, 0.f) * sin_theta;
+            }
+        }
+
+        m_warp = Warp(luminance_data.get(), res);
+    }
+
     UnpolarizedSpectrum eval_spectrum(Point2f uv, const Wavelength &wavelengths,
                                       Mask active, bool include_whitepoint = true) const {
         ScalarVector2u res = { m_data.shape(1), m_data.shape(0) };
 
-        uv.x() -= .5f / (res.x() - 1u);
+        uv.x() -= half_texel();
         uv -= dr::floor(uv);
         uv *= Vector2f(res - 1u);
 
@@ -593,6 +572,7 @@ protected:
     Warp m_warp;
     ref<Texture> m_d65;
     Float m_scale;
+    bool m_mis_compensation;
 
     MI_TRAVERSE_CB(Base, m_bsphere, m_data, m_warp, m_d65, m_scale)
 };
