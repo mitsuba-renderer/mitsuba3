@@ -7,10 +7,7 @@ import os
 
 
 def uses_hw_texture():
-    """The envmap radiance lookup uses a hardware texture unit (reduced-precision
-    bilinear weights) on GPU backends; the software path is near bit-exact."""
-    return dr.is_jit_v(mi.Float) and dr.backend_v(mi.Float) in (
-        dr.JitBackend.CUDA, dr.JitBackend.Metal)
+    return dr.backend_v(mi.Float) in (dr.JitBackend.CUDA, dr.JitBackend.Metal)
 
 
 @pytest.mark.parametrize("iteration", [0, 1, 2])
@@ -69,10 +66,10 @@ def test02_sampling_weights(variants_vec_backends_once_rgb):
         "filename" : fname
     })
 
-    # The radiance lookup uses a hardware texture on GPU backends, so the eval
-    # at the warp UV and at the recovered direction UV can differ by the texture
-    # unit's reduced-precision interpolation weights.
-    rtol = 3e-2 if uses_hw_texture() else 1e-3
+    # The radiance lookup uses a hardware texture on GPU backends. The texel
+    # values are interpolated at full precision, but the bilinear weight within
+    # a texel is quantized to 8 fractional bits (1/256 steps) on CUDA.
+    rtol = 7e-2 if uses_hw_texture() else 1e-3
 
     # Test the sample_direction() interface
     si = dr.zeros(mi.SurfaceInteraction3f)
