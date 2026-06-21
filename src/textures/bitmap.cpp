@@ -530,25 +530,18 @@ public:
 
                 Float f00, f10, f01, f11;
                 if (channels == 1) {
-                    dr::Array<Float *, 4> fetch_values;
-                    fetch_values[0] = &f00;
-                    fetch_values[1] = &f10;
-                    fetch_values[2] = &f01;
-                    fetch_values[3] = &f11;
-                    m_texture.template eval_fetch<Float>(uv, fetch_values, active);
+                    using Data1 = dr::Array<Float, 1>;
+                    dr::Array<Data1, 4> c =
+                        m_texture.template eval_fetch<Data1>(uv, active);
+                    f00 = c[0].x(); f10 = c[1].x();
+                    f01 = c[2].x(); f11 = c[3].x();
                 } else { // 3 channels
-                    Color3f v00, v10, v01, v11;
-                    dr::Array<Float *, 4> fetch_values;
-                    fetch_values[0] = v00.data();
-                    fetch_values[1] = v10.data();
-                    fetch_values[2] = v01.data();
-                    fetch_values[3] = v11.data();
-                    m_texture.template eval_fetch<Float>(uv, fetch_values, active);
-
-                    f00 = luminance(v00);
-                    f10 = luminance(v10);
-                    f01 = luminance(v01);
-                    f11 = luminance(v11);
+                    dr::Array<Color3f, 4> c =
+                        m_texture.template eval_fetch<Color3f>(uv, active);
+                    f00 = luminance(c[0]);
+                    f10 = luminance(c[1]);
+                    f01 = luminance(c[2]);
+                    f11 = luminance(c[3]);
                 }
 
                 ScalarVector2i res = resolution();
@@ -740,19 +733,14 @@ protected:
         Point2f uv = m_transform * si.uv;
 
         if (m_texture.filter_mode() == dr::FilterMode::Linear) {
-            Color3f v00, v10, v01, v11;
-            dr::Array<Float *, 4> fetch_values;
-            fetch_values[0] = v00.data();
-            fetch_values[1] = v10.data();
-            fetch_values[2] = v01.data();
-            fetch_values[3] = v11.data();
-            m_texture.template eval_fetch<Float>(uv, fetch_values, active);
+            dr::Array<Color3f, 4> v =
+                m_texture.template eval_fetch<Color3f>(uv, active);
 
             UnpolarizedSpectrum c00, c10, c01, c11, c0, c1;
-            c00 = srgb_model_eval<UnpolarizedSpectrum>(v00, si.wavelengths);
-            c10 = srgb_model_eval<UnpolarizedSpectrum>(v10, si.wavelengths);
-            c01 = srgb_model_eval<UnpolarizedSpectrum>(v01, si.wavelengths);
-            c11 = srgb_model_eval<UnpolarizedSpectrum>(v11, si.wavelengths);
+            c00 = srgb_model_eval<UnpolarizedSpectrum>(v[0], si.wavelengths);
+            c10 = srgb_model_eval<UnpolarizedSpectrum>(v[1], si.wavelengths);
+            c01 = srgb_model_eval<UnpolarizedSpectrum>(v[2], si.wavelengths);
+            c11 = srgb_model_eval<UnpolarizedSpectrum>(v[3], si.wavelengths);
 
             ScalarVector2i res = resolution();
             uv = dr::fmadd(uv, res, -.5f);
@@ -766,8 +754,7 @@ protected:
 
             return dr::fmadd(w0.y(), c0, w1.y() * c1);
         } else {
-            Color3f out;
-            m_texture.template eval<Float>(uv, out.data(), active);
+            Color3f out = m_texture.template eval<Color3f>(uv, active);
 
             return srgb_model_eval<UnpolarizedSpectrum>(out, si.wavelengths);
         }
@@ -785,10 +772,8 @@ protected:
 
         Point2f uv = m_transform * si.uv;
 
-        Float out;
-        m_texture.template eval<Float>(uv, &out, active);
-
-        return out;
+        using Data1 = dr::Array<Float, 1>;
+        return m_texture.template eval<Data1>(uv, active).x();
     }
 
     /**
@@ -803,10 +788,7 @@ protected:
 
         Point2f uv = m_transform * si.uv;
 
-        Color3f out;
-        m_texture.template eval<Float>(uv, out.data(), active);
-
-        return out;
+        return m_texture.template eval<Color3f>(uv, active);
     }
 
     /**

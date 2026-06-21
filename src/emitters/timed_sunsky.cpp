@@ -352,8 +352,8 @@ private:
               sun_idx = (dr::rad_to_deg(sun_idx) - 2.f) / 3.f;
               sun_idx /= MPDF_ELEVATION_COUNT;
 
-        Float res;
-        m_sky_sampling_weight_tex->eval(dr::Array<Float, 1>(sun_idx), &res, valid_elevation);
+        Float res = m_sky_sampling_weight_tex->template eval<dr::Array<Float, 1>>(
+            dr::Array<Float, 1>(sun_idx), valid_elevation).x();
 
         return dr::select(res == 0.f, 1.f, res);
     }
@@ -365,8 +365,9 @@ private:
               sun_idx = (dr::rad_to_deg(sun_idx) - 2.f) / 3.f;
               sun_idx /= MPDF_ELEVATION_COUNT;
 
-        Float res[CHANNEL_COUNT] = { 0.f };
-        m_sun_irrad_tex->eval(dr::Array<Float, 1>(sun_idx), res, dr::any(valid_elevation));
+        dr::Array<Float, CHANNEL_COUNT> res =
+            m_sun_irrad_tex->template eval<dr::Array<Float, CHANNEL_COUNT>>(
+                dr::Array<Float, 1>(sun_idx), dr::any(valid_elevation));
 
         USpec irradiance = 0.f;
         for (uint32_t channel = 0; channel < CHANNEL_COUNT; ++channel)
@@ -380,8 +381,9 @@ private:
             sun_eta_idx_f = (sun_eta_idx_f - MIN_SAMPLING_ETA) / (MAX_SAMPLING_ETA - MIN_SAMPLING_ETA);
 
         Mask valid_elevation = active & (sun_theta <= 0.5f * dr::Pi<Float>);
-        Float res[MPDF_CHANNELS] = { 0.f };
-        m_sampling_params_tex->eval(dr::Array<Float, 1>(sun_eta_idx_f), res, dr::any(valid_elevation));
+        dr::Array<Float, MPDF_CHANNELS> res =
+            m_sampling_params_tex->template eval<dr::Array<Float, MPDF_CHANNELS>>(
+                dr::Array<Float, 1>(sun_eta_idx_f), dr::any(valid_elevation));
 
         SamplingWeights sampling_weights;
         for (uint32_t i = 0; i < MPDF_CHANNELS; ++i)
