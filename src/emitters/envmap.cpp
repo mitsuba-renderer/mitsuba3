@@ -545,10 +545,10 @@ protected:
             // The spectral upsampling model is nonlinear. Use ``eval_fetch`` to
             // get the coefficients at the four corners so that we can evaluate
             // the model and interpolate ourselves.
-            PixelData c00, c10, c01, c11;
-            dr::Array<Float *, 4> fetch{ c00.data(), c10.data(),
-                                         c01.data(), c11.data() };
-            m_texture.template eval_fetch<Float>(pos, fetch, active);
+            dr::Array<PixelData, 4> corners =
+                m_texture.template eval_fetch<PixelData>(pos, active);
+            const PixelData &c00 = corners[0], &c10 = corners[1],
+                            &c01 = corners[2], &c11 = corners[3];
 
             // Weights from ``eval_fetch``'s own ``pos_f = uv * res - 0.5``
             Point2f pos_f = dr::fmadd(pos, Point2f(res.x() + 2.f, res.y()), -.5f);
@@ -584,8 +584,7 @@ protected:
             DRJIT_MARK_USED(wavelengths);
             // RGB / mono store linearly-interpolatable values, so the hardware
             // bilinear lookup matches the original math exactly.
-            Color3f v_rgb;
-            m_texture.template eval<Float>(pos, v_rgb.data(), active);
+            Color3f v_rgb = m_texture.template eval<Color3f>(pos, active);
 
             if constexpr (is_monochromatic_v<Spectrum>)
                 return dr::head<1>(v_rgb) * m_scale;
