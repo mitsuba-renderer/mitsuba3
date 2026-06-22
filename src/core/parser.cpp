@@ -8,6 +8,7 @@
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/formatter.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/frame.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/mitsuba.h>
@@ -37,7 +38,7 @@ using ScalarAffineTransform4d = AffineTransform<ScalarPoint4d>;
 enum class TagType {
     Boolean, Integer, Float, String, Point, Vector, Spectrum, RGB,
     Transform, Translate, Matrix, Rotate, Scale, LookAt, Object,
-    NamedReference, Include, Alias, Default, Resource, Invalid
+    NamedReference, Include, Alias, Default, Resource, Animation, Invalid
 };
 
 /**
@@ -132,6 +133,7 @@ static std::pair<TagType, ObjectType> interpret_tag(std::string_view str) {
     switch (str[0]) {
         case 'a':
             if (str == "alias") return {TagType::Alias, ObjectType::Unknown};
+            if (str == "animation") return {TagType::Animation, ObjectType::Unknown};
             break;
         case 'b':
             if (str == "boolean") return {TagType::Boolean, ObjectType::Unknown};
@@ -567,6 +569,19 @@ static void parse_transform_node(const ParserState &state, pugi::xml_node node,
     }
 }
 
+/// Instantiates an animated transform given Float/Spectrum types.
+template <typename Float, typename Spectrum>
+ref<Object> instantiate_animated_transform(
+    const std::vector<std::pair<double, ScalarAffineTransform4d>> &keyframes) {
+    using ScalarFloat = dr::scalar_t<Float>;
+    using ScalarTransform = mitsuba::Transform<mitsuba::Point<ScalarFloat, 4>, true>;
+    std::vector<std::pair<ScalarFloat, ScalarTransform>> kf;
+    for (const auto &[time, trafo] : keyframes) {
+        kf.push_back({ ScalarFloat(time), ScalarTransform(trafo) });
+    }
+    return new AnimatedTransform<Float, Spectrum>(kf);
+}
+
 // Helper function to parse XML nodes recursively
 static void parse_xml_node(const ParserConfig &config, ParserState &state,
                           pugi::xml_node node, size_t parent_idx,
@@ -900,6 +915,37 @@ static void parse_xml_node(const ParserConfig &config, ParserState &state,
 
             // Store the accumulated transform
             state[parent_idx].props.set(name, transform);
+
+            return; // Don't process children again
+        }
+
+        case TagType::Animation: {
+            check_attributes(state, scene_node, node, {"!name"sv});
+
+            std::vector<std::pair<double, ScalarAffineTransform4d>> keyframes;
+            for (pugi::xml_node child : node.children()) {
+                if (child.type() == pugi::node_element) {
+                    if (std::string_view(child.name()) != "transform")
+                         fail(state, scene_node, "unexpected <%s> element inside <animation>", child.name());
+
+                    check_attributes(state, scene_node, child, {"!time"sv});
+                    std::string_view time_str = child.attribute("time").value();
+                    double time = 0.0;
+                    try {
+                        time = string::stof<double>(time_str);
+                    } catch (...) {
+                        fail(state, scene_node, "could not parse time value \"%s\"", time_str);
+                    }
+                    ScalarAffineTransform4d transform;
+                    for (pugi::xml_node op : child.children()) {
+                        if (op.type() == pugi::node_element)
+                            parse_transform_node(state, op, scene_node, transform, params);
+                    }
+                    keyframes.push_back({time, transform});
+                }
+            }
+            ref<Object> anim = MI_INVOKE_VARIANT(config.variant, instantiate_animated_transform, keyframes);
+            state[parent_idx].props.set(name, anim);
 
             return; // Don't process children again
         }
