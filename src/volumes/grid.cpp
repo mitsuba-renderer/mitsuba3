@@ -446,7 +446,7 @@ public:
             << "  bbox = " << string::indent(m_bbox) << "," << std::endl
             << "  dimensions = " << resolution() << "," << std::endl
             << "  max = " << m_max << "," << std::endl
-            << "  channels = " << m_texture.shape()[3] << std::endl
+            << "  channels = " << m_texture.channel_count() << std::endl
             << "]";
         return oss.str();
     }
@@ -461,7 +461,7 @@ protected:
      * holds all scaling coefficients is omitted.
      */
     MI_INLINE size_t nchannels() const {
-        const size_t channels = m_texture.shape()[3];
+        const size_t channels = m_texture.channel_count();
         // When spectral upsampling is requested, a fourth channel is added to
         // the internal texture data to handle scaling coefficients.
         if (is_spectral_v<Spectrum> && channels == 4 && !m_raw)
@@ -483,8 +483,7 @@ protected:
         if (m_texture.filter_mode() == dr::FilterMode::Linear) {
             using Data4 = dr::Array<Float, 4>;
             dr::Array<Data4, 8> d =
-                m_accel ? m_texture.template eval_fetch<Data4>(p, active)
-                        : m_texture.template eval_fetch_nonaccel<Data4>(p, active);
+                m_texture.template eval_fetch<Data4>(p, active);
             const Data4 &d000 = d[0], &d100 = d[1], &d010 = d[2], &d110 = d[3],
                         &d001 = d[4], &d101 = d[5], &d011 = d[6], &d111 = d[7];
 
