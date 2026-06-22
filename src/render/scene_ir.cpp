@@ -84,6 +84,7 @@ SceneIR SceneIRBuilder<Float, Spectrum>::build(Scene<Float, Spectrum> *scene) {
             e.owner_registry_id = owner;
             for (int k = 0; k < 12; ++k)
                 e.to_world[k] = inst.to_world[k];
+            e.keyframes = inst.keyframes;
             sd.instances.push_back(e);
         }
     }

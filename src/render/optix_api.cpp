@@ -31,6 +31,7 @@ void optix_initialize() {
     L(optixTaskExecute);
     L(optixProgramGroupCreate);
     L(optixSbtRecordPackHeader);
+    L(optixConvertPointerToTraversableHandle);
 
     #undef L
 }

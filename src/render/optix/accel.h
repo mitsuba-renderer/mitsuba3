@@ -126,6 +126,8 @@ extern MI_EXPORT_LIB void
 prepare_ias(const SceneIR &sd,
             const std::vector<OptixTraversableHandle> &blas_handle,
             const std::vector<uint32_t> &blas_sbt_offset,
+            OptixDeviceContext context,
+            std::vector<void*> &out_motion_transforms,
             OptixInstance *out);
 
 NAMESPACE_END(mitsuba)

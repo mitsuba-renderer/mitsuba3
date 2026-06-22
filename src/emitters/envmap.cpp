@@ -1,4 +1,5 @@
 #include <mitsuba/core/bitmap.h>
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/bsphere.h>
 #include <mitsuba/core/distr_2d.h>
 #include <mitsuba/core/fresolver.h>
@@ -40,8 +41,8 @@ Environment emitter (:monosp:`envmap`)
    - |exposed|, |differentiable|
 
  * - to_world
-   - |transform|
-   - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
+   - |animation|
+   - Specifies an optional emitter-to-world transformation (can be animated).  (Default: none, i.e. emitter space = world space)
    - |exposed|
 
  * - mis_compensation
@@ -277,7 +278,7 @@ public:
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        Vector3f v = m_to_world.value().inverse() * (-si.wi);
+        Vector3f v = m_to_world->eval(si.time).inverse() * (-si.wi);
 
         Point2f uv = direction_to_uv(v);
 
@@ -304,7 +305,7 @@ public:
         pdf *= inv_sin_theta * dr::InvTwoPi<Float> * dr::InvPi<Float>;
 
         // Unlike \ref sample_direction, ray goes from the envmap toward the scene
-        Vector3f d_global = m_to_world.value() * -d;
+        Vector3f d_global = m_to_world->eval(time) * -d;
 
         // Compute ray origin
         Vector3f perpendicular_offset =
@@ -344,7 +345,7 @@ public:
         Float radius = dr::maximum(m_bsphere.radius, dr::norm(it.p - m_bsphere.center));
         Float dist = 2.f * radius;
 
-        d = m_to_world.value() * d;
+        d = m_to_world->eval(it.time) * d;
 
         DirectionSample3f ds;
         ds.p       = it.p + d * dist;
@@ -372,7 +373,7 @@ public:
                         Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        Vector3f d = m_to_world.value().inverse() * ds.d;
+        Vector3f d = m_to_world->eval(ds.time).inverse() * ds.d;
 
         Point2f uv = direction_to_uv(d);
         uv.x() -= half_texel();

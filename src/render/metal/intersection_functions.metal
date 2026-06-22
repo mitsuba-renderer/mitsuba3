@@ -82,7 +82,7 @@ static inline uint data_offset(device const uint *lookup,
 // ---------------------------------------------------------------------------
 //  Sphere
 // ---------------------------------------------------------------------------
-[[intersection(bounding_box, instancing, world_space_data)]]
+[[intersection(bounding_box, instancing)]]
 BoundingBoxIntersection intersection_sphere(
     float3 origin                       [[origin]],
     float3 direction                    [[direction]],
@@ -137,7 +137,7 @@ BoundingBoxIntersection intersection_sphere(
 //  Disk (object-space: z=0 plane, unit radius)
 // ---------------------------------------------------------------------------
 
-[[intersection(bounding_box, instancing, world_space_data)]]
+[[intersection(bounding_box, instancing)]]
 BoundingBoxIntersection intersection_disk(
     float3 origin                       [[origin]],
     float3 direction                    [[direction]],
@@ -170,7 +170,7 @@ BoundingBoxIntersection intersection_disk(
 //  Cylinder (object-space: z-axis, [0, length], radius)
 // ---------------------------------------------------------------------------
 
-[[intersection(bounding_box, instancing, world_space_data)]]
+[[intersection(bounding_box, instancing)]]
 BoundingBoxIntersection intersection_cylinder(
     float3 origin                       [[origin]],
     float3 direction                    [[direction]],
@@ -222,7 +222,7 @@ BoundingBoxIntersection intersection_cylinder(
 //  Ellipsoids (one ellipsoid per primitive, object space is unit sphere)
 // ---------------------------------------------------------------------------
 
-[[intersection(bounding_box, instancing, world_space_data)]]
+[[intersection(bounding_box, instancing)]]
 BoundingBoxIntersection intersection_ellipsoids(
     float3 origin                       [[origin]],
     float3 direction                    [[direction]],

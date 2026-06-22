@@ -262,3 +262,113 @@ def test04_single_child_group_recovery(variants_vec_backends_once_rgb, shape):
             assert dr.allclose(si.t, si_inst.t, atol=2e-2)
             assert dr.allclose(si.p, si_inst.p, atol=2e-2)
             assert dr.allclose(si.n, si_inst.n, atol=2e-2)
+
+
+@pytest.mark.parametrize("num_keyframes", [2, 3, 5])
+def test04_animated_instance(variants_all_rgb, num_keyframes):
+    from mitsuba import ScalarTransform4f as T
+
+    keyframes = {}
+    for i in range(num_keyframes):
+        t = 10.0 * i / (num_keyframes - 1)
+        keyframes[t] = T().translate([0, 0, t / 10.0])
+
+    scene = mi.load_dict({
+        'type' : 'scene',
+        'group_0' : {
+            'type' : 'shapegroup',
+            'shape' : {
+                'type' : 'sphere'
+            }
+        },
+        'instance' : {
+            'type' : 'instance',
+            "group" : {
+                "type" : "ref",
+                "id" : "group_0"
+            },
+            'to_world' : mi.AnimatedTransform4f(keyframes)
+        }
+    })
+
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=0.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, -1], atol=1e-6)
+
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=5.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, -0.5], atol=1e-6)
+
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=10.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, 0], atol=1e-6)
+
+
+def test05_animated_instance_rotation_scaling(variants_all_rgb):
+    from mitsuba import ScalarTransform4f as T
+
+    scene = mi.load_dict({
+        'type' : 'scene',
+        'group_0' : {
+            'type' : 'shapegroup',
+            'shape' : {
+                'type' : 'rectangle'
+            }
+        },
+        'instance' : {
+            'type' : 'instance',
+            "group" : {
+                "type" : "ref",
+                "id" : "group_0"
+            },
+            'to_world' : mi.AnimatedTransform4f({
+                0.0 : T().rotate([0, 1, 0], 0).scale([1, 1, 1]),
+                10.0 : T().rotate([0, 1, 0], 90).scale([2, 2, 2])
+            })
+        }
+    })
+
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=0.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, 0], atol=1e-6)
+
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=5.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, 0], atol=1e-6)
+
+    ray = mi.Ray3f(o=[-3, 0, 0], d=[1, 0, 0], time=10.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, 0], atol=1e-6)
+
+
+def test_non_uniform_animation_error(variants_vec_backends_once):
+    from mitsuba import ScalarTransform4f as T
+
+    with pytest.raises(RuntimeError):
+        mi.load_dict({
+            'type' : 'scene',
+            'group_0' : {
+                'type' : 'shapegroup',
+                'shape' : {
+                    'type' : 'sphere'
+                }
+            },
+            'instance' : {
+                'type' : 'instance',
+                "group" : {
+                    "type" : "ref",
+                    "id" : "group_0"
+                },
+                'to_world' : mi.AnimatedTransform4f({
+                    0.0 : T().translate([0, 0, 0]),
+                    0.3 : T().translate([0, 0, 1]),
+                    1.0 : T().translate([0, 0, 2])
+                })
+            }
+        })

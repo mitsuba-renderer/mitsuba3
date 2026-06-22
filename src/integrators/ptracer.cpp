@@ -124,7 +124,7 @@ public:
                from the center of the scene (the sensor is not part of the
                scene's bounding box, which could otherwise cause issues.) */
             Interaction3f ref_it(0.f, time, dr::zeros<Wavelength>(),
-                                 sensor->world_transform().translation());
+                                 sensor->world_transform()->eval(time).translation());
 
             auto [ds, dir_weight] = emitter->sample_direction(
                 ref_it, sampler->next_2d(active), active_e);
