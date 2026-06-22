@@ -135,10 +135,11 @@ public:
         m_flip_normals = props.get<bool>("flip_normals", false);
 
         // Update the to_world transform if radius and center are also provided
-        m_to_world =
-            m_to_world.scalar() *
+        ScalarAffineTransform4f to_world_new =
+            m_to_world->eval_scalar(0.f) *
             ScalarAffineTransform4f::translate(props.get<ScalarPoint3f>("center", 0.f)) *
             ScalarAffineTransform4f::scale(props.get<ScalarFloat>("radius", 1.f));
+        m_to_world = new AnimatedTransform4f(to_world_new);
 
         m_discontinuity_types = (uint32_t) DiscontinuityFlags::InteriorType;
 
@@ -150,7 +151,7 @@ public:
 
     void update() {
         // Extract center and radius from to_world matrix (25 iterations for numerical accuracy)
-        auto [S, Q, T] = dr::transform_decompose(m_to_world.scalar().matrix, 25);
+        auto [S, Q, T] = dr::transform_decompose(m_to_world->eval_scalar(0.f).matrix, 25);
 
         if (dr::abs(S[0][1]) > 1e-6f || dr::abs(S[0][2]) > 1e-6f || dr::abs(S[1][0]) > 1e-6f ||
             dr::abs(S[1][2]) > 1e-6f || dr::abs(S[2][0]) > 1e-6f || dr::abs(S[2][1]) > 1e-6f)
@@ -159,8 +160,8 @@ public:
         if (!(dr::abs(S[0][0] - S[1][1]) < 1e-6f && dr::abs(S[0][0] - S[2][2]) < 1e-6f))
             Log(Warn, "'to_world' transform shouldn't contain non-uniform scaling!");
 
-        m_radius = dr::norm(m_to_world.value() * Vector3f(1.f, 0.f, 0.f));
-        m_center = m_to_world.value() * Point3f(0.f);
+        m_radius = dr::norm(m_to_world->eval(0.f) * Vector3f(1.f, 0.f, 0.f));
+        m_center = m_to_world->eval(0.f) * Point3f(0.f);
 
         if (S[0][0] <= 0.f) {
             m_radius = dr::abs(m_radius.value());
@@ -177,21 +178,20 @@ public:
 
     void traverse(TraversalCallback *cb) override {
         Base::traverse(cb);
-        cb->put("to_world", m_to_world, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        cb->put("to_world", m_to_world.get(), ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
+        Base::parameters_changed(keys);
+
         if (keys.empty() || string::contains(keys, "to_world")) {
             // LLVM backend: don't overwrite local state until currently running
             // ray tracing kernels finish
             if constexpr (dr::is_llvm_v<Float>)
                 dr::sync_thread();
 
-            m_to_world = m_to_world.value().update();
             update();
         }
-
-        Base::parameters_changed(keys);
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -221,7 +221,7 @@ public:
         Point3f local = warp::square_to_uniform_sphere(sample);
 
         PositionSample3f ps = dr::zeros<PositionSample3f>();
-        ps.p = m_to_world.value() * local;
+        ps.p = m_to_world->eval(time) * local;
         ps.n = local;
 
         if (m_flip_normals)
@@ -344,7 +344,7 @@ public:
         Float theta = uv.y() * dr::Pi<Float>;
 
         Point3f local = sph_to_dir(theta, phi);
-        Point3f p = m_to_world.value() * local;
+        Point3f p = m_to_world->eval(0.f) * local;
 
         Ray3f ray(p + local, -local, 0, Wavelength(0));
 
@@ -423,7 +423,7 @@ public:
             Float theta = si.uv.y() * dr::Pi<Float>;
             Point3f local = dr::detach(sph_to_dir(theta, phi));
 
-            Point3f p_diff = m_to_world.value() * local;
+            Point3f p_diff = m_to_world->eval(0.f) * local;
 
             return dr::replace_grad(si.p, p_diff);
         }
@@ -459,7 +459,7 @@ public:
         ss.d = dr::normalize(ss.p - viewpoint);
         ss.n = dr::normalize(ss.p - center);
 
-        Point3f local = m_to_world.value().inverse() * ss.p;
+        Point3f local = m_to_world->eval(0.f).inverse() * ss.p;
         Point2f angles = dir_to_sph(Vector3f(local));
         Float theta = angles.x();
         Float phi = angles.y();
@@ -650,7 +650,7 @@ public:
 
         const Point3f& center = m_center.value();
         const Float& radius = m_radius.value();
-        const AffineTransform4f& to_world = m_to_world.value();
+        AffineTransform4f to_world = m_to_world->eval(ray.time);
         AffineTransform4f to_object = to_world.inverse();
 
         /* If necessary, temporally suspend gradient tracking for all shape
@@ -746,7 +746,7 @@ public:
 
     bool parameters_grad_enabled() const override {
         return dr::grad_enabled(m_radius) || dr::grad_enabled(m_center) ||
-               dr::grad_enabled(m_to_world.value());
+               m_to_world->parameters_grad_enabled();
     }
 
     //! @}
@@ -768,7 +768,7 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Sphere[" << std::endl
-            << "  to_world = " << string::indent(m_to_world, 13) << "," << std::endl
+            << "  to_world = " << string::indent(m_to_world->eval_scalar(0.f), 13) << "," << std::endl
             << "  center = "  << m_center << "," << std::endl
             << "  radius = "  << m_radius << "," << std::endl
             << "  surface_area = " << surface_area() << "," << std::endl

@@ -11,6 +11,13 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+struct KeyframeIR {
+    float time;
+    float scale[3];
+    float quat[4];
+    float trans[3];
+};
+
 struct ShapeIR {
     /// Mitsuba bundles each of the following geometry kinds into its own BLAS.
     /// Instance must remain last (see \ref NumGeometryKinds).
@@ -80,6 +87,9 @@ struct ShapeIR {
     /// BLAS-set cache key (shared by all instances of one ShapeGroup).
     const void *group_id = nullptr;
 
+    /// Keyframes for animated instances.
+    std::vector<KeyframeIR> keyframes;
+
     /// Resolved per-shape POD byte count (see \ref data_size).
     size_t data_size_bytes() const {
         return data_size ? data_size : prim_count * pdata_size;
@@ -114,6 +124,9 @@ struct InstanceEntry {
 
     /// JIT registry ID of the ShapeGroup, or ``SCENE_IR_NO_OWNER``.
     uint32_t owner_registry_id = SCENE_IR_NO_OWNER;
+
+    /// Keyframes for animated instances.
+    std::vector<KeyframeIR> keyframes;
 };
 
 /// Scene description consumed by acceleration-structure builders.

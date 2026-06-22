@@ -228,7 +228,7 @@ public:
                 p[i] = string::strtof<InputFloat>(cur, (char **) &cur);
                 parse_error |= cur == orig;
             }
-            p = m_to_world.scalar() * p;
+            p = m_to_world->eval_scalar(0.f) * p;
 
             // Vertex radius
             InputFloat r;

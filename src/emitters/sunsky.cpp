@@ -101,8 +101,10 @@ Sun and sky emitter (:monosp:`sunsky`)
      Both implementations integrate to the same total power.
 
  * - to_world
-   - |transform|
-   - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
+   - |animation|
+   - Specifies an optional emitter-to-world transformation. At the moment,
+     specifying animation keyframes is not supported here. See :ref:`timed_sunsky <emitter-timed_sunsky>`
+     for a temporal sunsky model.  (Default: none, i.e. emitter space = world space)
    - |exposed|
 
 This plugin implements an environment emitter for the sun and sky dome.
@@ -216,6 +218,12 @@ public:
     MI_IMPORT_TYPES(Scene, Texture)
 
     SunskyEmitter(const Properties &props) : Base(props) {
+        if (m_to_world->is_animated()) {
+          Throw("Animating the to_world matrix of a sunsky emitter is not "
+                "supported. Please use the timed_sunsky emitter for "
+                "temporal control.");
+        }
+
         if (props.has_property("sun_direction")) {
             if (props.has_property("latitude") || props.has_property("longitude")
                 || props.has_property("timezone") || props.has_property("year")
@@ -245,11 +253,11 @@ public:
             dr::make_opaque(m_location, m_time);
 
             const auto [theta, phi] = Base::sun_coordinates(m_time, m_location);
-            m_sun_dir = m_to_world.value() * sph_to_dir(theta, phi);
+            m_sun_dir = m_to_world->eval(0.f) * sph_to_dir(theta, phi);
         }
 
         // ================= UPDATE ANGLES =================
-        Vector3f local_sun_dir = m_to_world.value().inverse() * m_sun_dir;
+        Vector3f local_sun_dir = m_to_world->eval(0.f).inverse() * m_sun_dir;
 
         if (dr::any(local_sun_dir.z() < 0.f))
             Log(Warn, "The sun is below the horizon at the specified time and location!");
@@ -312,10 +320,10 @@ public:
         // Update sun angles
         if (changed_time_record) {
             const auto [theta, phi] = Base::sun_coordinates(m_time, m_location);
-            m_sun_dir = m_to_world.value() * sph_to_dir(theta, phi);
+            m_sun_dir = m_to_world->eval(0.f) * sph_to_dir(theta, phi);
             m_sun_angles = { theta, phi }; // flip convention
         } else if (changed_sun_dir) {
-            m_sun_angles = dir_to_sph(m_to_world.value().inverse() * m_sun_dir);
+            m_sun_angles = dir_to_sph(m_to_world->eval(0.f).inverse() * m_sun_dir);
         }
 
         Float sun_eta = 0.5f * dr::Pi<Float> - m_sun_angles.x();

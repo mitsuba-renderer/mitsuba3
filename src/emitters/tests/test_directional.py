@@ -43,7 +43,7 @@ def test_construct(variant_scalar_rgb):
     emitter = make_emitter()
     assert not emitter.bbox().valid()  # Degenerate bounding box
     assert dr.allclose(
-        emitter.world_transform().matrix,
+        emitter.world_transform().eval(0.0).matrix,
         [[1, 0, 0, 0],
          [0, 1, 0, 0],
          [0, 0, 1, 0],
@@ -53,7 +53,7 @@ def test_construct(variant_scalar_rgb):
     # Check transform setup correctness
     emitter = make_emitter(direction=[0, 0, -1])
     assert dr.allclose(
-        emitter.world_transform().matrix,
+        emitter.world_transform().eval(0.0).matrix,
         [[0, 1, 0, 0],
          [1, 0, 0, 0],
          [0, 0, -1, 0],

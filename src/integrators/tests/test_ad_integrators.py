@@ -887,7 +887,7 @@ class TranslateRectangleEmitterOnBlackConfig(TranslateShapeConfigBase):
 class TranslateDiskEmitterOnGrayConfig(ConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.key = 'disk.to_world'
+        self.key = 'disk.to_world.transform'
         self.scene_dict = {
             'type': 'scene',
             'disk': {
@@ -1203,7 +1203,7 @@ class TranslateSelfShadowingRightAngleConfig(ConfigBase):
 class TranslateCameraConfig(ConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.key = 'sensor.to_world'
+        self.key = 'sensor.to_world.transform'
         self.scene_dict = {
             'type': 'scene',
             'sphere': {

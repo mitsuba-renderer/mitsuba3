@@ -145,8 +145,8 @@ public:
 
                 InputPoint3f p  = vertices[i];
                 InputNormal3f n = normals[i];
-                p               = m_to_world.scalar() * p;
-                n               = dr::normalize(m_to_world.scalar() * n);
+                p               = m_to_world->eval_scalar(0.f) * p;
+                n               = dr::normalize(m_to_world->eval_scalar(0.f) * n);
 
                 dr::store(position_ptr, p);
                 dr::store(normal_ptr, n);

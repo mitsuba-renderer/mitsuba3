@@ -174,15 +174,36 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
 
             RTCGeometry inst = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_INSTANCE);
             rtcSetGeometryInstancedScene(inst, nested);
-            rtcSetGeometryTimeStepCount(inst, 1);
-            // Column-major 3x4 (g.to_world[col*3+row]) -> column-major 4x4.
-            float M[16];
-            for (int col = 0; col < 4; ++col) {
-                for (int row = 0; row < 3; ++row)
-                    M[col * 4 + row] = g.to_world[col * 3 + row];
-                M[col * 4 + 3] = (col == 3) ? 1.f : 0.f;
+
+            size_t n_keyframes = g.keyframes.size();
+            if (n_keyframes > 1) {
+                rtcSetGeometryTimeStepCount(inst, (unsigned int) n_keyframes);
+                float t_min = g.keyframes.front().time;
+                float t_max = g.keyframes.back().time;
+                rtcSetGeometryTimeRange(inst, t_min, t_max);
+                for (unsigned int i = 0; i < n_keyframes; ++i) {
+                    const auto &kf = g.keyframes[i];
+                    RTCQuaternionDecomposition rtc_decomp;
+                    rtcInitQuaternionDecomposition(&rtc_decomp);
+                    rtcQuaternionDecompositionSetQuaternion(
+                        &rtc_decomp, kf.quat[0], kf.quat[1], kf.quat[2], kf.quat[3]);
+                    rtcQuaternionDecompositionSetScale(
+                        &rtc_decomp, kf.scale[0], kf.scale[1], kf.scale[2]);
+                    rtcQuaternionDecompositionSetTranslation(
+                        &rtc_decomp, kf.trans[0], kf.trans[1], kf.trans[2]);
+                    rtcSetGeometryTransformQuaternion(inst, i, &rtc_decomp);
+                }
+            } else {
+                rtcSetGeometryTimeStepCount(inst, 1);
+                // Column-major 3x4 (g.to_world[col*3+row]) -> column-major 4x4.
+                float M[16];
+                for (int col = 0; col < 4; ++col) {
+                    for (int row = 0; row < 3; ++row)
+                        M[col * 4 + row] = g.to_world[col * 3 + row];
+                    M[col * 4 + 3] = (col == 3) ? 1.f : 0.f;
+                }
+                rtcSetGeometryTransform(inst, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, M);
             }
-            rtcSetGeometryTransform(inst, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, M);
             rtcCommitGeometry(inst);
             return inst;
         }

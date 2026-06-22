@@ -48,6 +48,9 @@ struct MiOptixSceneState {
     bool compact_accel = false;
     uint32_t sbt_jit_index;
 
+    /// Pointers to allocated motion transforms, owned here; freed on rebuild() and destruction.
+    std::vector<void*> motion_transforms;
+
     /// Copies of MiOptixConfig fields, cached to avoid a hash lookup + mutex lock.
     uint32_t config_key;
     OptixDeviceContext context;
@@ -76,21 +79,21 @@ struct MiOptixConfig {
 // Array storing previously initialized optix configurations
 static tsl::robin_map<uint32_t, MiOptixConfig> optix_configs;
 static std::mutex optix_configs_lock;
-static constexpr uint32_t OptixConfigCompactKey = 1u << 31;
+static constexpr uint32_t OptixConfigCompactKey    = 1u << 31;
+static constexpr uint32_t OptixConfigMotionBlurKey = 1u << 30;
 
-const MiOptixConfig &init_optix_config(uint32_t shape_types, bool compact) {
-    // Instances/groups are handled by IAS traversal, not by intersection
-    // programs. Mask the bits so they don't spuriously add the CUSTOM flag
-    shape_types &= ~((uint32_t) ShapeType::Instance |
-                     (uint32_t) ShapeType::ShapeGroup);
-
-    uint32_t key = shape_types;
+const MiOptixConfig &init_optix_config(uint32_t shape_types, bool compact, bool uses_motion_blur) {
+    // Mask out ShapeGroup and Instance as they don't affect intersection programs.
+    // We keep Instance in the key via OptixConfigMotionBlurKey if motion blur is actually needed.
+    uint32_t key = shape_types & ~((uint32_t) ShapeType::ShapeGroup | (uint32_t) ShapeType::Instance);
     if ((key & +ShapeType::Rectangle) == +ShapeType::Rectangle) {
         key &= ~ShapeType::Rectangle; // Rectangles are actually meshes
         key |= +ShapeType::Mesh;
     }
     if (compact)
         key |= OptixConfigCompactKey;
+    if (uses_motion_blur)
+        key |= OptixConfigMotionBlurKey;
 
     // Use flags as config index in optix_configs
     auto [it, success] = optix_configs.try_emplace(key);
@@ -119,11 +122,13 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types, bool compact) {
         module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
     }
 
-    config.pipeline_compile_options.usesMotionBlur     = false;
+    config.pipeline_compile_options.usesMotionBlur     = uses_motion_blur;
     config.pipeline_compile_options.numPayloadValues   = 0;
     config.pipeline_compile_options.numAttributeValues = 2; // the minimum legal value
     config.pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
     config.pipeline_compile_options.traversableGraphFlags =
+        config.pipeline_compile_options.usesMotionBlur ?
+        OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY :
         OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
 
     if (jit_flag(JitFlag::Debug))
@@ -152,6 +157,9 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types, bool compact) {
 
     }
 
+    // Instances/groups are handled by IAS traversal, not by intersection
+    // programs. Mask them out so they don't spuriously add the CUSTOM flag.
+    st &= ~((uint32_t) ShapeType::Instance | (uint32_t) ShapeType::ShapeGroup);
     if (st)
         prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
 
@@ -414,7 +422,11 @@ static void optix_rebuild_accel(
         auto *ias = (OptixInstance *) jit_malloc(
             JitBackend::CUDA, ias_count * sizeof(OptixInstance), /* shared = */ 1);
 
-        prepare_ias(sd, blas_handle, blas_sbt_offset, ias);
+        for (void *mt : s.motion_transforms)
+            jit_free(mt);
+        s.motion_transforms.clear();
+
+        prepare_ias(sd, blas_handle, blas_sbt_offset, s.context, s.motion_transforms, ias);
 
         // Build a "master" IAS that contains all the GAS of the scene (meshes,
         // custom shapes, curves, ...)
@@ -474,6 +486,8 @@ static void optix_rebuild_accel(
                 jit_free(s->ias_data.inputs);
                 for (void *buf : s->shape_data)
                     jit_free(buf);
+                for (void *mt : s->motion_transforms)
+                    jit_free(mt);
                 delete s;
             }
         },
@@ -571,8 +585,15 @@ void OptixAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
         //  Initialize OptiX configuration
         // =====================================================
 
+        bool uses_motion_blur = false;
+        for (const auto &inst : sd.instances) {
+            if (inst.keyframes.size() > 1) {
+                uses_motion_blur = true;
+                break;
+            }
+        }
         const MiOptixConfig &config =
-            init_optix_config(scene->shape_types(), scene->m_compact_accel);
+            init_optix_config(scene->shape_types(), scene->m_compact_accel, uses_motion_blur);
 
         // =====================================================
         //  Shader Binding Table generation
