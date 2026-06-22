@@ -483,8 +483,7 @@ protected:
         if (m_texture.filter_mode() == dr::FilterMode::Linear) {
             using Data4 = dr::Array<Float, 4>;
             dr::Array<Data4, 8> d =
-                m_accel ? m_texture.template eval_fetch<Data4>(p, active)
-                        : m_texture.template eval_fetch_nonaccel<Data4>(p, active);
+                m_texture.template eval_fetch<Data4>(p, active);
             const Data4 &d000 = d[0], &d100 = d[1], &d010 = d[2], &d110 = d[3],
                         &d001 = d[4], &d101 = d[5], &d011 = d[6], &d111 = d[7];
 
