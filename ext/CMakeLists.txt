@@ -279,16 +279,20 @@ mark_as_advanced(DFA_XTRA AWK PNG_FRAMEWORK PNG_HARDWARE_OPTIMIZATIONS
   PNG_TOOLS)
 
 # ----------------------------------------------------------
-#  libjpeg 7
+#  libjpeg-turbo (libjpeg-compatible API, SIMD-accelerated)
 # ----------------------------------------------------------
 
-set(LIBJPEG_BUILD_SHARED ON CACHE BOOL " " FORCE)
-set(LIBJPEG_BUILD_EXECUTABLES OFF CACHE BOOL " " FORCE)
-add_subdirectory(libjpeg)
+# Build only the shared libjpeg-API library: no static lib, no high-level
+# TurboJPEG API, and no command-line tools / regression tests.
+set(ENABLE_SHARED   ON  CACHE BOOL " " FORCE)
+set(ENABLE_STATIC   OFF CACHE BOOL " " FORCE)
+set(WITH_TURBOJPEG  OFF CACHE BOOL " " FORCE)
+set(WITH_TOOLS      OFF CACHE BOOL " " FORCE)
+add_subdirectory(libjpeg-turbo)
 set_property(TARGET jpeg PROPERTY FOLDER "dependencies")
-set(JPEG_LIBRARIES libjpeg PARENT_SCOPE)
 
-set(JPEG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libjpeg;${CMAKE_CURRENT_BINARY_DIR}/libjpeg" PARENT_SCOPE)
+# Public headers live in src/; the generated jconfig.h lands in the build dir.
+set(JPEG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libjpeg-turbo/src;${CMAKE_CURRENT_BINARY_DIR}/libjpeg-turbo" PARENT_SCOPE)
 set(JPEG_LIBRARIES    "jpeg" PARENT_SCOPE)
 set(JPEG_DEFINES      -DMI_HAS_LIBJPEG PARENT_SCOPE)
 
@@ -297,8 +301,10 @@ set(JPEG_DEFINES      -DMI_HAS_LIBJPEG PARENT_SCOPE)
 set_property(TARGET jpeg PROPERTY OUTPUT_NAME "jpeg-mitsuba")
 
 mark_as_advanced(
-  LIBJPEG_BUILD_EXECUTABLES
-  LIBJPEG_BUILD_SHARED
+  ENABLE_SHARED
+  ENABLE_STATIC
+  WITH_TURBOJPEG
+  WITH_TOOLS
 )
 
 # ----------------------------------------------------------
