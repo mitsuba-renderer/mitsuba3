@@ -135,7 +135,7 @@ To fetch all dependencies and Clang, enter the following commands on Ubuntu:
     sudo apt install clang-17 cmake ninja-build
 
     # Install libraries for image I/O
-    sudo apt install libpng-dev libjpeg-dev
+    sudo apt install libpng-dev libjpeg-dev nasm
 
     # Install required Python packages
     sudo apt install libpython3-dev python3-distutils
