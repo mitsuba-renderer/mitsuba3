@@ -323,6 +323,10 @@ set(JPEG_DEFINES      -DMI_HAS_LIBJPEG PARENT_SCOPE)
 # libraries that may already be loaded (e.g. into a Python interpreter)
 set_property(TARGET jpeg PROPERTY OUTPUT_NAME "jpeg-mitsuba")
 
+# Write output to libjpeg-mitsuba.dylib (no version suffix or symlink)
+set_property(TARGET jpeg PROPERTY VERSION)
+set_property(TARGET jpeg PROPERTY SOVERSION)
+
 mark_as_advanced(
   ENABLE_SHARED
   ENABLE_STATIC
