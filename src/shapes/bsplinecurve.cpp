@@ -474,7 +474,7 @@ public:
              * and cylinder's perimeters) directions in both hemispheres can
              * produce a visibility discontinuity; restricting to a single
              * hemisphere drops part of the tip gradients. */
-            ss.d = warp::square_to_uniform_sphere(
+            ss.d = warp::square_to_uniform_hemisphere(
                 Point2f(sample.y(), sample.z()));
 
             /// Fill other fields
@@ -492,7 +492,7 @@ public:
             dr::masked(ss.n, dr::dot(inward_dir, ss.n) > 0.f) *= -1.f;
 
             ss.pdf = dr::rcp(dr::TwoPi<Float> * radius * (2 * curve_count));
-            ss.pdf *= warp::square_to_uniform_sphere_pdf(ss.d);
+            ss.pdf *= warp::square_to_uniform_hemisphere_pdf(ss.d);
             ss.foreshortening = dr::norm(dr::cross(ss.d, ss.silhouette_d));
         } else if (has_flag(flags, DiscontinuityFlags::InteriorType)) {
             /// Sample a point on the shape surface
@@ -571,7 +571,7 @@ public:
         sample_perimeter.x() =
             (sample_perimeter.x() + curve_idx) / Float(curve_count);
 
-        Point2f sample_d = warp::uniform_sphere_to_square(ss.d);
+        Point2f sample_d = warp::uniform_hemisphere_to_square(ss.d);
         sample_perimeter.y() = sample_d.x();
         sample_perimeter.z() = sample_d.y();
 
