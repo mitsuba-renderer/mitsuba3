@@ -7,6 +7,29 @@ get_directory_property(MI_EXT_COMPILE_OPTIONS_NOWARN COMPILE_OPTIONS)
 list(REMOVE_ITEM MI_EXT_COMPILE_OPTIONS_NOWARN -Wall -Wextra /W4)
 
 # ---------------------------------------------------------------------------
+#  Enable assembler dialects
+# ---------------------------------------------------------------------------
+# libjpeg-turbo and struct-jit use different assembler dialects. Enabling so
+# within subdirectories causes issues with CMake. We work around this by
+# localizing all the ``enable_language()`` directives here.
+include(CheckLanguage)
+
+# ASM for OpenEXR, struct-jit (non-MSVC targets)
+enable_language(ASM)
+
+# MASM for struct-jit
+if (MSVC)
+  enable_language(ASM_MASM)
+endif()
+
+# NASM for libjpeg-turbo (x86, if available). Enabled last so it wins the
+# ``.asm`` extension, shared by all dialects.
+check_language(ASM_NASM)
+if (CMAKE_ASM_NASM_COMPILER)
+  enable_language(ASM_NASM)
+endif()
+
+# ---------------------------------------------------------------------------
 #  Link against Intel ITT (profiler events for VTune, optional)
 # ---------------------------------------------------------------------------
 
@@ -328,6 +351,14 @@ set(TINYFORMAT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tinyformat PARENT_SCOPE)
 set(SJIT_ENABLE_PYTHON OFF CACHE BOOL "" FORCE)
 add_subdirectory(struct-jit)
 set_property(TARGET struct-jit PROPERTY FOLDER "dependencies")
+
+# Tag struct-jit's snippet library as MASM (``.asm`` otherwise defaults to NASM).
+if (MSVC)
+  set_source_files_properties(
+    "${CMAKE_CURRENT_SOURCE_DIR}/struct-jit/asm/asm_x64_win.asm"
+    TARGET_DIRECTORY struct-jit
+    PROPERTIES LANGUAGE ASM_MASM)
+endif()
 
 mark_as_advanced(
   SJIT_ENABLE_PYTHON
