@@ -469,11 +469,9 @@ public:
                 (dr_dv * radius) * dc_dv
             );
 
-            /* Sample the full sphere of tangential directions. The open
-             * boundary ring is a true silhouette edge, so (just like the disk's
-             * and cylinder's perimeters) directions in both hemispheres can
-             * produce a visibility discontinuity; restricting to a single
-             * hemisphere drops part of the tip gradients. */
+            /* Because of backface culling, we only consider the set of
+             * tangential direcitons in the hemisphere which is pointing In
+             * the same direction as the surface normal */
             ss.d = warp::square_to_uniform_hemisphere(
                 Point2f(sample.y(), sample.z()));
 
