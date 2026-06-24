@@ -438,8 +438,13 @@ public:
             );
             ss.prim_index =
                 dr::select(use_first, first_segment_idx, last_segment_idx);
-            ss.uv = Point2f(local_uv.x(),
-                            (local_uv.y() + ss.prim_index) / dr::width(m_indices));
+            // Store `ss.uv` in the primitive parameterization expected by
+            // `compute_surface_interaction`: the segment-local `v` (0 or 1 at a
+            // tip) in `x`, the azimuth in `y`. This lets the projective
+            // integrators reconstruct the foreground interaction by feeding
+            // `ss.uv` straight into `pi.prim_uv` (the texture `(azimuth, v)`
+            // parameterization differs from this and is rebuilt on demand).
+            ss.uv = Point2f(local_uv.y(), local_uv.x());
 
             // map UV parameterization to point on surface
             Point3f c;
@@ -463,14 +468,14 @@ public:
                 (dr::squared_norm(dc_dv) - correction) * rad_vec -
                 (dr_dv * radius) * dc_dv
             );
-            Frame3f frame(n);
 
-            /* Because of backface culling, we only consider the set of
-             * tangential direcitons in the hemisphere which is pointing In
-             * the same direction as the surface normal */
-            Vector3f local_d = warp::square_to_uniform_hemisphere(
+            /* Sample the full sphere of tangential directions. The open
+             * boundary ring is a true silhouette edge, so (just like the disk's
+             * and cylinder's perimeters) directions in both hemispheres can
+             * produce a visibility discontinuity; restricting to a single
+             * hemisphere drops part of the tip gradients. */
+            ss.d = warp::square_to_uniform_sphere(
                 Point2f(sample.y(), sample.z()));
-            ss.d = frame.to_world(-local_d);
 
             /// Fill other fields
             ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
@@ -487,15 +492,24 @@ public:
             dr::masked(ss.n, dr::dot(inward_dir, ss.n) > 0.f) *= -1.f;
 
             ss.pdf = dr::rcp(dr::TwoPi<Float> * radius * (2 * curve_count));
-            ss.pdf *= warp::square_to_uniform_hemisphere_pdf(local_d);
+            ss.pdf *= warp::square_to_uniform_sphere_pdf(ss.d);
             ss.foreshortening = dr::norm(dr::cross(ss.d, ss.silhouette_d));
         } else if (has_flag(flags, DiscontinuityFlags::InteriorType)) {
             /// Sample a point on the shape surface
-            ss.uv = Point2f(sample.y(), sample.x()); // We use the x-axis as the cylindrical axis
-            auto [dp_du, dp_dv, dn_du, dn_dv, L, M, N] = partials(ss.uv, active);
+            // Texture parameterization: `x` is the azimuth (cylindrical axis),
+            // `y` the global curve coordinate.
+            Point2f tex_uv = Point2f(sample.y(), sample.x());
+            auto [dp_du, dp_dv, dn_du, dn_dv, L, M, N] = partials(tex_uv, active);
             SurfaceInteraction3f si = eval_parameterization(
-                ss.uv, +RayFlags::AllNonDifferentiable, active);
+                tex_uv, +RayFlags::AllNonDifferentiable, active);
             ss.p = si.p;
+            ss.prim_index = si.prim_index;
+
+            // Store `ss.uv` in the primitive parameterization (segment-local
+            // `v`, azimuth) so the projective integrators can reconstruct the
+            // foreground interaction via `pi.prim_uv` / `compute_surface_interaction`.
+            Float v_local = tex_uv.y() * dr::width(m_indices) - si.prim_index;
+            ss.uv = Point2f(v_local, tex_uv.x());
 
             /// Sample a tangential direction at the point
             ss.d = warp::interval_to_tangent_direction(si.n, sample.z());
@@ -546,39 +560,27 @@ public:
         curve_idx -= 1;
 
         size_t segment_count = dr::width(m_indices);
-        Float local_v = ss.uv.y() * segment_count - ss.prim_index;
+        // `ss.uv` holds (segment-local `v`, azimuth).
+        Float local_v = ss.uv.x();
 
         sample_perimeter.x() = dr::select(
             local_v < 0.5f,
-            ss.uv.x() * 0.5f,
-            ss.uv.x() * 0.5f + 0.5f
+            ss.uv.y() * 0.5f,
+            ss.uv.y() * 0.5f + 0.5f
         );
         sample_perimeter.x() =
             (sample_perimeter.x() + curve_idx) / Float(curve_count);
 
-        Point3f c;
-        Vector3f dc_dv, dc_dvv;
-        Float radius, dr_dv;
-        std::tie(c, dc_dv, dc_dvv, std::ignore, radius, dr_dv, std::ignore) =
-            cubic_interpolation(local_v, ss.prim_index, active);
-
-        Vector3f rad_vec = ss.p - c;
-        Float correction = dr::dot(rad_vec, dc_dvv);  // curvature correction
-        Normal3f n = dr::normalize(
-            (dr::squared_norm(dc_dv) - correction) * rad_vec -
-            (dr_dv * radius) * dc_dv
-        );
-        Frame3f frame(n);
-        Vector3f local_d = -frame.to_local(ss.d);
-
-        sample_perimeter.y() = warp::uniform_hemisphere_to_square(local_d).x();
-        sample_perimeter.z() = warp::uniform_hemisphere_to_square(local_d).y();
+        Point2f sample_d = warp::uniform_sphere_to_square(ss.d);
+        sample_perimeter.y() = sample_d.x();
+        sample_perimeter.z() = sample_d.y();
 
         /// Invert interior type samples
         Point3f sample_interior = dr::zeros<Point3f>(dr::width(ss));
         sample_interior.z() = warp::tangent_direction_to_interval(ss.n, ss.d);
-        sample_interior.y() = ss.uv.x();
-        sample_interior.x() = ss.uv.y();
+        sample_interior.y() = ss.uv.y(); // azimuth
+        sample_interior.x() =            // global curve coordinate
+            (ss.uv.x() + ss.prim_index) / Float(segment_count);
 
         /// Merge outputs
         Point3f sample = dr::zeros<Point3f>();
@@ -599,11 +601,14 @@ public:
         if constexpr (!drjit::is_diff_v<Float>) {
             return si.p;
         } else {
+            // `si.uv` holds (segment-local `v`, azimuth); the segment is named
+            // by `si.prim_index`.
             Point2f uv = dr::detach(si.uv);
 
             size_t segment_count = dr::width(m_indices);
-            UInt32 segment_id = dr::floor2int<UInt32>(uv.y() * segment_count);
-            Float v_local = uv.y() * segment_count - segment_id;
+            UInt32 segment_id =
+                dr::clip(si.prim_index, 0, (uint32_t) segment_count - 1);
+            Float v_local = uv.x();
 
             Point3f C;
             Vector3f Cv, Cvv, Cvvv;
@@ -614,7 +619,7 @@ public:
             auto [dir_rot, dir_rad] = local_frame(Cv_normalized);
 
             // Differentiable point (w.r.t curve parameters)
-            auto [sin_u, cos_u] = dr::sincos(uv.x() * dr::TwoPi<Float>);
+            auto [sin_u, cos_u] = dr::sincos(uv.y() * dr::TwoPi<Float>);
             Point3f p_diff =
                 C + cos_u * dir_rad * radius + sin_u * dir_rot * radius;
 
@@ -657,7 +662,9 @@ public:
             Mask use_first = curve_v < 0.5f;
             local_v = dr::select(use_first, 0.f, 1.f);
             ss.prim_index = dr::select(use_first, first_segment_idx, last_segment_idx);
-            ss.uv = Point2f(si.uv.x(), (local_v + ss.prim_index) / segment_count);
+            // (segment-local `v`, azimuth) -- the primitive parameterization
+            // consumed by `compute_surface_interaction`.
+            ss.uv = Point2f(local_v, si.uv.x());
 
             // Map UV parameterization to point on surface
             Point3f c;
@@ -687,6 +694,15 @@ public:
                 (dr_dv * radius) * dc_dv);
             Mask success = dr::dot(n, ss.d) < 0;
 
+            // `ss.n` must point outwards from the curve (consistent with
+            // `sample_silhouette`). Without this, the cross product above leaves
+            // the perimeter normal's sign to chance, flipping the gradients at
+            // the curve tips.
+            Vector3f inward_dir = -n;
+            dr::masked(ss.n, dr::dot(inward_dir, ss.n) > 0.f) *= -1.f;
+            inward_dir = dc_dv * dr::select(local_v == 0.f, 1.f, -1.f);
+            dr::masked(ss.n, dr::dot(inward_dir, ss.n) > 0.f) *= -1.f;
+
             ss.discontinuity_type =
                 dr::select(success,
                            (uint32_t) DiscontinuityFlags::PerimeterType,
@@ -694,6 +710,7 @@ public:
         } else if (has_flag(flags, DiscontinuityFlags::InteriorType)) {
             size_t segment_count = dr::width(m_indices);
             UInt32 segment_id = dr::floor2int<UInt32>(si.uv.y() * segment_count);
+            segment_id = dr::clip(segment_id, 0, (uint32_t) segment_count - 1); // In case si.uv.y() == 1
             Float v_local = si.uv.y() * segment_count - segment_id;
 
             Point3f c;
@@ -761,17 +778,22 @@ public:
             dr::masked(u_lower, u_lower < 0.f) += 1.f;
             dr::masked(u_lower, u_lower > 1.f) -= 1.f;
 
-            ss.uv = Point2f(u_lower, si.uv.y());
+            // Texture parameterization (azimuth, global `v`) used to evaluate
+            // the surface point and its partials.
+            Point2f tex_uv = Point2f(u_lower, si.uv.y());
             SurfaceInteraction3f si_ = eval_parameterization(
-                ss.uv, +RayFlags::AllNonDifferentiable, active);
+                tex_uv, +RayFlags::AllNonDifferentiable, active);
             ss.p = si_.p;
             ss.n = si_.n;
             ss.d = dr::normalize(ss.p - viewpoint);
             ss.prim_index = si_.prim_index;
+            // (segment-local `v`, azimuth) for the projective reconstruction.
+            Float v_local_out = tex_uv.y() * segment_count - si_.prim_index;
+            ss.uv = Point2f(v_local_out, tex_uv.x());
 
             Vector3f dp_du, dp_dv, dn_du, dn_dv;
             std::tie(dp_du, dp_dv, dn_du, dn_dv, std::ignore, std::ignore,
-                     std::ignore) = partials(ss.uv, active);
+                     std::ignore) = partials(tex_uv, active);
             Float E = dr::squared_norm(dp_du),
                   G = dr::squared_norm(dp_dv);
             Float a = dr::dot(ss.d, dp_du) / E,
@@ -853,9 +875,13 @@ public:
         dr::masked(ss, interior) =
             primitive_silhouette_projection(viewpoint, si, flags, 0.f, interior);
 
+        // Rebuild the texture parameterization (azimuth, global `v`) from the
+        // primitive-convention `ss.uv` (segment-local `v`, azimuth).
+        Float global_v = (ss.uv.x() + ss.prim_index) / Float(dr::width(m_indices));
+        Point2f tex_uv = Point2f(ss.uv.y(), global_v);
         Vector3f dp_dv;
         std::tie(std::ignore, dp_dv, std::ignore, std::ignore, std::ignore,
-                 std::ignore, std::ignore) = partials(ss.uv, active);
+                 std::ignore, std::ignore) = partials(tex_uv, active);
         dr::masked(ss.pdf, interior) =
             dr::rcp(2.f * dr::abs(dr::dot(dp_dv, ss.silhouette_d)));
 
@@ -941,7 +967,7 @@ public:
                    then compute the corresponding point along the ray. (Instead
                    of computing an intersection with the curve, we compute an
                    intersection with the tangent plane.) */
-                Vector3f rad_vec_diff = si.p - c;
+                Vector3f rad_vec_diff = p - c;
                 rad_vec = dr::replace_grad(rad_vec, rad_vec_diff);
 
                 // Differentiable tangent plane normal
@@ -993,9 +1019,26 @@ public:
         si.n = si.sh_frame.n = n;
 
         // Embree and OptiX cull curve backfaces at trace time; Metal's HW
-        // intersector reports both sides. Drop inside hits to match (a no-op
-        // on backends that already cull).
-        this->cull_backface(si, ray, active);
+        // intersector reports both sides.
+        //
+        // Two cases are deliberately *not* culled, because the projective
+        // foreground reconstruction calls this method directly with a synthetic
+        // ray along the boundary direction `ss.d` -- it bypasses the tracer, so
+        // this is the only cull it sees, on every backend:
+        //  * grazing/tangent hits (`dot(n, d) ~ 0`): interior silhouette samples
+        //    have `ss.d` in the tangent plane, so they graze the surface;
+        //    culling them by the sign of numerical noise drops half the
+        //    interior-silhouette gradients.
+        //  * the open boundary at a segment endpoint (`v_local` exactly 0 or 1):
+        //    a true double-sided silhouette edge whose `ss.d` spans the full
+        //    sphere.
+        // Real backface hits have `dot(n, d)` clearly positive and `v_local` in
+        // the open interval, so primal rendering is unaffected.
+        constexpr ScalarFloat BackfaceCullEps = 1e-2f;
+        Mask open_end = (v_local == 0.f) | (v_local == 1.f);
+        Mask backface = active & (dr::dot(si.n, ray.d) > BackfaceCullEps) &
+                        !open_end;
+        si.t = dr::select(backface, dr::Infinity<Float>, si.t);
 
         if (need_uv) {
             Float u = dr::atan2(dr::dot(u_rot, rad_vec_normalized),
@@ -1161,15 +1204,20 @@ private:
      */
     std::tuple<Vector3f, Vector3f, Vector3f, Vector3f, Float, Float, Float>
     partials(Point2f uv, Mask active) const {
-        /* To compute the partial devriatives of a point on the curve and of its
-           normal, we start by building the Frenet-Serret (TNB) frame. From the
-           frame we can compute the curves' first and second fundamental forms.
-           Finally, these are then used in the Weingarten equations to get the
-           normal's partials.
-         */
+        /* To compute the partial derivatives of a point on the curve and of its
+           normal, we build the surface normal from the Frenet-Serret normal and
+           the radial direction. The radial direction is anchored to the
+           consistent `local_frame`, so its derivatives along `v` are taken from
+           that frame (see `local_frame_derivatives`) rather than from the Frenet
+           torsion: the torsion depends on the discontinuous third derivative and
+           would otherwise inject spurious gradients at the segment borders.
+           Together with the position partials these give the first and second
+           fundamental forms, which feed the Weingarten equations for the
+           normal's partials. */
         Float v_global = uv.y();
         size_t segment_count = dr::width(m_indices);
         UInt32 segment_idx = dr::floor2int<UInt32>(v_global * segment_count);
+        segment_idx = dr::clip(segment_idx, 0, (uint32_t) segment_count - 1); // In case v_global == 1
         Float v_local = v_global * segment_count - segment_idx;
 
         Point3f c;
@@ -1180,46 +1228,38 @@ private:
 
         // Frenet-Serret (TNB) frame
         Float norm_dc_dv = dr::norm(dc_dv);
-        Vector3f cross_dc_dv_dc_dvv = dr::cross(dc_dv, dc_dvv),
-                 dc_dv_normalized = dc_dv / norm_dc_dv;
+        Vector3f cross_dc_dv_dc_dvv = dr::cross(dc_dv, dc_dvv);
         Float sqr_norm_dc_dv = dr::square(norm_dc_dv),
               norm_cross_dc_dv_dc_dvv = dr::norm(cross_dc_dv_dc_dvv),
-              kappa = norm_cross_dc_dv_dc_dvv / (norm_dc_dv * sqr_norm_dc_dv),
-              tau = dr::dot(dc_dvvv, cross_dc_dv_dc_dvv) / dr::square(norm_cross_dc_dv_dc_dvv);
-
-        dr::masked(tau, norm_cross_dc_dv_dc_dvv < 1e-6f) = 0.f;  // Numerical stability
-        dr::masked(tau, dr::norm(dc_dvvv) < 1e-6f) = 0.f;
+              kappa = norm_cross_dc_dv_dc_dvv / (norm_dc_dv * sqr_norm_dc_dv);
 
         Vector3f frame_t = dc_dv / norm_dc_dv,
-                 frame_n = dr::normalize(dr::cross(cross_dc_dv_dc_dvv, dc_dv)),
-                 frame_b = dr::normalize(dr::cross(frame_t, frame_n));
+                 frame_n = dr::normalize(dr::cross(cross_dc_dv_dc_dvv, dc_dv));
 
-        // Degenerated TNB frame
+        // Degenerated TNB frame: `frame_n` is ill-defined where the curvature
+        // vanishes, fall back to an arbitrary consistent normal.
         Mask degenerate = kappa < dr::Epsilon<Float>;
         dr::masked(kappa, degenerate) = 0.f;
-        dr::masked(tau, degenerate) = 0.f;
         Normal3f Tn(frame_t);
         Frame3f frame(Tn);
         dr::masked(frame_n, degenerate) = frame.s;
-        dr::masked(frame_b, degenerate) = frame.t;
 
-        // Consistent local frame
-        auto [dir_rot, dir_rad] = local_frame(dc_dv_normalized);
+        // Consistent local frame and its derivatives w.r.t. local `v`
+        auto [dir_rot, dir_rad, dir_rot_dv, dir_rad_dv, dir_rot_dvv,
+              dir_rad_dvv] = local_frame_derivatives(dc_dv, dc_dvv, dc_dvvv);
         auto [s_, c_] = dr::sincos(uv.x() * dr::TwoPi<Float>);
         Vector3f rad = c_ * dir_rad + s_ * dir_rot;
-        Float cos_theta_u = dr::dot(frame_n, rad),
-              sin_theta_u = dr::dot(frame_b, rad);
+        Float cos_theta_u = dr::dot(frame_n, rad);
         Normal3f n = dr::normalize(
             norm_dc_dv * (1.f - radius * kappa * cos_theta_u) * rad - dr_dv * frame_t);
 
-        // Position partials
-        Vector3f radu  = -sin_theta_u * frame_n + cos_theta_u * frame_b,
-                 radv  = norm_dc_dv * cos_theta_u * (-kappa * frame_t + tau * frame_b) +
-                         norm_dc_dv * sin_theta_u * (-tau * frame_n),
-                 radvv = sqr_norm_dc_dv * cos_theta_u * (-kappa * kappa - tau * tau) * frame_n +
-                         sqr_norm_dc_dv * sin_theta_u * (kappa * tau * frame_t - tau * tau * frame_b),
-                 raduv = -norm_dc_dv * sin_theta_u * (-kappa * frame_t + tau * frame_b) +
-                          norm_dc_dv * cos_theta_u * (-tau * frame_n);
+        // Position partials. The radial vector is anchored to `local_frame`, so
+        // its `v`-derivatives follow that frame (continuous across knots) rather
+        // than the Frenet frame's torsion.
+        Vector3f radu  = -s_ * dir_rad + c_ * dir_rot,
+                 radv  =  c_ * dir_rad_dv + s_ * dir_rot_dv,
+                 radvv =  c_ * dir_rad_dvv + s_ * dir_rot_dvv,
+                 raduv = -s_ * dir_rad_dv + c_ * dir_rot_dv;
         Vector3f dp_du  = radius * radu,
                  dp_dv  = dc_dv + dr_dv * rad + radius * radv,
                  dp_duu = -radius * rad,
@@ -1266,6 +1306,66 @@ private:
         Vector3f v_rad = dr::cross(v_rot, dc_dv_normalized);
 
         return { v_rot, v_rad };
+    }
+
+    /**
+     * \brief Frame vectors of \ref local_frame together with their first and
+     * second derivatives w.r.t. the local curve parameter \c v.
+     *
+     * The frame is defined by projecting a fixed guide vector onto the plane
+     * orthogonal to the tangent, so its derivatives can be computed analytically
+     * from the tangent's derivatives. Unlike a Frenet-Serret frame, the
+     * first-order derivatives depend only on \c dc_dv and \c dc_dvv and are
+     * therefore continuous across segment borders (a Frenet frame would inject
+     * the torsion, which depends on the discontinuous third derivative
+     * \c dc_dvvv and produces spurious gradients at the knots).
+     */
+    std::tuple<Vector3f, Vector3f, Vector3f, Vector3f, Vector3f, Vector3f>
+    local_frame_derivatives(const Vector3f &dc_dv, const Vector3f &dc_dvv,
+                            const Vector3f &dc_dvvv) const {
+        Vector3f guide = Vector3f(0, 0, 1);
+
+        // Unit tangent and its first/second derivatives (w.r.t. local `v`)
+        Float s = dr::norm(dc_dv);
+        Vector3f T = dc_dv / s;
+        Float m1 = dr::dot(T, dc_dvv);
+        Vector3f t_dv = (dc_dvv - m1 * T) / s;
+        Float m1_dv = dr::dot(t_dv, dc_dvv) + dr::dot(T, dc_dvvv);
+        Vector3f t_dvv = (dc_dvvv - m1_dv * T - 2.f * m1 * t_dv) / s;
+
+        // Rotation axis `v_rot = normalize(guide - T (T . guide))`
+        Float a = dr::dot(T, guide), a_dv = dr::dot(t_dv, guide),
+              a_dvv = dr::dot(t_dvv, guide);
+        Vector3f w     = guide - a * T,
+                 w_dv  = -a_dv * T - a * t_dv,
+                 w_dvv = -a_dvv * T - 2.f * a_dv * t_dv - a * t_dvv;
+        Float nw = dr::norm(w);
+        Vector3f v_rot = w / nw;
+        Float nw_dv = dr::dot(w, w_dv) / nw;
+        Vector3f v_rot_dv = (w_dv - v_rot * dr::dot(v_rot, w_dv)) / nw;
+        Float dvw    = dr::dot(v_rot, w_dv),
+              dvw_dv = dr::dot(v_rot_dv, w_dv) + dr::dot(v_rot, w_dvv);
+        Vector3f num_dv = w_dvv - v_rot_dv * dvw - v_rot * dvw_dv;
+        Vector3f v_rot_dvv = num_dv / nw - v_rot_dv * (nw_dv / nw);
+
+        // Radial axis `v_rad = cross(v_rot, T)`
+        Vector3f v_rad     = dr::cross(v_rot, T),
+                 v_rad_dv  = dr::cross(v_rot_dv, T) + dr::cross(v_rot, t_dv),
+                 v_rad_dvv = dr::cross(v_rot_dvv, T) +
+                             2.f * dr::cross(v_rot_dv, t_dv) +
+                             dr::cross(v_rot, t_dvv);
+
+        // Match `local_frame`'s singular handling (tangent (anti-)parallel to
+        // the guide) and keep the derivatives finite there.
+        Mask singular = nw < 1e-6f;
+        dr::masked(v_rot, singular) = Vector3f(0, 1, 0);
+        dr::masked(v_rad, singular) = dr::cross(Vector3f(0, 1, 0), T);
+        dr::masked(v_rot_dv, singular)  = 0.f;
+        dr::masked(v_rad_dv, singular)  = 0.f;
+        dr::masked(v_rot_dvv, singular) = 0.f;
+        dr::masked(v_rad_dvv, singular) = 0.f;
+
+        return { v_rot, v_rad, v_rot_dv, v_rad_dv, v_rot_dvv, v_rad_dvv };
     }
 
 private:

@@ -429,7 +429,9 @@ build_impl(const std::vector<BlasEntry> &blases,
                                                           ? MTLCurveBasisBSpline
                                                           : MTLCurveBasisLinear;
                         gd.curveType                = MTLCurveTypeRound;
-                        gd.curveEndCaps             = MTLCurveEndCapsSphere;
+                        gd.curveEndCaps             = bspline
+                                                          ? MTLCurveEndCapsNone
+                                                          : MTLCurveEndCapsSphere;
                         gd.opaque                   = YES;
                         [geoms addObject: gd];
 
