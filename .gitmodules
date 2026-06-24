@@ -46,3 +46,6 @@
 [submodule "ext/struct-jit"]
 	path = ext/struct-jit
 	url = https://github.com/mitsuba-renderer/struct-jit
+[submodule "ext/rgb2spec"]
+	path = ext/rgb2spec
+	url = https://github.com/mitsuba-renderer/rgb2spec
