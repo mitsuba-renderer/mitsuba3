@@ -13,8 +13,7 @@ Mitsuba 3.9.0
   variants targeting Apple Silicon GPUs with full support for Dr.Jit
   just-in-time compilation and hardware-accelerated ray tracing. The ray
   tracing core of Mitsuba was redesigned using an intermediate scene
-  representation to unify the various different backends. (commit `b494500d
-  <https://github.com/mitsuba-renderer/mitsuba3/commit/b494500d>`__, building
+  representation to unify the various different backends. (commit `b49450 <https://github.com/mitsuba-renderer/mitsuba3/commit/b494500dd04d4750294b59e5956ac0bccbe98670>`__, building
   on PR `#1874 <https://github.com/mitsuba-renderer/mitsuba3/pull/1874>`__,
   contributed by `Sebastien Speierer <https://github.com/Speierers>`__ and
   `Wenzel Jakob <https://github.com/wjakob>`__).
@@ -29,30 +28,24 @@ Mitsuba 3.9.0
      :cpp:class:`mitsuba.Hierarchical2D0` class used to importance sample
      envmaps switched to a better memory layout and now uses an optimized
      sequence of packet loads. Scenes using environment maps should render
-     noticeably faster after this change. (commits `2ad8eaef
-     <https://github.com/mitsuba-renderer/mitsuba3/commit/2ad8eaef>`__,
-     `0179ad9f
-     <https://github.com/mitsuba-renderer/mitsuba3/commit/0179ad9f>`__,
-     `df71f6d8
-     <https://github.com/mitsuba-renderer/mitsuba3/commit/df71f6d8>`__).
+     noticeably faster after this change. (commits `2ad8ea <https://github.com/mitsuba-renderer/mitsuba3/commit/2ad8eaefeb79c95796fcc6196bbae6b6a0d28715>`__,
+     `0179ad <https://github.com/mitsuba-renderer/mitsuba3/commit/0179ad9f28b580b15c75032afdef8036bfac7f09>`__,
+     `df71f6 <https://github.com/mitsuba-renderer/mitsuba3/commit/df71f6d85de11ad2c9996d9519a0fbc2a8bccf7e>`__).
 
    - The ``ImageBlock`` class used for sample accumulation now uses more
-     efficient packet atomics. (commits `2d016b54
-     <https://github.com/mitsuba-renderer/mitsuba3/commit/2d016b54>`__,
-     `2f61f961
-     <https://github.com/mitsuba-renderer/mitsuba3/commit/2f61f961>`__,
+     efficient packet atomics. (commits `2d016b <https://github.com/mitsuba-renderer/mitsuba3/commit/2d016b5437afa41961036d99c9f5e12d9c1c3186>`__,
+     `2f61f9 <https://github.com/mitsuba-renderer/mitsuba3/commit/2f61f961bb668abe34270a0c812c862a1e3eaea4>`__,
      contributed by `Lovro Nuic <https://github.com/lnuic>`__).
 
    - **8-bit bitmap textures**. The :ref:`bitmap <texture-bitmap>` texture leaves
      LDR images in 8-bit precision instead of casting them to half precision,
      which conserves memory and accelerates rendering. It uses the GPU's texture
      units to fetch and (if needed, remove sRGB gamma from) stored values. (commit
-     `56ec0f12 <https://github.com/mitsuba-renderer/mitsuba3/commit/56ec0f12>`__).
+     `56ec0f <https://github.com/mitsuba-renderer/mitsuba3/commit/56ec0f12bc3718b8a0ac09155bae74a57feb7c57>`__).
 
    - **Faster JPEG I/O**. JPEG encoding/decoding switched from the bundled
      ``libjpeg`` to `libjpeg-turbo <https://libjpeg-turbo.org/>`__, which
-     provides 2-6x throughput using SIMD acceleration. (commit `c8a5fbf1
-     <https://github.com/mitsuba-renderer/mitsuba3/commit/c8a5fbf1>`__).
+     provides 2-6x throughput using SIMD acceleration. (commit `c8a5fb <https://github.com/mitsuba-renderer/mitsuba3/commit/c8a5fbf1d5944cfb6ba1ad2fc54c73c22abf8c26>`__).
 
    - **Faster tracing, code generation, and Python bindings**. A comprehensive
      optimization pass in `Dr.Jit 1.4.0
@@ -121,8 +114,7 @@ Mitsuba 3.9.0
   and supports both **x86_64 and aarch64** (the old implementation only had a
   JIT for x86_64 and fell back to slow software emulation on ARM). Note: the
   data-structure conversion API changed; projects directly using the ``Struct``
-  API will need adaptations. (commit `06713ce2
-  <https://github.com/mitsuba-renderer/mitsuba3/commit/06713ce2>`__).
+  API will need adaptations. (commit `06713c <https://github.com/mitsuba-renderer/mitsuba3/commit/06713ce2dfd468a63fc2b169c29a6de18a15e9d2>`__).
 
 
 
@@ -131,14 +123,12 @@ Mitsuba 3.9.0
 
   - Migrated texture consumers to the new array-returning ``dr::Texture``
     ``eval*`` API (returns a Dr.Jit array by value instead of writing through a
-    raw pointer). (commit `44f1942c
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/44f1942c>`__).
+    raw pointer). (commit `44f194 <https://github.com/mitsuba-renderer/mitsuba3/commit/44f1942c4bf2567c023f22fb9e9f182a49e41103>`__).
 
 - **Miscellaneous**:
 
   - The :ref:`spot <emitter-spot>` emitter now exposes its beam parameters
-    through ``mi.traverse()``. (commit `e0afc5f8
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/e0afc5f8>`__,
+    through ``mi.traverse()``. (commit `e0afc5 <https://github.com/mitsuba-renderer/mitsuba3/commit/e0afc5f8110d9e99cb4f4f8cdaa87b342c8852dc>`__,
     contributed by `Delio Vicini <https://github.com/dvicini>`__).
   - The ray loader now supports mini-batch training. (PR `#1655
     <https://github.com/mitsuba-renderer/mitsuba3/pull/1655>`__,
@@ -146,36 +136,29 @@ Mitsuba 3.9.0
   - Added the ``AdamW`` optimizer to the ``optimizers.py`` imports.
     (PR `#1878 <https://github.com/mitsuba-renderer/mitsuba3/pull/1878>`__,
     contributed by `Ziyi Zhang <https://github.com/ziyi-zhang>`__).
-  - Improved type-checking stubs. (commits `9ce3e5fe
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/9ce3e5fe>`__,
-    `9067366f <https://github.com/mitsuba-renderer/mitsuba3/commit/9067366f>`__,
+  - Improved type-checking stubs. (commits `9ce3e5 <https://github.com/mitsuba-renderer/mitsuba3/commit/9ce3e5fe4f8aa4ec5320c6b9993210c78f7f46f2>`__,
+    `906736 <https://github.com/mitsuba-renderer/mitsuba3/commit/9067366f4e7d398a2971efd46ec63944264dfb27>`__,
     contributed by `Philippe Weier <https://github.com/WeiPhil>`__).
 
 - **Bug fixes**:
 
-  - Fixed a regression that disabled parallel loading of leaf scene nodes. (commit `502a8257
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/502a8257>`__,
+  - Fixed a regression that disabled parallel loading of leaf scene nodes. (commit `502a82 <https://github.com/mitsuba-renderer/mitsuba3/commit/502a8257a298be0b1fa81c047b3a2a2088c5cde8>`__,
     contributed by `Delio Vicini <https://github.com/dvicini>`__).
-  - Fixed side-effect processing. (commit `b9440e82
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/b9440e82>`__,
+  - Fixed side-effect processing. (commit `b9440e <https://github.com/mitsuba-renderer/mitsuba3/commit/b9440e8254670cd9f8698299c3a23c6baa5f2fe3>`__,
     contributed by `Delio Vicini <https://github.com/dvicini>`__).
-  - Fixed integer overflow issues. (commit `575b6c46
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/575b6c46>`__,
+  - Fixed integer overflow issues. (commit `575b6c <https://github.com/mitsuba-renderer/mitsuba3/commit/575b6c46645e46a024545767091c223269817bbe>`__,
     contributed by `Thomas Auzinger <https://github.com/ThomasAuzinger>`__).
   - Fixed the OptiX ``sdfgrid`` shape for non-cubical domains. (commit
-    `64175bb5 <https://github.com/mitsuba-renderer/mitsuba3/commit/64175bb5>`__).
-  - Fixed the command line executable for scalar variants. (commit `a58d4924
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/a58d4924>`__,
+    `64175b <https://github.com/mitsuba-renderer/mitsuba3/commit/64175bb5fb06c1f2635d3393d047dda4f2421003>`__).
+  - Fixed the command line executable for scalar variants. (commit `a58d49 <https://github.com/mitsuba-renderer/mitsuba3/commit/a58d4924ced99d3a6d54392780e5d13c089b42a7>`__,
     contributed by `Nicolas Roussel <https://github.com/njroussel>`__).
   - ``ImageBlock`` now considers the active mask in scalar backends. (commit
-    `5f9f842d <https://github.com/mitsuba-renderer/mitsuba3/commit/5f9f842d>`__,
+    `5f9f84 <https://github.com/mitsuba-renderer/mitsuba3/commit/5f9f842d0f3852a986c7bf4c37382e557a25c757>`__,
     contributed by `Tobias Jüterbock <https://github.com/tjueterb>`__).
-  - Upgraded the bundled ``nanobind`` dependency. (commit `21279f6e
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/21279f6e>`__).
-  - Various compilation fixes for MSVC and GCC. (commits `f5730379
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/f5730379>`__,
-    `25fcd89f <https://github.com/mitsuba-renderer/mitsuba3/commit/25fcd89f>`__,
-    `4bf6f10d <https://github.com/mitsuba-renderer/mitsuba3/commit/4bf6f10d>`__).
+  - Upgraded the bundled ``nanobind`` dependency. (commit `21279f <https://github.com/mitsuba-renderer/mitsuba3/commit/21279f6e967b874f990a1eeed41b1f32be1bceaa>`__).
+  - Various compilation fixes for MSVC and GCC. (commits `f57303 <https://github.com/mitsuba-renderer/mitsuba3/commit/f5730379ff5390a2507daf9f4ff95fed26fec5df>`__,
+    `25fcd8 <https://github.com/mitsuba-renderer/mitsuba3/commit/25fcd89f500f4e0c2f5ebf390a5c91d98509ada5>`__,
+    `4bf6f1 <https://github.com/mitsuba-renderer/mitsuba3/commit/4bf6f10d9914aea934700ac1b45b560fc3f0a8ae>`__).
 
 
 Mitsuba 3.8.0
@@ -238,8 +221,7 @@ Mitsuba 3.8.0
     <https://github.com/mitsuba-renderer/mitsuba3/pull/1842>`__,
     contributed by `Vincent Leroy <https://github.com/leroyvn>`__).
   - ``ShapeGroup`` now caches ``parameters_grad_enabled()`` to avoid repeated
-    checks. (commit `925f36ecb
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/925f36ecb>`__,
+    checks. (commit `925f36 <https://github.com/mitsuba-renderer/mitsuba3/commit/925f36ecbdc10b6034033393388e35e2e8c546a6>`__,
     contributed by `Vincent Leroy <https://github.com/leroyvn>`__).
   - Added wheels for **Python 3.14** and **Linux ARM** (``aarch64``).
     (PR `#1807
@@ -279,13 +261,10 @@ This list is not exhaustive:
     contributed by `Christian Döring <https://github.com/DoeringChristian>`__).
   - Fixed ``bitmap`` textures evaluating to 0 in CUDA double-precision
     variants, and similarly for ``sdfgrid``.
-    (commits `e18c1657
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/e18c16573>`__,
-    `54cc70eb
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/54cc70eb7>`__).
+    (commits `e18c16 <https://github.com/mitsuba-renderer/mitsuba3/commit/e18c16573f0948b1bc00a2fed2216bff8f9f6ad6>`__,
+    `54cc70 <https://github.com/mitsuba-renderer/mitsuba3/commit/54cc70eb79180bc10d55d90725c6509b22735949>`__).
   - Fixed ``hide_emitters`` to handle custom shapes.
-    (commit `3f968c544
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/3f968c544>`__).
+    (commit `3f968c <https://github.com/mitsuba-renderer/mitsuba3/commit/3f968c544efae3560bf22ff08aef62d746c14561>`__).
   - Restored ``resources`` feature in ``load_dict()``. (PR `#1829
     <https://github.com/mitsuba-renderer/mitsuba3/pull/1829>`__).
   - Fixed mesh not respecting explicitly provided normals (normals would be
@@ -300,14 +279,11 @@ This list is not exhaustive:
     (PR `#1764
     <https://github.com/mitsuba-renderer/mitsuba3/pull/1764>`__).
   - Handle differentiation through ``aov`` when no AOVs carry gradients.
-    (commit `f235aa22
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/f235aa229>`__).
+    (commit `f235aa <https://github.com/mitsuba-renderer/mitsuba3/commit/f235aa229ed97160aae44e834553eb4793dfe111>`__).
   - Fixed ``KDTree`` builds on MSVC.
-    (commit `9e542b68
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/9e542b689>`__).
+    (commit `9e542b <https://github.com/mitsuba-renderer/mitsuba3/commit/9e542b6896be5fca24bd45586558b324f32a6fd8>`__).
   - Fixed ``shapegroup.h`` compilation when no vectorized backend is available.
-    (commit `85ae5712
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/85ae57124>`__).
+    (commit `85ae57 <https://github.com/mitsuba-renderer/mitsuba3/commit/85ae571244d812e3d83f17cfecbe82fb3b51a1dd>`__).
   - Handle numpy scalars in ``Properties``.
     (PR `#1788
     <https://github.com/mitsuba-renderer/mitsuba3/pull/1788>`__).
@@ -316,8 +292,7 @@ This list is not exhaustive:
     <https://github.com/mitsuba-renderer/mitsuba3/pull/1753>`__,
     contributed by `Delio Vicini <https://github.com/dvicini>`__).
   - Fixed build compatibility with newer CMake versions.
-    (commit `eb65b90
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/eb65b90de>`__).
+    (commit `eb65b9 <https://github.com/mitsuba-renderer/mitsuba3/commit/eb65b90dea1abbb05bb3101237751819236717fd>`__).
 
 
 Mitsuba 3.7.1
@@ -349,14 +324,12 @@ Mitsuba 3.7.1
     the shadowing function from Estevez et al. 2019 :cite:`Estevez2019`. Both
     features are enabled by default but can be disabled via the
     ``flip_invalid_normals`` and ``use_shadowing_function`` parameters for
-    backwards compatibility. (commit `e32d71807
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/e32d71807>`__,
+    backwards compatibility. (commit `e32d71 <https://github.com/mitsuba-renderer/mitsuba3/commit/e32d71807c2c434c55ad9f898601b7df7bc773be>`__,
     contributed by `Delio Vicini <https://github.com/dvicini>`__).
   - Improved sunsky documentation. (PR `#1743
     <https://github.com/mitsuba-renderer/mitsuba3/pull/1743>`__,
     contributed by `Mattéo Santini <https://github.com/matttsss>`__).
-  - Added support for vcalls of Texture. (commit `6b1603c77
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/6b1603c77>`__).
+  - Added support for vcalls of Texture. (commit `6b1603 <https://github.com/mitsuba-renderer/mitsuba3/commit/6b1603c77204aa1655255386d51c91d0d94e953d>`__).
   - Added Python bindings for ``field<T>`` types. (PR `#1736
     <https://github.com/mitsuba-renderer/mitsuba3/pull/1736>`__,
     contributed by `Delio Vicini <https://github.com/dvicini>`__).
@@ -366,29 +339,24 @@ Mitsuba 3.7.1
 - **Bug fixes**:
 
   - Fixed bug with unintentional reordering of channels when serializing and
-    deserializing a Bitmap with more than 10 channels. (commit `e84b18f
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/e84b18f01>`__,
+    deserializing a Bitmap with more than 10 channels. (commit `e84b18 <https://github.com/mitsuba-renderer/mitsuba3/commit/e84b18f01079fddce7a24ca811006e35efee1b15>`__,
     contributed by `Sebastian Winberg <https://github.com/winbergs>`__).
   - Fixed ``hide_emitters`` behavior for ``area`` emitters in ``path``
-    integrator and all other integrators. (commits `3c3bf14c
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/3c3bf14c1>`__,
-    `0755134e0 <https://github.com/mitsuba-renderer/mitsuba3/commit/0755134e0>`__,
-    `c967a0a24 <https://github.com/mitsuba-renderer/mitsuba3/commit/c967a0a24>`__).
-  - Fixed KDTree reference counting and shutdown procedure. (commit `14c8c9763
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/14c8c9763>`__).
-  - Fixed compilation issues of the KDTree. (commit `65b38126b
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/65b38126b>`__).
+    integrator and all other integrators. (commits `3c3bf1 <https://github.com/mitsuba-renderer/mitsuba3/commit/3c3bf14c1e58b3e5c6a033e3b724f33bd53d425d>`__,
+    `075513 <https://github.com/mitsuba-renderer/mitsuba3/commit/0755134e09cbba86fd23faea9b4350bcff9fea9a>`__,
+    `c967a0 <https://github.com/mitsuba-renderer/mitsuba3/commit/c967a0a2451173857dd701cf2051496345f04abc>`__).
+  - Fixed KDTree reference counting and shutdown procedure. (commit `14c8c9 <https://github.com/mitsuba-renderer/mitsuba3/commit/14c8c9763ec246d9efd41681a2928fec74d057f1>`__).
+  - Fixed compilation issues of the KDTree. (commit `65b381 <https://github.com/mitsuba-renderer/mitsuba3/commit/65b38126b34b2426677ea5a8d29b7462f813acbc>`__).
   - Prevent NaN values for normals of triangles with zero area. (PR `#1733
     <https://github.com/mitsuba-renderer/mitsuba3/pull/1733>`__,
     contributed by `Delio Vicini <https://github.com/dvicini>`__).
   - Prevent users updating the ``UniformSpectrum`` with a float of size
     different than 1. (PR `#1722 <https://github.com/mitsuba-renderer/mitsuba3/pull/1722>`__,
     contributed by `Mattéo Santini <https://github.com/matttsss>`__).
-  - Added Image manipulation tutorial back in the "How-to Guides". (commit `465609174
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/465609174>`__,
+  - Added Image manipulation tutorial back in the "How-to Guides". (commit `465609 <https://github.com/mitsuba-renderer/mitsuba3/commit/4656091747b8a07ce8957a1944a81bde32e02048>`__,
     contributed by `Baptiste Nicolet <https://github.com/bathal1>`__).
   - Add support for JIT-freeting to the sunsky classes. (commit
-    `f07f26c5e <https://github.com/mitsuba-renderer/mitsuba3/commit/f07f26c5e>`__).
+    `f07f26 <https://github.com/mitsuba-renderer/mitsuba3/commit/f07f26c5eeee645113fdbd7d3e627cb4a2124ab2>`__).
 
 
 Mitsuba 3.7.0
@@ -619,8 +587,8 @@ Mitsuba 3.6.4
 *February 4, 2025*
 
 - Upgrade Dr.Jit to version `1.0.5 <https://github.com/mitsuba-renderer/drjit/releases/tag/v1.0.5>`__.
-- Fix normalmap `[1a4bea2] <https://github.com/mitsuba-renderer/mitsuba3/commit/1a4bea212c129a5d0239e533107473a5ca89230a>`__
-- Fallback mechanism for numerical issues in silhouette sampling `[ce4af8d] <https://github.com/mitsuba-renderer/mitsuba3/commit/ce4af8d31b464f1fc5f52688365eb598272e0153>`__
+- Fix normalmap `1a4bea <https://github.com/mitsuba-renderer/mitsuba3/commit/1a4bea212c129a5d0239e533107473a5ca89230a>`__
+- Fallback mechanism for numerical issues in silhouette sampling `ce4af8 <https://github.com/mitsuba-renderer/mitsuba3/commit/ce4af8d31b464f1fc5f52688365eb598272e0153>`__
 
 Mitsuba 3.6.3
 -------------
@@ -633,24 +601,24 @@ Mitsuba 3.6.2
 *January 16, 2025*
 
 - Enable parallel scene loading by default in ``mitsuba`` CLI (regression)
-  `[338898d] <https://github.com/mitsuba-renderer/mitsuba3/commit/338898dcf7b26d70523f22a58d4ac474a6cf8e5c>`__
+  `338898 <https://github.com/mitsuba-renderer/mitsuba3/commit/338898dcf7b26d70523f22a58d4ac474a6cf8e5c>`__
 - Improved ``bitmap`` construction in scalar variants
-  `[6af4d37] <https://github.com/mitsuba-renderer/mitsuba3/commit/6af4d377c52bc13b7cafa24cd17b96d68b898f87>`__
+  `6af4d3 <https://github.com/mitsuba-renderer/mitsuba3/commit/6af4d377c52bc13b7cafa24cd17b96d68b898f87>`__
 
 Mitsuba 3.6.1
 -------------
 *January 16, 2025*
 
 - Improve robustness of parallel scene loading
-  `[8d48f58] <https://github.com/mitsuba-renderer/mitsuba3/commit/8d48f585f07c6559d9aa346507b5e0c007c02513>`__
+  `8d48f5 <https://github.com/mitsuba-renderer/mitsuba3/commit/8d48f585f07c6559d9aa346507b5e0c007c02513>`__
 - Fixes to ``mi.sample_tea_float``
-  `[fd16fbe] <https://github.com/mitsuba-renderer/mitsuba3/commit/fd16fbe2e711379bfb36c3d8bcd5bb066ad0ae82>`__
+  `fd16fb <https://github.com/mitsuba-renderer/mitsuba3/commit/fd16fbe2e711379bfb36c3d8bcd5bb066ad0ae82>`__
 - Support for complex numbers or quaternions in ``mi.ad.Adam`` optimizer
-  `[eff5bf6] <https://github.com/mitsuba-renderer/mitsuba3/commit/eff5bf6eae8cc5448af0193f7be0d0cdbf9c41d2>`__
+  `eff5bf <https://github.com/mitsuba-renderer/mitsuba3/commit/eff5bf6eae8cc5448af0193f7be0d0cdbf9c41d2>`__
 - Improved error message when ``mi.load_dict`` fails
-  `[7db5401] <https://github.com/mitsuba-renderer/mitsuba3/commit/7db5401dcdbdcee70fd28b0736313f1365f279f8>`__
+  `7db540 <https://github.com/mitsuba-renderer/mitsuba3/commit/7db5401dcdbdcee70fd28b0736313f1365f279f8>`__
 - Add missing implementations for `spot` emitter (for AD)
-  `[9336491] <https://github.com/mitsuba-renderer/mitsuba3/commit/933649143dbce3086cb6316a9ee928d29c9053b5>`__
+  `11b56f <https://github.com/mitsuba-renderer/mitsuba3/commit/11b56fc107fc9613bad493aee28dfb70fd4bf8c6>`__
 
 Mitsuba 3.6.0
 -------------
@@ -675,15 +643,15 @@ This release also includes a series of bug fixes, quality of life improvements
 and new features. Here's a non-exhaustive list:
 
 - Support for Embree's robust intersection flag
-  `[96e0af2] <https://github.com/mitsuba-renderer/mitsuba3/commit/96e0af2de054c6d21e0ac2f68dd41bcd2cb469e5>`__
+  `96e0af <https://github.com/mitsuba-renderer/mitsuba3/commit/96e0af2de054c6d21e0ac2f68dd41bcd2cb469e5>`__
 - Callback system for variant changes
   `#1367 <https://github.com/mitsuba-renderer/mitsuba3/pull/1367>`__
 - ``MeshPtr`` for vectorized ``Mesh`` method calls
   `#1319 <https://github.com/mitsuba-renderer/mitsuba3/pull/1319>`__
 - Aliases for the ``ArrayX`` types of Dr.Jit
-  `[2e86e5e] <https://github.com/mitsuba-renderer/mitsuba3/commit/2e86e5e013b397391d6a59b09ee8238df03589b4>`__
+  `2e86e5 <https://github.com/mitsuba-renderer/mitsuba3/commit/2e86e5e013b397391d6a59b09ee8238df03589b4>`__
 - Fix attribute evaluation for ``twosided`` BSDFs
-  `[5508ee6] <https://github.com/mitsuba-renderer/mitsuba3/commit/5508ee6a392e2b32c1a4360742cbe9c966586458>`__ .. `[7528d9f] <https://github.com/mitsuba-renderer/mitsuba3/commit/7528d9fb2d9012e97ebade224685cc8620a647cd>`__
+  `5508ee <https://github.com/mitsuba-renderer/mitsuba3/commit/5508ee6a392e2b32c1a4360742cbe9c966586458>`__ .. `7528d9 <https://github.com/mitsuba-renderer/mitsuba3/commit/7528d9fb2d9012e97ebade224685cc8620a647cd>`__
 - A new `guide for using Mitsuba 3 in WSL 2 <https://mitsuba.readthedocs.io/en/v3.6.0/src/optix_setup.html>`__
 - ``batch`` sensors expose their inner ``Sensor`` objects when traversed with ``mi.traverse()``
   `#1297 <https://github.com/mitsuba-renderer/mitsuba3/pull/1297>`__
@@ -699,7 +667,7 @@ Mitsuba 3.5.2
 Most likely the last release which uses `pybind11 <https://pybind11.readthedocs.io>`__.
 
 - OptiX scene clean-ups could segfault
-  `[03f5e13] <https://github.com/mitsuba-renderer/mitsuba3/commit/03f5e1362d0cf1cc8c4edbd6e0e7bfd5ee8705a0>`__
+  `03f5e1 <https://github.com/mitsuba-renderer/mitsuba3/commit/03f5e1362d0cf1cc8c4edbd6e0e7bfd5ee8705a0>`__
 
 Mitsuba 3.5.1
 -------------
@@ -707,23 +675,23 @@ Mitsuba 3.5.1
 
 - Upgrade Dr.Jit to `[v0.4.6] <https://github.com/mitsuba-renderer/drjit/releases/tag/v0.4.6>`__
 - More robust scene clean-up when using Embree
-  `[7bb672c] <https://github.com/mitsuba-renderer/mitsuba3/commit/7bb672c32d64ad9a4996d3c7700d445d2c5750bc>`__
+  `7bb672 <https://github.com/mitsuba-renderer/mitsuba3/commit/7bb672c32d64ad9a4996d3c7700d445d2c5750bc>`__
 - Support for AOV fields in Python AD integrators
-  `[f3b427e] <https://github.com/mitsuba-renderer/mitsuba3/commit/f3b427e02ca9dd1fb2e0fb9b993c67a2779d2052>`__
+  `f3b427 <https://github.com/mitsuba-renderer/mitsuba3/commit/f3b427e02ca9dd1fb2e0fb9b993c67a2779d2052>`__
 - Fix potential segfault during OptiX scene clean-up
-  `[0bcfc72] <https://github.com/mitsuba-renderer/mitsuba3/commit/0bcfc72b846cd5483109b1323301755e23926e76>`__
+  `0bcfc7 <https://github.com/mitsuba-renderer/mitsuba3/commit/0bcfc72b846cd5483109b1323301755e23926e76>`__
 - Improve and fix Mesh PMF computations
-  `[ced7b22] <https://github.com/mitsuba-renderer/mitsuba3/commit/ced7b2204d7d8beefa149a6c5b43e2ff5796a725>`__ .. `[7d2951a] <https://github.com/mitsuba-renderer/mitsuba3/commit/7d2951a5f3f55a0bda4f40e3c4299441f05e70d5>`__
+  `ced7b2 <https://github.com/mitsuba-renderer/mitsuba3/commit/ced7b2204d7d8beefa149a6c5b43e2ff5796a725>`__ .. `7d2951 <https://github.com/mitsuba-renderer/mitsuba3/commit/7d2951a5f3f55a0bda4f40e3c4299441f05e70d5>`__
 - ``Shape.parameters_grad_enabled`` now only applies to parameters that introduce visibility discontinuities
-  `[3013adb] <https://github.com/mitsuba-renderer/mitsuba3/commit/3013adb4f12a491f8dd37c32bcedf55c7998f9e8>`__
+  `3013ad <https://github.com/mitsuba-renderer/mitsuba3/commit/3013adb4f12a491f8dd37c32bcedf55c7998f9e8>`__
 - The ``measuredpolarized`` plugin is now supported in vectorized variants
-  `[68b3a5f] <https://github.com/mitsuba-renderer/mitsuba3/commit/68b3a5f20ea00eb83631a7c48585162c6d901a7d>`__
+  `68b3a5 <https://github.com/mitsuba-renderer/mitsuba3/commit/68b3a5f20ea00eb83631a7c48585162c6d901a7d>`__
 - Fix an issue where the ``constant`` plugin would not reuse kernels
-  `[deebe4c] <https://github.com/mitsuba-renderer/mitsuba3/commit/deebe4c64586c129bb0b0280bbaf376e2315991c>`__
+  `deebe4 <https://github.com/mitsuba-renderer/mitsuba3/commit/deebe4c64586c129bb0b0280bbaf376e2315991c>`__
 - Minor changes to support Nvidia v555 drivers
-  `[19bf5a4] <https://github.com/mitsuba-renderer/mitsuba3/commit/19bf5a4d82e760614f766067baf0c8add3bc8a41>`__
+  `19bf5a <https://github.com/mitsuba-renderer/mitsuba3/commit/19bf5a4d82e760614f766067baf0c8add3bc8a41>`__
 - Many numerical and performance improvements to the ``sdfgrid`` shape
-  `[455de40] <https://github.com/mitsuba-renderer/mitsuba3/commit/455de408abf7660e1667a1ed810fc6fd903b9db3>`__ .. `[9e156bd] <https://github.com/mitsuba-renderer/mitsuba3/commit/9e156bdf3a33042b16593e3f5de40acb7d22da64>`__
+  `455de4 <https://github.com/mitsuba-renderer/mitsuba3/commit/455de408abf7660e1667a1ed810fc6fd903b9db3>`__ .. `9e156b <https://github.com/mitsuba-renderer/mitsuba3/commit/9e156bdf3a33042b16593e3f5de40acb7d22da64>`__
 
 Mitsuba 3.5.0
 -------------
@@ -744,27 +712,27 @@ Mitsuba 3.4.1
 
   - Solved threading/concurrency issues which could break loading of large scenes or long running optimizations
 - Scene's bounding box now gets updated on parameter changes
-  `[97d4b6a] <https://github.com/mitsuba-renderer/mitsuba3/commit/97d4b6ad4c1ba3471642c177cee01d3adf0bf22e>`__
+  `97d4b6 <https://github.com/mitsuba-renderer/mitsuba3/commit/97d4b6ad4c1ba3471642c177cee01d3adf0bf22e>`__
 - Python bindings for ``mi.lookup_ior``
-  `[d598d79] <https://github.com/mitsuba-renderer/mitsuba3/commit/d598d79a7d21c76ac9b422b3488137b1d28a33f9>`__
+  `d598d7 <https://github.com/mitsuba-renderer/mitsuba3/commit/d598d79a7d21c76ac9b422b3488137b1d28a33f9>`__
 - Fixes to ``mask`` BSDF when differentiated
-  `[ee87f1c] <https://github.com/mitsuba-renderer/mitsuba3/commit/ee87f1c01aa1b731bc58057ed9e6944046460a69>`__
+  `ee87f1 <https://github.com/mitsuba-renderer/mitsuba3/commit/ee87f1c01aa1b731bc58057ed9e6944046460a69>`__
 - Ray sampling is fixed when ``sample_border`` is used
-  `[c10b87b] <https://github.com/mitsuba-renderer/mitsuba3/commit/c10b87b072634db15d55a7dbc55cc3cf8f7c844c>`__
+  `c10b87 <https://github.com/mitsuba-renderer/mitsuba3/commit/c10b87b072634db15d55a7dbc55cc3cf8f7c844c>`__
 - Rename OpenEXR shared library
-  `[9cc3bf4] <https://github.com/mitsuba-renderer/mitsuba3/commit/9cc3bf495da10dcd28e80cc14a145fb178a5ef4c>`__
+  `9cc3bf <https://github.com/mitsuba-renderer/mitsuba3/commit/9cc3bf495da10dcd28e80cc14a145fb178a5ef4c>`__
 - Handle phase function differentiation in ``prbvolpath``
-  `[5f9eebd] <https://github.com/mitsuba-renderer/mitsuba3/commit/5f9eebd41a3a939096d4509b1d2504586a3bf7c6>`__
+  `5f9eeb <https://github.com/mitsuba-renderer/mitsuba3/commit/5f9eebd41a3a939096d4509b1d2504586a3bf7c6>`__
 - Fixes to linear ``retarder``
-  `[8033a80] <https://github.com/mitsuba-renderer/mitsuba3/commit/8033a807091f8315c5cef25f4f1a36a3766fb223>`__
+  `8033a8 <https://github.com/mitsuba-renderer/mitsuba3/commit/8033a807091f8315c5cef25f4f1a36a3766fb223>`__
 - Avoid copies to host when building 1D distributions
-  `[825f44f] <https://github.com/mitsuba-renderer/mitsuba3/commit/825f44f081fb43b23589b2bf0b9b7071af858f2a>`__ .. `[8f71fe9] <https://github.com/mitsuba-renderer/mitsuba3/commit/8f71fe995f40923449478ee05500918710ef27f6>`__
+  `825f44 <https://github.com/mitsuba-renderer/mitsuba3/commit/825f44f081fb43b23589b2bf0b9b7071af858f2a>`__ .. `8f71fe <https://github.com/mitsuba-renderer/mitsuba3/commit/8f71fe995f40923449478ee05500918710ef27f6>`__
 - Fixes to linear ``retarder``
-  `[8033a80] <https://github.com/mitsuba-renderer/mitsuba3/commit/8033a807091f8315c5cef25f4f1a36a3766fb223>`__
+  `8033a8 <https://github.com/mitsuba-renderer/mitsuba3/commit/8033a807091f8315c5cef25f4f1a36a3766fb223>`__
 - Sensor's prinicpal point is now exposed throught ``m̀i.traverse()``
-  `[f59faa5] <https://github.com/mitsuba-renderer/mitsuba3/commit/f59faa51929b506608a66522dc841f5317a8d43c>`__
+  `f59faa <https://github.com/mitsuba-renderer/mitsuba3/commit/f59faa51929b506608a66522dc841f5317a8d43c>`__
 - Minor fixes to ``ptracer`` which could result in illegal memory accesses
-  `[3d902a4] <https://github.com/mitsuba-renderer/mitsuba3/commit/3d902a4dbf176c8c8d08e5493f23623659295197>`__
+  `3d902a <https://github.com/mitsuba-renderer/mitsuba3/commit/3d902a4dbf176c8c8d08e5493f23623659295197>`__
 - Other various minor bug fixes
 
 Mitsuba 3.4.0
@@ -773,33 +741,33 @@ Mitsuba 3.4.0
 
 - Upgrade Dr.Jit to v0.4.3
 - Add ``mi.variant_context()``: a Python context manager for setting variants
-  `[96b219d] <https://github.com/mitsuba-renderer/mitsuba3/commit/96b219d75a69f997623c76611fb6d0b90e2c5c3e>`__
+  `96b219 <https://github.com/mitsuba-renderer/mitsuba3/commit/96b219d75a69f997623c76611fb6d0b90e2c5c3e>`__
 - Emitters may now define a sampling weight
-  `[9a5f4c0] <https://github.com/mitsuba-renderer/mitsuba3/commit/9a5f4c0d5f52de7553beb64e82ad139fce879649>`__
+  `9a5f4c <https://github.com/mitsuba-renderer/mitsuba3/commit/9a5f4c0d5f52de7553beb64e82ad139fce879649>`__
 - Fix ``bsplinecurve`` and ``linearcurve`` shading frames
-  `[3875f9a] <https://github.com/mitsuba-renderer/mitsuba3/commit/3875f9adda5eddf9b233901d52dac6b9238a5c83>`__
+  `3875f9 <https://github.com/mitsuba-renderer/mitsuba3/commit/3875f9adda5eddf9b233901d52dac6b9238a5c83>`__
 - Add implementation of ``LargeSteps`` method for mesh optimizations (includes a new tutorial)
-  `[48e6428] <https://github.com/mitsuba-renderer/mitsuba3/commit/48e64283814297bd89306cd4beba718221eacaf3>`__ .. `[130ed55] <https://github.com/mitsuba-renderer/mitsuba3/commit/130ed5522887f5405736f28f2081d04b1c1852c3>`__
+  `48e642 <https://github.com/mitsuba-renderer/mitsuba3/commit/48e64283814297bd89306cd4beba718221eacaf3>`__ .. `130ed5 <https://github.com/mitsuba-renderer/mitsuba3/commit/130ed5522887f5405736f28f2081d04b1c1852c3>`__
 - Support for spectral phase functions
-  `[c7d5c75] <https://github.com/mitsuba-renderer/mitsuba3/commit/c7d5c75707046ee9ade56604f8a0b1c5b724b729>`__
+  `c7d5c7 <https://github.com/mitsuba-renderer/mitsuba3/commit/c7d5c75707046ee9ade56604f8a0b1c5b724b729>`__
 - Additional resource folders can now be specified in ``mi.load_dict()``
-  `[66ea528] <https://github.com/mitsuba-renderer/mitsuba3/commit/66ea5285b1bc9a251eafa0b8449bb0d641e3fa1c>`__
+  `66ea52 <https://github.com/mitsuba-renderer/mitsuba3/commit/66ea5285b1bc9a251eafa0b8449bb0d641e3fa1c>`__
 - BSDFs can expose their attributes through a generic ``eval_attribute`` method
-  `[cfc425a] <https://github.com/mitsuba-renderer/mitsuba3/commit/cfc425a2b5753127aeb818dab0ebab828dc8f060>`__ .. `[c345d70] <https://github.com/mitsuba-renderer/mitsuba3/commit/c345d700bb273832d4ce2fd753929374fd076d64>`__
+  `cfc425 <https://github.com/mitsuba-renderer/mitsuba3/commit/cfc425a2b5753127aeb818dab0ebab828dc8f060>`__ .. `c345d7 <https://github.com/mitsuba-renderer/mitsuba3/commit/c345d700bb273832d4ce2fd753929374fd076d64>`__
 - New ``sdfgrid`` shape: a signed distance field on a regular grid
-  `[272a5bf] <https://github.com/mitsuba-renderer/mitsuba3/commit/272a5bf10e3590d9ae35144d0819396181bdaef2>`__ .. `[618da87] <https://github.com/mitsuba-renderer/mitsuba3/commit/618da871d19cb36a3879230d3799f3341a657c08>`__
+  `272a5b <https://github.com/mitsuba-renderer/mitsuba3/commit/272a5bf10e3590d9ae35144d0819396181bdaef2>`__ .. `618da8 <https://github.com/mitsuba-renderer/mitsuba3/commit/618da871d19cb36a3879230d3799f3341a657c08>`__
 - Support for adjoint differentiation methods through the ``aov`` integrator
-  `[c9df8de] <https://github.com/mitsuba-renderer/mitsuba3/commit/c9df8de011e2d835402a4fcc8fe6ef832b4ce40a>`__ .. `[bff5cf2] <https://github.com/mitsuba-renderer/mitsuba3/commit/bff5cf240ad1676eea398c99e32f4d49f0f44925>`__
+  `c9df8d <https://github.com/mitsuba-renderer/mitsuba3/commit/c9df8de011e2d835402a4fcc8fe6ef832b4ce40a>`__ .. `bff5cf <https://github.com/mitsuba-renderer/mitsuba3/commit/bff5cf240ad1676eea398c99e32f4d49f0f44925>`__
 - Various fixes to ``prbvolpath``
-  `[6d78f2e] <https://github.com/mitsuba-renderer/mitsuba3/commit/6d78f2ed30e746a718567a85a740db365e44407b>`__, `[a946691] <https://github.com/mitsuba-renderer/mitsuba3/commit/a946691a0d5272a80ea45f7b5f22f31d697cf290>`__ , `[91b0b7e] <https://github.com/mitsuba-renderer/mitsuba3/commit/91b0b7e7c2732a131fac9149bf1db81429e946b0>`__
+  `6d78f2 <https://github.com/mitsuba-renderer/mitsuba3/commit/6d78f2ed30e746a718567a85a740db365e44407b>`__, `a94669 <https://github.com/mitsuba-renderer/mitsuba3/commit/a946691a0d5272a80ea45f7b5f22f31d697cf290>`__ , `91b0b7 <https://github.com/mitsuba-renderer/mitsuba3/commit/91b0b7e7c2732a131fac9149bf1db81429e946b0>`__
 - Curve shapes (``bsplinecurve`` and ``linearcurve``) always have back-face culling enabled
-  `[188b254] <https://github.com/mitsuba-renderer/mitsuba3/commit/188b25425306fd373e69f07f183f0348d8952496>`__ .. `[01ea7ba] <https://github.com/mitsuba-renderer/mitsuba3/commit/01ea7baedf433dc8c337b29b2741992a3a857ee8>`__
+  `188b25 <https://github.com/mitsuba-renderer/mitsuba3/commit/188b25425306fd373e69f07f183f0348d8952496>`__ .. `01ea7b <https://github.com/mitsuba-renderer/mitsuba3/commit/01ea7baedf433dc8c337b29b2741992a3a857ee8>`__
 - ``Properties`` can now accept tensor objects, currenlty used in ``bitmap``, ``sdfgrid`` and ``gridvolume``
-  `[d030a3a] <https://github.com/mitsuba-renderer/mitsuba3/commit/d030a3a13b0d222e3c6647ebc6ceb0919a2f296b>`__
+  `d030a3 <https://github.com/mitsuba-renderer/mitsuba3/commit/d030a3a13b0d222e3c6647ebc6ceb0919a2f296b>`__
 - New ``hair`` BSDF shading model
-  `[91fc8e6] <https://github.com/mitsuba-renderer/mitsuba3/commit/91fc8e6356c95b665853a1d294da5187ea16bd39>`__ .. `[0b9b04a] <https://github.com/mitsuba-renderer/mitsuba3/commit/0b9b04aa2c6ca7d0e1b5f8503317b46f2bb972f8>`__
+  `91fc8e <https://github.com/mitsuba-renderer/mitsuba3/commit/91fc8e6356c95b665853a1d294da5187ea16bd39>`__ .. `0b9b04 <https://github.com/mitsuba-renderer/mitsuba3/commit/0b9b04aa2c6ca7d0e1b5f8503317b46f2bb972f8>`__
 - Improvements to the ``batch`` sensor (performance, documentation, bug fixes)
-  `[527ed22] <https://github.com/mitsuba-renderer/mitsuba3/commit/527ed22c801666efd746aebcfed8c299748777f0>`__ .. `[65e0444] <https://github.com/mitsuba-renderer/mitsuba3/commit/65e0444c59c4d50dd8b8547b05b8a3707353df4a>`__
+  `527ed2 <https://github.com/mitsuba-renderer/mitsuba3/commit/527ed22c801666efd746aebcfed8c299748777f0>`__ .. `65e044 <https://github.com/mitsuba-renderer/mitsuba3/commit/65e0444c59c4d50dd8b8547b05b8a3707353df4a>`__
 - Many missing Python bindings were added
 - Other various minor bug fixes
 
@@ -809,28 +777,28 @@ Mitsuba 3.3.0
 
 - Upgrade Dr.Jit to v0.4.2
 - Emitters' members are opaque (fixes long JIT compilation times)
-  `[df940c1] <https://github.com/mitsuba-renderer/mitsuba3/commit/df940c128116ffa9518058573aa93dedaca6cc33>`__
+  `df940c <https://github.com/mitsuba-renderer/mitsuba3/commit/df940c128116ffa9518058573aa93dedaca6cc33>`__
 - Sensors members are opaque (fixes long JIT compilation times)
-  `[c864e08] <https://github.com/mitsuba-renderer/mitsuba3/commit/c864e08f5bfa56388444e8ce0bb2751e35ee33d9>`__
+  `c864e0 <https://github.com/mitsuba-renderer/mitsuba3/commit/c864e08f5bfa56388444e8ce0bb2751e35ee33d9>`__
 - Fix ``cylinder``'s normals
-  `[d9ea8e8] <https://github.com/mitsuba-renderer/mitsuba3/commit/d9ea8e847a0ceea88ad3e28e1e41e36ce800d5b6>`__
+  `d9ea8e <https://github.com/mitsuba-renderer/mitsuba3/commit/d9ea8e847a0ceea88ad3e28e1e41e36ce800d5b6>`__
 - Fix next event estimation (NEE) in volume integrators
 - ``mi.xml.dict_to_xml`` now supports volumes
-  `[15d63df] <https://github.com/mitsuba-renderer/mitsuba3/commit/15d63df4d3eab283de0c7ed511c312bba504ec46>`__
+  `15d63d <https://github.com/mitsuba-renderer/mitsuba3/commit/15d63df4d3eab283de0c7ed511c312bba504ec46>`__
 - Allow extending ``AdjointIntegrator`` in Python
-  `[15d63df] <https://github.com/mitsuba-renderer/mitsuba3/commit/c4a8b31ee764a0e6d56d9075708c3c76062854be>`__
+  `15d63d <https://github.com/mitsuba-renderer/mitsuba3/commit/15d63df4d3eab283de0c7ed511c312bba504ec46>`__
 - ``mi.load_dict()`` is parallel (by default)
-  `[bb672ed] <https://github.com/mitsuba-renderer/mitsuba3/commit/bb672ed7cee006ff37819030b9f269f0da263568>`__
+  `bb672e <https://github.com/mitsuba-renderer/mitsuba3/commit/bb672ed7cee006ff37819030b9f269f0da263568>`__
 - Upsampling routines now support ``box`` filters
-  `[64e2ab1] <https://github.com/mitsuba-renderer/mitsuba3/commit/64e2ab1718e6f6959233b1f0ae18337e7a642684>`__
+  `64e2ab <https://github.com/mitsuba-renderer/mitsuba3/commit/64e2ab1718e6f6959233b1f0ae18337e7a642684>`__
 - The ``Mesh.write_ply()`` function writes ``s, t`` rather than ``u, v`` fields
-  `[fe4e448] <https://github.com/mitsuba-renderer/mitsuba3/commit/fe4e4484becc3a7997413f648b4efeb75667554b>`__
+  `fe4e44 <https://github.com/mitsuba-renderer/mitsuba3/commit/fe4e4484becc3a7997413f648b4efeb75667554b>`__
 - All shapes can hold ``Texture`` attributes which can be evaluated
-  `[f6ec944] <https://github.com/mitsuba-renderer/mitsuba3/commit/f6ec944c4beb8b0136dff6136e52bc0851acd931>`__
+  `f6ec94 <https://github.com/mitsuba-renderer/mitsuba3/commit/f6ec944c4beb8b0136dff6136e52bc0851acd931>`__
 - Radiative backpropagation style integrators use less memory
-  `[c1a9b8f] <https://github.com/mitsuba-renderer/mitsuba3/commit/c1a9b8fa52cea4fff4e25a8169ad8be811b1574e>`__
+  `c1a9b8 <https://github.com/mitsuba-renderer/mitsuba3/commit/c1a9b8fa52cea4fff4e25a8169ad8be811b1574e>`__
 - New ``bsplinecurve`` and ``linearcurve`` shapes
-  `[e4c847f] <https://github.com/mitsuba-renderer/mitsuba3/commit/e4c847fedf9005f80bda58a9f6bcfd05581b884c>`__ .. `[79eb026] <https://github.com/mitsuba-renderer/mitsuba3/commit/79eb026d6d594076994dba2c44de81c63b7806f4>`__
+  `e4c847 <https://github.com/mitsuba-renderer/mitsuba3/commit/e4c847fedf9005f80bda58a9f6bcfd05581b884c>`__ .. `79eb02 <https://github.com/mitsuba-renderer/mitsuba3/commit/79eb026d6d594076994dba2c44de81c63b7806f4>`__
 
 Mitsuba 3.2.1
 -------------
@@ -838,13 +806,13 @@ Mitsuba 3.2.1
 
 - Upgrade Dr.Jit to v0.4.1
 - ``Film`` plugins can now have error-compensated accumulation in JIT modes
-  `[afeefed] <https://github.com/mitsuba-renderer/mitsuba3/commit/afeefedc8db0d7381e023f80c00f527ce28725b7>`__
+  `afeefe <https://github.com/mitsuba-renderer/mitsuba3/commit/afeefedc8db0d7381e023f80c00f527ce28725b7>`__
 - Fix and add missing Python bindings for ``Endpoint``/``Emitter``/``Sensor``
-  `[8f03c7d] <https://github.com/mitsuba-renderer/mitsuba3/commit/8f03c7db7b697a2bac17fe960a8d4a6863bece4d>`__
+  `8f03c7 <https://github.com/mitsuba-renderer/mitsuba3/commit/8f03c7db7b697a2bac17fe960a8d4a6863bece4d>`__
 - Numerically robust sphere-ray intersections
-  `[7d46e10] <https://github.com/mitsuba-renderer/mitsuba3/commit/7d46e10154b19945b2e4ee97ba7876ac917692c8>`__ .. `[0b483bf] <https://github.com/mitsuba-renderer/mitsuba3/commit/0b483bff5fdcc6d9663d73626bb1dd46674311a6>`__
+  `7d46e1 <https://github.com/mitsuba-renderer/mitsuba3/commit/7d46e10154b19945b2e4ee97ba7876ac917692c8>`__ .. `0b483b <https://github.com/mitsuba-renderer/mitsuba3/commit/0b483bff5fdcc6d9663d73626bb1dd46674311a6>`__
 - Fix parallel scene loading with Python plugins
-  `[93bb99b] <https://github.com/mitsuba-renderer/mitsuba3/commit/93bb99b1ed20a3263b2fd82f1d5ab3a333afc002>`__
+  `93bb99 <https://github.com/mitsuba-renderer/mitsuba3/commit/93bb99b1ed20a3263b2fd82f1d5ab3a333afc002>`__
 - Various minor bug fixes
 
 Mitsuba 3.2.0
@@ -857,26 +825,26 @@ Mitsuba 3.2.0
   - Stability improvements (race conditions, invalid code generation)
   - Removed 4 billion variable limit
 - Add missing Python bindings for ``Shape`` and ``ShapePtr``
-  `[bdce950] <https://github.com/mitsuba-renderer/mitsuba3/commit/bdce9509f0504163678e81c6afdd7a8bc9c45340>`__
+  `bdce95 <https://github.com/mitsuba-renderer/mitsuba3/commit/bdce9509f0504163678e81c6afdd7a8bc9c45340>`__
 - Fix Python bindings for ``Scene``
-  `[4cd5585] <https://github.com/mitsuba-renderer/mitsuba3/commit/4cd558587d711fb35444d5e21c2ab32f74776e65>`__
+  `4cd558 <https://github.com/mitsuba-renderer/mitsuba3/commit/4cd558587d711fb35444d5e21c2ab32f74776e65>`__
 - Fix bug which would break the AD graph in ``spectral`` variants
-  `[f3ac81b] <https://github.com/mitsuba-renderer/mitsuba3/commit/f3ac81bc5c6ce65d5843dde3a1d5f230353453e3>`__
+  `f3ac81 <https://github.com/mitsuba-renderer/mitsuba3/commit/f3ac81bc5c6ce65d5843dde3a1d5f230353453e3>`__
 - Parallel scene loading in JIT variants
-  `[48c14a7] <https://github.com/mitsuba-renderer/mitsuba3/commit/48c14a709dcc6da9e44583e85eda5735f1888093>`__ .. `[187da96] <https://github.com/mitsuba-renderer/mitsuba3/commit/187da96afd45e14c17d82909fbbf50cb713c8196>`__
+  `48c14a <https://github.com/mitsuba-renderer/mitsuba3/commit/48c14a709dcc6da9e44583e85eda5735f1888093>`__ .. `187da9 <https://github.com/mitsuba-renderer/mitsuba3/commit/187da96afd45e14c17d82909fbbf50cb713c8196>`__
 - Fix sampling of ``hg`` ``PhaseFunction``
-  `[10d3514] <https://github.com/mitsuba-renderer/mitsuba3/commit/10d3514a0295cad4ac6d440c7ff326561c6da6a2>`__
+  `10d351 <https://github.com/mitsuba-renderer/mitsuba3/commit/10d3514a0295cad4ac6d440c7ff326561c6da6a2>`__
 - Fix `envmap` updating in JIT variants
-  `[7bf132f] <https://github.com/mitsuba-renderer/mitsuba3/commit/7bf132f6ae3ec46085a7b24bdb1fcce84983425e>`__
+  `7bf132 <https://github.com/mitsuba-renderer/mitsuba3/commit/7bf132f6ae3ec46085a7b24bdb1fcce84983425e>`__
 - Expose ``PhaseFunction`` of ``Medium`` objects through ``mi.traverse()``
-  `[cca5791] <https://github.com/mitsuba-renderer/mitsuba3/commit/cca5791aac22cdf7b3b12cd7a69f7a6800fc715b>`__
+  `cca579 <https://github.com/mitsuba-renderer/mitsuba3/commit/cca5791aac22cdf7b3b12cd7a69f7a6800fc715b>`__
 
 Mitsuba 3.1.1
 -------------
 *November 25, 2022*
 
 - Fixed maximum limits for OptiX kernel launches
-  `[a8e6989] <https://github.com/mitsuba-renderer/mitsuba3/commit/a8e69898eacde51954bbc91b34924448b4f8c954>`__
+  `a8e698 <https://github.com/mitsuba-renderer/mitsuba3/commit/a8e69898eacde51954bbc91b34924448b4f8c954>`__
 
 
 Mitsuba 3.1.0
@@ -886,48 +854,48 @@ New features
 ^^^^^^^^^^^^
 
 - Enable ray tracing against two different scenes in a single kernel
-  `[df79cb3] <https://github.com/mitsuba-renderer/mitsuba3/commit/df79cb3e2837e9296bc3e4ff2afb57416af102f4>`__
+  `df79cb <https://github.com/mitsuba-renderer/mitsuba3/commit/df79cb3e2837e9296bc3e4ff2afb57416af102f4>`__
 - Make ``ShapeGroup`` traversable and updatable
-  `[e0871aa] <https://github.com/mitsuba-renderer/mitsuba3/commit/e0871aa8ab58b64216247ed189a77e5e009297d2>`__
+  `e0871a <https://github.com/mitsuba-renderer/mitsuba3/commit/e0871aa8ab58b64216247ed189a77e5e009297d2>`__
 - Enable differentiation of ``to_world`` in ``instance``
-  `[54d2d3a] <https://github.com/mitsuba-renderer/mitsuba3/commit/54d2d3ab785f8fee4ade8581649ed82d653847cb>`__
+  `54d2d3 <https://github.com/mitsuba-renderer/mitsuba3/commit/54d2d3ab785f8fee4ade8581649ed82d653847cb>`__
 - Enable differentiation of ``to_world`` in ``sphere``, ``rectangle``, ``disk`` and ``cylinder``
-  `[b5d8c5d] <https://github.com/mitsuba-renderer/mitsuba3/commit/f5dbedec9bab3c45d31255532da07b0c01f5374c>`__ .. `[b5d8c] <https://github.com/mitsuba-renderer/mitsuba3/commit/b5d8c5dc8f33b65613ca27819771950ab9909824>`__
+  `b5d8c5 <https://github.com/mitsuba-renderer/mitsuba3/commit/b5d8c5dc8f33b65613ca27819771950ab9909824>`__ .. `b5d8c5 <https://github.com/mitsuba-renderer/mitsuba3/commit/b5d8c5dc8f33b65613ca27819771950ab9909824>`__
 - Enable differentiation of ``to_world`` in ``perspective`` and ``thinlens``
-  `[ea513f7] <https://github.com/mitsuba-renderer/mitsuba3/commit/ef9f559e0989fd01b43acce90892ba9e0dea255b>`__ .. `[ea513f] <https://github.com/mitsuba-renderer/mitsuba3/commit/ea513f73b65b8776afb75fdc8d40db4b1140345e>`__
+  `ea513f <https://github.com/mitsuba-renderer/mitsuba3/commit/ea513f73b65b8776afb75fdc8d40db4b1140345e>`__ .. `ea513f <https://github.com/mitsuba-renderer/mitsuba3/commit/ea513f73b65b8776afb75fdc8d40db4b1140345e>`__
 - Add ``BSDF::eval_diffuse_reflectance()`` to most BSDF plugins
-  `[59af884] <https://github.com/mitsuba-renderer/mitsuba3/commit/59af884e6fae3a50074921136329d80462b32413>`__
+  `59af88 <https://github.com/mitsuba-renderer/mitsuba3/commit/59af884e6fae3a50074921136329d80462b32413>`__
 - Add ``mi.OptixDenoiser`` class for simple denoising in Python
-  `[5529318] <https://github.com/mitsuba-renderer/mitsuba3/commit/1323497f4e675a8004529eef8404cdc541ade7cf>`__ .. `[55293] <https://github.com/mitsuba-renderer/mitsuba3/commit/552931890df648a5416b0d54d15488f6e766797a>`__
+  `552931 <https://github.com/mitsuba-renderer/mitsuba3/commit/552931890df648a5416b0d54d15488f6e766797a>`__ .. `552931 <https://github.com/mitsuba-renderer/mitsuba3/commit/552931890df648a5416b0d54d15488f6e766797a>`__
 - ``envmap`` plugin can be constructed from ``mi.Bitmap`` object
-  `[9389c8d] <https://github.com/mitsuba-renderer/mitsuba3/commit/9389c8d1d16aa7a46d0a54f64eec1d10a1ae1ffd>`__
+  `9389c8 <https://github.com/mitsuba-renderer/mitsuba3/commit/9389c8d1d16aa7a46d0a54f64eec1d10a1ae1ffd>`__
 
 Other improvements
 ^^^^^^^^^^^^^^^^^^
 
 - Major performance improvements in ``cuda_*`` variants with new version of Dr.Jit
 - Deprecated ``samples_per_pass`` parameter
-  `[8ba8528] <https://github.com/mitsuba-renderer/mitsuba3/commit/8ba8528abbad6add1f6a97b30b79ce53c4ff37bf>`__
+  `8ba852 <https://github.com/mitsuba-renderer/mitsuba3/commit/8ba8528abbad6add1f6a97b30b79ce53c4ff37bf>`__
 - Fix rendering progress bar on Windows
-  `[d8db806] <https://github.com/mitsuba-renderer/mitsuba3/commit/d8db806ae286358b31ade67dc714de666b25443f>`__
+  `d8db80 <https://github.com/mitsuba-renderer/mitsuba3/commit/d8db806ae286358b31ade67dc714de666b25443f>`__
 - ``obj`` file parsing performance improvements on Windows
-  `[28660f3] <https://github.com/mitsuba-renderer/mitsuba3/commit/28660f3ab9db8f1da58cc38d2fd309cff4871e7e>`__
+  `28660f <https://github.com/mitsuba-renderer/mitsuba3/commit/28660f3ab9db8f1da58cc38d2fd309cff4871e7e>`__
 - Fix ``mi.luminance()`` for monochromatic modes
-  `[61b9516] <https://github.com/mitsuba-renderer/mitsuba3/commit/61b9516a742f29e3a5d20e41c50be90d04509539>`__
+  `61b951 <https://github.com/mitsuba-renderer/mitsuba3/commit/61b9516a742f29e3a5d20e41c50be90d04509539>`__
 - Add bindings for ``PluginManager.create_object()``
-  `[4ebf700] <https://github.com/mitsuba-renderer/mitsuba3/commit/4ebf700c61e92bb494d605527961882da47a71c0>`__
+  `4ebf70 <https://github.com/mitsuba-renderer/mitsuba3/commit/4ebf700c61e92bb494d605527961882da47a71c0>`__
 - Fix ``SceneParameters.update()`` unnecessary hash computation
-  `[f57e741] <https://github.com/mitsuba-renderer/mitsuba3/commit/f57e7416ac263445e1b74eeaf661361f4ba94855>`__
+  `f57e74 <https://github.com/mitsuba-renderer/mitsuba3/commit/f57e7416ac263445e1b74eeaf661361f4ba94855>`__
 - Fix numerical instabilities with ``box`` filter splatting
-  `[2d89762] <https://github.com/mitsuba-renderer/mitsuba3/commit/2d8976266588e9b782f63f689c68648424b4898d>`__
+  `2d8976 <https://github.com/mitsuba-renderer/mitsuba3/commit/2d8976266588e9b782f63f689c68648424b4898d>`__
 - Improve ``math::bisect`` algorithm
-  `[7ca09a3] <https://github.com/mitsuba-renderer/mitsuba3/commit/7ca09a3ad95cec306c538493fa8450a096560891>`__
+  `7ca09a <https://github.com/mitsuba-renderer/mitsuba3/commit/7ca09a3ad95cec306c538493fa8450a096560891>`__
 - Fix syntax highlighting in documentation and tutorials
-  `[5aa2716] <https://github.com/mitsuba-renderer/mitsuba3/commit/5aa271684424eca5a46f93946536bc7d0c1bc099>`__
+  `5aa271 <https://github.com/mitsuba-renderer/mitsuba3/commit/5aa271684424eca5a46f93946536bc7d0c1bc099>`__
 - Fix ``Optimizer.set_learning_rate`` for ``int`` values
-  `[53143db] <https://github.com/mitsuba-renderer/mitsuba3/commit/53143db05739b964b7a489f58dbd1bd4da87533c>`__
+  `53143d <https://github.com/mitsuba-renderer/mitsuba3/commit/53143db05739b964b7a489f58dbd1bd4da87533c>`__
 - Various minor improvements to the Python typing stub generation
-  `[b7ef349] <https://github.com/mitsuba-renderer/mitsuba3/commit/f883834a50e3dab694b4fe4ceafdfa1ae3712782>`__ .. `[ad72a53] <https://github.com/mitsuba-renderer/mitsuba3/commit/ad72a5361889bcef1f19b702a28956c1549d26e3>`__
+  `b7ef34 <https://github.com/mitsuba-renderer/mitsuba3/commit/b7ef349e063b632c41c94243f5df4bdffe2a9ab4>`__ .. `ad72a5 <https://github.com/mitsuba-renderer/mitsuba3/commit/ad72a5361889bcef1f19b702a28956c1549d26e3>`__
 - Minor improvements to the documentation
 - Various other minor fixes
 
@@ -936,20 +904,20 @@ Mitsuba 3.0.2
 *September 13, 2022*
 
 - Change behavior of ``<spectrum ..>`` and ``<rgb ..>`` tag at scene loading for better consistency between ``*_rgb`` and ``*_spectral`` variants
-  `[f883834] <https://github.com/mitsuba-renderer/mitsuba3/commit/f883834a50e3dab694b4fe4ceafdfa1ae3712782>`__
+  `f88383 <https://github.com/mitsuba-renderer/mitsuba3/commit/f883834a50e3dab694b4fe4ceafdfa1ae3712782>`__
 - Polarization fixes
-  `[2709889] <https://github.com/mitsuba-renderer/mitsuba3/commit/2709889b9b6970018d58cb0a974f99a885b31dbe>`__, `[06c2960] <https://github.com/mitsuba-renderer/mitsuba3/commit/06c2960b170a655cda831c57b674ec26da7a008f>`__
+  `270988 <https://github.com/mitsuba-renderer/mitsuba3/commit/2709889b9b6970018d58cb0a974f99a885b31dbe>`__, `06c296 <https://github.com/mitsuba-renderer/mitsuba3/commit/06c2960b170a655cda831c57b674ec26da7a008f>`__
 - Add PyTorch/Mitsuba interoperability tutorial using ``dr.wrap_ad()``
 - Fix DLL loading crash when working with Mitsuba and PyTorch in Python
-  `[59d7b35] <https://github.com/mitsuba-renderer/mitsuba3/commit/59d7b35c0a7968957e8469f43c308683b63df5c4>`__
+  `59d7b3 <https://github.com/mitsuba-renderer/mitsuba3/commit/59d7b35c0a7968957e8469f43c308683b63df5c4>`__
 - Fix crash when evaluating Mitsuba ray tracing kernel from another thread in ``cuda`` mode.
-  `[cd0846f] <https://github.com/mitsuba-renderer/mitsuba3/commit/cd0846ffc570b13ece9fb6c1d3a05411d1ce4eef>`__
+  `cd0846 <https://github.com/mitsuba-renderer/mitsuba3/commit/cd0846ffc570b13ece9fb6c1d3a05411d1ce4eef>`__
 - Add stubs for ``Float``, ``ScalarFloat`` and other builtin types
-  `[8249179] <https://github.com/mitsuba-renderer/mitsuba3/commit/824917976176cb0a5b2a2b1cf1247e36e6b866ce>`__
+  `824917 <https://github.com/mitsuba-renderer/mitsuba3/commit/824917976176cb0a5b2a2b1cf1247e36e6b866ce>`__
 - Plugins ``regular`` and ``blackbody`` have renamed parameters: ``wavelength_min``, ``wavelength_max`` (previously ``lambda_min``, ``lambda_max``)
-  `[9d3487c] <https://github.com/mitsuba-renderer/mitsuba3/commit/9d3487c4846c5e9cc2a247afd30c4bbf3cbaae46>`__
+  `9d3487 <https://github.com/mitsuba-renderer/mitsuba3/commit/9d3487c4846c5e9cc2a247afd30c4bbf3cbaae46>`__
 - Dr.Jit Python stubs are generated during local builds
-  `[4302caa8] <https://github.com/mitsuba-renderer/mitsuba3/commit/4302caa8bfd200a0edd6455ba64f92eab2be5824>`__
+  `4302ca <https://github.com/mitsuba-renderer/mitsuba3/commit/4302caa8bfd200a0edd6455ba64f92eab2be5824>`__
 - Minor improvements to the documentation
 - Various other minor fixes
 
@@ -959,15 +927,15 @@ Mitsuba 3.0.1
 
 - Various minor fixes in documentation
 - Added experimental ``batch`` sensor plugin
-  `[0986152] <https://github.com/mitsuba-renderer/mitsuba3/commit/09861525e6c2ab677172dffc6204768c3d424c3e>`__
+  `098615 <https://github.com/mitsuba-renderer/mitsuba3/commit/09861525e6c2ab677172dffc6204768c3d424c3e>`__
 - Fix LD sampler for JIT modes
-  `[98a8ecb] <https://github.com/mitsuba-renderer/mitsuba3/commit/98a8ecb2390ebf35ef5f54f28cccaf9ab267ea48>`__
+  `98a8ec <https://github.com/mitsuba-renderer/mitsuba3/commit/98a8ecb2390ebf35ef5f54f28cccaf9ab267ea48>`__
 - Prevent rebuilding of kernels for each sensor in an optimization
-  `[152352f] <https://github.com/mitsuba-renderer/mitsuba3/commit/152352f87b5baea985511b2a80d9f91c3c945a90>`__
+  `152352 <https://github.com/mitsuba-renderer/mitsuba3/commit/152352f87b5baea985511b2a80d9f91c3c945a90>`__
 - Fix direction convention in ``tabphase`` plugin
-  `[49e40ba] <https://github.com/mitsuba-renderer/mitsuba3/commit/49e40bad03da536136d3c8563eca6582fcb0e895>`__
+  `49e40b <https://github.com/mitsuba-renderer/mitsuba3/commit/49e40bad03da536136d3c8563eca6582fcb0e895>`__
 - Create TLS module lookup cache for new threads
-  `[6f62749] <https://github.com/mitsuba-renderer/mitsuba3/commit/6f62749d97904471315d2143b96af5ad6548da06>`__
+  `6f6274 <https://github.com/mitsuba-renderer/mitsuba3/commit/6f62749d97904471315d2143b96af5ad6548da06>`__
 
 Mitsuba 3.0.0
 -------------
