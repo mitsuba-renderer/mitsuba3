@@ -299,6 +299,7 @@ endif()
 if (UNIX)
   include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/nanogui/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/struct-jit/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/ext/drjit-core/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/ext/drjit-core/ext/nanothread/include
@@ -322,6 +323,7 @@ if (UNIX)
     `find ${MKDOC_PATH}/core -name '*.h' ! -name fwd.h -print`
     `find ${MKDOC_PATH}/render -name '*.h' ! -name fwd.h -print`
     `find ${MKDOC_PATH}/ui -name '*.h' ! -name fwd.h -print`
+    ${MKDOC_PATH}/render/fwd.h
     -o ${MKDOC_PATH}/python/docstr.h
   )
 endif()

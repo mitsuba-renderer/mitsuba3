@@ -12,6 +12,7 @@
     typedef float4       mi_float4;
     typedef unsigned int mi_uint;
 #else
+#   include <cstddef>
 #   include <cstdint>
     struct alignas(16) mi_float4 { float x, y, z, w; };
     typedef uint32_t mi_uint;

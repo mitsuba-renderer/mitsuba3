@@ -7,6 +7,8 @@ How to make a new release?
 2. Regenerate the documentation using the `mkoc`, `mkdoc-api` and `docstrings`
    targets and commit the result. Do this with the following command in your
    build folder: ``ninja docstrings && ninja && ninja mkdoc-api mkdoc``.
+   Do this on a Linux box, with ``docs/requirement.txt`` installed (UV)
+   and pandoc installed (apt).
 
 3. Check that the ``nanobind`` dependency version in ``pyroject.toml`` (build
    requirement) matches the version used in the submodule.
