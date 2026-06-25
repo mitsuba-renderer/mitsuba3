@@ -75,17 +75,10 @@ The default file specifies two scalar variants that you may wish to extend
 according to your requirements and the explanations given above. Note that
 ``scalar_spectral`` can be removed, but ``scalar_rgb`` *must* currently be part
 of the list as some core components of Mitsuba depend on it. In addition,
-at least one ``ad``-enabled variant must also be compiled. If Mitsuba is
-launched from the command line without any specific mode parameter, the first
-variant of the list below will be used.
-
-You may also wish to change the *Python default* variant that is executed if no
-variant is explicitly specified (this must be one of the entries of the
-``enabled`` list):
-
-.. code-block:: text
-
-    "python-default": "llvm_ad_rgb",
+at least one ``ad``-enabled variant must also be compiled. When the ``mitsuba``
+command line executable is launched without a specific mode parameter, it will
+automatically select the most capable variant whose backend is available at
+runtime (preferring an RGB color representation).
 
 The remainder of this file lists the C++ types defining the available variants
 and can safely be ignored.

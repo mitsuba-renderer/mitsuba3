@@ -285,15 +285,20 @@ ObjectType PluginManager::plugin_type(std::string_view name) {
 
     std::lock_guard<std::mutex> guard(d->mutex);
 
+    // The object type of a plugin is variant-independent, so we can query it
+    // using any compiled-in variant. We use 'scalar_rgb', which is always
+    // available (enforced in 'resources/configure.py') and requires no device.
+    constexpr const char *query_variant = "scalar_rgb";
+
     // Try to find an already loaded variant using direct hash table lookup
-    std::pair<std::string, std::string> key(name, MI_DEFAULT_VARIANT);
+    std::pair<std::string, std::string> key(name, query_variant);
     auto it = d->plugins.find(key);
     if (it != d->plugins.end())
         return it->second.type;
 
-    // If not found with default variant, try to load it
+    // If not found with the query variant, try to load it
     try {
-        PluginInfo info = d->load_plugin_impl(name, MI_DEFAULT_VARIANT);
+        PluginInfo info = d->load_plugin_impl(name, query_variant);
         return info.type;
     } catch (...) {
         return ObjectType::Unknown;

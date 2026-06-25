@@ -23,6 +23,36 @@
 
 using namespace mitsuba;
 
+/// Initialize the JIT backend a variant requires; return whether it is
+/// available. Scalar variants need no backend and always succeed.
+static bool init_variant_backend(std::string_view variant) {
+    if (string::starts_with(variant, "scalar_"))
+        return true;
+
+#if defined(MI_ENABLE_CUDA)
+    if (string::starts_with(variant, "cuda_")) {
+        jit_init(1u << (uint32_t) JitBackend::CUDA);
+        return jit_has_backend(JitBackend::CUDA);
+    }
+#endif
+
+#if defined(MI_ENABLE_LLVM)
+    if (string::starts_with(variant, "llvm_")) {
+        jit_init(1u << (uint32_t) JitBackend::LLVM);
+        return jit_has_backend(JitBackend::LLVM);
+    }
+#endif
+
+#if defined(MI_ENABLE_METAL)
+    if (string::starts_with(variant, "metal_")) {
+        jit_init(1u << (uint32_t) JitBackend::Metal);
+        return jit_has_backend(JitBackend::Metal);
+    }
+#endif
+
+    return false;
+}
+
 static void help(int thread_count) {
     std::cout << util::info_build(thread_count) << std::endl;
     std::cout << util::info_copyright() << std::endl;
@@ -38,7 +68,8 @@ Options:
     -m, --mode
         Request a specific mode/variant of the renderer
 
-        Default: )" MI_DEFAULT_VARIANT R"(
+        Default: the most capable variant whose backend is available at
+        runtime (preferring an RGB color representation).
 
         Available:
               )" << string::indent(MI_VARIANTS, 14) << R"(
@@ -234,30 +265,28 @@ int main(int argc, char *argv[]) {
             params.emplace_back(value.substr(0, sep), value.substr(sep+1));
             arg_define = arg_define->next();
         }
-        mode = (*arg_mode ? arg_mode->as_string() : MI_DEFAULT_VARIANT);
+        if (*arg_mode) {
+            mode = arg_mode->as_string();
+            init_variant_backend(mode);
+        } else if (*arg_extra && !*arg_help) {
+            // Pick the most capable variant whose backend is available
+            for (const std::string &v : string::tokenize(MI_VARIANT_PRIORITY, "\n")) {
+                if (init_variant_backend(v)) {
+                    mode = v;
+                    break;
+                }
+            }
+        } else {
+            mode = "scalar_rgb";
+        }
+
         bool cuda  = string::starts_with(mode, "cuda_");
         bool llvm  = string::starts_with(mode, "llvm_");
         bool metal = string::starts_with(mode, "metal_");
-
-        // jit_init() expects a bitmask of backends (1 << JitBackend), not a
-        // raw enum value.
-#if defined(MI_ENABLE_CUDA)
-        if (cuda)
-            jit_init(1u << (uint32_t) JitBackend::CUDA);
-#endif
-
-#if defined(MI_ENABLE_LLVM)
-        if (llvm)
-            jit_init(1u << (uint32_t) JitBackend::LLVM);
-#endif
-
-#if defined(MI_ENABLE_METAL)
-        if (metal)
-            jit_init(1u << (uint32_t) JitBackend::Metal);
-#endif
+        bool jit   = cuda || llvm || metal;
 
 #if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
-        if (cuda || llvm || metal) {
+        if (jit) {
             if (*arg_optim_lev) {
                 int lev = arg_optim_lev->as_int();
                 jit_set_flag(JitFlag::VCallDeduplicate, lev > 0);
@@ -295,7 +324,7 @@ int main(int argc, char *argv[]) {
         DRJIT_MARK_USED(arg_source);
 #endif
 
-        if (!cuda && !llvm && !metal &&
+        if (!jit &&
             (*arg_optim_lev || *arg_wavefront || *arg_source || *arg_vec_width))
             Throw("Specified an argument that only makes sense in a JIT (LLVM/CUDA/Metal) mode!");
 
@@ -328,6 +357,7 @@ int main(int argc, char *argv[]) {
             Log(Info, "%s", util::info_build(pool_size() + 1));
             Log(Info, "%s", util::info_copyright());
             Log(Info, "%s", util::info_features());
+            Log(Info, "Rendering using the \"%s\" variant.", mode);
 
 #if !defined(NDEBUG)
             Log(Warn, "Renderer is compiled in debug mode, performance will be considerably reduced.");
