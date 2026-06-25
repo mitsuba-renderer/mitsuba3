@@ -7,7 +7,7 @@ strive to document breaking API changes in the release notes below.
 
 Mitsuba 3.9.0
 -------------
-*Upcoming release*
+*June 26, 2026*
 
 - **Metal GPU backend**. Mitsuba now ships ``metal_*`` and ``metal_ad_*``
   variants targeting Apple Silicon GPUs with full support for Dr.Jit
