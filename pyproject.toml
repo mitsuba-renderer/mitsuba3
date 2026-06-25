@@ -45,6 +45,12 @@ metadata.readme.provider = "scikit_build_core.metadata.fancy_pypi_readme"
 cmake.verbose = true
 logging.level = "INFO"
 
+# Some bundled dependencies (e.g. ext/zlib) declare a very old
+# 'cmake_minimum_required'. CMake >= 4.0 removed compatibility with these,
+# causing configuration to fail. Allow them to configure anyway.
+[tool.scikit-build.cmake.define]
+CMAKE_POLICY_VERSION_MINIMUM = "3.5"
+
 
 [tool.cibuildwheel]
 # Necessary to see build output from the actual compilation

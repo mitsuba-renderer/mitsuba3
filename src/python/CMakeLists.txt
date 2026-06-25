@@ -209,7 +209,14 @@ foreach (MI_VARIANT ${MI_VARIANTS})
   list(APPEND MI_ALL_VARIANTS ${MI_VARIANT_NAME})
 endforeach()
 
-set(MI_STUB_DEPENDS mitsuba_alias mitsuba_ext mitsuba-copy-python-src drjit-python ${MI_ALL_VARIANTS})
+set(MI_STUB_DEPENDS mitsuba_alias mitsuba_ext mitsuba-copy-python-src ${MI_ALL_VARIANTS})
+
+# We usually build Dr.Jit along with Mitsuba (except building wheels in the
+# cloud, as indicated by SKBUILD). In that case, Mitsuba stub generation
+# must depend on Dr.Jit's python bindings being compiled.
+if (NOT SKBUILD)
+  list(APPEND MI_STUB_DEPENDS drjit-python)
+endif()
 
 # ----------------------------------------------------------
 #   Copy targets for python (no rpath on Windows)
