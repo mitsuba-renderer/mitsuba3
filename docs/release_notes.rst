@@ -5,6 +5,179 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`__ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
+Mitsuba 3.9.0
+-------------
+*Upcoming release*
+
+- **Metal GPU backend**. Mitsuba now ships ``metal_*`` and ``metal_ad_*``
+  variants targeting Apple Silicon GPUs with full support for Dr.Jit
+  just-in-time compilation and hardware-accelerated ray tracing. The ray
+  tracing core of Mitsuba was redesigned using an intermediate scene
+  representation to unify the various different backends. (commit `b494500d
+  <https://github.com/mitsuba-renderer/mitsuba3/commit/b494500d>`__, building
+  on PR `#1874 <https://github.com/mitsuba-renderer/mitsuba3/pull/1874>`__,
+  contributed by `Sebastien Speierer <https://github.com/Speierers>`__ and
+  `Wenzel Jakob <https://github.com/wjakob>`__).
+
+- **Performance improvements**. Optimizations in Mitsuba and its dependencies
+  (Dr.Jit, nanobind, nanothread) improve the system's performance
+  significantly. Tracing and compilation are now ~2× faster. Rendering
+  performance was also improved but results here will depend on used features.
+
+   - **Environment maps**. The :ref:`envmap <emitter-envmap>` emitter now uses
+     GPU hardware textures units for lookups. The
+     :cpp:class:`mitsuba.Hierarchical2D0` class used to importance sample
+     envmaps switched to a better memory layout and now uses an optimized
+     sequence of packet loads. Scenes using environment maps should render
+     noticeably faster after this change. (commits `2ad8eaef
+     <https://github.com/mitsuba-renderer/mitsuba3/commit/2ad8eaef>`__,
+     `0179ad9f
+     <https://github.com/mitsuba-renderer/mitsuba3/commit/0179ad9f>`__,
+     `df71f6d8
+     <https://github.com/mitsuba-renderer/mitsuba3/commit/df71f6d8>`__).
+
+   - The ``ImageBlock`` class used for sample accumulation now uses more
+     efficient packet atomics. (commits `2d016b54
+     <https://github.com/mitsuba-renderer/mitsuba3/commit/2d016b54>`__,
+     `2f61f961
+     <https://github.com/mitsuba-renderer/mitsuba3/commit/2f61f961>`__,
+     contributed by `Lovro Nuic <https://github.com/lnuic>`__).
+
+   - **8-bit bitmap textures**. The :ref:`bitmap <texture-bitmap>` texture leaves
+     LDR images in 8-bit precision instead of casting them to half precision,
+     which conserves memory and accelerates rendering. It uses the GPU's texture
+     units to fetch and (if needed, remove sRGB gamma from) stored values. (commit
+     `56ec0f12 <https://github.com/mitsuba-renderer/mitsuba3/commit/56ec0f12>`__).
+
+   - **Faster JPEG I/O**. JPEG encoding/decoding switched from the bundled
+     ``libjpeg`` to `libjpeg-turbo <https://libjpeg-turbo.org/>`__, which
+     provides 2-6x throughput using SIMD acceleration. (commit `c8a5fbf1
+     <https://github.com/mitsuba-renderer/mitsuba3/commit/c8a5fbf1>`__).
+
+   - **Faster tracing, code generation, and Python bindings**. A comprehensive
+     optimization pass in `Dr.Jit 1.4.0
+     <https://drjit.readthedocs.io/en/latest/changelog.html>`__ made
+     tracing/code generation and the Python bindings roughly **twice as fast**,
+     and accelerated the :py:func:`@dr.freeze <drjit.freeze>` replay path by up
+     to **~2.5×** (Dr.Jit-Core PR `#194
+     <https://github.com/mitsuba-renderer/drjit-core/pull/194>`__; see the
+     Dr.Jit changelog for the full list of contributing commits).
+
+   - **Faster Python bindings via nanobind**. These binding-layer speedups
+     build on `nanobind 2.13.0
+     <https://nanobind.readthedocs.io/en/latest/changelog.html>`__, whose new
+     *instance pooling* recycles short-lived objects (up to 1.42× faster object
+     construction, and 3.2× on free-threaded builds), alongside a faster
+     function dispatcher and up to ~58% faster nd-array exchange. Dr.Jit and
+     Mitsuba allocate large numbers of temporary objects while tracing and so
+     benefit directly. (nanobind PRs `#1366
+     <https://github.com/wjakob/nanobind/pull/1366>`__, `#1374
+     <https://github.com/wjakob/nanobind/pull/1374>`__, `#1375
+     <https://github.com/wjakob/nanobind/pull/1375>`__).
+
+   - **Function calls**. This release bubbles up a Dr.Jit-Core change that
+     improves how indirect function calls (e.g. virtual BSDF/emitter
+     dispatch) are compiled, reducing both compilation time and kernel overhead.
+     (PR `#201 <https://github.com/mitsuba-renderer/drjit-core/pull/201>`__).
+
+- The following improvements `Dr.Jit 1.4.0 <https://drjit.readthedocs.io/en/latest/changelog.html>`__
+  are also noteworthy and were motivated by the needs of differentiable rendering workloads in Mitsuba.
+
+  - **Matrix multiplication for tensors**: The ``@`` operator and
+    :py:func:`dr.matmul() <drjit.matmul>` now support tensors of any size and
+    shape, fully replicating NumPy / PyTorch semantics (batched matrix products,
+    broadcasting, matrix-vector products, inner products), dispatching to
+    efficient block-tiled GEMM kernels and differentiable in both modes.
+
+  - **Reverse-mode differentiation of symbolic loops**:
+    :py:func:`@dr.syntax <drjit.syntax>` ``while`` loops and
+    :py:func:`dr.while_loop() <drjit.while_loop>` are now differentiable in
+    reverse mode via trajectory replay.
+
+  - **NumPy-style array/tensor manipulation and sorting**: A large set of
+    NumPy-compatible routines for sorting (:py:func:`dr.sort() <drjit.sort>`,
+    :py:func:`dr.argsort() <drjit.argsort>`, backed by a GPU-accelerated radix
+    sort), reshaping, reindexing, and NumPy-consistent reductions
+    (``keepdims``, ``var``/``std``, etc.).
+
+  - **Generalized convolution and resampling**: :py:func:`dr.convolve()
+    <drjit.convolve>` now also handles discrete filter kernels, with a new
+    ``boundary`` parameter (also on :py:func:`dr.resample() <drjit.resample>`).
+
+  - **Redesigned** :py:mod:`drjit.nn` **API and Muon optimizer**: The neural
+    network library now also accepts regular tensors as inputs, exposes a
+    cleaner ``opt.update(net)`` / ``net.update(opt)`` interface, and a
+    differentiable :py:func:`nn.pack() <drjit.nn.pack>`. New
+    :py:class:`dr.opt.Muon <drjit.opt.Muon>` optimizer for 2D hidden weights.
+
+
+
+- **New** ``struct-jit`` **dependency**. The ``asmjit`` dependency and
+  ``struct.cpp`` (a small JIT compiler for converting flat records between
+  formats, with sRGB/color-space conversion, dithering, quantization, etc.)
+  were replaced by the external `struct-jit
+  <https://github.com/mitsuba-renderer/struct-jit>`__ project. It uses a
+  patch-based assembler that glues together precompiled machine-code fragments
+  and supports both **x86_64 and aarch64** (the old implementation only had a
+  JIT for x86_64 and fell back to slow software emulation on ARM). Note: the
+  data-structure conversion API changed; projects directly using the ``Struct``
+  API will need adaptations. (commit `06713ce2
+  <https://github.com/mitsuba-renderer/mitsuba3/commit/06713ce2>`__).
+
+
+
+- **Performance**:
+
+
+  - Migrated texture consumers to the new array-returning ``dr::Texture``
+    ``eval*`` API (returns a Dr.Jit array by value instead of writing through a
+    raw pointer). (commit `44f1942c
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/44f1942c>`__).
+
+- **Miscellaneous**:
+
+  - The :ref:`spot <emitter-spot>` emitter now exposes its beam parameters
+    through ``mi.traverse()``. (commit `e0afc5f8
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/e0afc5f8>`__,
+    contributed by `Delio Vicini <https://github.com/dvicini>`__).
+  - The ray loader now supports mini-batch training. (PR `#1655
+    <https://github.com/mitsuba-renderer/mitsuba3/pull/1655>`__,
+    contributed by `Ziyi Zhang <https://github.com/ziyi-zhang>`__).
+  - Added the ``AdamW`` optimizer to the ``optimizers.py`` imports.
+    (PR `#1878 <https://github.com/mitsuba-renderer/mitsuba3/pull/1878>`__,
+    contributed by `Ziyi Zhang <https://github.com/ziyi-zhang>`__).
+  - Improved type-checking stubs. (commits `9ce3e5fe
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/9ce3e5fe>`__,
+    `9067366f <https://github.com/mitsuba-renderer/mitsuba3/commit/9067366f>`__,
+    contributed by `Philippe Weier <https://github.com/WeiPhil>`__).
+
+- **Bug fixes**:
+
+  - Fixed a regression that disabled parallel loading of leaf scene nodes. (commit `502a8257
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/502a8257>`__,
+    contributed by `Delio Vicini <https://github.com/dvicini>`__).
+  - Fixed side-effect processing. (commit `b9440e82
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/b9440e82>`__,
+    contributed by `Delio Vicini <https://github.com/dvicini>`__).
+  - Fixed integer overflow issues. (commit `575b6c46
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/575b6c46>`__,
+    contributed by `Thomas Auzinger <https://github.com/ThomasAuzinger>`__).
+  - Fixed the OptiX ``sdfgrid`` shape for non-cubical domains. (commit
+    `64175bb5 <https://github.com/mitsuba-renderer/mitsuba3/commit/64175bb5>`__).
+  - Fixed the command line executable for scalar variants. (commit `a58d4924
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/a58d4924>`__,
+    contributed by `Nicolas Roussel <https://github.com/njroussel>`__).
+  - ``ImageBlock`` now considers the active mask in scalar backends. (commit
+    `5f9f842d <https://github.com/mitsuba-renderer/mitsuba3/commit/5f9f842d>`__,
+    contributed by `Tobias Jüterbock <https://github.com/tjueterb>`__).
+  - Upgraded the bundled ``nanobind`` dependency. (commit `21279f6e
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/21279f6e>`__).
+  - Various compilation fixes for MSVC and GCC. (commits `f5730379
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/f5730379>`__,
+    `25fcd89f <https://github.com/mitsuba-renderer/mitsuba3/commit/25fcd89f>`__,
+    `4bf6f10d <https://github.com/mitsuba-renderer/mitsuba3/commit/4bf6f10d>`__).
+
+
 Mitsuba 3.8.0
 -------------
 *February 23, 2026*
