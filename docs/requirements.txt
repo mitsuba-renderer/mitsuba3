@@ -1,5 +1,5 @@
 sphinx==8.1.3
-IPython==8.8.0
+IPython==8.10.0
 pygments-mathematica==0.3.5
 pybtex==0.25.1
 nbsphinx==0.9.5

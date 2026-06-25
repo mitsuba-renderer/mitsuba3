@@ -12,8 +12,8 @@ Mitsuba 3.9.0
 - **Metal GPU backend**. Mitsuba now ships ``metal_*`` and ``metal_ad_*``
   variants targeting Apple Silicon GPUs with full support for Dr.Jit
   just-in-time compilation and hardware-accelerated ray tracing. The ray
-  tracing core of Mitsuba was redesigned using an intermediate scene
-  representation to unify the various different backends. (commit `b49450 <https://github.com/mitsuba-renderer/mitsuba3/commit/b494500dd04d4750294b59e5956ac0bccbe98670>`__, building
+  tracing core of Mitsuba was redesigned and now uses an intermediate scene
+  representation to unify the various backends. (commit `b49450 <https://github.com/mitsuba-renderer/mitsuba3/commit/b494500dd04d4750294b59e5956ac0bccbe98670>`__, building
   on PR `#1874 <https://github.com/mitsuba-renderer/mitsuba3/pull/1874>`__,
   contributed by `Sebastien Speierer <https://github.com/Speierers>`__ and
   `Wenzel Jakob <https://github.com/wjakob>`__).
@@ -21,89 +21,116 @@ Mitsuba 3.9.0
 - **Performance improvements**. Optimizations in Mitsuba and its dependencies
   (Dr.Jit, nanobind, nanothread) improve the system's performance
   significantly. Tracing and compilation are now ~2× faster. Rendering
-  performance was also improved but results here will depend on used features.
+  performance also saw uplift depending on the used scene features.
 
    - **Environment maps**. The :ref:`envmap <emitter-envmap>` emitter now uses
-     GPU hardware textures units for lookups. The
-     :cpp:class:`mitsuba.Hierarchical2D0` class used to importance sample
-     envmaps switched to a better memory layout and now uses an optimized
-     sequence of packet loads. Scenes using environment maps should render
-     noticeably faster after this change. (commits `2ad8ea <https://github.com/mitsuba-renderer/mitsuba3/commit/2ad8eaefeb79c95796fcc6196bbae6b6a0d28715>`__,
+     GPU hardware texture units for lookups. The underlying
+     :cpp:class:`mitsuba.Hierarchical2D0` class for importance sampling
+     envmaps switched to a packed memory layout and now uses vector memory
+     loads to pull in data more efficiently. Scenes using environment maps
+     should render noticeably faster after this change. (commits `2ad8ea <https://github.com/mitsuba-renderer/mitsuba3/commit/2ad8eaefeb79c95796fcc6196bbae6b6a0d28715>`__,
      `0179ad <https://github.com/mitsuba-renderer/mitsuba3/commit/0179ad9f28b580b15c75032afdef8036bfac7f09>`__,
      `df71f6 <https://github.com/mitsuba-renderer/mitsuba3/commit/df71f6d85de11ad2c9996d9519a0fbc2a8bccf7e>`__).
 
    - The ``ImageBlock`` class used for sample accumulation now uses more
-     efficient packet atomics. (commits `2d016b <https://github.com/mitsuba-renderer/mitsuba3/commit/2d016b5437afa41961036d99c9f5e12d9c1c3186>`__,
+     efficient vector atomics. The effect is most significant for simple scenes,
+     where sample accumulation was a bottleneck. (commits `2d016b <https://github.com/mitsuba-renderer/mitsuba3/commit/2d016b5437afa41961036d99c9f5e12d9c1c3186>`__,
      `2f61f9 <https://github.com/mitsuba-renderer/mitsuba3/commit/2f61f961bb668abe34270a0c812c862a1e3eaea4>`__,
      contributed by `Lovro Nuic <https://github.com/lnuic>`__).
 
-   - **8-bit bitmap textures**. The :ref:`bitmap <texture-bitmap>` texture leaves
+   - **8-bit bitmap textures**. The :ref:`bitmap <texture-bitmap>` texture now leaves
      LDR images in 8-bit precision instead of casting them to half precision,
      which conserves memory and accelerates rendering. It uses the GPU's texture
-     units to fetch and (if needed, remove sRGB gamma from) stored values. (commit
+     units to fetch (and if needed, decode sRGB gamma from) stored values. (commit
      `56ec0f <https://github.com/mitsuba-renderer/mitsuba3/commit/56ec0f12bc3718b8a0ac09155bae74a57feb7c57>`__).
 
-   - **Faster JPEG I/O**. JPEG encoding/decoding switched from the bundled
-     ``libjpeg`` to `libjpeg-turbo <https://libjpeg-turbo.org/>`__, which
-     provides 2-6x throughput using SIMD acceleration. (commit `c8a5fb <https://github.com/mitsuba-renderer/mitsuba3/commit/c8a5fbf1d5944cfb6ba1ad2fc54c73c22abf8c26>`__).
-
-   - **Faster tracing, code generation, and Python bindings**. A comprehensive
+   - **Faster tracing and code generation**. A comprehensive
      optimization pass in `Dr.Jit 1.4.0
      <https://drjit.readthedocs.io/en/latest/changelog.html>`__ made
      tracing/code generation and the Python bindings roughly **twice as fast**,
      and accelerated the :py:func:`@dr.freeze <drjit.freeze>` replay path by up
-     to **~2.5×** (Dr.Jit-Core PR `#194
+     to **~2.5×**. The latter helps realtime rendering applications
+     that freeze the computation needed to produce a frame. (Dr.Jit-Core PR `#194
      <https://github.com/mitsuba-renderer/drjit-core/pull/194>`__; see the
      Dr.Jit changelog for the full list of contributing commits).
 
-   - **Faster Python bindings via nanobind**. These binding-layer speedups
-     build on `nanobind 2.13.0
-     <https://nanobind.readthedocs.io/en/latest/changelog.html>`__, whose new
-     *instance pooling* recycles short-lived objects (up to 1.42× faster object
-     construction, and 3.2× on free-threaded builds), alongside a faster
-     function dispatcher and up to ~58% faster nd-array exchange. Dr.Jit and
-     Mitsuba allocate large numbers of temporary objects while tracing and so
-     benefit directly. (nanobind PRs `#1366
-     <https://github.com/wjakob/nanobind/pull/1366>`__, `#1374
+   - **Faster function calls**. Dr.Jit now generates much better code for
+     indirect function calls in kernels (e.g. BSDF/emitter evaluation and
+     sampling). It tightly packs call-related data into a joint buffer, loads
+     it using vector memory loads, and passes arguments in registers on the
+     LLVM backend. Compilation time of kernels that call a large set of
+     instances was reduced as well.
+     (PR `#201
+     <https://github.com/mitsuba-renderer/drjit-core/pull/201>`__, commit
+     `83207d
+     <https://github.com/mitsuba-renderer/drjit-core/commit/83207d5aeeb8fab27473c606b6a71349bce4157c>`__).
+
+   - **Faster Python bindings**. The Python bindings are now faster thanks to
+     improvements in `nanobind 2.13
+     <https://nanobind.readthedocs.io/en/latest/changelog.html>`__, which added
+     *instance pooling* to recycle short-lived objects (1.42× faster object
+     construction), alongside a faster function dispatcher and up to ~58%
+     faster nd-array exchange. Dr.Jit and Mitsuba allocate large numbers of
+     temporary objects while tracing and benefit from this. (nanobind PRs
+     `#1366 <https://github.com/wjakob/nanobind/pull/1366>`__, `#1374
      <https://github.com/wjakob/nanobind/pull/1374>`__, `#1375
      <https://github.com/wjakob/nanobind/pull/1375>`__).
 
-   - **Function calls**. This release bubbles up a Dr.Jit-Core change that
-     improves how indirect function calls (e.g. virtual BSDF/emitter
-     dispatch) are compiled, reducing both compilation time and kernel overhead.
-     (PR `#201 <https://github.com/mitsuba-renderer/drjit-core/pull/201>`__).
+   - **Faster Image I/O**. JPEG encoding/decoding switched from the bundled
+     ``libjpeg`` to `libjpeg-turbo <https://libjpeg-turbo.org/>`__.
+     This makes JPEG loading 2–6× faster. (commit `c8a5fb <https://github.com/mitsuba-renderer/mitsuba3/commit/c8a5fbf1d5944cfb6ba1ad2fc54c73c22abf8c26>`__).
 
-- The following improvements `Dr.Jit 1.4.0 <https://drjit.readthedocs.io/en/latest/changelog.html>`__
-  are also noteworthy and were motivated by the needs of differentiable rendering workloads in Mitsuba.
+- The following improvements in `Dr.Jit 1.4.0 <https://drjit.readthedocs.io/en/latest/changelog.html>`__
+  are also noteworthy and were motivated by the needs of differentiable
+  rendering workloads in Mitsuba.
 
   - **Matrix multiplication for tensors**: The ``@`` operator and
     :py:func:`dr.matmul() <drjit.matmul>` now support tensors of any size and
     shape, fully replicating NumPy / PyTorch semantics (batched matrix products,
-    broadcasting, matrix-vector products, inner products), dispatching to
-    efficient block-tiled GEMM kernels and differentiable in both modes.
+    broadcasting, matrix-vector products, inner products). They dispatch to
+    efficient block-tiled GEMM kernels and are differentiable.
+    (Dr.Jit commit `183dc4 <https://github.com/mitsuba-renderer/drjit/commit/183dc401a355c3190256c7948345befc2d2df41a>`__,
+    Dr.Jit-Core PR `#188 <https://github.com/mitsuba-renderer/drjit-core/pull/188>`__).
 
   - **Reverse-mode differentiation of symbolic loops**:
     :py:func:`@dr.syntax <drjit.syntax>` ``while`` loops and
     :py:func:`dr.while_loop() <drjit.while_loop>` are now differentiable in
-    reverse mode via trajectory replay.
+    reverse mode via trajectory replay. (Dr.Jit commit `2ccd7e <https://github.com/mitsuba-renderer/drjit/commit/2ccd7e40286730cec220baf189d2eea290354237>`__).
 
-  - **NumPy-style array/tensor manipulation and sorting**: A large set of
-    NumPy-compatible routines for sorting (:py:func:`dr.sort() <drjit.sort>`,
-    :py:func:`dr.argsort() <drjit.argsort>`, backed by a GPU-accelerated radix
-    sort), reshaping, reindexing, and NumPy-consistent reductions
-    (``keepdims``, ``var``/``std``, etc.).
+  - **NumPy-style array/tensor manipulation, sorting, and reductions**: This
+    release adds a large set of NumPy-compatible routines for sorting,
+    reshaping, and reindexing arrays and tensors. Sorting via
+    :py:func:`dr.sort() <drjit.sort>`, :py:func:`dr.argsort() <drjit.argsort>`,
+    :py:func:`dr.argmin() <drjit.argmin>`, and :py:func:`dr.argmax()
+    <drjit.argmax>` is backed by an efficient GPU-accelerated multi-bit radix
+    sort. New shape-manipulation helpers include :py:func:`dr.expand_dims()
+    <drjit.expand_dims>`, :py:func:`dr.squeeze() <drjit.squeeze>`,
+    :py:func:`dr.transpose() <drjit.transpose>`, and :py:func:`dr.swapaxes()
+    <drjit.swapaxes>`. The horizontal reductions (:py:func:`dr.sum()
+    <drjit.sum>`, :py:func:`dr.prod() <drjit.prod>`, :py:func:`dr.min()
+    <drjit.min>`, :py:func:`dr.max() <drjit.max>`, :py:func:`dr.mean()
+    <drjit.mean>`, :py:func:`dr.all() <drjit.all>`, :py:func:`dr.any()
+    <drjit.any>`, :py:func:`dr.none() <drjit.none>`, :py:func:`dr.count()
+    <drjit.count>`, :py:func:`dr.reduce() <drjit.reduce>`, :py:func:`dr.norm()
+    <drjit.norm>`, :py:func:`dr.squared_norm() <drjit.squared_norm>`) now mirror
+    NumPy more closely by accepting a ``keepdims`` flag with full tensor
+    support, and the new :py:func:`dr.var() <drjit.var>` and :py:func:`dr.std()
+    <drjit.std>` round out the family. (Dr.Jit PRs `#496
+    <https://github.com/mitsuba-renderer/drjit/pull/496>`__, `#493
+    <https://github.com/mitsuba-renderer/drjit/pull/493>`__).
 
   - **Generalized convolution and resampling**: :py:func:`dr.convolve()
     <drjit.convolve>` now also handles discrete filter kernels, with a new
     ``boundary`` parameter (also on :py:func:`dr.resample() <drjit.resample>`).
+    (Dr.Jit commit `00b40a <https://github.com/mitsuba-renderer/drjit/commit/00b40a6e873abf2031ed7e11fc19f505b96ec383>`__).
 
   - **Redesigned** :py:mod:`drjit.nn` **API and Muon optimizer**: The neural
     network library now also accepts regular tensors as inputs, exposes a
     cleaner ``opt.update(net)`` / ``net.update(opt)`` interface, and a
     differentiable :py:func:`nn.pack() <drjit.nn.pack>`. New
     :py:class:`dr.opt.Muon <drjit.opt.Muon>` optimizer for 2D hidden weights.
-
-
+    (Dr.Jit commits `39f3ee <https://github.com/mitsuba-renderer/drjit/commit/39f3ee5ee35ebeb2b1bdbc8829f1e80a950f549f>`__,
+    `d205c1 <https://github.com/mitsuba-renderer/drjit/commit/d205c1d4dd57870a54eff0875c2e336a99191317>`__).
 
 - **New** ``struct-jit`` **dependency**. The ``asmjit`` dependency and
   ``struct.cpp`` (a small JIT compiler for converting flat records between
@@ -116,10 +143,7 @@ Mitsuba 3.9.0
   data-structure conversion API changed; projects directly using the ``Struct``
   API will need adaptations. (commit `06713c <https://github.com/mitsuba-renderer/mitsuba3/commit/06713ce2dfd468a63fc2b169c29a6de18a15e9d2>`__).
 
-
-
 - **Performance**:
-
 
   - Migrated texture consumers to the new array-returning ``dr::Texture``
     ``eval*`` API (returns a Dr.Jit array by value instead of writing through a
