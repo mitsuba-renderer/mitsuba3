@@ -132,22 +132,14 @@ Mitsuba 3.9.0
     (Dr.Jit commits `39f3ee <https://github.com/mitsuba-renderer/drjit/commit/39f3ee5ee35ebeb2b1bdbc8829f1e80a950f549f>`__,
     `d205c1 <https://github.com/mitsuba-renderer/drjit/commit/d205c1d4dd57870a54eff0875c2e336a99191317>`__).
 
-- **New** ``struct-jit`` **dependency**. The ``asmjit`` dependency and
-  ``struct.cpp`` (a small JIT compiler for converting flat records between
-  formats, with sRGB/color-space conversion, dithering, quantization, etc.)
-  were replaced by the external `struct-jit
-  <https://github.com/mitsuba-renderer/struct-jit>`__ project. It uses a
-  patch-based assembler that glues together precompiled machine-code fragments
-  and supports both **x86_64 and aarch64** (the old implementation only had a
-  JIT for x86_64 and fell back to slow software emulation on ARM). Note: the
-  data-structure conversion API changed; projects directly using the ``Struct``
-  API will need adaptations. (commit `06713c <https://github.com/mitsuba-renderer/mitsuba3/commit/06713ce2dfd468a63fc2b169c29a6de18a15e9d2>`__).
-
-- **Performance**:
-
-  - Migrated texture consumers to the new array-returning ``dr::Texture``
-    ``eval*`` API (returns a Dr.Jit array by value instead of writing through a
-    raw pointer). (commit `44f194 <https://github.com/mitsuba-renderer/mitsuba3/commit/44f1942c4bf2567c023f22fb9e9f182a49e41103>`__).
+- **Just-in-Time compiler for data structure conversoin**: Mitsuba now depends on
+  `struct-jit <https://github.com/mitsuba-renderer/struct-jit>`__,
+  a tiny patch-based just-in-time compiler that can convert a sequence
+  of records (e.g., mesh vertices, bitmap pixels) from one format to another
+  while reordering or changing the precision of fields, Gamma en/de-coding,
+  dithering, etc. It targets ``x86_64`` / ``aarch64`` and replaces the former
+  ``asmjit`` dependency and ``Struct`` class that were used for the same purpose but only had a working implementation for Intel processors.
+  (commit `06713c <https://github.com/mitsuba-renderer/mitsuba3/commit/06713ce2dfd468a63fc2b169c29a6de18a15e9d2>`__).
 
 - **Miscellaneous**:
 
@@ -163,6 +155,9 @@ Mitsuba 3.9.0
   - Improved type-checking stubs. (commits `9ce3e5 <https://github.com/mitsuba-renderer/mitsuba3/commit/9ce3e5fe4f8aa4ec5320c6b9993210c78f7f46f2>`__,
     `906736 <https://github.com/mitsuba-renderer/mitsuba3/commit/9067366f4e7d398a2971efd46ec63944264dfb27>`__,
     contributed by `Philippe Weier <https://github.com/WeiPhil>`__).
+  - The ``dr::Texture``
+    ``eval*`` API now returns Dr.Jit arrays by value, which involved changes in Dr.Jit and Mitsuba.
+    (commit `44f194 <https://github.com/mitsuba-renderer/mitsuba3/commit/44f1942c4bf2567c023f22fb9e9f182a49e41103>`__).
 
 - **Bug fixes**:
 
