@@ -315,3 +315,26 @@ def test10_u8_unsupported_in_spectral(variants_vec_backends_once_spectral):
             'filename' : 'resources/data/common/textures/carrot.png',
             'format'   : 'uint8'
         })
+
+
+def test11_u8_small_bitmap_upsample(variants_vec_backends_once_rgb, tmpdir):
+    # A 1x1 uint8 bitmap must be padded to 2x2 for bilinear filtering.
+    import numpy as np
+    import os
+
+    bmp = mi.Bitmap(np.array([[[200, 100, 50]]], dtype=np.uint8))
+    bmp.set_srgb_gamma(True)
+
+    tmp_file = os.path.join(str(tmpdir), 'out.png')
+    bmp.write(tmp_file)
+
+    tex = mi.load_dict({
+        'type'     : 'bitmap',
+        'filename' : tmp_file,
+        'format'   : 'uint8',
+    })
+
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.uv = [0.5, 0.5]
+    val = tex.eval_3(si)
+    assert dr.all(val > 0)

@@ -367,11 +367,7 @@ protected:
 
         if (dr::any(bitmap->size() < 2)) {
             Log(Warn, "Image must be at least 2x2 pixels in size, up-sampling..");
-            ref<Bitmap::ReconstructionFilter> rfilter =
-                PluginManager::instance()
-                    ->create_object<Bitmap::ReconstructionFilter>(
-                        Properties("tent"));
-            bitmap = bitmap->resample(dr::maximum(bitmap->size(), 2), rfilter);
+            bitmap = bitmap->pad_to(ScalarVector2u(2));
         }
         return bitmap;
     }
