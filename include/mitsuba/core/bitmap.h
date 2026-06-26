@@ -467,6 +467,19 @@ public:
                  -dr::Infinity<ScalarFloat>, dr::Infinity<ScalarFloat> }) const;
 
     /**
+     * \brief Pad the bitmap so that each dimension is at least \c min_size
+     *
+     * Dimensions already >= \c min_size are left unchanged.  The extra
+     * pixels are filled by replicating the nearest edge row or column
+     * (simple edge-clamp), so this works with any component format
+     * (including integer types that \ref resample() does not support).
+     *
+     * \return A new bitmap with the padded size, or a reference to \c this
+     *         if no padding is needed.
+     */
+    ref<Bitmap> pad_to(const ScalarVector2u &min_size) const;
+
+    /**
      * \brief Convert the bitmap into another pixel and/or component format
      *
      * This helper function can be used to efficiently convert a bitmap
