@@ -44,41 +44,41 @@ Mitsuba 3.9.0
     units to fetch (and if needed, decode sRGB gamma from) stored values. (commit
     `56ec0f <https://github.com/mitsuba-renderer/mitsuba3/commit/56ec0f12bc3718b8a0ac09155bae74a57feb7c57>`__).
 
-   - **Faster tracing and code generation**. A comprehensive
-     optimization pass in `Dr.Jit 1.4.0
-     <https://drjit.readthedocs.io/en/latest/changelog.html>`__ made
-     tracing/code generation and the Python bindings roughly **twice as fast**,
-     and accelerated the :py:func:`@dr.freeze <drjit.freeze>` replay path by up
-     to **~2.5×**. The latter helps realtime rendering applications
-     that freeze the computation needed to produce a frame. (Dr.Jit-Core PR `#194
-     <https://github.com/mitsuba-renderer/drjit-core/pull/194>`__; see the
-     Dr.Jit changelog for the full list of contributing commits).
+  - **Faster tracing and code generation**. A comprehensive
+    optimization pass in `Dr.Jit 1.4.0
+    <https://drjit.readthedocs.io/en/latest/changelog.html>`__ made
+    tracing/code generation and the Python bindings roughly **twice as fast**,
+    and accelerated the :py:func:`@dr.freeze <drjit.freeze>` replay path by up
+    to **~2.5×**. The latter helps realtime rendering applications
+    that freeze the computation needed to produce a frame. (Dr.Jit-Core PR `#194
+    <https://github.com/mitsuba-renderer/drjit-core/pull/194>`__; see the
+    Dr.Jit changelog for the full list of contributing commits).
 
-   - **Faster function calls**. Dr.Jit now generates much better code for
-     indirect function calls in kernels (e.g. BSDF/emitter evaluation and
-     sampling). It tightly packs call-related data into a joint buffer, loads
-     it using vector memory loads, and passes arguments in registers on the
-     LLVM backend. Compilation time of kernels that call a large set of
-     instances was reduced as well.
-     (PR `#201
-     <https://github.com/mitsuba-renderer/drjit-core/pull/201>`__, commit
-     `83207d
-     <https://github.com/mitsuba-renderer/drjit-core/commit/83207d5aeeb8fab27473c606b6a71349bce4157c>`__).
+  - **Faster function calls**. Dr.Jit now generates much better code for
+    indirect function calls in kernels (e.g. BSDF/emitter evaluation and
+    sampling). It tightly packs call-related data into a joint buffer, loads
+    it using vector memory loads, and passes arguments in registers on the
+    LLVM backend. Compilation time of kernels that call a large set of
+    instances was reduced as well.
+    (PR `#201
+    <https://github.com/mitsuba-renderer/drjit-core/pull/201>`__, commit
+    `83207d
+    <https://github.com/mitsuba-renderer/drjit-core/commit/83207d5aeeb8fab27473c606b6a71349bce4157c>`__).
 
-   - **Faster Python bindings**. The Python bindings are now faster thanks to
-     improvements in `nanobind 2.13
-     <https://nanobind.readthedocs.io/en/latest/changelog.html>`__, which added
-     *instance pooling* to recycle short-lived objects (1.42× faster object
-     construction), alongside a faster function dispatcher and up to ~58%
-     faster nd-array exchange. Dr.Jit and Mitsuba allocate large numbers of
-     temporary objects while tracing and benefit from this. (nanobind PRs
-     `#1366 <https://github.com/wjakob/nanobind/pull/1366>`__, `#1374
-     <https://github.com/wjakob/nanobind/pull/1374>`__, `#1375
-     <https://github.com/wjakob/nanobind/pull/1375>`__).
+  - **Faster Python bindings**. The Python bindings are now faster thanks to
+    improvements in `nanobind 2.13
+    <https://nanobind.readthedocs.io/en/latest/changelog.html>`__, which added
+    *instance pooling* to recycle short-lived objects (1.42× faster object
+    construction), alongside a faster function dispatcher and up to ~58%
+    faster nd-array exchange. Dr.Jit and Mitsuba allocate large numbers of
+    temporary objects while tracing and benefit from this. (nanobind PRs
+    `#1366 <https://github.com/wjakob/nanobind/pull/1366>`__, `#1374
+    <https://github.com/wjakob/nanobind/pull/1374>`__, `#1375
+    <https://github.com/wjakob/nanobind/pull/1375>`__).
 
-   - **Faster Image I/O**. JPEG encoding/decoding switched from the bundled
-     ``libjpeg`` to `libjpeg-turbo <https://libjpeg-turbo.org/>`__.
-     This makes JPEG loading 2–6× faster. (commit `c8a5fb <https://github.com/mitsuba-renderer/mitsuba3/commit/c8a5fbf1d5944cfb6ba1ad2fc54c73c22abf8c26>`__).
+  - **Faster Image I/O**. JPEG encoding/decoding switched from the bundled
+    ``libjpeg`` to `libjpeg-turbo <https://libjpeg-turbo.org/>`__.
+    This makes JPEG loading 2–6× faster. (commit `c8a5fb <https://github.com/mitsuba-renderer/mitsuba3/commit/c8a5fbf1d5944cfb6ba1ad2fc54c73c22abf8c26>`__).
 
 - The following improvements in `Dr.Jit 1.4.0 <https://drjit.readthedocs.io/en/latest/changelog.html>`__
   are also noteworthy and were motivated by the needs of differentiable
