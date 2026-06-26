@@ -168,12 +168,13 @@ MI_PY_EXPORT(DrJit) {
 
     // Bind all type families
     const char *type_families[] = {
-        "TensorX", "ArrayX", "Complex2", "Quaternion4"
+        "TensorX", "ArrayX", "Complex2", "Quaternion4",
+        "Array0", "Array1", "Array2", "Array3", "Array4"
     };
 
     for (const char *family : type_families) {
         bind_aliases(family, float_mappings);
-        if (family[0] == 'T' || family[0] == 'A') // TensorX and ArrayX also have integer types
+        if (family[0] == 'T' || family[0] == 'A') // Tensor and Array families also have integer types
             bind_aliases(family, int_mappings);
     }
 
@@ -183,13 +184,27 @@ MI_PY_EXPORT(DrJit) {
         bind_aliases(matrix, float_mappings);
     }
 
+    // Textures additionally provide an 8-bit unsigned storage variant
+    constexpr SuffixMapping texture_mappings[] = {
+        { "f8u", "f8u" }
+    };
+
     for (int dim = 1; dim <= 3; ++dim) {
         std::string texture = "Texture" + std::to_string(dim);
         bind_aliases(texture, float_mappings);
+        bind_aliases(texture, texture_mappings);
     }
 
-    // PCG32 type alias
-    m.attr("PCG32") = drjit_variant.attr("PCG32");
+    // Random number generator type aliases
+    m.attr("PCG32")            = drjit_variant.attr("PCG32");
+    m.attr("ScalarPCG32")      = drjit_scalar.attr("PCG32");
+    m.attr("Philox4x32")       = drjit_variant.attr("Philox4x32");
+    m.attr("ScalarPhilox4x32") = drjit_scalar.attr("Philox4x32");
+
+    // Synchronization event type alias (JIT backends only)
+    nb::object event = nb::getattr(drjit_variant, "Event", nb::handle());
+    if (event.is_valid())
+        m.attr("Event") = event;
 
     // Loop type alias
     m.attr("while_loop") = drjit.attr("while_loop");
