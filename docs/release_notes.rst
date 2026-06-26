@@ -23,26 +23,26 @@ Mitsuba 3.9.0
   significantly. Tracing and compilation are now ~2× faster. Rendering
   performance also saw uplift depending on the used scene features.
 
-   - **Environment maps**. The :ref:`envmap <emitter-envmap>` emitter now uses
-     GPU hardware texture units for lookups. The underlying
-     :cpp:class:`mitsuba.Hierarchical2D0` class for importance sampling
-     envmaps switched to a packed memory layout and now uses vector memory
-     loads to pull in data more efficiently. Scenes using environment maps
-     should render noticeably faster after this change. (commits `2ad8ea <https://github.com/mitsuba-renderer/mitsuba3/commit/2ad8eaefeb79c95796fcc6196bbae6b6a0d28715>`__,
-     `0179ad <https://github.com/mitsuba-renderer/mitsuba3/commit/0179ad9f28b580b15c75032afdef8036bfac7f09>`__,
-     `df71f6 <https://github.com/mitsuba-renderer/mitsuba3/commit/df71f6d85de11ad2c9996d9519a0fbc2a8bccf7e>`__).
+  - **Environment maps**. The :ref:`envmap <emitter-envmap>` emitter now uses
+    GPU hardware texture units for lookups. The underlying
+    :cpp:class:`mitsuba.Hierarchical2D0` class for importance sampling
+    envmaps switched to a packed memory layout and now uses vector memory
+    loads to pull in data more efficiently. Scenes using environment maps
+    should render noticeably faster after this change. (commits `2ad8ea <https://github.com/mitsuba-renderer/mitsuba3/commit/2ad8eaefeb79c95796fcc6196bbae6b6a0d28715>`__,
+    `0179ad <https://github.com/mitsuba-renderer/mitsuba3/commit/0179ad9f28b580b15c75032afdef8036bfac7f09>`__,
+    `df71f6 <https://github.com/mitsuba-renderer/mitsuba3/commit/df71f6d85de11ad2c9996d9519a0fbc2a8bccf7e>`__).
 
-   - The ``ImageBlock`` class used for sample accumulation now uses more
-     efficient vector atomics. The effect is most significant for simple scenes,
-     where sample accumulation was a bottleneck. (commits `2d016b <https://github.com/mitsuba-renderer/mitsuba3/commit/2d016b5437afa41961036d99c9f5e12d9c1c3186>`__,
-     `2f61f9 <https://github.com/mitsuba-renderer/mitsuba3/commit/2f61f961bb668abe34270a0c812c862a1e3eaea4>`__,
-     contributed by `Lovro Nuic <https://github.com/lnuic>`__).
+  - The ``ImageBlock`` class used for sample accumulation now uses more
+    efficient vector atomics. The effect is most significant for simple scenes,
+    where sample accumulation was a bottleneck. (commits `2d016b <https://github.com/mitsuba-renderer/mitsuba3/commit/2d016b5437afa41961036d99c9f5e12d9c1c3186>`__,
+    `2f61f9 <https://github.com/mitsuba-renderer/mitsuba3/commit/2f61f961bb668abe34270a0c812c862a1e3eaea4>`__,
+    contributed by `Lovro Nuic <https://github.com/lnuic>`__).
 
-   - **8-bit bitmap textures**. The :ref:`bitmap <texture-bitmap>` texture now leaves
-     LDR images in 8-bit precision instead of casting them to half precision,
-     which conserves memory and accelerates rendering. It uses the GPU's texture
-     units to fetch (and if needed, decode sRGB gamma from) stored values. (commit
-     `56ec0f <https://github.com/mitsuba-renderer/mitsuba3/commit/56ec0f12bc3718b8a0ac09155bae74a57feb7c57>`__).
+  - **8-bit bitmap textures**. The :ref:`bitmap <texture-bitmap>` texture now leaves
+    LDR images in 8-bit precision instead of casting them to half precision,
+    which conserves memory and accelerates rendering. It uses the GPU's texture
+    units to fetch (and if needed, decode sRGB gamma from) stored values. (commit
+    `56ec0f <https://github.com/mitsuba-renderer/mitsuba3/commit/56ec0f12bc3718b8a0ac09155bae74a57feb7c57>`__).
 
    - **Faster tracing and code generation**. A comprehensive
      optimization pass in `Dr.Jit 1.4.0
