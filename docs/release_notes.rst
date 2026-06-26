@@ -41,8 +41,14 @@ Mitsuba 3.9.0
   - **8-bit bitmap textures**. The :ref:`bitmap <texture-bitmap>` texture now leaves
     LDR images in 8-bit precision instead of casting them to half precision,
     which conserves memory and accelerates rendering. It uses the GPU's texture
-    units to fetch (and if needed, decode sRGB gamma from) stored values. (commit
-    `56ec0f <https://github.com/mitsuba-renderer/mitsuba3/commit/56ec0f12bc3718b8a0ac09155bae74a57feb7c57>`__).
+    units to fetch (and if needed, decode sRGB gamma from) stored values.
+
+    ⚠️ Textures backed by ``uint8`` are *non-differentiable*. This could break
+    existing optimizations that use LDR textures for initialization (e.g.,
+    loaded from JPEGs or PNGs). Add a ``<string name="format"
+    value="variant"/>`` XML or "'formt' : 'variant' dictionary attribute to
+    promote them to the variant's precision. (commit `56ec0f
+    <https://github.com/mitsuba-renderer/mitsuba3/commit/56ec0f12bc3718b8a0ac09155bae74a57feb7c57>`__).
 
   - **Faster tracing and code generation**. A comprehensive
     optimization pass in `Dr.Jit 1.4.0
