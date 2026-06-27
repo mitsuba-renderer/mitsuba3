@@ -308,3 +308,12 @@ def test09_data_gradient(variant_llvm_ad_rgb):
         fd = (eval_value(dp) - eval_value(dm)) / (2 * h)
         assert np.allclose(fd, grad[y, x, c], atol=1e-3), \
             f"grad mismatch at {(y, x, c)}: AD={grad[y, x, c]}, FD={fd}"
+
+
+def test10_pad_to(variants_vec_backends_once_rgb):
+    bitmap = mi.Bitmap(np.ones((2, 1, 3), dtype=np.float32))
+    emitter = mi.load_dict({"type" : "envmap", "bitmap" : bitmap})
+    params = mi.traverse(emitter)
+
+    # Initially pads to (3, 2), and then adds 2 to width => (3, 4)
+    assert params['data'].shape[:2] == (3, 4)
