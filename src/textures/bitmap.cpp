@@ -365,10 +365,10 @@ protected:
             bitmap->srgb_gamma()       != keep_srgb_gamma)
             bitmap = bitmap->convert(pf, ct, keep_srgb_gamma);
 
-        if (dr::any(bitmap->size() < 2)) {
-            Log(Warn, "Image must be at least 2x2 pixels in size, up-sampling..");
+        // Image must be at least 2x2 pixels in size
+        if (dr::any(bitmap->size() < 2))
             bitmap = bitmap->pad_to(ScalarVector2u(2));
-        }
+
         return bitmap;
     }
 
