@@ -134,9 +134,7 @@ public:
             bitmap = new Bitmap(file_path);
         }
 
-        if (bitmap->width() < 2 || bitmap->height() < 3)
-            Throw("\"%s\": the environment map resolution must be at least "
-                  "2x3 pixels", (m_filename.empty() ? "<Bitmap>" : m_filename));
+        bitmap = bitmap->pad_to(ScalarVector2u(2, 3));
 
         // Convert to linear RGBA float bitmap, will undergo further
         // conversion into coefficients of a spectral upsampling model below
