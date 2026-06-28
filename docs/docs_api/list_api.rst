@@ -182,6 +182,8 @@
 
 .. autofunction:: mitsuba.MI_ENABLE_EMBREE
 
+.. autofunction:: mitsuba.MI_ENABLE_METAL
+
 .. autofunction:: mitsuba.MI_FILTER_RESOLUTION
 
 .. autofunction:: mitsuba.MI_VERSION
@@ -708,11 +710,11 @@
 
 .. autofunction:: mitsuba.ad.largesteps.mesh_laplacian
 
-.. autoclass:: mitsuba.ad.loaders.Rayloader
+.. autoclass:: mitsuba.ad.loaders.FlatSensor
+
+.. autoclass:: mitsuba.ad.loaders.RayDataLoader
 
 .. autofunction:: mitsuba.ad.loaders.Tuple
-
-.. autoclass:: mitsuba.ad.loaders.flat_sensor
 
 .. autofunction:: mitsuba.chi2.BSDFAdapter
 
@@ -855,6 +857,8 @@
 .. autofunction:: mitsuba.math.srgb_to_linear
 
 .. autofunction:: mitsuba.math.ulpdiff
+
+.. autofunction:: mitsuba.math_py.chi2
 
 .. autofunction:: mitsuba.math_py.rlgamma
 

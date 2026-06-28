@@ -4,9 +4,10 @@
 [submodule "ext/libpng"]
     path = ext/libpng
     url = https://github.com/mitsuba-renderer/libpng.git
-[submodule "ext/libjpeg"]
-    path = ext/libjpeg
-    url = https://github.com/mitsuba-renderer/libjpeg
+[submodule "ext/libjpeg-turbo"]
+    path = ext/libjpeg-turbo
+    url = https://github.com/mitsuba-renderer/libjpeg-turbo
+    branch = mitsuba-3.1.4
 [submodule "ext/openexr"]
     path = ext/openexr
     url = https://github.com/mitsuba-renderer/openexr
@@ -45,3 +46,6 @@
 [submodule "ext/struct-jit"]
 	path = ext/struct-jit
 	url = https://github.com/mitsuba-renderer/struct-jit
+[submodule "ext/rgb2spec"]
+	path = ext/rgb2spec
+	url = https://github.com/mitsuba-renderer/rgb2spec

@@ -279,3 +279,62 @@ def test08_to_uv(variant_scalar_rgb):
 
     params = mi.traverse(bitmap)
     assert params["to_uv"] == transform
+
+
+@fresolver_append_path
+def test09_eval_u8(variants_vec_backends_once_rgb):
+    # 8-bit sRGB storage decodes on lookup; it should agree with the float path
+    # (which decodes the same 8-bit source at load time) to within 8-bit /
+    # hardware-sRGB tolerance, for evaluation and the importance-sampling mean.
+    common = {
+        'type'     : 'bitmap',
+        'filename' : 'resources/data/common/textures/carrot.png'
+    }
+    tex_ref = mi.load_dict({ **common, 'format' : 'variant' })
+    tex_u8  = mi.load_dict({ **common, 'format' : 'uint8' })
+
+    x_res, y_res = tex_ref.resolution()
+    # Coordinates of green pixel: (7, 1)
+    x = (1 / x_res) * 7 + (1 / (2 * x_res))
+    y = (1 / y_res) * 1 + (1 / (2 * y_res))
+
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.uv = [x, y]
+
+    assert dr.allclose(tex_ref.eval_3(si), tex_u8.eval_3(si), atol=2e-3)
+    assert dr.allclose(tex_ref.eval_1(si), tex_u8.eval_1(si), atol=2e-3)
+    assert dr.allclose(tex_ref.mean(), tex_u8.mean(), atol=2e-3)
+
+
+@fresolver_append_path
+def test10_u8_unsupported_in_spectral(variants_vec_backends_once_spectral):
+    # 8-bit storage cannot hold spectral upsampling coefficients
+    with pytest.raises(RuntimeError):
+        mi.load_dict({
+            'type'     : 'bitmap',
+            'filename' : 'resources/data/common/textures/carrot.png',
+            'format'   : 'uint8'
+        })
+
+
+def test11_u8_small_bitmap_upsample(variants_vec_backends_once_rgb, tmpdir):
+    # A 1x1 uint8 bitmap must be padded to 2x2 for bilinear filtering.
+    import numpy as np
+    import os
+
+    bmp = mi.Bitmap(np.array([[[200, 100, 50]]], dtype=np.uint8))
+    bmp.set_srgb_gamma(True)
+
+    tmp_file = os.path.join(str(tmpdir), 'out.png')
+    bmp.write(tmp_file)
+
+    tex = mi.load_dict({
+        'type'     : 'bitmap',
+        'filename' : tmp_file,
+        'format'   : 'uint8',
+    })
+
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.uv = [0.5, 0.5]
+    val = tex.eval_3(si)
+    assert dr.all(val > 0)

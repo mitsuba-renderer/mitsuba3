@@ -93,12 +93,11 @@ struct BufferAllocation {
     }
 };
 
-/// Owns the Metal objects of a built scene (ARC frees them when deleted).
+/// Strong references to Metal objects of a built scene
 struct MetalAccelData {
     id<MTLAccelerationStructure> tlas;
     std::vector<id<MTLAccelerationStructure>> blases;
-    /// Strong refs to every buffer the TLAS depends on, including borrowed
-    /// Dr.Jit arrays.
+    /// Refernces to buffers the TLAS depends on
     std::vector<id<MTLBuffer>> buffers;
     /// Dr.Jit-backed scene-resident buffers.
     std::vector<BufferAllocation> allocations;

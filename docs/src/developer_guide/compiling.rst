@@ -75,17 +75,10 @@ The default file specifies two scalar variants that you may wish to extend
 according to your requirements and the explanations given above. Note that
 ``scalar_spectral`` can be removed, but ``scalar_rgb`` *must* currently be part
 of the list as some core components of Mitsuba depend on it. In addition,
-at least one ``ad``-enabled variant must also be compiled. If Mitsuba is
-launched from the command line without any specific mode parameter, the first
-variant of the list below will be used.
-
-You may also wish to change the *Python default* variant that is executed if no
-variant is explicitly specified (this must be one of the entries of the
-``enabled`` list):
-
-.. code-block:: text
-
-    "python-default": "llvm_ad_rgb",
+at least one ``ad``-enabled variant must also be compiled. When the ``mitsuba``
+command line executable is launched without a specific mode parameter, it will
+automatically select the most capable variant whose backend is available at
+runtime (preferring an RGB color representation).
 
 The remainder of this file lists the C++ types defining the available variants
 and can safely be ignored.
@@ -120,22 +113,15 @@ The build process under Linux requires several external dependencies that are
 easily installed using the system-provided package manager (e.g.,
 :monosp:`apt-get` under Ubuntu).
 
-Note that recent Linux distributions include two different compilers that can
-both be used for C++ software development. `GCC <https://gcc.gnu.org>`_ is
-typically the default, and `Clang <https://clang.llvm.org>`_ can be installed
-optionally. During the development of this project, we encountered many issues
-with GCC (mis-compilations, compiler errors, segmentation faults), and strongly
-recommend that you use Clang instead.
-
-To fetch all dependencies and Clang, enter the following commands on Ubuntu:
+To fetch all dependencies, enter the following commands on Ubuntu:
 
 .. code-block:: bash
 
-    # Install recent versions build tools, including Clang
-    sudo apt install clang-17 cmake ninja-build
+    # Install required build tools
+    sudo apt install g++ cmake ninja-build
 
     # Install libraries for image I/O
-    sudo apt install libpng-dev libjpeg-dev
+    sudo apt install libpng-dev libjpeg-dev nasm
 
     # Install required Python packages
     sudo apt install libpython3-dev python3-distutils
@@ -149,17 +135,7 @@ interesting to you, also enter the following commands:
     # For running tests
     sudo apt install python3-pytest python3-pytest-xdist python3-numpy
 
-Next, ensure that two environment variables :monosp:`CC` and :monosp:`CXX` are
-exported. You can either run these two commands manually before using CMake
-or---even better---add them to your :monosp:`~/.bashrc` file. This ensures that
-CMake will always use the correct compiler.
-
-.. code-block:: bash
-
-    export CC=clang-17 export CXX=clang++-17
-
-If you installed another version of Clang, the version suffix of course has to
-be adjusted. Now, compilation should be as simple as running the following from
+Now, compilation should be as simple as running the following from
 inside the :monosp:`mitsuba3` root directory:
 
 .. code-block:: bash

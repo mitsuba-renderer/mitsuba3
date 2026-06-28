@@ -7,6 +7,29 @@ get_directory_property(MI_EXT_COMPILE_OPTIONS_NOWARN COMPILE_OPTIONS)
 list(REMOVE_ITEM MI_EXT_COMPILE_OPTIONS_NOWARN -Wall -Wextra /W4)
 
 # ---------------------------------------------------------------------------
+#  Enable assembler dialects
+# ---------------------------------------------------------------------------
+# libjpeg-turbo and struct-jit use different assembler dialects. Enabling so
+# within subdirectories causes issues with CMake. We work around this by
+# localizing all the ``enable_language()`` directives here.
+include(CheckLanguage)
+
+# ASM for OpenEXR, struct-jit (non-MSVC targets)
+enable_language(ASM)
+
+# MASM for struct-jit
+if (MSVC)
+  enable_language(ASM_MASM)
+endif()
+
+# NASM for libjpeg-turbo (x86, if available). Enabled last so it wins the
+# ``.asm`` extension, shared by all dialects.
+check_language(ASM_NASM)
+if (CMAKE_ASM_NASM_COMPILER)
+  enable_language(ASM_NASM)
+endif()
+
+# ---------------------------------------------------------------------------
 #  Link against Intel ITT (profiler events for VTune, optional)
 # ---------------------------------------------------------------------------
 
@@ -279,16 +302,20 @@ mark_as_advanced(DFA_XTRA AWK PNG_FRAMEWORK PNG_HARDWARE_OPTIMIZATIONS
   PNG_TOOLS)
 
 # ----------------------------------------------------------
-#  libjpeg 7
+#  libjpeg-turbo (libjpeg-compatible API, SIMD-accelerated)
 # ----------------------------------------------------------
 
-set(LIBJPEG_BUILD_SHARED ON CACHE BOOL " " FORCE)
-set(LIBJPEG_BUILD_EXECUTABLES OFF CACHE BOOL " " FORCE)
-add_subdirectory(libjpeg)
+# Build only the shared libjpeg-API library: no static lib, no high-level
+# TurboJPEG API, and no command-line tools / regression tests.
+set(ENABLE_SHARED   ON  CACHE BOOL " " FORCE)
+set(ENABLE_STATIC   OFF CACHE BOOL " " FORCE)
+set(WITH_TURBOJPEG  OFF CACHE BOOL " " FORCE)
+set(WITH_TOOLS      OFF CACHE BOOL " " FORCE)
+add_subdirectory(libjpeg-turbo)
 set_property(TARGET jpeg PROPERTY FOLDER "dependencies")
-set(JPEG_LIBRARIES libjpeg PARENT_SCOPE)
 
-set(JPEG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libjpeg;${CMAKE_CURRENT_BINARY_DIR}/libjpeg" PARENT_SCOPE)
+# Public headers live in src/; the generated jconfig.h lands in the build dir.
+set(JPEG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libjpeg-turbo/src;${CMAKE_CURRENT_BINARY_DIR}/libjpeg-turbo" PARENT_SCOPE)
 set(JPEG_LIBRARIES    "jpeg" PARENT_SCOPE)
 set(JPEG_DEFINES      -DMI_HAS_LIBJPEG PARENT_SCOPE)
 
@@ -296,9 +323,15 @@ set(JPEG_DEFINES      -DMI_HAS_LIBJPEG PARENT_SCOPE)
 # libraries that may already be loaded (e.g. into a Python interpreter)
 set_property(TARGET jpeg PROPERTY OUTPUT_NAME "jpeg-mitsuba")
 
+# Write output to libjpeg-mitsuba.dylib (no version suffix or symlink)
+set_property(TARGET jpeg PROPERTY VERSION)
+set_property(TARGET jpeg PROPERTY SOVERSION)
+
 mark_as_advanced(
-  LIBJPEG_BUILD_EXECUTABLES
-  LIBJPEG_BUILD_SHARED
+  ENABLE_SHARED
+  ENABLE_STATIC
+  WITH_TURBOJPEG
+  WITH_TOOLS
 )
 
 # ----------------------------------------------------------
@@ -322,6 +355,14 @@ set(TINYFORMAT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tinyformat PARENT_SCOPE)
 set(SJIT_ENABLE_PYTHON OFF CACHE BOOL "" FORCE)
 add_subdirectory(struct-jit)
 set_property(TARGET struct-jit PROPERTY FOLDER "dependencies")
+
+# Tag struct-jit's snippet library as MASM (``.asm`` otherwise defaults to NASM).
+if (MSVC)
+  set_source_files_properties(
+    "${CMAKE_CURRENT_SOURCE_DIR}/struct-jit/asm/asm_x64_win.asm"
+    TARGET_DIRECTORY struct-jit
+    PROPERTIES LANGUAGE ASM_MASM)
+endif()
 
 mark_as_advanced(
   SJIT_ENABLE_PYTHON

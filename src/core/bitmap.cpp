@@ -394,6 +394,38 @@ ref<Bitmap> Bitmap::resample(
     return result;
 }
 
+ref<Bitmap> Bitmap::pad_to(const ScalarVector2u &min_size) const {
+    ScalarVector2u new_size = dr::maximum(m_size, min_size);
+    if (dr::all(new_size == m_size))
+        return const_cast<Bitmap *>(this);
+
+    ref<Bitmap> result =
+        new Bitmap(m_pixel_format, m_component_format, new_size, channel_count());
+    result->m_struct = m_struct;
+    result->m_metadata = m_metadata;
+    result->set_srgb_gamma(m_srgb_gamma);
+    result->set_premultiplied_alpha(m_premultiplied_alpha);
+
+    size_t bpp = bytes_per_pixel(),
+           src_row = bpp * m_size.x(),
+           dst_row = bpp * new_size.x();
+
+    // Copy source rows, extending columns by replicating the last pixel
+    for (uint32_t y = 0; y < m_size.y(); ++y) {
+        uint8_t *dst = result->uint8_data() + y * dst_row;
+        memcpy(dst, uint8_data() + y * src_row, src_row);
+        for (uint32_t x = m_size.x(); x < new_size.x(); ++x)
+            memcpy(dst + x * bpp, dst + (m_size.x() - 1) * bpp, bpp);
+    }
+
+    // Extend height by replicating the last (already complete) row
+    for (uint32_t y = m_size.y(); y < new_size.y(); ++y)
+        memcpy(result->uint8_data() + y * dst_row,
+               result->uint8_data() + (m_size.y() - 1) * dst_row, dst_row);
+
+    return result;
+}
+
 ref<Bitmap> Bitmap::convert(PixelFormat pixel_format,
                             sj::Type component_format,
                             bool srgb_gamma, Bitmap::AlphaTransform alpha_transform) const {

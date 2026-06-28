@@ -8,13 +8,13 @@ on:
         default: '0'
 
 env:
-  VARIANTS: "scalar_rgb,scalar_spectral,scalar_spectral_polarized,llvm_ad_rgb,llvm_ad_mono,llvm_ad_mono_polarized,llvm_ad_spectral,llvm_ad_spectral_polarized,cuda_ad_rgb,cuda_ad_mono,cuda_ad_mono_polarized,cuda_ad_spectral,cuda_ad_spectral_polarized"
+  VARIANTS: "scalar_rgb,scalar_spectral,scalar_spectral_polarized,llvm_ad_rgb,llvm_ad_mono,llvm_ad_mono_polarized,llvm_ad_spectral,llvm_ad_spectral_polarized,cuda_ad_rgb,cuda_ad_mono,cuda_ad_mono_polarized,cuda_ad_spectral,cuda_ad_spectral_polarized,metal_ad_rgb,metal_ad_mono,metal_ad_mono_polarized,metal_ad_spectral,metal_ad_spectral_polarized"
 
 jobs:
   build_wheels:
     strategy:
       matrix:
-        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-latest, macos-14]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-latest, macos-26]
         python: [cp39, cp310, cp311, cp312, cp312_stable, cp313, cp314]
       fail-fast: false
 
@@ -51,6 +51,13 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
+
+      # Required for libjpeg-turbo
+      - name: Install NASM on Windows
+        if: runner.os == 'Windows'
+        run: |
+          choco install nasm -y
+          echo "C:\Program Files\NASM" >> $env:GITHUB_PATH
 
       - name: Install cibuildwheel
         run: |
