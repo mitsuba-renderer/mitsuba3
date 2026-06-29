@@ -1816,8 +1816,13 @@ std::vector<ref<Object>> instantiate(const ParserConfig &config, ParserState &st
     // user-provided Dr.Jit arrays/tensor from being propagated to plugin
     // loaders running on a different thread. Side effects are queued in
     // per-thread data structures.
-    if (config.parallel && !string::starts_with(config.variant, "scalar_"))
+    if (config.parallel && !string::starts_with(config.variant, "scalar_")) {
+        // Flush side effects
         jit_eval();
+
+        // Flush thread-local command buffer on Metal
+        jit_flush_thread();
+    }
 #endif
 
     std::vector<Scratch> scratch(state.size());
