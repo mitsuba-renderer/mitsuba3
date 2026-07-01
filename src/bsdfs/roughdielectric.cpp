@@ -607,6 +607,21 @@ public:
                  dr::select(active, pdf * dr::abs(dwh_dwo), 0.f) };
     }
 
+    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
+                                      Mask active) const override {
+        // Microfacet-only BSDF: there is no diffuse lobe, so the default
+        // implementation would evaluate the glossy lobe at wo = n, leaking a
+        // view-dependent specular peak into denoising albedo AOVs. A rough
+        // dielectric reflects or transmits essentially all incident energy,
+        // so return 1 (tinted by specular_transmittance when present). This
+        // follows the Open Image Denoise documentation, which recommends an
+        // albedo of 1 for non-delta dielectric surfaces such as glass.
+        UnpolarizedSpectrum value(1.f);
+        if (m_specular_transmittance)
+            value *= m_specular_transmittance->eval(si, active);
+        return depolarizer<Spectrum>(value) & active;
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "RoughDielectric[" << std::endl
