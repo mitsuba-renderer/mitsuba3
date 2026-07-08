@@ -5,11 +5,17 @@
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/tuple.h>
 
-template <typename BBox, typename Ray> auto bind_bbox(nb::module_ &m, const char *name) {
+template <typename BBox, typename Ray> void bind_bbox(nb::module_ &m, const char *name) {
         using Point = typename BBox::Point;
         using Float = typename BBox::Value;
 
-        MI_PY_CHECK_ALIAS(BBox, name) {
+        // BBox only depends on Float, so variants sharing a Float type alias
+        // the same class here; ray_intersect() is bound separately below
+        // since it depends on Spectrum (via Ray) and must exist per-variant.
+        nb::handle alias = nb::type<BBox>();
+        if (alias.is_valid()) {
+            m.attr(name) = alias;
+        } else {
             auto bbox = nb::class_<BBox>(m, name, D(BoundingBox))
                 .def(nb::init<>(), D(BoundingBox, BoundingBox))
                 .def(nb::init<Point>(), D(BoundingBox, BoundingBox, 2), "p"_a)
@@ -73,14 +79,18 @@ template <typename BBox, typename Ray> auto bind_bbox(nb::module_ &m, const char
                 .def_repr(BBox);
 
             if constexpr (dr::size_v<Point> == 3) {
-                bbox.def("ray_intersect",
-                         [](const BBox &self, const Ray &ray) {
-                             return self.ray_intersect(ray);
-                         }, D(BoundingBox, ray_intersect), "ray"_a);
                 bbox.def("bounding_sphere", &BBox::bounding_sphere,
                          D(BoundingBox, bounding_sphere));
             }
-    }
+        }
+
+        if constexpr (dr::size_v<Point> == 3) {
+            nb::borrow<nb::class_<BBox>>(nb::type<BBox>())
+                .def("ray_intersect",
+                     [](const BBox &self, const Ray &ray) {
+                         return self.ray_intersect(ray);
+                     }, D(BoundingBox, ray_intersect), "ray"_a);
+        }
 }
 
 MI_PY_EXPORT(BoundingBox) {

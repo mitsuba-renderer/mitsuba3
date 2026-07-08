@@ -15,14 +15,25 @@ inline void transform_affine_is_deprecated_warning() {
     }
 }
 
+// Tracks which Ray types already have overloads on `cls`, to avoid
+// double-registering when multiple variants/aliases share both types.
+static bool record_ray_overload(nb::handle cls, const std::type_info &ray_type) {
+    const char *attr = "_mi_registered_ray_overloads";
+    nb::str tag(ray_type.name());
+    nb::set tags;
+    if (nb::hasattr(cls, attr)) {
+        tags = nb::borrow<nb::set>(nb::getattr(cls, attr));
+        if (tags.contains(tag))
+            return false;
+    } else {
+        cls.attr(attr) = tags;
+    }
+    tags.add(tag);
+    return true;
+}
+
 template <typename Transform, typename Float, typename Spectrum, size_t Dimension>
 void bind_transform(nb::module_ &m, const char *name) {
-    // Check if already bound, if so just return existing handle
-    if (auto h = nb::type<Transform>(); h.is_valid()) {
-        m.attr(name) = h;
-        return;
-    }
-
     MI_IMPORT_CORE_TYPES()
 
     using ScalarType = dr::scalar_t<Float>;
@@ -34,6 +45,24 @@ void bind_transform(nb::module_ &m, const char *name) {
     using ScalarPoint = Point<ScalarType, Dimension>;
     using NdMatrix = nb::ndarray<ScalarType, nb::shape<Dimension, Dimension>,
                                  nb::c_contig, nb::device::cpu>;
+
+    // Transform only depends on Float, so variants sharing a Float type
+    // alias the same class here; the Ray-typed __matmul__/transform_affine
+    // overloads depend on Spectrum too and must be (re-)bound per variant.
+    if (auto h = nb::type<Transform>(); h.is_valid()) {
+        m.attr(name) = h;
+        if (record_ray_overload(h, typeid(RayType))) {
+            nb::borrow<nb::class_<Transform>>(h)
+                .def("__matmul__", [](const Transform &a, const RayType &b) {
+                    return a * b;
+                }, nb::is_operator())
+                .def("transform_affine", [](const Transform &a, const RayType &b) {
+                    transform_affine_is_deprecated_warning();
+                    return a * b;
+                }, "ray"_a, D(Transform, transform_affine));
+        }
+        return;
+    }
 
     constexpr bool IsAffine = Transform::IsAffine;
     constexpr bool IsProjective = !IsAffine;
@@ -103,6 +132,8 @@ void bind_transform(nb::module_ &m, const char *name) {
         .def("__matmul__", [](const Transform &a, const RayType &b) {
             return a * b;
         }, nb::is_operator());
+
+    record_ray_overload(cls, typeid(RayType));
 
     // Deprecated transform_affine methods with warnings
     cls.def("transform_affine", [](const Transform &a, const PointType &b) {
