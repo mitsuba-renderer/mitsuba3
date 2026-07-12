@@ -1532,9 +1532,19 @@ void transform_relocate(const ParserConfig &/*config*/, ParserState &state,
         if (!fs::exists(target_dir))
             fs::create_directory(target_dir);
 
-        // Handle duplicates using copy_count mapping (matches Python behavior)
         std::string base_name = src_path.filename().string();
-        if (auto it = copy_count.find(base_name); it != copy_count.end()) {
+
+        // When the source already sits at its relocation target (e.g. when a
+        // scene is re-exported over itself), copying would truncate the file
+        // to zero bytes. Reference the file in place instead.
+        fs::path in_place = target_dir / base_name;
+        bool already_in_place =
+            fs::exists(in_place) && fs::equivalent(src_path, in_place);
+
+        if (already_in_place) {
+            if (copy_count.find(base_name) == copy_count.end())
+                copy_count[base_name] = 1;
+        } else if (auto it = copy_count.find(base_name); it != copy_count.end()) {
             // Add number suffix for duplicate
             std::string stem = src_path.filename().replace_extension().string(),
                         ext  = src_path.extension().string();
@@ -1546,7 +1556,7 @@ void transform_relocate(const ParserConfig &/*config*/, ParserState &state,
 
         fs::path target_path = target_dir / base_name;
 
-        if (!fs::copy_file(src_path, target_path))
+        if (!already_in_place && !fs::copy_file(src_path, target_path))
             Throw("Failed to copy file from \"%s\" to \"%s\"",
                   src_path.string(), target_path.string());
 
