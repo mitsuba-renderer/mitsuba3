@@ -425,3 +425,31 @@ def test07_complex(variant_scalar_rgb):
 '''
 
     assert xml_output == expected
+
+
+def test10_relocate_file_already_at_target(variant_scalar_rgb, tmp_path):
+    """transform_relocate must not truncate a file that already sits at its
+    relocation target (e.g. when a scene is re-exported over itself)"""
+    textures_dir = tmp_path / "textures"
+    textures_dir.mkdir()
+    texture = textures_dir / "wood.jpg"
+    texture.write_text("texture content")
+
+    scene_xml = f'''
+    <scene version="3.0.0">
+        <texture type="bitmap" name="wood_tex">
+            <string name="filename" value="{texture}"/>
+        </texture>
+    </scene>
+    '''
+
+    state = mi.parser.parse_string(config, scene_xml)
+    mi.parser.transform_upgrade(config, state)
+    mi.parser.transform_resolve(config, state)
+    mi.parser.transform_relocate(config, state, mi.filesystem.path(str(tmp_path)))
+
+    # The file must be intact and referenced via its relative path
+    assert texture.read_text() == "texture content"
+    filenames = [node.props.get("filename")
+                 for node in state.nodes if "filename" in node.props]
+    assert filenames == ["textures/wood.jpg"]
