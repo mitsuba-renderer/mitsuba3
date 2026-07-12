@@ -3,6 +3,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/filesystem.h>
+#include <mitsuba/core/fresolver.h>
 #include <tsl/robin_map.h>
 
 /**
@@ -154,6 +155,9 @@ struct MI_EXPORT_LIB ParserState {
     /// When parsing a file via parse_string(), this references the string
     /// contents. Used to compute line information for error messages.
     std::string_view content;
+
+    /// Search paths for files referenced by the scene
+    ref<FileResolver> resolver;
 
     /// Current include depth (for preventing infinite recursion)
     int depth = 0;
@@ -398,6 +402,8 @@ extern MI_EXPORT_LIB std::string file_location(const ParserState &state,
  *   ``config.parallel``)
  * - Property validation and type checking
  * - Object expansion (\ref Object::expand())
+ * - Installing \ref ParserState::resolver as the global file resolver, so that
+ *   plugins can locate the files referenced by the scene
  *
  * This function creates plugins with variant \ref ParserConfig::variant, using
  * parallelism if requested (\ref ParserConfig::parallel). It will usually

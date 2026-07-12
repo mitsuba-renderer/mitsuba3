@@ -1,3 +1,4 @@
+#include <nanobind/nanobind.h> // Needs to be first, to get `ref<T>` caster
 #include <mitsuba/python/python.h>
 #include <mitsuba/core/parser.h>
 #include <mitsuba/core/object.h>
@@ -157,16 +158,15 @@ static void parse_dict_impl(ParserState &state, const nb::dict &d,
                 if (!child_dict.contains("path"))
                     Throw("[%s] Resource path is missing 'path' attribute", path);
 
-                ref<FileResolver> fs = mitsuba::file_resolver();
                 fs::path resource_path(nb::cast<std::string_view>(child_dict["path"]));
 
                 if (!resource_path.is_absolute() && !fs::exists(resource_path))
-                    resource_path = fs->resolve(resource_path);
+                    resource_path = state.resolver->resolve(resource_path);
 
                 if (!fs::exists(resource_path))
                     Throw("[%s] Folder \"%s\" not found", path, resource_path);
 
-                fs->prepend(resource_path);
+                state.resolver->prepend(resource_path);
                 continue;
             }
 
@@ -236,6 +236,7 @@ static void parse_dict_impl(ParserState &state, const nb::dict &d,
 
 static ParserState parse_dict(const ParserConfig &, const nb::dict &d) {
     ParserState state;
+    state.resolver = new FileResolver(*file_resolver());
 
     // Create root node
     SceneNode root;
@@ -362,6 +363,9 @@ MI_PY_EXPORT(parser) {
         .def_rw("nodes", &ParserState::nodes, "List of all scene nodes")
         .def_rw("node_paths", &ParserState::node_paths, "Node paths for dictionary parsing")
         .def_rw("files", &ParserState::files, "List of parsed files")
+        .def_rw("resolver", &ParserState::resolver,
+                "File resolver holding the scene directory and any directories "
+                "declared via <path> tags or 'resources' entries")
         .def_prop_rw("id_to_index",
             [](const ParserState &s) {
                 nb::dict result;
@@ -476,28 +480,13 @@ MI_PY_EXPORT(parser) {
             config.merge_equivalent = optimize;
             config.merge_meshes = optimize;
 
-            // Set up FileResolver like the old parser does
-            fs::path filename(name);
-            if (!fs::exists(filename))
-                Throw("\"%s\": file does not exist!", filename);
-
-            ref<FileResolver> fs_backup = file_resolver();
-            ref<FileResolver> fs = new FileResolver(*fs_backup);
-            fs->prepend(filename.parent_path());
-            set_file_resolver(fs.get());
-
             std::vector<ref<Object>> objects;
-            try {
+            {
                 nb::gil_scoped_release release;
                 parser::ParserState state = parser::parse_file(config, name, params);
                 parser::transform_all(config, state);
                 objects = parser::instantiate(config, state);
-            } catch (...) {
-                set_file_resolver(fs_backup.get());
-                throw;
             }
-
-            set_file_resolver(fs_backup.get());
 
             return single_object_or_list(objects);
         },
@@ -565,25 +554,15 @@ Parameter ``kwargs``:
             config.merge_equivalent = optimize;
             config.merge_meshes = optimize;
 
-            ref<FileResolver> fs_backup = file_resolver();
-            ref<FileResolver> fs = new FileResolver(*fs_backup);
-            set_file_resolver(fs.get());
+            // Parse, transform, and instantiate
+            parser::ParserState state = parse_dict(config, dict);
 
             std::vector<ref<Object>> objects;
-            try {
-                // Parse, transform, and instantiate
-                parser::ParserState state = parse_dict(config, dict);
-                {
-                    nb::gil_scoped_release release;
-                    parser::transform_all(config, state);
-                    objects = parser::instantiate(config, state);
-                }
-            } catch(...) {
-                set_file_resolver(fs_backup.get());
-                throw;
+            {
+                nb::gil_scoped_release release;
+                parser::transform_all(config, state);
+                objects = parser::instantiate(config, state);
             }
-
-            set_file_resolver(fs_backup.get());
 
             return single_object_or_list(objects);
         },

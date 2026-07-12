@@ -79,4 +79,22 @@ extern MI_EXPORT_LIB FileResolver *file_resolver();
 /// Set the global file resolver instance (this is a process-wide setting)
 extern MI_EXPORT_LIB void set_file_resolver(FileResolver *file_resolver);
 
+/**
+ * \brief RAII helper that temporarily installs a file resolver as the
+ * session-global instance and restores the previous one when leaving the scope
+ */
+struct ScopedFileResolver {
+    ScopedFileResolver(FileResolver *fs) : m_backup(file_resolver()) {
+        set_file_resolver(fs);
+    }
+
+    ~ScopedFileResolver() { set_file_resolver(m_backup.get()); }
+
+    ScopedFileResolver(const ScopedFileResolver &) = delete;
+    ScopedFileResolver &operator=(const ScopedFileResolver &) = delete;
+
+private:
+    ref<FileResolver> m_backup;
+};
+
 NAMESPACE_END(mitsuba)

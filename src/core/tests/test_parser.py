@@ -852,6 +852,10 @@ def test33_xml_include_path_resolution(absolute_path, variant_scalar_rgb, tmp_pa
     assert shape.props.plugin_name() == "sphere"
     assert shape.props["radius"] == 0.5
 
+    # The subdirectory is only searched while parsing the included file
+    search_paths = [str(p) for p in state.resolver]
+    assert search_paths[0] == str(tmp_path) and str(subdir) not in search_paths
+
 
 def test34_xml_include_nested(variant_scalar_rgb, tmp_path):
     """Test nested includes"""
@@ -2233,12 +2237,22 @@ def test63_resource_path_management(variant_scalar_rgb, tmp_path):
     scene_file.write_text(xml_with_path)
 
     # This should succeed because <path> adds data/ to search paths
+    paths_before = list(mi.file_resolver())
     state = mi.parser.parse_file(config, str(scene_file))
 
     # Verify the texture node exists
     assert len(state.nodes) == 2  # root + texture
     assert state.nodes[1].props.plugin_name() == "bitmap"
     assert state.nodes[1].props["filename"] == "image_file.png"
+
+    # The directory is recorded in the parser state, and the session-global
+    # file resolver is left untouched
+    assert [str(p) for p in state.resolver][:2] == [str(data_dir), str(tmp_path)]
+    assert list(mi.file_resolver()) == paths_before
+
+    mi.parser.transform_all(config, state)
+    assert mi.parser.instantiate(config, state) is not None
+    assert list(mi.file_resolver()) == paths_before
 
     # Test 3: Multiple <path> tags
     # Create another directory with a different file
