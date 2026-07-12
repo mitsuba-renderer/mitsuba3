@@ -155,6 +155,11 @@ struct MI_EXPORT_LIB ParserState {
     /// contents. Used to compute line information for error messages.
     std::string_view content;
 
+    /// Resource search directories declared via <path> tags (XML) or
+    /// 'resources' dictionary entries. instantiate() temporarily prepends
+    /// them to the file resolver.
+    std::vector<fs::path> resource_paths;
+
     /// Current include depth (for preventing infinite recursion)
     int depth = 0;
 

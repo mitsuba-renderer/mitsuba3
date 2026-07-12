@@ -166,7 +166,10 @@ static void parse_dict_impl(ParserState &state, const nb::dict &d,
                 if (!fs::exists(resource_path))
                     Throw("[%s] Folder \"%s\" not found", path, resource_path);
 
+                // Make the directory available while parsing the rest of the
+                // dictionary; instantiate() reinstates it later on
                 fs->prepend(resource_path);
+                state.resource_paths.push_back(std::move(resource_path));
                 continue;
             }
 
@@ -235,6 +238,9 @@ static void parse_dict_impl(ParserState &state, const nb::dict &d,
 }
 
 static ParserState parse_dict(const ParserConfig &, const nb::dict &d) {
+    // Shield the session-global file resolver from 'resources' entries
+    ScopedFileResolver resolver_guard;
+
     ParserState state;
 
     // Create root node

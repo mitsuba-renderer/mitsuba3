@@ -999,7 +999,10 @@ static void parse_xml_node(const ParserConfig &config, ParserState &state,
             if (!fs::exists(resource_path))
                 fail(state, scene_node, "<path>: folder \"%s\" not found", resource_path);
 
+            // Make the directory available while parsing the rest of the
+            // file, and record it so that instantiate() can restore it later
             fs->prepend(resource_path);
+            state.resource_paths.push_back(std::move(resource_path));
             break;
         }
 
@@ -1058,6 +1061,11 @@ static void parse_xml_node(const ParserConfig &config, ParserState &state,
 
 ParserState parse_file(const ParserConfig &config, const fs::path &filename,
                        const ParameterList &param_list) {
+    /* Parsing may modify the file resolver (e.g. via <path> tags); shield
+       the session-global resolver from such changes. The declared paths are
+       recorded in the parser state and reinstated by instantiate(). */
+    ScopedFileResolver resolver_guard;
+
     SortedParameters params = make_sorted_parameters(param_list);
     ParserState state = parse_file_impl(config, filename, params, 0);
     check_unused_parameters(config, params);
@@ -1117,6 +1125,9 @@ static ParserState parse_file_impl(const ParserConfig &config,
 }
 
 ParserState parse_string(const ParserConfig &config, std::string_view string, const ParameterList &param_list) {
+    // Shield the session-global file resolver from <path> tags (see parse_file)
+    ScopedFileResolver resolver_guard;
+
     SortedParameters params = make_sorted_parameters(param_list);
 
     // Parse XML using pugixml
@@ -1820,6 +1831,13 @@ static Task* instantiate_node(const ParserConfig &config,
 std::vector<ref<Object>> instantiate(const ParserConfig &config, ParserState &state) {
     if (state.empty())
         Throw("No nodes to instantiate");
+
+    /* Make resource directories declared while parsing (<path> tags or
+       'resources' dictionary entries) available to plugin constructors,
+       without permanently modifying the session-global file resolver */
+    ScopedFileResolver resolver_guard;
+    for (const fs::path &p : state.resource_paths)
+        mitsuba::file_resolver()->prepend(p);
 
 #if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
     // Flush pending side effects here and now, to avoid potentially dirty

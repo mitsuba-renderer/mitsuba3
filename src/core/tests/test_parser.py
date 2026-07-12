@@ -2287,6 +2287,42 @@ def test63_resource_path_management(variant_scalar_rgb, tmp_path):
         mi.parser.parse_file(config, str(scene_file))
 
 
+def test63b_resource_path_no_resolver_leak(variant_scalar_rgb, tmp_path):
+    """<path> tags must not permanently modify the session-global file resolver"""
+    import shutil
+    from mitsuba.test.util import find_resource
+
+    data_dir = tmp_path / 'data'
+    data_dir.mkdir()
+    carrot_src = mi.file_resolver().resolve(find_resource("resources/data/common/textures/carrot.png"))
+    shutil.copy(str(carrot_src), str(data_dir / 'image_file.png'))
+
+    scene_file = tmp_path / 'scene.xml'
+    scene_file.write_text('''<scene version="3.0.0">
+        <path value="data"/>
+        <texture type="bitmap" id="tex">
+            <string name="filename" value="image_file.png"/>
+        </texture>
+    </scene>''')
+
+    paths_before = list(mi.file_resolver())
+
+    state = mi.parser.parse_file(config, str(scene_file))
+    assert list(mi.file_resolver()) == paths_before
+
+    # The declared path is still honored during instantiation
+    mi.parser.transform_all(config, state)
+    tex = mi.parser.instantiate(config, state)
+    assert tex is not None
+    assert list(mi.file_resolver()) == paths_before
+
+    # The same holds for parse_string
+    mi.parser.parse_string(config, f'''<scene version="3.0.0">
+        <path value="{data_dir}"/>
+    </scene>''')
+    assert list(mi.file_resolver()) == paths_before
+
+
 def test63_transform_reorder(variant_scalar_rgb):
     """Test reordering of scene elements by type"""
 
