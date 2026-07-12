@@ -424,3 +424,14 @@ def test19_numpy_scalars(variant_scalar_rgb):
     # Test that complex types are rejected
     with pytest.raises(RuntimeError, match=r"numpy scalars with a.*'c' data type are not supported"):
         props['j'] = np.complex64(1 + 2j)
+
+
+def test20_get_texture_missing(variant_scalar_rgb):
+    p = mi.Properties()
+
+    for getter in (p.get_texture, p.get_emissive_texture, p.get_unbounded_texture):
+        with pytest.raises(RuntimeError, match=r'Property "reflectance" cannot be found'):
+            getter('reflectance')
+
+    # The overloads with a default value still succeed
+    assert p.get_texture('reflectance', 0.5) is not None
