@@ -593,7 +593,7 @@ ref<Object> Properties::get_texture_impl(std::string_view name,
                                          std::string_view variant,
                                          bool emitter,
                                          bool unbounded) const {
-    size_t index = key_index(name);
+    size_t index = key_index_checked(name);
     const Entry &entry = d->entries[index];
     const Variant &value = entry.value;
     Type type = (Type) value.index();
