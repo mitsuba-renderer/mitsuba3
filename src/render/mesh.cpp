@@ -11,6 +11,8 @@
 #include <mitsuba/render/records.h>
 #include "bbox_reduce.h"
 #include <mitsuba/render/scene.h>
+#include <algorithm>
+#include <cstring>
 
 #if defined(MI_ENABLE_EMBREE)
     #include <embree3/rtcore.h>
@@ -74,6 +76,214 @@ void Mesh<Float, Spectrum>::initialize() {
 }
 
 MI_VARIANT Mesh<Float, Spectrum>::~Mesh() {}
+
+MI_VARIANT ref<Mesh<Float, Spectrum>>
+Mesh<Float, Spectrum>::from_corners(std::string_view name, size_t vertex_count,
+                                    size_t corner_count,
+                                    const InputFloat *positions,
+                                    const uint32_t *corner_vertex,
+                                    const CornerAttribute *attrs,
+                                    size_t attr_count,
+                                    const Properties &props) {
+    if (corner_count % 3 != 0)
+        Throw("Mesh::from_corners(): corner count (%zu) must be a multiple "
+              "of 3!", corner_count);
+    if (corner_count > (size_t) std::numeric_limits<uint32_t>::max())
+        Throw("Mesh::from_corners(): mesh with %zu corners exceeds the 32 "
+              "bit index limit!", corner_count);
+
+    bool face_normals = props.get<bool>("face_normals", false);
+
+    // Validate the attribute list and drop normals if they will be unused
+    std::vector<CornerAttribute> active;
+    active.reserve(attr_count);
+    bool has_normals = false;
+    for (size_t i = 0; i < attr_count; ++i) {
+        const CornerAttribute &a = attrs[i];
+
+        bool value_form = a.values != nullptr,
+             index_form = a.pool != nullptr || a.indices != nullptr;
+        if (index_form && !(a.pool && a.indices))
+            Throw("Mesh::from_corners(): attribute \"%s\": the index form "
+                  "requires both a value pool and an index array!", a.name);
+        if (value_form == index_form)
+            Throw("Mesh::from_corners(): attribute \"%s\" must provide "
+                  "either per-corner values or a pool with per-corner "
+                  "indices!", a.name);
+        if (a.dim == 0)
+            Throw("Mesh::from_corners(): attribute \"%s\" has dimension "
+                  "zero!", a.name);
+
+        for (const CornerAttribute &b : active)
+            if (a.name == b.name)
+                Throw("Mesh::from_corners(): duplicate attribute \"%s\"!",
+                      a.name);
+
+        if (a.name == "vertex_normals") {
+            if (a.dim != 3)
+                Throw("Mesh::from_corners(): \"vertex_normals\" must have "
+                      "dimension 3, got %zu!", a.dim);
+            if (face_normals)
+                continue;
+            has_normals = true;
+        } else if (a.name == "vertex_texcoords") {
+            if (a.dim != 2)
+                Throw("Mesh::from_corners(): \"vertex_texcoords\" must have "
+                      "dimension 2, got %zu!", a.dim);
+        } else if (!string::starts_with(a.name, "vertex_")) {
+            Throw("Mesh::from_corners(): attribute name \"%s\" must start "
+                  "with \"vertex_\"!", a.name);
+        }
+
+        active.push_back(a);
+    }
+
+    size_t C = corner_count, V = vertex_count;
+
+    std::unique_ptr<uint32_t[]> offsets(new uint32_t[V + 1]),
+                                unique(new uint32_t[V]),
+                                order(new uint32_t[C]),
+                                faces(new uint32_t[C]);
+
+    // Counting sort of the corners by source vertex index
+    memset(offsets.get(), 0, (V + 1) * sizeof(uint32_t));
+    for (size_t c = 0; c < C; ++c) {
+        uint32_t v = corner_vertex[c];
+        if (unlikely(v >= V))
+            Throw("Mesh::from_corners(): corner %zu references nonexistent "
+                  "vertex %u (vertex count: %zu)!", c, v, V);
+        offsets[v + 1]++;
+    }
+    for (size_t v = 0; v < V; ++v)
+        offsets[v + 1] += offsets[v];
+    memcpy(unique.get(), offsets.get(), V * sizeof(uint32_t));
+    for (size_t c = 0; c < C; ++c)
+        order[unique[corner_vertex[c]]++] = (uint32_t) c;
+
+    // Do corners 'a' and 'b' agree in every attribute?
+    auto equal = [&active](uint32_t a, uint32_t b) {
+        for (const CornerAttribute &at : active) {
+            if (at.values) {
+                if (memcmp(at.values + a * at.dim, at.values + b * at.dim,
+                           at.dim * sizeof(InputFloat)) != 0)
+                    return false;
+            } else {
+                if (at.indices[a] != at.indices[b])
+                    return false;
+            }
+        }
+        return true;
+    };
+
+    // Attribute-lexicographic order for the large-group fallback below
+    auto less = [&active](uint32_t a, uint32_t b) {
+        for (const CornerAttribute &at : active) {
+            if (at.values) {
+                int r = memcmp(at.values + a * at.dim, at.values + b * at.dim,
+                               at.dim * sizeof(InputFloat));
+                if (r)
+                    return r < 0;
+            } else {
+                if (at.indices[a] != at.indices[b])
+                    return at.indices[a] < at.indices[b];
+            }
+        }
+        return false;
+    };
+
+    /* Weld corners with identical keys within each vertex's corner group.
+       Groups are valence-sized (nearly always tiny), so a linear scan
+       against the group's already-unique corners suffices. The unique
+       representatives are compacted into the front of the group's slice of
+       'order', which is safe because slots below the read position have
+       already been processed. */
+    uint32_t out_count = 0;
+    for (size_t v = 0; v < V; ++v) {
+        uint32_t begin = offsets[v], end = offsets[v + 1], u = 0;
+
+        if (likely(end - begin <= 256)) {
+            for (uint32_t i = begin; i < end; ++i) {
+                uint32_t c = order[i], j = 0;
+                while (j < u && !equal(c, order[begin + j]))
+                    ++j;
+                if (j == u)
+                    order[begin + u++] = c;
+                faces[c] = out_count + j;
+            }
+        } else {
+            // Pathological valence: sort the group and collapse runs
+            std::sort(order.get() + begin, order.get() + end, less);
+            for (uint32_t i = begin; i < end; ++i) {
+                uint32_t c = order[i];
+                if (u == 0 || !equal(c, order[begin + u - 1]))
+                    order[begin + u++] = c;
+                faces[c] = out_count + u - 1;
+            }
+        }
+
+        unique[v] = u;
+        out_count += u;
+    }
+
+    ref<Mesh> mesh = new Mesh(props);
+    mesh->m_name = name;
+    mesh->m_vertex_count = out_count;
+    mesh->m_face_count = (ScalarSize) (C / 3);
+    if (C > 0)
+        mesh->m_faces = dr::load<DynamicBuffer<UInt32>>(faces.get(), C);
+
+    // Gather output vertex data from the welded representative corners
+    size_t out_size = (size_t) out_count * 3;
+    std::unique_ptr<InputFloat[]> buf(new InputFloat[out_size]);
+    for (size_t v = 0, k = 0; v < V; ++v)
+        for (uint32_t j = 0; j < unique[v]; ++j, ++k)
+            memcpy(buf.get() + k * 3, positions + v * 3,
+                   3 * sizeof(InputFloat));
+    if (out_count > 0)
+        mesh->m_vertex_positions = dr::load<FloatStorage>(buf.get(), out_size);
+
+    for (const CornerAttribute &a : active) {
+        // Zero-initialized so that missing (UINT32_MAX) entries yield zeros
+        std::vector<InputFloat> out((size_t) out_count * a.dim);
+
+        for (size_t v = 0, k = 0; v < V; ++v) {
+            for (uint32_t j = 0; j < unique[v]; ++j, ++k) {
+                uint32_t c = order[offsets[v] + j];
+                const InputFloat *src = nullptr;
+                if (a.values) {
+                    src = a.values + (size_t) c * a.dim;
+                } else {
+                    uint32_t idx = a.indices[c];
+                    if (idx != (uint32_t) -1)
+                        src = a.pool + (size_t) idx * a.dim;
+                }
+                if (src)
+                    memcpy(out.data() + k * a.dim, src,
+                           a.dim * sizeof(InputFloat));
+            }
+        }
+
+        if (a.name == "vertex_normals")
+            mesh->m_vertex_normals =
+                dr::load<FloatStorage>(out.data(), out.size());
+        else if (a.name == "vertex_texcoords")
+            mesh->m_vertex_texcoords =
+                dr::load<FloatStorage>(out.data(), out.size());
+        else
+            mesh->add_attribute(a.name, a.dim, out);
+    }
+
+    mesh->recompute_bbox();
+
+    if (!face_normals && !has_normals && out_count > 0) {
+        mesh->m_vertex_normals = dr::zeros<FloatStorage>(out_size);
+        mesh->recompute_vertex_normals();
+    }
+
+    mesh->initialize();
+
+    return mesh;
+}
 
 MI_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *cb) {
     Base::traverse(cb);

@@ -9,12 +9,14 @@
 #include <mitsuba/render/shape.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/trampoline.h>
+#include <nanobind/ndarray.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/string_view.h>
 #include <nanobind/stl/vector.h>
 #include <nanobind/stl/tuple.h>
 #include <nanobind/stl/optional.h>
 #include <drjit/python.h>
+#include <list>
 
 MI_PY_EXPORT(SilhouetteSample) {
     MI_PY_IMPORT_TYPES()
@@ -53,6 +55,9 @@ MI_PY_EXPORT(SilhouetteSample) {
                        scene_index, flags, projection_index, shape,
                        foreshortening, offset)
 }
+
+using Caster = nb::object(*)(mitsuba::Object *);
+extern Caster cast_object;
 
 /// Trampoline for derived types implemented in Python
 MI_VARIANT class PyMesh : public Mesh<Float, Spectrum> {
@@ -384,6 +389,168 @@ MI_PY_EXPORT(Shape) {
         .def("recompute_vertex_normals", &Mesh::recompute_vertex_normals)
         .def("recompute_bbox", &Mesh::recompute_bbox)
         .def("build_directed_edges", &Mesh::build_directed_edges);
+
+    {
+        using CornerAttribute = typename Mesh::CornerAttribute;
+        using InputFloat = typename Mesh::InputFloat;
+        using FloatNdArray =
+            nb::ndarray<const InputFloat, nb::c_contig, nb::device::cpu>;
+        using UInt32NdArray =
+            nb::ndarray<const uint32_t, nb::c_contig, nb::device::cpu>;
+
+        mesh_cls.def_static(
+            "from_corners",
+            [](const std::string &name, FloatNdArray positions,
+               UInt32NdArray corner_vertex, nb::object normals,
+               nb::object texcoords, nb::dict attributes,
+               const Properties &props) -> nb::object {
+                if (positions.ndim() != 2 || positions.shape(1) != 3)
+                    Throw("Mesh.from_corners(): 'positions' must be a float32 "
+                          "array of shape (vertex_count, 3)!");
+                if (corner_vertex.ndim() != 1)
+                    Throw("Mesh.from_corners(): 'corner_vertex' must be a "
+                          "uint32 array of shape (corner_count,)!");
+
+                size_t V = positions.shape(0),
+                       C = corner_vertex.shape(0);
+
+                auto cast_float = [](nb::handle h, const std::string &desc)
+                    -> FloatNdArray {
+                    FloatNdArray a;
+                    if (!nb::try_cast(h, a))
+                        Throw("Mesh.from_corners(): %s must be a "
+                              "C-contiguous float32 array!", desc);
+                    return a;
+                };
+                auto cast_uint32 = [](nb::handle h, const std::string &desc)
+                    -> UInt32NdArray {
+                    UInt32NdArray a;
+                    if (!nb::try_cast(h, a))
+                        Throw("Mesh.from_corners(): %s must be a "
+                              "C-contiguous uint32 array!", desc);
+                    return a;
+                };
+
+                // Keep the (potentially converted) arrays alive
+                std::vector<FloatNdArray> farrs;
+                std::vector<UInt32NdArray> iarrs;
+                std::list<std::string> names;
+                std::vector<CornerAttribute> attrs;
+
+                /* Register one attribute given either as a per-corner value
+                   array (C x dim) or as a (pool, indices) tuple. 'fixed_dim'
+                   constrains the dimension (0: arbitrary). */
+                auto add_attr = [&](std::string aname, nb::handle spec,
+                                    size_t fixed_dim) {
+                    names.push_back(std::move(aname));
+                    const std::string &n = names.back();
+
+                    CornerAttribute attr;
+                    attr.name = n;
+
+                    auto check_dim = [&](size_t dim) {
+                        if (dim == 0 || (fixed_dim && dim != fixed_dim))
+                            Throw("Mesh.from_corners(): attribute \"%s\": "
+                                  "expected entries of dimension %zu, got "
+                                  "%zu!", n, fixed_dim, dim);
+                        attr.dim = dim;
+                    };
+
+                    if (nb::isinstance<nb::tuple>(spec)) {
+                        nb::tuple t = nb::borrow<nb::tuple>(spec);
+                        if (t.size() != 2)
+                            Throw("Mesh.from_corners(): attribute \"%s\": "
+                                  "expected a (pool, indices) tuple!", n);
+
+                        FloatNdArray pool =
+                            cast_float(t[0], "attribute \"" + n + "\" pool");
+                        UInt32NdArray indices = cast_uint32(
+                            t[1], "attribute \"" + n + "\" indices");
+
+                        if (pool.ndim() != 1 && pool.ndim() != 2)
+                            Throw("Mesh.from_corners(): attribute \"%s\": "
+                                  "pool must have shape (N,) or (N, dim)!", n);
+                        if (indices.ndim() != 1 || indices.shape(0) != C)
+                            Throw("Mesh.from_corners(): attribute \"%s\": "
+                                  "indices must have shape (corner_count,)!",
+                                  n);
+                        check_dim(pool.ndim() == 2 ? pool.shape(1) : 1);
+
+                        size_t pool_count = pool.shape(0);
+                        const uint32_t *idx = indices.data();
+                        for (size_t i = 0; i < C; ++i) {
+                            if (idx[i] >= pool_count &&
+                                idx[i] != (uint32_t) -1)
+                                Throw("Mesh.from_corners(): attribute "
+                                      "\"%s\": index %u of corner %zu is out "
+                                      "of bounds (pool size: %zu)!",
+                                      n, idx[i], i, pool_count);
+                        }
+
+                        attr.pool = pool.data();
+                        attr.indices = idx;
+                        farrs.push_back(std::move(pool));
+                        iarrs.push_back(std::move(indices));
+                    } else {
+                        FloatNdArray values =
+                            cast_float(spec, "attribute \"" + n + "\"");
+                        if ((values.ndim() != 1 && values.ndim() != 2) ||
+                            values.shape(0) != C)
+                            Throw("Mesh.from_corners(): attribute \"%s\": "
+                                  "expected per-corner values of shape "
+                                  "(corner_count,) or (corner_count, dim)!",
+                                  n);
+                        check_dim(values.ndim() == 2 ? values.shape(1) : 1);
+
+                        attr.values = values.data();
+                        farrs.push_back(std::move(values));
+                    }
+
+                    attrs.push_back(attr);
+                };
+
+                if (!normals.is_none())
+                    add_attr("vertex_normals", normals, 3);
+                if (!texcoords.is_none())
+                    add_attr("vertex_texcoords", texcoords, 2);
+                for (auto [k, v] : attributes)
+                    add_attr(nb::cast<std::string>(k), v, 0);
+
+                ref<Mesh> result;
+                {
+                    nb::gil_scoped_release release;
+                    result = Mesh::from_corners(
+                        name, V, C, positions.data(), corner_vertex.data(),
+                        attrs.data(), attrs.size(), props);
+                }
+                return cast_object(result.get());
+            },
+            "name"_a, "positions"_a, "corner_vertex"_a,
+            "normals"_a = nb::none(), "texcoords"_a = nb::none(),
+            "attributes"_a = nb::dict(), "props"_a = Properties(),
+            "Construct a mesh from per-corner (face-varying) data.\n"
+            "\n"
+            "Builds a single-indexed mesh from positions stored per vertex\n"
+            "and attributes stored per face corner: vertices are split where\n"
+            "corner attributes differ and welded where they agree. Corner\n"
+            "``3*i+k`` is the k-th corner of triangle ``i``.\n"
+            "\n"
+            "Each attribute (``normals``, ``texcoords``, and the entries of\n"
+            "``attributes``) accepts two forms:\n"
+            "\n"
+            "1. a float32 array of shape ``(corner_count, dim)`` with one\n"
+            "   value per corner. Welding compares values bitwise: ``-0.0``\n"
+            "   differs from ``0.0``, and NaN values never weld.\n"
+            "2. a ``(pool, indices)`` tuple, where ``pool`` is a float32\n"
+            "   array of shape ``(N, dim)`` and ``indices`` is a uint32\n"
+            "   array of shape ``(corner_count,)``. Welding compares the\n"
+            "   indices; the value ``0xffffffff`` marks a missing entry and\n"
+            "   produces zeros in the output.\n"
+            "\n"
+            "Extra attribute names must start with ``vertex_``. When no\n"
+            "normals are given (and the ``face_normals`` property is not\n"
+            "set), smooth vertex normals are computed.");
+    }
 
     bind_mesh_generic<Mesh *>(mesh_cls);
 

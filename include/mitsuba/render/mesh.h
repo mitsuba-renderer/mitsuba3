@@ -54,6 +54,72 @@ public:
     /// Destructor
     ~Mesh();
 
+    /**
+     * \brief Per-corner attribute specification for \ref from_corners
+     *
+     * Exactly one of the following two representations must be active:
+     *
+     * 1. Value form: \c values points to <tt>corner_count * dim</tt> floats
+     *    holding one entry per face corner. The welding step compares
+     *    entries bitwise (\c memcmp semantics): <tt>-0.0</tt> and
+     *    <tt>0.0</tt> count as different values, and corners with NaN
+     *    entries never weld.
+     *
+     * 2. Index form: \c pool points to a set of \c dim -dimensional entries,
+     *    and \c indices assigns one of them to each corner. The welding step
+     *    compares indices exactly and never inspects the floating point
+     *    data. The special index value \c UINT32_MAX denotes a missing entry
+     *    (e.g. an OBJ face without texture coordinates) and produces zeros
+     *    in the output buffer.
+     */
+    struct CornerAttribute {
+        /// Name: "vertex_normals", "vertex_texcoords", or a custom "vertex_*" name
+        std::string_view name;
+
+        /// Entry dimension (3 for normals, 2 for texture coordinates)
+        size_t dim = 0;
+
+        /// Value form: per-corner values (corner_count x dim), or nullptr
+        const InputFloat *values = nullptr;
+
+        /// Index form: value pool and per-corner indices into it, or nullptr
+        const InputFloat *pool = nullptr;
+        const uint32_t *indices = nullptr;
+    };
+
+    /**
+     * \brief Construct a mesh from per-corner data
+     *
+     * DCC applications and mesh file formats typically store positions once
+     * per vertex, but normals, texture coordinates, etc. once per face
+     * corner so that they can be discontinuous across edges. Mitsuba meshes
+     * use a single shared index buffer, hence a vertex must be split
+     * whenever two of its corners disagree in some attribute, while corners
+     * that agree everywhere should be welded into one vertex.
+     *
+     * This function implements that conversion: it takes positions indexed
+     * by \c corner_vertex along with per-corner attributes, splits and welds
+     * vertices as needed, and returns a fully constructed mesh on which
+     * \ref initialize has already been called. Corner \c 3*i+k is the k-th
+     * corner of triangle \c i. Source vertices that no corner references
+     * are dropped.
+     *
+     * The attributes named \c vertex_normals and \c vertex_texcoords (which
+     * must have dimension 3 and 2) initialize the mesh's normal and texture
+     * coordinate buffers; other attribute names must start with
+     * \c vertex_ and are registered via \ref add_attribute. When no normals
+     * are given, and the \c face_normals property is not set, smooth vertex
+     * normals are computed. When \c face_normals is set, a supplied
+     * \c vertex_normals attribute is ignored and does not split vertices.
+     */
+    static ref<Mesh> from_corners(std::string_view name, size_t vertex_count,
+                                  size_t corner_count,
+                                  const InputFloat *positions,
+                                  const uint32_t *corner_vertex,
+                                  const CornerAttribute *attrs,
+                                  size_t attr_count,
+                                  const Properties &props = Properties());
+
     /** \brief Must be called once at the end of the construction of a Mesh
      *
      * This method computes internal data structures and notifies the parent
