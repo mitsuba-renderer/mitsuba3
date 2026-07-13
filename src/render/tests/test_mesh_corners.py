@@ -263,7 +263,29 @@ def test11_validation_errors(variant_scalar_rgb):
             'm', p, cv, attributes={'color': np.zeros((3, 3), np.float32)})
 
 
-def test12_render_smoke(variant_scalar_rgb):
+def test12_high_valence_fallback(variant_scalar_rgb):
+    # A 300-triangle fan around vertex 0 exceeds the linear-scan group size
+    # and takes the sort-based dedup path for the center vertex.
+    t = 300
+    angle = np.linspace(0, 2 * np.pi, t + 1).astype(np.float32)
+    p = np.concatenate([np.zeros((1, 3), np.float32), np.stack(
+        [np.cos(angle), np.sin(angle), np.zeros(t + 1)], axis=1)]
+    ).astype(np.float32)
+    cv = np.stack([np.zeros(t, np.uint32), np.arange(1, t + 1, dtype=np.uint32),
+                   np.arange(2, t + 2, dtype=np.uint32)], axis=1).ravel()
+
+    # Every triangle gets one of five UVs, so the center welds 300 -> 5
+    tri_uv = np.stack([np.arange(t) % 5, np.zeros(t)], axis=1)
+    uv = np.repeat(tri_uv, 3, axis=0).astype(np.float32)
+
+    m = mi.Mesh.from_corners('fan', p, cv, texcoords=uv)
+
+    expected = len(np.unique(np.column_stack([cv, uv]), axis=0))
+    assert m.vertex_count() == expected
+    check_consistency(m, p, cv, uv)
+
+
+def test13_render_smoke(variant_scalar_rgb):
     # A from_corners mesh must be directly usable in a scene
     p, cv = make_grid(2)
     m = mi.Mesh.from_corners('grid', p, cv)
