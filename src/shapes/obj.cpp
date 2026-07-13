@@ -7,6 +7,8 @@
 #include <mitsuba/core/timer.h>
 #include <mitsuba/core/profiler.h>
 
+#include <nanothread/nanothread.h>
+
 #include <array>
 
 
@@ -149,14 +151,6 @@ public:
         using ScalarIndex3 = std::array<ScalarIndex, 3>;
         constexpr ScalarIndex Missing = (ScalarIndex) -1;
 
-        /// Value pools filled by 'v', 'vn', and 'vt' lines (flat layout)
-        std::vector<InputFloat> vertices;
-        std::vector<InputFloat> normals;
-        std::vector<InputFloat> texcoords;
-
-        /// Pool indices of each triangle corner (0-based, Missing if absent)
-        std::vector<ScalarIndex> corner_v, corner_vt, corner_vn;
-
  #if !defined(_WIN32)
         ref<MemoryMappedFile> mmap = new MemoryMappedFile(file_path);
         size_t file_size           = mmap->size();
@@ -170,17 +164,40 @@ public:
         const char *ptr = tmp.get();
 #endif
 
-        size_t vertex_guess = file_size / 100;
-        const char *eof     = ptr + file_size;
-
-        vertices.reserve(vertex_guess * 3);
-        normals.reserve(vertex_guess * 3);
-        texcoords.reserve(vertex_guess * 2);
-        corner_v.reserve(vertex_guess * 6);
-        corner_vt.reserve(vertex_guess * 6);
-        corner_vn.reserve(vertex_guess * 6);
+        const char *eof = ptr + file_size;
 
         Timer timer;
+
+        /* OBJ indices are absolute, so the file can be cut into chunks at
+           newline boundaries that are parsed independently into value pools
+           and per-corner index triplets, then concatenated in file order. */
+        size_t chunk_count =
+            std::max<size_t>(1, std::min<size_t>(file_size / (1024 * 1024),
+                                                 4 * util::core_count()));
+
+        struct Chunk {
+            /// Value pools filled by 'v', 'vn', and 'vt' lines (flat layout)
+            std::vector<InputFloat> vertices, normals, texcoords;
+
+            /// Pool indices of the triangle corners (0-based, or Missing)
+            std::vector<ScalarIndex> corner_v, corner_vt, corner_vn;
+
+            /// Error message, or empty if the chunk parsed successfully
+            std::string error;
+        };
+
+        std::vector<Chunk> chunks(chunk_count);
+        std::vector<const char *> bounds(chunk_count + 1);
+        bounds[0] = ptr;
+        bounds[chunk_count] = eof;
+        for (size_t i = 1; i < chunk_count; ++i) {
+            const char *p = ptr + i * (file_size / chunk_count);
+            if (p < bounds[i - 1])
+                p = bounds[i - 1];
+            const char *nl = p < eof
+                ? (const char *) memchr(p, '\n', eof - p) : nullptr;
+            bounds[i] = nl ? nl + 1 : eof;
+        }
 
         // Skip space and tab characters, staying within the line
         auto skip_ws = [](const char *&p, const char *end) {
@@ -189,8 +206,8 @@ public:
         };
 
         // Bounded float parser (leaves 'p' unchanged on failure)
-        auto parse_float = [&](const char *&p, const char *end,
-                               InputFloat &out, bool &error) {
+        auto parse_float = [skip_ws](const char *&p, const char *end,
+                                     InputFloat &out, bool &error) {
             skip_ws(p, end);
             const char *orig = p;
             if (p != end)
@@ -198,156 +215,223 @@ public:
             error |= p == orig;
         };
 
-        while (ptr < eof) {
-            // The current line spans ptr..eol-1; parse it in place
-            const char *eol = (const char *) memchr(ptr, '\n', eof - ptr);
-            if (!eol)
-                eol = eof;
+        auto to_world = m_to_world.scalar();
+        bool face_normals = m_face_normals;
 
-            const char *cur = ptr;
-            skip_ws(cur, eol);
-            size_t len = eol - cur;
+        auto parse_chunk = [&](const char *ptr, const char *end, Chunk &out) {
+            size_t guess = (end - ptr) / 100;
+            out.vertices.reserve(guess * 3);
+            out.normals.reserve(guess * 3);
+            out.texcoords.reserve(guess * 2);
+            out.corner_v.reserve(guess * 6);
+            out.corner_vt.reserve(guess * 6);
+            out.corner_vn.reserve(guess * 6);
 
-            bool parse_error = false;
-            if (len >= 2 && cur[0] == 'v' && (cur[1] == ' ' || cur[1] == '\t')) {
-                // Vertex position
-                InputPoint3f p;
-                cur += 2;
-                for (size_t i = 0; i < 3; ++i)
-                    parse_float(cur, eol, p[i], parse_error);
-                p = m_to_world.scalar() * p;
-                if (unlikely(!all(dr::isfinite(p))))
-                    fail("mesh contains invalid vertex position data");
-                size_t off = vertices.size();
-                vertices.resize(off + 3);
-                dr::store(vertices.data() + off, p);
-            } else if (len >= 3 && cur[0] == 'v' && cur[1] == 'n' && (cur[2] == ' ' || cur[2] == '\t')) {
-                if (!m_face_normals) {
-                    // Vertex normal
-                    InputNormal3f n;
-                    cur += 3;
+            while (ptr < end) {
+                // The current line spans ptr..eol-1; parse it in place
+                const char *eol = (const char *) memchr(ptr, '\n', end - ptr);
+                if (!eol)
+                    eol = end;
+
+                const char *cur = ptr;
+                skip_ws(cur, eol);
+                size_t len = eol - cur;
+
+                bool parse_error = false;
+                if (len >= 2 && cur[0] == 'v' && (cur[1] == ' ' || cur[1] == '\t')) {
+                    // Vertex position
+                    InputPoint3f p;
+                    cur += 2;
                     for (size_t i = 0; i < 3; ++i)
-                        parse_float(cur, eol, n[i], parse_error);
-                    n = dr::normalize(m_to_world.scalar() * n);
-                    if (unlikely(!all(dr::isfinite(n))))
-                        fail("mesh contains invalid vertex normal data");
-                    size_t off = normals.size();
-                    normals.resize(off + 3);
-                    dr::store(normals.data() + off, n);
-                }
-            } else if (len >= 3 && cur[0] == 'v' && cur[1] == 't' && (cur[2] == ' ' || cur[2] == '\t')) {
-                // Texture coordinate
-                InputVector2f uv;
-                cur += 3;
-                for (size_t i = 0; i < 2; ++i)
-                    parse_float(cur, eol, uv[i], parse_error);
-                if (flip_tex_coords)
-                    uv.y() = 1.f - uv.y();
+                        parse_float(cur, eol, p[i], parse_error);
+                    p = to_world * p;
+                    if (unlikely(!all(dr::isfinite(p)))) {
+                        out.error = "mesh contains invalid vertex position data";
+                        return;
+                    }
+                    size_t off = out.vertices.size();
+                    out.vertices.resize(off + 3);
+                    dr::store(out.vertices.data() + off, p);
+                } else if (len >= 3 && cur[0] == 'v' && cur[1] == 'n' && (cur[2] == ' ' || cur[2] == '\t')) {
+                    if (!face_normals) {
+                        // Vertex normal
+                        InputNormal3f n;
+                        cur += 3;
+                        for (size_t i = 0; i < 3; ++i)
+                            parse_float(cur, eol, n[i], parse_error);
+                        n = dr::normalize(to_world * n);
+                        if (unlikely(!all(dr::isfinite(n)))) {
+                            out.error = "mesh contains invalid vertex normal data";
+                            return;
+                        }
+                        size_t off = out.normals.size();
+                        out.normals.resize(off + 3);
+                        dr::store(out.normals.data() + off, n);
+                    }
+                } else if (len >= 3 && cur[0] == 'v' && cur[1] == 't' && (cur[2] == ' ' || cur[2] == '\t')) {
+                    // Texture coordinate
+                    InputVector2f uv;
+                    cur += 3;
+                    for (size_t i = 0; i < 2; ++i)
+                        parse_float(cur, eol, uv[i], parse_error);
+                    if (flip_tex_coords)
+                        uv.y() = 1.f - uv.y();
 
-                size_t off = texcoords.size();
-                texcoords.resize(off + 2);
-                dr::store(texcoords.data() + off, uv);
-            } else if (len >= 2 && cur[0] == 'f' && (cur[1] == ' ' || cur[1] == '\t')) {
-                // Face specification
-                cur += 2;
-                size_t vertex_index = 0;
-                ScalarIndex3 first, prev, corner;
-
-                while (true) {
-                    skip_ws(cur, eol);
-                    if (cur == eol || *cur == '\r')
-                        break;
-
-                    // One corner: an index triplet v, v/vt, v//vn, or v/vt/vn
-                    ScalarIndex3 key {{ 0, 0, 0 }};
-                    size_t type_index = 0;
-                    bool corner_ok = false, has_vertex = false;
+                    size_t off = out.texcoords.size();
+                    out.texcoords.resize(off + 2);
+                    dr::store(out.texcoords.data() + off, uv);
+                } else if (len >= 2 && cur[0] == 'f' && (cur[1] == ' ' || cur[1] == '\t')) {
+                    // Face specification
+                    cur += 2;
+                    size_t vertex_index = 0;
+                    ScalarIndex3 first, prev, corner;
 
                     while (true) {
-                        if (unlikely(cur != eol && *cur == '-')) {
-                            // Negative (relative) indices are unsupported
-                            parse_error = true;
+                        skip_ws(cur, eol);
+                        if (cur == eol || *cur == '\r')
                             break;
-                        }
 
-                        ScalarIndex value = 0;
-                        bool has_digits = false;
-                        while (cur != eol && (unsigned char) (*cur - '0') < 10) {
-                            value = value * 10 + (ScalarIndex) (*cur - '0');
-                            ++cur;
-                            has_digits = true;
-                        }
+                        // One corner: an index triplet v, v/vt, v//vn, or v/vt/vn
+                        ScalarIndex3 key {{ 0, 0, 0 }};
+                        size_t type_index = 0;
+                        bool corner_ok = false, has_vertex = false;
 
-                        if (has_digits) {
-                            if (type_index < 3) {
-                                key[type_index] = value;
-                            } else {
+                        while (true) {
+                            if (unlikely(cur != eol && *cur == '-')) {
+                                // Negative (relative) indices are unsupported
                                 parse_error = true;
                                 break;
                             }
-                            if (type_index == 0)
-                                has_vertex = true;
+
+                            ScalarIndex value = 0;
+                            bool has_digits = false;
+                            while (cur != eol && (unsigned char) (*cur - '0') < 10) {
+                                value = value * 10 + (ScalarIndex) (*cur - '0');
+                                ++cur;
+                                has_digits = true;
+                            }
+
+                            if (has_digits) {
+                                if (type_index < 3) {
+                                    key[type_index] = value;
+                                } else {
+                                    parse_error = true;
+                                    break;
+                                }
+                                if (type_index == 0)
+                                    has_vertex = true;
+                            }
+
+                            if (cur != eol && *cur == '/') {
+                                do {
+                                    type_index++;
+                                    cur++;
+                                } while (cur != eol && *cur == '/');
+                                continue;
+                            }
+
+                            corner_ok = has_vertex &&
+                                (cur == eol || *cur == ' ' || *cur == '\t' || *cur == '\r');
+                            break;
                         }
 
-                        if (cur != eol && *cur == '/') {
-                            do {
-                                type_index++;
-                                cur++;
-                            } while (cur != eol && *cur == '/');
-                            continue;
+                        if (!corner_ok)
+                            break;
+
+                        corner = ScalarIndex3 {{
+                            key[0] - 1,
+                            key[1] ? key[1] - 1 : Missing,
+                            key[2] ? key[2] - 1 : Missing
+                        }};
+
+                        if (vertex_index == 0)
+                            first = corner;
+
+                        // Triangulate the polygon as a fan around the first corner
+                        if (vertex_index >= 2) {
+                            for (const ScalarIndex3 &c : { first, prev, corner }) {
+                                out.corner_v.push_back(c[0]);
+                                out.corner_vt.push_back(c[1]);
+                                out.corner_vn.push_back(c[2]);
+                            }
                         }
 
-                        corner_ok = has_vertex &&
-                            (cur == eol || *cur == ' ' || *cur == '\t' || *cur == '\r');
-                        break;
+                        prev = corner;
+                        vertex_index++;
                     }
-
-                    if (!corner_ok)
-                        break;
-
-                    if (unlikely(key[0] - 1 >= vertices.size() / 3))
-                        fail("reference to invalid vertex %i!", key[0]);
-
-                    corner = ScalarIndex3 {{
-                        key[0] - 1,
-                        key[1] ? key[1] - 1 : Missing,
-                        key[2] ? key[2] - 1 : Missing
-                    }};
-
-                    if (vertex_index == 0)
-                        first = corner;
-
-                    // Triangulate the polygon as a fan around the first corner
-                    if (vertex_index >= 2) {
-                        for (const ScalarIndex3 &c : { first, prev, corner }) {
-                            corner_v.push_back(c[0]);
-                            corner_vt.push_back(c[1]);
-                            corner_vn.push_back(c[2]);
-                        }
-                    }
-
-                    prev = corner;
-                    vertex_index++;
                 }
-            }
 
-            if (unlikely(parse_error))
-                fail("could not parse line \"%s\"", std::string(ptr, eol));
-            ptr = eol + 1;
+                if (unlikely(parse_error)) {
+                    out.error = "could not parse line \"" +
+                                std::string(ptr, eol) + '"';
+                    return;
+                }
+                ptr = eol + 1;
+            }
+        };
+
+        dr::parallel_for(
+            dr::blocked_range<size_t>(0, chunk_count, 1),
+            [&](const dr::blocked_range<size_t> &range) {
+                for (size_t i = range.begin(); i != range.end(); ++i)
+                    parse_chunk(bounds[i], bounds[i + 1], chunks[i]);
+            });
+
+        // Report the error of the earliest failed chunk, if any
+        for (const Chunk &c : chunks)
+            if (unlikely(!c.error.empty()))
+                fail("%s", c.error);
+
+        // Concatenate the per-chunk results in file order
+        std::vector<size_t> off_v(chunk_count + 1, 0), off_n(chunk_count + 1, 0),
+                            off_t(chunk_count + 1, 0), off_c(chunk_count + 1, 0);
+        for (size_t i = 0; i < chunk_count; ++i) {
+            off_v[i + 1] = off_v[i] + chunks[i].vertices.size();
+            off_n[i + 1] = off_n[i] + chunks[i].normals.size();
+            off_t[i + 1] = off_t[i] + chunks[i].texcoords.size();
+            off_c[i + 1] = off_c[i] + chunks[i].corner_v.size();
         }
 
-        // Texture coordinate and normal references may precede their pools
-        size_t texcoord_count = texcoords.size() / 2,
+        std::vector<InputFloat> vertices(off_v[chunk_count]),
+                                normals(off_n[chunk_count]),
+                                texcoords(off_t[chunk_count]);
+        std::vector<ScalarIndex> corner_v(off_c[chunk_count]),
+                                 corner_vt(off_c[chunk_count]),
+                                 corner_vn(off_c[chunk_count]);
+
+        dr::parallel_for(
+            dr::blocked_range<size_t>(0, chunk_count, 1),
+            [&](const dr::blocked_range<size_t> &range) {
+                auto append = [](auto &dst, size_t offset, const auto &src) {
+                    if (!src.empty())
+                        memcpy(dst.data() + offset, src.data(),
+                               src.size() * sizeof(src[0]));
+                };
+                for (size_t i = range.begin(); i != range.end(); ++i) {
+                    Chunk &c = chunks[i];
+                    append(vertices,  off_v[i], c.vertices);
+                    append(normals,   off_n[i], c.normals);
+                    append(texcoords, off_t[i], c.texcoords);
+                    append(corner_v,  off_c[i], c.corner_v);
+                    append(corner_vt, off_c[i], c.corner_vt);
+                    append(corner_vn, off_c[i], c.corner_vn);
+                    c = Chunk();
+                }
+            });
+
+        /* Index validation happens once the pool sizes are known, which
+           also permits forward references within the file */
+        size_t vertex_count   = vertices.size() / 3,
+               texcoord_count = texcoords.size() / 2,
                normal_count   = normals.size() / 3;
-        for (ScalarIndex i : corner_vt) {
-            if (unlikely(i != Missing && i >= texcoord_count))
-                fail("reference to invalid texture coordinate %i!", i + 1);
-        }
-        if (!m_face_normals) {
-            for (ScalarIndex i : corner_vn) {
-                if (unlikely(i != Missing && i >= normal_count))
-                    fail("reference to invalid normal %i!", i + 1);
-            }
+        for (size_t i = 0; i < corner_v.size(); ++i) {
+            if (unlikely(corner_v[i] >= vertex_count))
+                fail("reference to invalid vertex %i!", corner_v[i] + 1);
+            if (unlikely(corner_vt[i] != Missing && corner_vt[i] >= texcoord_count))
+                fail("reference to invalid texture coordinate %i!", corner_vt[i] + 1);
+            if (unlikely(!face_normals && corner_vn[i] != Missing &&
+                         corner_vn[i] >= normal_count))
+                fail("reference to invalid normal %i!", corner_vn[i] + 1);
         }
 
         CornerAttribute attrs[2];
