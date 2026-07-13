@@ -368,6 +368,8 @@ MI_PY_EXPORT(parser) {
         .def_rw("nodes", &ParserState::nodes, "List of all scene nodes")
         .def_rw("node_paths", &ParserState::node_paths, "Node paths for dictionary parsing")
         .def_rw("files", &ParserState::files, "List of parsed files")
+        .def_rw("resource_paths", &ParserState::resource_paths,
+                "Resource search directories declared via <path> tags or 'resources' entries")
         .def_prop_rw("id_to_index",
             [](const ParserState &s) {
                 nb::dict result;

@@ -2310,6 +2310,10 @@ def test63b_resource_path_no_resolver_leak(variant_scalar_rgb, tmp_path):
     state = mi.parser.parse_file(config, str(scene_file))
     assert list(mi.file_resolver()) == paths_before
 
+    # The declared directories are exposed on the parser state so that
+    # callers with their own resolution logic (e.g. DCC importers) can use them
+    assert [str(p) for p in state.resource_paths] == [str(data_dir)]
+
     # The declared path is still honored during instantiation
     mi.parser.transform_all(config, state)
     tex = mi.parser.instantiate(config, state)
