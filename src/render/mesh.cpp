@@ -13,6 +13,7 @@
 #include <mitsuba/render/scene.h>
 #include <algorithm>
 #include <cstring>
+#include <nanothread/nanothread.h>
 
 #if defined(MI_ENABLE_EMBREE)
     #include <embree3/rtcore.h>
@@ -141,7 +142,7 @@ Mesh<Float, Spectrum>::from_corners(std::string_view name, size_t vertex_count,
     size_t C = corner_count, V = vertex_count;
 
     std::unique_ptr<uint32_t[]> offsets(new uint32_t[V + 1]),
-                                unique(new uint32_t[V]),
+                                unique(new uint32_t[V + 1]),
                                 order(new uint32_t[C]),
                                 faces(new uint32_t[C]);
 
@@ -196,34 +197,54 @@ Mesh<Float, Spectrum>::from_corners(std::string_view name, size_t vertex_count,
        against the group's already-unique corners suffices. The unique
        representatives are compacted into the front of the group's slice of
        'order', which is safe because slots below the read position have
-       already been processed. */
+       already been processed. Groups are independent, so this runs in
+       parallel over vertex ranges and initially assigns group-local ids. */
+    dr::parallel_for(
+        dr::blocked_range<size_t>(0, V, 4096),
+        [&](const dr::blocked_range<size_t> &range) {
+            for (size_t v = range.begin(); v != range.end(); ++v) {
+                uint32_t begin = offsets[v], end = offsets[v + 1], u = 0;
+
+                if (likely(end - begin <= 256)) {
+                    for (uint32_t i = begin; i < end; ++i) {
+                        uint32_t c = order[i], j = 0;
+                        while (j < u && !equal(c, order[begin + j]))
+                            ++j;
+                        if (j == u)
+                            order[begin + u++] = c;
+                        faces[c] = j;
+                    }
+                } else {
+                    // Pathological valence: sort the group and collapse runs
+                    std::sort(order.get() + begin, order.get() + end, less);
+                    for (uint32_t i = begin; i < end; ++i) {
+                        uint32_t c = order[i];
+                        if (u == 0 || !equal(c, order[begin + u - 1]))
+                            order[begin + u++] = c;
+                        faces[c] = u - 1;
+                    }
+                }
+
+                unique[v] = u;
+            }
+        });
+
+    // Exclusive prefix sum: 'unique[v]' becomes each group's output base
     uint32_t out_count = 0;
     for (size_t v = 0; v < V; ++v) {
-        uint32_t begin = offsets[v], end = offsets[v + 1], u = 0;
-
-        if (likely(end - begin <= 256)) {
-            for (uint32_t i = begin; i < end; ++i) {
-                uint32_t c = order[i], j = 0;
-                while (j < u && !equal(c, order[begin + j]))
-                    ++j;
-                if (j == u)
-                    order[begin + u++] = c;
-                faces[c] = out_count + j;
-            }
-        } else {
-            // Pathological valence: sort the group and collapse runs
-            std::sort(order.get() + begin, order.get() + end, less);
-            for (uint32_t i = begin; i < end; ++i) {
-                uint32_t c = order[i];
-                if (u == 0 || !equal(c, order[begin + u - 1]))
-                    order[begin + u++] = c;
-                faces[c] = out_count + u - 1;
-            }
-        }
-
-        unique[v] = u;
+        uint32_t u = unique[v];
+        unique[v] = out_count;
         out_count += u;
     }
+    unique[V] = out_count;
+
+    // Turn the group-local ids into global output vertex indices
+    dr::parallel_for(
+        dr::blocked_range<size_t>(0, C, 65536),
+        [&](const dr::blocked_range<size_t> &range) {
+            for (size_t c = range.begin(); c != range.end(); ++c)
+                faces[c] += unique[corner_vertex[c]];
+        });
 
     ref<Mesh> mesh = new Mesh(props);
     mesh->m_name = name;
@@ -235,10 +256,14 @@ Mesh<Float, Spectrum>::from_corners(std::string_view name, size_t vertex_count,
     // Gather output vertex data from the welded representative corners
     size_t out_size = (size_t) out_count * 3;
     std::unique_ptr<InputFloat[]> buf(new InputFloat[out_size]);
-    for (size_t v = 0, k = 0; v < V; ++v)
-        for (uint32_t j = 0; j < unique[v]; ++j, ++k)
-            memcpy(buf.get() + k * 3, positions + v * 3,
-                   3 * sizeof(InputFloat));
+    dr::parallel_for(
+        dr::blocked_range<size_t>(0, V, 4096),
+        [&](const dr::blocked_range<size_t> &range) {
+            for (size_t v = range.begin(); v != range.end(); ++v)
+                for (uint32_t k = unique[v]; k < unique[v + 1]; ++k)
+                    memcpy(buf.get() + (size_t) k * 3, positions + v * 3,
+                           3 * sizeof(InputFloat));
+        });
     if (out_count > 0)
         mesh->m_vertex_positions = dr::load<FloatStorage>(buf.get(), out_size);
 
@@ -246,22 +271,26 @@ Mesh<Float, Spectrum>::from_corners(std::string_view name, size_t vertex_count,
         // Zero-initialized so that missing (UINT32_MAX) entries yield zeros
         std::vector<InputFloat> out((size_t) out_count * a.dim);
 
-        for (size_t v = 0, k = 0; v < V; ++v) {
-            for (uint32_t j = 0; j < unique[v]; ++j, ++k) {
-                uint32_t c = order[offsets[v] + j];
-                const InputFloat *src = nullptr;
-                if (a.values) {
-                    src = a.values + (size_t) c * a.dim;
-                } else {
-                    uint32_t idx = a.indices[c];
-                    if (idx != (uint32_t) -1)
-                        src = a.pool + (size_t) idx * a.dim;
+        dr::parallel_for(
+            dr::blocked_range<size_t>(0, V, 4096),
+            [&](const dr::blocked_range<size_t> &range) {
+                for (size_t v = range.begin(); v != range.end(); ++v) {
+                    for (uint32_t k = unique[v]; k < unique[v + 1]; ++k) {
+                        uint32_t c = order[offsets[v] + (k - unique[v])];
+                        const InputFloat *src = nullptr;
+                        if (a.values) {
+                            src = a.values + (size_t) c * a.dim;
+                        } else {
+                            uint32_t idx = a.indices[c];
+                            if (idx != (uint32_t) -1)
+                                src = a.pool + (size_t) idx * a.dim;
+                        }
+                        if (src)
+                            memcpy(out.data() + (size_t) k * a.dim, src,
+                                   a.dim * sizeof(InputFloat));
+                    }
                 }
-                if (src)
-                    memcpy(out.data() + k * a.dim, src,
-                           a.dim * sizeof(InputFloat));
-            }
-        }
+            });
 
         if (a.name == "vertex_normals")
             mesh->m_vertex_normals =
