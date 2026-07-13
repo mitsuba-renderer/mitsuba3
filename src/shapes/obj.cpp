@@ -113,20 +113,17 @@ Loading an ordinary OBJ file is as simple as writing:
 template <typename Float, typename Spectrum>
 class OBJMesh final : public Mesh<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
-                    m_face_count, m_vertex_positions, m_vertex_normals,
-                    m_vertex_texcoords, m_faces, m_face_normals,
-                    recompute_vertex_normals, has_vertex_normals, initialize)
+    MI_IMPORT_BASE(Mesh, m_name, m_to_world, m_vertex_count, m_face_count,
+                    m_face_normals, build_from_corners)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
     using typename Base::InputFloat;
-    using typename Base::InputPoint3f ;
+    using typename Base::InputPoint3f;
     using typename Base::InputVector2f;
-    using typename Base::InputVector3f;
     using typename Base::InputNormal3f;
-    using typename Base::FloatStorage;
+    using typename Base::CornerAttribute;
 
     OBJMesh(const Properties &props) : Base(props) {
         /* Causes all texture coordinates to be vertically flipped.
@@ -150,19 +147,15 @@ public:
         ScopedPhase phase(ProfilerPhase::LoadGeometry);
 
         using ScalarIndex3 = std::array<ScalarIndex, 3>;
+        constexpr ScalarIndex Missing = (ScalarIndex) -1;
 
-        struct VertexBinding {
-            ScalarIndex3 key {{ 0, 0, 0 }};
-            ScalarIndex value { 0 };
-            VertexBinding *next { nullptr };
-        };
+        /// Value pools filled by 'v', 'vn', and 'vt' lines (flat layout)
+        std::vector<InputFloat> vertices;
+        std::vector<InputFloat> normals;
+        std::vector<InputFloat> texcoords;
 
-        /// Temporary buffers for vertices, normals, and texture coordinates
-        std::vector<InputVector3f> vertices;
-        std::vector<InputNormal3f> normals;
-        std::vector<InputVector2f> texcoords;
-        std::vector<ScalarIndex3> triangles;
-        std::vector<VertexBinding> vertex_map;
+        /// Pool indices of each triangle corner (0-based, Missing if absent)
+        std::vector<ScalarIndex> corner_v, corner_vt, corner_vn;
 
  #if !defined(_WIN32)
         ref<MemoryMappedFile> mmap = new MemoryMappedFile(file_path);
@@ -180,13 +173,12 @@ public:
         size_t vertex_guess = file_size / 100;
         const char *eof     = ptr + file_size;
 
-        vertices.reserve(vertex_guess);
-        normals.reserve(vertex_guess);
-        texcoords.reserve(vertex_guess);
-        triangles.reserve(vertex_guess * 2);
-        vertex_map.resize(vertex_guess);
-
-        ScalarIndex vertex_ctr = 0;
+        vertices.reserve(vertex_guess * 3);
+        normals.reserve(vertex_guess * 3);
+        texcoords.reserve(vertex_guess * 2);
+        corner_v.reserve(vertex_guess * 6);
+        corner_vt.reserve(vertex_guess * 6);
+        corner_vn.reserve(vertex_guess * 6);
 
         Timer timer;
 
@@ -226,8 +218,9 @@ public:
                 p = m_to_world.scalar() * p;
                 if (unlikely(!all(dr::isfinite(p))))
                     fail("mesh contains invalid vertex position data");
-                m_bbox.expand(p);
-                vertices.push_back(p);
+                size_t off = vertices.size();
+                vertices.resize(off + 3);
+                dr::store(vertices.data() + off, p);
             } else if (len >= 3 && cur[0] == 'v' && cur[1] == 'n' && (cur[2] == ' ' || cur[2] == '\t')) {
                 if (!m_face_normals) {
                     // Vertex normal
@@ -238,7 +231,9 @@ public:
                     n = dr::normalize(m_to_world.scalar() * n);
                     if (unlikely(!all(dr::isfinite(n))))
                         fail("mesh contains invalid vertex normal data");
-                    normals.push_back(n);
+                    size_t off = normals.size();
+                    normals.resize(off + 3);
+                    dr::store(normals.data() + off, n);
                 }
             } else if (len >= 3 && cur[0] == 'v' && cur[1] == 't' && (cur[2] == ' ' || cur[2] == '\t')) {
                 // Texture coordinate
@@ -249,12 +244,14 @@ public:
                 if (flip_tex_coords)
                     uv.y() = 1.f - uv.y();
 
-                texcoords.push_back(uv);
+                size_t off = texcoords.size();
+                texcoords.resize(off + 2);
+                dr::store(texcoords.data() + off, uv);
             } else if (len >= 2 && cur[0] == 'f' && (cur[1] == ' ' || cur[1] == '\t')) {
                 // Face specification
                 cur += 2;
                 size_t vertex_index = 0;
-                ScalarIndex3 tri;
+                ScalarIndex3 first, prev, corner;
 
                 while (true) {
                     skip_ws(cur, eol);
@@ -308,41 +305,29 @@ public:
                     if (!corner_ok)
                         break;
 
-                    size_t map_index = key[0] - 1;
-                    if (unlikely(map_index >= vertices.size()))
+                    if (unlikely(key[0] - 1 >= vertices.size() / 3))
                         fail("reference to invalid vertex %i!", key[0]);
-                    if (unlikely(vertex_map.size() < vertices.size()))
-                        vertex_map.resize(vertices.size());
 
-                    // Hash table lookup
-                    VertexBinding *entry = &vertex_map[map_index];
-                    while (entry->key != key && entry->next != nullptr)
-                        entry = entry->next;
+                    corner = ScalarIndex3 {{
+                        key[0] - 1,
+                        key[1] ? key[1] - 1 : Missing,
+                        key[2] ? key[2] - 1 : Missing
+                    }};
 
-                    ScalarIndex id;
-                    if (entry->key == key) {
-                        // Hit
-                        id = entry->value;
-                    } else {
-                        // Miss
-                        if (entry->key != ScalarIndex3{{0, 0, 0}}) {
-                            entry->next = new VertexBinding();
-                            entry = entry->next;
+                    if (vertex_index == 0)
+                        first = corner;
+
+                    // Triangulate the polygon as a fan around the first corner
+                    if (vertex_index >= 2) {
+                        for (const ScalarIndex3 &c : { first, prev, corner }) {
+                            corner_v.push_back(c[0]);
+                            corner_vt.push_back(c[1]);
+                            corner_vn.push_back(c[2]);
                         }
-                        entry->key = key;
-                        id = entry->value = vertex_ctr++;
                     }
 
-                    if (vertex_index < 3) {
-                        tri[vertex_index] = id;
-                    } else {
-                        tri[1] = tri[2];
-                        tri[2] = id;
-                    }
+                    prev = corner;
                     vertex_index++;
-
-                    if (vertex_index >= 3)
-                        triangles.push_back(tri);
                 }
             }
 
@@ -351,48 +336,33 @@ public:
             ptr = eol + 1;
         }
 
-        m_vertex_count = vertex_ctr;
-        m_face_count = (ScalarSize) triangles.size();
-
-        std::unique_ptr<float[]> vertex_positions(new float[m_vertex_count * 3]);
-        std::unique_ptr<float[]> vertex_normals(new float[m_vertex_count * 3]);
-        std::unique_ptr<float[]> vertex_texcoords(new float[m_vertex_count * 2]);
-
-        for (const auto& v_ : vertex_map) {
-            const VertexBinding *v = &v_;
-
-            while (v && v->key != ScalarIndex3{{0, 0, 0}}) {
-                InputFloat* position_ptr = vertex_positions.get() + v->value * 3;
-                InputFloat* normal_ptr   = vertex_normals.get() + v->value * 3;
-                InputFloat* texcoord_ptr = vertex_texcoords.get() + v->value * 2;
-                auto key = v->key;
-
-                dr::store(position_ptr, vertices[key[0] - 1]);
-
-                if (key[1]) {
-                    size_t map_index = key[1] - 1;
-                    if (unlikely(map_index >= texcoords.size()))
-                        fail("reference to invalid texture coordinate %i!", key[1]);
-                    dr::store(texcoord_ptr, texcoords[map_index]);
-                }
-
-                if (!m_face_normals && key[2]) {
-                    size_t map_index = key[2] - 1;
-                    if (unlikely(map_index >= normals.size()))
-                        fail("reference to invalid normal %i!", key[2]);
-                    dr::store(normal_ptr, normals[key[2] - 1]);
-                }
-
-                v = v->next;
+        // Texture coordinate and normal references may precede their pools
+        size_t texcoord_count = texcoords.size() / 2,
+               normal_count   = normals.size() / 3;
+        for (ScalarIndex i : corner_vt) {
+            if (unlikely(i != Missing && i >= texcoord_count))
+                fail("reference to invalid texture coordinate %i!", i + 1);
+        }
+        if (!m_face_normals) {
+            for (ScalarIndex i : corner_vn) {
+                if (unlikely(i != Missing && i >= normal_count))
+                    fail("reference to invalid normal %i!", i + 1);
             }
         }
 
-        m_faces = dr::load<DynamicBuffer<UInt32>>(triangles.data(), m_face_count * 3);
-        m_vertex_positions = dr::load<FloatStorage>(vertex_positions.get(), m_vertex_count * 3);
-        if (!m_face_normals)
-            m_vertex_normals   = dr::load<FloatStorage>(vertex_normals.get(), m_vertex_count * 3);
+        CornerAttribute attrs[2];
+        size_t attr_count = 0;
         if (!texcoords.empty())
-            m_vertex_texcoords = dr::load<FloatStorage>(vertex_texcoords.get(), m_vertex_count * 2);
+            attrs[attr_count++] = { "vertex_texcoords", 2, nullptr,
+                                    texcoords.data(), corner_vt.data() };
+        if (!normals.empty())
+            attrs[attr_count++] = { "vertex_normals", 3, nullptr,
+                                    normals.data(), corner_vn.data() };
+
+        // Weld corners that agree in all attributes into shared vertices
+        build_from_corners(vertices.size() / 3, corner_v.size(),
+                           vertices.data(), corner_v.data(), attrs,
+                           attr_count);
 
         size_t vertex_data_bytes = 3 * sizeof(InputFloat);
         if (!m_face_normals)
@@ -406,15 +376,6 @@ public:
                              m_vertex_count * vertex_data_bytes),
             util::time_string((float) timer.value())
         );
-
-        if (!m_face_normals && normals.empty()) {
-            Timer timer2;
-            recompute_vertex_normals();
-            Log(Debug, "\"%s\": computed vertex normals (took %s)", m_name,
-                util::time_string((float) timer2.value()));
-        }
-
-        initialize();
     }
 
     MI_DECLARE_CLASS(OBJMesh)

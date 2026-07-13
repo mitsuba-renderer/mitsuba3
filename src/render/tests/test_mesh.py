@@ -632,42 +632,42 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
     si = pi.compute_surface_interaction(ray)
     dr.backward(si.dp_du.x)
     assert dr.allclose(dr.grad(params[vertex_pos_key]),
-                       [0, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 0], atol=1e-5)
+                       [0, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0], atol=1e-5)
 
     # To increase si.dp_du along the y-axis, we need to transform the rectangle into a trapezoid
     dr.set_grad(params[vertex_pos_key], 0.0)
     si = pi.compute_surface_interaction(ray)
     dr.backward(si.dp_du.y)
     assert dr.allclose(dr.grad(params[vertex_pos_key]),
-                       [0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0], atol=1e-5)
+                       [0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0], atol=1e-5)
 
     # To increase si.dp_dv along the x-axis, we need to transform the rectangle into a trapezoid
     dr.set_grad(params[vertex_pos_key], 0.0)
     si = pi.compute_surface_interaction(ray)
     dr.backward(si.dp_dv.x)
     assert dr.allclose(dr.grad(params[vertex_pos_key]),
-                       [-1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], atol=1e-5)
+                       [0, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 0], atol=1e-5)
 
     # To increase si.dp_dv along the y-axis, we need to stretch the right edge of the rectangle
     dr.set_grad(params[vertex_pos_key], 0.0)
     si = pi.compute_surface_interaction(ray)
     dr.backward(si.dp_dv.y)
     assert dr.allclose(dr.grad(params[vertex_pos_key]),
-                       [0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0], atol=1e-5)
+                       [0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0], atol=1e-5)
 
     # To increase si.n along the x-axis, we need to rotate the right edge around the y axis
     dr.set_grad(params[vertex_pos_key], 0.0)
     si = pi.compute_surface_interaction(ray)
     dr.backward(si.n.x)
     assert dr.allclose(dr.grad(params[vertex_pos_key]),
-                       [0, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 0, -0.5], atol=1e-5)
+                       [0, 0, 0, 0, 0, 0, 0, 0, 0.5, 0, 0, -0.5], atol=1e-5)
 
     # To increase si.n along the y-axis, we need to rotate the top edge around the x axis
     dr.set_grad(params[vertex_pos_key], 0.0)
     si = pi.compute_surface_interaction(ray)
     dr.backward(si.n.y)
     assert dr.allclose(dr.grad(params[vertex_pos_key]),
-                       [0, 0, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, -0.5], atol=1e-5)
+                       [0, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 0, -0.5], atol=1e-5)
 
     # To increase si.sh_frame.n along the x-axis, we need to rotate the right edge around the y axis
     dr.set_grad(params[vertex_pos_key], 0.0)
@@ -675,7 +675,7 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
     si = pi.compute_surface_interaction(ray)
     dr.backward(si.sh_frame.n.x)
     assert dr.allclose(dr.grad(params[vertex_pos_key]),
-                       [0, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 0, -0.5], atol=1e-5)
+                       [0, 0, 0, 0, 0, 0, 0, 0, 0.5, 0, 0, -0.5], atol=1e-5)
 
     # To increase si.sh_frame.n along the y-axis, we need to rotate the top edge around the x axis
     dr.set_grad(params[vertex_pos_key], 0.0)
@@ -683,7 +683,7 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
     si = pi.compute_surface_interaction(ray)
     dr.backward(si.sh_frame.n.y)
     assert dr.allclose(dr.grad(params[vertex_pos_key]),
-                       [0, 0, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, -0.5], atol=1e-5)
+                       [0, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 0, -0.5], atol=1e-5)
 
     # ---------------------------------------
     # Test vertex texcoords
@@ -707,14 +707,14 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
     si = pi.compute_surface_interaction(ray)
     dr.backward(si.dp_du.x)
     assert dr.allclose(dr.grad(params[vertex_texcoords_key]),
-                       [0, 0, 2, 0, 0, 0, -2, 0], atol=1e-5)
+                       [0, 0, 0, 0, 2, 0, -2, 0], atol=1e-5)
 
     # To increase si.dp_du along the y-axis, we need to shrink the uv along the right edge of the rectangle
     dr.set_grad(params[vertex_texcoords_key], 0.0)
     si = pi.compute_surface_interaction(ray)
     dr.backward(si.dp_dv.y)
     assert dr.allclose(dr.grad(params[vertex_texcoords_key]),
-                       [0, 2, 0, 0, 0, 0, 0, -2], atol=1e-5)
+                       [0, 0, 0, 2, 0, 0, 0, -2], atol=1e-5)
 
 
 @fresolver_append_path

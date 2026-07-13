@@ -86,6 +86,20 @@ Mesh<Float, Spectrum>::from_corners(std::string_view name, size_t vertex_count,
                                     const CornerAttribute *attrs,
                                     size_t attr_count,
                                     const Properties &props) {
+    ref<Mesh> mesh = new Mesh(props);
+    mesh->m_name = name;
+    mesh->build_from_corners(vertex_count, corner_count, positions,
+                             corner_vertex, attrs, attr_count);
+    return mesh;
+}
+
+MI_VARIANT void
+Mesh<Float, Spectrum>::build_from_corners(size_t vertex_count,
+                                          size_t corner_count,
+                                          const InputFloat *positions,
+                                          const uint32_t *corner_vertex,
+                                          const CornerAttribute *attrs,
+                                          size_t attr_count) {
     if (corner_count % 3 != 0)
         Throw("Mesh::from_corners(): corner count (%zu) must be a multiple "
               "of 3!", corner_count);
@@ -93,7 +107,7 @@ Mesh<Float, Spectrum>::from_corners(std::string_view name, size_t vertex_count,
         Throw("Mesh::from_corners(): mesh with %zu corners exceeds the 32 "
               "bit index limit!", corner_count);
 
-    bool face_normals = props.get<bool>("face_normals", false);
+    bool face_normals = m_face_normals;
 
     // Validate the attribute list and drop normals if they will be unused
     std::vector<CornerAttribute> active;
@@ -246,12 +260,10 @@ Mesh<Float, Spectrum>::from_corners(std::string_view name, size_t vertex_count,
                 faces[c] += unique[corner_vertex[c]];
         });
 
-    ref<Mesh> mesh = new Mesh(props);
-    mesh->m_name = name;
-    mesh->m_vertex_count = out_count;
-    mesh->m_face_count = (ScalarSize) (C / 3);
+    m_vertex_count = out_count;
+    m_face_count = (ScalarSize) (C / 3);
     if (C > 0)
-        mesh->m_faces = dr::load<DynamicBuffer<UInt32>>(faces.get(), C);
+        m_faces = dr::load<DynamicBuffer<UInt32>>(faces.get(), C);
 
     // Gather output vertex data from the welded representative corners
     size_t out_size = (size_t) out_count * 3;
@@ -265,7 +277,7 @@ Mesh<Float, Spectrum>::from_corners(std::string_view name, size_t vertex_count,
                            3 * sizeof(InputFloat));
         });
     if (out_count > 0)
-        mesh->m_vertex_positions = dr::load<FloatStorage>(buf.get(), out_size);
+        m_vertex_positions = dr::load<FloatStorage>(buf.get(), out_size);
 
     for (const CornerAttribute &a : active) {
         // Zero-initialized so that missing (UINT32_MAX) entries yield zeros
@@ -293,25 +305,21 @@ Mesh<Float, Spectrum>::from_corners(std::string_view name, size_t vertex_count,
             });
 
         if (a.name == "vertex_normals")
-            mesh->m_vertex_normals =
-                dr::load<FloatStorage>(out.data(), out.size());
+            m_vertex_normals = dr::load<FloatStorage>(out.data(), out.size());
         else if (a.name == "vertex_texcoords")
-            mesh->m_vertex_texcoords =
-                dr::load<FloatStorage>(out.data(), out.size());
+            m_vertex_texcoords = dr::load<FloatStorage>(out.data(), out.size());
         else
-            mesh->add_attribute(a.name, a.dim, out);
+            add_attribute(a.name, a.dim, out);
     }
 
-    mesh->recompute_bbox();
+    recompute_bbox();
 
     if (!face_normals && !has_normals && out_count > 0) {
-        mesh->m_vertex_normals = dr::zeros<FloatStorage>(out_size);
-        mesh->recompute_vertex_normals();
+        m_vertex_normals = dr::zeros<FloatStorage>(out_size);
+        recompute_vertex_normals();
     }
 
-    mesh->initialize();
-
-    return mesh;
+    initialize();
 }
 
 MI_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *cb) {

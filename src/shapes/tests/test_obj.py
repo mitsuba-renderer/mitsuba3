@@ -134,9 +134,8 @@ def test09_unreferenced_vertices_dropped(variant_scalar_rgb, tmp_path):
     m = load_obj(tmp_path,
                  "v 0 0 0\nv 1 0 0\nv 0 1 0\nv 5 5 5\nf 1 2 3\n")
     assert m.vertex_count() == 3
-    # The bounding box nevertheless includes the unreferenced vertex
-    # (it is expanded while parsing 'v' lines)
-    assert dr.allclose(m.bbox().max, [5, 5, 5])
+    # The bounding box only spans the vertices that survive welding
+    assert dr.allclose(m.bbox().max, [1, 1, 0])
 
 
 def test10_face_normals_flag(variant_scalar_rgb, tmp_path):
@@ -226,7 +225,41 @@ def test16_ray_intersect(variant_scalar_rgb, tmp_path):
     assert dr.allclose(si.uv, [0.625, 0.25])
 
 
-def test17_large_grid_file(variant_scalar_rgb):
+def test17_golden_reference(variant_scalar_rgb, tmp_path):
+    # Golden data captured from the loader before it switched to the shared
+    # Mesh.build_from_corners welding backend. The comparison uses per-corner
+    # expanded buffers because the two implementations number the welded
+    # vertices differently.
+    m = load_obj(tmp_path,
+                 "v 0 0 0\nv 1 0 0\nv 1 1 0\nv 0 1 0\nv 2 0 0\nv 2 1 0\n"
+                 "vt 0 0\nvt 1 0\nvt 1 1\nvt 0 1\nvt 0.25 0.25\n"
+                 "vn 0 0 1\nvn 0 1 0\n"
+                 "f 1/1/1 2/2/1 3/3/1 4/4/1\n"
+                 "f 2/2/1 5/5/1 6/3/2 3/3/1\n"
+                 "f 1/5/2 2/2/1 4/4/2\n")
+    assert m.vertex_count() == 8 and m.face_count() == 5
+    p, n, uv = corner_expand(m)
+    assert np.array_equal(p, [
+        [[0, 0, 0], [1, 0, 0], [1, 1, 0]],
+        [[0, 0, 0], [1, 1, 0], [0, 1, 0]],
+        [[1, 0, 0], [2, 0, 0], [2, 1, 0]],
+        [[1, 0, 0], [2, 1, 0], [1, 1, 0]],
+        [[0, 0, 0], [1, 0, 0], [0, 1, 0]]])
+    assert np.array_equal(n, [
+        [[0, 0, 1], [0, 0, 1], [0, 0, 1]],
+        [[0, 0, 1], [0, 0, 1], [0, 0, 1]],
+        [[0, 0, 1], [0, 0, 1], [0, 1, 0]],
+        [[0, 0, 1], [0, 1, 0], [0, 0, 1]],
+        [[0, 1, 0], [0, 0, 1], [0, 1, 0]]])
+    assert np.array_equal(uv, [
+        [[0, 1], [1, 1], [1, 0]],
+        [[0, 1], [1, 0], [0, 0]],
+        [[1, 1], [0.25, 0.75], [1, 0]],
+        [[1, 1], [1, 0], [1, 0]],
+        [[0.25, 0.75], [1, 1], [0, 0]]])
+
+
+def test18_large_grid_file(variant_scalar_rgb):
     fn = os.environ.get("MITSUBA_TEST_GRID_OBJ")
     if fn is None or not os.path.exists(fn):
         pytest.skip("set MITSUBA_TEST_GRID_OBJ to run the large-file test")

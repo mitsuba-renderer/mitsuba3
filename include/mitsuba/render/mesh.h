@@ -120,6 +120,19 @@ public:
                                   size_t attr_count,
                                   const Properties &props = Properties());
 
+    /**
+     * \brief Instance-level backend of \ref from_corners
+     *
+     * Fills an otherwise empty mesh (e.g. one created by a subclass
+     * constructor) with the result of the corner welding process described
+     * in \ref from_corners and calls \ref initialize. The \c face_normals
+     * mesh property must already reflect the construction-time value.
+     */
+    void build_from_corners(size_t vertex_count, size_t corner_count,
+                            const InputFloat *positions,
+                            const uint32_t *corner_vertex,
+                            const CornerAttribute *attrs, size_t attr_count);
+
     /** \brief Must be called once at the end of the construction of a Mesh
      *
      * This method computes internal data structures and notifies the parent
