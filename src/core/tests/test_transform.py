@@ -273,3 +273,25 @@ def test06_dual_callable(variant_scalar_rgb, transform_type):
     t1 = T.translate([1, 0, 0]).rotate([0, 1, 0], 45).scale([2, 2, 2])
     t2 = T().translate([1, 0, 0]).rotate([0, 1, 0], 45).scale([2, 2, 2])
     assert dr.allclose(t1.matrix, t2.matrix)
+
+
+def test09_matmul_ray_cross_variant_alias():
+    if ('llvm_ad_rgb' not in mi.variants() or
+        'llvm_ad_spectral' not in mi.variants()):
+        pytest.skip("Missing variants to properly run the test.")
+
+    # Run in a subprocess: whether this reproduces depends on which variant's
+    # module is imported first in the process, which other tests running
+    # earlier in the same session may have already influenced.
+    import subprocess, sys, textwrap
+    script = textwrap.dedent("""
+        import mitsuba as mi
+        mi.set_variant('llvm_ad_rgb')
+        mi.set_variant('llvm_ad_spectral')
+        t = mi.Transform4f.translate([1, 0, 0])
+        ray = mi.Ray3f([0, 0, 0], [1, 0, 0])
+        transformed = t @ ray
+        assert abs(transformed.o[0] - 1.0) < 1e-6
+    """)
+    result = subprocess.run([sys.executable, '-c', script], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr

@@ -137,3 +137,23 @@ def test06_ray_intersect_vec(variant_scalar_rgb):
 
     from mitsuba.test.util import check_vectorization
     check_vectorization(kernel, arg_dims = [3, 3, 3])
+
+
+def test07_ray_intersect_cross_variant_alias():
+    if 'llvm_ad_rgb' not in mi.variants() or 'scalar_rgb' not in mi.variants():
+        pytest.skip("Missing variants to properly run the test.")
+
+    # Run in a subprocess: whether this reproduces depends on which variant's
+    # module is imported first in the process, which other tests running
+    # earlier in the same session may have already influenced.
+    import subprocess, sys, textwrap
+    script = textwrap.dedent("""
+        import mitsuba as mi
+        mi.set_variant('llvm_ad_rgb')
+        mi.set_variant('scalar_rgb')
+        bbox = mi.BoundingBox3f([-1, -1, -1], [1, 1, 1])
+        hit, mint, maxt = bbox.ray_intersect(mi.Ray3f([-5, 0, 0], [1, 0, 0]))
+        assert hit and abs(mint - 4.0) < 1e-6 and abs(maxt - 6.0) < 1e-6
+    """)
+    result = subprocess.run([sys.executable, '-c', script], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
