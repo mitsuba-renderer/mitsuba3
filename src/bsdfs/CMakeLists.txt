@@ -23,5 +23,6 @@ add_plugin(measured_polarized   measured_polarized.cpp)
 add_plugin(pplastic             pplastic.cpp)
 add_plugin(principled           principled.cpp)
 add_plugin(principledthin       principledthin.cpp)
+add_plugin(openpbr              openpbr.cpp)
 
 set(MI_PLUGIN_TARGETS "${MI_PLUGIN_TARGETS}" PARENT_SCOPE)
