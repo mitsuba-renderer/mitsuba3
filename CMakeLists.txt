@@ -298,6 +298,21 @@ endif()
 
 set(CMAKE_INSTALL_RPATH "${MI_ORIGIN};${MI_ORIGIN}/../drjit")
 
+# Force a libstdc++.so.6 DT_NEEDED entry so std:: symbols never bind to copies in vendored libraries
+if (UNIX AND NOT APPLE AND CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)"
+    AND NOT CMAKE_CXX_FLAGS MATCHES "libc\\+\\+")
+  include(CheckLinkerFlag OPTIONAL RESULT_VARIABLE MI_CHECK_LINKER_FLAG)
+  if (MI_CHECK_LINKER_FLAG)
+    set(MI_LINK_LIBSTDCXX "-Wl,--push-state,--no-as-needed -l:libstdc++.so.6 -Wl,--pop-state")
+    string(REPLACE " " ";" MI_LINK_LIBSTDCXX_LIST "${MI_LINK_LIBSTDCXX}")
+    check_linker_flag(CXX "${MI_LINK_LIBSTDCXX_LIST}" MI_LINK_LIBSTDCXX_SUPPORTED)
+    if (MI_LINK_LIBSTDCXX_SUPPORTED)
+      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${MI_LINK_LIBSTDCXX}")
+      set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${MI_LINK_LIBSTDCXX}")
+    endif()
+  endif()
+endif()
+
 # Build the dependencies
 add_subdirectory(ext)
 
