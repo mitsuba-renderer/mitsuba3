@@ -86,6 +86,9 @@ struct ParserConfig {
     /// Merge compatible meshes (same material) into single larger mesh
     bool merge_meshes = true;
 
+    /// Merge instances of the same ShapeGroup into MergeInstance shapes
+    bool merge_instances = true;
+
     /// Constructor that takes variant name
     ParserConfig(std::string_view variant) : variant(variant) {}
 };

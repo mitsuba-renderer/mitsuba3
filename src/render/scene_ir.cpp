@@ -26,7 +26,8 @@ SceneIR SceneIRBuilder<Float, Spectrum>::build(Scene<Float, Spectrum> *scene) {
         ShapeIR g;
         shapes[i]->describe(g);
         g.data_slot = slot++;
-        if (g.kind == ShapeIR::Kind::Instance)
+        if (g.kind == ShapeIR::Kind::Instance ||
+            g.kind == ShapeIR::Kind::MergeInstance)
             inst_shapes.push_back(std::move(g));
         else
             top_noninst.push_back(std::move(g));
@@ -75,16 +76,37 @@ SceneIR SceneIRBuilder<Float, Spectrum>::build(Scene<Float, Spectrum> *scene) {
         e.blas_index = bi;
         sd.instances.push_back(e);
     }
-    // ...then, per Instance shape, one instance per BLAS of its ShapeGroup.
+    // ...then, per Instance/MergeInstance shape, one instance per BLAS
+    // of its ShapeGroup.
     for (const ShapeIR &inst : inst_shapes) {
         uint32_t owner = jit_registry_id(inst.ctx);
-        for (uint32_t bi : sd.group_blases[group_index.at(inst.group_id)]) {
-            InstanceEntry e;
-            e.blas_index = bi;
-            e.owner_registry_id = owner;
-            for (int k = 0; k < 12; ++k)
-                e.to_world[k] = inst.to_world[k];
-            sd.instances.push_back(e);
+        const auto &group_bi = sd.group_blases[group_index.at(inst.group_id)];
+
+        if (inst.kind == ShapeIR::Kind::Instance) {
+            // Single instance: one InstanceEntry per BLAS of the group.
+            for (uint32_t bi : group_bi) {
+                InstanceEntry e;
+                e.blas_index = bi;
+                e.owner_registry_id = owner;
+                for (int k = 0; k < 12; ++k)
+                    e.to_world[k] = inst.to_world[k];
+                sd.instances.push_back(e);
+            }
+        } else {
+            // MergeInstance: one InstanceEntry per batch element per BLAS.
+            uint32_t elem_idx = 0;
+            for (const auto &tw : inst.batch_to_worlds) {
+                for (uint32_t bi : group_bi) {
+                    InstanceEntry e;
+                    e.blas_index = bi;
+                    e.owner_registry_id = owner;
+                    e.instance_index = elem_idx;
+                    for (int k = 0; k < 12; ++k)
+                        e.to_world[k] = tw[k];
+                    sd.instances.push_back(e);
+                }
+                elem_idx++;
+            }
         }
     }
 

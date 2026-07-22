@@ -79,10 +79,11 @@ static std::mutex optix_configs_lock;
 static constexpr uint32_t OptixConfigCompactKey = 1u << 31;
 
 const MiOptixConfig &init_optix_config(uint32_t shape_types, bool compact) {
-    // Instances/groups are handled by IAS traversal, not by intersection
+    // Instances/groups/mergeinstances are handled by IAS traversal, not by intersection
     // programs. Mask the bits so they don't spuriously add the CUSTOM flag
     shape_types &= ~((uint32_t) ShapeType::Instance |
-                     (uint32_t) ShapeType::ShapeGroup);
+                     (uint32_t) ShapeType::ShapeGroup |
+                     (uint32_t) ShapeType::MergeInstance);
 
     uint32_t key = shape_types;
     if ((key & +ShapeType::Rectangle) == +ShapeType::Rectangle) {
@@ -351,7 +352,9 @@ template <typename Float, typename Spectrum>
 static void optix_rebuild_accel(
         Scene<Float, Spectrum> *scene, MiOptixSceneState *state,
         dr::uint64_array_t<Float> &accel_handle,
+        DynamicBuffer<dr::uint32_array_t<Float>> &batch_element_ids,
         const SceneIR &sd) {
+    using UInt32 = dr::uint32_array_t<Float>;
     using UInt64 = dr::uint64_array_t<Float>;
     MiOptixSceneState &s = *state;
 
@@ -450,6 +453,19 @@ static void optix_rebuild_accel(
             buffer_sizes.outputSizeInBytes, &s.ias_handle, 0, 0));
 
         jit_free(d_temp_buffer);
+
+        // Upload batch_element_ids for IAS instances
+        std::vector<uint32_t> batch_indices;
+        batch_indices.reserve(sd.instances.size());
+        for (const auto &inst : sd.instances)
+            batch_indices.push_back(inst.instance_index);
+
+        if (!batch_indices.empty()) {
+            batch_element_ids = dr::load<DynamicBuffer<UInt32>>(
+                batch_indices.data(), batch_indices.size());
+        } else {
+            batch_element_ids = dr::full<DynamicBuffer<UInt32>>((uint32_t) -1, 1);
+        }
     }
 
     // Set up a callback on the handle variable to release the OptiX scene
@@ -623,7 +639,7 @@ void OptixAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
 
     // Build the GAS/IAS from the SceneIR already lowered above for the SBT,
     // so each shape is described only once.
-    optix_rebuild_accel<Float, Spectrum>(scene, state, accel_handle, sd);
+    optix_rebuild_accel<Float, Spectrum>(scene, state, accel_handle, batch_element_ids, sd);
 
     Log(Info, "OptiX ready. (took %s)", util::time_string((float) timer.value()));
 }
@@ -634,7 +650,7 @@ void OptixAccel<Float, Spectrum>::rebuild(
     // Lower the scene once; the GAS and IAS phases read from this.
     SceneIR sd = SceneIRBuilder<Float, Spectrum>::build(scene);
 
-    optix_rebuild_accel<Float, Spectrum>(scene, state, accel_handle, sd);
+    optix_rebuild_accel<Float, Spectrum>(scene, state, accel_handle, batch_element_ids, sd);
 }
 
 template <typename Float, typename Spectrum>
@@ -725,15 +741,16 @@ OptixAccel<Float, Spectrum>::ray_intersect_preliminary(
         OptixHitObjectField::Attribute1,
         OptixHitObjectField::PrimitiveIndex,
         OptixHitObjectField::SBTDataPointer,
-        OptixHitObjectField::InstanceId
+        OptixHitObjectField::InstanceId,
+        OptixHitObjectField::InstanceIndex
     };
-    uint32_t hitobject_out[7];
+    uint32_t hitobject_out[8];
 
     // Scene property takes precedence
     reorder &= scene->m_thread_reordering;
 
     jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
-                        has_instances ? 7 : 6, fields, hitobject_out,
+                        has_instances ? 8 : 6, fields, hitobject_out,
                         reorder, reorder_hint.index(), reorder_hint_bits,
                         false, active.index(),
                         s.pipeline_jit_index, s.sbt_jit_index);
@@ -753,10 +770,17 @@ OptixAccel<Float, Spectrum>::ray_intersect_preliminary(
     pi.prim_uv[1] = dr::reinterpret_array<Single, UInt32>(UInt32::steal(hitobject_out[3]));
     pi.prim_index = UInt32::steal(hitobject_out[4]);
     pi.shape      = dr::reinterpret_array<ShapePtr, UInt32>(UInt32::steal(shape_id_idx));
-    pi.instance   = has_instances ? ShapePtr::steal(hitobject_out[6]) : dr::zeros<ShapePtr>();
-
-    // This field is only used by embree, but we still need to initialize it for vcalls
-    pi.shape_index = dr::zeros<UInt32>();
+    size_t width  = dr::width(valid);
+    if (has_instances) {
+        UInt32 raw_inst_id  = UInt32::steal(hitobject_out[6]);
+        UInt32 raw_inst_idx = UInt32::steal(hitobject_out[7]);
+        pi.instance       = dr::reinterpret_array<ShapePtr, UInt32>(raw_inst_id);
+        pi.instance_index = dr::gather<UInt32>(batch_element_ids, raw_inst_idx, valid);
+    } else {
+        pi.instance       = dr::zeros<ShapePtr>(width);
+        pi.instance_index = dr::zeros<UInt32>(width);
+    }
+    pi.shape_index = dr::zeros<UInt32>(width);
 
     return pi;
 }

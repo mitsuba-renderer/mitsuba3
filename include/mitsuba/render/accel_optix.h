@@ -43,14 +43,16 @@ struct OptixAccel {
         const Scene<Float, Spectrum> *scene, const Ray3f &ray,
         Mask active) const;
 
-    // --- Declarative traversal (the IAS handle + the rebindable SBT handle) ---
-    DRJIT_TRAVERSE(OptixAccel, accel_handle, sbt_handle)
+    // --- Declarative traversal (the IAS handle, rebindable SBT handle, and batch element buffer) ---
+    DRJIT_TRAVERSE(OptixAccel, accel_handle, sbt_handle, batch_element_ids)
 
     /// Heap-allocated native OptiX state.
     MiOptixSceneState *state = nullptr;
     /// Freeze-visible IAS and SBT owner handles.
     UInt64 accel_handle;
     UInt64 sbt_handle;
+    /// Maps OptiX instance index in the IAS to batch element index for MergeInstance.
+    DynamicBuffer<UInt32> batch_element_ids;
 };
 
 NAMESPACE_END(mitsuba)

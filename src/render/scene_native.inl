@@ -17,8 +17,11 @@ void NativeAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
     accel = new ShapeKDTree<Float, Spectrum>(props);
     accel->inc_ref();
 
-    if constexpr (dr::is_llvm_v<Float>)
+    if constexpr (dr::is_llvm_v<Float>) {
         shapes_registry_ids = build_registry_ids<Float, Spectrum>(scene->m_shapes);
+        batch_element_ids = dr::full<DynamicBuffer<UInt32>>(
+            (uint32_t) -1, dr::width(shapes_registry_ids));
+    }
 
     rebuild(scene);
 }
@@ -188,7 +191,8 @@ NativeAccel<Float, Spectrum>::ray_intersect_preliminary(
         // The kd-tree traces in ``Float`` precision, so the hit fields are
         // stolen at that width.
         return decode_cpu_llvm_pi<Float, Spectrum, Float>(out,
-                                                          shapes_registry_ids);
+                                                          shapes_registry_ids,
+                                                          batch_element_ids);
     }
 }
 
