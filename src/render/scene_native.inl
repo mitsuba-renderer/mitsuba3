@@ -34,8 +34,24 @@ void NativeAccel<Float, Spectrum>::rebuild(
         dr::sync_thread();
 
     accel->clear();
-    for (Shape *shape : scene->m_shapes)
+    for (Shape *shape : scene->m_shapes) {
+        // MergeInstance stores a single set of batched transforms and relies
+        // on the acceleration structure to report which batch element was
+        // hit (via PreliminaryIntersection::instance_index) so that
+        // MergeInstance::compute_surface_interaction() can look up the
+        // right one. Only the Embree and OptiX/Metal backends currently
+        // implement that; the kd-tree here would silently always resolve to
+        // the first instance of the batch instead of failing loudly, so
+        // reject it explicitly.
+        if (shape->is_merge_instance())
+            Throw("The native (kd-tree) acceleration structure does not "
+                  "support the 'mergeinstance' shape produced by automatic "
+                  "instance merging. Either rebuild Mitsuba with Embree "
+                  "enabled, or disable this optimization by passing "
+                  "optimize=False (or, for the low-level parser API, "
+                  "ParserConfig.merge_instances=False).");
         accel->add_shape(shape);
+    }
     ScopedPhase phase(ProfilerPhase::InitAccel);
     accel->build();
 

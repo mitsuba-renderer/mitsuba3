@@ -67,18 +67,18 @@ struct EmbreeAccel {
     UInt64 occlude_handle;
     DynamicBuffer<UInt32> shapes_registry_ids;
 
-    /// For LLVM path: maps geom_id → batch element index within a
-    /// MergeInstance.  Value is (uint32_t)-1 for non-batch shapes.
+    /// LLVM path: maps a top-level Embree geom_id to its batch element index
+    /// within a MergeInstance. Value is (uint32_t) -1 for non-batch shapes.
     DynamicBuffer<UInt32> batch_element_ids;
 
-    /// MergeInstance.  Value is (uint32_t)-1 for non-batch shapes.
-    ///
-    /// For MergeInstance shapes that emit N Embree geometries, all N geom_ids
-    /// map to the same \c m_shapes index.
+    /// Scalar path: maps a top-level Embree geom_id to its owning index in
+    /// \c scene->m_shapes. A MergeInstance shape emits one geometry per batch
+    /// element, so several consecutive geom_ids can map to the same entry.
     std::vector<uint32_t> geom_id_to_shape_idx;
 
-    /// Maps Embree geom_id → batch element index within a MergeInstance.
-    /// For non-batch shapes, the value is (uint32_t)-1.
+    /// Scalar path: maps a top-level Embree geom_id to its batch element
+    /// index within a MergeInstance. Value is (uint32_t) -1 for non-batch
+    /// shapes. Host-side counterpart of \c batch_element_ids.
     std::vector<uint32_t> geom_id_to_batch_idx;
 };
 

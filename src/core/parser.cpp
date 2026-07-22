@@ -1589,6 +1589,20 @@ void transform_merge_instances(const ParserConfig &config,
     if (!config.merge_instances || state.empty() || state.root().type != ObjectType::Scene)
         return;
 
+#if !defined(MI_ENABLE_EMBREE)
+    // Without Embree, scalar/LLVM (CPU) variants fall back to the built-in
+    // kd-tree (see NativeAccel in scene_native.inl), which does not support
+    // the 'mergeinstance' shape this pass produces -- it has no way to
+    // recover which batch element was hit. Skip the merge for those variants
+    // and keep individual 'instance' shapes instead; this is a valid
+    // (slower, but always correct) fallback since the kd-tree is a backup
+    // path anyway. CUDA (OptiX) and Metal variants support MergeInstance
+    // regardless of MI_ENABLE_EMBREE, so they are unaffected.
+    if (string::starts_with(config.variant, "scalar_") ||
+        string::starts_with(config.variant, "llvm_"))
+        return;
+#endif
+
     Properties &root_props = state.root().props;
 
     // Collect all instance children of the root, grouping them by their
@@ -1628,10 +1642,22 @@ void transform_merge_instances(const ParserConfig &config,
         groups[group_idx].emplace_back(std::string(prop.name()), node_idx);
     }
 
+    // Process groups in ascending node-index order: `groups` is a hash map,
+    // whose iteration order is otherwise unspecified and would make the
+    // resulting shape ordering (and hence e.g. shape indices used for
+    // debugging/AOVs) depend on hash bucket layout rather than on the scene
+    // file.
+    std::vector<size_t> group_indices;
+    group_indices.reserve(groups.size());
+    for (const auto &[group_idx, instances] : groups)
+        group_indices.push_back(group_idx);
+    std::sort(group_indices.begin(), group_indices.end());
+
     // For every ShapeGroup that has ≥ 2 instances, replace them with a
     // single MergeInstance node.
     size_t batch_count = 0;
-    for (auto &[group_idx, instances] : groups) {
+    for (size_t group_idx : group_indices) {
+        std::vector<std::pair<std::string, size_t>> &instances = groups[group_idx];
         if (instances.size() < 2)
             continue;
 

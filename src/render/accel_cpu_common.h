@@ -35,9 +35,13 @@ build_registry_ids(const std::vector<ref<Shape<Float, Spectrum>>> &shapes) {
  * The trace writes \c out = { valid, t, u, v, prim_index, shape_index,
  * inst_index, hit_inst }. The owning \c ShapePtr comes from \c registry_ids,
  * gathered by instance index for instanced hits and shape index for top-level
- * For MergeInstance hits, \c batch_element_ids maps the geom_id to the
- * batch element index so
- * \c MergeInstance::compute_surface_interaction can gather the right transform.
+ * hits. Embree and the native kd-tree share this logic and only differ in
+ * \c RayScalar precision.
+ *
+ * For MergeInstance hits, \c batch_element_ids additionally maps the same
+ * geom_id/instance index to the batch element index, so that
+ * \c MergeInstance::compute_surface_interaction can gather the right
+ * transform.
  */
 template <typename Float, typename Spectrum, typename RayScalar>
 auto decode_cpu_llvm_pi(
