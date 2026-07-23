@@ -115,12 +115,13 @@ static void embree_backface_cull(const RTCFilterFunctionNArguments *args) {
     }
 }
 
-/// Build one Embree geometry from a \ref ShapeIR.
+/// Build Embree geometries from a \ref ShapeIR.
+/// Returns one geometry for most shapes, or N geometries for a MergeInstance.
 template <typename Float, typename Spectrum>
-static RTCGeometry
-embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
-                     const tsl::robin_map<const void *, RTCSceneTy *,
-                                          PointerHasher> &group_scenes) {
+static std::vector<RTCGeometry>
+embree_make_geometries(RTCDevice device, const Shape<Float, Spectrum> *shape,
+                       const tsl::robin_map<const void *, RTCSceneTy *,
+                                            PointerHasher> &group_scenes) {
     ShapeIR g;
     shape->describe(g);
 
@@ -133,7 +134,7 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
             rtcSetGeometryIntersectFunction(geom, embree_intersect<Float, Spectrum>);
             rtcSetGeometryOccludedFunction(geom, embree_occluded<Float, Spectrum>);
             rtcCommitGeometry(geom);
-            return geom;
+            return { geom };
         }
 
         case ShapeIR::Kind::Triangles:
@@ -150,7 +151,7 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
                 rtcSetGeometryOccludedFilterFunction(geom, embree_backface_cull);
             }
             rtcCommitGeometry(geom);
-            return geom;
+            return { geom };
         }
 
         case ShapeIR::Kind::BSplineCurve:
@@ -166,7 +167,7 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
                                        RTC_FORMAT_UINT, g.seg_ptr, 0,
                                        sizeof(uint32_t), g.seg_count);
             rtcCommitGeometry(geom);
-            return geom;
+            return { geom };
         }
 
         case ShapeIR::Kind::Instance: {
@@ -184,10 +185,32 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
             }
             rtcSetGeometryTransform(inst, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, M);
             rtcCommitGeometry(inst);
-            return inst;
+            return { inst };
+        }
+
+        case ShapeIR::Kind::MergeInstance: {
+            RTCScene nested = group_scenes.at(g.group_id);
+            std::vector<RTCGeometry> result;
+            result.reserve(g.batch_to_worlds.size());
+
+            for (const auto &tw : g.batch_to_worlds) {
+                RTCGeometry inst = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_INSTANCE);
+                rtcSetGeometryInstancedScene(inst, nested);
+                rtcSetGeometryTimeStepCount(inst, 1);
+                float M[16];
+                for (int col = 0; col < 4; ++col) {
+                    for (int row = 0; row < 3; ++row)
+                        M[col * 4 + row] = tw[col * 3 + row];
+                    M[col * 4 + 3] = (col == 3) ? 1.f : 0.f;
+                }
+                rtcSetGeometryTransform(inst, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, M);
+                rtcCommitGeometry(inst);
+                result.push_back(inst);
+            }
+            return result;
         }
     }
-    return nullptr; // unreachable
+    return {}; // unreachable
 }
 
 // -----------------------------------------------------------------------
@@ -231,9 +254,6 @@ void EmbreeAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
 
     Log(Info, "Embree ready. (took %s)",
         util::time_string((float) timer.value()));
-
-    if constexpr (dr::is_llvm_v<Float>)
-        shapes_registry_ids = build_registry_ids<Float, Spectrum>(scene->m_shapes);
 }
 
 template <typename Float, typename Spectrum>
@@ -257,21 +277,70 @@ void EmbreeAccel<Float, Spectrum>::rebuild(
     for (auto &group : scene->m_shapegroups) {
         RTCScene nested = rtcNewScene(embree_device);
         for (const ref<Shape> &child : group->shapes()) {
-            RTCGeometry cg = embree_make_geometry<Float, Spectrum>(
+            auto geoms = embree_make_geometries<Float, Spectrum>(
                 embree_device, child.get(), group_scenes);
-            rtcAttachGeometry(nested, cg);
-            rtcReleaseGeometry(cg);
+            for (auto geom : geoms) {
+                rtcAttachGeometry(nested, geom);
+                rtcReleaseGeometry(geom);
+            }
         }
         // Publish the uncommitted nested scene for top-level Instances.
         group_scenes[(const void *) group.get()] = nested;
         nested_scenes.push_back(nested);
     }
 
-    for (Shape *shape : scene->m_shapes) {
-        RTCGeometry geom = embree_make_geometry<Float, Spectrum>(
+    // Build extended registry IDs: for MergeInstance shapes, the Embree scene
+    // will contain multiple RTC instance geometries (one per batch element),
+    // each with its own geom_id.  The shapes_registry_ids buffer must map
+    // every geom_id to the owning Mitsuba shape.  We build this mapping during
+    // attachment and upload it after the loop.
+    std::vector<uint32_t> registry_data;
+    std::vector<uint32_t> batch_element_data;
+    geom_id_to_shape_idx.clear();
+    geom_id_to_batch_idx.clear();
+
+    for (size_t si = 0; si < scene->m_shapes.size(); ++si) {
+        Shape *shape = scene->m_shapes[si];
+        auto geoms = embree_make_geometries<Float, Spectrum>(
             embree_device, shape, group_scenes);
-        geometries.push_back(rtcAttachGeometry(accel, geom));
-        rtcReleaseGeometry(geom);
+        for (size_t gi = 0; gi < geoms.size(); ++gi) {
+            uint32_t gid = rtcAttachGeometry(accel, geoms[gi]);
+            geometries.push_back(gid);
+            rtcReleaseGeometry(geoms[gi]);
+            // All geom_ids produced by one shape share the same registry ID.
+            uint32_t reg_id = 0;
+            if constexpr (dr::is_jit_v<Float>)
+                reg_id = jit_registry_id(shape);
+            registry_data.push_back(reg_id);
+            // For MergeInstance, gi is the batch element index; else -1.
+            batch_element_data.push_back(
+                geoms.size() > 1 ? (uint32_t) gi : (uint32_t) -1);
+
+            // Ensure mapping vectors are large enough (geom_ids are
+            // sequentially assigned by Embree starting from 0).
+            if (gid >= geom_id_to_shape_idx.size()) {
+                geom_id_to_shape_idx.resize(gid + 1, 0);
+                geom_id_to_batch_idx.resize(gid + 1, (uint32_t) -1);
+            }
+            geom_id_to_shape_idx[gid] = (uint32_t) si;
+            // For a MergeInstance, geoms has N entries; gi is the batch index.
+            if (geoms.size() > 1)
+                geom_id_to_batch_idx[gid] = (uint32_t) gi;
+        }
+    }
+
+    // Upload the extended registry IDs and batch element buffers.
+    if constexpr (dr::is_llvm_v<Float>) {
+        if (!registry_data.empty()) {
+            shapes_registry_ids = dr::load<DynamicBuffer<UInt32>>(
+                registry_data.data(), registry_data.size());
+            batch_element_ids = dr::load<DynamicBuffer<UInt32>>(
+                batch_element_data.data(), batch_element_data.size());
+        } else {
+            shapes_registry_ids = dr::zeros<DynamicBuffer<UInt32>>(1);
+            batch_element_ids   = dr::full<DynamicBuffer<UInt32>>(
+                (uint32_t) -1, 1);
+        }
     }
 
     // One sync for the whole rebuild: all geometry (nested + top-level) is now
@@ -408,9 +477,12 @@ EmbreeAccel<Float, Spectrum>::ray_intersect_preliminary(
 
             // If the hit is not on an instance
             bool hit_instance = inst_index != RTC_INVALID_GEOMETRY_ID;
-            uint32_t index = hit_instance ? inst_index : shape_index;
+            uint32_t geom_id = hit_instance ? inst_index : shape_index;
 
-            ShapePtr shape = scene->m_shapes[index];
+            // Use the geom_id mapping to recover the m_shapes index.
+            // For MergeInstance shapes, multiple Embree geometries map
+            // to the same m_shapes entry.
+            ShapePtr shape = scene->m_shapes[geom_id_to_shape_idx[geom_id]];
             if (hit_instance)
                 pi.instance = shape;
             else
@@ -418,6 +490,9 @@ EmbreeAccel<Float, Spectrum>::ray_intersect_preliminary(
 
             pi.valid = true;
             pi.shape_index = shape_index;
+            uint32_t batch_idx = geom_id_to_batch_idx[geom_id];
+            pi.instance_index = (batch_idx != (uint32_t) -1)
+                                 ? batch_idx : inst_index;
 
             pi.t = rh.ray.tfar;
             pi.prim_index = prim_index;
@@ -437,7 +512,8 @@ EmbreeAccel<Float, Spectrum>::ray_intersect_preliminary(
 
         // Embree traces in float32, so the hit fields are stolen as ``Single``.
         return decode_cpu_llvm_pi<Float, Spectrum, Single>(out,
-                                                           shapes_registry_ids);
+                                                           shapes_registry_ids,
+                                                           batch_element_ids);
     } else {
         DRJIT_MARK_USED(ray);
         DRJIT_MARK_USED(coherent);

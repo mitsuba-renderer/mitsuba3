@@ -60,8 +60,10 @@ set_preliminary_intersection_to_payload(float t,
     optixSetPayload_4(shape_registry_id);
 
     // Instance index is initialized to 0 when there is no instancing in the scene
-    if (optixGetPayload_5() > 0)
+    if (optixGetPayload_5() > 0) {
         optixSetPayload_5(optixGetInstanceId());
+        optixSetPayload_6(optixGetInstanceIndex());
+    }
 }
 
 #endif

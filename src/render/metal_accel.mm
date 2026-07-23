@@ -488,6 +488,7 @@ build_impl(const std::vector<BlasEntry> &blases,
                     }
 
                     case ShapeIR::Kind::Instance:
+                    case ShapeIR::Kind::MergeInstance:
                         Throw("MetalAccel: instance geometry must be flattened "
                               "before reaching the BLAS builder.");
                 }

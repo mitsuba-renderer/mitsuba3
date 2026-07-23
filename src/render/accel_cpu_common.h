@@ -37,11 +37,17 @@ build_registry_ids(const std::vector<ref<Shape<Float, Spectrum>>> &shapes) {
  * gathered by instance index for instanced hits and shape index for top-level
  * hits. Embree and the native kd-tree share this logic and only differ in
  * \c RayScalar precision.
+ *
+ * For MergeInstance hits, \c batch_element_ids additionally maps the same
+ * geom_id/instance index to the batch element index, so that
+ * \c MergeInstance::compute_surface_interaction can gather the right
+ * transform.
  */
 template <typename Float, typename Spectrum, typename RayScalar>
 auto decode_cpu_llvm_pi(
         const uint32_t out[8],
-        const DynamicBuffer<dr::uint32_array_t<Float>> &registry_ids) {
+        const DynamicBuffer<dr::uint32_array_t<Float>> &registry_ids,
+        const DynamicBuffer<dr::uint32_array_t<Float>> &batch_element_ids) {
     MI_IMPORT_TYPES(Shape, ShapePtr)
 
     PreliminaryIntersection3f pi;
@@ -60,6 +66,12 @@ auto decode_cpu_llvm_pi(
 
     pi.instance = shape & hit_inst;
     pi.shape    = shape & !hit_inst;
+
+    // For MergeInstance hits, set instance_index to the batch element index
+    // so compute_surface_interaction can gather the right transform, while
+    // preserving shape_index (the child shape index within the ShapeGroup).
+    UInt32 batch_idx = dr::gather<UInt32>(batch_element_ids, index, pi.valid);
+    pi.instance_index = dr::select(hit_inst & (batch_idx != (uint32_t) -1), batch_idx, inst_index);
 
     return pi;
 }

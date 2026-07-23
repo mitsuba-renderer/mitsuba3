@@ -44,7 +44,8 @@ struct NativeAccel {
 
     // --- Declarative traversal ---
     DRJIT_TRAVERSE(NativeAccel, accel_handle, func_handle,
-                   occlude_handle, shapes_registry_ids)
+                   occlude_handle, shapes_registry_ids,
+                   batch_element_ids)
 
     /// Native kd-tree, lifetime tied to ``accel_handle`` in JIT variants.
     ShapeKDTree<Float, Spectrum> *accel = nullptr;
@@ -57,6 +58,8 @@ struct NativeAccel {
     UInt64 func_handle;
     UInt64 occlude_handle;
     DynamicBuffer<UInt32> shapes_registry_ids;
+    /// Dummy for MergeInstance (native backend does not support MergeInstance).
+    DynamicBuffer<UInt32> batch_element_ids;
 };
 
 NAMESPACE_END(mitsuba)

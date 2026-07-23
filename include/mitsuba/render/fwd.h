@@ -83,6 +83,9 @@ enum class ShapeType : uint32_t {
     /// ShapeGroup (`shapegroup`)
     ShapeGroup = 1u << 11,
 
+    /// MergeInstance (`mergeinstance`) -- a collection of same-group instances
+    MergeInstance = 1u << 12,
+
     /// Invalid for default initialization
     Invalid = 0
 };

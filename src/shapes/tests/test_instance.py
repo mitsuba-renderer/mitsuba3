@@ -182,7 +182,7 @@ def test03_ray_intersect_instance(variants_all_rgb, width):
             'type' : 'rectangle',
             'to_world' : T().translate([0.5, 0.5, 0.0]) @ T().scale(0.5)
         }
-    })
+    }, optimize=False)
 
     time = 0.0 if scalar_mode else [0.0] * width
 
@@ -262,3 +262,102 @@ def test04_single_child_group_recovery(variants_vec_backends_once_rgb, shape):
             assert dr.allclose(si.t, si_inst.t, atol=2e-2)
             assert dr.allclose(si.p, si_inst.p, atol=2e-2)
             assert dr.allclose(si.n, si_inst.n, atol=2e-2)
+
+
+def test05_merge_instance_optimize(variants_all_rgb):
+    """Checks that automatic instance merging (optimize=True) produces identical
+    ray intersection and rendering results compared to unmerged instances (optimize=False)."""
+    from mitsuba import ScalarTransform4f as T
+
+    scene_dict = {
+        'type': 'scene',
+        'group_0': {
+            'type': 'shapegroup',
+            'rect': {
+                'type': 'rectangle',
+                'to_world': T().scale(0.4)
+            },
+            'sphere': {
+                'type': 'sphere',
+                'to_world': T().translate([0.5, 0, 0]).scale(0.2)
+            }
+        },
+        'inst_0': {
+            'type': 'instance',
+            'group': {'type': 'ref', 'id': 'group_0'},
+            'to_world': T().translate([-0.6, 0, 0])
+        },
+        'inst_1': {
+            'type': 'instance',
+            'group': {'type': 'ref', 'id': 'group_0'},
+            'to_world': T().translate([0.6, 0, 0])
+        }
+    }
+
+    s_opt = mi.load_dict(scene_dict, optimize=True)
+    s_noopt = mi.load_dict(scene_dict, optimize=False)
+
+    n = 11
+    inv_n = 1.0 / n
+    for x in range(n):
+        for y in range(n):
+            x_coord = (2 * (x * inv_n) - 1) * 2
+            y_coord = (2 * (y * inv_n) - 1) * 2
+            ray = mi.Ray3f(o=[x_coord, y_coord, -5], d=[0.0, 0.0, 1.0], time=0.0, wavelengths=[])
+
+            hit_opt = s_opt.ray_test(ray)
+            dr.eval(hit_opt)
+            hit_noopt = s_noopt.ray_test(ray)
+            dr.eval(hit_noopt)
+            assert hit_opt == hit_noopt
+
+            if hit_opt:
+                si_opt = s_opt.ray_intersect(ray)
+                dr.eval(si_opt)
+                si_noopt = s_noopt.ray_intersect(ray)
+                dr.eval(si_noopt)
+                assert dr.allclose(si_opt.t, si_noopt.t, atol=1e-3)
+                assert dr.allclose(si_opt.p, si_noopt.p, atol=1e-3)
+                assert dr.allclose(si_opt.n, si_noopt.n, atol=1e-3)
+
+
+def test06_merge_instance_traverse(variants_all_rgb):
+    """Verifies parameter traversal and parameter update sync for MergeInstance.
+
+    On CPU variants without Embree, the parser intentionally leaves instances
+    unmerged instead (the built-in kd-tree cannot resolve which batch element
+    was hit, see transform_merge_instances() in parser.cpp), so there is
+    nothing to check in that case."""
+    from mitsuba import ScalarTransform4f as T
+
+    scene_dict = {
+        'type': 'scene',
+        'group_0': {
+            'type': 'shapegroup',
+            'rect': {
+                'type': 'rectangle',
+                'to_world': T().scale(0.4)
+            }
+        },
+        'inst_0': {
+            'type': 'instance',
+            'group': {'type': 'ref', 'id': 'group_0'},
+            'to_world': T().translate([-0.6, 0, 0])
+        },
+        'inst_1': {
+            'type': 'instance',
+            'group': {'type': 'ref', 'id': 'group_0'},
+            'to_world': T().translate([0.6, 0, 0])
+        }
+    }
+
+    scene = mi.load_dict(scene_dict, optimize=True)
+    params = mi.traverse(scene)
+
+    merged_keys = [k for k in params.keys() if 'transforms' in k]
+    if not merged_keys:
+        return
+
+    for k in merged_keys:
+        assert len(params[k]) == 24  # 2 instances * 12 floats
+

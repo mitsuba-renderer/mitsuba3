@@ -52,6 +52,18 @@ void MetalAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
     geom_shape_table =
         dr::load<DynamicBuffer<UInt32>>(table.data(), table.size());
 
+    // batch_element_ids[instance_id] is the batch element index within a
+    // MergeInstance for that TLAS instance, or 0 for a non-batch instance
+    // (mirrors InstanceEntry::instance_index, indexed the same way as
+    // geom_shape_offsets, i.e. by the raw instance_id Metal reports for a
+    // hit -- see MetalAccel::ray_intersect_preliminary()).
+    std::vector<uint32_t> batch_indices;
+    batch_indices.reserve(sd.instances.size());
+    for (const InstanceEntry &inst : sd.instances)
+        batch_indices.push_back(inst.instance_index);
+    batch_element_ids =
+        dr::load<DynamicBuffer<UInt32>>(batch_indices.data(), batch_indices.size());
+
     std::tie(accel, scene_index) =
         build_metal_accel(sd, scene->m_compact_accel);
 
@@ -144,6 +156,12 @@ MetalAccel<Float, Spectrum>::ray_intersect_preliminary(
     // ShapeGroup (one per BLAS) share a userID, which is correct.
     UInt32 user_id = dr::select(valid, UInt32::steal(out[7]), dr::zeros<UInt32>());
     pi.instance = dr::reinterpret_array<ShapePtr, UInt32>(user_id);
+
+    // For a MergeInstance hit, recover which batch element was hit so that
+    // MergeInstance::compute_surface_interaction() can gather the matching
+    // transform. Harmless (reads back 0) for every other kind of hit, since
+    // only MergeInstance ever looks at this field.
+    pi.instance_index = dr::gather<UInt32>(batch_element_ids, instance_id, valid);
 
     return pi;
 }

@@ -48,7 +48,8 @@ struct EmbreeAccel {
 
     // --- Declarative traversal ---
     DRJIT_TRAVERSE(EmbreeAccel, accel_handle, func_handle,
-                   occlude_handle, shapes_registry_ids)
+                   occlude_handle, shapes_registry_ids,
+                   batch_element_ids)
 
     /// Native Embree scene, lifetime tied to ``accel_handle`` in JIT variants.
     RTCSceneTy *accel = nullptr;
@@ -65,6 +66,20 @@ struct EmbreeAccel {
     UInt64 func_handle;
     UInt64 occlude_handle;
     DynamicBuffer<UInt32> shapes_registry_ids;
+
+    /// LLVM path: maps a top-level Embree geom_id to its batch element index
+    /// within a MergeInstance. Value is (uint32_t) -1 for non-batch shapes.
+    DynamicBuffer<UInt32> batch_element_ids;
+
+    /// Scalar path: maps a top-level Embree geom_id to its owning index in
+    /// \c scene->m_shapes. A MergeInstance shape emits one geometry per batch
+    /// element, so several consecutive geom_ids can map to the same entry.
+    std::vector<uint32_t> geom_id_to_shape_idx;
+
+    /// Scalar path: maps a top-level Embree geom_id to its batch element
+    /// index within a MergeInstance. Value is (uint32_t) -1 for non-batch
+    /// shapes. Host-side counterpart of \c batch_element_ids.
+    std::vector<uint32_t> geom_id_to_batch_idx;
 };
 
 NAMESPACE_END(mitsuba)

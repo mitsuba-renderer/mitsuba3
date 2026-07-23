@@ -45,7 +45,7 @@ struct MetalAccel {
 
     // --- Declarative traversal (scene handle + recovery tables) ---
     DRJIT_TRAVERSE(MetalAccel, accel_handle, geom_shape_offsets,
-                   geom_shape_table)
+                   geom_shape_table, batch_element_ids)
 
     /// Opaque handle owning the Metal objects (TLAS/BLAS/buffers/library)
     MetalAccelData *accel = nullptr;
@@ -57,6 +57,10 @@ struct MetalAccel {
     /// (instance_id, geometry_id), built in scene_metal.inl.
     DynamicBuffer<UInt32> geom_shape_offsets;
     DynamicBuffer<UInt32> geom_shape_table;
+    /// Maps a TLAS instance_id (see \ref geom_shape_offsets) to its batch
+    /// element index within a MergeInstance. 0 for non-batch instances (see
+    /// \c InstanceEntry::instance_index).
+    DynamicBuffer<UInt32> batch_element_ids;
 
 private:
     /// Trace \c ray, writing eight result variable indices to \c out. With

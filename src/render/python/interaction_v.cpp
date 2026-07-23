@@ -138,6 +138,7 @@ MI_PY_EXPORT(PreliminaryIntersection) {
         .def_field(PreliminaryIntersection3f, prim_uv,     D(PreliminaryIntersection, prim_uv))
         .def_field(PreliminaryIntersection3f, prim_index,  D(PreliminaryIntersection, prim_index))
         .def_field(PreliminaryIntersection3f, shape_index, D(PreliminaryIntersection, shape_index))
+        .def_field(PreliminaryIntersection3f, instance_index, "Instance index (e.g. batch element index)")
         .def_field(PreliminaryIntersection3f, shape,       D(PreliminaryIntersection, shape))
         .def_field(PreliminaryIntersection3f, instance,    D(PreliminaryIntersection, instance))
 
@@ -157,5 +158,5 @@ MI_PY_EXPORT(PreliminaryIntersection) {
         .def_repr(PreliminaryIntersection3f);
 
     MI_PY_DRJIT_STRUCT(pi, PreliminaryIntersection3f, valid, t, prim_uv,
-                       prim_index, shape_index, shape, instance);
+                       prim_index, shape_index, instance_index, shape, instance);
 }

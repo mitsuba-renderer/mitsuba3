@@ -20,7 +20,8 @@ struct ShapeIR {
         BSplineCurve,     ///< cubic B-spline curve
         LinearCurve,      ///< linear curve
         Custom,           ///< AABB/implicit: sphere, disk, cylinder, sdfgrid, ellipsoids
-        Instance          ///< ShapeGroup instance, carries no geometry and is never bucketed
+        Instance,         ///< ShapeGroup instance, carries no geometry and is never bucketed
+        MergeInstance     ///< Merged instances (same ShapeGroup, multiple transforms)
     };
 
     Kind kind = Kind::Custom;
@@ -80,6 +81,11 @@ struct ShapeIR {
     /// BLAS-set cache key (shared by all instances of one ShapeGroup).
     const void *group_id = nullptr;
 
+    // --- MergeInstance ---
+
+    /// All per-instance transforms (column-major 3x4, 12 floats each).
+    std::vector<std::array<float, 12>> batch_to_worlds;
+
     /// Resolved per-shape POD byte count (see \ref data_size).
     size_t data_size_bytes() const {
         return data_size ? data_size : prim_count * pdata_size;
@@ -87,7 +93,7 @@ struct ShapeIR {
 };
 
 /// Number of geometry kinds and the bucket-array size for BLAS partitioning.
-/// Instance is excluded, hence it must remain the last \ref ShapeIR::Kind.
+/// Instance and MergeInstance are excluded from bucketing.
 static constexpr size_t NumGeometryKinds = (size_t) ShapeIR::Kind::Instance;
 
 // ---------------------------------------------------------------------------
@@ -114,6 +120,9 @@ struct InstanceEntry {
 
     /// JIT registry ID of the ShapeGroup, or ``SCENE_IR_NO_OWNER``.
     uint32_t owner_registry_id = SCENE_IR_NO_OWNER;
+
+    /// Batch element index for MergeInstance, or 0.
+    uint32_t instance_index = 0;
 };
 
 /// Scene description consumed by acceleration-structure builders.

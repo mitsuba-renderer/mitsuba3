@@ -17,8 +17,11 @@ void NativeAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
     accel = new ShapeKDTree<Float, Spectrum>(props);
     accel->inc_ref();
 
-    if constexpr (dr::is_llvm_v<Float>)
+    if constexpr (dr::is_llvm_v<Float>) {
         shapes_registry_ids = build_registry_ids<Float, Spectrum>(scene->m_shapes);
+        batch_element_ids = dr::full<DynamicBuffer<UInt32>>(
+            (uint32_t) -1, dr::width(shapes_registry_ids));
+    }
 
     rebuild(scene);
 }
@@ -31,8 +34,24 @@ void NativeAccel<Float, Spectrum>::rebuild(
         dr::sync_thread();
 
     accel->clear();
-    for (Shape *shape : scene->m_shapes)
+    for (Shape *shape : scene->m_shapes) {
+        // MergeInstance stores a single set of batched transforms and relies
+        // on the acceleration structure to report which batch element was
+        // hit (via PreliminaryIntersection::instance_index) so that
+        // MergeInstance::compute_surface_interaction() can look up the
+        // right one. Only the Embree and OptiX/Metal backends currently
+        // implement that; the kd-tree here would silently always resolve to
+        // the first instance of the batch instead of failing loudly, so
+        // reject it explicitly.
+        if (shape->is_merge_instance())
+            Throw("The native (kd-tree) acceleration structure does not "
+                  "support the 'mergeinstance' shape produced by automatic "
+                  "instance merging. Either rebuild Mitsuba with Embree "
+                  "enabled, or disable this optimization by passing "
+                  "optimize=False (or, for the low-level parser API, "
+                  "ParserConfig.merge_instances=False).");
         accel->add_shape(shape);
+    }
     ScopedPhase phase(ProfilerPhase::InitAccel);
     accel->build();
 
@@ -188,7 +207,8 @@ NativeAccel<Float, Spectrum>::ray_intersect_preliminary(
         // The kd-tree traces in ``Float`` precision, so the hit fields are
         // stolen at that width.
         return decode_cpu_llvm_pi<Float, Spectrum, Float>(out,
-                                                          shapes_registry_ids);
+                                                          shapes_registry_ids,
+                                                          batch_element_ids);
     }
 }
 

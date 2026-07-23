@@ -822,6 +822,9 @@ public:
     /// Is this shape an instance?
     bool is_instance() const { return shape_type() == +ShapeType::Instance; };
 
+    /// Is this shape a (batched) MergeInstance?
+    bool is_merge_instance() const { return shape_type() == +ShapeType::MergeInstance; };
+
     /// Does the surface of this shape mark a medium transition?
     bool is_medium_transition() const { return m_interior_medium.get() != nullptr ||
                                                m_exterior_medium.get() != nullptr; }

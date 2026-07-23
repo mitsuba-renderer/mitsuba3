@@ -665,6 +665,9 @@ struct PreliminaryIntersection {
     /// Shape index, e.g. the shape ID in shapegroup (if applicable)
     Index shape_index;
 
+    /// Instance index, e.g. batch element index within a MergeInstance (if applicable)
+    Index instance_index;
+
     /// Pointer to the associated shape
     ShapePtr shape = nullptr;
 
@@ -689,6 +692,7 @@ struct PreliminaryIntersection {
         prim_uv     = dr::zeros<Point2f>(size);
         prim_index  = dr::zeros<Index>(size);
         shape_index = dr::zeros<Index>(size);
+        instance_index = dr::zeros<Index>(size);
 
         if constexpr (dr::is_jit_v<Float_>) {
             shape       = dr::zeros<ShapePtr>(size);
@@ -746,7 +750,7 @@ struct PreliminaryIntersection {
     // =============================================================
 
     DRJIT_STRUCT(PreliminaryIntersection, valid, t, prim_uv, prim_index,
-                 shape_index, shape, instance);
+                 shape_index, instance_index, shape, instance);
 };
 
 // -----------------------------------------------------------------------------

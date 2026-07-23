@@ -1584,11 +1584,124 @@ void transform_relocate(const ParserConfig &/*config*/, ParserState &state,
         Log(Info, "Relocated %zu files.", file_mapping.size());
 }
 
+void transform_merge_instances(const ParserConfig &config,
+                               ParserState &state) {
+    if (!config.merge_instances || state.empty() || state.root().type != ObjectType::Scene)
+        return;
+
+#if !defined(MI_ENABLE_EMBREE)
+    // Without Embree, scalar/LLVM (CPU) variants fall back to the built-in
+    // kd-tree (see NativeAccel in scene_native.inl), which does not support
+    // the 'mergeinstance' shape this pass produces -- it has no way to
+    // recover which batch element was hit. Skip the merge for those variants
+    // and keep individual 'instance' shapes instead; this is a valid
+    // (slower, but always correct) fallback since the kd-tree is a backup
+    // path anyway. CUDA (OptiX) and Metal variants support MergeInstance
+    // regardless of MI_ENABLE_EMBREE, so they are unaffected.
+    if (string::starts_with(config.variant, "scalar_") ||
+        string::starts_with(config.variant, "llvm_"))
+        return;
+#endif
+
+    Properties &root_props = state.root().props;
+
+    // Collect all instance children of the root, grouping them by their
+    // ShapeGroup reference.  An instance node is a Shape node with
+    // plugin_name == "instance" and a single ResolvedReference child that
+    // points to a ShapeGroup node.
+    //
+    // Key: ShapeGroup node index  →  value: list of (property-name, node-index).
+    tsl::robin_map<size_t, std::vector<std::pair<std::string, size_t>>,
+                   std::hash<size_t>>
+        groups;
+    for (const auto &prop :
+             root_props.filter(Properties::Type::ResolvedReference)) {
+        size_t node_idx =
+            prop.get<Properties::ResolvedReference>().index();
+        const SceneNode &node = state[node_idx];
+        if (node.type != ObjectType::Shape ||
+            node.props.plugin_name() != "instance")
+            continue;
+
+        // Find the ShapeGroup reference inside the instance node.
+        size_t group_idx = (size_t) -1;
+        for (const auto &child_prop :
+                 node.props.filter(Properties::Type::ResolvedReference)) {
+            size_t ci =
+                child_prop.get<Properties::ResolvedReference>().index();
+            if (state[ci].type == ObjectType::Shape &&
+                state[ci].props.plugin_name() == "shapegroup") {
+                group_idx = ci;
+                break;
+            }
+        }
+
+        if (group_idx == (size_t) -1)
+            continue;
+
+        groups[group_idx].emplace_back(std::string(prop.name()), node_idx);
+    }
+
+    // Process groups in ascending node-index order: `groups` is a hash map,
+    // whose iteration order is otherwise unspecified and would make the
+    // resulting shape ordering (and hence e.g. shape indices used for
+    // debugging/AOVs) depend on hash bucket layout rather than on the scene
+    // file.
+    std::vector<size_t> group_indices;
+    group_indices.reserve(groups.size());
+    for (const auto &[group_idx, instances] : groups)
+        group_indices.push_back(group_idx);
+    std::sort(group_indices.begin(), group_indices.end());
+
+    // For every ShapeGroup that has ≥ 2 instances, replace them with a
+    // single MergeInstance node.
+    size_t batch_count = 0;
+    for (size_t group_idx : group_indices) {
+        std::vector<std::pair<std::string, size_t>> &instances = groups[group_idx];
+        if (instances.size() < 2)
+            continue;
+
+        // Create a new MergeInstance scene node.
+        SceneNode batch_node;
+        batch_node.type = ObjectType::Shape;
+        batch_node.props.set_plugin_name("mergeinstance");
+
+        // Add a reference to the ShapeGroup.
+        batch_node.props.set("_arg_0",
+                             Properties::ResolvedReference(group_idx), false);
+
+        // Extract each instance's to_world transform and add it as
+        // "to_world_0", "to_world_1", ...
+        for (size_t i = 0; i < instances.size(); ++i) {
+            const SceneNode &inst_node = state[instances[i].second];
+            batch_node.props.set(
+                tfm::format("to_world_%zu", i),
+                inst_node.props.get<ScalarAffineTransform4d>("to_world", ScalarAffineTransform4d()),
+                false);
+        }
+
+        // Remove original instance references from the root.
+        for (const auto &[prop_name, _] : instances)
+            root_props.remove_property(prop_name);
+
+        // Add the new MergeInstance node.
+        root_props.set(tfm::format("_merge_instance_%zu", batch_count++),
+                       Properties::ResolvedReference(state.size()), false);
+        state.nodes.push_back(std::move(batch_node));
+
+        Log(Info, "Merged %zu instance nodes into MergeInstance "
+                  "(shapegroup at index %zu)",
+            instances.size(), group_idx);
+    }
+}
+
 void transform_all(const ParserConfig &config, ParserState &state) {
     transform_upgrade(config, state);
     transform_resolve(config, state);
     if (config.merge_equivalent)
         transform_merge_equivalent(config, state);
+    if (config.merge_instances)
+        transform_merge_instances(config, state);
     if (config.merge_meshes)
         transform_merge_meshes(config, state);
 }

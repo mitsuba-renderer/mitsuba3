@@ -338,7 +338,9 @@ MI_PY_EXPORT(parser) {
         .def_rw("merge_equivalent", &ParserConfig::merge_equivalent,
                 "Enable merging of equivalent nodes (deduplication) (default: true)")
         .def_rw("merge_meshes", &ParserConfig::merge_meshes,
-                "Enable merging of meshes into a single merge shape (default: true)");
+                "Enable merging of meshes into a single merge shape (default: true)")
+        .def_rw("merge_instances", &ParserConfig::merge_instances,
+                "Enable merging of instances into mergeinstance shapes (default: true)");
 
     // Export SceneNode
     nb::class_<SceneNode>(parser, "SceneNode")
@@ -475,6 +477,7 @@ MI_PY_EXPORT(parser) {
             config.parallel = parallel;
             config.merge_equivalent = optimize;
             config.merge_meshes = optimize;
+            config.merge_instances = optimize;
 
             // Set up FileResolver like the old parser does
             fs::path filename(name);
@@ -528,6 +531,7 @@ Parameter ``kwargs``:
             config.parallel = parallel;
             config.merge_equivalent = optimize;
             config.merge_meshes = optimize;
+            config.merge_instances = optimize;
 
             std::vector<ref<Object>> objects;
             {
@@ -564,6 +568,7 @@ Parameter ``kwargs``:
             config.parallel = parallel;
             config.merge_equivalent = optimize;
             config.merge_meshes = optimize;
+            config.merge_instances = optimize;
 
             ref<FileResolver> fs_backup = file_resolver();
             ref<FileResolver> fs = new FileResolver(*fs_backup);
