@@ -1,14 +1,19 @@
 name: Build Python wheels
 on:
-  workflow_dispatch:
-    inputs:
-      upload:
-        description: 'Upload wheels to PyPI? (0: no, 1: yes)'
-        required: true
-        default: '0'
+  # workflow_dispatch:
+  #   inputs:
+  #     upload:
+  #       description: 'Upload wheels to PyPI? (0: no, 1: yes)'
+  #       required: true
+  #       default: '0'
+
+  # pull_request:
+  #   types:
+  #     - opened
+  #     - synchronize
 
 env:
-  VARIANTS: "scalar_rgb,scalar_spectral,scalar_spectral_polarized,llvm_ad_rgb,llvm_ad_mono,llvm_ad_mono_polarized,llvm_ad_spectral,llvm_ad_spectral_polarized,cuda_ad_rgb,cuda_ad_mono,cuda_ad_mono_polarized,cuda_ad_spectral,cuda_ad_spectral_polarized,metal_ad_rgb,metal_ad_mono,metal_ad_mono_polarized,metal_ad_spectral,metal_ad_spectral_polarized"
+  VARIANTS: "scalar_rgb,scalar_acoustic,cuda_ad_rgb,cuda_ad_acoustic,llvm_ad_rgb,llvm_ad_acoustic"
 
 jobs:
   build_wheels:
@@ -114,16 +119,15 @@ jobs:
           name: wheels-${{ matrix.os }}-${{ matrix.python }}
           path: ./wheelhouse/*.whl
 
-  upload_pypi:
-    name: Upload wheels to PyPI
+  upload_testpypi:
+    name: Upload wheels to TestPyPI
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.upload == '1'}}
     needs: [build_wheels]
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
-      #########################
-      # Fetch and upload wheels
-      #########################
       - uses: actions/download-artifact@v4
         with:
           pattern: wheels-*
@@ -132,5 +136,27 @@ jobs:
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          repository-url: https://test.pypi.org/legacy/
           user: __token__
-          password: ${{ secrets.PYPI_PASSWORD }}
+          password: ${{secrets.TESTPYPI_TOKEN}}
+
+  # upload_pypi:
+  #   name: Upload wheels to PyPI
+  #   runs-on: ubuntu-latest
+  #   if: ${{ github.event.inputs.upload == '1'}}
+  #   needs: [build_wheels]
+
+  #   steps:
+  #     #########################
+  #     # Fetch and upload wheels
+  #     #########################
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         pattern: wheels-*
+  #         merge-multiple: true
+  #         path: dist
+
+  #     - uses: pypa/gh-action-pypi-publish@release/v1
+  #       with:
+  #         user: __token__
+  #         password: ${{ secrets.PYPI_PASSWORD }}

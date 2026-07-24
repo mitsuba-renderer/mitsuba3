@@ -10,9 +10,15 @@ build-backend = "scikit_build_core.build"
 
 
 [project]
+<<<<<<< HEAD
 name = "misuka"
 dynamic = ["version"]
 description = "misuka: A Differentiable Room Acoustic Renderer"
+=======
+name = "Misuka"
+dynamic = ["version"]
+description = "misuka: A differentiable room acoustic renderer"
+>>>>>>> eed43721 (Pypi publishing workflow v3.9 (#9))
 readme = "README.md"
 dependencies = [
   "typing_extensions>=4.12;python_version<\"3.11\"",
@@ -20,9 +26,13 @@ dependencies = [
 ]
 requires-python = ">=3.9"
 authors = [
+<<<<<<< HEAD
     { name = "Tobias Jüterbock" },
     { name = "Ugo Finnendahl" },
     { name = "Markus Worchel" },
+=======
+    { name = "Tobias Jüterbock", email = "a.jueterbock@tu-berlin.de" }
+>>>>>>> eed43721 (Pypi publishing workflow v3.9 (#9))
 ]
 license = "PolyForm-Noncommercial-1.0.0 AND BSD-3-Clause"
 license-files = ["LICENSE"]
@@ -64,7 +74,11 @@ skip = "*-musllinux* pp*"
 manylinux-aarch64-image = "manylinux2014"
 
 # Try to import the package to see if it was built correctly (compromise)
+<<<<<<< HEAD
 test-command = ["python -c \"import misuka as mi; mi.set_variant('scalar_rgb')\""]
+=======
+test-command = ["python -c \"import mitsuba as mi; mi.set_variant('scalar_acoustic')\""]
+>>>>>>> eed43721 (Pypi publishing workflow v3.9 (#9))
 
 # Needed for full C++17 support
 [tool.cibuildwheel.macos.environment]
