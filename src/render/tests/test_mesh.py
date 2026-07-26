@@ -1467,3 +1467,26 @@ def test39_custom_vertex_normals(variants_vec_rgb):
 
     # The custom vertex normals should not have been modified.
     assert dr.allclose(params['vertex_normals'], normals)
+
+
+@pytest.mark.parametrize("texcoords", [True, False])
+@pytest.mark.parametrize("flip_normals", [False, True])
+def test40_normal_partials(variant_scalar_rgb, texcoords, flip_normals):
+    from drjit.scalar import ArrayXf as ScalarF
+    from mitsuba.scalar_rgb.test.util import curved_triangle, check_normal_partials
+
+    mesh, normal_field = curved_triangle(flip_normals, texcoords)
+    scene = mi.load_dict({'type': 'scene', 'shape': mesh})
+    flags = mi.RayFlags.All | mi.RayFlags.dNSdUV
+
+    hits = 0
+    for x in dr.linspace(ScalarF, 0.05, 0.5, 6):
+        for y in dr.linspace(ScalarF, 0.05, 0.5, 6):
+            ray = mi.Ray3f(mi.Point3f(x, y, 5), mi.Vector3f(0, 0, -1))
+            si = scene.ray_intersect(ray, flags, True)
+            if not si.is_valid():
+                continue
+            hits += 1
+            check_normal_partials(si, normal_field)
+
+    assert hits > 10, hits
