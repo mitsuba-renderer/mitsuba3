@@ -274,19 +274,6 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         }
     }
 
-    /// Initialize local shading frame using Gram-schmidt orthogonalization
-    void initialize_sh_frame() {
-        sh_frame.s = dr::normalize(
-            dr::fmadd(sh_frame.n, -dr::dot(sh_frame.n, dp_du), dp_du));
-
-        // When dp_du is invalid, use an orthonormal basis
-        Mask singularity_mask = dr::all(dp_du == 0.f);
-        if (unlikely(dr::any_or<true>(singularity_mask)))
-            sh_frame.s[singularity_mask] = coordinate_system(sh_frame.n).first;
-
-        sh_frame.t = dr::cross(sh_frame.n, sh_frame.s);
-    }
-
     /// Convert a local shading-space vector into world space
     Vector3f to_world(const Vector3f &v) const {
         return sh_frame.to_world(v);
@@ -506,11 +493,29 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         time        = ray.time;
         wavelengths = ray.wavelengths;
 
-        if (has_flag(ray_flags, RayFlags::ShadingFrame))
-            initialize_sh_frame();
+        if (has_flag(ray_flags, RayFlags::ShadingFrame)) {
+            // Orthogonalize ``dp_du`` against the shading normal
+            Vector3f n = sh_frame.n,
+                     s = dr::fnmadd(n, dr::dot(n, dp_du), dp_du);
+            Float sqr_norm = dr::squared_norm(s);
 
-        // Incident direction in local coordinates
-        wi = dr::select(active, to_local(-ray.d), -ray.d);
+            std::tie(sh_frame.s, sh_frame.t) = dr::if_stmt(
+                std::make_tuple(n, s, sqr_norm), sqr_norm > 0.f,
+
+                [](Vector3f &n, Vector3f &s, Float &sqr_norm) {
+                    Vector3f s2 = s * dr::rsqrt(sqr_norm);
+                    return std::make_pair(s2, Vector3f(dr::cross(n, s2)));
+                },
+
+                // Fall back to an arbitrary basis when degenerate
+                [](Vector3f &n, Vector3f &, Float &) {
+                    return coordinate_system(n);
+                },
+
+                "SurfaceInteraction::finalize_surface_interaction()"
+            );
+            wi = dr::select(active, to_local(-ray.d), -ray.d);
+        }
 
         duv_dx = duv_dy = dr::zeros<Point2f>();
     }

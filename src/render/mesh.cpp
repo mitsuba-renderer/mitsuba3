@@ -1577,13 +1577,6 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     // Texture coordinates (if available)
     si.uv = Point2f(b1, b2);
 
-    Vector3f dp0 = p1 - p0,
-             dp1 = p2 - p0;
-
-    // Without texture coordinates the parameterization is barycentric
-    si.dp_du = p1 - p0;
-    si.dp_dv = p2 - p0;
-
     if (has_vertex_texcoords() &&
         likely(has_flag(ray_flags, RayFlags::UV) ||
                has_flag(ray_flags, RayFlags::dPdUV))) {
@@ -1602,6 +1595,8 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
             // Fall back to an arbitrary basis for degenerate parameterizations
             std::tie(si.dp_du, si.dp_dv) = coordinate_system(si.n);
 
+            Vector3f dp0 = p1 - p0,
+                     dp1 = p2 - p0;
             Vector2f duv0 = uv1 - uv0,
                      duv1 = uv2 - uv0;
 
@@ -1613,6 +1608,10 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
             si.dp_du[valid] = dr::fmsub( duv1.y(), dp0, duv0.y() * dp1) * inv_det;
             si.dp_dv[valid] = dr::fnmadd(duv1.x(), dp0, duv0.x() * dp1) * inv_det;
         }
+    } else if (likely(has_flag(ray_flags, RayFlags::dPdUV))) {
+        // Without texture coordinates the parameterization is barycentric
+        si.dp_du = p1 - p0;
+        si.dp_dv = p2 - p0;
     }
 
     // Fetch shading normal (if available)

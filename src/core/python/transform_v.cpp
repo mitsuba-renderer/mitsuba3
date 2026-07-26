@@ -181,6 +181,7 @@ void bind_transform(nb::module_ &m, const char *name) {
     cls.def("inverse", &Transform::inverse, D(Transform, inverse))
         .def("translation", &Transform::translation, D(Transform, translation))
         .def("has_scale", &Transform::has_scale, D(Transform, has_scale))
+        .def("is_similarity", &Transform::is_similarity, D(Transform, is_similarity))
         .def_rw("matrix", &Transform::matrix)
         .def_rw("inverse_transpose", &Transform::inverse_transpose)
         .def_repr(Transform);
