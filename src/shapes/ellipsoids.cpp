@@ -405,6 +405,7 @@ public:
         si.sh_frame.n = dr::normalize(rot * (local / dr::square(ellipsoid.scale)));
 
         si.n = si.sh_frame.n;
+
         si.uv    = Point2f(0.f, 0.f);
         si.dp_du = Vector3f(0.f);
         si.dp_dv = Vector3f(0.f);

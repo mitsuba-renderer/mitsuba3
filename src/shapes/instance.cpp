@@ -213,9 +213,6 @@ public:
             }
         }
 
-        if (likely(has_flag(ray_flags, RayFlags::ShadingFrame)))
-            si.initialize_sh_frame();
-
         if (likely(has_flag(ray_flags, RayFlags::dPdUV))) {
             si.dp_du = to_world * si.dp_du;
             si.dp_dv = to_world * si.dp_dv;

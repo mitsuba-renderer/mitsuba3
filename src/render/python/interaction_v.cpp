@@ -57,8 +57,6 @@ MI_PY_EXPORT(SurfaceInteraction) {
         .def(nb::init<const SurfaceInteraction3f &>(), "Copy constructor")
         .def(nb::init<const PositionSample3f &, const Wavelength &>(), "ps"_a,
             "wavelengths"_a, D(SurfaceInteraction, SurfaceInteraction))
-        .def("initialize_sh_frame", &SurfaceInteraction3f::initialize_sh_frame,
-            D(SurfaceInteraction, initialize_sh_frame))
         .def("to_world", &SurfaceInteraction3f::to_world, "v"_a, D(SurfaceInteraction, to_world))
         .def("to_local", &SurfaceInteraction3f::to_local, "v"_a, D(SurfaceInteraction, to_local))
         .def("to_world_mueller", &SurfaceInteraction3f::to_world_mueller, "M_local"_a,

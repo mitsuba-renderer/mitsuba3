@@ -152,12 +152,10 @@ public:
         // Extract center and radius from to_world matrix (25 iterations for numerical accuracy)
         auto [S, Q, T] = dr::transform_decompose(m_to_world.scalar().matrix, 25);
 
-        if (dr::abs(S[0][1]) > 1e-6f || dr::abs(S[0][2]) > 1e-6f || dr::abs(S[1][0]) > 1e-6f ||
-            dr::abs(S[1][2]) > 1e-6f || dr::abs(S[2][0]) > 1e-6f || dr::abs(S[2][1]) > 1e-6f)
-            Log(Warn, "'to_world' transform shouldn't contain any shearing!");
-
-        if (!(dr::abs(S[0][0] - S[1][1]) < 1e-6f && dr::abs(S[0][0] - S[2][2]) < 1e-6f))
-            Log(Warn, "'to_world' transform shouldn't contain non-uniform scaling!");
+        // A sphere must be uniformly scaled (else it is an ellipsoid)
+        if (!m_to_world.scalar().is_similarity())
+            Log(Warn, "'to_world' transform shouldn't contain non-uniform "
+                      "scaling or shearing!");
 
         m_radius = dr::norm(m_to_world.value() * Vector3f(1.f, 0.f, 0.f));
         m_center = m_to_world.value() * Point3f(0.f);
