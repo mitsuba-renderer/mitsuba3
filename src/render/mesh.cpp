@@ -1325,7 +1325,7 @@ Mesh<Float, Spectrum>::precompute_silhouette(
             Pt3f v0           = dr::load<Pt3f>(V + 3 * idx.x());
             Pt3f v1           = dr::load<Pt3f>(V + 3 * idx.y());
             Pt3f v2           = dr::load<Pt3f>(V + 3 * idx.z());
-            Vec3f n           = dr::normalize(dr::cross(v1 - v0, v2 - v0));
+            Vec3f n           = face_normal(v0, v1, v2);
 
             Vec3f to_v0 = dr::normalize(v0 - viewpoint);
             Vec3f to_v1 = dr::normalize(v1 - viewpoint);
@@ -1348,8 +1348,7 @@ Mesh<Float, Spectrum>::precompute_silhouette(
                     Pt3f v0_oppo = dr::load<Pt3f>(V + 3 * v_idx_oppo.x());
                     Pt3f v1_oppo = dr::load<Pt3f>(V + 3 * v_idx_oppo.y());
                     Pt3f v2_oppo = dr::load<Pt3f>(V + 3 * v_idx_oppo.z());
-                    Vec3f n_oppo = dr::normalize(
-                        dr::cross(v1_oppo - v0_oppo, v2_oppo - v0_oppo));
+                    Vec3f n_oppo = face_normal(v0_oppo, v1_oppo, v2_oppo);
 
                     if (dr::dot(dir1, n) * dr::dot(dir1, n_oppo) <= 0.f &&
                         dr::abs(dr::dot(n, n_oppo)) < 1.f) {
@@ -1571,8 +1570,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     si.t = dr::select(active, t, dr::Infinity<Float>);
 
-    // Face normal
-    si.n = face_normal(pi.prim_index, active);
+    si.n = face_normal(p0, p1, p2);
 
     // Texture coordinates (if available)
     si.uv = Point2f(b1, b2);
