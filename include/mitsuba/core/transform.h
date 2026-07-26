@@ -245,9 +245,38 @@ struct Transform {
             for (size_t j = i; j < Size - 1; ++j) {
                 Float sum = 0.f;
                 for (size_t k = 0; k < Size - 1; ++k)
-                    sum += matrix[i][k] * matrix[j][k];
+                    sum = dr::fmadd(matrix[i][k], matrix[j][k], sum);
 
                 mask |= dr::abs(sum - (i == j ? 1.f : 0.f)) > 1e-3f;
+            }
+        }
+        return mask;
+    }
+
+    /**
+     * \brief Test whether the linear part is a similarity, i.e., a
+     * rotation/reflection, potentially with a uniform scale and translation.
+     *
+     * The implementation checks whether <tt>M . M^T</tt> is a multiple of the
+     * identity.
+     */
+    Mask is_similarity() const {
+        constexpr size_t N = Size - 1;
+
+        // Compute the shared uniform scale, if present.
+        Float ref = 0.f;
+        for (size_t i = 0; i < N; ++i)
+            for (size_t k = 0; k < N; ++k)
+                ref = dr::fmadd(matrix[i][k], matrix[i][k], ref);
+        ref *= Scalar(1) / Scalar(N);
+
+        Mask mask(true);
+        for (size_t i = 0; i < N; ++i) {
+            for (size_t j = i; j < N; ++j) {
+                Float sum = 0.f;
+                for (size_t k = 0; k < N; ++k)
+                    sum += matrix[i][k] * matrix[j][k];
+                mask &= dr::abs(sum - (i == j ? ref : 0.f)) <= ref * 1e-3f;
             }
         }
         return mask;

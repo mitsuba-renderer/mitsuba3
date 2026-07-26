@@ -11274,6 +11274,13 @@ static const char *__doc_mitsuba_Transform_from_frame =
 R"doc(Creates a transformation that converts from 'frame' to the standard
 basis)doc";
 
+static const char *__doc_mitsuba_Transform_is_similarity =
+R"doc(Test whether the linear part is a similarity, i.e., a
+rotation/reflection, potentially with a uniform scale and translation.
+
+The implementation checks whether ``M . M^T`` is a multiple of the
+identity.)doc";
+
 static const char *__doc_mitsuba_Transform_has_scale =
 R"doc(Test for a scale component in each transform matrix by checking
 whether ``M . M^T == I`` (where ``M`` is the matrix in question and
