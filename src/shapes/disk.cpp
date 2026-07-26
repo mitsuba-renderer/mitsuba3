@@ -440,14 +440,12 @@ public:
                                                      uint32_t recursion_depth,
                                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
-        constexpr bool IsDiff = dr::is_diff_v<Float>;
 
         // Early exit when tracing isn't necessary
         if (!m_is_instance && recursion_depth > 0)
             return dr::zeros<SurfaceInteraction3f>();
 
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
-        bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
 
         AffineTransform4f to_world = m_to_world.value();
         AffineTransform4f to_object = to_world.inverse();
@@ -455,50 +453,26 @@ public:
         dr::suspend_grad<Float> scope(detach_shape, to_world, to_object, m_frame);
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
-        Point2f prim_uv = pi.prim_uv;
 
-        if constexpr (IsDiff) {
-            if (follow_shape) {
-                /* FollowShape glues the interaction point with the shape.
-                   Therefore, to also account for a possible differential motion
-                   of the shape, we first compute a detached intersection point
-                   in local space and transform it back in world space to get a
-                   point rigidly attached to the shape's motion, including
-                   translation, scaling and rotation. */
-                Point3f local = to_object * ray(pi.t);
-                /* With FollowShape the local position should always be static as
-                   the intersection point follows any motion of the sphere. */
-                local = dr::detach(local);
-                si.p = to_world * local;
-                si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) / dr::squared_norm(ray.d));
-                prim_uv = dr::head<2>(local);
-            } else {
-                /* To ensure that the differential interaction point stays along
-                   the traced ray, we first recompute the intersection distance
-                   in a differentiable way (w.r.t. to the disk parameters) and
-                   then compute the corresponding point along the ray. */
-                PreliminaryIntersection3f pi_d = ray_intersect_preliminary(ray, 0, active);
-                si.t = dr::replace_grad(pi.t, pi_d.t);
-                si.p = ray(si.t);
-                prim_uv = dr::replace_grad(pi.prim_uv, pi_d.prim_uv);
-            }
-        } else {
-            si.t = pi.t;
-            // Re-project onto the disk to improve accuracy
-            Point3f p = ray(pi.t);
-            Float dist = dr::dot(to_world.translation() - p, m_frame.n);
-            si.p = p + dist * m_frame.n;
-        }
+        si.t = pi.t;
+        si.n = dr::detach(m_frame.n);
+
+        // Re-project onto the disk to improve accuracy
+        Point3f p = ray(pi.t);
+        si.p = dr::detach(
+            p + dr::dot(dr::detach(to_world).translation() - p, si.n) * si.n);
+
+        /* Surface position at the detached parameterization: the local
+           coordinates are static as the disk moves. */
+        Point3f p_att = to_world * dr::detach(to_object * si.p);
+
+        si.attach_motion(ray, p_att, ray_flags);
 
         si.t = dr::select(active, si.t, dr::Infinity<Float>);
 
-        // The Metal intersection function cannot forward prim_uv, so recompute
-        // it from si.p. Done after the diff branches, which would otherwise
-        // propagate Metal's zero value through ``replace_grad``.
-        if constexpr (dr::is_metal_v<Float>) {
-            Point3f local = to_object * si.p;
-            prim_uv = Point2f(local.x(), local.y());
-        }
+        // Recover the local coordinates (``pi.prim_uv`` is not set on all backends)
+        Point3f local = to_object * si.p;
+        Point2f prim_uv(local.x(), local.y());
 
         si.n = m_frame.n;
 

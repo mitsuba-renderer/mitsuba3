@@ -342,7 +342,6 @@ public:
                                 uint32_t ray_flags, uint32_t recursion_depth,
                                 Mask active) const override {
         MI_MASK_ARGUMENT(active);
-        constexpr bool IsDiff = dr::is_diff_v<Float>;
 
         // Early exit when tracing isn't necessary
         if (!m_is_instance && recursion_depth > 0)
@@ -351,7 +350,6 @@ public:
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
-        bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
 
         AffineTransform4f to_world  = m_to_world.value();
         AffineTransform4f to_object = to_world.inverse();
@@ -359,71 +357,27 @@ public:
         dr::suspend_grad<Float> scope(detach_shape, to_world, to_object,
                                       m_grid_texture.value());
 
-        if constexpr (IsDiff) {
-            if (follow_shape) {
-                /* FollowShape glues the interaction point with the shape.
-                   Therefore, to also account for a possible differential motion
-                   of the shape, we first compute a detached intersection point
-                   in local space and transform it back in world space to get a
-                   point rigidly attached to the shape's motion, including
-                   translation, scaling and rotation. */
-                Point3f local_p =
-                    dr::detach(to_object * ray(pi.t));
-                Vector3f local_grad = dr::detach(sdf_grad(local_p));
-                Normal3f local_n    = dr::normalize(local_grad);
-                Ray3f local_ray = dr::detach(to_object * ray);
+        Point3f local_p = dr::detach(to_object * ray(pi.t));
+        Vector3f local_grad = dr::detach(sdf_grad(local_p));
+        Normal3f local_n = dr::normalize(local_grad);
 
-                /* Note: Only when applying a motion to the entire shape is the
-                 * interaction point truly "glued" to the shape. For a single
-                 * voxel, the motion of the surface is ambiguous and therefore
-                 * the interaction point is not "glued" to the shape. */
+        si.t = pi.t;
+        si.p = dr::detach(to_world) * local_p;
+        si.n = dr::normalize(dr::detach(to_world) * local_n);
 
-                // Capture gradients of `m_grid_texture`
-                Float sdf_value = m_grid_texture.template eval<dr::Array<Float, 1>>(
-                    rescale_point(local_p)).x();
-                Point3f local_motion =
-                    sdf_value * (-local_n) / dr::dot(local_n, local_grad);
-                local_p = dr::replace_grad(local_p, local_motion);
-
-                // Capture gradients of `m_to_world`
-                si.p = to_world * local_p;
-                si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) /
-                                dr::squared_norm(ray.d));
-            } else {
-                /* To ensure that the differential interaction point stays along
-                   the traced ray, we first recompute the intersection distance
-                   in a differentiable way (w.r.t. to the grid parameters) and
-                   then compute the corresponding point along the ray. (Instead
-                   of computing an intersection with the SDF, we compute an
-                   intersection with the tangent plane.) */
-                Point3f local_p =
-                    dr::detach(to_object * ray(pi.t));
-                Ray3f local_ray = dr::detach(to_object * ray);
-
-                /// Differentiable tangent plane normal
-                // Capture gradients of `m_grid_texture`
-                Normal3f local_n = dr::normalize(sdf_grad(local_p));
-                // Capture gradients of `m_to_world`
-                Normal3f n = to_world * local_n;
-
-                /// Differentiable tangent plane point
-                // Capture gradients of `m_grid_texture`
-                Float sdf_value = m_grid_texture.template eval<dr::Array<Float, 1>>(
-                    rescale_point(local_p)).x();
-
-                Float t_diff =
-                    sdf_value / dr::dot(dr::detach(local_n), -local_ray.d);
-                t_diff = dr::replace_grad(pi.t, t_diff);
-                // Capture gradients of `m_to_world`
-                Point3f p = to_world * local_ray(t_diff);
-
-                si.t = dr::dot(p - ray.o, n) / dr::dot(n, ray.d);
-                si.p = ray(si.t);
-            }
-        } else {
-            si.t = pi.t;
-            si.p = ray(si.t);
+        Point3f p_att = si.p;
+        if constexpr (dr::is_diff_v<Float>) {
+            /* Position at the detached parameterization. Only a motion of the
+               entire shape truly glues the interaction point to the surface:
+               for a single voxel the motion is ambiguous. */
+            Float sdf_value = m_grid_texture.template eval<dr::Array<Float, 1>>(
+                rescale_point(local_p)).x();
+            Point3f local_motion =
+                sdf_value * (-local_n) / dr::dot(local_n, local_grad);
+            p_att = to_world * dr::replace_grad(local_p, local_motion);
         }
+
+        si.attach_motion(ray, p_att, ray_flags);
 
         si.t = dr::select(active, si.t, dr::Infinity<Float>);
 
@@ -445,7 +399,6 @@ public:
                     Throw("Unknown normal computation.");
             }
         }
-
 
         si.prim_index = pi.prim_index;
         si.shape    = this;

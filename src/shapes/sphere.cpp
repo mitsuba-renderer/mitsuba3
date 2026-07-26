@@ -632,7 +632,6 @@ public:
                                                      uint32_t recursion_depth,
                                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
-        constexpr bool IsDiff = dr::is_diff_v<Float>;
 
         // Early exit when tracing isn't necessary
         if (!m_is_instance && recursion_depth > 0)
@@ -640,7 +639,6 @@ public:
 
         bool shading      = has_flag(ray_flags, RayFlags::Shading);
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
-        bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
 
         const Point3f& center = m_center.value();
         const Float& radius = m_radius.value();
@@ -654,41 +652,21 @@ public:
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
-        Point3f local;
-        if constexpr (IsDiff) {
-            if (follow_shape) {
-                /* FollowShape glues the interaction point with the shape.
-                   Therefore, to also account for a possible differential motion
-                   of the shape, we first compute a detached intersection point
-                   in local space and transform it back in world space to get a
-                   point rigidly attached to the shape's motion, including
-                   translation, scaling and rotation. */
-                local = to_object * ray(pi.t);
-                /* With FollowShape the local position should always be static as
-                   the intersection point follows any motion of the sphere. */
-                local = dr::detach(local);
-                si.p = to_world * local;
-                si.sh_frame.n = (si.p - center) / radius;
-                si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) / dr::squared_norm(ray.d));
-            } else {
-                /* To ensure that the differential interaction point stays along
-                   the traced ray, we first recompute the intersection distance
-                   in a differentiable way (w.r.t. to the sphere parameters) and
-                   then compute the corresponding point along the ray. */
-                si.t = dr::replace_grad(pi.t, ray_intersect_preliminary(ray, 0, active).t);
-                si.p = ray(si.t);
-                si.sh_frame.n = dr::normalize(si.p - center);
-                local = to_object * si.p;
-            }
-        } else {
-            si.t = pi.t;
-            si.sh_frame.n = dr::normalize(ray(si.t) - center);
-            // Re-project onto the sphere to improve accuracy
-            si.p = dr::fmadd(si.sh_frame.n, radius, center);
-            local = to_object * si.p;
-        }
+        // Re-project onto the sphere to improve accuracy
+        si.t = pi.t;
+        si.n = dr::detach(dr::normalize(ray(pi.t) - center));
+        si.p = dr::detach(dr::fmadd(si.n, radius, center));
+
+        /* Surface position at the detached parameterization: the local
+           coordinates are static as the sphere moves. */
+        Point3f p_att = to_world * dr::detach(to_object * si.p);
+
+        si.attach_motion(ray, p_att, ray_flags);
 
         si.t = dr::select(active, si.t, dr::Infinity<Float>);
+
+        si.sh_frame.n = dr::normalize(si.p - center);
+        Point3f local = to_object * si.p;
 
         if (likely(shading)) {
             Point2f angles = dir_to_sph(Vector3f(local));
