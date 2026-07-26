@@ -1502,6 +1502,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         return dr::zeros<SurfaceInteraction3f>();
 
     constexpr bool IsDiff = dr::is_diff_v<Float>;
+    bool detach = IsDiff && has_flag(ray_flags, RayFlags::DetachShape);
 
     Vector3u fi = face_indices(pi.prim_index, active);
 
@@ -1509,66 +1510,48 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
             p1 = vertex_position(fi[1], active),
             p2 = vertex_position(fi[2], active);
 
-    Float t = pi.t;
-    Point2f prim_uv = pi.prim_uv;
-
-    if constexpr (IsDiff) {
-        /* On a high level, the computed surface interaction has gradients
-           attached due to (1) ray.o, (2) ray.d, (3) motion of the intersected
-           triangle.
-           Moeller and Trumbore method bridges the gradients at 'ray' and the
-           computed surface interaction. But the effects of the third part
-           remains ambiguous. 'DetachShape' explicitly detaches the three
-           vertices, which is equivalent to computing a 'hit point' of a laser
-           characterized by 'ray'. 'FollowShape' on the other hand first finds
-           the 'hit point', then glues the interaction point with the
-           intersected triangle. For this reason, it no longer tracks
-           infinitesimal changes of the laser ('ray') itself.
-           Note that these two flags not only affects the interaction point
-           position, but also the distance and local differential geometry. */
-        if (has_flag(ray_flags, RayFlags::DetachShape) &&
-            has_flag(ray_flags, RayFlags::FollowShape))
-            Throw("Invalid combination of RayFlags: DetachShape | FollowShape");
-
-        if (has_flag(ray_flags, RayFlags::DetachShape)) {
-            p0 = dr::detach<true>(p0);
-            p1 = dr::detach<true>(p1);
-            p2 = dr::detach<true>(p2);
-        }
-
-        /* When either the input ray or the vertex positions (p0, p1, p2) have
-           gradient tracking enabled, we need to perform a differentiable
-           ray-triangle intersection (done here via the method by Moeller and
-           Trumbore). The result is mapped through `dr::replace_grad` so that we
-           don't actually recompute the primal intersection but only use the
-           intersection computation graph for derivative tracking (this assumes
-           that the function is eventually differentiated). When the
-           'FollowShape' ray flag is specified, we skip this part since the
-           intersection position should be rigidly attached to the mesh. */
-        if (dr::grad_enabled(p0, p1, p2, ray.o, ray.d /* <- any enabled? */) &&
-            !has_flag(ray_flags, RayFlags::FollowShape)) {
-            auto [t_d, prim_uv_d, hit] =
-                moeller_trumbore(ray, p0, p1, p2);
-
-            prim_uv = dr::replace_grad(prim_uv, prim_uv_d);
-            t = dr::replace_grad(t, t_d);
-        }
+    if (detach) {
+        p0 = dr::detach(p0);
+        p1 = dr::detach(p1);
+        p2 = dr::detach(p2);
     }
 
-    Float b1 = prim_uv.x(),
-          b2 = prim_uv.y(),
+    Float b1 = pi.prim_uv.x(),
+          b2 = pi.prim_uv.y(),
           b0 = 1.f - b1 - b2;
 
     SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
-    // Re-interpolate intersection using barycentric coordinates
-    si.p = dr::fmadd(p0, b0, dr::fmadd(p1, b1, p2 * b2));
+    // Surface position at the detached barycentric coordinates
+    Point3f p_att = dr::fmadd(p0, b0, dr::fmadd(p1, b1, p2 * b2));
 
-    // Potentially recompute the distance traveled to the surface interaction hit point
-    if (IsDiff && has_flag(ray_flags, RayFlags::FollowShape))
-        t = dr::sqrt(dr::squared_norm(si.p - ray.o) / dr::squared_norm(ray.d));
+    si.t = pi.t;
+    si.p = dr::detach(p_att);
+    si.n = dr::detach(face_normal(p0, p1, p2));
 
-    si.t = dr::select(active, t, dr::Infinity<Float>);
+    si.attach_motion(ray, p_att, ray_flags);
+
+    if constexpr (IsDiff) {
+        /* Let the barycentric coordinates follow the sliding of the
+           interaction point across the moving triangle */
+        if (!has_flag(ray_flags, RayFlags::FollowShape) &&
+            dr::grad_enabled(p0, p1, p2, ray.o, ray.d)) {
+            Vector3f du  = p1 - p0,
+                     dv  = p2 - p0,
+                     rel = si.p - p_att;
+
+            Float a11 = dr::dot(du, du), a12 = dr::dot(du, dv),
+                  a22 = dr::dot(dv, dv),
+                  inv_det = dr::rcp(dr::fmsub(a11, a22, a12 * a12)),
+                  r1 = dr::dot(du, rel), r2 = dr::dot(dv, rel);
+
+            b1 = dr::replace_grad(b1, b1 + dr::fmsub (a22, r1, a12 * r2) * inv_det);
+            b2 = dr::replace_grad(b2, b2 + dr::fnmadd(a12, r1, a11 * r2) * inv_det);
+            b0 = 1.f - b1 - b2;
+        }
+    }
+
+    si.t = dr::select(active, si.t, dr::Infinity<Float>);
 
     si.n = face_normal(p0, p1, p2);
 
@@ -1576,7 +1559,6 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         si.n = -si.n;
 
     if (likely(has_flag(ray_flags, RayFlags::Shading))) {
-        bool detach  = IsDiff && has_flag(ray_flags, RayFlags::DetachShape);
         bool need_dn = has_vertex_normals() &&
                        has_flag(ray_flags, RayFlags::NormalPartials);
 
@@ -1587,10 +1569,11 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
             Normal3f n0 = vertex_normal(fi[0], active),
                      n1 = vertex_normal(fi[1], active),
                      n2 = vertex_normal(fi[2], active);
+
             if (detach) {
-                n0 = dr::detach<true>(n0);
-                n1 = dr::detach<true>(n1);
-                n2 = dr::detach<true>(n2);
+                n0 = dr::detach(n0);
+                n1 = dr::detach(n1);
+                n2 = dr::detach(n2);
             }
 
             Normal3f n = dr::fmadd(n2, b2, dr::fmadd(n1, b1, n0 * b0));
@@ -1620,10 +1603,11 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
             Point2f uv0 = vertex_texcoord(fi[0], active),
                     uv1 = vertex_texcoord(fi[1], active),
                     uv2 = vertex_texcoord(fi[2], active);
+
             if (detach) {
-                uv0 = dr::detach<true>(uv0);
-                uv1 = dr::detach<true>(uv1);
-                uv2 = dr::detach<true>(uv2);
+                uv0 = dr::detach(uv0);
+                uv1 = dr::detach(uv1);
+                uv2 = dr::detach(uv2);
             }
 
             si.uv = dr::fmadd(uv2, b2, dr::fmadd(uv1, b1, uv0 * b0));

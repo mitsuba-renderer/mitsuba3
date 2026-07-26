@@ -398,14 +398,27 @@ public:
         ellipsoid.scale *= m_ellipsoids.template extents<Float>(pi.prim_index, active);
         auto rot = dr::quat_to_matrix<Matrix3f>(ellipsoid.quat);
 
-        si.t = dr::select(active, pi.t, dr::Infinity<Float>);
-        si.p = ray(pi.t);
+        // The local coordinates are static as the ellipsoid moves
+        si.t = pi.t;
+        si.p = dr::detach(ray(pi.t));
+        Point3f local_d =
+            dr::detach(dr::transpose(rot) * (si.p - ellipsoid.center));
+
+        si.n = dr::detach(
+            dr::normalize(rot * (local_d / dr::square(ellipsoid.scale))));
+
+        Point3f p_att = ellipsoid.center +
+                        rot * (ellipsoid.scale *
+                               (local_d / dr::detach(ellipsoid.scale)));
+
+        si.attach_motion(ray, p_att, ray_flags);
+
+        si.t = dr::select(active, si.t, dr::Infinity<Float>);
 
         Point3f local = dr::transpose(rot) * (si.p - ellipsoid.center);
         si.sh_frame.n = dr::normalize(rot * (local / dr::square(ellipsoid.scale)));
 
         si.n = si.sh_frame.n;
-
 
         si.prim_index = pi.prim_index;
         si.shape      = this;

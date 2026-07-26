@@ -492,6 +492,49 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     }
 
     /**
+     * \brief Attach the motion of this interaction under the requested
+     * differentiation mode
+     *
+     * This function exists for use within implementations of \ref
+     * Shape::compute_surface_interaction(). It reads \c t, \c p and \c n and
+     * updates the AD state of \c t and \c p, so that their derivatives express
+     * how the interaction point responds to a change of the scene parameters:
+     * it either stays on the ray while the surface moves underneath it (the
+     * default), or follows the surface (\ref RayFlags::FollowShape).
+     * The case \ref RayFlags::DetachShape must be handled on the caller's end.
+     *
+     * Shapes that recover their local coordinates from \c p need nothing
+     * further. Those parameterized by \c pi.prim_uv must furthermore update it
+     * to match \ref p by projecting the (primal-zero) displacement ``p -
+     * p_att`` onto the tangent basis and attaching it via \c dr::replace_grad.
+     *
+     * \param p_att
+     *      Surface position at the *detached* parameterization, attached to the
+     *      shape's parameters. Its primal value equals \c p.
+     */
+    void attach_motion(const Ray3f &ray, const Point3f &p_att, uint32_t ray_flags) {
+        if constexpr (!dr::is_diff_v<Float>) {
+            DRJIT_MARK_USED(ray);
+            DRJIT_MARK_USED(p_att);
+            DRJIT_MARK_USED(ray_flags);
+        } else if (has_flag(ray_flags, RayFlags::FollowShape)) {
+            // Glue the interaction point to the shape: it is then no longer
+            // tied to the ray, and the distance follows the surface motion.
+            Float t_att = dr::norm(p_att - ray.o) / dr::norm(ray.d);
+            t = dr::replace_grad(t, t_att);
+            p = dr::replace_grad(p, p_att);
+        } else {
+            // Keep the interaction point on the ray, intersecting the moving
+            // tangent plane at the hit point. The normal is detached (dependence
+            // on it would be a higher order effect.)
+            Normal3f nd = dr::detach(n);
+            Float t_att = dr::dot(p_att - ray.o, nd) / dr::dot(nd, ray.d);
+            t = dr::replace_grad(t, t_att);
+            p = dr::replace_grad(p, ray(t));
+        }
+    }
+
+    /**
      * \brief Fills uninitialized fields after a call to \ref Shape::compute_surface_interaction()
      *
      * \param pi
