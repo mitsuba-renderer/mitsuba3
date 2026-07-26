@@ -7,7 +7,6 @@ MI_PY_EXPORT(RayFlags) {
         .def_value(RayFlags, Minimal)
         .def_value(RayFlags, UV)
         .def_value(RayFlags, dPdUV)
-        .def_value(RayFlags, dNGdUV)
         .def_value(RayFlags, dNSdUV)
         .def_value(RayFlags, ShadingFrame)
         .def_value(RayFlags, FollowShape)

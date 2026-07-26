@@ -172,3 +172,83 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6,
         # Compare results
         for i in range(len(results_scalar)):
             assert dr.allclose(results_vec[i], np.transpose(results_scalar[i]), atol=atol)
+
+
+def curved_triangle(flip_normals=False, texcoords=True):
+    """
+    Build a single triangle whose randomly generated vertex normals give it
+    curvature, and return an exact model of its shading normal along with it.
+
+    Parameter ``texcoords`` (bool):
+        Assign a random parameterization, which is not the barycentric one.
+
+    Returns a ``(mesh, normal_field)`` pair, where ``normal_field(u, v)``
+    evaluates the unit shading normal in double precision.
+    """
+    import numpy as np
+    import mitsuba as mi
+
+    props = mi.Properties()
+    props['flip_normals'] = flip_normals
+    mesh = mi.Mesh("curved_triangle", 3, 1, props, has_vertex_normals=True,
+                   has_vertex_texcoords=texcoords)
+
+    rng = np.random.default_rng(0)
+    p = mi.traverse(mesh)
+    p['faces'] = [0, 1, 2]
+    p['vertex_positions'] = [0, 0, 0,  1, 0, 0,  0, 1, 0]
+    # Tilt the normals away from the triangle's own, but keep them on its side
+    p['vertex_normals'] = (rng.normal(size=(3, 3)) + [0, 0, 4]).ravel()
+    if texcoords:
+        p['vertex_texcoords'] = rng.random(6)
+    p.update()
+
+    # Without texture coordinates the parameterization is barycentric, which
+    # the identity below turns into the same change of variables
+    n = np.array(p['vertex_normals'], dtype=np.float64).reshape(3, 3)
+    uv = (np.array(p['vertex_texcoords'], dtype=np.float64).reshape(3, 2)
+          if texcoords else np.array([[0., 0.], [1., 0.], [0., 1.]]))
+    to_bary = np.linalg.inv(np.column_stack((uv[1] - uv[0], uv[2] - uv[0])))
+
+    def normal_field(u, v):
+        b = to_bary @ (np.array([u, v]) - uv[0])
+        ni = (1 - b[0] - b[1]) * n[0] + b[0] * n[1] + b[1] * n[2]
+        return (-1 if flip_normals else 1) * ni / np.linalg.norm(ni)
+
+    return mesh, normal_field
+
+
+def check_normal_partials(si, normal_field, to_world=None, h=1e-3, rtol=2e-3):
+    """
+    Check ``si.dn_du``/``si.dn_dv`` against central differences of an exact
+    normal field, and return the relative error.
+
+    Parameter ``normal_field`` (callable):
+        Maps ``(u, v)`` to the unit shading normal, in double precision.
+
+    Parameter ``to_world`` (``mi.ScalarTransform4f``):
+        If given, map the field to world space through the inverse transpose,
+        as a shape's ``to_world`` or an instance transform does.
+    """
+    import numpy as np
+
+    field = normal_field
+    if to_world is not None:
+        N = np.linalg.inv(np.array(to_world.matrix, dtype=np.float64)[:3, :3]).T
+
+        def field(u, v):
+            n = N @ normal_field(u, v)
+            return n / np.linalg.norm(n)
+
+    u, v = float(si.uv[0]), float(si.uv[1])
+    ref = [(field(u + h, v) - field(u - h, v)) / (2 * h),
+           (field(u, v + h) - field(u, v - h)) / (2 * h)]
+
+    scale = max(np.linalg.norm(ref[0]), np.linalg.norm(ref[1]), 1.0)
+    err = max(np.abs(np.array(d).ravel() - r).max()
+              for d, r in zip((si.dn_du, si.dn_dv), ref)) / scale
+
+    assert err < rtol, (f"normal partials at uv=({u}, {v}) are off by {err}:\n"
+                        f"  dn_du = {si.dn_du}, expected {ref[0]}\n"
+                        f"  dn_dv = {si.dn_dv}, expected {ref[1]}")
+    return err
