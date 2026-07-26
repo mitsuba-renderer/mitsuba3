@@ -330,7 +330,7 @@ public:
         if (!m_is_instance && recursion_depth > 0)
             return dr::zeros<SurfaceInteraction3f>();
 
-        bool need_uv = has_flag(ray_flags, RayFlags::UV);
+        bool shading = has_flag(ray_flags, RayFlags::Shading);
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.t = dr::select(active, pi.t, dr::Infinity<Float>);
@@ -353,16 +353,15 @@ public:
         std::tie(u_rot, u_rad) = local_frame(dr::normalize(p1 - p0));
 
         Point3f c = p0 * (1.f - v_local) + p1 * v_local;
-        si.n = si.sh_frame.n = dr::normalize(si.p - c);
+        si.n = dr::normalize(si.p - c);
 
         // Embree and OptiX cull linear-curve backfaces at trace time; Metal's
         // HW intersector reports both sides. Drop inside hits to match (a no-op
         // on backends that already cull).
         this->cull_backface(si, ray, active);
 
-        if (need_uv) {
-            Vector3f rad_vec = si.p - c;
-            Vector3f rad_vec_normalized = dr::normalize(rad_vec);
+        if (shading) {
+            Vector3f rad_vec_normalized = dr::normalize(si.p - c);
 
             Float u = dr::atan2(dr::dot(u_rot, rad_vec_normalized),
                                 dr::dot(u_rad, rad_vec_normalized));
@@ -371,6 +370,7 @@ public:
             Float v = (v_local + prim_idx) / dr::width(m_indices);
 
             si.uv = Point2f(u, v);
+            si.sh_frame.n = si.n;
         }
 
         si.prim_index = pi.prim_index;

@@ -638,10 +638,7 @@ public:
         if (!m_is_instance && recursion_depth > 0)
             return dr::zeros<SurfaceInteraction3f>();
 
-        // Fields requirement dependencies
-        bool need_dn_duv  = has_flag(ray_flags, RayFlags::dNSdUV);
-        bool need_dp_duv  = has_flag(ray_flags, RayFlags::dPdUV) || need_dn_duv;
-        bool need_uv      = has_flag(ray_flags, RayFlags::UV) || need_dp_duv;
+        bool shading      = has_flag(ray_flags, RayFlags::Shading);
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
         bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
 
@@ -693,7 +690,7 @@ public:
 
         si.t = dr::select(active, si.t, dr::Infinity<Float>);
 
-        if (likely(need_uv)) {
+        if (likely(shading)) {
             Point2f angles = dir_to_sph(Vector3f(local));
             Float theta = angles.x();
             Float phi = angles.y();
@@ -701,38 +698,34 @@ public:
             dr::masked(phi, phi < 0.f) += 2.f * dr::Pi<Float>;
             si.uv = Point2f(phi * dr::InvTwoPi<Float>, theta * dr::InvPi<Float>);
 
-            if (likely(need_dp_duv)) {
-                si.dp_du = Vector3f(-local.y(), local.x(), 0.f);
+            si.dp_du = Vector3f(-local.y(), local.x(), 0.f);
 
-                Float rd_2    = dr::square(local.x()) + dr::square(local.y()),
-                      rd      = dr::sqrt(rd_2),
-                      inv_rd  = dr::rcp(rd),
-                      cos_phi = local.x() * inv_rd,
-                      sin_phi = local.y() * inv_rd;
+            Float rd_2    = dr::square(local.x()) + dr::square(local.y()),
+                  rd      = dr::sqrt(rd_2),
+                  inv_rd  = dr::rcp(rd),
+                  cos_phi = local.x() * inv_rd,
+                  sin_phi = local.y() * inv_rd;
 
-                si.dp_dv = Vector3f(local.z() * cos_phi,
-                                    local.z() * sin_phi,
-                                    -rd);
+            si.dp_dv = Vector3f(local.z() * cos_phi, local.z() * sin_phi, -rd);
 
-                Mask singularity_mask = active && (rd == 0.f);
-                if (unlikely(dr::any_or<true>(singularity_mask)))
-                    si.dp_dv[singularity_mask] = Vector3f(1.f, 0.f, 0.f);
+            Mask singularity_mask = active && (rd == 0.f);
+            if (unlikely(dr::any_or<true>(singularity_mask)))
+                si.dp_dv[singularity_mask] = Vector3f(1.f, 0.f, 0.f);
 
-                si.dp_du = to_world * si.dp_du * (2.f * dr::Pi<Float>);
-                si.dp_dv = to_world * si.dp_dv * dr::Pi<Float>;
+            si.dp_du = to_world * si.dp_du * (2.f * dr::Pi<Float>);
+            si.dp_dv = to_world * si.dp_dv * dr::Pi<Float>;
+
+            if (has_flag(ray_flags, RayFlags::NormalPartials)) {
+                Float inv_radius =
+                    (m_flip_normals ? -1.f : 1.f) * dr::rcp(radius);
+                si.dn_du = si.dp_du * inv_radius;
+                si.dn_dv = si.dp_dv * inv_radius;
             }
         }
 
         if (m_flip_normals)
             si.sh_frame.n = -si.sh_frame.n;
         si.n = si.sh_frame.n;
-
-        if (need_dn_duv) {
-            Float inv_radius =
-                (m_flip_normals ? -1.f : 1.f) * dr::rcp(radius);
-            si.dn_du = si.dp_du * inv_radius;
-            si.dn_dv = si.dp_dv * inv_radius;
-        }
 
         si.prim_index = pi.prim_index;
         si.shape    = this;

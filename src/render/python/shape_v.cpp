@@ -13,6 +13,7 @@
 #include <nanobind/stl/string_view.h>
 #include <nanobind/stl/vector.h>
 #include <nanobind/stl/tuple.h>
+#include <nanobind/stl/pair.h>
 #include <nanobind/stl/optional.h>
 #include <drjit/python.h>
 
@@ -113,7 +114,7 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
                Mask active) {
                 return shape->compute_surface_interaction(ray, pi, ray_flags, 0, active);
             },
-            "ray"_a, "pi"_a, "ray_flags"_a = +RayFlags::All,
+            "ray"_a, "pi"_a, "ray_flags"_a = +RayFlags::Default,
             "active"_a = true, D(Shape, compute_surface_interaction))
        .def("has_attribute",
             [](Ptr shape, const std::string &name, const Mask &active) {
@@ -153,7 +154,7 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             [](Ptr shape, const Ray3f &ray, uint32_t flags, const Mask &active) {
                 return shape->ray_intersect(ray, flags, active);
             },
-            "ray"_a, "ray_flags"_a = +RayFlags::All, "active"_a = true,
+            "ray"_a, "ray_flags"_a = +RayFlags::Default, "active"_a = true,
             D(Shape, ray_intersect))
        .def("ray_test",
             [](Ptr shape, const Ray3f &ray, const Mask &active) {
@@ -229,7 +230,7 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             [](Ptr shape, const Point2f &uv, uint32_t ray_flags, Mask active) {
                 return shape->eval_parameterization(uv, ray_flags, active);
             },
-            "uv"_a, "ray_flags"_a = +RayFlags::All, "active"_a = true,
+            "uv"_a, "ray_flags"_a = +RayFlags::Default, "active"_a = true,
             D(Shape, eval_parameterization))
        .def("surface_area",
             [](Ptr shape) {

@@ -120,7 +120,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
         SurfaceInteraction3f si = scene->ray_intersect(
-            ray, +RayFlags::All, /* coherent = */ true, active);
+            ray, +RayFlags::Default, /* coherent = */ true, active);
 
         Spectrum result(0.f);
 
@@ -136,7 +136,7 @@ public:
                 PreliminaryIntersection3f pi =
                     Base::skip_area_emitters(scene, ray_skip, true, skip_emitters);
                 SurfaceInteraction3f si_after_skip = pi.compute_surface_interaction(
-                        ray, +RayFlags::All, skip_emitters);
+                        ray, +RayFlags::Default, skip_emitters);
                 dr::masked(si, skip_emitters) = si_after_skip;
             }
         } else {

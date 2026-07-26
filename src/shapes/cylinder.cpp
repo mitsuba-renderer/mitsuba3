@@ -684,8 +684,6 @@ public:
         if (!m_is_instance && recursion_depth > 0)
             return dr::zeros<SurfaceInteraction3f>();
 
-        // Fields requirement dependencies
-        bool need_dn_duv  = has_flag(ray_flags, RayFlags::dNSdUV);
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
         bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
 
@@ -733,16 +731,11 @@ public:
 
         si.t = dr::select(active, si.t, dr::Infinity<Float>);
 
-        // si.uv
-        Float phi = dr::atan2(local.y(), local.x());
-        dr::masked(phi, phi < 0.f) += dr::TwoPi<Float>;
-        si.uv = Point2f(phi * dr::InvTwoPi<Float>, local.z());
-        // si.dp_duv & si.n
-        Vector3f dp_du = dr::TwoPi<Float> * Vector3f(-local.y(), local.x(), 0.f);
-        Vector3f dp_dv = Vector3f(0.f, 0.f, 1.f);
-        si.dp_du = to_world * dp_du;
-        si.dp_dv = to_world * dp_dv;
-        si.n = Normal3f(dr::normalize(dr::cross(si.dp_du, si.dp_dv)));
+        Vector3f dp_du = to_world * (dr::TwoPi<Float> *
+                                     Vector3f(-local.y(), local.x(), 0.f)),
+                 dp_dv = to_world * Vector3f(0.f, 0.f, 1.f);
+
+        si.n = Normal3f(dr::normalize(dr::cross(dp_du, dp_dv)));
 
         if constexpr (!IsDiff) {
             /* Mitigate roundoff error issues by a normal shift of the computed
@@ -752,11 +745,20 @@ public:
 
         if (m_flip_normals)
             si.n = -si.n;
-        si.sh_frame.n = si.n;
 
-        if (likely(need_dn_duv)) {
-            si.dn_du = si.dp_du / (radius * (m_flip_normals ? -1.f : 1.f));
-            si.dn_dv = Vector3f(0.f);
+        if (likely(has_flag(ray_flags, RayFlags::Shading))) {
+            Float phi = dr::atan2(local.y(), local.x());
+            dr::masked(phi, phi < 0.f) += dr::TwoPi<Float>;
+
+            si.uv         = Point2f(phi * dr::InvTwoPi<Float>, local.z());
+            si.dp_du      = dp_du;
+            si.dp_dv      = dp_dv;
+            si.sh_frame.n = si.n;
+
+            // The normal partial along 'v' vanishes, the cylinder is straight
+            if (has_flag(ray_flags, RayFlags::NormalPartials))
+                si.dn_du = dp_du * ((m_flip_normals ? -1.f : 1.f) *
+                                    dr::rcp(m_radius.value()));
         }
 
         si.prim_index = pi.prim_index;

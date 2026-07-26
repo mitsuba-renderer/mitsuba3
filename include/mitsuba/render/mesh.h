@@ -290,7 +290,7 @@ public:
                              Mask active = true) const override;
 
     SurfaceInteraction3f eval_parameterization(const Point2f &uv,
-                                               uint32_t ray_flags = +RayFlags::All,
+                                               uint32_t ray_flags = +RayFlags::Default,
                                                Mask active = true) const override;
 
     void set_scene(Scene<Float, Spectrum> *scene) { m_scene = scene; }

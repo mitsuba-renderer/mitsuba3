@@ -150,7 +150,7 @@ MI_PY_EXPORT(PreliminaryIntersection) {
                        std::forward<const Ray3f&>(ray), ray_flags, active);
            },
            D(PreliminaryIntersection, compute_surface_interaction),
-           "ray"_a, "ray_flags"_a = +RayFlags::All, "active"_a = true)
+           "ray"_a, "ray_flags"_a = +RayFlags::Default, "active"_a = true)
         .def("zero_", &PreliminaryIntersection3f::zero_, D(PreliminaryIntersection, zero))
         .def_repr(PreliminaryIntersection3f);
 

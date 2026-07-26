@@ -232,7 +232,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().scale(1 + theta)
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.DetachShape)
+    si = shape.ray_intersect(ray, mi.RayFlags.Default | mi.RayFlags.DetachShape)
 
     dr.forward(theta)
 
@@ -250,7 +250,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().scale(1 + theta)
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All)
+    si = shape.ray_intersect(ray, mi.RayFlags.Default)
 
     dr.forward(theta)
 
@@ -268,7 +268,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().translate([theta, 0.0, 0.0])
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
+    si = shape.ray_intersect(ray, mi.RayFlags.Default | mi.RayFlags.FollowShape)
 
     dr.forward(theta)
 
@@ -286,7 +286,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().rotate([0, 1, 0], 90 * theta)
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
+    si = shape.ray_intersect(ray, mi.RayFlags.Default | mi.RayFlags.FollowShape)
 
     dr.forward(theta)
 
@@ -304,7 +304,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().rotate([1, 0, 0], 90 * theta)
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All)
+    si = shape.ray_intersect(ray, mi.RayFlags.Default)
 
     dr.forward(theta)
 
@@ -504,7 +504,7 @@ def test21_normal_partials(variant_scalar_rgb):
 
     scene = mi.load_dict({'type': 'scene',
                           'shape': {'type': 'sphere', 'radius': 0.8}})
-    flags = mi.RayFlags.All | mi.RayFlags.dNSdUV
+    flags = mi.RayFlags.Default | mi.RayFlags.NormalPartials
 
     def normal_field(u, v):
         phi, theta = 2 * np.pi * u, np.pi * v

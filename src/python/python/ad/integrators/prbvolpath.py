@@ -227,7 +227,7 @@ class PRBVolpathIntegrator(RBIntegrator):
 
                     ray_skip = si.spawn_ray(ray.d)
                     pi = self.skip_area_emitters(scene, ray_skip, True, skip_emitters)
-                    si_after_skip = pi.compute_surface_interaction(ray, mi.RayFlags.All, skip_emitters)
+                    si_after_skip = pi.compute_surface_interaction(ray, mi.RayFlags.Default, skip_emitters)
                     si[skip_emitters] = si_after_skip
 
                 # ----------------- Intersection with emitters -----------------

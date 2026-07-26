@@ -199,7 +199,7 @@ public:
 
             // Fill out all information of the interaction
             SurfaceInteraction3f si =
-                ls.pi.compute_surface_interaction(ls.ray, +RayFlags::All);
+                ls.pi.compute_surface_interaction(ls.ray, +RayFlags::Default);
 
             // ---------------------- Direct emission ----------------------
 

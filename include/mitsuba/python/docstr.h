@@ -7806,27 +7806,46 @@ compute_surface_interaction().
 It also specifies whether the SurfaceInteraction should be
 differentiable with respect to the shapes parameters.)doc";
 
-static const char *__doc_mitsuba_RayFlags_All = R"doc(//! Compound compute flags)doc";
+static const char *__doc_mitsuba_RayFlags_Shading =
+R"doc(Additionally compute the UV coordinates, the position partials and the
+shading frame
 
-static const char *__doc_mitsuba_RayFlags_AllNonDifferentiable = R"doc(Compute all fields of the surface interaction ignoring shape's motion)doc";
+The tangent of the shading frame follows ``dp_du``, hence the two
+cannot be requested separately. Without this flag, ``uv``, ``dp_du``,
+``dp_dv``, ``sh_frame`` and ``wi`` are left undefined.)doc";
+
+static const char *__doc_mitsuba_RayFlags_All =
+R"doc(Deprecated alias for Shading
+
+This is the detail level that ``All`` selected in Mitsuba 3.9 and
+earlier.)doc";
+
+static const char *__doc_mitsuba_RayFlags_Default = R"doc(The detail level requested by default, i.e. everything but NormalPartials)doc";
+
 
 static const char *__doc_mitsuba_RayFlags_DetachShape = R"doc(Derivatives of the SurfaceInteraction fields ignore shape's motion)doc";
 
-static const char *__doc_mitsuba_RayFlags_Empty = R"doc(No flags set)doc";
 
 static const char *__doc_mitsuba_RayFlags_FollowShape = R"doc(Derivatives of the SurfaceInteraction fields follow shape's motion)doc";
 
-static const char *__doc_mitsuba_RayFlags_Minimal = R"doc(Compute position and geometric normal)doc";
+static const char *__doc_mitsuba_RayFlags_Minimal = R"doc(Compute the distance, position and geometric normal
 
-static const char *__doc_mitsuba_RayFlags_ShadingFrame = R"doc(Compute shading normal and shading frame)doc";
+This is the baseline: it is the absence of Shading rather than a flag
+of its own, so ``has_flag(flags, Minimal)`` is always false.)doc";
 
-static const char *__doc_mitsuba_RayFlags_UV = R"doc(Compute UV coordinates)doc";
+static const char *__doc_mitsuba_RayFlags_NormalPartials =
+R"doc(Additionally compute the partial derivatives of the shading normal
+wrt. the UV parameterization
+
+Depends on Shading: the partials differentiate the parameterization
+that flag defines, hence they are not computed without it. Shapes with
+a flat shading normal, and those that do not implement the partials,
+report zero.)doc";
 
 
 
-static const char *__doc_mitsuba_RayFlags_dNSdUV = R"doc(Compute the shading normal partials wrt. the UV coordinates)doc";
 
-static const char *__doc_mitsuba_RayFlags_dPdUV = R"doc(Compute position partials wrt. UV coordinates)doc";
+
 
 static const char *__doc_mitsuba_Ray_Ray = R"doc(Construct a new ray (o, d) at time 'time')doc";
 
@@ -8507,7 +8526,7 @@ traced, that the user desires access to all fields of the
 SurfaceInteraction, and that no thread reordering is requested. In
 other words, it simply invokes the general ``ray_intersect``()
 overload with ``coherent=false``, ``ray_flags`` equal to
-RayFlags::All, and ``reorder=false``.
+RayFlags::Default, and ``reorder=false``.
 
 Parameter ``ray``:
     A 3D ray including maximum extent (Ray::maxt) and time (Ray::time)
@@ -8553,7 +8572,7 @@ In the context of differentiable rendering, the ``ray_flags``
 parameter also influences how derivatives propagate between the input
 ray, the shape parameters, and the computed intersection (see
 RayFlags::FollowShape and RayFlags::DetachShape for details on this).
-The default, RayFlags::All, propagates derivatives through all steps
+The default, RayFlags::Default, propagates derivatives through all steps
 of the intersection computation.
 
 The ``coherent`` flag is a hint that can improve performance in the
@@ -8622,7 +8641,7 @@ In the context of differentiable rendering, the ``ray_flags``
 parameter also influences how derivatives propagate between the input
 ray, the shape parameters, and the computed intersection (see
 RayFlags::FollowShape and RayFlags::DetachShape for details on this).
-The default, RayFlags::All, propagates derivatives through all steps
+The default, RayFlags::Default, propagates derivatives through all steps
 of the intersection computation.
 
 The ``coherent`` flag is a hint that can improve performance in the

@@ -406,10 +406,6 @@ public:
 
         si.n = si.sh_frame.n;
 
-        si.uv    = Point2f(0.f, 0.f);
-        si.dp_du = Vector3f(0.f);
-        si.dp_dv = Vector3f(0.f);
-        si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
 
         si.prim_index = pi.prim_index;
         si.shape      = this;

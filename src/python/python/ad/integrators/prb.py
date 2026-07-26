@@ -127,7 +127,7 @@ class PRBIntegrator(RBIntegrator):
             # from differentiable shape parameters (position, normals, etc.)
             # In primal mode, this is just an ordinary ray tracing operation.
             with dr.resume_grad(when=not primal):
-                si = pi.compute_surface_interaction(ray, ray_flags=mi.RayFlags.All)
+                si = pi.compute_surface_interaction(ray, ray_flags=mi.RayFlags.Default)
 
                 # Recompute an attached si.wi to account for motion of the
                 # previous surface interaction

@@ -1572,111 +1572,91 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     si.n = face_normal(p0, p1, p2);
 
-    // Texture coordinates (if available)
-    si.uv = Point2f(b1, b2);
+    if (m_flip_normals)
+        si.n = -si.n;
 
-    /* The position and normal partials are both derivatives of the
-       parameterization reported in ``si.uv``, hence they share the change of
-       variables from the barycentric coordinates */
-    bool need_dn_duv = has_flag(ray_flags, RayFlags::dNSdUV),
-         need_jac    = need_dn_duv || has_flag(ray_flags, RayFlags::dPdUV);
+    if (likely(has_flag(ray_flags, RayFlags::Shading))) {
+        bool detach  = IsDiff && has_flag(ray_flags, RayFlags::DetachShape);
+        bool need_dn = has_vertex_normals() &&
+                       has_flag(ray_flags, RayFlags::NormalPartials);
 
-    Vector2f duv0 = 0.f, duv1 = 0.f;
-    Float inv_det = 0.f;
+        // Shading normal, and its partials wrt. the barycentric coordinates
+        Vector3f dn_db1 = 0.f, dn_db2 = 0.f;
 
-    if (has_vertex_texcoords() &&
-        likely(has_flag(ray_flags, RayFlags::UV) || need_jac)) {
-        Point2f uv0 = vertex_texcoord(fi[0], active),
-                uv1 = vertex_texcoord(fi[1], active),
-                uv2 = vertex_texcoord(fi[2], active);
-        if (IsDiff && has_flag(ray_flags, RayFlags::DetachShape)) {
-            uv0 = dr::detach<true>(uv0);
-            uv1 = dr::detach<true>(uv1);
-            uv2 = dr::detach<true>(uv2);
-        }
-
-        si.uv = dr::fmadd(uv2, b2, dr::fmadd(uv1, b1, uv0 * b0));
-
-        if (likely(need_jac)) {
-            duv0 = uv1 - uv0;
-            duv1 = uv2 - uv0;
-
-            Float det = dr::fmsub(duv0.x(), duv1.y(), duv0.y() * duv1.x());
-            inv_det   = dr::select(det != 0.f, dr::rcp(det), 0.f);
-        }
-
-        if (likely(has_flag(ray_flags, RayFlags::dPdUV))) {
-            Vector3f dp0 = p1 - p0,
-                     dp1 = p2 - p0;
-
-            // Change of variables to the texture parameterization
-            si.dp_du = dr::fmsub( duv1.y(), dp0, duv0.y() * dp1) * inv_det;
-            si.dp_dv = dr::fnmadd(duv1.x(), dp0, duv0.x() * dp1) * inv_det;
-        }
-    } else if (likely(has_flag(ray_flags, RayFlags::dPdUV))) {
-        // Without texture coordinates the parameterization is barycentric
-        si.dp_du = p1 - p0;
-        si.dp_dv = p2 - p0;
-    }
-
-    // Fetch shading normal (if available)
-    Normal3f n0, n1, n2;
-    if (has_vertex_normals() &&
-        likely(has_flag(ray_flags, RayFlags::ShadingFrame) ||
-               has_flag(ray_flags, RayFlags::dNSdUV))) {
-        n0 = vertex_normal(fi[0], active);
-        n1 = vertex_normal(fi[1], active);
-        n2 = vertex_normal(fi[2], active);
-    }
-
-    if (has_vertex_normals() &&
-        likely(has_flag(ray_flags, RayFlags::ShadingFrame) ||
-               has_flag(ray_flags, RayFlags::dNSdUV))) {
-        if (IsDiff && has_flag(ray_flags, RayFlags::DetachShape)) {
-            n0 = dr::detach<true>(n0);
-            n1 = dr::detach<true>(n1);
-            n2 = dr::detach<true>(n2);
-        }
-
-        Normal3f n = dr::fmadd(n2, b2, dr::fmadd(n1, b1, n0 * b0));
-        Float il = dr::rsqrt(dr::squared_norm(n));
-        n *= il;
-
-        si.sh_frame.n = n;
-
-        if (need_dn_duv) {
-            /* Derivative of "normalize(b0*n0 + b1*n1 + b2*n2)" with respect to
-               the barycentric coordinates. Since d/du [f(u)/|f(u)|] =
-               [d/du f(u)]/|f(u)| - f(u)/|f(u)|^3 <f(u), d/du f(u)> */
-            Vector3f dn_db1 = (n1 - n0) * il,
-                     dn_db2 = (n2 - n0) * il;
-
-            dn_db1 = dr::fnmadd(n, dr::dot(n, dn_db1), dn_db1);
-            dn_db2 = dr::fnmadd(n, dr::dot(n, dn_db2), dn_db2);
-
-            if (m_flip_normals) {
-                dn_db1 = -dn_db1;
-                dn_db2 = -dn_db2;
+        if (has_vertex_normals()) {
+            Normal3f n0 = vertex_normal(fi[0], active),
+                     n1 = vertex_normal(fi[1], active),
+                     n2 = vertex_normal(fi[2], active);
+            if (detach) {
+                n0 = dr::detach<true>(n0);
+                n1 = dr::detach<true>(n1);
+                n2 = dr::detach<true>(n2);
             }
 
-            if (has_vertex_texcoords()) {
-                // Change of variables to the texture parameterization
-                si.dn_du = dr::fmsub( duv1.y(), dn_db1, duv0.y() * dn_db2) * inv_det;
-                si.dn_dv = dr::fnmadd(duv1.x(), dn_db1, duv0.x() * dn_db2) * inv_det;
-            } else {
+            Normal3f n = dr::fmadd(n2, b2, dr::fmadd(n1, b1, n0 * b0));
+            Float il = dr::rsqrt(dr::squared_norm(n));
+            n *= il;
+
+            si.sh_frame.n = m_flip_normals ? -n : n;
+
+            if (need_dn) {
+                /* Derivative of ``normalize(b0*n0 + b1*n1 + b2*n2)``. Since
+                   d/du [f(u)/|f(u)|] = [d/du f(u)]/|f(u)|
+                       - f(u)/|f(u)|^3 <f(u), d/du f(u)>, this results in */
+                dn_db1 = dr::fnmadd(n, dr::dot(n, (n1 - n0) * il), (n1 - n0) * il);
+                dn_db2 = dr::fnmadd(n, dr::dot(n, (n2 - n0) * il), (n2 - n0) * il);
+
+                if (m_flip_normals) {
+                    dn_db1 = -dn_db1;
+                    dn_db2 = -dn_db2;
+                }
+            }
+        } else {
+            si.sh_frame.n = si.n;
+        }
+
+        // Texture coordinates and the associated partials
+        if (has_vertex_texcoords()) {
+            Point2f uv0 = vertex_texcoord(fi[0], active),
+                    uv1 = vertex_texcoord(fi[1], active),
+                    uv2 = vertex_texcoord(fi[2], active);
+            if (detach) {
+                uv0 = dr::detach<true>(uv0);
+                uv1 = dr::detach<true>(uv1);
+                uv2 = dr::detach<true>(uv2);
+            }
+
+            si.uv = dr::fmadd(uv2, b2, dr::fmadd(uv1, b1, uv0 * b0));
+
+            Vector2f duv0 = uv1 - uv0,
+                     duv1 = uv2 - uv0;
+
+            Float det     = dr::fmsub(duv0.x(), duv1.y(), duv0.y() * duv1.x()),
+                  inv_det = dr::select(det != 0.f, dr::rcp(det), 0.f);
+
+            /* Change of variables from the barycentric coordinates to the
+               texture parameterization */
+            auto to_uv_basis = [&](const Vector3f &d1, const Vector3f &d2) {
+                return std::make_pair(
+                    Vector3f(dr::fmsub( duv1.y(), d1, duv0.y() * d2) * inv_det),
+                    Vector3f(dr::fnmadd(duv1.x(), d1, duv0.x() * d2) * inv_det));
+            };
+
+            std::tie(si.dp_du, si.dp_dv) = to_uv_basis(p1 - p0, p2 - p0);
+
+            if (need_dn)
+                std::tie(si.dn_du, si.dn_dv) = to_uv_basis(dn_db1, dn_db2);
+        } else {
+            // Without texture coordinates the parameterization is barycentric
+            si.uv    = Point2f(b1, b2);
+            si.dp_du = p1 - p0;
+            si.dp_dv = p2 - p0;
+
+            if (need_dn) {
                 si.dn_du = dn_db1;
                 si.dn_dv = dn_db2;
             }
-        } else {
-            si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
         }
-    } else {
-        si.sh_frame.n = si.n;
-    }
-
-    if (m_flip_normals) {
-        si.n = -si.n;
-        si.sh_frame.n = -si.sh_frame.n;
     }
 
     si.prim_index = pi.prim_index;
