@@ -156,6 +156,13 @@ public:
         return dr::gather<Result>(m_vertex_texcoords, index, active);
     }
 
+    /// Returns the normal direction of a face with the given vertex positions
+    template <typename Point3>
+    static MI_INLINE auto face_normal(const Point3 &p0, const Point3 &p1,
+                                      const Point3 &p2) {
+        return dr::normalize(dr::cross(p1 - p0, p2 - p0));
+    }
+
     /// Returns the normal direction of the face with index \c index
     template <typename Index>
     MI_INLINE auto face_normal(Index index,
@@ -165,7 +172,7 @@ public:
                           vertex_position(vertex_indices[1], active),
                           vertex_position(vertex_indices[2], active) };
 
-        return dr::normalize(dr::cross(v[1] - v[0], v[2] - v[0]));
+        return face_normal(v[0], v[1], v[2]);
     }
 
     /**
