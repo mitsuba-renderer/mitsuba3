@@ -37,11 +37,8 @@ enum class RayFlags : uint32_t {
     /// Compute shading normal and shading frame
     ShadingFrame = 0x8,
 
-    /// Compute the geometric normal partials wrt. the UV coordinates
-    dNGdUV = 0x10,
-
     /// Compute the shading normal partials wrt. the UV coordinates
-    dNSdUV = 0x20,
+    dNSdUV = 0x10,
 
     // =============================================================
     //!              Differentiability compute flags
@@ -213,7 +210,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     /// Position partials wrt. the UV parameterization
     Vector3f dp_du, dp_dv;
 
-    /// Normal partials wrt. the UV parameterization
+    /// Shading normal partials wrt. the UV parameterization
     Vector3f dn_du, dn_dv;
 
     /// UV partials wrt. changes in screen-space

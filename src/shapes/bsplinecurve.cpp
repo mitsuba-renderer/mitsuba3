@@ -882,8 +882,7 @@ public:
             return dr::zeros<SurfaceInteraction3f>();
 
         // Fields requirement dependencies
-        bool need_dn_duv = has_flag(ray_flags, RayFlags::dNSdUV) ||
-                           has_flag(ray_flags, RayFlags::dNGdUV);
+        bool need_dn_duv = has_flag(ray_flags, RayFlags::dNSdUV);
         bool need_dp_duv  = has_flag(ray_flags, RayFlags::dPdUV) || need_dn_duv;
         bool need_uv      = has_flag(ray_flags, RayFlags::UV) || need_dp_duv;
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);

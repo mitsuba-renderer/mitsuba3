@@ -192,8 +192,27 @@ public:
         // Hit point `si.p` is only attached to the surface motion
         si.p = to_world * si.p;
         si.n = dr::normalize(dr::detach(to_world) * si.n);
-        if (likely(has_flag(ray_flags, RayFlags::ShadingFrame)))
-            si.sh_frame.n = dr::normalize(dr::detach(to_world) * si.sh_frame.n);
+
+        if (likely(has_flag(ray_flags, RayFlags::ShadingFrame) ||
+                   has_flag(ray_flags, RayFlags::dNSdUV))) {
+            AffineTransform4f to_world_d = dr::detach(to_world);
+
+            /* Transforming a normal applies the inverse transpose, which does
+               not preserve its length. Differentiating the re-normalization
+               projects the transformed partials back onto the tangent plane. */
+            Normal3f n = to_world_d * si.sh_frame.n;
+            Float inv_len = dr::rcp(dr::norm(n));
+            n *= inv_len;
+            si.sh_frame.n = n;
+
+            if (has_flag(ray_flags, RayFlags::dNSdUV)) {
+                Vector3f dn_du = to_world_d * Normal3f(si.dn_du) * inv_len,
+                         dn_dv = to_world_d * Normal3f(si.dn_dv) * inv_len;
+
+                si.dn_du = dr::fnmadd(n, dr::dot(n, dn_du), dn_du);
+                si.dn_dv = dr::fnmadd(n, dr::dot(n, dn_dv), dn_dv);
+            }
+        }
 
         if constexpr (IsDiff) {
             if (follow_shape && grad_enabled) {
@@ -216,22 +235,6 @@ public:
         if (likely(has_flag(ray_flags, RayFlags::dPdUV))) {
             si.dp_du = to_world * si.dp_du;
             si.dp_dv = to_world * si.dp_dv;
-        }
-
-        if (has_flag(ray_flags, RayFlags::dNGdUV) || has_flag(ray_flags, RayFlags::dNSdUV)) {
-            Normal3f n = has_flag(ray_flags, RayFlags::dNGdUV) ? si.n : si.sh_frame.n;
-
-            // Determine the length of the transformed normal before it was re-normalized
-            Normal3f tn = to_world * dr::normalize(to_object * n);
-            Float inv_len = dr::rcp(dr::norm(tn));
-            tn *= inv_len;
-
-            // Apply transform to dn_du and dn_dv
-            si.dn_du = to_world * Normal3f(si.dn_du) * inv_len;
-            si.dn_dv = to_world * Normal3f(si.dn_dv) * inv_len;
-
-            si.dn_du -= tn * dr::dot(tn, si.dn_du);
-            si.dn_dv -= tn * dr::dot(tn, si.dn_dv);
         }
 
         si.prim_index = pi.prim_index;

@@ -496,3 +496,29 @@ def test20_eval_param_consistency(variants_vec_rgb, r):
     assert dr.allclose(si_ray.p, ps.p)
     assert dr.allclose(si_param.uv, ps.uv)
     assert dr.allclose(si_ray.uv, ps.uv)
+
+
+def test21_normal_partials(variant_scalar_rgb):
+    import numpy as np
+    from mitsuba.scalar_rgb.test.util import check_normal_partials
+
+    scene = mi.load_dict({'type': 'scene',
+                          'shape': {'type': 'sphere', 'radius': 0.8}})
+    flags = mi.RayFlags.All | mi.RayFlags.dNSdUV
+
+    def normal_field(u, v):
+        phi, theta = 2 * np.pi * u, np.pi * v
+        return np.array([np.sin(theta) * np.cos(phi),
+                         np.sin(theta) * np.sin(phi), np.cos(theta)])
+
+    hits = 0
+    for x in dr.linspace(Float, -0.5, 0.5, 6):
+        for y in dr.linspace(Float, -0.5, 0.5, 6):
+            ray = mi.Ray3f(mi.Point3f(x, y, 5), mi.Vector3f(0, 0, -1))
+            si = scene.ray_intersect(ray, flags, True)
+            if not si.is_valid():
+                continue
+            hits += 1
+            check_normal_partials(si, normal_field)
+
+    assert hits > 10, hits

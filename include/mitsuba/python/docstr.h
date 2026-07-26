@@ -7834,7 +7834,7 @@ static const char *__doc_mitsuba_RayFlags_ShadingFrame = R"doc(Compute shading n
 
 static const char *__doc_mitsuba_RayFlags_UV = R"doc(Compute UV coordinates)doc";
 
-static const char *__doc_mitsuba_RayFlags_dNGdUV = R"doc(Compute the geometric normal partials wrt. the UV coordinates)doc";
+
 
 static const char *__doc_mitsuba_RayFlags_dNSdUV = R"doc(Compute the shading normal partials wrt. the UV coordinates)doc";
 
@@ -10377,9 +10377,11 @@ static const char *__doc_mitsuba_SurfaceInteraction_bsdf_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_compute_uv_partials = R"doc(Computes texture coordinate partials)doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_dn_du = R"doc(Normal partials wrt. the UV parameterization)doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_dn_dv = R"doc(Normal partials wrt. the UV parameterization)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_dn_du = R"doc(Shading normal partials wrt. the UV parameterization)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_dn_dv = R"doc(Shading normal partials wrt. the UV parameterization)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_dp_du = R"doc(Position partials wrt. the UV parameterization)doc";
 
@@ -10411,11 +10413,11 @@ Parameter ``ray``:
 Parameter ``ray_flags``:
     Flags specifying which information should be computed)doc";
 
+
 static const char *__doc_mitsuba_SurfaceInteraction_has_n_partials = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_has_uv_partials = R"doc()doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_initialize_sh_frame = R"doc(Initialize local shading frame using Gram-schmidt orthogonalization)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_instance = R"doc(Stores a pointer to the parent instance (if applicable))doc";
 
@@ -11246,17 +11248,17 @@ static const char *__doc_mitsuba_Transform_from_frame =
 R"doc(Creates a transformation that converts from 'frame' to the standard
 basis)doc";
 
+static const char *__doc_mitsuba_Transform_has_scale =
+R"doc(Test for a scale component in each transform matrix by checking
+whether ``M . M^T == I`` (where ``M`` is the matrix in question and
+``I`` is the identity).)doc";
+
 static const char *__doc_mitsuba_Transform_is_similarity =
 R"doc(Test whether the linear part is a similarity, i.e., a
 rotation/reflection, potentially with a uniform scale and translation.
 
 The implementation checks whether ``M . M^T`` is a multiple of the
 identity.)doc";
-
-static const char *__doc_mitsuba_Transform_has_scale =
-R"doc(Test for a scale component in each transform matrix by checking
-whether ``M . M^T == I`` (where ``M`` is the matrix in question and
-``I`` is the identity).)doc";
 
 static const char *__doc_mitsuba_Transform_inverse = R"doc()doc";
 

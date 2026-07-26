@@ -1575,9 +1575,17 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     // Texture coordinates (if available)
     si.uv = Point2f(b1, b2);
 
+    /* The position and normal partials are both derivatives of the
+       parameterization reported in ``si.uv``, hence they share the change of
+       variables from the barycentric coordinates */
+    bool need_dn_duv = has_flag(ray_flags, RayFlags::dNSdUV),
+         need_jac    = need_dn_duv || has_flag(ray_flags, RayFlags::dPdUV);
+
+    Vector2f duv0 = 0.f, duv1 = 0.f;
+    Float inv_det = 0.f;
+
     if (has_vertex_texcoords() &&
-        likely(has_flag(ray_flags, RayFlags::UV) ||
-               has_flag(ray_flags, RayFlags::dPdUV))) {
+        likely(has_flag(ray_flags, RayFlags::UV) || need_jac)) {
         Point2f uv0 = vertex_texcoord(fi[0], active),
                 uv1 = vertex_texcoord(fi[1], active),
                 uv2 = vertex_texcoord(fi[2], active);
@@ -1589,22 +1597,21 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
         si.uv = dr::fmadd(uv2, b2, dr::fmadd(uv1, b1, uv0 * b0));
 
-        if (likely(has_flag(ray_flags, RayFlags::dPdUV))) {
-            // Fall back to an arbitrary basis for degenerate parameterizations
-            std::tie(si.dp_du, si.dp_dv) = coordinate_system(si.n);
+        if (likely(need_jac)) {
+            duv0 = uv1 - uv0;
+            duv1 = uv2 - uv0;
 
+            Float det = dr::fmsub(duv0.x(), duv1.y(), duv0.y() * duv1.x());
+            inv_det   = dr::select(det != 0.f, dr::rcp(det), 0.f);
+        }
+
+        if (likely(has_flag(ray_flags, RayFlags::dPdUV))) {
             Vector3f dp0 = p1 - p0,
                      dp1 = p2 - p0;
-            Vector2f duv0 = uv1 - uv0,
-                     duv1 = uv2 - uv0;
 
-            Float det     = dr::fmsub(duv0.x(), duv1.y(), duv0.y() * duv1.x()),
-                  inv_det = dr::rcp(det);
-
-            Mask valid = (det != 0.f);
-
-            si.dp_du[valid] = dr::fmsub( duv1.y(), dp0, duv0.y() * dp1) * inv_det;
-            si.dp_dv[valid] = dr::fnmadd(duv1.x(), dp0, duv0.x() * dp1) * inv_det;
+            // Change of variables to the texture parameterization
+            si.dp_du = dr::fmsub( duv1.y(), dp0, duv0.y() * dp1) * inv_det;
+            si.dp_dv = dr::fnmadd(duv1.x(), dp0, duv0.x() * dp1) * inv_det;
         }
     } else if (likely(has_flag(ray_flags, RayFlags::dPdUV))) {
         // Without texture coordinates the parameterization is barycentric
@@ -1637,18 +1644,29 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
         si.sh_frame.n = n;
 
-        if (has_flag(ray_flags, RayFlags::dNSdUV)) {
-            /* Now compute the derivative of "normalize(u*n1 + v*n2 + (1-u-v)*n0)"
-               with respect to [u, v] in the local triangle parameterization.
+        if (need_dn_duv) {
+            /* Derivative of "normalize(b0*n0 + b1*n1 + b2*n2)" with respect to
+               the barycentric coordinates. Since d/du [f(u)/|f(u)|] =
+               [d/du f(u)]/|f(u)| - f(u)/|f(u)|^3 <f(u), d/du f(u)> */
+            Vector3f dn_db1 = (n1 - n0) * il,
+                     dn_db2 = (n2 - n0) * il;
 
-               Since d/du [f(u)/|f(u)|] = [d/du f(u)]/|f(u)|
-                   - f(u)/|f(u)|^3 <f(u), d/du f(u)>, this results in
-            */
-            si.dn_du = (n1 - n0) * il;
-            si.dn_dv = (n2 - n0) * il;
+            dn_db1 = dr::fnmadd(n, dr::dot(n, dn_db1), dn_db1);
+            dn_db2 = dr::fnmadd(n, dr::dot(n, dn_db2), dn_db2);
 
-            si.dn_du = dr::fnmadd(n, dr::dot(n, si.dn_du), si.dn_du);
-            si.dn_dv = dr::fnmadd(n, dr::dot(n, si.dn_dv), si.dn_dv);
+            if (m_flip_normals) {
+                dn_db1 = -dn_db1;
+                dn_db2 = -dn_db2;
+            }
+
+            if (has_vertex_texcoords()) {
+                // Change of variables to the texture parameterization
+                si.dn_du = dr::fmsub( duv1.y(), dn_db1, duv0.y() * dn_db2) * inv_det;
+                si.dn_dv = dr::fnmadd(duv1.x(), dn_db1, duv0.x() * dn_db2) * inv_det;
+            } else {
+                si.dn_du = dn_db1;
+                si.dn_dv = dn_db2;
+            }
         } else {
             si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
         }
