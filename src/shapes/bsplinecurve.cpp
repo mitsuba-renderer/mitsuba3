@@ -494,7 +494,7 @@ public:
             ss.uv = Point2f(sample.y(), sample.x()); // We use the x-axis as the cylindrical axis
             auto [dp_du, dp_dv, dn_du, dn_dv, L, M, N] = partials(ss.uv, active);
             SurfaceInteraction3f si = eval_parameterization(
-                ss.uv, +RayFlags::AllNonDifferentiable, active);
+                ss.uv, RayFlags::Default | RayFlags::DetachShape, active);
             ss.p = si.p;
 
             /// Sample a tangential direction at the point
@@ -763,7 +763,7 @@ public:
 
             ss.uv = Point2f(u_lower, si.uv.y());
             SurfaceInteraction3f si_ = eval_parameterization(
-                ss.uv, +RayFlags::AllNonDifferentiable, active);
+                ss.uv, RayFlags::Default | RayFlags::DetachShape, active);
             ss.p = si_.p;
             ss.n = si_.n;
             ss.d = dr::normalize(ss.p - viewpoint);
@@ -881,10 +881,7 @@ public:
         if (!m_is_instance && recursion_depth > 0)
             return dr::zeros<SurfaceInteraction3f>();
 
-        // Fields requirement dependencies
-        bool need_dn_duv = has_flag(ray_flags, RayFlags::dNSdUV);
-        bool need_dp_duv  = has_flag(ray_flags, RayFlags::dPdUV) || need_dn_duv;
-        bool need_uv      = has_flag(ray_flags, RayFlags::UV) || need_dp_duv;
+        bool shading      = has_flag(ray_flags, RayFlags::Shading);
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
         bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
 
@@ -989,14 +986,14 @@ public:
             (dr::squared_norm(dc_dv) - correction) * rad_vec -
             (dr_dv * radius) * dc_dv
         );
-        si.n = si.sh_frame.n = n;
+        si.n = n;
 
         // Embree and OptiX cull curve backfaces at trace time; Metal's HW
         // intersector reports both sides. Drop inside hits to match (a no-op
         // on backends that already cull).
         this->cull_backface(si, ray, active);
 
-        if (need_uv) {
+        if (shading) {
             Float u = dr::atan2(dr::dot(u_rot, rad_vec_normalized),
                                 dr::dot(u_rad, rad_vec_normalized));
             u += dr::select(u < 0.f, dr::TwoPi<Float>, 0.f);
@@ -1004,18 +1001,19 @@ public:
             Float v = (v_local + prim_idx) / dr::width(m_indices);
 
             si.uv = Point2f(u, v);
-        }
 
-        if (need_dp_duv) {
             Vector3f dp_du, dp_dv, dn_du, dn_dv;
             std::tie(dp_du, dp_dv, dn_du, dn_dv, std::ignore, std::ignore,
                      std::ignore) = partials(si.uv, active);
             si.dp_du = dp_du;
             si.dp_dv = dp_dv;
-            if (need_dn_duv) {
+
+            if (has_flag(ray_flags, RayFlags::NormalPartials)) {
                 si.dn_du = dn_du;
                 si.dn_dv = dn_dv;
             }
+
+            si.sh_frame.n = si.n;
         }
 
         si.prim_index = pi.prim_index;

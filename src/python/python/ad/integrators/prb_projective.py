@@ -196,7 +196,7 @@ class PathProjectiveIntegrator(PSIntegrator):
             use_si_shade = ignore_ray & (depth == depth_init)
             with dr.resume_grad(when=not primal):
                 si = pi.compute_surface_interaction(ray,
-                                                    ray_flags=mi.RayFlags.All,
+                                                    ray_flags=mi.RayFlags.Default,
                                                     active=active_next & ~use_si_shade)
 
                 # Recompute an attached si.wi to account for motion of the
@@ -489,7 +489,7 @@ class PathProjectiveIntegrator(PSIntegrator):
         # The ray origin is wrong, but this is fine if we only need the primal
         # radiance
         si_fg = pi_fg.compute_surface_interaction(
-            dummy_ray, mi.RayFlags.All, active)
+            dummy_ray, mi.RayFlags.Default, active)
 
         # If smooth normals are used, it is possible that the computed
         # shading normal near visibility silhouette points to the wrong side
@@ -531,7 +531,7 @@ class PathProjectiveIntegrator(PSIntegrator):
         ss_importance.d = -ss_importance.d
         ray_boundary = ss_importance.spawn_ray(wavelengths)
         si_boundary = scene.ray_intersect(ray_boundary,
-                                          ray_flags=mi.RayFlags.All,
+                                          ray_flags=mi.RayFlags.Default,
                                           coherent=False,
                                           reorder=True,
                                           active=active)
@@ -596,7 +596,7 @@ class PathProjectiveIntegrator(PSIntegrator):
             # Get the next surface interaction
             ray_next = si_loop.spawn_ray(wo_bsdf_world)
             si_loop[active_loop] = scene.ray_intersect(ray_next,
-                                                       ray_flags=mi.RayFlags.All,
+                                                       ray_flags=mi.RayFlags.Default,
                                                        coherent=False,
                                                        reorder=dr.flag(dr.JitFlag.LoopRecord),
                                                        active=active_loop)

@@ -225,8 +225,9 @@ class ProjectiveDetail():
         )
 
         # Get the intersection struct for the shape pointer
-        flags = mi.RayFlags.All | mi.RayFlags.dNSdUV
-        si = scene.ray_intersect(ray_seed, ray_flags=flags, coherent=True, active=active)
+        si = scene.ray_intersect(
+            ray_seed, ray_flags=mi.RayFlags.Default | mi.RayFlags.NormalPartials,
+            coherent=True, active=active)
         active &= si.is_valid()
 
         # Is the shape we hit being differentiated in this scene?
@@ -696,8 +697,9 @@ class ProjectiveDetail():
                     projected_p + projected_normal * mi.math.RayEpsilon,
                     -projected_normal
                 )
-                si = scene.ray_intersect(ray_new, mi.RayFlags.All | mi.RayFlags.dNSdUV,
-                                         coherent=False, active=loop_active)
+                si = scene.ray_intersect(
+                    ray_new, mi.RayFlags.Default | mi.RayFlags.NormalPartials,
+                    coherent=False, active=loop_active)
                 loop_active &= si.is_valid() & (si.shape == shape)
 
                 # Check if we hit a silhouette
@@ -738,7 +740,8 @@ class ProjectiveDetail():
             pi.shape = ss.shape
             dummy_ray = dr.zeros(mi.Ray3f, dr.width(ss))
             si_jump = pi.compute_surface_interaction(
-                dummy_ray, mi.RayFlags.All | mi.RayFlags.dNSdUV, active=active)
+                dummy_ray, mi.RayFlags.Default | mi.RayFlags.NormalPartials,
+                active=active)
 
             # Perform the jump operation
             ss_jump, valid_jump = self.mesh_jump(scene, si_jump, viewpoint, sampler.state, active_jump, 1)

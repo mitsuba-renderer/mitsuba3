@@ -242,7 +242,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().scale(1 + theta)
     params.update()
-    si = scene.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.DetachShape, False)
+    si = scene.ray_intersect(ray, mi.RayFlags.Default | mi.RayFlags.DetachShape, False)
 
     dr.forward(theta)
 
@@ -260,7 +260,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().scale([1 + theta, 1 + 2 * theta, 1])
     params.update()
-    si = scene.ray_intersect(ray, mi.RayFlags.All, False)
+    si = scene.ray_intersect(ray, mi.RayFlags.Default, False)
 
     dr.forward(theta)
 
@@ -281,7 +281,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().translate([theta, 0.0, 0.0])
     params.update()
-    si = scene.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape, False)
+    si = scene.ray_intersect(ray, mi.RayFlags.Default | mi.RayFlags.FollowShape, False)
 
     dr.forward(theta, dr.ADFlag.ClearNone)
 
@@ -299,7 +299,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().rotate([0, 0, 1], 90 * theta)
     params.update()
-    si = scene.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape, False)
+    si = scene.ray_intersect(ray, mi.RayFlags.Default | mi.RayFlags.FollowShape, False)
 
     dr.forward(theta)
 
@@ -316,7 +316,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().rotate([0, 0, 1], 90 * theta)
     params.update()
-    si = scene.ray_intersect(ray, mi.RayFlags.All, False)
+    si = scene.ray_intersect(ray, mi.RayFlags.Default, False)
 
     dr.forward(theta)
 
@@ -492,7 +492,7 @@ def test18_inv_transpose(variants_all_ad_rgb):
     dr.enable_grad(params['shape.to_world'])
     params.update()
 
-    si = scene.ray_intersect(mi.Ray3f([0, 0, 2], [0, 0, -1]), mi.RayFlags.All, False)
+    si = scene.ray_intersect(mi.Ray3f([0, 0, 2], [0, 0, -1]), mi.RayFlags.Default, False)
     dr.backward(si.t)
     assert dr.allclose(
         dr.grad(params['shape.to_world']).matrix,

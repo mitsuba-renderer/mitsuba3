@@ -10,11 +10,11 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief This list of flags is used to determine which members of \ref SurfaceInteraction
+ * \brief Flags to determine which members of \ref SurfaceInteraction
  * should be computed when calling \ref compute_surface_interaction().
  *
- * It also specifies whether the \ref SurfaceInteraction should be differentiable with
- * respect to the shapes parameters.
+ * It also specifies differentiation behavior with respect to shape
+ * parameters.
  */
 enum class RayFlags : uint32_t {
 
@@ -22,44 +22,68 @@ enum class RayFlags : uint32_t {
     //             Surface interaction compute flags
     // =============================================================
 
-    /// No flags set
-    Empty = 0x0,
+    /// Compute the distance, position and geometric normal (cannot be disabled)
+    Minimal = 0x0,
 
-    /// Compute position and geometric normal
-    Minimal = 0x1,
+    /** \brief Additionally compute the UV coordinates (``uv``), position
+     * partials (``dp_du``, ``dp_dv``), shading frame (``sh_frame``), and the
+     * incident direction in the shading frame (``wi``).
+     *
+     * This is also the default option selected by \ref Default.
+     */
+    Shading = 0x1,
 
-    /// Compute UV coordinates
-    UV = 0x2,
+    /** \brief Additionally compute normal partial derivatives (``dn_du``,
+     * ``dn_dv``), which encode information about curvature.
+     *
+     * Depends on \ref Shading.
+     */
+    NormalPartials = 0x2,
 
-    /// Compute position partials wrt. UV coordinates
-    dPdUV = 0x4,
+    /// The detail level requested by default, i.e. everything but \ref
+    /// NormalPartials
+    Default = Shading,
 
-    /// Compute shading normal and shading frame
-    ShadingFrame = 0x8,
-
-    /// Compute the shading normal partials wrt. the UV coordinates
-    dNSdUV = 0x10,
+    /// Deprecated alias for \ref Shading
+    All [[deprecated("Deprecated, change to RayFlags::Default.")]] = Shading,
 
     // =============================================================
     //!              Differentiability compute flags
     // =============================================================
 
-    /// Derivatives of the SurfaceInteraction fields follow shape's motion
-    FollowShape = 0x80,
+    /** \brief Track differentiable dependence of the \ref SurfaceInteraction
+     * with respect to shape parameters.
+     *
+     * By default (i.e., when neither \ref FollowShape nor \ref DetachShape is
+     * specified), intersections differentiably depend on both the ray
+     * (``ray.o``, ``ray.d``) and shape parameters. They conceptually slide
+     * along the surface as either the ray or the geometry moves.
+     *
+     * With ``FollowShape``, the intersection is instead rigidly glued to the
+     * surface. The hit is first located non-differentiably, and the resulting
+     * point is then differentiably re-evaluated using a local parameterization.
+     * The point consequently moves along with and no longer tracks
+     * infinitesimal changes of the ray. This is the same quantity that
+     * \ref Shape::differential_motion() returns.
+     *
+     * At most one of FollowShape or \ref DetachShape can be specified. The flag
+     * has no effect in non-differentiable variants.
+     */
+    FollowShape = 0x4,
 
-    /// Derivatives of the SurfaceInteraction fields ignore shape's motion
-    DetachShape = 0x100,
-
-    // =============================================================
-    //!                 Compound compute flags
-    // =============================================================
-
-    /* \brief Default: compute all fields of the surface interaction data
-       structure except shading/geometric normal derivatives */
-    All = UV | dPdUV | ShadingFrame,
-
-    /// Compute all fields of the surface interaction ignoring shape's motion
-    AllNonDifferentiable = All | DetachShape,
+    /** \brief Ignore the differentiable dependence of the \ref
+     * SurfaceInteraction on respect to shape parameters.
+     *
+     * With ``DetachShape``, the shape's parameters are detached before the
+     * interaction is computed, which amounts to intersecting a differentiable
+     * ray with a static surface. Derivatives then originate exclusively from
+     * ``ray.o`` and ``ray.d``, and the hit point slides across a surface that
+     * is held in place.
+     *
+     * At most one of FollowShape or \ref DetachShape can be specified. The flag
+     * has no effect in non-differentiable variants.
+     */
+    DetachShape = 0x8,
 };
 
 MI_DECLARE_ENUM_OPERATORS(RayFlags)
@@ -490,7 +514,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         time        = ray.time;
         wavelengths = ray.wavelengths;
 
-        if (has_flag(ray_flags, RayFlags::ShadingFrame)) {
+        if (has_flag(ray_flags, RayFlags::Shading)) {
             // Orthogonalize ``dp_du`` against the shading normal
             Vector3f n = sh_frame.n,
                      s = dr::fnmadd(n, dr::dot(n, dp_du), dp_du);
@@ -717,7 +741,7 @@ struct PreliminaryIntersection {
      *      A data structure containing the detailed information
      */
     auto compute_surface_interaction(const Ray3f &ray,
-                                     uint32_t ray_flags = +RayFlags::All,
+                                     uint32_t ray_flags = +RayFlags::Default,
                                      Mask active = true) {
         if constexpr (!std::is_same_v<Shape_, Shape<Float, Spectrum>>) {
             Throw("PreliminaryIntersection::compute_surface_interaction(): not implemented!");

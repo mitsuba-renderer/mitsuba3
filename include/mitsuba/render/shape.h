@@ -541,8 +541,8 @@ public:
      * \brief Compute and return detailed information related to a surface interaction
      *
      * The implementation should at most compute the fields \c p, \c uv, \c n,
-     * \c sh_frame.n, \c dp_du, \c dp_dv, \c dn_du and \c dn_dv. The \c flags parameter
-     * specifies which of those fields should be computed.
+     * \c sh_frame.n, \c dp_du, \c dp_dv, \c dn_du and \c dn_dv. The \c flags
+     * parameter specifies which of those fields should be computed.
      *
      * The fields \c t, \c time, \c wavelengths, \c shape, \c prim_index, \c instance,
      * will already have been initialized by the caller. The field \c wi is initialized
@@ -563,7 +563,7 @@ public:
      */
     virtual SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                              const PreliminaryIntersection3f &pi,
-                                                             uint32_t ray_flags = +RayFlags::All,
+                                                             uint32_t ray_flags = +RayFlags::Default,
                                                              uint32_t recursion_depth = 0,
                                                              Mask active = true) const;
 
@@ -580,7 +580,7 @@ public:
      *     Describe how the detailed information should be computed
      */
     SurfaceInteraction3f ray_intersect(const Ray3f &ray,
-                                       uint32_t ray_flags = +RayFlags::All,
+                                       uint32_t ray_flags = +RayFlags::Default,
                                        Mask active = true) const;
 
     //! @}
@@ -793,7 +793,7 @@ public:
      * The default implementation throws.
      */
     virtual SurfaceInteraction3f eval_parameterization(const Point2f &uv,
-                                                       uint32_t ray_flags = +RayFlags::All,
+                                                       uint32_t ray_flags = +RayFlags::Default,
                                                        Mask active = true) const;
 
     //! @}

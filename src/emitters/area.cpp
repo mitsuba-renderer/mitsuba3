@@ -141,7 +141,7 @@ public:
             auto [uv, pdf] = m_radiance->sample_position(sample, active);
             active &= (pdf != 0.f);
 
-            si = m_shape->eval_parameterization(uv, +RayFlags::All, active);
+            si = m_shape->eval_parameterization(uv, +RayFlags::Default, active);
             si.wavelengths = it.wavelengths;
             active &= si.is_valid();
 
@@ -186,7 +186,7 @@ public:
             value = m_shape->pdf_direction(it, ds, active);
         } else {
             // This surface intersection would be nice to avoid..
-            SurfaceInteraction3f si = m_shape->eval_parameterization(ds.uv, +RayFlags::dPdUV, active);
+            SurfaceInteraction3f si = m_shape->eval_parameterization(ds.uv, +RayFlags::Default, active);
             active &= si.is_valid();
 
             value = m_radiance->pdf_position(ds.uv, active) * dr::square(ds.dist) /
@@ -231,7 +231,7 @@ public:
             auto [uv, pdf] = m_radiance->sample_position(sample, active);
             active &= (pdf != 0.f);
 
-            auto si = m_shape->eval_parameterization(uv, +RayFlags::All, active);
+            auto si = m_shape->eval_parameterization(uv, +RayFlags::Default, active);
             active &= si.is_valid();
             pdf /= dr::norm(dr::cross(si.dp_du, si.dp_dv));
 

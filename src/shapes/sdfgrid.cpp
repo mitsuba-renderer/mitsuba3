@@ -432,7 +432,7 @@ public:
         si.n =
             dr::normalize(m_to_world.value() * Normal3f(grad));
 
-        if (likely(has_flag(ray_flags, RayFlags::ShadingFrame))) {
+        if (likely(has_flag(ray_flags, RayFlags::Shading))) {
             switch (m_normal_method) {
                 case Analytic:
                     si.sh_frame.n = si.n;
@@ -446,10 +446,6 @@ public:
             }
         }
 
-        si.uv    = Point2f(0.f, 0.f);
-        si.dp_du = Vector3f(0.f);
-        si.dp_dv = Vector3f(0.f);
-        si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
 
         si.prim_index = pi.prim_index;
         si.shape    = this;

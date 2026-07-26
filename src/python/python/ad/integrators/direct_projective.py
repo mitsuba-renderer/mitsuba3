@@ -145,7 +145,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
             si = si_shade
         else:
             with dr.resume_grad(when=not primal):
-                si = scene.ray_intersect(ray, ray_flags=mi.RayFlags.All,
+                si = scene.ray_intersect(ray, ray_flags=mi.RayFlags.Default,
                                          coherent=True, active=active)
 
         # Hide the environment emitter if necessary
@@ -331,7 +331,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
             # The ray origin is wrong, but this is fine if we only need the primal
             # radiance
             si_fg = pi_fg.compute_surface_interaction(
-                dummy_ray, mi.RayFlags.All, active)
+                dummy_ray, mi.RayFlags.Default, active)
 
             # We know the incident direction is valid since this is the
             # foreground interaction. Overwrite the incident direction to avoid
@@ -362,7 +362,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
             # The ray origin is wrong, but this is fine if we only need the primal
             # radiance
             si_fg = pi_fg.compute_surface_interaction(
-                dummy_ray, mi.RayFlags.All, active)
+                dummy_ray, mi.RayFlags.Default, active)
 
             # If smooth normals are used, it is possible that the computed
             # shading normal near visibility silhouette points to the wrong side
@@ -411,7 +411,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
         ss_importance.d = -ss_importance.d
         ray_boundary = ss_importance.spawn_ray(wavelengths)
         si_boundary = scene.ray_intersect(ray_boundary,
-                                          ray_flags=mi.RayFlags.All,
+                                          ray_flags=mi.RayFlags.Default,
                                           coherent=False,
                                           reorder=True,
                                           active=active)

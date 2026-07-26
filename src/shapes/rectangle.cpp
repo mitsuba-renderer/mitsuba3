@@ -247,7 +247,6 @@ public:
         si.dp_du     = m_frame.s;
         si.dp_dv     = m_frame.t;
         si.uv        = uv;
-        si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
         si.shape    = this;
         si.instance = nullptr;
         si.t        = dr::select(active, 0, dr::Infinity<Float>);
@@ -255,7 +254,7 @@ public:
         /// Zero-initialize remaining fields
         si.time        = 0.f;
         si.wavelengths = Wavelength(0.f);
-        si.dn_du = si.dn_dv = si.wi = Vector3f(0);
+        si.wi          = Vector3f(0);
         si.duv_dx = si.duv_dy = 0;
         si.prim_index = 0;
 
