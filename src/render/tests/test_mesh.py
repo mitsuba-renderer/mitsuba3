@@ -405,7 +405,7 @@ def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb):
 
     # si should be attached if ray is attached (even when we pass RayFlags.DetachShape)
     dr.enable_grad(ray.o)
-    si = pi.compute_surface_interaction(ray, mi.RayFlags.DetachShape)
+    si = pi.compute_surface_interaction(ray, mi.RayFlags.Default | mi.RayFlags.DetachShape)
     assert dr.grad_enabled(si.p)
     assert dr.grad_enabled(si.uv)
     assert not dr.grad_enabled(si.n) # Face normal doesn't depend on ray
@@ -765,7 +765,7 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
 
     # If the vertices are shifted along x-axis, sticky si.p should follow
     apply_transformation(lambda v : mi.Transform4f().translate(v))
-    si = pi.compute_surface_interaction(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
+    si = pi.compute_surface_interaction(ray, mi.RayFlags.Default | mi.RayFlags.FollowShape)
     p = si.p + mi.Float(0.001) # Ensure p is a AD leaf node
     dr.forward(diff_vector.x)
     assert dr.allclose(dr.grad(p), [1.0, 0.0, 0.0], atol=1e-5)
@@ -778,14 +778,14 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
 
     # If the vertices are shifted along x-axis, sticky si.uv shouldn't move
     apply_transformation(lambda v : mi.Transform4f().translate(v))
-    si = pi.compute_surface_interaction(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
+    si = pi.compute_surface_interaction(ray, mi.RayFlags.Default | mi.RayFlags.FollowShape)
     dr.forward(diff_vector.x)
     assert dr.allclose(dr.grad(si.uv), [0.0, 0.0], atol=1e-5)
 
     # TODO fix this!
     # If the vertices are shifted along x-axis, sticky si.t should follow
     # apply_transformation(lambda v : Transform4f.translate(v))
-    # si = pi.compute_surface_interaction(ray, RayFlags.All | RayFlags.FollowShape)
+    # si = pi.compute_surface_interaction(ray, RayFlags.Default | RayFlags.FollowShape)
     # dr.forward(diff_vector.y)
     # assert dr.allclose(dr.grad(si.t), 10.0, atol=1e-5)
 
@@ -1477,7 +1477,7 @@ def test40_normal_partials(variant_scalar_rgb, texcoords, flip_normals):
 
     mesh, normal_field = curved_triangle(flip_normals, texcoords)
     scene = mi.load_dict({'type': 'scene', 'shape': mesh})
-    flags = mi.RayFlags.All | mi.RayFlags.dNSdUV
+    flags = mi.RayFlags.Default | mi.RayFlags.NormalPartials
 
     hits = 0
     for x in dr.linspace(ScalarF, 0.05, 0.5, 6):

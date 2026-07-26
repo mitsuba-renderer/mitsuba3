@@ -60,7 +60,8 @@ def test03_ray_intersect(variant_scalar_rgb):
                         ray = mi.Ray3f(o=[x, y, -10], d=[0, 0, 1],
                                     time=0.0, wavelengths=[])
 
-                        si = s.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.dNSdUV, True)
+                        si = s.ray_intersect(
+                            ray, mi.RayFlags.Default | mi.RayFlags.NormalPartials, True)
                         ray_u = mi.Ray3f(ray)
                         ray_v = mi.Ray3f(ray)
                         eps = 1e-4
@@ -190,7 +191,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().scale(1 + theta)
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.DetachShape)
+    si = shape.ray_intersect(ray, mi.RayFlags.Default | mi.RayFlags.DetachShape)
 
     dr.forward(theta)
 
@@ -208,7 +209,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().scale(1 + theta)
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All)
+    si = shape.ray_intersect(ray, mi.RayFlags.Default)
 
     dr.forward(theta)
 
@@ -232,7 +233,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().translate([theta, 0.0, 0.0])
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
+    si = shape.ray_intersect(ray, mi.RayFlags.Default | mi.RayFlags.FollowShape)
 
     dr.forward(theta, dr.ADFlag.ClearNone)
 
@@ -250,7 +251,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().rotate([0, 0, 1], 90 * theta)
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
+    si = shape.ray_intersect(ray, mi.RayFlags.Default | mi.RayFlags.FollowShape)
 
     dr.forward(theta)
 
@@ -268,7 +269,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().rotate([0, 0, 1], 90 * theta)
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All)
+    si = shape.ray_intersect(ray, mi.RayFlags.Default)
 
     dr.forward(theta)
 
@@ -447,7 +448,7 @@ def test18_position_partials(variant_scalar_rgb):
     for x in dr.linspace(Float, -1.5, 1.5, 5):
         for y in dr.linspace(Float, -1.5, 1.5, 5):
             ray = mi.Ray3f(mi.Point3f(x, y, 5), mi.Vector3f(0, 0, -1))
-            si = scene.ray_intersect(ray, mi.RayFlags.All, True)
+            si = scene.ray_intersect(ray, mi.RayFlags.Default, True)
             # The azimuth, and hence the partials, are undefined at the center
             if not si.is_valid() or si.uv[0] == 0:
                 continue

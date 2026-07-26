@@ -193,8 +193,7 @@ public:
         si.p = to_world * si.p;
         si.n = dr::normalize(dr::detach(to_world) * si.n);
 
-        if (likely(has_flag(ray_flags, RayFlags::ShadingFrame) ||
-                   has_flag(ray_flags, RayFlags::dNSdUV))) {
+        if (likely(has_flag(ray_flags, RayFlags::Shading))) {
             AffineTransform4f to_world_d = dr::detach(to_world);
 
             /* Transforming a normal applies the inverse transpose, which does
@@ -205,7 +204,7 @@ public:
             n *= inv_len;
             si.sh_frame.n = n;
 
-            if (has_flag(ray_flags, RayFlags::dNSdUV)) {
+            if (has_flag(ray_flags, RayFlags::NormalPartials)) {
                 Vector3f dn_du = to_world_d * Normal3f(si.dn_du) * inv_len,
                          dn_dv = to_world_d * Normal3f(si.dn_dv) * inv_len;
 
@@ -232,7 +231,7 @@ public:
             }
         }
 
-        if (likely(has_flag(ray_flags, RayFlags::dPdUV))) {
+        if (likely(has_flag(ray_flags, RayFlags::Shading))) {
             si.dp_du = to_world * si.dp_du;
             si.dp_dv = to_world * si.dp_dv;
         }

@@ -66,8 +66,9 @@ def test01_ray_intersect(variant_scalar_rgb, shape):
             assert si_found == si_found_inst
 
             if si_found:
-                si = s.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.dNSdUV, coherent=True, active=True)
-                si_inst = s_inst.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.dNSdUV, coherent=True, active=True)
+                flags = mi.RayFlags.Default | mi.RayFlags.NormalPartials
+                si = s.ray_intersect(ray, flags, coherent=True, active=True)
+                si_inst = s_inst.ray_intersect(ray, flags, coherent=True, active=True)
 
                 assert si.prim_index == si_inst.prim_index
                 assert si.instance is None
@@ -113,7 +114,7 @@ def test02_ray_intersect_transform(variant_scalar_rgb, shape):
                 assert si_found == si_found_inst
 
                 if si_found:
-                    flags = mi.RayFlags.All | mi.RayFlags.dNSdUV
+                    flags = mi.RayFlags.Default | mi.RayFlags.NormalPartials
                     si = s.ray_intersect(ray, flags, coherent=True, active=True)
                     si_inst = s_inst.ray_intersect(ray, flags, coherent=True, active=True)
 
@@ -281,7 +282,7 @@ def test05_normal_partials_non_similarity(variant_scalar_rgb):
                      'group': {'type': 'ref', 'id': 'group'},
                      'to_world': to_world}
     })
-    flags = mi.RayFlags.All | mi.RayFlags.dNSdUV
+    flags = mi.RayFlags.Default | mi.RayFlags.NormalPartials
 
     hits = 0
     for x in dr.linspace(ScalarF, -0.9, 0.9, 8):

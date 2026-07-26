@@ -36,12 +36,12 @@ def test01_backface_culling_contract(variants_all_rgb):
     ray = mi.Ray3f(o=mi.Point3f([0, 0, 0]), d=mi.Vector3f([0, 0, -1]))
     _assert_invalid(scene.ray_test(ray))
     _assert_invalid(scene.ray_intersect_preliminary(ray).is_valid())
-    _assert_invalid(scene.ray_intersect(ray, mi.RayFlags.All, True).is_valid())
+    _assert_invalid(scene.ray_intersect(ray, mi.RayFlags.Default, True).is_valid())
 
     ray = mi.Ray3f(o=mi.Point3f([0, 0, 2]), d=mi.Vector3f([0, 0, -1]))
     _assert_valid(scene.ray_test(ray))
     _assert_valid(scene.ray_intersect_preliminary(ray).is_valid())
-    _assert_valid(scene.ray_intersect(ray, mi.RayFlags.All, True).is_valid())
+    _assert_valid(scene.ray_intersect(ray, mi.RayFlags.Default, True).is_valid())
 
 
 @fresolver_append_path
@@ -77,4 +77,4 @@ def test02_mixed_mesh_backfaces_remain_double_sided(variants_all_rgb):
     ray = mi.Ray3f(o=mi.Point3f([3, 0, -2]), d=mi.Vector3f([0, 0, 1]))
     _assert_valid(scene.ray_test(ray))
     _assert_valid(scene.ray_intersect_preliminary(ray).is_valid())
-    _assert_valid(scene.ray_intersect(ray, mi.RayFlags.All, True).is_valid())
+    _assert_valid(scene.ray_intersect(ray, mi.RayFlags.Default, True).is_valid())

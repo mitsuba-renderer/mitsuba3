@@ -317,7 +317,7 @@ public:
                         PreliminaryIntersection3f pi =
                             Base::skip_area_emitters(scene, ray, true, skip_emitters);
                         SurfaceInteraction3f si_after_skip =
-                            pi.compute_surface_interaction(ray, +RayFlags::All, skip_emitters);
+                            pi.compute_surface_interaction(ray, +RayFlags::Default, skip_emitters);
                         dr::masked(si, skip_emitters) = si_after_skip;
                     }
                 }

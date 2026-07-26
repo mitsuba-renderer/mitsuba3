@@ -64,7 +64,7 @@ public:
      * that the user desires access to all fields of the
      * \ref SurfaceInteraction, and that no thread reordering is requested. In
      * other words, it simply invokes the general \c ray_intersect() overload
-     * with <tt>coherent=false</tt>, \c ray_flags equal to \ref RayFlags::All,
+     * with <tt>coherent=false</tt>, \c ray_flags equal to \ref RayFlags::Default,
      * and <tt>reorder=false</tt>.
      *
      * \param ray
@@ -77,7 +77,7 @@ public:
      */
     SurfaceInteraction3f ray_intersect(const Ray3f &ray,
                                        Mask active = true) const {
-        return ray_intersect(ray, +RayFlags::All, false, false, 0, 0, active);
+        return ray_intersect(ray, +RayFlags::Default, false, false, 0, 0, active);
     }
 
     /**
@@ -116,7 +116,7 @@ public:
      * also influences how derivatives propagate between the input ray, the
      * shape parameters, and the computed intersection (see
      * \ref RayFlags::FollowShape and \ref RayFlags::DetachShape for details on
-     * this). The default, \ref RayFlags::All, propagates derivatives through
+     * this). The default, \ref RayFlags::Default, propagates derivatives through
      * all steps of the intersection computation.
      *
      * The \c coherent flag is a hint that can improve performance in the first
@@ -191,7 +191,7 @@ public:
      * also influences how derivatives propagate between the input ray, the
      * shape parameters, and the computed intersection (see
      * \ref RayFlags::FollowShape and \ref RayFlags::DetachShape for details on
-     * this). The default, \ref RayFlags::All, propagates derivatives through
+     * this). The default, \ref RayFlags::Default, propagates derivatives through
      * all steps of the intersection computation.
      *
      * The \c coherent flag is a hint that can improve performance in the first

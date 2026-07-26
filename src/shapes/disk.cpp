@@ -500,8 +500,9 @@ public:
             prim_uv = Point2f(local.x(), local.y());
         }
 
-        if (likely(has_flag(ray_flags, RayFlags::UV) ||
-                   has_flag(ray_flags, RayFlags::dPdUV))) {
+        si.n = m_frame.n;
+
+        if (likely(has_flag(ray_flags, RayFlags::Shading))) {
             Float r_2   = dr::squared_norm(prim_uv),
                   inv_r = dr::select(r_2 != 0.f, dr::rsqrt(r_2), 0.f),
                   r     = r_2 * inv_r;
@@ -510,20 +511,16 @@ public:
             dr::masked(v, v < 0.f) += 1.f;
             si.uv = Point2f(r, v);
 
-            if (likely(has_flag(ray_flags, RayFlags::dPdUV))) {
-                Float cos_phi = prim_uv.x() * inv_r,
-                      sin_phi = prim_uv.y() * inv_r;
+            Float cos_phi = prim_uv.x() * inv_r,
+                  sin_phi = prim_uv.y() * inv_r;
 
-                si.dp_du = to_world * Vector3f( cos_phi, sin_phi, 0.f);
-                si.dp_dv = to_world * Vector3f(-sin_phi, cos_phi, 0.f) *
-                           (dr::TwoPi<Float> * r);
-            }
+            // The ``v`` coordinate is the azimuth scaled into [0, 1]
+            si.dp_du = to_world * Vector3f( cos_phi, sin_phi, 0.f);
+            si.dp_dv = to_world * Vector3f(-sin_phi, cos_phi, 0.f) *
+                       (dr::TwoPi<Float> * r);
+
+            si.sh_frame.n = m_frame.n;
         }
-
-        si.n          = m_frame.n;
-        si.sh_frame.n = m_frame.n;
-
-        si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
 
         si.prim_index = pi.prim_index;
         si.shape    = this;
