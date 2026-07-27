@@ -3,7 +3,8 @@
 Variants in C++
 ===============
 
-As described in the section on :ref:`choosing variants <sec-variants>`, Mitsuba
+As described in the upstream section on `choosing variants
+<https://mitsuba.readthedocs.io/en/latest/src/key_topics/variants.html>`_, Mitsuba
 3 code can be compiled into different variants, which are parameterized by
 their computational backend and representation of color. To enable such
 retargeting from a single implementation, the system relies on C++ templates

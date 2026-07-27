@@ -64,7 +64,8 @@ total path length and the speed of sound.
 
 At each surface interaction, the integrator uses multiple importance sampling
 (MIS) to combine BSDF and emitter samples, analogous to the optical
-:ref:`path tracer <integrator-path>`. The key difference is that energy
+`path tracer <https://mitsuba.readthedocs.io/en/latest/src/plugin_reference/section_integrators.html#integrator-path>`_.
+The key difference is that energy
 transport is not assumed to be instantaneous, but at the speed of sound. Instead
 of producing an image, the output is stored in a ``Tape``, where the first axis
 corresponds to frequency bins and the second axis to time bins.

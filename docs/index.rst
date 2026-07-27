@@ -30,7 +30,9 @@ misuka is built from source, analogously to Mitsuba 3. Follow the
 :ref:`developer guide <sec-compiling>` for the full recipe, and make sure the
 :monosp:`mitsuba.conf` ``"enabled"`` list contains at least one ``*_acoustic``
 variant (e.g. ``llvm_ad_acoustic``) — acoustic scenes cannot be rendered with an
-optical variant. See :ref:`sec-variants` for details.
+optical variant. See the `Mitsuba variants guide
+<https://mitsuba.readthedocs.io/en/latest/src/key_topics/variants.html>`_ for
+background on the variant system.
 
 Requirements
 ^^^^^^^^^^^^

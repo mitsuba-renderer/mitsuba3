@@ -36,7 +36,8 @@ emitter parameters:
 In practice, it is however discouraged to instantiate plugins in this explicit way
 and the XML scene description parser directly parses a number of common (shorter)
 ``<spectrum>`` and ``<rgb>`` tags. See the corresponding section about the
-:ref:`scene file format <sec-file-format>` for details.
+`scene file format <https://mitsuba.readthedocs.io/en/latest/src/key_topics/scene_format.html>`_
+for details.
 
 The following two tables summarize which underlying plugins get instantiated
 in each case, accounting for differences between reflectance and emission properties
@@ -108,8 +109,8 @@ as the radiance value of an emitter will result in a purple-ish color. On the
 other hand, using such spectrum for a BSDF reflectance value will result in
 an object appearing white. Both RGB and spectral modes of Mitsuba 3 will
 exhibit this behavior consistently. The figure below illustrates this for
-combinations of inputs for the emitter radiance (here using a :ref:`constant <emitter-constant>` emitter)
-and the BSDF reflectance (here using a :ref:`diffuse <bsdf-diffuse>` BSDF).
+combinations of inputs for the emitter radiance (here using a constant emitter)
+and the BSDF reflectance (here using a diffuse BSDF).
 
 .. image:: ../../resources/data/docs/images/misc/spectrum_rgb_table.png
     :width: 60%
@@ -118,8 +119,8 @@ and the BSDF reflectance (here using a :ref:`diffuse <bsdf-diffuse>` BSDF).
 .. warning::
 
     While it is possible to define unbounded RGB properties (such as the ``eta``
-    value for a :ref:`conductor BSDF <bsdf-conductor>`) using ``<rgb name=".." value=".."/>``
+    value for a conductor BSDF) using ``<rgb name=".." value=".."/>``
     tag, it is highly recommended to directly define a spectrum curve (or use a
-    material from :numref:`conductor-ior-list`) as the spectral uplifting algorithm
+    material from the conductor's built-in IOR list) as the spectral uplifting algorithm
     implemented in Mitsuba won't be able to guarantee that the produced spectrum
     will behave consistently in both RGB and spectral modes.

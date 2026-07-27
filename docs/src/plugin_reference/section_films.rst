@@ -3,11 +3,15 @@
 Films
 =====
 
-A film defines how conducted measurements are stored and converted into the final
-output file that is written to disk at the end of the rendering process.
+A film defines how conducted measurements are stored and converted into the
+final output that is written to disk at the end of the rendering process.
+misuka's acoustic film is :ref:`tape <film-tape>`, which records an
+**Energy Time Curve (ETC)**: energy accumulated per frequency band, against
+propagation time. Unlike an image film, its two axes are frequency bands and
+time bins rather than pixel width and height.
 
-In the XML scene description language, a normal film configuration might look
-as follows:
+In the XML scene description language, a film configuration might look as
+follows:
 
 .. tabs::
     .. code-tab:: xml
@@ -15,17 +19,13 @@ as follows:
         <scene version="3.0.0">
             <!-- .. scene contents -->
 
-            <sensor type=".. sensor type ..">
+            <sensor type="microphone">
                 <!-- .. sensor parameters .. -->
 
-                <!-- Write to a high dynamic range EXR image -->
-                <film type="hdrfilm">
-                    <!-- Specify the desired resolution (e.g. full HD) -->
-                    <integer name="width" value="1920"/>
-                    <integer name="height" value="1080"/>
-
-                    <!-- Use a Gaussian reconstruction filter. -->
-                    <rfilter type="gaussian"/>
+                <!-- Record an ETC over three frequency bands -->
+                <film type="tape">
+                    <string name="frequencies" value="100, 500, 20000"/>
+                    <integer name="time_bins" value="1000"/>
                 </film>
             </sensor>
         </scene>
@@ -37,21 +37,18 @@ as follows:
         # .. scene contents ..
 
         'sensor_id': {
-            'type': '<sensor_type>',
+            'type': 'microphone',
 
-            # Write to a high dynamic range EXR image
+            # Record an ETC over three frequency bands
             'film_id': {
-                'type': 'hdrfilm',
-                # Specify the desired resolution (e.g. full HD)
-                'width': 1920,
-                'height': 1080,
-                # Use a Gaussian reconstruction filter
-                'filter': { 'type': 'gaussian' }
+                'type': 'tape',
+                'frequencies': '100, 500, 20000',
+                'time_bins': 1000,
             }
         }
 
 The ``<film>`` plugin should be instantiated inside a ``<sensor>``
-declaration. Note how the output filename is never specified---it is automatically
-inferred from the scene filename and can be manually overridden by passing the
-configuration parameter ``-o`` to the ``mitsuba`` executable when rendering
-from the command line.
+declaration. As with other films, the output filename is inferred from the
+scene filename and can be manually overridden by passing the configuration
+parameter ``-o`` to the ``mitsuba`` executable when rendering from the
+command line.
