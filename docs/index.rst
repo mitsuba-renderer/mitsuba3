@@ -19,16 +19,16 @@ efficient gradient estimation with respect to material properties, source/receiv
 positions, and scene geometry.
 
 Because misuka is an extension, the light-transport engine, scene description
-language, and Python API are documented upstream. This site documents only the
-**acoustic surface**; follow the links above for everything misuka inherits from
-Mitsuba 3 and Dr.Jit.
+language, and Python API are documented upstream. This site documents only
+**acoustic rendering functionality**; follow the links above for everything
+misuka inherits from Mitsuba 3 and Dr.Jit.
 
 Installation
 ------------
 
 misuka is built from source, analogously to Mitsuba 3. Follow the
 :ref:`developer guide <sec-compiling>` for the full recipe, and make sure the
-:monosp:`mitsuba.conf` ``"enabled"`` list contains at least one ``*_acoustic``
+:monosp:`misuka.conf` ``"enabled"`` list contains at least one ``*_acoustic``
 variant (e.g. ``llvm_ad_acoustic``) — acoustic scenes cannot be rendered with an
 optical variant. See the `Mitsuba variants guide
 <https://mitsuba.readthedocs.io/en/latest/src/key_topics/variants.html>`_ for
