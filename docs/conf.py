@@ -20,20 +20,11 @@ def replacement(self, node):
     vr(self, node)
 HTML5Translator.visit_reference = replacement
 
-if not os.path.exists('src/quickstart/'):
-    os.symlink('../../tutorials/quickstart', 'src/quickstart', target_is_directory=True)
-
 if not os.path.exists('src/rendering'):
-    os.symlink('../../tutorials/rendering', 'src/rendering', target_is_directory=True)
+    os.symlink('../../tutorials_acoustic/rendering', 'src/rendering', target_is_directory=True)
 
 if not os.path.exists('src/inverse_rendering'):
-    os.symlink('../../tutorials/inverse_rendering', 'src/inverse_rendering', target_is_directory=True)
-
-if not os.path.exists('src/others'):
-    os.symlink('../../tutorials/others', 'src/others', target_is_directory=True)
-
-if not os.path.exists('src/how_to_guides/'):
-    os.symlink('../../tutorials/how_to_guides', 'src/how_to_guides', target_is_directory=True)
+    os.symlink('../../tutorials_acoustic/inverse_rendering', 'src/inverse_rendering', target_is_directory=True)
 
 if not os.path.exists('src/generated'):
     os.symlink('../generated', 'src/generated', target_is_directory=True)
@@ -272,7 +263,7 @@ nbsphinx_prolog = """
     </style>
 
     <div style="display: block; width: 100%; text-align: center;">
-        <a href="https://raw.githubusercontent.com/mitsuba-renderer/mitsuba-tutorials/master/{{ env.doc2path(env.docname, base=None)[4:] }}" target="_blank">
+        <a href="https://raw.githubusercontent.com/misuka-renderer/misuka-tutorials/main/{{ env.doc2path(env.docname, base=None)[4:] }}" target="_blank">
             <button id="nb_btn">Download notebook</button>
         </a>
 
@@ -283,9 +274,7 @@ nbsphinx_prolog = """
 
 """
 
-nbsphinx_thumbnails = {
-    'src/getting_started/quickstart/drjit_quickstart': '_static/drjit-logo-dark.png',
-}
+nbsphinx_thumbnails = {}
 
 extensions.append('sphinx_copybutton')
 
