@@ -4,7 +4,7 @@ Acoustic rendering
 ==================
 
 misuka turns Mitsuba 3 into a room-acoustic renderer. The geometry, samplers,
-scene format, and the `Dr.Jit <https://drjit.readthedocs.io/en/latest/>`_
+scene format, and the `Dr.Jit <https://drjit.readthedocs.io/en/v1.4.0/>`_
 JIT / autodiff engine all carry over unchanged; what changes is *what* is
 transported and *what* the renderer records. Instead of spectral radiance
 integrated into a 2D image, misuka transports **sound energy** and records an
@@ -39,7 +39,7 @@ with automatic differentiation, ``cuda_ad_acoustic`` its GPU counterpart, and
 variant such as ``llvm_ad_rgb`` **cannot** render acoustic scenes; the acoustic
 plugins and integrators only register under ``_acoustic`` variants. See the
 `Mitsuba variants guide
-<https://mitsuba.readthedocs.io/en/latest/src/key_topics/variants.html>`_ for the
+<https://mitsuba.readthedocs.io/en/v3.9.0/src/key_topics/variants.html>`_ for the
 underlying variant system, and the :ref:`developer guide <sec-compiling>` for
 enabling ``_acoustic`` variants in :monosp:`misuka.conf`.
 

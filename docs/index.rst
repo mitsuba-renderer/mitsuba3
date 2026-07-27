@@ -9,9 +9,9 @@ Getting started
 
 misuka is a research-oriented, differentiable **room-acoustic renderer** for
 forward and inverse sound-transport simulation. It is a fully compatible
-extension to `Mitsuba 3 <https://mitsuba.readthedocs.io/en/latest/>`_: it reuses
+extension to `Mitsuba 3 <https://mitsuba.readthedocs.io/en/v3.9.0/>`_: it reuses
 Mitsuba's scene format, geometry, samplers, and the `Dr.Jit
-<https://drjit.readthedocs.io/en/latest/>`_ JIT compiler / autodiff engine, and
+<https://drjit.readthedocs.io/en/v1.4.0/>`_ JIT compiler / autodiff engine, and
 adds acoustic plugins (an absorbing/scattering material, an energy path tracer,
 a microphone sensor, and an Energy-Time-Curve film). It implements `Time-Resolved
 Path Replay Backpropagation <https://dl.acm.org/doi/pdf/10.1145/3730900>`_ for
@@ -31,7 +31,7 @@ misuka is built from source, analogously to Mitsuba 3. Follow the
 :monosp:`misuka.conf` ``"enabled"`` list contains at least one ``*_acoustic``
 variant (e.g. ``llvm_ad_acoustic``) — acoustic scenes cannot be rendered with an
 optical variant. See the `Mitsuba variants guide
-<https://mitsuba.readthedocs.io/en/latest/src/key_topics/variants.html>`_ for
+<https://mitsuba.readthedocs.io/en/v3.9.0/src/key_topics/variants.html>`_ for
 background on the variant system.
 
 Requirements
@@ -169,9 +169,9 @@ When using Time-Resolved Path Replay Backpropagation, please also cite:
         doi     = {10.1145/3730900},
     }
 
-misuka is built on `Mitsuba 3 <https://mitsuba.readthedocs.io/en/latest/>`_; when
+misuka is built on `Mitsuba 3 <https://mitsuba.readthedocs.io/en/v3.9.0/>`_; when
 appropriate, please also cite the underlying renderer following its
-`citation guidelines <https://mitsuba.readthedocs.io/en/latest/#citation>`_.
+`citation guidelines <https://mitsuba.readthedocs.io/en/v3.9.0/#citation>`_.
 
 .. .............................................................................
 

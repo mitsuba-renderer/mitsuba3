@@ -50,13 +50,13 @@ The lobe width is controlled by the `specular_lobe_width` parameter.
 Small `specular_lobe_width` values (default or lower) approximate ideal specular reflections (see left figure) while remaining continuously differentiable.
 Larger values increase the specular lobe width (see right figure).
 Under the hood, this BSDF uses the microfacet-based model from
-`roughconductor <https://mitsuba.readthedocs.io/en/latest/src/plugin_reference/section_bsdfs.html#bsdf-roughconductor>`_
+`roughconductor <https://mitsuba.readthedocs.io/en/v3.9.0/src/generated/plugins_bsdfs.html#bsdf-roughconductor>`_
 with a Beckmann distribution. The parameter `specular_lobe_width` corresponds to the parameter `alpha` in the
-`roughconductor <https://mitsuba.readthedocs.io/en/latest/src/plugin_reference/section_bsdfs.html#bsdf-roughconductor>`_ BSDF.
+`roughconductor <https://mitsuba.readthedocs.io/en/v3.9.0/src/generated/plugins_bsdfs.html#bsdf-roughconductor>`_ BSDF.
 Note that microfacet models are not validated for the application to sound propagation, although any non-finite surface will exhibit specular lobes with non-zero width.
 
 The diffuse component follows Lambertian scattering (see
-`diffuse <https://mitsuba.readthedocs.io/en/latest/src/plugin_reference/section_bsdfs.html#bsdf-diffuse>`_).
+`diffuse <https://mitsuba.readthedocs.io/en/v3.9.0/src/generated/plugins_bsdfs.html#bsdf-diffuse>`_).
 
 .. subfigstart::
 .. subfigure:: ../../resources/data_acoustic/docs/images/bsdf/acoustic_bsdf-1.png

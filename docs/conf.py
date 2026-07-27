@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# Mitsuba 3 documentation build configuration file
+# misuka documentation build configuration file
 #
 # The documentation can be built by invoking "make mkdoc"
 # from the build directory
@@ -167,8 +167,8 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 
-html_logo = "images/logo.png"
-html_title = "Mitsuba 3"
+html_logo = "images/misuka_logo.png"
+html_title = "misuka"
 html_theme = 'furo'
 html_static_path = ['_static']
 html_js_files = []
@@ -196,12 +196,9 @@ extensions.append('sphinx_design')
 
 extensions.append('nbsphinx')
 
-intersphinx_mapping = { 
+intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
-    "drjit" : (
-        "https://drjit.readthedocs.io/en/latest/", 
-        ("https://drjit.readthedocs.io/en/v0.4.6/", None)
-    )
+    "drjit" : ("https://drjit.readthedocs.io/en/v1.4.0/", None)
 }
 
 nbsphinx_execute = 'never'
@@ -428,7 +425,7 @@ html_show_sourcelink = False
 #html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'mitsuba3_doc'
+htmlhelp_basename = 'misuka_doc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -450,7 +447,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'mitsuba3.tex', 'Mitsuba 3 Documentation',
+    (master_doc, 'misuka.tex', 'misuka Documentation',
      author, 'manual'),
 ]
 
@@ -480,7 +477,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'mitsuba3', 'Mitsuba 3 Documentation',
+    (master_doc, 'misuka', 'misuka Documentation',
      [author], 1)
 ]
 
@@ -494,8 +491,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'mitsuba3', 'Mitsuba 3 Documentation',
-     author, 'mitsuba3', 'One line description of project.',
+    (master_doc, 'misuka', 'misuka Documentation',
+     author, 'misuka', 'Differentiable room acoustic renderer.',
      'Miscellaneous'),
 ]
 

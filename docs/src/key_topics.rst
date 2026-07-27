@@ -17,10 +17,10 @@ Because misuka is a compatible extension to Mitsuba 3, most of its key topics
 versions, and polarized light transport — are inherited unchanged and stay
 documented upstream:
 
-- `Choosing variants <https://mitsuba.readthedocs.io/en/latest/src/key_topics/variants.html>`_
-- `Scene format <https://mitsuba.readthedocs.io/en/latest/src/key_topics/scene_format.html>`_
-- `Differences to previous versions <https://mitsuba.readthedocs.io/en/latest/src/key_topics/differences.html>`_
-- `Polarization <https://mitsuba.readthedocs.io/en/latest/src/key_topics/polarization.html>`_
+- `Choosing variants <https://mitsuba.readthedocs.io/en/v3.9.0/src/key_topics/variants.html>`_
+- `Scene format <https://mitsuba.readthedocs.io/en/v3.9.0/src/key_topics/scene_format.html>`_
+- `Differences to previous versions <https://mitsuba.readthedocs.io/en/v3.9.0/src/key_topics/differences.html>`_
+- `Polarization <https://mitsuba.readthedocs.io/en/v3.9.0/src/key_topics/polarization.html>`_
 
 Only the acoustic-specific extensions to these topics — the ``_acoustic``
 variant family and the ETC output format — are documented here.

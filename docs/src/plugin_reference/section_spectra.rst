@@ -36,7 +36,7 @@ emitter parameters:
 In practice, it is however discouraged to instantiate plugins in this explicit way
 and the XML scene description parser directly parses a number of common (shorter)
 ``<spectrum>`` and ``<rgb>`` tags. See the corresponding section about the
-`scene file format <https://mitsuba.readthedocs.io/en/latest/src/key_topics/scene_format.html>`_
+`scene file format <https://mitsuba.readthedocs.io/en/v3.9.0/src/key_topics/scene_format.html>`_
 for details.
 
 The following two tables summarize which underlying plugins get instantiated
