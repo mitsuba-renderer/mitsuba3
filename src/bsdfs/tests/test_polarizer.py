@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 def test01_create(variant_scalar_mono_polarized):
     b = mi.load_dict({'type': 'polarizer'})

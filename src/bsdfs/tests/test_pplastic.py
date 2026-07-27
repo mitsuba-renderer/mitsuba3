@@ -1,5 +1,5 @@
 import pytest
-import mitsuba as mi
+import misuka as mi
 
 
 @pytest.mark.slow

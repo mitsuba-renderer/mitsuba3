@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import drjit as dr
 from drjit.scalar import ArrayXf as Float
-import mitsuba as mi
+import misuka as mi
 
 
 def check_warp_vectorization(func_str, wrapper = (lambda f: lambda x: f(x)), atol=1e-6):
@@ -20,7 +20,7 @@ def check_warp_vectorization(func_str, wrapper = (lambda f: lambda x: f(x)), ato
 
         return result
 
-    from mitsuba.test.util import check_vectorization
+    from misuka.test.util import check_vectorization
     check_vectorization(kernel, atol=atol)
 
 
@@ -185,7 +185,7 @@ def test_square_to_bilinear(variant_scalar_rgb):
 
 
 def test_interval_to_tangent_direction(variant_scalar_rgb):
-    from mitsuba.test.util import check_vectorization
+    from misuka.test.util import check_vectorization
 
     for x in dr.linspace(Float, 1e-6, 1-1e-6, 5):
         for y in dr.linspace(Float, 1e-6, 1-1e-6, 5):

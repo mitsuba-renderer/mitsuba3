@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 def test01_traverse_flags(variants_vec_backends_once_rgb):
     class MyBSDF(mi.BSDF):

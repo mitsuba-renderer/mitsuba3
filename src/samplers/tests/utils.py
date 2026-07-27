@@ -1,4 +1,4 @@
-import mitsuba
+import misuka
 import pytest
 import drjit as dr
 import numpy as np
@@ -25,7 +25,7 @@ def check_uniform_scalar_sampler(sampler, res=16, atol=0.5):
 
 
 def check_uniform_wavefront_sampler(sampler, res=16, atol=0.5):
-    import mitsuba as mi
+    import misuka as mi
 
     sample_count = sampler.sample_count()
     sampler.set_samples_per_wavefront(sample_count)

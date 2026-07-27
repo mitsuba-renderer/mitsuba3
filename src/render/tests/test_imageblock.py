@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 import math
 import os
 

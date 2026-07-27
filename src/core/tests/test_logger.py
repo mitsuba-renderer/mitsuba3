@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 
 def test01_custom(variant_scalar_rgb):

@@ -1,4 +1,4 @@
-import mitsuba as mi
+import misuka as mi
 import sys
 import os
 
@@ -31,7 +31,7 @@ v = stub_variant()
 if v not in mi.variants():
     raise ImportError(f'Based on chosen set of Mitsuba variants, variant {v} '
                        'is required for stub generation. Please modify your '
-                       'mitsuba.conf file to include this variant and recompile '
+                       'misuka.conf file to include this variant and recompile '
                        'Mitsuba.')
 
 # Mitsuba variant has static initialization that requires JIT to initialize
@@ -45,7 +45,7 @@ try:
 finally:
     del os.environ["MI_STUB_GENERATION"]
 
-sys.modules[__name__] = sys.modules['mitsuba']
+sys.modules[__name__] = sys.modules['misuka']
 sys.modules[__name__ +'.math']       = mi.math
 sys.modules[__name__ +'.spline']     = mi.spline
 sys.modules[__name__ +'.warp']       = mi.warp

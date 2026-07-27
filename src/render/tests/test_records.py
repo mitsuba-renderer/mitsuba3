@@ -5,7 +5,7 @@ mechanics for data structures that support dynamically-sized vectorization.
 
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 import numpy as np
 
 

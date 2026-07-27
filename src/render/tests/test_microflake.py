@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 import numpy as np
 
 def test01_binding_types(variants_all_rgb):

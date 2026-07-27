@@ -1,10 +1,10 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 
 def test01_basics(variant_scalar_rgb):
-    from mitsuba import BoundingBox3f as BBox
+    from misuka import BoundingBox3f as BBox
 
     bbox1 = BBox()
     bbox2 = BBox([0, 1, 2])
@@ -58,7 +58,7 @@ def test01_basics(variant_scalar_rgb):
 
 
 def test02_contains_variants(variant_scalar_rgb):
-    from mitsuba import BoundingBox3f as BBox
+    from misuka import BoundingBox3f as BBox
 
     bbox = BBox([1, 2, 3], [2, 3, 5])
     assert bbox.contains([1.5, 2.5, 3.5])
@@ -80,7 +80,7 @@ def test02_contains_variants(variant_scalar_rgb):
 
 
 def test03_distance(variant_scalar_rgb):
-    from mitsuba import BoundingBox3f as BBox
+    from misuka import BoundingBox3f as BBox
 
     assert BBox([1, 2, 3], [2, 3, 5]).distance(
         BBox([4, 2, 3], [5, 3, 5])) == 2
@@ -121,7 +121,7 @@ def test05_surface_area_vec(variant_scalar_rgb):
         bbox.expand(p)
         return bbox.surface_area()
 
-    from mitsuba.test.util import check_vectorization
+    from misuka.test.util import check_vectorization
     check_vectorization(kernel, arg_dims = [3, 3, 3])
 
 
@@ -135,7 +135,7 @@ def test06_ray_intersect_vec(variant_scalar_rgb):
 
         return mint, maxt
 
-    from mitsuba.test.util import check_vectorization
+    from misuka.test.util import check_vectorization
     check_vectorization(kernel, arg_dims = [3, 3, 3])
 
 
@@ -148,7 +148,7 @@ def test07_ray_intersect_cross_variant_alias():
     # earlier in the same session may have already influenced.
     import subprocess, sys, textwrap
     script = textwrap.dedent("""
-        import mitsuba as mi
+        import misuka as mi
         mi.set_variant('llvm_ad_rgb')
         mi.set_variant('scalar_rgb')
         bbox = mi.BoundingBox3f([-1, -1, -1], [1, 1, 1])

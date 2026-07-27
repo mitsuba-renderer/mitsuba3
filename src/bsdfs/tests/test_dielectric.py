@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 def example_bsdf(reflectance=0.3, transmittance=0.6):
     return mi.load_dict({

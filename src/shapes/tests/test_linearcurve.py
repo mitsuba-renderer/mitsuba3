@@ -1,9 +1,9 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 from drjit.scalar import ArrayXf as Float
-from mitsuba.scalar_rgb.test.util import fresolver_append_path
+from misuka.scalar_rgb.test.util import fresolver_append_path
 
 @fresolver_append_path
 def test01_create(variants_all_rgb):
@@ -123,7 +123,7 @@ def test04_ray_intersect(variant_scalar_rgb):
 
 @fresolver_append_path
 def test05_ray_intersect_vec(variant_scalar_rgb):
-    from mitsuba.scalar_rgb.test.util import check_vectorization
+    from misuka.scalar_rgb.test.util import check_vectorization
 
     def kernel(o):
         scene = mi.load_dict({

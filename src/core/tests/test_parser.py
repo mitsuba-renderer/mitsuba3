@@ -1,9 +1,9 @@
 import pytest
-import mitsuba as mi
+import misuka as mi
 import drjit as dr
 import re
 
-from mitsuba.scalar_rgb.test.util import fresolver_append_path
+from misuka.scalar_rgb.test.util import fresolver_append_path
 
 def xml_escape(path):
     """Escape dollar signs in paths for XML parameter substitution"""
@@ -2190,7 +2190,7 @@ def test62_transform_relocate(variant_scalar_rgb, tmp_path):
 def test63_resource_path_management(variant_scalar_rgb, tmp_path):
     """Test resource path management (<path> tag)"""
     import shutil
-    from mitsuba.test.util import find_resource
+    from misuka.test.util import find_resource
 
     # Create a data subdirectory in temp path
     data_dir = tmp_path / 'data'
@@ -2411,7 +2411,7 @@ def test66_escaped_dollar_sign(variant_scalar_rgb):
 def test67_dict_resource_path_management(variant_scalar_rgb, tmp_path):
     """Test resource path management for dictionaries (type='resources')"""
     import shutil
-    from mitsuba.test.util import find_resource
+    from misuka.test.util import find_resource
 
     # Create a data subdirectory in temp path
     data_dir = tmp_path / 'data_parser_67'

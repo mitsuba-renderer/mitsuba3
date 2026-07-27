@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 import os
 import argparse
 import glob
@@ -8,7 +8,7 @@ import numpy as np
 
 from os.path import join, dirname, basename, splitext, exists
 from drjit.scalar import ArrayXf as Float
-from mitsuba.scalar_rgb.test.util import find_resource
+from misuka.scalar_rgb.test.util import find_resource
 
 color_modes = ['mono', 'rgb', 'spectral_polarized', 'spectral']
 

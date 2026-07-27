@@ -1,7 +1,7 @@
 import pytest
 import drjit as dr
 from drjit.scalar import ArrayXf as Float
-import mitsuba as mi
+import misuka as mi
 
 
 def test01_coordinate_system(variant_scalar_rgb):
@@ -41,5 +41,5 @@ def test02_coordinate_system_vec(variant_scalar_rgb):
         n = mi.warp.square_to_uniform_sphere([u, v])
         return mi.coordinate_system(n)
 
-    from mitsuba.test.util import check_vectorization
+    from misuka.test.util import check_vectorization
     check_vectorization(kernel)

@@ -1,8 +1,8 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
-from mitsuba.scalar_rgb.test.util import fresolver_append_path
+from misuka.scalar_rgb.test.util import fresolver_append_path
 
 def test01_ss_repr(variants_vec_backends_once_rgb):
     # Test that the class is bound and prints itself

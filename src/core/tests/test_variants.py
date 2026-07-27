@@ -1,5 +1,5 @@
 import pytest
-import mitsuba as mi
+import misuka as mi
 
 
 def test01_variants_callbacks(variants_all_backends_once):

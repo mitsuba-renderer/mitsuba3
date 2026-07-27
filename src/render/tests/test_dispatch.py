@@ -1,5 +1,5 @@
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 import pytest
 
 @pytest.mark.parametrize("recorded", [True, False])

@@ -45,7 +45,7 @@ MI_PY_DECLARE(DiscontinuityFlags);
 
 NB_MODULE(mitsuba_ext, m) {
     // Temporarily change the module name (for pydoc)
-    m.attr("__name__") = "mitsuba";
+    m.attr("__name__") = "misuka";
 
     // Expose some constants in the main `mitsuba` module
     m.attr("__version__")      = MI_VERSION;
@@ -186,12 +186,12 @@ NB_MODULE(mitsuba_ext, m) {
     }));
 
     /* Make this a package, thus allowing statements such as:
-     * `from mitsuba.test.util import function`
+     * `from misuka.test.util import function`
      * For that `__path__` needs to be populated. We do it by using the
      * `__file__` attribute of a Python file which is located in the same
      * directory as this module */
     nb::module_ os = nb::module_::import_("os");
-    nb::module_ cfg = nb::module_::import_("mitsuba.config");
+    nb::module_ cfg = nb::module_::import_("misuka.config");
     nb::object cfg_path = os.attr("path").attr("realpath")(cfg.attr("__file__"));
     nb::object mi_dir = os.attr("path").attr("dirname")(cfg_path);
     nb::object mi_py_dir = os.attr("path").attr("join")(mi_dir, "python");

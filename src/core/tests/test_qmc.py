@@ -1,6 +1,6 @@
 # import drjit as dr
 # import pytest
-# import mitsuba
+# import misuka
 
 
 # def r_inv(divisor, index):
@@ -33,7 +33,7 @@
 
 
 # def test01_radical_inverse(variant_scalar_rgb):
-#     from mitsuba.core import RadicalInverse
+#     from misuka.core import RadicalInverse
 
 #     v = RadicalInverse()
 #     assert(v.eval(0, 0) == 0)
@@ -49,7 +49,7 @@
 
 # @pytest.mark.skip(reason="RadicalInverse has no vectorized bindings")
 # def test02_radical_inverse_vectorized(variant_scalar_rgb):
-#     from mitsuba.core import RadicalInverse
+#     from misuka.core import RadicalInverse
 
 #     v = RadicalInverse()
 #     for index, prime in enumerate(gen_primes()):
@@ -61,7 +61,7 @@
 
 
 # def test03_faure_permutations(variant_scalar_rgb):
-#     from mitsuba.core import RadicalInverse
+#     from misuka.core import RadicalInverse
 
 #     p = RadicalInverse()
 #     assert (p.permutation(0) == [0, 1]).all()
@@ -71,8 +71,8 @@
 
 
 # def test04_scrambled_radical_inverse(variant_scalar_rgb):
-#     from mitsuba.core import RadicalInverse
-#     from mitsuba.core import math
+#     from misuka.core import RadicalInverse
+#     from misuka.core import math
 
 #     p = RadicalInverse(10, -1)
 #     assert (p.permutation(0) == [0, 1]).all()
@@ -99,10 +99,10 @@
 
 # @pytest.mark.skip(reason="RadicalInverse has no vectorized bindings")
 # def test02_radical_inverse_vectorized(variant_scalar_rgb):
-#     from mitsuba.core import RadicalInverse
+#     from misuka.core import RadicalInverse
 
 #     try:
-#         from mitsuba.packet_rgb.core.qmc import RadicalInverseP
+#         from misuka.packet_rgb.core.qmc import RadicalInverseP
 #     except ImportError:
 #         pytest.skip("packet_rgb mode not enabled")
 

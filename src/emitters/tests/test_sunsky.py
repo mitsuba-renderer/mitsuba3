@@ -1,9 +1,9 @@
 import pytest
 import numpy as np
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
-from mitsuba.scalar_rgb.test.util import find_resource
+from misuka.scalar_rgb.test.util import find_resource
 
 eps = 1e-4
 SIN_OFFSET = 0.00775

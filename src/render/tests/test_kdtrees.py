@@ -1,8 +1,8 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
-from mitsuba.scalar_rgb.test.util import fresolver_append_path
+from misuka.scalar_rgb.test.util import fresolver_append_path
 
 # Generate stairs in a 1x1x1 bbox, going up the Z axis along the X axis
 def create_stairs(num_steps):

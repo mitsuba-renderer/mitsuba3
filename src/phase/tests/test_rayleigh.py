@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 def test_create(variant_scalar_rgb):
     p = mi.load_dict({"type": "rayleigh"})

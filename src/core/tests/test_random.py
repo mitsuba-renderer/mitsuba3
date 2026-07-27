@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 import numpy as np
 
@@ -28,7 +28,7 @@ def test02_tea_float64(variant_scalar_rgb):
 
 
 def test03_tea_vectorized(variant_scalar_rgb):
-    from mitsuba.test.util import check_vectorization
+    from misuka.test.util import check_vectorization
 
     width = 125
 

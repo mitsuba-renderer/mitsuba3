@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 def test01_create(variants_all):
     b = mi.load_dict({'type': 'hair'})
@@ -162,7 +162,7 @@ def test05_sample_consistency(variants_vec_backends_once_rgb):
 
 @pytest.mark.slow
 def test06_chi2(variants_vec_backends_once_rgb):
-    from mitsuba.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
+    from misuka.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
     for long_roughness in list(dr.linspace(mi.Float, 0.2, 1.0, 4)):
         # Low azimuthal roughness tests are difficult to pass (w/ limited budget)
         for azi_roughness in list(dr.linspace(mi.Float, 0.8, 1.0, 3)):

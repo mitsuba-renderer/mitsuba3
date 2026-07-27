@@ -1,6 +1,6 @@
 import numpy as np
 import os
-import mitsuba as mi
+import misuka as mi
 
 def test01_open_read_only(variant_scalar_rgb, tmpdir):
     tmp_file = os.path.join(str(tmpdir), "mmap_test")

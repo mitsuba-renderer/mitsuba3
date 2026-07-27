@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 
 def create_camera(o, d, fov=34, fov_axis="x", s_open=1.5, s_close=5, near_clip=1.0):

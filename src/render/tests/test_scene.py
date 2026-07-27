@@ -1,8 +1,8 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
-from mitsuba.scalar_rgb.test.util import fresolver_append_path
+from misuka.scalar_rgb.test.util import fresolver_append_path
 
 
 @fresolver_append_path
@@ -103,7 +103,7 @@ def test03_shapes_parameters_grad_enabled(variant_cuda_ad_rgb):
 @fresolver_append_path
 @pytest.mark.parametrize("shadow", [True, False])
 def test04_scene_destruction_and_pending_raytracing(variants_vec_rgb, shadow):
-    from mitsuba import ScalarTransform4f as T
+    from misuka import ScalarTransform4f as T
 
     # Create and raytrace scene in a function, so that the scene object gets
     # destroyed (attempt) when leaving the function call
@@ -371,7 +371,7 @@ def test14_many_top_level_analytic_shapes(variants_vec_backends_once_rgb):
     bottom-level acceleration structure on the GPU backends, yet each must be
     recovered individually: ``si.shape`` for a ray hitting shape ``i`` must be
     exactly ``scene.shapes()[i]``."""
-    from mitsuba import ScalarTransform4f as T
+    from misuka import ScalarTransform4f as T
 
     n = 8
     d = {'type': 'scene'}

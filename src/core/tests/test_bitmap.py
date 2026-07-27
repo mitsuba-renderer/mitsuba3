@@ -3,9 +3,9 @@ import os
 
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
-from mitsuba.test.util import find_resource
+from misuka.test.util import find_resource
 
 
 def test_read_convert_yc(variant_scalar_rgb, tmpdir):

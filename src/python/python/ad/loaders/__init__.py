@@ -1,5 +1,5 @@
 import importlib
-import mitsuba as mi
+import misuka as mi
 
 if mi.variant() is not None and not mi.variant().startswith('scalar'):
     from . import ray_loader

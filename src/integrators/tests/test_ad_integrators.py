@@ -24,13 +24,13 @@ reference data (e.g. for a new configurations). Please see the following command
 """
 
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 import pytest, os, argparse
 from os.path import join, exists
 
-from mitsuba.scalar_rgb.test.util import fresolver_append_path
-from mitsuba.scalar_rgb.test.util import find_resource
+from misuka.scalar_rgb.test.util import fresolver_append_path
+from misuka.scalar_rgb.test.util import find_resource
 
 output_dir = find_resource('resources/data/tests/integrators')
 
@@ -148,7 +148,7 @@ def check_gradient_error(grad, grad_ref, config, integrator_name, threshold_attr
 #                          Test configs
 # -------------------------------------------------------------------
 
-from mitsuba.scalar_rgb import ScalarTransform4f as T
+from misuka.scalar_rgb import ScalarTransform4f as T
 
 class ConfigBase:
     """

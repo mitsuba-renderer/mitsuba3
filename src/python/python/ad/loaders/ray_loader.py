@@ -2,7 +2,7 @@ from __future__ import annotations as __annotations__ # Delayed parsing of type 
 
 from typing import Tuple
 
-import mitsuba as mi
+import misuka as mi
 import drjit as dr
 
 

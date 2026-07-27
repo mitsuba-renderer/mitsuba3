@@ -1,6 +1,6 @@
 import struct
 
-from mitsuba import Struct, StructConverter
+from misuka import Struct, StructConverter
 
 # The structured-data conversion engine lives in the standalone 'struct-jit'
 # library, which has its own extensive test suite covering the numeric

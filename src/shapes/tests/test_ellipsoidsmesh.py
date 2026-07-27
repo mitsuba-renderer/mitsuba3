@@ -1,8 +1,8 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
-from mitsuba.scalar_rgb.test.util import fresolver_append_path
+from misuka.scalar_rgb.test.util import fresolver_append_path
 
 
 def _single_ellipsoid_data():
@@ -46,7 +46,7 @@ def test01_backface_culling_contract(variants_all_rgb):
 
 @fresolver_append_path
 def test02_mixed_mesh_backfaces_remain_double_sided(variants_all_rgb):
-    from mitsuba import ScalarTransform4f as T
+    from misuka import ScalarTransform4f as T
 
     scene = mi.load_dict({
         "type": "scene",

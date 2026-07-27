@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 
 def make_sensor(origin=None, direction=None, to_world=None, pixels=1):

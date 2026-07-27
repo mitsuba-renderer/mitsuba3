@@ -1,9 +1,9 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 import os
 
-from mitsuba.test.util import fresolver_append_path
+from misuka.test.util import fresolver_append_path
 
 config = mi.parser.ParserConfig('scalar_rgb')
 

@@ -2,7 +2,7 @@
 import pytest
 import drjit as dr
 from drjit.scalar import ArrayXu as UInt32
-import mitsuba as mi
+import misuka as mi
 
 
 def test01_create(variant_scalar_rgb):

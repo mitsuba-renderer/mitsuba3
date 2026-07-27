@@ -1,13 +1,13 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
-from mitsuba.scalar_rgb.test.util import fresolver_append_path
+from misuka.scalar_rgb.test.util import fresolver_append_path
 
 
 @fresolver_append_path
 def example_scene(shape, scale=1.0, translate=[0, 0, 0], angle=0.0):
-    from mitsuba import ScalarTransform4f as T
+    from misuka import ScalarTransform4f as T
 
     to_world = T().translate(translate) @ T().rotate([0, 1, 0], angle) @ T().scale(scale)
 
@@ -137,7 +137,7 @@ def test02_ray_intersect_transform(variant_scalar_rgb, shape):
 def test03_ray_intersect_instance(variants_all_rgb, width):
     """Check that we get the correct instance pointer when tracing a ray"""
 
-    from mitsuba import ScalarTransform4f as T
+    from misuka import ScalarTransform4f as T
 
     scalar_mode = mi.variant().startswith('scalar')
 

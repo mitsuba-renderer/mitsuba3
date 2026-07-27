@@ -1,5 +1,5 @@
 import pytest
-import mitsuba as mi
+import misuka as mi
 
 
 def test01_phase_function_accessors(variants_vec_rgb):

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import pytest
-import mitsuba as mi
+import misuka as mi
 import drjit as dr
 mi.set_log_level(mi.LogLevel.Trace)
 

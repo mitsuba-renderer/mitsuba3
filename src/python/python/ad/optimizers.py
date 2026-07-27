@@ -1,6 +1,6 @@
 from typing import Mapping
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 # The built-in Mitsuba optimizers have been replaced with an improved and
 # general implementation in Dr.Jit. More information is available at the

@@ -16,14 +16,14 @@ extern nb::object cast_object(Object *o);
 // Template function for texture retrieval bindings
 template <bool Emissive, bool Unbounded>
 static nb::object get_texture_binding(const Properties& p, std::string_view name) {
-    nb::object mi = nb::module_::import_("mitsuba");
+    nb::object mi = nb::module_::import_("misuka");
     nb::str variant = nb::cast<nb::str>(mi.attr("variant")());
     return cast_object(p.get_texture_impl(name, variant.c_str(), Emissive, Unbounded).get());
 }
 
 template <bool Emissive, bool Unbounded>
 static nb::object get_texture_binding_default(const Properties& p, std::string_view name, double def) {
-    nb::object mi = nb::module_::import_("mitsuba");
+    nb::object mi = nb::module_::import_("misuka");
     nb::str variant = nb::cast<nb::str>(mi.attr("variant")());
     return cast_object(p.get_texture_impl(name, variant.c_str(), Emissive, Unbounded, def).get());
 }

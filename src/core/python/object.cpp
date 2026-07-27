@@ -35,7 +35,7 @@ MI_PY_EXPORT(Object) {
         m, "PluginManager", D(PluginManager))
         .def_static_method(PluginManager, instance, nb::rv_policy::reference)
         .def("create_object", [](PluginManager &pmgr, const Properties &props) {
-            auto mi = nb::module_::import_("mitsuba");
+            auto mi = nb::module_::import_("misuka");
             std::string variant = nb::cast<std::string>(mi.attr("variant")());
             return cast_object(pmgr.create_object(props, variant, ObjectType::Unknown).get());
         }, "props"_a, D(PluginManager, create_object))

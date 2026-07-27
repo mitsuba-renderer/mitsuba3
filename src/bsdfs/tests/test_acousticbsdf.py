@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 mi.set_log_level(mi.LogLevel.Info)
 
 def test01_create(variants_all_acoustic):

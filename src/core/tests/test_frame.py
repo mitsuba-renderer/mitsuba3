@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 
 def test01_construction(variant_scalar_rgb):
@@ -66,7 +66,7 @@ def test03_frame_equality(variant_scalar_rgb):
 
 
 def test05_coord_convertion_vec(variant_scalar_rgb):
-    from mitsuba.test.util import check_vectorization
+    from misuka.test.util import check_vectorization
 
     def kernel(theta, phi, d):
         sin_theta, cos_theta = dr.sincos(theta)

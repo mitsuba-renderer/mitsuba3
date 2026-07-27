@@ -1,8 +1,8 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
-from mitsuba.scalar_rgb.test.util import find_resource
+from misuka.scalar_rgb.test.util import find_resource
 
 def write_kernels(*args, output_dir='kernels', scene_fname=None):
     import os

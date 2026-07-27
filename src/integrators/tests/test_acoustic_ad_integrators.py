@@ -25,9 +25,9 @@ reference data (e.g. for a new configurations). Please see the following command
 
 """
 
-from mitsuba.scalar_acoustic import ScalarTransform4f as T
+from misuka.scalar_acoustic import ScalarTransform4f as T
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 import numpy as np
 import pytest
@@ -36,8 +36,8 @@ import argparse
 
 from os.path import join, exists
 
-from mitsuba.scalar_rgb.test.util import fresolver_append_path
-from mitsuba.scalar_rgb.test.util import find_resource
+from misuka.scalar_rgb.test.util import fresolver_append_path
+from misuka.scalar_rgb.test.util import find_resource
 
 # Cross-backend equivalence helpers live in test_acoustic_path.py.
 import sys

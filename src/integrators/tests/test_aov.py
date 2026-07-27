@@ -1,8 +1,8 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
-from mitsuba.scalar_rgb.test.util import find_resource
+from misuka.scalar_rgb.test.util import find_resource
 
 def test01_construct(variants_all):
     # Single AOV

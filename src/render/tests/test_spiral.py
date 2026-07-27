@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 import numpy as np
 
 from drjit.scalar import ArrayXf as Float

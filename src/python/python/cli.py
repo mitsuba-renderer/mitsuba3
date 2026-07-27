@@ -1,9 +1,9 @@
 def _main():
     import os, sys, subprocess
-    import mitsuba  # This import will check runtime requirements (ex: DrJit version)
+    import misuka  # This import will check runtime requirements (ex: DrJit version)
 
     for p in sys.path:
-        mi_package = os.path.join(p, "mitsuba")
+        mi_package = os.path.join(p, "misuka")
         if os.path.isdir(mi_package):
             os_ext = ""
             env = os.environ.copy()
@@ -11,13 +11,13 @@ def _main():
                 os_ext = ".exe"
                 env["PATH"] = os.path.join(p, "drjit") + os.pathsep + env["PATH"]
 
-            mi_executable = os.path.join(mi_package, "mitsuba" + os_ext)
+            mi_executable = os.path.join(mi_package, "misuka" + os_ext)
             args = [mi_executable] + sys.argv[1:]
             process = subprocess.run(args, env=env)
 
             exit(process.returncode)
 
-    print("Could not find mitsuba executable!", file=sys.stderr)
+    print("Could not find misuka executable!", file=sys.stderr)
     exit(-1)
 
 

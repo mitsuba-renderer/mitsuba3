@@ -11,7 +11,7 @@ This module configures the test environment for Mitsuba, providing:
 import time
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 # ===== RNG Seedinng Fixture =====
 

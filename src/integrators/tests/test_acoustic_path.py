@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 import numpy as np
 import pytest
@@ -9,9 +9,9 @@ import argparse
 
 from os.path import join, exists
 
-from mitsuba.scalar_acoustic.test.util import fresolver_append_path
-from mitsuba.scalar_acoustic.test.util import find_resource
-from mitsuba.scalar_acoustic import ScalarTransform4f as T
+from misuka.scalar_acoustic.test.util import fresolver_append_path
+from misuka.scalar_acoustic.test.util import find_resource
+from misuka.scalar_acoustic import ScalarTransform4f as T
 
 output_dir = find_resource('resources/data_acoustic/tests/integrators')
 

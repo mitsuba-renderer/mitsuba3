@@ -1,8 +1,8 @@
 import pytest
-import mitsuba as mi
+import misuka as mi
 import drjit as dr
 
-from mitsuba.scalar_rgb.test.util import find_resource
+from misuka.scalar_rgb.test.util import find_resource
 
 ###
 ### Reference images are generated using the `optixDenoiser` example provided

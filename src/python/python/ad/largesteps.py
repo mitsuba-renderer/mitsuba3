@@ -1,6 +1,6 @@
 from __future__ import annotations as __annotations__ # Delayed parsing of type annotations
 
-import mitsuba as mi
+import misuka as mi
 import drjit as dr
 
 def mesh_laplacian(n_verts, faces, lambda_):

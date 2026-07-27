@@ -3,7 +3,7 @@ from __future__ import annotations # Delayed parsing of type annotations
 from typing import Optional, Tuple, Callable, Any, Union
 
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 import gc
 
 from .common import RBIntegrator, mis_weight

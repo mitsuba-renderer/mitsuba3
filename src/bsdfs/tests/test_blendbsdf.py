@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 
 def test01_create(variant_scalar_rgb):
@@ -207,7 +207,7 @@ def test05_sample_components(variant_scalar_rgb):
     assert dr.allclose(bs_b.pdf, expected_bs_b.pdf)
 
 def test06_chi2_diffuse(variants_vec_backends_once_rgb):
-    from mitsuba.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
+    from misuka.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
 
     sample_func, pdf_func = BSDFAdapter("blendbsdf", {
         'type': 'blendbsdf',
@@ -226,7 +226,7 @@ def test06_chi2_diffuse(variants_vec_backends_once_rgb):
     assert chi2.run()
 
 def test07_chi2_diffuse_roughdielectric(variants_vec_backends_once_rgb):
-    from mitsuba.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
+    from misuka.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
 
     sample_func, pdf_func = BSDFAdapter("blendbsdf", {
         'type': 'blendbsdf',
@@ -245,7 +245,7 @@ def test07_chi2_diffuse_roughdielectric(variants_vec_backends_once_rgb):
     assert chi2.run()
 
 def test08_chi2_roughconductor_roughdielectric(variants_vec_backends_once_rgb):
-    from mitsuba.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
+    from misuka.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
 
     sample_func, pdf_func = BSDFAdapter("blendbsdf", {
         'type': 'blendbsdf',

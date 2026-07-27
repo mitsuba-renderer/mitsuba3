@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 def test01_interaction_invalid_init(variants_all_backends_once):
     si = dr.zeros(mi.SurfaceInteraction3f)
@@ -143,7 +143,7 @@ def test04_mueller_to_world_to_local(variant_scalar_mono_polarized):
     assert dr.allclose(M, M_world, atol=1e-5)
 
 def test05_gather_interaction(variants_any_llvm):
-    from mitsuba import ScalarTransform4f as T
+    from misuka import ScalarTransform4f as T
     scene = mi.load_dict({
         "type" : "scene",
         'sphere': { 'type' : 'sphere' },

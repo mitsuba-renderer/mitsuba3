@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 
 def test01_basics(variant_scalar_rgb):
@@ -46,7 +46,7 @@ def test06_ray_intersect_vec(variant_scalar_rgb):
 
         return mint, maxt
 
-    from mitsuba.test.util import check_vectorization
+    from misuka.test.util import check_vectorization
     check_vectorization(kernel, arg_dims = [3, 3, 1])
 
 
@@ -59,7 +59,7 @@ def test07_ray_intersect_cross_variant_alias():
     # earlier in the same session may have already influenced.
     import subprocess, sys, textwrap
     script = textwrap.dedent("""
-        import mitsuba as mi
+        import misuka as mi
         mi.set_variant('llvm_ad_rgb')
         mi.set_variant('scalar_rgb')
         bsphere = mi.BoundingSphere3f([0, 0, 0], 1)

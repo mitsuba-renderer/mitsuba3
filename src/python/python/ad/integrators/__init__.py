@@ -1,5 +1,5 @@
 # Import/re-import all files in this folder to register AD integrators
-import mitsuba as mi
+import misuka as mi
 import sys
 
 if mi.variant() is not None and not mi.variant().startswith('scalar'):

@@ -1,9 +1,9 @@
 from typing import Callable, Optional, Tuple
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
-from mitsuba.scalar_rgb.test.util import find_resource
+from misuka.scalar_rgb.test.util import find_resource
 
 EMITTERS = [
     "area",

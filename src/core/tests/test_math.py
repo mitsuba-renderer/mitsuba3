@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 
 def test01_is_power_of_two(variant_scalar_rgb):
@@ -34,7 +34,7 @@ def test03_solve_quadratic(variant_scalar_rgb):
 
 
 def test04_solve_quadratic_vec(variant_scalar_rgb):
-    from mitsuba.test.util import check_vectorization
+    from misuka.test.util import check_vectorization
 
     def kernel(a : float, b : float, c : float):
         found, x, y = mi.math.solve_quadratic(a, b, c)
@@ -70,7 +70,7 @@ def test07_legendre_pd_diff(variant_scalar_rgb):
 
 
 def test08_legendre_vec(variant_scalar_rgb):
-    from mitsuba.test.util import check_vectorization
+    from misuka.test.util import check_vectorization
 
     def kernel(x : float):
         return (

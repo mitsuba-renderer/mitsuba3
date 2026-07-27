@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 import numpy as np
 import numpy.linalg as la
@@ -285,7 +285,7 @@ def test09_matmul_ray_cross_variant_alias():
     # earlier in the same session may have already influenced.
     import subprocess, sys, textwrap
     script = textwrap.dedent("""
-        import mitsuba as mi
+        import misuka as mi
         mi.set_variant('llvm_ad_rgb')
         mi.set_variant('llvm_ad_spectral')
         t = mi.Transform4f.translate([1, 0, 0])

@@ -2,8 +2,8 @@ import os
 import pytest
 import drjit as dr
 
-from mitsuba import Stream, DummyStream, FileStream, MemoryStream, ZStream
-from mitsuba.test.util import tmpfile, make_tmpfile
+from misuka import Stream, DummyStream, FileStream, MemoryStream, ZStream
+from misuka.test.util import tmpfile, make_tmpfile
 
 parameters = [
     'class_,args',

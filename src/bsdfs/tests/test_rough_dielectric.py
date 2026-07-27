@@ -1,11 +1,11 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 # TODO this is way too slow
 # @pytest.mark.slow
 # def test01_chi2_smooth(variants_vec_backends_once_rgb):
-#     from mitsuba.core import mi.ScalarVector3f
+#     from misuka.core import mi.ScalarVector3f
 #     xml = """<float name="alpha" value="0.05"/>"""
 #     wi = dr.normalize(mi.ScalarVector3f(0.8, 0.3, 0.05))
 #     sample_func, pdf_func = mi.chi2.BSDFAdapter("roughdielectric", xml, wi=wi)

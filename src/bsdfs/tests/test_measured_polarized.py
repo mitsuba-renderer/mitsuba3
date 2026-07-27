@@ -1,10 +1,10 @@
-import mitsuba
+import misuka
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 import numpy as np
 
-from mitsuba.scalar_rgb.test.util import fresolver_append_path
+from misuka.scalar_rgb.test.util import fresolver_append_path
 
 @fresolver_append_path
 def test01_evaluation(variant_scalar_spectral_polarized):

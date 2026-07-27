@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 
 def create_microphone(o, d=None, kappa=0.0):

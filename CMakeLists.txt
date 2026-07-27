@@ -5,7 +5,7 @@ cmake_minimum_required (VERSION 3.13...3.18)
 
 project(mitsuba
   DESCRIPTION
-    "Mitsuba"
+    "misuka"
   LANGUAGES
     CXX C
 )
@@ -106,14 +106,14 @@ if (SKBUILD)
 endif()
 
 # ----------------------------------------------------------
-#  Create the 'mitsuba.conf' file if none is found
+#  Create the 'misuka.conf' file if none is found
 # ----------------------------------------------------------
 
-if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf)
+if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/misuka.conf)
   if (APPLE)
-    set(MI_DEFAULT_VARIANTS "scalar_rgb,scalar_acoustic,llvm_acoustic,metal_acoustic,metal_ad_rgb,metal_ad_acoustic,llvm_ad_rgb,llvm_ad_acoustic" CACHE STRING "Default Mitsuba variants that should be included if no mitsuba.conf file exists")
+    set(MI_DEFAULT_VARIANTS "scalar_rgb,scalar_acoustic,llvm_acoustic,metal_acoustic,metal_ad_rgb,metal_ad_acoustic,llvm_ad_rgb,llvm_ad_acoustic" CACHE STRING "Default Mitsuba variants that should be included if no misuka.conf file exists")
   else()
-    set(MI_DEFAULT_VARIANTS "scalar_rgb,scalar_acoustic,cuda_ad_rgb,cuda_ad_acoustic,llvm_ad_rgb,llvm_ad_acoustic" CACHE STRING "Default Mitsuba variants that should be included if no mitsuba.conf file exists")
+    set(MI_DEFAULT_VARIANTS "scalar_rgb,scalar_acoustic,cuda_ad_rgb,cuda_ad_acoustic,llvm_ad_rgb,llvm_ad_acoustic" CACHE STRING "Default Mitsuba variants that should be included if no misuka.conf file exists")
   endif()
   string(REPLACE "," ";" MI_DEFAULT_VARIANTS "${MI_DEFAULT_VARIANTS}")
   message(STATUS "MI_DEFAULT_VARIANTS: ${MI_DEFAULT_VARIANTS}")
@@ -122,16 +122,16 @@ if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf)
     string(APPEND INSERT_CONFIGURATIONS_HERE "\"${TMP}\", ")
   endforeach()
   string(REGEX REPLACE ", $" "" INSERT_CONFIGURATIONS_HERE "${INSERT_CONFIGURATIONS_HERE}")
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/mitsuba.conf.template
-                 ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf @ONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/misuka.conf.template
+                 ${CMAKE_CURRENT_BINARY_DIR}/misuka.conf @ONLY)
   unset(INSERT_CONFIGURATIONS_HERE)
   set(MI_COPIED_CONFIG_FILE 1)
 endif()
 
 # ----------------------------------------------------------
-#  Parse 'mitsuba.conf' and generate derived files:
+#  Parse 'misuka.conf' and generate derived files:
 #   1. include/core/config.h
-#   2. python/mitsuba/config.py
+#   2. python/misuka/config.py
 # ----------------------------------------------------------
 
 if (NOT Python_EXECUTABLE)
@@ -158,7 +158,7 @@ endif()
 
 list(LENGTH MI_VARIANTS MI_VARIANTS_COUNT)
 
-message(STATUS "Mitsuba: building the following variants:")
+message(STATUS "misuka: building the following variants:")
 foreach (MI_VARIANT ${MI_VARIANTS})
   string(REPLACE "|" ";" MI_VARIANT ${MI_VARIANT})
   list(GET MI_VARIANT 0 MI_VARIANT_NAME)
@@ -191,12 +191,12 @@ if (MI_VARIANTS MATCHES "ad_")
 endif()
 
 # ----------------------------------------------------------
-#  Re-run CMake when 'mitsuba.conf' changes (we must
+#  Re-run CMake when 'misuka.conf' changes (we must
 #  dynamically add or remove targets based on this file).
 #  Abuses the 'configure_file' mechanism to achieve this.
 # ----------------------------------------------------------
 
-configure_file(${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf
+configure_file(${CMAKE_CURRENT_BINARY_DIR}/misuka.conf
                ${CMAKE_CURRENT_BINARY_DIR}/ext/unused)
 
 
@@ -277,7 +277,7 @@ if ((MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY) AND
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
-    message(STATUS "Mitsuba: enabling the address sanitizer.")
+    message(STATUS "misuka: enabling the address sanitizer.")
   endif()
 
   if (MI_SANITIZE_MEMORY)
@@ -285,7 +285,7 @@ if ((MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY) AND
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=memory")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=memory")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=memory")
-    message(STATUS "Mitsuba: enabling the memory sanitizer.")
+    message(STATUS "misuka: enabling the memory sanitizer.")
   endif()
 endif()
 
@@ -324,7 +324,7 @@ include_directories(include
 )
 
 if (MI_ENABLE_CUDA)
-  message(STATUS "Mitsuba: using OptiX for GPU ray tracing.")
+  message(STATUS "misuka: using OptiX for GPU ray tracing.")
   add_definitions(-DMI_ENABLE_CUDA=1)
 endif()
 
@@ -333,16 +333,16 @@ if (MI_ENABLE_LLVM)
 endif()
 
 if (MI_ENABLE_METAL)
-  message(STATUS "Mitsuba: using Metal for GPU ray tracing.")
+  message(STATUS "misuka: using Metal for GPU ray tracing.")
   add_definitions(-DMI_ENABLE_METAL=1)
 endif()
 
 if (MI_ENABLE_EMBREE)
   include_directories(${EMBREE_INCLUDE_DIRS})
   add_definitions(-DMI_ENABLE_EMBREE=1)
-  message(STATUS "Mitsuba: using Embree for CPU ray tracing.")
+  message(STATUS "misuka: using Embree for CPU ray tracing.")
 else()
-  message(STATUS "Mitsuba: using built-in implementation for CPU ray tracing.")
+  message(STATUS "misuka: using built-in implementation for CPU ray tracing.")
 endif()
 
 if (MI_ENABLE_AUTODIFF)
@@ -501,9 +501,9 @@ if (MSVC)
   set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT mitsuba)
 endif()
 
-# Warn if a mitsuba.conf file was newly created
+# Warn if a misuka.conf file was newly created
 if (MI_COPIED_CONFIG_FILE AND NOT SKBUILD)
-  message(WARNING "\n${BoldRed}Created a default 'mitsuba.conf' configuration "
+  message(WARNING "\n${BoldRed}Created a default 'misuka.conf' configuration "
           "file. You will probably want to edit this file to specify the "
           "desired configurations before starting to compile.${ColorReset}")
 endif()
@@ -545,9 +545,9 @@ if (MSVC AND MI_ENABLE_PYTHON)
   foreach(target ${COPY_TARGETS})
     get_target_property(TARGET_FOLDER ${target} FOLDER)
     if(TARGET_FOLDER MATCHES "plugins/.*$")
-        set(COPY_TARGET_DESTINATION ${MI_BINARY_DIR}/python/mitsuba/plugins/$<TARGET_FILE_NAME:${target}>)
+        set(COPY_TARGET_DESTINATION ${MI_BINARY_DIR}/python/misuka/plugins/$<TARGET_FILE_NAME:${target}>)
     else()
-        set(COPY_TARGET_DESTINATION ${MI_BINARY_DIR}/python/mitsuba/$<TARGET_FILE_NAME:${target}>)
+        set(COPY_TARGET_DESTINATION ${MI_BINARY_DIR}/python/misuka/$<TARGET_FILE_NAME:${target}>)
     endif()
     add_custom_command(
       TARGET copy-targets POST_BUILD
@@ -600,12 +600,12 @@ mark_as_advanced(MI_SRGB_COEFF_FILE)
 if ("${MI_SRGB_COEFF_FILE}" STREQUAL "")
   ro_copy(${CMAKE_CURRENT_BINARY_DIR}/ext/rgb2spec/srgb.coeff data/srgb.coeff rgb2spec_opt_run)
   if (MSVC AND MI_ENABLE_PYTHON)
-    ro_copy(${CMAKE_CURRENT_BINARY_DIR}/ext/rgb2spec/srgb.coeff python/mitsuba/data/srgb.coeff rgb2spec_opt_run)
+    ro_copy(${CMAKE_CURRENT_BINARY_DIR}/ext/rgb2spec/srgb.coeff python/misuka/data/srgb.coeff rgb2spec_opt_run)
   endif()
 else()
   ro_copy(${MI_SRGB_COEFF_FILE} data/srgb.coeff)
   if (MSVC AND MI_ENABLE_PYTHON)
-    ro_copy(${MI_SRGB_COEFF_FILE} python/mitsuba/data/srgb.coeff)
+    ro_copy(${MI_SRGB_COEFF_FILE} python/misuka/data/srgb.coeff)
   endif()
 endif()
 install(
@@ -628,7 +628,7 @@ if (MSVC AND MI_ENABLE_PYTHON)
     TARGET copy-resources POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/ior"
-    "${MI_BINARY_DIR}/python/mitsuba/data/ior"
+    "${MI_BINARY_DIR}/python/misuka/data/ior"
   )
 endif()
 install(
@@ -649,7 +649,7 @@ if (MSVC AND MI_ENABLE_PYTHON)
     TARGET copy-resources POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/sunsky/output"
-    "${MI_BINARY_DIR}/python/mitsuba/data/sunsky"
+    "${MI_BINARY_DIR}/python/misuka/data/sunsky"
   )
 endif()
 install(

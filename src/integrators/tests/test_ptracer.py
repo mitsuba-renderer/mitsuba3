@@ -1,8 +1,8 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
-from mitsuba.scalar_rgb.test.util import fresolver_append_path
+from misuka.scalar_rgb.test.util import fresolver_append_path
 
 @fresolver_append_path
 def create_test_scene(max_depth=4, emitter='area',
@@ -183,11 +183,11 @@ def test05_render_crop_film(variants_all):
     dr.eval(image3)
 
     if False:
-        from mitsuba.core import Bitmap
-        Bitmap(image1).write(f'test05_{mitsuba.variant()}_full.exr')
-        Bitmap(image1_cropped).write(f'test05_{mitsuba.variant()}_full_cropped.exr')
-        Bitmap(image2).write(f'test05_{mitsuba.variant()}_cropped.exr')
-        Bitmap(image3).write(f'test05_{mitsuba.variant()}_loaded.exr')
+        from misuka.core import Bitmap
+        Bitmap(image1).write(f'test05_{mi.variant()}_full.exr')
+        Bitmap(image1_cropped).write(f'test05_{mi.variant()}_full_cropped.exr')
+        Bitmap(image2).write(f'test05_{mi.variant()}_cropped.exr')
+        Bitmap(image3).write(f'test05_{mi.variant()}_loaded.exr')
 
     # Since we trace the exact same rays regardless of crops, even the noise
     # pattern should be identical

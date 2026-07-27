@@ -230,7 +230,7 @@ void bind_transform(nb::module_ &m, const char *name) {
     }
 
     // Patch methods to be callable as Transform().f() and Transform.f()
-    nb::module_::import_("mitsuba.detail").attr("patch_transform")(cls);
+    nb::module_::import_("misuka.detail").attr("patch_transform")(cls);
 
     nb::implicitly_convertible<MatrixType, Transform>();
 

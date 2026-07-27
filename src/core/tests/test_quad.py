@@ -1,5 +1,5 @@
 import pytest
-import mitsuba as mi
+import misuka as mi
 import drjit as dr
 from drjit.scalar import ArrayXf as Float
 

@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 import numpy as np
 
 def test01_vcalls(variants_vec_backends_once_rgb):

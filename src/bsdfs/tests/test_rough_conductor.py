@@ -1,5 +1,5 @@
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 def test01_chi2_smooth(variants_vec_backends_once_rgb):
     xml = """<float name="alpha" value="0.05"/>"""

@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 import numpy as np
 
 # Special case to support both NumPy 1.x and >= 2.4.
@@ -434,7 +434,7 @@ def test13_conditional_regular_irregular_same(variants_vec_backends_once_spectra
 
 
 def test14_conditional_chi2_sampling(variants_vec_backends_once_spectral, type_str):
-    from mitsuba.chi2 import ChiSquareTest, LineDomain
+    from misuka.chi2 import ChiSquareTest, LineDomain
     Type , distr_regular = get_types(type_str, 'Regular')
     _ , distr_irregular = get_types(type_str, 'Irregular')
 

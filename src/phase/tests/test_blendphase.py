@@ -1,5 +1,5 @@
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 
 def test01_create(variant_scalar_rgb):
@@ -205,7 +205,7 @@ def test05_sample_components(variant_scalar_rgb):
     assert dr.allclose(w_b, weight * expected_eval_b / expected_pdf_b)
 
 def test06_chi2_isotropic_hg(variants_vec_backends_once_rgb):
-    from mitsuba.chi2 import PhaseFunctionAdapter, ChiSquareTest, SphericalDomain
+    from misuka.chi2 import PhaseFunctionAdapter, ChiSquareTest, SphericalDomain
 
     sample_func, pdf_func = PhaseFunctionAdapter("blendphase", {
         "type": "blendphase",
@@ -224,7 +224,7 @@ def test06_chi2_isotropic_hg(variants_vec_backends_once_rgb):
     assert chi2.run()
 
 def test07_chi2_hg_rayleigh(variants_vec_backends_once_rgb):
-    from mitsuba.chi2 import PhaseFunctionAdapter, ChiSquareTest, SphericalDomain
+    from misuka.chi2 import PhaseFunctionAdapter, ChiSquareTest, SphericalDomain
 
     sample_func, pdf_func = PhaseFunctionAdapter("blendphase", {
         "type": "blendphase",

@@ -10,4 +10,4 @@ if (UNIX AND NOT APPLE)
   target_link_libraries(mitsuba-bin PRIVATE dl)
 endif()
 
-set_target_properties(mitsuba-bin PROPERTIES OUTPUT_NAME mitsuba)
+set_target_properties(mitsuba-bin PROPERTIES OUTPUT_NAME misuka)

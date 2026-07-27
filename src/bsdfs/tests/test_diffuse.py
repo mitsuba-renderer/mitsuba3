@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 def test01_create(variant_scalar_rgb):
     b = mi.load_dict({'type': 'diffuse'})
@@ -37,7 +37,7 @@ def test02_eval_pdf(variant_scalar_rgb):
 
 
 def test03_chi2(variants_vec_backends_once_rgb):
-    from mitsuba.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
+    from misuka.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
 
     sample_func, pdf_func = BSDFAdapter("diffuse", '')
 

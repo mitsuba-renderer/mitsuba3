@@ -1,5 +1,5 @@
 import pytest
-import mitsuba as mi
+import misuka as mi
 
 
 def test01_short_args(variant_scalar_rgb):

@@ -1,7 +1,7 @@
 import numpy as np
 
 def polvis(fname, args):
-    import mitsuba.scalar_rgb as mi
+    import misuka.scalar_rgb as mi
     mi.set_log_level(mi.LogLevel.Info)
 
     te = mi.ThreadEnvironment()

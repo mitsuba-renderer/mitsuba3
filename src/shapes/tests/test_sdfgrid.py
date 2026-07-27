@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 def default_sdf_grid():
     return mi.TensorXf([0, 0, 1, 0, 0, 1, 0, 0], shape=(2, 2, 2, 1))

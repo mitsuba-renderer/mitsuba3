@@ -5,7 +5,7 @@ from collections.abc import Mapping
 from typing import Any, Optional, Union
 
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 class SceneParameters(Mapping):
     """

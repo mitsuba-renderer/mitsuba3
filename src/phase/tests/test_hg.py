@@ -1,4 +1,4 @@
-import mitsuba as mi
+import misuka as mi
 import pytest
 
 

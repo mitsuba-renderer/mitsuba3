@@ -12,7 +12,7 @@ Run directly::
 
 from pathlib import Path
 
-import mitsuba as mi
+import misuka as mi
 mi.set_variant('cuda_acoustic', 'llvm_acoustic', 'scalar_acoustic')
 
 import numpy as np

@@ -4,7 +4,7 @@ from os.path import abspath, dirname, join, exists
 from typing import Union
 
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 class RenderingRegressionTest:
     '''

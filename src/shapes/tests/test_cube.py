@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 
 def test01_create(variant_scalar_rgb):
@@ -68,7 +68,7 @@ def test03_ray_intersect(variant_scalar_rgb):
                     assert dr.allclose(si.uv, mi.Vector2f([1.0-oo, tt]), atol=1e-5, rtol=1e-5)
 
 def test04_ray_intersect_vec(variant_scalar_rgb):
-    from mitsuba.scalar_rgb.test.util import check_vectorization
+    from misuka.scalar_rgb.test.util import check_vectorization
 
     def kernel(o):
         scene = mi.load_dict({

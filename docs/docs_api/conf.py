@@ -67,9 +67,9 @@ rst_prolog = r"""
 master_doc = 'list_api'
 
 # General information about the project.
-project = 'mitsuba3'
-copyright = '2022, Realistic Graphics Lab (RGL), EPFL'
-author = 'Realistic Graphics Lab, EPFL'
+project = 'misuka'
+copyright = '2026, the misuka maintainers'
+author = 'The misuka contributors'
 
 
 # -- Options for autodoc ----------------------------------------------

@@ -50,12 +50,12 @@ foreach (MI_VARIANT ${MI_VARIANTS})
 
   set_target_properties(${TARGET_NAME}
       PROPERTIES
-      LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
+      LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/misuka
       FOLDER python
   )
 
   install(TARGETS ${TARGET_NAME}
-      LIBRARY DESTINATION mitsuba
+      LIBRARY DESTINATION misuka
   )
 endforeach()
 
@@ -66,12 +66,12 @@ endif()
 set(nanobind_lib_name "${nanobind_lib_name}-${MI_NB_DOMAIN}") # Append domain name
 set_target_properties(${nanobind_lib_name}
   PROPERTIES
-  LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
-  RUNTIME_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
+  LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/misuka
+  RUNTIME_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/misuka
   FOLDER python
 )
 install(TARGETS ${nanobind_lib_name}
-  LIBRARY DESTINATION mitsuba
+  LIBRARY DESTINATION misuka
 )
 
 nanobind_add_module(mitsuba_ext
@@ -105,17 +105,17 @@ set_source_files_properties(${SJIT_PY_BINDINGS} PROPERTIES
 
 set_target_properties(mitsuba_ext
   PROPERTIES
-  LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
+  LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/misuka
   FOLDER python
 )
 
 install(TARGETS mitsuba_ext
-  LIBRARY DESTINATION mitsuba
+  LIBRARY DESTINATION misuka
 )
 
 set_target_properties(mitsuba_alias
   PROPERTIES
-  LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
+  LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/misuka
   FOLDER python
 )
 
@@ -125,7 +125,7 @@ target_include_directories(mitsuba_alias
   ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/ext/drjit-core/include)
 
 install(TARGETS mitsuba_alias
-  LIBRARY DESTINATION mitsuba
+  LIBRARY DESTINATION misuka
 )
 
 # ----------------------------------------------------------
@@ -138,8 +138,8 @@ set(MI_COPY_FILES "")
 foreach(file ${MI_PYTHON_FILES})
   get_filename_component(IN_FILE_DIR ${file} DIRECTORY)
   set(IN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${file})
-  ro_copy(${IN_FILE} python/mitsuba/${file})
-  install(FILES ${IN_FILE} DESTINATION mitsuba/${IN_FILE_DIR})
+  ro_copy(${IN_FILE} python/misuka/${file})
+  install(FILES ${IN_FILE} DESTINATION misuka/${IN_FILE_DIR})
 endforeach()
 
 # ----------------------------------------------------------
@@ -147,12 +147,12 @@ endforeach()
 # ----------------------------------------------------------
 
 install(
-  FILES ${CMAKE_CURRENT_BINARY_DIR}/../../python/mitsuba/config.py
-  DESTINATION mitsuba
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/../../python/misuka/config.py
+  DESTINATION misuka
 )
 
 if (MSVC)
-  ro_copy(${CMAKE_CURRENT_BINARY_DIR}/../../python/mitsuba/config.py python/mitsuba/config.py)
+  ro_copy(${CMAKE_CURRENT_BINARY_DIR}/../../python/misuka/config.py python/misuka/config.py)
 endif()
 
 # ----------------------------------------------------------
@@ -250,42 +250,42 @@ if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
 
   nanobind_add_stub(
     mitsuba-stub
-    MODULE mitsuba.mitsuba_stubs
-    OUTPUT ${MI_BINARY_DIR}/python/mitsuba/_stubs.pyi
-    MARKER_FILE ${MI_BINARY_DIR}/python/mitsuba/py.typed
+    MODULE misuka.mitsuba_stubs
+    OUTPUT ${MI_BINARY_DIR}/python/misuka/_stubs.pyi
+    MARKER_FILE ${MI_BINARY_DIR}/python/misuka/py.typed
     ${STUB_ARGS}
   )
 
   add_custom_command(
-    OUTPUT ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
+    OUTPUT ${MI_BINARY_DIR}/python/misuka/__init__.pyi
     DEPENDS mitsuba-stub
     COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/variant-stub.cmake
-      ${MI_BINARY_DIR}/python/mitsuba/_stubs.pyi
-      ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
+      ${MI_BINARY_DIR}/python/misuka/_stubs.pyi
+      ${MI_BINARY_DIR}/python/misuka/__init__.pyi
   )
 
   set(MI_STUB_TARGET_DEPS
-    ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
-    ${MI_BINARY_DIR}/python/mitsuba/py.typed)
+    ${MI_BINARY_DIR}/python/misuka/__init__.pyi
+    ${MI_BINARY_DIR}/python/misuka/py.typed)
 
   foreach (value ${MI_STUB_SUBMODULES})
     string(REPLACE "." "/" value_path ${value})
     nanobind_add_stub(
       mitsuba-stub-${value}
-      MODULE mitsuba.mitsuba_stubs.${value}
-      OUTPUT ${MI_BINARY_DIR}/python/mitsuba/_${value_path}_stubs.pyi
+      MODULE misuka.mitsuba_stubs.${value}
+      OUTPUT ${MI_BINARY_DIR}/python/misuka/_${value_path}_stubs.pyi
       ${STUB_ARGS}
     )
 
     add_custom_command(
-      OUTPUT ${MI_BINARY_DIR}/python/mitsuba/${value_path}.pyi
+      OUTPUT ${MI_BINARY_DIR}/python/misuka/${value_path}.pyi
       DEPENDS mitsuba-stub-${value}
       COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/variant-stub.cmake
-        ${MI_BINARY_DIR}/python/mitsuba/_${value_path}_stubs.pyi
-        ${MI_BINARY_DIR}/python/mitsuba/${value_path}.pyi
+        ${MI_BINARY_DIR}/python/misuka/_${value_path}_stubs.pyi
+        ${MI_BINARY_DIR}/python/misuka/${value_path}.pyi
     )
 
-    list(APPEND MI_STUB_TARGET_DEPS ${MI_BINARY_DIR}/python/mitsuba/${value_path}.pyi)
+    list(APPEND MI_STUB_TARGET_DEPS ${MI_BINARY_DIR}/python/misuka/${value_path}.pyi)
   endforeach()
 
   add_custom_target(
@@ -294,7 +294,7 @@ if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
     DEPENDS ${MI_STUB_TARGET_DEPS}
   )
 
-  install(FILES ${MI_STUB_TARGET_DEPS} DESTINATION mitsuba)
+  install(FILES ${MI_STUB_TARGET_DEPS} DESTINATION misuka)
 
 endif()
 

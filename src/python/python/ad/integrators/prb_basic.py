@@ -1,7 +1,7 @@
 from __future__ import annotations # Delayed parsing of type annotations
 
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 from .common import RBIntegrator, solid_angle_to_area_jacobian
 

@@ -3,10 +3,10 @@ import re
 
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
-from mitsuba import filesystem as fs
-from mitsuba.filesystem import preferred_separator as sep
+from misuka import filesystem as fs
+from misuka.filesystem import preferred_separator as sep
 
 path_here_relative = fs.path("." + sep)
 path_here = fs.current_path()

@@ -1,4 +1,4 @@
-import mitsuba as mi
+import misuka as mi
 import drjit as dr
 import time
 
@@ -648,7 +648,7 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None):
 
 
 if __name__ == '__main__':
-    import mitsuba as mi
+    import misuka as mi
     mi.set_variant('llvm_ad_rgb')
 
     def my_sample(sample):

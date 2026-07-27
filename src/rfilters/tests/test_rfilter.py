@@ -1,7 +1,7 @@
 import pytest
 import drjit as dr
 from drjit.scalar import ArrayXf as Float
-import mitsuba as mi
+import misuka as mi
 
 # Spot-check the various reconstruction filters to prevent code rot
 

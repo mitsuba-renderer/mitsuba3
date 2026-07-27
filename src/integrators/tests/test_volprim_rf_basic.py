@@ -1,10 +1,10 @@
 import pytest, os
 
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
-from mitsuba.scalar_rgb import Transform4f as T
-from mitsuba.testing import RenderingRegressionTest
+from misuka.scalar_rgb import Transform4f as T
+from misuka.testing import RenderingRegressionTest
 
 class EllipsoidsFactory:
     '''

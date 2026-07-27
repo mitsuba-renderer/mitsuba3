@@ -86,7 +86,7 @@ static nb::object variant_module(nb::handle variant) {
     if (!result.is_none())
         return result;
 
-    nb::str module_name = nb::str("mitsuba.{}").format(variant);
+    nb::str module_name = nb::str("misuka.{}").format(variant);
     result = import_with_deepbind_if_necessary(module_name.c_str());
     Safe_PyDict_SetItem(variant_modules, variant.ptr(), result.ptr());
 
@@ -135,7 +135,7 @@ static void set_variant(nb::args args) {
             // CUDA driver is installed, but there is no GPU available.
             // We only allow such failures as long as we have more variants to try.
             if (!is_last && e.matches(PyExc_ImportError)) {
-                const auto mi = nb::module_::import_("mitsuba");
+                const auto mi = nb::module_::import_("misuka");
                 mi.attr("Log")(
                     mi.attr("LogLevel").attr("Debug"),
                     nb::str("The requested variant \"{}\" could not be loaded, "
@@ -162,9 +162,9 @@ static void set_variant(nb::args args) {
     if (!curr_variant.equal(old_variant)) {
         // Reload internal plugins
         if (curr_variant.attr("startswith")(nb::make_tuple("llvm_", "cuda_", "metal_"))) {
-            nb::module_ mi_python = nb::module_::import_("mitsuba.python.ad.integrators");
+            nb::module_ mi_python = nb::module_::import_("misuka.python.ad.integrators");
             nb::steal(PyImport_ReloadModule(mi_python.ptr()));
-            mi_python = nb::module_::import_("mitsuba.python.ad.loaders");
+            mi_python = nb::module_::import_("misuka.python.ad.loaders");
             nb::steal(PyImport_ReloadModule(mi_python.ptr()));
         }
 
@@ -213,18 +213,18 @@ static nb::object get_attr(nb::handle key) {
         if (attr_name) {
             return nb::steal(PyErr_Format(PyExc_AttributeError,
                 "Cannot access '%s' before setting a variant. "
-                "Please call `mitsuba.set_variant('variant_name')` first. "
-                "For example: mitsuba.set_variant('scalar_rgb') or mitsuba.set_variant('cuda_ad_rgb'). "
-                "Use mitsuba.variants() to see all available variants.",
+                "Please call `misuka.set_variant('variant_name')` first. "
+                "For example: misuka.set_variant('scalar_rgb') or misuka.set_variant('cuda_ad_rgb'). "
+                "Use misuka.variants() to see all available variants.",
                 attr_name));
         }
     }
 
-    return nb::steal(PyErr_Format(PyExc_AttributeError, "Module 'mitsuba' has no attribute %R", key.ptr()));
+    return nb::steal(PyErr_Format(PyExc_AttributeError, "Module 'misuka' has no attribute %R", key.ptr()));
 }
 
 NB_MODULE(mitsuba_alias, m) {
-    m.attr("__name__") = "mitsuba";
+    m.attr("__name__") = "misuka";
     m.attr("__version__")      = MI_VERSION;
 
     curr_variant = nb::none();
@@ -236,7 +236,7 @@ NB_MODULE(mitsuba_alias, m) {
     // Need to populate `__path__` we do it by using the `__file__` attribute
     // of a Python file which is located in the same directory as this module
     nb::module_ path = nb::module_::import_("os").attr("path");
-    nb::module_ cfg = nb::module_::import_("mitsuba.config");
+    nb::module_ cfg = nb::module_::import_("misuka.config");
     nb::object cfg_path = path.attr("realpath")(cfg.attr("__file__"));
     nb::object mi_dir = path.attr("dirname")(cfg_path);
     nb::object mi_py_dir = path.attr("join")(mi_dir, "python");
@@ -247,7 +247,7 @@ NB_MODULE(mitsuba_alias, m) {
 
     // Replace sys.modules['mitsuba'] with this module, such that `mitsuba` is
     // resolved as `mitsuba_alias` in Python
-    nb::module_::import_("sys").attr("modules")["mitsuba"] = m;
+    nb::module_::import_("sys").attr("modules")["misuka"] = m;
 
     nb::list all_variant_names(nb::str(MI_VARIANTS).attr("split")("\n"));
     size_t variant_count = nb::len(all_variant_names) - 1;
@@ -268,7 +268,7 @@ NB_MODULE(mitsuba_alias, m) {
     m.def("__getattr__", [](nb::handle key) { return get_attr(key); });
 
     // Create the detail submodule
-    nb::module_ mi_detail = nb::module_::import_("mitsuba.detail");
+    nb::module_ mi_detail = nb::module_::import_("misuka.detail");
     mi_detail.def("add_variant_callback", add_variant_callback);
     mi_detail.def("remove_variant_callback", remove_variant_callback);
     mi_detail.def("clear_variant_callbacks", clear_variant_callbacks);
@@ -276,7 +276,7 @@ NB_MODULE(mitsuba_alias, m) {
 
     /// Fill `__dict__` with all objects in `mitsuba_ext` and `mitsuba.python`
     mi_dict = m.attr("__dict__").ptr();
-    nb::object mi_ext = import_with_deepbind_if_necessary("mitsuba.mitsuba_ext");
+    nb::object mi_ext = import_with_deepbind_if_necessary("misuka.mitsuba_ext");
     nb::dict mitsuba_ext_dict = mi_ext.attr("__dict__");
     for (const auto &k : mitsuba_ext_dict.keys()) {
         if (!nb::bool_(k.attr("startswith")("__")) &&
@@ -286,7 +286,7 @@ NB_MODULE(mitsuba_alias, m) {
     }
 
     // Import contents of `mitsuba.python` into top-level `mitsuba` module
-    nb::object mi_python = nb::module_::import_("mitsuba.python");
+    nb::object mi_python = nb::module_::import_("misuka.python");
     nb::dict mitsuba_python_dict = mi_python.attr("__dict__");
     for (const auto &k : mitsuba_python_dict.keys()) {
         if (!nb::bool_(k.attr("startswith")("__")) &&

@@ -311,7 +311,7 @@ static nb::object single_object_or_list(std::vector<ref<Object>> &objects) {
 
 /// Get the current variant
 static nb::str get_variant_str() {
-    nb::object variant = nb::module_::import_("mitsuba").attr("variant")();
+    nb::object variant = nb::module_::import_("misuka").attr("variant")();
     if (variant.is_none())
         nb::raise("No variant was set!");
     return nb::borrow<nb::str>(std::move(variant));

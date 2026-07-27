@@ -134,7 +134,7 @@ NB_MODULE(MI_VARIANT_NAME, m) {
         }
     }
 
-    m.attr("__name__") = "mitsuba";
+    m.attr("__name__") = "misuka";
 
     // Create sub-modules
     // Don't use nb::def_submodule because of namespace collisions
@@ -154,7 +154,7 @@ NB_MODULE(MI_VARIANT_NAME, m) {
 
     // FIXME: we don't really need a list of casters
     /// Initialize the list of casters
-    nb::object mitsuba_ext = nb::module_::import_("mitsuba.mitsuba_ext");
+    nb::object mitsuba_ext = nb::module_::import_("misuka.mitsuba_ext");
     cast_object = (Caster) (void *)((nb::capsule) mitsuba_ext.attr("cast_object")).data();
 
     /// Register the variant-specific caster with the 'core_ext' module
@@ -242,12 +242,12 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     }));
 
     /* Make this a package, thus allowing statements such as:
-     * `from mitsuba.scalar_rgb.test.util import function`
+     * `from misuka.scalar_rgb.test.util import function`
      * For that we `__path__` needs to be populated. We do it by using the
      * `__file__` attribute of a Python file which is located in the same
      * directory as this module */
     nb::module_ os = nb::module_::import_("os");
-    nb::module_ cfg = nb::module_::import_("mitsuba.config");
+    nb::module_ cfg = nb::module_::import_("misuka.config");
     nb::object cfg_path = os.attr("path").attr("realpath")(cfg.attr("__file__"));
     nb::object mi_dir = os.attr("path").attr("dirname")(cfg_path);
     nb::object mi_py_dir = os.attr("path").attr("join")(mi_dir, "python");

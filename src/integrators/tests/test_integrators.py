@@ -1,6 +1,6 @@
 import pytest
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 def test01_trampoline_id(variants_vec_backends_once_rgb):
     class DummyIntegrator(mi.SamplingIntegrator):

@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 
 import drjit as dr
-import mitsuba as mi
+import misuka as mi
 
 UINT_32_MAX = (1 << 32) - 1
 

@@ -2,7 +2,7 @@ if __name__ == '__main__':
     import sys, os
     import argparse
     from concurrent.futures import ThreadPoolExecutor
-    import mitsuba as mi
+    import misuka as mi
     mi.set_variant('scalar_rgb')
 
     mi.set_log_level(mi.LogLevel.Info)
