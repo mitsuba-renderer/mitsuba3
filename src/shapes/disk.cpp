@@ -201,8 +201,8 @@ public:
     SurfaceInteraction3f eval_parameterization(const Point2f &uv,
                                                uint32_t ray_flags,
                                                Mask active) const override {
-        Point2f uniform_disk = warp::square_to_uniform_disk_concentric(uv);
-        Point3f local = Point3f(uniform_disk.x(), uniform_disk.y(), 0.f);
+        auto [sin_phi, cos_phi] = dr::sincos(dr::TwoPi<Float> * uv.y());
+        Point3f local(uv.x() * cos_phi, uv.x() * sin_phi, 0.f);
 
         Point3f p = m_to_world.value() * local;
 
@@ -502,19 +502,21 @@ public:
 
         if (likely(has_flag(ray_flags, RayFlags::UV) ||
                    has_flag(ray_flags, RayFlags::dPdUV))) {
-            Float r = dr::norm(Point2f(prim_uv.x(), prim_uv.y())),
-                  inv_r = dr::rcp(r);
+            Float r_2   = dr::squared_norm(prim_uv),
+                  inv_r = dr::select(r_2 != 0.f, dr::rsqrt(r_2), 0.f),
+                  r     = r_2 * inv_r;
 
             Float v = dr::atan2(prim_uv.y(), prim_uv.x()) * dr::InvTwoPi<Float>;
             dr::masked(v, v < 0.f) += 1.f;
             si.uv = Point2f(r, v);
 
             if (likely(has_flag(ray_flags, RayFlags::dPdUV))) {
-                Float cos_phi = dr::select(r != 0.f, prim_uv.x() * inv_r, 1.f),
-                      sin_phi = dr::select(r != 0.f, prim_uv.y() * inv_r, 0.f);
+                Float cos_phi = prim_uv.x() * inv_r,
+                      sin_phi = prim_uv.y() * inv_r;
 
                 si.dp_du = to_world * Vector3f( cos_phi, sin_phi, 0.f);
-                si.dp_dv = to_world * Vector3f(-sin_phi, cos_phi, 0.f);
+                si.dp_dv = to_world * Vector3f(-sin_phi, cos_phi, 0.f) *
+                           (dr::TwoPi<Float> * r);
             }
         }
 
