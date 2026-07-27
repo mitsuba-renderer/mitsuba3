@@ -61,6 +61,10 @@ SAMPLER_ORDERING = [
 
 INTEGRATOR_ORDERING = [
     'acoustic_path',
+    '../src/python/python/ad/integrators/acoustic_ad.py',
+    '../src/python/python/ad/integrators/acoustic_prb.py',
+    '../src/python/python/ad/integrators/acoustic_ad_threepoint.py',
+    '../src/python/python/ad/integrators/acoustic_prb_threepoint.py',
 ]
 
 FILM_ORDERING = [

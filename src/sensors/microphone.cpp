@@ -8,6 +8,84 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+.. _sensor-microphone:
+
+Microphone (:monosp:`microphone`)
+---------------------------------
+
+.. pluginparameters::
+
+ * - to_world
+   - |transform|
+   - Specifies the position and orientation of the microphone. The receiver is
+     located at the origin of this transformation, and its forward (on-axis)
+     direction points along the local :math:`+Z` axis.
+     (Default: identity, i.e. positioned at the world origin)
+
+ * - origin, direction
+   - |point|, |vector|
+   - Alternative to ``to_world``: place the microphone at ``origin`` and orient
+     its forward axis along ``direction``. Both must be given together, and they
+     cannot be combined with ``to_world``.
+
+ * - kappa
+   - |float|
+   - Concentration parameter :math:`\kappa` of the von Mises--Fisher
+     distribution used to model the receiver directivity. ``kappa = 0`` yields
+     an omnidirectional receiver (uniform sensitivity over the whole sphere);
+     larger values concentrate the sensitivity into an increasingly narrow lobe
+     around the forward direction. (Default: 0)
+
+This plugin implements an acoustic receiver (microphone) that records the sound
+energy arriving from the scene. It is the acoustic counterpart to an optical
+camera and must be paired with a :ref:`tape <film-tape>` film, which stores the
+resulting energy-time curve (ETC).
+
+The microphone samples incoming directions from a von Mises--Fisher
+distribution centered on its forward axis. The concentration parameter
+``kappa`` controls the directivity: with ``kappa = 0`` the receiver is
+omnidirectional, while increasing ``kappa`` narrows its angular sensitivity,
+approximating a directional microphone.
+
+Unlike an optical camera, the microphone has no image resolution -- its film is
+a single receiver point. The two axes of the ``tape`` output correspond to
+frequency bands and time bins rather than image pixels.
+
+.. tabs::
+    .. code-tab:: xml
+        :name: microphone-sensor
+
+        <sensor type="microphone">
+            <float name="kappa" value="0.0"/>
+            <point name="origin" value="2, 1, 0"/>
+            <vector name="direction" value="-1, 0, 0"/>
+            <film type="tape">
+                <string name="frequencies" value="125, 250, 500, 1000, 2000, 4000"/>
+                <integer name="time_bins" value="1000"/>
+            </film>
+            <sampler type="independent">
+                <integer name="sample_count" value="16"/>
+            </sampler>
+        </sensor>
+
+    .. code-tab:: python
+
+        'type': 'microphone',
+        'kappa': 0.0,
+        'origin': [2, 1, 0],
+        'direction': [-1, 0, 0],
+        'film': {
+            'type': 'tape',
+            'frequencies': '125, 250, 500, 1000, 2000, 4000',
+            'time_bins': 1000,
+        },
+        'sampler': {
+            'type': 'independent',
+            'sample_count': 16,
+        },
+*/
+
 MI_VARIANT class Microphone final : public Sensor<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Sensor, m_film, m_to_world, m_needs_sample_2)
