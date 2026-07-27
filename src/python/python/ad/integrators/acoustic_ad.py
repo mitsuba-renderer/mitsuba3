@@ -200,7 +200,7 @@ class AcousticADIntegrator(RBIntegrator):
 
             # Perform the weight division and return an image tensor
             film.put_block(block)
-            self.primal_image = film.develop()
+            self.primal_image = film.develop() / spp
 
             return self.primal_image
 
@@ -573,7 +573,7 @@ class AcousticADIntegrator(RBIntegrator):
                     )
 
                 film.put_block(block)
-                result_img = film.develop()
+                result_img = film.develop() / spp
 
                 # Propagate the gradients to the image tensor
                 dr.forward_to(result_img)
@@ -628,7 +628,7 @@ class AcousticADIntegrator(RBIntegrator):
                     )
 
                 film.put_block(block)
-                result_img = film.develop()
+                result_img = film.develop() / spp
 
                 # Differentiate sample splatting and weight division steps to
                 # retrieve the adjoint radiance

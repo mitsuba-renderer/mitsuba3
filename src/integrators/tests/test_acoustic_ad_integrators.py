@@ -451,11 +451,8 @@ def test10_rendering_primal(variants_all_ad_acoustic, integrator_name, config):
     etc_primal_ref = mi.TensorXf(mi.Bitmap(filename))
     etc = integrator.render(config.scene, seed=0, spp=config.spp)
 
-    # FIXME: once the integrators normalize by spp, remove this normalization.
-    etc /= dr.max(dr.abs(etc))
-    etc_primal_ref /= dr.max(dr.abs(etc_primal_ref))
-
-    error = dr.abs(etc - etc_primal_ref) / dr.maximum(dr.abs(etc_primal_ref), 2e-2)
+    floor = 2e-2 * dr.max(dr.abs(etc_primal_ref), axis=None)
+    error = dr.abs(etc - etc_primal_ref) / dr.maximum(dr.abs(etc_primal_ref), floor)
     error_mean = dr.mean(error, axis=None)
     error_max = dr.max(error, axis=None)
 
@@ -628,10 +625,11 @@ def test11_rendering_forward(variants_all_ad_acoustic, integrator_name, config):
 
     dr.set_label(config.params, 'params')
     etc_fwd = integrator.render_forward(
-        config.scene, seed=0, spp=config.spp, params=theta) / config.spp
+        config.scene, seed=0, spp=config.spp, params=theta)
     etc_fwd = dr.detach(etc_fwd)
 
-    error = dr.abs(etc_fwd - etc_fwd_ref) / dr.maximum(dr.abs(etc_fwd_ref), 2e-1)
+    floor = 2e-1 * dr.max(dr.abs(etc_fwd_ref), axis=None)
+    error = dr.abs(etc_fwd - etc_fwd_ref) / dr.maximum(dr.abs(etc_fwd_ref), floor)
     error_mean = dr.mean(error, axis=None)
     error_max = dr.max(error, axis=None)
 
@@ -661,10 +659,6 @@ def test12_rendering_backward(variants_all_ad_acoustic, integrator_name, config)
 
     filename = join(output_dir, f"test_{config.name}_fwd_ref.exr")
     etc_fwd_ref = mi.TensorXf(mi.Bitmap(filename))
-
-    # FIXME: remove this normalization once the integrators normalize by spp.
-    #FIXME: use value used to generate the reference ETC in the config, not necessarily 2**30.
-    etc_fwd_ref *= config.spp / 2**30
 
     grad_in = 0.001
     etc_adj = dr.full(mi.TensorXf, grad_in, etc_fwd_ref.shape)
@@ -874,10 +868,7 @@ if __name__ == "__main__":
                         help='Samples per pixel. Default value: 2**30.')
     args = parser.parse_args()
 
-    if args.spp != 2**30:
-        raise ValueError("Normalization is hardcoded in the tests. If you want to generate reference ETCs with a different spp, please update the normalization in the tests accordingly. This will be fixed once the integrators normalize by spp.")
-
-    mi.set_variant('cuda_acoustic', 'llvm_acoustic')
+    mi.set_variant('cuda_acoustic', 'metal_ad_acoustic', 'llvm_acoustic')
 
     if not exists(output_dir):
         os.makedirs(output_dir)

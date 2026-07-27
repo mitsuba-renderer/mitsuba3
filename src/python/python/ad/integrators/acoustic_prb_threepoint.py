@@ -413,7 +413,7 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
             ray, weight, position_sample = self.sample_rays(scene, sensor, sampler)
 
             # Input gradient (a function) represented as discrete (1D-)function
-            δH = mi.ImageBlock(grad_in,
+            δH = mi.ImageBlock(grad_in / spp,
                                rfilter=film.rfilter(),
                                border=film.sample_border(),
                                y_only=True)

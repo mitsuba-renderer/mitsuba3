@@ -7,10 +7,11 @@ Release notes
 - Add Acoustic Path Integrator `[PR #3] <https://github.com/misuka-renderer/misuka/pull/3>`_
 - Add Acoustic BSDF `[f5c57d4] <https://github.com/misuka-renderer/misuka/commit/f5c57d495597ad400a283f3620481aef802b5c7f>`_
 - `acoustic_ad` and `acoustic_prb`:
-    - Use infinite depth by default `[f33301e] <https://github.com/misuka-renderer/misuka/commit/f33301ec13115c9132df09a6828a8f9b6fcbaa71>`_
-    - Use true geometric distances for path length calculation, avoiding the epsilon offset introduced by `si.spawn_ray()` `[757f880] <https://github.com/misuka-renderer/misuka/commit/757f8807a9444a853d1886f9442dc79da6e50c9f>`_
-    - Add an energy-loss stopping criterion: paths terminate once their throughput drops below `max_energy_loss` in dB `[PR #4] <https://github.com/misuka-renderer/misuka/pull/4>`_
-    - Add a `hide_emitters` option to exclude direct emitter contributions from the ETC `[PR #4] <https://github.com/misuka-renderer/misuka/pull/4>`_
+  - Use infinite depth by default `[f33301e] <https://github.com/misuka-renderer/misuka/commit/f33301ec13115c9132df09a6828a8f9b6fcbaa71>`_
+  - Use true geometric distances for path length calculation, avoiding the epsilon offset introduced by `si.spawn_ray()` `[757f880] <https://github.com/misuka-renderer/misuka/commit/757f8807a9444a853d1886f9442dc79da6e50c9f>`_
+  - Add an energy-loss stopping criterion: paths terminate once their throughput drops below `max_energy_loss` in dB `[PR #4] <https://github.com/misuka-renderer/misuka/pull/4>`_
+  - Add a `hide_emitters` option to exclude direct emitter contributions from the ETC `[PR #4] <https://github.com/misuka-renderer/misuka/pull/4>`_
+- Normalize acoustic integrator output by the sample count, so the ETC is spp-invariant `[PR #12] <https://github.com/misuka-renderer/misuka/pull/12>`_
 - Add a test pipeline for the acoustic AD integrators `[PR #4] <https://github.com/misuka-renderer/misuka/pull/4>`_
 - Update Mitsuba base to v3.9.0 `[PR #7] <https://github.com/misuka-renderer/misuka/pull/7>`_
 

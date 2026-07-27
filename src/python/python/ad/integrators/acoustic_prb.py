@@ -366,7 +366,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
             # Generate a set of rays starting at the sensor
             ray, weight, position_sample = self.sample_rays(scene, sensor, sampler)
 
-            δH = mi.ImageBlock(grad_in,
+            δH = mi.ImageBlock(grad_in / spp,
                                rfilter=film.rfilter(),
                                border=film.sample_border(),
                                y_only=True)

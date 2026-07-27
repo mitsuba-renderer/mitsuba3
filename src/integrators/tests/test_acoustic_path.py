@@ -445,11 +445,8 @@ def test08_rendering_primal(variants_all_acoustic, integrator_name, config):
     etc_ref = mi.TensorXf(mi.Bitmap(filename))
     etc = integrator.render(config.scene, seed=0, spp=config.spp)
 
-    #FIXME: Remove normalization here once integrator outputs properly scaled ETCs.
-    etc /= dr.max(dr.abs(etc))
-    etc_ref /= dr.max(dr.abs(etc_ref))
-
-    error = dr.abs(etc - etc_ref) / dr.maximum(dr.abs(etc_ref), 2e-2)
+    floor = 2e-2 * dr.max(dr.abs(etc_ref), axis=None)
+    error = dr.abs(etc - etc_ref) / dr.maximum(dr.abs(etc_ref), floor)
     error_mean = dr.mean(error, axis=None)
     error_max = dr.max(error, axis=None)
 
@@ -511,7 +508,7 @@ if __name__ == "__main__":
                         help='Samples per pixel. Default value: 2**30')
     args = parser.parse_args()
 
-    mi.set_variant('cuda_acoustic', 'llvm_acoustic')
+    mi.set_variant('cuda_acoustic', 'metal_ad_acoustic', 'llvm_acoustic')
 
     if not exists(output_dir):
         os.makedirs(output_dir)

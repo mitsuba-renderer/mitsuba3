@@ -180,6 +180,8 @@ public:
         // Start the render timer (used for timeouts & log messages)
         m_render_timer.reset();
 
+        ScalarFloat sample_scale = 1.f / (ScalarFloat) spp;
+
         TensorXf result;
         if constexpr (!dr::is_jit_v<Float>) {
             // Render on the CPU using a spiral pattern
@@ -241,6 +243,8 @@ public:
                                 sampler->advance();
                             }
                         }
+
+                        block->tensor() = block->tensor() * sample_scale;
 
                         film->put_block(block);
 
@@ -322,6 +326,8 @@ public:
                     dr::eval(block->tensor());
                 }
             }
+
+            block->tensor() = block->tensor() * sample_scale;
 
             film->put_block(block);
 
