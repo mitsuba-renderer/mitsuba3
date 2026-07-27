@@ -124,3 +124,27 @@ and the BSDF reflectance (here using a diffuse BSDF).
     material from the conductor's built-in IOR list) as the spectral uplifting algorithm
     implemented in Mitsuba won't be able to guarantee that the produced spectrum
     will behave consistently in both RGB and spectral modes.
+
+.. _sec-spectra-acoustic:
+
+Frequency-domain spectra (acoustic variants)
+--------------------------------------------
+
+In the ``*_acoustic`` variants, the spectral domain is **frequency (Hz)** rather than
+**wavelength (nm)**: :monosp:`Spectrum` represents a single acoustic frequency band, and
+material/emission curves are defined over a frequency range instead of a visible-light range.
+
+:ref:`regular <spectrum-regular>` and :ref:`irregular <spectrum-irregular>` both accept
+frequency parameters as a drop-in alternative to their wavelength parameters:
+
+- :ref:`regular <spectrum-regular>` accepts ``frequency_min``/``frequency_max`` in place of
+  ``wavelength_min``/``wavelength_max``.
+- :ref:`irregular <spectrum-irregular>` accepts ``frequencies`` in place of ``wavelengths``.
+
+Only one of the two domains may be given for a single plugin instance — specifying both
+wavelength and frequency parameters together raises an error at scene-load time.
+
+:ref:`regular <spectrum-regular>`'s exposed ``range`` scene parameter (used for parameter
+traversal, e.g. during optimization) holds this same two-value extent regardless of which
+domain the plugin was constructed with — a frequency range in Hz for acoustic variants, a
+wavelength range in nanometers otherwise.

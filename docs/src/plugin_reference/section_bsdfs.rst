@@ -7,8 +7,8 @@ Acoustic materials describe how a surface reflects, absorbs, and scatters
 incident sound energy — the acoustic analogue of a light-transport BSDF.
 misuka currently ships a single acoustic material, :ref:`acousticbsdf
 <bsdf-acousticbsdf>`, which combines a frequency-dependent absorption
-coefficient with a specular/diffuse scattering split (see :ref:`Spectra
-<sec-spectra>` for how the frequency-value curves are defined).
+coefficient with a specular/diffuse scattering split (see :ref:`frequency-domain
+spectra <sec-spectra-acoustic>` for how the frequency-value curves are defined).
 
 As in Mitsuba, BSDFs are assigned to *shapes*, either nested directly or
 declared once and referenced by name — useful when the same material is

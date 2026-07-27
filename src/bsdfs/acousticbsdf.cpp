@@ -68,7 +68,8 @@ The diffuse component follows Lambertian scattering (see
 
 
 The following XML snippet describes an acoustic material with spectrally varying
-absorption and scattering values, given in frequency-value pairs (see :ref:`sec-spectra`).
+absorption and scattering values, given in frequency-value pairs (see
+:ref:`frequency-domain spectra <sec-spectra-acoustic>`).
 
 .. tabs::
     .. code-tab:: xml
