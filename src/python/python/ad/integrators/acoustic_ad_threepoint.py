@@ -16,11 +16,7 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
     Acoustic AD Three-Point Form (:monosp:`acoustic_ad_threepoint`)
     ---------------------------------------------------------------
 
-    .. pluginparameters::
-        :extra-rows: 0
-
-        (Inherits all parameters from
-        :ref:`acoustic_ad <integrator-acoustic_ad>`.)
+    Inherits all parameters from :ref:`acoustic_ad <integrator-acoustic_ad>`.
 
     This integrator behaves similarly to
     :ref:`acoustic_prb <integrator-acoustic_prb>`, but uses a three-point-form

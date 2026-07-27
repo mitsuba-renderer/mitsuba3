@@ -16,11 +16,7 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
     Acoustic Path Replay Backpropagation (:monosp:`acoustic_prb`)
     -------------------------------------------------------------
 
-    .. pluginparameters::
-        :extra-rows: 0
-
-        (Inherits all parameters from
-        :ref:`acoustic_ad <integrator-acoustic_ad>`.)
+    Inherits all parameters from :ref:`acoustic_ad <integrator-acoustic_ad>`.
 
     This integrator works analogously to the
     :ref:`acoustic path tracer <integrator-acoustic_path>`, but includes
