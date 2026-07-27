@@ -89,9 +89,18 @@ autoclass_content = 'both'
 autodoc_member_order = 'bysource'
 
 # Set Mitsuba variant for autodoc
-import mitsuba
+import sys
+import misuka as mitsuba
+
+# The Python package was renamed from 'mitsuba' to 'misuka' (misuka-renderer/misuka#11),
+# but the underlying C++ namespace is still `mitsuba::` and this file's generated API
+# reference intentionally keeps the `mitsuba.*` display naming to match it. Alias
+# 'mitsuba' in sys.modules so the `.. autoclass:: mitsuba.Foo` directives written below
+# (and any autodoc-triggered `import mitsuba`) resolve to the real `misuka` package.
+sys.modules.setdefault('mitsuba', mitsuba)
+
 mitsuba.set_variant('llvm_ad_rgb')
-variant_prefix = 'mitsuba.llvm_ad_rgb.'
+variant_prefix = 'misuka.llvm_ad_rgb.'
 drjit_variant_alias = 'drjit.llvm'
 
 # -- Event callback for processing the docstring ----------------------------------------------
@@ -490,7 +499,7 @@ def process_docstring_callback(app, what, name, obj, options, lines):
             # Add information about the base class if it is a Mitsuba type
             if len(obj.__bases__) > 0:
                 full_base_name = str(obj.__bases__[0])[8:-2]
-                if full_base_name.startswith('mitsuba'):
+                if full_base_name.startswith('misuka'):
                     lines.insert(0, 'Base class: %s' % sanitize_types(full_base_name))
                     lines.insert(1, '')
 
@@ -727,10 +736,10 @@ def generate_list_api_callback(app):
               (isfunction(obj) and obj.__module__.startswith(drjit_variant_alias))):
             # Do not ignore "aliased" DrJit imports
             pass
-        elif ((ismodule(obj) and not obj.__name__.startswith('mitsuba.')) or
-              (isclass(obj) and not obj.__module__.startswith('mitsuba')) or
-              (ismethod(obj) and not obj.__module__.startswith('mitsuba')) or
-              (isfunction(obj) and not obj.__module__.startswith('mitsuba'))
+        elif ((ismodule(obj) and not obj.__name__.startswith('misuka.')) or
+              (isclass(obj) and not obj.__module__.startswith('misuka')) or
+              (ismethod(obj) and not obj.__module__.startswith('misuka')) or
+              (isfunction(obj) and not obj.__module__.startswith('misuka'))
               ):
             # Handles imports from external packages
             return
@@ -738,7 +747,7 @@ def generate_list_api_callback(app):
         if ismodule(obj):
             if name in mitsuba.variants():
                 return
-            elif obj.__name__ in [f'mitsuba.{variant}' for variant in mitsuba.variants()]:
+            elif obj.__name__ in [f'misuka.{variant}' for variant in mitsuba.variants()]:
                 # Handles recursive imports of 'mi'
                 return
             elif name == 'python':
