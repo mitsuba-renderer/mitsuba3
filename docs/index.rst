@@ -47,7 +47,7 @@ Hello World!
 
 The example below builds a simple shoebox room with a spherical sound source,
 places a microphone, and renders an **Energy Time Curve (ETC)** — the acoustic
-analogue of an image: energy against propagation time, one row per frequency band.
+analogue of an image: energy against propagation time, one column per frequency band.
 
 .. code-block:: python
 

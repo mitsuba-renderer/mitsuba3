@@ -53,11 +53,11 @@ acoustic simulation: the sound energy arriving at the receiver as a function of
 time, resolved per frequency band. It is the acoustic counterpart to an image
 film and must be paired with a :ref:`microphone <sensor-microphone>` sensor.
 
-The output is a tensor whose first axis corresponds to the frequency bands
-listed in ``frequencies`` and whose second axis corresponds to the ``time_bins``
-time bins. Each bin accumulates the energy of all sampled paths whose total
-propagation time falls within that bin, so a single receiver produces one ETC
-per frequency band rather than a two-dimensional image.
+The output is a tensor of shape ``(time_bins, frequencies, 1)``: its first axis
+corresponds to the ``time_bins`` time bins and its second axis to the frequency
+bands listed in ``frequencies``. Each bin accumulates the energy of all sampled
+paths whose total propagation time falls within that bin, so a single receiver
+produces one ETC per frequency band rather than a two-dimensional image.
 
 Unlike a conventional image film, the ``tape`` does not accept ``width`` or
 ``height``; the frequency axis is determined by ``frequencies`` and the time
