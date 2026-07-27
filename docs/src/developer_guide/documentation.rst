@@ -20,9 +20,9 @@ Documentation sources
 Documentation comes from several sources:
 
 1. **C++ headers** (``include/mitsuba/{core,render}/*.h``): API documentation extracted via docstrings
-2. **C++ plugin sources** (``src/{bsdfs,shapes,emitters,...}/*.cpp``): Plugin descriptions and parameters
+2. **C++ plugin sources** (``src/{bsdfs,shapes,sensors,films,integrators,...}/*.cpp``): Plugin descriptions and parameters. The built plugin reference is filtered to misuka's acoustic thin fork (see ``docs/generate_plugin_doc.py``); shared sections like ``shapes``/``textures``/``spectra`` are kept whole, while ``bsdfs``/``sensors``/``films``/``integrators`` are allow-listed down to the acoustic plugins.
 3. **RST files** (``docs/src/``): User guides, tutorials, and manual content
-4. **Jupyter notebooks** (``docs/tutorials/``): Interactive tutorials rendered with nbsphinx
+4. **Jupyter notebooks** (``tutorials_acoustic/``, symlinked into ``docs/src/rendering`` and ``docs/src/inverse_rendering``): Interactive tutorials rendered with nbsphinx
 
 Build process overview
 ----------------------

@@ -55,37 +55,45 @@ Afterwards, simply write
 
 to fetch the latest version of Mitsuba 3.
 
-Configuring :monosp:`mitsuba.conf`
+Configuring :monosp:`misuka.conf`
 ----------------------------------
 
-Mitsuba 3 variants are specified in the file :monosp:`mitsuba.conf`. This file
+Mitsuba variants are specified in the file :monosp:`misuka.conf`. This file
 can be found in the build directory and will be created when executing CMake the
 first time.
 
-Open :monosp:`mitsuba.conf` in your favorite text editor and scroll down to the
+Open :monosp:`misuka.conf` in your favorite text editor and scroll down to the
 declaration of the enabled variants (around line 86):
 
 .. code-block:: text
 
     "enabled": [
-        "scalar_rgb", "scalar_spectral", "cuda_ad_rgb", "llvm_ad_rgb", "llvm_ad_spectral"
+        "scalar_rgb", "scalar_acoustic", "llvm_ad_rgb", "llvm_ad_acoustic"
     ],
 
 The default file specifies two scalar variants that you may wish to extend
 according to your requirements and the explanations given above. Note that
-``scalar_spectral`` can be removed, but ``scalar_rgb`` *must* currently be part
-of the list as some core components of Mitsuba depend on it. In addition,
-at least one ``ad``-enabled variant must also be compiled. When the ``mitsuba``
-command line executable is launched without a specific mode parameter, it will
-automatically select the most capable variant whose backend is available at
-runtime (preferring an RGB color representation).
+``scalar_rgb`` *must* currently be part of the list as some core components of
+Mitsuba depend on it, and at least one ``ad``-enabled variant must also be
+compiled. When the ``mitsuba`` command line executable is launched without a
+specific mode parameter, it will automatically select the most capable variant
+whose backend is available at runtime (preferring an RGB color representation).
+
+**Acoustic rendering requires an** ``*_acoustic`` **variant** — the example
+above enables ``scalar_acoustic`` and ``llvm_ad_acoustic``; without one of
+these (or another ``*_acoustic`` variant) in the enabled list, acoustic scenes
+cannot be rendered, since the stock RGB/spectral variants use
+``Spectrum<Float, 3>``/``Spectrum<Float, N>`` color representations rather than
+the single-channel energy representation acoustic rendering needs. See
+:ref:`sec-acoustics` for background on the ``_acoustic`` variant family.
 
 The remainder of this file lists the C++ types defining the available variants
 and can safely be ignored.
 
-TLDR: If you plan to use Mitsuba from Python, we recommend adding one of
-``llvm_ad_rgb`` or ``llvm_ad_spectral`` for CPU rendering, or one of
-``cuda_ad_rgb`` or ``cuda_ad_spectral`` for differentiable GPU rendering.
+TLDR: If you plan to use misuka from Python, we recommend adding one of
+``llvm_ad_rgb`` or ``llvm_ad_spectral`` for optical CPU rendering, or
+``llvm_ad_acoustic`` for acoustic CPU rendering (substitute ``cuda_ad_*`` for
+differentiable GPU rendering).
 
 .. warning::
 
@@ -136,7 +144,7 @@ interesting to you, also enter the following commands:
     sudo apt install python3-pytest python3-pytest-xdist python3-numpy
 
 Now, compilation should be as simple as running the following from
-inside the :monosp:`mitsuba3` root directory:
+inside the :monosp:`misuka` root directory:
 
 .. code-block:: bash
 
@@ -175,7 +183,7 @@ CMake, or Python might need to be installed manually. Mitsuba's build system
 *requires* access to Python >= 3.9 even if you do not plan to use Mitsuba's
 python interface.
 
-From the root `mitsuba3` directory, the build can be configured with:
+From the root `misuka` directory, the build can be configured with:
 
 .. code-block:: bash
 
@@ -222,7 +230,7 @@ via `Miniconda 3 <https://docs.conda.io/en/latest/miniconda.html>`_ or `Homebrew
 <https://brew.sh/>`_).
 
 Now, compilation should be as simple as running the following from inside the
-`mitsuba3` root directory:
+`misuka` root directory:
 
 .. code-block:: bash
 
@@ -254,10 +262,10 @@ required to run Mitsuba.
     source setpath.sh
 
     # On Windows (cmd)
-    C:/.../mitsuba3/build/Release> setpath
+    C:/.../misuka/build/Release> setpath
 
     # On Windows (powershell)
-    C:/.../mitsuba3/build/Release> .\setpath.ps1
+    C:/.../misuka/build/Release> .\setpath.ps1
 
 Mitsuba can then be used to render scenes by typing
 
@@ -272,7 +280,7 @@ where ``scene.xml`` is a Mitsuba scene file. Alternatively,
     mitsuba -m scalar_spectral_polarized scene.xml
 
 renders with a specific variant that was previously enabled in
-:monosp:`mitsuba.conf`. Call ``mitsuba --help`` to print additional information
+:monosp:`misuka.conf`. Call ``mitsuba --help`` to print additional information
 about the various possible command line options.
 
 

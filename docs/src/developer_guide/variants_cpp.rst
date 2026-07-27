@@ -15,8 +15,8 @@ templates with the following two type parameters:
 - ``Spectrum``.
 
 These two parameters exactly correspond to the previously mentioned
-computational backend and color representation. During compilation, Mitsuba's
-build system reads the ``mitsuba.conf`` file and substitutes the types of
+computational backend and color representation. During compilation, misuka's
+build system reads the ``misuka.conf`` file and substitutes the types of
 selected variants into these template parameters. For example,
 
 .. code-block:: text

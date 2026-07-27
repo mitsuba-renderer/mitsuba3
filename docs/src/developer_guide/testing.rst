@@ -39,23 +39,44 @@ the test function like in the following example:
         print(f'Hello {mi.variant()}')
         assert True
 
-Here is the list of available fixtures:
+.. warning::
 
-- :monosp:`variants_all`: execute on all variants
-- :monosp:`variants_all_scalar`: execute on all ``scalar_*`` variants
-- :monosp:`variants_all_rgb`: execute on all ``*_rgb`` variants
-- :monosp:`variants_all_spectral`: execute on all ``*_spectral`` variants
-- :monosp:`variants_all_backends_once`: execute the test for at least on variant per backend
-- :monosp:`variants_all_ad_rgb`: execute on all ``*_ad_rgb`` variants
-- :monosp:`variants_all_ad_spectral`: execute on all ``*_ad_spectral`` variants
-- :monosp:`variants_any_scalar`: execute on one ``scalar_*`` variant if available
-- :monosp:`variants_any_llvm`: execute on one ``llvm_*`` variant if available
-- :monosp:`variants_any_cuda`: execute on one ``cuda_*`` variant if available
-- :monosp:`variants_vec_backends_once`: execute on one ``cuda_*`` and one ``llvm_*`` variant if available
-- :monosp:`variants_vec_backends_once_rgb`: execute on one ``cuda_*_rgb`` and one ``llvm_*_rgb`` variant if available
-- :monosp:`variants_vec_backends_once_spectral`: execute on one ``cuda_*_spectral`` and one ``llvm_*_spectral`` variant if available
-- :monosp:`variants_vec_rgb`: execute on ``cuda_*_rgb`` and ``llvm_*_rgb`` variants
-- :monosp:`variants_vec_spectral`: execute on ``cuda_*_spectral`` and ``llvm_*_spectral`` variants
+    :monosp:`variants_all` and :monosp:`variants_all_scalar` **exclude acoustic
+    variants by design**. These groups (and the plain :monosp:`variants_all_*`
+    families below) predate misuka's acoustic extension and are meant for
+    upstream-style optical tests. Acoustic-aware tests must use
+    :monosp:`variants_all_acoustic` or one of the more specific acoustic groups
+    below. See the ``variant_groups`` comment in ``src/conftest.py`` for the
+    rationale.
+
+Here is the current list of available fixtures (from the ``variant_groups`` dict
+in ``src/conftest.py``):
+
+- :monosp:`variants_any_scalar`: one ``scalar_*`` variant (excluding acoustic) if available
+- :monosp:`variants_any_llvm`: one ``llvm_*`` variant (excluding acoustic) if available
+- :monosp:`variants_any_cuda`: one ``cuda_*`` variant (excluding acoustic) if available
+- :monosp:`variants_any_metal`: one ``metal_*`` variant (excluding acoustic) if available
+- :monosp:`variants_any_acoustic`: one ``*_acoustic`` variant if available
+- :monosp:`variants_all`: all variants, **excluding acoustic**
+- :monosp:`variants_all_optical`: alias for :monosp:`variants_all` (all variants, excluding acoustic)
+- :monosp:`variants_all_scalar`: all ``scalar_*`` variants, excluding acoustic
+- :monosp:`variants_all_rgb`: all ``*_rgb`` variants
+- :monosp:`variants_all_rgb_unpolarized`: all ``*_rgb`` variants, excluding polarized
+- :monosp:`variants_all_spectral`: all ``*_spectral`` variants
+- :monosp:`variants_all_acoustic`: all ``*_acoustic`` variants
+- :monosp:`variants_all_backends_once`: at least one variant per backend (scalar/llvm/cuda/metal), excluding acoustic
+- :monosp:`variants_vec_backends_once`: one ``llvm_*``, one ``cuda_*``, and one ``metal_*`` variant if available, excluding acoustic
+- :monosp:`variants_vec_backends_once_rgb`: one ``llvm_*_rgb``, one ``cuda_*_rgb``, and one ``metal_*_rgb`` variant if available
+- :monosp:`variants_vec_backends_once_spectral`: one ``llvm_*_spectral``, one ``cuda_*_spectral``, and one ``metal_*_spectral`` variant if available
+- :monosp:`variants_vec_rgb`: all non-scalar ``*_rgb`` variants
+- :monosp:`variants_vec_spectral`: all non-scalar ``*_spectral`` variants
+- :monosp:`variants_all_ad_rgb`: all ``*_ad_rgb`` variants
+- :monosp:`variants_all_ad_rgb_unpolarized`: all ``*_ad_rgb`` variants, excluding polarized
+- :monosp:`variants_all_ad_spectral`: all ``*_ad_spectral`` variants
+- :monosp:`variants_all_ad_acoustic`: all ``*_ad_acoustic`` variants
+- :monosp:`variants_all_cuda_ad_acoustic`: all ``cuda_ad_acoustic`` variants
+- :monosp:`variants_all_llvm_ad_acoustic`: all ``llvm_ad_acoustic`` variants
+- :monosp:`variants_all_jit_acoustic`: all non-scalar ``*_acoustic`` variants
 
 Chi^2 tests
 -----------
@@ -180,6 +201,28 @@ To only run the rendering test suite, use the following command:
 .. code-block:: bash
 
     pytest src/render/tests/test_renders.py
+
+Acoustic regression suite
+--------------------------
+
+The acoustic integrators (``acoustic_ad``, ``acoustic_prb``,
+``acoustic_ad_threepoint``, ``acoustic_prb_threepoint``) have a separate
+regression suite in ``src/integrators/tests/test_acoustic_ad_integrators.py``.
+For each integrator and a set of predefined scene configurations, it checks
+primal rendering against reference ETCs stored in
+``resources/data_acoustic/tests/``, and adjoint forward/backward rendering
+against finite differences.
+
+.. code-block:: bash
+
+    pytest src/integrators/tests/test_acoustic_ad_integrators.py
+
+Reference ETCs can be regenerated (e.g. after adding a new configuration) by
+running the file directly with Python:
+
+.. code-block:: bash
+
+    python3 src/integrators/tests/test_acoustic_ad_integrators.py --help
 
 One can easily add a scene to the ``resources/data/tests/scenes/`` folder to add
 it to the rendering test suite. Then, the missing reference images can be
