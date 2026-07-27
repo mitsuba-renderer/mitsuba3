@@ -45,7 +45,10 @@ def test01_create_mesh(variant_scalar_rgb):
   face_count = 2,
   faces = [24 B of face data],
   surface_area = 0.96,
-  face_normals = 0
+  face_normals = 0,
+  bsdf = SmoothDiffuse[
+    reflectance = UniformSpectrum[value=0.500000]
+  ]
 ]"""
 
 
@@ -219,6 +222,9 @@ def test07_ply_stored_attribute(variant_scalar_rgb):
   face_normals = 0,
   mesh attributes = [
     face_color: 3 floats
+  ],
+  bsdf = SmoothDiffuse[
+    reflectance = UniformSpectrum[value=0.500000]
   ]
 ]"""
 
@@ -246,6 +252,9 @@ def test08_mesh_manage_attributes(variant_scalar_rgb):
   face_normals = 0,
   mesh attributes = [
     vertex_color: 3 floats
+  ],
+  bsdf = SmoothDiffuse[
+    reflectance = UniformSpectrum[value=0.500000]
   ]
 ]"""
 
@@ -1421,5 +1430,40 @@ def test37_create_mesh_with_properties(variant_scalar_rgb):
   vertices = [0 B of vertex data],
   face_count = 0,
   faces = [0 B of face data],
-  face_normals = 0
+  face_normals = 0,
+  bsdf = SmoothDiffuse[
+    reflectance = UniformSpectrum[value=0.500000]
+  ]
 ]"""
+
+def test38_ray_intersect_triangle(variants_all_rgb):
+    mesh = mi.Mesh(name='', vertex_count=3, face_count=1)
+    params = mi.traverse(mesh)
+    params['vertex_positions'] = [
+        0.0, 0.0, 0.0, 
+        1.0, 0.0, 0.0,
+        0.5, 1.0, 0.0,
+    ]
+    params['faces'] = [0, 1, 2]
+    params.update()
+
+    ray = mi.Ray3f([0.5, 0.5, 1.0], [0.0, 0.0, -1.0])
+
+    pi = mesh.ray_intersect_triangle(mi.UInt32(0), ray)
+    assert dr.all(dr.abs(pi.t - 1) <= 1e-12)
+    assert dr.all(pi.prim_index == 0)
+
+def test39_custom_vertex_normals(variants_vec_rgb):
+    m = mi.Mesh(mi.Properties())
+    normals = dr.linspace(mi.Float, -1, 1, 12)
+    params = mi.traverse(m)
+    params['vertex_positions'] = [0.0, 0.0, 0.0,
+                                  1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0]
+    params['faces'] = [0, 1, 2, 1, 2, 3]
+    params['vertex_normals'] = normals
+    params.update()
+    assert m.has_vertex_normals()
+    params = mi.traverse(m)
+
+    # The custom vertex normals should not have been modified.
+    assert dr.allclose(params['vertex_normals'], normals)

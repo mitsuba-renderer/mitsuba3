@@ -7,6 +7,29 @@ get_directory_property(MI_EXT_COMPILE_OPTIONS_NOWARN COMPILE_OPTIONS)
 list(REMOVE_ITEM MI_EXT_COMPILE_OPTIONS_NOWARN -Wall -Wextra /W4)
 
 # ---------------------------------------------------------------------------
+#  Enable assembler dialects
+# ---------------------------------------------------------------------------
+# libjpeg-turbo and struct-jit use different assembler dialects. Enabling so
+# within subdirectories causes issues with CMake. We work around this by
+# localizing all the ``enable_language()`` directives here.
+include(CheckLanguage)
+
+# ASM for OpenEXR, struct-jit (non-MSVC targets)
+enable_language(ASM)
+
+# MASM for struct-jit
+if (MSVC)
+  enable_language(ASM_MASM)
+endif()
+
+# NASM for libjpeg-turbo (x86, if available). Enabled last so it wins the
+# ``.asm`` extension, shared by all dialects.
+check_language(ASM_NASM)
+if (CMAKE_ASM_NASM_COMPILER)
+  enable_language(ASM_NASM)
+endif()
+
+# ---------------------------------------------------------------------------
 #  Link against Intel ITT (profiler events for VTune, optional)
 # ---------------------------------------------------------------------------
 
@@ -279,16 +302,20 @@ mark_as_advanced(DFA_XTRA AWK PNG_FRAMEWORK PNG_HARDWARE_OPTIMIZATIONS
   PNG_TOOLS)
 
 # ----------------------------------------------------------
-#  libjpeg 7
+#  libjpeg-turbo (libjpeg-compatible API, SIMD-accelerated)
 # ----------------------------------------------------------
 
-set(LIBJPEG_BUILD_SHARED ON CACHE BOOL " " FORCE)
-set(LIBJPEG_BUILD_EXECUTABLES OFF CACHE BOOL " " FORCE)
-add_subdirectory(libjpeg)
+# Build only the shared libjpeg-API library: no static lib, no high-level
+# TurboJPEG API, and no command-line tools / regression tests.
+set(ENABLE_SHARED   ON  CACHE BOOL " " FORCE)
+set(ENABLE_STATIC   OFF CACHE BOOL " " FORCE)
+set(WITH_TURBOJPEG  OFF CACHE BOOL " " FORCE)
+set(WITH_TOOLS      OFF CACHE BOOL " " FORCE)
+add_subdirectory(libjpeg-turbo)
 set_property(TARGET jpeg PROPERTY FOLDER "dependencies")
-set(JPEG_LIBRARIES libjpeg PARENT_SCOPE)
 
-set(JPEG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libjpeg;${CMAKE_CURRENT_BINARY_DIR}/libjpeg" PARENT_SCOPE)
+# Public headers live in src/; the generated jconfig.h lands in the build dir.
+set(JPEG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libjpeg-turbo/src;${CMAKE_CURRENT_BINARY_DIR}/libjpeg-turbo" PARENT_SCOPE)
 set(JPEG_LIBRARIES    "jpeg" PARENT_SCOPE)
 set(JPEG_DEFINES      -DMI_HAS_LIBJPEG PARENT_SCOPE)
 
@@ -296,9 +323,15 @@ set(JPEG_DEFINES      -DMI_HAS_LIBJPEG PARENT_SCOPE)
 # libraries that may already be loaded (e.g. into a Python interpreter)
 set_property(TARGET jpeg PROPERTY OUTPUT_NAME "jpeg-mitsuba")
 
+# Write output to libjpeg-mitsuba.dylib (no version suffix or symlink)
+set_property(TARGET jpeg PROPERTY VERSION)
+set_property(TARGET jpeg PROPERTY SOVERSION)
+
 mark_as_advanced(
-  LIBJPEG_BUILD_EXECUTABLES
-  LIBJPEG_BUILD_SHARED
+  ENABLE_SHARED
+  ENABLE_STATIC
+  WITH_TURBOJPEG
+  WITH_TOOLS
 )
 
 # ----------------------------------------------------------
@@ -317,34 +350,22 @@ target_compile_features(pugixml PUBLIC cxx_std_17)
 set(TINYFORMAT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tinyformat PARENT_SCOPE)
 
 # ----------------------------------------------------------
-#  asmjit -- x86/64 JIT compiler
+#  struct-jit -- JIT-accelerated structure converter
 # ----------------------------------------------------------
+set(SJIT_ENABLE_PYTHON OFF CACHE BOOL "" FORCE)
+add_subdirectory(struct-jit)
+set_property(TARGET struct-jit PROPERTY FOLDER "dependencies")
 
-if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
-  # Build asmjit
-  set(ASMJIT_NO_AARCH32    TRUE CACHE BOOL "" FORCE)
-  set(ASMJIT_NO_AARCH64    TRUE CACHE BOOL "" FORCE)
-  set(ASMJIT_NO_DEPRECATED TRUE CACHE BOOL "" FORCE)
-
-  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-inconsistent-missing-override -Wno-undefined-inline")
-  endif()
-  add_subdirectory(asmjit)
-  set(ASMJIT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/asmjit/src PARENT_SCOPE)
-  set_property(TARGET asmjit PROPERTY FOLDER "dependencies")
-  if (MSVC)
-    target_compile_options(asmjit PRIVATE "/wd4804" "/wd4838")
-    # Don't complain about ignoring '/INCREMENTAL'
-    set_target_properties(asmjit PROPERTIES LINK_FLAGS "/ignore:4075")
-  endif()
-  # Avoid name clashes with pytorch (which also includes asmjit)
-  set_property(TARGET asmjit PROPERTY OUTPUT_NAME "asmjit-mitsuba")
+# Tag struct-jit's snippet library as MASM (``.asm`` otherwise defaults to NASM).
+if (MSVC)
+  set_source_files_properties(
+    "${CMAKE_CURRENT_SOURCE_DIR}/struct-jit/asm/asm_x64_win.asm"
+    TARGET_DIRECTORY struct-jit
+    PROPERTIES LANGUAGE ASM_MASM)
 endif()
 
 mark_as_advanced(
-  ASMJIT_DIR ASMJIT_EMBED ASMJIT_STATIC ASMJIT_NO_AARCH32 ASMJIT_NO_AARCH64
-  ASMJIT_NO_DEPRECATED ASMJIT_NO_CUSTOM_FLAGS ASMJIT_NO_FOREIGN ASMJIT_NO_NATVIS
-  ASMJIT_NO_X86 ASMJIT_TEST ASMJIT_SANITIZE
+  SJIT_ENABLE_PYTHON
 )
 
 # ----------------------------------------------------------

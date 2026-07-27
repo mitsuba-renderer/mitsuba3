@@ -1,5 +1,6 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/mesh.h>
+#include <mitsuba/render/scene_ir.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/sensor.h>
@@ -10,10 +11,6 @@
 #  include <embree3/rtcore.h>
 #else
 #  include <mitsuba/render/kdtree.h>
-#endif
-
-#if defined(MI_ENABLE_CUDA)
-#  include <mitsuba/render/optix/shapes.h>
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
@@ -62,12 +59,7 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props)
     m_silhouette_sampling_weight = props.get<ScalarFloat>("silhouette_sampling_weight", 1.0f);
 }
 
-MI_VARIANT Shape<Float, Spectrum>::~Shape() {
-#if defined(MI_ENABLE_CUDA)
-    if constexpr (dr::is_cuda_v<Float>)
-        jit_free(m_optix_data_ptr);
-#endif
-}
+MI_VARIANT Shape<Float, Spectrum>::~Shape() { }
 
 
 MI_VARIANT typename Shape<Float, Spectrum>::PositionSample3f
@@ -80,264 +72,23 @@ MI_VARIANT Float Shape<Float, Spectrum>::pdf_position(const PositionSample3f & /
     NotImplementedError("pdf_position");
 }
 
-#if defined(MI_ENABLE_EMBREE)
-template <typename Float, typename Spectrum>
-void embree_bbox(const struct RTCBoundsFunctionArguments* args) {
-    MI_IMPORT_TYPES(Shape)
-    const Shape* shape = (const Shape*) args->geometryUserPtr;
-    ScalarBoundingBox3f bbox = shape->bbox(args->primID);
-    RTCBounds* bounds_o = args->bounds_o;
-    bounds_o->lower_x = (float) bbox.min.x();
-    bounds_o->lower_y = (float) bbox.min.y();
-    bounds_o->lower_z = (float) bbox.min.z();
-    bounds_o->upper_x = (float) bbox.max.x();
-    bounds_o->upper_y = (float) bbox.max.y();
-    bounds_o->upper_z = (float) bbox.max.z();
-}
 
-template <typename Float, typename Spectrum>
-void embree_intersect_scalar(int* valid,
-                             void* geometryUserPtr,
-                             unsigned int geomID,
-                             unsigned int instID,
-                             unsigned int primID,
-                             RTCRay* rtc_ray,
-                             RTCHit* rtc_hit) {
-    MI_IMPORT_TYPES(Shape)
-
-    const Shape* shape = (const Shape*) geometryUserPtr;
-
-    if (!valid[0])
-        return;
-
-    // Create a Mitsuba ray
-    Ray3f ray = dr::zeros<Ray3f>();
-    ray.o.x() = rtc_ray->org_x;
-    ray.o.y() = rtc_ray->org_y;
-    ray.o.z() = rtc_ray->org_z;
-    ray.d.x() = rtc_ray->dir_x;
-    ray.d.y() = rtc_ray->dir_y;
-    ray.d.z() = rtc_ray->dir_z;
-    ray.time  = rtc_ray->time;
-
-    ray.o += ray.d * rtc_ray->tnear;
-    ray.maxt = rtc_ray->tfar - rtc_ray->tnear;
-
-    // Check whether this is a shadow ray or not
-    if (rtc_hit) {
-        PreliminaryIntersection3f pi = shape->ray_intersect_preliminary(ray, primID, true);
-        if (dr::all(pi.is_valid())) {
-            rtc_ray->tfar      = (float) dr::slice(pi.t);
-            rtc_hit->u         = (float) dr::slice(pi.prim_uv.x());
-            rtc_hit->v         = (float) dr::slice(pi.prim_uv.y());
-            rtc_hit->geomID    = geomID;
-            rtc_hit->primID    = primID;
-            rtc_hit->instID[0] = instID;
-#if !defined(NDEBUG)
-            rtc_hit->Ng_x      = 0.f;
-            rtc_hit->Ng_y      = 0.f;
-            rtc_hit->Ng_z      = 0.f;
+MI_VARIANT void
+Shape<Float, Spectrum>::describe(ShapeIR &g) const {
+    g.kind = ShapeIR::Kind::Custom;
+    g.type = m_shape_type;
+    g.prim_count = primitive_count();
+    g.ctx = this;
+#if defined(MI_ENABLE_METAL) || defined(MI_ENABLE_CUDA)
+    // Default custom shape: one AABB equal to the shape bounds.
+    g.fill_aabbs = [](const void *ctx, void *out) {
+        ScalarBoundingBox3f b = static_cast<const Shape *>(ctx)->bbox();
+        float *d = (float *) out;
+        d[0] = (float) b.min.x(); d[1] = (float) b.min.y(); d[2] = (float) b.min.z();
+        d[3] = (float) b.max.x(); d[4] = (float) b.max.y(); d[5] = (float) b.max.z();
+    };
 #endif
-        }
-    } else {
-        if (dr::all(shape->ray_test(ray, primID, true)))
-            rtc_ray->tfar = -dr::Infinity<float>;
-    }
 }
-
-template <typename Float, typename Spectrum, size_t N, typename RTCRay_, typename RTCHit_>
-static void embree_intersect_packet(int *valid, void *geometryUserPtr,
-                                    unsigned int geomID,
-                                    unsigned int instID,
-                                    unsigned int primID,
-                                    RTCRay_ *rtc_ray,
-                                    RTCHit_ *rtc_hit) {
-    MI_IMPORT_TYPES(Shape)
-
-    using FloatP   = dr::Packet<dr::scalar_t<Float>, N>;
-    using MaskP    = dr::mask_t<FloatP>;
-    using Point2fP = Point<FloatP, 2>;
-    using Point3fP = Point<FloatP, 3>;
-    using Ray3fP   = Ray<Point<FloatP, 3>, Spectrum>;
-    using UInt32P  = dr::uint32_array_t<FloatP>;
-    using Float32P = dr::Packet<dr::scalar_t<Float32>, N>;
-
-    const Shape* shape = (const Shape*) geometryUserPtr;
-
-    MaskP active = dr::load_aligned<UInt32P>(valid) != 0;
-    if (dr::none(active))
-        return;
-
-    // Create Mitsuba ray
-    Ray3fP ray;
-    ray.o.x() = dr::load_aligned<Float32P>(rtc_ray->org_x);
-    ray.o.y() = dr::load_aligned<Float32P>(rtc_ray->org_y);
-    ray.o.z() = dr::load_aligned<Float32P>(rtc_ray->org_z);
-    ray.d.x() = dr::load_aligned<Float32P>(rtc_ray->dir_x);
-    ray.d.y() = dr::load_aligned<Float32P>(rtc_ray->dir_y);
-    ray.d.z() = dr::load_aligned<Float32P>(rtc_ray->dir_z);
-    ray.time  = dr::load_aligned<Float32P>(rtc_ray->time);
-
-    Float32P tnear = dr::load_aligned<Float32P>(rtc_ray->tnear),
-             tfar  = dr::load_aligned<Float32P>(rtc_ray->tfar);
-    ray.o += ray.d * tnear;
-    ray.maxt = tfar - tnear;
-
-    // Check whether this is a shadow ray or not
-    if (rtc_hit) {
-        auto [t, prim_uv, s_idx, p_idx] = shape->ray_intersect_preliminary_packet(ray, primID, active);
-        active &= (t != dr::Infinity<Float>);
-        dr::store_aligned(rtc_ray->tfar,      Float32P(dr::select(active, t,           ray.maxt)));
-        dr::store_aligned(rtc_hit->u,         Float32P(dr::select(active, prim_uv.x(), dr::load_aligned<Float32P>(rtc_hit->u))));
-        dr::store_aligned(rtc_hit->v,         Float32P(dr::select(active, prim_uv.y(), dr::load_aligned<Float32P>(rtc_hit->v))));
-        dr::store_aligned(rtc_hit->geomID,    dr::select(active, UInt32P(geomID), dr::load_aligned<UInt32P>(rtc_hit->geomID)));
-        dr::store_aligned(rtc_hit->primID,    dr::select(active, UInt32P(primID), dr::load_aligned<UInt32P>(rtc_hit->primID)));
-        dr::store_aligned(rtc_hit->instID[0], dr::select(active, UInt32P(instID), dr::load_aligned<UInt32P>(rtc_hit->instID[0])));
-    } else {
-        active &= shape->ray_test_packet(ray, primID, active);
-        dr::store_aligned(rtc_ray->tfar, Float32P(dr::select(active, -dr::Infinity<Float>, tfar)));
-    }
-}
-
-template <typename Float, typename Spectrum>
-void embree_intersect(const RTCIntersectFunctionNArguments* args) {
-    switch (args->N) {
-        case 1:
-            embree_intersect_scalar<Float, Spectrum>(
-                args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0], args->primID,
-                &((RTCRayHit *) args->rayhit)->ray,
-                &((RTCRayHit *) args->rayhit)->hit);
-            break;
-
-        case 4:
-            embree_intersect_packet<Float, Spectrum, 4>(
-                args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0], args->primID,
-                &((RTCRayHit4 *) args->rayhit)->ray,
-                &((RTCRayHit4 *) args->rayhit)->hit);
-            break;
-
-        case 8:
-            embree_intersect_packet<Float, Spectrum, 8>(
-                args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0], args->primID,
-                &((RTCRayHit8 *) args->rayhit)->ray,
-                &((RTCRayHit8 *) args->rayhit)->hit);
-            break;
-
-        case 16:
-            embree_intersect_packet<Float, Spectrum, 16>(
-                args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0], args->primID,
-                &((RTCRayHit16 *) args->rayhit)->ray,
-                &((RTCRayHit16 *) args->rayhit)->hit);
-            break;
-
-        default:
-            Throw("embree_intersect(): unsupported packet size!");
-    }
-}
-
-template <typename Float, typename Spectrum>
-void embree_occluded(const RTCOccludedFunctionNArguments* args) {
-    switch (args->N) {
-        case 1:
-            embree_intersect_scalar<Float, Spectrum>(
-                args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0], args->primID,
-                (RTCRay *) args->ray,
-                (RTCHit *) nullptr);
-            break;
-
-        case 4:
-            embree_intersect_packet<Float, Spectrum, 4>(
-                args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0], args->primID,
-                (RTCRay4 *) args->ray,
-                (RTCHit4 *) nullptr);
-            break;
-
-        case 8:
-            embree_intersect_packet<Float, Spectrum, 8>(
-                args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0], args->primID,
-                (RTCRay8 *) args->ray,
-                (RTCHit8 *) nullptr);
-            break;
-
-        case 16:
-            embree_intersect_packet<Float, Spectrum, 16>(
-                args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0], args->primID,
-                (RTCRay16 *) args->ray,
-                (RTCHit16 *) nullptr);
-            break;
-
-        default:
-            Throw("embree_occluded(): unsupported packet size!");
-    }
-}
-
-MI_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice device) {
-    if constexpr (!dr::is_cuda_v<Float>) {
-        RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
-        rtcSetGeometryUserPrimitiveCount(geom, primitive_count());
-        rtcSetGeometryUserData(geom, (void *) this);
-        rtcSetGeometryBoundsFunction(geom, embree_bbox<Float, Spectrum>, nullptr);
-        rtcSetGeometryIntersectFunction(geom, embree_intersect<Float, Spectrum>);
-        rtcSetGeometryOccludedFunction(geom, embree_occluded<Float, Spectrum>);
-        rtcCommitGeometry(geom);
-        return geom;
-    } else {
-        DRJIT_MARK_USED(device);
-        Throw("embree_geometry() should only be called in CPU mode.");
-    }
-}
-#endif
-
-#if defined(MI_ENABLE_CUDA)
-static const uint32_t optix_geometry_flags[1] = { OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT };
-
-MI_VARIANT void Shape<Float, Spectrum>::optix_prepare_geometry() {
-    NotImplementedError("optix_prepare_geometry");
-}
-
-MI_VARIANT
-void Shape<Float, Spectrum>::optix_fill_hitgroup_records(
-    std::vector<HitGroupSbtRecord> &hitgroup_records,
-    const OptixProgramGroup *program_groups,
-    const OptixProgramGroupMapping &pg_mapping) {
-
-    optix_prepare_geometry();
-
-    HitGroupSbtRecord rec{ { jit_registry_id(this), m_optix_data_ptr } };
-    uint32_t pg_index = pg_mapping.at((ShapeType) shape_type());
-
-    // Setup the hitgroup record and copy it to the hitgroup records array
-    jit_optix_check(optixSbtRecordPackHeader(program_groups[pg_index], &rec));
-
-    // Set hitgroup record data
-    hitgroup_records.push_back(rec);
-}
-
-MI_VARIANT void Shape<Float, Spectrum>::optix_prepare_ias(const OptixDeviceContext& /*context*/,
-                                                           std::vector<OptixInstance>& /*instances*/,
-                                                           uint32_t /*instance_id*/,
-                                                           const ScalarAffineTransform4f& /*transf*/) {
-    NotImplementedError("optix_prepare_ias");
-}
-
-MI_VARIANT void Shape<Float, Spectrum>::optix_build_input(OptixBuildInput &build_input) const {
-    build_input.type = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
-    // Assumes the aabb is always the first member of the data struct
-    build_input.customPrimitiveArray.aabbBuffers   = (CUdeviceptr*) &m_optix_data_ptr;
-    build_input.customPrimitiveArray.numPrimitives = 1;
-    build_input.customPrimitiveArray.strideInBytes = 6 * sizeof(float);
-    build_input.customPrimitiveArray.flags         = optix_geometry_flags;
-    build_input.customPrimitiveArray.numSbtRecords = 1;
-}
-#endif
 
 MI_VARIANT typename Shape<Float, Spectrum>::DirectionSample3f
 Shape<Float, Spectrum>::sample_direction(const Interaction3f &it,
@@ -431,7 +182,8 @@ Shape<Float, Spectrum>::ray_intersect_preliminary(const Ray3f & /*ray*/,
 }
 
 MI_VARIANT
-std::tuple<typename Shape<Float, Spectrum>::ScalarFloat,
+std::tuple<bool,
+           typename Shape<Float, Spectrum>::ScalarFloat,
            typename Shape<Float, Spectrum>::ScalarPoint2f,
            typename Shape<Float, Spectrum>::ScalarUInt32,
            typename Shape<Float, Spectrum>::ScalarUInt32>
@@ -440,7 +192,8 @@ Shape<Float, Spectrum>::ray_intersect_preliminary_scalar(const ScalarRay3f & /*r
 }
 
 #define MI_DEFAULT_RAY_INTERSECT_PACKET(N)                                                          \
-    MI_VARIANT std::tuple<typename Shape<Float, Spectrum>::FloatP##N,                               \
+    MI_VARIANT std::tuple<typename Shape<Float, Spectrum>::MaskP##N,                                \
+                           typename Shape<Float, Spectrum>::FloatP##N,                              \
                            typename Shape<Float, Spectrum>::Point2fP##N,                            \
                            typename Shape<Float, Spectrum>::UInt32P##N,                             \
                            typename Shape<Float, Spectrum>::UInt32P##N>                             \
@@ -453,7 +206,7 @@ Shape<Float, Spectrum>::ray_intersect_preliminary_scalar(const ScalarRay3f & /*r
                                             uint32_t prim_index,                                    \
                                             MaskP##N active) const {                                \
         auto res = ray_intersect_preliminary_packet(ray, prim_index, active);                       \
-        return std::get<0>(res) != dr::Infinity<Float>;                                             \
+        return std::get<0>(res);                                                                    \
     }
 
 MI_DEFAULT_RAY_INTERSECT_PACKET(4)
@@ -649,11 +402,6 @@ void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &
 
         if (m_sensor)
             m_sensor->parameters_changed({"parent"});
-
-#if defined(MI_ENABLE_CUDA)
-        if constexpr (dr::is_cuda_v<Float>)
-            optix_prepare_geometry();
-#endif
     }
 }
 

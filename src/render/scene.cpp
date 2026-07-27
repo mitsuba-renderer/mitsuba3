@@ -17,11 +17,16 @@
 #  include "scene_optix.inl"
 #endif
 
+#if defined(MI_ENABLE_METAL)
+#  include "scene_metal.inl"
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
     : JitObject<Scene>(props.id()) {
     m_thread_reordering = props.get<bool>("allow_thread_reordering", true);
+    m_compact_accel = props.get<bool>("compact_acceleration_structures", false);
 
     for (auto &prop : props.objects()) {
         ref<Object> v = prop.get<ref<Object>>();
@@ -85,10 +90,8 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
     props.mark_queried("kd_retract_bad_splits");
     props.mark_queried("kd_exact_primitive_threshold");
 
-    if constexpr (dr::is_cuda_v<Float>)
-        accel_init_gpu(props);
-    else
-        accel_init_cpu(props);
+    m_accel.init(this, props);
+    clear_shapes_dirty();
 
     if (!m_emitters.empty()) {
         // Inform environment emitters etc. about the scene bounds
@@ -174,10 +177,10 @@ void Scene<Float, Spectrum>::update_silhouette_sampling_distribution() {
 }
 
 MI_VARIANT Scene<Float, Spectrum>::~Scene() {
-    if constexpr (dr::is_cuda_v<Float>)
-        accel_release_gpu();
-    else
-        accel_release_cpu();
+    // Release the acceleration structure first (it may sync_thread to ensure
+    // no ray-tracing kernel still references the shapes about to be freed).
+    // ``release()`` is idempotent; the m_accel destructor calls it again.
+    m_accel.release();
 
     // Trigger deallocation of all instances
     m_emitters.clear();
@@ -203,10 +206,11 @@ Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags,
     DRJIT_MARK_USED(reorder_hint);
     DRJIT_MARK_USED(reorder_hint_bits);
 
-    if constexpr (dr::is_cuda_v<Float>)
-        return ray_intersect_gpu(ray, ray_flags, reorder, reorder_hint, reorder_hint_bits, active);
-    else
-        return ray_intersect_cpu(ray, ray_flags, coherent, active);
+    // Locate the intersection using the backend, then expand it into a full
+    // SurfaceInteraction. This composition is backend-independent.
+    PreliminaryIntersection3f pi = m_accel.ray_intersect_preliminary(
+        this, ray, coherent, reorder, reorder_hint, reorder_hint_bits, active);
+    return pi.compute_surface_interaction(ray, ray_flags, active);
 }
 
 MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
@@ -220,10 +224,9 @@ Scene<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray,
     DRJIT_MARK_USED(reorder_hint);
     DRJIT_MARK_USED(reorder_hint_bits);
 
-    if constexpr (dr::is_cuda_v<Float>)
-        return ray_intersect_preliminary_gpu(ray, reorder, reorder_hint, reorder_hint_bits, active);
-    else
-        return ray_intersect_preliminary_cpu(ray, coherent, active);
+    return m_accel.ray_intersect_preliminary(this, ray, coherent, reorder,
+                                             reorder_hint, reorder_hint_bits,
+                                             active);
 }
 
 MI_VARIANT typename Scene<Float, Spectrum>::Mask
@@ -231,23 +234,13 @@ Scene<Float, Spectrum>::ray_test(const Ray3f &ray, Mask coherent, Mask active) c
     MI_MASKED_FUNCTION(ProfilerPhase::RayTest, active);
     DRJIT_MARK_USED(coherent);
 
-    if constexpr (dr::is_cuda_v<Float>)
-        return ray_test_gpu(ray, active);
-    else
-        return ray_test_cpu(ray, coherent, active);
+    return m_accel.ray_test(this, ray, coherent, active);
 }
 
 MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_naive(const Ray3f &ray, Mask active) const {
     MI_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
-
-#if !defined(MI_ENABLE_EMBREE)
-    if constexpr (!dr::is_cuda_v<Float>)
-        return ray_intersect_naive_cpu(ray, active);
-#endif
-    DRJIT_MARK_USED(ray);
-    DRJIT_MARK_USED(active);
-    NotImplementedError("ray_intersect_naive");
+    return m_accel.ray_intersect_naive(this, ray, active);
 }
 
 // -----------------------------------------------------------------------
@@ -541,10 +534,8 @@ MI_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std
     }
 
     if (accel_is_dirty) {
-        if constexpr (dr::is_cuda_v<Float>)
-            accel_parameters_changed_gpu();
-        else
-            accel_parameters_changed_cpu();
+        m_accel.rebuild(this);
+        clear_shapes_dirty();
 
         m_bbox = {};
         for (auto &s : m_shapes)
@@ -587,99 +578,26 @@ MI_VARIANT std::string Scene<Float, Spectrum>::to_string() const {
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization() {
-    if constexpr (dr::is_cuda_v<Float>)
-        Scene::static_accel_initialization_gpu();
-    else
-        Scene::static_accel_initialization_cpu();
+    SceneAccel<Float, Spectrum>::static_initialization();
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown() {
-    if constexpr (dr::is_cuda_v<Float>)
-        Scene::static_accel_shutdown_gpu();
-    else
-        Scene::static_accel_shutdown_cpu();
+    SceneAccel<Float, Spectrum>::static_shutdown();
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::clear_shapes_dirty() {
     for (auto &s : m_shapes)
         s->m_dirty = false;
-    for (auto &s : m_shapegroups)
+    for (auto &s : m_shapegroups) {
         s->m_dirty = false;
-}
-
-MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_cpu() { }
-MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_cpu() { }
-
-void librender_nop() { }
-
-#if !defined(MI_ENABLE_CUDA)
-MI_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &) {
-    NotImplementedError("accel_init_gpu");
-}
-MI_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
-    NotImplementedError("accel_parameters_changed_gpu");
-}
-MI_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
-    NotImplementedError("accel_release_gpu");
-}
-MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
-Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &, bool, UInt32, uint32_t, Mask) const {
-    NotImplementedError("ray_intersect_preliminary_gpu");
-}
-MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
-Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &, uint32_t, bool, UInt32, uint32_t, Mask) const {
-    NotImplementedError("ray_intersect_naive_gpu");
-}
-MI_VARIANT typename Scene<Float, Spectrum>::Mask
-Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &, Mask) const {
-    NotImplementedError("ray_test_gpu");
-}
-MI_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_gpu() { }
-MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() { }
-#endif
-
-MI_VARIANT
-void Scene<Float, Spectrum>::traverse_1_cb_ro(
-    void *payload, drjit::detail::traverse_callback_ro fn) const {
-
-    // Only traverse the scene for frozen functions, since accidentally
-    // traversing the scene in loops or vcalls can cause errors with variable
-    // size mismatches, and backpropagation of gradients.
-    if (!jit_flag(JitFlag::EnableObjectTraversal))
-    return;
-
-    if constexpr (!std::is_same_v<Object, drjit::TraversableBase>)
-        Object::traverse_1_cb_ro(payload, fn);
-    drjit::traverse_1(this->traverse_1_cb_fields_(), [payload, fn](auto &x) {
-        drjit::traverse_1_fn_ro(x, payload, fn);
-    });
-    if constexpr (dr::is_cuda_v<Float>) {
-        // Nothing to traverse for now
-    } else {
-        traverse_1_cb_ro_cpu(payload, fn);
+        // Clear the group's children too (consumed into its accel by the same
+        // build); a backend's per-group dirty check relies on this.
+        for (auto &c : s->shapes())
+            const_cast<Shape *>(c.get())->m_dirty = false;
     }
 }
 
-MI_VARIANT
-void Scene<Float, Spectrum>::traverse_1_cb_rw(
-    void *payload, drjit::detail::traverse_callback_rw fn) {
+MI_IMPLEMENT_TRAVERSE_CB(Scene, Object)
 
-    // Only traverse the scene for frozen functions, since accidentally
-    // traversing the scene in loops or vcalls can cause errors with variable
-    // size mismatches, and backpropagation of gradients.
-    if (!jit_flag(JitFlag::EnableObjectTraversal))
-        return;
-
-    if constexpr (!std::is_same_v<Object, drjit::TraversableBase>)
-        Object::traverse_1_cb_rw(payload, fn);
-    drjit::traverse_1(this->traverse_1_cb_fields_(), [payload, fn](auto &x) {
-        drjit::traverse_1_fn_rw(x, payload, fn);
-    });
-    if constexpr (dr::is_cuda_v<Float>) {
-        // Nothing to traverse for now
-    } else {
-        traverse_1_cb_rw_cpu(payload, fn);
-    }
-}
 MI_INSTANTIATE_CLASS(Scene)
 NAMESPACE_END(mitsuba)

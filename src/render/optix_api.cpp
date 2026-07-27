@@ -5,7 +5,6 @@
 #include <drjit-core/optix.h>
 #define OPTIX_API_IMPL
 #include <mitsuba/render/optix_api.h>
-#include <mitsuba/render/optix/shapes.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

@@ -1251,7 +1251,11 @@ void transform_upgrade(const ParserConfig &/*config*/, ParserState &state) {
 
 // Helper function to detect circular references using DFS
 static void check_cycles(const ParserState &state, size_t node_idx,
-                         std::vector<size_t> &path) {
+                         std::vector<size_t> &path, std::vector<bool> &visited) {
+    // If already visited, skip (optimization for shared subgraphs)
+    if (visited[node_idx])
+        return;
+
     // Check if current node is already in the path (cycle detected)
     auto it = std::find(path.begin(), path.end(), node_idx);
     if (it != path.end()) {
@@ -1272,8 +1276,11 @@ static void check_cycles(const ParserState &state, size_t node_idx,
     // Add current node to path and recurse
     path.push_back(node_idx);
     for (const auto &prop : state[node_idx].props.filter(Properties::Type::ResolvedReference))
-        check_cycles(state, prop.get<Properties::ResolvedReference>().index(), path);
+        check_cycles(state, prop.get<Properties::ResolvedReference>().index(), path, visited);
     path.pop_back();
+
+    // Mark node as visited after processing
+    visited[node_idx] = true;
 }
 
 void transform_resolve(const ParserConfig &/*config*/, ParserState &state) {
@@ -1298,8 +1305,9 @@ void transform_resolve(const ParserConfig &/*config*/, ParserState &state) {
 
     // Second pass: detect circular references
     std::vector<size_t> path;
+    std::vector<bool> visited(state.size(), false);
     for (size_t i = 0; i < state.size(); ++i)
-        check_cycles(state, i, path);
+        check_cycles(state, i, path, visited);
 }
 
 void transform_merge_equivalent(const ParserConfig &/*config*/, ParserState &state) {
@@ -1600,7 +1608,7 @@ struct Scratch {
 // Set JIT scopes while instantating nodes
 struct ScopedSetJITScope {
     ScopedSetJITScope(uint32_t backend, uint32_t scope) : backend(backend), backup(0) {
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
         if (backend) {
             backup = jit_scope((JitBackend) backend);
             jit_set_scope((JitBackend) backend, scope);
@@ -1609,7 +1617,7 @@ struct ScopedSetJITScope {
     }
 
     ~ScopedSetJITScope() {
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
         if (backend)
             jit_set_scope((JitBackend) backend, backup);
 #endif
@@ -1652,11 +1660,13 @@ static Task* instantiate_node(const ParserConfig &config,
     uint32_t backend = 0, scope = 0;
 
     if (config.parallel) {
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
         if (string::starts_with(config.variant, "cuda_"))
             backend = (uint32_t) JitBackend::CUDA;
         else if (string::starts_with(config.variant, "llvm_"))
             backend = (uint32_t) JitBackend::LLVM;
+        else if (string::starts_with(config.variant, "metal_"))
+            backend = (uint32_t) JitBackend::Metal;
 
         if (backend) {
             jit_new_scope((JitBackend) backend);
@@ -1715,6 +1725,13 @@ static Task* instantiate_node(const ParserConfig &config,
         if (s.objects.empty())
             s.objects.push_back(obj);
 
+#if defined(MI_ENABLE_METAL)
+        // Commit this worker's per-thread command buffer so its buffer uploads
+        // are ordered (on the shared queue) ahead of later consuming kernels.
+        if (config.parallel && backend == (uint32_t) JitBackend::Metal)
+            jit_flush_thread();
+#endif
+
         // Check for unqueried properties by iterating through all properties
         std::string unqueried_details;
         size_t unqueried_count = 0;
@@ -1770,7 +1787,7 @@ static Task* instantiate_node(const ParserConfig &config,
         // Instantiate the root
         instantiate();
 
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA)
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
         if (backend && config.parallel)
             jit_new_scope((JitBackend) backend);
 #endif
@@ -1778,7 +1795,7 @@ static Task* instantiate_node(const ParserConfig &config,
         return nullptr;
     } else {
         // Non-root nodes
-        if (config.parallel && !deps.empty()) {
+        if (config.parallel) {
             // Schedule asynchronous instantiation with dependencies
             s.task = dr::do_async(instantiate, deps.data(), deps.size());
             return s.task;
@@ -1793,6 +1810,20 @@ static Task* instantiate_node(const ParserConfig &config,
 std::vector<ref<Object>> instantiate(const ParserConfig &config, ParserState &state) {
     if (state.empty())
         Throw("No nodes to instantiate");
+
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
+    // Flush pending side effects here and now, to avoid potentially dirty
+    // user-provided Dr.Jit arrays/tensor from being propagated to plugin
+    // loaders running on a different thread. Side effects are queued in
+    // per-thread data structures.
+    if (config.parallel && !string::starts_with(config.variant, "scalar_")) {
+        // Flush side effects
+        jit_eval();
+
+        // Flush thread-local command buffer on Metal
+        jit_flush_thread();
+    }
+#endif
 
     std::vector<Scratch> scratch(state.size());
     instantiate_node(config, state, scratch, 0);

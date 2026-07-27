@@ -2,21 +2,17 @@
 
 #include <math.h>
 #include <mitsuba/render/optix/common.h>
-
-struct OptixDiskData {
-    optix::BoundingBox3f bbox;
-    optix::Transform4f to_object;
-};
+#include <mitsuba/render/shapedata.h>
 
 #ifdef __CUDACC__
 extern "C" __global__ void __intersection__disk() {
     const OptixHitGroupData *sbt_data = (OptixHitGroupData*) optixGetSbtDataPointer();
-    OptixDiskData *disk = (OptixDiskData *)sbt_data->data;
+    shapedata::DiskData *disk = (shapedata::DiskData *)sbt_data->data;
 
     // Ray in instance-space
     Ray3f ray = get_ray();
     // Ray in object-space
-    ray = disk->to_object.transform_ray(ray);
+    ray = apply_affine_ray(disk->to_object, ray);
 
     float t = -ray.o.z() / ray.d.z();
     Vector3f local = ray(t);

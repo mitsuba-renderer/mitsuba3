@@ -134,7 +134,7 @@ has no effect in scalar or LLVM variants.
 
 .. pluginparameters::
 
- * - embree_use_robust_intersection
+ * - embree_use_robust_intersections
    - :paramtype:`bool`
    - Whether Embree uses the robust mode flag `RTC_SCENE_FLAG_ROBUST` (Default: |false|).
  * - allow_thread_reordering
@@ -149,13 +149,13 @@ When creating a scene, the scene-wide attributes can be specified as follows:
     .. code-tab:: xml
 
         <scene version="3.0.0">
-            <boolean name="embree_use_robust_intersection" value="true"/>
+            <boolean name="embree_use_robust_intersections" value="true"/>
         </scene>
 
     .. code-tab:: python
 
         {
             'type': 'scene',
-            'embree_use_robust_intersection': True,
+            'embree_use_robust_intersections': True,
             'allow_thread_reordering': True,
         }

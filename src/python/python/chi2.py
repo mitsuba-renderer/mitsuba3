@@ -117,8 +117,8 @@ class ChiSquareTest:
 
         samples_in = getattr(mi, 'Vector%if' % self.sample_dim)()
         for i in range(self.sample_dim):
-            samples_in[i] = rng.next_float32() if mi.Float is mi.Float32 \
-                else rng.next_float64()
+            samples_in[i] = rng.next_float32() if (mi.Float is mi.Float32 or
+                mi.variant().startswith('metal')) else rng.next_float64()
 
         # Invoke sampling strategy
         samples_out = self.sample_func(samples_in)
@@ -255,22 +255,24 @@ class ChiSquareTest:
             rejected.
 
         """
-        import numpy as np
         if self.histogram is None:
             self.tabulate_histogram()
 
         if self.pdf is None:
             self.tabulate_pdf()
 
-        index = mi.UInt32(np.array([i[0] for i in sorted(enumerate(self.pdf.numpy()),
-                                                         key=lambda x: x[1])]))
+        index = dr.argsort(self.pdf)
 
         # Sort entries by expected frequency (increasing)
-        pdf = mi.Float64(dr.gather(mi.Float, self.pdf, index))
-        histogram = mi.Float64(dr.gather(mi.Float, self.histogram, index))
-
-        # Compute chi^2 statistic and pool low-valued cells
-        chi2val, dof, pooled_in, pooled_out = mi.math.chi2(histogram, pdf, 5)
+        pdf = dr.gather(mi.Float, self.pdf, index)
+        histogram = dr.gather(mi.Float, self.histogram, index)
+        if mi.variant().startswith('metal'):
+            # Metal has no float64; run the pooled chi^2 test on the host
+            chi2val, dof, pooled_in, pooled_out = mi.math_py.chi2(
+                histogram.numpy(), pdf.numpy(), 5)
+        else:
+            chi2val, dof, pooled_in, pooled_out = mi.math.chi2(
+                mi.Float64(histogram), mi.Float64(pdf), 5)
 
         if dof < 1:
             self._log('Failure: The number of degrees of freedom is too low!')

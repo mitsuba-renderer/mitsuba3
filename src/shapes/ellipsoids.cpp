@@ -12,11 +12,16 @@
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
+#include <mitsuba/render/scene_ir.h>
 
 #include "ellipsoids.h"
 
 #if defined(MI_ENABLE_CUDA)
     #include "optix/ellipsoids.cuh"
+#endif
+
+#if defined(MI_ENABLE_METAL)
+    #include "../render/metal/shapes.h"
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
@@ -118,6 +123,23 @@ It is designed for use with volumetric primitive integrators, as detailed in
             'filename': 'my_primitives.ply'
         }
  */
+
+#if defined(MI_ENABLE_METAL)
+// Center, effective scale (s) and object->world rotation (R) of one ellipsoid
+// from its 10 floats (center, scale, quaternion).
+static void ellipsoid_frame(const float *e10, float ext,
+                            float R[3][3], float c[3], float s[3]) {
+    c[0] = e10[0]; c[1] = e10[1]; c[2] = e10[2];
+    s[0] = e10[3]*ext; s[1] = e10[4]*ext; s[2] = e10[5]*ext;
+    float qx = e10[6], qy = e10[7], qz = e10[8], qw = e10[9];
+    float xx = qx*qx, yy = qy*qy, zz = qz*qz, xy = qx*qy, xz = qx*qz,
+          yz = qy*qz, xw = qx*qw, yw = qy*qw, zw = qz*qw;
+    R[0][0] = 1 - 2*(yy + zz); R[0][1] = 2*(xy - zw);     R[0][2] = 2*(xz + yw);
+    R[1][0] = 2*(xy + zw);     R[1][1] = 1 - 2*(xx + zz); R[1][2] = 2*(yz - xw);
+    R[2][0] = 2*(xz - yw);     R[2][1] = 2*(yz + xw);     R[2][2] = 1 - 2*(xx + yy);
+}
+#endif
+
 template <typename Float, typename Spectrum>
 class Ellipsoids final : public Shape<Float, Spectrum> {
 public:
@@ -325,8 +347,8 @@ public:
     }
 
     template <typename FloatP, typename Ray3fP>
-    std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
-               dr::uint32_array_t<FloatP>>
+    std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
+               dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray,
                                    ScalarIndex prim_index,
                                    dr::mask_t<FloatP> active) const {
@@ -336,7 +358,7 @@ public:
         auto ellipsoid = m_ellipsoids.template get_ellipsoid<ScalarValue>(prim_index, active);
         ellipsoid.scale *= m_ellipsoids.template extents<ScalarValue>(prim_index);
         auto [t, valid] = ray_ellipsoid_intersection<FloatP, Ray3fP>(ray, ellipsoid, active);
-        return { t, dr::zeros<Point<FloatP, 2>>(), ((uint32_t) -1), prim_index };
+        return { valid, t, dr::zeros<Point<FloatP, 2>>(), ((uint32_t) -1), prim_index };
     }
 
     template <typename FloatP, typename Ray3fP>
@@ -395,35 +417,90 @@ public:
         return si;
     }
 
-#if defined(MI_ENABLE_CUDA)
-    using Base::m_optix_data_ptr;
-
-    void optix_prepare_geometry() override {
-        if constexpr (dr::is_cuda_v<Float>) {
-            if (!m_optix_data_ptr)
-                m_optix_data_ptr =
-                    jit_malloc(AllocType::Device, sizeof(OptixEllipsoidsData));
-
-            OptixEllipsoidsData data = {
-                m_bbox,
-                m_ellipsoids.extents_data().data(),
-                m_ellipsoids.data().data()
+#if defined(MI_ENABLE_METAL) || defined(MI_ENABLE_CUDA)
+    // Multi-primitive shape: one AABB + one per-ellipsoid data record.
+    void describe(ShapeIR &g) const override {
+        Base::describe(g);
+#if defined(MI_ENABLE_METAL)
+        if constexpr (dr::is_metal_v<Float>) {
+            g.pdata_size = sizeof(shapedata::EllipsoidData);
+            g.fill_aabbs = [](const void *ctx, void *out) {
+                static_cast<const Ellipsoids *>(ctx)->gpu_fill_aabbs(out);
             };
-            jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data, sizeof(OptixEllipsoidsData));
+            g.fill_data = [](const void *ctx, void *out) {
+                static_cast<const Ellipsoids *>(ctx)->gpu_fill_data(out);
+            };
+        }
+#endif
+#if defined(MI_ENABLE_CUDA)
+        if constexpr (dr::is_cuda_v<Float>) {
+            // OptiX zero-copy: the AABBs are precomputed on the device, and the
+            // SBT data is just two device pointers into the ellipsoid arrays.
+            g.data_size = sizeof(OptixEllipsoidsData);
+            g.aabb_buffer = m_device_bboxes;
+            g.fill_data = [](const void *ctx, void *out) {
+                auto *self = const_cast<Ellipsoids *>(
+                    static_cast<const Ellipsoids *>(ctx));
+                *static_cast<OptixEllipsoidsData *>(out) = OptixEllipsoidsData{
+                    self->m_ellipsoids.extents_data().data(),
+                    self->m_ellipsoids.data().data()
+                };
+            };
+        }
+#endif
+    }
+#endif
+
+#if defined(MI_ENABLE_METAL)
+    /// Migrate the ellipsoid arrays to the host and invoke \c f with the
+    /// world-space frame (rotation \c R, center \c c, scale \c s) of each.
+    template <typename Func>
+    void gpu_for_each_frame(Func &&f) const {
+        size_t n = (size_t) m_ellipsoids.count();
+        auto data = dr::migrate(m_ellipsoids.data(), JitBackend::None);
+        auto ext  = dr::migrate(m_ellipsoids.extents_data(), JitBackend::None);
+        dr::sync_thread();
+        const float *data_p = data.data(), *ext_p = ext.data();
+        for (size_t i = 0; i < n; ++i) {
+            float R[3][3], c[3], s[3];
+            ellipsoid_frame(data_p + i * 10, ext_p[i], R, c, s);
+            f(i, R, c, s);
         }
     }
 
-    void optix_build_input(OptixBuildInput &build_input) const override {
-        build_input.type = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
-        build_input.customPrimitiveArray.aabbBuffers   = (CUdeviceptr*) &m_device_bboxes;
-        build_input.customPrimitiveArray.numPrimitives = primitive_count();
-        build_input.customPrimitiveArray.strideInBytes = 6 * sizeof(float);
-        build_input.customPrimitiveArray.flags         = optix_geometry_flags;
-        build_input.customPrimitiveArray.primitiveIndexOffset = 0;
-        build_input.customPrimitiveArray.numSbtRecords = 1;
+    void gpu_fill_aabbs(void *out) const {
+        if constexpr (dr::is_metal_v<Float>) {
+            float *dst = (float *) out;
+            gpu_for_each_frame([&](size_t i, float R[3][3], float c[3], float s[3]) {
+                float d[3];
+                for (int r = 0; r < 3; ++r)
+                    d[r] = std::sqrt(R[r][0]*R[r][0]*s[0]*s[0] +
+                                     R[r][1]*R[r][1]*s[1]*s[1] +
+                                     R[r][2]*R[r][2]*s[2]*s[2]);
+                dst[i*6+0] = c[0]-d[0]; dst[i*6+1] = c[1]-d[1]; dst[i*6+2] = c[2]-d[2];
+                dst[i*6+3] = c[0]+d[0]; dst[i*6+4] = c[1]+d[1]; dst[i*6+5] = c[2]+d[2];
+            });
+        } else {
+            (void) out;
+        }
     }
 
-    static constexpr uint32_t optix_geometry_flags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
+    void gpu_fill_data(void *out) const {
+        if constexpr (dr::is_metal_v<Float>) {
+            shapedata::EllipsoidData *dst = (shapedata::EllipsoidData *) out;
+            gpu_for_each_frame([&](size_t i, float R[3][3], float c[3], float s[3]) {
+                // Row-major world->object affine: diag(1/s) * R^T * translate(-c).
+                for (int row = 0; row < 3; ++row) {
+                    float inv = 1.f / s[row];
+                    float t = R[0][row]*c[0] + R[1][row]*c[1] + R[2][row]*c[2];
+                    dst[i].to_object[row] = { R[0][row]*inv, R[1][row]*inv,
+                                              R[2][row]*inv, -inv*t };
+                }
+            });
+        } else {
+            (void) out;
+        }
+    }
 #endif
 
     //! @}
@@ -447,65 +524,142 @@ public:
         return oss.str();
     }
 
+    void traverse_1_cb_ro(void *payload, dr::detail::traverse_callback_ro fn) const override {
+        // Only traverse the scene for frozen functions, since accidentally
+        // traversing the scene in loops or vcalls can cause errors with variable
+        // size mismatches, and backpropagation of gradients.
+        if (!jit_flag(JitFlag::EnableObjectTraversal))
+            return;
+
+        Object::traverse_1_cb_ro(payload, fn);
+        dr::traverse_1(this->traverse_1_cb_fields_(), [payload, fn](auto &x) {
+            dr::traverse_1_fn_ro(x, payload, fn);
+        });
+
+        dr::traverse_1_fn_ro(m_ellipsoids.data(), payload, fn);
+        dr::traverse_1_fn_ro(m_ellipsoids.extents_data(), payload, fn);
+        auto &attr_map = m_ellipsoids.attributes();
+        for (auto it = attr_map.begin(); it != attr_map.end(); ++it) {
+            dr::traverse_1_fn_ro(it.value(), payload, fn);
+        }
+    }
+
+    void traverse_1_cb_rw(void *payload, dr::detail::traverse_callback_rw fn) override {
+        // Only traverse the scene for frozen functions, since accidentally
+        // traversing the scene in loops or vcalls can cause errors with variable
+        // size mismatches, and backpropagation of gradients.
+        if (!jit_flag(JitFlag::EnableObjectTraversal))
+            return;
+
+        Object::traverse_1_cb_rw(payload, fn);
+        dr::traverse_1(this->traverse_1_cb_fields_(), [payload, fn](auto &x) {
+            dr::traverse_1_fn_rw(x, payload, fn);
+        });
+
+        dr::traverse_1_fn_rw(m_ellipsoids.data(), payload, fn);
+        dr::traverse_1_fn_rw(m_ellipsoids.extents_data(), payload, fn);
+        auto &attr_map = m_ellipsoids.attributes();
+        for (auto it = attr_map.begin(); it != attr_map.end(); ++it) {
+            dr::traverse_1_fn_rw(it.value(), payload, fn);
+        }
+    }
+
     MI_DECLARE_CLASS(Ellipsoids)
 
 private:
 
     /// Helper routine to recompute the bounding boxes of all ellipsoids.
     void recompute_bbox() {
+        Timer timer;
         size_t ellipsoid_count = primitive_count();
-        auto&& data = dr::migrate(m_ellipsoids.data(), AllocType::Host);
-        auto&& extents = dr::migrate(m_ellipsoids.extents_data(), AllocType::Host);
 
-        Log(Debug, "Recomputing bounding boxes for \"%s\" ellipsoid ellipsoids", ellipsoid_count);
-        if constexpr (dr::is_jit_v<Float>)
-            dr::sync_thread();
+        Log(Debug, "Recomputing bounding boxes for \"%s\" ellipsoids", ellipsoid_count);
 
-        const float *ptr = data.data();
-        const float *ptr_extents = extents.data();
+        if constexpr (dr::is_jit_v<Float>) {
+            UInt32 idx = dr::arange<UInt32>(m_ellipsoids.count());
+            auto ellipsoid = m_ellipsoids.template get_ellipsoid<Float>(idx);
+            ellipsoid.scale *= m_ellipsoids.extents_data();
+            auto rot = dr::quat_to_matrix<Matrix3f>(ellipsoid.quat);
 
-        BoundingBoxType *host_aabbs = (BoundingBoxType *) jit_malloc(
-            AllocType::Host, sizeof(BoundingBoxType) * ellipsoid_count);
-
-        m_bbox.reset();
-
-        for (size_t i = 0; i < ellipsoid_count; ++i) {
-            size_t idx = i * EllipsoidStructSize;
-            ScalarPoint3f center(ptr[idx + 0], ptr[idx + 1], ptr[idx + 2]);
-            ScalarVector3f scale(ptr[idx + 3], ptr[idx + 4], ptr[idx + 5]);
-            ScalarQuaternion4f quat(ptr[idx + 6], ptr[idx + 7], ptr[idx + 8], ptr[idx + 9]);
-            scale *= ptr_extents[i];
-            auto rot = dr::quat_to_matrix<ScalarMatrix3f>(quat);
-
-            // Derivation here https://tavianator.com/2014/ellipsoid_bounding_boxes.html
-            ScalarVector3f delta = ScalarVector3f(
-                dr::norm(rot[0] * scale),
-                dr::norm(rot[1] * scale),
-                dr::norm(rot[2] * scale)
+            Vector3f delta = Vector3f(
+                dr::norm(rot[0] * ellipsoid.scale),
+                dr::norm(rot[1] * ellipsoid.scale),
+                dr::norm(rot[2] * ellipsoid.scale)
             );
 
-            auto prim_bbox = ScalarBoundingBox3f(center - delta, center + delta);
+            BoundingBox3f bbox(ellipsoid.center - delta, ellipsoid.center + delta);
 
-            // Append the ellipsoid bounding box to the list
-            host_aabbs[i] = BoundingBoxType(prim_bbox);
+            uint32_t size = (uint32_t) sizeof(BoundingBoxType) / sizeof(ScalarFloat);
+            uint32_t stride = (uint32_t) offsetof(BoundingBoxType, max) / sizeof(ScalarFloat);
 
-            // Expand the shape's bounding box
-            m_bbox.expand(prim_bbox);
+            Float data = dr::empty<Float>(ellipsoid_count * size);
+            for (int i = 0; i < 3; i++) {
+                dr::scatter(data, bbox.min[i], idx * size + i, true, ReduceMode::NoConflicts);
+                dr::scatter(data, bbox.max[i], idx * size + i + stride, true, ReduceMode::NoConflicts);
+            }
+
+            if constexpr (dr::is_cuda_v<Float>) {
+                jit_free(m_device_bboxes);
+                m_device_bboxes = jit_malloc(JitBackend::CUDA, sizeof(BoundingBoxType) * ellipsoid_count);
+                jit_memcpy(JitBackend::CUDA, m_device_bboxes, data.data(),
+                           sizeof(BoundingBoxType) * ellipsoid_count);
+            }
+
+            if constexpr (dr::is_llvm_v<Float>) {
+                jit_free(m_host_bboxes);
+                m_host_bboxes = jit_malloc(JitBackend::None, sizeof(BoundingBoxType) * ellipsoid_count);
+                jit_memcpy(JitBackend::LLVM, m_host_bboxes, data.data(),
+                           sizeof(BoundingBoxType) * ellipsoid_count);
+            }
+
+            m_bbox = ScalarBoundingBox3f(
+                ScalarVector3f(
+                    dr::slice<ScalarFloat>(dr::min(bbox.min[0])),
+                    dr::slice<ScalarFloat>(dr::min(bbox.min[1])),
+                    dr::slice<ScalarFloat>(dr::min(bbox.min[2]))
+                ),
+                ScalarVector3f(
+                    dr::slice<ScalarFloat>(dr::max(bbox.max[0])),
+                    dr::slice<ScalarFloat>(dr::max(bbox.max[1])),
+                    dr::slice<ScalarFloat>(dr::max(bbox.max[2]))
+                )
+            );
+        } else {
+            const float *ptr = m_ellipsoids.data().data();
+            const float *ptr_extents = m_ellipsoids.extents_data().data();
+
+            BoundingBoxType *host_bboxes = (BoundingBoxType *) jit_malloc(
+                JitBackend::None, sizeof(BoundingBoxType) * ellipsoid_count);
+
+            m_bbox.reset();
+
+            for (size_t i = 0; i < ellipsoid_count; ++i) {
+                size_t idx = i * EllipsoidStructSize;
+                ScalarPoint3f center(ptr[idx + 0], ptr[idx + 1], ptr[idx + 2]);
+                ScalarVector3f scale(ptr[idx + 3], ptr[idx + 4], ptr[idx + 5]);
+                ScalarQuaternion4f quat(ptr[idx + 6], ptr[idx + 7], ptr[idx + 8], ptr[idx + 9]);
+                scale *= ptr_extents[i];
+                auto rot = dr::quat_to_matrix<ScalarMatrix3f>(quat);
+
+                ScalarVector3f delta = ScalarVector3f(
+                    dr::norm(rot[0] * scale),
+                    dr::norm(rot[1] * scale),
+                    dr::norm(rot[2] * scale)
+                );
+                auto prim_bbox = ScalarBoundingBox3f(center - delta, center + delta);
+
+                // Append the ellipsoid bounding box to the list
+                host_bboxes[i] = BoundingBoxType(prim_bbox);
+
+                // Expand the shape's bounding box
+                m_bbox.expand(prim_bbox);
+            }
+
+            jit_free(m_host_bboxes);
+            m_host_bboxes = host_bboxes;
         }
 
-        Log(Debug, "Finished recomputing bounding boxes");
-
-        if constexpr (dr::is_cuda_v<Float>) {
-            jit_free(m_device_bboxes);
-            void *device_aabbs = jit_malloc(
-                AllocType::Device, sizeof(BoundingBoxType) * ellipsoid_count);
-            jit_memcpy_async(JitBackend::CUDA, device_aabbs, host_aabbs,
-                             sizeof(BoundingBoxType) * ellipsoid_count);
-            m_device_bboxes = device_aabbs;
-        }
-
-        jit_free(m_host_bboxes);
-        m_host_bboxes = host_aabbs;
+        Log(Debug, "Finished recomputing bounding boxes in %s", util::time_string((float) timer.value()));
     }
 
 private:

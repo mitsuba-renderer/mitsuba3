@@ -162,14 +162,6 @@ template <typename Value_, size_t Size_> struct Array {
     template <size_t S = Size, std::enable_if_t<(S >= 4), int> = 0>
     DEVICE Value &w() { return v[3]; }
 
-    /// Debug print
-    DEVICE void print() const {
-        printf("[");
-        for (size_t i = 0; i < Size; i++)
-            printf((i < Size - 1 ? "%f, " : "%f"), v[i]);
-        printf("]\n");
-    }
-
     DEVICE static Array load(const void *mem) {
         Array result;
         memcpy(result.v, mem, sizeof(Value) * StorageSize);

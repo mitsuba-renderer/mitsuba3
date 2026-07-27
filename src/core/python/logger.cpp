@@ -11,25 +11,17 @@ static void PyLog(mitsuba::LogLevel level, const std::string &msg) {
     if (!logger)
         return;
 
-#if PY_VERSION_HEX >= 0x03090000
-    PyFrameObject *frame = PyThreadState_GetFrame(PyThreadState_Get());
-    PyCodeObject *f_code = PyFrame_GetCode(frame);
-#else
-    PyFrameObject *frame = PyThreadState_Get()->frame;
-    PyCodeObject *f_code = frame->f_code;
-#endif
+    nb::object frame = nb::steal(
+        (PyObject *) PyThreadState_GetFrame(PyThreadState_Get()));
+    nb::object f_code = nb::steal(
+        (PyObject *) PyFrame_GetCode((PyFrameObject *) frame.ptr()));
 
     std::string name =
-        nb::borrow<nb::str>(nb::handle(f_code->co_name)).c_str();
+        nb::borrow<nb::str>(f_code.attr("co_name")).c_str();
     std::string filename =
-        nb::borrow<nb::str>(nb::handle(f_code->co_filename)).c_str();
+        nb::borrow<nb::str>(f_code.attr("co_filename")).c_str();
     std::string fmt = "%s: %s";
-    int lineno = PyFrame_GetLineNumber(frame);
-
-#if PY_VERSION_HEX >= 0x03090000
-    Py_DECREF(f_code);
-    Py_DECREF(frame);
-#endif
+    int lineno = PyFrame_GetLineNumber((PyFrameObject *) frame.ptr());
 
     if (!name.empty() && name[0] != '<')
         fmt.insert(2, "()");

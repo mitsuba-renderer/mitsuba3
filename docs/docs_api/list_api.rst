@@ -82,6 +82,14 @@
 
 .. autoclass:: mitsuba.Complex2f64
 
+.. autoclass:: mitsuba.ConditionalIrregular1D
+
+.. autoclass:: mitsuba.ConditionalIrregular1DSpectrum
+
+.. autoclass:: mitsuba.ConditionalRegular1D
+
+.. autoclass:: mitsuba.ConditionalRegular1DSpectrum
+
 .. autoclass:: mitsuba.ContinuousDistribution
 
 .. autoclass:: mitsuba.CppADIntegrator
@@ -173,6 +181,8 @@
 .. autofunction:: mitsuba.MI_ENABLE_CUDA
 
 .. autofunction:: mitsuba.MI_ENABLE_EMBREE
+
+.. autofunction:: mitsuba.MI_ENABLE_METAL
 
 .. autofunction:: mitsuba.MI_FILTER_RESOLUTION
 
@@ -346,6 +356,8 @@
 
 .. autoclass:: mitsuba.RadicalInverse
 
+.. autoclass:: mitsuba.Ray2d
+
 .. autoclass:: mitsuba.Ray2f
 
 .. autoclass:: mitsuba.Ray3d
@@ -443,6 +455,14 @@
 .. autoclass:: mitsuba.ScalarProjectiveTransform4d
 
 .. autoclass:: mitsuba.ScalarProjectiveTransform4f
+
+.. autoclass:: mitsuba.ScalarRay2d
+
+.. autoclass:: mitsuba.ScalarRay2f
+
+.. autoclass:: mitsuba.ScalarRay3d
+
+.. autoclass:: mitsuba.ScalarRay3f
 
 .. autoclass:: mitsuba.ScalarTransform3d
 
@@ -690,6 +710,12 @@
 
 .. autofunction:: mitsuba.ad.largesteps.mesh_laplacian
 
+.. autoclass:: mitsuba.ad.loaders.FlatSensor
+
+.. autoclass:: mitsuba.ad.loaders.RayDataLoader
+
+.. autofunction:: mitsuba.ad.loaders.Tuple
+
 .. autofunction:: mitsuba.chi2.BSDFAdapter
 
 .. autoclass:: mitsuba.chi2.ChiSquareTest
@@ -831,6 +857,8 @@
 .. autofunction:: mitsuba.math.srgb_to_linear
 
 .. autofunction:: mitsuba.math.ulpdiff
+
+.. autofunction:: mitsuba.math_py.chi2
 
 .. autofunction:: mitsuba.math_py.rlgamma
 

@@ -133,6 +133,7 @@ MI_PY_EXPORT(PreliminaryIntersection) {
         nb::class_<PreliminaryIntersection3f>(m, "PreliminaryIntersection3f",
                                               D(PreliminaryIntersection))
         // Members
+        .def_field(PreliminaryIntersection3f, valid,       "Valid hit mask")
         .def_field(PreliminaryIntersection3f, t,           D(PreliminaryIntersection, t))
         .def_field(PreliminaryIntersection3f, prim_uv,     D(PreliminaryIntersection, prim_uv))
         .def_field(PreliminaryIntersection3f, prim_index,  D(PreliminaryIntersection, prim_index))
@@ -155,6 +156,6 @@ MI_PY_EXPORT(PreliminaryIntersection) {
         .def("zero_", &PreliminaryIntersection3f::zero_, D(PreliminaryIntersection, zero))
         .def_repr(PreliminaryIntersection3f);
 
-    MI_PY_DRJIT_STRUCT(pi, PreliminaryIntersection3f, t, prim_uv, prim_index,
-                        shape_index, shape, instance);
+    MI_PY_DRJIT_STRUCT(pi, PreliminaryIntersection3f, valid, t, prim_uv,
+                       prim_index, shape_index, shape, instance);
 }

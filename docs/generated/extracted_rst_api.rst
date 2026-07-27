@@ -2,25 +2,6 @@
 
     Base class: :py:obj:`mitsuba.Integrator`
 
-    Abstract adjoint integrator that performs Monte Carlo sampling
-    starting from the emitters.
-
-    Subclasses of this interface must implement the sample() method, which
-    performs recursive Monte Carlo integration starting from an emitter
-    and directly accumulates the product of radiance and importance into
-    the film. The render() method then repeatedly invokes this estimator
-    to compute the rendered image.
-
-    Remark:
-        The adjoint integrator does not support renderings with arbitrary
-        output variables (AOVs).
-
-    .. py:method:: __init__(self, arg)
-
-        Parameter ``arg`` (:py:obj:`mitsuba.Properties`, /):
-            *no description available*
-
-
     .. py:method:: mitsuba.AdjointIntegrator.render_backward(self, scene, params, grad_in, sensor, seed=0, spp=0)
 
         Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
@@ -1657,7 +1638,7 @@
 
         Overloaded function.
         
-        1. ``__init__(self, pixel_format: :py:obj:`mitsuba.Bitmap.PixelFormat`, component_format: :py:obj:`mitsuba.Struct.Type`, size: :py:obj:`mitsuba.ScalarVector2u`, channel_count: int = 0, channel_names: collections.abc.Sequence[str] = []) -> None``
+        1. ``__init__(self, pixel_format: :py:obj:`mitsuba.Bitmap.PixelFormat`, component_format: :py:obj:`mitsuba._struct_jit.Type`, size: :py:obj:`mitsuba.ScalarVector2u`, channel_count: int = 0, channel_names: collections.abc.Sequence[str] = []) -> None``
         
         Create a bitmap of the specified type and allocate the necessary
         amount of memory
@@ -1665,7 +1646,7 @@
         Parameter ``pixel_format`` (:py:obj:`mitsuba.Bitmap.PixelFormat`):
             Specifies the pixel format (e.g. RGBA or Luminance-only)
         
-        Parameter ``component_format`` (:py:obj:`mitsuba.Struct.Type`):
+        Parameter ``component_format`` (:py:obj:`mitsuba._struct_jit.Type`):
             Specifies how the per-pixel components are encoded (e.g. unsigned
             8 bit integers or 32-bit floating point values). The component
             format struct_type_v<Float> will be translated to the
@@ -1899,7 +1880,7 @@
 
         Return the component format of this bitmap
 
-        Returns → :py:obj:`mitsuba.Struct.Type`:
+        Returns → :py:obj:`mitsuba._struct_jit.Type`:
             *no description available*
 
     .. py:method:: mitsuba.Bitmap.convert(self, pixel_format=None, component_format=None, srgb_gamma=None, alpha_transform=AlphaTransform.Empty)
@@ -2129,7 +2110,7 @@
         Return a ``Struct`` instance describing the contents of the bitmap
         (const version)
 
-        Returns → :py:obj:`mitsuba.Struct`:
+        Returns → :py:obj:`mitsuba._struct_jit.Struct`:
             *no description available*
 
     .. py:method:: mitsuba.Bitmap.vflip()
@@ -2947,6 +2928,692 @@
 
 .. py:class:: mitsuba.Complex2f64
 
+.. py:class:: mitsuba.ConditionalIrregular1D
+
+
+    .. py:method:: ``__init__()
+
+        Conditional 1D irregular distribution
+
+        Similarly to the irregular 1D distribution, this class represents a
+        1-dimensional irregular distribution. It differs in the fact that it
+        has N-1 extra dimensions on which it is conditioned.
+
+        As an example, assume you have a 3D distribution P(x,y,z), with
+        leading dimension X. This class would allow you to obtain the linear
+        interpolated value of the PDF for ``x`` given ``y`` and ``z``.
+        Additionally, it allows you to sample from the distribution
+        P(x|Y=y,Z=z) for a given ``y`` and ``z``.
+
+        It assumes every conditioned PDF has the same size.
+
+        If the user requests a method that needs the integral, it will
+        automatically schedule its computation on-the-fly.
+
+        This distribution can be used in the context of spectral rendering,
+        where each wavelength conditions the underlying distribution.
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, nodes, pdf, nodes_cond)
+
+        Construct a conditional irregular 1D distribution.
+
+        Parameter ``nodes`` (drjit.llvm.ad.Float):
+            Points where the leading dimension N is defined.
+
+        Parameter ``pdf`` (drjit.llvm.ad.Float):
+            Flattened array of shape [D1, D2, ..., Dn, N], containing the
+            PDFs.
+
+        Parameter ``nodes_cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Arrays containing points where each conditional dimension is
+            evaluated.
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, nodes, pdf, nodes_cond)
+
+        Construct a conditional irregular 1D distribution.
+
+        Parameter ``nodes`` (drjit.llvm.ad.Float):
+            Points where the leading dimension N is defined.
+
+        Parameter ``pdf`` (drjit.llvm.ad.TensorXf):
+            Tensor containing the values of the PDF of shape [D1, D2, ..., Dn,
+            N].
+
+        Parameter ``nodes_cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Arrays containing points where each conditional dimension is
+            evaluated.
+
+        Returns → None``:
+            *no description available*
+
+    .. py:property:: mitsuba.ConditionalIrregular1D.cdf_array
+
+        Return the CDF.
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.empty()
+
+        Is the distribution object empty/uninitialized?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.eval_pdf(self, x, cond, active=True)
+
+        Evaluate the unnormalized probability density function (PDF) at
+        position ``pos``, conditioned on ``cond``.
+
+        Parameter ``pos``:
+            Position where the PDF is evaluated.
+
+        Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Array of values where the conditionals are evaluated.
+
+        Parameter ``x`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.llvm.ad.Float:
+            The value of the PDF at position ``pos``, conditioned on ``cond``.
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.eval_pdf_normalized(self, x, cond, active=True)
+
+        Evaluate the normalized probability density function (PDF) at position
+        ``pos``, conditioned on ``cond``.
+
+        Parameter ``pos``:
+            Position where the PDF is evaluated.
+
+        Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Array of values where the conditionals are evaluated.
+
+        Parameter ``x`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.llvm.ad.Float:
+            The value of the normalized PDF at position ``pos``, conditioned
+            on ``cond``.
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.integral(self, cond)
+
+        Return the integral of the distribution conditioned on ``cond``.
+
+        Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Conditionals that define the distribution.
+
+        Returns → drjit.llvm.ad.Float:
+            The integral of the distribution.
+
+    .. py:property:: mitsuba.ConditionalIrregular1D.integral_array
+
+        Return the integral array.
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.max()
+
+        Return the maximum value of the distribution
+
+        Returns → float:
+            *no description available*
+
+    .. py:property:: mitsuba.ConditionalIrregular1D.nodes
+
+        Return the nodes of the underlying discretization.
+
+    .. py:property:: mitsuba.ConditionalIrregular1D.nodes_cond
+
+        Return the conditional nodes of the underlying discretization.
+
+    .. py:property:: mitsuba.ConditionalIrregular1D.pdf
+
+        Return the underlying tensor storing the distribution values.
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.sample_pdf(self, u, cond, active=True)
+
+        Sample the distribution given a uniform sample ``u``, conditioned on
+        ``cond``.
+
+        Parameter ``u`` (drjit.llvm.ad.Float):
+            Uniform sample.
+
+        Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Conditionals where the PDF is sampled.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
+            A pair where the first element is the sampled position and the
+            second element the value of the normalized PDF at that position
+            conditioned on ``cond``.
+
+    .. py:method:: mitsuba.ConditionalIrregular1D.update()
+
+        Update the internal state.
+
+        Must be invoked when PDF is changed.
+
+        Returns → None:
+            *no description available*
+
+.. py:class:: mitsuba.ConditionalIrregular1DSpectrum
+
+
+    .. py:method:: ``__init__()
+
+        Conditional 1D irregular distribution
+
+        Similarly to the irregular 1D distribution, this class represents a
+        1-dimensional irregular distribution. It differs in the fact that it
+        has N-1 extra dimensions on which it is conditioned.
+
+        As an example, assume you have a 3D distribution P(x,y,z), with
+        leading dimension X. This class would allow you to obtain the linear
+        interpolated value of the PDF for ``x`` given ``y`` and ``z``.
+        Additionally, it allows you to sample from the distribution
+        P(x|Y=y,Z=z) for a given ``y`` and ``z``.
+
+        It assumes every conditioned PDF has the same size.
+
+        If the user requests a method that needs the integral, it will
+        automatically schedule its computation on-the-fly.
+
+        This distribution can be used in the context of spectral rendering,
+        where each wavelength conditions the underlying distribution.
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, nodes, pdf, nodes_cond)
+
+        Construct a conditional irregular 1D distribution.
+
+        Parameter ``nodes`` (drjit.llvm.ad.Float):
+            Points where the leading dimension N is defined.
+
+        Parameter ``pdf`` (drjit.llvm.ad.Float):
+            Flattened array of shape [D1, D2, ..., Dn, N], containing the
+            PDFs.
+
+        Parameter ``nodes_cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Arrays containing points where each conditional dimension is
+            evaluated.
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, nodes, pdf, nodes_cond)
+
+        Construct a conditional irregular 1D distribution.
+
+        Parameter ``nodes`` (drjit.llvm.ad.Float):
+            Points where the leading dimension N is defined.
+
+        Parameter ``pdf`` (drjit.llvm.ad.TensorXf):
+            Tensor containing the values of the PDF of shape [D1, D2, ..., Dn,
+            N].
+
+        Parameter ``nodes_cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Arrays containing points where each conditional dimension is
+            evaluated.
+
+        Returns → None``:
+            *no description available*
+
+    .. py:property:: mitsuba.ConditionalIrregular1DSpectrum.cdf_array
+
+        Return the CDF.
+
+    .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.empty()
+
+        Is the distribution object empty/uninitialized?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.eval_pdf(self, x, cond, active=True)
+
+        Evaluate the unnormalized probability density function (PDF) at
+        position ``pos``, conditioned on ``cond``.
+
+        Parameter ``pos``:
+            Position where the PDF is evaluated.
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            Array of values where the conditionals are evaluated.
+
+        Parameter ``x`` (:py:obj:`mitsuba.Color3f`):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            The value of the PDF at position ``pos``, conditioned on ``cond``.
+
+    .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.eval_pdf_normalized(self, x, cond, active=True)
+
+        Evaluate the normalized probability density function (PDF) at position
+        ``pos``, conditioned on ``cond``.
+
+        Parameter ``pos``:
+            Position where the PDF is evaluated.
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            Array of values where the conditionals are evaluated.
+
+        Parameter ``x`` (:py:obj:`mitsuba.Color3f`):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            The value of the normalized PDF at position ``pos``, conditioned
+            on ``cond``.
+
+    .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.integral(self, cond)
+
+        Return the integral of the distribution conditioned on ``cond``.
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            Conditionals that define the distribution.
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            The integral of the distribution.
+
+    .. py:property:: mitsuba.ConditionalIrregular1DSpectrum.integral_array
+
+        Return the integral array.
+
+    .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.max()
+
+        Return the maximum value of the distribution
+
+        Returns → float:
+            *no description available*
+
+    .. py:property:: mitsuba.ConditionalIrregular1DSpectrum.nodes
+
+        Return the nodes of the underlying discretization.
+
+    .. py:property:: mitsuba.ConditionalIrregular1DSpectrum.nodes_cond
+
+        Return the conditional nodes of the underlying discretization.
+
+    .. py:property:: mitsuba.ConditionalIrregular1DSpectrum.pdf
+
+        Return the underlying tensor storing the distribution values.
+
+    .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.sample_pdf(self, u, cond, active=True)
+
+        Sample the distribution given a uniform sample ``u``, conditioned on
+        ``cond``.
+
+        Parameter ``u`` (:py:obj:`mitsuba.Color3f`):
+            Uniform sample.
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            Conditionals where the PDF is sampled.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
+            A pair where the first element is the sampled position and the
+            second element the value of the normalized PDF at that position
+            conditioned on ``cond``.
+
+    .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.update()
+
+        Update the internal state.
+
+        Must be invoked when PDF is changed.
+
+        Returns → None:
+            *no description available*
+
+.. py:class:: mitsuba.ConditionalRegular1D
+
+
+    .. py:method:: ``__init__()
+
+        Conditional 1D regular distribution.
+
+        Similar to the regular 1D distribution, but this class represents an
+        N-Dimensional regular one (with the extra conditional dimensions being
+        also regular).
+
+        As an example, assume you have a 3D distribution P(x,y,z), with
+        leading dimension X. This class would allow you to obtain the linear
+        interpolated value of the PDF for ``x`` given ``y`` and ``z``.
+        Additionally, it allows you to sample from the distribution
+        P(x|Y=y,Z=z) for a given ``y`` and ``z``.
+
+        It assumes every conditioned PDF has the same size. If the user
+        requests a method that needs the integral, it will schedule its
+        computation.
+
+        This distribution can be used in the context of spectral rendering,
+        where each wavelength conditions the underlying distribution.
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, pdf, range, range_cond, size_cond)
+
+        Construct a conditional regular 1D distribution
+
+        Parameter ``pdf`` (drjit.llvm.ad.Float):
+            Flattened array of shape [D1, D2, ..., Dn, N] containing the PDFs.
+
+        Parameter ``range`` (:py:obj:`mitsuba.ScalarVector2f`):
+            Range where the leading dimension N is defined.
+
+        Parameter ``range_cond`` (collections.abc.Sequence[:py:obj:`mitsuba.ScalarVector2f`]):
+            Array of ranges where the dimensional conditionals are defined.
+
+        Parameter ``size_cond`` (collections.abc.Sequence[int]):
+            Array with the size of each conditional dimension.
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, pdf, range, range_cond)
+
+        Construct a conditional regular 1D distribution.
+
+        Parameter ``pdf`` (drjit.llvm.ad.TensorXf):
+            Tensor containing the values of the PDF of shape [D1, D2, ..., Dn,
+            N].
+
+        Parameter ``range`` (:py:obj:`mitsuba.ScalarVector2f`):
+            Range where the leading dimension N is defined.
+
+        Parameter ``range_cond`` (collections.abc.Sequence[:py:obj:`mitsuba.ScalarVector2f`]):
+            Array of ranges where the dimensional conditionals are defined.
+
+        Returns → None``:
+            *no description available*
+
+    .. py:property:: mitsuba.ConditionalRegular1D.cdf_array
+
+        Return the cdf array of the distribution
+
+    .. py:method:: mitsuba.ConditionalRegular1D.empty()
+
+        Is the distribution object empty/uninitialized?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1D.eval_pdf(self, x, cond, active=True)
+
+        Evaluate the unnormalized probability density function (PDF) at
+        position ``x``, conditioned on ``cond``.
+
+        Parameter ``x`` (drjit.llvm.ad.Float):
+            Position where the PDF is evaluated.
+
+        Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Conditionals where the PDF is evaluated.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1D.eval_pdf_normalized(self, x, cond, active=True)
+
+        Evaluate the normalized probability density function (PDF) at position
+        ``x``, conditioned on ``cond``.
+
+        Parameter ``x`` (drjit.llvm.ad.Float):
+            Position where the PDF is evaluated.
+
+        Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Conditionals where the PDF is evaluated.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1D.integral(self, cond)
+
+        Return the integral of the distribution conditioned on ``cond``
+
+        Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:property:: mitsuba.ConditionalRegular1D.integral_array
+
+        Return the integral array of the distribution
+
+    .. py:method:: mitsuba.ConditionalRegular1D.max()
+
+        Return the maximum value of the distribution
+
+        Returns → float:
+            *no description available*
+
+    .. py:property:: mitsuba.ConditionalRegular1D.pdf
+
+        Return the underlying tensor storing the distribution values
+
+    .. py:property:: mitsuba.ConditionalRegular1D.range
+
+        Return the range where the distribution is defined
+
+    .. py:property:: mitsuba.ConditionalRegular1D.range_cond
+
+        Return the conditional range where the distribution is defined
+
+    .. py:method:: mitsuba.ConditionalRegular1D.sample_pdf(self, u, cond, active=True)
+
+        Sample the distribution given a uniform sample ``u``, conditioned on
+        ``cond``.
+
+        Parameter ``u`` (drjit.llvm.ad.Float):
+            Uniform sample.
+
+        Parameter ``cond`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            Conditionals where the PDF is sampled.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1D.update()
+
+        Update the internal state. Must be invoked when changing the
+        distribution.
+
+        Returns → None:
+            *no description available*
+
+.. py:class:: mitsuba.ConditionalRegular1DSpectrum
+
+
+    .. py:method:: ``__init__()
+
+        Conditional 1D regular distribution.
+
+        Similar to the regular 1D distribution, but this class represents an
+        N-Dimensional regular one (with the extra conditional dimensions being
+        also regular).
+
+        As an example, assume you have a 3D distribution P(x,y,z), with
+        leading dimension X. This class would allow you to obtain the linear
+        interpolated value of the PDF for ``x`` given ``y`` and ``z``.
+        Additionally, it allows you to sample from the distribution
+        P(x|Y=y,Z=z) for a given ``y`` and ``z``.
+
+        It assumes every conditioned PDF has the same size. If the user
+        requests a method that needs the integral, it will schedule its
+        computation.
+
+        This distribution can be used in the context of spectral rendering,
+        where each wavelength conditions the underlying distribution.
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, pdf, range, range_cond, size_cond)
+
+        Construct a conditional regular 1D distribution
+
+        Parameter ``pdf`` (drjit.llvm.ad.Float):
+            Flattened array of shape [D1, D2, ..., Dn, N] containing the PDFs.
+
+        Parameter ``range`` (:py:obj:`mitsuba.ScalarVector2f`):
+            Range where the leading dimension N is defined.
+
+        Parameter ``range_cond`` (collections.abc.Sequence[:py:obj:`mitsuba.ScalarVector2f`]):
+            Array of ranges where the dimensional conditionals are defined.
+
+        Parameter ``size_cond`` (collections.abc.Sequence[int]):
+            Array with the size of each conditional dimension.
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, pdf, range, range_cond)
+
+        Construct a conditional regular 1D distribution.
+
+        Parameter ``pdf`` (drjit.llvm.ad.TensorXf):
+            Tensor containing the values of the PDF of shape [D1, D2, ..., Dn,
+            N].
+
+        Parameter ``range`` (:py:obj:`mitsuba.ScalarVector2f`):
+            Range where the leading dimension N is defined.
+
+        Parameter ``range_cond`` (collections.abc.Sequence[:py:obj:`mitsuba.ScalarVector2f`]):
+            Array of ranges where the dimensional conditionals are defined.
+
+        Returns → None``:
+            *no description available*
+
+    .. py:property:: mitsuba.ConditionalRegular1DSpectrum.cdf_array
+
+        Return the cdf array of the distribution
+
+    .. py:method:: mitsuba.ConditionalRegular1DSpectrum.empty()
+
+        Is the distribution object empty/uninitialized?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1DSpectrum.eval_pdf(self, x, cond, active=True)
+
+        Evaluate the unnormalized probability density function (PDF) at
+        position ``x``, conditioned on ``cond``.
+
+        Parameter ``x`` (:py:obj:`mitsuba.Color3f`):
+            Position where the PDF is evaluated.
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            Conditionals where the PDF is evaluated.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1DSpectrum.eval_pdf_normalized(self, x, cond, active=True)
+
+        Evaluate the normalized probability density function (PDF) at position
+        ``x``, conditioned on ``cond``.
+
+        Parameter ``x`` (:py:obj:`mitsuba.Color3f`):
+            Position where the PDF is evaluated.
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            Conditionals where the PDF is evaluated.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1DSpectrum.integral(self, cond)
+
+        Return the integral of the distribution conditioned on ``cond``
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Color3f`:
+            *no description available*
+
+    .. py:property:: mitsuba.ConditionalRegular1DSpectrum.integral_array
+
+        Return the integral array of the distribution
+
+    .. py:method:: mitsuba.ConditionalRegular1DSpectrum.max()
+
+        Return the maximum value of the distribution
+
+        Returns → float:
+            *no description available*
+
+    .. py:property:: mitsuba.ConditionalRegular1DSpectrum.pdf
+
+        Return the underlying tensor storing the distribution values
+
+    .. py:property:: mitsuba.ConditionalRegular1DSpectrum.range
+
+        Return the range where the distribution is defined
+
+    .. py:property:: mitsuba.ConditionalRegular1DSpectrum.range_cond
+
+        Return the conditional range where the distribution is defined
+
+    .. py:method:: mitsuba.ConditionalRegular1DSpectrum.sample_pdf(self, u, cond, active=True)
+
+        Sample the distribution given a uniform sample ``u``, conditioned on
+        ``cond``.
+
+        Parameter ``u`` (:py:obj:`mitsuba.Color3f`):
+            Uniform sample.
+
+        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+            Conditionals where the PDF is sampled.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
+            *no description available*
+
+    .. py:method:: mitsuba.ConditionalRegular1DSpectrum.update()
+
+        Update the internal state. Must be invoked when changing the
+        distribution.
+
+        Returns → None:
+            *no description available*
+
 .. py:class:: mitsuba.ContinuousDistribution
 
     Continuous 1D probability distribution defined in terms of a regularly
@@ -3233,50 +3900,32 @@
 
     Base class: :py:obj:`mitsuba.PositionSample3f`
 
-    Record for solid-angle based area sampling techniques
+    Overloaded function.
 
-    This data structure is used in techniques that sample positions
-    relative to a fixed reference position in the scene. For instance,
-    *direct illumination strategies* importance sample the incident
-    radiance received by a given surface location. Mitsuba uses this
-    approach in a wider bidirectional sense: sampling the incident
-    importance due to a sensor also uses the same data structures and
-    strategies, which are referred to as *direct sampling*.
+    1. ``__init__(self) -> None``
 
-    This record inherits all fields from PositionSample and extends it
-    with two useful quantities that are cached so that they don't need to
-    be recomputed: the unit direction and distance from the reference
-    position to the sampled point.
+    Construct an uninitialized direct sample
 
-    .. py:method:: __init__()
+    2. ``__init__(self, other: :py:obj:`mitsuba.PositionSample3f`) -> None``
 
-        Overloaded function.
-        
-        1. ``__init__(self) -> None``
-        
-        Construct an uninitialized direct sample
-        
-        2. ``__init__(self, other: :py:obj:`mitsuba.PositionSample3f`) -> None``
-        
-        Construct from a position sample
-        
-        3. ``__init__(self, other: :py:obj:`mitsuba.DirectionSample3f`) -> None``
-        
-        Copy constructor
-        
-        4. ``__init__(self, p: :py:obj:`mitsuba.Point3f`, n: :py:obj:`mitsuba.Normal3f`, uv: :py:obj:`mitsuba.Point2f`, time: drjit.llvm.ad.Float, pdf: drjit.llvm.ad.Float, delta: drjit.llvm.ad.Bool, d: :py:obj:`mitsuba.Vector3f`, dist: drjit.llvm.ad.Float, emitter: :py:obj:`mitsuba.EmitterPtr`) -> None``
-        
-        Element-by-element constructor
-        
-        5. ``__init__(self, scene: :py:obj:`mitsuba.Scene` | None, si: :py:obj:`mitsuba.SurfaceInteraction3f`, ref: :py:obj:`mitsuba.Interaction3f`) -> None``
-        
-        Create a position sampling record from a surface intersection
-        
-        This is useful to determine the hypothetical sampling density on a
-        surface after hitting it using standard ray tracing. This happens for
-        instance in path tracing with multiple importance sampling.
+    Construct from a position sample
 
-        
+    3. ``__init__(self, other: :py:obj:`mitsuba.DirectionSample3f`) -> None``
+
+    Copy constructor
+
+    4. ``__init__(self, p: :py:obj:`mitsuba.Point3f`, n: :py:obj:`mitsuba.Normal3f`, uv: :py:obj:`mitsuba.Point2f`, time: drjit.llvm.ad.Float, pdf: drjit.llvm.ad.Float, delta: drjit.llvm.ad.Bool, d: :py:obj:`mitsuba.Vector3f`, dist: drjit.llvm.ad.Float, emitter: :py:obj:`mitsuba.EmitterPtr`) -> None``
+
+    Element-by-element constructor
+
+    5. ``__init__(self, scene: :py:obj:`mitsuba.Scene` | None, si: :py:obj:`mitsuba.SurfaceInteraction3f`, ref: :py:obj:`mitsuba.Interaction3f`) -> None``
+
+    Create a position sampling record from a surface intersection
+
+    This is useful to determine the hypothetical sampling density on a
+    surface after hitting it using standard ray tracing. This happens for
+    instance in path tracing with multiple importance sampling.
+
     .. py:method:: mitsuba.DirectionSample3f.assign(self, arg)
 
         Parameter ``arg`` (:py:obj:`mitsuba.DirectionSample3f`, /):
@@ -5238,62 +5887,6 @@
 
     Base class: :py:obj:`mitsuba.Object`
 
-    Intermediate storage for an image or image sub-region being rendered
-
-    This class facilitates parallel rendering of images in both scalar and
-    JIT-based variants of Mitsuba.
-
-    In scalar mode, image blocks represent independent rectangular image
-    regions that are simultaneously processed by worker threads. They are
-    finally merged into a master ImageBlock controlled by the Film
-    instance via the put_block() method. The smaller image blocks can
-    include a border region storing contributions that are slightly
-    outside of the block, which is required to correctly account for image
-    reconstruction filters.
-
-    In JIT variants there is only a single ImageBlock, whose contents are
-    computed in parallel. A border region is usually not needed in this
-    case.
-
-    In addition to receiving samples via the put() method, the image block
-    can also be queried via the read() method, in which case the
-    reconstruction filter is used to compute suitable interpolation
-    weights. This is feature is useful for differentiable rendering, where
-    one needs to evaluate the reverse-mode derivative of the put() method.
-
-    .. py:method:: __init__(self, size, offset, channel_count, rfilter=None, border=False, normalize=False, coalesce=True, compensate=False, warn_negative=False, warn_invalid=False)
-
-        Parameter ``size`` (:py:obj:`mitsuba.ScalarVector2u`):
-            *no description available*
-
-        Parameter ``offset`` (:py:obj:`mitsuba.ScalarPoint2i`):
-            *no description available*
-
-        Parameter ``channel_count`` (int):
-            *no description available*
-
-        Parameter ``rfilter`` (:py:obj:`mitsuba.ReconstructionFilter` | None):
-            *no description available*
-
-        Parameter ``border`` (bool):
-            *no description available*
-
-        Parameter ``normalize`` (bool):
-            *no description available*
-
-        Parameter ``coalesce`` (bool):
-            *no description available*
-
-        Parameter ``compensate`` (bool):
-            *no description available*
-
-        Parameter ``warn_negative`` (bool):
-            *no description available*
-
-        Parameter ``warn_invalid`` (bool):
-            *no description available*
-
-
     .. py:method:: mitsuba.ImageBlock.border_size()
 
         Return the border region used by the reconstruction filter
@@ -5318,13 +5911,6 @@
     .. py:method:: mitsuba.ImageBlock.coalesce()
 
         Try to coalesce reads/writes in JIT modes?
-
-        Returns → bool:
-            *no description available*
-
-    .. py:method:: mitsuba.ImageBlock.compensate()
-
-        Use Kahan-style error-compensated floating point accumulation?
 
         Returns → bool:
             *no description available*
@@ -5431,16 +6017,6 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.set_compensate(self, arg)
-
-        Use Kahan-style error-compensated floating point accumulation?
-
-        Parameter ``arg`` (bool, /):
-            *no description available*
-
-        Returns → None:
-            *no description available*
-
     .. py:method:: mitsuba.ImageBlock.set_normalize(self, arg)
 
         Re-normalize filter weights in put() and read()
@@ -5539,22 +6115,6 @@
 .. py:class:: mitsuba.Integrator
 
     Base class: :py:obj:`mitsuba.Object`
-
-    Abstract integrator base class, which does not make any assumptions
-    with regards to how radiance is computed.
-
-    In Mitsuba, the different rendering techniques are collectively
-    referred to as *integrators*, since they perform integration over a
-    high-dimensional space. Each integrator represents a specific approach
-    for solving the light transport equation---usually favored in certain
-    scenarios, but at the same time affected by its own set of intrinsic
-    limitations. Therefore, it is important to carefully select an
-    integrator based on user-specified accuracy requirements and
-    properties of the scene to be rendered.
-
-    This is the base class of all integrators; it does not make any
-    assumptions on how radiance is computed, which allows for many
-    different kinds of implementations.
 
     .. py:method:: mitsuba.Integrator.aov_names()
 
@@ -5682,25 +6242,46 @@
 
 .. py:class:: mitsuba.Interaction3f
 
-    Generic surface interaction data structure
 
-    .. py:method:: __init__()
+    .. py:method:: ``__init__()
 
-        Overloaded function.
-        
-        1. ``__init__(self) -> None``
-        
         Constructor
-        
-        2. ``__init__(self, arg: :py:obj:`mitsuba.Interaction3f`) -> None``
-        
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, arg)
+
         Copy constructor
-        
-        3. ``__init__(self, t: drjit.llvm.ad.Float, time: drjit.llvm.ad.Float, wavelengths: :py:obj:`mitsuba.Color0f`, p: :py:obj:`mitsuba.Point3f`, n: :py:obj:`mitsuba.Normal3f` = 0) -> None``
-        
+
+        Parameter ``arg`` (:py:obj:`mitsuba.Interaction3f`):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, t, time, wavelengths, p, n=0)
+
         //! @}
 
-        
+        Parameter ``t`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Parameter ``time`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Parameter ``wavelengths`` (:py:obj:`mitsuba.Color0f`):
+            *no description available*
+
+        Parameter ``p`` (:py:obj:`mitsuba.Point3f`):
+            *no description available*
+
+        Parameter ``n`` (:py:obj:`mitsuba.Normal3f`):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
     .. py:method:: mitsuba.Interaction3f.assign(self, arg)
 
         Parameter ``arg`` (:py:obj:`mitsuba.Interaction3f`, /):
@@ -5768,7 +6349,7 @@
         This callback method is invoked by dr::zeros<>, and takes care of
         fields that deviate from the standard zero-initialization convention.
         In this particular class, the ``t`` field should be set to an infinite
-        value to mark invalid intersection records.
+        value to mark invalid interaction records.
 
         Parameter ``size`` (int):
             *no description available*
@@ -6188,13 +6769,17 @@
     :type: bool
     :value: True
 
+.. py:data:: mitsuba.MI_ENABLE_METAL
+    :type: bool
+    :value: False
+
 .. py:data:: mitsuba.MI_FILTER_RESOLUTION
     :type: int
     :value: 31
 
 .. py:data:: mitsuba.MI_VERSION
     :type: str
-    :value: 3.7.1
+    :value: 3.9.0
 
 .. py:data:: mitsuba.MI_VERSION_MAJOR
     :type: int
@@ -6202,11 +6787,11 @@
 
 .. py:data:: mitsuba.MI_VERSION_MINOR
     :type: int
-    :value: 7
+    :value: 9
 
 .. py:data:: mitsuba.MI_VERSION_PATCH
     :type: int
-    :value: 1
+    :value: 0
 
 .. py:data:: mitsuba.MI_YEAR
     :type: str
@@ -7367,21 +7952,16 @@
 
     Base class: :py:obj:`mitsuba.Interaction3f`
 
-    Stores information related to a medium scattering interaction
+    Overloaded function.
 
-    .. py:method:: __init__()
+    1. ``__init__(self) -> None``
 
-        Overloaded function.
-        
-        1. ``__init__(self) -> None``
-        
-        //! @}
-        
-        2. ``__init__(self, arg: :py:obj:`mitsuba.MediumInteraction3f`) -> None``
-        
-        Copy constructor
+    //! @}
 
-        
+    2. ``__init__(self, arg: :py:obj:`mitsuba.MediumInteraction3f`) -> None``
+
+    Copy constructor
+
     .. py:method:: mitsuba.MediumInteraction3f.assign(self, arg)
 
         Parameter ``arg`` (:py:obj:`mitsuba.MediumInteraction3f`, /):
@@ -7752,7 +8332,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.ad.Array2u:
+        Returns → :py:obj:`mitsuba.Vector2u`:
             *no description available*
 
     .. py:method:: mitsuba.Mesh.face_count()
@@ -7772,7 +8352,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.ad.Array3u:
+        Returns → :py:obj:`mitsuba.Vector3u`:
             *no description available*
 
     .. py:method:: mitsuba.Mesh.face_normal(self, index, active=True)
@@ -7871,7 +8451,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → None:
+        Returns → :py:obj:`mitsuba.PreliminaryIntersection3f`:
             *no description available*
 
     .. py:method:: mitsuba.Mesh.recompute_bbox()
@@ -7996,7 +8576,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.ad.Array2u:
+        Returns → :py:obj:`mitsuba.Vector2u`:
             *no description available*
 
     .. py:method:: mitsuba.MeshPtr.face_count()
@@ -8016,7 +8596,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → drjit.llvm.ad.Array3u:
+        Returns → :py:obj:`mitsuba.Vector3u`:
             *no description available*
 
     .. py:method:: mitsuba.MeshPtr.face_normal(self, index, active=True)
@@ -8096,7 +8676,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → None:
+        Returns → :py:obj:`mitsuba.PreliminaryIntersection3f`:
             *no description available*
 
     .. py:method:: mitsuba.MeshPtr.vertex_count()
@@ -8146,42 +8726,6 @@
             *no description available*
 
 .. py:class:: mitsuba.MicrofacetDistribution
-
-    Implementation of the Beckman and GGX / Trowbridge-Reitz microfacet
-    distributions and various useful sampling routines
-
-    Based on the papers
-
-    "Microfacet Models for Refraction through Rough Surfaces" by Bruce
-    Walter, Stephen R. Marschner, Hongsong Li, and Kenneth E. Torrance
-
-    and
-
-    "Importance Sampling Microfacet-Based BSDFs using the Distribution of
-    Visible Normals" by Eric Heitz and Eugene D'Eon
-
-    The visible normal sampling code was provided by Eric Heitz and Eugene
-    D'Eon. An improvement of the Beckmann model sampling routine is
-    discussed in
-
-    "An Improved Visible Normal Sampling Routine for the Beckmann
-    Distribution" by Wenzel Jakob
-
-    An improvement of the GGX model sampling routine is discussed in "A
-    Simpler and Exact Sampling Routine for the GGX Distribution of Visible
-    Normals" by Eric Heitz
-
-    .. py:method:: __init__(self, type, alpha, sample_visible=True)
-
-        Parameter ``type`` (:py:obj:`mitsuba.MicrofacetType`):
-            *no description available*
-
-        Parameter ``alpha`` (float):
-            *no description available*
-
-        Parameter ``sample_visible`` (bool):
-            *no description available*
-
 
     .. py:method:: mitsuba.MicrofacetDistribution.G(self, wi, wo, m)
 
@@ -8341,14 +8885,6 @@
 .. py:class:: mitsuba.MonteCarloIntegrator
 
     Base class: :py:obj:`mitsuba.SamplingIntegrator`
-
-    Abstract integrator that performs *recursive* Monte Carlo sampling
-    starting from the sensor
-
-    This class is almost identical to SamplingIntegrator. It stores two
-    additional fields that are helpful for recursive Monte Carlo
-    techniques: the maximum path depth, and the depth at which the Russian
-    Roulette path termination technique should start to become active.
 
 .. py:class:: mitsuba.Normal3d
 
@@ -8555,44 +9091,31 @@
 
     Base class: :py:obj:`mitsuba.Object`
 
-    Wrapper for the OptiX AI denoiser
+    Constructs an OptiX denoiser
 
-    The OptiX AI denoiser is wrapped in this object such that it can work
-    directly with Mitsuba types and its conventions.
+    Parameter ``input_size``:
+        Resolution of noisy images that will be fed to the denoiser.
 
-    The denoiser works best when applied to noisy renderings that were
-    produced with a Film which used the `box` ReconstructionFilter. With a
-    filter that spans multiple pixels, the denoiser might identify some
-    local variance as a feature of the scene and will not denoise it.
+    Parameter ``albedo``:
+        Whether or not albedo information will also be given to the
+        denoiser. This parameter is optional, by default it is false.
 
-    .. py:method:: __init__(self, input_size, albedo=False, normals=False, temporal=False, denoise_alpha=False)
+    Parameter ``normals``:
+        Whether or not shading normals information will also be given to
+        the denoiser. This parameter is optional, by default it is false.
 
-        Constructs an OptiX denoiser
-        
-        Parameter ``input_size`` (:py:obj:`mitsuba.ScalarVector2u`):
-            Resolution of noisy images that will be fed to the denoiser.
-        
-        Parameter ``albedo`` (bool):
-            Whether or not albedo information will also be given to the
-            denoiser. This parameter is optional, by default it is false.
-        
-        Parameter ``normals`` (bool):
-            Whether or not shading normals information will also be given to
-            the denoiser. This parameter is optional, by default it is false.
-        
-        Parameter ``temporal`` (bool):
-            Whether or not temporal information will also be given to the
-            denoiser. This parameter is optional, by default it is false.
-        
-        Parameter ``denoise_alpha`` (bool):
-            Whether or not the alpha channel (if specified in the noisy input)
-            should be denoised too. This parameter is optional, by default it
-            is false.
-        
-        Returns:
-            A callable object which will apply the OptiX denoiser.
+    Parameter ``temporal``:
+        Whether or not temporal information will also be given to the
+        denoiser. This parameter is optional, by default it is false.
 
-        
+    Parameter ``denoise_alpha``:
+        Whether or not the alpha channel (if specified in the noisy input)
+        should be denoised too. This parameter is optional, by default it
+        is false.
+
+    Returns:
+        A callable object which will apply the OptiX denoiser.
+
     .. py:method:: mitsuba.OptixDenoiser.__call__(self, noisy, albedo, normals, to_sensor=None, flow, previous_denoised)
 
         Overloaded function.
@@ -9245,18 +9768,6 @@
 
     Base class: :py:obj:`mitsuba.Object`
 
-    Abstract phase function base-class.
-
-    This class provides an abstract interface to all Phase function
-    plugins in Mitsuba. It exposes functions for evaluating and sampling
-    the model.
-
-    .. py:method:: __init__(self, arg)
-
-        Parameter ``arg`` (:py:obj:`mitsuba.Properties`, /):
-            *no description available*
-
-
     .. py:method:: mitsuba.PhaseFunction.component_count(self, active=True)
 
         Number of components this phase function is comprised of.
@@ -9619,37 +10130,38 @@
 
 .. py:class:: mitsuba.PositionSample3f
 
-    Generic sampling record for positions
 
-    This sampling record is used to implement techniques that draw a
-    position from a point, line, surface, or volume domain in 3D and
-    furthermore provide auxiliary information about the sample.
+    .. py:method:: ``__init__()
 
-    Apart from returning the position and (optionally) the surface normal,
-    the responsible sampling method must annotate the record with the
-    associated probability density and delta.
-
-    .. py:method:: __init__()
-
-        Overloaded function.
-        
-        1. ``__init__(self) -> None``
-        
         Construct an uninitialized position sample
-        
-        2. ``__init__(self, other: :py:obj:`mitsuba.PositionSample3f`) -> None``
-        
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, other)
+
         Copy constructor
-        
-        3. ``__init__(self, si: :py:obj:`mitsuba.SurfaceInteraction3f`) -> None``
-        
+
+        Parameter ``other`` (:py:obj:`mitsuba.PositionSample3f`):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, si)
+
         Create a position sampling record from a surface intersection
-        
+
         This is useful to determine the hypothetical sampling density on a
         surface after hitting it using standard ray tracing. This happens for
         instance in path tracing with multiple importance sampling.
 
-        
+        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
     .. py:method:: mitsuba.PositionSample3f.assign(self, arg)
 
         Parameter ``arg`` (:py:obj:`mitsuba.PositionSample3f`, /):
@@ -9690,30 +10202,24 @@
 
 .. py:class:: mitsuba.PreliminaryIntersection3f
 
-    Stores preliminary information related to a ray intersection
 
-    This data structure is used as return type for the
-    Shape::ray_intersect_preliminary efficient ray intersection routine.
-    It stores whether the shape is intersected by a given ray, and cache
-    preliminary information about the intersection if that is the case.
+    .. py:method:: ``__init__()
 
-    If the intersection is deemed relevant, detailed intersection
-    information can later be obtained via the
-    compute_surface_interaction() method.
-
-    .. py:method:: __init__()
-
-        Overloaded function.
-        
-        1. ``__init__(self) -> None``
-        
         //! @}
-        
-        2. ``__init__(self, arg: :py:obj:`mitsuba.PreliminaryIntersection3f`) -> None``
-        
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, arg)
+
         Copy constructor
 
-        
+        Parameter ``arg`` (:py:obj:`mitsuba.PreliminaryIntersection3f`):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
     .. py:method:: mitsuba.PreliminaryIntersection3f.assign(self, arg)
 
         Parameter ``arg`` (:py:obj:`mitsuba.PreliminaryIntersection3f`, /):
@@ -9768,14 +10274,18 @@
 
     .. py:property:: mitsuba.PreliminaryIntersection3f.t
 
-        Distance traveled along the ray
+        Distance traveled along the ray. Invalid lanes are set to infinity.
+
+    .. py:property:: mitsuba.PreliminaryIntersection3f.valid
+
+        Valid hit mask
 
     .. py:method:: mitsuba.PreliminaryIntersection3f.zero_(self, arg)
 
         This callback method is invoked by dr::zeros<>, and takes care of
         fields that deviate from the standard zero-initialization convention.
-        In this particular class, the ``t`` field should be set to an infinite
-        value to mark invalid intersection records.
+        It clears ``valid`` and sets ``t`` to infinity for invalid
+        intersection records.
 
         Parameter ``arg`` (int, /):
             *no description available*
@@ -9786,19 +10296,6 @@
 .. py:class:: mitsuba.ProjectiveCamera
 
     Base class: :py:obj:`mitsuba.Sensor`
-
-    Projective camera interface
-
-    This class provides an abstract interface to several types of sensors
-    that are commonly used in computer graphics, such as perspective and
-    orthographic camera models.
-
-    The interface is meant to be implemented by any kind of sensor, whose
-    world to clip space transformation can be explained using only linear
-    operations on homogeneous coordinates.
-
-    A useful feature of ProjectiveCamera sensors is that their view can be
-    rendered using the traditional OpenGL pipeline.
 
     .. py:method:: mitsuba.ProjectiveCamera.far_clip()
 
@@ -10707,6 +11204,77 @@
         Returns → int:
             *no description available*
 
+.. py:class:: mitsuba.Ray2d
+
+    Simple n-dimensional ray segment data structure
+
+    Along with the ray origin and direction, this data structure
+    additionally stores a maximum ray position ``maxt``, a time value
+    ``time`` as well a the wavelength information associated with the ray.
+
+    .. py:method:: __init__()
+
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Create an uninitialized ray
+        
+        2. ``__init__(self, other: :py:obj:`mitsuba.Ray2d`) -> None``
+        
+        Copy constructor
+        
+        3. ``__init__(self, o: :py:obj:`mitsuba.Point2d`, d: :py:obj:`mitsuba.Vector2d`, time: drjit.llvm.ad.Float64 = 0.0, wavelengths: :py:obj:`mitsuba.Color0f` | None = None) -> None``
+        
+        Construct a new ray (o, d) with time
+        
+        4. ``__init__(self, o: :py:obj:`mitsuba.Point2d`, d: :py:obj:`mitsuba.Vector2d`, maxt: drjit.llvm.ad.Float64, time: drjit.llvm.ad.Float64, wavelengths: :py:obj:`mitsuba.Color0f`) -> None``
+        
+        Construct a new ray (o, d) with bounds
+        
+        5. ``__init__(self, other: :py:obj:`mitsuba.Ray2d`, maxt: drjit.llvm.ad.Float64) -> None``
+        
+        Copy a ray, but change the maxt value
+
+        
+    .. py:method:: mitsuba.Ray2d.__call__(self, t)
+
+        Return the position of a point along the ray
+
+        Parameter ``t`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.Point2d`:
+            *no description available*
+
+    .. py:method:: mitsuba.Ray2d.assign(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.Ray2d`, /):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:property:: mitsuba.Ray2d.d
+
+        Ray direction
+
+    .. py:property:: mitsuba.Ray2d.maxt
+
+        Maximum position on the ray segment
+
+    .. py:property:: mitsuba.Ray2d.o
+
+        Ray origin
+
+    .. py:property:: mitsuba.Ray2d.time
+
+        Time value associated with this ray
+
+    .. py:property:: mitsuba.Ray2d.wavelengths
+
+        Wavelength associated with the ray
+
 .. py:class:: mitsuba.Ray2f
 
     Simple n-dimensional ray segment data structure
@@ -11274,60 +11842,6 @@
 
     Base class: :py:obj:`mitsuba.Object`
 
-    Base class of all sample generators.
-
-    A *sampler* provides a convenient abstraction around methods that
-    generate uniform pseudo- or quasi-random points within a conceptual
-    infinite-dimensional unit hypercube \f$[0,1]^\infty$\f. This involves
-    two main operations: by querying successive component values of such
-    an infinite-dimensional point (next_1d(), next_2d()), or by discarding
-    the current point and generating another one (advance()).
-
-    Scalar and vectorized rendering algorithms interact with the sampler
-    interface in a slightly different way:
-
-    Scalar rendering algorithm:
-
-    1. The rendering algorithm first invokes seed() to initialize the
-    sampler state.
-
-    2. The first pixel sample can now be computed, after which advance()
-    needs to be invoked. This repeats until all pixel samples have been
-    generated. Note that some implementations need to be configured for a
-    certain number of pixel samples, and exceeding these will lead to an
-    exception being thrown.
-
-    3. While computing a pixel sample, the rendering algorithm usually
-    requests 1D or 2D component blocks using the next_1d() and next_2d()
-    functions before moving on to the next sample.
-
-    A vectorized rendering algorithm effectively queries multiple sample
-    generators that advance in parallel. This involves the following
-    steps:
-
-    1. The rendering algorithm invokes set_samples_per_wavefront() if each
-    rendering step is split into multiple passes (in which case fewer
-    samples should be returned per sample_1d() or sample_2d() call).
-
-    2. The rendering algorithm then invokes seed() to initialize the
-    sampler state, and to inform the sampler of the wavefront size, i.e.,
-    how many sampler evaluations should be performed in parallel,
-    accounting for all passes. The initialization ensures that the set of
-    parallel samplers is mutually statistically independent (in a
-    pseudo/quasi-random sense).
-
-    3. advance() can be used to advance to the next point.
-
-    4. As in the scalar approach, the rendering algorithm can request
-    batches of (pseudo-) random numbers using the next_1d() and next_2d()
-    functions.
-
-    .. py:method:: __init__(self, props)
-
-        Parameter ``props`` (:py:obj:`mitsuba.Properties`):
-            *no description available*
-
-
     .. py:method:: mitsuba.Sampler.advance()
 
         Advance to the next sample.
@@ -11447,22 +11961,6 @@
 .. py:class:: mitsuba.SamplingIntegrator
 
     Base class: :py:obj:`mitsuba.Integrator`
-
-    Abstract integrator that performs Monte Carlo sampling starting from
-    the sensor
-
-    Subclasses of this interface must implement the sample() method, which
-    performs Monte Carlo integration to return an unbiased statistical
-    estimate of the radiance value along a given ray.
-
-    The render() method then repeatedly invokes this estimator to compute
-    all pixels of the image.
-
-    .. py:method:: __init__(self, arg)
-
-        Parameter ``arg`` (:py:obj:`mitsuba.Properties`, /):
-            *no description available*
-
 
     .. py:property:: mitsuba.SamplingIntegrator.hide_emitters
 
@@ -13126,6 +13624,258 @@
         Returns → :py:obj:`mitsuba.ScalarProjectiveTransform4f`:
             *no description available*
 
+.. py:class:: mitsuba.ScalarRay2d
+
+    Simple n-dimensional ray segment data structure
+
+    Along with the ray origin and direction, this data structure
+    additionally stores a maximum ray position ``maxt``, a time value
+    ``time`` as well a the wavelength information associated with the ray.
+
+    .. py:method:: __init__()
+
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Create an uninitialized ray
+        
+        2. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay2d`) -> None``
+        
+        Copy constructor
+        
+        3. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint2d`, d: :py:obj:`mitsuba.ScalarVector2d`, time: float = 0.0, wavelengths: :py:obj:`mitsuba.ScalarColor0f` | None = None) -> None``
+        
+        Construct a new ray (o, d) with time
+        
+        4. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint2d`, d: :py:obj:`mitsuba.ScalarVector2d`, maxt: float, time: float, wavelengths: :py:obj:`mitsuba.ScalarColor0f`) -> None``
+        
+        Construct a new ray (o, d) with bounds
+        
+        5. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay2d`, maxt: float) -> None``
+        
+        Copy a ray, but change the maxt value
+
+        
+    .. py:method:: mitsuba.ScalarRay2d.__call__(self, t)
+
+        Return the position of a point along the ray
+
+        Parameter ``t`` (float):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ScalarPoint2d`:
+            *no description available*
+
+    .. py:property:: mitsuba.ScalarRay2d.d
+
+        Ray direction
+
+    .. py:property:: mitsuba.ScalarRay2d.maxt
+
+        Maximum position on the ray segment
+
+    .. py:property:: mitsuba.ScalarRay2d.o
+
+        Ray origin
+
+    .. py:property:: mitsuba.ScalarRay2d.time
+
+        Time value associated with this ray
+
+    .. py:property:: mitsuba.ScalarRay2d.wavelengths
+
+        Wavelength associated with the ray
+
+.. py:class:: mitsuba.ScalarRay2f
+
+    Simple n-dimensional ray segment data structure
+
+    Along with the ray origin and direction, this data structure
+    additionally stores a maximum ray position ``maxt``, a time value
+    ``time`` as well a the wavelength information associated with the ray.
+
+    .. py:method:: __init__()
+
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Create an uninitialized ray
+        
+        2. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay2f`) -> None``
+        
+        Copy constructor
+        
+        3. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint2f`, d: :py:obj:`mitsuba.ScalarVector2f`, time: float = 0.0, wavelengths: :py:obj:`mitsuba.ScalarColor0f` | None = None) -> None``
+        
+        Construct a new ray (o, d) with time
+        
+        4. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint2f`, d: :py:obj:`mitsuba.ScalarVector2f`, maxt: float, time: float, wavelengths: :py:obj:`mitsuba.ScalarColor0f`) -> None``
+        
+        Construct a new ray (o, d) with bounds
+        
+        5. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay2f`, maxt: float) -> None``
+        
+        Copy a ray, but change the maxt value
+
+        
+    .. py:method:: mitsuba.ScalarRay2f.__call__(self, t)
+
+        Return the position of a point along the ray
+
+        Parameter ``t`` (float):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ScalarPoint2f`:
+            *no description available*
+
+    .. py:property:: mitsuba.ScalarRay2f.d
+
+        Ray direction
+
+    .. py:property:: mitsuba.ScalarRay2f.maxt
+
+        Maximum position on the ray segment
+
+    .. py:property:: mitsuba.ScalarRay2f.o
+
+        Ray origin
+
+    .. py:property:: mitsuba.ScalarRay2f.time
+
+        Time value associated with this ray
+
+    .. py:property:: mitsuba.ScalarRay2f.wavelengths
+
+        Wavelength associated with the ray
+
+.. py:class:: mitsuba.ScalarRay3d
+
+    Simple n-dimensional ray segment data structure
+
+    Along with the ray origin and direction, this data structure
+    additionally stores a maximum ray position ``maxt``, a time value
+    ``time`` as well a the wavelength information associated with the ray.
+
+    .. py:method:: __init__()
+
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Create an uninitialized ray
+        
+        2. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay3d`) -> None``
+        
+        Copy constructor
+        
+        3. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint3d`, d: :py:obj:`mitsuba.ScalarVector3d`, time: float = 0.0, wavelengths: :py:obj:`mitsuba.ScalarColor0f` | None = None) -> None``
+        
+        Construct a new ray (o, d) with time
+        
+        4. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint3d`, d: :py:obj:`mitsuba.ScalarVector3d`, maxt: float, time: float, wavelengths: :py:obj:`mitsuba.ScalarColor0f`) -> None``
+        
+        Construct a new ray (o, d) with bounds
+        
+        5. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay3d`, maxt: float) -> None``
+        
+        Copy a ray, but change the maxt value
+
+        
+    .. py:method:: mitsuba.ScalarRay3d.__call__(self, t)
+
+        Return the position of a point along the ray
+
+        Parameter ``t`` (float):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ScalarPoint3d`:
+            *no description available*
+
+    .. py:property:: mitsuba.ScalarRay3d.d
+
+        Ray direction
+
+    .. py:property:: mitsuba.ScalarRay3d.maxt
+
+        Maximum position on the ray segment
+
+    .. py:property:: mitsuba.ScalarRay3d.o
+
+        Ray origin
+
+    .. py:property:: mitsuba.ScalarRay3d.time
+
+        Time value associated with this ray
+
+    .. py:property:: mitsuba.ScalarRay3d.wavelengths
+
+        Wavelength associated with the ray
+
+.. py:class:: mitsuba.ScalarRay3f
+
+    Simple n-dimensional ray segment data structure
+
+    Along with the ray origin and direction, this data structure
+    additionally stores a maximum ray position ``maxt``, a time value
+    ``time`` as well a the wavelength information associated with the ray.
+
+    .. py:method:: __init__()
+
+        Overloaded function.
+        
+        1. ``__init__(self) -> None``
+        
+        Create an uninitialized ray
+        
+        2. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay3f`) -> None``
+        
+        Copy constructor
+        
+        3. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint3f`, d: :py:obj:`mitsuba.ScalarVector3f`, time: float = 0.0, wavelengths: :py:obj:`mitsuba.ScalarColor0f` | None = None) -> None``
+        
+        Construct a new ray (o, d) with time
+        
+        4. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint3f`, d: :py:obj:`mitsuba.ScalarVector3f`, maxt: float, time: float, wavelengths: :py:obj:`mitsuba.ScalarColor0f`) -> None``
+        
+        Construct a new ray (o, d) with bounds
+        
+        5. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay3f`, maxt: float) -> None``
+        
+        Copy a ray, but change the maxt value
+
+        
+    .. py:method:: mitsuba.ScalarRay3f.__call__(self, t)
+
+        Return the position of a point along the ray
+
+        Parameter ``t`` (float):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.ScalarPoint3f`:
+            *no description available*
+
+    .. py:property:: mitsuba.ScalarRay3f.d
+
+        Ray direction
+
+    .. py:property:: mitsuba.ScalarRay3f.maxt
+
+        Maximum position on the ray segment
+
+    .. py:property:: mitsuba.ScalarRay3f.o
+
+        Ray origin
+
+    .. py:property:: mitsuba.ScalarRay3f.time
+
+        Time value associated with this ray
+
+    .. py:property:: mitsuba.ScalarRay3f.wavelengths
+
+        Wavelength associated with the ray
+
 .. py:class:: mitsuba.ScalarVector0d
 
 .. py:class:: mitsuba.ScalarVector0f
@@ -13169,33 +13919,6 @@
 .. py:class:: mitsuba.Scene
 
     Base class: :py:obj:`mitsuba.Object`
-
-    Central scene data structure
-
-    Mitsuba's scene class encapsulates a tree of mitsuba Object instances
-    including emitters, sensors, shapes, materials, participating media,
-    the integrator (i.e. the method used to render the image) etc.
-
-    It organizes these objects into groups that can be accessed through
-    getters (see shapes(), emitters(), sensors(), etc.), and it provides
-    three key abstractions implemented on top of these groups,
-    specifically:
-
-    * Ray intersection queries and shadow ray tests (See
-    \ray_intersect_preliminary(), ray_intersect(), and ray_test()).
-
-    * Sampling rays approximately proportional to the emission profile of
-    light sources in the scene (see sample_emitter_ray())
-
-    * Sampling directions approximately proportional to the direct
-    radiance from emitters received at a given scene location (see
-    sample_emitter_direction()).
-
-    .. py:method:: __init__(self, arg)
-
-        Parameter ``arg`` (:py:obj:`mitsuba.Properties`, /):
-            *no description available*
-
 
     .. py:method:: mitsuba.Scene.bbox()
 
@@ -14612,8 +15335,6 @@
 
     Base class: :py:obj:`mitsuba.Object`
 
-    Forward declaration for `SilhouetteSample`
-
     .. py:method:: mitsuba.Shape.add_texture_attribute(self, name, texture)
 
         Add a texture attribute with the given ``name``.
@@ -15862,7 +16583,7 @@
 
 .. py:class:: mitsuba.ShapeType
 
-    Enumeration of all shape types in Mitsuba
+    Shape type bit flags driving GPU intersection-function dispatch.
 
     Valid values are as follows:
 
@@ -15904,7 +16625,7 @@
 
     .. py:data:: EllipsoidsMesh
 
-        Ellipsoids (`ellipsoidsmesh`)
+        Ellipsoid meshes (`ellipsoidsmesh`)
 
     .. py:data:: Invalid
 
@@ -15914,22 +16635,16 @@
 
     Base class: :py:obj:`mitsuba.PositionSample3f`
 
-    Data structure holding the result of visibility silhouette sampling
-    operations on geometry.
+    Overloaded function.
 
-    .. py:method:: __init__()
+    1. ``__init__(self) -> None``
 
-        Overloaded function.
-        
-        1. ``__init__(self) -> None``
-        
-        Construct an uninitialized silhouette sample
-        
-        2. ``__init__(self, other: :py:obj:`mitsuba.SilhouetteSample3f`) -> None``
-        
-        Copy constructor
+    Construct an uninitialized silhouette sample
 
-        
+    2. ``__init__(self, other: :py:obj:`mitsuba.SilhouetteSample3f`) -> None``
+
+    Copy constructor
+
     .. py:method:: mitsuba.SilhouetteSample3f.assign(self, arg)
 
         Parameter ``arg`` (:py:obj:`mitsuba.SilhouetteSample3f`, /):
@@ -16591,31 +17306,47 @@
 
 .. py:class:: mitsuba.Struct
 
-    Base class: :py:obj:`mitsuba.Object`
+    Describes the in-memory layout of a record as an ordered list of
+    named, typed Field entries.
 
-    Descriptor for specifying the contents and in-memory layout of a POD-
-    style data record
+    A ``Struct`` is the schema that a Converter reads from and writes to.
+    It tracks each field's type, byte offset, optional Flag annotations,
+    and default value, along with structure-wide properties such as the
+    byte order and whether fields are tightly packed or padded for natural
+    alignment.
 
-    Remark:
-        The python API provides an additional ``dtype()`` method, which
-        returns the NumPy ``dtype`` equivalent of a given ``Struct``
-        instance.
+    .. py:method:: __init__(self, pack=False, byte_order=ByteOrder.Native)
 
-    .. py:method:: __init__(self, pack=False, byte_order=ByteOrder.HostByteOrder)
-
-        Create a new ``Struct`` and indicate whether the contents are packed
-        or aligned
-
+        Overloaded function.
+        
+        1. ``__init__(self, pack: bool = False, byte_order: :py:obj:`mitsuba._struct_jit.ByteOrder` = ByteOrder.Native) -> None``
+        
+        Create an empty data structure
+        
         Parameter ``pack`` (bool):
-            *no description available*
-
-        Parameter ``byte_order`` (:py:obj:`mitsuba.Struct.ByteOrder`):
-            *no description available*
+            If ``True``, fields will be tightly packed without adding
+            alignment-related padding
+        
+        Parameter ``byte_order`` (:py:obj:`mitsuba._struct_jit.ByteOrder`):
+            Enables overriding the byte order of the data structure. If
+            needed, Struct-JIT will perform endianness conversion during
+            conversions.
+        
+        2. ``__init__(self, dtype: object) -> None``
+        
+        
+        3. ``__init__(self, arg: :py:obj:`mitsuba._struct_jit.Struct`) -> None``
 
         
     .. py:class:: mitsuba.Struct.ByteOrder
 
+        Byte order of the fields in the ``Struct``
+
         Valid values are as follows:
+
+        .. py:data:: Native
+
+            
 
         .. py:data:: LittleEndian
 
@@ -16625,108 +17356,15 @@
 
             
 
-        .. py:data:: HostByteOrder
-
-            
-
-    .. py:class:: mitsuba.Struct.Field
-
-        Field specifier with size and offset
-
-    .. py:property:: mitsuba.Struct.Field.blend
-
-        For use with StructConverter::convert()
-
-        Specifies a pair of weights and source field names that will be
-        linearly blended to obtain the output field value. Note that this only
-        works for floating point fields or integer fields with the
-        Flags::Normalized flag. Gamma-corrected fields will be blended in
-        linear space.
-
-    .. py:property:: mitsuba.Struct.Field.flags
-
-        Additional flags
-
-    .. py:method:: mitsuba.Struct.Field.is_float()
-
-        Returns → bool:
-            *no description available*
-
-    .. py:method:: mitsuba.Struct.Field.is_integer()
-
-        Returns → bool:
-            *no description available*
-
-    .. py:method:: mitsuba.Struct.Field.is_signed()
-
-        Returns → bool:
-            *no description available*
-
-    .. py:method:: mitsuba.Struct.Field.is_unsigned()
-
-        Returns → bool:
-            *no description available*
-
-    .. py:property:: mitsuba.Struct.Field.name
-
-        Name of the field
-
-    .. py:property:: mitsuba.Struct.Field.offset
-
-        Offset within the ``Struct`` (in bytes)
-
-    .. py:method:: mitsuba.Struct.Field.range()
-
-        Returns → tuple[float, float]:
-            *no description available*
-
-    .. py:property:: mitsuba.Struct.Field.size
-
-        Size in bytes
-
-    .. py:property:: mitsuba.Struct.Field.type
-
-        Type identifier
-
-    .. py:class:: mitsuba.Struct.Flags
-
-        Valid values are as follows:
-
-        .. py:data:: Empty
-
-            No flags set (default value)
-
-        .. py:data:: Normalized
-
-            Specifies whether an integer field encodes a normalized value in the range [0, 1]. The flag is ignored if specified for floating point valued fields.
-
-        .. py:data:: Gamma
-
-            Specifies whether the field encodes a sRGB gamma-corrected value. Assumes ``Normalized`` is also specified.
-
-        .. py:data:: Weight
-
-            In FieldConverter::convert, when an input structure contains a weight field, the value of all entries are considered to be expressed relative to its value. Converting to an un-weighted structure entails a division by the weight.
-
-        .. py:data:: Assert
-
-            In FieldConverter::convert, check that the field value matches the specified default value. Otherwise, return a failure
-
-        .. py:data:: Alpha
-
-            Specifies whether the field encodes an alpha value
-
-        .. py:data:: PremultipliedAlpha
-
-            Specifies whether the field encodes an alpha premultiplied value
-
-        .. py:data:: Default
-
-            In FieldConverter::convert, when the field is missing in the source record, replace it by the specified default value
-
     .. py:class:: mitsuba.Struct.Type
 
+        List of field types supported by Struct-JIT
+
         Valid values are as follows:
+
+        .. py:data:: Invalid
+
+            
 
         .. py:data:: Int8
 
@@ -16772,204 +17410,117 @@
 
             
 
-        .. py:data:: Invalid
-
-            
-
-    .. py:method:: mitsuba.Struct.alignment()
+    .. py:method:: mitsuba.Struct.align()
 
         Return the alignment (in bytes) of the data structure
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Struct.append(self, name, type, flags=Flags.Empty, default=0.0)
+    .. py:method:: mitsuba.Struct.append(self, name, type, flags=0, value=0.0)
 
-        Append a new field to the ``Struct``; determines size and offset
-        automatically
+        Overloaded function.
+
+        1. ``append(self, name: str, type: :py:obj:`mitsuba._struct_jit.Type`, flags: int = 0, value: float = 0.0) -> :py:obj:`mitsuba._struct_jit.Struct```
+
+        Append a new field, while determining size and offset automatically
+
+        2. ``append(self, field: :py:obj:`mitsuba._struct_jit.Field`) -> :py:obj:`mitsuba._struct_jit.Struct```
+
+        Append a new field to the ``Struct`` (all information must be
+        provided)
 
         Parameter ``name`` (str):
             *no description available*
 
-        Parameter ``type`` (:py:obj:`mitsuba.Struct.Type`):
+        Parameter ``type`` (:py:obj:`mitsuba._struct_jit.Type`):
             *no description available*
 
         Parameter ``flags`` (int):
             *no description available*
 
-        Parameter ``default`` (float):
+        Parameter ``value`` (float):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Struct`:
+        Returns → :py:obj:`mitsuba._struct_jit.Struct`:
             *no description available*
 
     .. py:method:: mitsuba.Struct.byte_order()
 
         Return the byte order of the ``Struct``
 
-        Returns → :py:obj:`mitsuba.Struct.ByteOrder`:
+        Returns → :py:obj:`mitsuba._struct_jit.ByteOrder`:
             *no description available*
 
-    .. py:method:: mitsuba.Struct.field(self, arg)
+    .. py:method:: mitsuba.Struct.dtype()
 
-        Look up a field by name (throws an exception if not found)
+        Return an equivalent NumPy dtype
 
-        Parameter ``arg`` (str, /):
+        Returns → object:
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Struct.Field`:
-            *no description available*
+    .. py:method:: mitsuba.Struct.nbytes()
 
-    .. py:method:: mitsuba.Struct.field_count()
-
-        Return the number of fields
+        Return the total size (in bytes) of the data structure, including
+        padding
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Struct.has_field(self, arg)
+    .. py:method:: mitsuba.Struct.pack()
 
-        Check if the ``Struct`` has a field of the specified name
-
-        Parameter ``arg`` (str, /):
-            *no description available*
+        Are appended fields tightly packed (i.e. without alignment padding)?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Struct.size()
+    .. py:method:: mitsuba.Struct.set_byte_order(self, arg)
 
-        Return the size (in bytes) of the data structure, including padding
-
-        Returns → int:
+        Parameter ``arg`` (:py:obj:`mitsuba._struct_jit.ByteOrder`, /):
             *no description available*
 
-.. py:class:: mitsuba.StructConverter
-
-    Base class: :py:obj:`mitsuba.Object`
-
-    This class solves the any-to-any problem: efficiently converting from
-    one kind of structured data representation to another
-
-    Graphics applications often need to convert from one kind of
-    structured representation to another, for instance when loading/saving
-    image or mesh data. Consider the following data records which both
-    describe positions tagged with color data.
-
-    .. code-block:: c
-
-        struct Source { // <-- Big endian! :(
-           uint8_t r, g, b; // in sRGB
-           half x, y, z;
-        };
-
-        struct Target { // <-- Little endian!
-           float x, y, z;
-           float r, g, b, a; // in linear space
-        };
-
-
-    The record ``Source`` may represent what is stored in a file on disk,
-    while ``Target`` represents the expected input of the implementation.
-    Not only are the formats (e.g. float vs half or uint8_t, incompatible
-    endianness) and encodings different (e.g. gamma correction vs linear
-    space), but the second record even has a different order and extra
-    fields that don't exist in the first one.
-
-    This class provides a routine convert() which <ol>
-
-    * reorders entries
-
-    * converts between many different formats (u[int]8-64, float16-64)
-
-    * performs endianness conversion
-
-    * applies or removes gamma correction
-
-    * optionally checks that certain entries have expected default values
-
-    * substitutes missing values with specified defaults
-
-    * performs linear transformations of groups of fields (e.g. between
-    different RGB color spaces)
-
-    * applies dithering to avoid banding artifacts when converting 2D
-    images
-
-    </ol>
-
-    The above operations can be arranged in countless ways, which makes it
-    hard to provide an efficient generic implementation of this
-    functionality. For this reason, the implementation of this class
-    relies on a JIT compiler that generates fast conversion code on demand
-    for each specific conversion. The function is cached and reused in
-    case the same conversion is needed later on. Note that JIT compilation
-    only works on x86_64 processors; other platforms use a slow generic
-    fallback implementation.
-
-    .. py:method:: __init__(self, source, target, dither=False)
-
-        Parameter ``source`` (:py:obj:`mitsuba.Struct`):
+        Returns → None:
             *no description available*
 
-        Parameter ``target`` (:py:obj:`mitsuba.Struct`):
+    .. py:method:: mitsuba.Struct.set_pack(self, arg)
+
+        Parameter ``arg`` (bool, /):
             *no description available*
 
-        Parameter ``dither`` (bool):
+        Returns → None:
             *no description available*
 
+    .. py:method:: mitsuba.Struct.validate()
 
-    .. py:method:: mitsuba.StructConverter.convert(self, arg)
+        Validate field flags, layout ordering, and shared backend limits
 
-        Parameter ``arg`` (bytes, /):
-            *no description available*
-
-        Returns → bytes:
-            *no description available*
-
-    .. py:method:: mitsuba.StructConverter.source()
-
-        Return the source ``Struct`` descriptor
-
-        Returns → :py:obj:`mitsuba.Struct`:
-            *no description available*
-
-    .. py:method:: mitsuba.StructConverter.target()
-
-        Return the target ``Struct`` descriptor
-
-        Returns → :py:obj:`mitsuba.Struct`:
+        Returns → None:
             *no description available*
 
 .. py:class:: mitsuba.SurfaceInteraction3f
 
     Base class: :py:obj:`mitsuba.Interaction3f`
 
-    Stores information related to a surface scattering interaction
+    Overloaded function.
 
-    .. py:method:: __init__()
+    1. ``__init__(self) -> None``
 
-        Overloaded function.
-        
-        1. ``__init__(self) -> None``
-        
-        Construct from a position sample. Unavailable fields such as `wi` and
-        the partial derivatives are left uninitialized. The `shape` pointer is
-        left uninitialized because we can't guarantee that the given
-        PositionSample::object points to a Shape instance.
-        
-        2. ``__init__(self, arg: :py:obj:`mitsuba.SurfaceInteraction3f`) -> None``
-        
-        Copy constructor
-        
-        3. ``__init__(self, ps: :py:obj:`mitsuba.PositionSample3f`, wavelengths: :py:obj:`mitsuba.Color0f`) -> None``
-        
-        Construct from a position sample. Unavailable fields such as `wi` and
-        the partial derivatives are left uninitialized. The `shape` pointer is
-        left uninitialized because we can't guarantee that the given
-        PositionSample::object points to a Shape instance.
+    Construct from a position sample. Unavailable fields such as `wi` and
+    the partial derivatives are left uninitialized. The `shape` pointer is
+    left uninitialized because we can't guarantee that the given
+    PositionSample::object points to a Shape instance.
 
-        
+    2. ``__init__(self, arg: :py:obj:`mitsuba.SurfaceInteraction3f`) -> None``
+
+    Copy constructor
+
+    3. ``__init__(self, ps: :py:obj:`mitsuba.PositionSample3f`, wavelengths: :py:obj:`mitsuba.Color0f`) -> None``
+
+    Construct from a position sample. Unavailable fields such as `wi` and
+    the partial derivatives are left uninitialized. The `shape` pointer is
+    left uninitialized because we can't guarantee that the given
+    PositionSample::object points to a Shape instance.
+
     .. py:method:: mitsuba.SurfaceInteraction3f.assign(self, arg)
 
         Parameter ``arg`` (:py:obj:`mitsuba.SurfaceInteraction3f`, /):
@@ -17257,24 +17808,6 @@
 
     Base class: :py:obj:`mitsuba.Object`
 
-    Base class of all surface texture implementations
-
-    This class implements a generic texture map that supports evaluation
-    at arbitrary surface positions and wavelengths (if compiled in
-    spectral mode). It can be used to provide both intensities (e.g. for
-    light sources) and unitless reflectance parameters (e.g. an albedo of
-    a reflectance model).
-
-    The spectrum can be evaluated at arbitrary (continuous) wavelengths,
-    though the underlying function it is not required to be smooth or even
-    continuous.
-
-    .. py:method:: __init__(self, props)
-
-        Parameter ``props`` (:py:obj:`mitsuba.Properties`):
-            *no description available*
-
-
     .. py:method:: mitsuba.Texture.eval(self, si, active=True)
 
         Evaluate the texture at the given surface interaction
@@ -17485,29 +18018,43 @@
 .. py:class:: mitsuba.Texture1f
 
 
-    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, writable=False, srgb=False)
 
         Create a new texture with the specified size and channel count
 
-        On CUDA, this is a slow operation that synchronizes the GPU pipeline, so
-        texture objects should be reused/updated via :py:func:`set_value()` and
-        :py:func:`set_tensor()` as much as possible.
+        On GPU backends, this is a slow operation that synchronizes the pipeline to
+        rewrite the device memory map. Therefore, prefer reusing and updating
+        texture objects via :py:func:`set_value()` and :py:func:`set_tensor()` over
+        creating new ones.
 
-        When ``use_accel`` is set to ``False`` on CUDA mode, the texture will not
-        use hardware acceleration (allocation and evaluation). In other modes
+        When ``use_accel`` is set to ``False``, GPU backends will emulate the
+        texture API instead of using the hardware texture units. In other modes,
         this argument has no effect.
 
         The ``filter_mode`` parameter defines the interpolation method to be used
         in all evaluation routines. By default, the texture is linearly
         interpolated. Besides nearest/linear filtering, the implementation also
         provides a clamped cubic B-spline interpolation scheme in case a
-        higher-order interpolation is needed. In CUDA mode, this is done using a
-        series of linear lookups to optimally use the hardware (hence, linear
-        filtering must be enabled to use this feature).
+        higher-order interpolation is needed. On the CUDA and Metal backends, this
+        is done using a series of linear lookups to optimally use the hardware
+        (hence, linear filtering must be enabled to use this feature).
 
         When evaluating the texture outside of its boundaries, the ``wrap_mode``
         defines the wrapping method. The default behavior is ``drjit.WrapMode.Clamp``,
         which indefinitely extends the colors on the boundary along each dimension.
+
+        On the CUDA and Metal backends, hardware texture units resolve the sub-texel
+        position using reduced-precision fixed-point weights (8 fractional bits on
+        CUDA, i.e. 256 steps between texels). This does not degrade the stored values
+        or the interpolated quantity, only how finely the fractional position within
+        a texel is resolved. Set ``use_accel=False`` to disable the texture units and
+        avoid this approximation at some cost in performance.
+
+        For 8-bit textures, setting ``srgb`` additionally requests that samples be
+        decoded from sRGB to linear. Passing it for a floating-point texture raises
+        an error. Channels are grouped into hardware RGBA quads, so within each group
+        of four the first three are decoded and the fourth (alpha) is left linear
+        (e.g. channel 3 is linear for a 6-channel texture).
 
         Parameter ``shape`` (collections.abc.Sequence[int]):
             *no description available*
@@ -17524,20 +18071,32 @@
         Parameter ``wrap_mode`` (drjit.WrapMode):
             *no description available*
 
+        Parameter ``writable`` (bool):
+            *no description available*
+
+        Parameter ``srgb`` (bool):
+            *no description available*
+
         Returns → None``:
             *no description available*
 
-    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, srgb=False)
 
-        Construct a new texture from a given tensor.
+        Construct a new texture from a given tensor
 
-        This constructor allocates texture memory with the shape information
-        deduced from ``tensor``. It subsequently invokes :py:func:`set_tensor(tensor)`
-        to fill the texture memory with the provided tensor.
+        This constructor allocates texture memory just like the previous
+        constructor, extracting shape information from ``tensor``. It then also
+        invokes ``set_tensor(tensor)`` to fill the texture memory with the provided
+        tensor.
 
-        When both ``migrate`` and ``use_accel`` are set to ``True`` in CUDA mode, the texture
-        exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage. Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on a GPU backend, the texture is *fully*
+        migrated to GPU texture memory to avoid redundant storage. Note that the
+        texture is still differentiable even when migrated. The :py:func:`value()`
+        and :py:func:`tensor()` operations will perform a reverse migration in this
+        case.
+
+        Both the ``filter_mode`` and ``wrap_mode`` have the same defaults and
+        behaviors as for the previous constructor.
 
         Parameter ``tensor`` (drjit.llvm.ad.TensorXf):
             *no description available*
@@ -17554,32 +18113,47 @@
         Parameter ``wrap_mode`` (drjit.WrapMode):
             *no description available*
 
+        Parameter ``srgb`` (bool):
+            *no description available*
+
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.eval(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture1f.channel_count()
+
+        Return the number of channels (equals ``shape()[ndim()-1]``)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f.eval(self, pos, active=True)
 
         Evaluate the linear interpolant represented by this texture.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+        When hardware-acceleration is not available, the numerical precision of the
+        interpolation is dictated by the floating point precision of the query
+        point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.eval_cubic(self, pos, active=Bool(True), force_nonaccel=False)
+    .. py:method:: mitsuba.Texture1f.eval_cubic(self, pos, active=True, force_nonaccel=False)
 
         Evaluate a clamped cubic B-Spline interpolant represented by this
         texture
 
         Instead of interpolating the texture via B-Spline basis functions, the
         implementation transforms this calculation into an equivalent weighted
-        sum of several linear interpolant evaluations. In CUDA mode, this can
-        then be accelerated by hardware texture units, which runs faster than
-        a naive implementation. More information can be found in:
+        sum of several linear interpolant evaluations. On the CUDA and Metal
+        backends, these steps can then be accelerated by hardware texture units,
+        which runs faster than a naive implementation. More information can be found
+        in:
 
             GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
             by Christian Sigg.
@@ -17590,19 +18164,22 @@
         calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
         direct evaluation of the B-Spline basis functions in that case.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
         Parameter ``force_nonaccel`` (bool):
             *no description available*
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.eval_cubic_grad(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture1f.eval_cubic_grad(self, pos, active=True)
 
         Evaluate the positional gradient of a cubic B-Spline
 
@@ -17613,16 +18190,16 @@
         to count for the transformation from the unit size volume to the size of its
         shape.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → tuple:
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.eval_cubic_helper(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture1f.eval_cubic_helper(self, pos, active=True)
 
         Helper function to evaluate a clamped cubic B-Spline interpolant
 
@@ -17631,16 +18208,16 @@
         evaluation result is desired, the :py:func:`eval_cubic()` function is faster
         than this simple implementation
 
-        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.eval_cubic_hessian(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture1f.eval_cubic_hessian(self, pos, active=True)
 
         Evaluate the positional gradient and hessian matrix of a cubic B-Spline
 
@@ -17651,58 +18228,80 @@
         to count for the transformation from the unit size volume to the size of its
         shape.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → tuple:
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray], list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.eval_fetch(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture1f.eval_fetch(self, pos, active=True)
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[list[drjit.llvm.ad.Float]]:
+        Returns → tuple[drjit.AnyArray, ...]:
             *no description available*
 
     .. py:method:: mitsuba.Texture1f.filter_mode()
 
-        Return the filter mode
+        Return the texture filtering mode (e.g., nearest, bilinear, etc.)
 
         Returns → drjit.FilterMode:
             *no description available*
 
+    .. py:method:: mitsuba.Texture1f.map()
+
+        Map an imported texture (:py:func:`from_native_handle()`) for use by Dr.Jit
+        (no-op on Metal, required for CUDA/OpenGL).
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Texture1f.migrated()
 
-        Return whether textures with :py:func:`use_accel()` set to ``True`` only store
-        the data as a hardware-accelerated CUDA texture.
-
-        If ``False`` then a copy of the array data will additionally be retained .
+        Is the texture data held exclusively in GPU texture memory?
 
         Returns → bool:
             *no description available*
 
+    .. py:method:: mitsuba.Texture1f.native_handle(self, sub_index=0)
+
+        Return the native texture handle (as an integer), e.g. to display it in a
+        GUI. On Metal this is the ``id<MTLTexture>`` of sub-texture ``sub_index``; on
+        CUDA it is the wrapped OpenGL texture id (``sub_index`` is ignored, and the
+        result is 0 unless the texture wraps an OpenGL handle).
+
+        Parameter ``sub_index`` (int):
+            *no description available*
+
+        Returns → int:
+            *no description available*
+
     .. py:method:: mitsuba.Texture1f.set_tensor(self, tensor, migrate=False)
 
-        Override the texture contents with the provided tensor.
+        Overwrite the texture contents with the provided tensor
 
         This method updates the values of all texels. Changing the texture
-        resolution or its number of channels is also supported. However, on CUDA,
-        such operations have a significantly larger overhead (the GPU pipeline
-        needs to be synchronized for new texture objects to be created).
+        resolution or its number of channels is also supported. However, on the
+        CUDA and Metal backends, such operations have a significantly larger
+        overhead (new hardware texture objects must be created; on CUDA this also
+        synchronizes the GPU pipeline).
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``tensor`` (drjit.llvm.ad.TensorXf):
             *no description available*
@@ -17715,13 +18314,41 @@
 
     .. py:method:: mitsuba.Texture1f.set_value(self, value, migrate=False)
 
-        Override the texture contents with the provided linearized 1D array.
+        Overwrite the texture contents with the provided linearized 1D array
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``value`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f.set_value_with_event(self, value, event, migrate=False)
+
+        Overwrite the texture contents with the provided linearized 1D array and
+        record a device event
+
+        This function is a convenience wrapper that simply does
+
+        .. code-block:: python
+
+           texture.set_value(value)
+           event.record()
+
+        This combination is helpful for interactive workflows, where a producer
+        renders to a texture that is then shown in an user interface. The consumer
+        must await the event before using the texture.
+
+        Parameter ``value`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Parameter ``event`` (drjit.llvm.Event):
             *no description available*
 
         Parameter ``migrate`` (bool):
@@ -17734,6 +18361,13 @@
 
         Return the texture shape
 
+    .. py:method:: mitsuba.Texture1f.srgb()
+
+        Are 8-bit samples decoded from sRGB to linear?
+
+        Returns → bool:
+            *no description available*
+
     .. py:method:: mitsuba.Texture1f.tensor()
 
         Return the texture data as a tensor object
@@ -17741,20 +18375,27 @@
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
+    .. py:method:: mitsuba.Texture1f.unmap()
+
+        Release a mapping established by :py:func:`map()`.
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Texture1f.update_inplace(self, migrate=False)
 
         Update the texture after applying an indirect update to its tensor
-        representation (obtained with py:func:`tensor()`).
+        representation (obtained with :py:func:`tensor()`).
 
-        A tensor representation of this texture object can be retrived with
-        py:func:`tensor()`. That representation can be modified, but in order to apply
-        it succesfuly to the texture, this method must also be called. In short,
-        this method will use the tensor representation to update the texture's
-        internal state.
+        A tensor representation of this texture object can be retrieved with
+        :py:func:`tensor()`. That representation can be modified, but in order to
+        apply it successfully to the texture, this method must also be called. In
+        short, this method will use the tensor representation to update the
+        texture's internal state.
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.)
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``migrate`` (bool):
             *no description available*
@@ -17764,7 +18405,7 @@
 
     .. py:method:: mitsuba.Texture1f.use_accel()
 
-        Return whether texture uses the GPU for storage and evaluation
+        Are hardware texture units used for evaluation?
 
         Returns → bool:
             *no description available*
@@ -17776,39 +18417,95 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
+    .. py:method:: mitsuba.Texture1f.wrap(self, pos)
+
+        Apply the configured texture wrapping mode to an integer position
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Returns → drjit.AnyArray:
+            *no description available*
+
     .. py:method:: mitsuba.Texture1f.wrap_mode()
 
-        Return the wrap mode
+        Return the boundary handling mode for out-of-bounds lookups
 
         Returns → drjit.WrapMode:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f.writable()
+
+        Was this texture created so that kernels may store into it via
+        :py:func:`write()`?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f.write(self, pos, value, active=Bool(True))
+
+        Store values into a writable hardware texture
+
+        The per-channel values in ``value`` are written to the texel addressed by
+        the integer coordinates ``pos``. The texture must have been created with
+        ``writable=True``.
+
+        This is a hardware texture store (a side effect): it is not differentiable,
+        and the written texture is meant for display / external sampling rather than
+        :py:func:`eval()`.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1u):
+            *no description available*
+
+        Parameter ``value`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → None:
             *no description available*
 
 .. py:class:: mitsuba.Texture1f16
 
 
-    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, writable=False, srgb=False)
 
         Create a new texture with the specified size and channel count
 
-        On CUDA, this is a slow operation that synchronizes the GPU pipeline, so
-        texture objects should be reused/updated via :py:func:`set_value()` and
-        :py:func:`set_tensor()` as much as possible.
+        On GPU backends, this is a slow operation that synchronizes the pipeline to
+        rewrite the device memory map. Therefore, prefer reusing and updating
+        texture objects via :py:func:`set_value()` and :py:func:`set_tensor()` over
+        creating new ones.
 
-        When ``use_accel`` is set to ``False`` on CUDA mode, the texture will not
-        use hardware acceleration (allocation and evaluation). In other modes
+        When ``use_accel`` is set to ``False``, GPU backends will emulate the
+        texture API instead of using the hardware texture units. In other modes,
         this argument has no effect.
 
         The ``filter_mode`` parameter defines the interpolation method to be used
         in all evaluation routines. By default, the texture is linearly
         interpolated. Besides nearest/linear filtering, the implementation also
         provides a clamped cubic B-spline interpolation scheme in case a
-        higher-order interpolation is needed. In CUDA mode, this is done using a
-        series of linear lookups to optimally use the hardware (hence, linear
-        filtering must be enabled to use this feature).
+        higher-order interpolation is needed. On the CUDA and Metal backends, this
+        is done using a series of linear lookups to optimally use the hardware
+        (hence, linear filtering must be enabled to use this feature).
 
         When evaluating the texture outside of its boundaries, the ``wrap_mode``
         defines the wrapping method. The default behavior is ``drjit.WrapMode.Clamp``,
         which indefinitely extends the colors on the boundary along each dimension.
+
+        On the CUDA and Metal backends, hardware texture units resolve the sub-texel
+        position using reduced-precision fixed-point weights (8 fractional bits on
+        CUDA, i.e. 256 steps between texels). This does not degrade the stored values
+        or the interpolated quantity, only how finely the fractional position within
+        a texel is resolved. Set ``use_accel=False`` to disable the texture units and
+        avoid this approximation at some cost in performance.
+
+        For 8-bit textures, setting ``srgb`` additionally requests that samples be
+        decoded from sRGB to linear. Passing it for a floating-point texture raises
+        an error. Channels are grouped into hardware RGBA quads, so within each group
+        of four the first three are decoded and the fourth (alpha) is left linear
+        (e.g. channel 3 is linear for a 6-channel texture).
 
         Parameter ``shape`` (collections.abc.Sequence[int]):
             *no description available*
@@ -17825,20 +18522,32 @@
         Parameter ``wrap_mode`` (drjit.WrapMode):
             *no description available*
 
+        Parameter ``writable`` (bool):
+            *no description available*
+
+        Parameter ``srgb`` (bool):
+            *no description available*
+
         Returns → None``:
             *no description available*
 
-    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, srgb=False)
 
-        Construct a new texture from a given tensor.
+        Construct a new texture from a given tensor
 
-        This constructor allocates texture memory with the shape information
-        deduced from ``tensor``. It subsequently invokes :py:func:`set_tensor(tensor)`
-        to fill the texture memory with the provided tensor.
+        This constructor allocates texture memory just like the previous
+        constructor, extracting shape information from ``tensor``. It then also
+        invokes ``set_tensor(tensor)`` to fill the texture memory with the provided
+        tensor.
 
-        When both ``migrate`` and ``use_accel`` are set to ``True`` in CUDA mode, the texture
-        exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage. Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on a GPU backend, the texture is *fully*
+        migrated to GPU texture memory to avoid redundant storage. Note that the
+        texture is still differentiable even when migrated. The :py:func:`value()`
+        and :py:func:`tensor()` operations will perform a reverse migration in this
+        case.
+
+        Both the ``filter_mode`` and ``wrap_mode`` have the same defaults and
+        behaviors as for the previous constructor.
 
         Parameter ``tensor`` (drjit.llvm.ad.TensorXf16):
             *no description available*
@@ -17855,32 +18564,47 @@
         Parameter ``wrap_mode`` (drjit.WrapMode):
             *no description available*
 
+        Parameter ``srgb`` (bool):
+            *no description available*
+
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.eval(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture1f16.channel_count()
+
+        Return the number of channels (equals ``shape()[ndim()-1]``)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f16.eval(self, pos, active=True)
 
         Evaluate the linear interpolant represented by this texture.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+        When hardware-acceleration is not available, the numerical precision of the
+        interpolation is dictated by the floating point precision of the query
+        point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.eval_cubic(self, pos, active=Bool(True), force_nonaccel=False)
+    .. py:method:: mitsuba.Texture1f16.eval_cubic(self, pos, active=True, force_nonaccel=False)
 
         Evaluate a clamped cubic B-Spline interpolant represented by this
         texture
 
         Instead of interpolating the texture via B-Spline basis functions, the
         implementation transforms this calculation into an equivalent weighted
-        sum of several linear interpolant evaluations. In CUDA mode, this can
-        then be accelerated by hardware texture units, which runs faster than
-        a naive implementation. More information can be found in:
+        sum of several linear interpolant evaluations. On the CUDA and Metal
+        backends, these steps can then be accelerated by hardware texture units,
+        which runs faster than a naive implementation. More information can be found
+        in:
 
             GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
             by Christian Sigg.
@@ -17891,19 +18615,22 @@
         calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
         direct evaluation of the B-Spline basis functions in that case.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
         Parameter ``force_nonaccel`` (bool):
             *no description available*
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.eval_cubic_grad(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture1f16.eval_cubic_grad(self, pos, active=True)
 
         Evaluate the positional gradient of a cubic B-Spline
 
@@ -17914,16 +18641,16 @@
         to count for the transformation from the unit size volume to the size of its
         shape.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → tuple:
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.eval_cubic_helper(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture1f16.eval_cubic_helper(self, pos, active=True)
 
         Helper function to evaluate a clamped cubic B-Spline interpolant
 
@@ -17932,16 +18659,16 @@
         evaluation result is desired, the :py:func:`eval_cubic()` function is faster
         than this simple implementation
 
-        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.eval_cubic_hessian(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture1f16.eval_cubic_hessian(self, pos, active=True)
 
         Evaluate the positional gradient and hessian matrix of a cubic B-Spline
 
@@ -17952,58 +18679,80 @@
         to count for the transformation from the unit size volume to the size of its
         shape.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → tuple:
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray], list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.eval_fetch(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture1f16.eval_fetch(self, pos, active=True)
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[list[drjit.llvm.ad.Float]]:
+        Returns → tuple[drjit.AnyArray, ...]:
             *no description available*
 
     .. py:method:: mitsuba.Texture1f16.filter_mode()
 
-        Return the filter mode
+        Return the texture filtering mode (e.g., nearest, bilinear, etc.)
 
         Returns → drjit.FilterMode:
             *no description available*
 
+    .. py:method:: mitsuba.Texture1f16.map()
+
+        Map an imported texture (:py:func:`from_native_handle()`) for use by Dr.Jit
+        (no-op on Metal, required for CUDA/OpenGL).
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Texture1f16.migrated()
 
-        Return whether textures with :py:func:`use_accel()` set to ``True`` only store
-        the data as a hardware-accelerated CUDA texture.
-
-        If ``False`` then a copy of the array data will additionally be retained .
+        Is the texture data held exclusively in GPU texture memory?
 
         Returns → bool:
             *no description available*
 
+    .. py:method:: mitsuba.Texture1f16.native_handle(self, sub_index=0)
+
+        Return the native texture handle (as an integer), e.g. to display it in a
+        GUI. On Metal this is the ``id<MTLTexture>`` of sub-texture ``sub_index``; on
+        CUDA it is the wrapped OpenGL texture id (``sub_index`` is ignored, and the
+        result is 0 unless the texture wraps an OpenGL handle).
+
+        Parameter ``sub_index`` (int):
+            *no description available*
+
+        Returns → int:
+            *no description available*
+
     .. py:method:: mitsuba.Texture1f16.set_tensor(self, tensor, migrate=False)
 
-        Override the texture contents with the provided tensor.
+        Overwrite the texture contents with the provided tensor
 
         This method updates the values of all texels. Changing the texture
-        resolution or its number of channels is also supported. However, on CUDA,
-        such operations have a significantly larger overhead (the GPU pipeline
-        needs to be synchronized for new texture objects to be created).
+        resolution or its number of channels is also supported. However, on the
+        CUDA and Metal backends, such operations have a significantly larger
+        overhead (new hardware texture objects must be created; on CUDA this also
+        synchronizes the GPU pipeline).
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``tensor`` (drjit.llvm.ad.TensorXf16):
             *no description available*
@@ -18016,13 +18765,41 @@
 
     .. py:method:: mitsuba.Texture1f16.set_value(self, value, migrate=False)
 
-        Override the texture contents with the provided linearized 1D array.
+        Overwrite the texture contents with the provided linearized 1D array
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``value`` (drjit.llvm.ad.Float16):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f16.set_value_with_event(self, value, event, migrate=False)
+
+        Overwrite the texture contents with the provided linearized 1D array and
+        record a device event
+
+        This function is a convenience wrapper that simply does
+
+        .. code-block:: python
+
+           texture.set_value(value)
+           event.record()
+
+        This combination is helpful for interactive workflows, where a producer
+        renders to a texture that is then shown in an user interface. The consumer
+        must await the event before using the texture.
+
+        Parameter ``value`` (drjit.llvm.ad.Float16):
+            *no description available*
+
+        Parameter ``event`` (drjit.llvm.Event):
             *no description available*
 
         Parameter ``migrate`` (bool):
@@ -18035,6 +18812,13 @@
 
         Return the texture shape
 
+    .. py:method:: mitsuba.Texture1f16.srgb()
+
+        Are 8-bit samples decoded from sRGB to linear?
+
+        Returns → bool:
+            *no description available*
+
     .. py:method:: mitsuba.Texture1f16.tensor()
 
         Return the texture data as a tensor object
@@ -18042,20 +18826,27 @@
         Returns → drjit.llvm.ad.TensorXf16:
             *no description available*
 
+    .. py:method:: mitsuba.Texture1f16.unmap()
+
+        Release a mapping established by :py:func:`map()`.
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Texture1f16.update_inplace(self, migrate=False)
 
         Update the texture after applying an indirect update to its tensor
-        representation (obtained with py:func:`tensor()`).
+        representation (obtained with :py:func:`tensor()`).
 
-        A tensor representation of this texture object can be retrived with
-        py:func:`tensor()`. That representation can be modified, but in order to apply
-        it succesfuly to the texture, this method must also be called. In short,
-        this method will use the tensor representation to update the texture's
-        internal state.
+        A tensor representation of this texture object can be retrieved with
+        :py:func:`tensor()`. That representation can be modified, but in order to
+        apply it successfully to the texture, this method must also be called. In
+        short, this method will use the tensor representation to update the
+        texture's internal state.
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.)
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``migrate`` (bool):
             *no description available*
@@ -18065,7 +18856,7 @@
 
     .. py:method:: mitsuba.Texture1f16.use_accel()
 
-        Return whether texture uses the GPU for storage and evaluation
+        Are hardware texture units used for evaluation?
 
         Returns → bool:
             *no description available*
@@ -18077,39 +18868,95 @@
         Returns → drjit.llvm.ad.Float16:
             *no description available*
 
+    .. py:method:: mitsuba.Texture1f16.wrap(self, pos)
+
+        Apply the configured texture wrapping mode to an integer position
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Returns → drjit.AnyArray:
+            *no description available*
+
     .. py:method:: mitsuba.Texture1f16.wrap_mode()
 
-        Return the wrap mode
+        Return the boundary handling mode for out-of-bounds lookups
 
         Returns → drjit.WrapMode:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f16.writable()
+
+        Was this texture created so that kernels may store into it via
+        :py:func:`write()`?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f16.write(self, pos, value, active=Bool(True))
+
+        Store values into a writable hardware texture
+
+        The per-channel values in ``value`` are written to the texel addressed by
+        the integer coordinates ``pos``. The texture must have been created with
+        ``writable=True``.
+
+        This is a hardware texture store (a side effect): it is not differentiable,
+        and the written texture is meant for display / external sampling rather than
+        :py:func:`eval()`.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1u):
+            *no description available*
+
+        Parameter ``value`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → None:
             *no description available*
 
 .. py:class:: mitsuba.Texture1f64
 
 
-    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, writable=False, srgb=False)
 
         Create a new texture with the specified size and channel count
 
-        On CUDA, this is a slow operation that synchronizes the GPU pipeline, so
-        texture objects should be reused/updated via :py:func:`set_value()` and
-        :py:func:`set_tensor()` as much as possible.
+        On GPU backends, this is a slow operation that synchronizes the pipeline to
+        rewrite the device memory map. Therefore, prefer reusing and updating
+        texture objects via :py:func:`set_value()` and :py:func:`set_tensor()` over
+        creating new ones.
 
-        When ``use_accel`` is set to ``False`` on CUDA mode, the texture will not
-        use hardware acceleration (allocation and evaluation). In other modes
+        When ``use_accel`` is set to ``False``, GPU backends will emulate the
+        texture API instead of using the hardware texture units. In other modes,
         this argument has no effect.
 
         The ``filter_mode`` parameter defines the interpolation method to be used
         in all evaluation routines. By default, the texture is linearly
         interpolated. Besides nearest/linear filtering, the implementation also
         provides a clamped cubic B-spline interpolation scheme in case a
-        higher-order interpolation is needed. In CUDA mode, this is done using a
-        series of linear lookups to optimally use the hardware (hence, linear
-        filtering must be enabled to use this feature).
+        higher-order interpolation is needed. On the CUDA and Metal backends, this
+        is done using a series of linear lookups to optimally use the hardware
+        (hence, linear filtering must be enabled to use this feature).
 
         When evaluating the texture outside of its boundaries, the ``wrap_mode``
         defines the wrapping method. The default behavior is ``drjit.WrapMode.Clamp``,
         which indefinitely extends the colors on the boundary along each dimension.
+
+        On the CUDA and Metal backends, hardware texture units resolve the sub-texel
+        position using reduced-precision fixed-point weights (8 fractional bits on
+        CUDA, i.e. 256 steps between texels). This does not degrade the stored values
+        or the interpolated quantity, only how finely the fractional position within
+        a texel is resolved. Set ``use_accel=False`` to disable the texture units and
+        avoid this approximation at some cost in performance.
+
+        For 8-bit textures, setting ``srgb`` additionally requests that samples be
+        decoded from sRGB to linear. Passing it for a floating-point texture raises
+        an error. Channels are grouped into hardware RGBA quads, so within each group
+        of four the first three are decoded and the fourth (alpha) is left linear
+        (e.g. channel 3 is linear for a 6-channel texture).
 
         Parameter ``shape`` (collections.abc.Sequence[int]):
             *no description available*
@@ -18126,20 +18973,32 @@
         Parameter ``wrap_mode`` (drjit.WrapMode):
             *no description available*
 
+        Parameter ``writable`` (bool):
+            *no description available*
+
+        Parameter ``srgb`` (bool):
+            *no description available*
+
         Returns → None``:
             *no description available*
 
-    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, srgb=False)
 
-        Construct a new texture from a given tensor.
+        Construct a new texture from a given tensor
 
-        This constructor allocates texture memory with the shape information
-        deduced from ``tensor``. It subsequently invokes :py:func:`set_tensor(tensor)`
-        to fill the texture memory with the provided tensor.
+        This constructor allocates texture memory just like the previous
+        constructor, extracting shape information from ``tensor``. It then also
+        invokes ``set_tensor(tensor)`` to fill the texture memory with the provided
+        tensor.
 
-        When both ``migrate`` and ``use_accel`` are set to ``True`` in CUDA mode, the texture
-        exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage. Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on a GPU backend, the texture is *fully*
+        migrated to GPU texture memory to avoid redundant storage. Note that the
+        texture is still differentiable even when migrated. The :py:func:`value()`
+        and :py:func:`tensor()` operations will perform a reverse migration in this
+        case.
+
+        Both the ``filter_mode`` and ``wrap_mode`` have the same defaults and
+        behaviors as for the previous constructor.
 
         Parameter ``tensor`` (drjit.llvm.ad.TensorXf64):
             *no description available*
@@ -18156,32 +19015,47 @@
         Parameter ``wrap_mode`` (drjit.WrapMode):
             *no description available*
 
+        Parameter ``srgb`` (bool):
+            *no description available*
+
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.eval(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture1f64.channel_count()
+
+        Return the number of channels (equals ``shape()[ndim()-1]``)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f64.eval(self, pos, active=True)
 
         Evaluate the linear interpolant represented by this texture.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+        When hardware-acceleration is not available, the numerical precision of the
+        interpolation is dictated by the floating point precision of the query
+        point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.eval_cubic(self, pos, active=Bool(True), force_nonaccel=False)
+    .. py:method:: mitsuba.Texture1f64.eval_cubic(self, pos, active=True, force_nonaccel=False)
 
         Evaluate a clamped cubic B-Spline interpolant represented by this
         texture
 
         Instead of interpolating the texture via B-Spline basis functions, the
         implementation transforms this calculation into an equivalent weighted
-        sum of several linear interpolant evaluations. In CUDA mode, this can
-        then be accelerated by hardware texture units, which runs faster than
-        a naive implementation. More information can be found in:
+        sum of several linear interpolant evaluations. On the CUDA and Metal
+        backends, these steps can then be accelerated by hardware texture units,
+        which runs faster than a naive implementation. More information can be found
+        in:
 
             GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
             by Christian Sigg.
@@ -18192,19 +19066,22 @@
         calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
         direct evaluation of the B-Spline basis functions in that case.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
         Parameter ``force_nonaccel`` (bool):
             *no description available*
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.eval_cubic_grad(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture1f64.eval_cubic_grad(self, pos, active=True)
 
         Evaluate the positional gradient of a cubic B-Spline
 
@@ -18215,16 +19092,16 @@
         to count for the transformation from the unit size volume to the size of its
         shape.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → tuple:
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.eval_cubic_helper(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture1f64.eval_cubic_helper(self, pos, active=True)
 
         Helper function to evaluate a clamped cubic B-Spline interpolant
 
@@ -18233,16 +19110,16 @@
         evaluation result is desired, the :py:func:`eval_cubic()` function is faster
         than this simple implementation
 
-        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.eval_cubic_hessian(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture1f64.eval_cubic_hessian(self, pos, active=True)
 
         Evaluate the positional gradient and hessian matrix of a cubic B-Spline
 
@@ -18253,58 +19130,80 @@
         to count for the transformation from the unit size volume to the size of its
         shape.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → tuple:
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray], list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.eval_fetch(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture1f64.eval_fetch(self, pos, active=True)
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array1f):
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[list[drjit.llvm.ad.Float]]:
+        Returns → tuple[drjit.AnyArray, ...]:
             *no description available*
 
     .. py:method:: mitsuba.Texture1f64.filter_mode()
 
-        Return the filter mode
+        Return the texture filtering mode (e.g., nearest, bilinear, etc.)
 
         Returns → drjit.FilterMode:
             *no description available*
 
+    .. py:method:: mitsuba.Texture1f64.map()
+
+        Map an imported texture (:py:func:`from_native_handle()`) for use by Dr.Jit
+        (no-op on Metal, required for CUDA/OpenGL).
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Texture1f64.migrated()
 
-        Return whether textures with :py:func:`use_accel()` set to ``True`` only store
-        the data as a hardware-accelerated CUDA texture.
-
-        If ``False`` then a copy of the array data will additionally be retained .
+        Is the texture data held exclusively in GPU texture memory?
 
         Returns → bool:
             *no description available*
 
+    .. py:method:: mitsuba.Texture1f64.native_handle(self, sub_index=0)
+
+        Return the native texture handle (as an integer), e.g. to display it in a
+        GUI. On Metal this is the ``id<MTLTexture>`` of sub-texture ``sub_index``; on
+        CUDA it is the wrapped OpenGL texture id (``sub_index`` is ignored, and the
+        result is 0 unless the texture wraps an OpenGL handle).
+
+        Parameter ``sub_index`` (int):
+            *no description available*
+
+        Returns → int:
+            *no description available*
+
     .. py:method:: mitsuba.Texture1f64.set_tensor(self, tensor, migrate=False)
 
-        Override the texture contents with the provided tensor.
+        Overwrite the texture contents with the provided tensor
 
         This method updates the values of all texels. Changing the texture
-        resolution or its number of channels is also supported. However, on CUDA,
-        such operations have a significantly larger overhead (the GPU pipeline
-        needs to be synchronized for new texture objects to be created).
+        resolution or its number of channels is also supported. However, on the
+        CUDA and Metal backends, such operations have a significantly larger
+        overhead (new hardware texture objects must be created; on CUDA this also
+        synchronizes the GPU pipeline).
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``tensor`` (drjit.llvm.ad.TensorXf64):
             *no description available*
@@ -18317,13 +19216,41 @@
 
     .. py:method:: mitsuba.Texture1f64.set_value(self, value, migrate=False)
 
-        Override the texture contents with the provided linearized 1D array.
+        Overwrite the texture contents with the provided linearized 1D array
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``value`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f64.set_value_with_event(self, value, event, migrate=False)
+
+        Overwrite the texture contents with the provided linearized 1D array and
+        record a device event
+
+        This function is a convenience wrapper that simply does
+
+        .. code-block:: python
+
+           texture.set_value(value)
+           event.record()
+
+        This combination is helpful for interactive workflows, where a producer
+        renders to a texture that is then shown in an user interface. The consumer
+        must await the event before using the texture.
+
+        Parameter ``value`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+        Parameter ``event`` (drjit.llvm.Event):
             *no description available*
 
         Parameter ``migrate`` (bool):
@@ -18336,6 +19263,13 @@
 
         Return the texture shape
 
+    .. py:method:: mitsuba.Texture1f64.srgb()
+
+        Are 8-bit samples decoded from sRGB to linear?
+
+        Returns → bool:
+            *no description available*
+
     .. py:method:: mitsuba.Texture1f64.tensor()
 
         Return the texture data as a tensor object
@@ -18343,20 +19277,27 @@
         Returns → drjit.llvm.ad.TensorXf64:
             *no description available*
 
+    .. py:method:: mitsuba.Texture1f64.unmap()
+
+        Release a mapping established by :py:func:`map()`.
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Texture1f64.update_inplace(self, migrate=False)
 
         Update the texture after applying an indirect update to its tensor
-        representation (obtained with py:func:`tensor()`).
+        representation (obtained with :py:func:`tensor()`).
 
-        A tensor representation of this texture object can be retrived with
-        py:func:`tensor()`. That representation can be modified, but in order to apply
-        it succesfuly to the texture, this method must also be called. In short,
-        this method will use the tensor representation to update the texture's
-        internal state.
+        A tensor representation of this texture object can be retrieved with
+        :py:func:`tensor()`. That representation can be modified, but in order to
+        apply it successfully to the texture, this method must also be called. In
+        short, this method will use the tensor representation to update the
+        texture's internal state.
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.)
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``migrate`` (bool):
             *no description available*
@@ -18366,7 +19307,7 @@
 
     .. py:method:: mitsuba.Texture1f64.use_accel()
 
-        Return whether texture uses the GPU for storage and evaluation
+        Are hardware texture units used for evaluation?
 
         Returns → bool:
             *no description available*
@@ -18378,39 +19319,95 @@
         Returns → drjit.llvm.ad.Float64:
             *no description available*
 
+    .. py:method:: mitsuba.Texture1f64.wrap(self, pos)
+
+        Apply the configured texture wrapping mode to an integer position
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Returns → drjit.AnyArray:
+            *no description available*
+
     .. py:method:: mitsuba.Texture1f64.wrap_mode()
 
-        Return the wrap mode
+        Return the boundary handling mode for out-of-bounds lookups
 
         Returns → drjit.WrapMode:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f64.writable()
+
+        Was this texture created so that kernels may store into it via
+        :py:func:`write()`?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture1f64.write(self, pos, value, active=Bool(True))
+
+        Store values into a writable hardware texture
+
+        The per-channel values in ``value`` are written to the texel addressed by
+        the integer coordinates ``pos``. The texture must have been created with
+        ``writable=True``.
+
+        This is a hardware texture store (a side effect): it is not differentiable,
+        and the written texture is meant for display / external sampling rather than
+        :py:func:`eval()`.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1u):
+            *no description available*
+
+        Parameter ``value`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → None:
             *no description available*
 
 .. py:class:: mitsuba.Texture2f
 
 
-    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, writable=False, srgb=False)
 
         Create a new texture with the specified size and channel count
 
-        On CUDA, this is a slow operation that synchronizes the GPU pipeline, so
-        texture objects should be reused/updated via :py:func:`set_value()` and
-        :py:func:`set_tensor()` as much as possible.
+        On GPU backends, this is a slow operation that synchronizes the pipeline to
+        rewrite the device memory map. Therefore, prefer reusing and updating
+        texture objects via :py:func:`set_value()` and :py:func:`set_tensor()` over
+        creating new ones.
 
-        When ``use_accel`` is set to ``False`` on CUDA mode, the texture will not
-        use hardware acceleration (allocation and evaluation). In other modes
+        When ``use_accel`` is set to ``False``, GPU backends will emulate the
+        texture API instead of using the hardware texture units. In other modes,
         this argument has no effect.
 
         The ``filter_mode`` parameter defines the interpolation method to be used
         in all evaluation routines. By default, the texture is linearly
         interpolated. Besides nearest/linear filtering, the implementation also
         provides a clamped cubic B-spline interpolation scheme in case a
-        higher-order interpolation is needed. In CUDA mode, this is done using a
-        series of linear lookups to optimally use the hardware (hence, linear
-        filtering must be enabled to use this feature).
+        higher-order interpolation is needed. On the CUDA and Metal backends, this
+        is done using a series of linear lookups to optimally use the hardware
+        (hence, linear filtering must be enabled to use this feature).
 
         When evaluating the texture outside of its boundaries, the ``wrap_mode``
         defines the wrapping method. The default behavior is ``drjit.WrapMode.Clamp``,
         which indefinitely extends the colors on the boundary along each dimension.
+
+        On the CUDA and Metal backends, hardware texture units resolve the sub-texel
+        position using reduced-precision fixed-point weights (8 fractional bits on
+        CUDA, i.e. 256 steps between texels). This does not degrade the stored values
+        or the interpolated quantity, only how finely the fractional position within
+        a texel is resolved. Set ``use_accel=False`` to disable the texture units and
+        avoid this approximation at some cost in performance.
+
+        For 8-bit textures, setting ``srgb`` additionally requests that samples be
+        decoded from sRGB to linear. Passing it for a floating-point texture raises
+        an error. Channels are grouped into hardware RGBA quads, so within each group
+        of four the first three are decoded and the fourth (alpha) is left linear
+        (e.g. channel 3 is linear for a 6-channel texture).
 
         Parameter ``shape`` (collections.abc.Sequence[int]):
             *no description available*
@@ -18427,20 +19424,32 @@
         Parameter ``wrap_mode`` (drjit.WrapMode):
             *no description available*
 
+        Parameter ``writable`` (bool):
+            *no description available*
+
+        Parameter ``srgb`` (bool):
+            *no description available*
+
         Returns → None``:
             *no description available*
 
-    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, srgb=False)
 
-        Construct a new texture from a given tensor.
+        Construct a new texture from a given tensor
 
-        This constructor allocates texture memory with the shape information
-        deduced from ``tensor``. It subsequently invokes :py:func:`set_tensor(tensor)`
-        to fill the texture memory with the provided tensor.
+        This constructor allocates texture memory just like the previous
+        constructor, extracting shape information from ``tensor``. It then also
+        invokes ``set_tensor(tensor)`` to fill the texture memory with the provided
+        tensor.
 
-        When both ``migrate`` and ``use_accel`` are set to ``True`` in CUDA mode, the texture
-        exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage. Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on a GPU backend, the texture is *fully*
+        migrated to GPU texture memory to avoid redundant storage. Note that the
+        texture is still differentiable even when migrated. The :py:func:`value()`
+        and :py:func:`tensor()` operations will perform a reverse migration in this
+        case.
+
+        Both the ``filter_mode`` and ``wrap_mode`` have the same defaults and
+        behaviors as for the previous constructor.
 
         Parameter ``tensor`` (drjit.llvm.ad.TensorXf):
             *no description available*
@@ -18457,32 +19466,47 @@
         Parameter ``wrap_mode`` (drjit.WrapMode):
             *no description available*
 
+        Parameter ``srgb`` (bool):
+            *no description available*
+
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.eval(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture2f.channel_count()
+
+        Return the number of channels (equals ``shape()[ndim()-1]``)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f.eval(self, pos, active=True)
 
         Evaluate the linear interpolant represented by this texture.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+        When hardware-acceleration is not available, the numerical precision of the
+        interpolation is dictated by the floating point precision of the query
+        point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.eval_cubic(self, pos, active=Bool(True), force_nonaccel=False)
+    .. py:method:: mitsuba.Texture2f.eval_cubic(self, pos, active=True, force_nonaccel=False)
 
         Evaluate a clamped cubic B-Spline interpolant represented by this
         texture
 
         Instead of interpolating the texture via B-Spline basis functions, the
         implementation transforms this calculation into an equivalent weighted
-        sum of several linear interpolant evaluations. In CUDA mode, this can
-        then be accelerated by hardware texture units, which runs faster than
-        a naive implementation. More information can be found in:
+        sum of several linear interpolant evaluations. On the CUDA and Metal
+        backends, these steps can then be accelerated by hardware texture units,
+        which runs faster than a naive implementation. More information can be found
+        in:
 
             GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
             by Christian Sigg.
@@ -18493,19 +19517,22 @@
         calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
         direct evaluation of the B-Spline basis functions in that case.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
         Parameter ``force_nonaccel`` (bool):
             *no description available*
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.eval_cubic_grad(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture2f.eval_cubic_grad(self, pos, active=True)
 
         Evaluate the positional gradient of a cubic B-Spline
 
@@ -18516,16 +19543,16 @@
         to count for the transformation from the unit size volume to the size of its
         shape.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → tuple:
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.eval_cubic_helper(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture2f.eval_cubic_helper(self, pos, active=True)
 
         Helper function to evaluate a clamped cubic B-Spline interpolant
 
@@ -18534,16 +19561,16 @@
         evaluation result is desired, the :py:func:`eval_cubic()` function is faster
         than this simple implementation
 
-        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.eval_cubic_hessian(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture2f.eval_cubic_hessian(self, pos, active=True)
 
         Evaluate the positional gradient and hessian matrix of a cubic B-Spline
 
@@ -18554,58 +19581,80 @@
         to count for the transformation from the unit size volume to the size of its
         shape.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → tuple:
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray], list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.eval_fetch(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture2f.eval_fetch(self, pos, active=True)
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[list[drjit.llvm.ad.Float]]:
+        Returns → tuple[drjit.AnyArray, ...]:
             *no description available*
 
     .. py:method:: mitsuba.Texture2f.filter_mode()
 
-        Return the filter mode
+        Return the texture filtering mode (e.g., nearest, bilinear, etc.)
 
         Returns → drjit.FilterMode:
             *no description available*
 
+    .. py:method:: mitsuba.Texture2f.map()
+
+        Map an imported texture (:py:func:`from_native_handle()`) for use by Dr.Jit
+        (no-op on Metal, required for CUDA/OpenGL).
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Texture2f.migrated()
 
-        Return whether textures with :py:func:`use_accel()` set to ``True`` only store
-        the data as a hardware-accelerated CUDA texture.
-
-        If ``False`` then a copy of the array data will additionally be retained .
+        Is the texture data held exclusively in GPU texture memory?
 
         Returns → bool:
             *no description available*
 
+    .. py:method:: mitsuba.Texture2f.native_handle(self, sub_index=0)
+
+        Return the native texture handle (as an integer), e.g. to display it in a
+        GUI. On Metal this is the ``id<MTLTexture>`` of sub-texture ``sub_index``; on
+        CUDA it is the wrapped OpenGL texture id (``sub_index`` is ignored, and the
+        result is 0 unless the texture wraps an OpenGL handle).
+
+        Parameter ``sub_index`` (int):
+            *no description available*
+
+        Returns → int:
+            *no description available*
+
     .. py:method:: mitsuba.Texture2f.set_tensor(self, tensor, migrate=False)
 
-        Override the texture contents with the provided tensor.
+        Overwrite the texture contents with the provided tensor
 
         This method updates the values of all texels. Changing the texture
-        resolution or its number of channels is also supported. However, on CUDA,
-        such operations have a significantly larger overhead (the GPU pipeline
-        needs to be synchronized for new texture objects to be created).
+        resolution or its number of channels is also supported. However, on the
+        CUDA and Metal backends, such operations have a significantly larger
+        overhead (new hardware texture objects must be created; on CUDA this also
+        synchronizes the GPU pipeline).
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``tensor`` (drjit.llvm.ad.TensorXf):
             *no description available*
@@ -18618,13 +19667,41 @@
 
     .. py:method:: mitsuba.Texture2f.set_value(self, value, migrate=False)
 
-        Override the texture contents with the provided linearized 1D array.
+        Overwrite the texture contents with the provided linearized 1D array
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``value`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f.set_value_with_event(self, value, event, migrate=False)
+
+        Overwrite the texture contents with the provided linearized 1D array and
+        record a device event
+
+        This function is a convenience wrapper that simply does
+
+        .. code-block:: python
+
+           texture.set_value(value)
+           event.record()
+
+        This combination is helpful for interactive workflows, where a producer
+        renders to a texture that is then shown in an user interface. The consumer
+        must await the event before using the texture.
+
+        Parameter ``value`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Parameter ``event`` (drjit.llvm.Event):
             *no description available*
 
         Parameter ``migrate`` (bool):
@@ -18637,6 +19714,13 @@
 
         Return the texture shape
 
+    .. py:method:: mitsuba.Texture2f.srgb()
+
+        Are 8-bit samples decoded from sRGB to linear?
+
+        Returns → bool:
+            *no description available*
+
     .. py:method:: mitsuba.Texture2f.tensor()
 
         Return the texture data as a tensor object
@@ -18644,20 +19728,27 @@
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
+    .. py:method:: mitsuba.Texture2f.unmap()
+
+        Release a mapping established by :py:func:`map()`.
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Texture2f.update_inplace(self, migrate=False)
 
         Update the texture after applying an indirect update to its tensor
-        representation (obtained with py:func:`tensor()`).
+        representation (obtained with :py:func:`tensor()`).
 
-        A tensor representation of this texture object can be retrived with
-        py:func:`tensor()`. That representation can be modified, but in order to apply
-        it succesfuly to the texture, this method must also be called. In short,
-        this method will use the tensor representation to update the texture's
-        internal state.
+        A tensor representation of this texture object can be retrieved with
+        :py:func:`tensor()`. That representation can be modified, but in order to
+        apply it successfully to the texture, this method must also be called. In
+        short, this method will use the tensor representation to update the
+        texture's internal state.
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.)
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``migrate`` (bool):
             *no description available*
@@ -18667,7 +19758,7 @@
 
     .. py:method:: mitsuba.Texture2f.use_accel()
 
-        Return whether texture uses the GPU for storage and evaluation
+        Are hardware texture units used for evaluation?
 
         Returns → bool:
             *no description available*
@@ -18679,39 +19770,95 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
+    .. py:method:: mitsuba.Texture2f.wrap(self, pos)
+
+        Apply the configured texture wrapping mode to an integer position
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Returns → drjit.AnyArray:
+            *no description available*
+
     .. py:method:: mitsuba.Texture2f.wrap_mode()
 
-        Return the wrap mode
+        Return the boundary handling mode for out-of-bounds lookups
 
         Returns → drjit.WrapMode:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f.writable()
+
+        Was this texture created so that kernels may store into it via
+        :py:func:`write()`?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f.write(self, pos, value, active=Bool(True))
+
+        Store values into a writable hardware texture
+
+        The per-channel values in ``value`` are written to the texel addressed by
+        the integer coordinates ``pos``. The texture must have been created with
+        ``writable=True``.
+
+        This is a hardware texture store (a side effect): it is not differentiable,
+        and the written texture is meant for display / external sampling rather than
+        :py:func:`eval()`.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2u):
+            *no description available*
+
+        Parameter ``value`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → None:
             *no description available*
 
 .. py:class:: mitsuba.Texture2f16
 
 
-    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, writable=False, srgb=False)
 
         Create a new texture with the specified size and channel count
 
-        On CUDA, this is a slow operation that synchronizes the GPU pipeline, so
-        texture objects should be reused/updated via :py:func:`set_value()` and
-        :py:func:`set_tensor()` as much as possible.
+        On GPU backends, this is a slow operation that synchronizes the pipeline to
+        rewrite the device memory map. Therefore, prefer reusing and updating
+        texture objects via :py:func:`set_value()` and :py:func:`set_tensor()` over
+        creating new ones.
 
-        When ``use_accel`` is set to ``False`` on CUDA mode, the texture will not
-        use hardware acceleration (allocation and evaluation). In other modes
+        When ``use_accel`` is set to ``False``, GPU backends will emulate the
+        texture API instead of using the hardware texture units. In other modes,
         this argument has no effect.
 
         The ``filter_mode`` parameter defines the interpolation method to be used
         in all evaluation routines. By default, the texture is linearly
         interpolated. Besides nearest/linear filtering, the implementation also
         provides a clamped cubic B-spline interpolation scheme in case a
-        higher-order interpolation is needed. In CUDA mode, this is done using a
-        series of linear lookups to optimally use the hardware (hence, linear
-        filtering must be enabled to use this feature).
+        higher-order interpolation is needed. On the CUDA and Metal backends, this
+        is done using a series of linear lookups to optimally use the hardware
+        (hence, linear filtering must be enabled to use this feature).
 
         When evaluating the texture outside of its boundaries, the ``wrap_mode``
         defines the wrapping method. The default behavior is ``drjit.WrapMode.Clamp``,
         which indefinitely extends the colors on the boundary along each dimension.
+
+        On the CUDA and Metal backends, hardware texture units resolve the sub-texel
+        position using reduced-precision fixed-point weights (8 fractional bits on
+        CUDA, i.e. 256 steps between texels). This does not degrade the stored values
+        or the interpolated quantity, only how finely the fractional position within
+        a texel is resolved. Set ``use_accel=False`` to disable the texture units and
+        avoid this approximation at some cost in performance.
+
+        For 8-bit textures, setting ``srgb`` additionally requests that samples be
+        decoded from sRGB to linear. Passing it for a floating-point texture raises
+        an error. Channels are grouped into hardware RGBA quads, so within each group
+        of four the first three are decoded and the fourth (alpha) is left linear
+        (e.g. channel 3 is linear for a 6-channel texture).
 
         Parameter ``shape`` (collections.abc.Sequence[int]):
             *no description available*
@@ -18728,20 +19875,32 @@
         Parameter ``wrap_mode`` (drjit.WrapMode):
             *no description available*
 
+        Parameter ``writable`` (bool):
+            *no description available*
+
+        Parameter ``srgb`` (bool):
+            *no description available*
+
         Returns → None``:
             *no description available*
 
-    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, srgb=False)
 
-        Construct a new texture from a given tensor.
+        Construct a new texture from a given tensor
 
-        This constructor allocates texture memory with the shape information
-        deduced from ``tensor``. It subsequently invokes :py:func:`set_tensor(tensor)`
-        to fill the texture memory with the provided tensor.
+        This constructor allocates texture memory just like the previous
+        constructor, extracting shape information from ``tensor``. It then also
+        invokes ``set_tensor(tensor)`` to fill the texture memory with the provided
+        tensor.
 
-        When both ``migrate`` and ``use_accel`` are set to ``True`` in CUDA mode, the texture
-        exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage. Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on a GPU backend, the texture is *fully*
+        migrated to GPU texture memory to avoid redundant storage. Note that the
+        texture is still differentiable even when migrated. The :py:func:`value()`
+        and :py:func:`tensor()` operations will perform a reverse migration in this
+        case.
+
+        Both the ``filter_mode`` and ``wrap_mode`` have the same defaults and
+        behaviors as for the previous constructor.
 
         Parameter ``tensor`` (drjit.llvm.ad.TensorXf16):
             *no description available*
@@ -18758,32 +19917,47 @@
         Parameter ``wrap_mode`` (drjit.WrapMode):
             *no description available*
 
+        Parameter ``srgb`` (bool):
+            *no description available*
+
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.eval(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture2f16.channel_count()
+
+        Return the number of channels (equals ``shape()[ndim()-1]``)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f16.eval(self, pos, active=True)
 
         Evaluate the linear interpolant represented by this texture.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+        When hardware-acceleration is not available, the numerical precision of the
+        interpolation is dictated by the floating point precision of the query
+        point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.eval_cubic(self, pos, active=Bool(True), force_nonaccel=False)
+    .. py:method:: mitsuba.Texture2f16.eval_cubic(self, pos, active=True, force_nonaccel=False)
 
         Evaluate a clamped cubic B-Spline interpolant represented by this
         texture
 
         Instead of interpolating the texture via B-Spline basis functions, the
         implementation transforms this calculation into an equivalent weighted
-        sum of several linear interpolant evaluations. In CUDA mode, this can
-        then be accelerated by hardware texture units, which runs faster than
-        a naive implementation. More information can be found in:
+        sum of several linear interpolant evaluations. On the CUDA and Metal
+        backends, these steps can then be accelerated by hardware texture units,
+        which runs faster than a naive implementation. More information can be found
+        in:
 
             GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
             by Christian Sigg.
@@ -18794,19 +19968,22 @@
         calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
         direct evaluation of the B-Spline basis functions in that case.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
         Parameter ``force_nonaccel`` (bool):
             *no description available*
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.eval_cubic_grad(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture2f16.eval_cubic_grad(self, pos, active=True)
 
         Evaluate the positional gradient of a cubic B-Spline
 
@@ -18817,16 +19994,16 @@
         to count for the transformation from the unit size volume to the size of its
         shape.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → tuple:
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.eval_cubic_helper(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture2f16.eval_cubic_helper(self, pos, active=True)
 
         Helper function to evaluate a clamped cubic B-Spline interpolant
 
@@ -18835,16 +20012,16 @@
         evaluation result is desired, the :py:func:`eval_cubic()` function is faster
         than this simple implementation
 
-        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.eval_cubic_hessian(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture2f16.eval_cubic_hessian(self, pos, active=True)
 
         Evaluate the positional gradient and hessian matrix of a cubic B-Spline
 
@@ -18855,58 +20032,80 @@
         to count for the transformation from the unit size volume to the size of its
         shape.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → tuple:
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray], list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.eval_fetch(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture2f16.eval_fetch(self, pos, active=True)
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[list[drjit.llvm.ad.Float]]:
+        Returns → tuple[drjit.AnyArray, ...]:
             *no description available*
 
     .. py:method:: mitsuba.Texture2f16.filter_mode()
 
-        Return the filter mode
+        Return the texture filtering mode (e.g., nearest, bilinear, etc.)
 
         Returns → drjit.FilterMode:
             *no description available*
 
+    .. py:method:: mitsuba.Texture2f16.map()
+
+        Map an imported texture (:py:func:`from_native_handle()`) for use by Dr.Jit
+        (no-op on Metal, required for CUDA/OpenGL).
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Texture2f16.migrated()
 
-        Return whether textures with :py:func:`use_accel()` set to ``True`` only store
-        the data as a hardware-accelerated CUDA texture.
-
-        If ``False`` then a copy of the array data will additionally be retained .
+        Is the texture data held exclusively in GPU texture memory?
 
         Returns → bool:
             *no description available*
 
+    .. py:method:: mitsuba.Texture2f16.native_handle(self, sub_index=0)
+
+        Return the native texture handle (as an integer), e.g. to display it in a
+        GUI. On Metal this is the ``id<MTLTexture>`` of sub-texture ``sub_index``; on
+        CUDA it is the wrapped OpenGL texture id (``sub_index`` is ignored, and the
+        result is 0 unless the texture wraps an OpenGL handle).
+
+        Parameter ``sub_index`` (int):
+            *no description available*
+
+        Returns → int:
+            *no description available*
+
     .. py:method:: mitsuba.Texture2f16.set_tensor(self, tensor, migrate=False)
 
-        Override the texture contents with the provided tensor.
+        Overwrite the texture contents with the provided tensor
 
         This method updates the values of all texels. Changing the texture
-        resolution or its number of channels is also supported. However, on CUDA,
-        such operations have a significantly larger overhead (the GPU pipeline
-        needs to be synchronized for new texture objects to be created).
+        resolution or its number of channels is also supported. However, on the
+        CUDA and Metal backends, such operations have a significantly larger
+        overhead (new hardware texture objects must be created; on CUDA this also
+        synchronizes the GPU pipeline).
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``tensor`` (drjit.llvm.ad.TensorXf16):
             *no description available*
@@ -18919,13 +20118,41 @@
 
     .. py:method:: mitsuba.Texture2f16.set_value(self, value, migrate=False)
 
-        Override the texture contents with the provided linearized 1D array.
+        Overwrite the texture contents with the provided linearized 1D array
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``value`` (drjit.llvm.ad.Float16):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f16.set_value_with_event(self, value, event, migrate=False)
+
+        Overwrite the texture contents with the provided linearized 1D array and
+        record a device event
+
+        This function is a convenience wrapper that simply does
+
+        .. code-block:: python
+
+           texture.set_value(value)
+           event.record()
+
+        This combination is helpful for interactive workflows, where a producer
+        renders to a texture that is then shown in an user interface. The consumer
+        must await the event before using the texture.
+
+        Parameter ``value`` (drjit.llvm.ad.Float16):
+            *no description available*
+
+        Parameter ``event`` (drjit.llvm.Event):
             *no description available*
 
         Parameter ``migrate`` (bool):
@@ -18938,6 +20165,13 @@
 
         Return the texture shape
 
+    .. py:method:: mitsuba.Texture2f16.srgb()
+
+        Are 8-bit samples decoded from sRGB to linear?
+
+        Returns → bool:
+            *no description available*
+
     .. py:method:: mitsuba.Texture2f16.tensor()
 
         Return the texture data as a tensor object
@@ -18945,20 +20179,27 @@
         Returns → drjit.llvm.ad.TensorXf16:
             *no description available*
 
+    .. py:method:: mitsuba.Texture2f16.unmap()
+
+        Release a mapping established by :py:func:`map()`.
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Texture2f16.update_inplace(self, migrate=False)
 
         Update the texture after applying an indirect update to its tensor
-        representation (obtained with py:func:`tensor()`).
+        representation (obtained with :py:func:`tensor()`).
 
-        A tensor representation of this texture object can be retrived with
-        py:func:`tensor()`. That representation can be modified, but in order to apply
-        it succesfuly to the texture, this method must also be called. In short,
-        this method will use the tensor representation to update the texture's
-        internal state.
+        A tensor representation of this texture object can be retrieved with
+        :py:func:`tensor()`. That representation can be modified, but in order to
+        apply it successfully to the texture, this method must also be called. In
+        short, this method will use the tensor representation to update the
+        texture's internal state.
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.)
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``migrate`` (bool):
             *no description available*
@@ -18968,7 +20209,7 @@
 
     .. py:method:: mitsuba.Texture2f16.use_accel()
 
-        Return whether texture uses the GPU for storage and evaluation
+        Are hardware texture units used for evaluation?
 
         Returns → bool:
             *no description available*
@@ -18980,39 +20221,95 @@
         Returns → drjit.llvm.ad.Float16:
             *no description available*
 
+    .. py:method:: mitsuba.Texture2f16.wrap(self, pos)
+
+        Apply the configured texture wrapping mode to an integer position
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Returns → drjit.AnyArray:
+            *no description available*
+
     .. py:method:: mitsuba.Texture2f16.wrap_mode()
 
-        Return the wrap mode
+        Return the boundary handling mode for out-of-bounds lookups
 
         Returns → drjit.WrapMode:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f16.writable()
+
+        Was this texture created so that kernels may store into it via
+        :py:func:`write()`?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f16.write(self, pos, value, active=Bool(True))
+
+        Store values into a writable hardware texture
+
+        The per-channel values in ``value`` are written to the texel addressed by
+        the integer coordinates ``pos``. The texture must have been created with
+        ``writable=True``.
+
+        This is a hardware texture store (a side effect): it is not differentiable,
+        and the written texture is meant for display / external sampling rather than
+        :py:func:`eval()`.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2u):
+            *no description available*
+
+        Parameter ``value`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → None:
             *no description available*
 
 .. py:class:: mitsuba.Texture2f64
 
 
-    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, writable=False, srgb=False)
 
         Create a new texture with the specified size and channel count
 
-        On CUDA, this is a slow operation that synchronizes the GPU pipeline, so
-        texture objects should be reused/updated via :py:func:`set_value()` and
-        :py:func:`set_tensor()` as much as possible.
+        On GPU backends, this is a slow operation that synchronizes the pipeline to
+        rewrite the device memory map. Therefore, prefer reusing and updating
+        texture objects via :py:func:`set_value()` and :py:func:`set_tensor()` over
+        creating new ones.
 
-        When ``use_accel`` is set to ``False`` on CUDA mode, the texture will not
-        use hardware acceleration (allocation and evaluation). In other modes
+        When ``use_accel`` is set to ``False``, GPU backends will emulate the
+        texture API instead of using the hardware texture units. In other modes,
         this argument has no effect.
 
         The ``filter_mode`` parameter defines the interpolation method to be used
         in all evaluation routines. By default, the texture is linearly
         interpolated. Besides nearest/linear filtering, the implementation also
         provides a clamped cubic B-spline interpolation scheme in case a
-        higher-order interpolation is needed. In CUDA mode, this is done using a
-        series of linear lookups to optimally use the hardware (hence, linear
-        filtering must be enabled to use this feature).
+        higher-order interpolation is needed. On the CUDA and Metal backends, this
+        is done using a series of linear lookups to optimally use the hardware
+        (hence, linear filtering must be enabled to use this feature).
 
         When evaluating the texture outside of its boundaries, the ``wrap_mode``
         defines the wrapping method. The default behavior is ``drjit.WrapMode.Clamp``,
         which indefinitely extends the colors on the boundary along each dimension.
+
+        On the CUDA and Metal backends, hardware texture units resolve the sub-texel
+        position using reduced-precision fixed-point weights (8 fractional bits on
+        CUDA, i.e. 256 steps between texels). This does not degrade the stored values
+        or the interpolated quantity, only how finely the fractional position within
+        a texel is resolved. Set ``use_accel=False`` to disable the texture units and
+        avoid this approximation at some cost in performance.
+
+        For 8-bit textures, setting ``srgb`` additionally requests that samples be
+        decoded from sRGB to linear. Passing it for a floating-point texture raises
+        an error. Channels are grouped into hardware RGBA quads, so within each group
+        of four the first three are decoded and the fourth (alpha) is left linear
+        (e.g. channel 3 is linear for a 6-channel texture).
 
         Parameter ``shape`` (collections.abc.Sequence[int]):
             *no description available*
@@ -19029,20 +20326,32 @@
         Parameter ``wrap_mode`` (drjit.WrapMode):
             *no description available*
 
+        Parameter ``writable`` (bool):
+            *no description available*
+
+        Parameter ``srgb`` (bool):
+            *no description available*
+
         Returns → None``:
             *no description available*
 
-    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, srgb=False)
 
-        Construct a new texture from a given tensor.
+        Construct a new texture from a given tensor
 
-        This constructor allocates texture memory with the shape information
-        deduced from ``tensor``. It subsequently invokes :py:func:`set_tensor(tensor)`
-        to fill the texture memory with the provided tensor.
+        This constructor allocates texture memory just like the previous
+        constructor, extracting shape information from ``tensor``. It then also
+        invokes ``set_tensor(tensor)`` to fill the texture memory with the provided
+        tensor.
 
-        When both ``migrate`` and ``use_accel`` are set to ``True`` in CUDA mode, the texture
-        exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage. Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on a GPU backend, the texture is *fully*
+        migrated to GPU texture memory to avoid redundant storage. Note that the
+        texture is still differentiable even when migrated. The :py:func:`value()`
+        and :py:func:`tensor()` operations will perform a reverse migration in this
+        case.
+
+        Both the ``filter_mode`` and ``wrap_mode`` have the same defaults and
+        behaviors as for the previous constructor.
 
         Parameter ``tensor`` (drjit.llvm.ad.TensorXf64):
             *no description available*
@@ -19059,32 +20368,47 @@
         Parameter ``wrap_mode`` (drjit.WrapMode):
             *no description available*
 
+        Parameter ``srgb`` (bool):
+            *no description available*
+
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.eval(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture2f64.channel_count()
+
+        Return the number of channels (equals ``shape()[ndim()-1]``)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f64.eval(self, pos, active=True)
 
         Evaluate the linear interpolant represented by this texture.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+        When hardware-acceleration is not available, the numerical precision of the
+        interpolation is dictated by the floating point precision of the query
+        point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.eval_cubic(self, pos, active=Bool(True), force_nonaccel=False)
+    .. py:method:: mitsuba.Texture2f64.eval_cubic(self, pos, active=True, force_nonaccel=False)
 
         Evaluate a clamped cubic B-Spline interpolant represented by this
         texture
 
         Instead of interpolating the texture via B-Spline basis functions, the
         implementation transforms this calculation into an equivalent weighted
-        sum of several linear interpolant evaluations. In CUDA mode, this can
-        then be accelerated by hardware texture units, which runs faster than
-        a naive implementation. More information can be found in:
+        sum of several linear interpolant evaluations. On the CUDA and Metal
+        backends, these steps can then be accelerated by hardware texture units,
+        which runs faster than a naive implementation. More information can be found
+        in:
 
             GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
             by Christian Sigg.
@@ -19095,19 +20419,22 @@
         calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
         direct evaluation of the B-Spline basis functions in that case.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
         Parameter ``force_nonaccel`` (bool):
             *no description available*
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.eval_cubic_grad(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture2f64.eval_cubic_grad(self, pos, active=True)
 
         Evaluate the positional gradient of a cubic B-Spline
 
@@ -19118,16 +20445,16 @@
         to count for the transformation from the unit size volume to the size of its
         shape.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → tuple:
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.eval_cubic_helper(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture2f64.eval_cubic_helper(self, pos, active=True)
 
         Helper function to evaluate a clamped cubic B-Spline interpolant
 
@@ -19136,16 +20463,16 @@
         evaluation result is desired, the :py:func:`eval_cubic()` function is faster
         than this simple implementation
 
-        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.eval_cubic_hessian(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture2f64.eval_cubic_hessian(self, pos, active=True)
 
         Evaluate the positional gradient and hessian matrix of a cubic B-Spline
 
@@ -19156,58 +20483,80 @@
         to count for the transformation from the unit size volume to the size of its
         shape.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → tuple:
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray], list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.eval_fetch(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture2f64.eval_fetch(self, pos, active=True)
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array2f):
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[list[drjit.llvm.ad.Float]]:
+        Returns → tuple[drjit.AnyArray, ...]:
             *no description available*
 
     .. py:method:: mitsuba.Texture2f64.filter_mode()
 
-        Return the filter mode
+        Return the texture filtering mode (e.g., nearest, bilinear, etc.)
 
         Returns → drjit.FilterMode:
             *no description available*
 
+    .. py:method:: mitsuba.Texture2f64.map()
+
+        Map an imported texture (:py:func:`from_native_handle()`) for use by Dr.Jit
+        (no-op on Metal, required for CUDA/OpenGL).
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Texture2f64.migrated()
 
-        Return whether textures with :py:func:`use_accel()` set to ``True`` only store
-        the data as a hardware-accelerated CUDA texture.
-
-        If ``False`` then a copy of the array data will additionally be retained .
+        Is the texture data held exclusively in GPU texture memory?
 
         Returns → bool:
             *no description available*
 
+    .. py:method:: mitsuba.Texture2f64.native_handle(self, sub_index=0)
+
+        Return the native texture handle (as an integer), e.g. to display it in a
+        GUI. On Metal this is the ``id<MTLTexture>`` of sub-texture ``sub_index``; on
+        CUDA it is the wrapped OpenGL texture id (``sub_index`` is ignored, and the
+        result is 0 unless the texture wraps an OpenGL handle).
+
+        Parameter ``sub_index`` (int):
+            *no description available*
+
+        Returns → int:
+            *no description available*
+
     .. py:method:: mitsuba.Texture2f64.set_tensor(self, tensor, migrate=False)
 
-        Override the texture contents with the provided tensor.
+        Overwrite the texture contents with the provided tensor
 
         This method updates the values of all texels. Changing the texture
-        resolution or its number of channels is also supported. However, on CUDA,
-        such operations have a significantly larger overhead (the GPU pipeline
-        needs to be synchronized for new texture objects to be created).
+        resolution or its number of channels is also supported. However, on the
+        CUDA and Metal backends, such operations have a significantly larger
+        overhead (new hardware texture objects must be created; on CUDA this also
+        synchronizes the GPU pipeline).
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``tensor`` (drjit.llvm.ad.TensorXf64):
             *no description available*
@@ -19220,13 +20569,41 @@
 
     .. py:method:: mitsuba.Texture2f64.set_value(self, value, migrate=False)
 
-        Override the texture contents with the provided linearized 1D array.
+        Overwrite the texture contents with the provided linearized 1D array
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``value`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f64.set_value_with_event(self, value, event, migrate=False)
+
+        Overwrite the texture contents with the provided linearized 1D array and
+        record a device event
+
+        This function is a convenience wrapper that simply does
+
+        .. code-block:: python
+
+           texture.set_value(value)
+           event.record()
+
+        This combination is helpful for interactive workflows, where a producer
+        renders to a texture that is then shown in an user interface. The consumer
+        must await the event before using the texture.
+
+        Parameter ``value`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+        Parameter ``event`` (drjit.llvm.Event):
             *no description available*
 
         Parameter ``migrate`` (bool):
@@ -19239,6 +20616,13 @@
 
         Return the texture shape
 
+    .. py:method:: mitsuba.Texture2f64.srgb()
+
+        Are 8-bit samples decoded from sRGB to linear?
+
+        Returns → bool:
+            *no description available*
+
     .. py:method:: mitsuba.Texture2f64.tensor()
 
         Return the texture data as a tensor object
@@ -19246,20 +20630,27 @@
         Returns → drjit.llvm.ad.TensorXf64:
             *no description available*
 
+    .. py:method:: mitsuba.Texture2f64.unmap()
+
+        Release a mapping established by :py:func:`map()`.
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Texture2f64.update_inplace(self, migrate=False)
 
         Update the texture after applying an indirect update to its tensor
-        representation (obtained with py:func:`tensor()`).
+        representation (obtained with :py:func:`tensor()`).
 
-        A tensor representation of this texture object can be retrived with
-        py:func:`tensor()`. That representation can be modified, but in order to apply
-        it succesfuly to the texture, this method must also be called. In short,
-        this method will use the tensor representation to update the texture's
-        internal state.
+        A tensor representation of this texture object can be retrieved with
+        :py:func:`tensor()`. That representation can be modified, but in order to
+        apply it successfully to the texture, this method must also be called. In
+        short, this method will use the tensor representation to update the
+        texture's internal state.
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.)
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``migrate`` (bool):
             *no description available*
@@ -19269,7 +20660,7 @@
 
     .. py:method:: mitsuba.Texture2f64.use_accel()
 
-        Return whether texture uses the GPU for storage and evaluation
+        Are hardware texture units used for evaluation?
 
         Returns → bool:
             *no description available*
@@ -19281,39 +20672,95 @@
         Returns → drjit.llvm.ad.Float64:
             *no description available*
 
+    .. py:method:: mitsuba.Texture2f64.wrap(self, pos)
+
+        Apply the configured texture wrapping mode to an integer position
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Returns → drjit.AnyArray:
+            *no description available*
+
     .. py:method:: mitsuba.Texture2f64.wrap_mode()
 
-        Return the wrap mode
+        Return the boundary handling mode for out-of-bounds lookups
 
         Returns → drjit.WrapMode:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f64.writable()
+
+        Was this texture created so that kernels may store into it via
+        :py:func:`write()`?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture2f64.write(self, pos, value, active=Bool(True))
+
+        Store values into a writable hardware texture
+
+        The per-channel values in ``value`` are written to the texel addressed by
+        the integer coordinates ``pos``. The texture must have been created with
+        ``writable=True``.
+
+        This is a hardware texture store (a side effect): it is not differentiable,
+        and the written texture is meant for display / external sampling rather than
+        :py:func:`eval()`.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2u):
+            *no description available*
+
+        Parameter ``value`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → None:
             *no description available*
 
 .. py:class:: mitsuba.Texture3f
 
 
-    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, writable=False, srgb=False)
 
         Create a new texture with the specified size and channel count
 
-        On CUDA, this is a slow operation that synchronizes the GPU pipeline, so
-        texture objects should be reused/updated via :py:func:`set_value()` and
-        :py:func:`set_tensor()` as much as possible.
+        On GPU backends, this is a slow operation that synchronizes the pipeline to
+        rewrite the device memory map. Therefore, prefer reusing and updating
+        texture objects via :py:func:`set_value()` and :py:func:`set_tensor()` over
+        creating new ones.
 
-        When ``use_accel`` is set to ``False`` on CUDA mode, the texture will not
-        use hardware acceleration (allocation and evaluation). In other modes
+        When ``use_accel`` is set to ``False``, GPU backends will emulate the
+        texture API instead of using the hardware texture units. In other modes,
         this argument has no effect.
 
         The ``filter_mode`` parameter defines the interpolation method to be used
         in all evaluation routines. By default, the texture is linearly
         interpolated. Besides nearest/linear filtering, the implementation also
         provides a clamped cubic B-spline interpolation scheme in case a
-        higher-order interpolation is needed. In CUDA mode, this is done using a
-        series of linear lookups to optimally use the hardware (hence, linear
-        filtering must be enabled to use this feature).
+        higher-order interpolation is needed. On the CUDA and Metal backends, this
+        is done using a series of linear lookups to optimally use the hardware
+        (hence, linear filtering must be enabled to use this feature).
 
         When evaluating the texture outside of its boundaries, the ``wrap_mode``
         defines the wrapping method. The default behavior is ``drjit.WrapMode.Clamp``,
         which indefinitely extends the colors on the boundary along each dimension.
+
+        On the CUDA and Metal backends, hardware texture units resolve the sub-texel
+        position using reduced-precision fixed-point weights (8 fractional bits on
+        CUDA, i.e. 256 steps between texels). This does not degrade the stored values
+        or the interpolated quantity, only how finely the fractional position within
+        a texel is resolved. Set ``use_accel=False`` to disable the texture units and
+        avoid this approximation at some cost in performance.
+
+        For 8-bit textures, setting ``srgb`` additionally requests that samples be
+        decoded from sRGB to linear. Passing it for a floating-point texture raises
+        an error. Channels are grouped into hardware RGBA quads, so within each group
+        of four the first three are decoded and the fourth (alpha) is left linear
+        (e.g. channel 3 is linear for a 6-channel texture).
 
         Parameter ``shape`` (collections.abc.Sequence[int]):
             *no description available*
@@ -19330,20 +20777,32 @@
         Parameter ``wrap_mode`` (drjit.WrapMode):
             *no description available*
 
+        Parameter ``writable`` (bool):
+            *no description available*
+
+        Parameter ``srgb`` (bool):
+            *no description available*
+
         Returns → None``:
             *no description available*
 
-    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, srgb=False)
 
-        Construct a new texture from a given tensor.
+        Construct a new texture from a given tensor
 
-        This constructor allocates texture memory with the shape information
-        deduced from ``tensor``. It subsequently invokes :py:func:`set_tensor(tensor)`
-        to fill the texture memory with the provided tensor.
+        This constructor allocates texture memory just like the previous
+        constructor, extracting shape information from ``tensor``. It then also
+        invokes ``set_tensor(tensor)`` to fill the texture memory with the provided
+        tensor.
 
-        When both ``migrate`` and ``use_accel`` are set to ``True`` in CUDA mode, the texture
-        exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage. Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on a GPU backend, the texture is *fully*
+        migrated to GPU texture memory to avoid redundant storage. Note that the
+        texture is still differentiable even when migrated. The :py:func:`value()`
+        and :py:func:`tensor()` operations will perform a reverse migration in this
+        case.
+
+        Both the ``filter_mode`` and ``wrap_mode`` have the same defaults and
+        behaviors as for the previous constructor.
 
         Parameter ``tensor`` (drjit.llvm.ad.TensorXf):
             *no description available*
@@ -19360,32 +20819,47 @@
         Parameter ``wrap_mode`` (drjit.WrapMode):
             *no description available*
 
+        Parameter ``srgb`` (bool):
+            *no description available*
+
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.eval(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture3f.channel_count()
+
+        Return the number of channels (equals ``shape()[ndim()-1]``)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f.eval(self, pos, active=True)
 
         Evaluate the linear interpolant represented by this texture.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+        When hardware-acceleration is not available, the numerical precision of the
+        interpolation is dictated by the floating point precision of the query
+        point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.eval_cubic(self, pos, active=Bool(True), force_nonaccel=False)
+    .. py:method:: mitsuba.Texture3f.eval_cubic(self, pos, active=True, force_nonaccel=False)
 
         Evaluate a clamped cubic B-Spline interpolant represented by this
         texture
 
         Instead of interpolating the texture via B-Spline basis functions, the
         implementation transforms this calculation into an equivalent weighted
-        sum of several linear interpolant evaluations. In CUDA mode, this can
-        then be accelerated by hardware texture units, which runs faster than
-        a naive implementation. More information can be found in:
+        sum of several linear interpolant evaluations. On the CUDA and Metal
+        backends, these steps can then be accelerated by hardware texture units,
+        which runs faster than a naive implementation. More information can be found
+        in:
 
             GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
             by Christian Sigg.
@@ -19396,19 +20870,22 @@
         calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
         direct evaluation of the B-Spline basis functions in that case.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
         Parameter ``force_nonaccel`` (bool):
             *no description available*
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.eval_cubic_grad(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture3f.eval_cubic_grad(self, pos, active=True)
 
         Evaluate the positional gradient of a cubic B-Spline
 
@@ -19419,16 +20896,16 @@
         to count for the transformation from the unit size volume to the size of its
         shape.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → tuple:
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.eval_cubic_helper(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture3f.eval_cubic_helper(self, pos, active=True)
 
         Helper function to evaluate a clamped cubic B-Spline interpolant
 
@@ -19437,16 +20914,16 @@
         evaluation result is desired, the :py:func:`eval_cubic()` function is faster
         than this simple implementation
 
-        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.eval_cubic_hessian(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture3f.eval_cubic_hessian(self, pos, active=True)
 
         Evaluate the positional gradient and hessian matrix of a cubic B-Spline
 
@@ -19457,58 +20934,80 @@
         to count for the transformation from the unit size volume to the size of its
         shape.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → tuple:
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray], list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.eval_fetch(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture3f.eval_fetch(self, pos, active=True)
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[list[drjit.llvm.ad.Float]]:
+        Returns → tuple[drjit.AnyArray, ...]:
             *no description available*
 
     .. py:method:: mitsuba.Texture3f.filter_mode()
 
-        Return the filter mode
+        Return the texture filtering mode (e.g., nearest, bilinear, etc.)
 
         Returns → drjit.FilterMode:
             *no description available*
 
+    .. py:method:: mitsuba.Texture3f.map()
+
+        Map an imported texture (:py:func:`from_native_handle()`) for use by Dr.Jit
+        (no-op on Metal, required for CUDA/OpenGL).
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Texture3f.migrated()
 
-        Return whether textures with :py:func:`use_accel()` set to ``True`` only store
-        the data as a hardware-accelerated CUDA texture.
-
-        If ``False`` then a copy of the array data will additionally be retained .
+        Is the texture data held exclusively in GPU texture memory?
 
         Returns → bool:
             *no description available*
 
+    .. py:method:: mitsuba.Texture3f.native_handle(self, sub_index=0)
+
+        Return the native texture handle (as an integer), e.g. to display it in a
+        GUI. On Metal this is the ``id<MTLTexture>`` of sub-texture ``sub_index``; on
+        CUDA it is the wrapped OpenGL texture id (``sub_index`` is ignored, and the
+        result is 0 unless the texture wraps an OpenGL handle).
+
+        Parameter ``sub_index`` (int):
+            *no description available*
+
+        Returns → int:
+            *no description available*
+
     .. py:method:: mitsuba.Texture3f.set_tensor(self, tensor, migrate=False)
 
-        Override the texture contents with the provided tensor.
+        Overwrite the texture contents with the provided tensor
 
         This method updates the values of all texels. Changing the texture
-        resolution or its number of channels is also supported. However, on CUDA,
-        such operations have a significantly larger overhead (the GPU pipeline
-        needs to be synchronized for new texture objects to be created).
+        resolution or its number of channels is also supported. However, on the
+        CUDA and Metal backends, such operations have a significantly larger
+        overhead (new hardware texture objects must be created; on CUDA this also
+        synchronizes the GPU pipeline).
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``tensor`` (drjit.llvm.ad.TensorXf):
             *no description available*
@@ -19521,13 +21020,41 @@
 
     .. py:method:: mitsuba.Texture3f.set_value(self, value, migrate=False)
 
-        Override the texture contents with the provided linearized 1D array.
+        Overwrite the texture contents with the provided linearized 1D array
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``value`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f.set_value_with_event(self, value, event, migrate=False)
+
+        Overwrite the texture contents with the provided linearized 1D array and
+        record a device event
+
+        This function is a convenience wrapper that simply does
+
+        .. code-block:: python
+
+           texture.set_value(value)
+           event.record()
+
+        This combination is helpful for interactive workflows, where a producer
+        renders to a texture that is then shown in an user interface. The consumer
+        must await the event before using the texture.
+
+        Parameter ``value`` (drjit.llvm.ad.Float):
+            *no description available*
+
+        Parameter ``event`` (drjit.llvm.Event):
             *no description available*
 
         Parameter ``migrate`` (bool):
@@ -19540,6 +21067,13 @@
 
         Return the texture shape
 
+    .. py:method:: mitsuba.Texture3f.srgb()
+
+        Are 8-bit samples decoded from sRGB to linear?
+
+        Returns → bool:
+            *no description available*
+
     .. py:method:: mitsuba.Texture3f.tensor()
 
         Return the texture data as a tensor object
@@ -19547,20 +21081,27 @@
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
+    .. py:method:: mitsuba.Texture3f.unmap()
+
+        Release a mapping established by :py:func:`map()`.
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Texture3f.update_inplace(self, migrate=False)
 
         Update the texture after applying an indirect update to its tensor
-        representation (obtained with py:func:`tensor()`).
+        representation (obtained with :py:func:`tensor()`).
 
-        A tensor representation of this texture object can be retrived with
-        py:func:`tensor()`. That representation can be modified, but in order to apply
-        it succesfuly to the texture, this method must also be called. In short,
-        this method will use the tensor representation to update the texture's
-        internal state.
+        A tensor representation of this texture object can be retrieved with
+        :py:func:`tensor()`. That representation can be modified, but in order to
+        apply it successfully to the texture, this method must also be called. In
+        short, this method will use the tensor representation to update the
+        texture's internal state.
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.)
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``migrate`` (bool):
             *no description available*
@@ -19570,7 +21111,7 @@
 
     .. py:method:: mitsuba.Texture3f.use_accel()
 
-        Return whether texture uses the GPU for storage and evaluation
+        Are hardware texture units used for evaluation?
 
         Returns → bool:
             *no description available*
@@ -19582,39 +21123,95 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
+    .. py:method:: mitsuba.Texture3f.wrap(self, pos)
+
+        Apply the configured texture wrapping mode to an integer position
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Returns → drjit.AnyArray:
+            *no description available*
+
     .. py:method:: mitsuba.Texture3f.wrap_mode()
 
-        Return the wrap mode
+        Return the boundary handling mode for out-of-bounds lookups
 
         Returns → drjit.WrapMode:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f.writable()
+
+        Was this texture created so that kernels may store into it via
+        :py:func:`write()`?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f.write(self, pos, value, active=Bool(True))
+
+        Store values into a writable hardware texture
+
+        The per-channel values in ``value`` are written to the texel addressed by
+        the integer coordinates ``pos``. The texture must have been created with
+        ``writable=True``.
+
+        This is a hardware texture store (a side effect): it is not differentiable,
+        and the written texture is meant for display / external sampling rather than
+        :py:func:`eval()`.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3u):
+            *no description available*
+
+        Parameter ``value`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → None:
             *no description available*
 
 .. py:class:: mitsuba.Texture3f16
 
 
-    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, writable=False, srgb=False)
 
         Create a new texture with the specified size and channel count
 
-        On CUDA, this is a slow operation that synchronizes the GPU pipeline, so
-        texture objects should be reused/updated via :py:func:`set_value()` and
-        :py:func:`set_tensor()` as much as possible.
+        On GPU backends, this is a slow operation that synchronizes the pipeline to
+        rewrite the device memory map. Therefore, prefer reusing and updating
+        texture objects via :py:func:`set_value()` and :py:func:`set_tensor()` over
+        creating new ones.
 
-        When ``use_accel`` is set to ``False`` on CUDA mode, the texture will not
-        use hardware acceleration (allocation and evaluation). In other modes
+        When ``use_accel`` is set to ``False``, GPU backends will emulate the
+        texture API instead of using the hardware texture units. In other modes,
         this argument has no effect.
 
         The ``filter_mode`` parameter defines the interpolation method to be used
         in all evaluation routines. By default, the texture is linearly
         interpolated. Besides nearest/linear filtering, the implementation also
         provides a clamped cubic B-spline interpolation scheme in case a
-        higher-order interpolation is needed. In CUDA mode, this is done using a
-        series of linear lookups to optimally use the hardware (hence, linear
-        filtering must be enabled to use this feature).
+        higher-order interpolation is needed. On the CUDA and Metal backends, this
+        is done using a series of linear lookups to optimally use the hardware
+        (hence, linear filtering must be enabled to use this feature).
 
         When evaluating the texture outside of its boundaries, the ``wrap_mode``
         defines the wrapping method. The default behavior is ``drjit.WrapMode.Clamp``,
         which indefinitely extends the colors on the boundary along each dimension.
+
+        On the CUDA and Metal backends, hardware texture units resolve the sub-texel
+        position using reduced-precision fixed-point weights (8 fractional bits on
+        CUDA, i.e. 256 steps between texels). This does not degrade the stored values
+        or the interpolated quantity, only how finely the fractional position within
+        a texel is resolved. Set ``use_accel=False`` to disable the texture units and
+        avoid this approximation at some cost in performance.
+
+        For 8-bit textures, setting ``srgb`` additionally requests that samples be
+        decoded from sRGB to linear. Passing it for a floating-point texture raises
+        an error. Channels are grouped into hardware RGBA quads, so within each group
+        of four the first three are decoded and the fourth (alpha) is left linear
+        (e.g. channel 3 is linear for a 6-channel texture).
 
         Parameter ``shape`` (collections.abc.Sequence[int]):
             *no description available*
@@ -19631,20 +21228,32 @@
         Parameter ``wrap_mode`` (drjit.WrapMode):
             *no description available*
 
+        Parameter ``writable`` (bool):
+            *no description available*
+
+        Parameter ``srgb`` (bool):
+            *no description available*
+
         Returns → None``:
             *no description available*
 
-    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, srgb=False)
 
-        Construct a new texture from a given tensor.
+        Construct a new texture from a given tensor
 
-        This constructor allocates texture memory with the shape information
-        deduced from ``tensor``. It subsequently invokes :py:func:`set_tensor(tensor)`
-        to fill the texture memory with the provided tensor.
+        This constructor allocates texture memory just like the previous
+        constructor, extracting shape information from ``tensor``. It then also
+        invokes ``set_tensor(tensor)`` to fill the texture memory with the provided
+        tensor.
 
-        When both ``migrate`` and ``use_accel`` are set to ``True`` in CUDA mode, the texture
-        exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage. Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on a GPU backend, the texture is *fully*
+        migrated to GPU texture memory to avoid redundant storage. Note that the
+        texture is still differentiable even when migrated. The :py:func:`value()`
+        and :py:func:`tensor()` operations will perform a reverse migration in this
+        case.
+
+        Both the ``filter_mode`` and ``wrap_mode`` have the same defaults and
+        behaviors as for the previous constructor.
 
         Parameter ``tensor`` (drjit.llvm.ad.TensorXf16):
             *no description available*
@@ -19661,32 +21270,47 @@
         Parameter ``wrap_mode`` (drjit.WrapMode):
             *no description available*
 
+        Parameter ``srgb`` (bool):
+            *no description available*
+
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.eval(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture3f16.channel_count()
+
+        Return the number of channels (equals ``shape()[ndim()-1]``)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f16.eval(self, pos, active=True)
 
         Evaluate the linear interpolant represented by this texture.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+        When hardware-acceleration is not available, the numerical precision of the
+        interpolation is dictated by the floating point precision of the query
+        point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.eval_cubic(self, pos, active=Bool(True), force_nonaccel=False)
+    .. py:method:: mitsuba.Texture3f16.eval_cubic(self, pos, active=True, force_nonaccel=False)
 
         Evaluate a clamped cubic B-Spline interpolant represented by this
         texture
 
         Instead of interpolating the texture via B-Spline basis functions, the
         implementation transforms this calculation into an equivalent weighted
-        sum of several linear interpolant evaluations. In CUDA mode, this can
-        then be accelerated by hardware texture units, which runs faster than
-        a naive implementation. More information can be found in:
+        sum of several linear interpolant evaluations. On the CUDA and Metal
+        backends, these steps can then be accelerated by hardware texture units,
+        which runs faster than a naive implementation. More information can be found
+        in:
 
             GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
             by Christian Sigg.
@@ -19697,19 +21321,22 @@
         calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
         direct evaluation of the B-Spline basis functions in that case.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
         Parameter ``force_nonaccel`` (bool):
             *no description available*
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.eval_cubic_grad(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture3f16.eval_cubic_grad(self, pos, active=True)
 
         Evaluate the positional gradient of a cubic B-Spline
 
@@ -19720,16 +21347,16 @@
         to count for the transformation from the unit size volume to the size of its
         shape.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → tuple:
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.eval_cubic_helper(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture3f16.eval_cubic_helper(self, pos, active=True)
 
         Helper function to evaluate a clamped cubic B-Spline interpolant
 
@@ -19738,16 +21365,16 @@
         evaluation result is desired, the :py:func:`eval_cubic()` function is faster
         than this simple implementation
 
-        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.eval_cubic_hessian(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture3f16.eval_cubic_hessian(self, pos, active=True)
 
         Evaluate the positional gradient and hessian matrix of a cubic B-Spline
 
@@ -19758,58 +21385,80 @@
         to count for the transformation from the unit size volume to the size of its
         shape.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → tuple:
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray], list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.eval_fetch(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture3f16.eval_fetch(self, pos, active=True)
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[list[drjit.llvm.ad.Float]]:
+        Returns → tuple[drjit.AnyArray, ...]:
             *no description available*
 
     .. py:method:: mitsuba.Texture3f16.filter_mode()
 
-        Return the filter mode
+        Return the texture filtering mode (e.g., nearest, bilinear, etc.)
 
         Returns → drjit.FilterMode:
             *no description available*
 
+    .. py:method:: mitsuba.Texture3f16.map()
+
+        Map an imported texture (:py:func:`from_native_handle()`) for use by Dr.Jit
+        (no-op on Metal, required for CUDA/OpenGL).
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Texture3f16.migrated()
 
-        Return whether textures with :py:func:`use_accel()` set to ``True`` only store
-        the data as a hardware-accelerated CUDA texture.
-
-        If ``False`` then a copy of the array data will additionally be retained .
+        Is the texture data held exclusively in GPU texture memory?
 
         Returns → bool:
             *no description available*
 
+    .. py:method:: mitsuba.Texture3f16.native_handle(self, sub_index=0)
+
+        Return the native texture handle (as an integer), e.g. to display it in a
+        GUI. On Metal this is the ``id<MTLTexture>`` of sub-texture ``sub_index``; on
+        CUDA it is the wrapped OpenGL texture id (``sub_index`` is ignored, and the
+        result is 0 unless the texture wraps an OpenGL handle).
+
+        Parameter ``sub_index`` (int):
+            *no description available*
+
+        Returns → int:
+            *no description available*
+
     .. py:method:: mitsuba.Texture3f16.set_tensor(self, tensor, migrate=False)
 
-        Override the texture contents with the provided tensor.
+        Overwrite the texture contents with the provided tensor
 
         This method updates the values of all texels. Changing the texture
-        resolution or its number of channels is also supported. However, on CUDA,
-        such operations have a significantly larger overhead (the GPU pipeline
-        needs to be synchronized for new texture objects to be created).
+        resolution or its number of channels is also supported. However, on the
+        CUDA and Metal backends, such operations have a significantly larger
+        overhead (new hardware texture objects must be created; on CUDA this also
+        synchronizes the GPU pipeline).
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``tensor`` (drjit.llvm.ad.TensorXf16):
             *no description available*
@@ -19822,13 +21471,41 @@
 
     .. py:method:: mitsuba.Texture3f16.set_value(self, value, migrate=False)
 
-        Override the texture contents with the provided linearized 1D array.
+        Overwrite the texture contents with the provided linearized 1D array
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``value`` (drjit.llvm.ad.Float16):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f16.set_value_with_event(self, value, event, migrate=False)
+
+        Overwrite the texture contents with the provided linearized 1D array and
+        record a device event
+
+        This function is a convenience wrapper that simply does
+
+        .. code-block:: python
+
+           texture.set_value(value)
+           event.record()
+
+        This combination is helpful for interactive workflows, where a producer
+        renders to a texture that is then shown in an user interface. The consumer
+        must await the event before using the texture.
+
+        Parameter ``value`` (drjit.llvm.ad.Float16):
+            *no description available*
+
+        Parameter ``event`` (drjit.llvm.Event):
             *no description available*
 
         Parameter ``migrate`` (bool):
@@ -19841,6 +21518,13 @@
 
         Return the texture shape
 
+    .. py:method:: mitsuba.Texture3f16.srgb()
+
+        Are 8-bit samples decoded from sRGB to linear?
+
+        Returns → bool:
+            *no description available*
+
     .. py:method:: mitsuba.Texture3f16.tensor()
 
         Return the texture data as a tensor object
@@ -19848,20 +21532,27 @@
         Returns → drjit.llvm.ad.TensorXf16:
             *no description available*
 
+    .. py:method:: mitsuba.Texture3f16.unmap()
+
+        Release a mapping established by :py:func:`map()`.
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Texture3f16.update_inplace(self, migrate=False)
 
         Update the texture after applying an indirect update to its tensor
-        representation (obtained with py:func:`tensor()`).
+        representation (obtained with :py:func:`tensor()`).
 
-        A tensor representation of this texture object can be retrived with
-        py:func:`tensor()`. That representation can be modified, but in order to apply
-        it succesfuly to the texture, this method must also be called. In short,
-        this method will use the tensor representation to update the texture's
-        internal state.
+        A tensor representation of this texture object can be retrieved with
+        :py:func:`tensor()`. That representation can be modified, but in order to
+        apply it successfully to the texture, this method must also be called. In
+        short, this method will use the tensor representation to update the
+        texture's internal state.
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.)
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``migrate`` (bool):
             *no description available*
@@ -19871,7 +21562,7 @@
 
     .. py:method:: mitsuba.Texture3f16.use_accel()
 
-        Return whether texture uses the GPU for storage and evaluation
+        Are hardware texture units used for evaluation?
 
         Returns → bool:
             *no description available*
@@ -19883,39 +21574,95 @@
         Returns → drjit.llvm.ad.Float16:
             *no description available*
 
+    .. py:method:: mitsuba.Texture3f16.wrap(self, pos)
+
+        Apply the configured texture wrapping mode to an integer position
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Returns → drjit.AnyArray:
+            *no description available*
+
     .. py:method:: mitsuba.Texture3f16.wrap_mode()
 
-        Return the wrap mode
+        Return the boundary handling mode for out-of-bounds lookups
 
         Returns → drjit.WrapMode:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f16.writable()
+
+        Was this texture created so that kernels may store into it via
+        :py:func:`write()`?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f16.write(self, pos, value, active=Bool(True))
+
+        Store values into a writable hardware texture
+
+        The per-channel values in ``value`` are written to the texel addressed by
+        the integer coordinates ``pos``. The texture must have been created with
+        ``writable=True``.
+
+        This is a hardware texture store (a side effect): it is not differentiable,
+        and the written texture is meant for display / external sampling rather than
+        :py:func:`eval()`.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3u):
+            *no description available*
+
+        Parameter ``value`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → None:
             *no description available*
 
 .. py:class:: mitsuba.Texture3f64
 
 
-    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, writable=False, srgb=False)
 
         Create a new texture with the specified size and channel count
 
-        On CUDA, this is a slow operation that synchronizes the GPU pipeline, so
-        texture objects should be reused/updated via :py:func:`set_value()` and
-        :py:func:`set_tensor()` as much as possible.
+        On GPU backends, this is a slow operation that synchronizes the pipeline to
+        rewrite the device memory map. Therefore, prefer reusing and updating
+        texture objects via :py:func:`set_value()` and :py:func:`set_tensor()` over
+        creating new ones.
 
-        When ``use_accel`` is set to ``False`` on CUDA mode, the texture will not
-        use hardware acceleration (allocation and evaluation). In other modes
+        When ``use_accel`` is set to ``False``, GPU backends will emulate the
+        texture API instead of using the hardware texture units. In other modes,
         this argument has no effect.
 
         The ``filter_mode`` parameter defines the interpolation method to be used
         in all evaluation routines. By default, the texture is linearly
         interpolated. Besides nearest/linear filtering, the implementation also
         provides a clamped cubic B-spline interpolation scheme in case a
-        higher-order interpolation is needed. In CUDA mode, this is done using a
-        series of linear lookups to optimally use the hardware (hence, linear
-        filtering must be enabled to use this feature).
+        higher-order interpolation is needed. On the CUDA and Metal backends, this
+        is done using a series of linear lookups to optimally use the hardware
+        (hence, linear filtering must be enabled to use this feature).
 
         When evaluating the texture outside of its boundaries, the ``wrap_mode``
         defines the wrapping method. The default behavior is ``drjit.WrapMode.Clamp``,
         which indefinitely extends the colors on the boundary along each dimension.
+
+        On the CUDA and Metal backends, hardware texture units resolve the sub-texel
+        position using reduced-precision fixed-point weights (8 fractional bits on
+        CUDA, i.e. 256 steps between texels). This does not degrade the stored values
+        or the interpolated quantity, only how finely the fractional position within
+        a texel is resolved. Set ``use_accel=False`` to disable the texture units and
+        avoid this approximation at some cost in performance.
+
+        For 8-bit textures, setting ``srgb`` additionally requests that samples be
+        decoded from sRGB to linear. Passing it for a floating-point texture raises
+        an error. Channels are grouped into hardware RGBA quads, so within each group
+        of four the first three are decoded and the fourth (alpha) is left linear
+        (e.g. channel 3 is linear for a 6-channel texture).
 
         Parameter ``shape`` (collections.abc.Sequence[int]):
             *no description available*
@@ -19932,20 +21679,32 @@
         Parameter ``wrap_mode`` (drjit.WrapMode):
             *no description available*
 
+        Parameter ``writable`` (bool):
+            *no description available*
+
+        Parameter ``srgb`` (bool):
+            *no description available*
+
         Returns → None``:
             *no description available*
 
-    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp)
+    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, srgb=False)
 
-        Construct a new texture from a given tensor.
+        Construct a new texture from a given tensor
 
-        This constructor allocates texture memory with the shape information
-        deduced from ``tensor``. It subsequently invokes :py:func:`set_tensor(tensor)`
-        to fill the texture memory with the provided tensor.
+        This constructor allocates texture memory just like the previous
+        constructor, extracting shape information from ``tensor``. It then also
+        invokes ``set_tensor(tensor)`` to fill the texture memory with the provided
+        tensor.
 
-        When both ``migrate`` and ``use_accel`` are set to ``True`` in CUDA mode, the texture
-        exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage. Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on a GPU backend, the texture is *fully*
+        migrated to GPU texture memory to avoid redundant storage. Note that the
+        texture is still differentiable even when migrated. The :py:func:`value()`
+        and :py:func:`tensor()` operations will perform a reverse migration in this
+        case.
+
+        Both the ``filter_mode`` and ``wrap_mode`` have the same defaults and
+        behaviors as for the previous constructor.
 
         Parameter ``tensor`` (drjit.llvm.ad.TensorXf64):
             *no description available*
@@ -19962,32 +21721,47 @@
         Parameter ``wrap_mode`` (drjit.WrapMode):
             *no description available*
 
+        Parameter ``srgb`` (bool):
+            *no description available*
+
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.eval(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture3f64.channel_count()
+
+        Return the number of channels (equals ``shape()[ndim()-1]``)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f64.eval(self, pos, active=True)
 
         Evaluate the linear interpolant represented by this texture.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+        When hardware-acceleration is not available, the numerical precision of the
+        interpolation is dictated by the floating point precision of the query
+        point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.eval_cubic(self, pos, active=Bool(True), force_nonaccel=False)
+    .. py:method:: mitsuba.Texture3f64.eval_cubic(self, pos, active=True, force_nonaccel=False)
 
         Evaluate a clamped cubic B-Spline interpolant represented by this
         texture
 
         Instead of interpolating the texture via B-Spline basis functions, the
         implementation transforms this calculation into an equivalent weighted
-        sum of several linear interpolant evaluations. In CUDA mode, this can
-        then be accelerated by hardware texture units, which runs faster than
-        a naive implementation. More information can be found in:
+        sum of several linear interpolant evaluations. On the CUDA and Metal
+        backends, these steps can then be accelerated by hardware texture units,
+        which runs faster than a naive implementation. More information can be found
+        in:
 
             GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
             by Christian Sigg.
@@ -19998,19 +21772,22 @@
         calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
         direct evaluation of the B-Spline basis functions in that case.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
         Parameter ``force_nonaccel`` (bool):
             *no description available*
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.eval_cubic_grad(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture3f64.eval_cubic_grad(self, pos, active=True)
 
         Evaluate the positional gradient of a cubic B-Spline
 
@@ -20021,16 +21798,16 @@
         to count for the transformation from the unit size volume to the size of its
         shape.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → tuple:
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.eval_cubic_helper(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture3f64.eval_cubic_helper(self, pos, active=True)
 
         Helper function to evaluate a clamped cubic B-Spline interpolant
 
@@ -20039,16 +21816,16 @@
         evaluation result is desired, the :py:func:`eval_cubic()` function is faster
         than this simple implementation
 
-        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[drjit.llvm.ad.Float]:
+        Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.eval_cubic_hessian(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture3f64.eval_cubic_hessian(self, pos, active=True)
 
         Evaluate the positional gradient and hessian matrix of a cubic B-Spline
 
@@ -20059,58 +21836,80 @@
         to count for the transformation from the unit size volume to the size of its
         shape.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → tuple:
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray], list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.eval_fetch(self, pos, active=Bool(True))
+    .. py:method:: mitsuba.Texture3f64.eval_fetch(self, pos, active=True)
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
 
-        Parameter ``pos`` (drjit.llvm.ad.Array3f):
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
             *no description available*
 
-        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+        Parameter ``active`` (drjit.AnyArray | bool):
             Mask to specify active lanes.
 
-        Returns → list[list[drjit.llvm.ad.Float]]:
+        Returns → tuple[drjit.AnyArray, ...]:
             *no description available*
 
     .. py:method:: mitsuba.Texture3f64.filter_mode()
 
-        Return the filter mode
+        Return the texture filtering mode (e.g., nearest, bilinear, etc.)
 
         Returns → drjit.FilterMode:
             *no description available*
 
+    .. py:method:: mitsuba.Texture3f64.map()
+
+        Map an imported texture (:py:func:`from_native_handle()`) for use by Dr.Jit
+        (no-op on Metal, required for CUDA/OpenGL).
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Texture3f64.migrated()
 
-        Return whether textures with :py:func:`use_accel()` set to ``True`` only store
-        the data as a hardware-accelerated CUDA texture.
-
-        If ``False`` then a copy of the array data will additionally be retained .
+        Is the texture data held exclusively in GPU texture memory?
 
         Returns → bool:
             *no description available*
 
+    .. py:method:: mitsuba.Texture3f64.native_handle(self, sub_index=0)
+
+        Return the native texture handle (as an integer), e.g. to display it in a
+        GUI. On Metal this is the ``id<MTLTexture>`` of sub-texture ``sub_index``; on
+        CUDA it is the wrapped OpenGL texture id (``sub_index`` is ignored, and the
+        result is 0 unless the texture wraps an OpenGL handle).
+
+        Parameter ``sub_index`` (int):
+            *no description available*
+
+        Returns → int:
+            *no description available*
+
     .. py:method:: mitsuba.Texture3f64.set_tensor(self, tensor, migrate=False)
 
-        Override the texture contents with the provided tensor.
+        Overwrite the texture contents with the provided tensor
 
         This method updates the values of all texels. Changing the texture
-        resolution or its number of channels is also supported. However, on CUDA,
-        such operations have a significantly larger overhead (the GPU pipeline
-        needs to be synchronized for new texture objects to be created).
+        resolution or its number of channels is also supported. However, on the
+        CUDA and Metal backends, such operations have a significantly larger
+        overhead (new hardware texture objects must be created; on CUDA this also
+        synchronizes the GPU pipeline).
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``tensor`` (drjit.llvm.ad.TensorXf64):
             *no description available*
@@ -20123,13 +21922,41 @@
 
     .. py:method:: mitsuba.Texture3f64.set_value(self, value, migrate=False)
 
-        Override the texture contents with the provided linearized 1D array.
+        Overwrite the texture contents with the provided linearized 1D array
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.Note that the texture is still differentiable even when migrated.
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``value`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f64.set_value_with_event(self, value, event, migrate=False)
+
+        Overwrite the texture contents with the provided linearized 1D array and
+        record a device event
+
+        This function is a convenience wrapper that simply does
+
+        .. code-block:: python
+
+           texture.set_value(value)
+           event.record()
+
+        This combination is helpful for interactive workflows, where a producer
+        renders to a texture that is then shown in an user interface. The consumer
+        must await the event before using the texture.
+
+        Parameter ``value`` (drjit.llvm.ad.Float64):
+            *no description available*
+
+        Parameter ``event`` (drjit.llvm.Event):
             *no description available*
 
         Parameter ``migrate`` (bool):
@@ -20142,6 +21969,13 @@
 
         Return the texture shape
 
+    .. py:method:: mitsuba.Texture3f64.srgb()
+
+        Are 8-bit samples decoded from sRGB to linear?
+
+        Returns → bool:
+            *no description available*
+
     .. py:method:: mitsuba.Texture3f64.tensor()
 
         Return the texture data as a tensor object
@@ -20149,20 +21983,27 @@
         Returns → drjit.llvm.ad.TensorXf64:
             *no description available*
 
+    .. py:method:: mitsuba.Texture3f64.unmap()
+
+        Release a mapping established by :py:func:`map()`.
+
+        Returns → None:
+            *no description available*
+
     .. py:method:: mitsuba.Texture3f64.update_inplace(self, migrate=False)
 
         Update the texture after applying an indirect update to its tensor
-        representation (obtained with py:func:`tensor()`).
+        representation (obtained with :py:func:`tensor()`).
 
-        A tensor representation of this texture object can be retrived with
-        py:func:`tensor()`. That representation can be modified, but in order to apply
-        it succesfuly to the texture, this method must also be called. In short,
-        this method will use the tensor representation to update the texture's
-        internal state.
+        A tensor representation of this texture object can be retrieved with
+        :py:func:`tensor()`. That representation can be modified, but in order to
+        apply it successfully to the texture, this method must also be called. In
+        short, this method will use the tensor representation to update the
+        texture's internal state.
 
-        In CUDA mode, when both the argument ``migrate`` and :py:func:`use_accel()` are ``True``,
-        the texture exclusively stores a copy of the input data as a CUDA texture to avoid
-        redundant storage.)
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
 
         Parameter ``migrate`` (bool):
             *no description available*
@@ -20172,7 +22013,7 @@
 
     .. py:method:: mitsuba.Texture3f64.use_accel()
 
-        Return whether texture uses the GPU for storage and evaluation
+        Are hardware texture units used for evaluation?
 
         Returns → bool:
             *no description available*
@@ -20184,11 +22025,53 @@
         Returns → drjit.llvm.ad.Float64:
             *no description available*
 
+    .. py:method:: mitsuba.Texture3f64.wrap(self, pos)
+
+        Apply the configured texture wrapping mode to an integer position
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Returns → drjit.AnyArray:
+            *no description available*
+
     .. py:method:: mitsuba.Texture3f64.wrap_mode()
 
-        Return the wrap mode
+        Return the boundary handling mode for out-of-bounds lookups
 
         Returns → drjit.WrapMode:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f64.writable()
+
+        Was this texture created so that kernels may store into it via
+        :py:func:`write()`?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.Texture3f64.write(self, pos, value, active=Bool(True))
+
+        Store values into a writable hardware texture
+
+        The per-channel values in ``value`` are written to the texel addressed by
+        the integer coordinates ``pos``. The texture must have been created with
+        ``writable=True``.
+
+        This is a hardware texture store (a side effect): it is not differentiable,
+        and the written texture is meant for display / external sampling rather than
+        :py:func:`eval()`.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3u):
+            *no description available*
+
+        Parameter ``value`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → None:
             *no description available*
 
 .. py:class:: mitsuba.TexturePtr
@@ -20575,14 +22458,6 @@
 
     Base class: :py:obj:`mitsuba.Object`
 
-    Abstract base class for 3D volumes.
-
-    .. py:method:: __init__(self, props)
-
-        Parameter ``props`` (:py:obj:`mitsuba.Properties`):
-            *no description available*
-
-
     .. py:method:: mitsuba.Volume.bbox()
 
         Returns the bounding box of the volume
@@ -20718,34 +22593,22 @@
 
     Base class: :py:obj:`mitsuba.Object`
 
-    Class to read and write 3D volume grids
+    Overloaded function.
 
-    This class handles loading of volumes in the Mitsuba volume file
-    format Please see the documentation of gridvolume (grid3d.cpp) for the
-    file format specification.
+    1. ``__init__(self, path: :py:obj:`mitsuba.filesystem.path`) -> None``
 
-    .. py:method:: __init__(self, path)
 
-        Overloaded function.
-        
-        1. ``__init__(self, path: :py:obj:`mitsuba.filesystem.path`) -> None``
-        
-        
-        2. ``__init__(self, stream: :py:obj:`mitsuba.Stream`) -> None``
-        
-        
-        3. ``__init__(self, array: ndarray[dtype=float32, order='C', device='cpu'], compute_max: bool = True) -> None``
-        
-        Initialize a VolumeGrid from a CPU-visible ndarray
-        
-        4. ``__init__(self, array: drjit.llvm.ad.TensorXf, compute_max: bool = True) -> None``
-        
-        Initialize a VolumeGrid from a drjit tensor
+    2. ``__init__(self, stream: :py:obj:`mitsuba.Stream`) -> None``
 
-        Parameter ``path`` (:py:obj:`mitsuba.filesystem.path`):
-            *no description available*
 
-        
+    3. ``__init__(self, array: ndarray[dtype=float32, order='C', device='cpu'], compute_max: bool = True) -> None``
+
+    Initialize a VolumeGrid from a CPU-visible ndarray
+
+    4. ``__init__(self, array: drjit.llvm.ad.TensorXf, compute_max: bool = True) -> None``
+
+    Initialize a VolumeGrid from a drjit tensor
+
     .. py:method:: mitsuba.VolumeGrid.buffer_size()
 
         Return the volume grid size in bytes (excluding metadata)
@@ -22167,6 +24030,211 @@
     Compute the index and data arrays of the (combinatorial) Laplacian matrix of
     a given mesh.
 
+.. py:class:: mitsuba.ad.loaders.FlatSensor
+
+    Base class: :py:obj:`mitsuba.Sensor`
+
+    Sensor used internally by :py:class:`~:py:obj:`mitsuba.ad.RayDataLoader``.
+
+    Its film has one row with ``pixels_per_batch`` pixels. Before each render
+    call, :py:meth:`~:py:obj:`mitsuba.ad.RayDataLoader.next`()` stores the selected flat
+    source pixel indices in ``pixel_idx``. Sampling this sensor then remaps
+    those flat indices to the corresponding source sensor and pixel
+    coordinates.
+
+    .. py:method:: __init__(self, arg)
+
+        Parameter ``arg`` (:py:obj:`mitsuba.Properties`, /):
+            *no description available*
+
+
+    .. py:method:: mitsuba.ad.loaders.FlatSensor.initialize(sensors, pixels_per_batch)
+
+        Initialize the flat sensor with multiple sensors.
+
+        Parameter ``sensors`` (list[~:py:obj:`mitsuba.Sensor`]):
+            *no description available*
+
+        Parameter ``pixels_per_batch`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.ad.loaders.FlatSensor.sample_ray_differential(self, time, sample1, sample2, sample3, active=True)
+
+        Importance sample a ray differential proportional to the sensor's
+        sensitivity profile.
+
+        The sensor profile is a six-dimensional quantity that depends on time,
+        wavelength, surface position, and direction. This function takes a
+        given time value and five uniformly distributed samples on the
+        interval [0, 1] and warps them so that the returned ray the profile.
+        Any discrepancies between ideal and actual sampled profiles are
+        absorbed into a spectral importance weight that is returned along with
+        the ray.
+
+        In contrast to Endpoint::sample_ray(), this function returns
+        differentials with respect to the X and Y axis in screen space.
+
+        Parameter ``time`` (drjit.llvm.ad.Float):
+            The scene time associated with the ray_differential to be sampled
+
+        Parameter ``sample1`` (drjit.llvm.ad.Float):
+            A uniformly distributed 1D value that is used to sample the
+            spectral dimension of the sensitivity profile.
+
+        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+            This argument corresponds to the sample position in fractional
+            pixel coordinates relative to the crop window of the underlying
+            film.
+
+        Parameter ``sample3`` (:py:obj:`mitsuba.Point2f`):
+            A uniformly distributed sample on the domain ``[0,1]^2``. This
+            argument determines the position on the aperture of the sensor.
+            This argument is ignored if ``needs_sample_3() == false``.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[:py:obj:`mitsuba.RayDifferential3f`, :py:obj:`mitsuba.Color3f`]:
+            The sampled ray differential and (potentially spectrally varying)
+            importance weights. The latter account for the difference between
+            the sensor profile and the actual used sampling density function.
+
+    .. py:method:: mitsuba.ad.loaders.FlatSensor.sample_ray(self, time, sample1, sample2, sample3, active=True)
+
+        Importance sample a ray proportional to the endpoint's
+        sensitivity/emission profile.
+
+        The endpoint profile is a six-dimensional quantity that depends on
+        time, wavelength, surface position, and direction. This function takes
+        a given time value and five uniformly distributed samples on the
+        interval [0, 1] and warps them so that the returned ray follows the
+        profile. Any discrepancies between ideal and actual sampled profile
+        are absorbed into a spectral importance weight that is returned along
+        with the ray.
+
+        Parameter ``time`` (drjit.llvm.ad.Float):
+            The scene time associated with the ray to be sampled
+
+        Parameter ``sample1`` (drjit.llvm.ad.Float):
+            A uniformly distributed 1D value that is used to sample the
+            spectral dimension of the emission profile.
+
+        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+            A uniformly distributed sample on the domain ``[0,1]^2``. For
+            sensor endpoints, this argument corresponds to the sample position
+            in fractional pixel coordinates relative to the crop window of the
+            underlying film. This argument is ignored if ``needs_sample_2() ==
+            false``.
+
+        Parameter ``sample3`` (:py:obj:`mitsuba.Point2f`):
+            A uniformly distributed sample on the domain ``[0,1]^2``. For
+            sensor endpoints, this argument determines the position on the
+            aperture of the sensor. This argument is ignored if
+            ``needs_sample_3() == false``.
+
+        Parameter ``active`` (drjit.llvm.ad.Bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[:py:obj:`mitsuba.Ray3f`, :py:obj:`mitsuba.Color3f`]:
+            The sampled ray and (potentially spectrally varying) importance
+            weights. The latter account for the difference between the profile
+            and the actual used sampling density function.
+
+.. py:class:: mitsuba.ad.loaders.RayDataLoader
+
+    Minibatch loader for rendering rays and matching target pixels.
+
+    This class treats every pixel of every source sensor as one flattened sample.
+    Calling :py:meth:`next()` returns a target tensor with shape
+    ``(1, pixels_per_batch, channels)`` together with an internal sensor that is
+    configured to render the same flattened pixels.
+
+    The loader exposes several scalar layout members: ``num_sensors``,
+    ``width``, ``height``, ``channel_size``, ``total_pixels``,
+    ``effective_total_pixels``, ``iter_shuffle``, and tile counts
+    (``tiles_per_row``, ``tiles_per_col``, ``tiles_per_sensor``). The member
+    ``pixel_batch_multiplier`` is equal to ``total_pixels / pixels_per_batch``
+    and can be used to scale minibatch losses to full-image magnitude.
+
+    .. py:method:: __init__(sensors, target_images, pixels_per_batch, seed=0, regular_reshuffle=False, tile_size=4)
+
+        Initialize the ray data loader.
+        
+        Parameter ``sensors`` (``mi.Sensor`` or ``list[mi.Sensor]``):
+            Source sensor(s). They must share a full film size, have no crop
+            window, disable ``sample_border``, and use the same number of base
+            channels as the target images.
+        
+        Parameter ``target_images`` (``mi.TensorXf`` or ``list[mi.TensorXf]``):
+            Target image tensor(s), one per sensor. Each tensor must have shape
+            ``(height, width, channels)`` matching the corresponding sensor
+            film.
+        
+        Parameter ``pixels_per_batch`` (``int``):
+            Number of flattened pixels returned by each
+            :py:meth:`~:py:obj:`mitsuba.ad.RayDataLoader.next`()` call. It must be
+            positive and no larger than ``total_pixels``.
+        
+        Parameter ``seed`` (``int``):
+            Base seed used for deterministic pixel permutation.
+        
+        Parameter ``regular_reshuffle`` (``bool``):
+            When enabled, reshuffle at the beginning of every full pass through
+            the padded pixel set. Otherwise, reuse the initial permutation.
+        
+        Parameter ``tile_size`` (``int``):
+            Side length of square tiles used for pixel shuffling. A value of
+            ``1`` gives a fully random pixel permutation, intermediate values
+            improve spatial coherence, and values at least as large as the
+            image dimensions fall back to whole-image permutation.
+
+        Parameter ``sensors`` (list[~:py:obj:`mitsuba.Sensor`] | ~:py:obj:`mitsuba.Sensor`):
+            *no description available*
+
+        Parameter ``target_images`` (list[~drjit.llvm.ad.TensorXf] | ~drjit.llvm.ad.TensorXf):
+            *no description available*
+
+        Parameter ``pixels_per_batch`` (int):
+            *no description available*
+
+        Parameter ``seed`` (int):
+            *no description available*
+
+        Parameter ``regular_reshuffle`` (bool):
+            *no description available*
+
+        Parameter ``tile_size`` (int):
+            *no description available*
+
+        
+    .. py:method:: mitsuba.ad.loaders.RayDataLoader.shuffle_pixel_index(seed)
+
+        Shuffle pixel index buffer using tile-based permutation for GPU coherence.
+
+        Parameter ``seed`` (~drjit.llvm.ad.UInt):
+            *no description available*
+
+    .. py:method:: mitsuba.ad.loaders.RayDataLoader.next()
+
+        Get the next batch of pixel indices and corresponding target tensor.
+
+        This method reshuffles the pixel index buffer every `iter_shuffle`
+        iterations. It reuses and mutates the same flat sensor on every call.
+
+.. py:function:: mitsuba.ad.loaders.Tuple(overloaded)
+
+
+    Tuple[X, Y] is the cross-product type of X and Y.
+
+    Example: Tuple[T1, T2] is a tuple of two elements corresponding
+    to type variables T1 and T2.  Tuple[int, float, str] is a tuple
+    of an int, a float and a string.
+
+    To specify a variable-length tuple of homogeneous type, use Tuple[T, ...].
+
 .. py:function:: mitsuba.chi2.BSDFAdapter()
 
     Adapter to test BSDF sampling using the Chi^2 test.
@@ -23161,6 +25229,14 @@
 
     Returns → float:
         *no description available*
+
+.. py:function:: mitsuba.math_py.chi2()
+
+    Pure-Python/numpy port of ``mitsuba::math::chi2()`` for backends that lack
+    float64 (e.g. Metal). Cells with expected frequency below ``pool_threshold``
+    are pooled into larger groups before contributing to the statistic.
+
+    Returns ``(statistic, dof, n_pooled_in, n_pooled_out)``.
 
 .. py:function:: mitsuba.math_py.rlgamma()
 

@@ -7,7 +7,7 @@ Cloning the repository
 ----------------------
 
 Compiling Mitsuba 3 from scratch requires recent versions of CMake (at least
-**3.9.0**) and Python (at least **3.8**). Further platform-specific dependencies
+**3.9.0**) and Python (at least **3.9**). Further platform-specific dependencies
 and compilation instructions are provided below for each operating system. Some
 additional steps are required for GPU-based backends that are described at the
 end of this section.
@@ -75,17 +75,10 @@ The default file specifies two scalar variants that you may wish to extend
 according to your requirements and the explanations given above. Note that
 ``scalar_spectral`` can be removed, but ``scalar_rgb`` *must* currently be part
 of the list as some core components of Mitsuba depend on it. In addition,
-at least one ``ad``-enabled variant must also be compiled. If Mitsuba is
-launched from the command line without any specific mode parameter, the first
-variant of the list below will be used.
-
-You may also wish to change the *Python default* variant that is executed if no
-variant is explicitly specified (this must be one of the entries of the
-``enabled`` list):
-
-.. code-block:: text
-
-    "python-default": "llvm_ad_rgb",
+at least one ``ad``-enabled variant must also be compiled. When the ``mitsuba``
+command line executable is launched without a specific mode parameter, it will
+automatically select the most capable variant whose backend is available at
+runtime (preferring an RGB color representation).
 
 The remainder of this file lists the C++ types defining the available variants
 and can safely be ignored.
@@ -120,22 +113,15 @@ The build process under Linux requires several external dependencies that are
 easily installed using the system-provided package manager (e.g.,
 :monosp:`apt-get` under Ubuntu).
 
-Note that recent Linux distributions include two different compilers that can
-both be used for C++ software development. `GCC <https://gcc.gnu.org>`_ is
-typically the default, and `Clang <https://clang.llvm.org>`_ can be installed
-optionally. During the development of this project, we encountered many issues
-with GCC (mis-compilations, compiler errors, segmentation faults), and strongly
-recommend that you use Clang instead.
-
-To fetch all dependencies and Clang, enter the following commands on Ubuntu:
+To fetch all dependencies, enter the following commands on Ubuntu:
 
 .. code-block:: bash
 
-    # Install recent versions build tools, including Clang
-    sudo apt install clang-17 cmake ninja-build
+    # Install required build tools
+    sudo apt install g++ cmake ninja-build
 
     # Install libraries for image I/O
-    sudo apt install libpng-dev libjpeg-dev
+    sudo apt install libpng-dev libjpeg-dev nasm
 
     # Install required Python packages
     sudo apt install libpython3-dev python3-distutils
@@ -149,17 +135,7 @@ interesting to you, also enter the following commands:
     # For running tests
     sudo apt install python3-pytest python3-pytest-xdist python3-numpy
 
-Next, ensure that two environment variables :monosp:`CC` and :monosp:`CXX` are
-exported. You can either run these two commands manually before using CMake
-or---even better---add them to your :monosp:`~/.bashrc` file. This ensures that
-CMake will always use the correct compiler.
-
-.. code-block:: bash
-
-    export CC=clang-17 export CXX=clang++-17
-
-If you installed another version of Clang, the version suffix of course has to
-be adjusted. Now, compilation should be as simple as running the following from
+Now, compilation should be as simple as running the following from
 inside the :monosp:`mitsuba3` root directory:
 
 .. code-block:: bash
@@ -178,17 +154,17 @@ slight adjustments for the package manager and package names). We have mainly
 worked with software environments listed below, and our instructions should work
 without modifications in those cases.
 
-.. tabularcolumns:: |p{0.33\width}|p{0.33\width}|p{0.33\width}|
+.. tabularcolumns:: |p{0.33\width}|p{0.33\width}|
 
-+--------------------------+--------------------------+--------------------------+
-| **Focal**                | **Jammy**                | **Noble**                |
-|                          |                          |                          |
-| - Ubuntu 20.04           | - Ubuntu 22.04           | - Ubuntu 24.04           |
-| - g++ 9.4.0              | - clang 17.0.6           | - g++ 13.2.0             |
-| - cmake 3.16.3           | - cmake 3.22.1           | - cmake 3.28.3           |
-| - ninja 1.10.0           | - ninja 1.10.1           | - ninja 1.11.1           |
-| - python 3.8.10          | - python 3.10.12         | - python 3.12.3          |
-+--------------------------+--------------------------+--------------------------+
++--------------------------+--------------------------+
+| **Jammy**                | **Noble**                |
+|                          |                          |
+| - Ubuntu 22.04           | - Ubuntu 24.04           |
+| - clang 17.0.6           | - g++ 13.2.0             |
+| - cmake 3.22.1           | - cmake 3.28.3           |
+| - ninja 1.10.1           | - ninja 1.11.1           |
+| - python 3.10.12         | - python 3.12.3          |
++--------------------------+--------------------------+
 
 Windows
 -------
@@ -196,7 +172,7 @@ Windows
 On Windows, a recent version of `Visual Studio 2022
 <https://visualstudio.microsoft.com/vs/>`_ is required. Some tools such as git,
 CMake, or Python might need to be installed manually. Mitsuba's build system
-*requires* access to Python >= 3.8 even if you do not plan to use Mitsuba's
+*requires* access to Python >= 3.9 even if you do not plan to use Mitsuba's
 python interface.
 
 From the root `mitsuba3` directory, the build can be configured with:
@@ -241,7 +217,7 @@ once might be necessary:
     xcode-select --install
 
 Note that the default Python version installed with macOS is not compatible with
-Mitsuba 3, and a more recent version (at least 3.8) needs to be installed (e.g.
+Mitsuba 3, and a more recent version (at least 3.9) needs to be installed (e.g.
 via `Miniconda 3 <https://docs.conda.io/en/latest/miniconda.html>`_ or `Homebrew
 <https://brew.sh/>`_).
 

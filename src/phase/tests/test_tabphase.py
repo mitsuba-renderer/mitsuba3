@@ -1,8 +1,15 @@
 import pytest
 import drjit as dr
 import mitsuba as mi
+import numpy as np
 
 from itertools import product
+
+# Special case to support both NumPy 1.x and >= 2.4.
+if hasattr(np, 'trapezoid'):
+    trapezoid = np.trapezoid
+else:
+    trapezoid = np.trapz
 
 
 def test_create(variant_scalar_rgb):
@@ -16,12 +23,11 @@ def test_eval(variant_scalar_rgb):
     We make sure that the values we use to initialize the plugin are such that
     the phase function has an asymmetric lobe.
     """
-    import numpy as np
 
     # Phase function table definition
     ref_y = np.array([0.5, 1.0, 1.5])
     ref_x = np.linspace(-1, 1, len(ref_y))
-    ref_integral = np.trapz(ref_y, ref_x)
+    ref_integral = trapezoid(ref_y, ref_x)
 
     def eval(wi, wo):
         # Python implementation used as a reference
@@ -111,11 +117,10 @@ def test_chi2(variants_vec_backends_once_rgb):
 
 def test_traverse(variant_scalar_rgb):
     # Phase function table definition
-    import numpy as np
 
     ref_y = np.array([0.5, 1.0, 1.5])
     ref_x = np.linspace(-1, 1, len(ref_y))
-    ref_integral = np.trapz(ref_y, ref_x)
+    ref_integral = trapezoid(ref_y, ref_x)
 
     # Initialise as isotropic and update with parameters
     phase = mi.load_dict({"type": "tabphase", "values": "1, 1, 1"})

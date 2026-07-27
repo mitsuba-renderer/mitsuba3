@@ -161,6 +161,41 @@ MI_PY_EXPORT(Properties) {
             [](Properties &p, std::string_view key, Object *value) {
                 p.set(key, ref<Object>(value), false);
             })
+        // NumPy scalar handler
+        .def("__setitem__",
+            [](Properties &p, std::string_view key, nb::handle value) {
+                if (!nb::hasattr(value.type(), "__module__"))
+                    throw nb::next_overload();
+
+                const char *mod =
+                    nb::borrow<nb::str>(value.type().attr("__module__")).c_str();
+
+                if (strcmp(mod, "numpy") == 0) {
+                    nb::object np = nb::module_::import_("numpy");
+
+                    if (nb::bool_(np.attr("isscalar")(value))) {
+                        const char *dtype =
+                            nb::borrow<nb::str>(value.attr("dtype").attr("kind")).c_str();
+
+                        if (dtype[0] == 'b') {
+                            p.set(key, nb::cast<bool>(value.attr("item")()), false);
+                            return;
+                        } else if (dtype[0] == 'i' || dtype[0] == 'u') {
+                            p.set(key, nb::cast<int64_t>(value), false);
+                            return;
+                        } else if (dtype[0] == 'f') {
+                            p.set(key, nb::cast<double>(value), false);
+                            return;
+                        } else {
+                            Throw(
+                                "Properties.__setitem__(): numpy scalars with "
+                                "a '%s' data type are not supported!", dtype);
+                        }
+                    }
+                }
+
+                throw nb::next_overload();
+            })
         .def("__setitem__",
             [](Properties &p, std::string_view key, nb::fallback value) {
                 try {

@@ -1,4 +1,5 @@
 #include <mitsuba/core/properties.h>
+#include <mitsuba/core/string.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/medium.h>
@@ -103,24 +104,24 @@ public:
 
         ScalarFloat cutoff_angle = props.get<ScalarFloat>("cutoff_angle", 20.0f);
         m_beam_width   = props.get<ScalarFloat>("beam_width", cutoff_angle * 3.0f / 4.0f);
-        m_cutoff_angle = dr::deg_to_rad(cutoff_angle);
-        m_beam_width   = dr::deg_to_rad(m_beam_width);
-        m_inv_transition_width = 1.0f / (m_cutoff_angle - m_beam_width);
-        m_cos_cutoff_angle = dr::cos(m_cutoff_angle);
-        m_cos_beam_width   = dr::cos(m_beam_width);
-        Assert(dr::all(m_cutoff_angle >= m_beam_width));
-        m_uv_factor = dr::tan(m_cutoff_angle);
-
-        dr::make_opaque(m_beam_width, m_cutoff_angle, m_uv_factor,
-                        m_cos_beam_width, m_cos_cutoff_angle,
-                        m_inv_transition_width);
+        m_cutoff_angle = cutoff_angle;
+        update();
     }
 
     void traverse(TraversalCallback *cb) override {
         Base::traverse(cb);
-        cb->put("intensity", m_intensity,  ParamFlags::Differentiable);
-        cb->put("texture",   m_texture,    ParamFlags::Differentiable);
-        cb->put("to_world",  m_to_world,   ParamFlags::NonDifferentiable);
+        cb->put("intensity",    m_intensity,    ParamFlags::Differentiable);
+        cb->put("texture",      m_texture,      ParamFlags::Differentiable);
+        cb->put("cutoff_angle", m_cutoff_angle, ParamFlags::Differentiable);
+        cb->put("beam_width",   m_beam_width,   ParamFlags::Differentiable);
+        cb->put("to_world",     m_to_world,     ParamFlags::NonDifferentiable);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys = {}) override {
+        Base::parameters_changed(keys);
+        if (keys.empty() || string::contains(keys, "cutoff_angle") || string::contains(keys, "beam_width")) {
+            update();
+        }
     }
 
     /**
@@ -144,7 +145,7 @@ public:
         Float cos_theta    = local_dir.z();
         Float beam_res = dr::select(
             cos_theta >= m_cos_beam_width, 1.f,
-            (m_cutoff_angle - dr::acos(cos_theta)) * m_inv_transition_width);
+            (m_cutoff_angle_rad - dr::acos(cos_theta)) * m_inv_transition_width);
 
         return dr::select(cos_theta > m_cos_cutoff_angle, beam_res, 0.f);
     }
@@ -296,14 +297,28 @@ public:
 
     MI_DECLARE_CLASS(SpotLight)
 private:
+    void update() {
+        m_cutoff_angle_rad     = dr::deg_to_rad(m_cutoff_angle);
+        Float beam_width_rad   = dr::deg_to_rad(m_beam_width);
+        m_inv_transition_width = 1.0f / (m_cutoff_angle_rad - beam_width_rad);
+        m_cos_cutoff_angle     = dr::cos(m_cutoff_angle_rad);
+        m_cos_beam_width       = dr::cos(beam_width_rad);
+        Assert(dr::all(m_cutoff_angle_rad >= beam_width_rad));
+        m_uv_factor = dr::tan(m_cutoff_angle_rad);
+
+        dr::make_opaque(m_beam_width, m_cutoff_angle, beam_width_rad,
+                        m_cutoff_angle_rad, m_uv_factor, m_cos_beam_width,
+                        m_cos_cutoff_angle, m_inv_transition_width);
+    }
+
     ref<Texture> m_intensity;
     ref<Texture> m_texture;
-    Float m_beam_width, m_cutoff_angle, m_uv_factor;
+    Float m_beam_width, m_cutoff_angle, m_cutoff_angle_rad, m_uv_factor;
     Float m_cos_beam_width, m_cos_cutoff_angle, m_inv_transition_width;
 
     MI_TRAVERSE_CB(Base, m_intensity, m_texture, m_beam_width, m_cutoff_angle,
-                   m_uv_factor, m_cos_beam_width, m_cos_cutoff_angle,
-                   m_inv_transition_width)
+                   m_cutoff_angle_rad, m_uv_factor, m_cos_beam_width,
+                   m_cos_cutoff_angle, m_inv_transition_width)
 };
 
 MI_EXPORT_PLUGIN(SpotLight)

@@ -291,6 +291,43 @@ def test02_pose_estimation(variants_vec_rgb, integrator, auto_opaque):
     #     assert dr.allclose(img_ref, img_frozen, atol=0.001)
 
 
+def test02b_cross_scene_rebind(variants_vec_rgb):
+    """
+    Freeze a render on one scene, then replay the frozen function on a
+    *different* but structurally-equivalent scene instance. The frozen function
+    must render the second scene's geometry/materials, not the captured first
+    scene.
+
+    Before resource owners became rebindable freeze inputs, the Metal backend
+    captured the acceleration structure by identity and silently traced the
+    original scene; the other backends always exposed it as a traversed input.
+    This test pins the (now uniform) behaviour across backends.
+    """
+    def make_scene(green):
+        d = mi.cornell_box()
+        d["sensor"]["film"]["width"] = 32
+        d["sensor"]["film"]["height"] = 32
+        d["green"]["reflectance"]["value"] = green
+        return mi.load_dict(d)
+
+    def render(scene):
+        return mi.render(scene, spp=16)
+
+    frozen = dr.freeze(render)
+
+    scene_a = make_scene([0.1, 0.4, 0.1])
+    scene_b = make_scene([0.4, 0.1, 0.1])
+
+    res_a = frozen(scene_a)
+    res_b = frozen(scene_b)   # replay on a *different* scene instance
+    ref_b = render(scene_b)   # non-frozen reference for scene B
+
+    # The frozen replay must match a fresh render of scene B ...
+    assert dr.allclose(res_b, ref_b, atol=1e-3)
+    # ... and must differ from scene A (i.e. it did not trace the captured one).
+    assert not dr.allclose(res_b, res_a, atol=1e-3)
+
+
 @pytest.mark.parametrize("auto_opaque", [False, True])
 def test03_optimize_color(variants_vec_rgb, auto_opaque):
     """

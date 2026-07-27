@@ -213,7 +213,7 @@ public:
      *    implementation will allocate memory itself.
      */
     Bitmap(PixelFormat pixel_format,
-           Struct::Type component_format,
+           sj::Type component_format,
            const Vector2u &size,
            size_t channel_count = 0,
            const std::vector<std::string> &channel_names = {},
@@ -254,7 +254,7 @@ public:
     PixelFormat pixel_format() const { return m_pixel_format; }
 
     /// Return the component format of this bitmap
-    Struct::Type component_format() const { return m_component_format; }
+    sj::Type component_format() const { return m_component_format; }
 
     /// Return a pointer to the underlying bitmap storage
     void *data() { return m_data.get(); }
@@ -281,7 +281,7 @@ public:
     size_t pixel_count() const { return m_size.x() * (size_t) m_size.y(); }
 
     /// Return the number of channels used by this bitmap
-    size_t channel_count() const { return m_struct->field_count(); }
+    size_t channel_count() const { return m_struct.size(); }
 
     /// Return whether this image has an alpha channel
     bool has_alpha() const {
@@ -322,10 +322,10 @@ public:
     void clear();
 
     /// Return a \c Struct instance describing the contents of the bitmap (const version)
-    const Struct *struct_() const { return m_struct.get(); }
+    const sj::Struct &struct_() const { return m_struct; }
 
     /// Return a \c Struct instance describing the contents of the bitmap
-    Struct *struct_() { return m_struct.get(); }
+    sj::Struct &struct_() { return m_struct; }
 
     /**
      * Write an encoded form of the bitmap to a stream using the specified file format
@@ -467,6 +467,19 @@ public:
                  -dr::Infinity<ScalarFloat>, dr::Infinity<ScalarFloat> }) const;
 
     /**
+     * \brief Pad the bitmap so that each dimension is at least \c min_size
+     *
+     * Dimensions already >= \c min_size are left unchanged.  The extra
+     * pixels are filled by replicating the nearest edge row or column
+     * (simple edge-clamp), so this works with any component format
+     * (including integer types that \ref resample() does not support).
+     *
+     * \return A new bitmap with the padded size, or a reference to \c this
+     *         if no padding is needed.
+     */
+    ref<Bitmap> pad_to(const ScalarVector2u &min_size) const;
+
+    /**
      * \brief Convert the bitmap into another pixel and/or component format
      *
      * This helper function can be used to efficiently convert a bitmap
@@ -512,7 +525,7 @@ public:
      *      the output values.
      */
     ref<Bitmap> convert(PixelFormat pixel_format,
-                        Struct::Type component_format,
+                        sj::Type component_format,
                         bool srgb_gamma,
                         Bitmap::AlphaTransform alpha_transform = Bitmap::AlphaTransform::Empty) const;
 
@@ -645,9 +658,9 @@ public:
  protected:
      std::unique_ptr<uint8_t[]> m_data;
      PixelFormat m_pixel_format;
-     Struct::Type m_component_format;
+     sj::Type m_component_format;
      Vector2u m_size;
-     ref<Struct> m_struct;
+     sj::Struct m_struct;
      bool m_srgb_gamma;
      bool m_premultiplied_alpha;
      bool m_owns_data;

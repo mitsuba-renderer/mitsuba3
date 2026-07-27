@@ -20,7 +20,8 @@ public:
     MI_IMPORT_TYPES(BSDF)
     MI_IMPORT_BASE(Shape, m_to_world, mark_dirty, m_emitter, m_sensor, m_bsdf,
                    m_interior_medium, m_exterior_medium, m_is_instance,
-                   m_discontinuity_types, m_shape_type, m_initialized)
+                   m_discontinuity_types, m_shape_type, m_initialized,
+                   get_children_string)
 
     // Mesh is always stored in single precision
     using InputFloat = float;
@@ -113,7 +114,7 @@ public:
     template <typename Index>
     MI_INLINE auto face_indices(Index index,
                                 dr::mask_t<Index> active = true) const {
-        using Result = dr::Array<dr::uint32_array_t<Index>, 3>;
+        using Result = Vector<dr::uint32_array_t<Index>, 3>;
         return dr::gather<Result>(m_faces, index, active);
     }
 
@@ -125,7 +126,7 @@ public:
     MI_INLINE auto edge_indices(Index tri_index, Index edge_index,
                                 dr::mask_t<Index> active = true) const {
         using UInt32 = dr::uint32_array_t<Index>;
-        return dr::Array<UInt32, 2>(
+        return Vector<UInt32, 2>(
             dr::gather<UInt32>(m_faces, 3 * tri_index + edge_index, active),
             dr::gather<UInt32>(m_faces, 3 * tri_index + (edge_index + 1) % 3, active)
         );
@@ -325,14 +326,13 @@ public:
      * \param ray
      *    The ray segment to be used for the intersection query.
      * \return
-     *    Returns an ordered tuple <tt>(mask, u, v, t)</tt>, where \c mask
+     *    Returns an ordered tuple <tt>(valid, t, uv)</tt>, where \c valid
      *    indicates whether an intersection was found, \c t contains the
-     *    distance from the ray origin to the intersection point, and \c u and
-     *    \c v contains the first two components of the intersection in
-     *    barycentric coordinates
+     *    distance from the ray origin to the intersection point, and \c uv
+     *    contains the first two barycentric coordinates.
      */
     template <typename T, typename Ray3>
-    std::pair<T, Point<T, 2>>
+    std::tuple<dr::mask_t<T>, T, Point<T, 2>>
     ray_intersect_triangle_impl(const dr::uint32_array_t<T> &index,
                                 const Ray3 &ray,
                                 dr::mask_t<T> active = true) const {
@@ -358,21 +358,22 @@ public:
         }
 
         auto [t, uv, hit] = moeller_trumbore(ray, p0, p1, p2, active);
-        return { dr::select(hit, t, dr::Infinity<T>), uv };
+        return { hit, dr::select(hit, t, dr::Infinity<T>), uv };
     }
 
     MI_INLINE PreliminaryIntersection3f
     ray_intersect_triangle(const UInt32 &index, const Ray3f &ray,
                            Mask active = true) const {
         PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>();
-        std::tie(pi.t, pi.prim_uv) = ray_intersect_triangle_impl<Float>(index, ray, active);
+        std::tie(pi.valid, pi.t, pi.prim_uv) =
+            ray_intersect_triangle_impl<Float>(index, ray, active);
         pi.prim_index = index;
         pi.shape = this;
         return pi;
     }
 
     using ScalarRay3f = Ray<ScalarPoint3f, Spectrum>;
-    MI_INLINE std::pair<ScalarFloat, ScalarPoint2f>
+    MI_INLINE std::tuple<bool, ScalarFloat, ScalarPoint2f>
     ray_intersect_triangle_scalar(const ScalarUInt32 &index, const ScalarRay3f &ray) const {
         return ray_intersect_triangle_impl<ScalarFloat>(index, ray, true);
     }
@@ -384,7 +385,7 @@ public:
     using Point2fP##N = Point<FloatP##N, 2>;                               \
     using Point3fP##N = Point<FloatP##N, 3>;                               \
     using Ray3fP##N   = Ray<Point3fP##N, Spectrum>;                        \
-    virtual std::pair<FloatP##N, Point2fP##N>                              \
+    virtual std::tuple<MaskP##N, FloatP##N, Point2fP##N>                   \
     ray_intersect_triangle_packet(const UInt32P##N &index,                 \
                                   const Ray3fP##N &ray,                    \
                                   MaskP##N active = true) const {          \
@@ -395,16 +396,7 @@ public:
     MI_DECLARE_RAY_INTERSECT_TRI_PACKET(8)
     MI_DECLARE_RAY_INTERSECT_TRI_PACKET(16)
 
-#if defined(MI_ENABLE_EMBREE)
-    /// Return the Embree version of this shape
-    RTCGeometry embree_geometry(RTCDevice device) override;
-#endif
-
-#if defined(MI_ENABLE_CUDA)
-    using Base::m_optix_data_ptr;
-    void optix_prepare_geometry() override;
-    void optix_build_input(OptixBuildInput&) const override;
-#endif
+    void describe(ShapeIR &g) const override;
 
     /// @}
     // =========================================================================
@@ -515,11 +507,12 @@ protected:
         MeshAttributeType type;
         mutable FloatStorage buf;
 
-        MeshAttribute migrate(AllocType at) const {
-            return MeshAttribute { size, type, dr::migrate(buf, at) };
+        MeshAttribute migrate(JitBackend backend) const {
+            return MeshAttribute { size, type, dr::migrate(buf, backend) };
         }
 
-        DRJIT_STRUCT_NODEF(MeshAttribute, buf);
+        DRJIT_ARRAY_DEFAULTS(MeshAttribute)
+        DRJIT_TRAVERSE(MeshAttribute, buf);
     };
 
     template <uint32_t Size, bool Raw>
@@ -595,10 +588,6 @@ protected:
 
     tsl::robin_map<std::string, MeshAttribute, std::hash<std::string_view>,
                    std::equal_to<>> m_mesh_attributes;
-
-#if defined(MI_ENABLE_CUDA)
-    mutable void* m_vertex_buffer_ptr = nullptr;
-#endif
 
     /// Flag that can be set by the user to disable loading/computation of vertex normals
     bool m_face_normals = false;

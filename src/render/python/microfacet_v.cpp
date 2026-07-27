@@ -11,7 +11,7 @@
 MI_PY_EXPORT(MicrofacetDistribution) {
     MI_PY_IMPORT_TYPES(MicrofacetDistribution)
 
-    nb::class_<MicrofacetDistribution>(m, "MicrofacetDistribution", D(MicrofacetDistribution))
+    nb::class_<MicrofacetDistribution, drjit::TraversableBase>(m, "MicrofacetDistribution", D(MicrofacetDistribution))
         .def("__init__", [](MicrofacetDistribution* alloc, MicrofacetType t, ScalarFloat alpha, bool sv) {
             new (alloc) MicrofacetDistribution(t, alpha, sv);
         }, "type"_a, "alpha"_a, "sample_visible"_a = true)

@@ -33,14 +33,11 @@ def test01_construct(variant_scalar_rgb):
 @pytest.mark.parametrize("offset", [ [0, 0], [1, 2] ])
 @pytest.mark.parametrize("normalize", [ False, True ])
 @pytest.mark.parametrize("coalesce", [ False, True ])
-@pytest.mark.parametrize("compensate", [ False, True ])
-def test02_put(variants_all, filter_name, border, offset, normalize, coalesce, compensate):
+@pytest.mark.parametrize("active", [ False, True ])
+def test02_put(variants_all, filter_name, border, offset, normalize, coalesce, active):
     # Checks the result of the ImageBlock::put() method
     # against a brute force reference
     scalar = 'scalar' in mi.variant()
-
-    if compensate and scalar:
-        pytest.skip('for now, error compensation is just enabled in JIT modes')
 
     rfilter = mi.load_dict({ 'type' : filter_name })
 
@@ -57,11 +54,10 @@ def test02_put(variants_all, filter_name, border, offset, normalize, coalesce, c
                                   channel_count=1,
                                   rfilter=rfilter,
                                   border=border,
-                                  compensate=compensate,
                                   normalize=normalize,
                                   coalesce=coalesce)
 
-            block.put(pos=pos, values=[1])
+            block.put(pos=pos, values=[1], active=active)
 
             size += 2 * block.border_size()
             Array1f = mi.Float if not scalar else dr.scalar.ArrayXf
@@ -106,6 +102,11 @@ def test02_put(variants_all, filter_name, border, offset, normalize, coalesce, c
                 value = dr.sum(ref_norm, axis=None)
                 if dr.all(value > 0):
                     ref /= value
+
+            if not active:
+                ref *=0
+                ref_norm *= 0
+
             match = dr.allclose(block.tensor(), ref, atol=1e-5)
 
             if not match:
@@ -235,25 +236,3 @@ def test05_boundary_effects(variants_vec_rgb, coalesce, normalize):
     else:
         ref = v1
     assert dr.allclose(ib.tensor().array, ref, rtol=1e-2)
-
-@pytest.mark.parametrize("compensate", [ False, True ])
-def test06_error_compensation(variants_any_cuda, compensate):
-    with dr.scoped_set_flag(dr.JitFlag.ScatterReduceLocal, False):
-        ib = mi.ImageBlock(
-            size=(1, 1),
-            offset=(0, 0),
-            channel_count=1,
-            rfilter=None,
-            normalize=False,
-            coalesce=False,
-            compensate=compensate
-        )
-        ib.put(
-            pos=(0.5, 0.5),
-            values = (dr.ones(mi.Float, 2**24+1024),)
-        )
-        print(ib.tensor().array[0])
-        print("vs")
-        print(2**24 + 1024)
-        print(2**24)
-        assert ib.tensor().array[0] ==  2**24 + (1024 if compensate else 0)

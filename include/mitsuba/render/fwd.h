@@ -7,7 +7,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 struct BSDFContext;
-struct OptixProgramGroupMapping;
+struct ShapeIR;
 template <typename Float, typename Spectrum> class BSDF;
 template <typename Float, typename Spectrum> class OptixDenoiser;
 template <typename Float, typename Spectrum> class Emitter;
@@ -44,6 +44,50 @@ template <typename Float, typename Spectrum> struct Interaction;
 template <typename Float, typename Spectrum> struct MediumInteraction;
 template <typename Float, typename Spectrum> struct SurfaceInteraction;
 template <typename Float, typename Shape>    struct PreliminaryIntersection;
+
+/// Shape type bit flags driving GPU intersection-function dispatch.
+enum class ShapeType : uint32_t {
+    /// Meshes (`ply`, `obj`, `serialized`)
+    Mesh = 1u << 0,
+
+    /// Rectangle: a particular type of mesh
+    Rectangle = Mesh | (1u << 1), // Tagged with an extra bit
+
+    /// B-Spline curves (`bsplinecurve`)
+    BSplineCurve = 1u << 2,
+
+    /// Linear curves (`linearcurve`)
+    LinearCurve = 1u << 3,
+
+    /// Cylinders (`cylinder`)
+    Cylinder = 1u << 4,
+
+    /// Disks (`disk`)
+    Disk = 1u << 5,
+
+    /// SDF Grids (`sdfgrid`)
+    SDFGrid = 1u << 6,
+
+    /// Spheres (`sphere`)
+    Sphere = 1u << 7,
+
+    /// Ellipsoids (`ellipsoids`)
+    Ellipsoids = 1u << 8,
+
+    /// Ellipsoid meshes (`ellipsoidsmesh`)
+    EllipsoidsMesh = Mesh | (1u << 9), // Tagged with an extra bit
+
+    /// Instance (`instance`)
+    Instance = 1u << 10,
+
+    /// ShapeGroup (`shapegroup`)
+    ShapeGroup = 1u << 11,
+
+    /// Invalid for default initialization
+    Invalid = 0
+};
+
+MI_DECLARE_ENUM_OPERATORS(ShapeType)
 
 template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Float                     = Float_;

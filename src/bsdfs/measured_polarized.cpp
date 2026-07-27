@@ -133,18 +133,18 @@ public:
         auto pbrdf   = tf->field("M");
 
         if (!(theta_h.shape.size() == 2 &&
-              theta_h.dtype == Struct::Type::Float32 &&
+              theta_h.dtype == sj::Type::Float32 &&
 
               theta_d.shape.size() == 2 &&
-              theta_d.dtype == Struct::Type::Float32 &&
+              theta_d.dtype == sj::Type::Float32 &&
 
               phi_d.shape.size() == 2 &&
-              phi_d.dtype == Struct::Type::Float32 &&
+              phi_d.dtype == sj::Type::Float32 &&
 
               wvls.shape.size() == 1 &&
-              wvls.dtype == Struct::Type::UInt16 &&
+              wvls.dtype == sj::Type::UInt16 &&
 
-              pbrdf.dtype == Struct::Type::Float32 &&
+              pbrdf.dtype == sj::Type::Float32 &&
               pbrdf.shape.size() == 6 &&
               pbrdf.shape[0] == phi_d.shape[1] &&
               pbrdf.shape[1] == theta_d.shape[1] &&

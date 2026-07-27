@@ -2,6 +2,10 @@
 
 #ifdef __CUDACC__
 # include <optix.h>
+  // Mitsuba targets the OptiX 8.0 ABI.
+# if !defined(OPTIX_VERSION) || OPTIX_VERSION != 80000
+#  error "Mitsuba requires the OptiX SDK 8.0 (point OPTIX_PATH at it)."
+# endif
 #else
 # include <mitsuba/render/optix_api.h>
 #endif
@@ -13,7 +17,7 @@
 struct OptixHitGroupData {
     /// Shape id in Dr.Jit's pointer registry
     uint32_t shape_registry_id;
-    /// Pointer to the memory region of Shape data (e.g. \c OptixSphereData )
+    /// Pointer to the memory region of Shape data (e.g. \c shapedata::SphereData)
     void* data;
 };
 

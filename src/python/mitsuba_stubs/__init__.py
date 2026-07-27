@@ -8,8 +8,8 @@ import os
 # (polarization, spectral rendering), hence those are scored higher.
 FEATURE_SCORES = {
     'scalar': 1,
-    'llvm': 2,
-    'cuda': 3,
+    'llvm': 200,
+    'cuda': 300,
     'mono': 10,
     'rgb': 20,
     'spectral': 30,

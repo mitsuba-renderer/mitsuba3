@@ -730,6 +730,7 @@ class ProjectiveDetail():
             # We construct a surface interaction `si_jump` with all the information
             # needed to perform the jump operation to avoid one expensive ray tracing.
             pi = dr.zeros(mi.PreliminaryIntersection3f, dr.width(ss))
+            pi.valid = active
             pi.t = 1.0
             sample_2d = mi.Point2f(sampler.next_float32(), sampler.next_float32())
             pi.prim_uv = mi.warp.square_to_uniform_triangle(sample_2d)

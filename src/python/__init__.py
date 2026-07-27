@@ -5,8 +5,8 @@ import os as _os
 import drjit as _dr
 import logging
 
-if _sys.version_info < (3, 8):
-    raise ImportError("Mitsuba requires Python 3.8 or greater.")
+if _sys.version_info < (3, 9):
+    raise ImportError("Mitsuba requires Python 3.9 or greater.")
 
 mi_dir = _os.path.dirname(_os.path.realpath(__file__))
 drjit_expected_loc = _os.path.realpath(_os.path.join(mi_dir, "..", "drjit"))

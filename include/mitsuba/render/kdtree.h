@@ -2505,18 +2505,23 @@ protected:
 
         if constexpr (ShadowRay) {
             bool hit;
-            if (shape->is_mesh())
-                hit = mesh->ray_intersect_triangle_scalar(prim_index, ray).first != dr::Infinity<ScalarFloat>;
-            else
+            if (shape->is_mesh()) {
+                hit = std::get<0>(
+                    mesh->ray_intersect_triangle_scalar(prim_index, ray));
+            } else {
                 hit = shape->ray_test_scalar(ray);
-            pi.t = dr::select(hit, 0.f , pi.t);
+            }
+            pi.valid = hit;
+            pi.t = dr::select(hit, ScalarFloat(0), dr::Infinity<ScalarFloat>);
         } else {
             uint32_t inst_index = (uint32_t) -1;
-            if (shape->is_mesh())
-                std::tie(pi.t, pi.prim_uv) = mesh->ray_intersect_triangle_scalar(prim_index, ray);
-            else
-                std::tie(pi.t, pi.prim_uv, inst_index, prim_index) =
+            if (shape->is_mesh()) {
+                std::tie(pi.valid, pi.t, pi.prim_uv) =
+                    mesh->ray_intersect_triangle_scalar(prim_index, ray);
+            } else {
+                std::tie(pi.valid, pi.t, pi.prim_uv, inst_index, prim_index) =
                     shape->ray_intersect_preliminary_scalar(ray);
+            }
             pi.prim_index = prim_index;
 
             bool hit_inst  = (inst_index != (uint32_t) -1);

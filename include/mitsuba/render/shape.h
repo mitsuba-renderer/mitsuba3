@@ -7,6 +7,8 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/bbox.h>
 #include <mitsuba/core/field.h>
+#include <mitsuba/render/fwd.h>
+#include <mitsuba/render/scene_ir.h>
 #include <drjit/packet.h>
 #include <tsl/robin_map.h>
 
@@ -15,50 +17,6 @@
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
-
-/// Enumeration of all shape types in Mitsuba
-enum class ShapeType : uint32_t {
-    /// Meshes (`ply`, `obj`, `serialized`)
-    Mesh = 1u << 0,
-
-    /// Rectangle: a particular type of mesh
-    Rectangle = Mesh | (1u << 1), // Tagged with an extra bit
-
-    /// B-Spline curves (`bsplinecurve`)
-    BSplineCurve = 1u << 2,
-
-    /// Linear curves (`linearcurve`)
-    LinearCurve = 1u << 3,
-
-    /// Cylinders (`cylinder`)
-    Cylinder = 1u << 4,
-
-    /// Disks (`disk`)
-    Disk = 1u << 5,
-
-    /// SDF Grids (`sdfgrid`)
-    SDFGrid = 1u << 6,
-
-    /// Spheres (`sphere`)
-    Sphere = 1u << 7,
-
-    /// Ellipsoids (`ellipsoids`)
-    Ellipsoids = 1u << 8,
-
-    /// Ellipsoids (`ellipsoidsmesh`)
-    EllipsoidsMesh = Mesh | (1u << 9), // Tagged with an extra bit
-
-    /// Instance (`instance`)
-    Instance = 1u << 10,
-
-    /// ShapeGroup (`shapegroup`)
-    ShapeGroup = 1u << 11,
-
-    /// Invalid for default initialization
-    Invalid = 0
-};
-
-MI_DECLARE_ENUM_OPERATORS(ShapeType)
 
 /**
  * \brief This list of flags is used to control the behavior of discontinuity
@@ -640,11 +598,12 @@ public:
      *     The ray to be tested for an intersection
      *
      * \return
-     *     A tuple containing the following field: \c t, \c uv, \c shape_index,
-     *     \c prim_index. The \c shape_index should be only used by the
+     *     A tuple containing the following field: \c valid, \c t, \c uv,
+     *     \c shape_index, \c prim_index. The \c shape_index should be only used by the
      *     \ref ShapeGroup class and be set to \c (uint32_t)-1 otherwise.
      */
-    virtual std::tuple<ScalarFloat, ScalarPoint2f, ScalarUInt32, ScalarUInt32>
+    virtual std::tuple<bool, ScalarFloat, ScalarPoint2f,
+                       ScalarUInt32, ScalarUInt32>
     ray_intersect_preliminary_scalar(const ScalarRay3f &ray) const;
     virtual bool ray_test_scalar(const ScalarRay3f &ray) const;
 
@@ -656,7 +615,8 @@ public:
         using Point2fP##N = Point<FloatP##N, 2>;                                \
         using Point3fP##N = Point<FloatP##N, 3>;                                \
         using Ray3fP##N   = Ray<Point3fP##N, Spectrum>;                         \
-        virtual std::tuple<FloatP##N, Point2fP##N, UInt32P##N, UInt32P##N>      \
+        virtual std::tuple<MaskP##N, FloatP##N, Point2fP##N,                    \
+                           UInt32P##N, UInt32P##N>                              \
         ray_intersect_preliminary_packet(const Ray3fP##N &ray,                  \
                                          ScalarIndex prim_index = 0,            \
                                          MaskP##N active = true) const;         \
@@ -918,96 +878,35 @@ public:
     /// Does this shape have flipped normals?
     virtual bool has_flipped_normals() const;
 
-
-#if defined(MI_ENABLE_EMBREE)
-    /// Return the Embree version of this shape
-    virtual RTCGeometry embree_geometry(RTCDevice device);
-#endif
-
-#if defined(MI_ENABLE_CUDA)
     /**
-     * \brief Populates the GPU data buffer, used in the OptiX Hitgroup sbt records.
+     * \brief Describe this shape's geometry to the ray-tracing backends.
      *
-     * \remark
-     *      Actual implementations of this method should allocate the field \ref
-     *      m_optix_data_ptr on the GPU and populate it with the OptiX representation
-     *      of the class.
+     * Fills a backend-neutral \ref ShapeIR descriptor that each backend's
+     * scene builder consumes to construct its acceleration structures. Called
+     * once per shape at build/update time.
      *
-     * The default implementation throws an exception.
+     * The default implementation describes a single-primitive custom
+     * (bounding-box) shape whose AABB is the shape's bounding box.
      */
-    virtual void optix_prepare_geometry();
+    virtual void describe(ShapeIR &g) const;
 
-    /**
-     * \brief Fills the OptixBuildInput associated with this shape.
-     *
-     * \param build_input
-     *     A reference to the build input to be filled. The field
-     *     build_input.type has to be set, along with the associated members. For
-     *     now, Mitsuba only supports the types \ref OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES
-     *     and \ref OPTIX_BUILD_INPUT_TYPE_TRIANGLES.
-     *
-     * The default implementation assumes that an implicit Shape (custom primitive
-     * build type) is begin constructed, with its GPU data stored at \ref m_optix_data_ptr.
-     */
-    virtual void optix_build_input(OptixBuildInput& build_input) const;
+    /// Describe a custom shape and register a \c fill_data callback that emits
+    /// one \c PodT per primitive via \c Derived::gpu_fill_data().
+    template <typename Derived, typename PodT>
+    void describe_with_data(ShapeIR &g) const {
+        Shape::describe(g);
+        g.pdata_size = sizeof(PodT);
+        g.fill_data = [](const void *ctx, void *out) {
+            static_cast<const Derived *>(ctx)->gpu_fill_data(out);
+        };
+    }
 
-    /**
-     * \brief Prepares and fills the \ref OptixInstance(s) associated with this
-     * shape. This process includes generating the OptiX instance acceleration
-     * structure (IAS) represented by this shape, and pushing OptixInstance
-     * structs to the provided instances vector.
-     *
-     * \remark
-     *     This method is currently only implemented for the \ref Instance
-     *     and \ref ShapeGroup plugin.
-     *
-     * \param context
-     *     The OptiX context that was used to construct the rest of the scene's
-     *     OptiX representation.
-     *
-     * \param instances
-     *     The array to which new OptixInstance should be appended.
-     *
-     * \param instance_id
-     *     The instance id, used internally inside OptiX to detect when a Shape
-     *     is part of an Instance.
-     *
-     * \param transf
-     *     The current to_world transformation (should allow for recursive instancing).
-     *
-     * The default implementation throws an exception.
-     */
-    virtual void optix_prepare_ias(const OptixDeviceContext& /*context*/,
-                                   std::vector<OptixInstance>& /*out_instances*/,
-                                   uint32_t /*instance_id*/,
-                                   const ScalarAffineTransform4f& /*transf*/);
-
-    /**
-     * \brief Creates and appends the HitGroupSbtRecord(s) associated with this
-     * shape to the provided array.
-     *
-     * \remark
-     *     This method can append multiple hitgroup records to the array
-     *     (see the \ref Shapegroup plugin for an example).
-     *
-     * \param hitgroup_records
-     *     The array of hitgroup records where the new HitGroupRecords should be
-     *     appended.
-     *
-     * \param pg
-     *     The array of available program groups (used to pack the OptiX header
-     *     at the beginning of the record).
-     *
-     * The default implementation creates a new HitGroupSbtRecord and fills its
-     * \ref data field with \ref m_optix_data_ptr. It then calls \ref
-     * optixSbtRecordPackHeader with one of the OptixProgramGroup of the \ref
-     * program_groups array (the actual program group index is inferred by the
-     * type of the Shape, see \ref OptixProgramGroupMapping).
-     */
-    virtual void optix_fill_hitgroup_records(std::vector<HitGroupSbtRecord> &hitgroup_records,
-                                             const OptixProgramGroup *pg,
-                                             const OptixProgramGroupMapping &pg_mapping);
-#endif
+    /// Invalidate hits whose geometric normal faces along the ray, enforcing the
+    /// single-sided contract on backends (Metal) that report both faces.
+    void cull_backface(SurfaceInteraction3f &si, const Ray3f &ray, Mask active) const {
+        Mask backface = active & (dr::dot(si.n, ray.d) > 0.f);
+        si.t = dr::select(backface, dr::Infinity<Float>, si.t);
+    }
 
     void traverse(TraversalCallback *callback) override;
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override;
@@ -1062,11 +961,6 @@ protected:
     /// True if the shape is used in a \c ShapeGroup
     bool m_is_instance = false;
 
-#if defined(MI_ENABLE_CUDA)
-    /// OptiX hitgroup data buffer
-    void* m_optix_data_ptr = nullptr;
-#endif
-
 protected:
     /// True if the shape's geometry has changed
     bool m_dirty = true;
@@ -1117,22 +1011,22 @@ NAMESPACE_END(mitsuba)
     using typename Base::Point2fP##N;                                                       \
     using typename Base::Point3fP##N;                                                       \
     using typename Base::Ray3fP##N;                                                         \
-    std::tuple<FloatP##N, Point2fP##N, UInt32P##N, UInt32P##N>                              \
+    std::tuple<MaskP##N, FloatP##N, Point2fP##N, UInt32P##N, UInt32P##N>                    \
     ray_intersect_preliminary_packet(                                                       \
         const Ray3fP##N &ray, ScalarIndex prim_index, MaskP##N active) const override {     \
         (void) ray; (void) prim_index; (void) active;                                       \
-        if constexpr (!dr::is_cuda_v<Float>)                                                \
+        if constexpr (!dr::is_cuda_v<Float> && !dr::is_metal_v<Float>)                      \
             return ray_intersect_preliminary_impl<FloatP##N>(ray, prim_index, active);      \
         else                                                                                \
-            Throw("ray_intersect_preliminary_packet() CUDA not supported");                 \
+            Throw("ray_intersect_preliminary_packet() CUDA/Metal not supported");           \
     }                                                                                       \
     MaskP##N ray_test_packet(const Ray3fP##N &ray, ScalarIndex prim_index, MaskP##N active) \
         const override {                                                                    \
         (void) ray; (void) prim_index; (void) active;                                       \
-        if constexpr (!dr::is_cuda_v<Float>)                                                \
+        if constexpr (!dr::is_cuda_v<Float> && !dr::is_metal_v<Float>)                      \
             return ray_test_impl<FloatP##N>(ray, prim_index, active);                       \
         else                                                                                \
-            Throw("ray_intersect_preliminary_packet() CUDA not supported");                 \
+            Throw("ray_intersect_preliminary_packet() CUDA/Metal not supported");           \
     }
 
 // Macro to define ray intersection methods given an *_impl() templated implementation
@@ -1141,7 +1035,7 @@ NAMESPACE_END(mitsuba)
         const Ray3f &ray, ScalarIndex prim_index, Mask active) const override {             \
         MI_MASK_ARGUMENT(active);                                                           \
         PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>();              \
-        std::tie(pi.t, pi.prim_uv, pi.shape_index, pi.prim_index) =                         \
+        std::tie(pi.valid, pi.t, pi.prim_uv, pi.shape_index, pi.prim_index) =               \
             ray_intersect_preliminary_impl<Float>(ray, prim_index, active);                 \
         pi.shape = this;                                                                    \
         return pi;                                                                          \
@@ -1151,7 +1045,7 @@ NAMESPACE_END(mitsuba)
         return ray_test_impl<Float>(ray, prim_index, active);                               \
     }                                                                                       \
     using typename Base::ScalarRay3f;                                                       \
-    std::tuple<ScalarFloat, ScalarPoint2f, ScalarUInt32, ScalarUInt32>                      \
+    std::tuple<bool, ScalarFloat, ScalarPoint2f, ScalarUInt32, ScalarUInt32>                \
     ray_intersect_preliminary_scalar(const ScalarRay3f &ray) const override {               \
         return ray_intersect_preliminary_impl<ScalarFloat>(ray, 0, true);                   \
     }                                                                                       \
