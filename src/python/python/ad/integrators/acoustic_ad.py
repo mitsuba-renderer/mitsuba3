@@ -57,8 +57,10 @@ class AcousticADIntegrator(RBIntegrator):
 
      * - track_time_derivatives
        - |bool|
-       - Whether to track derivatives with respect to time/distance.
-         (Default: |true|)
+       - Whether to track derivatives with respect to time/distance, needed
+         to compute gradients with respect to geometry (time-dependent)
+         scene parameters. If not optimizing for such parameters, setting
+         this to |false| is more efficient. (Default: |true|)
 
     This is the base class for differentiable acoustic integrators. It extends
     the :ref:`acoustic path tracer <integrator-acoustic_path>` with automatic
@@ -78,9 +80,17 @@ class AcousticADIntegrator(RBIntegrator):
     :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>` for
     non-static scenes.
 
-    .. note:: This integrator does not handle participating media or polarized
-       rendering. It requires a ``Microphone`` sensor with a ``Tape`` film
-       type.
+    .. warning:: With the default ``is_detached`` setting, this integrator is
+       biased when used with moving geometry. It omits the gradient
+       contributions that the :ref:`three-point variants
+       <integrator-acoustic_prb_threepoint>` compute explicitly. The time
+       derivatives it does track carry overlapping information, though, so
+       geometry optimization can still converge in practice, depending on
+       the scene and optimization setting.
+
+    .. note:: This integrator only supports acoustic rendering and does not
+       handle participating media. It requires a ``Microphone`` sensor with a
+       ``Tape`` film.
 
     .. tabs::
         .. code-tab:: python
@@ -89,6 +99,8 @@ class AcousticADIntegrator(RBIntegrator):
             'max_time': 1.0,
             'speed_of_sound': 343.0,
             'max_depth': -1,
+            'max_energy_loss': 60.0,
+            'track_time_derivatives': False,
     """
 
     def __init__(self, props):

@@ -16,7 +16,47 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
     Acoustic Path Replay Backpropagation (:monosp:`acoustic_prb`)
     -------------------------------------------------------------
 
-    Inherits all parameters from :ref:`acoustic_ad <integrator-acoustic_ad>`.
+    .. pluginparameters::
+
+     * - speed_of_sound
+       - |float|
+       - Speed of sound in meters per second. (Default: 343.0)
+
+     * - max_time
+       - |float|
+       - Stopping criterion for the maximum propagation time in seconds.
+         Paths whose accumulated travel distance exceeds ``max_time *
+         speed_of_sound`` are terminated.
+
+     * - max_depth
+       - |int|
+       - Specifies the longest path depth (where -1
+         corresponds to :math:`\infty`). A value of 1 will only render directly
+         audible sound sources. 2 will lead to first-order reflections, and so
+         on. (Default: -1)
+
+     * - rr_depth
+       - |int|
+       - Russian roulette path termination is not yet supported. Setting this
+         to any value other than the default raises an error. Use
+         ``max_energy_loss`` instead. (Default: 100000)
+
+     * - max_energy_loss
+       - |float|
+       - Maximum energy loss in dB before a path is terminated. Set to -1 to
+         disable this criterion. (Default: 60.0)
+
+     * - hide_emitters
+       - |bool|
+       - Hide directly visible emitters, i.e. skip the direct (line-of-sight)
+         contribution from sound sources. (Default: no, i.e. |false|)
+
+     * - track_time_derivatives
+       - |bool|
+       - Whether to track derivatives with respect to time/distance, needed
+         to compute gradients with respect to geometry (time-dependent)
+         scene parameters. If not optimizing for such parameters, setting
+         this to |false| is more efficient. (Default: |true|)
 
     This integrator works analogously to the
     :ref:`acoustic path tracer <integrator-acoustic_path>`, but includes
@@ -30,11 +70,16 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
     :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>`
     instead.
 
-    .. warning:: This integrator is biased when used with moving geometry.
+    .. warning:: This integrator is biased when used with moving geometry. It
+       omits the gradient contributions that the :ref:`three-point variants
+       <integrator-acoustic_prb_threepoint>` compute explicitly. The time
+       derivatives it does track carry overlapping information, though, so
+       geometry optimization can still converge in practice, depending on
+       the scene and optimization setting.
 
-    .. note:: This integrator does not handle participating media or polarized
-       rendering. It requires a ``Microphone`` sensor with a ``Tape`` film
-       type.
+    .. note:: This integrator only supports acoustic rendering and does not
+       handle participating media. It requires a ``Microphone`` sensor with a
+       ``Tape`` film.
 
     .. tabs::
         .. code-tab:: python
@@ -43,6 +88,8 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
             'max_time': 1.0,
             'speed_of_sound': 343.0,
             'max_depth': -1,
+            'max_energy_loss': 60.0,
+            'track_time_derivatives': False,
     """
 
     @dr.syntax

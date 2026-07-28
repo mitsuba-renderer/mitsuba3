@@ -64,7 +64,8 @@ total path length and the speed of sound.
 
 At each surface interaction, the integrator uses multiple importance sampling
 (MIS) to combine BSDF and emitter samples, analogous to the optical
-`path tracer <https://mitsuba.readthedocs.io/en/v3.9.0/src/generated/plugins_integrators.html#integrator-path>`_.
+`path tracer
+<https://mitsuba.readthedocs.io/en/v3.9.0/src/generated/plugins_integrators.html#integrator-path>`_.
 The key difference is that energy
 transport is not assumed to be instantaneous, but at the speed of sound. Instead
 of producing an image, the output is stored in a ``Tape``, where the first axis
@@ -74,10 +75,11 @@ Sound paths are terminated when any of the following conditions are met:
 
 - The maximum path depth (``max_depth``) is reached.
 - The accumulated path distance exceeds ``max_time * speed_of_sound``.
-- The path throughput drops below the energy loss threshold (``max_energy_loss``).
+- The path throughput drops below the energy loss threshold
+  (``max_energy_loss``).
 
-.. note:: This integrator does not handle participating media or polarized
-   rendering. It requires a ``Microphone`` sensor with a ``Tape`` film type.
+.. note:: This integrator only supports acoustic rendering and does not handle
+   participating media. It requires a ``Microphone`` sensor with a ``Tape`` film.
 
 .. tabs::
     .. code-tab::  xml
