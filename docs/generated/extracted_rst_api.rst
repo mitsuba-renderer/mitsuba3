@@ -25430,8 +25430,9 @@
     This integrator works analogously to the
     :ref:`acoustic path tracer <integrator-acoustic_path>`, but includes
     additional gradient tracking. It uses time-resolved path replay
-    backpropagation (PRB) to efficiently propagate gradients with respect to
-    material properties, using constant memory and linear time complexity.
+    backpropagation (PRB) :cite:`acoustic_prb` to efficiently propagate
+    gradients with respect to material properties, using constant memory and
+    linear time complexity.
 
     This integrator is only suitable for **static scenes** (i.e., scenes with
     no moving objects). For non-static scenes, use
@@ -25616,7 +25617,7 @@
     challenges:
 
     1. Moving geometry can cause discontinuities in the integrand whose
-       locations depend on the scene parameters -- for example, when a small
+       locations depend on the scene parameters. An example is when a small
        displacement of a surface causes a ray to start or stop intersecting it.
        Even if the derivative of the integral with respect to a scene parameter
        is continuous, it cannot be estimated by differentiating the individual
