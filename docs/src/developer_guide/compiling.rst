@@ -79,8 +79,8 @@ compiled. When the ``mitsuba`` command line executable is launched without a
 specific mode parameter, it will automatically select the most capable variant
 whose backend is available at runtime (preferring an RGB color representation).
 
-**Acoustic rendering requires an** ``*_acoustic`` **variant** — the example
-above enables ``scalar_acoustic`` and ``llvm_ad_acoustic``; without one of
+**Acoustic rendering requires an** ``*_acoustic`` **variant**. The example
+above enables ``scalar_acoustic`` and ``llvm_ad_acoustic``. Without one of
 these (or another ``*_acoustic`` variant) in the enabled list, acoustic scenes
 cannot be rendered, since the stock RGB/spectral variants use
 ``Spectrum<Float, 3>``/``Spectrum<Float, N>`` color representations rather than

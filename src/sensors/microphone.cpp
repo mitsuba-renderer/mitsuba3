@@ -31,10 +31,10 @@ Microphone (:monosp:`microphone`)
 
  * - kappa
    - |float|
-   - Concentration parameter :math:`\kappa` of the von Mises--Fisher
+   - Concentration parameter :math:`\kappa` of the von Mises-Fisher
      distribution used to model the receiver directivity. ``kappa = 0`` yields
-     an omnidirectional receiver (uniform sensitivity over the whole sphere);
-     larger values concentrate the sensitivity into an increasingly narrow lobe
+     an omnidirectional receiver (uniform sensitivity over the whole sphere).
+     Larger values concentrate the sensitivity into an increasingly narrow lobe
      around the forward direction. (Default: 0)
 
 This plugin implements an acoustic receiver (microphone) that records the sound
@@ -42,13 +42,13 @@ energy arriving from the scene. It is the acoustic counterpart to an optical
 camera and must be paired with a :ref:`tape <film-tape>` film, which stores the
 resulting energy-time curve (ETC).
 
-The microphone samples incoming directions from a von Mises--Fisher
+The microphone samples incoming directions from a von Mises-Fisher
 distribution centered on its forward axis. The concentration parameter
 ``kappa`` controls the directivity: with ``kappa = 0`` the receiver is
 omnidirectional, while increasing ``kappa`` narrows its angular sensitivity,
 approximating a directional microphone.
 
-Unlike an optical camera, the microphone has no image resolution -- its film is
+Unlike an optical camera, the microphone has no image resolution. Its film is
 a single receiver point. The two axes of the ``tape`` output correspond to
 frequency bands and time bins rather than image pixels.
 

@@ -20,7 +20,7 @@ positions, and scene geometry.
 
 Because misuka is an extension, the light-transport engine, scene description
 language, and Python API are documented upstream. This site documents only
-**acoustic rendering functionality**; follow the links above for everything
+**acoustic rendering functionality**. Follow the links above for everything
 misuka inherits from Mitsuba 3 and Dr.Jit.
 
 Installation
@@ -29,7 +29,7 @@ Installation
 misuka is built from source, analogously to Mitsuba 3. Follow the
 :ref:`developer guide <sec-compiling>` for the full recipe, and make sure the
 :monosp:`misuka.conf` ``"enabled"`` list contains at least one ``*_acoustic``
-variant (e.g. ``llvm_ad_acoustic``) — acoustic scenes cannot be rendered with an
+variant (e.g. ``llvm_ad_acoustic``). Acoustic scenes cannot be rendered with an
 optical variant. See the `Mitsuba variants guide
 <https://mitsuba.readthedocs.io/en/v3.9.0/src/key_topics/variants.html>`_ for
 background on the variant system.
@@ -46,8 +46,9 @@ Hello World!
 ------------
 
 The example below builds a simple shoebox room with a spherical sound source,
-places a microphone, and renders an **Energy Time Curve (ETC)** — the acoustic
-analogue of an image: energy against propagation time, one column per frequency band.
+places a microphone, and renders an **Energy Time Curve (ETC)**. The ETC is the
+acoustic analogue of an image: energy against propagation time, one column per
+frequency band.
 
 .. code-block:: python
 
@@ -129,8 +130,8 @@ analogue of an image: energy against propagation time, one column per frequency 
     # Render the ETC (time_bins x frequencies x 1). Increase spp to reduce noise.
     etc = mi.render(scene, sensor=microphone, integrator=integrator, spp=2**16)
 
-For a fully worked version — including a visual preview of the room and plotting
-the ETC — see the :doc:`rendering tutorials <src/rendering_tutorials>`.
+For a fully worked version, including a visual preview of the room and plotting
+the ETC, see the :doc:`rendering tutorials <src/rendering_tutorials>`.
 
 Citation
 --------
@@ -169,7 +170,7 @@ When using Time-Resolved Path Replay Backpropagation, please also cite:
         doi     = {10.1145/3730900},
     }
 
-misuka is built on `Mitsuba 3 <https://mitsuba.readthedocs.io/en/v3.9.0/>`_; when
+misuka is built on `Mitsuba 3 <https://mitsuba.readthedocs.io/en/v3.9.0/>`_. When
 appropriate, please also cite the underlying renderer following its
 `citation guidelines <https://mitsuba.readthedocs.io/en/v3.9.0/#citation>`_.
 

@@ -141,10 +141,10 @@ frequency parameters as a drop-in alternative to their wavelength parameters:
   ``wavelength_min``/``wavelength_max``.
 - :ref:`irregular <spectrum-irregular>` accepts ``frequencies`` in place of ``wavelengths``.
 
-Only one of the two domains may be given for a single plugin instance — specifying both
+Only one of the two domains may be given for a single plugin instance. Specifying both
 wavelength and frequency parameters together raises an error at scene-load time.
 
 :ref:`regular <spectrum-regular>`'s exposed ``range`` scene parameter (used for parameter
 traversal, e.g. during optimization) holds this same two-value extent regardless of which
-domain the plugin was constructed with — a frequency range in Hz for acoustic variants, a
-wavelength range in nanometers otherwise.
+domain the plugin was constructed with. It is a frequency range in Hz for acoustic variants,
+and a wavelength range in nanometers otherwise.

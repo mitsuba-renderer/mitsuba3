@@ -23,7 +23,7 @@ Tape (:monosp:`tape`)
  * - frequencies
    - |string|
    - Comma- or space-separated list of frequency band values in Hz. Each entry
-     becomes one frequency band of the output; the number of entries defines the
+     becomes one frequency band of the output. The number of entries defines the
      first (frequency) axis of the ETC. This parameter is required.
 
  * - time_bins
@@ -60,7 +60,7 @@ paths whose total propagation time falls within that bin, so a single receiver
 produces one ETC per frequency band rather than a two-dimensional image.
 
 Unlike a conventional image film, the ``tape`` does not accept ``width`` or
-``height``; the frequency axis is determined by ``frequencies`` and the time
+``height``. The frequency axis is determined by ``frequencies`` and the time
 axis by ``time_bins``.
 
 .. tabs::

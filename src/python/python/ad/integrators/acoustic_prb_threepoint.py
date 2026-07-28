@@ -24,7 +24,7 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
     challenges:
 
     1. Moving geometry can cause discontinuities in the integrand whose
-       locations depend on the scene parameters -- for example, when a small
+       locations depend on the scene parameters. An example is when a small
        displacement of a surface causes a ray to start or stop intersecting it.
        Even if the derivative of the integral with respect to a scene parameter
        is continuous, it cannot be estimated by differentiating the individual

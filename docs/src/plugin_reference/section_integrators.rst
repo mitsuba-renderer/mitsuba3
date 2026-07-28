@@ -9,7 +9,7 @@ accumulating their contributions into a :ref:`tape <film-tape>` film. misuka
 provides a forward, primal-only path tracer, :ref:`acoustic_path
 <integrator-acoustic_path>`, implemented in C++, as well as differentiable
 Python integrators (built on Time-Resolved Path Replay Backpropagation) for
-gradient-based acoustic optimization — see the acoustic integrators listed
+gradient-based acoustic optimization. See the acoustic integrators listed
 below.
 
 In the XML description language, a single integrator is usually instantiated
