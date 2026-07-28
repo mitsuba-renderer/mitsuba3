@@ -126,7 +126,6 @@ language = 'en'
 # directories to ignore when looking for source files.
 exclude_patterns = ['.build',
                     'release.rst',
-                    'src/optix_setup.rst',
                     'porting_3_6.rst',
                     'src/plugin_reference/section_*.rst',
                     'docs_api/*',

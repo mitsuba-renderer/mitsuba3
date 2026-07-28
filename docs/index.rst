@@ -210,5 +210,6 @@ appropriate, please also cite the underlying renderer following its
     :caption: Miscellaneous
     :hidden:
 
+    src/optix_setup
     release_notes
     zz_bibliography
