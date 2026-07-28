@@ -157,7 +157,7 @@ Differentiable acoustics
 Under an ``_ad_`` variant, misuka differentiates the ETC with respect to scene
 parameters: material absorption/scattering, source and receiver positions, and
 geometry. The :ref:`acoustic_prb <integrator-acoustic_prb>` integrator
-implements **Time-Resolved Path Replay Backpropagation**, which propagates
-gradients efficiently across many reflections without storing the full path
-history. This is the basis for the inverse-rendering tutorials, where scene
-parameters are optimized to match a target ETC.
+implements **Time-Resolved Path Replay Backpropagation** :cite:`acoustic_prb`,
+which propagates gradients efficiently across many reflections without
+storing the full path history. This is the basis for the inverse-rendering
+tutorials, where scene parameters are optimized to match a target ETC.

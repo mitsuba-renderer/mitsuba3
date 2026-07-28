@@ -21,8 +21,9 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
     This integrator works analogously to the
     :ref:`acoustic path tracer <integrator-acoustic_path>`, but includes
     additional gradient tracking. It uses time-resolved path replay
-    backpropagation (PRB) to efficiently propagate gradients with respect to
-    material properties, using constant memory and linear time complexity.
+    backpropagation (PRB) :cite:`acoustic_prb` to efficiently propagate
+    gradients with respect to material properties, using constant memory and
+    linear time complexity.
 
     This integrator is only suitable for **static scenes** (i.e., scenes with
     no moving objects). For non-static scenes, use
