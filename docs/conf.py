@@ -168,7 +168,7 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 
-html_logo = "images/misuka_logo.png"
+html_logo = "images/misuka_icon_cropped.png"
 html_title = "misuka"
 html_theme = 'furo'
 html_static_path = ['_static']
@@ -340,6 +340,10 @@ html_theme_options = {
 
     # Disable edit button on read the docs
     "top_of_page_button": None,
+
+    # The logo already contains the "misuka" wordmark, so hide the redundant
+    # text label Furo would otherwise render underneath it.
+    "sidebar_hide_name": True,
 }
 # Force pygments style in dark mode back to the light variant
 pygments_dark_style = 'tango'

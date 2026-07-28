@@ -247,7 +247,19 @@ img {
 }
 
 .sidebar-logo {
-    max-width: 25%;
+    max-width: 70%;
+}
+
+.sidebar-logo-container {
+    margin-bottom: 0;
+}
+
+.sidebar-brand {
+    padding-bottom: 0;
+}
+
+.sidebar-search-container {
+    margin-top: 1rem;
 }
 
 .card-body.text-center {

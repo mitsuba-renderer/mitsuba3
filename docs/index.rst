@@ -1,7 +1,7 @@
 .. only:: not latex
 
     .. image:: images/misuka_logo.png
-        :width: 40%
+        :width: 60%
         :align: center
 
 Getting started
