@@ -16,7 +16,7 @@ Plugin reference
 Overview
 --------
 
-The subsections above describe the available Mitsuba 3 plugins, usually along with example
+The subsections above describe the available misuka plugins, usually along with example
 renderings and a description of what each parameter does. They are separated into subsections
 covering textures, surface scattering models, etc.
 
@@ -106,7 +106,7 @@ Each parameter optionally has flags that are listed in the last column.
 These flags indicate whether the parameter is differentiable or not, or whether it introduces
 discontinuities and thus needs special treatment.
 
-See :py:class:`mitsuba.ParamFlags` for their documentation.
+See :py:class:`misuka.ParamFlags` for their documentation.
 
 
 Scene-wide attributes
