@@ -1,29 +1,59 @@
 Release notes
 =============
 
-[unreleased]
-------------
+misuka release notes
+---------------------
 
-- Add Acoustic Path Integrator `[PR #3] <https://github.com/misuka-renderer/misuka/pull/3>`_
-- Add Acoustic BSDF `[f5c57d4] <https://github.com/misuka-renderer/misuka/commit/f5c57d495597ad400a283f3620481aef802b5c7f>`_
-- `acoustic_ad` and `acoustic_prb`:
-  - Use infinite depth by default `[f33301e] <https://github.com/misuka-renderer/misuka/commit/f33301ec13115c9132df09a6828a8f9b6fcbaa71>`_
-  - Use true geometric distances for path length calculation, avoiding the epsilon offset introduced by `si.spawn_ray()` `[757f880] <https://github.com/misuka-renderer/misuka/commit/757f8807a9444a853d1886f9442dc79da6e50c9f>`_
-  - Add an energy-loss stopping criterion: paths terminate once their throughput drops below `max_energy_loss` in dB `[PR #4] <https://github.com/misuka-renderer/misuka/pull/4>`_
-  - Add a `hide_emitters` option to exclude direct emitter contributions from the ETC `[PR #4] <https://github.com/misuka-renderer/misuka/pull/4>`_
-- Normalize acoustic integrator output by the sample count, so the ETC is spp-invariant `[PR #12] <https://github.com/misuka-renderer/misuka/pull/12>`_
-- Add a test pipeline for the acoustic AD integrators `[PR #4] <https://github.com/misuka-renderer/misuka/pull/4>`_
-- Update Mitsuba base to v3.9.0 `[PR #7] <https://github.com/misuka-renderer/misuka/pull/7>`_
+misuka 0.1.0
+~~~~~~~~~~~~
+*Todo: Add date once we release*
+
+- **Mitsuba update**. misuka now builds on Mitsuba 3.9.0, so all of its features
+  are available (e.g. function freezing, Dr.Jit's new gradient-based optimizers, and
+  the Metal backend for GPU rendering on macOS). `[PR #7] <https://github.com/misuka-renderer/misuka/pull/7>`_
+
+- **Acoustic path integrator**. New ``acoustic_path`` plugin, a forward primal-only
+  path tracer for room-acoustic simulation. `[PR #3] <https://github.com/misuka-renderer/misuka/pull/3>`_
+
+- **Acoustic material**. New ``acousticbsdf`` plugin, a differentiable material
+  combining specular and diffuse reflections with frequency-dependent absorption and scattering coefficients. `[f5c57d4] <https://github.com/misuka-renderer/misuka/commit/f5c57d495597ad400a283f3620481aef802b5c7f>`_
+
+- **Differentiable integrators**. Several updates to the ``acoustic_ad`` and
+  ``acoustic_prb`` integrators:
+
+  - **Infinite depth by default**. Path depth (``max_depth``) is now unbounded
+    (``-1``) unless overridden. `[f33301e] <https://github.com/misuka-renderer/misuka/commit/f33301ec13115c9132df09a6828a8f9b6fcbaa71>`_
+
+  - **True geometric path lengths**. Path length now uses true geometric distances,
+    avoiding the epsilon offset introduced by ``si.spawn_ray()``. `[757f880] <https://github.com/misuka-renderer/misuka/commit/757f8807a9444a853d1886f9442dc79da6e50c9f>`_
+
+  - **Energy-loss stopping criterion**. Paths now terminate once their throughput
+    drops below ``max_energy_loss`` in dB. `[PR #4] <https://github.com/misuka-renderer/misuka/pull/4>`_
+
+  - **Hide emitters**. The new ``hide_emitters`` option excludes direct emitter
+    contributions from the ETC. It replaces ``skip_direct``, which is now deprecated.
+    `[PR #4] <https://github.com/misuka-renderer/misuka/pull/4>`_
+
+- **spp-invariant ETC**. Acoustic integrator output is now normalized by the sample
+  count, so the ETC is invariant to the number of rays used. `[PR #12] <https://github.com/misuka-renderer/misuka/pull/12>`_
+
+- **Acoustic test pipeline**. New test pipeline covering the acoustic AD integrators.
+  `[PR #4] <https://github.com/misuka-renderer/misuka/pull/4>`_
 
 misuka 0.0.0
-------------
+~~~~~~~~~~~~
 
 *August 24, 2025*
 
-- Initial source code release, branched off Mitsuba 3.6.4. `[f4bb42e] <https://github.com/misuka-renderer/misuka/commit/f4bb42e43ab68df3b0c8a5ecd4df04106e2bb582>`_
+- **Initial release**. Source code release, branched off Mitsuba 3.6.4. `[f4bb42e] <https://github.com/misuka-renderer/misuka/commit/f4bb42e43ab68df3b0c8a5ecd4df04106e2bb582>`_
+
+----
+
+Mitsuba release notes
+----------------------
 
 Mitsuba 3.9.0
--------------
+~~~~~~~~~~~~~
 *June 26, 2026*
 
 - **Metal GPU backend**. Mitsuba now ships ``metal_*`` and ``metal_ad_*``
@@ -204,7 +234,7 @@ Mitsuba 3.9.0
 
 
 Mitsuba 3.8.0
--------------
+~~~~~~~~~~~~~
 *February 23, 2026*
 
 - Upgrade Dr.Jit to version `1.3.1
@@ -338,7 +368,7 @@ This list is not exhaustive:
 
 
 Mitsuba 3.7.1
--------------
+~~~~~~~~~~~~~
 *September 17, 2025*
 
 - Upgrade Dr.Jit to version `1.2.0
@@ -402,7 +432,7 @@ Mitsuba 3.7.1
 
 
 Mitsuba 3.7.0
--------------
+~~~~~~~~~~~~~
 *August 7, 2025*
 
 - Upgrade Dr.Jit to version `1.1.0
@@ -625,7 +655,7 @@ Mitsuba 3.7.0
   `#1702 <https://github.com/mitsuba-renderer/mitsuba3/pull/1702>`__).
 
 Mitsuba 3.6.4
--------------
+~~~~~~~~~~~~~
 *February 4, 2025*
 
 - Upgrade Dr.Jit to version `1.0.5 <https://github.com/mitsuba-renderer/drjit/releases/tag/v1.0.5>`__.
@@ -633,13 +663,13 @@ Mitsuba 3.6.4
 - Fallback mechanism for numerical issues in silhouette sampling `ce4af8 <https://github.com/mitsuba-renderer/mitsuba3/commit/ce4af8d31b464f1fc5f52688365eb598272e0153>`__
 
 Mitsuba 3.6.3
--------------
+~~~~~~~~~~~~~
 *January 29, 2025*
 
 - Release was retracted
 
 Mitsuba 3.6.2
--------------
+~~~~~~~~~~~~~
 *January 16, 2025*
 
 - Enable parallel scene loading by default in ``mitsuba`` CLI (regression)
@@ -648,7 +678,7 @@ Mitsuba 3.6.2
   `6af4d3 <https://github.com/mitsuba-renderer/mitsuba3/commit/6af4d377c52bc13b7cafa24cd17b96d68b898f87>`__
 
 Mitsuba 3.6.1
--------------
+~~~~~~~~~~~~~
 *January 16, 2025*
 
 - Improve robustness of parallel scene loading
@@ -663,7 +693,7 @@ Mitsuba 3.6.1
   `11b56f <https://github.com/mitsuba-renderer/mitsuba3/commit/11b56fc107fc9613bad493aee28dfb70fd4bf8c6>`__
 
 Mitsuba 3.6.0
--------------
+~~~~~~~~~~~~~
 *November 25, 2024*
 
 This release comes with a major overhaul of some of the internal components of
@@ -703,7 +733,7 @@ and new features. Here's a non-exhaustive list:
   `#1355 <https://github.com/mitsuba-renderer/mitsuba3/pull/1355>`__
 
 Mitsuba 3.5.2
--------------
+~~~~~~~~~~~~~
 *June 5, 2024*
 
 Most likely the last release which uses `pybind11 <https://pybind11.readthedocs.io>`__.
@@ -712,7 +742,7 @@ Most likely the last release which uses `pybind11 <https://pybind11.readthedocs.
   `03f5e1 <https://github.com/mitsuba-renderer/mitsuba3/commit/03f5e1362d0cf1cc8c4edbd6e0e7bfd5ee8705a0>`__
 
 Mitsuba 3.5.1
--------------
+~~~~~~~~~~~~~
 *June 5, 2024*
 
 - Upgrade Dr.Jit to `[v0.4.6] <https://github.com/mitsuba-renderer/drjit/releases/tag/v0.4.6>`__
@@ -736,7 +766,7 @@ Mitsuba 3.5.1
   `455de4 <https://github.com/mitsuba-renderer/mitsuba3/commit/455de408abf7660e1667a1ed810fc6fd903b9db3>`__ .. `9e156b <https://github.com/mitsuba-renderer/mitsuba3/commit/9e156bdf3a33042b16593e3f5de40acb7d22da64>`__
 
 Mitsuba 3.5.0
--------------
+~~~~~~~~~~~~~
 
 - New projective sampling based integrators, see PR `#997 <https://github.com/mitsuba-renderer/mitsuba3/pull/997>`__ for more details.
   Here's a brief overview of some of the major or breaking changes:
@@ -747,7 +777,7 @@ Mitsuba 3.5.0
   - Can no longer differentiate ``instance``, ``sdfgrid`` and ``Sensor``'s positions
 
 Mitsuba 3.4.1
--------------
+~~~~~~~~~~~~~
 *December 11, 2023*
 
 - Upgrade Dr.Jit to `[v0.4.4] <https://github.com/mitsuba-renderer/drjit/releases/tag/v0.4.4>`__
@@ -778,7 +808,7 @@ Mitsuba 3.4.1
 - Other various minor bug fixes
 
 Mitsuba 3.4.0
--------------
+~~~~~~~~~~~~~
 *August 29, 2023*
 
 - Upgrade Dr.Jit to v0.4.3
@@ -814,7 +844,7 @@ Mitsuba 3.4.0
 - Other various minor bug fixes
 
 Mitsuba 3.3.0
--------------
+~~~~~~~~~~~~~
 *April 25, 2023*
 
 - Upgrade Dr.Jit to v0.4.2
@@ -843,7 +873,7 @@ Mitsuba 3.3.0
   `e4c847 <https://github.com/mitsuba-renderer/mitsuba3/commit/e4c847fedf9005f80bda58a9f6bcfd05581b884c>`__ .. `79eb02 <https://github.com/mitsuba-renderer/mitsuba3/commit/79eb026d6d594076994dba2c44de81c63b7806f4>`__
 
 Mitsuba 3.2.1
--------------
+~~~~~~~~~~~~~
 *February 22, 2023*
 
 - Upgrade Dr.Jit to v0.4.1
@@ -858,7 +888,7 @@ Mitsuba 3.2.1
 - Various minor bug fixes
 
 Mitsuba 3.2.0
--------------
+~~~~~~~~~~~~~
 *January 6, 2023*
 
 - Upgrade Dr.Jit to v0.4.0
@@ -882,7 +912,7 @@ Mitsuba 3.2.0
   `cca579 <https://github.com/mitsuba-renderer/mitsuba3/commit/cca5791aac22cdf7b3b12cd7a69f7a6800fc715b>`__
 
 Mitsuba 3.1.1
--------------
+~~~~~~~~~~~~~
 *November 25, 2022*
 
 - Fixed maximum limits for OptiX kernel launches
@@ -890,10 +920,10 @@ Mitsuba 3.1.1
 
 
 Mitsuba 3.1.0
--------------
+~~~~~~~~~~~~~
 
 New features
-^^^^^^^^^^^^
+""""""""""""
 
 - Enable ray tracing against two different scenes in a single kernel
   `df79cb <https://github.com/mitsuba-renderer/mitsuba3/commit/df79cb3e2837e9296bc3e4ff2afb57416af102f4>`__
@@ -913,7 +943,7 @@ New features
   `9389c8 <https://github.com/mitsuba-renderer/mitsuba3/commit/9389c8d1d16aa7a46d0a54f64eec1d10a1ae1ffd>`__
 
 Other improvements
-^^^^^^^^^^^^^^^^^^
+""""""""""""""""""
 
 - Major performance improvements in ``cuda_*`` variants with new version of Dr.Jit
 - Deprecated ``samples_per_pass`` parameter
@@ -942,7 +972,7 @@ Other improvements
 - Various other minor fixes
 
 Mitsuba 3.0.2
--------------
+~~~~~~~~~~~~~
 *September 13, 2022*
 
 - Change behavior of ``<spectrum ..>`` and ``<rgb ..>`` tag at scene loading for better consistency between ``*_rgb`` and ``*_spectral`` variants
@@ -964,7 +994,7 @@ Mitsuba 3.0.2
 - Various other minor fixes
 
 Mitsuba 3.0.1
--------------
+~~~~~~~~~~~~~
 *July 27, 2022*
 
 - Various minor fixes in documentation
@@ -980,7 +1010,7 @@ Mitsuba 3.0.1
   `6f6274 <https://github.com/mitsuba-renderer/mitsuba3/commit/6f62749d97904471315d2143b96af5ad6548da06>`__
 
 Mitsuba 3.0.0
--------------
+~~~~~~~~~~~~~
 *July 20, 2022*
 
 - Initial release
